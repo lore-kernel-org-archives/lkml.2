@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab2ITWPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 18:15:17 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:46376 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756297Ab2ITWPL (ORCPT
+	id S1756386Ab2ITWPc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 18:15:32 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:40911 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756349Ab2ITWP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 18:15:11 -0400
+	Thu, 20 Sep 2012 18:15:29 -0400
 From: Irina Tirdea <irina.tirdea@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
         David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
         Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 2/4] perf tools: configure shell path at compile time
-Date: Fri, 21 Sep 2012 01:13:33 +0300
-Message-Id: <1348179215-11160-3-git-send-email-irina.tirdea@gmail.com>
+Subject: [PATCH 3/4] perf annotate: configure objdump path at compile time
+Date: Fri, 21 Sep 2012 01:13:34 +0300
+Message-Id: <1348179215-11160-4-git-send-email-irina.tirdea@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348179215-11160-1-git-send-email-irina.tirdea@gmail.com>
 References: <1348179215-11160-1-git-send-email-irina.tirdea@gmail.com>
@@ -27,107 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Irina Tirdea <irina.tirdea@intel.com>
 
-Shell path /bin/sh is hardcoded in various places in perf. Android has a
-different folder structure and does not have /bin/sh.
+The default name for objdump is "objdump". For cross-compiling the name of
+objdump will be different (e.g. arm-eabi-objdump in Android).
 
-Set the shell path at compile time in the Makefile by setting PERF_SHELL_PATH.
-By default it is set to /bin/sh.
+Setting the default objdump name in the Makefile with PERF_OBJDUMP_PATH.
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- tools/perf/Makefile         |    6 +++++-
- tools/perf/builtin-help.c   |    2 +-
- tools/perf/builtin-script.c |   12 ++++++------
- 3 files changed, 12 insertions(+), 8 deletions(-)
+ tools/perf/Makefile        |    4 ++++
+ tools/perf/util/annotate.c |    2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index eab4a36..9021a1f 100644
+index 9021a1f..3d28150 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -828,7 +828,11 @@ $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFL
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
- 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
- 		'-DPERF_MAN_PATH="$(mandir_SQ)"' \
--		'-DPERF_INFO_PATH="$(infodir_SQ)"' $<
-+		'-DPERF_INFO_PATH="$(infodir_SQ)"' \
-+		'-DPERF_SHELL_DIR="/bin/sh"' $<
+@@ -140,6 +140,7 @@ ETC_PERFCONFIG = etc/perfconfig
+ endif
+ lib = lib
+ PERF_TMP_DIR = /tmp
++objdump = objdump
+ 
+ export prefix bindir sharedir sysconfdir
+ 
+@@ -883,6 +884,9 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ 		'-DPREFIX="$(prefix_SQ)"' \
+ 		$<
+ 
++$(OUTPUT)util/annotate.o: util/annotate.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_OBJDUMP_PATH='"$(objdump)"' $<
 +
-+$(OUTPUT)builtin-script.o: builtin-script.c $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_SHELL_DIR='"/bin/sh"' $<
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
  
- $(OUTPUT)builtin-timechart.o: builtin-timechart.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
-diff --git a/tools/perf/builtin-help.c b/tools/perf/builtin-help.c
-index 25c8b94..a1d9703 100644
---- a/tools/perf/builtin-help.c
-+++ b/tools/perf/builtin-help.c
-@@ -171,7 +171,7 @@ static void exec_man_cmd(const char *cmd, const char *page)
- {
- 	struct strbuf shell_cmd = STRBUF_INIT;
- 	strbuf_addf(&shell_cmd, "%s %s", cmd, page);
--	execl("/bin/sh", "sh", "-c", shell_cmd.buf, NULL);
-+	execl(PERF_SHELL_DIR, "sh", "-c", shell_cmd.buf, NULL);
- 	warning("failed to exec '%s': %s", cmd, strerror(errno));
- }
- 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 1be843a..4cc2c96 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1326,7 +1326,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 				goto out;
- 			}
- 
--			__argv[j++] = "/bin/sh";
-+			__argv[j++] = PERF_SHELL_DIR;
- 			__argv[j++] = rec_script_path;
- 			if (system_wide)
- 				__argv[j++] = "-a";
-@@ -1337,7 +1337,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 				__argv[j++] = argv[i];
- 			__argv[j++] = NULL;
- 
--			execvp("/bin/sh", (char **)__argv);
-+			execvp(PERF_SHELL_DIR, (char **)__argv);
- 			free(__argv);
- 			exit(-1);
- 		}
-@@ -1353,7 +1353,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 		}
- 
- 		j = 0;
--		__argv[j++] = "/bin/sh";
-+		__argv[j++] = PERF_SHELL_DIR;
- 		__argv[j++] = rep_script_path;
- 		for (i = 1; i < rep_args + 1; i++)
- 			__argv[j++] = argv[i];
-@@ -1361,7 +1361,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 		__argv[j++] = "-";
- 		__argv[j++] = NULL;
- 
--		execvp("/bin/sh", (char **)__argv);
-+		execvp(PERF_SHELL_DIR, (char **)__argv);
- 		free(__argv);
- 		exit(-1);
- 	}
-@@ -1390,7 +1390,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 			goto out;
- 		}
- 
--		__argv[j++] = "/bin/sh";
-+		__argv[j++] = PERF_SHELL_DIR;
- 		__argv[j++] = script_path;
- 		if (system_wide)
- 			__argv[j++] = "-a";
-@@ -1398,7 +1398,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 			__argv[j++] = argv[i];
- 		__argv[j++] = NULL;
- 
--		execvp("/bin/sh", (char **)__argv);
-+		execvp(PERF_SHELL_DIR, (char **)__argv);
- 		free(__argv);
- 		exit(-1);
- 	}
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index f0a9103..a45ac77 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -824,7 +824,7 @@ fallback:
+ 		 "%s %s%s --start-address=0x%016" PRIx64
+ 		 " --stop-address=0x%016" PRIx64
+ 		 " -d %s %s -C %s|grep -v %s|expand",
+-		 objdump_path ? objdump_path : "objdump",
++		 objdump_path ? objdump_path : PERF_OBJDUMP_PATH,
+ 		 disassembler_style ? "-M " : "",
+ 		 disassembler_style ? disassembler_style : "",
+ 		 map__rip_2objdump(map, sym->start),
 -- 
 1.7.9.5
 
