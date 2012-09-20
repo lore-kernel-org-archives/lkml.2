@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2ITHgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 03:36:41 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59515 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2ITHgi (ORCPT
+	id S1753590Ab2ITHhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 03:37:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64503 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302Ab2ITHhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 03:36:38 -0400
-Date: Thu, 20 Sep 2012 09:36:24 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Andy Lutomirski <luto@amacapital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
- issue in timekeeping core
-Message-ID: <20120920073624.GC2349@netboy.at.omicron.at>
-References: <5057BE59.3050903@linaro.org>
- <20120918180200.GA2281@netboy.at.omicron.at>
- <5058BD9E.30909@linaro.org>
- <20120919045038.GA2248@netboy.at.omicron.at>
- <5059F367.5020104@linaro.org>
- <20120919170347.GA2232@netboy.at.omicron.at>
- <505A06BD.6000406@linaro.org>
- <CALCETrUAiLXvxYMnNDvdUSFkno+v+P_XGirOYch-k8dUG05jpw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F19D43167@ORSMSX108.amr.corp.intel.com>
- <505A34E6.6040107@linaro.org>
+	Thu, 20 Sep 2012 03:37:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505A34E6.6040107@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120920070508.GA4221@secunet.com>
+References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
+	<1348090423-32665-6-git-send-email-minipli@googlemail.com>
+	<1348094309.2636.80.camel@bwh-desktop.uk.solarflarecom.com>
+	<CA+rthh8Q464Jw5okH5aXds0QZztay9dpcyniahtWFxev8tpN9w@mail.gmail.com>
+	<20120920070508.GA4221@secunet.com>
+Date: Thu, 20 Sep 2012 09:37:34 +0200
+Message-ID: <CA+rthh_tRHpQzy0jpbaqwNZTBk+f8t5=cFE4w7yu=6CM-chTSA@mail.gmail.com>
+Subject: Re: [PATCH 5/6] xfrm_user: ensure user supplied esn replay window is valid
+From: Mathias Krause <minipli@googlemail.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Martin Willi <martin@revosec.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 02:11:02PM -0700, John Stultz wrote:
-> Now, I suspect the difficult part will be finding someone with the
-> time and interest to try get the vdso gettime working on ia64 (or
-> s390 or powerpc), and then try to unify the kernel side
-> implementation. Reducing the maintenance burden might not be
-> inspirational enough, especially if there is a small performance
-> cost along with it.
+On Thu, Sep 20, 2012 at 9:05 AM, Steffen Klassert
+<steffen.klassert@secunet.com> wrote:
+> On Thu, Sep 20, 2012 at 08:12:11AM +0200, Mathias Krause wrote:
+>> On Thu, Sep 20, 2012 at 12:38 AM, Ben Hutchings
+>> <bhutchings@solarflare.com> wrote:
+>> > On Wed, 2012-09-19 at 23:33 +0200, Mathias Krause wrote:
+>>
+>> > I'm a little worried that the user-provided
+>> > xfrm_replay_state_esn::bmp_len is not being directly validated anywhere.
+>>
+>> That's what my P.S. in the cover letter tried to hint at -- a missing
+>> upper limit check. But as I wanted to avoid lengthy discussions about
+>> the concrete value and the possible need for some sysctl knob to tune
+>> this even further, I just left this as an exercise for someone else
+>> who is more familiar with the code ;)
+>>
+>
+> I think we should limit bmp_len to some sane value. RFC 4303 recommends
+> an anti replay window size of 64 packets, so limiting bmp_len to cover
+> 4096 packets should be more that enough. Also we can increase this value
+> later without changing the user API if this is needed.
 
-Small performance cost verses correct time keeping?
+Okay. If no-one objects, I'll at add a upper limit check for 4096
+packets to verify_replay().
 
-I couldn't help but notice all of the leap second issues and fixes
-that, once again, appeared this summer. It is great that John looks
-after this stuff, but I cannot avoid the image of Hans Brinker
-stopping leaks with his fingers.
+>> [...]
+>> I disagree. The value of nla_len() is ensured to be in the range of
+>> [sizeof(*up), USHRT_MAX-NLA_HDRLEN], i.e. a positive 16 bit number,
+>> when it passes nlmsg_parse() in xfrm_user_rcv_msg(). This in turn
+>> allows us to assume the int value returned by nla_len() is actually
+>> positive and the compiler can safely make it unsigned for the compare
+>> -- no sign bit, no hassle.
+>
+> I think xfrm_replay_state_esn_len() should return the same type as
+> nla_len(), no matter what we can assume from the current code base.
 
-There is a way to fix this issue once and for all (as we discussed
-before). But in order to implement it, one would have to change all of
-the vdsos, too. So if there is way to refactor the vdsos, then I see
-this as a most "inspirational" task.
+The type of the expression calculated in xfrm_replay_state_esn_len()
+is size_t; the functions the value get passed onto (k*alloc, kmemdup,
+memcpy, memcmp) expect a size_t argument; expressions where the value
+is evaluated to calculate sizes (e.g. in xfrm_sa_len) operate on
+size_t types. So size_t feels just natural.
 
-> And also, all this discussion is a bit far afield of the patchset
-> I'm proposing here. :)  I'd still like to hear any thoughts on it
-> from the various arch maintainers, otherwise I'll submit it to
+> Also it should not return anything else than the other xfrm length
+> calculation functions.
 
-(Sorry for the continuing off topic rant)
+So the other functions should have a return type of size_t, too?
+
+Anyway, such a cleanup should go into a separate patch as the other
+functions are not vulnerable to an overflow like it could happen in
+xfrm_replay_state_esn_len().
+
+> Once we limited bmp_len, xfrm_replay_state_esn_len() should return
+> always a positive value.
+
+True. So int it'll be then again for xfrm_replay_state_esn_len() in v3
+of the patch.
+
 
 Thanks,
-Richard
+Mathias
