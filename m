@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab2ITO0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:26:18 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50282 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755687Ab2ITO0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:26:08 -0400
-Date: Thu, 20 Sep 2012 19:36:34 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] uprobes: Move clear_thread_flag(TIF_UPROBE) to
- uprobe_notify_resume()
-Message-ID: <20120920140634.GE27880@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120914171513.GA29599@redhat.com>
- <20120914171603.GA29652@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120914171603.GA29652@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12092014-7182-0000-0000-000002AA4D38
+	id S1755674Ab2ITOYh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:24:37 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39443 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513Ab2ITOXl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:23:41 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@zeniv.linux.org.uk
+Cc: eparis@redhat.com, linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, acme@ghostprotocols.net
+Subject: [PATCH v2 10/10] vfs: unexport getname and putname symbols
+Date: Thu, 20 Sep 2012 10:23:19 -0400
+Message-Id: <1348150999-13028-11-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1348150999-13028-1-git-send-email-jlayton@redhat.com>
+References: <1348150999-13028-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-09-14 19:16:03]:
+I see no callers in module code.
 
-> Move clear_thread_flag(TIF_UPROBE) from do_notify_resume() to
-> uprobe_notify_resume() for !CONFIG_UPROBES case.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-> ---
->  arch/x86/kernel/signal.c |    4 +---
->  kernel/events/uprobes.c  |    2 ++
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-> index b280908..0041e5a 100644
-> --- a/arch/x86/kernel/signal.c
-> +++ b/arch/x86/kernel/signal.c
-> @@ -785,10 +785,8 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
->  		mce_notify_process();
->  #endif /* CONFIG_X86_64 && CONFIG_X86_MCE */
-> 
-> -	if (thread_info_flags & _TIF_UPROBE) {
-> -		clear_thread_flag(TIF_UPROBE);
-> +	if (thread_info_flags & _TIF_UPROBE)
->  		uprobe_notify_resume(regs);
-> -	}
-> 
->  	/* deal with pending signal delivery */
->  	if (thread_info_flags & _TIF_SIGPENDING)
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 4ea0f0b..14c2e99 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1558,6 +1558,8 @@ void uprobe_notify_resume(struct pt_regs *regs)
->  {
->  	struct uprobe_task *utask;
-> 
-> +	clear_thread_flag(TIF_UPROBE);
-> +
->  	utask = current->utask;
->  	if (utask && utask->active_uprobe)
->  		handle_singlestep(utask, regs);
-> -- 
-> 1.5.5.1
-> 
+diff --git a/fs/namei.c b/fs/namei.c
+index 32a3ed0..e80434e 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -209,7 +209,6 @@ getname(const char __user * filename)
+ {
+ 	return getname_flags(filename, 0, NULL);
+ }
+-EXPORT_SYMBOL(getname);
+ 
+ void putname(struct getname_info *ginfo)
+ {
+@@ -219,7 +218,6 @@ void putname(struct getname_info *ginfo)
+ #endif
+ 	final_putname(ginfo);
+ }
+-EXPORT_SYMBOL(putname);
+ 
+ static int check_acl(struct inode *inode, int mask)
+ {
+-- 
+1.7.11.4
 
