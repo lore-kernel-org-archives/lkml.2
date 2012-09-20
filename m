@@ -1,206 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab2ITGMC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 02:12:02 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:47912 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab2ITGMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 02:12:00 -0400
-X-IronPort-AV: E=Sophos;i="4.80,453,1344182400"; 
-   d="scan'208";a="5875916"
-Message-ID: <505AB4F9.70402@cn.fujitsu.com>
-Date: Thu, 20 Sep 2012 14:17:29 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752898Ab2ITGMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 02:12:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65338 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab2ITGMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 02:12:12 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Shaohua Li <shli@fusionio.com>
-Subject: Re: [PATCH] memory-hotplug: fix zone stat mismatch
-References: <1348039748-32111-1-git-send-email-minchan@kernel.org> <CAHGf_=oSSsJEeh7eN+R6P3n0vq2h5+3DPmogpXqDiu1jJyKmpg@mail.gmail.com> <20120919201738.GA2425@barrios> <505A6EB7.5070305@cn.fujitsu.com> <20120920023053.GD13234@bbox> <505A89A8.8070008@cn.fujitsu.com> <20120920051628.GE13234@bbox> <505AAA8B.4020005@cn.fujitsu.com> <20120920055501.GF13234@bbox>
-In-Reply-To: <20120920055501.GF13234@bbox>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/20 14:12:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/20 14:12:06,
-	Serialize complete at 2012/09/20 14:12:06
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1348094309.2636.80.camel@bwh-desktop.uk.solarflarecom.com>
+References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
+	<1348090423-32665-6-git-send-email-minipli@googlemail.com>
+	<1348094309.2636.80.camel@bwh-desktop.uk.solarflarecom.com>
+Date: Thu, 20 Sep 2012 08:12:11 +0200
+Message-ID: <CA+rthh8Q464Jw5okH5aXds0QZztay9dpcyniahtWFxev8tpN9w@mail.gmail.com>
+Subject: Re: [PATCH 5/6] xfrm_user: ensure user supplied esn replay window is valid
+From: Mathias Krause <minipli@googlemail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Martin Willi <martin@revosec.ch>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 09/20/2012 01:55 PM, Minchan Kim Wrote:
-> On Thu, Sep 20, 2012 at 01:32:59PM +0800, Wen Congyang wrote:
->> At 09/20/2012 01:16 PM, Minchan Kim Wrote:
->>> On Thu, Sep 20, 2012 at 11:12:40AM +0800, Wen Congyang wrote:
->>>> At 09/20/2012 10:30 AM, Minchan Kim Wrote:
->>>>> On Thu, Sep 20, 2012 at 09:17:43AM +0800, Wen Congyang wrote:
->>>>>> At 09/20/2012 04:17 AM, Minchan Kim Wrote:
->>>>>>> Hi KOSAKI,
->>>>>>>
->>>>>>> On Wed, Sep 19, 2012 at 02:05:20PM -0400, KOSAKI Motohiro wrote:
->>>>>>>> On Wed, Sep 19, 2012 at 3:29 AM, Minchan Kim <minchan@kernel.org> wrote:
->>>>>>>>> During memory-hotplug stress test, I found NR_ISOLATED_[ANON|FILE]
->>>>>>>>> are increasing so that kernel are hang out.
->>>>>>>>>
->>>>>>>>> The cause is that when we do memory-hotadd after memory-remove,
->>>>>>>>> __zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
->>>>>>>>> without draining vm_stat_diff of all CPU.
->>>>>>>>>
->>>>>>>>> This patch fixes it.
->>>>>>>>
->>>>>>>> zone_pcp_update() is called from online pages path. but IMHO,
->>>>>>>> the statistics should be drained offline path. isn't it?
->>>>>>>
->>>>>>> It isn't necessary because statistics is right until we reset it to zero
->>>>>>> in online path.
->>>>>>> Do you have something on your mind that we have to drain it in offline path?
->>>>>>
->>>>>> When a node is offlined and onlined again. We create node_data[i] in the
->>>>>
->>>>> I would like to clarify your word.
->>>>> Create or recreate?
->>>>> Why I have a question is as I look over the source code, hotadd_new_pgdat
->>>>> seem to be called if we do hotadd *new* memory. It's not the case for
->>>>> offline and online again you mentioned. If you're right, I should find 
->>>>> arch_free_nodedata to free pgdat when node is disappear but I can't find it.
->>>>> Do I miss something?
->>>>
->>>> Hmm, when a memory is removed, we don't do cleanup now. We(Fujitsu) posted
->>>> a patchset to do this:
->>>> https://lkml.org/lkml/2012/9/5/201
->>>>
->>>> We don't free pgdat in this patchset now. We have two choice:
->>>> 1. free pgdat
->>>> 2. don't free it, and reuse it when it is onlined again
->>>>
->>>> I'm not sure which choice is better.
->>>
->>> I have no idea because I don't know how you guys uses.
->>> If there is use case that sometime you ues many node burstly but
->>> ues a few node in most time, 1) would be good POV memory efficiency
->>> although it makes code rather complicated.
->>>
->>> Anyway, it's another story with this patch because it's not merged yet.
->>>
->>>>
->>>>>
->>>>>
->>>>>> function hotadd_new_pgdat(), and we will lost the statistics stored in
->>>>>> zone->pageset. So we should drain it in offline path.
->>>>>
->>>>> Even we drain in offline patch, it still has a problem.
->>>>>
->>>>> 1. offline
->>>>> 2. drain -> OKAY 
->>>>> 3. schedule
->>>>> 4. Process A increase zone stat
->>>>> 5. Process B increase zone stat
->>>>> 6. online
->>>>> 7. reset it -> we ends up lost zone stat counter which is modified between 2-6
->>>>>
->>>>
->>>> I understand why you drain it in online path now. But it still should drain it
->>>> in offline path because if all pages in this zone are offlined, we will call
->>>> zone_pcp_reset() to reset zone's pcp. We should also drop it in the function
->>>> zone_pcp_reset().
->>>
->>> Good point.
->>> How about this?
->>>
->>> >From e92bf3e96720c89cb18ec32c5db095a27ad4133c Mon Sep 17 00:00:00 2001
->>> From: Minchan Kim <minchan@kernel.org>
->>> Date: Thu, 20 Sep 2012 14:11:49 +0900
->>> Subject: [PATCH v2] memory-hotplug: fix zone stat mismatch
->>>
->>> During memory-hotplug, I found NR_ISOLATED_[ANON|FILE]
->>> are increasing so that kernel are hang out.
->>>
->>> The cause is that when we do memory-hotadd after memory-remove,
->>> __zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
->>> although vm_stat_diff of all CPU still have value.
->>>
->>> In addtion, when we offline all pages of the zone, we reset them
->>> in zone_pcp_reset without drain so that we lost zone stat item.
->>>
->>> This patch fixes it.
->>>
->>> * from v1
->>>   * drain offline patch - KOSAKI, Wen
->>>
->>> Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>> Cc: Wen Congyang <wency@cn.fujitsu.com>
->>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>> Signed-off-by: Minchan Kim <minchan@kernel.org>
->>> ---
->>>  include/linux/vmstat.h |    4 ++++
->>>  mm/page_alloc.c        |    7 +++++++
->>>  mm/vmstat.c            |   12 ++++++++++++
->>>  3 files changed, 23 insertions(+)
->>>
->>> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
->>> index ad2cfd5..5d31876 100644
->>> --- a/include/linux/vmstat.h
->>> +++ b/include/linux/vmstat.h
->>> @@ -198,6 +198,8 @@ extern void __dec_zone_state(struct zone *, enum zone_stat_item);
->>>  void refresh_cpu_vm_stats(int);
->>>  void refresh_zone_stat_thresholds(void);
->>>  
->>> +void drain_zonestat(struct zone *zone, struct per_cpu_pageset *);
->>> +
->>>  int calculate_pressure_threshold(struct zone *zone);
->>>  int calculate_normal_threshold(struct zone *zone);
->>>  void set_pgdat_percpu_threshold(pg_data_t *pgdat,
->>> @@ -251,6 +253,8 @@ static inline void __dec_zone_page_state(struct page *page,
->>>  static inline void refresh_cpu_vm_stats(int cpu) { }
->>>  static inline void refresh_zone_stat_thresholds(void) { }
->>>  
->>> +static inline void drain_zonestat(struct zone *zone,
->>> +			struct per_cpu_pageset *pset) { }
->>>  #endif		/* CONFIG_SMP */
->>>  
->>>  extern const char * const vmstat_text[];
->>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->>> index ab58346..980f2e7 100644
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -5904,6 +5904,7 @@ static int __meminit __zone_pcp_update(void *data)
->>>  		local_irq_save(flags);
->>>  		if (pcp->count > 0)
->>>  			free_pcppages_bulk(zone, pcp->count, pcp);
->>> +		drain_zonestat(zone, pset);
->>>  		setup_pageset(pset, batch);
->>>  		local_irq_restore(flags);
->>>  	}
->>> @@ -5920,10 +5921,16 @@ void __meminit zone_pcp_update(struct zone *zone)
->>>  void zone_pcp_reset(struct zone *zone)
->>>  {
->>>  	unsigned long flags;
->>> +	int cpu;
->>> +	struct per_cpu_pageset *pset;
->>>  
->>>  	/* avoid races with drain_pages()  */
->>>  	local_irq_save(flags);
->>>  	if (zone->pageset != &boot_pageset) {
->>> +		for_each_online_cpu(cpu) {
+On Thu, Sep 20, 2012 at 12:38 AM, Ben Hutchings
+<bhutchings@solarflare.com> wrote:
+> On Wed, 2012-09-19 at 23:33 +0200, Mathias Krause wrote:
+>> The current code fails to ensure that the netlink message actually
+>> contains as many bytes as the header indicates. If a user creates a new
+>> state or updates an existing one but does not supply the bytes for the
+>> whole ESN replay window, the kernel copies random heap bytes into the
+>> replay bitmap, the ones happen to follow the XFRMA_REPLAY_ESN_VAL
+>> netlink attribute. This leads to following issues:
 >>
->> A cpu can be offlined before the pages in the zone are offlined. So
->> I think you should drain it on all possible cpu, not online cpu.
+>> 1. The replay window has random bits set confusing the replay handling
+>>    code later on.
 >>
-> 
-> I'm not CPU hotplug expert but IMHO, it should be handled
-> by vmstat_cpuup_callback when the CPU is down. Otherwise,
-> it should never drain until zone is empty by memory-hotplug.
-> 
-> And if it is, it should be another patch.
+>> 2. A malicious user could use this flaw to leak up to ~3.5kB of heap
+>>    memory when she has access to the XFRM netlink interface (requires
+>>    CAP_NET_ADMIN).
+>
+> Where does this limit come from?  Is that just the standard size netlink
+> skb?
 
-It has been done in page_alloc_cpu_notify(). Your patch is OK to me now.
+It's from then "msg_new(NLMSG_DEFAULT_SIZE, GFP_ATOMIC)" in
+xfrm_state_netlink() which boils down to roughly 3.7k free space for
+the netlink message. Excluding the space used for struct
+xfrm_usersa_info and some minimal extensions leaves roughly 3.5k for
+the replay window.
+Maybe that's just another bug and the code should allocate a netlink
+message big enough for the whole state dump. Don't know. I'm not
+familiar with the code.
 
-Thanks
-Wen Congyang
+> I'm a little worried that the user-provided
+> xfrm_replay_state_esn::bmp_len is not being directly validated anywhere.
+
+That's what my P.S. in the cover letter tried to hint at -- a missing
+upper limit check. But as I wanted to avoid lengthy discussions about
+the concrete value and the possible need for some sysctl knob to tune
+this even further, I just left this as an exercise for someone else
+who is more familiar with the code ;)
+
+> Currently xfrm_replay_state_esn_len() may overflow, and as its return
+> type is int it may unexpectedly return a negative value.
+
+So xfrm_replay_state_esn_len() should return size_t instead as it's
+value should always be positive -- it represents a length. Negative
+lengths make no sense. It can overflow, still. But it cannot get
+negative, at least. Still, the upper limit check would be required to
+avoid other user induced nastiness.
+
+>
+> [...]
+>> --- a/net/xfrm/xfrm_user.c
+>> +++ b/net/xfrm/xfrm_user.c
+> [...]
+>> @@ -370,14 +378,15 @@ static inline int xfrm_replay_verify_len(struct xfrm_replay_state_esn *replay_es
+>>                                        struct nlattr *rp)
+>>  {
+>>       struct xfrm_replay_state_esn *up;
+>> +     size_t ulen;
+>
+> I would normally expect to see sizes declared as size_t but mixing
+> size_t and int in comparisons tends to result in bugs.  So I think this
+> should to be int, matching the return types of nla_len() and
+> xfrm_replay_state_esn_len() (and apparently all lengths in netlink...)
+
+I disagree. The value of nla_len() is ensured to be in the range of
+[sizeof(*up), USHRT_MAX-NLA_HDRLEN], i.e. a positive 16 bit number,
+when it passes nlmsg_parse() in xfrm_user_rcv_msg(). This in turn
+allows us to assume the int value returned by nla_len() is actually
+positive and the compiler can safely make it unsigned for the compare
+-- no sign bit, no hassle.
+What still might happen is the overflow in xfrm_replay_state_esn_len()
+resulting in a to small bitmap allocation for the requested replay
+size. But that gets catched in xfrm_init_replay(). Little late, but
+hey.
+
+>
+>>       if (!replay_esn || !rp)
+>>               return 0;
+>>
+>>       up = nla_data(rp);
+>> +     ulen = xfrm_replay_state_esn_len(up);
+>>
+>> -     if (xfrm_replay_state_esn_len(replay_esn) !=
+>> -                     xfrm_replay_state_esn_len(up))
+>> +     if (nla_len(rp) < ulen || xfrm_replay_state_esn_len(replay_esn) != ulen)
+>>               return -EINVAL;
+>>
+>>       return 0;
+>> @@ -388,22 +397,28 @@ static int xfrm_alloc_replay_state_esn(struct xfrm_replay_state_esn **replay_esn
+>>                                      struct nlattr *rta)
+>>  {
+>>       struct xfrm_replay_state_esn *p, *pp, *up;
+>> +     size_t klen, ulen;
+>
+> Also int, for the same reason.
+
+No, for the reason stated above. I'll fixup
+xfrm_replay_state_esn_len() to return size_t instead.
+
+>
+>>       if (!rta)
+>>               return 0;
+>>
+>>       up = nla_data(rta);
+>> +     klen = xfrm_replay_state_esn_len(up);
+>> +     ulen = nla_len(rta) > sizeof(*up) ? klen : sizeof(*up);
+> [...]
+>
+> I understand that this is correct since verify_replay() previously
+> checked that nla_len(rta) is either == sizeof(*up) or >= klen.  But
+> would it not be more obviously correct to test nla_len(rta) >= klen?
+
+It is. Comparing against klen makes the code more readable.
+
+Thanks,
+Mathias
+
+>
+> Ben.
+>
+> --
+> Ben Hutchings, Staff Engineer, Solarflare
+> Not speaking for my employer; that's the marketing department's job.
+> They asked us to note that Solarflare product names are trademarked.
+>
