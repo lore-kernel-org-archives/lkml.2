@@ -1,127 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab2ITLk3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 07:40:29 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:39009 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab2ITLk0 (ORCPT
+	id S1754092Ab2ITLki (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 07:40:38 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:13409 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab2ITLkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 07:40:26 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: <linux-fsdevel@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>
-Date: Thu, 20 Sep 2012 04:40:18 -0700
-Message-ID: <877grox6ql.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 20 Sep 2012 07:40:35 -0400
+X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
+   d="scan'208";a="14654088"
+Date: Thu, 20 Sep 2012 12:39:45 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Pawel Moll <pawel.moll@arm.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual
+ machines
+In-Reply-To: <1348135563.11116.94.camel@hornet>
+Message-ID: <alpine.DEB.2.02.1209201235450.29232@kaball.uk.xensource.com>
+References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com> <1348135563.11116.94.camel@hornet>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/oX5Jslyd6zVysf5Z3PeyFQH0y1hkqHRk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.1 XMSubLong Long Subject
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [REVIEW][PATCH 00/25] userns: Trivial filesystem conversions
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 20 Sep 2012, Pawel Moll wrote:
+> Morning,
+> 
+> On Wed, 2012-09-19 at 18:44 +0100, Stefano Stabellini wrote:
+> > +/dts-v1/;
+> > +
+> > +/include/ "skeleton.dtsi"
+> 
+> Any particular reason to include skeleton? And I think it would be
+> better to use #address-cells = <2> and #size-cells = <2>, to be ready
+> for LPAE addresses...
 
-This continues my conversion of uid_t and gidt into kuid_t and kgid_t.
-This time my target was all of the file systems that had an extremely
-trivial conversion.
+good idea
 
-These patches are against:
-git.kernel.org:/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-next
 
-Which is against 3.6-rc1.
+> > +/ {
+> > +	model = "XENVM-4.2";
+> > +	compatible = "xen,xenvm-4.2", "arm,vexpress";
+> > +	interrupt-parent = <&gic>;
+> > +
+> > +	chosen {
+> > +		bootargs = "earlyprintk console=hvc0 root=/dev/xvda init=/sbin/init";
+> > +	};
+> > +
+> > +	cpus {
+> > +		#address-cells = <1>;
+> > +		#size-cells = <0>;
+> > +
+> > +		cpu@0 {
+> > +			device_type = "cpu";
+> > +			compatible = "arm,cortex-a15";
+> > +			reg = <0>;
+> > +		};
+> > +	};
+> > +
+> > +	memory {
+> 
+> Formally, it should be memory@80000000, not that I have any strong
+> feelings about it :-)
 
-Once the review is complete I will push these patches to my for-next
-branch, hopefully in time for 3.7.
+OK
 
-Eric
 
-Eric W. Biederman (25):
-      userns: Convert fat to use kuid/kgid where appropriate
-      userns: Convert gadgetfs to use kuid and kgid where appropriate
-      userns: Convert usb functionfs to use kuid/kgid where appropriate
-      userns: Convert devtmpfs to use GLOBAL_ROOT_UID and GLOBAL_ROOT_GID
-      userns: Convert hugetlbfs to use kuid/kgid where appropriate
-      userns: Convert xenfs to use kuid and kgid where appropriate
-      userns: Convert adfs to use kuid and kgid where appropriate
-      userns: Convert befs to use kuid/kgid where appropriate
-      userns: Convert cramfs to use kuid/kgid where appropriate
-      userns: Convert ecryptfs to use kuid/kgid where appropriate
-      userns: Convert efs to use kuid/kgid where appropriate
-      userns: Convert exofs to use kuid/kgid where appropriate
-      userns: Convert hfs to use kuid and kgid where appropriate
-      userns: Convert hfsplus to use kuid and kgid where appropriate
-      userns: Convert isofs to use kuid/kgid where appropriate
-      userns: Convert logfs to use kuid/kgid where appropriate
-      userns: Convert minix to use kuid/kgid where appropriate
-      userns: Convert nillfs2 to use kuid/kgid where appropriate
-      userns: Convert ntfs to use kuid and kgid where appropriate
-      userns: Convert omfs to use kuid and kgid where appropriate
-      userns: Convert the qnx4 filesystem to use kuid/kgid where appropriate
-      userns: Convert the qnx6 filesystem to use kuid/kgid where appropriate
-      userns: Convert the sysv filesystem to use kuid/kgid where appropriate
-      userns: Convert freevxfs to use kuid/kgid where appropriate
-      userns: Convert ipathfs to use GLOBAL_ROOT_UID and GLOBAL_ROOT_GID
+> > +		device_type = "memory";
+> > +		reg = <0x80000000 0x08000000>;
+> > +	};
+> > +
+> > +	gic: interrupt-controller@2c001000 {
+> > +		compatible = "arm,cortex-a9-gic";
+> > +		#interrupt-cells = <3>;
+> > +		#address-cells = <0>;
+> > +		interrupt-controller;
+> > +		reg = <0x2c001000 0x1000>,
+> > +		      <0x2c002000 0x100>;
+> > +	};
+> > +
+> > +	timer {
+> > +		compatible = "arm,armv7-timer";
+> > +		interrupts = <1 13 0xf08>,
+> > +			     <1 14 0xf08>,
+> > +			     <1 11 0xf08>,
+> > +			     <1 10 0xf08>;
+> > +	};
+> > +
+> > +	hypervisor {
+> > +		compatible = "xen,xen-4.2", "xen,xen";
+> > +		reg = <0xb0000000 0x20000>;
+> > +		interrupts = <1 15 0xf08>;
+> > +	};
+> 
+> Is this binding documented somewhere - I mean in
+> Documentation/devicetree/bindings?
 
- drivers/base/devtmpfs.c            |    4 +-
- drivers/infiniband/hw/qib/qib_fs.c |    4 +-
- drivers/usb/gadget/f_fs.c          |   23 ++++++++++++++------
- drivers/usb/gadget/inode.c         |    4 +-
- drivers/xen/xenfs/super.c          |    3 +-
- fs/adfs/adfs.h                     |    4 +-
- fs/adfs/inode.c                    |    4 +-
- fs/adfs/super.c                    |   21 ++++++++++++-------
- fs/befs/befs.h                     |    4 +-
- fs/befs/linuxvfs.c                 |   27 +++++++++++++++++-------
- fs/cramfs/inode.c                  |    4 +-
- fs/ecryptfs/main.c                 |    5 ++-
- fs/ecryptfs/messaging.c            |    5 +--
- fs/efs/inode.c                     |    4 +-
- fs/exofs/inode.c                   |    8 +++---
- fs/fat/fat.h                       |    4 +-
- fs/fat/file.c                      |    6 ++--
- fs/fat/inode.c                     |   18 +++++++++++-----
- fs/freevxfs/vxfs_inode.c           |    4 +-
- fs/hfs/hfs_fs.h                    |    4 +-
- fs/hfs/inode.c                     |    4 +-
- fs/hfs/super.c                     |   16 ++++++++++++--
- fs/hfsplus/catalog.c               |    4 +-
- fs/hfsplus/hfsplus_fs.h            |    4 +-
- fs/hfsplus/inode.c                 |    8 +++---
- fs/hfsplus/options.c               |   15 +++++++++++--
- fs/hugetlbfs/inode.c               |   16 ++++++++++----
- fs/isofs/inode.c                   |   17 ++++++++++-----
- fs/isofs/isofs.h                   |    4 +-
- fs/isofs/rock.c                    |    4 +-
- fs/logfs/inode.c                   |    4 +-
- fs/logfs/readwrite.c               |    8 +++---
- fs/minix/inode.c                   |   16 +++++++-------
- fs/nilfs2/inode.c                  |    8 +++---
- fs/ntfs/inode.c                    |    7 +++--
- fs/ntfs/super.c                    |   39 +++++++++++++++++++++++++++++------
- fs/ntfs/volume.h                   |    5 ++-
- fs/omfs/inode.c                    |    8 +++++-
- fs/omfs/omfs.h                     |    4 +-
- fs/qnx4/inode.c                    |    4 +-
- fs/qnx6/inode.c                    |    4 +-
- fs/sysv/inode.c                    |    8 +++---
- init/Kconfig                       |   26 ------------------------
- 43 files changed, 230 insertions(+), 163 deletions(-)
+Yes, it is: Documentation/devicetree/bindings/arm/xen.txt
+added by: http://marc.info/?l=linux-kernel&m=134790380030990&w=2
+
+
+> > +	motherboard {
+> > +		arm,v2m-memory-map = "rs1";
+> > +		ranges = <0 0 0x08000000 0x04000000>,
+> > +			 <1 0 0x14000000 0x04000000>,
+> > +			 <2 0 0x18000000 0x04000000>,
+> > +			 <3 0 0x1c000000 0x04000000>,
+> > +			 <4 0 0x0c000000 0x04000000>,
+> > +			 <5 0 0x10000000 0x04000000>;
+> > +
+> > +		interrupt-map-mask = <0 0 63>;
+> > +		interrupt-map = <0 0  0 &gic 0  0 4>,
+> > +				<0 0  1 &gic 0  1 4>,
+> > +				<0 0  2 &gic 0  2 4>,
+> > +				<0 0  3 &gic 0  3 4>,
+> > +				<0 0  4 &gic 0  4 4>,
+> > +				<0 0  5 &gic 0  5 4>,
+> > +				<0 0  6 &gic 0  6 4>,
+> > +				<0 0  7 &gic 0  7 4>,
+> > +				<0 0  8 &gic 0  8 4>,
+> > +				<0 0  9 &gic 0  9 4>,
+> > +				<0 0 10 &gic 0 10 4>,
+> > +				<0 0 11 &gic 0 11 4>,
+> > +				<0 0 12 &gic 0 12 4>,
+> > +				<0 0 13 &gic 0 13 4>,
+> > +				<0 0 14 &gic 0 14 4>,
+> > +				<0 0 15 &gic 0 15 4>,
+> > +				<0 0 16 &gic 0 16 4>,
+> > +				<0 0 17 &gic 0 17 4>,
+> > +				<0 0 18 &gic 0 18 4>,
+> > +				<0 0 19 &gic 0 19 4>,
+> > +				<0 0 20 &gic 0 20 4>,
+> > +				<0 0 21 &gic 0 21 4>,
+> > +				<0 0 22 &gic 0 22 4>,
+> > +				<0 0 23 &gic 0 23 4>,
+> > +				<0 0 24 &gic 0 24 4>,
+> > +				<0 0 25 &gic 0 25 4>,
+> > +				<0 0 26 &gic 0 26 4>,
+> > +				<0 0 27 &gic 0 27 4>,
+> > +				<0 0 28 &gic 0 28 4>,
+> > +				<0 0 29 &gic 0 29 4>,
+> > +				<0 0 30 &gic 0 30 4>,
+> > +				<0 0 31 &gic 0 31 4>,
+> > +				<0 0 32 &gic 0 32 4>,
+> > +				<0 0 33 &gic 0 33 4>,
+> > +				<0 0 34 &gic 0 34 4>,
+> > +				<0 0 35 &gic 0 35 4>,
+> > +				<0 0 36 &gic 0 36 4>,
+> > +				<0 0 37 &gic 0 37 4>,
+> > +				<0 0 38 &gic 0 38 4>,
+> > +				<0 0 39 &gic 0 39 4>,
+> > +				<0 0 40 &gic 0 40 4>,
+> > +				<0 0 41 &gic 0 41 4>,
+> > +				<0 0 42 &gic 0 42 4>;
+> > +	};
+> > +};
+> 
+> You've lost me here... You have ranges and interrupt map, but don't
+> include motherboard file. Is it a mistake? If not, you could remove the
+> ranges and interrupt-map, but where do you get your peripherals from
+> then?
+
+There are no peripherals apart from the ones that are already described
+here (timer, gic). All the peripherals that the guest sees are virtual
+devices that show up on xenbus (a virtual bus). In order to initialize
+xenbus, the guest only needs the hypervisor node.  So I'll remove the
+ranges and interrupt-map.
