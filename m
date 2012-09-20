@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab2ITXi7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:38:59 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:56778 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab2ITXi5 (ORCPT
+	id S1753577Ab2ITXlj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:41:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43751 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab2ITXlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:38:57 -0400
-Date: Fri, 21 Sep 2012 01:20:30 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thanasis <thanasis@asyr.hopto.org>, LKML <linux-kernel@vger.kernel.org>,
-        nic_swsd@realtek.com
-Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-Message-ID: <20120920232030.GA9224@electric-eye.fr.zoreil.com>
-References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com>
-Mime-Version: 1.0
+	Thu, 20 Sep 2012 19:41:37 -0400
+Date: Thu, 20 Sep 2012 16:41:33 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v2 03/26] block: Refactor blk_update_request()
+Message-ID: <20120920234133.GM7264@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-4-git-send-email-koverstreet@google.com>
+ <20120920232000.GG7264@google.com>
+ <20120920233632.GC5519@google.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+In-Reply-To: <20120920233632.GC5519@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas <bhelgaas@google.com> :
-[...]
-> Thanks.  I don't see anything wrong from the PCI core point of view.
-> But searching for "r8169 transmit queue timed out" found lots of
-> similar reports.
+Hey,
 
-It's a rather common symptom when things go wrong :o/
+On Thu, Sep 20, 2012 at 04:36:32PM -0700, Kent Overstreet wrote:
+> > Other than that, I definitely like this.  It would be nice to note
+> > that the custom partial bio advancing in blk_update_request() is
+> > replaced with multiple calls to req_bio_endio().  I don't think it has
+> > any meaningful performance implications.  It's just nice to future
+> > readers of the commit.
+> 
+> The number of calls to req_bio_endio() isn't changing...
+> blk_update_request() called it for partial completions before. It's just
+> where the bio itself is updated that's getting shuffled around.
+>
+> Or did you mean that bio_advance() is getting called on every bio
+> instead of the custom advancing in blk_update_request() before? That is
+> different, yeah - it's now always looping over the iovec, not just for
+> partial completions.
+> 
+> Yeah, I will note that in the commit message, in case Jens sees a
+> performance regression from it :)
 
-> +cc 8169 driver folks
+I don't think there's any performance implication.  It's just nice to
+explain how the complexity went away.  If for nothing else, to point
+out how silly the original code was. :)
 
-(thanks)
+> > Also, it would be really nice if you can verify this actually works
+> > with partial blk_update_request().  sector update bug in the previous
+> > patch scares me a bit.  Implementing some debug hacks in the
+> > completion path might be the easiest way to verify.  A subtle bug here
+> > could be pretty painful.
+> 
+> Any suggestions on how to trigger partial updates?
 
-Thanasis, can you narrow down a bit the failing revision ?
+ide along with many legacy drivers do it.  Any SCSI driver including
+libata only does full completion.  I don't know.  Even just trying to
+call the function and comparing before & after with the original code
+would be good.  I'd like to see at least some form of verification
+because the manifested bugs could be extremely nasty and difficult to
+track down.
 
-I'm ok with building a set of ad-hoc backported r8169 drivers to find
-the culprit - if the problem lays there - but I won't mind avoiding
-a few tens of unneeded changesets.
+Thanks.
 
 -- 
-Ueimor
+tejun
