@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab2ITNBg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 09:01:36 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:56388 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab2ITNBf (ORCPT
+	id S1753689Ab2ITNDu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 09:03:50 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:3183 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab2ITNDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 09:01:35 -0400
-Message-ID: <505B12D2.1050101@linux.vnet.ibm.com>
-Date: Thu, 20 Sep 2012 18:27:54 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Thu, 20 Sep 2012 09:03:48 -0400
+Message-ID: <505B1419.2070706@atmel.com>
+Date: Thu, 20 Sep 2012 15:03:21 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suzuki Poulose <suzuki@in.ibm.com>
-Subject: Re: 3.6rc6 slab corruption.
-References: <20120918143504.GA30585@redhat.com> <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com> <20120918192338.GA25845@phenom.dumpdata.com> <CA+55aFy6=1vW4CN0_g8BgSKKdxZNZj9Yd2WG=0BFKjish=Vw=g@mail.gmail.com> <20120918203713.GB19300@phenom.dumpdata.com> <CA+55aFzZvFeCLF8fw=NYFN7C_8ObwJMeK13bN8xRodKQ0QJkTQ@mail.gmail.com> <20120919191652.GA14631@phenom.dumpdata.com> <alpine.DEB.2.00.1209191427460.6273@chino.kir.corp.google.com> <alpine.DEB.2.00.1209191438200.21378@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1209191438200.21378@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <havard@skinnemoen.net>,
+        <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
+        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/9] net/macb: driver enhancement concerning GEM support,
+ ring logic and cleanup
+References: <cover.1348055112.git.nicolas.ferre@atmel.com> <20120919.135006.394934820049386022.davem@davemloft.net>
+In-Reply-To: <20120919.135006.394934820049386022.davem@davemloft.net>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12092013-5140-0000-0000-0000021A1841
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 03:19 AM, David Rientjes wrote:
-> On Wed, 19 Sep 2012, David Rientjes wrote:
->
->>>  From 0806b133b5b28081adf23d0d04a99636ed3b861b Mon Sep 17 00:00:00 2001
->>> From: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
->>> Date: Wed, 19 Sep 2012 11:23:01 -0400
->>> Subject: [PATCH 1/2] debugfs: Add lock for u32_array_read
->>>
->>> Dave Jones spotted that the u32_array_read was doing something funny:
->>>
->>> =============================================================================
->>> BUG kmalloc-64 (Not tainted): Redzone overwritten
->>> -----------------------------------------------------------------------------
->>>
->>> INFO: 0xffff88001f4b4970-0xffff88001f4b4977. First byte 0xbb instead of 0xcc
->>> INFO: Allocated in u32_array_read+0xd1/0x110 age=0 cpu=6 pid=32767
->>>          __slab_alloc+0x516/0x5a5
->>>          __kmalloc+0x213/0x2c0
->>>          u32_array_read+0xd1/0x110
->>> .. snip..
->>> INFO: Freed in u32_array_read+0x99/0x110 age=0 cpu=0 pid=32749
->>>          __slab_free+0x3f/0x3bf
->>>          kfree+0x2d5/0x310
->>>          u32_array_read+0x99/0x110
->>>
->>> Linus tracked it down and found out that "debugfs is racy for that case
->>> [read calls in parallel on the debugfs]. At least the file->private_data
->>> accesses are, for the case of that "u32_array" case.
->>>
->>> In fact it is racy in ...  the whole "file->private_data" access ..
->>> If you have multiple readers on the same file, the whole
->>>
->>> 	if (file->private_data) {
->>> 		kfree(file->private_data);
->>> 		file->private_data = NULL;
->>> 	}
->>>
->>> 	file->private_data = format_array_alloc("%u", data->array,
->>>                                                                data->elements);
->>>
->>> thing is just a disaster waiting to happen." He suggested
->>> putting a lock which this patch does.
->>>
+On 09/19/2012 07:50 PM, David Miller :
+> From: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Date: Wed, 19 Sep 2012 13:55:13 +0200
+> 
+>> This is an enhancement work that began several years ago. I try to catchup with
+>> some performance improvement that has been implemented then by Havard.
+>> The ring index logic and the TX error path modification are the biggest changes
+>> but some cleanup/debugging have been added along the way.
+>> The GEM revision will benefit from the Gigabit support.
 >>
->> Since these are non-seekable files, it must also race to find *ppos == 0.
+>> The series has been tested on several Atmel AT91 SoC with the two MACB/GEM
+>> flavors.
 >>
->>> The consequence of this is that it will trigger more spinlock usage,
->>> as this particular debugfs is used to provide a histogram of spinlock
->>> contention. But memory corruption is a worst offender then that.
->>>
->>> Reported-by: Dave Jones<davej@redhat.com>
->>> Suggested-by: Linus Torvalds<torvalds@linux-foundation.org>
->>
->> Tested-by: David Rientjes<rientjes@google.com>
->>
->
-> An alternative to this, though, might be to never test for *ppos == 0 in
-> u32_array_read() and do the format_array_alloc() in u32_array_open() to
-> initialize file->private_data.  If that allocation fails, just return
-> -ENOMEM.  Then you never need to add a mutex in the read path.
->
+>> v2: - modify the tx error handling: now uses a workqueue
+>>     - information provided by ethtool -i were not accurate: removed
+> 
+> Don't submit patches like this.
+> 
+> When you put an RFC right in the middle of the series, it screws everything
+> up.
+> 
+> It means that I can't only apply the parts that are not RFC.
 
-Tested-by: Raghavendra <raghavendra.kt@linux.vnet.ibm.com>
+I will submit a v3 patch series when I am more confident about the patch
+that I have tagged as RFC...
 
+And as you noted last time that I have included a modified patch in a
+series:
+"Please, when you receive feedback on your patches, you need to
+resubmit the whole patch series for review not just the patches where
+changes were asked for."
+==> I thought that it was a better idea to post the whole patch series
+so that people could figure out the context. As the TX error path is
+greatly modified, it could make senses.
+
+Now, is it possible to review this series as it is or should I repost
+patches? attached to the previous thread? RFC patch alone?
+
+puzzled,
+-- 
+Nicolas Ferre
