@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab2ITCNZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 22:13:25 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51750 "EHLO
+	id S1753980Ab2ITCNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 22:13:23 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:51762 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565Ab2ITCLc (ORCPT
+	with ESMTP id S1753573Ab2ITCLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Sep 2012 22:11:32 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
@@ -14,30 +14,31 @@ Cc: <linux-fsdevel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
         linux-security-module@vger.kernel.org, Jan Kara <jack@suse.cz>,
         Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
         Eric Paris <eparis@redhat.com>, David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
-Date: Wed, 19 Sep 2012 18:52:25 -0700
-Message-Id: <1348105949-25454-23-git-send-email-ebiederm@xmission.com>
+        "Eric W. Biederman" <ebiederm@xmission.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, Steven Whitehouse <swhiteho@redhat.com>
+Date: Wed, 19 Sep 2012 18:52:26 -0700
+Message-Id: <1348105949-25454-24-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348105949-25454-1-git-send-email-ebiederm@xmission.com>
 References: <871uhx1n71.fsf@xmission.com>
  <1348105949-25454-1-git-send-email-ebiederm@xmission.com>
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+1Q/XQMk6prxsPzz2wYzdyMe0rx2gdXt0=
+X-XM-AID: U2FsdGVkX18sUNdDEdf5tv5VrUarsnYfFNt/6H5Rgto=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
 	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4081]
+	*      [score: 0.4449]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
 	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
 X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: *;<linux-kernel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH 23/27] userns: Modify dqget to take struct kqid
+Subject: [PATCH 24/27] userns: Convert quota netlink aka quota_send_warning
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -47,154 +48,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Modify dqget to take struct kqid instead of a type and an identifier
-pair.
+Modify quota_send_warning to take struct kqid instead a type and
+identifier pair.
 
-Modify the callers of dqget in ocfs2 and dquot to take generate
-a struct kqid so they can continue to call dqget.  The conversion
-to create struct kqid should all be the final conversions that
-are needed in those code paths.
+When sending netlink broadcasts always convert uids and quota
+identifiers into the intial user namespace.  There is as yet no way to
+send a netlink broadcast message with different contents to receivers
+in different namespaces, so for the time being just map all of the
+identifiers into the initial user namespace which preserves the
+current behavior.
 
+Change the callers of quota_send_warning in gfs2, xfs and dquot
+to generate a struct kqid to pass to quota send warning.  When
+all of the user namespaces convesions are complete a struct kqid
+values will be availbe without need for conversion, but a conversion
+is needed now to avoid needing to convert everything at once.
+
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: Dave Chinner <david@fromorbit.com>
 Cc: Jan Kara <jack@suse.cz>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- fs/ocfs2/file.c          |    6 ++----
- fs/ocfs2/quota_local.c   |    4 +++-
- fs/quota/dquot.c         |   20 +++++++++++---------
- include/linux/quotaops.h |    2 +-
- 4 files changed, 17 insertions(+), 15 deletions(-)
+ fs/gfs2/quota.c          |   12 ++++++++----
+ fs/quota/dquot.c         |    2 +-
+ fs/quota/netlink.c       |   10 ++++++----
+ fs/xfs/xfs_trans_dquot.c |    8 +++++---
+ include/linux/quota.h    |    4 ++--
+ init/Kconfig             |    1 -
+ 6 files changed, 22 insertions(+), 15 deletions(-)
 
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 46a1f6d..5a4ee77 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -1184,8 +1184,7 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
- 		if (attr->ia_valid & ATTR_UID && attr->ia_uid != inode->i_uid
- 		    && OCFS2_HAS_RO_COMPAT_FEATURE(sb,
- 		    OCFS2_FEATURE_RO_COMPAT_USRQUOTA)) {
--			transfer_to[USRQUOTA] = dqget(sb, attr->ia_uid,
--						      USRQUOTA);
-+			transfer_to[USRQUOTA] = dqget(sb, make_kqid_uid(attr->ia_uid));
- 			if (!transfer_to[USRQUOTA]) {
- 				status = -ESRCH;
- 				goto bail_unlock;
-@@ -1194,8 +1193,7 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
- 		if (attr->ia_valid & ATTR_GID && attr->ia_gid != inode->i_gid
- 		    && OCFS2_HAS_RO_COMPAT_FEATURE(sb,
- 		    OCFS2_FEATURE_RO_COMPAT_GRPQUOTA)) {
--			transfer_to[GRPQUOTA] = dqget(sb, attr->ia_gid,
--						      GRPQUOTA);
-+			transfer_to[GRPQUOTA] = dqget(sb, make_kqid_gid(attr->ia_gid));
- 			if (!transfer_to[GRPQUOTA]) {
- 				status = -ESRCH;
- 				goto bail_unlock;
-diff --git a/fs/ocfs2/quota_local.c b/fs/ocfs2/quota_local.c
-index f100bf7..020f0ba 100644
---- a/fs/ocfs2/quota_local.c
-+++ b/fs/ocfs2/quota_local.c
-@@ -501,7 +501,9 @@ static int ocfs2_recover_local_quota_file(struct inode *lqinode,
- 			}
- 			dqblk = (struct ocfs2_local_disk_dqblk *)(qbh->b_data +
- 				ol_dqblk_block_off(sb, chunk, bit));
--			dquot = dqget(sb, le64_to_cpu(dqblk->dqb_id), type);
-+			dquot = dqget(sb,
-+				      make_kqid(&init_user_ns, type,
-+						le64_to_cpu(dqblk->dqb_id)));
- 			if (!dquot) {
- 				status = -EIO;
- 				mlog(ML_ERROR, "Failed to get quota structure "
+diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
+index b311539..d554dff 100644
+--- a/fs/gfs2/quota.c
++++ b/fs/gfs2/quota.c
+@@ -1070,8 +1070,10 @@ int gfs2_quota_check(struct gfs2_inode *ip, u32 uid, u32 gid)
+ 
+ 		if (be64_to_cpu(qd->qd_qb.qb_limit) && (s64)be64_to_cpu(qd->qd_qb.qb_limit) < value) {
+ 			print_message(qd, "exceeded");
+-			quota_send_warning(test_bit(QDF_USER, &qd->qd_flags) ?
+-					   USRQUOTA : GRPQUOTA, qd->qd_id,
++			quota_send_warning(make_kqid(&init_user_ns,
++						     test_bit(QDF_USER, &qd->qd_flags) ?
++						     USRQUOTA : GRPQUOTA,
++						     qd->qd_id),
+ 					   sdp->sd_vfs->s_dev, QUOTA_NL_BHARDWARN);
+ 
+ 			error = -EDQUOT;
+@@ -1081,8 +1083,10 @@ int gfs2_quota_check(struct gfs2_inode *ip, u32 uid, u32 gid)
+ 			   time_after_eq(jiffies, qd->qd_last_warn +
+ 					 gfs2_tune_get(sdp,
+ 						gt_quota_warn_period) * HZ)) {
+-			quota_send_warning(test_bit(QDF_USER, &qd->qd_flags) ?
+-					   USRQUOTA : GRPQUOTA, qd->qd_id,
++			quota_send_warning(make_kqid(&init_user_ns,
++						     test_bit(QDF_USER, &qd->qd_flags) ?
++						     USRQUOTA : GRPQUOTA,
++						     qd->qd_id),
+ 					   sdp->sd_vfs->s_dev, QUOTA_NL_BSOFTWARN);
+ 			error = print_message(qd, "warning");
+ 			qd->qd_last_warn = jiffies;
 diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index 80d3378..53e377a 100644
+index 7714b16..80d3378 100644
 --- a/fs/quota/dquot.c
 +++ b/fs/quota/dquot.c
-@@ -829,8 +829,10 @@ static struct dquot *get_empty_dquot(struct super_block *sb, int type)
-  *   a) checking for quota flags under dq_list_lock and
-  *   b) getting a reference to dquot before we release dq_list_lock
-  */
--struct dquot *dqget(struct super_block *sb, unsigned int id, int type)
-+struct dquot *dqget(struct super_block *sb, struct kqid qid)
- {
-+	unsigned int type = qid.type;
-+	unsigned int id = from_kqid(&init_user_ns, qid);
- 	unsigned int hashent = hashfn(sb, id, type);
- 	struct dquot *dquot = NULL, *empty = NULL;
- 
-@@ -1390,7 +1392,6 @@ static int dquot_active(const struct inode *inode)
-  */
- static void __dquot_initialize(struct inode *inode, int type)
- {
--	unsigned int id = 0;
- 	int cnt;
- 	struct dquot *got[MAXQUOTAS];
- 	struct super_block *sb = inode->i_sb;
-@@ -1403,18 +1404,19 @@ static void __dquot_initialize(struct inode *inode, int type)
- 
- 	/* First get references to structures we might need. */
- 	for (cnt = 0; cnt < MAXQUOTAS; cnt++) {
-+		struct kqid qid;
- 		got[cnt] = NULL;
- 		if (type != -1 && cnt != type)
- 			continue;
- 		switch (cnt) {
- 		case USRQUOTA:
--			id = inode->i_uid;
-+			qid = make_kqid_uid(inode->i_uid);
- 			break;
- 		case GRPQUOTA:
--			id = inode->i_gid;
-+			qid = make_kqid_gid(inode->i_gid);
- 			break;
- 		}
--		got[cnt] = dqget(sb, id, cnt);
-+		got[cnt] = dqget(sb, qid);
+@@ -1236,7 +1236,7 @@ static void flush_warnings(struct dquot_warn *warn)
+ #ifdef CONFIG_PRINT_QUOTA_WARNING
+ 		print_warning(&warn[i]);
+ #endif
+-		quota_send_warning(warn[i].w_dq_type, warn[i].w_dq_id,
++		quota_send_warning(make_kqid(&init_user_ns, warn[i].w_dq_type, warn[i].w_dq_id),
+ 				   warn[i].w_sb->s_dev, warn[i].w_type);
  	}
+ }
+diff --git a/fs/quota/netlink.c b/fs/quota/netlink.c
+index d67908b..16e8abb 100644
+--- a/fs/quota/netlink.c
++++ b/fs/quota/netlink.c
+@@ -30,7 +30,7 @@ static struct genl_family quota_genl_family = {
+  *
+  */
  
- 	down_write(&sb_dqopt(sb)->dqptr_sem);
-@@ -1898,9 +1900,9 @@ int dquot_transfer(struct inode *inode, struct iattr *iattr)
- 		return 0;
- 
- 	if (iattr->ia_valid & ATTR_UID && iattr->ia_uid != inode->i_uid)
--		transfer_to[USRQUOTA] = dqget(sb, iattr->ia_uid, USRQUOTA);
-+		transfer_to[USRQUOTA] = dqget(sb, make_kqid_uid(iattr->ia_uid));
- 	if (iattr->ia_valid & ATTR_GID && iattr->ia_gid != inode->i_gid)
--		transfer_to[GRPQUOTA] = dqget(sb, iattr->ia_gid, GRPQUOTA);
-+		transfer_to[GRPQUOTA] = dqget(sb, make_kqid_gid(iattr->ia_gid));
- 
- 	ret = __dquot_transfer(inode, transfer_to);
- 	dqput_all(transfer_to);
-@@ -2381,7 +2383,7 @@ int dquot_get_dqblk(struct super_block *sb, struct kqid qid,
+-void quota_send_warning(short type, unsigned int id, dev_t dev,
++void quota_send_warning(struct kqid qid, dev_t dev,
+ 			const char warntype)
  {
- 	struct dquot *dquot;
+ 	static atomic_t seq;
+@@ -56,10 +56,11 @@ void quota_send_warning(short type, unsigned int id, dev_t dev,
+ 		  "VFS: Cannot store netlink header in quota warning.\n");
+ 		goto err_out;
+ 	}
+-	ret = nla_put_u32(skb, QUOTA_NL_A_QTYPE, type);
++	ret = nla_put_u32(skb, QUOTA_NL_A_QTYPE, qid.type);
+ 	if (ret)
+ 		goto attr_err_out;
+-	ret = nla_put_u64(skb, QUOTA_NL_A_EXCESS_ID, id);
++	ret = nla_put_u64(skb, QUOTA_NL_A_EXCESS_ID,
++			  from_kqid_munged(&init_user_ns, qid));
+ 	if (ret)
+ 		goto attr_err_out;
+ 	ret = nla_put_u32(skb, QUOTA_NL_A_WARNING, warntype);
+@@ -71,7 +72,8 @@ void quota_send_warning(short type, unsigned int id, dev_t dev,
+ 	ret = nla_put_u32(skb, QUOTA_NL_A_DEV_MINOR, MINOR(dev));
+ 	if (ret)
+ 		goto attr_err_out;
+-	ret = nla_put_u64(skb, QUOTA_NL_A_CAUSED_ID, current_uid());
++	ret = nla_put_u64(skb, QUOTA_NL_A_CAUSED_ID,
++			  from_kuid_munged(&init_user_ns, current_uid()));
+ 	if (ret)
+ 		goto attr_err_out;
+ 	genlmsg_end(skb, msg_head);
+diff --git a/fs/xfs/xfs_trans_dquot.c b/fs/xfs/xfs_trans_dquot.c
+index bcb6054..0c7fa54 100644
+--- a/fs/xfs/xfs_trans_dquot.c
++++ b/fs/xfs/xfs_trans_dquot.c
+@@ -578,9 +578,11 @@ xfs_quota_warn(
+ 	/* no warnings for project quotas - we just return ENOSPC later */
+ 	if (dqp->dq_flags & XFS_DQ_PROJ)
+ 		return;
+-	quota_send_warning((dqp->dq_flags & XFS_DQ_USER) ? USRQUOTA : GRPQUOTA,
+-			   be32_to_cpu(dqp->q_core.d_id), mp->m_super->s_dev,
+-			   type);
++	quota_send_warning(make_kqid(&init_user_ns,
++				     (dqp->dq_flags & XFS_DQ_USER) ?
++				     USRQUOTA : GRPQUOTA,
++				     be32_to_cpu(dqp->q_core.d_id)),
++			   mp->m_super->s_dev, type);
+ }
  
--	dquot = dqget(sb, qid.type, from_kqid(&init_user_ns, qid));
-+	dquot = dqget(sb, qid);
- 	if (!dquot)
- 		return -ESRCH;
- 	do_get_dqblk(dquot, di);
-@@ -2494,7 +2496,7 @@ int dquot_set_dqblk(struct super_block *sb, struct kqid qid,
- 	struct dquot *dquot;
- 	int rc;
+ /*
+diff --git a/include/linux/quota.h b/include/linux/quota.h
+index f96427a..8b27604 100644
+--- a/include/linux/quota.h
++++ b/include/linux/quota.h
+@@ -511,10 +511,10 @@ static inline unsigned int dquot_generic_flag(unsigned int flags, int type)
+ }
  
--	dquot = dqget(sb, qid.type, from_kqid(&init_user_ns, qid));
-+	dquot = dqget(sb, qid);
- 	if (!dquot) {
- 		rc = -ESRCH;
- 		goto out;
-diff --git a/include/linux/quotaops.h b/include/linux/quotaops.h
-index bd3730d..1c50093 100644
---- a/include/linux/quotaops.h
-+++ b/include/linux/quotaops.h
-@@ -44,7 +44,7 @@ void inode_sub_rsv_space(struct inode *inode, qsize_t number);
+ #ifdef CONFIG_QUOTA_NETLINK_INTERFACE
+-extern void quota_send_warning(short type, unsigned int id, dev_t dev,
++extern void quota_send_warning(struct kqid qid, dev_t dev,
+ 			       const char warntype);
+ #else
+-static inline void quota_send_warning(short type, unsigned int id, dev_t dev,
++static inline void quota_send_warning(struct kqid qid, dev_t dev,
+ 				      const char warntype)
+ {
+ 	return;
+diff --git a/init/Kconfig b/init/Kconfig
+index 15bb1dc..9c8aa8c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -928,7 +928,6 @@ config UIDGID_CONVERTED
+ 	depends on IMA = n
+ 	depends on EVM = n
+ 	depends on QUOTA = n
+-	depends on QUOTA_NETLINK_INTERFACE = n
  
- void dquot_initialize(struct inode *inode);
- void dquot_drop(struct inode *inode);
--struct dquot *dqget(struct super_block *sb, unsigned int id, int type);
-+struct dquot *dqget(struct super_block *sb, struct kqid qid);
- void dqput(struct dquot *dquot);
- int dquot_scan_active(struct super_block *sb,
- 		      int (*fn)(struct dquot *dquot, unsigned long priv),
+ 	# Networking
+ 	depends on NET_9P = n
 -- 
 1.7.5.4
 
