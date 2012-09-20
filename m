@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab2ITHgc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 03:36:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47724 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab2ITHga (ORCPT
+	id S1753574Ab2ITHgl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 03:36:41 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59515 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab2ITHgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 03:36:30 -0400
-Date: Thu, 20 Sep 2012 17:36:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: linux-next: build failure after merge of the final tree (net-next
- tree related)
-Message-Id: <20120920173622.2aa7209cd241a3945f4384d4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__20_Sep_2012_17_36_22_+1000_OR2iKvAWGf=5rQZb"
+	Thu, 20 Sep 2012 03:36:38 -0400
+Date: Thu, 20 Sep 2012 09:36:24 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Andy Lutomirski <luto@amacapital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
+ issue in timekeeping core
+Message-ID: <20120920073624.GC2349@netboy.at.omicron.at>
+References: <5057BE59.3050903@linaro.org>
+ <20120918180200.GA2281@netboy.at.omicron.at>
+ <5058BD9E.30909@linaro.org>
+ <20120919045038.GA2248@netboy.at.omicron.at>
+ <5059F367.5020104@linaro.org>
+ <20120919170347.GA2232@netboy.at.omicron.at>
+ <505A06BD.6000406@linaro.org>
+ <CALCETrUAiLXvxYMnNDvdUSFkno+v+P_XGirOYch-k8dUG05jpw@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F19D43167@ORSMSX108.amr.corp.intel.com>
+ <505A34E6.6040107@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <505A34E6.6040107@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Sep_2012_17_36_22_+1000_OR2iKvAWGf=5rQZb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 19, 2012 at 02:11:02PM -0700, John Stultz wrote:
+> Now, I suspect the difficult part will be finding someone with the
+> time and interest to try get the vdso gettime working on ia64 (or
+> s390 or powerpc), and then try to unify the kernel side
+> implementation. Reducing the maintenance burden might not be
+> inspirational enough, especially if there is a small performance
+> cost along with it.
 
-Hi all,
+Small performance cost verses correct time keeping?
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+I couldn't help but notice all of the leap second issues and fixes
+that, once again, appeared this summer. It is great that John looks
+after this stuff, but I cannot avoid the image of Hans Brinker
+stopping leaks with his fingers.
 
-drivers/net/ethernet/i825xx/znet.c: In function 'hardware_init':
-drivers/net/ethernet/i825xx/znet.c:868:2: error: implicit declaration of fu=
-nction 'isa_virt_to_bus' [-Werror=3Dimplicit-function-declaration]
+There is a way to fix this issue once and for all (as we discussed
+before). But in order to implement it, one would have to change all of
+the vdsos, too. So if there is way to refactor the vdsos, then I see
+this as a most "inspirational" task.
 
-Caused by commit 1d3ff76759b7 ("i825xx: znet: fix compiler warnings when
-building a 64-bit kernel").  Is there some Kconfig dependency missing (CONF=
-IG_ISA)?
+> And also, all this discussion is a bit far afield of the patchset
+> I'm proposing here. :)  I'd still like to hear any thoughts on it
+> from the various arch maintainers, otherwise I'll submit it to
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+(Sorry for the continuing off topic rant)
 
---Signature=_Thu__20_Sep_2012_17_36_22_+1000_OR2iKvAWGf=5rQZb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQWsd2AAoJEECxmPOUX5FEf8YP/RMOnhYeXVHPZxPj8JO1Mkkt
-1Z7czcmR0yDt5vnO/XoCNcNWfCLTGuSClxonTmUmx0IofYgMgVe17ww+c4DcdWkU
-txcT3sw0UjI+nthzvkmuhjgNoU3f/wC8Z/MgtS9H10CEqJgNGQ0slQitIJ4DaAAl
-9HGWVP0a/2Mzwh+RLU7yOValMP9DogDRFoXIIyjhxWi5LOfFu9MJ5EQfAhBLXzTo
-hp+vsaLJEp8T9kTQyZrt0KredzAOsaKi3q1vSH7NXSpWlsfMcIWffs3fWz0CEEaH
-6SF7awfG9vzR1+oaR6n0fxgIJGM4Iz8mLfNdFXiDrsdpAnyEfX/hi8yD4wgb/xGs
-SRYEtlJU1gXFF07g5R93S9fTC38E658GhGYkoj09p1/oAH3dCXzwmDWtOVCUQyIu
-YdgmbETCxcjyWgv8Cl0bYEE2BB123HgYJQTHlBotCBriU1InFY5t0PDGjEjjyBkC
-qM7Y4ZiKJ6Ffu7aBLBlK1SA7euP94+B3mC/y6pBRMN5pn2sezw0GaQ3FQynL6zEo
-DESuHQXk20qD2k6eyIOUdLU5HJsDpjFuIi6anZ82jTT+qPiW2cTiC1xN7PqBjCEK
-PKE5H47Q6TNNawmVXuGVSo7meHzTTSKBSKD9QrsMEen4cVrLnawms/D1pbCE3+0V
-IEf5/N8ZhRj/pkD4K3M2
-=SUiP
------END PGP SIGNATURE-----
-
---Signature=_Thu__20_Sep_2012_17_36_22_+1000_OR2iKvAWGf=5rQZb--
+Thanks,
+Richard
