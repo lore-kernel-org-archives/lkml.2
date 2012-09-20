@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab2ITMLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:11:36 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:41427 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab2ITMLe (ORCPT
+	id S1754583Ab2ITMLk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:11:40 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:54950 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab2ITMLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:11:34 -0400
+	Thu, 20 Sep 2012 08:11:35 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-fsdevel@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
         Linux Containers <containers@lists.linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Thu, 20 Sep 2012 04:41:58 -0700
-Message-Id: <1348141326-23355-17-git-send-email-ebiederm@xmission.com>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Joern Engel <joern@logfs.org>,
+        Prasad Joshi <prasadjoshi.linux@gmail.com>
+Date: Thu, 20 Sep 2012 04:41:57 -0700
+Message-Id: <1348141326-23355-16-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
 References: <877grox6ql.fsf@xmission.com>
  <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19bagFmntilvVLqqvxl7Pjo355yTHlCPhM=
+X-XM-AID: U2FsdGVkX1+kjcMPlEe6guuFaqG1zdVRVwO9dIeYoKE=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0272]
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0013]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1]
+	*      [sa03 1397; Body=1 Fuz1=1]
 	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
 	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 
-X-Spam-Combo: ****;<linux-fsdevel@vger.kernel.org>
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 
+X-Spam-Combo: *;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH 17/25] userns: Convert minix to use kuid/kgid where appropriate
+Subject: [PATCH 16/25] userns: Convert logfs to use kuid/kgid where appropriate
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -45,73 +47,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
+Cc: Joern Engel <joern@logfs.org>
+Cc: Prasad Joshi <prasadjoshi.linux@gmail.com>
 Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/minix/inode.c |   16 ++++++++--------
- init/Kconfig     |    1 -
- 2 files changed, 8 insertions(+), 9 deletions(-)
+ fs/logfs/inode.c     |    4 ++--
+ fs/logfs/readwrite.c |    8 ++++----
+ init/Kconfig         |    1 -
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/fs/minix/inode.c b/fs/minix/inode.c
-index 2a503ad..d0e42c6 100644
---- a/fs/minix/inode.c
-+++ b/fs/minix/inode.c
-@@ -460,8 +460,8 @@ static struct inode *V1_minix_iget(struct inode *inode)
- 		return ERR_PTR(-EIO);
- 	}
- 	inode->i_mode = raw_inode->i_mode;
--	inode->i_uid = (uid_t)raw_inode->i_uid;
--	inode->i_gid = (gid_t)raw_inode->i_gid;
-+	i_uid_write(inode, raw_inode->i_uid);
-+	i_gid_write(inode, raw_inode->i_gid);
- 	set_nlink(inode, raw_inode->i_nlinks);
- 	inode->i_size = raw_inode->i_size;
- 	inode->i_mtime.tv_sec = inode->i_atime.tv_sec = inode->i_ctime.tv_sec = raw_inode->i_time;
-@@ -493,8 +493,8 @@ static struct inode *V2_minix_iget(struct inode *inode)
- 		return ERR_PTR(-EIO);
- 	}
- 	inode->i_mode = raw_inode->i_mode;
--	inode->i_uid = (uid_t)raw_inode->i_uid;
--	inode->i_gid = (gid_t)raw_inode->i_gid;
-+	i_uid_write(inode, raw_inode->i_uid);
-+	i_gid_write(inode, raw_inode->i_gid);
- 	set_nlink(inode, raw_inode->i_nlinks);
- 	inode->i_size = raw_inode->i_size;
- 	inode->i_mtime.tv_sec = raw_inode->i_mtime;
-@@ -545,8 +545,8 @@ static struct buffer_head * V1_minix_update_inode(struct inode * inode)
- 	if (!raw_inode)
- 		return NULL;
- 	raw_inode->i_mode = inode->i_mode;
--	raw_inode->i_uid = fs_high2lowuid(inode->i_uid);
--	raw_inode->i_gid = fs_high2lowgid(inode->i_gid);
-+	raw_inode->i_uid = fs_high2lowuid(i_uid_read(inode));
-+	raw_inode->i_gid = fs_high2lowgid(i_gid_read(inode));
- 	raw_inode->i_nlinks = inode->i_nlink;
- 	raw_inode->i_size = inode->i_size;
- 	raw_inode->i_time = inode->i_mtime.tv_sec;
-@@ -572,8 +572,8 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
- 	if (!raw_inode)
- 		return NULL;
- 	raw_inode->i_mode = inode->i_mode;
--	raw_inode->i_uid = fs_high2lowuid(inode->i_uid);
--	raw_inode->i_gid = fs_high2lowgid(inode->i_gid);
-+	raw_inode->i_uid = fs_high2lowuid(i_uid_read(inode));
-+	raw_inode->i_gid = fs_high2lowgid(i_gid_read(inode));
- 	raw_inode->i_nlinks = inode->i_nlink;
- 	raw_inode->i_size = inode->i_size;
- 	raw_inode->i_mtime = inode->i_mtime.tv_sec;
+diff --git a/fs/logfs/inode.c b/fs/logfs/inode.c
+index a422f42..43f61c2 100644
+--- a/fs/logfs/inode.c
++++ b/fs/logfs/inode.c
+@@ -192,8 +192,8 @@ static void logfs_init_inode(struct super_block *sb, struct inode *inode)
+ 	li->li_height	= 0;
+ 	li->li_used_bytes = 0;
+ 	li->li_block	= NULL;
+-	inode->i_uid	= 0;
+-	inode->i_gid	= 0;
++	i_uid_write(inode, 0);
++	i_gid_write(inode, 0);
+ 	inode->i_size	= 0;
+ 	inode->i_blocks	= 0;
+ 	inode->i_ctime	= CURRENT_TIME;
+diff --git a/fs/logfs/readwrite.c b/fs/logfs/readwrite.c
+index f1cb512..a8d492d 100644
+--- a/fs/logfs/readwrite.c
++++ b/fs/logfs/readwrite.c
+@@ -119,8 +119,8 @@ static void logfs_disk_to_inode(struct logfs_disk_inode *di, struct inode*inode)
+ 	inode->i_mode	= be16_to_cpu(di->di_mode);
+ 	li->li_height	= di->di_height;
+ 	li->li_flags	= be32_to_cpu(di->di_flags);
+-	inode->i_uid	= be32_to_cpu(di->di_uid);
+-	inode->i_gid	= be32_to_cpu(di->di_gid);
++	i_uid_write(inode, be32_to_cpu(di->di_uid));
++	i_gid_write(inode, be32_to_cpu(di->di_gid));
+ 	inode->i_size	= be64_to_cpu(di->di_size);
+ 	logfs_set_blocks(inode, be64_to_cpu(di->di_used_bytes));
+ 	inode->i_atime	= be64_to_timespec(di->di_atime);
+@@ -156,8 +156,8 @@ static void logfs_inode_to_disk(struct inode *inode, struct logfs_disk_inode*di)
+ 	di->di_height	= li->li_height;
+ 	di->di_pad	= 0;
+ 	di->di_flags	= cpu_to_be32(li->li_flags);
+-	di->di_uid	= cpu_to_be32(inode->i_uid);
+-	di->di_gid	= cpu_to_be32(inode->i_gid);
++	di->di_uid	= cpu_to_be32(i_uid_read(inode));
++	di->di_gid	= cpu_to_be32(i_gid_read(inode));
+ 	di->di_size	= cpu_to_be64(i_size_read(inode));
+ 	di->di_used_bytes = cpu_to_be64(li->li_used_bytes);
+ 	di->di_atime	= timespec_to_be64(inode->i_atime);
 diff --git a/init/Kconfig b/init/Kconfig
-index 80edba8..c69e085 100644
+index 88f6571..80edba8 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -946,7 +946,6 @@ config UIDGID_CONVERTED
  	depends on HPFS_FS = n
  	depends on JFFS2_FS = n
  	depends on JFS_FS = n
--	depends on MINIX_FS = n
+-	depends on LOGFS = n
+ 	depends on MINIX_FS = n
  	depends on NCP_FS = n
  	depends on NFSD = n
- 	depends on NFS_FS = n
 -- 
 1.7.5.4
 
