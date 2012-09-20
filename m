@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab2ITVxU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 17:53:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53175 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab2ITVxS (ORCPT
+	id S1755512Ab2ITVxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 17:53:40 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39756 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab2ITVxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 17:53:18 -0400
-Date: Thu, 20 Sep 2012 14:53:13 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v2 01/26] block: Convert integrity to bvec_alloc_bs(),
- and a bugfix
-Message-ID: <20120920215313.GE7264@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-2-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347322957-25260-2-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 20 Sep 2012 17:53:38 -0400
+Date: Thu, 20 Sep 2012 17:53:35 -0400 (EDT)
+Message-Id: <20120920.175335.1128494030737237412.davem@davemloft.net>
+To: gregkh@linuxfoundation.org
+Cc: netdev@vger.kernel.org, joe@perches.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] USB: remove dbg() usage in USB networking drivers
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120919194614.GA17585@kroah.com>
+References: <1348077212.22122.13.camel@joe2Laptop>
+	<20120919193536.GA13933@kroah.com>
+	<20120919194614.GA17585@kroah.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Wed, 19 Sep 2012 20:46:14 +0100
 
-On Mon, Sep 10, 2012 at 05:22:12PM -0700, Kent Overstreet wrote:
-> This adds a pointer to the bvec array to struct bio_integrity_payload,
-> instead of the bvecs always being inline; then the bvecs are allocated
-> with bvec_alloc_bs().
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> This is needed eventually for immutable bio vecs - immutable bvecs
-> aren't useful if we still have to copy them, hence the need for the
-> pointer. Less code is always nice too, though.
+> The dbg() USB macro is so old, it predates me.  The USB networking drivers are
+> the last hold-out using this macro, and we want to get rid of it, so replace
+> the usage of it with the proper netdev_dbg() or dev_dbg() (depending on the
+> context) calls.
 > 
-> Also fix an amusing bug in bio_integrity_split() - struct bio_pair
-> doesn't have the integrity bvecs after the bio_integrity_payloads, so
-> there was a buffer overrun. The code was confusing pointers with arrays.
+> Some places we end up using a local variable for the debug call, so also
+> convert the other existing dev_* calls to use it as well, to save tiny amounts
+> of code space.
+> 
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+> v2: Addressed review comments from Joe Perches
+> 
+> Again, I am glad to take this in the usb-next tree if wanted, whatever is
+> easiest.
 
-Aside from what Martin and Vivek already pointed out, it generally
-looks okay to me but here are some thoughts.
-
-I'm quite doubtful how much we're gaining by this complex set of slabs
-and mempools approach compared to just using kmalloc + one mempool for
-the largest size.  I can't think of anything to be gained in terms of
-cacheline hotness.  In terms of memory usage too, we're proabably
-introducing more fragmentation with all the different slabs.
-
-Jens, what are you thoughts?  For forward progress guarantee, single
-mempool per bioset serving the largest one is enough and we can
-significantly simplify the whole bioset thing.
-
-Thanks.
-
--- 
-tejun
+I'll take this into net-next, applied, thanks Greg.
