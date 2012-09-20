@@ -1,74 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab2ITXgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:36:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42487 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932489Ab2ITXgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:36:35 -0400
-Date: Thu, 20 Sep 2012 16:36:32 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v2 03/26] block: Refactor blk_update_request()
-Message-ID: <20120920233632.GC5519@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-4-git-send-email-koverstreet@google.com>
- <20120920232000.GG7264@google.com>
+	id S932620Ab2ITXhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:37:05 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:43355 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932519Ab2ITXhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 19:37:02 -0400
+Date: Thu, 20 Sep 2012 16:37:00 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: linux-man@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wad@chromium.org
+Subject: [RESEND][PATCH] prctl: update seccomp sections for mode 2 (BPF)
+Message-ID: <20120920233700.GA3363@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120920232000.GG7264@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 04:20:00PM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Mon, Sep 10, 2012 at 05:22:14PM -0700, Kent Overstreet wrote:
-> >  static void req_bio_endio(struct request *rq, struct bio *bio,
-> >  			  unsigned int nbytes, int error)
-> >  {
-> > +	/*
-> > +	 * XXX: bio_endio() does this. only need this because of the weird
-> > +	 * flush seq thing.
-> > +	 */
-> >  	if (error)
-> >  		clear_bit(BIO_UPTODATE, &bio->bi_flags);
-> >  	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
-> >  		error = -EIO;
-> 
-> Isn't this also necessary to record errors on partial completions?
+This adds a short summary of the arguments used for "mode 2" (BPF)
+seccomp.
 
-Ah yeah, you're right. Meant to delete that comment anyways.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ man2/prctl.2 |   40 ++++++++++++++++++++++++++++++----------
+ 1 files changed, 30 insertions(+), 10 deletions(-)
 
-> Other than that, I definitely like this.  It would be nice to note
-> that the custom partial bio advancing in blk_update_request() is
-> replaced with multiple calls to req_bio_endio().  I don't think it has
-> any meaningful performance implications.  It's just nice to future
-> readers of the commit.
+diff --git a/man2/prctl.2 b/man2/prctl.2
+index eb53aa8..a44aa32 100644
+--- a/man2/prctl.2
++++ b/man2/prctl.2
+@@ -41,11 +41,12 @@
+ .\" 2012-04 Cyrill Gorcunov, Document PR_SET_MM
+ .\" 2012-04-25 Michael Kerrisk, Document PR_TASK_PERF_EVENTS_DISABLE and
+ .\"				PR_TASK_PERF_EVENTS_ENABLE
++.\" 2012-09-20 Kees Cook, update PR_SET_SECCOMP for mode 2
+ .\"
+ .\" FIXME: Document PR_SET_TIMERSLACK and PR_GET_TIMERSLACK (new in 2.6.28)
+ .\"		commit 6976675d94042fbd446231d1bd8b7de71a980ada
+ .\"
+-.TH PRCTL 2 2012-04-23 "Linux" "Linux Programmer's Manual"
++.TH PRCTL 2 2012-09-20 "Linux" "Linux Programmer's Manual"
+ .SH NAME
+ prctl \- operations on a process
+ .SH SYNOPSIS
+@@ -235,11 +236,17 @@ in the location pointed to by
+ .\" See http://thread.gmane.org/gmane.linux.kernel/542632
+ .\" [PATCH 0 of 2] seccomp updates
+ .\" andrea@cpushare.com
+-Set the secure computing mode for the calling thread.
+-In the current implementation,
++Set the secure computing mode for the calling thread, to limit
++the available syscalls.
++The seccomp mode is selected via
++.IR arg2 .
++(The seccomp constants are defined in
++.IR <linux/seccomp.h> .)
++
++With
+ .IR arg2
+-must be 1.
+-After the secure computing mode has been set to 1,
++set to
++.BR SECCOMP_MODE_STRICT
+ the only system calls that the thread is permitted to make are
+ .BR read (2),
+ .BR write (2),
+@@ -249,22 +256,35 @@ and
+ Other system calls result in the delivery of a
+ .BR SIGKILL
+ signal.
+-Secure computing mode is useful for number-crunching applications
++Strict secure computing mode is useful for number-crunching applications
+ that may need to execute untrusted byte code,
+ perhaps obtained by reading from a pipe or socket.
+ This operation is only available
+ if the kernel is configured with CONFIG_SECCOMP enabled.
++
++With
++.IR arg2
++set to
++.BR SECCOMP_MODE_FILTER " (since Linux 3.5)"
++the system calls allowed are
++defined by a pointer passed in
++.IR arg3
++to a Berkeley Packet Filter, which can be designed to filter
++arbitrary syscalls and syscall arguments.
++This mode is only available if the kernel is configured with
++CONFIG_SECCOMP_FILTER enabled.
++
+ .TP
+ .BR PR_GET_SECCOMP " (since Linux 2.6.23)"
+ Return the secure computing mode of the calling thread.
+-Not very useful for the current implementation (mode equals 1),
+-but may be useful for other possible future modes:
+-if the caller is not in secure computing mode, this operation returns 0;
+-if the caller is in secure computing mode, then the
++If the caller is not in secure computing mode, this operation returns 0;
++if the caller is in strict secure computing mode, then the
+ .BR prctl ()
+ call will cause a
+ .B SIGKILL
+ signal to be sent to the process.
++If the caller is in filter mode, and this syscall is allowed by the
++seccomp filters, it returns 2.
+ This operation is only available
+ if the kernel is configured with CONFIG_SECCOMP enabled.
+ .TP
+-- 
+1.7.0.4
 
-The number of calls to req_bio_endio() isn't changing...
-blk_update_request() called it for partial completions before. It's just
-where the bio itself is updated that's getting shuffled around.
-
-Or did you mean that bio_advance() is getting called on every bio
-instead of the custom advancing in blk_update_request() before? That is
-different, yeah - it's now always looping over the iovec, not just for
-partial completions.
-
-Yeah, I will note that in the commit message, in case Jens sees a
-performance regression from it :)
-
-> Also, it would be really nice if you can verify this actually works
-> with partial blk_update_request().  sector update bug in the previous
-> patch scares me a bit.  Implementing some debug hacks in the
-> completion path might be the easiest way to verify.  A subtle bug here
-> could be pretty painful.
-
-Any suggestions on how to trigger partial updates?
+-- 
+Kees Cook
+Chrome OS Security
