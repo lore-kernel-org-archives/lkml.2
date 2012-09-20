@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab2ITIRR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 04:17:17 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60041 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab2ITIRN (ORCPT
+	id S1752911Ab2ITIT1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 04:19:27 -0400
+Received: from tee.schottelius.org ([77.109.138.222]:42697 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751704Ab2ITITY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 04:17:13 -0400
-Message-ID: <505AD103.8050004@gmail.com>
-Date: Thu, 20 Sep 2012 10:17:07 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	Thu, 20 Sep 2012 04:19:24 -0400
+Date: Thu, 20 Sep 2012 10:21:02 +0200
+From: Nico Schottelius <nico-kernel20120920@schottelius.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Nico Schottelius <nico-kernel20120920@schottelius.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: Re: Out of memory on 3.5 kernels
+Message-ID: <20120920082102.GB1311@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-kernel20120920@schottelius.org>,
+	Arend van Spriel <arend@broadcom.com>,
+	David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+	Stanislaw Gruszka <sgruszka@redhat.com>
+References: <20120920060202.GB10758@schottelius.org>
+ <alpine.DEB.2.00.1209192351440.30029@chino.kir.corp.google.com>
+ <20120920073245.GA1327@schottelius.org>
+ <505AC952.60501@broadcom.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/11] pinctrl: mvebu: pinctrl driver
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <CACRpkda+Kav6RGstSQ9+BCgVV+pR6ca_HmoueODYubX_xYM8Jw@mail.gmail.com>
-In-Reply-To: <CACRpkda+Kav6RGstSQ9+BCgVV+pR6ca_HmoueODYubX_xYM8Jw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <505AC952.60501@broadcom.com>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.5.4-1-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 10:13 AM, Linus Walleij wrote:
-> I've tried to group related implementations together, so if the first four
-> are dependent we should either:
->
-> 1. Move all of these to the subdir drivers/pinctrl/mvebu
+Hey Arend,
 
-Linus,
+Arend van Spriel [Thu, Sep 20, 2012 at 09:44:18AM +0200]:
+> Hi Nico,
+> 
+> Being curious (and suspicious) over here. Are you doing the rsync
+> over wireless interface using brcmsmac? I am currently looking at
+> bugzilla #47721 (see [1]) and maybe this is related.
 
-I prefer having a subdirectory as there are three more SoCs related
-to mvebu.
+No, the rsync actually goes to a local usb disk that is encrypted
+with luks.
 
-> Either way it's NO BIG DEAL, so I will take care of this after they
-> are merged unless you feel like just fixing it in-flight at this moment.
+The only issue with brcmsmac currently is that after suspend & resume,
+I've to manually do reassociate - it thinks it is associated, but no
+packets are being received by the card (using tshark).
 
-I think integration into Marvell tree is a little bit stalled by other
-patches. Hopefully, today I find some time and update the patches accordingly.
+> [1] https://bugzilla.kernel.org/show_bug.cgi?id=47721
 
-Sebastian
+Uh, this is ugly. I'll have a look at brcmsmac related messages, before
+the kernel buffer fills up again.
+
+Cheers,
+
+Nico
+
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
