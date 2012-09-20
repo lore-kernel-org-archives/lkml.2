@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab2ITMV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:21:27 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55161 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab2ITMNH (ORCPT
+	id S1754645Ab2ITMNG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:13:06 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:54187 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab2ITMLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:13:07 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olof.johansson@gmail.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 03/32] ARM: ux500: Pass PMU platform data due for Perf though AUXDATA
-Date: Thu, 20 Sep 2012 14:12:21 +0200
-Message-Id: <1348143170-2130-4-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
-References: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
+	Thu, 20 Sep 2012 08:11:32 -0400
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <linux-fsdevel@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kai Bankett <chaosman@ontika.net>
+Date: Thu, 20 Sep 2012 04:42:03 -0700
+Message-Id: <1348141326-23355-22-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
+References: <877grox6ql.fsf@xmission.com>
+ <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18clg9Rd0IuhE5nb/2875TB3H+uoPUfGaE=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0047]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 
+X-Spam-Combo: *;<linux-fsdevel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 22/25] userns: Convert the qnx6 filesystem to use kuid/kgid where appropriate
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When booting with Device Tree we need a way to call-back to the
-DB8500 PMU IRQ handler. This is necessary because the two CPU
-IRQ lines are muxed together on the DB8500 chip. The DB8500
-PMU IRQ handler contains logic to pass over to the other core
-in the case of IRQ_NONE. This patch allows the DB8500 PMU IRQ
-handler to be passed to Perf through platform data.
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Cc: Kai Bankett <chaosman@ontika.net>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/arm/mach-ux500/board-mop500.c |    2 ++
- arch/arm/mach-ux500/board-mop500.h |    1 +
- 2 files changed, 3 insertions(+)
+ fs/qnx6/inode.c |    4 ++--
+ init/Kconfig    |    1 -
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index a534d88..5d9600b 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -732,6 +732,8 @@ static struct platform_device *snowball_of_platform_devs[] __initdata = {
- };
+diff --git a/fs/qnx6/inode.c b/fs/qnx6/inode.c
+index 2049c81..f4eef0b 100644
+--- a/fs/qnx6/inode.c
++++ b/fs/qnx6/inode.c
+@@ -574,8 +574,8 @@ struct inode *qnx6_iget(struct super_block *sb, unsigned ino)
+ 	raw_inode = ((struct qnx6_inode_entry *)page_address(page)) + offs;
  
- struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
-+	/* Requires call-back bindings. */
-+	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
- 	/* Requires DMA and call-back bindings. */
- 	OF_DEV_AUXDATA("arm,pl011", 0x80120000, "uart0", &uart0_plat),
- 	OF_DEV_AUXDATA("arm,pl011", 0x80121000, "uart1", &uart1_plat),
-diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
-index b5bfc1a..d04a8e6 100644
---- a/arch/arm/mach-ux500/board-mop500.h
-+++ b/arch/arm/mach-ux500/board-mop500.h
-@@ -81,6 +81,7 @@ struct device;
- struct i2c_board_info;
- extern struct mmci_platform_data mop500_sdi0_data;
- extern struct mmci_platform_data mop500_sdi4_data;
-+extern struct arm_pmu_platdata db8500_pmu_platdata;
- 
- extern void mop500_sdi_init(struct device *parent);
- extern void snowball_sdi_init(struct device *parent);
+ 	inode->i_mode    = fs16_to_cpu(sbi, raw_inode->di_mode);
+-	inode->i_uid     = (uid_t)fs32_to_cpu(sbi, raw_inode->di_uid);
+-	inode->i_gid     = (gid_t)fs32_to_cpu(sbi, raw_inode->di_gid);
++	i_uid_write(inode, (uid_t)fs32_to_cpu(sbi, raw_inode->di_uid));
++	i_gid_write(inode, (gid_t)fs32_to_cpu(sbi, raw_inode->di_gid));
+ 	inode->i_size    = fs64_to_cpu(sbi, raw_inode->di_size);
+ 	inode->i_mtime.tv_sec   = fs32_to_cpu(sbi, raw_inode->di_mtime);
+ 	inode->i_mtime.tv_nsec = 0;
+diff --git a/init/Kconfig b/init/Kconfig
+index b9d6be5..1ff9f41 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -950,7 +950,6 @@ config UIDGID_CONVERTED
+ 	depends on NFSD = n
+ 	depends on NFS_FS = n
+ 	depends on OCFS2_FS = n
+-	depends on QNX6FS_FS = n
+ 	depends on REISERFS_FS = n
+ 	depends on SQUASHFS = n
+ 	depends on SYSV_FS = n
 -- 
-1.7.9.5
+1.7.5.4
 
