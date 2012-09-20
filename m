@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab2ITVv5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 17:51:57 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:37041 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab2ITVvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 17:51:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@deeprootsystems.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH RESEND] PM / Runtime: let rpm_resume() succeed if RPM_ACTIVE, even when disabled
-Date: Thu, 20 Sep 2012 23:58:24 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@vger.kernel.org, linux-omap@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Nishanth Menon <nm@ti.com>, LKML <linux-kernel@vger.kernel.org>
-References: <1348176542-28983-1-git-send-email-khilman@deeprootsystems.com>
-In-Reply-To: <1348176542-28983-1-git-send-email-khilman@deeprootsystems.com>
+	id S1755237Ab2ITVwq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 17:52:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:64523 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab2ITVwo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 17:52:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH] module: add finit_module syscall to asm-generic
+Date: Thu, 20 Sep 2012 21:52:38 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+References: <20120920200702.GA18807@www.outflux.net>
+In-Reply-To: <20120920200702.GA18807@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-2"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209202358.24400.rjw@sisk.pl>
+Message-Id: <201209202152.38630.arnd@arndb.de>
+X-Provags-ID: V02:K0:8cK7RUPedAEeScR0HAPeASRyxXn6XrnJrbsdMmXXoqz
+ 0gGQazhc7kjWQ3/3cBECdJ7rvmNR5PLWw6wDN5tyQhLYMxr3Uj
+ Szz9+0gqgXi4QLwRClpuKS+MwvT6ocORvTcUlPD1g+ybxGP9Ua
+ vXiL03+RpYZOmQg05jKWHMNN2Mg6BBgb27SWsawRwkiNe4cdQJ
+ XTeHNlc3L3AnAM6u1b7JGGRL2fQ/4J9p4l2KoO/bt4jFbBs8Vf
+ aKyx0hkwpjfcdXx+yb0SRC6QvgnNBha5St0GwaOXwX22781oOy
+ WyteS+qRlX8//sBOJRU88GhDAOQjNIrmpn2UBagGXtsMQlv/Eq
+ h5Ar2K/uWIbSD8IRBb04=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 20, 2012, Kevin Hilman wrote:
-> From: Kevin Hilman <khilman@ti.com>
+On Thursday 20 September 2012, Kees Cook wrote:
 > 
-> When runtime PM is disabled, what we want is for callbacks not to be
-> called from then on.  However, currently, when runtime PM is disabled,
-> operations such as 'get' will also fail even if the device is
-> currently active.
+> This adds the finit_module syscall to the generic syscall list.
 > 
-> Since calling 'get' on a device that is already RPM_ACTIVE does not
-> involve calling the callbacks, it should be allowed to succeed, even
-> if runtime PM is disabled.
-> 
-> This is particularily useful in runtime PM enabled drivers that are
-> used during system suspend.  Because runtime PM is disabled during
-> system suspend, currently any driver's use of pm_runtime_get* will
-> fail with -EACCES.  This is expected if the device was already runtime
-> suspended, but if the device is actually active (due to recent usage,
-> autosuspend timeout not expired, or pm_runtime_resume() called in
-> ->suspend() method), the pm_runtime_get*() call should actually
-> succeed.
-
-I'd say the problem is when the drive in question uses the return value of
-pm_runtime_get_sync(), for example, to decide whether or not it is safe
-to access the hardware.  In that case it may decide that accessing the
-hardware is unsafe during system suspend, although that's not really the
-case.  So the change you're proposing allows drivers of this kind  (and there
-may be a substantial number of them) to be simplified slightly.
-
-> To permit the usage described above, add a check to rpm_resume() so
-> that success is returned in the case where a driver is suspended (it's
-> ->suspend callback has been called) but is still RPM_ACTIVE.
-> 
-> This patch was developed in close collaboration with Rafael J. Wysocki
-> <rjw@sisk.pl>
-> 
-> Tested on AM3730/Beagle-xM where wakeup IRQ firing during the late
-> suspend phase triggers runtime PM activity in the I2C driver since the
-> wakeup IRQ is on an I2C-connected PMIC.
-> 
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Kevin Hilman <khilman@ti.com>
-
-OK, I wonder if anyone has any objections against this.  Alan?
-
-Rafael
-
-
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 > ---
-> This version is just a resend with the vger address for linux-pm.
-> 
->  drivers/base/power/runtime.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 7d9c1cb..dafa5ec 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -510,7 +510,8 @@ static int rpm_resume(struct device *dev, int rpmflags)
->  	if (dev->power.runtime_error)
->  		retval = -EINVAL;
->  	else if (dev->power.disable_depth > 0)
-> -		retval = -EACCES;
-> +		retval = dev->power.is_suspended && 
-> +			dev->power.runtime_status == RPM_ACTIVE ? 1 : -EACCES;
->  	if (retval)
->  		goto out;
->  
-> 
+> This depends on the finit_module patchset in Rusty's tree, based on
+> https://lkml.org/lkml/2012/9/7/559
 
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Please queue this along with the other patches.
