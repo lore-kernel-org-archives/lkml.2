@@ -1,177 +1,871 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab2ITEBx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 00:01:53 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:37327 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab2ITEBw (ORCPT
+	id S1752117Ab2ITEFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 00:05:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43633 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab2ITEFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 00:01:52 -0400
-Date: Wed, 19 Sep 2012 21:01:12 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: David Rientjes <rientjes@google.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org
-Subject: Re: [patch for-3.6] mm, thp: fix mapped pages avoiding unevictable
- list on mlock
-In-Reply-To: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com>
-Message-ID: <alpine.LSU.2.00.1209192021270.28543@eggly.anvils>
-References: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 20 Sep 2012 00:05:46 -0400
+Message-ID: <1348113942.16096.18.camel@maxim-laptop>
+Subject: Re: [PATCH] memstick: add support for legacy memorysticks
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alex Dubov <oakad@yahoo.com>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Date: Thu, 20 Sep 2012 07:05:42 +0300
+In-Reply-To: <20120919145228.80f72f59.akpm@linux-foundation.org>
+References: <1348060743-6295-1-git-send-email-maximlevitsky@gmail.com>
+	 <1348060743-6295-2-git-send-email-maximlevitsky@gmail.com>
+	 <20120919145228.80f72f59.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Sep 2012, David Rientjes wrote:
+On Wed, 2012-09-19 at 14:52 -0700, Andrew Morton wrote: 
+> On Wed, 19 Sep 2012 16:19:02 +0300
+> Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > Based partially on MS standard spec quotes from Alex Dubov.
+> > 
+> > As any code that works with user data this driver isn't
+> > recommended to use to write cards that contain valuable data.
+> > 
+> > It tries its best though to avoid data corruption
+> > and possible damage to the card.
+> > 
+> > Tested on MS DUO 64 MB card on Ricoh R592 card reader..
+> > 
+> 
+> Generally looks nice to me, although I wouldn't know a memstick if one
+> stuck to my shoe.
+> 
+> I have a bunch of fairly trivial comments, and one head-scratcher for
+> Tejun: what's up with the local-irqs-disabled requirement in sg_miter_next()?
 
-> When a transparent hugepage is mapped and it is included in an mlock()
-> range, follow_page() incorrectly avoids setting the page's mlock bit and
-> moving it to the unevictable lru.
-> 
-> This is evident if you try to mlock(), munlock(), and then mlock() a 
-> range again.  Currently:
-> 
-> 	#define MAP_SIZE	(4 << 30)	/* 4GB */
-> 
-> 	void *ptr = mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE,
-> 			 MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-> 	mlock(ptr, MAP_SIZE);
-> 
-> 		$ grep -E "Unevictable|Inactive\(anon" /proc/meminfo
-> 		Inactive(anon):     6304 kB
-> 		Unevictable:     4213924 kB
-> 
-> 	munlock(ptr, MAP_SIZE);
-> 
-> 		Inactive(anon):  4186252 kB
-> 		Unevictable:       19652 kB
-> 
-> 	mlock(ptr, MAP_SIZE);
-> 
-> 		Inactive(anon):  4198556 kB
-> 		Unevictable:       21684 kB
-> 
-> Notice that less than 2MB was added to the unevictable list; this is
-> because these pages in the range are not transparent hugepages since the
-> 4GB range was allocated with mmap() and has no specific alignment.  If
-> posix_memalign() were used instead, unevictable would not have grown at
-> all on the second mlock().
-> 
-> The fix is to call mlock_vma_page() so that the mlock bit is set and the
-> page is added to the unevictable list.  With this patch:
-> 
-> 	mlock(ptr, MAP_SIZE);
-> 
-> 		Inactive(anon):     4056 kB
-> 		Unevictable:     4213940 kB
-> 
-> 	munlock(ptr, MAP_SIZE);
-> 
-> 		Inactive(anon):  4198268 kB
-> 		Unevictable:       19636 kB
-> 
-> 	mlock(ptr, MAP_SIZE);
-> 
-> 		Inactive(anon):     4008 kB
-> 		Unevictable:     4213940 kB
-> 
-> Cc: stable@vger.kernel.org [v2.6.38+]
-> Signed-off-by: David Rientjes <rientjes@google.com>
+Awesome, thanks for the review!
+I will address all comments very soon.
 
-Good catch, and the patch looks right to me, as far as it goes:
-but does it go far enough?
-
-I hesitate because it looks as if the NR_MLOCK zone page state is
-maintained (with incs and decs) in ignorance of THP; so although
-you will be correcting the Unevictable kB with your mlock_vma_page(),
-the Mlocked kB just above it in /proc/meminfo would still be wrong?
-
-And this is all a matter of the numbers shown in /proc/meminfo,
-isn't it?  Hmm, and some list balancing ratios, I suppose.  I mean,
-these pages are effectively locked in memory, aren't they, even
-without being properly counted?  When page reclaim comes to evict them,
-it will find them in a VM_LOCKED area and then move to unevictable.  Ah,
-but probably after splitting the THP: it would be nice to avoid that.
-
-I suppose I'm not sure whether this is material for late-3.6:
-surely it's not a fix for a recent regression?
-
-> ---
->  include/linux/huge_mm.h |    2 +-
->  mm/huge_memory.c        |   11 ++++++++++-
->  mm/memory.c             |    2 +-
->  3 files changed, 12 insertions(+), 3 deletions(-)
 > 
-> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-> --- a/include/linux/huge_mm.h
-> +++ b/include/linux/huge_mm.h
-> @@ -12,7 +12,7 @@ extern int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  			       unsigned long address, pmd_t *pmd,
->  			       pmd_t orig_pmd);
->  extern pgtable_t get_pmd_huge_pte(struct mm_struct *mm);
-> -extern struct page *follow_trans_huge_pmd(struct mm_struct *mm,
-> +extern struct page *follow_trans_huge_pmd(struct vm_area_struct *vma,
->  					  unsigned long addr,
->  					  pmd_t *pmd,
->  					  unsigned int flags);
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -997,11 +997,12 @@ out:
->  	return ret;
->  }
->  
-> -struct page *follow_trans_huge_pmd(struct mm_struct *mm,
-> +struct page *follow_trans_huge_pmd(struct vm_area_struct *vma,
->  				   unsigned long addr,
->  				   pmd_t *pmd,
->  				   unsigned int flags)
->  {
-> +	struct mm_struct *mm = vma->vm_mm;
->  	struct page *page = NULL;
->  
->  	assert_spin_locked(&mm->page_table_lock);
-> @@ -1024,6 +1025,14 @@ struct page *follow_trans_huge_pmd(struct mm_struct *mm,
->  		_pmd = pmd_mkyoung(pmd_mkdirty(*pmd));
->  		set_pmd_at(mm, addr & HPAGE_PMD_MASK, pmd, _pmd);
->  	}
-> +	if ((flags & FOLL_MLOCK) && (vma->vm_flags & VM_LOCKED)) {
-> +		if (page->mapping && trylock_page(page)) {
-> +			lru_add_drain();
-> +			if (page->mapping)
+> > ...
+> >
+> > +static int sg_nents(struct scatterlist *sg)
+> > +{
+> > +	int nents = 0;
+> > +	while (sg) {
+> > +		nents++;
+> > +		sg = sg_next(sg);
+> > +	}
+> > +
+> > +	return nents;
+> > +}
+> 
+> I think we may as well put this in scatterlist.c immediately.  It
+> wouldn't surprise me if we already have open-coded copies of this lying
+> around the tree.
+I agree, but as usual afraid that it wont be accepted here.
 
-Amusingly, in another thread (for mmotm), Hannes and I were discussing
-this very code block that you have copied from follow_page(), and we
-concluded that this page->mapping check is not necessary.  But you're
-absolutely right to copy it as is, then I can come and remove it later.
+> 
+> > +/*
+> > + * Copies section of 'sg_from' starting from offset 'offset' and with length
+> > + * 'len' To another scatterlist of to_nents enties
+> > + */
+> > +static int sg_copy(struct scatterlist *sg_from, struct scatterlist *sg_to,
+> > +					int to_nents, int offset, size_t len)
+> 
+> The should return a size_t, to match the type of `len'.  And the type
+> of `offset' is fishy - there's nothing which intrinsically limits these
+> things to 2G?
+In my case, I will never have large offsets here, but I agree with you
+completely. 
+> 
+> > +{
+> > +	int copied = 0;
+> > +
+> > +	while (offset > 0) {
+> > +
+> > +		if (offset >= sg_from->length) {
+> > +			if (sg_is_last(sg_from))
+> > +				return 0;
+> > +
+> > +			offset -= sg_from->length;
+> > +			sg_from = sg_next(sg_from);
+> > +			continue;
+> > +		}
+> > +
+> > +		copied = min(len, (size_t)(sg_from->length - offset));
+> 
+> min_t would be more conventional.  Or perhaps even min(), depending on
+> `offset's new type (but probably not).
+Agree. 
+> 
+> > +		sg_set_page(sg_to, sg_page(sg_from),
+> > +			copied, sg_from->offset + offset);
+> > +
+> > +		len -= copied;
+> > +		offset = 0;
+> > +
+> > +		if (sg_is_last(sg_from) || !len)
+> > +			goto out;
+> > +
+> > +		sg_to = sg_next(sg_to);
+> > +		to_nents--;
+> > +		sg_from = sg_next(sg_from);
+> > +	}
+> > +
+> > +	while (len > sg_from->length && to_nents--) {
+> > +
+> > +		len -= sg_from->length;
+> > +		copied += sg_from->length;
+> > +
+> > +		sg_set_page(sg_to, sg_page(sg_from),
+> > +				sg_from->length, sg_from->offset);
+> > +
+> > +		if (sg_is_last(sg_from) || !len)
+> > +			goto out;
+> > +
+> > +		sg_from = sg_next(sg_from);
+> > +		sg_to = sg_next(sg_to);
+> > +	}
+> > +
+> > +	if (len && to_nents) {
+> > +		sg_set_page(sg_to, sg_page(sg_from), len, sg_from->offset);
+> > +		copied += len;
+> > +	}
+> > +
+> > +out:
+> > +	sg_mark_end(sg_to);
+> > +	return copied;
+> > +}
+> > +
+> > +/*
+> > + * Compares section of 'sg' starting from offset 'offset' and with length 'len'
+> > + * to linear buffer of length 'len' at address 'buffer'
+> 
+> The comment should document the return value.
+> 
+> > + */
+> > +static bool sg_compare_to_buffer(struct scatterlist *sg,
+> > +					int offset, u8 *buffer, size_t len)
+> > +{
+> > +	unsigned long flags;
+> > +	int retval = 0;
+> > +	struct sg_mapping_iter miter;
+> > +
+> > +	local_irq_save(flags);
+> 
+> hm, the "IRQ disabled if SG_MITER_ATOMIC" requirement of
+> sg_miter_next() is weird and unexpected.
+> 
+> Tejun's 137d3edb48425f8 added the code whch has this strange
+> requirement, but it is unexplained.  Wazzup?
+> 
+> > +	sg_miter_start(&miter, sg, sg_nents(sg),
+> > +					SG_MITER_ATOMIC | SG_MITER_FROM_SG);
+> > +
+> > +	while (sg_miter_next(&miter) && len > 0) {
+> > +
+> > +		int cmplen;
+> > +
+> > +		if (offset >= miter.length) {
+> > +			offset -= miter.length;
+> > +			continue;
+> > +		}
+> > +
+> > +		cmplen = min(miter.length - offset, len);
+> > +		retval = memcmp(miter.addr + offset, buffer, cmplen);
+> > +		if (retval)
+> > +			break;
+> > +
+> > +		buffer += cmplen;
+> > +		len -= cmplen;
+> > +		offset = 0;
+> > +	}
+> > +
+> > +	if (!retval && len)
+> > +		retval = -1;
+> > +
+> > +	sg_miter_stop(&miter);
+> > +	local_irq_restore(flags);
+> > +	return retval;
+> > +}
+> >
+> > ...
+> >
+> > +static void msb_mark_block_unused(struct msb_data *msb, int pba)
+> > +{
+> > +	int zone = msb_get_zone_from_pba(pba);
+> > +
+> > +	if (!test_bit(pba, msb->used_blocks_bitmap)) {
+> > +		ms_printk("BUG: attempt to mark "
+> > +				"already unused pba %d as unused" , pba);
+> > +		msb->read_only = true;
+> > +		return;
+> > +	}
+> > +
+> > +#ifdef DEBUG
+> > +	if (msb_validate_used_block_bitmap(msb))
+> > +		return;
+> > +#endif
+> > +	clear_bit(pba, msb->used_blocks_bitmap);
+> > +	msb->free_block_count[zone]++;
+> > +}
+> 
+> Presumably there is some lock which the caller must hold to prevent the
+> obvious races in the above two functions.  I suggest adding a comment
+> whcih documents this requirement, then take advantage of that lock to
+> switch to the more efficient __set_bit() and __clear_bit().
+There can't be races in the driver, since it contains a single thread
+that does all the IO it got from block layer.
+The thread is awaken each time the request function of block device is
+called.
+This why I didn't do much locking in here. In addition I found out that
+this is quite common way to implement a block device driver.
 
-Hugh
+> 
+> > +/* Invalidate current register window*/
+> 
+> hm, checkpatch misses the missing space before */
+> 
+> > +static void msb_invalidate_reg_window(struct msb_data *msb)
+> > +{
+> > +	msb->reg_addr.w_offset = offsetof(struct ms_register, id);
+> > +	msb->reg_addr.w_length = sizeof(struct ms_id_register);
+> > +	msb->reg_addr.r_offset = offsetof(struct ms_register, id);
+> > +	msb->reg_addr.r_length = sizeof(struct ms_id_register);
+> > +	msb->addr_valid = false;
+> > +}
+> > +
+> > +/* Sane way to start a state machine*/
+> > +static int msb_run_state_machine(struct msb_data *msb, int   (*state_func)
+> > +		(struct memstick_dev *card, struct memstick_request **req))
+> > +{
+> > +	struct memstick_dev *card = msb->card;
+> > +
+> > +	WARN_ON(msb->state != -1);
+> > +	msb->int_polling = false;
+> > +	msb->state = 0;
+> > +	msb->exit_error = 0;
+> > +
+> > +	memset(&card->current_mrq, 0, sizeof(card->current_mrq));
+> > +
+> > +	card->next_request = state_func;
+> > +	memstick_new_req(card->host);
+> > +	wait_for_completion(&card->mrq_complete);
+> > +
+> > +	WARN_ON(msb->state != -1);
+> > +	return msb->exit_error;
+> > +}
+> > +
+> > +/* State machines call that to exit */
+> > +int msb_exit_state_machine(struct msb_data *msb, int error)
+> 
+> static
+> 
+> > +{
+> > +	WARN_ON(msb->state == -1);
+> > +
+> > +	msb->state = -1;
+> > +	msb->exit_error = error;
+> > +	msb->card->next_request = h_msb_default_bad;
+> > +
+> > +	/* Invalidate reg window on errors */
+> > +	if (error)
+> > +		msb_invalidate_reg_window(msb);
+> > +
+> > +	complete(&msb->card->mrq_complete);
+> > +	return -ENXIO;
+> > +}
+> > +
+> > +/* read INT register */
+> > +int msb_read_int_reg(struct msb_data *msb, long timeout)
+> 
+> static
+> 
+> > +{
+> > +	struct memstick_request *mrq = &msb->card->current_mrq;
+> > +	WARN_ON(msb->state == -1);
+> 
+> It's conventional to put a newline between end-of-locals and start-of-code.
+> 
+> > +	if (!msb->int_polling) {
+> > +		msb->int_timeout = jiffies +
+> > +			msecs_to_jiffies(timeout == -1 ? 500 : timeout);
+> > +		msb->int_polling = true;
+> > +	} else if (time_after(jiffies, msb->int_timeout)) {
+> > +		mrq->data[0] = MEMSTICK_INT_CMDNAK;
+> > +		return 0;
+> > +	}
+> > +
+> > +	if ((msb->caps & MEMSTICK_CAP_AUTO_GET_INT) &&
+> > +				mrq->need_card_int && !mrq->error) {
+> > +		mrq->data[0] = mrq->int_reg;
+> > +		mrq->need_card_int = false;
+> > +		return 0;
+> > +	} else {
+> > +		memstick_init_req(mrq, MS_TPC_GET_INT, NULL, 1);
+> > +		return 1;
+> > +	}
+> > +}
+> > +
+> > +/* Read a register */
+> > +int msb_read_regs(struct msb_data *msb, int offset, int len)
+> 
+> static.  I'll stop checking them now ;)
+> 
+> > +{
+> > +	struct memstick_request *req = &msb->card->current_mrq;
+> > +
+> > +	if (msb->reg_addr.r_offset != offset ||
+> > +	    msb->reg_addr.r_length != len || !msb->addr_valid) {
+> > +
+> > +		msb->reg_addr.r_offset = offset;
+> > +		msb->reg_addr.r_length = len;
+> > +		msb->addr_valid = true;
+> > +
+> > +		memstick_init_req(req, MS_TPC_SET_RW_REG_ADRS,
+> > +			&msb->reg_addr, sizeof(msb->reg_addr));
+> > +		return 0;
+> > +	}
+> > +
+> > +	memstick_init_req(req, MS_TPC_READ_REG, NULL, len);
+> > +	return 1;
+> > +}
+> > +
+> > +/* Write a card register */
+> > +int msb_write_regs(struct msb_data *msb, int offset, int len, void *buf)
+> > +{
+> > +	struct memstick_request *req = &msb->card->current_mrq;
+> > +
+> > +	if (msb->reg_addr.w_offset != offset ||
+> > +		msb->reg_addr.w_length != len  || !msb->addr_valid) {
+> > +
+> > +		msb->reg_addr.w_offset = offset;
+> > +		msb->reg_addr.w_length = len;
+> > +		msb->addr_valid = true;
+> > +
+> > +		memstick_init_req(req, MS_TPC_SET_RW_REG_ADRS,
+> > +			&msb->reg_addr, sizeof(msb->reg_addr));
+> > +		return 0;
+> > +	}
+> > +
+> > +	memstick_init_req(req, MS_TPC_WRITE_REG, buf, len);
+> > +	return 1;
+> > +}
+> > +
+> > +/* Handler for absense of IO */
+> 
+> "absence" :)
+> 
+> > +static int h_msb_default_bad(struct memstick_dev *card,
+> > +						struct memstick_request **mrq)
+> > +{
+> > +	return -ENXIO;
+> > +}
+> > +
+> > +/*
+> > + * This function is a handler for reads of one page from device.
+> > + * Writes output to msb->current_sg, takes sector address from msb->reg.param
+> > + * Can also be used to read extra data only. Set params accordintly.
+> > + */
+> > +static int h_msb_read_page(struct memstick_dev *card,
+> > +					struct memstick_request **out_mrq)
+> > +{
+> > +	struct msb_data *msb = memstick_get_drvdata(card);
+> > +	struct memstick_request *mrq = *out_mrq = &card->current_mrq;
+> > +	struct scatterlist sg[2];
+> > +	u8 command, intreg;
+> > +
+> > +	if (mrq->error) {
+> > +		dbg("read_page, unknown error");
+> > +		return msb_exit_state_machine(msb, mrq->error);
+> > +	}
+> > +again:
+> > +	switch (msb->state) {
+> > +	case 0: /* Write the sector address */
+> > +		if (!msb_write_regs(msb,
+> > +			offsetof(struct ms_register, param),
+> > +			sizeof(struct ms_param_register),
+> > +			(unsigned char *)&msb->regs.param))
+> > +			return 0;
+> > +		break;
+> > +
+> > +	case 1: /* Execute the read command*/
+> > +		command = MS_CMD_BLOCK_READ;
+> > +		memstick_init_req(mrq, MS_TPC_SET_CMD, &command, 1);
+> > +		break;
+> > +
+> > +	case 2: /* send INT request */
+> > +		if (msb_read_int_reg(msb, -1))
+> > +			break;
+> > +		msb->state++;
+> > +
+> > +	case 3: /* get result of the INT request*/
+> > +		intreg = mrq->data[0];
+> > +		msb->regs.status.interrupt = intreg;
+> > +
+> > +		if (intreg & MEMSTICK_INT_CMDNAK)
+> > +			return msb_exit_state_machine(msb, -EIO);
+> > +
+> > +		if (!(intreg & MEMSTICK_INT_CED)) {
+> > +			msb->state--;
+> > +			goto again;
+> > +		}
+> > +
+> > +		msb->int_polling = false;
+> > +
+> > +		if (intreg & MEMSTICK_INT_ERR)
+> > +			msb->state++;
+> > +		else
+> > +			msb->state = 6;
+> > +
+> > +		goto again;
+> > +
+> > +	case 4: /* read the status register
+> > +				to understand source of the INT_ERR */
+> > +		if (!msb_read_regs(msb,
+> > +			offsetof(struct ms_register, status),
+> > +			sizeof(struct ms_status_register)))
+> > +			return 0;
+> > +		break;
+> > +
+> > +	case 5: /* get results of status check */
+> > +		msb->regs.status = *(struct ms_status_register *)mrq->data;
+> > +		msb->state++;
+> > +
+> > +	case 6: /* Send extra data read request */
+> > +		if (!msb_read_regs(msb,
+> > +			offsetof(struct ms_register, extra_data),
+> > +			sizeof(struct ms_extra_data_register)))
+> > +			return 0;
+> > +		break;
+> > +
+> > +	case 7: /* Save result of extra data request */
+> > +		msb->regs.extra_data =
+> > +			*(struct ms_extra_data_register *) mrq->data;
+> > +		msb->state++;
+> > +
+> > +	case 8: /* Send the  MS_TPC_READ_LONG_DATA to read IO buffer */
+> > +
+> > +		/* Skip that state if we only read the oob */
+> > +		if (msb->regs.param.cp == MEMSTICK_CP_EXTRA) {
+> > +			msb->state++;
+> > +			goto again;
+> > +		}
+> > +
+> > +		sg_init_table(sg, ARRAY_SIZE(sg));
+> > +		sg_copy(msb->current_sg, sg, ARRAY_SIZE(sg),
+> > +			msb->current_sg_offset,
+> > +			msb->page_size);
+> > +
+> > +		memstick_init_req_sg(mrq, MS_TPC_READ_LONG_DATA, sg);
+> > +		break;
+> > +
+> > +	case 9: /* check validity of data buffer & done */
+> > +
+> > +		if (!(msb->regs.status.interrupt & MEMSTICK_INT_ERR)) {
+> > +			msb->current_sg_offset += msb->page_size;
+> > +			return msb_exit_state_machine(msb, 0);
+> > +		}
+> > +
+> > +		if (msb->regs.status.status1 & MEMSTICK_UNCORR_ERROR) {
+> > +			dbg("read_page: uncorrectable error");
+> > +			return msb_exit_state_machine(msb, -EBADMSG);
+> > +		}
+> > +
+> > +		if (msb->regs.status.status1 & MEMSTICK_CORR_ERROR) {
+> > +			dbg("read_page: correctable error");
+> > +			msb->current_sg_offset += msb->page_size;
+> > +			return msb_exit_state_machine(msb, -EUCLEAN);
+> > +		} else {
+> > +			dbg("read_page: INT error, but no status error bits");
+> > +			return msb_exit_state_machine(msb, -EIO);
+> > +		}
+> > +	default:
+> > +		BUG();
+> > +	}
+> > +	msb->state++;
+> 
+> I think this code would be quite a lot cleaner, safer and more readable
+> if you were to do away with the "msb->state++" concept altogether.  Just do
+> 
+> enum msb_states {
+> 	state_foo1,
+> 	state_foo2
+> 	...
+> };
+> 
+> and do
+> 
+> 	msb->state = state_foo2;
+> 
+> in each switch case.
+> 
+> This way, the reader doesn't have to scratch his head over what the
+> state _used_ to be, and the states have nice names to help the reader
+> understand what's going on.
+I now remember hearing about that back then too, and on second thought,
+I'll do that.
 
-> +				mlock_vma_page(page);
-> +			unlock_page(page);
-> +		}
-> +	}
->  	page += (addr & ~HPAGE_PMD_MASK) >> PAGE_SHIFT;
->  	VM_BUG_ON(!PageCompound(page));
->  	if (flags & FOLL_GET)
-> diff --git a/mm/memory.c b/mm/memory.c
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1521,7 +1521,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
->  				spin_unlock(&mm->page_table_lock);
->  				wait_split_huge_page(vma->anon_vma, pmd);
->  			} else {
-> -				page = follow_trans_huge_pmd(mm, address,
-> +				page = follow_trans_huge_pmd(vma, address,
->  							     pmd, flags);
->  				spin_unlock(&mm->page_table_lock);
->  				goto out;
+> 
+> 
+> > +	return 0;
+> > +}
+> >
+> > ...
+> >
+> > +/*
+> > + * This function is used to send simple IO requests to device that consist
+> > + * of register write + command
+> > + */
+> > +static int h_msb_send_command(struct memstick_dev *card,
+> > +					struct memstick_request **out_mrq)
+> > +{
+> > +	struct msb_data *msb = memstick_get_drvdata(card);
+> > +	struct memstick_request *mrq = *out_mrq = &card->current_mrq;
+> > +
+> 
+> stray newline
+> 
+> > +	u8 intreg;
+> > +
+> > +	if (mrq->error) {
+> > +		dbg("send_command: unknown error");
+> > +		return msb_exit_state_machine(msb, mrq->error);
+> > +	}
+> > +again:
+> > +	switch (msb->state) {
+> > +
+> > +		/* HACK: see h_msb_write_block */
+> > +
+> >
+> > ...
+> >
+> > +static int h_msb_parallel_switch(struct memstick_dev *card,
+> > +					struct memstick_request **out_mrq)
+> > +{
+> > +	struct msb_data *msb = memstick_get_drvdata(card);
+> > +	struct memstick_request *mrq = *out_mrq = &card->current_mrq;
+> > +
+> 
+> stray newline.  Please fix 'em up - it does make the code a little
+> discordant to read.
+> 
+> > +	struct memstick_host *host = card->host;
+> > +
+> > +	if (mrq->error) {
+> > +		dbg("parallel_switch: error");
+> > +		msb->regs.param.system &= ~MEMSTICK_SYS_PAM;
+> > +		return msb_exit_state_machine(msb, mrq->error);
+> > +	}
+> > +
+> > +	switch (msb->state) {
+> > +	case 0: /* Set the parallel interface on memstick side */
+> > +		msb->regs.param.system |= MEMSTICK_SYS_PAM;
+> > +
+> > +		if (!msb_write_regs(msb,
+> > +			offsetof(struct ms_register, param),
+> > +			1,
+> > +			(unsigned char *)&msb->regs.param))
+> > +			return 0;
+> > +		break;
+> > +
+> > +	case 1: /* Set parallel interface on our side + send a dummy request
+> > +			to see if card responds */
+> > +		host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_PAR4);
+> > +		memstick_init_req(mrq, MS_TPC_GET_INT, NULL, 1);
+> > +		break;
+> > +
+> > +	case 2:
+> > +		return msb_exit_state_machine(msb, 0);
+> > +	}
+> > +	msb->state++;
+> > +	return 0;
+> > +}
+> > +
+> > +static int msb_switch_to_parallel(struct msb_data *msb);
+> > +
+> > +/* Reset the card, to guard against hw errors beeing treated as bad blocks */
+> > +static int msb_reset(struct msb_data *msb, bool full)
+> > +{
+> > +
+> > +	bool was_parallel = msb->regs.param.system & MEMSTICK_SYS_PAM;
+> 
+> fyi, alas, this is (probably) slower than using an `int'.  gcc will
+> convert the result of the expression into 1-or-0.
+Didn't knew about that. Here this code is executed once per card insert,
+so it sure doesn't matter. 
+> 
+> > +	struct memstick_dev *card = msb->card;
+> > +	struct memstick_host *host = card->host;
+> > +	int error;
+> > +
+> > +	/* Reset the card */
+> > +	msb->regs.param.system = MEMSTICK_SYS_BAMD;
+> > +
+> > +	if (full) {
+> > +		error =  host->set_param(host,
+> > +					MEMSTICK_POWER, MEMSTICK_POWER_OFF);
+> > +		if (error)
+> > +			goto out_error;
+> > +
+> > +		msb_invalidate_reg_window(msb);
+> > +
+> > +		error = host->set_param(host,
+> > +					MEMSTICK_POWER, MEMSTICK_POWER_ON);
+> > +		if (error)
+> > +			goto out_error;
+> > +
+> > +		error = host->set_param(host,
+> > +					MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
+> > +		if (error) {
+> >
+> > ...
+> >
+> > +static int msb_erase_block(struct msb_data *msb, u16 pba)
+> > +{
+> > +	int error, try;
+> > +	if (msb->read_only)
+> > +		return -EROFS;
+> > +
+> > +	dbg_verbose("erasing pba %d", pba);
+> > +
+> > +	for (try = 1 ; try < 3 ; try++) {
+> > +		msb->regs.param.block_address = cpu_to_be16(pba);
+> > +		msb->regs.param.page_address = 0;
+> > +		msb->regs.param.cp = MEMSTICK_CP_BLOCK;
+> > +		msb->command_value = MS_CMD_BLOCK_ERASE;
+> > +		msb->command_need_oob = false;
+> > +
+> > +
+> > +		error = msb_run_state_machine(msb, h_msb_send_command);
+> > +		if (!error || msb_reset(msb, true))
+> > +			break;
+> > +	}
+> > +
+> > +	if (error) {
+> > +		ms_printk("erase failed, marking pba %d as bad", pba);
+> > +		msb_mark_bad(msb, pba);
+> > +	}
+> > +
+> > +	dbg_verbose("erase success, marking pba %d as unused", pba);
+> > +	msb_mark_block_unused(msb, pba);
+> > +	set_bit(pba, msb->erased_blocks_bitmap);
+> 
+> Should be able to use __set_bit() here, as msb_mark_block_unused()
+> required caller-provided locking.
+Again, I think I don't need locking here. 
+> 
+> > +	return error;
+> > +}
+> > +
+> >
+> > ...
+> >
+> > +static int msb_read_oob(struct msb_data *msb, u16 pba, u16 page,
+> > +	struct ms_extra_data_register *extra)
+> > +{
+> > +	int error;
+> > +	BUG_ON(!extra);
+> > +
+> 
+> vertical whitespace oddnesses
+> 
+> > +	msb->regs.param.block_address = cpu_to_be16(pba);
+> > +	msb->regs.param.page_address = page;
+> > +	msb->regs.param.cp = MEMSTICK_CP_EXTRA;
+> > +
+> > +	if (pba > msb->block_count) {
+> > +		ms_printk("BUG: attempt to read beyond"
+> > +					" the end of card at pba %d", pba);
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	error = msb_run_state_machine(msb, h_msb_read_page);
+> > +	*extra = msb->regs.extra_data;
+> > +
+> > +	if (error == -EUCLEAN) {
+> > +		ms_printk("correctable error on pba %d, page %d",
+> > +			pba, page);
+> > +		return 0;
+> > +	}
+> > +
+> > +	return error;
+> > +}
+> > +
+> > +
+> > +/* Reads a block and compares it with data contained in scatterlist orig_sg */
+> > +static bool msb_verify_block(struct msb_data *msb, u16 pba,
+> > +				struct scatterlist *orig_sg,  int offset)
+> > +{
+> > +	struct scatterlist sg;
+> > +	int page = 0, error;
+> > +
+> > +	sg_init_one(&sg, msb->block_buffer, msb->block_size);
+> > +
+> > +	while (page < msb->pages_in_block) {
+> > +
+> > +		error = msb_read_page(msb, pba, page,
+> > +				NULL, &sg, page * msb->page_size);
+> > +		if (error)
+> > +			return -EIO;
+> 
+> msb_read_page() returned an errno.  Propagate that, rather than
+> overwriting it?
+Sure! 
+> 
+> > +		page++;
+> > +	}
+> > +
+> > +	if (sg_compare_to_buffer(orig_sg, offset,
+> > +				msb->block_buffer, msb->block_size))
+> > +		return -EIO;
+> > +	return 0;
+> > +}
+> > +
+> >
+> > ...
+> >
+> > +static int msb_read_bad_block_table(struct msb_data *msb, int block_nr)
+> 
+> hm.  Should block_nr be a sector_t?
+Actually no, as its an index in internal array of 'boot blocks', aka
+superblocks and there should be just two of them
+msb_read_boot_blocks reads them.
+Each of boot blocks contains a pointer to bad blocks table. 
+> 
+> 
+> > +{
+> > +	struct ms_boot_page *boot_block;
+> > +	struct scatterlist sg;
+> > +	u16 *buffer = NULL;
+> > +	int offset = 0;
+> > +
+> > +	int i, error = 0;
+> > +	int data_size, data_offset, page, page_offset, size_to_read;
+> > +	u16 pba;
+> 
+> vertical whitespace oddness
+> 
+> > +	BUG_ON(block_nr > 1);
+> > +
+> > +	boot_block = &msb->boot_page[block_nr];
+> > +	pba = msb->boot_block_locations[block_nr];
+> > +
+> >
+> > ...
+> >
+> > +static int msb_cache_write(struct msb_data *msb, int lba,
+> > +	int page, bool add_to_cache_only, struct scatterlist *sg, int offset)
+> > +{
+> > +	int error;
+> > +	struct scatterlist sg_tmp[10];
+> 
+> newline..
+> 
+> > +	if (msb->read_only)
+> > +		return -EROFS;
+> > +
+> > +	if (msb->cache_block_lba == MS_BLOCK_INVALID ||
+> > +						lba != msb->cache_block_lba)
+> > +		if (add_to_cache_only)
+> > +			return 0;
+> > +
+> > +	/* If we need to write different block */
+> > +	if (msb->cache_block_lba != MS_BLOCK_INVALID &&
+> > +						lba != msb->cache_block_lba) {
+> > +		dbg_verbose("first flush the cache");
+> > +		error = msb_cache_flush(msb);
+> > +		if (error)
+> > +			return error;
+> > +	}
+> > +
+> > +	if (msb->cache_block_lba  == MS_BLOCK_INVALID) {
+> > +		msb->cache_block_lba  = lba;
+> > +		mod_timer(&msb->cache_flush_timer,
+> > +			jiffies + msecs_to_jiffies(cache_flush_timeout));
+> > +	}
+> > +
+> > +	dbg_verbose("Write of LBA %d page %d to cache ", lba, page);
+> > +
+> > +	sg_init_table(sg_tmp, ARRAY_SIZE(sg_tmp));
+> > +	sg_copy(sg, sg_tmp, ARRAY_SIZE(sg_tmp), offset, msb->page_size);
+> > +
+> > +	sg_copy_to_buffer(sg_tmp, sg_nents(sg_tmp),
+> > +		msb->cache + page * msb->page_size, msb->page_size);
+> > +
+> > +	set_bit(page, &msb->valid_cache_bitmap);
+> > +	return 0;
+> > +}
+> > +
+> >
+> > ...
+> >
+> > +static int msb_do_write_request(struct msb_data *msb, int lba,
+> > +	int page, struct scatterlist *sg, int len, int *sucessfuly_written)
+> > +{
+> > +	int error = 0;
+> > +	int offset = 0;
+> > +	*sucessfuly_written = 0;
+> 
+> (more vertical whitespace glitches)
+> 
+> Again the types look a bit wrong.  I'd have expected `len' and `offset'
+> to be size_t.
+> 
+> > +	while (offset < len) {
+> > +		if (page == 0 && len - offset >= msb->block_size) {
+> > +
+> > +			if (msb->cache_block_lba == lba)
+> > +				msb_cache_discard(msb);
+> > +
+> > +			dbg_verbose("Writing whole lba %d", lba);
+> > +			error = msb_update_block(msb, lba, sg, offset);
+> > +			if (error)
+> > +				return error;
+> > +
+> > +			offset += msb->block_size;
+> > +			*sucessfuly_written += msb->block_size;
+> > +			lba++;
+> > +			continue;
+> > +		}
+> > +
+> > +		error = msb_cache_write(msb, lba, page, false, sg, offset);
+> > +		if (error)
+> > +			return error;
+> > +
+> > +		offset += msb->page_size;
+> > +		*sucessfuly_written += msb->page_size;
+> > +
+> > +		page++;
+> > +		if (page == msb->pages_in_block) {
+> > +			page = 0;
+> > +			lba++;
+> > +		}
+> > +	}
+> > +	return 0;
+> > +}
+> >
+> > ...
+> >
+> > +static DEFINE_IDR(msb_disk_idr);
+> > +static DEFINE_MUTEX(msb_disk_lock);
+> 
+> A little comment which describes the overall role of msb_disk_idr wold
+> be nice. 
+Sure!
+
+The things I didn't comment on I agree too, I will fix all these
+non-static functions and newlines. Newlines I put mostly to make the
+code a bit more clear to myself, but I really don't mind removing these.
+
+Thanks again for a review, I will address all the issues very soon.
+
+-- 
+Best regards,
+        Maxim Levitsky
+
