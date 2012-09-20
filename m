@@ -1,114 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab2ITTAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 15:00:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45837 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074Ab2ITTAg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 15:00:36 -0400
-Date: Thu, 20 Sep 2012 12:00:32 -0700
-From: "Kevin Daughtridge" <kevin@kdau.com>
-To: linux-input@vger.kernel.org, jkosina@suse.cz
-Cc: kevin@kdau.com, rydberg@euromail.se, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH v3] HID: keep dev_rdesc unmodified and use it for
- comparisons
-Message-ID: <505b67d0.jarbgcy4b522QzyI%kevin@kdau.com>
-User-Agent: Heirloom mailx 12.5 6/20/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932301Ab2ITTBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 15:01:11 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49465 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754137Ab2ITStB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 14:49:01 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 08/23] rcu: Provide OOM handler to motivate lazy RCU callbacks
+Date: Thu, 20 Sep 2012 11:48:04 -0700
+Message-Id: <1348166900-18716-8-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120920184751.GA18657@linux.vnet.ibm.com>
+ <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
+x-cbid: 12092018-7182-0000-0000-000002AAD3B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dev_rdesc member of the hid_device structure is meant to store the original
-report descriptor received from the device, but it is currently passed to any
-report_fixup method before it is copied to the rdesc member. This patch uses a
-temporary buffer to shield dev_rdesc from the side effects of many HID drivers'
-report_fixup implementations.
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-usbhid's hid_post_reset checks the report descriptor currently returned by the
-device against a descriptor that may have been modified by a driver's
-report_fixup method. That leaves some devices nonfunctional after a resume, with
-a "reset_resume error 1" reported. This patch checks the new descriptor against
-the unmodified dev_rdesc instead and uses the original, instead of modified,
-report size.
+In kernels built with CONFIG_RCU_FAST_NO_HZ=y, CPUs can accumulate a
+large number of lazy callbacks, which as the name implies will be slow
+to be invoked.  This can be a problem on small-memory systems, where the
+default 6-second sleep for CPUs having only lazy RCU callbacks could well
+be fatal.  This commit therefore installs an OOM hander that ensures that
+every CPU with lazy callbacks has at least one non-lazy callback, in turn
+ensuring timely advancement for these callbacks.
 
-BugLink: http://bugs.launchpad.net/bugs/1049623
-Signed-off-by: Kevin Daughtridge <kevin@kdau.com>
+Updated to fix bug that disabled OOM killing, noted by Lai Jiangshan.
+
+Updated to push the for_each_rcu_flavor() loop into rcu_oom_notify_cpu(),
+thus reducing the number of IPIs, as suggested by Steven Rostedt.  Also
+to make the for_each_online_cpu() loop be preemptible.  (Later, it might
+be good to use smp_call_function(), as suggested by Peter Zijlstra.)
+
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/hid/hid-core.c        |   16 +++++++++++++---
- drivers/hid/usbhid/hid-core.c |    6 +++---
- 2 files changed, 16 insertions(+), 6 deletions(-)
+ kernel/rcutree.h        |    5 ++-
+ kernel/rcutree_plugin.h |   83 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+), 1 deletions(-)
 
-Changed in this version: added a temporary buffer to work around report_fixup
-inconsistencies; using dev_rsize instead of rsize to allocate and read new
-descriptor.
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 117a150..effb273 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -315,8 +315,11 @@ struct rcu_data {
+ 	unsigned long n_rp_need_fqs;
+ 	unsigned long n_rp_need_nothing;
+ 
+-	/* 6) _rcu_barrier() callback. */
++	/* 6) _rcu_barrier() and OOM callbacks. */
+ 	struct rcu_head barrier_head;
++#ifdef CONFIG_RCU_FAST_NO_HZ
++	struct rcu_head oom_head;
++#endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+ 
+ 	int cpu;
+ 	struct rcu_state *rsp;
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 7f3244c..5879636 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -25,6 +25,7 @@
+  */
+ 
+ #include <linux/delay.h>
++#include <linux/oom.h>
+ 
+ #define RCU_KTHREAD_PRIO 1
+ 
+@@ -2112,6 +2113,88 @@ static void rcu_idle_count_callbacks_posted(void)
+ 	__this_cpu_add(rcu_dynticks.nonlazy_posted, 1);
+ }
+ 
++/*
++ * Data for flushing lazy RCU callbacks at OOM time.
++ */
++static atomic_t oom_callback_count;
++static DECLARE_WAIT_QUEUE_HEAD(oom_callback_wq);
++
++/*
++ * RCU OOM callback -- decrement the outstanding count and deliver the
++ * wake-up if we are the last one.
++ */
++static void rcu_oom_callback(struct rcu_head *rhp)
++{
++	if (atomic_dec_and_test(&oom_callback_count))
++		wake_up(&oom_callback_wq);
++}
++
++/*
++ * Post an rcu_oom_notify callback on the current CPU if it has at
++ * least one lazy callback.  This will unnecessarily post callbacks
++ * to CPUs that already have a non-lazy callback at the end of their
++ * callback list, but this is an infrequent operation, so accept some
++ * extra overhead to keep things simple.
++ */
++static void rcu_oom_notify_cpu(void *unused)
++{
++	struct rcu_state *rsp;
++	struct rcu_data *rdp;
++
++	for_each_rcu_flavor(rsp) {
++		rdp = __this_cpu_ptr(rsp->rda);
++		if (rdp->qlen_lazy != 0) {
++			atomic_inc(&oom_callback_count);
++			rsp->call(&rdp->oom_head, rcu_oom_callback);
++		}
++	}
++}
++
++/*
++ * If low on memory, ensure that each CPU has a non-lazy callback.
++ * This will wake up CPUs that have only lazy callbacks, in turn
++ * ensuring that they free up the corresponding memory in a timely manner.
++ * Because an uncertain amount of memory will be freed in some uncertain
++ * timeframe, we do not claim to have freed anything.
++ */
++static int rcu_oom_notify(struct notifier_block *self,
++			  unsigned long notused, void *nfreed)
++{
++	int cpu;
++
++	/* Wait for callbacks from earlier instance to complete. */
++	wait_event(oom_callback_wq, atomic_read(&oom_callback_count) == 0);
++
++	/*
++	 * Prevent premature wakeup: ensure that all increments happen
++	 * before there is a chance of the counter reaching zero.
++	 */
++	atomic_set(&oom_callback_count, 1);
++
++	get_online_cpus();
++	for_each_online_cpu(cpu) {
++		smp_call_function_single(cpu, rcu_oom_notify_cpu, NULL, 1);
++		cond_resched();
++	}
++	put_online_cpus();
++
++	/* Unconditionally decrement: no need to wake ourselves up. */
++	atomic_dec(&oom_callback_count);
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block rcu_oom_nb = {
++	.notifier_call = rcu_oom_notify
++};
++
++static int __init rcu_register_oom_notifier(void)
++{
++	register_oom_notifier(&rcu_oom_nb);
++	return 0;
++}
++early_initcall(rcu_register_oom_notifier);
++
+ #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
+ 
+ #ifdef CONFIG_RCU_CPU_STALL_INFO
+-- 
+1.7.8
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 8bcd168..5de3bb3 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -757,6 +757,7 @@ int hid_open_report(struct hid_device *device)
- 	struct hid_item item;
- 	unsigned int size;
- 	__u8 *start;
-+	__u8 *buf;
- 	__u8 *end;
- 	int ret;
- 	static int (*dispatch_type[])(struct hid_parser *parser,
-@@ -775,12 +776,21 @@ int hid_open_report(struct hid_device *device)
- 		return -ENODEV;
- 	size = device->dev_rsize;
- 
-+	buf = kmemdup(start, size, GFP_KERNEL);
-+	if (buf == NULL)
-+		return -ENOMEM;
-+
- 	if (device->driver->report_fixup)
--		start = device->driver->report_fixup(device, start, &size);
-+		start = device->driver->report_fixup(device, buf, &size);
-+	else
-+		start = buf;
- 
--	device->rdesc = kmemdup(start, size, GFP_KERNEL);
--	if (device->rdesc == NULL)
-+	start = kmemdup(start, size, GFP_KERNEL);
-+	kfree(buf);
-+	if (start == NULL)
- 		return -ENOMEM;
-+
-+	device->rdesc = start;
- 	device->rsize = size;
- 
- 	parser = vzalloc(sizeof(struct hid_parser));
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index dedd8e4..8e0c4bf94 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -1415,20 +1415,20 @@ static int hid_post_reset(struct usb_interface *intf)
- 	 * configuration descriptors passed, we already know that
- 	 * the size of the HID report descriptor has not changed.
- 	 */
--	rdesc = kmalloc(hid->rsize, GFP_KERNEL);
-+	rdesc = kmalloc(hid->dev_rsize, GFP_KERNEL);
- 	if (!rdesc) {
- 		dbg_hid("couldn't allocate rdesc memory (post_reset)\n");
- 		return 1;
- 	}
- 	status = hid_get_class_descriptor(dev,
- 				interface->desc.bInterfaceNumber,
--				HID_DT_REPORT, rdesc, hid->rsize);
-+				HID_DT_REPORT, rdesc, hid->dev_rsize);
- 	if (status < 0) {
- 		dbg_hid("reading report descriptor failed (post_reset)\n");
- 		kfree(rdesc);
- 		return 1;
- 	}
--	status = memcmp(rdesc, hid->rdesc, hid->rsize);
-+	status = memcmp(rdesc, hid->dev_rdesc, hid->dev_rsize);
- 	kfree(rdesc);
- 	if (status != 0) {
- 		dbg_hid("report descriptor changed\n");
