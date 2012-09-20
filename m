@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab2ITOnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:43:39 -0400
+	id S932180Ab2ITOmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:42:39 -0400
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:41616 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167Ab2ITOmj (ORCPT
+	with ESMTP id S932101Ab2ITOm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:42:39 -0400
+	Thu, 20 Sep 2012 10:42:28 -0400
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [RFC PATCH 11/13] spi: omap2-mcspi: add generic DMA request support to the DT binding
-Date: Thu, 20 Sep 2012 10:43:44 -0400
-Message-Id: <1348152226-13588-12-git-send-email-mporter@ti.com>
+Subject: [RFC PATCH 06/13] ARM: omap: add hsmmc am33xx specific init
+Date: Thu, 20 Sep 2012 10:43:39 -0400
+Message-Id: <1348152226-13588-7-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348152226-13588-1-git-send-email-mporter@ti.com>
 References: <1348152226-13588-1-git-send-email-mporter@ti.com>
@@ -37,56 +37,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The binding definition is based on the generic DMA request binding.
+AM33xx requires special handling in hsmmc initialization
+platform glue.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/hsmmc.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/spi/omap-spi.txt b/Documentation/devicetree/bindings/spi/omap-spi.txt
-index 81df374..11aff04 100644
---- a/Documentation/devicetree/bindings/spi/omap-spi.txt
-+++ b/Documentation/devicetree/bindings/spi/omap-spi.txt
-@@ -7,8 +7,18 @@ Required properties:
- - ti,spi-num-cs : Number of chipselect supported  by the instance.
- - ti,hwmods: Name of the hwmod associated to the McSPI
+diff --git a/arch/arm/mach-omap2/hsmmc.c b/arch/arm/mach-omap2/hsmmc.c
+index a9675d8..679fb43 100644
+--- a/arch/arm/mach-omap2/hsmmc.c
++++ b/arch/arm/mach-omap2/hsmmc.c
+@@ -364,7 +364,7 @@ static int __init omap_hsmmc_pdata_init(struct omap2_hsmmc_info *c,
+ 	else
+ 		mmc->slots[0].ocr_mask = c->ocr_mask;
  
-+Optional properties:
-+- dmas: List of DMA controller phandle and DMA request ordered
-+	pairs. One tx and one rx pair is required for each chip
-+	select.
-+- dma-names: List of DMA request names. These strings correspond
-+	1:1 with the ordered pairs in dmas. The string naming is
-+	to be "rxN" and "txN" for RX and TX requests,
-+	respectively, where N equals the chip select number.
+-	if (!soc_is_am35xx())
++	if (!soc_is_am35xx() && !soc_is_am33xx())
+ 		mmc->slots[0].features |= HSMMC_HAS_PBIAS;
  
--Example:
-+Examples:
-+
-+[hwmod populated DMA resources]
+ 	if (cpu_is_omap44xx() && (omap_rev() > OMAP4430_REV_ES1_0))
+@@ -387,7 +387,7 @@ static int __init omap_hsmmc_pdata_init(struct omap2_hsmmc_info *c,
+ 			}
+ 		}
  
- mcspi1: mcspi@1 {
-     #address-cells = <1>;
-@@ -18,3 +28,18 @@ mcspi1: mcspi@1 {
-     ti,spi-num-cs = <4>;
- };
+-		if (soc_is_am35xx())
++		if (soc_is_am35xx() || soc_is_am33xx())
+ 			mmc->slots[0].set_power = nop_mmc_set_power;
  
-+[generic DMA request binding]
-+
-+mcspi1: mcspi@1 {
-+    #address-cells = <1>;
-+    #size-cells = <0>;
-+    compatible = "ti,omap4-mcspi";
-+    ti,hwmods = "mcspi1";
-+    ti,spi-num-cs = <2>;
-+    dmas = <&edma 42
-+	    &edma 43
-+	    &edma 44
-+	    &edma 45>;
-+    dma-names = "tx0", "rx0", "tx1", "rx1";
-+};
-+
+ 		/* OMAP3630 HSMMC1 supports only 4-bit */
+@@ -488,7 +488,8 @@ static void __init omap_hsmmc_init_one(struct omap2_hsmmc_info *hsmmcinfo,
+ 	if (res < 0)
+ 		goto free_mmc;
+ 
+-	omap_hsmmc_mux(mmc_data, (ctrl_nr - 1));
++	if (!soc_is_am33xx())
++		omap_hsmmc_mux(mmc_data, (ctrl_nr - 1));
+ 
+ 	name = "omap_hsmmc";
+ 	res = snprintf(oh_name, MAX_OMAP_MMC_HWMOD_NAME_LEN,
 -- 
 1.7.9.5
 
