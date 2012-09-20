@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab2ITBTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 21:19:42 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30538 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751854Ab2ITBTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 21:19:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,452,1344236400"; 
-   d="scan'208";a="224220377"
-Message-ID: <505A6EFD.4070802@intel.com>
-Date: Thu, 20 Sep 2012 09:18:53 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-CC: x86@kernel.org, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86: Distinguish TLB shootdown interrupts from other
- functions call interrupts
-References: <20120919090417.24381.87388.stgit@hpxw>
-In-Reply-To: <20120919090417.24381.87388.stgit@hpxw>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752039Ab2ITBUe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 21:20:34 -0400
+Received: from noserose.net ([66.220.18.76]:58607 "HELO noserose.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751213Ab2ITBUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 21:20:32 -0400
+Date: Wed, 19 Sep 2012 18:20:28 -0700
+Message-Id: <d7700b3b5e169d98c058fe086e69ed665048a475.1348088283.git.ecashin@coraid.com>
+In-Reply-To: <cover.1348088283.git.ecashin@coraid.com>
+References: <1348079358.4585@cat.he.net>
+	<cover.1348088283.git.ecashin@coraid.com>
+From: Ed Cashin <ecashin@coraid.com>
+Subject: [PATCH 2/2] net: do not disable sg for packets requiring no checksum
+To: davem@davemloft.net
+Cc: ecashin@coraid.com, akpm@linux-foundation.org, bhutchings@solarflare.com,
+        jesse@nicira.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A change in a series of VLAN-related changes appears to have
+inadvertently disabled the use of the scatter gather feature of
+network cards for transmission of non-IP ethernet protocols like ATA
+over Ethernet (AoE).  Below is a reference to the commit that
+introduces a "harmonize_features" function that turns off scatter
+gather when the NIC does not support hardware checksumming for the
+ethernet protocol of an sk buff.
 
-> @@ -147,7 +148,7 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
->  #ifdef CONFIG_SMP
->  	sum += irq_stats(cpu)->irq_resched_count;
->  	sum += irq_stats(cpu)->irq_call_count;
-> -	sum += irq_stats(cpu)->irq_tlb_count;
-> +	/* irq_tlb_count is already added to irq_call_count */
+  commit f01a5236bd4b140198fbcc550f085e8361fd73fa
+  Author: Jesse Gross <jesse@nicira.com>
+  Date:   Sun Jan 9 06:23:31 2011 +0000
 
+      net offloading: Generalize netif_get_vlan_features().
 
-redundant comments here?
+The can_checksum_protocol function is not equipped to consider a
+protocol that does not require checksumming.  Calling it for a
+protocol that requires no checksum is inappropriate.
 
->  #endif
->  #ifdef CONFIG_X86_THERMAL_VECTOR
->  	sum += irq_stats(cpu)->irq_thermal_count;
-> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-> index 613cd83..0a054db 100644
-> --- a/arch/x86/mm/tlb.c
-> +++ b/arch/x86/mm/tlb.c
-> @@ -98,6 +98,9 @@ static void flush_tlb_func(void *info)
->  {
->  	struct flush_tlb_info *f = info;
->  
-> +	/* irq_call_cnt is also incremented; be subtracted on display */
+The patch below has harmonize_features call can_checksum_protocol when
+the protocol needs a checksum, so that the network layer is not forced
+to perform unnecessary skb linearization on the transmission of AoE
+packets.  Unnecessary linearization results in decreased performance
+and increased memory pressure, as reported here:
 
+  http://www.spinics.net/lists/linux-mm/msg15184.html
 
-If is it better to move above explanation to irq_call_cnt definition place: harirq.h?
+The problem has probably not been widely experienced yet, because
+only recently has the kernel.org-distributed aoe driver acquired the
+ability to use payloads of over a page in size, with the patchset
+recently included in the mm tree:
 
-> +	inc_irq_stat(irq_tlb_count);
-> +
->  	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
->  		return;
->  
-> 
+  https://lkml.org/lkml/2012/8/28/140
 
+The coraid.com-distributed aoe driver already could use payloads of
+greater than a page in size, but its users generally do not use the
+newest kernels.
 
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+---
+ net/core/dev.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
+diff --git a/net/core/dev.c b/net/core/dev.c
+index d7fe32c..9b934d4 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2134,7 +2134,8 @@ static bool can_checksum_protocol(netdev_features_t features, __be16 protocol)
+ static netdev_features_t harmonize_features(struct sk_buff *skb,
+ 	__be16 protocol, netdev_features_t features)
+ {
+-	if (!can_checksum_protocol(features, protocol)) {
++	if (skb->ip_summed != CHECKSUM_NONE &&
++	    !can_checksum_protocol(features, protocol)) {
+ 		features &= ~NETIF_F_ALL_CSUM;
+ 		features &= ~NETIF_F_SG;
+ 	} else if (illegal_highdma(skb->dev, skb)) {
 -- 
-Thanks
-    Alex
+1.7.2.5
+
