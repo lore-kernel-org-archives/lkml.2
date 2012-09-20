@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab2ITTOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 15:14:03 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:36247 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752906Ab2ITTOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 15:14:01 -0400
+	id S932192Ab2ITTOW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 15:14:22 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36766 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754513Ab2ITTOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 15:14:02 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>, Huang Ying <ying.huang@intel.com>
+Subject: Re: [RFC 1/3] PCI/PM: Fix kexec for D3cold and bridge suspending
+Date: Thu, 20 Sep 2012 21:20:31 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Eric Biederman <ebiederm@xmission.com>,
+        kexec@lists.infradead.org
+References: <1347872076-5260-1-git-send-email-ying.huang@intel.com> <1347872076-5260-2-git-send-email-ying.huang@intel.com> <CAErSpo5fVbN2vD5Omc7dGJFWUccYZoCOVRF4YmXPe2Oxm81u5g@mail.gmail.com>
+In-Reply-To: <CAErSpo5fVbN2vD5Omc7dGJFWUccYZoCOVRF4YmXPe2Oxm81u5g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <505939EB.8080004@hitachi.com>
-References: <1347574063-22521-1-git-send-email-irina.tirdea@intel.com>
- <1347574063-22521-2-git-send-email-irina.tirdea@intel.com>
- <87ligd8j46.fsf@sejong.aot.lge.com> <505939EB.8080004@hitachi.com>
-From: Irina Tirdea <irina.tirdea@gmail.com>
-Date: Thu, 20 Sep 2012 22:13:40 +0300
-Message-ID: <CANg8OWK4CzLBKnJUd9oa+f5t+5A0htZMORtimcMQgQxcQjzGCw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] perf tools: remove sscanf extension %as
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Cc: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        rostedt@goodmis.org, paulus@samba.org, dsahern@gmail.com,
-        namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
-        Irina Tirdea <irina.tirdea@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209202120.32029.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> On Fri, 14 Sep 2012 01:07:40 +0300, Irina Tirdea wrote:
->>> From: Irina Tirdea <irina.tirdea@intel.com>
->>>
->>> perf uses sscanf extension %as to read and allocate a
->>> string in the same step. This is a non-standard extension
->>> only present in new versions of glibc.
->>>
->>> Replacing the use of sscanf and %as with strtok_r calls
->>> in order to parse a given string into its components.
->>> This is needed in Android since bionic does not support
->>> %as extension for sscanf.
->>>
->>> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
->>> ---
->>>  tools/perf/util/probe-event.c       |   25 ++++++++++++++++++-------
->>>  tools/perf/util/trace-event-parse.c |   18 ++++++++----------
->>>  2 files changed, 26 insertions(+), 17 deletions(-)
->>>
->>> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
->>> index 4ce04c2..685ddcf 100644
->>> --- a/tools/perf/util/probe-event.c
->>> +++ b/tools/perf/util/probe-event.c
->>> @@ -1100,6 +1100,7 @@ static int parse_probe_trace_command(const char *cmd,
->>>      struct probe_trace_point *tp = &tev->point;
->>>      char pr;
->>>      char *p;
->>> +    char *argv0_str = NULL, *fmt, *fmt1_str, *fmt2_str, *fmt3_str;
->>>      int ret, i, argc;
->>>      char **argv;
->>>
->>> @@ -1116,14 +1117,19 @@ static int parse_probe_trace_command(const char *cmd,
->>>      }
->>>
->>>      /* Scan event and group name. */
->>> -    ret = sscanf(argv[0], "%c:%a[^/ \t]/%a[^ \t]",
->>> -                 &pr, (float *)(void *)&tev->group,
->>> -                 (float *)(void *)&tev->event);
->>> -    if (ret != 3) {
->>> +    argv0_str = strdup(argv[0]);
->>
->> It seems you need to check return value of strdup.
->
-> Agreed.
+On Monday, September 17, 2012, Bjorn Helgaas wrote:
+> +cc Eric and kexec list
+> 
+> On Mon, Sep 17, 2012 at 2:54 AM, Huang Ying <ying.huang@intel.com> wrote:
+> > If PCI devices are put into D3cold before kexec, because the
+> > configuration registers of PCI devices in D3cold are not accessible.
+> >
+> > And if PCI bridges are put into low power state before kexec,
+> > configuration registers of PCI devices underneath the PCI bridges are
+> > not accessible too.
+> >
+> > These will make some PCI devices can not be scanned after kexec, so
+> > resume the PCI devices in D3cold or PCI bridges in low power state
+> > before kexec.
+> 
+> Don't we need to resume the device even without the kexec issue?  And
+> even if it's in D1 or D2?
+> 
+> It looks to me like pci_msi_shutdown() (and probably drv->shutdown())
+> depend on the device being in D0.
+
+We should in theory, but we didn't do any power management of PCI bridges
+before, so this is the first time we have a problem with it.
+
+So I'd say, yeah, let's resume if current_state is between D1 and D3cold
+inclusive and the kexec comment is not very helpful (the problem is not
+kexec-specific in general).
+
+Speaking of kexec, it might consider using the hibernation device freeze
+instead of device shutdown (which the kexec jump feature does).  I've seen
+reports of problems that would be solved this way most likely.
+
+Thanks,
+Rafael
 
 
-Thanks for the review! I'll make the fixes and resend the patch.
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  drivers/pci/pci-driver.c |    4 ++++
+> >  1 file changed, 4 insertions(+)
+> >
+> > --- a/drivers/pci/pci-driver.c
+> > +++ b/drivers/pci/pci-driver.c
+> > @@ -421,6 +421,10 @@ static void pci_device_shutdown(struct d
+> >         struct pci_dev *pci_dev = to_pci_dev(dev);
+> >         struct pci_driver *drv = pci_dev->driver;
+> >
+> > +       /* Resume bridges and devices in D3cold for kexec to work properly */
+> > +       if (pci_dev->current_state == PCI_D3cold || pci_dev->subordinate)
+> > +               pm_runtime_resume(dev);
+> > +
+> >         if (drv && drv->shutdown)
+> >                 drv->shutdown(pci_dev);
+> >         pci_msi_shutdown(pci_dev);
+> 
+> 
 
-Irina
