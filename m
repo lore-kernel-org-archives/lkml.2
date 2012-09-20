@@ -1,58 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab2ITPMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 11:12:42 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:16399 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102Ab2ITPMk (ORCPT
+	id S1755849Ab2ITPZR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 11:25:17 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42534 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab2ITPZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 11:12:40 -0400
-Message-ID: <505B325D.4020802@oracle.com>
-Date: Thu, 20 Sep 2012 23:12:29 +0800
-From: Liu Bo <bo.li.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Thu, 20 Sep 2012 11:25:15 -0400
+Message-ID: <505B3557.5000500@wwwdotorg.org>
+Date: Thu, 20 Sep 2012 09:25:11 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-CC: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Btrfs: small fix the commment for the action flags in
- delayed-ref.h
-References: <505B3117.9040603@gmail.com>
-In-Reply-To: <505B3117.9040603@gmail.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] dt: Document general interrupt controller bindings
+References: <1348143410-32656-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1348143410-32656-1-git-send-email-thierry.reding@avionic-design.de>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 11:07 PM, Wang Sheng-Hui wrote:
-> The action has been merged into struct btrfs_delayed_ref_node,
-> and no struct btrfs_delayed_ref is available now.
-> 
+On 09/20/2012 06:16 AM, Thierry Reding wrote:
+> In order to use a device as interrupt controller, it needs to be marked
+> with the DT interrupt-controller property. This commit adds rudimentary
+> documentation about the required standard properties and describes the
+> most commonly used interrupt specifiers.
 
-You can consider sending this kind of typo fix patch to trivial list instead.
-
-thanks,
-liubo
-
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  fs/btrfs/delayed-ref.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/btrfs/delayed-ref.h b/fs/btrfs/delayed-ref.h
-> index ab53005..c9d7036 100644
-> --- a/fs/btrfs/delayed-ref.h
-> +++ b/fs/btrfs/delayed-ref.h
-> @@ -18,7 +18,7 @@
->  #ifndef __DELAYED_REF__
->  #define __DELAYED_REF__
->  
-> -/* these are the possible values of struct btrfs_delayed_ref->action */
-> +/* these are the possible values of struct btrfs_delayed_ref_node->action */
->  #define BTRFS_ADD_DELAYED_REF    1 /* add one backref to the tree */
->  #define BTRFS_DROP_DELAYED_REF   2 /* delete one backref from the tree */
->  #define BTRFS_ADD_DELAYED_EXTENT 3 /* record a full extent allocation */
-> 
-
+Acked-by: Stephen Warren <swarren@nvidia.com>
