@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab2ITKHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 06:07:18 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37444 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752985Ab2ITKHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 06:07:16 -0400
-Message-ID: <1348135633.5604.5.camel@joe2Laptop>
-Subject: Re: [PATCH v2] USB: remove dbg() usage in USB networking drivers
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Sep 2012 03:07:13 -0700
-In-Reply-To: <20120919194614.GA17585@kroah.com>
-References: <20120919171316.GA12248@kroah.com>
-	 <1348077212.22122.13.camel@joe2Laptop> <20120919193536.GA13933@kroah.com>
-	 <20120919194614.GA17585@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753369Ab2ITKIo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 06:08:44 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:37333 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115Ab2ITKIn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 06:08:43 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.116.118.250]
+In-Reply-To: <1348072769-17314-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1348072769-17314-1-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 20 Sep 2012 13:08:20 +0300
+Message-ID: <CAK=WgbYt1mtDSyTQzOxO+mcp320A3MQrgXuL=AY7h9FixSg=hg@mail.gmail.com>
+Subject: Re: [PATCHv3] remoteproc: Add STE modem driver for remoteproc
+To: sjur.brandeland@stericsson.com
+Cc: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-19 at 20:46 +0100, Greg Kroah-Hartman wrote:
-> The dbg() USB macro is so old, it predates me.  The USB networking drivers are
-> the last hold-out using this macro, and we want to get rid of it, so replace
-> the usage of it with the proper netdev_dbg() or dev_dbg() (depending on the
-> context) calls.
+Hi Sjur,
 
-OK, one more bit of trivia
+On Wed, Sep 19, 2012 at 7:39 PM,  <sjur.brandeland@stericsson.com> wrote:
+> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+>
+> Add support for the STE modem shared memory driver.
+> This driver hooks into the remoteproc framework
+> in order to manage configuration and the virtio
+> devices.
+>
+> This driver adds custom firmware handlers, because
+> STE modem uses a custom firmware layout.
+>
+> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> cc: Linus Walleij <linus.walleij@linaro.org>
+> cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> ---
+> Changes since v3:
 
-> diff --git a/drivers/net/usb/net1080.c b/drivers/net/usb/net1080.c
-[]
-> @@ -422,8 +419,9 @@ static int net1080_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
->  	if (!(skb->len & 0x01)) {
->  #ifdef DEBUG
->  		struct net_device	*net = dev->net;
-> -		dbg("rx framesize %d range %d..%d mtu %d", skb->len,
-> -			net->hard_header_len, dev->hard_mtu, net->mtu);
-> +		netdev_dbg(dev->net, "rx framesize %d range %d..%d mtu %d\n",
-> +			   skb->len, net->hard_header_len, dev->hard_mtu,
-> +			   net->mtu);
->  #endif
+Looks good, thanks.
 
-maybe
-		netdev_dbg(net, ...
+I have just one comment/question:
 
-or remove the odd #ifdef DEBUG surround used to guard
-the otherwise unused net variable and use:
+> +/* STE modem device is unregistered */
+> +static int sproc_drv_remove(struct platform_device *pdev)
+> +{
+> +       struct ste_modem_device *mdev =
+> +               container_of(pdev, struct ste_modem_device, pdev);
+> +       struct sproc *sproc = mdev->drv_data;
+> +
+> +       sproc_dbg(sproc, "remove ste-modem\n");
+> +
+> +       /* Unregister as remoteproc device */
+> +       rproc_del(sproc->rproc);
+> +       rproc_put(sproc->rproc);
+> +
+> +       mdev->drv_data = NULL;
+> +       mdev->drv_ops = NULL;
+> +       return 0;
+> +}
+> +
+> +struct ste_modem_drv_ops sproc_drv_ops = {
+> +       .kick = sproc_kick_callback
+> +};
+> +
+> +/* Handle probe of a modem device */
+> +static int sproc_probe(struct platform_device *pdev)
+> +{
+...
+> +       mdev->drv_data = sproc;
+> +
+> +       /* Provide callbacks to modem device */
+> +       mdev->drv_ops = &sproc_drv_ops;
 
-		netdev_dbg(dev->net, "rx framesize %d range %d..%d mtu %d\n",
-			   skb->len, dev->net->hard_header_len, dev->hard_mtu,
-			   dev->net->mtu);
+Implicitly providing the modem with drv_ops and drv_data in this
+manner feels racy and somewhat error prone.
 
+E.g., on remove these members are set to NULL, under the assumption
+that the modem won't invoke sproc_kick_callback or access sproc
+anymore, but this doesn't feel safe.
 
+Any chance you can add an explicit registration method to
+ste_modem_dev_ops, with which you'll be able to explicitly set/unset
+sproc_kick_callback and sproc ?
+
+Thanks,
+Ohad.
