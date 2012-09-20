@@ -1,125 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab2ITRte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 13:49:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36831 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2ITRtc (ORCPT
+	id S1753377Ab2ITRt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 13:49:57 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:56952 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab2ITRtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 13:49:32 -0400
-Date: Thu, 20 Sep 2012 10:49:27 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+	Thu, 20 Sep 2012 13:49:55 -0400
+Date: Thu, 20 Sep 2012 13:49:53 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+cc: paulmck@linux.vnet.ibm.com, John Stultz <john.stultz@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memstick: add support for legacy memorysticks
-Message-ID: <20120920174927.GD28934@google.com>
-References: <1348060743-6295-1-git-send-email-maximlevitsky@gmail.com>
- <1348060743-6295-2-git-send-email-maximlevitsky@gmail.com>
- <20120919145228.80f72f59.akpm@linux-foundation.org>
+Subject: Re: RCU lockup in the SMP idle thread, help...
+In-Reply-To: <CACRpkdaOG59CNvqUGFer+1TcVM8ovJwxmc3ZryJKw--PJ=bzsQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1209201056531.6667@xanadu.home>
+References: <CACRpkdYgxsF1G7Dc_xCcQcFV9G+foz1czOCmROcMQ5NfR-ziCA@mail.gmail.com> <50520E8A.9030408@linaro.org> <20120913165844.GW4257@linux.vnet.ibm.com> <CACRpkdatjfk_eUof5G4fwa-Qf8SoF_NvSUJQAZ7U8yjcSYFuTA@mail.gmail.com> <20120914175322.GI4257@linux.vnet.ibm.com>
+ <CACRpkdbw+VgaV26U6uZeKr9g28ax2shrieQSxFuj-Pi9RXPtLQ@mail.gmail.com> <20120920000313.GH2455@linux.vnet.ibm.com> <CACRpkdaOG59CNvqUGFer+1TcVM8ovJwxmc3ZryJKw--PJ=bzsQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120919145228.80f72f59.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
+On Thu, 20 Sep 2012, Linus Walleij wrote:
 
-On Wed, Sep 19, 2012 at 02:52:28PM -0700, Andrew Morton wrote:
-> I have a bunch of fairly trivial comments, and one head-scratcher for
-> Tejun: what's up with the local-irqs-disabled requirement in sg_miter_next()?
-
-> > +static bool sg_compare_to_buffer(struct scatterlist *sg,
-> > +					int offset, u8 *buffer, size_t len)
-> > +{
-> > +	unsigned long flags;
-> > +	int retval = 0;
-> > +	struct sg_mapping_iter miter;
-> > +
-> > +	local_irq_save(flags);
+> On Thu, Sep 20, 2012 at 2:03 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> hm, the "IRQ disabled if SG_MITER_ATOMIC" requirement of
-> sg_miter_next() is weird and unexpected.
+> > Any thoughts on the feasibility of implementing NMI-based stack backtraces
+> > for ARM?
 > 
-> Tejun's 137d3edb48425f8 added the code whch has this strange
-> requirement, but it is unexplained.  Wazzup?
+> Nico's department, so let's page him.
 
-Heh, that's long time ago.  Trying to remember... so it was written
-before kmap_atomic() is converted to stack based implementation and
-had to be supplied with the specific KMAP index.  Atomic mapping
-iterator should be useable from irq context too (and there were other
-irq handler paths using KM_BIO_SRC_IRQ as the name implies), so it
-couldn't allow irq to happen while mapping is in use.  At the time,
-having to disable IRQ to use any of KM_*_IRQs was rather self-evident.
+That _could_ be done, at least in theory, with some restrictions.  
 
-I think we now can relax the requirement.  All that's required is not
-to sleep or preempted while mapped.  Something like the following is
-in order?
+However in practice ...
 
---------8<--------
-Subject: scatterlist: atomic sg_mapping_iter no longer needs disabling IRQ
+> In IIRC ux500 all NMIs are reserved for the secure world, so it's
+> basically a no can do. :-(
 
-SG mapping iterator w/ SG_MITER_ATOMIC set required IRQ disabled
-because it originally used KM_BIO_SRC_IRQ to allow use from IRQ
-handlers.  kmap_atomic() has long been updated to handle stacking
-atomic mapping requests on per-cpu basis and only requires not
-sleeping while mapped.
+That's the main issue here: not all platforms allow FIQs ( a FIQ is the 
+closest to a NMI on ARM) to be available to the operating system.
 
-Update sg_mapping_iter such that atomic iterators only require
-disabling preemption instead of disabling IRQ.
+However, for where this is possible, there is a patch series from Anton 
+Vorontsov implementing FIQ based KGDB support which might be useful 
+here.
 
-While at it, convert wte weird @ARG@ notations to @ARG in the comment
-of sg_miter_start().
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- lib/scatterlist.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index fadae77..e76d85c 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -404,14 +404,13 @@ EXPORT_SYMBOL(sg_miter_start);
-  * @miter: sg mapping iter to proceed
-  *
-  * Description:
-- *   Proceeds @miter@ to the next mapping.  @miter@ should have been
-- *   started using sg_miter_start().  On successful return,
-- *   @miter@->page, @miter@->addr and @miter@->length point to the
-- *   current mapping.
-+ *   Proceeds @miter to the next mapping.  @miter should have been started
-+ *   using sg_miter_start().  On successful return, @miter->page,
-+ *   @miter->addr and @miter->length point to the current mapping.
-  *
-  * Context:
-- *   IRQ disabled if SG_MITER_ATOMIC.  IRQ must stay disabled till
-- *   @miter@ is stopped.  May sleep if !SG_MITER_ATOMIC.
-+ *   Preemption disabled if SG_MITER_ATOMIC.  Preemption must stay disabled
-+ *   till @miter is stopped.  May sleep if !SG_MITER_ATOMIC.
-  *
-  * Returns:
-  *   true if @miter contains the next mapping.  false if end of sg
-@@ -465,7 +464,8 @@ EXPORT_SYMBOL(sg_miter_next);
-  *   resources (kmap) need to be released during iteration.
-  *
-  * Context:
-- *   IRQ disabled if the SG_MITER_ATOMIC is set.  Don't care otherwise.
-+ *   Preemption disabled if the SG_MITER_ATOMIC is set.  Don't care
-+ *   otherwise.
-  */
- void sg_miter_stop(struct sg_mapping_iter *miter)
- {
-@@ -479,7 +479,7 @@ void sg_miter_stop(struct sg_mapping_iter *miter)
- 			flush_kernel_dcache_page(miter->page);
- 
- 		if (miter->__flags & SG_MITER_ATOMIC) {
--			WARN_ON(!irqs_disabled());
-+			WARN_ON_ONCE(preemptible());
- 			kunmap_atomic(miter->addr);
- 		} else
- 			kunmap(miter->page);
+Nicolas
