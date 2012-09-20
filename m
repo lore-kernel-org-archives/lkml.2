@@ -1,36 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab2ITJqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:46:52 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:57813 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751Ab2ITJqu (ORCPT
+	id S1753898Ab2ITJrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:47:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25790 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750962Ab2ITJrI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:46:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1348134130.13371.39.camel@smile>
-References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1347867577-13170-6-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x=kRV-K+0SfBwoTkA641G9CeQWP4-4COMZKmkZGNL=1Dgw@mail.gmail.com>
-	<1348134130.13371.39.camel@smile>
-Date: Thu, 20 Sep 2012 15:16:50 +0530
-X-Google-Sender-Auth: qx0mcQQTps-KiH6_cuhXyjKrPhg
-Message-ID: <CAOh2x=mHPEp5QshoVXc0YfL1EuxuUPOed=G3nCvMnKY5+45jQw@mail.gmail.com>
-Subject: Re: [PATCH 5/7] dw_dmac: autoconfigure data_width or get it via
- platform data
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+	Thu, 20 Sep 2012 05:47:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,453,1344236400"; 
+   d="scan'208";a="208557995"
+Message-ID: <1348134206.13371.40.camel@smile>
+Subject: Re: [PATCH 6/7] dw_dmac: check if controller supports LLP
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: viresh kumar <viresh.kumar@linaro.org>
 Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
         linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Thu, 20 Sep 2012 12:43:26 +0300
+In-Reply-To: <CAOh2x=mav-8hkKEpOw0H5vQ=uPx+7sxBPsa_eDpTpEqgXuzXSQ@mail.gmail.com>
+References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1347867577-13170-7-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAOh2x=mav-8hkKEpOw0H5vQ=uPx+7sxBPsa_eDpTpEqgXuzXSQ@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 3:12 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
->> Do these changes in a single patch 2/7
-> From this comment I guess you would like to have dw_dmac_regs.h changes
-> at one place. Am I right?
+On Tue, 2012-09-18 at 12:43 +0530, viresh kumar wrote: 
+> On Mon, Sep 17, 2012 at 1:09 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> > Some controllers have the reduced functionality where the LLP multi block
+> > transfers are not supported. This patch introduces a check and refuses to deal
+> > with such devices.
+> >
+> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > ---
+> >  drivers/dma/dw_dmac.c      |   35 ++++++++++++++++++++++++++++++++++-
+> >  drivers/dma/dw_dmac_regs.h |    4 ++++
+> >  2 files changed, 38 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> > index fdb7d5a..00958ad 100644
+> > --- a/drivers/dma/dw_dmac.c
+> > +++ b/drivers/dma/dw_dmac.c
+> > @@ -647,6 +647,12 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+> >         unsigned int            dst_width;
+> >         u32                     ctllo;
+> >
+> > +       if (dwc->nollp) {
+> > +               dev_dbg(chan2dev(&dwc->chan),
+> > +                               "channel doesn't support LLP transfers\n");
+> > +               return NULL;
+> > +       }
+> 
+> But this could have been a single block request. Isn't it?
+I think we could discard this comment in regard to comments on next
+patch.
 
-yes.
+
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
