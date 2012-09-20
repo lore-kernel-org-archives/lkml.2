@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab2ITXTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:19:23 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34507 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932451Ab2ITXTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:19:22 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4] power_supply: add new lp8788 charger driver
-Thread-Topic: [PATCH v4] power_supply: add new lp8788 charger driver
-Thread-Index: AQHNl33+s01O5KgSDUijJYDBAHfx45eT2rbQ
-Date: Thu, 20 Sep 2012 23:19:07 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF5B1C@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF2227@DQHE02.ent.ti.com>
- <20120920221638.GF18223@lizard>
-In-Reply-To: <20120920221638.GF18223@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="utf-8"
+	id S932508Ab2ITXUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:20:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49294 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932451Ab2ITXUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 19:20:05 -0400
+Date: Thu, 20 Sep 2012 16:20:00 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v2 03/26] block: Refactor blk_update_request()
+Message-ID: <20120920232000.GG7264@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-4-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347322957-25260-4-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8KNJwwd007179
 
-> -----Original Message-----
-> From: Anton Vorontsov [mailto:anton.vorontsov@linaro.org]
-> Sent: Friday, September 21, 2012 7:17 AM
-> To: Kim, Milo
-> Cc: David Woodhouse; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v4] power_supply: add new lp8788 charger driver
-> 
-> On Wed, Sep 05, 2012 at 10:43:21AM +0000, Kim, Milo wrote:
-> >  TI LP8788 PMU supports regulators, battery charger, RTC,
-> >  ADC, backlight driver and current sinks.
-> >
-> >  This patch supports the charger operations including
-> >  the charger interrupt handling.
-> [...]
-> > Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> > ---
-> 
-> Had to fix a bunch of checkpatch complaints:
-> 
-> CHECK: space prohibited before semicolon
-> #478: FILE: drivers/power/lp8788-charger.c:396:
-> +       for (i = 0 ; i < pdata->num_chg_params ; i++) {
-> 
-> CHECK: space prohibited before semicolon
-> #541: FILE: drivers/power/lp8788-charger.c:459:
-> +       for (i = 0 ; i < pchg->num_irqs ; i++) {
+Hello,
 
-Thanks a lot for this review.
+On Mon, Sep 10, 2012 at 05:22:14PM -0700, Kent Overstreet wrote:
+>  static void req_bio_endio(struct request *rq, struct bio *bio,
+>  			  unsigned int nbytes, int error)
+>  {
+> +	/*
+> +	 * XXX: bio_endio() does this. only need this because of the weird
+> +	 * flush seq thing.
+> +	 */
+>  	if (error)
+>  		clear_bit(BIO_UPTODATE, &bio->bi_flags);
+>  	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+>  		error = -EIO;
 
-It seems like the result of running checkpatch script with --strict option.
-Should I keep this option whenever submitting the file?
-I used to run w/o strict option.
+Isn't this also necessary to record errors on partial completions?
 
-> 
-> 
-> But other than this, it looks really good, this is now applied.
-> 
-> Obviously, I couldn't compile-test it, but hopefully it will work
-> once MFD part is also in. :-) If not, you can just send a follow-up
-> fix.
+Other than that, I definitely like this.  It would be nice to note
+that the custom partial bio advancing in blk_update_request() is
+replaced with multiple calls to req_bio_endio().  I don't think it has
+any meaningful performance implications.  It's just nice to future
+readers of the commit.
 
-Additionally, lp8788-charger depends on lp8788-adc driver.
-I've found wrong calculation on getting the battery voltage and temperature.
-I would submit this patch later.
+Also, it would be really nice if you can verify this actually works
+with partial blk_update_request().  sector update bug in the previous
+patch scares me a bit.  Implementing some debug hacks in the
+completion path might be the easiest way to verify.  A subtle bug here
+could be pretty painful.
 
-I appreciate your help.
+Thanks.
 
-Best Regards,
-Milo
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+tejun
