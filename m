@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab2ITS5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:57:16 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46700 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab2ITSyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:54:50 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: [PATCH 08/13] fs: limit filesystem stacking depth
-Date: Thu, 20 Sep 2012 20:55:25 +0200
-Message-Id: <1348167330-30288-9-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
-References: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
+	id S1755985Ab2ITS5Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 14:57:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932279Ab2ITS5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 14:57:18 -0400
+Message-ID: <505B6706.1000104@redhat.com>
+Date: Thu, 20 Sep 2012 14:57:10 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
+        Avi Kivity <avi@redhat.com>, QEMU-devel <qemu-devel@nongnu.org>,
+        KVM <kvm@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] mm: compaction: Restart compaction from near where
+ it left off
+References: <1348149875-29678-1-git-send-email-mgorman@suse.de> <1348149875-29678-7-git-send-email-mgorman@suse.de>
+In-Reply-To: <1348149875-29678-7-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On 09/20/2012 10:04 AM, Mel Gorman wrote:
+> This is almost entirely based on Rik's previous patches and discussions
+> with him about how this might be implemented.
+>
+> Order > 0 compaction stops when enough free pages of the correct page
+> order have been coalesced.  When doing subsequent higher order allocations,
+> it is possible for compaction to be invoked many times.
+>
+> However, the compaction code always starts out looking for things to compact
+> at the start of the zone, and for free pages to compact things to at the
+> end of the zone.
+>
+> This can cause quadratic behaviour, with isolate_freepages starting at
+> the end of the zone each time, even though previous invocations of the
+> compaction code already filled up all free memory on that end of the zone.
+> This can cause isolate_freepages to take enormous amounts of CPU with
+> certain workloads on larger memory systems.
+>
+> This patch caches where the migration and free scanner should start from on
+> subsequent compaction invocations using the pageblock-skip information. When
+> compaction starts it begins from the cached restart points and will
+> update the cached restart points until a page is isolated or a pageblock
+> is skipped that would have been scanned by synchronous compaction.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Add a simple read-only counter to super_block that indicates deep this
-is in the stack of filesystems.  Previously ecryptfs was the only
-stackable filesystem and it explicitly disallowed multiple layers of
-itself.
+Together with patch 5/6, this has the effect of
+skipping compaction in a zone if the free and
+isolate markers have met, and it has been less
+than 5 seconds since the "skip" information was
+reset.
 
-Overlayfs, however, can be stacked recursively and also may be stacked
-on top of ecryptfs or vice versa.
+Compaction on zones where we cycle through more
+slowly can continue, even when this particular
+zone is experiencing problems, so I guess this
+is desired behaviour...
 
-To limit the kernel stack usage we must limit the depth of the
-filesystem stack.  Initially the limit is set to 2.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/ecryptfs/main.c   |    7 +++++++
- fs/overlayfs/super.c |   10 ++++++++++
- include/linux/fs.h   |   11 +++++++++++
- 3 files changed, 28 insertions(+), 0 deletions(-)
-
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index 2768138..344fb2c 100644
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -565,6 +565,13 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
- 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
- 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
- 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
-+	s->s_stack_depth = path.dentry->d_sb->s_stack_depth + 1;
-+
-+	rc = -EINVAL;
-+	if (s->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
-+		printk(KERN_ERR "eCryptfs: maximum fs stacking depth exceeded\n");
-+		goto out_free;
-+	}
- 
- 	inode = ecryptfs_get_inode(path.dentry->d_inode, s);
- 	rc = PTR_ERR(inode);
-diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-index 20e5ecf..8cfe8df 100644
---- a/fs/overlayfs/super.c
-+++ b/fs/overlayfs/super.c
-@@ -570,6 +570,16 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
- 	}
- 	ufs->lower_namelen = statfs.f_namelen;
- 
-+	sb->s_stack_depth = max(upperpath.mnt->mnt_sb->s_stack_depth,
-+				lowerpath.mnt->mnt_sb->s_stack_depth) + 1;
-+
-+	err = -EINVAL;
-+	if (sb->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
-+		printk(KERN_ERR "overlayfs: maximum fs stacking depth exceeded\n");
-+		goto out_put_lowerpath;
-+	}
-+
-+
- 	ufs->upper_mnt = clone_private_mount(&upperpath);
- 	err = PTR_ERR(ufs->upper_mnt);
- 	if (IS_ERR(ufs->upper_mnt)) {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e372113..3dd3045 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -505,6 +505,12 @@ struct iattr {
-  */
- #include <linux/quota.h>
- 
-+/*
-+ * Maximum number of layers of fs stack.  Needs to be limited to
-+ * prevent kernel stack overflow
-+ */
-+#define FILESYSTEM_MAX_STACK_DEPTH 2
-+
- /** 
-  * enum positive_aop_returns - aop return codes with specific semantics
-  *
-@@ -1578,6 +1584,11 @@ struct super_block {
- 
- 	/* Being remounted read-only */
- 	int s_readonly_remount;
-+
-+	/*
-+	 * Indicates how deep in a filesystem stack this SB is
-+	 */
-+	int s_stack_depth;
- };
- 
- /* superblock cache pruning functions */
--- 
-1.7.7
+Acked-by: Rik van Riel <riel@redhat.com>
 
