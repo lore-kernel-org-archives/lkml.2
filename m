@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab2ITJcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:32:08 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:31937 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab2ITJcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:32:05 -0400
-Message-ID: <505AE28D.9060901@parallels.com>
-Date: Thu, 20 Sep 2012 13:31:57 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1753537Ab2ITJcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:32:32 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42006 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164Ab2ITJca (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 05:32:30 -0400
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>
-CC: Andrew Vagin <avagin@openvz.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH] tcp: restore rcv_wscale in a repair mode (v2)
-References: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
-In-Reply-To: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <1348133405.13371.30.camel@smile>
+References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1347867577-13170-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x==Te7MBNrqX-wjaPzso_xTC44rUejMDhs7SW7HJag7j8g@mail.gmail.com>
+	<1347951305.13371.10.camel@smile>
+	<CAOh2x=k3hjXtuAd23LYLWvG59HPgFS8W2J+5-2Bre+wFufgcng@mail.gmail.com>
+	<1348133405.13371.30.camel@smile>
+Date: Thu, 20 Sep 2012 15:02:29 +0530
+X-Google-Sender-Auth: W73c72wI3E2LmfR64nHFYCFAnh8
+Message-ID: <CAOh2x=nqi=8kURCoZYXetVCZsTKgHa=77_vuqkq-ZrMOZaiY4A@mail.gmail.com>
+Subject: Re: [PATCH 2/7] dw_dmac: fill optional encoded parameters in register structure
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2012 11:40 PM, Andrew Vagin wrote:
-> rcv_wscale is a symetric parameter with snd_wscale.
-> 
-> Both this parameters are set on a connection handshake.
-> 
-> Without this value a remote window size can not be interpreted correctly,
-> because a value from a packet should be shifted on rcv_wscale.
-> 
-> And one more thing is that wscale_ok should be set too.
-> 
-> This patch doesn't break a backward compatibility.
-> If someone uses it in a old scheme, a rcv window
-> will be restored with the same bug (rcv_wscale = 0).
-> 
-> v2: Save backward compatibility on big-endian system. Before
->     the first two bytes were snd_wscale and the second two bytes were
->     rcv_wscale. Now snd_wscale is opt_val & 0xFFFF and rcv_wscale >> 16.
->     This approach is independent on byte ordering.
-> 
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+On Thu, Sep 20, 2012 at 3:00 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+>> Ok. If i am not wrong, such calls are only required once for below line:
+> Actually twice...
+>> dw_params = dma_raw_readl(regs, DW_PARAMS
+> ...here and for channel parameters.
 
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Till the time we hit channel code, we can allocate memory for dw and so
+can use dma_readl/writel. Isn't it?
 
+viresh
