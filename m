@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab2ITPbz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 11:31:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64648 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab2ITPbx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 11:31:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: manual merge of the ixp4xx tree with the arm-soc tree
-Date: Thu, 20 Sep 2012 15:31:49 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "Krzysztof =?utf-8?q?Ha=C5=82asa?=" <khc@pm.waw.pl>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-References: <20120920163227.c6d8f1559b9cde971a376abf@canb.auug.org.au>
-In-Reply-To: <20120920163227.c6d8f1559b9cde971a376abf@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209201531.50167.arnd@arndb.de>
-X-Provags-ID: V02:K0:PT2T+HFwqXuHA5kg7wMtiSFeRn5xwICwLOQDoj5TvLB
- OA7vrRL5xqSQq3gNcQMxZUreMX2E2kQjiku/Mw3Eb2iwWjjLUC
- yd3d5+KCNee5eoLyYIo3v3Z/vSjRZQYggPwf4pJJDjNbK+R/0h
- Hrlfje2r0bfK5AvsYpE7sOMfWYGKhIrGniSwbhIcwI+evFJsjY
- YQFHbmZAmBePnQ89WuVmW7nHc9CjAo73zSCFnL84bdVYIt/5Yl
- fsLEgrisLXkYiyg1xDBR/ZoP3UgoZSpprnM4rxx8J3Yc9s3ysO
- a798RqflXbnUzsD0pWhndm5qmBz23owiH/L5xHrqDf3xSjRl4i
- F24HVrl0GYPtBMuEJzR0=
+	id S1755290Ab2ITPfD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 11:35:03 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:49353 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab2ITPfB convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 20 Sep 2012 11:35:01 -0400
+Message-Id: <505B53D7020000780009CBB5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 20 Sep 2012 16:35:19 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "David Vrabel" <david.vrabel@citrix.com>,
+        "Oliver Chick" <oliver.chick@citrix.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk
+ drivers
+References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
+ <505AF126.2050806@citrix.com>
+ <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
+ <505B1EB9020000780009CA6E@nat28.tlf.novell.com>
+ <20120920134951.GC1998@localhost.localdomain>
+In-Reply-To: <20120920134951.GC1998@localhost.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 September 2012, Stephen Rothwell wrote:
-> Today's linux-next merge of the ixp4xx tree got conflicts in
-> arch/arm/mach-ixp4xx/common.c and
-> arch/arm/mach-ixp4xx/include/mach/ixp4xx-regs.h between commit
-> 13ec32f47cb4 ("ARM: ixp4xx: use __iomem pointers for MMIO") from the
-> arm-soc tree and commits 43690ab7543a ("IXP4xx: Always ioremap() Queue
-> Manager MMIO region at boot") and f62736b567ff ("IXP4xx: map CPU config
-> registers within VMALLOC region") from the ixp4xx tree.
+>>> On 20.09.12 at 15:49, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Thu, Sep 20, 2012 at 12:48:41PM +0100, Jan Beulich wrote:
+>> >>> On 20.09.12 at 13:30, Oliver Chick <oliver.chick@citrix.com> wrote:
+>> > The memory overhead, and fallback mode points are related:
+>> > -Firstly, it turns out that the overhead is actually 2.75MB, not 11MB
+>> > per device. I made a mistake (pointed out by Jan) as the maximum number
+>> > of requests that can fit into a single-page ring is 64, not 256.
+>> > -Clearly, this still scales linearly. So the problem of memory footprint
+>> > will occur with more VMs, or block devices.
+>> > -Whilst 2.75MB per device is probably acceptable (?), if we start using
+>> > multipage rings, then we might not want to have
+>> > BLKIF_MAX_PERS_REQUESTS_PER_DEVICE==__RING_SIZE, as this will cause the
+>> > memory overhead to increase. This is why I have implemented the
+>> > 'fallback' mode. With a multipage ring, it seems reasonable to want the
+>> > first $x$ grefs seen by blkback to be treated as persistent, and any
+>> > later ones to be non-persistent. Does that seem sensible?
+>> 
+>> From a resource usage pov, perhaps. But this will get the guest
+>> entirely unpredictable performance. Plus I don't think 11Mb of
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> Wouldn't it fall back to the older performance?
 
-Ok, thanks!
+Right, but the guest can't really predict this. That may have
+significant impact if the performance difference is big enough.
 
-This conflict will go away once Krzysztof's patches make it into arm-soc.
+Jan
 
-	Arnd
