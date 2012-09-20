@@ -1,56 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab2ITIv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 04:51:58 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:32554 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2ITIv4 (ORCPT
+	id S1753552Ab2ITIzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 04:55:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56991 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab2ITIzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 04:51:56 -0400
-X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
-   d="scan'208";a="14648494"
-Message-ID: <1348131088.24539.2.camel@oliverchick-Precision-WorkStation-T3400>
-Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk drivers
-From: Oliver Chick <oliver.chick@citrix.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Sep 2012 09:51:28 +0100
-In-Reply-To: <5059D0C8020000780009C4CF@nat28.tlf.novell.com>
-References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
-	 <5059D0C8020000780009C4CF@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Sep 2012 04:55:51 -0400
+Date: Thu, 20 Sep 2012 10:55:45 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH v2 1/3] tracing,x86: add a TSC trace_clock
+Message-ID: <20120920085545.GA3497@gmail.com>
+References: <1347499439.10751.78.camel@gandalf.local.home>
+ <1348004227-23575-1-git-send-email-dhsharp@google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348004227-23575-1-git-send-email-dhsharp@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ah yes, you're right - rings can accomodate 64 requests. ijc, and myself
-got muddled. It also explains the comment in my summary that we only use
-the first 60-ish persistent grants!
 
-With multipage rings, this will probably become a function, rather than
-a constant. Does that sound sensible?
+* David Sharp <dhsharp@google.com> wrote:
 
-On Wed, 2012-09-19 at 13:03 +0100, Jan Beulich wrote:
-> >>> On 19.09.12 at 12:51, Oliver Chick <oliver.chick@citrix.com> wrote:
-> > +/*
-> > + * Maximum number of persistent grants that can be mapped by Dom0 for each
-> > + * interface. This is set to be the size of the ring, as this is a limit on
-> > + * the number of requests that can be inflight at any one time. 256 imposes
-> > + * an overhead of 11MB of mapped kernel space per interface.
-> > + */
-> > +#define BLKIF_MAX_PERS_REQUESTS_PER_DEV 256
+> In order to promote interoperability between userspace tracers and ftrace,
+> add a trace_clock that reports raw TSC values which will then be recorded
+> in the ring buffer. Userspace tracers that also record TSCs are then on
+> exactly the same time base as the kernel and events can be unambiguously
+> interlaced.
 > 
-> How can this be a fixed number, especially in the context of ring
-> size extensions? Iirc, single page rings can accommodate 64
-> requests, so I'd guess the number above was observed with a
-> 4-page (order 2) ring...
+> Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
+> timestamp values.
 > 
-> Jan
+> v2:
+> Move arch-specific bits out of generic code.
 > 
+> Google-Bug-Id: 6980623
+> Signed-off-by: David Sharp <dhsharp@google.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+> ---
+>  arch/x86/include/asm/trace_clock.h |   16 ++++++++++++++++
+>  arch/x86/kernel/Makefile           |    1 +
+>  arch/x86/kernel/trace_clock.c      |   20 ++++++++++++++++++++
+>  include/asm-generic/trace_clock.h  |   15 +++++++++++++++
+>  include/linux/trace_clock.h        |    2 ++
+>  kernel/trace/trace.c               |    1 +
+>  6 files changed, 55 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/include/asm/trace_clock.h
+>  create mode 100644 arch/x86/kernel/trace_clock.c
+>  create mode 100644 include/asm-generic/trace_clock.h
+> 
+> diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
+> new file mode 100644
+> index 0000000..0b1f391
+> --- /dev/null
+> +++ b/arch/x86/include/asm/trace_clock.h
+> @@ -0,0 +1,16 @@
+> +#ifndef _ASM_X86_TRACE_CLOCK_H
+> +#define _ASM_X86_TRACE_CLOCK_H
+> +
+> +#include <linux/compiler.h>
+> +#include <linux/types.h>
+> +
+> +#ifdef CONFIG_X86_TSC
+> +
+> +extern u64 notrace trace_clock_x86_tsc(void);
+> +
+> +# define ARCH_TRACE_CLOCKS \
+> +	{ trace_clock_x86_tsc,	"tsc" },
 
+I'd name it "x86-tsc", to make sure the naming is unique. That 
+will also enable the addition of other hw clocks, should the 
+need arise.
 
+> +
+> +#endif
+> +
+> +#endif  /* _ASM_X86_TRACE_CLOCK_H */
+> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+> index 8215e56..0ee9344 100644
+> --- a/arch/x86/kernel/Makefile
+> +++ b/arch/x86/kernel/Makefile
+> @@ -62,6 +62,7 @@ obj-$(CONFIG_X86_REBOOTFIXUPS)	+= reboot_fixups_32.o
+>  obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
+>  obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
+>  obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
+> +obj-$(CONFIG_X86_TSC)		+= trace_clock.o
+>  obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
+>  obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
+>  obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
+> diff --git a/arch/x86/kernel/trace_clock.c b/arch/x86/kernel/trace_clock.c
+> new file mode 100644
+> index 0000000..b8959f8
+> --- /dev/null
+> +++ b/arch/x86/kernel/trace_clock.c
+> @@ -0,0 +1,20 @@
+> +/*
+> + * X86 trace clocks
+> + */
+> +#include <asm/trace_clock.h>
+> +#include <asm/barrier.h>
+> +#include <asm/msr.h>
+> +
+> +/*
+> + * trace_clock_x86_tsc(): A clock that is just the cycle counter.
+> + *
+> + * Unlike the other clocks, this is not in nanoseconds.
+> + */
+> +u64 notrace trace_clock_x86_tsc(void)
+> +{
+> +	u64 ret;
+> +	rdtsc_barrier();
+
+Missing newline.
+
+> +	rdtscll(ret);
+> +
+> +	return ret;
+> +}
+> diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
+> new file mode 100644
+> index 0000000..648cdcd
+> --- /dev/null
+> +++ b/include/asm-generic/trace_clock.h
+> @@ -0,0 +1,15 @@
+> +/*
+> + * Arch-specific trace clocks.
+> + */
+> +#ifndef _ASM_GENERIC_TRACE_CLOCK_H
+> +#define _ASM_GENERIC_TRACE_CLOCK_H
+
+We typically put header guards to the first and last lines of 
+the file, that way it can be ignored easily.
+
+> +
+> +/*
+> + * Additional trace clocks added to the trace_clocks
+> + * array in kernel/trace/trace.c
+
+I'd add: "None if the architecture has not defined it."
+
+> + */
+> +#ifndef ARCH_TRACE_CLOCKS
+> +# define ARCH_TRACE_CLOCKS
+> +#endif
+> +
+> +#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
+> diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
+> index 4eb4902..d563f37 100644
+> --- a/include/linux/trace_clock.h
+> +++ b/include/linux/trace_clock.h
+> @@ -12,6 +12,8 @@
+>  #include <linux/compiler.h>
+>  #include <linux/types.h>
+>  
+> +#include <asm/trace_clock.h>
+> +
+>  extern u64 notrace trace_clock_local(void);
+>  extern u64 notrace trace_clock(void);
+>  extern u64 notrace trace_clock_global(void);
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 5c38c81..92fb08e 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -480,6 +480,7 @@ static struct {
+>  	{ trace_clock_local,	"local" },
+>  	{ trace_clock_global,	"global" },
+>  	{ trace_clock_counter,	"counter" },
+> +	ARCH_TRACE_CLOCKS
+>  };
+>  
+
+Looks useful and good otherwise:
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
