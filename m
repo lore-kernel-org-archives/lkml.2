@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab2ITOOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:14:18 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:8481 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab2ITOOR (ORCPT
+	id S1755419Ab2ITOPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:15:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37371 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755368Ab2ITOPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:14:17 -0400
-X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
-   d="scan'208";a="14659991"
-Message-ID: <1348150422.24539.58.camel@oliverchick-Precision-WorkStation-T3400>
-Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk drivers
-From: Oliver Chick <oliver.chick@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Sep 2012 15:13:42 +0100
-In-Reply-To: <20120920134951.GC1998@localhost.localdomain>
-References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
-	 <505AF126.2050806@citrix.com>
-	 <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
-	 <505B1EB9020000780009CA6E@nat28.tlf.novell.com>
-	 <20120920134951.GC1998@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Sep 2012 10:15:51 -0400
+Date: Thu, 20 Sep 2012 07:15:30 -0700
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-50a011f6409e888d5f41343024d24885281f048c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        tglx@linutronix.de, borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        tglx@linutronix.de, borislav.petkov@amd.com
+In-Reply-To: <1348145034-16603-1-git-send-email-bp@amd64.org>
+References: <1348145034-16603-1-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] kprobes/x86: Move skip_singlestep up
+Git-Commit-ID: 50a011f6409e888d5f41343024d24885281f048c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 20 Sep 2012 07:15:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-20 at 14:49 +0100, Konrad Rzeszutek Wilk wrote:
-> On Thu, Sep 20, 2012 at 12:48:41PM +0100, Jan Beulich wrote:
-> > >>> On 20.09.12 at 13:30, Oliver Chick <oliver.chick@citrix.com> wrote:
-> > > The memory overhead, and fallback mode points are related:
-> > > -Firstly, it turns out that the overhead is actually 2.75MB, not 11MB
-> > > per device. I made a mistake (pointed out by Jan) as the maximum number
-> > > of requests that can fit into a single-page ring is 64, not 256.
-> > > -Clearly, this still scales linearly. So the problem of memory footprint
-> > > will occur with more VMs, or block devices.
-> > > -Whilst 2.75MB per device is probably acceptable (?), if we start using
-> > > multipage rings, then we might not want to have
-> > > BLKIF_MAX_PERS_REQUESTS_PER_DEVICE==__RING_SIZE, as this will cause the
-> > > memory overhead to increase. This is why I have implemented the
-> > > 'fallback' mode. With a multipage ring, it seems reasonable to want the
-> > > first $x$ grefs seen by blkback to be treated as persistent, and any
-> > > later ones to be non-persistent. Does that seem sensible?
-> > 
-> > From a resource usage pov, perhaps. But this will get the guest
-> > entirely unpredictable performance. Plus I don't think 11Mb of
-> 
-> Wouldn't it fall back to the older performance?
+Commit-ID:  50a011f6409e888d5f41343024d24885281f048c
+Gitweb:     http://git.kernel.org/tip/50a011f6409e888d5f41343024d24885281f048c
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Thu, 20 Sep 2012 14:43:54 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 20 Sep 2012 14:48:16 +0200
 
-I guess it would be a bit more complex than that. It would be worse than
-the new performance because the grefs that get processed by the
-'fallback' mode will cause TLB shootdowns. But any early grefs will
-still be processed by the persistent mode, so won't have shootdowns.
-Therefore, depending on the ratio of {persistent grants}:{non-persistent
-grants), allocated by blkfront, the performance will be somewhere
-inbetween the two extremes.
+kprobes/x86: Move skip_singlestep up
 
-I guess that the choice is between
-1) Compiling blk{front,back} with a pre-determined number of persistent
-grants, and failing if this limit is exceeded. This seems rather
-unflexible, as blk{front,back} must then both both use the same version,
-or you will get failures.
-2 (current setup)) Have a recommended maximum number of
-persistently-mapped pages, and going into a 'fallback' mode if blkfront
-exceeds this limit.
-3) Having blkback inform blkfront on startup as to how many grefs it is
-willing to persistently-map. We then hit the same question again though:
-what should be do if blkfront ignores this limit?
+I get this warning:
 
-> > _virtual_ space is unacceptable overhead in a 64-bit kernel. If
-> > you really want/need this in a 32-bit one, then perhaps some
-> > other alternatives would be needed (and persistent grants may
-> > not be the right approach there in the first place).
-> > 
-> > Jan
-> > 
+  arch/x86/kernel/kprobes.c:544:23: warning: ‘skip_singlestep’ declared ‘static’ but never defined
 
+on tip/auto-latest.
 
+Put the skip_singlestep function declaration up, in
+KPROBES_CAN_USE_FTRACE and drop the superfluous forward
+declaration.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1348145034-16603-1-git-send-email-bp@amd64.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/kprobes.c |   32 ++++++++++++++++----------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index b7c2a85..57916c0 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -541,8 +541,23 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
+ 	return 1;
+ }
+ 
++#ifdef KPROBES_CAN_USE_FTRACE
+ static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+-				      struct kprobe_ctlblk *kcb);
++				      struct kprobe_ctlblk *kcb)
++{
++	/*
++	 * Emulate singlestep (and also recover regs->ip)
++	 * as if there is a 5byte nop
++	 */
++	regs->ip = (unsigned long)p->addr + MCOUNT_INSN_SIZE;
++	if (unlikely(p->post_handler)) {
++		kcb->kprobe_status = KPROBE_HIT_SSDONE;
++		p->post_handler(p, regs, 0);
++	}
++	__this_cpu_write(current_kprobe, NULL);
++}
++#endif
++
+ /*
+  * Interrupts are disabled on entry as trap3 is an interrupt gate and they
+  * remain disabled throughout this function.
+@@ -1061,21 +1076,6 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ }
+ 
+ #ifdef KPROBES_CAN_USE_FTRACE
+-static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+-				      struct kprobe_ctlblk *kcb)
+-{
+-	/*
+-	 * Emulate singlestep (and also recover regs->ip)
+-	 * as if there is a 5byte nop
+-	 */
+-	regs->ip = (unsigned long)p->addr + MCOUNT_INSN_SIZE;
+-	if (unlikely(p->post_handler)) {
+-		kcb->kprobe_status = KPROBE_HIT_SSDONE;
+-		p->post_handler(p, regs, 0);
+-	}
+-	__this_cpu_write(current_kprobe, NULL);
+-}
+-
+ /* Ftrace callback handler for kprobes */
+ void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+ 				     struct ftrace_ops *ops, struct pt_regs *regs)
