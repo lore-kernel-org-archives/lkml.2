@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab2ITTcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 15:32:17 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38757 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab2ITTcP (ORCPT
+	id S1756126Ab2ITTeu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 15:34:50 -0400
+Received: from mail05-md.ns.itscom.net ([175.177.155.115]:42339 "EHLO
+	mail05-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab2ITTet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 15:32:15 -0400
-Date: Thu, 20 Sep 2012 15:32:12 -0400 (EDT)
-Message-Id: <20120920.153212.297605753294494829.davem@davemloft.net>
-To: will.deacon@arm.com
-Cc: ralf@linux-mips.org, Catalin.Marinas@arm.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mhocko@suse.cz, Steve.Capper@arm.com
-Subject: Re: [PATCH 2/3] mm: thp: Fix the update_mmu_cache() last argument
- passing in mm/huge_memory.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120920124401.GF4654@mudshark.cambridge.arm.com>
-References: <CAHkRjk7uCZZvA_Ubq7vgkAV2r-vMNHxs+hZmvf+99ks+4v7isA@mail.gmail.com>
-	<20120919155346.GB32398@linux-mips.org>
-	<20120920124401.GF4654@mudshark.cambridge.arm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Sep 2012 15:34:49 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v15)
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
+        mszeredi@suse.cz
+In-Reply-To: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
+References: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
+Date: Fri, 21 Sep 2012 04:34:44 +0900
+Message-ID: <9647.1348169684@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Deacon <will.deacon@arm.com>
-Date: Thu, 20 Sep 2012 13:44:01 +0100
 
-> Just to clarify: do you want a cast from pmd_t * to pte_t * or instead copy
-> the hugetlb code and pass ptes around instead of pmds? The latter is pretty
-> invasive...
+Thank you for CC-ing me.
 
-But will be necessary for SPARC64 and POWERPC where the hugetlb
-entries are encoded at the PTE level.
+Miklos Szeredi:
+> Please consider overlayfs for inclusion into 3.7.
+>
+> It's used by Ubuntu and by various other projects.  I regularly get emails
+> asking when it will be included in mainline.
+
+AUFS is in very same situation for years.
+Miklos, how do you think about this?
+<http://marc.info/?l=linux-kernel&m=123938533724484&w=2>
+Do you think UnionMount is totally gone?
+
+
+> Git tree is here:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v15
+
+Years ago, I also switched the AUFS development base (and releases) to
+GIT on SourceForge due to the request from Ubuntu people.
+
+
+J. R. Okajima
