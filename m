@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab2ITNwr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 09:52:47 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4989 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275Ab2ITNwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 09:52:45 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <505B1FA0.6030100@broadcom.com>
-Date: Thu, 20 Sep 2012 15:52:32 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827
- Thunderbird/15.0
+	id S1753008Ab2ITNxN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 09:53:13 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22988 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab2ITNxL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 09:53:11 -0400
+Date: Thu, 20 Sep 2012 09:52:59 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Oliver Chick <oliver.chick@citrix.com>
+Cc: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Persistent grant maps for xen blk drivers
+Message-ID: <20120920135257.GD1998@localhost.localdomain>
+References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
+ <20120919141138.GC12367@phenom.dumpdata.com>
+ <1348146745.24539.42.camel@oliverchick-Precision-WorkStation-T3400>
 MIME-Version: 1.0
-To: "Nico Schottelius" <nico-kernel20120920@schottelius.org>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: Out of memory on 3.5 kernels
-X-WSS-ID: 7C45C0A13PS1011649-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348146745.24539.42.camel@oliverchick-Precision-WorkStation-T3400>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Nico
+On Thu, Sep 20, 2012 at 02:12:25PM +0100, Oliver Chick wrote:
+> Thank you for all your useful feedback, Konrad.
+> 
+> I have made most of the changes you suggest. I will test them and
+> repost. I have made a few points below.
 
- > just while running, I got the following brcmsmac related error:
- >
- > [17336.572558] WARNING: at 
-drivers/net/wireless/brcm80211/brcmsmac/main.c:7968 
-brcms_c_wait_for_tx_completion+0x99/0xb0 [brcmsmac]()
- > [17336.572562] Hardware name: MacBookAir4,2
- > [17336.572565] Modules linked in: sha256_generic snd_hda_codec_hdmi 
-snd_hda_codec_cirrus ext4 jbd2 mbcache arc4 uvcvideo brcmsmac 
-videobuf2_vmalloc videobuf2_memops cordic brcmutil btusb bluetooth i915 
-videobuf2_core mac80211 videodev crc16 acpi_cpufreq snd_hda_intel media 
-i2c_algo_bit cfg80211 mperf drm_kms_helper snd_hda_codec rfkill joydev 
-bcm5974 iTCO_wdt iTCO_vendor_support i2c_i801 intel_agp lpc_ich applesmc 
-evdev microcode drm coretemp input_polldev pcspkr intel_gtt mfd_core 
-i2c_core processor bcma snd_hwdep video button battery apple_bl mei ac 
-snd_pcm_oss snd_mixer_oss snd_pcm snd_page_alloc snd_timer snd soundcore 
-kvm_intel kvm nfs nfs_acl lockd auth_rpcgss sunrpc fscache autofs4 jfs 
-xts gf128mul dm_crypt dm_mod sd_mod pata_acpi ata_generic hid_generic 
-usb_storage hid_apple usbhid hid uhci_hcd aesni_intel aes_x86_64 
-aes_generic ghash_clmulni_intel cryptd crc32c_intel ata_piix libata 
-scsi_mod ehci_hcd usbcore usb_common
- > [17336.572716] Pid: 27714, comm: kworker/u:1 Not tainted 3.5.4-1-ARCH #1
- > [17336.572719] Call Trace:
- > [17336.572734]  [<ffffffff81051a3f>] warn_slowpath_common+0x7f/0xc0
- > [17336.572743]  [<ffffffff81051a9a>] warn_slowpath_null+0x1a/0x20
- > [17336.572759]  [<ffffffffa063bd29>] 
-brcms_c_wait_for_tx_completion+0x99/0xb0 [brcmsmac]
- > [17336.572769]  [<ffffffffa062e1bb>] brcms_ops_flush+0x3b/0x60 [brcmsmac]
+Great. Looking forward to your next patch. Also pls include it
+as an attachment as I could not apply it last time.. Not sure if
+that is something with your mailer - but attachments usually survive
+any MUA mangling.
+> > > +                             page_to_pfn(pers_gnt->page));
+> > 
+> > Would it make sense to cache this in the 'pers_gnt' structure?
+> 
+> As far as I can tell, we only need this value when mapping, and
+> unmapping. So if we cache it, we will use it a maximum of one time. I
+> think it's cheap to calculate. Am I right?
 
-This issue is bugging me for quite a while and some patch do patch up 
-the issue, but it is still bleeding. Nasty one to get to the root cause 
-of it, but I am testing my pitbull mentality on it ;-)
+Then lets not cache it.
+> > > @@ -688,7 +804,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+> > >       for (i = 0; i < nseg; i++) {
+> > >               while ((bio == NULL) ||
+> > >                      (bio_add_page(bio,
+> > > -                                  blkbk->pending_page(pending_req, i),
+> > 
+> > Can we get rid of pending_page macro?
+> 
+> Unfortunately not, it is still used in the non-persistent mode to
+> populate the pages[].
 
-Gr. AvS
+Fair enough
+> > > +                             memcpy(shared_data + sg->offset,
+> > > +                                    bvec_data   + sg->offset,
+> > > +                                    sg->length);
+> > 
+> > Do we need to worry about it spilling over a page? Should we check that
+> > sg>offset + sg->length < PAGE_SIZE ?
+> 
+> I agree, this is probably a worthwhile thing to check.
 
+> 
+> > 
+> > Also this would imply that based on the offset (so say it is 3999) that the old data (0->3998)
+> > might be still there - don't know how important that is?
+> 
+> This is true. I spoke with IanC about this, and we *think* that this is
+> ok. Any old data that is there will have already been given to blkback,
+> so we're not really leaking data that we shouldn't be. 
+
+Put a comment in saying that. In case in the future we want to share
+the persistent grants with other domains, we would need to address this.
