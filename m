@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab2ITPiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 11:38:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22594 "EHLO mga11.intel.com"
+	id S1755961Ab2ITPl3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 11:41:29 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:57952 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754880Ab2ITPiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 11:38:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,454,1344236400"; 
-   d="scan'208";a="224642576"
-Date: Thu, 20 Sep 2012 23:32:09 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>, <andi@firstfloor.org>,
-        <namhyung@kernel.org>, <dsahern@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] perf tool: Add a global variable "const char
- *input_name"
-Message-ID: <20120920233209.7008669e@feng-i7>
-In-Reply-To: <20120920150551.GD26278@infradead.org>
-References: <1348150779-17707-1-git-send-email-feng.tang@intel.com>
-	<20120920150551.GD26278@infradead.org>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751062Ab2ITPl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 11:41:28 -0400
+Date: Thu, 20 Sep 2012 11:41:11 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Vasiliy Kulikov <segooon@gmail.com>
+Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
+Message-ID: <20120920154111.GT1560@cmpxchg.org>
+References: <20120919235156.GC13234@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120919235156.GC13234@bbox>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Sep 2012 12:05:51 -0300
-Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-
-> Em Thu, Sep 20, 2012 at 10:19:39PM +0800, Feng Tang escreveu:
-> > Currently many perf ommands annotate/evlist/report/script/lock etc
-> > all support "-i" option to chose a specific perf data, and all
-> > of them create a local "input_name" to save the file name for
-> > that perf data.
-> > 
-> > So adding a global variable could unify all those local ones, and
-> > it will also be useful for other codes which need to know the file name.
+On Thu, Sep 20, 2012 at 08:51:56AM +0900, Minchan Kim wrote:
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Thu, 20 Sep 2012 08:39:52 +0900
+> Subject: [PATCH] mm: revert 0def08e3, mm/mempolicy.c: check return code of
+>  check_range
 > 
-> But I think the input_name should be passed as a parameter to whoever
-> needs it. Think about 'perf diff', for instance, it deals with two
-> perf.data files.
-
-Yes, when I wrote the patch, I checked all "perf_session__new()" calls, and
-found "perf diff" uses the "input_new" and "input_old", so I thought it
-should be immune to this change :)
-
-The reason I came up with this patch is, when I rewrote the script browser
-patch, I need to know this "input_name" to run script's report func on,
-but IIUC currently this info is only saved in struct perf_session, and in
-the browser stage (report/annotate), the perf_session is already phased
-out and I don't know how to get a reference for the perf_session to get
-the "input_name" 
-
+> This patch reverts 0def08e3 because check_range can't fail in
+> migrate_to_node with considering current usecases.
 > 
-> In general I think we should _remove_ more globals :-)
+> Quote from Johannes
+> "
+> I think it makes sense to revert.  Not because of the semantics, but I
+> just don't see how check_range() could even fail for this callsite:
+> 
+> 1. we pass mm->mmap->vm_start in there, so we should not fail due to
+>    find_vma()
+> 
+> 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
+>    and so can not fail
+> 
+> 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
+>    continue until addr == end, so we never fail with -EIO
+> "
+> 
+> And I add new VM_BUG_ON for checking migrate_to_node's future usecase
+> which might pass to MPOL_MF_STRICT.
+> 
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Vasiliy Kulikov <segooon@gmail.com>
+> Suggested-by: Johannes Weiner <hannes@cmpxchg.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  mm/mempolicy.c |    9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 3d64b36..9ec87bd 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -946,15 +946,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+>  	nodemask_t nmask;
+>  	LIST_HEAD(pagelist);
+>  	int err = 0;
+> -	struct vm_area_struct *vma;
+>  
+>  	nodes_clear(nmask);
+>  	node_set(source, nmask);
+>  
+> -	vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+> +	/*
+> +	 * Collect migrate pages and it shoudn't be failed.
+> +	 */
+> +	VM_BUG_ON(flags & MPOL_MF_STRICT);
 
-Understood.
+Adding a check and a comment is a good idea, but I'm not a big fan of
+checking for MPOL_MF_STRICT in particular because it's one of the
+invalid inputs, and so you need to extend this check when somebody
+extends the spectrum of invalid inputs.  I would much prefer checking
+directly for !(flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) instead, which
+would also make the possible inputs apparent without having to chase
+up the call chain to find out what is usually passed in.
 
-Thanks,
-Feng
+And how about
+
+/*
+ * This does not "check" the range but isolates all pages that
+ * need migration.  Between passing in the full user address
+ * space range and MPOL_MF_DISCONTIG_OK, this call can not fail.
+ */
+
+?
+
+> +	check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+>  			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
+> -	if (IS_ERR(vma))
+> -		return PTR_ERR(vma);
+>  
+>  	if (!list_empty(&pagelist)) {
+>  		err = migrate_pages(&pagelist, new_node_page, dest,
+> -- 
+> 1.7.9.5
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
