@@ -1,216 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab2IUScZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 14:32:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071Ab2IUScW (ORCPT
+	id S1757559Ab2IUSce (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 14:32:34 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:36613 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757533Ab2IUSc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 14:32:22 -0400
-Date: Fri, 21 Sep 2012 11:32:17 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/16] memcg: infrastructure to match an allocation
- to the right cache
-Message-ID: <20120921183217.GH7264@google.com>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
- <1347977530-29755-7-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347977530-29755-7-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 21 Sep 2012 14:32:26 -0400
+From: morten.rasmussen@arm.com
+To: paulmck@linux.vnet.ibm.com, pjt@google.com, peterz@infradead.org,
+        suresh.b.siddha@intel.com
+Cc: morten.rasmussen@arm.com, linaro-sched-sig@lists.linaro.org,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 00/10] sched: Task placement for heterogeneous MP systems
+Date: Fri, 21 Sep 2012 19:32:15 +0100
+Message-Id: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-OriginalArrivalTime: 21 Sep 2012 18:32:22.0991 (UTC) FILETIME=[70F5B5F0:01CD9827]
+X-MC-Unique: 112092119322400901
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8LIWiKI011328
 
-On Tue, Sep 18, 2012 at 06:12:00PM +0400, Glauber Costa wrote:
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 04851bb..1cce5c3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -339,6 +339,11 @@ struct mem_cgroup {
->  #ifdef CONFIG_INET
->  	struct tcp_memcontrol tcp_mem;
->  #endif
-> +
-> +#ifdef CONFIG_MEMCG_KMEM
-> +	/* Slab accounting */
-> +	struct kmem_cache *slabs[MAX_KMEM_CACHE_TYPES];
-> +#endif
+From: Morten Rasmussen <morten.rasmussen@arm.com>
 
-Bah, 400 entry array in struct mem_cgroup.  Can't we do something a
-bit more flexible?
+Hi Paul, Paul, Peter, Suresh, linaro-sched-sig, and LKML,
 
-> +static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-> +{
-> +	char *name;
-> +	struct dentry *dentry;
-> +
-> +	rcu_read_lock();
-> +	dentry = rcu_dereference(memcg->css.cgroup->dentry);
-> +	rcu_read_unlock();
-> +
-> +	BUG_ON(dentry == NULL);
-> +
-> +	name = kasprintf(GFP_KERNEL, "%s(%d:%s)",
-> +	    cachep->name, css_id(&memcg->css), dentry->d_name.name);
+As a follow-up on my Linux Plumbers Conference talk about my experiments with
+scheduling on heterogeneous systems I'm posting a proof-of-concept patch set
+with my modifications. The intention behind the modifications is to tweak
+scheduling behaviour to only use fast (and power hungry) cores when it is
+necessary and also improve performance consistency. Without the modifications
+it is more or less random where tasks are scheduled and so is the execution
+time.
 
-Maybe including full path is better, I don't know.
+I'm seeing good improvements on performance consistency for web browsing on
+Android using Bbench <http://www.gem5.org/Bbench> on the ARM big.LITTLE TC2
+chip, which has two fast cores (Cortex-A15) and three power-efficient cores
+(Cortex-A7). The total execution time numbers below are for Androids
+SurfaceFlinger process is key for page rendering performance. The average
+execution time is lower with the patches enabled and the standard deviation is
+much smaller. Similar improvements can be seen for the Android.Browser and
+WebViewCoreThread processes.
 
-> +	return name;
-> +}
-...
->  void __init memcg_init_kmem_cache(void)
-> @@ -665,6 +704,170 @@ static void disarm_kmem_keys(struct mem_cgroup *memcg)
->  	 */
->  	WARN_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
->  }
-> +
-> +static DEFINE_MUTEX(memcg_cache_mutex);
+Total execution time statistics based on 50 runs.
 
-Blank line missing.  Or if it's used inside memcg_create_kmem_cache()
-only move it inside the function?
+SurfaceFlinger  SMP kernel [s]  HMP modifications [s]
+------------------------------------------------------
+Average         14.617          11.012
+St. Dev.         4.577           0.902
+10% Pctl.        9.343          10.783
+90% Pctl.       18.743          11.695
 
-> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-> +						  struct kmem_cache *cachep)
-> +{
-> +	struct kmem_cache *new_cachep;
-> +	int idx;
-> +
-> +	BUG_ON(!memcg_can_account_kmem(memcg));
+Unfortunately, I cannot share power-efficiency numbers at this stage.
 
-WARN_ON_ONCE() generally preferred.
+This patch set introduces proof-of-concept scheduler modifications which
+attempt to improve scheduling decisions on heterogeneous multi-processor
+systems (HMP) such as ARM big.LITTLE systems. The patch set relies on the
+entity load-tracking re-work patch set by Paul Turner:
 
-> +	idx = cachep->memcg_params.id;
+<https://lkml.org/lkml/2012/8/23/267>
 
-Ah, okay so the id is assigned to the "base" cache.  Maybe explain it
-somewhere?
+The modifications attempt to migrate tasks between cores with different
+compute capacity depending on the tracked load and priority. The aim is
+to only use fast cores for tasks which really need the extra performance
+and thereby improve power consumption by running everything else on the
+slow cores.
 
-> +	mutex_lock(&memcg_cache_mutex);
-> +	new_cachep = memcg->slabs[idx];
-> +	if (new_cachep)
-> +		goto out;
-> +
-> +	new_cachep = kmem_cache_dup(memcg, cachep);
-> +
-> +	if (new_cachep == NULL) {
-> +		new_cachep = cachep;
-> +		goto out;
-> +	}
-> +
-> +	mem_cgroup_get(memcg);
-> +	memcg->slabs[idx] = new_cachep;
-> +	new_cachep->memcg_params.memcg = memcg;
-> +out:
-> +	mutex_unlock(&memcg_cache_mutex);
-> +	return new_cachep;
-> +}
-> +
-> +struct create_work {
-> +	struct mem_cgroup *memcg;
-> +	struct kmem_cache *cachep;
-> +	struct list_head list;
-> +};
-> +
-> +/* Use a single spinlock for destruction and creation, not a frequent op */
-> +static DEFINE_SPINLOCK(cache_queue_lock);
-> +static LIST_HEAD(create_queue);
-> +
-> +/*
-> + * Flush the queue of kmem_caches to create, because we're creating a cgroup.
-> + *
-> + * We might end up flushing other cgroups' creation requests as well, but
-> + * they will just get queued again next time someone tries to make a slab
-> + * allocation for them.
-> + */
-> +void memcg_flush_cache_create_queue(void)
-> +{
-...
-> +static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
-> +				       struct kmem_cache *cachep)
-> +{
-> +	struct create_work *cw;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&cache_queue_lock, flags);
-> +	list_for_each_entry(cw, &create_queue, list) {
-> +		if (cw->memcg == memcg && cw->cachep == cachep) {
-> +			spin_unlock_irqrestore(&cache_queue_lock, flags);
-> +			return;
-> +		}
-> +	}
-> +	spin_unlock_irqrestore(&cache_queue_lock, flags);
-> +
-> +	/* The corresponding put will be done in the workqueue. */
-> +	if (!css_tryget(&memcg->css))
-> +		return;
-> +
-> +	cw = kmalloc(sizeof(struct create_work), GFP_NOWAIT);
-> +	if (cw == NULL) {
-> +		css_put(&memcg->css);
-> +		return;
-> +	}
-> +
-> +	cw->memcg = memcg;
-> +	cw->cachep = cachep;
-> +	spin_lock_irqsave(&cache_queue_lock, flags);
-> +	list_add_tail(&cw->list, &create_queue);
-> +	spin_unlock_irqrestore(&cache_queue_lock, flags);
-> +
-> +	schedule_work(&memcg_create_cache_work);
-> +}
+The patch introduces hmp_domains to represent the different types of cores
+that are available on the given platform. Multiple (>2) hmp_domains is
+supported but not tested. hmp_domains must be set up by platform code and
+the patch set includes patches for ARM platforms using device-tree.
 
-Why create your own worklist and flush mechanism?  Just embed a work
-item in create_work and use a dedicated workqueue for flushing.
+The patches intentionally try to avoid modifying the existing code paths
+as much as possible. The aim is to experiment with HMP scheduling and get
+the overall policy right before integrating it properly with the existing
+load-balancer.
 
-> +/*
-> + * Return the kmem_cache we're supposed to use for a slab allocation.
-> + * We try to use the current memcg's version of the cache.
-> + *
-> + * If the cache does not exist yet, if we are the first user of it,
-> + * we either create it immediately, if possible, or create it asynchronously
-> + * in a workqueue.
-> + * In the latter case, we will let the current allocation go through with
-> + * the original cache.
-> + *
-> + * Can't be called in interrupt context or from kernel threads.
-> + * This function needs to be called with rcu_read_lock() held.
-> + */
-> +struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
-> +					  gfp_t gfp)
-> +{
-> +	struct mem_cgroup *memcg;
-> +	int idx;
-> +	struct task_struct *p;
-> +
-> +	if (cachep->memcg_params.memcg)
-> +		return cachep;
-> +
-> +	idx = cachep->memcg_params.id;
-> +	VM_BUG_ON(idx == -1);
-> +
-> +	rcu_read_lock();
-> +	p = rcu_dereference(current->mm->owner);
-> +	memcg = mem_cgroup_from_task(p);
-> +	rcu_read_unlock();
-> +
-> +	if (!memcg_can_account_kmem(memcg))
-> +		return cachep;
-> +
-> +	if (memcg->slabs[idx] == NULL) {
-> +		memcg_create_cache_enqueue(memcg, cachep);
+Morten
 
-Do we want to wait for the work item if @gfp allows?
+Morten Rasmussen (10):
+  sched: entity load-tracking load_avg_ratio
+  sched: Task placement for heterogeneous systems based on task
+    load-tracking
+  sched: Forced task migration on heterogeneous systems
+  sched: Introduce priority-based task migration filter
+  ARM: Add HMP scheduling support for ARM architecture
+  ARM: sched: Use device-tree to provide fast/slow CPU list for HMP
+  ARM: sched: Setup SCHED_HMP domains
+  sched: Add ftrace events for entity load-tracking
+  sched: Add HMP task migration ftrace event
+  sched: SCHED_HMP multi-domain task migration control
 
-Thanks.
+ arch/arm/Kconfig                |   46 +++++
+ arch/arm/include/asm/topology.h |   32 +++
+ arch/arm/kernel/topology.c      |   91 ++++++++
+ include/linux/sched.h           |   11 +
+ include/trace/events/sched.h    |  153 ++++++++++++++
+ kernel/sched/core.c             |    4 +
+ kernel/sched/fair.c             |  434 ++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/sched.h            |    9 +
+ 8 files changed, 779 insertions(+), 1 deletion(-)
 
 -- 
-tejun
+1.7.9.5
+
+
