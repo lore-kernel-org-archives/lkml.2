@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab2IUBCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 21:02:14 -0400
-Received: from nm21.bullet.mail.ird.yahoo.com ([212.82.108.136]:33785 "HELO
-	nm21.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753351Ab2IUBCN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 21:02:13 -0400
-X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Sep 2012 21:02:13 EDT
-X-Yahoo-Newman-Id: 765765.47838.bm@smtp148.mail.ird.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: d4CXAbIVM1lA4Xay.nzMmQppNtB1HnuwDdPrgs2HnItp9_O
- KHeVrQxZmb8OitRC6EoH0jvKly.9U8_LntWKuUcx8XnTTDMvpHBoGipzODFM
- 6X2HKpFJ9L7ueD4V6b3TAjzJzxAtbmJrSSJCtgDWOkoqs5ifd0GX2DHBUkDR
- 3V5SnP5ujv2qFUzIOguAFNB6iodvap1qEEL5p3QUgL.e3aRYE5sSWrfyNfdr
- igvKw2oV852yoqO.xAMv65deU35ouRkjJJkYaUiQOpZE9vIJ5PWtzRgOhDKS
- cgshV6tv9k6yKi4LusRs1plztykAcyLLAhnt48OzixSuBHK7UucyerEtTnyN
- z0khY7_59U2anOrLDYgxnx4gqUkzJm1m_aJc.a.nAOpbrXYSkU6ICVvKyCfi
- 6nocD_0AOQXeKl7I9MYyo
-X-Yahoo-SMTP: 5Vuzu2WswBCxMnJ0hjKohBcp6M6Es6bt5AQ-
-Message-ID: <505BBB4B.3060508@yahoo.com>
-Date: Fri, 21 Sep 2012 01:56:43 +0100
-From: Paul Parsons <lost.distance@yahoo.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1753026Ab2IUBIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 21:08:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467Ab2IUBIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 21:08:23 -0400
+Message-ID: <505BBE03.80507@redhat.com>
+Date: Thu, 20 Sep 2012 20:08:19 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: cbou@mail.ru, dwmw2@infradead.org
-CC: philipp.zabel@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] pda_power: remove ac_draw_failed goto and label
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Namhyung Kim <namhyung@kernel.org>
+CC: kernel list <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] perf: Fix parallel build
+References: <505BAC5D.9020909@redhat.com> <877groz0hh.fsf@sejong.aot.lge.com>
+In-Reply-To: <877groz0hh.fsf@sejong.aot.lge.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A previous patch added the ac_draw_failed goto and label to
-pda_power_probe(). The goto would be invoked after a failed call to
-regulator_get().
+On 9/20/12 7:24 PM, Namhyung Kim wrote:
+> Hi Eric,
+> 
+> On Thu, 20 Sep 2012 18:53:01 -0500, Eric Sandeen wrote:
+>> Parallel builds of perf were failing for me on a 32p box, with:
+>>
+>>     * new build flags or prefix
+>> util/pmu.l:7:23: error: pmu-bison.h: No such file or directory
+>>
+>> ...
+>>
+>> make: *** [util/pmu-flex.o] Error 1
+>> make: *** Waiting for unfinished jobs....
+>>
+>> This can pretty quickly be seen by adding a sleep in front of
+>> the bison call in tools/perf/Makefile and running make -j4 on a
+>> smaller box:
+>>
+>> 	sleep 10; $(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+>>
+>> Adding the following dependency fixes it for me:
+>>
+>> Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+>> ---
+>>
+>> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+>> index bad726a..6c389d9 100644
+>> --- a/tools/perf/Makefile
+>> +++ b/tools/perf/Makefile
+>> @@ -219,7 +219,7 @@ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l
+>>  $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+>>  	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
+>>  
+>> -$(OUTPUT)util/pmu-flex.c: util/pmu.l
+>> +$(OUTPUT)util/pmu-flex.c: util/pmu.l util/pmu-bison.c
+>>  	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+>>  
+>>  $(OUTPUT)util/pmu-bison.c: util/pmu.y
+> 
+> I guess the $(OUTPUT)util/parse-events-flex.c: line has the same
+> problem.  Could you check and submit a patch for that too?
+> 
+> Thanks,
+> Namhyung
+> 
 
-However the way ac_draw is used - always after a check for NULL -
-suggests that a failed call to regulator_get() was not fatal.
+Whoops you are right, will resent V2 shortly, thanks.
 
-This patch removes the ac_draw_failed goto and label, partly reverting
-the previous patch.
-
-This patch also removes the assignment of an error code to ret after a
-failed call to regulator_get(), since the error code is now never used.
-
-Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
-Cc: Philipp Zabel <philipp.zabel@gmail.com>
----
-  drivers/power/pda_power.c |    3 ---
-  1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
-index d3be834d..7df7c5f 100644
---- a/drivers/power/pda_power.c
-+++ b/drivers/power/pda_power.c
-@@ -284,9 +284,7 @@ static int pda_power_probe(struct platform_device *pdev)
-  	ac_draw = regulator_get(dev, "ac_draw");
-  	if (IS_ERR(ac_draw)) {
-  		dev_dbg(dev, "couldn't get ac_draw regulator\n");
--		ret = PTR_ERR(ac_draw);
-  		ac_draw = NULL;
--		goto ac_draw_failed;
-  	}
-
-  	update_status();
-@@ -416,7 +414,6 @@ ac_supply_failed:
-  		regulator_put(ac_draw);
-  		ac_draw = NULL;
-  	}
--ac_draw_failed:
-  	if (pdata->exit)
-  		pdata->exit(dev);
-  init_failed:
--- 
-1.7.8.6
-
+-Eric
