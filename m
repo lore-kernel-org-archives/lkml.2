@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab2IUOit (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 10:38:49 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49183 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754910Ab2IUOir (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 10:38:47 -0400
-Date: Fri, 21 Sep 2012 10:27:33 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Jan Beulich <JBeulich@suse.com>, Oliver Chick <oliver.chick@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk drivers
-Message-ID: <20120921142733.GB3389@phenom.dumpdata.com>
-References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
- <505AF126.2050806@citrix.com>
- <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
- <505B1EB9020000780009CA6E@nat28.tlf.novell.com>
- <505C5C54.4060100@citrix.com>
+	id S1755707Ab2IUOjw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 10:39:52 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:2925 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755200Ab2IUOjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 10:39:51 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <505C7C27.2050108@broadcom.com>
+Date: Fri, 21 Sep 2012 16:39:35 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827
+ Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505C5C54.4060100@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: "Wei Ni" <wni@nvidia.com>
+cc: swarren@wwwdotorg.org, krakesh@nvidia.com, ldewangan@nvidia.com,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] ARM: tegra: enable brcmfmac in defconfig
+References: <1348217700-12309-1-git-send-email-wni@nvidia.com>
+ <1348217700-12309-6-git-send-email-wni@nvidia.com>
+In-Reply-To: <1348217700-12309-6-git-send-email-wni@nvidia.com>
+X-WSS-ID: 7C42A47A3MK37091618-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 01:23:48PM +0100, David Vrabel wrote:
-> On 20/09/12 12:48, Jan Beulich wrote:
-> >>>> On 20.09.12 at 13:30, Oliver Chick <oliver.chick@citrix.com> wrote:
-> >> The memory overhead, and fallback mode points are related:
-> >> -Firstly, it turns out that the overhead is actually 2.75MB, not 11MB
-> >> per device. I made a mistake (pointed out by Jan) as the maximum number
-> >> of requests that can fit into a single-page ring is 64, not 256.
-> >> -Clearly, this still scales linearly. So the problem of memory footprint
-> >> will occur with more VMs, or block devices.
-> >> -Whilst 2.75MB per device is probably acceptable (?), if we start using
-> >> multipage rings, then we might not want to have
-> >> BLKIF_MAX_PERS_REQUESTS_PER_DEVICE==__RING_SIZE, as this will cause the
-> >> memory overhead to increase. This is why I have implemented the
-> >> 'fallback' mode. With a multipage ring, it seems reasonable to want the
-> >> first $x$ grefs seen by blkback to be treated as persistent, and any
-> >> later ones to be non-persistent. Does that seem sensible?
-> > 
-> >>From a resource usage pov, perhaps. But this will get the guest
-> > entirely unpredictable performance. Plus I don't think 11Mb of
-> > _virtual_ space is unacceptable overhead in a 64-bit kernel. If
-> > you really want/need this in a 32-bit one, then perhaps some
-> > other alternatives would be needed (and persistent grants may
-> > not be the right approach there in the first place).
-> 
-> It's not just virtual space.  blkback in pvops kernels allocates its
-> pages from the balloon and if there aren't enough ballooned out pages it
-> has to allocate real pages (releasing the MFN back to Xen).
-> 
-> Classic kernels didn't need to do this as there was an API for allocate
-> new "empty" struct page's that get mapped into kernel space.
+On 09/21/2012 10:55 AM, Wei Ni wrote:
+> New options enabled:
+> * CFG80211_WEXT: (dependency)
+> * BRCMFMAC: wlan driver, enable as module.
+>
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> ---
+>   arch/arm/configs/tegra_defconfig |    2 ++
+>   1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+> index adcf3c2..04b18ea 100644
+> --- a/arch/arm/configs/tegra_defconfig
+> +++ b/arch/arm/configs/tegra_defconfig
+> @@ -73,6 +73,7 @@ CONFIG_BT_BNEP=y
+>   CONFIG_BT_HIDP=y
+>   CONFIG_BT_HCIBTUSB=m
+>   CONFIG_CFG80211=y
+> +CONFIG_CFG80211_WEXT=y
 
-Can we ressurect/implement that in the new pvops? We could use the memory
-hotplug mechanism to allocate "non-existent" memory. 
-> 
-> David
+Any particular reason for enabling this? The driver does not 
+specifically need it. The option only allows use of WEXT dependent 
+user-space tools like iwconfig and iwlist. At least it is not needed by 
+brcmfmac driver hence it does not select it.
+
+You indicate there is a dependency. Could you elaborate?
+
+Gr. AvS
+
+
