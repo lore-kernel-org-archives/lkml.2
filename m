@@ -1,77 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531Ab2IUVck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 17:32:40 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64861 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab2IUVci (ORCPT
+	id S932921Ab2IUVgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 17:36:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42818 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378Ab2IUVf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 17:32:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <2737921.JXTsrgJ0N6@dtor-d630.eng.vmware.com>
-References: <1348163523-2062-1-git-send-email-dh.herrmann@googlemail.com>
-	<CANq1E4Q-35oF11Dz6mbNvNYpWYSfOgCXW_E4ZwJ2neZB8p_64w@mail.gmail.com>
-	<CANq1E4Rcj0UsgQr=0sohXn8rXpY92PMnHAYwXNpsPPFULHQsrw@mail.gmail.com>
-	<2737921.JXTsrgJ0N6@dtor-d630.eng.vmware.com>
-Date: Fri, 21 Sep 2012 23:32:37 +0200
-Message-ID: <CANq1E4RJk5f0nVWeWvGrGVKzCrK1A3Gue3Z_3fkb91CX_LNj4g@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] input: Dynamic Minor Numbers
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Sep 2012 17:35:58 -0400
+Date: Fri, 21 Sep 2012 14:35:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/9] mm: compaction: Acquire the zone->lock as late as
+ possible
+Message-Id: <20120921143557.fe490819.akpm@linux-foundation.org>
+In-Reply-To: <1348224383-1499-7-git-send-email-mgorman@suse.de>
+References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
+	<1348224383-1499-7-git-send-email-mgorman@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry
+On Fri, 21 Sep 2012 11:46:20 +0100
+Mel Gorman <mgorman@suse.de> wrote:
 
-On Fri, Sep 21, 2012 at 10:51 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Friday, September 21, 2012 09:18:00 PM David Herrmann wrote:
->> Hi Dmitry
->>
->> On Fri, Sep 21, 2012 at 11:22 AM, David Herrmann
->>
->> <dh.herrmann@googlemail.com> wrote:
->> > Hi Dmitry
->> >
->> > On Fri, Sep 21, 2012 at 10:07 AM, Dmitry Torokhov
->> >
->> > <dmitry.torokhov@gmail.com> wrote:
->> >> Thank you very much for working on this, unfortunately your patch extends
->> >> the existing infrastructure handling of character devices in input core,
->> >> which is quite rigid and sub-optimal.
->> >>
->> >> For a while now I wanted to stop input core from pre-creating character
->> >> devices and multiplexing file operations and instead push more chardev
->> >> handling tasks into individual input handlers and make they more
->> >> independent from input core. So while I won't be taking your patch as is
->> >> it was a great motivator to finally do something about current
->> >> limitation and I would appreciate if you could take a look at the patch
->> >> below and see if you have any issues with it.
->> >
->> > I didn't know why we did that, anyway. But I tried to keep that logic,
->> > even though it is really weird. So I am quite glad that you fixed it.
->>
->> Sorry, compiling a kernel takes 44m here so I haven't had time earlier
->> this day. But I just recompiled with your patch and it works like a
->> charm. I have attached output of "ls -la /dev/input" with 900 uinput
->> devices. Performance does suck but that is definitely another issue.
+> Compactions free scanner acquires the zone->lock when checking for PageBuddy
+> pages and isolating them. It does this even if there are no PageBuddy pages
+> in the range.
+> 
+> This patch defers acquiring the zone lock for as long as possible. In the
+> event there are no free pages in the pageblock then the lock will not be
+> acquired at all which reduces contention on zone->lock.
 >
-> Could you elaborate a bit on this?
+> ...
+>
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -93,6 +93,28 @@ static inline bool compact_trylock_irqsave(spinlock_t *lock,
+>  	return compact_checklock_irqsave(lock, flags, false, cc);
+>  }
+>  
+> +/* Returns true if the page is within a block suitable for migration to */
+> +static bool suitable_migration_target(struct page *page)
+> +{
+> +
 
-It takes like 2s to create 100 devices. Ok, that's about 500 syscalls.
-But still, 2s seemed pretty much to me. But that's probably related to
-uinput. 1000 devices take like 10s here.
-Also the xserver crashes when connecting more than 40 or 50 devices.
-It does print "too many devices; ignoring" but there seems to be some
-error-path bug.
-I haven't noticed any runtime kernel bugs or runtime
-performance-drops, though. So as I said, there are some issues, that
-need to be solved, but they are not related to input-core. (Also,
-creating 1000 uinput devices doesn't seem like a use-case that we
-should try to optimize).
+stray newline
 
-Regards
-David
+> +	int migratetype = get_pageblock_migratetype(page);
+> +
+> +	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
+> +	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
+> +		return false;
+> +
+> +	/* If the page is a large free page, then allow migration */
+> +	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+> +		return true;
+> +
+> +	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
+> +	if (migrate_async_suitable(migratetype))
+> +		return true;
+> +
+> +	/* Otherwise skip the block */
+> +	return false;
+> +}
+> +
+>
+> ...
+>
+> @@ -168,23 +193,38 @@ static unsigned long isolate_freepages_block(unsigned long blockpfn,
+>  		int isolated, i;
+>  		struct page *page = cursor;
+>  
+> -		if (!pfn_valid_within(blockpfn)) {
+> -			if (strict)
+> -				return 0;
+> -			continue;
+> -		}
+> +		if (!pfn_valid_within(blockpfn))
+> +			goto strict_check;
+>  		nr_scanned++;
+>  
+> -		if (!PageBuddy(page)) {
+> -			if (strict)
+> -				return 0;
+> -			continue;
+> -		}
+> +		if (!PageBuddy(page))
+> +			goto strict_check;
+> +
+> +		/*
+> +		 * The zone lock must be held to isolate freepages. This
+> +		 * unfortunately this is a very coarse lock and can be
+
+this this
+
+> +		 * heavily contended if there are parallel allocations
+> +		 * or parallel compactions. For async compaction do not
+> +		 * spin on the lock and we acquire the lock as late as
+> +		 * possible.
+> +		 */
+> +		locked = compact_checklock_irqsave(&cc->zone->lock, &flags,
+> +								locked, cc);
+> +		if (!locked)
+> +			break;
+> +
+> +		/* Recheck this is a suitable migration target under lock */
+> +		if (!strict && !suitable_migration_target(page))
+> +			break;
+> +
+> +		/* Recheck this is a buddy page under lock */
+> +		if (!PageBuddy(page))
+> +			goto strict_check;
+>  
+>  		/* Found a free page, break it into order-0 pages */
+>  		isolated = split_free_page(page);
+>  		if (!isolated && strict)
+> -			return 0;
+> +			goto strict_check;
+>  		total_isolated += isolated;
+>  		for (i = 0; i < isolated; i++) {
+>  			list_add(&page->lru, freelist);
+> @@ -196,9 +236,23 @@ static unsigned long isolate_freepages_block(unsigned long blockpfn,
+>  			blockpfn += isolated - 1;
+>  			cursor += isolated - 1;
+>  		}
+> +
+> +		continue;
+> +
+> +strict_check:
+> +		/* Abort isolation if the caller requested strict isolation */
+> +		if (strict) {
+> +			total_isolated = 0;
+> +			goto out;
+> +		}
+>  	}
+>  
+>  	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
+> +
+> +out:
+> +	if (locked)
+> +		spin_unlock_irqrestore(&cc->zone->lock, flags);
+> +
+>  	return total_isolated;
+>  }
+
+A a few things about this function.
+
+Would it be cleaner if we did
+
+	if (!strict) {
+		if (!suitable_migration_target(page))
+			break;
+	} else {
+		if (!PageBuddy(page))
+			goto strict_check;
+	}
+
+and then remove the test of `strict' from strict_check (which then
+should be renamed)?
+
+Which perhaps means that the whole `strict_check' block can go away:
+
+	if (!strict) {
+		if (!suitable_migration_target(page))
+			break;
+	} else {
+		if (!PageBuddy(page)) {
+			total_isolated = 0;
+			goto out;
+	}
+
+Have a think about it?  The function is a little straggly.
+
+Secondly, it is correct/desirable to skip the (now misnamed
+`trace_mm_compaction_isolate_freepages') tracepoint generation if we
+baled out of the loop?  The fact that we entered
+isolate_freepages_block() but failed to isolate anything is data which
+people might be interested in?
+
+Thirdly, that (existing) comment "This assumes the block is valid" is
+either too vague or wrong.  If it's valid, why wo we check
+pfn_valid_within()?
+
+> @@ -218,13 +272,18 @@ static unsigned long isolate_freepages_block(unsigned long blockpfn,
+>  unsigned long
+>  isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
+>  {
+> -	unsigned long isolated, pfn, block_end_pfn, flags;
+> +	unsigned long isolated, pfn, block_end_pfn;
+>  	struct zone *zone = NULL;
+>  	LIST_HEAD(freelist);
+> +	struct compact_control cc;
+>  
+>  	if (pfn_valid(start_pfn))
+>  		zone = page_zone(pfn_to_page(start_pfn));
+>  
+> +	/* cc needed for isolate_freepages_block to acquire zone->lock */
+> +	cc.zone = zone;
+> +	cc.sync = true;
+
+We initialise two of cc's fields, leave the other 12 fields containing
+random garbage, then start using it.  I see no bug here, but...
+
+
+>  	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
+>  		if (!pfn_valid(pfn) || zone != page_zone(pfn_to_page(pfn)))
+>  			break;
+> ...
+>
