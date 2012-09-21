@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab2IUBhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 21:37:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39646 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab2IUBhv (ORCPT
+	id S1754827Ab2IUBp6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 21:45:58 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:35655 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab2IUBp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 21:37:51 -0400
-Date: Fri, 21 Sep 2012 11:37:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the final tree
- (net-next tree related)
-Message-Id: <20120921113749.146a7b501463d70cda3dc268@canb.auug.org.au>
-In-Reply-To: <20120920173622.2aa7209cd241a3945f4384d4@canb.auug.org.au>
-References: <20120920173622.2aa7209cd241a3945f4384d4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__21_Sep_2012_11_37_49_+1000_wNJqj3MwOJCMRZws"
+	Thu, 20 Sep 2012 21:45:56 -0400
+Message-ID: <505BC6CA.4060602@linux.vnet.ibm.com>
+Date: Fri, 21 Sep 2012 09:45:46 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: kernel BUG at kernel/sched/core.c:1465!
+References: <20120919091230.GA25576@liondog.tnic> <505AB9F7.6030605@linux.vnet.ibm.com> <20120920125801.GA15045@x1.osrc.amd.com>
+In-Reply-To: <20120920125801.GA15045@x1.osrc.amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092101-5140-0000-0000-0000021AB623
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_Sep_2012_11_37_49_+1000_wNJqj3MwOJCMRZws
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/20/2012 08:58 PM, Borislav Petkov wrote:
+> On Thu, Sep 20, 2012 at 02:38:47PM +0800, Michael Wang wrote:
+>> Could you please try below patch and see whether the new WARNING
+>> appear or not?
+>>
+>> And cc Tejun Heo <tj@kernel.org> since wq_worker_sleeping() doesn't
+>> work as it's introduced...
+> 
+> Ok, now that you mentioned workqueues, I remember the powernow-k8
+> workaround from Tejun a couple of days ago and looking at Linus' tree
+> from today, he actually merged a fix for exactly that:
+> 
+> commit c5c473e29c641380aef4a9d1f9c39de49219980f
+> Merge: 925a6f0bf8bd 6889125b8b4e
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Wed Sep 19 11:00:07 2012 -0700
+> 
+>     Merge branch 'for-3.6-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq
+>     
+>     Pull workqueue / powernow-k8 fix from Tejun Heo:
+>      "This is the fix for the bug where cpufreq/powernow-k8 was tripping
+>       BUG_ON() in try_to_wake_up_local() by migrating workqueue worker to a
+>       different CPU.
+> 
+> and this is exactly the same BUG_ON I'm hitting. and powernowk8_target
+> is in the stack trace so it has to be the same issue.
+> 
+> I'll update my tree to latest Linus and retest.
 
-Hi Dave,
+Happen to see the problem solved.
 
-On Thu, 20 Sep 2012 17:36:22 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
->=20
-> drivers/net/ethernet/i825xx/znet.c: In function 'hardware_init':
-> drivers/net/ethernet/i825xx/znet.c:868:2: error: implicit declaration of =
-function 'isa_virt_to_bus' [-Werror=3Dimplicit-function-declaration]
->=20
-> Caused by commit 1d3ff76759b7 ("i825xx: znet: fix compiler warnings when
-> building a 64-bit kernel").  Is there some Kconfig dependency missing (CO=
-NFIG_ISA)?
->=20
-> I have reverted that commit for today.
+Regards,
+Michael Wang
 
-Today, I have added the following merge fix patch instead of reverting the
-above (just until PowerPC can be fixed one way or the other).  I don't
-know if you want to put this into the net-next tree, but it may be a
-reasonable temporary measure.
+> 
+> Thanks for pointing this out.
+> 
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 21 Sep 2012 11:32:09 +1000
-Subject: [PATCH] i825xx: znet: temporarily disable on PPC
-
-due to build problems
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/ethernet/i825xx/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/ethernet/i825xx/Kconfig b/drivers/net/ethernet/i82=
-5xx/Kconfig
-index fed5080..9fce38b 100644
---- a/drivers/net/ethernet/i825xx/Kconfig
-+++ b/drivers/net/ethernet/i825xx/Kconfig
-@@ -151,6 +151,7 @@ config SUN3_82586
- config ZNET
- 	tristate "Zenith Z-Note support (EXPERIMENTAL)"
- 	depends on EXPERIMENTAL && ISA_DMA_API
-+	depends on !PPC
- 	---help---
- 	  The Zenith Z-Note notebook computer has a built-in network
- 	  (Ethernet) card, and this is the Linux driver for it. Note that the
---=20
-1.7.10.280.gaa39
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__21_Sep_2012_11_37_49_+1000_wNJqj3MwOJCMRZws
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQW8TtAAoJEECxmPOUX5FE3msP/AmFP2NEVyZevD2rXmr8XBi0
-02VMs4hFBR9uvQr3St+pG6rv22juutYn9m0Sd35x3LihYiiGVKgbHmPB6ckbnsF6
-MtigP5KUclF6E3o0FVOS18N9WNof6Sd/PAqoYZoimMOqIeE95PTnXY3eLnQfXRBq
-YXtLkEVRPPQUwLs3lIiCfFViSs+1aUb0oMobSUQiVVLwAaWVavhp/DUfi10YI862
-uKuIhLLvvdDkFUfhwR2t5kGE3cO0OCRcK7sED6W2rB2OZj8Efv6o1PeWXu3M6BFv
-e4Y96Nnlf5bLUELB5R321MyZmqGSGGxfjeNDAF32FgYrIDaXzRubQBSvtm5CGfYK
-iMhSQ6s8yiy7OLoyjm/Svs4fj8QDrfSZmUAL+k93XvAN5SrERqjYnlPe5xZFKdzu
-UYnvjsQ4GXc5q0A6KAxex/64NKgzz9BJ0ww8sfUl4ZcDC2UeBHxLoY7rCPg4dxx2
-22Z/c14jsi1xizL+dSqaSENwcCYunTYzy42MD88/JW5XowSKgg0FNvkzhkfhmBd3
-moLdhsouxU7YwbQlvHZXLUSbEtlCXzOaxJUprzuV4LRhYnqE9FmnhstC0nWN5VJB
-r3JdcTXnj957V7UdHP8bMPiJ7maG43PJdAXCcUHnflpwcQlN8KEO6/YXWUSv1Hwa
-sg00fVXrYKJf4JqW3DUE
-=wLOi
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_Sep_2012_11_37_49_+1000_wNJqj3MwOJCMRZws--
