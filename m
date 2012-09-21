@@ -1,108 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab2IUTET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 15:04:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38230 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932724Ab2IUTEQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 15:04:16 -0400
-Date: Fri, 21 Sep 2012 14:52:58 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Andres Lagar-Cavilla <andres@lagarcavilla.org>,
-        xen-devel <xen-devel@lists.xen.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] Xen backend support for paged out grant targets V4.
-Message-ID: <20120921185258.GA4931@phenom.dumpdata.com>
-References: <1347632819-13684-1-git-send-email-andres@lagarcavilla.org>
- <1347869865.14977.15.camel@zakaz.uk.xensource.com>
- <5B5132A4-93B2-41D0-B1A6-048810565DB5@gridcentric.ca>
+	id S933114Ab2IUTFc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 15:05:32 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4998 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756608Ab2IUTFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 15:05:30 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <505CBA6E.3030304@broadcom.com>
+Date: Fri, 21 Sep 2012 21:05:18 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827
+ Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5B5132A4-93B2-41D0-B1A6-048810565DB5@gridcentric.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: "Stephen Warren" <swarren@wwwdotorg.org>
+cc: "Wei Ni" <wni@nvidia.com>, krakesh@nvidia.com, ldewangan@nvidia.com,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "Johannes Berg" <johannes@sipsolutions.net>
+Subject: Re: [PATCH v2 5/5] ARM: tegra: enable brcmfmac in defconfig
+References: <1348217700-12309-1-git-send-email-wni@nvidia.com>
+ <1348217700-12309-6-git-send-email-wni@nvidia.com>
+ <505C7C27.2050108@broadcom.com> <505C93A1.2040801@wwwdotorg.org>
+In-Reply-To: <505C93A1.2040801@wwwdotorg.org>
+X-WSS-ID: 7C4266733PS1554509-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 05:29:24AM -0400, Andres Lagar-Cavilla wrote:
-> On Sep 17, 2012, at 4:17 AM, Ian Campbell wrote:
-> 
-> > (I think I forgot to hit send on this on Friday, sorry. Also
-> > s/xen.lists.org/lists.xen.org in the CC line…)
-> I'm on a roll here…
-> 
-> > 
-> > On Fri, 2012-09-14 at 15:26 +0100, Andres Lagar-Cavilla wrote:
-> >> Since Xen-4.2, hvm domains may have portions of their memory paged out. When a
-> >> foreign domain (such as dom0) attempts to map these frames, the map will
-> >> initially fail. The hypervisor returns a suitable errno, and kicks an
-> >> asynchronous page-in operation carried out by a helper. The foreign domain is
-> >> expected to retry the mapping operation until it eventually succeeds. The
-> >> foreign domain is not put to sleep because itself could be the one running the
-> >> pager assist (typical scenario for dom0).
-> >> 
-> >> This patch adds support for this mechanism for backend drivers using grant
-> >> mapping and copying operations. Specifically, this covers the blkback and
-> >> gntdev drivers (which map foregin grants), and the netback driver (which copies
-> > 
-> >                           foreign
-> > 
-> >> foreign grants).
-> >> 
-> >> * Add a retry method for grants that fail with GNTST_eagain (i.e. because the
-> >>  target foregin frame is paged out).
-> > 
-> >          foreign
-> > 
-> >> * Insert hooks with appropriate wrappers in the aforementioned drivers.
-> >> 
-> >> The retry loop is only invoked if the grant operation status is GNTST_eagain.
-> >> It guarantees to leave a new status code different from GNTST_eagain. Any other
-> >> status code results in identical code execution as before.
-> >> 
-> >> The retry loop performs 256 attempts with increasing time intervals through a
-> >> 32 second period. It uses msleep to yield while waiting for the next retry.
-> > [...]
-> >> Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
-> > 
-> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> > 
-> > Since this is more about grant tables than netback this should probably
-> > go via Konrad rather than Dave, is that OK with you Dave?
-> 
-> If that is the case hopefully Konrad can deal with the two typos? Otherwise happy to re-spin the patch.
+On 09/21/2012 06:19 PM, Stephen Warren wrote:
+> On 09/21/2012 08:39 AM, Arend van Spriel wrote:
+>> On 09/21/2012 10:55 AM, Wei Ni wrote:
+>>> New options enabled:
+>>> * CFG80211_WEXT: (dependency)
+>>> * BRCMFMAC: wlan driver, enable as module.
+>>>
+>>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>>> ---
+>>>    arch/arm/configs/tegra_defconfig |    2 ++
+>>>    1 files changed, 2 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/arch/arm/configs/tegra_defconfig
+>>> b/arch/arm/configs/tegra_defconfig
+>>> index adcf3c2..04b18ea 100644
+>>> --- a/arch/arm/configs/tegra_defconfig
+>>> +++ b/arch/arm/configs/tegra_defconfig
+>>> @@ -73,6 +73,7 @@ CONFIG_BT_BNEP=y
+>>>    CONFIG_BT_HIDP=y
+>>>    CONFIG_BT_HCIBTUSB=m
+>>>    CONFIG_CFG80211=y
+>>> +CONFIG_CFG80211_WEXT=y
+>>
+>> Any particular reason for enabling this? The driver does not
+>> specifically need it. The option only allows use of WEXT dependent
+>> user-space tools like iwconfig and iwlist. At least it is not needed by
+>> brcmfmac driver hence it does not select it.
+>>
+>> You indicate there is a dependency. Could you elaborate?
+>
+> "Dependency" probably isn't correct.
+>
+> However, the intent of tegra_defconfig is to provide a useful
+> configuration for Tegra boards. Without the ability to use
+> iwconfig/iwlist, enabling the wireless driver doesn't seem useful; how
+> would someone configure the wireless connection?
 
-So with this patch when I launch an PVHVM guest on Xen 4.1 I get this
-in the initial domain and the guest is crashed:
+Let me explain. CFG80211 provides a netlink api called NL80211 which is 
+favorable over WEXT api. In user-space the iw tool is replacing iwconfig 
+and iwlist. Also wpa_supplicant has support for both wext and nl80211.
 
-[  261.927218] privcmd_fault: vma=ffff88002a31dce8 7f4edc095000-7f4edc195000, pgoff=c8, uv=00007f4edc15d000
+CFG80211_WEXT basically provides an adaptation/compatibility layer that 
+allows user-space tools to interact with cfg80211 drivers. However, it 
+is intended to be phased out so I would not recommend putting it in a 
+defconfig.
 
-guest config:
-> more /mnt/lab/latest/hvm.xm 
-kernel = "/usr/lib/xen/boot/hvmloader"
-builder='hvm'
-memory=1024
-#maxmem=1024
-maxvcpus = 2
-serial='pty'
-vcpus = 2
-disk = [ 'file:/mnt/lab/latest/root_image.iso,hdc:cdrom,r']
-boot="dn"
-#vif = [ 'type=ioemu,model=e1000,mac=00:0F:4B:00:00:71, bridge=switch' ]
-vif = [ 'type=netfront, bridge=switch' ]
-#vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
-vnc=1
-vnclisten="0.0.0.0"
-usb=1
-xen_platform_pci=1
+Gr. AvS
 
 
