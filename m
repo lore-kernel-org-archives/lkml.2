@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab2IUQkB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 12:40:01 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62811 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab2IUQj7 (ORCPT
+	id S1756587Ab2IUQlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 12:41:17 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:51395 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab2IUQlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 12:39:59 -0400
+	Fri, 21 Sep 2012 12:41:15 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6842"; a="239658425"
+X-IronPort-AV: E=Sophos;i="4.80,463,1344236400"; 
+   d="scan'208";a="391696287"
+Message-ID: <505C98A3.9060109@qca.qualcomm.com>
+Date: Fri, 21 Sep 2012 19:41:07 +0300
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <201209211449.56906.arnd@arndb.de>
-References: <1345307035-3545-1-git-send-email-festevam@gmail.com>
-	<CAOMZO5C2ihKUeQk17JOHc9VXAB3KTeQLS3OcLOiiUC8jucsexg@mail.gmail.com>
-	<CAOMZO5C2rTBM6si0MUC7XWznwqwmUq5-LmFyekLab8UBVwaCFw@mail.gmail.com>
-	<201209211449.56906.arnd@arndb.de>
-Date: Fri, 21 Sep 2012 13:39:59 -0300
-Message-ID: <CAOMZO5DwwxFz30hHVyUWPBwEzCD+qcoxE6ef3t758MHd72JdKw@mail.gmail.com>
-Subject: Re: [PATCH 01/11] ARM: defconfig: Remove CONFIG_MISC_DEVICES
-From: Fabio Estevam <festevam@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+To: Andi Kleen <andi@firstfloor.org>
+CC: <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        ath6kl-devel <ath6kl-devel@qualcomm.com>
+Subject: Re: [PATCH] Fix uninitialized variable in ath6kl ath6kl_sdio_enable_scatter
+References: <20120903201536.GA16230@one.firstfloor.org>
+In-Reply-To: <20120903201536.GA16230@one.firstfloor.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On 09/03/2012 11:15 PM, Andi Kleen wrote:
+> gcc 4.8 warns
+> 
+> /backup/lsrc/git/linux-lto-2.6/drivers/net/wireless/ath/ath6kl/sdio.c:
+> In function 'ath6kl_sdio_enable_scatter':
+> /backup/lsrc/git/linux-lto-2.6/drivers/net/wireless/ath/ath6kl/sdio.c:748:16:
+> warning: 'ret' may be used uninitialized in this function
+> [-Wmaybe-uninitialized]
+>   if (virt_scat || ret) {
+>                 ^
+> 
+> The variable can indeed be uninitialized when the previous if branch is
+> skipped. I just set it to zero for now. I'm not fully sure the fix is
+> correct, maybe the || should be an && ? 
 
-On Fri, Sep 21, 2012 at 11:49 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>From a quick look || should be correct, but of course I might be missing
+something. I think your patch is correct way to fix this.
 
-> Sorry for not replying earlier. We could merge these through the
-> arm-soc tree, but I'm not actually sure if they are necessary.
->
-> For all I know, listing a nonexisting configuration option in
-> a defconfig file has no effect, and the files get recreated
-> whenever the maintainers choose to.
+Thanks, applied to ath6kl.git. I just added "ath6kl:" prefix to the title.
 
-My intention with this series is merely to provide a cleanup in the
-defconfigs, so that they do not include an non-existing configuration.
-I know it is not harmful to let the CONFIG_MISC_DEVICES there, but
-after my commit 7c5763 I think we should get rid of
-CONFIG_MISC_DEVICES completely.
-
-I saw that the ia64 Intel patch from this series was already applied
-into mainline and I also got some other Acks from different
-architectures.
-
-Regards,
-
-Fabio Estevam
+Kalle
