@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab2IUA3B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 20:29:01 -0400
-Received: from mga11.intel.com ([192.55.52.93]:21567 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754692Ab2IUA27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 20:28:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,457,1344236400"; 
-   d="scan'208";a="224833535"
-Message-ID: <1348187322.8212.224.camel@yhuang-dev>
-Subject: Re: [RFC 1/3] PCI/PM: Fix kexec for D3cold and bridge suspending
-From: Huang Ying <ying.huang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org
-Date: Fri, 21 Sep 2012 08:28:42 +0800
-In-Reply-To: <201209202120.32029.rjw@sisk.pl>
-References: <1347872076-5260-1-git-send-email-ying.huang@intel.com>
-	 <1347872076-5260-2-git-send-email-ying.huang@intel.com>
-	 <CAErSpo5fVbN2vD5Omc7dGJFWUccYZoCOVRF4YmXPe2Oxm81u5g@mail.gmail.com>
-	 <201209202120.32029.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932131Ab2IUA3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 20:29:06 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:41684 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756593Ab2IUA3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 20:29:03 -0400
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <linux-security-module@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Signed-off-by: Jens Axboe" <jaxboe@fusionio.com>
+Date: Thu, 20 Sep 2012 17:28:37 -0700
+Message-Id: <1348187330-6616-1-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <87k3vote43.fsf@xmission.com>
+References: <87k3vote43.fsf@xmission.com>
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19Z8Z124jNBoEpWxpBKBaBUcS6Sji3iWYQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;<linux-security-module@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 01/14] userns: Convert loop to use kuid_t instead of uid_t
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-20 at 21:20 +0200, Rafael J. Wysocki wrote:
-> On Monday, September 17, 2012, Bjorn Helgaas wrote:
-> > +cc Eric and kexec list
-> > 
-> > On Mon, Sep 17, 2012 at 2:54 AM, Huang Ying <ying.huang@intel.com> wrote:
-> > > If PCI devices are put into D3cold before kexec, because the
-> > > configuration registers of PCI devices in D3cold are not accessible.
-> > >
-> > > And if PCI bridges are put into low power state before kexec,
-> > > configuration registers of PCI devices underneath the PCI bridges are
-> > > not accessible too.
-> > >
-> > > These will make some PCI devices can not be scanned after kexec, so
-> > > resume the PCI devices in D3cold or PCI bridges in low power state
-> > > before kexec.
-> > 
-> > Don't we need to resume the device even without the kexec issue?  And
-> > even if it's in D1 or D2?
-> > 
-> > It looks to me like pci_msi_shutdown() (and probably drv->shutdown())
-> > depend on the device being in D0.
-> 
-> We should in theory, but we didn't do any power management of PCI bridges
-> before, so this is the first time we have a problem with it.
-> 
-> So I'd say, yeah, let's resume if current_state is between D1 and D3cold
-> inclusive and the kexec comment is not very helpful (the problem is not
-> kexec-specific in general).
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Resume from D1 to D3cold for any device or just bridges?
+Cc: Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ drivers/block/loop.c |    4 ++--
+ include/linux/loop.h |    2 +-
+ init/Kconfig         |    1 -
+ 3 files changed, 3 insertions(+), 4 deletions(-)
 
-Best Regards,
-Huang Ying
-
-> Speaking of kexec, it might consider using the hibernation device freeze
-> instead of device shutdown (which the kexec jump feature does).  I've seen
-> reports of problems that would be solved this way most likely.
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> > > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > > ---
-> > >  drivers/pci/pci-driver.c |    4 ++++
-> > >  1 file changed, 4 insertions(+)
-> > >
-> > > --- a/drivers/pci/pci-driver.c
-> > > +++ b/drivers/pci/pci-driver.c
-> > > @@ -421,6 +421,10 @@ static void pci_device_shutdown(struct d
-> > >         struct pci_dev *pci_dev = to_pci_dev(dev);
-> > >         struct pci_driver *drv = pci_dev->driver;
-> > >
-> > > +       /* Resume bridges and devices in D3cold for kexec to work properly */
-> > > +       if (pci_dev->current_state == PCI_D3cold || pci_dev->subordinate)
-> > > +               pm_runtime_resume(dev);
-> > > +
-> > >         if (drv && drv->shutdown)
-> > >                 drv->shutdown(pci_dev);
-> > >         pci_msi_shutdown(pci_dev);
-> > 
-> > 
-> 
-
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 3bba655..e9d594f 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1038,10 +1038,10 @@ loop_set_status(struct loop_device *lo, const struct loop_info64 *info)
+ {
+ 	int err;
+ 	struct loop_func_table *xfer;
+-	uid_t uid = current_uid();
++	kuid_t uid = current_uid();
+ 
+ 	if (lo->lo_encrypt_key_size &&
+-	    lo->lo_key_owner != uid &&
++	    !uid_eq(lo->lo_key_owner, uid) &&
+ 	    !capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 	if (lo->lo_state != Lo_bound)
+diff --git a/include/linux/loop.h b/include/linux/loop.h
+index 11a41a8..9635116 100644
+--- a/include/linux/loop.h
++++ b/include/linux/loop.h
+@@ -44,7 +44,7 @@ struct loop_device {
+ 	int		lo_encrypt_key_size;
+ 	struct loop_func_table *lo_encryption;
+ 	__u32           lo_init[2];
+-	uid_t		lo_key_owner;	/* Who set the key */
++	kuid_t		lo_key_owner;	/* Who set the key */
+ 	int		(*ioctl)(struct loop_device *, int cmd, 
+ 				 unsigned long arg); 
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index f0371a6..f315997 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -960,7 +960,6 @@ config UIDGID_CONVERTED
+ 	depends on !UML || HOSTFS = n
+ 
+ 	# The rare drivers that won't build
+-	depends on BLK_DEV_LOOP = n
+ 	depends on ANDROID_BINDER_IPC = n
+ 
+ 	# Security modules
+-- 
+1.7.5.4
 
