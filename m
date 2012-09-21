@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab2IUJmG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:42:06 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:38786 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932906Ab2IUJmA (ORCPT
+	id S932958Ab2IUJmg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:42:36 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37316 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932482Ab2IUJme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:42:00 -0400
-Date: Fri, 21 Sep 2012 12:37:11 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>, Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
-Subject: Re: [PATCH v2] USB: PHY: Re-organize Tegra USB PHY driver
-Message-ID: <20120921093710.GC15626@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1347519738-24162-1-git-send-email-vbyravarasu@nvidia.com>
- <5052157F.8040201@wwwdotorg.org>
- <D958900912E20642BCBC71664EFECE3E6DDF601145@BGMAIL02.nvidia.com>
- <20120920120004.GD3523@kroah.com>
- <D958900912E20642BCBC71664EFECE3E6DDF601261@BGMAIL02.nvidia.com>
+	Fri, 21 Sep 2012 05:42:34 -0400
+Date: Fri, 21 Sep 2012 10:42:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Cc: "Porter, Matt" <mporter@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
+	arm/common
+Message-ID: <20120921094205.GC31374@n2100.arm.linux.org.uk>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com> <1348152226-13588-2-git-send-email-mporter@ti.com> <20120921092923.GA31374@n2100.arm.linux.org.uk> <1BAFE6F6C881BF42822005164F1491C33EA8AA3C@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ABTtc+pdwF7KHXCz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDF601261@BGMAIL02.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EA8AA3C@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 21, 2012 at 09:33:42AM +0000, Hebbar, Gururaja wrote:
+> On Fri, Sep 21, 2012 at 14:59:23, Russell King - ARM Linux wrote:
+> > On Thu, Sep 20, 2012 at 10:43:34AM -0400, Matt Porter wrote:
+> > > Move mach-davinci/dma.c to common/edma.c so it can be used
+> > > by OMAP (specifically AM33xx atm) as well. This just moves
+> > > the private EDMA API but does not support OMAP.
+> > > 
+> > > Signed-off-by: Matt Porter <mporter@ti.com>
+> > > ---
+> > >  arch/arm/Kconfig                           |    1 +
+> > >  arch/arm/common/Kconfig                    |    3 +
+> > >  arch/arm/common/Makefile                   |    1 +
+> > >  arch/arm/common/edma.c                     | 1588 ++++++++++++++++++++++++++++
+> > >  arch/arm/include/asm/mach/edma.h           |  267 +++++
+> > 
+> > asm/mach should not be used as a dumping ground for platform header files.
+> > It is there to provide the interfaces between generic ARM architecture
+> > code and platform code.  (At least four files that are there at the
+> > moment need to be moved out of there - patch series to follow...)
+> 
+> Can this be moved to include/linux/platform_data/ ?
 
---ABTtc+pdwF7KHXCz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Here's the pertinant question: "is it platform data?"  Looking at the
+file, it appears to be internal data structures and register definitions
+for the driver itself.  Therefore, it isn't platform data, and it
+shouldn't be living separately from the driver.
 
-Hi,
+If the driver itself only makes use of the data structures, the data
+structures should be defined either within the driver, or a header file
+co-located next to the driver itself.  The same goes for register
+definitions too.
 
-On Thu, Sep 20, 2012 at 05:32:36PM +0530, Venu Byravarasu wrote:
-> Thanks Greg, for quick response.
-
-I'm waiting for a newer version fixing Kishon's comments. BTW, his
-comment about pdata usage is 100% valid. You should fix that.
-
---=20
-balbi
-
---ABTtc+pdwF7KHXCz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQXDVGAAoJEIaOsuA1yqREfvIQAJ48H3qF97borDnWsxu5/d4h
-3/RDneiLhYFrDc9RSz1vJ10VUVqgGniMiMIEyWx6XFKIcbxklpaHBA2izFMdvsuV
-Seas9s5Iv500Vc0QoS6ZkO9RGLBaVvQNT8cGlwkJbeVA34IYw2ruwlyJ5XG/l6HT
-u5wusmGpzzSkU0UKVSUvsFbxZikOfKxCe3gk1zTanv1niVaL0/izS3/5sf34GnHY
-9HfQr2FU4JyiyaYXbtmqBehofgZTkrCsfLKtiu7G8Pm1iwTAD7AeRhWwQm8FJNsZ
-3WaEhouJ5aBnrrfcKmhtLgrf5XFV3hSBrRDyjN87lLNR+CV1XA6FW8uq7dqUybhR
-/psy15te5xHzt9wBjmU+HmV8QVi48FkLahQbxEE8XlWprXVIRSfapBvxPfe9zK+0
-HOhc04Wc/hK/dpx68LQPkJKaDhXsdlmjcO2mPf5Xm3/i4erj4sZlhF8Xrm4kZWxL
-i/LXx2eLHghUP2IQ3/JBD6ADflRCGi3QUDrGvdAb4VLzYceAkdV7fCh5fdUfD6Nx
-G01SL/O5RGNMRAaG8ZpFfroOVmSkSs1p9ojvZJoz5nz8cAdjSpDTOPwy37zgz7fU
-9wlxLmkuH2vmkq8LL95ysCpmaLUF/fNqrIy4+xiGtsbSa82rU9xbySX8NLOCu8F5
-mfHVAom35XTjp1N/4Pfu
-=gEP1
------END PGP SIGNATURE-----
-
---ABTtc+pdwF7KHXCz--
+The only structure that I can find which isn't internal to the driver
+is struct edma_soc_info, struct edma_rsv_info, and the enum dma_event_q.
+Those can go to include/linux/platform_data, but the rest should not.
