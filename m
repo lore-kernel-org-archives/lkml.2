@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab2IUGAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 02:00:39 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:47965 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755363Ab2IUGAR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 02:00:17 -0400
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Robert Morell <rmorell@nvidia.com>,
-        Dilan Lee <dilee@nvidia.com>, Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Date: Fri, 21 Sep 2012 07:59:48 +0200
-Subject: RE: [PATCH] pwm-backlight: Take over maintenance
-Thread-Topic: [PATCH] pwm-backlight: Take over maintenance
-Thread-Index: Ac2XHcqQlYHr/WVlTBanBtFd2sGZwQAn5FQQ
-Message-ID: <F45880696056844FA6A73F415B568C695B44DDE234@EXDCVYMBSTM006.EQ1STM.local>
-References: <1348138235-3625-1-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1348138235-3625-1-git-send-email-thierry.reding@avionic-design.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755526Ab2IUGEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 02:04:30 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:60244 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755395Ab2IUGE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 02:04:28 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAOh2x=n-26MSV4yxse=+iT=3ATa2Qd858QuWmRiRmjwnzxmFhA@mail.gmail.com>
+References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1347867577-13170-4-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x==MwD6RVnShoD0zJaAPZ814bAGDx6BEjGsK=9M+LxMxBA@mail.gmail.com>
+	<1348133748.13371.33.camel@smile>
+	<CAOh2x=n-26MSV4yxse=+iT=3ATa2Qd858QuWmRiRmjwnzxmFhA@mail.gmail.com>
+Date: Fri, 21 Sep 2012 11:34:27 +0530
+X-Google-Sender-Auth: -Bl4p1yPwEvuLQt0TimgTDoufzQ
+Message-ID: <CAOh2x==Fud7k6VcxiiS2VBKsbfOJLZBsX=rtdV+QfdyYQEoY=Q@mail.gmail.com>
+Subject: Re: [PATCH 3/7] dw_dmac: get number of channels from hardware if possible
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> Cc: Arun Murthy <arun.murthy@stericsson.com>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Robert Morell <rmorell@nvidia.com>
-> Cc: Dilan Lee <dilee@nvidia.com>
-> Cc: Axel Lin <axel.lin@gmail.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Alexandre Courbot <acourbot@nvidia.com>
-> Cc: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> Andrew: As previously discussed this patch makes me the new maintainer
-> for the pwm-backlight driver. I contacted Richard Purdie and requested his
-> Acked-by for this because he's the backlight subsystem maintainer.
-> Unfortunately he hasn't answered yet. Looking at the commit log, every
-> commit in the last 2+ years has gone through your tree, which seems to be
-> reason enough for me to take over this driver but I still wanted to get an
-> Acked-by at least from you so that this doesn't look like hijacking. I've also
-> Cc'ed a couple of people that have done work on the driver in the past to
-> give them a chance to object or send their Acked-by.
+On Thu, Sep 20, 2012 at 3:10 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
+> On Thu, Sep 20, 2012 at 3:05 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+>> On Tue, 2012-09-18 at 12:20 +0530, viresh kumar wrote:
+>>> > @@ -1392,23 +1396,32 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>>> > +       dw_params = dma_raw_readl(regs, DW_PARAMS);
+>>>
+>>> Is this valid for every SoC implementation. What if this configuration
+>>> is not valid
+>>> for a particular SoC and it is invalid to access this address? Or this
+>>> gives a invalid
+>>> value instead of returning 0?
+>
+>> Actually I didn't get it clearly from the documentation. We have only
+>> one test report from Hein until now.
+>
+> @Shiraz: Can you please verify reading this register from u-boot? This
+> is important before we apply this patch to linux-next.
 
-Acked-by: Arun Murthy<arun.murthy@stericsson.com>
+Ok. I have verified from the documentation. This are valid registers for SPEAr.
+@Shiraz: No need to check now. :)
 
-I hope now the review process will be fast instead of going through Andrew's
-tree.
-All the Best!
-Now I think I can re-start my pwm core driver thread, since I have a maintainer
-for this :-)
-
-Thanks and Regards,
-Arun R Murthy
-------------------
+--
+viresh
