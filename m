@@ -1,83 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab2IUJey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:34:54 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46761 "EHLO arroyo.ext.ti.com"
+	id S932855Ab2IUJfZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:35:25 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:48663 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932609Ab2IUJew convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:34:52 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Porter, Matt" <mporter@ti.com>
-CC: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
-	arm/common
-Thread-Topic: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
-	arm/common
-Thread-Index: AQHNl9u40QawS97+1kKyI+aS1pelCJeUiGZQ
-Date: Fri, 21 Sep 2012 09:33:42 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA8AA3C@DBDE01.ent.ti.com>
-References: <1348152226-13588-1-git-send-email-mporter@ti.com>
-	<1348152226-13588-2-git-send-email-mporter@ti.com>
- <20120921092923.GA31374@n2100.arm.linux.org.uk>
-In-Reply-To: <20120921092923.GA31374@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S932609Ab2IUJfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 05:35:22 -0400
+Message-ID: <505C340B.4020009@parallels.com>
+Date: Fri, 21 Sep 2012 13:31:55 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
+To: JoonSoo Kim <js1304@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 15/16] memcg/sl[au]b: shrink dead caches
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-16-git-send-email-glommer@parallels.com> <CAAmzW4NyK6gqqXHttUE35=-=h0Eve-smiYJCj3i+mHFFysQE4A@mail.gmail.com> <505C27E4.90509@parallels.com> <CAAmzW4PRPBgySUpNsj=RP6VR3KLcVWv3G7rRtX=r+wiWUTDchw@mail.gmail.com>
+In-Reply-To: <CAAmzW4PRPBgySUpNsj=RP6VR3KLcVWv3G7rRtX=r+wiWUTDchw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 14:59:23, Russell King - ARM Linux wrote:
-> On Thu, Sep 20, 2012 at 10:43:34AM -0400, Matt Porter wrote:
-> > Move mach-davinci/dma.c to common/edma.c so it can be used
-> > by OMAP (specifically AM33xx atm) as well. This just moves
-> > the private EDMA API but does not support OMAP.
-> > 
-> > Signed-off-by: Matt Porter <mporter@ti.com>
-> > ---
-> >  arch/arm/Kconfig                           |    1 +
-> >  arch/arm/common/Kconfig                    |    3 +
-> >  arch/arm/common/Makefile                   |    1 +
-> >  arch/arm/common/edma.c                     | 1588 ++++++++++++++++++++++++++++
-> >  arch/arm/include/asm/mach/edma.h           |  267 +++++
+On 09/21/2012 01:28 PM, JoonSoo Kim wrote:
+> Hi, Glauber.
 > 
-> asm/mach should not be used as a dumping ground for platform header files.
-> It is there to provide the interfaces between generic ARM architecture
-> code and platform code.  (At least four files that are there at the
-> moment need to be moved out of there - patch series to follow...)
+>>> 2012/9/18 Glauber Costa <glommer@parallels.com>:
+>>>> diff --git a/mm/slub.c b/mm/slub.c
+>>>> index 0b68d15..9d79216 100644
+>>>> --- a/mm/slub.c
+>>>> +++ b/mm/slub.c
+>>>> @@ -2602,6 +2602,7 @@ redo:
+>>>>         } else
+>>>>                 __slab_free(s, page, x, addr);
+>>>>
+>>>> +       kmem_cache_verify_dead(s);
+>>>>  }
+>>>
+>>> As far as u know, I am not a expert and don't know anything about memcg.
+>>> IMHO, this implementation may hurt system performance in some case.
+>>>
+>>> In case of memcg is destoried, remained kmem_cache is marked "dead".
+>>> After it is marked,
+>>> every free operation to this "dead" kmem_cache call
+>>> kmem_cache_verify_dead() and finally call kmem_cache_shrink().
+>>
+>> As long as it is restricted to that cache, this is a non issue.
+>> dead caches are exactly what they name imply: dead.
+>>
+>> Means that we actively want them to go away, and just don't kill them
+>> right away because they have some inflight objects - which we expect not
+>> to be too much.
+> 
+> Hmm.. I don't think so.
+> We can destroy memcg whenever we want, is it right?
 
-Can this be moved to include/linux/platform_data/ ?
+wrong.
 
-> _______________________________________________
-> Davinci-linux-open-source mailing list
-> Davinci-linux-open-source@linux.davincidsp.com
-> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+it is impossible to track objects to a task, so when tasks are moved,
+objects stay. Which means that some objects are still referenced by the
+cache.
+> If it is right, there is many inflight objects when we destory memcg.
+> If there is so many inflight objects, performance of these processes
+> can be hurt too much.
+> 
+There are in-flight objects. It is not expected to have "many inflight
+objects", which is a different statement.
+
+We are assuming all the time that the workloads that goes into a cgroup
+are mostly nature. When it goes away, most of the objects that were
+referenced are expected to go away. Because we can't guarantee all of
+them will, the references stay.
+
+When we are able to call shrink_slab() directly on a memcg slab, which
+is WIP, we'll be able make those objects even rarer.
+
+>>> And, I found one case that destroying memcg's kmem_cache don't works properly.
+>>> If we destroy memcg after all object is freed, current implementation
+>>> doesn't destroy kmem_cache.
+>>> kmem_cache_destroy_work_func() check "cachep->memcg_params.nr_pages == 0",
+>>> but in this case, it return false, because kmem_cache may have
+>>> cpu_slab, and cpu_partials_slabs.
+>>> As we already free all objects, kmem_cache_verify_dead() is not invoked forever.
+>>> I think that we need another kmem_cache_shrink() in
+>>> kmem_cache_destroy_work_func().
+>>
+>> I'll take a look here. What you describe makes sense, and can
+>> potentially happen. I tried to handle this case with care in
+>> destroy_all_caches, but I may have always made a mistake...
+>>
+>> Did you see this actively happening, or are you just assuming this can
+>> happen from your read of the code?
+> 
+> Just read of the code.
 > 
 
+I will go through it again, just in case. This is indeed subtle and it
+is in my best interest to sort out those issues early.
 
-Regards, 
-Gururaja
+
