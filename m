@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab2IUGEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 02:04:30 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:60244 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab2IUGE2 (ORCPT
+	id S1755599Ab2IUGEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 02:04:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53338 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755395Ab2IUGEh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 02:04:28 -0400
+	Fri, 21 Sep 2012 02:04:37 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: RE: [PATCH v2] pwm_backlight: Add device tree support for Low
+ Threshold Brightness
+Thread-Topic: [PATCH v2] pwm_backlight: Add device tree support for Low
+ Threshold Brightness
+Thread-Index: AQHNl7dcczUdlqqMiEavEaWXq+POTpeT5POAgABctfA=
+Date: Fri, 21 Sep 2012 06:03:11 +0000
+Deferred-Delivery: Fri, 21 Sep 2012 06:03:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9A685B@DBDE01.ent.ti.com>
+References: <1348203080-16348-1-git-send-email-avinashphilip@ti.com>
+ <505BF83D.8040201@wwwdotorg.org>
+In-Reply-To: <505BF83D.8040201@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAOh2x=n-26MSV4yxse=+iT=3ATa2Qd858QuWmRiRmjwnzxmFhA@mail.gmail.com>
-References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1347867577-13170-4-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x==MwD6RVnShoD0zJaAPZ814bAGDx6BEjGsK=9M+LxMxBA@mail.gmail.com>
-	<1348133748.13371.33.camel@smile>
-	<CAOh2x=n-26MSV4yxse=+iT=3ATa2Qd858QuWmRiRmjwnzxmFhA@mail.gmail.com>
-Date: Fri, 21 Sep 2012 11:34:27 +0530
-X-Google-Sender-Auth: -Bl4p1yPwEvuLQt0TimgTDoufzQ
-Message-ID: <CAOh2x==Fud7k6VcxiiS2VBKsbfOJLZBsX=rtdV+QfdyYQEoY=Q@mail.gmail.com>
-Subject: Re: [PATCH 3/7] dw_dmac: get number of channels from hardware if possible
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 3:10 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
-> On Thu, Sep 20, 2012 at 3:05 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
->> On Tue, 2012-09-18 at 12:20 +0530, viresh kumar wrote:
->>> > @@ -1392,23 +1396,32 @@ static int __devinit dw_probe(struct platform_device *pdev)
->>> > +       dw_params = dma_raw_readl(regs, DW_PARAMS);
->>>
->>> Is this valid for every SoC implementation. What if this configuration
->>> is not valid
->>> for a particular SoC and it is invalid to access this address? Or this
->>> gives a invalid
->>> value instead of returning 0?
->
->> Actually I didn't get it clearly from the documentation. We have only
->> one test report from Hein until now.
->
-> @Shiraz: Can you please verify reading this register from u-boot? This
-> is important before we apply this patch to linux-next.
+Hi Stephen,
 
-Ok. I have verified from the documentation. This are valid registers for SPEAr.
-@Shiraz: No need to check now. :)
+On Fri, Sep 21, 2012 at 10:46:45, Stephen Warren wrote:
+> On 09/20/2012 10:51 PM, Philip, Avinash wrote:
+> > Some backlights perform poorly when driven by a PWM with a short
+> > duty-cycle. For such devices, the low threshold can be used to specify a
+> > lower bound for the duty-cycle and should be chosen to exclude the
+> > problematic range.
+> > 
+> > This patch adds support for an optional low-threshold-brightness
+> > property.
+> 
+> > diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> 
+> >  Optional properties:
+> >    - pwm-names: a list of names for the PWM devices specified in the
+> >                 "pwms" property (see PWM binding[0])
+> > +  - low-threshold-brightness: brightness threshold low level. Low threshold
+> > +    brightness set to value so that backlight present on low end of
+> > +    brightness.
+> 
+> For my education, why not just specify values above this value in the
+> brightness-levels array; how do those two interact?
 
---
-viresh
+Please find details from 
+https://lkml.org/lkml/2012/7/18/284
+
+Thanks
+Avinash
+
+> It seems like any
+> description of that is missing from the PWM documentation, and would be
+> good to have in the DT binding too.
+> 
+> 
+
