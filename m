@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab2IUJl4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:41:56 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55197 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932742Ab2IUJlz (ORCPT
+	id S932950Ab2IUJmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:42:06 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:38786 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932906Ab2IUJmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:41:55 -0400
-Date: Fri, 21 Sep 2012 12:41:52 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Glauber Costa <glommer@parallels.com>
-cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v3 09/16] sl[au]b: always get the cache from its page in
- kfree
-In-Reply-To: <505C33D3.5000202@parallels.com>
-Message-ID: <alpine.LFD.2.02.1209211240410.3619@tux.localdomain>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-10-git-send-email-glommer@parallels.com> <00000139d9fe8595-8905906d-18ed-4d41-afdb-f4c632c2d50a-000000@email.amazonses.com> <5059777E.8060906@parallels.com>
- <CAOJsxLFgwOqUcLHEwYNERwn1Uvp4-8CmvRKTfBFAHD6p_-6c7g@mail.gmail.com> <505C33D3.5000202@parallels.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 21 Sep 2012 05:42:00 -0400
+Date: Fri, 21 Sep 2012 12:37:11 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "balbi@ti.com" <balbi@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v2] USB: PHY: Re-organize Tegra USB PHY driver
+Message-ID: <20120921093710.GC15626@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1347519738-24162-1-git-send-email-vbyravarasu@nvidia.com>
+ <5052157F.8040201@wwwdotorg.org>
+ <D958900912E20642BCBC71664EFECE3E6DDF601145@BGMAIL02.nvidia.com>
+ <20120920120004.GD3523@kroah.com>
+ <D958900912E20642BCBC71664EFECE3E6DDF601261@BGMAIL02.nvidia.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ABTtc+pdwF7KHXCz"
+Content-Disposition: inline
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDF601261@BGMAIL02.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Sep 2012, Glauber Costa wrote:
-> > We should assume that most distributions enable CONFIG_MEMCG_KMEM,
-> > right? Therfore, any performance impact should be dependent on whether
-> > or not kmem memcg is *enabled* at runtime or not.
-> > 
-> > Can we use the "static key" thingy introduced by tracing folks for this?
->
-> Yes.
-> 
-> I am already using static keys extensively in this patchset, and that is
-> how I intend to handle this particular case.
 
-Cool.
+--ABTtc+pdwF7KHXCz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The key point here is that !CONFIG_MEMCG_KMEM should have exactly *zero* 
-performance impact and CONFIG_MEMCG_KMEM disabled at runtime should have 
-absolute minimal impact.
+Hi,
 
-			Pekka
+On Thu, Sep 20, 2012 at 05:32:36PM +0530, Venu Byravarasu wrote:
+> Thanks Greg, for quick response.
+
+I'm waiting for a newer version fixing Kishon's comments. BTW, his
+comment about pdata usage is 100% valid. You should fix that.
+
+--=20
+balbi
+
+--ABTtc+pdwF7KHXCz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQXDVGAAoJEIaOsuA1yqREfvIQAJ48H3qF97borDnWsxu5/d4h
+3/RDneiLhYFrDc9RSz1vJ10VUVqgGniMiMIEyWx6XFKIcbxklpaHBA2izFMdvsuV
+Seas9s5Iv500Vc0QoS6ZkO9RGLBaVvQNT8cGlwkJbeVA34IYw2ruwlyJ5XG/l6HT
+u5wusmGpzzSkU0UKVSUvsFbxZikOfKxCe3gk1zTanv1niVaL0/izS3/5sf34GnHY
+9HfQr2FU4JyiyaYXbtmqBehofgZTkrCsfLKtiu7G8Pm1iwTAD7AeRhWwQm8FJNsZ
+3WaEhouJ5aBnrrfcKmhtLgrf5XFV3hSBrRDyjN87lLNR+CV1XA6FW8uq7dqUybhR
+/psy15te5xHzt9wBjmU+HmV8QVi48FkLahQbxEE8XlWprXVIRSfapBvxPfe9zK+0
+HOhc04Wc/hK/dpx68LQPkJKaDhXsdlmjcO2mPf5Xm3/i4erj4sZlhF8Xrm4kZWxL
+i/LXx2eLHghUP2IQ3/JBD6ADflRCGi3QUDrGvdAb4VLzYceAkdV7fCh5fdUfD6Nx
+G01SL/O5RGNMRAaG8ZpFfroOVmSkSs1p9ojvZJoz5nz8cAdjSpDTOPwy37zgz7fU
+9wlxLmkuH2vmkq8LL95ysCpmaLUF/fNqrIy4+xiGtsbSa82rU9xbySX8NLOCu8F5
+mfHVAom35XTjp1N/4Pfu
+=gEP1
+-----END PGP SIGNATURE-----
+
+--ABTtc+pdwF7KHXCz--
