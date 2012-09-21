@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739Ab2IUJ3Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:29:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63012 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757104Ab2IUJ3V (ORCPT
+	id S932751Ab2IUJaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:30:18 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37254 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932510Ab2IUJaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:29:21 -0400
+	Fri, 21 Sep 2012 05:30:16 -0400
+Date: Fri, 21 Sep 2012 10:29:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Matt Porter <mporter@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>, Vinod Koul <vinod.koul@intel.com>,
+        Rob Landley <rob@landley.net>, Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
+	arm/common
+Message-ID: <20120921092923.GA31374@n2100.arm.linux.org.uk>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com> <1348152226-13588-2-git-send-email-mporter@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1347977530-29755-9-git-send-email-glommer@parallels.com>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
-	<1347977530-29755-9-git-send-email-glommer@parallels.com>
-Date: Fri, 21 Sep 2012 12:29:20 +0300
-X-Google-Sender-Auth: 94m4xHrTHoLDfF0w8ND8AANvRHk
-Message-ID: <CAOJsxLFeh5G1JBMmZPkwMBTEXSJB7Bmp1yvvbDz0suWE5sReYA@mail.gmail.com>
-Subject: Re: [PATCH v3 08/16] slab: allow enable_cpu_cache to use preset
- values for its tunables
-From: Pekka Enberg <penberg@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348152226-13588-2-git-send-email-mporter@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 5:12 PM, Glauber Costa <glommer@parallels.com> wrote:
-> diff --git a/mm/slab.c b/mm/slab.c
-> index e2cf984..f2d760c 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -4141,8 +4141,19 @@ static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
->  static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp)
->  {
->         int err;
-> -       int limit, shared;
-> -
-> +       int limit = 0;
-> +       int shared = 0;
-> +       int batchcount = 0;
-> +
-> +#ifdef CONFIG_MEMCG_KMEM
-> +       if (cachep->memcg_params.parent) {
-> +               limit = cachep->memcg_params.parent->limit;
-> +               shared = cachep->memcg_params.parent->shared;
-> +               batchcount = cachep->memcg_params.parent->batchcount;
+On Thu, Sep 20, 2012 at 10:43:34AM -0400, Matt Porter wrote:
+> Move mach-davinci/dma.c to common/edma.c so it can be used
+> by OMAP (specifically AM33xx atm) as well. This just moves
+> the private EDMA API but does not support OMAP.
+> 
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  arch/arm/Kconfig                           |    1 +
+>  arch/arm/common/Kconfig                    |    3 +
+>  arch/arm/common/Makefile                   |    1 +
+>  arch/arm/common/edma.c                     | 1588 ++++++++++++++++++++++++++++
+>  arch/arm/include/asm/mach/edma.h           |  267 +++++
 
-Style nit: please introduce a variable for
-"cachep->memcg_params.parent" to make this human-readable.
+asm/mach should not be used as a dumping ground for platform header files.
+It is there to provide the interfaces between generic ARM architecture
+code and platform code.  (At least four files that are there at the
+moment need to be moved out of there - patch series to follow...)
