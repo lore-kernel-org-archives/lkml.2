@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab2IUNCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 09:02:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49487 "EHLO
+	id S1754698Ab2IUNFb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 09:05:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59514 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab2IUNCk (ORCPT
+	with ESMTP id S1754014Ab2IUNFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 09:02:40 -0400
+	Fri, 21 Sep 2012 09:05:30 -0400
+Message-ID: <505C6617.4010801@gmail.com>
+Date: Fri, 21 Sep 2012 07:05:27 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120921135916.796d970e@bob.linux.org.uk>
-References: <CAC27Lhfn+o5OWQFs6kvkaheh5cX_6jFxtJadLa8csJcfVknJLQ@mail.gmail.com>
-	<20120921135916.796d970e@bob.linux.org.uk>
-Date: Fri, 21 Sep 2012 15:02:39 +0200
-Message-ID: <CAC27LhfvV4u1WemsvimtVGuMwwLuz8ns82-wPDe30=cq4OUkAQ@mail.gmail.com>
-Subject: Re: gma500_gfx black screen
-From: Markus H <hauschild.markus@gmail.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Pekka Enberg <penberg@kernel.org>, Irina Tirdea <irina.tirdea@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: Re: [PATCH 1/4] perf tools: configure tmp path at build time
+References: <1348179215-11160-1-git-send-email-irina.tirdea@gmail.com> <1348179215-11160-2-git-send-email-irina.tirdea@gmail.com> <CAOJsxLHYZyGkORudmXd5+f3_NBXTh7rmDC-Cw3=06vyVk7WZaA@mail.gmail.com>
+In-Reply-To: <CAOJsxLHYZyGkORudmXd5+f3_NBXTh7rmDC-Cw3=06vyVk7WZaA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 9/21/12 1:47 AM, Pekka Enberg wrote:
 
-> Should be fixed in the very latest 3.6-rc. I got a report from someone
-> else that I could duplicate and pin down exactly. It's made somewhat
-> more complicated by the fact that another bug got introduced and then
-> fixed across the same period.
+>> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+>> index e2e8c69..eb671d5 100644
+>> --- a/tools/perf/util/symbol.c
+>> +++ b/tools/perf/util/symbol.c
+>> @@ -1051,7 +1051,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+>>
+>>          dso->adjust_symbols = 0;
+>>
+>> -       if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
+>> +       if (strncmp(dso->name, PERF_TMP_DIR "/perf-", 10) == 0) {
+>>                  struct stat st;
 
-Oh I thought that one was irrelevant because I mixed up all the GMA600
-codenames.
+And, with "/tmp" as a variable the 10 in the strncmp might not be right.
 
-> Can you try the latest 3.6-rc release. The commit in question is
-> "gma500: Fix regression on Oaktrail devices"
+David
 
-I will try 3.6-rc6 and report back.
-
-
-Thanks,
-Markus
