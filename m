@@ -1,112 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012Ab2IUImX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 04:42:23 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35900 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab2IUImS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 04:42:18 -0400
-X-IronPort-AV: E=Sophos;i="4.80,460,1344211200"; 
-   d="scan'208";a="14682919"
-Message-ID: <1348216908.3689.3.camel@oliverchick-Precision-WorkStation-T3400>
-Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk drivers
-From: Oliver Chick <oliver.chick@citrix.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Sep 2012 09:41:48 +0100
-In-Reply-To: <505C30CC020000780009CDD6@nat28.tlf.novell.com>
-References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
-	 <505AF126.2050806@citrix.com>
-	 <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
-	 <505B1EB9020000780009CA6E@nat28.tlf.novell.com>
-	 <20120920134951.GC1998@localhost.localdomain>
-	 <1348150422.24539.58.camel@oliverchick-Precision-WorkStation-T3400>
-	 <20120920212407.GD27312@konrad-lan.dumpdata.com>
-	 <505C30CC020000780009CDD6@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1757057Ab2IUInm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 04:43:42 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:60653 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754935Ab2IUIni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 04:43:38 -0400
+Message-ID: <505C27E4.90509@parallels.com>
+Date: Fri, 21 Sep 2012 12:40:04 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
+To: JoonSoo Kim <js1304@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 15/16] memcg/sl[au]b: shrink dead caches
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-16-git-send-email-glommer@parallels.com> <CAAmzW4NyK6gqqXHttUE35=-=h0Eve-smiYJCj3i+mHFFysQE4A@mail.gmail.com>
+In-Reply-To: <CAAmzW4NyK6gqqXHttUE35=-=h0Eve-smiYJCj3i+mHFFysQE4A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-21 at 08:18 +0100, Jan Beulich wrote:
-> >>> On 20.09.12 at 23:24, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > On Thu, Sep 20, 2012 at 03:13:42PM +0100, Oliver Chick wrote:
-> >> On Thu, 2012-09-20 at 14:49 +0100, Konrad Rzeszutek Wilk wrote:
-> >> > On Thu, Sep 20, 2012 at 12:48:41PM +0100, Jan Beulich wrote:
-> >> > > >>> On 20.09.12 at 13:30, Oliver Chick <oliver.chick@citrix.com> wrote:
-> >> > > > The memory overhead, and fallback mode points are related:
-> >> > > > -Firstly, it turns out that the overhead is actually 2.75MB, not 11MB
-> >> > > > per device. I made a mistake (pointed out by Jan) as the maximum number
-> >> > > > of requests that can fit into a single-page ring is 64, not 256.
-> >> > > > -Clearly, this still scales linearly. So the problem of memory footprint
-> >> > > > will occur with more VMs, or block devices.
-> >> > > > -Whilst 2.75MB per device is probably acceptable (?), if we start using
-> >> > > > multipage rings, then we might not want to have
-> >> > > > BLKIF_MAX_PERS_REQUESTS_PER_DEVICE==__RING_SIZE, as this will cause the
-> >> > > > memory overhead to increase. This is why I have implemented the
-> >> > > > 'fallback' mode. With a multipage ring, it seems reasonable to want the
-> >> > > > first $x$ grefs seen by blkback to be treated as persistent, and any
-> >> > > > later ones to be non-persistent. Does that seem sensible?
-> >> > > 
-> >> > > From a resource usage pov, perhaps. But this will get the guest
-> >> > > entirely unpredictable performance. Plus I don't think 11Mb of
-> >> > 
-> >> > Wouldn't it fall back to the older performance?
-> >> 
-> >> I guess it would be a bit more complex than that. It would be worse than
-> >> the new performance because the grefs that get processed by the
-> >> 'fallback' mode will cause TLB shootdowns. But any early grefs will
-> >> still be processed by the persistent mode, so won't have shootdowns.
-> >> Therefore, depending on the ratio of {persistent grants}:{non-persistent
-> >> grants), allocated by blkfront, the performance will be somewhere
-> >> inbetween the two extremes.
-> >> 
-> >> I guess that the choice is between
-> >> 1) Compiling blk{front,back} with a pre-determined number of persistent
-> >> grants, and failing if this limit is exceeded. This seems rather
-> >> unflexible, as blk{front,back} must then both both use the same version,
-> >> or you will get failures.
-> >> 2 (current setup)) Have a recommended maximum number of
-> >> persistently-mapped pages, and going into a 'fallback' mode if blkfront
-> >> exceeds this limit.
-> >> 3) Having blkback inform blkfront on startup as to how many grefs it is
-> >> willing to persistently-map. We then hit the same question again though:
-> >> what should be do if blkfront ignores this limit?
-> > 
-> > How about 2 and 3 together? Meaning have a recommended maximmum number.
-> > If we fall back due to memory pressure we can tell the guest that we
-> > are entering fall-back mode. The frontend can decide what it wants to do
-> > (throttle the amount of I/Os?) or just do a printk telling the user it
-> > dropped the speed from "Insane Hot!" down to "Turbo!"... 
-> > 
-> > Or maybe not. Perhaps just reporting it in the backend that we are
-> > hitting memory pressure and using the old-style-fallback mechanism
-> > so the system admin can take actions (and tell his users why suddenly
-> > their I/Os are so slow).
+On 09/21/2012 08:48 AM, JoonSoo Kim wrote:
+> Hi Glauber.
 > 
-> So would either of you help me understand what memory pressure
-> we're in need of dealing with here. So far, talk was only about
-> virtual address space that's needed for mapping in the grants, and
-> even then I don't see how this space requirement varies between
-> persistent and non-persistent grants - it's being reserved during
-> backend initialization anyway.
+Hi
+
+> 2012/9/18 Glauber Costa <glommer@parallels.com>:
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index 0b68d15..9d79216 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -2602,6 +2602,7 @@ redo:
+>>         } else
+>>                 __slab_free(s, page, x, addr);
+>>
+>> +       kmem_cache_verify_dead(s);
+>>  }
 > 
-> Jan
+> As far as u know, I am not a expert and don't know anything about memcg.
+> IMHO, this implementation may hurt system performance in some case.
 > 
+> In case of memcg is destoried, remained kmem_cache is marked "dead".
+> After it is marked,
+> every free operation to this "dead" kmem_cache call
+> kmem_cache_verify_dead() and finally call kmem_cache_shrink().
 
-IIRC, the pending_pages[] used by blkback is a static array of 256
-pages, allocated during initialisation. Therefore, the memory mapped
-does not increase with the number of block devices being backed, for
-non-persistent operation. Whereas, when we become persistent, we don't
-unmap pages so can't reuse pages for different block devices, therefore
-we have to alloc more pages for each device.
+As long as it is restricted to that cache, this is a non issue.
+dead caches are exactly what they name imply: dead.
 
-Does that answer your question, and make sense?
+Means that we actively want them to go away, and just don't kill them
+right away because they have some inflight objects - which we expect not
+to be too much.
 
+> kmem_cache_shrink() do invoking kmalloc and flush_all() and taking a
+> lock for online node and invoking kfree.
+> Especially, flush_all() may hurt performance largely, because it call
+> has_cpu_slab() against all the cpus.
+
+Again, this is all right, but being a dead cache, it shouldn't be on any
+hot path.
+
+> 
+> And, I found one case that destroying memcg's kmem_cache don't works properly.
+> If we destroy memcg after all object is freed, current implementation
+> doesn't destroy kmem_cache.
+> kmem_cache_destroy_work_func() check "cachep->memcg_params.nr_pages == 0",
+> but in this case, it return false, because kmem_cache may have
+> cpu_slab, and cpu_partials_slabs.
+> As we already free all objects, kmem_cache_verify_dead() is not invoked forever.
+> I think that we need another kmem_cache_shrink() in
+> kmem_cache_destroy_work_func().
+
+I'll take a look here. What you describe makes sense, and can
+potentially happen. I tried to handle this case with care in
+destroy_all_caches, but I may have always made a mistake...
+
+Did you see this actively happening, or are you just assuming this can
+happen from your read of the code?
