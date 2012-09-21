@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab2IUO6F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 10:58:05 -0400
-Received: from fbsmtp.dnsalias.org ([82.66.248.156]:40628 "EHLO
-	fbsmtp.dnsalias.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755580Ab2IUO6D (ORCPT
+	id S1756066Ab2IUPAR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 11:00:17 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37475 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755518Ab2IUPAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 10:58:03 -0400
-Date: Fri, 21 Sep 2012 16:57:53 +0200
-From: =?ISO-8859-1?Q?Fran=E7ois?= Boisson 
-	<user.anti-spam@maison.homelinux.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: shutdown with toshiba portege
-Message-Id: <20120921165753.7a5701fc6a0e1445daa92500@maison.homelinux.net>
-In-Reply-To: <20120920204234.0fb035a89f88a2e1f468aa54@maison.homelinux.net>
-References: <20120920204234.0fb035a89f88a2e1f468aa54@maison.homelinux.net>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Scanner: exiscan *1TF4fy-0004PS-00*xnrZDucU3Rk*
+	Fri, 21 Sep 2012 11:00:15 -0400
+Date: Fri, 21 Sep 2012 15:59:30 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>, Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 3/4] ARM: add finit_module syscall to ARM
+Message-ID: <20120921145930.GA28875@flint.arm.linux.org.uk>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <1348179300-11653-3-git-send-email-keescook@chromium.org> <201209211315.06668.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201209211315.06668.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Thu, 20 Sep 2012 20:42:34 +0200
-François Boisson  <user.anti-spam@maison.homelinux.net> a écrit:
-
-> Hey 
+On Fri, Sep 21, 2012 at 01:15:06PM +0000, Arnd Bergmann wrote:
+> On Thursday 20 September 2012, Kees Cook wrote:
+> > Add finit_module syscall to the ARM syscall list.
+> > 
+> > Signed-off-by: Kees Cook <keescook@chromium.org>
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > ---
 > 
-> I have a problem which seems to be related to shutdown for a Toshiba portege
-> (it's seems that the problem is also on other Toshiba, on VAIO cw5, y
-[...]
-> If i shutdown the computer and wait some hours, the power consumption of the
-> computer is not null, it's about the same as the power consumtion during a
-> suspend of computer. In fact
-> 
-> Boot and halt with:
-> Windows 7 ---> No power consumption after
-> Linux 2.6.37-486-PAE --->  No power consumption after
-> Linux >= 3.0  ---> Power consumption (about 45-50 mW if acpitool is correct)
-[...]
+> My Ack was on the asm-generic patch, not the ARM architecture
+> one. This patch looks ok as well, but Russell is the one
+> maintaining the file, so you should get him to Ack this patch
+> instead.
 
-Well can anybody just tell me the sequence of shutdown and power of a x86
-computer in then linux kernell, or just how to verify that a device is power
-off with a printk, or where to search or even only where is the part of code
-doing this. There is many documentation about use device but nothing about
-power off.
+And, as no one bothered to copy me, I can't give an ack for a patch I've
+not seen.
 
-Thanks
-
-François Boisson
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
