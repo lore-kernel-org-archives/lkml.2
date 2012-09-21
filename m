@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2IUCdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 22:33:45 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:55131 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab2IUCdo (ORCPT
+	id S1756957Ab2IUCgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 22:36:14 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46495 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756852Ab2IUCgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 22:33:44 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6841"; a="237157951"
-Message-ID: <505BD206.9070600@codeaurora.org>
-Date: Thu, 20 Sep 2012 19:33:42 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Thu, 20 Sep 2012 22:36:13 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-f5-505bd29b8d30
+From: Namhyung Kim <namhyung@kernel.org>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH V3] perf: Fix parallel build
+References: <505BAC5D.9020909@redhat.com> <505BBF12.4060800@redhat.com>
+	<87392cyvpl.fsf@sejong.aot.lge.com> <505BD190.40707@redhat.com>
+Date: Fri, 21 Sep 2012 11:27:31 +0900
+In-Reply-To: <505BD190.40707@redhat.com> (Eric Sandeen's message of "Thu, 20
+	Sep 2012 21:31:44 -0500")
+Message-ID: <87y5k4xg8c.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/3] clk: Add devm_clk_{register,unregister}()
-References: <1348034730-16473-1-git-send-email-sboyd@codeaurora.org> <1348034730-16473-3-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1348034730-16473-3-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/12 23:05, Stephen Boyd wrote:
-> +void devm_clk_unregister(struct device *dev, struct clk *clk)
-> +{
-> +	WARN_ON(devres_destroy(dev, devm_clk_release, devm_clk_match, clk));
+On Thu, 20 Sep 2012 21:31:44 -0500, Eric Sandeen wrote:
+> Parallel builds of perf were failing for me on a 32p box, with:
+>
+>     * new build flags or prefix
+> util/pmu.l:7:23: error: pmu-bison.h: No such file or directory
+>
+> ...
+>
+> make: *** [util/pmu-flex.o] Error 1
+> make: *** Waiting for unfinished jobs....
+>
+> This can pretty quickly be seen by adding a sleep in front of
+> the bison calls in tools/perf/Makefile and running make -j4 on a
+> smaller box i.e.:
+>
+> 	sleep 10; $(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+>
+> Adding the following dependencies fixes it for me.
+>
+> Signed-off-by: Eric Sandeen <sandeen@redhat.com>
 
-Hm... I guess this needs to be devres_release() instead of destroy. Can
-you squash this in or should I resend for the few character change?
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 6852809..f02f4fe 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1509,7 +1509,7 @@ static int devm_clk_match(struct device *dev, void *res, void *data)
-  */
- void devm_clk_unregister(struct device *dev, struct clk *clk)
- {
--       WARN_ON(devres_destroy(dev, devm_clk_release, devm_clk_match, clk));
-+       WARN_ON(devres_release(dev, devm_clk_release, devm_clk_match, clk));
- }
- EXPORT_SYMBOL(devm_clk_unregister);
- 
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Thanks for fixing this!
+Namhyung
