@@ -1,396 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab2IUR6H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:58:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12410 "EHLO mx1.redhat.com"
+	id S1755681Ab2IUR6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:58:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15194 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752106Ab2IUR6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:58:05 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v11] kvm: Add resampling irqfds for level triggered interrupts
-To: avi@redhat.com, mst@redhat.com
-Cc: gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 21 Sep 2012 11:58:03 -0600
-Message-ID: <20120921175601.32604.63271.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1754610Ab2IUR6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 13:58:10 -0400
+Message-ID: <505CAAA1.3040409@redhat.com>
+Date: Fri, 21 Sep 2012 13:57:53 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Takao Indoh <indou.takao@jp.fujitsu.com>, vgoyal@redhat.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com, hbabu@us.ibm.com,
+        ishii.hironobu@jp.fujitsu.com, martin.wilck@ts.fujitsu.com
+Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+References: <501BB4EF.7080909@jp.fujitsu.com> <20120803114643.GA28330@redhat.com> <501F4877.5050605@jp.fujitsu.com> <20120806203902.GH25559@redhat.com> <50473306.1070803@jp.fujitsu.com> <20120910143604.GB639@redhat.com> <504F1343.7030607@jp.fujitsu.com> <20120914200334.GA9041@phenom.dumpdata.com>
+In-Reply-To: <20120914200334.GA9041@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To emulate level triggered interrupts, add a resample option to
-KVM_IRQFD.  When specified, a new resamplefd is provided that notifies
-the user when the irqchip has been resampled by the VM.  This may, for
-instance, indicate an EOI.  Also in this mode, posting of an interrupt
-through an irqfd only asserts the interrupt.  On resampling, the
-interrupt is automatically de-asserted prior to user notification.
-This enables level triggered interrupts to be posted and re-enabled
-from vfio with no userspace intervention.
-
-All resampling irqfds can make use of a single irq source ID, so we
-reserve a new one for this interface.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
-
-Taking Michael's idea to create our own lock for resampling irqfds
-simplifies things significantly.  We can now avoid any nesting with
-the irqfds.lock spinlock so we can call everything we need to
-directly.
-
- Documentation/virtual/kvm/api.txt |   13 +++
- arch/x86/kvm/x86.c                |    4 +
- include/linux/kvm.h               |   12 +++
- include/linux/kvm_host.h          |    5 +
- virt/kvm/eventfd.c                |  150 ++++++++++++++++++++++++++++++++++++-
- virt/kvm/irq_comm.c               |    6 +
- 6 files changed, 184 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index bf33aaa..6240366 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1946,6 +1946,19 @@ the guest using the specified gsi pin.  The irqfd is removed using
- the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
- and kvm_irqfd.gsi.
- 
-+With KVM_CAP_IRQFD_RESAMPLE, KVM_IRQFD supports a de-assert and notify
-+mechanism allowing emulation of level-triggered, irqfd-based
-+interrupts.  When KVM_IRQFD_FLAG_RESAMPLE is set the user must pass an
-+additional eventfd in the kvm_irqfd.resamplefd field.  When operating
-+in resample mode, posting of an interrupt through kvm_irq.fd asserts
-+the specified gsi in the irqchip.  When the irqchip is resampled, such
-+as from an EOI, the gsi is de-asserted and the user is notifed via
-+kvm_irqfd.resamplefd.  It is the user's responsibility to re-queue
-+the interrupt if the device making use of it still requires service.
-+Note that closing the resamplefd is not sufficient to disable the
-+irqfd.  The KVM_IRQFD_FLAG_RESAMPLE is only necessary on assignment
-+and need not be specified with KVM_IRQFD_FLAG_DEASSIGN.
-+
- 4.76 KVM_PPC_ALLOCATE_HTAB
- 
- Capability: KVM_CAP_PPC_ALLOC_HTAB
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 2966c84..56f9002 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2177,6 +2177,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_GET_TSC_KHZ:
- 	case KVM_CAP_PCI_2_3:
- 	case KVM_CAP_KVMCLOCK_CTRL:
-+	case KVM_CAP_IRQFD_RESAMPLE:
- 		r = 1;
- 		break;
- 	case KVM_CAP_COALESCED_MMIO:
-@@ -6268,6 +6269,9 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
- 
- 	/* Reserve bit 0 of irq_sources_bitmap for userspace irq source */
- 	set_bit(KVM_USERSPACE_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
-+	/* Reserve bit 1 of irq_sources_bitmap for irqfd-resampler */
-+	set_bit(KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID,
-+		&kvm->arch.irq_sources_bitmap);
- 
- 	raw_spin_lock_init(&kvm->arch.tsc_write_lock);
- 
-diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index 2ce09aa..a01a3d5 100644
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_PPC_GET_SMMU_INFO 78
- #define KVM_CAP_S390_COW 79
- #define KVM_CAP_PPC_ALLOC_HTAB 80
-+#define KVM_CAP_IRQFD_RESAMPLE 81
- 
- #ifdef KVM_CAP_IRQ_ROUTING
- 
-@@ -683,12 +684,21 @@ struct kvm_xen_hvm_config {
- #endif
- 
- #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
-+/*
-+ * Available with KVM_CAP_IRQFD_RESAMPLE
-+ *
-+ * KVM_IRQFD_FLAG_RESAMPLE indicates resamplefd is valid and specifies
-+ * the irqfd to operate in resampling mode for level triggered interrupt
-+ * emlation.  See Documentation/virtual/kvm/api.txt.
-+ */
-+#define KVM_IRQFD_FLAG_RESAMPLE (1 << 1)
- 
- struct kvm_irqfd {
- 	__u32 fd;
- 	__u32 gsi;
- 	__u32 flags;
--	__u8  pad[20];
-+	__u32 resamplefd;
-+	__u8  pad[16];
- };
- 
- struct kvm_clock_data {
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index b70b48b..6966ce2 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -70,7 +70,8 @@
- #define KVM_REQ_PMU               16
- #define KVM_REQ_PMI               17
- 
--#define KVM_USERSPACE_IRQ_SOURCE_ID	0
-+#define KVM_USERSPACE_IRQ_SOURCE_ID		0
-+#define KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID	1
- 
- struct kvm;
- struct kvm_vcpu;
-@@ -283,6 +284,8 @@ struct kvm {
- 	struct {
- 		spinlock_t        lock;
- 		struct list_head  items;
-+		struct list_head  resampler_list;
-+		struct mutex      resampler_lock;
- 	} irqfds;
- 	struct list_head ioeventfds;
- #endif
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 7d7e2aa..356965c 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -43,6 +43,31 @@
-  * --------------------------------------------------------------------
-  */
- 
-+/*
-+ * Resampling irqfds are a special variety of irqfds used to emulate
-+ * level triggered interrupts.  The interrupt is asserted on eventfd
-+ * trigger.  On acknowledgement through the irq ack notifier, the
-+ * interrupt is de-asserted and userspace is notified through the
-+ * resamplefd.  All resamplers on the same gsi are de-asserted
-+ * together, so we don't need to track the state of each individual
-+ * user.  We can also therefore share the same irq source ID.
-+ */
-+struct _irqfd_resampler {
-+	struct kvm *kvm;
-+	/*
-+	 * List of resampling struct _irqfd objects sharing this gsi.
-+	 * RCU list modified under kvm->irqfds.resampler_lock
-+	 */
-+	struct list_head list;
-+	struct kvm_irq_ack_notifier notifier;
-+	/*
-+	 * Entry in list of kvm->irqfd.resampler_list.  Use for sharing
-+	 * resamplers among irqfds on the same gsi.
-+	 * Accessed and modified under kvm->irqfds.resampler_lock
-+	 */
-+	struct list_head link;
-+};
-+
- struct _irqfd {
- 	/* Used for MSI fast-path */
- 	struct kvm *kvm;
-@@ -52,6 +77,12 @@ struct _irqfd {
- 	/* Used for level IRQ fast-path */
- 	int gsi;
- 	struct work_struct inject;
-+	/* The resampler used by this irqfd (resampler-only) */
-+	struct _irqfd_resampler *resampler;
-+	/* Eventfd notified on resample (resampler-only) */
-+	struct eventfd_ctx *resamplefd;
-+	/* Entry in list of irqfds for a resampler (resampler-only) */
-+	struct list_head resampler_link;
- 	/* Used for setup/shutdown */
- 	struct eventfd_ctx *eventfd;
- 	struct list_head list;
-@@ -67,8 +98,58 @@ irqfd_inject(struct work_struct *work)
- 	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
- 	struct kvm *kvm = irqfd->kvm;
- 
--	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
--	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-+	if (!irqfd->resampler) {
-+		kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
-+		kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-+	} else
-+		kvm_set_irq(kvm, KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID,
-+			    irqfd->gsi, 1);
-+}
-+
-+/*
-+ * Since resampler irqfds share an IRQ source ID, we de-assert once
-+ * then notify all of the resampler irqfds using this GSI.  We can't
-+ * do multiple de-asserts or we risk racing with incoming re-asserts.
-+ */
-+static void
-+irqfd_resampler_ack(struct kvm_irq_ack_notifier *kian)
-+{
-+	struct _irqfd_resampler *resampler;
-+	struct _irqfd *irqfd;
-+
-+	resampler = container_of(kian, struct _irqfd_resampler, notifier);
-+
-+	kvm_set_irq(resampler->kvm, KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID,
-+		    resampler->notifier.gsi, 0);
-+
-+	rcu_read_lock();
-+
-+	list_for_each_entry_rcu(irqfd, &resampler->list, resampler_link)
-+		eventfd_signal(irqfd->resamplefd, 1);
-+
-+	rcu_read_unlock();
-+}
-+
-+static void
-+irqfd_resampler_shutdown(struct _irqfd *irqfd)
-+{
-+	struct _irqfd_resampler *resampler = irqfd->resampler;
-+	struct kvm *kvm = resampler->kvm;
-+
-+	mutex_lock(&kvm->irqfds.resampler_lock);
-+
-+	list_del_rcu(&irqfd->resampler_link);
-+	synchronize_rcu();
-+
-+	if (list_empty(&resampler->list)) {
-+		list_del(&resampler->link);
-+		kvm_unregister_irq_ack_notifier(kvm, &resampler->notifier);
-+		kvm_set_irq(kvm, KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID,
-+			    resampler->notifier.gsi, 0);
-+		kfree(resampler);
-+	}
-+
-+	mutex_unlock(&kvm->irqfds.resampler_lock);
- }
- 
- /*
-@@ -92,6 +173,11 @@ irqfd_shutdown(struct work_struct *work)
- 	 */
- 	flush_work_sync(&irqfd->inject);
- 
-+	if (irqfd->resampler) {
-+		irqfd_resampler_shutdown(irqfd);
-+		eventfd_ctx_put(irqfd->resamplefd);
-+	}
-+
- 	/*
- 	 * It is now safe to release the object's resources
- 	 */
-@@ -203,7 +289,7 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
- 	struct kvm_irq_routing_table *irq_rt;
- 	struct _irqfd *irqfd, *tmp;
- 	struct file *file = NULL;
--	struct eventfd_ctx *eventfd = NULL;
-+	struct eventfd_ctx *eventfd = NULL, *resamplefd = NULL;
- 	int ret;
- 	unsigned int events;
- 
-@@ -231,6 +317,54 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
- 
- 	irqfd->eventfd = eventfd;
- 
-+	if (args->flags & KVM_IRQFD_FLAG_RESAMPLE) {
-+		struct _irqfd_resampler *resampler;
-+
-+		resamplefd = eventfd_ctx_fdget(args->resamplefd);
-+		if (IS_ERR(resamplefd)) {
-+			ret = PTR_ERR(resamplefd);
-+			goto fail;
-+		}
-+
-+		irqfd->resamplefd = resamplefd;
-+		INIT_LIST_HEAD(&irqfd->resampler_link);
-+
-+		mutex_lock(&kvm->irqfds.resampler_lock);
-+
-+		list_for_each_entry(resampler,
-+				    &kvm->irqfds.resampler_list, list) {
-+			if (resampler->notifier.gsi == irqfd->gsi) {
-+				irqfd->resampler = resampler;
-+				break;
-+			}
-+		}
-+
-+		if (!irqfd->resampler) {
-+			resampler = kzalloc(sizeof(*resampler), GFP_KERNEL);
-+			if (!resampler) {
-+				ret = -ENOMEM;
-+				mutex_unlock(&kvm->irqfds.resampler_lock);
-+				goto fail;
-+			}
-+
-+			resampler->kvm = kvm;
-+			INIT_LIST_HEAD(&resampler->list);
-+			resampler->notifier.gsi = irqfd->gsi;
-+			resampler->notifier.irq_acked = irqfd_resampler_ack;
-+			INIT_LIST_HEAD(&resampler->link);
-+
-+			list_add(&resampler->link, &kvm->irqfds.resampler_list);
-+			kvm_register_irq_ack_notifier(kvm,
-+						      &resampler->notifier);
-+			irqfd->resampler = resampler;
-+		}
-+
-+		list_add_rcu(&irqfd->resampler_link, &irqfd->resampler->list);
-+		synchronize_rcu();
-+
-+		mutex_unlock(&kvm->irqfds.resampler_lock);
-+	}
-+
- 	/*
- 	 * Install our own custom wake-up handling so we are notified via
- 	 * a callback whenever someone signals the underlying eventfd
-@@ -276,6 +410,12 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
- 	return 0;
- 
- fail:
-+	if (irqfd->resampler)
-+		irqfd_resampler_shutdown(irqfd);
-+
-+	if (resamplefd && !IS_ERR(resamplefd))
-+		eventfd_ctx_put(resamplefd);
-+
- 	if (eventfd && !IS_ERR(eventfd))
- 		eventfd_ctx_put(eventfd);
- 
-@@ -291,6 +431,8 @@ kvm_eventfd_init(struct kvm *kvm)
- {
- 	spin_lock_init(&kvm->irqfds.lock);
- 	INIT_LIST_HEAD(&kvm->irqfds.items);
-+	INIT_LIST_HEAD(&kvm->irqfds.resampler_list);
-+	mutex_init(&kvm->irqfds.resampler_lock);
- 	INIT_LIST_HEAD(&kvm->ioeventfds);
- }
- 
-@@ -340,7 +482,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
- int
- kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
- {
--	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
-+	if (args->flags & ~(KVM_IRQFD_FLAG_DEASSIGN | KVM_IRQFD_FLAG_RESAMPLE))
- 		return -EINVAL;
- 
- 	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
-diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-index 83402d7..738f954 100644
---- a/virt/kvm/irq_comm.c
-+++ b/virt/kvm/irq_comm.c
-@@ -223,6 +223,9 @@ int kvm_request_irq_source_id(struct kvm *kvm)
- 	}
- 
- 	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
-+#ifdef CONFIG_X86
-+	ASSERT(irq_source_id != KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID);
-+#endif
- 	set_bit(irq_source_id, bitmap);
- unlock:
- 	mutex_unlock(&kvm->irq_lock);
-@@ -233,6 +236,9 @@ unlock:
- void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
- {
- 	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
-+#ifdef CONFIG_X86
-+	ASSERT(irq_source_id != KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID);
-+#endif
- 
- 	mutex_lock(&kvm->irq_lock);
- 	if (irq_source_id < 0 ||
+On 09/14/2012 04:03 PM, Konrad Rzeszutek Wilk wrote:
+>> As to the boot parameter to enable this function, you suggested using
+>> reset_devices. I found that on a certain platform resetting devices
+>> caused PCIe error due to a hardware bug. Therefore I think we need
+>> new parameter apart from reset_devices to disable this function on
+>> such a machine.
+>
+> Wouldn't a DMI quirk be better for this? That way the second kernel
+> internally would know not to do this.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+a DMI quirk for a PCIe switch?  pci-quirk maybe?  there is a hook
+in per-device pci reset code path, which could be setup for such
+a case.
 
