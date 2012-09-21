@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab2IUAGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 20:06:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52435 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab2IUAGg (ORCPT
+	id S1756589Ab2IUAJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 20:09:27 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:34721 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756500Ab2IUAJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 20:06:36 -0400
-Date: Thu, 20 Sep 2012 17:06:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
-Subject: Re: [PATCH v2 15/26] block: Add bio_copy_data()
-Message-ID: <20120921000632.GS7264@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-16-git-send-email-koverstreet@google.com>
+	Thu, 20 Sep 2012 20:09:25 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX182GkGrMj0RydJt8gIoUSuS
+Date: Thu, 20 Sep 2012 17:09:22 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Benoit Cousson <b-cousson@ti.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: Re: [PATCH 1/3] pinctrl: pinctrl-single must be initialized early.
+Message-ID: <20120921000922.GQ28835@atomide.com>
+References: <1348070841-23354-1-git-send-email-panto@antoniou-consulting.com>
+ <1348070841-23354-2-git-send-email-panto@antoniou-consulting.com>
+ <20120918182150.GY11762@atomide.com>
+ <B7D59159-4456-468B-A414-9B57BCEE018D@antoniou-consulting.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347322957-25260-16-git-send-email-koverstreet@google.com>
+In-Reply-To: <B7D59159-4456-468B-A414-9B57BCEE018D@antoniou-consulting.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+* Pantelis Antoniou <panto@antoniou-consulting.com> [120918 12:11]:
+> 
+> As long as we get the regulator to work early in the game no problem.
+> I don't know if deferring the probe will work in this case.
+> I could give it a shot and see if it works at all.
 
-On Mon, Sep 10, 2012 at 05:22:26PM -0700, Kent Overstreet wrote:
-> +void bio_copy_data(struct bio *dst, struct bio *src)
-> +{
-...
-> +		src_p = kmap_atomic(src_bv->bv_page);
-> +		dst_p = kmap_atomic(dst_bv->bv_page);
-> +
-> +		memcpy(dst_p + dst_bv->bv_offset,
-> +		       src_p + src_bv->bv_offset,
-> +		       bytes);
-> +
-> +		kunmap_atomic(dst_p);
-> +		kunmap_atomic(src_p);
+Did you have any luck with deferred probe here?
 
-Wrap these in preempt_disable/enable() to allow the function to be
-called from any context?
-
-Thanks.
-
--- 
-tejun
+Tony
