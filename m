@@ -1,65 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab2IUP5C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 11:57:02 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46227 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab2IUP5A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 11:57:00 -0400
-Date: Fri, 21 Sep 2012 11:45:51 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Marcus Karlsson <mk@acc.umu.se>, gregkh@linuxfoundation.org,
-        xiaoguangrong@linux.vnet.ibm.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: zcache: fix spelling of comment
-Message-ID: <20120921154550.GB4780@phenom.dumpdata.com>
-References: <1346531386-9524-1-git-send-email-mk@acc.umu.se>
- <20120905160555.GA12339@phenom.dumpdata.com>
+	id S1756846Ab2IUP5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 11:57:30 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60306 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756508Ab2IUP5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 11:57:09 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+To: <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, <catalin.marinas@arm.com>, <davidb@codeaurora.org>,
+        <frank.rowand@am.sony.com>, <hsweeten@visionengravers.com>,
+        <linus.walleij@linaro.org>, <marc.zyngier@arm.com>, <nico@linaro.org>,
+        <paul.gortmaker@windriver.com>, <plagnioj@jcrosoft.com>,
+        <rabin@rab.in>, <rmallon@gmail.com>, <rob.herring@calxeda.com>,
+        <sboyd@codeaurora.org>, <sjg@chromium.org>, <tglx@linutronix.de>,
+        <tj@kernel.org>, <vincent.guittot@linaro.org>, <vitalya@ti.com>,
+        <will.deacon@arm.com>, <grant.likely@secretlab.ca>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH v3 RESEND 16/17] ARM: mm: cleanup checks for membank overlap with vmalloc area
+Date: Fri, 21 Sep 2012 11:56:14 -0400
+Message-ID: <1348242975-19184-17-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348242975-19184-1-git-send-email-cyril@ti.com>
+References: <1348242975-19184-1-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905160555.GA12339@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 12:05:55PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Sat, Sep 01, 2012 at 10:29:46PM +0200, Marcus Karlsson wrote:
-> > Fix spelling in tmem.c:
-> > Transcedent -> Transcendent
-> > 
-> > Signed-off-by: Marcus Karlsson <mk@acc.umu.se>
-> 
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Keystone platforms, physical memory is entirely outside the 32-bit
+addressible range.  Therefore, the (bank->start > ULONG_MAX) check below marks
+the entire system memory as highmem, and this causes unpleasentness all over.
 
-Greg, can you pick this up for 3.7 pls? Or should I prep a git branch
-to send to you (I've a patch for the TODO file as well).
+This patch eliminates the extra bank start check (against ULONG_MAX) by
+checking bank->start against the physical address corresponding to vmalloc_min
+instead.
 
-> > ---
-> >  drivers/staging/zcache/tmem.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/staging/zcache/tmem.c b/drivers/staging/zcache/tmem.c
-> > index eaa9021..56c8e60 100644
-> > --- a/drivers/staging/zcache/tmem.c
-> > +++ b/drivers/staging/zcache/tmem.c
-> > @@ -3,7 +3,7 @@
-> >   *
-> >   * Copyright (c) 2009-2011, Dan Magenheimer, Oracle Corp.
-> >   *
-> > - * The primary purpose of Transcedent Memory ("tmem") is to map object-oriented
-> > + * The primary purpose of Transcendent Memory ("tmem") is to map object-oriented
-> >   * "handles" (triples containing a pool id, and object id, and an index), to
-> >   * pages in a page-accessible memory (PAM).  Tmem references the PAM pages via
-> >   * an abstract "pampd" (PAM page-descriptor), which can be operated on by a
-> > -- 
-> > 1.7.12
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+In the process, this patch also cleans up parts of the highmem sanity check
+code by removing what has now become a redundant check for banks that entirely
+overlap with the vmalloc range.
+
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+---
+ arch/arm/mm/mmu.c |   19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
+
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index fcdc185..e631f73 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -901,15 +901,12 @@ void __init sanity_check_meminfo(void)
+ 		struct membank *bank = &meminfo.bank[j];
+ 		*bank = meminfo.bank[i];
+ 
+-		if (bank->start > ULONG_MAX)
+-			highmem = 1;
+-
+-#ifdef CONFIG_HIGHMEM
+ 		if (bank->start >= vmalloc_limit)
+ 			highmem = 1;
+ 
+ 		bank->highmem = highmem;
+ 
++#ifdef CONFIG_HIGHMEM
+ 		/*
+ 		 * Split those memory banks which are partially overlapping
+ 		 * the vmalloc area greatly simplifying things later.
+@@ -932,8 +929,6 @@ void __init sanity_check_meminfo(void)
+ 			bank->size = vmalloc_limit - bank->start;
+ 		}
+ #else
+-		bank->highmem = highmem;
+-
+ 		/*
+ 		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
+ 		 */
+@@ -946,18 +941,6 @@ void __init sanity_check_meminfo(void)
+ 		}
+ 
+ 		/*
+-		 * Check whether this memory bank would entirely overlap
+-		 * the vmalloc area.
+-		 */
+-		if (bank->start >= vmalloc_limit) {
+-			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
+-			       "(vmalloc region overlap).\n",
+-			       (unsigned long long)bank->start,
+-			       (unsigned long long)bank->start + bank->size - 1);
+-			continue;
+-		}
+-
+-		/*
+ 		 * Check whether this memory bank would partially overlap
+ 		 * the vmalloc area.
+ 		 */
+-- 
+1.7.9.5
+
