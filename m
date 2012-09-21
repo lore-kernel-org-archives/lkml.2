@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab2IUR0c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:26:32 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42794 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab2IUR0a (ORCPT
+	id S932193Ab2IUR2p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:28:45 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:40564 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087Ab2IUR2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:26:30 -0400
+	Fri, 21 Sep 2012 13:28:42 -0400
+Message-ID: <505CA2EB.7050403@linux.vnet.ibm.com>
+Date: Fri, 21 Sep 2012 22:54:59 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120921165137.GB28875@flint.arm.linux.org.uk>
-References: <1348243081-6725-1-git-send-email-keescook@chromium.org>
-	<20120921165137.GB28875@flint.arm.linux.org.uk>
-Date: Fri, 21 Sep 2012 10:26:29 -0700
-X-Google-Sender-Auth: MDjNCIY9BaeiRshTgLlB-mCj4ng
-Message-ID: <CAGXu5jJ75hhb4N_C+3Trp8=LWFMkA52CUmwv+1P9p-6OqMhjEw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: add finit_module syscall to ARM
-From: Kees Cook <keescook@chromium.org>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Rik van Riel <riel@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com>
+In-Reply-To: <505C654B.2050106@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092117-9264-0000-0000-000002604B8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 9:51 AM, Russell King <rmk@arm.linux.org.uk> wrote:
-> On Fri, Sep 21, 2012 at 08:58:00AM -0700, Kees Cook wrote:
->> Add finit_module syscall to the ARM syscall list.
+On 09/21/2012 06:32 PM, Rik van Riel wrote:
+> On 09/21/2012 08:00 AM, Raghavendra K T wrote:
+>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 >>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> Cc: Russell King <rmk@arm.linux.org.uk>
->> ---
->>  arch/arm/include/asm/unistd.h |    1 +
->>  arch/arm/kernel/calls.S       |    1 +
->>  2 files changed, 2 insertions(+), 0 deletions(-)
+>> When total number of VCPUs of system is less than or equal to physical
+>> CPUs,
+>> PLE exits become costly since each VCPU can have dedicated PCPU, and
+>> trying to find a target VCPU to yield_to just burns time in PLE handler.
 >>
->> diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
->> index 0cab47d..904b579 100644
->> --- a/arch/arm/include/asm/unistd.h
->> +++ b/arch/arm/include/asm/unistd.h
->> @@ -404,6 +404,7 @@
->>  #define __NR_setns                   (__NR_SYSCALL_BASE+375)
->>  #define __NR_process_vm_readv                (__NR_SYSCALL_BASE+376)
->>  #define __NR_process_vm_writev               (__NR_SYSCALL_BASE+377)
->> +#define __NR_finit_module            (__NR_SYSCALL_BASE+378)
+>> This patch reduces overhead, by simply doing a return in such
+>> scenarios by
+>> checking the length of current cpu runqueue.
 >
-> This gives us a different syscall ordering if we add the kcmp syscall.
+> I am not convinced this is the way to go.
 >
-> That brings up another question though - when was kcmp added to x86, and
-> why aren't we getting notifications from checksyscalls.sh that ARM hasn't
-> been updated?
->
-> It seems to be that the script was broken, and no one has noticed.
->
-> commit 29dc54c673ea2531d589400badb4ada5f5f60dae
-> Author: H. Peter Anvin <hpa@linux.intel.com>
-> Date:   Fri Nov 11 15:57:53 2011 -0800
->
->     checksyscalls: Use arch/x86/syscalls/syscall_32.tbl as source
->
->     Use the new arch/x86/syscalls/syscall_32.tbl file as source instead of
->     arch/x86/include/asm/unistd_32.h.
->
->     Cc: Michal Marek <mmarek@suse.cz>
->     Cc: Geert Uytterhoeven <geert@linux-m68k.org>
->     Cc: Sam Ravnborg <sam@ravnborg.org>
->     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
->
-> is the culpret, more specifically this fragment:
->
-> +           echo <<EOF
-> +#if !defined(__NR_${name}) && !defined(__IGNORE_${name})
-> +#warning syscall ${name} not implemented
-> +#endif
-> +EOF
->
-> "echo <<EOF" doesn't read from its stdin and output to stdout, so the
-> above just generates a blank line for each entry in x86's syscalls_32.tbl,
-> resulting in the compiler doing no checking for us.
->
-> That "echo <<EOF" should be "cat <<EOF"... and with that fixed we get:
->
-> <stdin>:1220:2: warning: #warning syscall kcmp not implemented
->
-> So, actually, I want to add this kcmp syscall _now_ into -rc which I'm
-> afraid will break your patch, and bump your syscall number on ARM to 379.
+> The VCPU that is holding the lock, and is not releasing it,
+> probably got scheduled out. That implies that VCPU is on a
+> runqueue with at least one other task.
 
-That's fine by me. I'll adjust my patch series.
+I see your point here, we have two cases:
 
-Thanks!
+case 1)
 
--Kees
+rq1 : vcpu1->wait(lockA) (spinning)
+rq2 : vcpu2->holding(lockA) (running)
 
--- 
-Kees Cook
-Chrome OS Security
+Here Ideally vcpu1 should not enter PLE handler, since it would surely
+get the lock within ple_window cycle. (assuming ple_window is tuned for
+that workload perfectly).
+
+May be this explains why we are not seeing benefit with kernbench.
+
+On the other side, Since we cannot have a perfect ple_window tuned for
+all type of workloads, for those workloads, which may need more than
+4096 cycles, we gain. thinking is it that we are seeing in benefited
+cases?
+
+case 2)
+rq1 : vcpu1->wait(lockA) (spinning)
+rq2 : vcpu3 (running) ,  vcpu2->holding(lockA) [scheduled out]
+
+I agree that checking rq1 length is not proper in this case, and as you
+rightly pointed out, we are in trouble here. 
+nr_running()/num_online_cpus() would give more accurate picture here,
+but it seemed costly. May be load balancer save us a bit here in not
+running to such sort of cases. ( I agree load balancer is far too
+complex).
+
