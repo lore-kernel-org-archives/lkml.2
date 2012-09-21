@@ -1,45 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab2IUTy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 15:54:28 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53222 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757861Ab2IUTy0 convert rfc822-to-8bit (ORCPT
+	id S1757968Ab2IUT4S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 15:56:18 -0400
+Received: from cust-218-222.on4.ontelecoms.gr ([92.118.218.222]:53939 "EHLO
+	vergina.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757875Ab2IUT4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 15:54:26 -0400
+	Fri, 21 Sep 2012 15:56:17 -0400
+Message-ID: <505CC65D.9010605@asyr.hopto.org>
+Date: Fri, 21 Sep 2012 22:56:13 +0300
+From: Thanasis <thanasis@asyr.hopto.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1348256595-29119-1-git-send-email-hpa@linux.intel.com>
-References: <1348256595-29119-1-git-send-email-hpa@linux.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 21 Sep 2012 12:54:04 -0700
-X-Google-Sender-Auth: MEqibh-f_ngu0mS15JFFj1sYd6w
-Message-ID: <CA+55aFwaZdMxLA1VCfOy9BDQHPp6CTwRFHYGUCXdJ4+KkQoN+g@mail.gmail.com>
-Subject: Re: [PATCH 00/11] x86: Supervisor Mode Access Prevention
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kees Cook <keescook@chromium.org>, Linda Wang <lwang@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
+References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org> <20120921152828.GA24364@electric-eye.fr.zoreil.com> <505C98C7.20302@asyr.hopto.org> <20120921175455.GA28255@electric-eye.fr.zoreil.com>
+In-Reply-To: <20120921175455.GA28255@electric-eye.fr.zoreil.com>
+Content-Type: multipart/mixed;
+ boundary="------------040901010807090305030603"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 12:43 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> Supervisor Mode Access Prevention (SMAP) is a new security feature
-> disclosed by Intel in revision 014 of the Intel® Architecture
-> Instruction Set Extensions Programming Reference:
+This is a multi-part message in MIME format.
+--------------040901010807090305030603
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-Looks good.
+Attached the whole log so far.
+(the process looks stuck anyway for more than 30 min at the same point)
 
-Did this find any bugs, btw? We've had a few cases where we forgot to
-use the proper user access function, and code just happened to work
-because it all boils down to the same thing and never got any page
-faults in practice anyway..
 
-I'd obviously hope that we have caught all of them, but.. IOW, has
-SMAP actually triggered for anybody in testing inside Intel?
+--------------040901010807090305030603
+Content-Type: application/x-bzip;
+ name="lets-go-shopping.log.bz2"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="lets-go-shopping.log.bz2"
 
-                 Linus
+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
+--------------040901010807090305030603--
