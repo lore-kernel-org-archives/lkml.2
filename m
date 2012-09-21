@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab2IUFhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 01:37:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45984 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab2IUFha (ORCPT
+	id S1755242Ab2IUFvU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 01:51:20 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:39606 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab2IUFvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 01:37:30 -0400
+	Fri, 21 Sep 2012 01:51:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120920.180949.2287169159603922703.davem@davemloft.net>
-References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
-	<20120920.180949.2287169159603922703.davem@davemloft.net>
-Date: Fri, 21 Sep 2012 07:37:29 +0200
-Message-ID: <CA+rthh8iRhymobiYMi=9TrO1FGfrHBrPZzCpsUgnKXsjD0bZiA@mail.gmail.com>
-Subject: Re: [PATCH 0/6] xfrm_user info leaks
-From: Mathias Krause <minipli@googlemail.com>
-To: David Miller <davem@davemloft.net>
-Cc: steffen.klassert@secunet.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+Date: Fri, 21 Sep 2012 13:51:18 +0800
+Message-ID: <CAPgLHd-Fpei5pNeyLrgvQogEF8phJrr2F-nKpchG6JE9ykxiWg@mail.gmail.com>
+Subject: [PATCH] ufs: fix return value check in ufs_alloc_lastblock()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: dushistov@mail.ru
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 12:09 AM, David Miller <davem@davemloft.net> wrote:
-> From: Mathias Krause <minipli@googlemail.com>
-> Date: Wed, 19 Sep 2012 23:33:37 +0200
->
->> the following series fixes various info leaks in the xfrm netlink
->> interface. As always, a test case can be supplied on request.
->>
->> Patches 1 to 5 are probably material for stable, too. Patch 6 is just a
->> minor optimization I stumbled across while auditing the code.
->>
->> Please apply!
->
-> All applied, and I made sure to use v3 of patch #5 (which you marked
-> as 5/7 instead of 5/6 :-)
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Sorry for the confusion. Looks like I've to learn a few more git
-tricks, so this won't happen again ;)
+In case of error, the function ufs_get_locked_page() returns ERR_PTR()
+or NULL pointer. The IS_ERR() test in the error handling should be
+replaced with IS_ERR_OR_NULL().
 
-> Also, these have been queued up for -stable as well.
+dpatch engine is used to auto generated this patch.
+(https://github.com/weiyj/dpatch)
 
-Thanks!
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ fs/ufs/truncate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/ufs/truncate.c b/fs/ufs/truncate.c
+index f04f89f..82426ed 100644
+--- a/fs/ufs/truncate.c
++++ b/fs/ufs/truncate.c
+@@ -391,7 +391,7 @@ static int ufs_alloc_lastblock(struct inode *inode)
+ 
+ 	lastpage = ufs_get_locked_page(mapping, lastfrag >>
+ 				       (PAGE_CACHE_SHIFT - inode->i_blkbits));
+-       if (IS_ERR(lastpage)) {
++	if (IS_ERR_OR_NULL(lastpage)) {
+                err = -EIO;
+                goto out;
+        }
+
