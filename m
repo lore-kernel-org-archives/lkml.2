@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab2IUHQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 03:16:57 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43801 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880Ab2IUHQ4 (ORCPT
+	id S1755918Ab2IUHRy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 03:17:54 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4196 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2IUHRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 03:16:56 -0400
+	Fri, 21 Sep 2012 03:17:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 21 Sep 2012 00:17:52 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <grant.likely@secretlab.ca>, <benh@kernel.crashing.org>
+CC: <linux-kernel@vger.kernel.org>, Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] irqdomain: Removed unused variable description
+Date: Fri, 21 Sep 2012 12:47:27 +0530
+Message-ID: <1348211847-24252-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Date: Fri, 21 Sep 2012 15:16:55 +0800
-Message-ID: <CAPgLHd9i5kYKk+eTcC2ddu3k_F+PwdnVi91k4vEoj_wWkgBXDw@mail.gmail.com>
-Subject: [PATCH] spi: sh-hspi: fix return value check in hspi_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: grant.likely@secretlab.ca
-Cc: yongjun_wei@trendmicro.com.cn, spi-devel-general@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Removed description for unused variables: irq_base, nr_irq &
+hwirq_base, from the irq_domain structure.
 
-In case of error, the function clk_get() returns ERR_PTR()
-and never returns NULL pointer. The NULL test in the error
-handling should be replaced with IS_ERR().
-
-dpatch engine is used to auto generated this patch.
-(https://github.com/weiyj/dpatch)
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 ---
- drivers/spi/spi-sh-hspi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/irqdomain.h |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/spi/spi-sh-hspi.c b/drivers/spi/spi-sh-hspi.c
-index 934138c..ecb99f3 100644
---- a/drivers/spi/spi-sh-hspi.c
-+++ b/drivers/spi/spi-sh-hspi.c
-@@ -251,7 +251,7 @@ static int __devinit hspi_probe(struct platform_device *pdev)
- 	}
- 
- 	clk = clk_get(NULL, "shyway_clk");
--	if (!clk) {
-+	if (IS_ERR(clk)) {
- 		dev_err(&pdev->dev, "shyway_clk is required\n");
- 		ret = -EINVAL;
- 		goto error0;
-
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 0d5b17b..a248aec 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -75,11 +75,6 @@ struct irq_domain_ops {
+  * @ops: pointer to irq_domain methods
+  * @host_data: private data pointer for use by owner.  Not touched by irq_domain
+  *             core code.
+- * @irq_base: Start of irq_desc range assigned to the irq_domain.  The creator
+- *            of the irq_domain is responsible for allocating the array of
+- *            irq_desc structures.
+- * @nr_irq: Number of irqs managed by the irq domain
+- * @hwirq_base: Starting number for hwirqs managed by the irq domain
+  * @of_node: (optional) Pointer to device tree nodes associated with the
+  *           irq_domain.  Used when decoding device tree interrupt specifiers.
+  */
+-- 
+1.7.1.1
 
