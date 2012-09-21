@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab2IUU1c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 16:27:32 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:36239 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805Ab2IUU1a convert rfc822-to-8bit (ORCPT
+	id S1757847Ab2IUUbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 16:31:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38974 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757527Ab2IUUbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 16:27:30 -0400
+	Fri, 21 Sep 2012 16:31:05 -0400
+Date: Fri, 21 Sep 2012 13:31:01 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 12/16] memcg/sl[au]b Track all the memcg children of
+ a kmem_cache.
+Message-ID: <20120921203101.GP7264@google.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
+ <1347977530-29755-13-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1348239433.2669.522.camel@edumazet-glaptop>
-References: <1348073761.26523.1095.camel@edumazet-glaptop>
-	<20120920.174827.1245530945282009606.davem@davemloft.net>
-	<1348239433.2669.522.camel@edumazet-glaptop>
-Date: Fri, 21 Sep 2012 13:27:30 -0700
-Message-ID: <CAGK4HS98RG78Auvaai3Ny6zz5c_hccO-ShD3GuT=moRRm4+RUA@mail.gmail.com>
-Subject: Re: [PATCH net-next v1] net: use a per task frag allocator
-From: Vijay Subramanian <subramanian.vijay@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347977530-29755-13-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get the following compile error with the newer version of the patch
+Hello, Glauber.
 
-net/sched/em_meta.c: In function ‘meta_int_sk_sendmsg_off’:
-net/sched/em_meta.c:464: error: ‘struct sock’ has no member named
-‘sk_sndmsg_off’
-make[1]: *** [net/sched/em_meta.o] Error 1
-make: *** [net/sched/em_meta.o] Error 2
+On Tue, Sep 18, 2012 at 06:12:06PM +0400, Glauber Costa wrote:
+> This enables us to remove all the children of a kmem_cache being
+> destroyed, if for example the kernel module it's being used in
+> gets unloaded. Otherwise, the children will still point to the
+> destroyed parent.
 
+I find the terms parent / child / sibling a bit confusing.  It usually
+implies proper tree structure.  Maybe we can use better terms which
+reflect the single layer structure better?
 
+And, again, in general, please add some comments.  If someone tries to
+understand this for the first time and takes a look at
+mem_cgroup_cache_params, there's almost nothing to guide that person.
+What's the struct for?  What does each field do?  What are the
+synchronization rules?
 
-Vijay
+> @@ -626,6 +630,9 @@ void memcg_release_cache(struct kmem_cache *cachep)
+>  {
+>  	if (cachep->memcg_params.id != -1)
+>  		ida_simple_remove(&cache_types, cachep->memcg_params.id);
+> +	else
+> +		list_del(&cachep->memcg_params.sibling_list);
+> +
+
+list_del_init() please.
+
+Thanks.
+
+-- 
+tejun
