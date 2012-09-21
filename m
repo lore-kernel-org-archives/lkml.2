@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab2IUKHQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 06:07:16 -0400
+	id S933052Ab2IUKH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 06:07:26 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:48957 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932814Ab2IUKHL (ORCPT
+	with ESMTP id S933036Ab2IUKHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 06:07:11 -0400
+	Fri, 21 Sep 2012 06:07:21 -0400
 From: Haojian Zhuang <haojian.zhuang@gmail.com>
 To: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
         dmitry.torokhov@gmail.com
 Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH v2 2/4] mfd: 88pm860x: support dt
-Date: Fri, 21 Sep 2012 18:06:52 +0800
-Message-Id: <1348222014-15927-3-git-send-email-haojian.zhuang@gmail.com>
+Subject: [PATCH v2 3/4] mfd: 88pm860x: move gpadc init into touch
+Date: Fri, 21 Sep 2012 18:06:53 +0800
+Message-Id: <1348222014-15927-4-git-send-email-haojian.zhuang@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348222014-15927-1-git-send-email-haojian.zhuang@gmail.com>
 References: <1348222014-15927-1-git-send-email-haojian.zhuang@gmail.com>
@@ -21,660 +21,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The initilization of GPADC is moved from core driver to touch driver
+with DT support.
+
 Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 ---
- Documentation/devicetree/bindings/mfd/88pm860x.txt |   85 ++++++++++++++++++++
- .../devicetree/bindings/regulator/88pm860x.txt     |   30 +++++++
- .../bindings/video/backlight/88pm860x.txt          |   16 ++++
- drivers/input/touchscreen/88pm860x-ts.c            |   46 +++++++----
- drivers/leds/leds-88pm860x.c                       |   33 +++++++-
- drivers/mfd/88pm860x-core.c                        |   62 +++++++++++---
- drivers/regulator/88pm8607.c                       |   35 +++++++-
- drivers/rtc/rtc-88pm860x.c                         |   43 +++++++---
- drivers/video/backlight/88pm860x_bl.c              |   39 ++++++++-
- include/linux/mfd/88pm860x.h                       |    4 +-
- 10 files changed, 352 insertions(+), 41 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/88pm860x.txt
- create mode 100644 Documentation/devicetree/bindings/regulator/88pm860x.txt
- create mode 100644 Documentation/devicetree/bindings/video/backlight/88pm860x.txt
+ drivers/input/touchscreen/88pm860x-ts.c |   91 +++++++++++++++++++++++++++++--
+ drivers/mfd/88pm860x-core.c             |   51 -----------------
+ 2 files changed, 85 insertions(+), 57 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/88pm860x.txt b/Documentation/devicetree/bindings/mfd/88pm860x.txt
-new file mode 100644
-index 0000000..63f3ee3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/88pm860x.txt
-@@ -0,0 +1,85 @@
-+* Marvell 88PM860x Power Management IC
-+
-+Required parent device properties:
-+- compatible : "marvell,88pm860x"
-+- reg : the I2C slave address for the 88pm860x chip
-+- interrupts : IRQ line for the 88pm860x chip
-+- interrupt-controller: describes the 88pm860x as an interrupt controller (has its own domain)
-+- #interrupt-cells : should be 1.
-+		- The cell is the 88pm860x local IRQ number
-+
-+Optional parent device properties:
-+- marvell,88pm860x-irq-read-clr: inicates whether interrupt status is cleared by read
-+- marvell,88pm860x-slave-addr: 88pm860x are two chips solution. <reg> stores the I2C address
-+				of one chip, and this property stores the I2C address of
-+				another chip.
-+
-+88pm860x consists of a large and varied group of sub-devices:
-+
-+Device			 Supply Names	 Description
-+------			 ------------	 -----------
-+88pm860x-onkey		:		: On key
-+88pm860x-rtc		:		: RTC
-+88pm8607		:		: Regulators
-+88pm860x-backlight	:		: Backlight
-+88pm860x-led		:		: Led
-+88pm860x-touch		:		: Touchscreen
-+
-+Example:
-+
-+	pmic: 88pm860x@34 {
-+		compatible = "marvell,88pm860x";
-+		reg = <0x34>;
-+		interrupts = <4>;
-+		interrupt-parent = <&intc>;
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+
-+		marvell,88pm860x-irq-read-clr;
-+		marvell,88pm860x-slave-addr = <0x11>;
-+
-+		regulators {
-+			BUCK1 {
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+			LDO1 {
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+		};
-+		rtc {
-+			marvell,88pm860x-vrtc = <1>;
-+		};
-+		touch {
-+			marvell,88pm860x-gpadc-prebias = <1>;
-+			marvell,88pm860x-gpadc-slot-cycle = <1>;
-+			marvell,88pm860x-tsi-prebias = <6>;
-+			marvell,88pm860x-pen-prebias = <16>;
-+			marvell,88pm860x-pen-prechg = <2>;
-+			marvell,88pm860x-resistor-X = <300>;
-+		};
-+		backlights {
-+			backlight-0 {
-+				marvell,88pm860x-iset = <4>;
-+				marvell,88pm860x-pwm = <3>;
-+			};
-+			backlight-2 {
-+			};
-+		};
-+		leds {
-+			led0-red {
-+				marvell,88pm860x-iset = <12>;
-+			};
-+			led0-green {
-+				marvell,88pm860x-iset = <12>;
-+			};
-+			led0-blue {
-+				marvell,88pm860x-iset = <12>;
-+			};
-+		};
-+	};
-diff --git a/Documentation/devicetree/bindings/regulator/88pm860x.txt b/Documentation/devicetree/bindings/regulator/88pm860x.txt
-new file mode 100644
-index 0000000..1267b3e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/88pm860x.txt
-@@ -0,0 +1,30 @@
-+Marvell 88PM860x regulator
-+
-+Required properties:
-+- compatible: "marvell,88pm860x"
-+- reg: I2C slave address
-+- regulators: A node that houses a sub-node for each regulator within the
-+  device. Each sub-node is identified using the regulator-compatible
-+  property, with valid values listed below.
-+
-+Example:
-+
-+	pmic: 88pm860x@34 {
-+		compatible = "marvell,88pm860x";
-+		reg = <0x34>;
-+
-+		regulators {
-+			BUCK1 {
-+			        regulator-min-microvolt = <1000000>;
-+			        regulator-max-microvolt = <1500000>;
-+			        regulator-boot-on;
-+			        regulator-always-on;
-+			};
-+			BUCK3 {
-+			        regulator-min-microvolt = <1000000>;
-+			        regulator-max-microvolt = <3000000>;
-+			        regulator-boot-on;
-+			        regulator-always-on;
-+			};
-+		};
-+	};
-diff --git a/Documentation/devicetree/bindings/video/backlight/88pm860x.txt b/Documentation/devicetree/bindings/video/backlight/88pm860x.txt
-new file mode 100644
-index 0000000..4e6a24c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/backlight/88pm860x.txt
-@@ -0,0 +1,16 @@
-+88pm860x-backlight bindings
-+
-+Optional properties:
-+  - marvell,88pm860x-iset: Current supplies on backlight device.
-+  - marvell,88pm860x-pwm: PWM frequency on backlight device.
-+
-+Example:
-+
-+	backlights {
-+		backlight-0 {
-+			marvell,88pm860x-iset = <4>;
-+			marvell,88pm860x-pwm = <3>;
-+		};
-+		backlight-2 {
-+		};
-+
 diff --git a/drivers/input/touchscreen/88pm860x-ts.c b/drivers/input/touchscreen/88pm860x-ts.c
-index 05f30b7..4f81e6e 100644
+index 4f81e6e..326218d 100644
 --- a/drivers/input/touchscreen/88pm860x-ts.c
 +++ b/drivers/input/touchscreen/88pm860x-ts.c
-@@ -10,6 +10,7 @@
-  */
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/i2c.h>
- #include <linux/input.h>
-@@ -113,14 +114,31 @@ static void pm860x_touch_close(struct input_dev *dev)
- 	pm860x_set_bits(touch->i2c, MEAS_EN3, data, 0);
- }
+@@ -116,9 +116,13 @@ static void pm860x_touch_close(struct input_dev *dev)
  
-+#ifdef CONFIG_OF
-+static int __devinit pm860x_touch_dt_init(struct platform_device *pdev,
-+					  int *res_x)
-+{
-+	struct device_node *np = pdev->dev.parent->of_node;
-+	if (!np)
-+		return -ENODEV;
-+	np = of_find_node_by_name(np, "touch");
-+	if (!np) {
-+		dev_err(&pdev->dev, "Can't find touch node\n");
-+		return -EINVAL;
-+	}
-+	of_property_read_u32(np, "marvell,88pm860x-resistor-X", res_x);
-+	return 0;
-+}
-+#else
-+#define pm860x_touch_dt_init(x, y)	(-1)
-+#endif
-+
- static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+ #ifdef CONFIG_OF
+ static int __devinit pm860x_touch_dt_init(struct platform_device *pdev,
++					  struct pm860x_chip *chip,
+ 					  int *res_x)
  {
+ 	struct device_node *np = pdev->dev.parent->of_node;
++	struct i2c_client *i2c = (chip->id == CHIP_PM8607) ? chip->client \
++				 : chip->companion;
++	int data, n, ret;
+ 	if (!np)
+ 		return -ENODEV;
+ 	np = of_find_node_by_name(np, "touch");
+@@ -126,11 +130,43 @@ static int __devinit pm860x_touch_dt_init(struct platform_device *pdev,
+ 		dev_err(&pdev->dev, "Can't find touch node\n");
+ 		return -EINVAL;
+ 	}
++	/* set GPADC MISC1 register */
++	data = 0;
++	if (!of_property_read_u32(np, "marvell,88pm860x-gpadc-prebias", &n))
++		data |= (n << 1) & PM8607_GPADC_PREBIAS_MASK;
++	if (!of_property_read_u32(np, "marvell,88pm860x-gpadc-slot-cycle", &n))
++		data |= (n << 3) & PM8607_GPADC_SLOT_CYCLE_MASK;
++	if (!of_property_read_u32(np, "marvell,88pm860x-gpadc-off-scale", &n))
++		data |= (n << 5) & PM8607_GPADC_OFF_SCALE_MASK;
++	if (!of_property_read_u32(np, "marvell,88pm860x-gpadc-sw-cal", &n))
++		data |= (n << 7) & PM8607_GPADC_SW_CAL_MASK;
++	if (data) {
++		ret = pm860x_reg_write(i2c, PM8607_GPADC_MISC1, data);
++		if (ret < 0)
++			return -EINVAL;
++	}
++	/* set tsi prebias time */
++	if (!of_property_read_u32(np, "marvell,88pm860x-tsi-prebias", &data)) {
++		ret = pm860x_reg_write(i2c, PM8607_TSI_PREBIAS, data);
++		if (ret < 0)
++			return -EINVAL;
++	}
++	/* set prebias & prechg time of pen detect */
++	data = 0;
++	if (!of_property_read_u32(np, "marvell,88pm860x-pen-prebias", &n))
++		data |= n & PM8607_PD_PREBIAS_MASK;
++	if (!of_property_read_u32(np, "marvell,88pm860x-pen-prechg", &n))
++		data |= n & PM8607_PD_PRECHG_MASK;
++	if (data) {
++		ret = pm860x_reg_write(i2c, PM8607_PD_PREBIAS, data);
++		if (ret < 0)
++			return -EINVAL;
++	}
+ 	of_property_read_u32(np, "marvell,88pm860x-resistor-X", res_x);
+ 	return 0;
+ }
+ #else
+-#define pm860x_touch_dt_init(x, y)	(-1)
++#define pm860x_touch_dt_init(x, y, z)	(-1)
+ #endif
+ 
+ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+@@ -138,7 +174,9 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
  	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
--	struct pm860x_platform_data *pm860x_pdata =		\
--				pdev->dev.parent->platform_data;
--	struct pm860x_touch_pdata *pdata = NULL;
-+	struct pm860x_touch_pdata *pdata = pdev->dev.platform_data;
+ 	struct pm860x_touch_pdata *pdata = pdev->dev.platform_data;
  	struct pm860x_touch *touch;
--	int irq, ret;
-+	int irq, ret, res_x = 0;
+-	int irq, ret, res_x = 0;
++	struct i2c_client *i2c = (chip->id == CHIP_PM8607) ? chip->client \
++				 : chip->companion;
++	int irq, ret, res_x = 0, data = 0;
  
  	irq = platform_get_irq(pdev, 0);
  	if (irq < 0) {
-@@ -128,15 +146,13 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+@@ -146,14 +184,55 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
  		return -EINVAL;
  	}
  
--	if (!pm860x_pdata) {
--		dev_err(&pdev->dev, "platform data is missing\n");
--		return -EINVAL;
--	}
--
--	pdata = pm860x_pdata->touch;
--	if (!pdata) {
--		dev_err(&pdev->dev, "touchscreen data is missing\n");
--		return -EINVAL;
-+	if (pm860x_touch_dt_init(pdev, &res_x)) {
-+		if (pdata)
-+			res_x = pdata->res_x;
-+		else {
-+			dev_err(&pdev->dev, "failed to get platform data\n");
-+			return -EINVAL;
-+		}
- 	}
- 
- 	touch = kzalloc(sizeof(struct pm860x_touch), GFP_KERNEL);
-@@ -159,8 +175,8 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
- 	touch->idev->close = pm860x_touch_close;
- 	touch->chip = chip;
- 	touch->i2c = (chip->id == CHIP_PM8607) ? chip->client : chip->companion;
--	touch->irq = irq + chip->irq_base;
--	touch->res_x = pdata->res_x;
-+	touch->irq = irq;
-+	touch->res_x = res_x;
- 	input_set_drvdata(touch->idev, touch);
- 
- 	ret = request_threaded_irq(touch->irq, NULL, pm860x_touch_handler,
-diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
-index 70232b1..b7e8cc0 100644
---- a/drivers/leds/leds-88pm860x.c
-+++ b/drivers/leds/leds-88pm860x.c
-@@ -12,6 +12,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/init.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/i2c.h>
- #include <linux/leds.h>
-@@ -123,6 +124,33 @@ static void pm860x_led_set(struct led_classdev *cdev,
- 	schedule_work(&data->work);
- }
- 
-+#ifdef CONFIG_OF
-+static int pm860x_led_dt_init(struct platform_device *pdev,
-+			      struct pm860x_led *data)
-+{
-+	struct device_node *nproot = pdev->dev.parent->of_node, *np;
-+	int iset = 0;
-+	if (!nproot)
-+		return -ENODEV;
-+	nproot = of_find_node_by_name(nproot, "leds");
-+	if (!nproot) {
-+		dev_err(&pdev->dev, "failed to find leds node\n");
-+		return -ENODEV;
-+	}
-+	for_each_child_of_node(nproot, np) {
-+		if (!of_node_cmp(np->name, data->name)) {
-+			of_property_read_u32(np, "marvell,88pm860x-iset",
-+					     &iset);
-+			data->iset = PM8606_LED_CURRENT(iset);
-+			break;
-+		}
-+	}
-+	return 0;
-+}
-+#else
-+#define pm860x_led_dt_init(x, y)	(-1)
-+#endif
-+
- static int pm860x_led_probe(struct platform_device *pdev)
- {
- 	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
-@@ -179,8 +207,9 @@ static int pm860x_led_probe(struct platform_device *pdev)
- 	data->chip = chip;
- 	data->i2c = (chip->id == CHIP_PM8606) ? chip->client : chip->companion;
- 	data->port = pdev->id;
--	if (pdata && pdata->iset)
--		data->iset = pdata->iset;
-+	if (pm860x_led_dt_init(pdev, data))
-+		if (pdata)
-+			data->iset = pdata->iset;
- 
- 	data->current_brightness = 0;
- 	data->cdev.name = data->name;
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index b6766c9..a2bc5bf 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -16,6 +16,8 @@
- #include <linux/irq.h>
- #include <linux/interrupt.h>
- #include <linux/irqdomain.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
- #include <linux/platform_device.h>
- #include <linux/regmap.h>
- #include <linux/slab.h>
-@@ -1126,12 +1128,6 @@ static void __devexit pm860x_device_exit(struct pm860x_chip *chip)
- 	mfd_remove_devices(chip->dev);
- }
- 
--static const struct i2c_device_id pm860x_id_table[] = {
--	{ "88PM860x", 0 },
--	{}
--};
--MODULE_DEVICE_TABLE(i2c, pm860x_id_table);
--
- static int verify_addr(struct i2c_client *i2c)
- {
- 	unsigned short addr_8607[] = {0x30, 0x34};
-@@ -1158,21 +1154,52 @@ static struct regmap_config pm860x_regmap_config = {
- 	.val_bits = 8,
- };
- 
-+static int __devinit pm860x_dt_init(struct device_node *np,
-+				    struct device *dev,
-+				    struct pm860x_platform_data *pdata)
-+{
-+	int ret;
-+
-+	if (of_get_property(np, "marvell,88pm860x-irq-read-clr", NULL))
-+		pdata->irq_mode = 1;
-+	ret = of_property_read_u32(np, "marvell,88pm860x-slave-addr",
-+				   &pdata->companion_addr);
-+	if (ret) {
-+		dev_err(dev, "Not found \"marvell,88pm860x-slave-addr\" "
-+			"property\n");
-+		pdata->companion_addr = 0;
-+	}
-+	return 0;
-+}
-+
- static int __devinit pm860x_probe(struct i2c_client *client,
- 				  const struct i2c_device_id *id)
- {
- 	struct pm860x_platform_data *pdata = client->dev.platform_data;
-+	struct device_node *node = client->dev.of_node;
- 	struct pm860x_chip *chip;
- 	int ret;
- 
--	if (!pdata) {
-+	if (node && !pdata) {
-+		/* parse DT to get platform data */
-+		pdata = devm_kzalloc(&client->dev,
-+				     sizeof(struct pm860x_platform_data),
-+				     GFP_KERNEL);
-+		if (!pdata)
-+			return -ENOMEM;
-+		ret = pm860x_dt_init(node, &client->dev, pdata);
-+		if (ret)
-+			goto err;
-+	} else if (!pdata) {
- 		pr_info("No platform data in %s!\n", __func__);
- 		return -EINVAL;
- 	}
- 
- 	chip = kzalloc(sizeof(struct pm860x_chip), GFP_KERNEL);
--	if (chip == NULL)
--		return -ENOMEM;
-+	if (chip == NULL) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
- 
- 	chip->id = verify_addr(client);
- 	chip->regmap = regmap_init_i2c(client, &pm860x_regmap_config);
-@@ -1212,6 +1239,10 @@ static int __devinit pm860x_probe(struct i2c_client *client,
- 
- 	pm860x_device_init(chip, pdata);
- 	return 0;
-+err:
-+	if (node)
-+		devm_kfree(&client->dev, pdata);
-+	return ret;
- }
- 
- static int __devexit pm860x_remove(struct i2c_client *client)
-@@ -1252,11 +1283,24 @@ static int pm860x_resume(struct device *dev)
- 
- static SIMPLE_DEV_PM_OPS(pm860x_pm_ops, pm860x_suspend, pm860x_resume);
- 
-+static const struct i2c_device_id pm860x_id_table[] = {
-+	{ "88PM860x", 0 },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(i2c, pm860x_id_table);
-+
-+static const struct of_device_id pm860x_dt_ids[] = {
-+	{ .compatible = "marvell,88pm860x", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, pm860x_dt_ids);
-+
- static struct i2c_driver pm860x_driver = {
- 	.driver	= {
- 		.name	= "88PM860x",
- 		.owner	= THIS_MODULE,
- 		.pm     = &pm860x_pm_ops,
-+		.of_match_table	= of_match_ptr(pm860x_dt_ids),
- 	},
- 	.probe		= pm860x_probe,
- 	.remove		= __devexit_p(pm860x_remove),
-diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
-index f96fbe3..1c5ab01 100644
---- a/drivers/regulator/88pm8607.c
-+++ b/drivers/regulator/88pm8607.c
-@@ -12,6 +12,8 @@
- #include <linux/init.h>
- #include <linux/err.h>
- #include <linux/i2c.h>
-+#include <linux/of.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
-@@ -364,6 +366,34 @@ static struct pm8607_regulator_info pm8606_regulator_info[] = {
- 	PM8606_PREG(PREREGULATORB, 5),
- };
- 
-+#ifdef CONFIG_OF
-+static int pm8607_regulator_dt_init(struct platform_device *pdev,
-+				    struct pm8607_regulator_info *info,
-+				    struct regulator_config *config)
-+{
-+	struct device_node *nproot, *np;
-+	nproot = pdev->dev.parent->of_node;
-+	if (!nproot)
-+		return -ENODEV;
-+	nproot = of_find_node_by_name(nproot, "regulators");
-+	if (!nproot) {
-+		dev_err(&pdev->dev, "failed to find regulators node\n");
-+		return -ENODEV;
-+	}
-+	for_each_child_of_node(nproot, np) {
-+		if (!of_node_cmp(np->name, info->desc.name)) {
-+			config->init_data =
-+				of_get_regulator_init_data(&pdev->dev, np);
-+			config->of_node = np;
-+			break;
-+		}
-+	}
-+	return 0;
-+}
-+#else
-+#define pm8607_regulator_dt_init(x, y, z)	(-1)
-+#endif
-+
- static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
- {
- 	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
-@@ -402,9 +432,12 @@ static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
- 		info->slope_double = 1;
- 
- 	config.dev = &pdev->dev;
--	config.init_data = pdata;
- 	config.driver_data = info;
- 
-+	if (pm8607_regulator_dt_init(pdev, info, &config))
-+		if (pdata)
-+			config.init_data = pdata;
-+
- 	if (chip->id == CHIP_PM8607)
- 		config.regmap = chip->regmap;
- 	else
-diff --git a/drivers/rtc/rtc-88pm860x.c b/drivers/rtc/rtc-88pm860x.c
-index feddefc..de9e854 100644
---- a/drivers/rtc/rtc-88pm860x.c
-+++ b/drivers/rtc/rtc-88pm860x.c
-@@ -11,6 +11,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/mutex.h>
-@@ -284,6 +285,28 @@ out:
- }
- #endif
- 
-+#ifdef CONFIG_OF
-+static int __devinit pm860x_rtc_dt_init(struct platform_device *pdev,
-+					struct pm860x_rtc_info *info)
-+{
-+	struct device_node *np = pdev->dev.parent->of_node;
-+	int ret;
-+	if (!np)
-+		return -ENODEV;
-+	np = of_find_node_by_name(np, "rtc");
-+	if (!np) {
-+		dev_err(&pdev->dev, "failed to find rtc node\n");
-+		return -ENODEV;
-+	}
-+	ret = of_property_read_u32(np, "marvell,88pm860x-vrtc", &info->vrtc);
-+	if (ret)
-+		info->vrtc = 0;
-+	return 0;
-+}
-+#else
-+#define pm860x_rtc_dt_init(x, y)	(-1)
-+#endif
-+
- static int __devinit pm860x_rtc_probe(struct platform_device *pdev)
- {
- 	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
-@@ -294,8 +317,6 @@ static int __devinit pm860x_rtc_probe(struct platform_device *pdev)
- 	int ret;
- 
- 	pdata = pdev->dev.platform_data;
--	if (pdata == NULL)
--		dev_warn(&pdev->dev, "No platform data!\n");
- 
- 	info = kzalloc(sizeof(struct pm860x_rtc_info), GFP_KERNEL);
- 	if (!info)
-@@ -345,9 +366,11 @@ static int __devinit pm860x_rtc_probe(struct platform_device *pdev)
+-	if (pm860x_touch_dt_init(pdev, &res_x)) {
+-		if (pdata)
++	if (pm860x_touch_dt_init(pdev, chip, &res_x)) {
++		if (pdata) {
++			/* set GPADC MISC1 register */
++			data = 0;
++			data |= (pdata->gpadc_prebias << 1)
++				& PM8607_GPADC_PREBIAS_MASK;
++			data |= (pdata->slot_cycle << 3)
++				& PM8607_GPADC_SLOT_CYCLE_MASK;
++			data |= (pdata->off_scale << 5)
++				& PM8607_GPADC_OFF_SCALE_MASK;
++			data |= (pdata->sw_cal << 7)
++				& PM8607_GPADC_SW_CAL_MASK;
++			if (data) {
++				ret = pm860x_reg_write(i2c,
++					PM8607_GPADC_MISC1, data);
++				if (ret < 0)
++					return -EINVAL;
++			}
++			/* set tsi prebias time */
++			if (pdata->tsi_prebias) {
++				data = pdata->tsi_prebias;
++				ret = pm860x_reg_write(i2c,
++					PM8607_TSI_PREBIAS, data);
++				if (ret < 0)
++					return -EINVAL;
++			}
++			/* set prebias & prechg time of pen detect */
++			data = 0;
++			data |= pdata->pen_prebias
++				& PM8607_PD_PREBIAS_MASK;
++			data |= (pdata->pen_prechg << 5)
++				& PM8607_PD_PRECHG_MASK;
++			if (data) {
++				ret = pm860x_reg_write(i2c,
++					PM8607_PD_PREBIAS, data);
++				if (ret < 0)
++					return -EINVAL;
++			}
+ 			res_x = pdata->res_x;
+-		else {
++		} else {
+ 			dev_err(&pdev->dev, "failed to get platform data\n");
+ 			return -EINVAL;
  		}
  	}
- 	rtc_tm_to_time(&tm, &ticks);
--	if (pdata && pdata->sync) {
--		pdata->sync(ticks);
--		info->sync = pdata->sync;
-+	if (pm860x_rtc_dt_init(pdev, info)) {
-+		if (pdata && pdata->sync) {
-+			pdata->sync(ticks);
-+			info->sync = pdata->sync;
-+		}
- 	}
++	/* enable GPADC */
++	ret = pm860x_set_bits(i2c, PM8607_GPADC_MISC1, PM8607_GPADC_EN,
++			      PM8607_GPADC_EN);
++	if (ret)
++		return ret;
  
- 	info->rtc_dev = rtc_device_register("88pm860x-rtc", &pdev->dev,
-@@ -366,10 +389,12 @@ static int __devinit pm860x_rtc_probe(struct platform_device *pdev)
- 
- #ifdef VRTC_CALIBRATION
- 	/* <00> -- 2.7V, <01> -- 2.9V, <10> -- 3.1V, <11> -- 3.3V */
--	if (pdata && pdata->vrtc)
--		info->vrtc = pdata->vrtc & 0x3;
--	else
--		info->vrtc = 1;
-+	if (pm860x_rtc_dt_init(pdev, info)) {
-+		if (pdata && pdata->vrtc)
-+			info->vrtc = pdata->vrtc & 0x3;
-+		else
-+			info->vrtc = 1;
-+	}
- 	pm860x_set_bits(info->i2c, PM8607_MEAS_EN2, MEAS2_VRTC, MEAS2_VRTC);
- 
- 	/* calibrate VRTC */
-diff --git a/drivers/video/backlight/88pm860x_bl.c b/drivers/video/backlight/88pm860x_bl.c
-index 965161c..b7ec34c 100644
---- a/drivers/video/backlight/88pm860x_bl.c
-+++ b/drivers/video/backlight/88pm860x_bl.c
-@@ -11,6 +11,7 @@
- 
- #include <linux/init.h>
- #include <linux/kernel.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/fb.h>
-@@ -159,6 +160,36 @@ static const struct backlight_ops pm860x_backlight_ops = {
- 	.get_brightness	= pm860x_backlight_get_brightness,
+ 	touch = kzalloc(sizeof(struct pm860x_touch), GFP_KERNEL);
+ 	if (touch == NULL)
+@@ -174,7 +253,7 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+ 	touch->idev->open = pm860x_touch_open;
+ 	touch->idev->close = pm860x_touch_close;
+ 	touch->chip = chip;
+-	touch->i2c = (chip->id == CHIP_PM8607) ? chip->client : chip->companion;
++	touch->i2c = i2c;
+ 	touch->irq = irq;
+ 	touch->res_x = res_x;
+ 	input_set_drvdata(touch->idev, touch);
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index a2bc5bf..66acac2 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -558,53 +558,6 @@ static struct irq_domain_ops pm860x_irq_domain_ops = {
+ 	.xlate	= irq_domain_xlate_onetwocell,
  };
  
-+#ifdef CONFIG_OF
-+static int pm860x_backlight_dt_init(struct platform_device *pdev,
-+				    struct pm860x_backlight_data *data,
-+				    char *name)
-+{
-+	struct device_node *nproot = pdev->dev.parent->of_node, *np;
-+	int iset = 0;
-+	if (!nproot)
-+		return -ENODEV;
-+	nproot = of_find_node_by_name(nproot, "backlights");
-+	if (!nproot) {
-+		dev_err(&pdev->dev, "failed to find backlights node\n");
-+		return -ENODEV;
-+	}
-+	for_each_child_of_node(nproot, np) {
-+		if (!of_node_cmp(np->name, name)) {
-+			of_property_read_u32(np, "marvell,88pm860x-iset",
-+					     &iset);
-+			data->iset = PM8606_WLED_CURRENT(iset);
-+			of_property_read_u32(np, "marvell,88pm860x-pwm",
-+					     &data->pwm);
-+			break;
-+		}
-+	}
-+	return 0;
-+}
-+#else
-+#define pm860x_backlight_dt_init(x, y, z)	(-1)
-+#endif
-+
- static int pm860x_backlight_probe(struct platform_device *pdev)
+-static int __devinit device_gpadc_init(struct pm860x_chip *chip,
+-				       struct pm860x_platform_data *pdata)
+-{
+-	struct i2c_client *i2c = (chip->id == CHIP_PM8607) ? chip->client \
+-				: chip->companion;
+-	int data;
+-	int ret;
+-
+-	/* initialize GPADC without activating it */
+-
+-	if (!pdata || !pdata->touch)
+-		return -EINVAL;
+-
+-	/* set GPADC MISC1 register */
+-	data = 0;
+-	data |= (pdata->touch->gpadc_prebias << 1) & PM8607_GPADC_PREBIAS_MASK;
+-	data |= (pdata->touch->slot_cycle << 3) & PM8607_GPADC_SLOT_CYCLE_MASK;
+-	data |= (pdata->touch->off_scale << 5) & PM8607_GPADC_OFF_SCALE_MASK;
+-	data |= (pdata->touch->sw_cal << 7) & PM8607_GPADC_SW_CAL_MASK;
+-	if (data) {
+-		ret = pm860x_reg_write(i2c, PM8607_GPADC_MISC1, data);
+-		if (ret < 0)
+-			goto out;
+-	}
+-	/* set tsi prebias time */
+-	if (pdata->touch->tsi_prebias) {
+-		data = pdata->touch->tsi_prebias;
+-		ret = pm860x_reg_write(i2c, PM8607_TSI_PREBIAS, data);
+-		if (ret < 0)
+-			goto out;
+-	}
+-	/* set prebias & prechg time of pen detect */
+-	data = 0;
+-	data |= pdata->touch->pen_prebias & PM8607_PD_PREBIAS_MASK;
+-	data |= (pdata->touch->pen_prechg << 5) & PM8607_PD_PRECHG_MASK;
+-	if (data) {
+-		ret = pm860x_reg_write(i2c, PM8607_PD_PREBIAS, data);
+-		if (ret < 0)
+-			goto out;
+-	}
+-
+-	ret = pm860x_set_bits(i2c, PM8607_GPADC_MISC1,
+-			      PM8607_GPADC_EN, PM8607_GPADC_EN);
+-out:
+-	return ret;
+-}
+-
+ static int __devinit device_irq_init(struct pm860x_chip *chip,
+ 				     struct pm860x_platform_data *pdata)
  {
- 	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
-@@ -203,9 +234,11 @@ static int pm860x_backlight_probe(struct platform_device *pdev)
- 	data->i2c = (chip->id == CHIP_PM8606) ? chip->client	\
- 			: chip->companion;
- 	data->current_brightness = MAX_BRIGHTNESS;
--	if (pdata) {
--		data->pwm = pdata->pwm;
--		data->iset = pdata->iset;
-+	if (pm860x_backlight_dt_init(pdev, data, name)) {
-+		if (pdata) {
-+			data->pwm = pdata->pwm;
-+			data->iset = pdata->iset;
-+		}
+@@ -1067,10 +1020,6 @@ static void __devinit device_8607_init(struct pm860x_chip *chip,
+ 		goto out;
  	}
  
- 	memset(&props, 0, sizeof(struct backlight_properties));
-diff --git a/include/linux/mfd/88pm860x.h b/include/linux/mfd/88pm860x.h
-index d515e5c..ef3e6b7 100644
---- a/include/linux/mfd/88pm860x.h
-+++ b/include/linux/mfd/88pm860x.h
-@@ -306,7 +306,7 @@ struct pm860x_chip {
- 	struct regmap           *regmap_companion;
- 
- 	int			buck3_double;	/* DVC ramp slope double */
--	unsigned short		companion_addr;
-+	int			companion_addr;
- 	unsigned short		osc_vote;
- 	int			id;
- 	int			irq_mode;
-@@ -376,7 +376,7 @@ struct pm860x_platform_data {
- 	struct regulator_init_data	*ldo_vibrator;
- 	struct regulator_init_data	*ldo14;
- 
--	unsigned short	companion_addr;	/* I2C address of companion chip */
-+	int 		companion_addr;	/* I2C address of companion chip */
- 	int		i2c_port;	/* Controlled by GI2C or PI2C */
- 	int		irq_mode;	/* Clear interrupt by read/write(0/1) */
- 	int		irq_base;	/* IRQ base number of 88pm860x */
+-	ret = device_gpadc_init(chip, pdata);
+-	if (ret < 0)
+-		goto out;
+-
+ 	ret = device_irq_init(chip, pdata);
+ 	if (ret < 0)
+ 		goto out;
 -- 
 1.7.9.5
 
