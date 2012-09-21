@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab2IUHTS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 03:19:18 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:51931 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783Ab2IUHTO (ORCPT
+	id S1756215Ab2IUHYJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 03:24:09 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26951 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755333Ab2IUHYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 03:19:14 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-security-module\@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-References: <87k3vote43.fsf@xmission.com>
-	<1348187330-6616-1-git-send-email-ebiederm@xmission.com>
-	<505C0438.9060907@fusionio.com> <87sjabsvkx.fsf@xmission.com>
-	<505C1331.8050907@fusionio.com>
-Date: Fri, 21 Sep 2012 00:19:07 -0700
-In-Reply-To: <505C1331.8050907@fusionio.com> (Jens Axboe's message of "Fri, 21
-	Sep 2012 09:11:45 +0200")
-Message-ID: <878vc3sv10.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 21 Sep 2012 03:24:07 -0400
+Date: Fri, 21 Sep 2012 10:23:59 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        levinsasha928@gmail.com, Feng Jin <joe.jin@oracle.com>
+Subject: Re: mm: frontswap: fix a wrong if condition in frontswap_shrink
+Message-ID: <20120921072359.GB13767@mwanda>
+References: <505BDF34.3080905@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18+gQK6NqU0ItN6v/8+iYmPiEy6zDhLjcA=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Jens Axboe <jaxboe@fusionio.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 01/14] userns: Convert loop to use kuid_t instead of uid_t
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <505BDF34.3080905@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <jaxboe@fusionio.com> writes:
+On Fri, Sep 21, 2012 at 11:29:56AM +0800, Zhenzhong Duan wrote:
+> pages_to_unuse is set to 0 to unuse all frontswap pages
+> But that doesn't happen since a wrong condition in frontswap_shrink
+> cancels it.
+> 
+> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> ---
+>  mm/frontswap.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/frontswap.c b/mm/frontswap.c
+> index 6b3e71a..db2a86f 100644
+> --- a/mm/frontswap.c
+> +++ b/mm/frontswap.c
+> @@ -275,7 +275,7 @@ static int __frontswap_shrink(unsigned long target_pages,
+>  	if (total_pages <= target_pages) {
+>  		/* Nothing to do */
+>  		*pages_to_unuse = 0;
+> -		return 0;
+> +		return 1;
+>  	}
 
-> On 2012-09-21 09:07, Eric W. Biederman wrote:
->> Jens Axboe <jaxboe@fusionio.com> writes:
->> 
->>> On 2012-09-21 02:28, Eric W. Biederman wrote:
->>>> From: "Eric W. Biederman" <ebiederm@xmission.com>
->>>>
->>>> Cc: Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
->>>> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
->>>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->>>> ---
->>>>  drivers/block/loop.c |    4 ++--
->>>>  include/linux/loop.h |    2 +-
->>>>  init/Kconfig         |    1 -
->>>>  3 files changed, 3 insertions(+), 4 deletions(-)
->>>
->>> Thanks Eric, queued for 3.7.
->> 
->> Would it be a problem if I also merged throug my user-namespace.git tree?
->> 
->> That was the original plan and it is handy to keep all of the patches
->> together.
->> 
->> Not that it matters much in this case.
->
-> Not at all, go ahead. It'll be trivial to resolve any merge conflict due
-> to this.
->
-> BTW, this:
->
-> Cc: Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
->
-> in your original patch needs fixing up. I'm assuming it's a copy-paste
-> error and meant to be a Cc, since I haven't signed-off on it.
+This function used to return 0 or an error code.  Could we add a
+comment at the top saying what the return values mean.
 
-Doh.  Yes sorry.  It was supposed to just be Cc:
+regards,
+dan carpenter
 
-Eric
