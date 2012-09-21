@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab2IUQN2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 12:13:28 -0400
-Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:46329 "EHLO
-	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755291Ab2IUQNY (ORCPT
+	id S1756538Ab2IUQNe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 12:13:34 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:34235 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756226Ab2IUQNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 12:13:24 -0400
-Message-ID: <1348244001.1660.14.camel@castor.rsk>
-Subject: perf bench unexpected behaviour
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Fri, 21 Sep 2012 17:13:21 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Sep 2012 12:13:30 -0400
+Date: Fri, 21 Sep 2012 16:13:29 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        "Bruce, Becky" <bbruce@ti.com>, "Hilman, Kevin" <khilman@ti.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Hunter, Jon" <jon-hunter@ti.com>, snijsure@grid-net.com
+Subject: [PATCH] Documentation: RCU: update the stall warning message "timer=-1"
+ to match reality
+Message-ID: <alpine.DEB.2.00.1209211610280.30239@utopia.booyaka.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-If I run
-	perf bench --format=simple all > test.out
 
-I get this line repeated hundreds of times in test.out
+The CONFIG_RCU_FAST_NO_HZ stall warning messages can never emit
+"timer=-1".  This is because the printf() format specifier to generate
+that number is '%lu'.  So, update the documentation to use the
+unsigned long equivalent instead, "timer=4294967295".  This is what
+actually shows up in traces.
 
-	# Running sched/messaging benchmark...
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>
+---
+ Documentation/RCU/stallwarn.txt |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-interleaved with the useful output.
-It's only printed once if I call it from the command line, it just
-redirecting to a file that does odd things. 
-
-AFAICT the message is only printed once, so any ideas why it does this? 
-and is there anything I can do to stop it?
-
-This is on 3.6-rc*, I haven't tried any earlier kernels.
-
-thanks
-Richard
-
+diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
+index 523364e..fe3379e 100644
+--- a/Documentation/RCU/stallwarn.txt
++++ b/Documentation/RCU/stallwarn.txt
+@@ -99,7 +99,7 @@ In kernels with CONFIG_RCU_FAST_NO_HZ, even more information is
+ printed:
+ 
+ 	INFO: rcu_preempt detected stall on CPU
+-	0: (64628 ticks this GP) idle=dd5/3fffffffffffffff/0 drain=0 . timer=-1
++	0: (64628 ticks this GP) idle=dd5/3fffffffffffffff/0 drain=0 . timer=4294967295
+ 	   (t=65000 jiffies)
+ 
+ The "(64628 ticks this GP)" indicates that this CPU has taken more
+@@ -119,10 +119,10 @@ number (as shown above) otherwise.
+ For CONFIG_RCU_FAST_NO_HZ kernels, the "drain=0" indicates that the
+ CPU is not in the process of trying to force itself into dyntick-idle
+ state, the "." indicates that the CPU has not given up forcing RCU
+-into dyntick-idle mode (it would be "H" otherwise), and the "timer=-1"
+-indicates that the CPU has not recented forced RCU into dyntick-idle
+-mode (it would otherwise indicate the number of microseconds remaining
+-in this forced state).
++into dyntick-idle mode (it would be "H" otherwise), and the
++"timer=4294967295" (the magic number (2^32)-1) indicates that the CPU
++has not recently forced RCU into dyntick-idle mode (it would otherwise
++indicate the number of microseconds remaining in this forced state).
+ 
+ 
+ Multiple Warnings From One Stall
+-- 
+1.7.10.4
 
