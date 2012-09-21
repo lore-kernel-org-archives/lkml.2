@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab2IUDP6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 23:15:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46193 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab2IUDP5 (ORCPT
+	id S1754432Ab2IUDSR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 23:18:17 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:65246 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab2IUDSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 23:15:57 -0400
-Date: Fri, 21 Sep 2012 13:15:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Anton Vorontsov <avorontsov@ru.mvista.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Jett.Zhou" <jtzhou@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: linux-next: manual merge of the battery tree with the mfd tree
-Message-Id: <20120921131546.032757ac5bc270ed280282ea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__21_Sep_2012_13_15_46_+1000_Dppj5gDQF1KmFtON"
+	Thu, 20 Sep 2012 23:18:15 -0400
+MIME-Version: 1.0
+From: Hui Zhu <teawater@gmail.com>
+Date: Fri, 21 Sep 2012 11:17:34 +0800
+Message-ID: <CANFwon2wn6fWE6RDq0QwCp-rhZvxyqLZodNoHeo-9iUw-nnpMw@mail.gmail.com>
+Subject: KGTP (Linux debugger and tracer) 20120920 release (add LKM plugin and
+ per cpu TSV update)
+To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
+        kgtp <kgtp@freelists.org>
+Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_Sep_2012_13_15_46_+1000_Dppj5gDQF1KmFtON
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi guys,
 
-Hi Anton,
+KGTP is a flexible , lightweight and realtime Linux debugger and tracer.
+To use it, you don't need patch or rebuild the Linux kernel. Just
+build KGTP module and insmod it is OK.
 
-Today's linux-next merge of the battery tree got a conflict in
-include/linux/mfd/88pm860x.h between commit a70abacb06b8 ("mfd: 88pm860x:
-Use REG resource in regulator") from the mfd tree and commit a830d28b48bf
-("power_supply: Enable battery-charger for 88pm860x") from the battery
-tree.
+It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
+current machine or remote machine can debug and trace Linux through
+GDB tracepoint and some other functions without stopping the Linux
+Kernel.
+And even if the board doesn't have GDB on it and doesn't have
+interface for remote debug. It can debug the Linux Kernel using
+offline debug (See
+http://code.google.com/p/kgtp/wiki/HOWTO#/sys/kernel/debug/gtpframe_and_offline_debug).
+KGTP supports X86-32, X86-64, MIPS and ARM.
+KGTP is tested on Linux kernel 2.6.18 to upstream.
+And it can work with Android (See
+http://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid).
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Please go to http://code.google.com/p/kgtp/wiki/HOWTO or
+http://code.google.com/p/kgtp/wiki/HOWTO (Chinese) to get more info
+about howto use KGTP.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Now, KGTP 20120920 release.
+You can get the package for it from
+http://kgtp.googlecode.com/files/kgtp_20120920.tar.bz2
+or
+svn co https://kgtp.googlecode.com/svn/tags/20120920
 
-diff --cc include/linux/mfd/88pm860x.h
-index d515e5c,b7c5a3c..0000000
---- a/include/linux/mfd/88pm860x.h
-+++ b/include/linux/mfd/88pm860x.h
-@@@ -359,22 -460,8 +440,23 @@@ struct pm860x_platform_data=20
-  	struct pm860x_rtc_pdata		*rtc;
-  	struct pm860x_touch_pdata	*touch;
-  	struct pm860x_power_pdata	*power;
-+ 	struct charger_desc		*chg_desc;
- -	struct regulator_init_data	*regulator;
- +	struct regulator_init_data	*buck1;
- +	struct regulator_init_data	*buck2;
- +	struct regulator_init_data	*buck3;
- +	struct regulator_init_data	*ldo1;
- +	struct regulator_init_data	*ldo2;
- +	struct regulator_init_data	*ldo3;
- +	struct regulator_init_data	*ldo4;
- +	struct regulator_init_data	*ldo5;
- +	struct regulator_init_data	*ldo6;
- +	struct regulator_init_data	*ldo7;
- +	struct regulator_init_data	*ldo8;
- +	struct regulator_init_data	*ldo9;
- +	struct regulator_init_data	*ldo10;
- +	struct regulator_init_data	*ldo12;
- +	struct regulator_init_data	*ldo_vibrator;
- +	struct regulator_init_data	*ldo14;
- =20
-  	unsigned short	companion_addr;	/* I2C address of companion chip */
-  	int		i2c_port;	/* Controlled by GI2C or PI2C */
+The main change of this release is:
+C plugin support.  With this function, you can dynamic add new
+function to KGTP with LKM.
+To get more info about it.  Please goto
+http://code.google.com/p/kgtp/wiki/HOWTO#How_to_add_plugin_in_C
 
---Signature=_Fri__21_Sep_2012_13_15_46_+1000_Dppj5gDQF1KmFtON
-Content-Type: application/pgp-signature
+Per_cpu trace state variables function was updated.  The usage and
+format was changed.  This change make it more easy to be used.  And I
+also update the doc to make it more clear.  Please goto
+http://code.google.com/p/kgtp/wiki/HOWTO#Per_cpu_trace_state_variables
+get it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Please goto http://code.google.com/p/kgtp/wiki/UPDATE get more info
+about this release.
 
-iQIcBAEBCAAGBQJQW9viAAoJEECxmPOUX5FEPnoP/A+Xa+uzXEjjOQksWHFtUF5R
-AP2Cfq4CKIzblDWedcBzkawhpYDPTUipC8RwkTn0ZzLePXr868TOLdZ5TC/ueCUH
-/Y1LD3Gn/R/LIxCHxOJ1Zl7KONiKYaGFuG1dlOIQbjpBX+ps/A3ZEzY2WHUvAo3t
-L5xUJikbmEtamq6WwMw73YZSwiWrswPqi+FNRnO/Y+DkN36dtp8r3C0XpLKPFhX8
-HLKDViChFJDmd4YG1wnQ/pAyV9ofZxhug/iGuf9bXshVaZilrViA0xoQF9nSZTp2
-eVzYQBUZA66Yd57nylRr62ZFHTIXAU0OnSXXuDvwGT3CKv2SXoCs9lz/J85KkQhw
-etvMIW/rzWAuwUwYgNrB++4wWKP7Y7tGeuvlP9E/TMnE+xmU5NGNCeitKN8ailVK
-Jb4dLDiwkt+OSmDgKsB9KGJInutnEGdXQAGEbgBnLj2zOwdKQcf1LxYEHsG42cNK
-l1/Briv46iqHzoD384DnMgN4DnBGD3OOG6rYRTl6FVdkVicW1YfYUsmFozbvOL9N
-eMAqSqg4Ma5Nh7glXZENXBzEf2IJlN7kDxKrPjxbAVAGIpV6muoHaHZiP5eWaHlW
-zev1qA2X8SZdciVmXpm9UcdY+DCDhxPi0weMizpsYei4I5GeOmfdL4Ynlof8FpwF
-MFZOyEACWTpRp2IWqB1b
-=sriF
------END PGP SIGNATURE-----
+According to the comments of Christoph, Geoff and Andi.  I make lite
+patch for review.  Please goto https://lkml.org/lkml/2012/5/9/90 to
+see it.
 
---Signature=_Fri__21_Sep_2012_13_15_46_+1000_Dppj5gDQF1KmFtON--
+Thanks,
+Hui
