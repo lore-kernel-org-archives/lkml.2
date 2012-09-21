@@ -1,36 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab2IURb7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:31:59 -0400
-Received: from cust-218-222.on4.ontelecoms.gr ([92.118.218.222]:53803 "EHLO
-	vergina.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab2IURb6 (ORCPT
+	id S932216Ab2IURd7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:33:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65060 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932072Ab2IURd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:31:58 -0400
-Message-ID: <505CA48C.5000200@asyr.hopto.org>
-Date: Fri, 21 Sep 2012 20:31:56 +0300
-From: Thanasis <thanasis@asyr.hopto.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
+	Fri, 21 Sep 2012 13:33:57 -0400
+Date: Fri, 21 Sep 2012 10:33:52 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 03/16] slab: Ignore the cflgs bit in cache creation
+Message-ID: <20120921173352.GE7264@google.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
+ <1347977530-29755-4-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org> <20120921152828.GA24364@electric-eye.fr.zoreil.com> <505C9629.6080406@asyr.hopto.org>
-In-Reply-To: <505C9629.6080406@asyr.hopto.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347977530-29755-4-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on 09/21/2012 07:30 PM Thanasis wrote the following:
-> on 09/21/2012 06:28 PM Francois Romieu wrote the following:
->> <insert your ip addr add ... / link up and test sequence here>
-> I don't get what you mean by the above step.
-> Could you be more explicit please?
+On Tue, Sep 18, 2012 at 06:11:57PM +0400, Glauber Costa wrote:
+> No cache should ever pass that as a creation flag, since this bit is
+> used to mark an internal decision of the slab about object placement. We
+> can just ignore this bit if it happens to be passed (such as when
+> duplicating a cache in the kmem memcg patches)
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: David Rientjes <rientjes@google.com>
+> ---
+>  mm/slab.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index a7ed60f..ccf496c 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -2373,6 +2373,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+>  	int err;
+>  	size_t size = cachep->size;
+>  
+> +	flags &= ~CFLGS_OFF_SLAB;
 
-Hmm, think I got it ... Here is what I put there:
+A comment explaining why this is necessary wouldn't hurt.
 
-ifconfig eth0 192.168.0.19 up ; ping -c 3 192.168.0.1
+Thanks.
 
+-- 
+tejun
