@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab2IUJCv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:02:51 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:35471 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab2IUJCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:02:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120921162612.8e65fef4f07680d41717981c@canb.auug.org.au>
-References: <20120921162612.8e65fef4f07680d41717981c@canb.auug.org.au>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Fri, 21 Sep 2012 11:02:28 +0200
-Message-ID: <CAK1hOcM2-9Ret6am2+EGUC_5FE9x3c4eaPH-vgTjUujMd6LUiA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+	id S932313Ab2IUJEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:04:49 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:45252 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932072Ab2IUJEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 05:04:48 -0400
+X-IronPort-AV: E=Sophos;i="4.80,460,1344211200"; 
+   d="scan'208";a="38699921"
+From: Oliver Chick <oliver.chick@citrix.com>
+To: konrad.wilk@oracle.com, xen-devel@lists.xensource.com,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+CC: Oliver Chick <oliver.chick@citrix.com>
+Subject: [PATCH] Change xen_vbd's flush_support and discard_secure to have type unsigned int, rather than bool
+Date: Fri, 21 Sep 2012 10:04:18 +0100
+Message-ID: <1348218258-4418-1-git-send-email-oliver.chick@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Changing the type of bdev parameters to be unsigned int :1, rather than bool.
+This is more consistent with the types of other features in the block drivers.
 
-On Fri, Sep 21, 2012 at 8:26 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Andrew,
->
-> After merging the akpm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->
-> fs/compat_binfmt_elf.c:22:53: fatal error: asm/sigframe.h: No such file or directory
->
-> Caused by commit "coredump: add a new elf note with siginfo of the
-> signal".  That include file only exists on the x86 and tile architectures.
->
-> I have reverted that commit (and "coredump: extend core dump note section
-> to contain file names of mapped files" and
-> "coredump-extend-core-dump-note-section-to-contain-file-names-of-mapped-files-checkpatch-fixes"
-> that follow it) for today.
+Signed-off-by: Oliver Chick <oliver.chick@citrix.com>
+---
+ drivers/block/xen-blkback/common.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Sorry about this. I will take a look at it.
-
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index 9ad3b5e..9a54623 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -158,8 +158,8 @@ struct xen_vbd {
+ 	struct block_device	*bdev;
+ 	/* Cached size parameter. */
+ 	sector_t		size;
+-	bool			flush_support;
+-	bool			discard_secure;
++	unsigned int		flush_support:1;
++	unsigned int		discard_secure:1;
+ };
+ 
+ struct backend_info;
 -- 
-vda
+1.7.9.5
+
