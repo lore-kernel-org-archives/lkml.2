@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab2IURG1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:06:27 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55643 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754852Ab2IURGZ convert rfc822-to-8bit (ORCPT
+	id S1756738Ab2IURPz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:15:55 -0400
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:57214 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756614Ab2IURPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:06:25 -0400
-Message-ID: <1348247182.11116.245.camel@hornet>
-Subject: Re: [PATCH v2] arm: introduce a DTS for Xen unprivileged virtual
- machines
-From: Pawel Moll <pawel.moll@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Fri, 21 Sep 2012 18:06:22 +0100
-In-Reply-To: <1348156062-11476-1-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <1348156062-11476-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Mime-Version: 1.0
-X-OriginalArrivalTime: 21 Sep 2012 17:06:22.0760 (UTC) FILETIME=[6D38F280:01CD981B]
-X-MC-Unique: 112092118062401301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Sep 2012 13:15:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1348152226-13588-9-git-send-email-mporter@ti.com>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com> <1348152226-13588-9-git-send-email-mporter@ti.com>
+From: "S, Venkatraman" <svenkatr@ti.com>
+Date: Fri, 21 Sep 2012 22:45:29 +0530
+Message-ID: <CANfBPZ81anOy8fWgKM1PgCtB4V2pEp2x1Qi4x1uPsq7QieMN5g@mail.gmail.com>
+Subject: Re: [RFC PATCH 08/13] mmc: omap_hsmmc: limit max_segs with the EDMA DMAC
+To: Matt Porter <mporter@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-20 at 16:47 +0100, Stefano Stabellini wrote:
-> Given that the xenvm machine is based on vexpress but with an extremely
-> limited selection of peripherals (the guest is supposed to use virtual
-> devices instead), add "xen,xenvm" to the list of compatible machines in
-> mach-vexpress.
-> 
-> 
-> Changes in v2:
-> 
-> - remove include skeleton;
-> - use #address-cells = <2> and #size-cells = <2>;
-> - remove the debug bootargs;
-> - use memory@80000000 instead of memory;
-> - remove the ranges and interrupt-map from the motherboard node;
-> - set the machine compatible to "xen,xenvm-4.2", "xen,xenvm";
-> - rename the dts file to xenvm-4.2.dts;
-> - add "xen,xenvm" to the list of compatible DT strings to mach-vexpress.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: Pawel Moll <pawel.moll@arm.com>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/boot/dts/xenvm-4.2.dts      |   64 ++++++++++++++++++++++++++++++++++
->  arch/arm/mach-vexpress/Makefile.boot |    3 +-
->  arch/arm/mach-vexpress/v2m.c         |    1 +
->  3 files changed, 67 insertions(+), 1 deletions(-)
->  create mode 100644 arch/arm/boot/dts/xenvm-4.2.dts
+On Thu, Sep 20, 2012 at 8:13 PM, Matt Porter <mporter@ti.com> wrote:
+> The EDMA DMAC has a hardware limitation that prevents supporting
+> scatter gather lists with any number of segments. Since the EDMA
+> DMA Engine driver sets the maximum segments to 16, we do the
+> same.
+>
+> Note: this can be removed once the DMA Engine API supports an
+> API to query the DMAC's segment limitations.
+>
 
-I'm still not 100% convinced that the DTS is really necessary there, but
-as to the v2m.c change:
-
-Acked-by: Pawel Moll <pawel.moll@arm.com>
-
-Cheers!
-
-Pawel
-
-
+I wouldn't want to bind the properties of EDMA to omap_hsmmc as this patch
+suggests. Why don't we have a max_segs property, which when explicitly specified
+in DT, will override the default ?
