@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab2IUQOU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 12:14:20 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43783 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab2IUQOR (ORCPT
+	id S1756825Ab2IUQOo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 12:14:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15916 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904Ab2IUQOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 12:14:17 -0400
-Message-ID: <505C9254.5090101@lwfinger.net>
-Date: Fri, 21 Sep 2012 11:14:12 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        dwmw2@infradead.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Jan Terstegge <jan@terstegge.net>
-Subject: Re: [PATCH] rtlwifi/rtl8712u Revert firmware
-References: <1347294365-6509-1-git-send-email-Larry.Finger@lwfinger.net> <1348180259.4801.9.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1348180259.4801.9.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 21 Sep 2012 12:14:41 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Ky7_2ek-80sA:10 a=wbbZa8dPOpVhAwLHmpQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348244077.13080.84.camel@gandalf.local.home>
+Subject: Re: TRACE_EVENT without ARGS
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Wolfgang Grandegger <wg@grandegger.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Fri, 21 Sep 2012 12:14:37 -0400
+In-Reply-To: <505C8937.4040505@grandegger.com>
+References: <505C8937.4040505@grandegger.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 05:31 PM, Ben Hutchings wrote:
-> On Mon, 2012-09-10 at 11:26 -0500, Larry Finger wrote:
->> Although the newest firmware for the RTL8192SU, which is found in vendor
->> driver rtl8188C_8192C_8192D_usb_linux_v3.4.2_3727.20120404, works with most
->> devices, it causes drops of the wireless connection for the ASUS WL-167G V3
->> (USB ID 0b05:1791), the D-Link DWA131 (07d1:3303), and probably others.
->> Tests show that the firmware from vendor driver
->> rtl8712_8188_8191_8192SU_usb_linux_v7_0.20100831 works better.
->>
->> This commerts reverts to that older firmware.
->>
->> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-> [...]
->
-> This is the original blob added by:
->
-> commit 8f919160792e4702c6b7a67a243cea4f757407e4
-> Author: Larry Finger <Larry.Finger@lwfinger.net>
-> Date:   Mon Nov 1 23:56:52 2010 -0500
->
->      linux-firmware: Add firmware files for Realtek RTL8712U and RTL8192CE
->
-> There have been two updates since then:
->
-> commit f8ddc05e13c4c6dd9d725bc376b287f307eb223a
-> Author: Larry Finger <Larry.Finger@lwfinger.net>
-> Date:   Tue Aug 16 11:12:14 2011 -0500
->
->      rtlwifi: rtl8712u: Upgrade to firmware found in vendor's V2.6.6
->
-> commit d8f60751d3f09545f51aac5d8e451f7668063ebf
-> Author: Larry Finger <Larry.Finger@lwfinger.net>
-> Date:   Wed Jul 11 13:18:30 2012 -0500
->
->      r8712u: Update to latest firmware
->
->      A new firmware file is used in the vendor driver with name/version
->      rtl8188C_8192C_8192D_usb_linux_v3.4.2_3727.20120404.
->
-> Sure you want to revert both of these, not just the latest?
+On Fri, 2012-09-21 at 17:35 +0200, Wolfgang Grandegger wrote:
+> Hello,
+> 
+> I would like to define trace events for functions without arguments,
+> e.g. my_yield(). But TRACE_EVENT requires at least one argument to be
+> defined and I also have not found an example in the kernel sources,
+> apart from:
+> 
+>   $ cat include/trace/events/xen.h
+>   ...
+>   TRACE_EVENT(xen_mmu_flush_tlb,
+>               TP_PROTO(int x),
+>               TP_ARGS(x),
+>               TP_STRUCT__entry(__array(char, x, 0)),
+>               TP_fast_assign((void)x),
+>               TP_printk("%s", "")
+>           );
+> 
+> It uses a dummy argument to work around the problem. Is that the
+> recommended way to handle such cases?
+> 
 
-Yes. Both of the updates work on my hardware (D-Link and Rosewill), but both 
-fail on an ASUS WL-167g v3 as reported privately to me. I will work with Realtek 
-and the OP to resolve the problem, and then update the fw once again.
+Right now this is the only way, because honestly, I was trying to avoid
+people from doing this. I'm more worried about people littering the
+kernel with these place markers, which give nothing but "I'm hit here".
+It would be better to have a 'noinline' to the xen_flush_tlb() call, and
+use function tracer to trace it:
 
-Thanks,
+	echo xen_flush_tlb > debug/tracing/set_ftrace_filter
 
-Larry
+But seeing that this just throws in a dummy argument, this doesn't make
+things nicer. My worry is about bloat. Each TRACE_EVENT() can add up to
+5k to the kernel. When you use the DECLARE_EVENT_CLASS() along with
+DEFINE_EVENT(), most of that goes into the DECLARE_EVENT_CLASS, and each
+DEFINE_EVENT() adds just about 250 bytes. This is why I push people to
+use DEFINE_EVENT, as TRACE_EVENT() is really nothing more than:
+
+#define TRACE_EVENT(...) \
+	DECLARE_EVENT_CLASS(..) \
+	DEFINE_EVENT(...)
+
+
+Now maybe I can add something called:
+
+TRACE_MARKER(name);
+
+Where this will create an event that has no fields, and you call this
+with: trace_name() and no parameters.
+
+This way, I could probably hack something up that this will be much
+smaller, and leave out the creation of fields and related code.
+
+Heck, as it is saving no data, I could make it use a default trace and
+perf function that does nothing but state that it was hit.
+
+-- Steve
 
 
