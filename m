@@ -1,110 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932697Ab2IUCuA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 22:50:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37927 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932641Ab2IUCt5 (ORCPT
+	id S1756996Ab2IUC5I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 22:57:08 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57261 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756909Ab2IUC5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 22:49:57 -0400
-Date: Fri, 21 Sep 2012 12:49:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Neil Brown <neilb@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shaohua Li <shli@fusionio.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: linux-next: manual merge of the md tree with the  tree
-Message-Id: <20120921124955.643dcd503be6cc67f5d1738c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__21_Sep_2012_12_49_55_+1000_8fFBJvoYfvIhz9ue"
+	Thu, 20 Sep 2012 22:57:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQWuVW6U9cE+iY0Gpua_0xhdxp6HxcWyhqqSN+L3Da_1Qg@mail.gmail.com>
+References: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com>
+ <1346168638-32724-5-git-send-email-jiang.liu@huawei.com> <CAE9FiQVAOEUHMSFHCpZLVK-Rbso3Rh1nUQHmfcujwb6tpUTz8A@mail.gmail.com>
+ <CAErSpo58sSCPYF9Ug-o-f3odJovECkdxPOoahx9+Ob6kmP_srw@mail.gmail.com> <CAE9FiQWuVW6U9cE+iY0Gpua_0xhdxp6HxcWyhqqSN+L3Da_1Qg@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 20 Sep 2012 20:56:43 -0600
+Message-ID: <CAErSpo5zeBVBowMyQS8QgAzrVbTJOb=Tuees9r1BnUZ3x13V0A@mail.gmail.com>
+Subject: Re: [PATCH 4/5] PCI/IOV: simplify code by hotplug safe pci_get_domain_bus_and_slot()
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Don Dutile <ddutile@redhat.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_Sep_2012_12_49_55_+1000_8fFBJvoYfvIhz9ue
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 20, 2012 at 7:51 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Sep 20, 2012 at 4:59 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Thu, Sep 20, 2012 at 2:38 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> in that case, VFs  are stopped before PF, so they are not in device
+>>> tree anymore.
+>>> so pci_get_domain_bus_and_slot will not find those VFs.
+>>>
+>>> So the reference to PF is not released. Also vit_bus may not be released too.
+>>>
+>>> So you have to rework
+>>>     pci_get_domain_bus_and_slot to make it work on pci devices get stopped only.
+>>>
+>>> or just drop this from the tree.
+>>
+>> pci_find_bus() is a broken interface (because there's no reference
+>> counting or safety with respect to hot-plug), and if the design
+>> depends on it, that means the design is broken, too.  I don't think
+>> reworking pci_get_domain_bus_and_slot() is the right answer.
+>>
+>> It's not clear to me why we need the split between stopping and
+>> removing devices.  That split leads to these zombie devices that have
+>> been stopped and are no longer findable by bus_find_device() (which is
+>> used by pci_get_domain_bus_and_slot()), but still "exist" in some
+>> fashion until they're removed.  It's unreasonable for random PCI and
+>> driver code to have to worry about that zombie state.
+>
+> That is not zombie state. that is driver unloaded, and not in /sys, /proc.
+> that pci device only can be found under bus->devices.
 
-Hi Neil,
+It doesn't matter whether we call this a "zombie state" or just refer
+to it as "devices not in /sys & /proc but still in bus->devices."  The
+point is that this state is not very useful, and code outside the PCI
+core should not have to know that it exists.
 
-Today's linux-next merge of the md tree got a conflict in fs/bio.c
-between commit 4363ac7c13a9 ("block: Implement support for WRITE SAME")
-from the block tree and commit 368e564836d3 ("block: makes bio_split
-support bio without data") from the md tree.
+> just like we have pci_device_add and pci_bus_add_device
+> or acpi add and acpi start.
 
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
+The fact that ACPI drivers have both .add() and .start() methods is
+another artifact of poor design, in my opinion.  No other subsystem
+has that split, as far as I know.  The ACPI split exists because of a
+messed-up ACPI hotplug implementation.  That doesn't mean we should
+copy it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> I'm not happy about either reverting Jiang's patch or splitting
+>> stop/remove again.  It complicates the design and the code.  I'll
+>> apply them because they're regressions, and we don't have time for
+>> redesign before 3.7.  But I encourage you to think about how to do
+>> this more cleanly.
+>
+> That will need to redesign sriov implementation.
 
-diff --cc fs/bio.c
-index f855e0e,dbb7a6c..0000000
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@@ -1485,20 -1511,19 +1485,21 @@@ struct bio_pair *bio_split(struct bio *
-  	bp->bio2.bi_size -=3D first_sectors << 9;
-  	bp->bio1.bi_size =3D first_sectors << 9;
- =20
-- 	bp->bv1 =3D bi->bi_io_vec[0];
-- 	bp->bv2 =3D bi->bi_io_vec[0];
--=20
-- 	if (bio_is_rw(bi)) {
-- 		bp->bv2.bv_offset +=3D first_sectors << 9;
-- 		bp->bv2.bv_len -=3D first_sectors << 9;
-- 		bp->bv1.bv_len =3D first_sectors << 9;
-- 	}
-+ 	if (bi->bi_vcnt !=3D 0) {
-+ 		bp->bv1 =3D bi->bi_io_vec[0];
-+ 		bp->bv2 =3D bi->bi_io_vec[0];
- -		bp->bv2.bv_offset +=3D first_sectors << 9;
- -		bp->bv2.bv_len -=3D first_sectors << 9;
- -		bp->bv1.bv_len =3D first_sectors << 9;
-++		if (bio_is_rw(bi)) {
-++			bp->bv2.bv_offset +=3D first_sectors << 9;
-++			bp->bv2.bv_len -=3D first_sectors << 9;
-++			bp->bv1.bv_len =3D first_sectors << 9;
-++		}
- =20
-- 	bp->bio1.bi_io_vec =3D &bp->bv1;
-- 	bp->bio2.bi_io_vec =3D &bp->bv2;
-+ 		bp->bio1.bi_io_vec =3D &bp->bv1;
-+ 		bp->bio2.bi_io_vec =3D &bp->bv2;
- =20
-- 	bp->bio1.bi_max_vecs =3D 1;
-- 	bp->bio2.bi_max_vecs =3D 1;
-+ 		bp->bio1.bi_max_vecs =3D 1;
-+ 		bp->bio2.bi_max_vecs =3D 1;
-+ 	}
- =20
-  	bp->bio1.bi_end_io =3D bio_pair_end_1;
-  	bp->bio2.bi_end_io =3D bio_pair_end_2;
+That's right.  If we can improve the situation by redesigning, that's
+what we should do.  The present situation, where we keep adding
+special cases because "that's the way the rest of the system works" is
+not sustainable in the long term.
 
---Signature=_Fri__21_Sep_2012_12_49_55_+1000_8fFBJvoYfvIhz9ue
-Content-Type: application/pgp-signature
+> Also that pci root bus add/start, stop/remove will need special
+> sequence to make ioapic
+> and dmar to be started early before normal pci device drivers and
+> stopped after normal pci device drivers.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+This is another thing I'm curious about.  How do you handle this
+situation today (before host bridge hot-add)?
 
-iQIcBAEBCAAGBQJQW9XTAAoJEECxmPOUX5FEWp8P/RUmasv7Qs3n0UWlrzyPwRlo
-BKXidlrRKiauR+i4McaZb/P5Fe9sOP8Lrv7igB172Z0rLHZ6hBLQUTN3Rfw/5aGW
-SkzIGMfx2Ul+ia4FFOU9aFoN4NxDt4TUwz03diF7y0uDgetJ5o8mM1iHScRarS95
-HE6Terb9renhlXUyAmmM9NDBWgwTxhE2MqQ+LiwsJznpdV3Hl3WhHye3sUgu4jj3
-J8O2wfrcLNnP8p8V5aGLhjkM6vkTdAlx7HBnJMb4GBhVIu22SeGS/GNfRNzoOHfE
-JfGEWhSFQ2/RXrcTiTLyyeXMEqunwu5CF5BtiLMDM501vYXjL+TJeBqYfdDWMNPl
-lJ4EnSQycRIrTx/BKEqoZH/BXUwbOgIvtjS0vr9e6Db4fgC0z4bE0ISDOBtscNZa
-3xlHeVuQYylAoTNcghJvBiE6OMmeyulfaq2kLmdHaJ5ToJ9/Uo32o9j5wSZ8KK1g
-sroUyzgqmZEqAeBKviZhx6yZHNGqBthghK+M4X6/3xzaLsW521lNfrYc5XtYdXz7
-fUkWNfAuhlRZZLs5PBrXfbdVPwzgk8uSEV13NYby68uYYDvr0tZ5MFseOdVbRSzS
-cARPYfCNxVzzJldHvXPJY+RcbAohexZzfn5yshr3kuMkBWxdMgYcaQVgRMRF95Dh
-GiCR03GJbVhvLij1UgAU
-=C2D+
------END PGP SIGNATURE-----
+The DMAR I'm not so worried about because as far as I know, there's no
+such thing as a DMAR that's discovered by PCI enumeration.  We should
+discover it via ACPI, and that can happen before we enumerate anything
+behind a host bridge, so I don't really see any ordering problem
+between the DMAR and the PCI devices that would use it.
 
---Signature=_Fri__21_Sep_2012_12_49_55_+1000_8fFBJvoYfvIhz9ue--
+However, I know there *are* IOAPICs that are enumerated as PCI
+devices, and I don't know whether we can deduce a relationship between
+the IOAPIC and the devices that use it.  Don't we have this problem
+already?  I assume that even without hot-adding a host bridge, we
+might discover a PCI IOAPIC that was present at boot, and we'd have to
+make sure to bind a driver to it before we use any of the PCI devices
+connected to it.  How does that work?
+
+Bjorn
