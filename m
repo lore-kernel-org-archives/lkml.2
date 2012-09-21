@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab2IURd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:33:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65060 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab2IURd5 (ORCPT
+	id S932278Ab2IUReJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:34:09 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:34057 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932229Ab2IUReE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:33:57 -0400
-Date: Fri, 21 Sep 2012 10:33:52 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 03/16] slab: Ignore the cflgs bit in cache creation
-Message-ID: <20120921173352.GE7264@google.com>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
- <1347977530-29755-4-git-send-email-glommer@parallels.com>
+	Fri, 21 Sep 2012 13:34:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347977530-29755-4-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120921171840.GB10409@arwen.pp.htv.fi>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com>
+ <1348152226-13588-9-git-send-email-mporter@ti.com> <CANfBPZ81anOy8fWgKM1PgCtB4V2pEp2x1Qi4x1uPsq7QieMN5g@mail.gmail.com>
+ <CANfBPZ-h7MD4X_NRYfwOmMnEyOKy0bTNNLNRmdbef2pe=2aHyg@mail.gmail.com> <20120921171840.GB10409@arwen.pp.htv.fi>
+From: "S, Venkatraman" <svenkatr@ti.com>
+Date: Fri, 21 Sep 2012 23:03:42 +0530
+Message-ID: <CANfBPZ-q68qqpF0TvrY9HXH4mOjVE2j1T7+J0-aKKpg2ZaR+4g@mail.gmail.com>
+Subject: Re: [RFC PATCH 08/13] mmc: omap_hsmmc: limit max_segs with the EDMA DMAC
+To: balbi@ti.com
+Cc: Matt Porter <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Sekhar Nori <nsekhar@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 06:11:57PM +0400, Glauber Costa wrote:
-> No cache should ever pass that as a creation flag, since this bit is
-> used to mark an internal decision of the slab about object placement. We
-> can just ignore this bit if it happens to be passed (such as when
-> duplicating a cache in the kmem memcg patches)
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: David Rientjes <rientjes@google.com>
-> ---
->  mm/slab.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/mm/slab.c b/mm/slab.c
-> index a7ed60f..ccf496c 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -2373,6 +2373,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
->  	int err;
->  	size_t size = cachep->size;
->  
-> +	flags &= ~CFLGS_OFF_SLAB;
+On Fri, Sep 21, 2012 at 10:48 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Fri, Sep 21, 2012 at 10:47:30PM +0530, S, Venkatraman wrote:
+>> On Fri, Sep 21, 2012 at 10:45 PM, S, Venkatraman <svenkatr@ti.com> wrote:
+>> > On Thu, Sep 20, 2012 at 8:13 PM, Matt Porter <mporter@ti.com> wrote:
+>> >> The EDMA DMAC has a hardware limitation that prevents supporting
+>> >> scatter gather lists with any number of segments. Since the EDMA
+>> >> DMA Engine driver sets the maximum segments to 16, we do the
+>> >> same.
+>> >>
+>> >> Note: this can be removed once the DMA Engine API supports an
+>> >> API to query the DMAC's segment limitations.
+>> >>
+>> >
+>> > I wouldn't want to bind the properties of EDMA to omap_hsmmc as this patch
+>> > suggests. Why don't we have a max_segs property, which when explicitly specified
+>> > in DT, will override the default ?
+>>
+>> If you are adventurous, this can be a generic mmc DT binding instead
+>> of restricting it to OMAP.
+>
+> I say if it's a limitation in the DMAC, then DMAC's driver should handle
+> it, no ? Meaning that in this case you would copy from one multi-segment
+> sg into a one-segment sg and when transfer is complete, before calling
+> user's callback, copy data the other way around (?)
+>
 
-A comment explaining why this is necessary wouldn't hurt.
-
-Thanks.
-
--- 
-tejun
+Right ! So even if the property is defined for MMC, Matt will end up coding the
+limitation into every peripheral driver that uses EMAC, which doesn't scale.
+Your solution is better.
