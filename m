@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2IUFZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 01:25:52 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47199 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732Ab2IUFYr (ORCPT
+	id S1754388Ab2IUFhb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 01:37:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45984 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049Ab2IUFha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 01:24:47 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-9b-505bfa1e1033
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Dong Hao <haodong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 1/4] perf header: Add struct perf_session_env
-Date: Fri, 21 Sep 2012 14:16:01 +0900
-Message-Id: <1348204564-1105-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1348204564-1105-1-git-send-email-namhyung@kernel.org>
-References: <1348204564-1105-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 21 Sep 2012 01:37:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120920.180949.2287169159603922703.davem@davemloft.net>
+References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
+	<20120920.180949.2287169159603922703.davem@davemloft.net>
+Date: Fri, 21 Sep 2012 07:37:29 +0200
+Message-ID: <CA+rthh8iRhymobiYMi=9TrO1FGfrHBrPZzCpsUgnKXsjD0bZiA@mail.gmail.com>
+Subject: Re: [PATCH 0/6] xfrm_user info leaks
+From: Mathias Krause <minipli@googlemail.com>
+To: David Miller <davem@davemloft.net>
+Cc: steffen.klassert@secunet.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Fri, Sep 21, 2012 at 12:09 AM, David Miller <davem@davemloft.net> wrote:
+> From: Mathias Krause <minipli@googlemail.com>
+> Date: Wed, 19 Sep 2012 23:33:37 +0200
+>
+>> the following series fixes various info leaks in the xfrm netlink
+>> interface. As always, a test case can be supplied on request.
+>>
+>> Patches 1 to 5 are probably material for stable, too. Patch 6 is just a
+>> minor optimization I stumbled across while auditing the code.
+>>
+>> Please apply!
+>
+> All applied, and I made sure to use v3 of patch #5 (which you marked
+> as 5/7 instead of 5/6 :-)
 
-The struct perf_session_env will preserve environment information at
-the time of perf record.  It can be accessed anytime after parsing a
-perf.data file if needed.
+Sorry for the confusion. Looks like I've to learn a few more git
+tricks, so this won't happen again ;)
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/header.h | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+> Also, these have been queued up for -stable as well.
 
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 209dad4fee2b..99bdd3abce59 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -58,6 +58,29 @@ struct perf_header;
- int perf_file_header__read(struct perf_file_header *header,
- 			   struct perf_header *ph, int fd);
- 
-+struct perf_session_env {
-+	char			*hostname;
-+	char			*os_release;
-+	char			*version;
-+	char			*arch;
-+	int			nr_cpus_online;
-+	int			nr_cpus_avail;
-+	char			*cpu_desc;
-+	char			*cpuid;
-+	unsigned long long	total_mem;
-+
-+	int			nr_cmdline;
-+	char			*cmdline;
-+	int			nr_sibling_cores;
-+	char			*sibling_cores;
-+	int			nr_sibling_threads;
-+	char			*sibling_threads;
-+	int			nr_numa_nodes;
-+	char			*numa_nodes;
-+	int			nr_pmu_mappings;
-+	char			*pmu_mappings;
-+};
-+
- struct perf_header {
- 	int			frozen;
- 	bool			needs_swap;
-@@ -67,6 +90,7 @@ struct perf_header {
- 	u64			event_offset;
- 	u64			event_size;
- 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
-+	struct perf_session_env env;
- };
- 
- struct perf_evlist;
--- 
-1.7.11.4
-
+Thanks!
