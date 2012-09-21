@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab2IUJfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:35:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43333 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932609Ab2IUJff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:35:35 -0400
-Date: Fri, 21 Sep 2012 10:35:30 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Richard Davies <richard@arachsys.com>
-Cc: Shaohua Li <shli@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Avi Kivity <avi@redhat.com>, QEMU-devel <qemu-devel@nongnu.org>,
-        KVM <kvm@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Reduce compaction scanning and lock contention
-Message-ID: <20120921093530.GS11266@suse.de>
-References: <1348149875-29678-1-git-send-email-mgorman@suse.de>
- <20120921091333.GA32081@alpha.arachsys.com>
+	id S932867Ab2IUJhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:37:43 -0400
+Received: from nm32.bullet.mail.ne1.yahoo.com ([98.138.229.25]:21039 "HELO
+	nm32.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757111Ab2IUJhm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 05:37:42 -0400
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Sep 2012 05:37:41 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 984998.22226.bm@omp1016.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=XWEw97UyI7ul7uP2UyCVGTVGLZJX7SnRLsJWGemr4REtSyTLiOuQ2i6w80gk+h5TjHDwfn/Wa1926R8xNhSJCgmmqvmki1GJL8ypvByAkL7KJvYwpe1tCfCnGBI4n5JkVnjTchs37fKm/PS7rXp5Wlv3cv1ibif4Ikw9hzp1Bfc=;
+X-YMail-OSG: 34dUKLsVM1ks2JzfPQn7N4pmJXYdSIwvLaWEf9j6kyK.zOh
+ VZ8RzTKAkA1Uk3r22zV6GtXV1th_wK8BMH6BonysdgteFR8cGytghpLQ658S
+ EPJdO6pqz0SYmEuHsR_lRiuhOMzUFRfjpNS.rpvhPFIF5eNf5sv4.zjdAOuk
+ IiQTxxtmnmUXOpp8AZVAAKXvC92oWuziM50gCRXQcsnGoh0n2FBZA5xj_lQC
+ kIxPm_wxPsRGzs0vI0IO8B2eTzFnQqJop5TVwQ2DXWh3.WRyTy5rSbU4ucOU
+ JPs_f4kUvhJQiVSm3Fq6ige6Hrxt61xx0LiE24I_OGGSMgVgWaSht59xa8O4
+ WMgOPgXEjJIer9c3qT6Z4rWycTMuKkL.bJg9.iG5n0fBO5n7NhQIQerLrcIh
+ e0w9sBEZcYG5Imx7K93JOm7blVtVNcbnEt4kxm40h01LO.c7C31Qzf4mW2ng
+ 9vuKe.VXLmATVdUBG56mRu0cYouZfkvnHNRRXRWm7Su117G9KDe9jbhNXHYl
+ Z4PmZD5J.JNL18epaA6bntWbZ3hGsuAw42.vV4CHEK1A-
+X-Mailer: YahooMailWebService/0.8.121.416
+Message-ID: <1348219885.5550.YahooMailNeo@web120504.mail.ne1.yahoo.com>
+Date: Fri, 21 Sep 2012 02:31:25 -0700 (PDT)
+From: Eugene Markow <ejmarkow@yahoo.com>
+Reply-To: Eugene Markow <ejmarkow@yahoo.com>
+Subject: Re: [PATCH] i915: Don't register backlight when max PWM value is unknown
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120921091333.GA32081@alpha.arachsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 10:13:33AM +0100, Richard Davies wrote:
-> Hi Mel,
-> 
-> Thank you for this series. I have applied on clean 3.6-rc5 and tested, and
-> it works well for me - the lock contention is (still) gone and
-> isolate_freepages_block is much reduced.
-> 
 
-Excellent!
 
-> Here is a typical test with these patches:
-> 
-> # grep -F '[k]' report | head -8
->     65.20%         qemu-kvm  [kernel.kallsyms]     [k] clear_page_c
->      2.18%         qemu-kvm  [kernel.kallsyms]     [k] isolate_freepages_block
->      1.56%         qemu-kvm  [kernel.kallsyms]     [k] _raw_spin_lock
->      1.40%         qemu-kvm  [kernel.kallsyms]     [k] svm_vcpu_run
->      1.38%          swapper  [kernel.kallsyms]     [k] default_idle
->      1.35%         qemu-kvm  [kernel.kallsyms]     [k] get_page_from_freelist
->      0.74%             ksmd  [kernel.kallsyms]     [k] memcmp
->      0.72%         qemu-kvm  [kernel.kallsyms]     [k] free_pages_prepare
-> 
+In reference to:
 
-Ok, so that is more or less acceptable. I would like to reduce the scanning
-even further but I'll take this as a start -- largely because I do not have
-any new good ideas on how it could be reduced further without incurring
-a large cost in the page allocator :)
+-----
+commit 28dcc2d60cb570d9f549c329b2f51400553412a1
+Author: Jani Nikula <jani.nikula@...com>
+Date:   Mon Sep 3 16:25:12 2012 +0300
 
-> I did manage to get a couple which were slightly worse, but nothing like as
-> bad as before. Here are the results:
-> 
-> # grep -F '[k]' report | head -8
->     45.60%       qemu-kvm  [kernel.kallsyms]     [k] clear_page_c
->     11.26%       qemu-kvm  [kernel.kallsyms]     [k] isolate_freepages_block
->      3.21%       qemu-kvm  [kernel.kallsyms]     [k] _raw_spin_lock
->      2.27%           ksmd  [kernel.kallsyms]     [k] memcmp
->      2.02%        swapper  [kernel.kallsyms]     [k] default_idle
->      1.58%       qemu-kvm  [kernel.kallsyms]     [k] svm_vcpu_run
->      1.30%       qemu-kvm  [kernel.kallsyms]     [k] _raw_spin_lock_irqsave
->      1.09%       qemu-kvm  [kernel.kallsyms]     [k] get_page_from_freelist
-> 
-> # grep -F '[k]' report | head -8
->     61.29%       qemu-kvm  [kernel.kallsyms]     [k] clear_page_c
->      4.52%       qemu-kvm  [kernel.kallsyms]     [k] _raw_spin_lock_irqsave
->      2.64%       qemu-kvm  [kernel.kallsyms]     [k] copy_page_c
->      1.61%        swapper  [kernel.kallsyms]     [k] default_idle
->      1.57%       qemu-kvm  [kernel.kallsyms]     [k] _raw_spin_lock
->      1.18%       qemu-kvm  [kernel.kallsyms]     [k] get_page_from_freelist
->      1.18%       qemu-kvm  [kernel.kallsyms]     [k] isolate_freepages_block
->      1.11%       qemu-kvm  [kernel.kallsyms]     [k] svm_vcpu_run
-> 
-> 
 
-Were the boot times acceptable even when these slightly worse figures
-were recorded?
+   drm/i915: do not expose a dysfunctional backlight interface to userspace
+-----
 
-> I will follow up with the detailed traces for these three tests.
-> 
-> Thank you!
-> 
+Using kernel snapshot 3.6.0-rc6 commit 4651afb (Mon, 17 Sep 2012), dmesg is showing:
 
-Thank you for the detailed reporting and the testing, it's much
-appreciated. I've already rebased the patches to Andrew's tree and tested
-them overnight and the figures look good on my side. I'll update the
-changelog and push them shortly.
+[5.764086] [drm:intel_panel_setup_backlight] *ERROR* Failed to get maximum backlight value
 
--- 
-Mel Gorman
-SUSE Labs
+
+
+Regards,
+
+Eugene Markow
+
