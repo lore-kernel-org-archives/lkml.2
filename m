@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab2IUAcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 20:32:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33353 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756669Ab2IUA3U (ORCPT
+	id S1756613Ab2IUAd0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 20:33:26 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42809 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755075Ab2IUAdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 20:29:20 -0400
-Date: Thu, 20 Sep 2012 17:29:16 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
-Subject: Re: [PATCH v2 19/26] bounce: Refactor __blk_queue_bounce to not use
- bi_io_vec
-Message-ID: <20120921002916.GM5519@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-20-git-send-email-koverstreet@google.com>
- <20120921002555.GV7264@google.com>
+	Thu, 20 Sep 2012 20:33:25 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-3d-505bb5d2079a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] perf: Fix parallel build
+References: <505BAC5D.9020909@redhat.com>
+Date: Fri, 21 Sep 2012 09:24:42 +0900
+In-Reply-To: <505BAC5D.9020909@redhat.com> (Eric Sandeen's message of "Thu, 20
+	Sep 2012 18:53:01 -0500")
+Message-ID: <877groz0hh.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120921002555.GV7264@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 05:25:55PM -0700, Tejun Heo wrote:
-> Hello, Kent.
-> 
-> On Mon, Sep 10, 2012 at 05:22:30PM -0700, Kent Overstreet wrote:
-> > A bunch of what __blk_queue_bounce() was doing was problematic for the
-> > immutable bvec work; this cleans that up and the code is quite a bit
-> > smaller, too.
-> > 
-> > The __bio_for_each_segment() in copy_to_high_bio_irq() was changed
-> > because that one's looping over the original bio, not the bounce bio -
-> > since the bounce code doesn't own that bio the __ version wasn't
-> > correct.
-> 
-> I do like the new implementation.  I think the function is broken
-> before and after tho.  Allocating from fs_bio_set from block layer is
-> never safe and nothing seems to prevent multiple allocators compete in
-> the bounce page mempool.  This will need a separate bioset and the
-> multiple mempool allocation would have to be put inside a mutex.
+Hi Eric,
 
-Yeah, I should've at least made a note of that.
+On Thu, 20 Sep 2012 18:53:01 -0500, Eric Sandeen wrote:
+> Parallel builds of perf were failing for me on a 32p box, with:
+>
+>     * new build flags or prefix
+> util/pmu.l:7:23: error: pmu-bison.h: No such file or directory
+>
+> ...
+>
+> make: *** [util/pmu-flex.o] Error 1
+> make: *** Waiting for unfinished jobs....
+>
+> This can pretty quickly be seen by adding a sleep in front of
+> the bison call in tools/perf/Makefile and running make -j4 on a
+> smaller box:
+>
+> 	sleep 10; $(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+>
+> Adding the following dependency fixes it for me:
+>
+> Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+> ---
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index bad726a..6c389d9 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -219,7 +219,7 @@ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l
+>  $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+>  	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
+>  
+> -$(OUTPUT)util/pmu-flex.c: util/pmu.l
+> +$(OUTPUT)util/pmu-flex.c: util/pmu.l util/pmu-bison.c
+>  	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+>  
+>  $(OUTPUT)util/pmu-bison.c: util/pmu.y
 
-I should really add "audit all uses of fs_bio_set" to my todo list.
+I guess the $(OUTPUT)util/parse-events-flex.c: line has the same
+problem.  Could you check and submit a patch for that too?
 
-> Also, how was this tested?
-
-Changed queue_bounce_pfn() to return 0, forcing all io to be bounced.
+Thanks,
+Namhyung
