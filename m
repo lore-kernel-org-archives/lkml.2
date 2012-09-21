@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab2IUQNe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 12:13:34 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:34235 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226Ab2IUQNa (ORCPT
+	id S1756463Ab2IUQOU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 12:14:20 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:43783 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407Ab2IUQOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 12:13:30 -0400
-Date: Fri, 21 Sep 2012 16:13:29 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        "Bruce, Becky" <bbruce@ti.com>, "Hilman, Kevin" <khilman@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Hunter, Jon" <jon-hunter@ti.com>, snijsure@grid-net.com
-Subject: [PATCH] Documentation: RCU: update the stall warning message "timer=-1"
- to match reality
-Message-ID: <alpine.DEB.2.00.1209211610280.30239@utopia.booyaka.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 21 Sep 2012 12:14:17 -0400
+Message-ID: <505C9254.5090101@lwfinger.net>
+Date: Fri, 21 Sep 2012 11:14:12 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        dwmw2@infradead.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Jan Terstegge <jan@terstegge.net>
+Subject: Re: [PATCH] rtlwifi/rtl8712u Revert firmware
+References: <1347294365-6509-1-git-send-email-Larry.Finger@lwfinger.net> <1348180259.4801.9.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1348180259.4801.9.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/20/2012 05:31 PM, Ben Hutchings wrote:
+> On Mon, 2012-09-10 at 11:26 -0500, Larry Finger wrote:
+>> Although the newest firmware for the RTL8192SU, which is found in vendor
+>> driver rtl8188C_8192C_8192D_usb_linux_v3.4.2_3727.20120404, works with most
+>> devices, it causes drops of the wireless connection for the ASUS WL-167G V3
+>> (USB ID 0b05:1791), the D-Link DWA131 (07d1:3303), and probably others.
+>> Tests show that the firmware from vendor driver
+>> rtl8712_8188_8191_8192SU_usb_linux_v7_0.20100831 works better.
+>>
+>> This commerts reverts to that older firmware.
+>>
+>> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+> [...]
+>
+> This is the original blob added by:
+>
+> commit 8f919160792e4702c6b7a67a243cea4f757407e4
+> Author: Larry Finger <Larry.Finger@lwfinger.net>
+> Date:   Mon Nov 1 23:56:52 2010 -0500
+>
+>      linux-firmware: Add firmware files for Realtek RTL8712U and RTL8192CE
+>
+> There have been two updates since then:
+>
+> commit f8ddc05e13c4c6dd9d725bc376b287f307eb223a
+> Author: Larry Finger <Larry.Finger@lwfinger.net>
+> Date:   Tue Aug 16 11:12:14 2011 -0500
+>
+>      rtlwifi: rtl8712u: Upgrade to firmware found in vendor's V2.6.6
+>
+> commit d8f60751d3f09545f51aac5d8e451f7668063ebf
+> Author: Larry Finger <Larry.Finger@lwfinger.net>
+> Date:   Wed Jul 11 13:18:30 2012 -0500
+>
+>      r8712u: Update to latest firmware
+>
+>      A new firmware file is used in the vendor driver with name/version
+>      rtl8188C_8192C_8192D_usb_linux_v3.4.2_3727.20120404.
+>
+> Sure you want to revert both of these, not just the latest?
 
-The CONFIG_RCU_FAST_NO_HZ stall warning messages can never emit
-"timer=-1".  This is because the printf() format specifier to generate
-that number is '%lu'.  So, update the documentation to use the
-unsigned long equivalent instead, "timer=4294967295".  This is what
-actually shows up in traces.
+Yes. Both of the updates work on my hardware (D-Link and Rosewill), but both 
+fail on an ASUS WL-167g v3 as reported privately to me. I will work with Realtek 
+and the OP to resolve the problem, and then update the fw once again.
 
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
----
- Documentation/RCU/stallwarn.txt |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Thanks,
 
-diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
-index 523364e..fe3379e 100644
---- a/Documentation/RCU/stallwarn.txt
-+++ b/Documentation/RCU/stallwarn.txt
-@@ -99,7 +99,7 @@ In kernels with CONFIG_RCU_FAST_NO_HZ, even more information is
- printed:
- 
- 	INFO: rcu_preempt detected stall on CPU
--	0: (64628 ticks this GP) idle=dd5/3fffffffffffffff/0 drain=0 . timer=-1
-+	0: (64628 ticks this GP) idle=dd5/3fffffffffffffff/0 drain=0 . timer=4294967295
- 	   (t=65000 jiffies)
- 
- The "(64628 ticks this GP)" indicates that this CPU has taken more
-@@ -119,10 +119,10 @@ number (as shown above) otherwise.
- For CONFIG_RCU_FAST_NO_HZ kernels, the "drain=0" indicates that the
- CPU is not in the process of trying to force itself into dyntick-idle
- state, the "." indicates that the CPU has not given up forcing RCU
--into dyntick-idle mode (it would be "H" otherwise), and the "timer=-1"
--indicates that the CPU has not recented forced RCU into dyntick-idle
--mode (it would otherwise indicate the number of microseconds remaining
--in this forced state).
-+into dyntick-idle mode (it would be "H" otherwise), and the
-+"timer=4294967295" (the magic number (2^32)-1) indicates that the CPU
-+has not recently forced RCU into dyntick-idle mode (it would otherwise
-+indicate the number of microseconds remaining in this forced state).
- 
- 
- Multiple Warnings From One Stall
--- 
-1.7.10.4
+Larry
+
 
