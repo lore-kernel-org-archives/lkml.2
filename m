@@ -1,44 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab2IUKQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 06:16:06 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50007 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab2IUKQD (ORCPT
+	id S1754437Ab2IUKW5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 06:22:57 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:36073 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753562Ab2IUKWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 06:16:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120919114933.GX8832@opensource.wolfsonmicro.com>
-References: <1347855552-26213-1-git-send-email-haojian.zhuang@gmail.com>
-	<20120919112614.GE8138@sortiz-mobl>
-	<20120919114933.GX8832@opensource.wolfsonmicro.com>
-Date: Fri, 21 Sep 2012 18:16:02 +0800
-Message-ID: <CAN1soZwZB=SHjfDVz6Li_q=0GLsQPc83ckty+XjnyeySnE5zFQ@mail.gmail.com>
-Subject: Re: [PATCH 0/9] mfd: update on 88pm860x and max8925
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, lrg@ti.com, rpurdie@rpsys.net,
-        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Sep 2012 06:22:54 -0400
+From: Nestor Lopez Casado <nlopezcasad@logitech.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        685360@bugs.debian.org, john.ettedgui@gmail.com, barz621@gmail.com,
+        joy@debbugs.entuzijast.net, dh.herrmann@googlemail.com,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>
+Subject: [PATCH 1/1] HID: Fix missing Unifying device issue
+Date: Fri, 21 Sep 2012 12:21:34 +0200
+Message-Id: <1348222894-6767-1-git-send-email-nlopezcasad@logitech.com>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 7:49 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, Sep 19, 2012 at 01:26:14PM +0200, Samuel Ortiz wrote:
->
->> I applied the 5 first patches.
->> For the regulator one, I'd like to get Mark's ACK as well.
->
-> I'm still waiting for an update on what the depdencies in the rest of
-> the series are.
+This patch fixes an issue introduced after commit 4ea5454203d991ec
 
-Jett's PREG patch is used to append PREG regulator. My patch is used
-to avoid checking
-resource of PREG regulator. Without Jett's patch, my patch doesn't
-make sense. So I prefer
-both of these two patches could go through into same git tree.
+After that commit, hid-core silently discards any incoming packet
+that arrives while any hid driver's probe function is being executed.
 
-Best Regards
-Haojian
+This broke the enumeration process of hid-logitech-dj, that must
+receive control packets in-band with the mouse and keyboard
+packets. Discarding mouse or keyboard data at the very begining is
+usually fine, but it is not the case for control packets.
+
+This patch forces a re-enumeration of the paired devices when a packet
+arrives that comes from an unknown device.
+
+Based on a patch originally written by Benjamin Tissoires.
+
+Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
+---
+
+Hello Jiri, David,
+
+      I suggest we include this patch as this solves the issue with the 
+      Unifying devices while we decide the future of the lock in hid-core.
+
+      Cheers,
+      Nestor
+
+ drivers/hid/hid-logitech-dj.c |   45 +++++++++++++++++++++++++++++++++++++++++
+ drivers/hid/hid-logitech-dj.h |    1 +
+ 2 files changed, 46 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index 4d524b5..9500f2f 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -193,6 +193,7 @@ static struct hid_ll_driver logi_dj_ll_driver;
+ static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
+ 					size_t count,
+ 					unsigned char report_type);
++static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev);
+ 
+ static void logi_dj_recv_destroy_djhid_device(struct dj_receiver_dev *djrcv_dev,
+ 						struct dj_report *dj_report)
+@@ -233,6 +234,7 @@ static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
+ 	if (dj_report->report_params[DEVICE_PAIRED_PARAM_SPFUNCTION] &
+ 	    SPFUNCTION_DEVICE_LIST_EMPTY) {
+ 		dbg_hid("%s: device list is empty\n", __func__);
++		djrcv_dev->querying_devices = false;
+ 		return;
+ 	}
+ 
+@@ -243,6 +245,12 @@ static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
+ 		return;
+ 	}
+ 
++	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
++		/* The device is already known. No need to reallocate it. */
++		dbg_hid("%s: device is already known\n", __func__);
++		return;
++	}
++
+ 	dj_hiddev = hid_allocate_device();
+ 	if (IS_ERR(dj_hiddev)) {
+ 		dev_err(&djrcv_hdev->dev, "%s: hid_allocate_device failed\n",
+@@ -306,6 +314,7 @@ static void delayedwork_callback(struct work_struct *work)
+ 	struct dj_report dj_report;
+ 	unsigned long flags;
+ 	int count;
++	int retval;
+ 
+ 	dbg_hid("%s\n", __func__);
+ 
+@@ -338,6 +347,25 @@ static void delayedwork_callback(struct work_struct *work)
+ 		logi_dj_recv_destroy_djhid_device(djrcv_dev, &dj_report);
+ 		break;
+ 	default:
++	/* A normal report (i. e. not belonging to a pair/unpair notification)
++	 * arriving here, means that the report arrived but we did not have a
++	 * paired dj_device associated to the report's device_index, this
++	 * means that the original "device paired" notification corresponding
++	 * to this dj_device never arrived to this driver. The reason is that
++	 * hid-core discards all packets coming from a device while probe() is
++	 * executing. */
++	if (!djrcv_dev->paired_dj_devices[dj_report.device_index]) {
++		/* ok, we don't know the device, just re-ask the
++		 * receiver for the list of connected devices. */
++		retval = logi_dj_recv_query_paired_devices(djrcv_dev);
++		if (!retval) {
++			/* everything went fine, so just leave */
++			break;
++		}
++		dev_err(&djrcv_dev->hdev->dev,
++			"%s:logi_dj_recv_query_paired_devices "
++			"error:%d\n", __func__, retval);
++		}
+ 		dbg_hid("%s: unexpected report type\n", __func__);
+ 	}
+ }
+@@ -368,6 +396,12 @@ static void logi_dj_recv_forward_null_report(struct dj_receiver_dev *djrcv_dev,
+ 	if (!djdev) {
+ 		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
+ 			" is NULL, index %d\n", dj_report->device_index);
++		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
++
++		if (schedule_work(&djrcv_dev->work) == 0) {
++			dbg_hid("%s: did not schedule the work item, was already "
++			"queued\n", __func__);
++		}
+ 		return;
+ 	}
+ 
+@@ -398,6 +432,12 @@ static void logi_dj_recv_forward_report(struct dj_receiver_dev *djrcv_dev,
+ 	if (dj_device == NULL) {
+ 		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
+ 			" is NULL, index %d\n", dj_report->device_index);
++		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
++
++		if (schedule_work(&djrcv_dev->work) == 0) {
++			dbg_hid("%s: did not schedule the work item, was already "
++			"queued\n", __func__);
++		}
+ 		return;
+ 	}
+ 
+@@ -439,6 +479,10 @@ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+ 	struct dj_report *dj_report;
+ 	int retval;
+ 
++	/* no need to protect djrcv_dev->querying_devices */
++	if (djrcv_dev->querying_devices)
++		return 0;
++
+ 	dj_report = kzalloc(sizeof(struct dj_report), GFP_KERNEL);
+ 	if (!dj_report)
+ 		return -ENOMEM;
+@@ -450,6 +494,7 @@ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+ 	return retval;
+ }
+ 
++
+ static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
+ 					  unsigned timeout)
+ {
+diff --git a/drivers/hid/hid-logitech-dj.h b/drivers/hid/hid-logitech-dj.h
+index fd28a5e..4a40003 100644
+--- a/drivers/hid/hid-logitech-dj.h
++++ b/drivers/hid/hid-logitech-dj.h
+@@ -101,6 +101,7 @@ struct dj_receiver_dev {
+ 	struct work_struct work;
+ 	struct kfifo notif_fifo;
+ 	spinlock_t lock;
++	bool querying_devices;
+ };
+ 
+ struct dj_device {
+-- 
+1.7.5.3
+
