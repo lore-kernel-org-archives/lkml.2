@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab2IUHHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 03:07:22 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:42472 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab2IUHHS (ORCPT
+	id S1754637Ab2IUHLj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 03:11:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57124 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752645Ab2IUHLg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 03:07:18 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-security-module\@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-References: <87k3vote43.fsf@xmission.com>
-	<1348187330-6616-1-git-send-email-ebiederm@xmission.com>
-	<505C0438.9060907@fusionio.com>
-Date: Fri, 21 Sep 2012 00:07:10 -0700
-In-Reply-To: <505C0438.9060907@fusionio.com> (Jens Axboe's message of "Fri, 21
-	Sep 2012 08:07:52 +0200")
-Message-ID: <87sjabsvkx.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 21 Sep 2012 03:11:36 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Porter, Matt" <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+CC: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: RE: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
+ arm/common
+Thread-Topic: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
+ arm/common
+Thread-Index: AQHNlz5P7Id64n7/pEWRn/L8Ro/of5eUXMUg
+Date: Fri, 21 Sep 2012 07:10:52 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA8A6A9@DBDE01.ent.ti.com>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com>
+ <1348152226-13588-2-git-send-email-mporter@ti.com>
+In-Reply-To: <1348152226-13588-2-git-send-email-mporter@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/SECikYNvc9B/mA82WrHAVTNV2tbtv/+A=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Jens Axboe <jaxboe@fusionio.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 01/14] userns: Convert loop to use kuid_t instead of uid_t
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <jaxboe@fusionio.com> writes:
-
-> On 2012-09-21 02:28, Eric W. Biederman wrote:
->> From: "Eric W. Biederman" <ebiederm@xmission.com>
->> 
->> Cc: Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
->> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
->> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->> ---
->>  drivers/block/loop.c |    4 ++--
->>  include/linux/loop.h |    2 +-
->>  init/Kconfig         |    1 -
->>  3 files changed, 3 insertions(+), 4 deletions(-)
->
-> Thanks Eric, queued for 3.7.
-
-Would it be a problem if I also merged throug my user-namespace.git tree?
-
-That was the original plan and it is handy to keep all of the patches
-together.
-
-Not that it matters much in this case.
-
-Eric
+On Thu, Sep 20, 2012 at 20:13:34, Porter, Matt wrote:
+> Move mach-davinci/dma.c to common/edma.c so it can be used
+> by OMAP (specifically AM33xx atm) as well. This just moves
+> the private EDMA API but does not support OMAP.
+> 
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  arch/arm/Kconfig                           |    1 +
+>  arch/arm/common/Kconfig                    |    3 +
+>  arch/arm/common/Makefile                   |    1 +
+>  arch/arm/common/edma.c                     | 1588 ++++++++++++++++++++++++++++
+>  arch/arm/include/asm/mach/edma.h           |  267 +++++
+>  arch/arm/mach-davinci/Makefile             |    2 +-
+>  arch/arm/mach-davinci/devices.c            |    3 +-
+>  arch/arm/mach-davinci/dm355.c              |    2 +-
+>  arch/arm/mach-davinci/dm365.c              |    2 +-
+>  arch/arm/mach-davinci/dm644x.c             |    2 +-
+>  arch/arm/mach-davinci/dm646x.c             |    2 +-
+>  arch/arm/mach-davinci/dma.c                | 1588 ----------------------------
 
 
+Please use –M option, while generating patches via git-format-patch. 
+This reduces the patch size if files are copied/renamed/moved.
 
+>  arch/arm/mach-davinci/include/mach/asp.h   |    2 +-
+>  arch/arm/mach-davinci/include/mach/da8xx.h |    3 +-
+>  arch/arm/mach-davinci/include/mach/edma.h  |  267 -----
+>  arch/arm/mach-davinci/include/mach/spi.h   |    2 +-
+>  arch/arm/plat-omap/Kconfig                 |    1 +
+>  17 files changed, 1872 insertions(+), 1864 deletions(-)
+>  create mode 100644 arch/arm/common/edma.c
+>  create mode 100644 arch/arm/include/asm/mach/edma.h
+>  delete mode 100644 arch/arm/mach-davinci/dma.c
+>  delete mode 100644 arch/arm/mach-davinci/include/mach/edma.h
+> 
+
+...snip...
+...snip...
+...snip...
+
+>  
+> -- 
+> 1.7.9.5
+> 
+> _______________________________________________
+> Davinci-linux-open-source mailing list
+> Davinci-linux-open-source@linux.davincidsp.com
+> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> 
+
+
+Regards, 
+Gururaja
