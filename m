@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab2IUIQX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 04:16:23 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58963 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702Ab2IUIQS (ORCPT
+	id S1756803Ab2IUI1K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 04:27:10 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:59690 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756445Ab2IUI1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 04:16:18 -0400
-Date: Fri, 21 Sep 2012 09:16:14 +0100
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Konstantin Ryabitsev <mricon@kernel.org>, linux-kernel@vger.kernel.org,
-        backports@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Helping with backports: linux-next, linux, linux-stable - a few
- enhancements
-Message-ID: <20120921081614.GA17547@kroah.com>
-References: <CAB=NE6UVZ2HQU27LdkzUFe3of6N1v8YZYVMKsfA+0Wmg5nRBug@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB=NE6UVZ2HQU27LdkzUFe3of6N1v8YZYVMKsfA+0Wmg5nRBug@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 21 Sep 2012 04:27:04 -0400
+Subject: Re: [PATCH V2 07/10] Secure boot: Add a dummy kernel parameter
+ that will switch on Secure Boot mode
+From: joeyli <jlee@suse.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>
+In-Reply-To: <1348152065-31353-8-git-send-email-mjg@redhat.com>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	 <1348152065-31353-8-git-send-email-mjg@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Sep 2012 16:20:53 +0800
+Message-ID: <1348215653.5337.94.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 03:45:46PM -0700, Luis R. Rodriguez wrote:
-> Greg, Stephen, Konstantin,
+於 四，2012-09-20 於 10:41 -0400，Matthew Garrett 提到：
+> From: Josh Boyer <jwboyer@redhat.com>
 > 
-> so for the Linux backports project [0] we rely on a few git trees:
+> This forcibly drops CAP_COMPROMISE_KERNEL from both cap_permitted and cap_bset
+> in the init_cred struct, which everything else inherits from.  This works on
+> any machine and can be used to develop even if the box doesn't have UEFI.
 > 
->   * linux-next.git
->   * linux-stable.git
->   * linux.git
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+
+Patch works to me for test lock the IO port access.
+
+Tested-by: Lee, Chun-Yi <jlee@suse.com>
+
+Joey Lee
+
+> ---
+>  kernel/cred.c | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
 > 
-> The linux.git tree is required for RC releases. The linux-stable.git
-> tree for extraversion stable releases, and the linux-next.git tree for
-> daily snapshots. There is a trick for stable releases whereby we
-> accelerate the integration of pending-stable patches by cherry picking
-> them out of linux-next.git if the commit log entry has the
-> 'stable@vger.kernel.org' on the commit log, and if the stable patch
-> does not apply we require the developers to provide a backport
-> compatible port. This trick works swell on linux-next.git for RC
-> release given that we can query for rc releases there as linux-next
-> carries them but linux-next.git does not carry extra version tags.
-> Additionally the requirement of linux.git is only there given that at
-> times there are delays between which linux-stable.git will not have an
-> RC release on it. I have a way to address all these issues, namely to
-> add linux.git as a remote for my local linux-stable tree, and also by
-> adding linux-stable as a local remote for my linux-next tree. Now, I
-> document how I resolve this for backport package consumers / builders
-> but it occurs to me perhaps we can simplify this if we had:
-> 
->   * linux-next - pulling in linux-stable packs / tags
->   * a new linux-releases.git - which has both linux.git and
-> linux-stable pulled together through a cronjob
-> 
-> Would this be reasonable to accommodate to help ease of use or shall
-> we just live with folks having to do the remote / local remote hacks?
+> diff --git a/kernel/cred.c b/kernel/cred.c
+> index de728ac..7e6e83f 100644
+> --- a/kernel/cred.c
+> +++ b/kernel/cred.c
+> @@ -623,6 +623,23 @@ void __init cred_init(void)
+>  				     0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
+>  }
+>  
+> +void __init secureboot_enable()
+> +{
+> +	pr_info("Secure boot enabled\n");
+> +	cap_lower((&init_cred)->cap_bset, CAP_COMPROMISE_KERNEL);
+> +	cap_lower((&init_cred)->cap_permitted, CAP_COMPROMISE_KERNEL);
+> +}
+> +
+> +/* Dummy Secure Boot enable option to fake out UEFI SB=1 */
+> +static int __init secureboot_enable_opt(char *str)
+> +{
+> +	int sb_enable = !!simple_strtol(str, NULL, 0);
+> +	if (sb_enable)
+> +		secureboot_enable();
+> +	return 1;
+> +}
+> +__setup("secureboot_enable=", secureboot_enable_opt);
+> +
+>  /**
+>   * prepare_kernel_cred - Prepare a set of credentials for a kernel service
+>   * @daemon: A userspace daemon to be used as a reference
 
-I pull the linux.git tree into linux-stable.git every few -rc releases,
-and as it's based on linux.git, it's really not a big deal.
 
-I don't see how pulling linux-stable into linux-next really helps anyone
-out, linux-stable is so far behind what is in linux-next it's not funny.
-
-But, if you really want it all in a single tree, can't you just do this
-with a few 'remote' markings in your git configuration file for the repo
-and do it locally if you want to?
-
-Otherwise I don't see the real question here.
-
-confused probably due to a bad case of jet lag,
-
-greg k-h
