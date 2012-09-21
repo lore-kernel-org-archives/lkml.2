@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab2IVHuf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 03:50:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44127 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040Ab2IVHue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 03:50:34 -0400
-Date: Sat, 22 Sep 2012 09:50:22 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        685360@bugs.debian.org, john.ettedgui@gmail.com, barz621@gmail.com,
-        joy@debbugs.entuzijast.net, dh.herrmann@googlemail.com
-Subject: Re: [PATCH 1/1] HID: Fix missing Unifying device issue
-In-Reply-To: <1348222894-6767-1-git-send-email-nlopezcasad@logitech.com>
-Message-ID: <alpine.LNX.2.00.1209220949380.32086@pobox.suse.cz>
-References: <1348222894-6767-1-git-send-email-nlopezcasad@logitech.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754367Ab2IVIBl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 04:01:41 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60323 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab2IVIBj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Sep 2012 04:01:39 -0400
+Subject: Re: [PATCH net-next v1] net: use a per task frag allocator
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Vijay Subramanian <subramanian.vijay@gmail.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+In-Reply-To: <CAGK4HS98RG78Auvaai3Ny6zz5c_hccO-ShD3GuT=moRRm4+RUA@mail.gmail.com>
+References: <1348073761.26523.1095.camel@edumazet-glaptop>
+	 <20120920.174827.1245530945282009606.davem@davemloft.net>
+	 <1348239433.2669.522.camel@edumazet-glaptop>
+	 <CAGK4HS98RG78Auvaai3Ny6zz5c_hccO-ShD3GuT=moRRm4+RUA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Sep 2012 23:11:11 +0200
+Message-ID: <1348261871.2669.962.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Sep 2012, Nestor Lopez Casado wrote:
+On Fri, 2012-09-21 at 13:27 -0700, Vijay Subramanian wrote:
+> I get the following compile error with the newer version of the patch
+> 
+> net/sched/em_meta.c: In function ‘meta_int_sk_sendmsg_off’:
+> net/sched/em_meta.c:464: error: ‘struct sock’ has no member named
+> ‘sk_sndmsg_off’
+> make[1]: *** [net/sched/em_meta.o] Error 1
+> make: *** [net/sched/em_meta.o] Error 2
+> 
+> 
+> 
+> Vijay
 
-> This patch fixes an issue introduced after commit 4ea5454203d991ec
-> 
-> After that commit, hid-core silently discards any incoming packet
-> that arrives while any hid driver's probe function is being executed.
-> 
-> This broke the enumeration process of hid-logitech-dj, that must
-> receive control packets in-band with the mouse and keyboard
-> packets. Discarding mouse or keyboard data at the very begining is
-> usually fine, but it is not the case for control packets.
-> 
-> This patch forces a re-enumeration of the paired devices when a packet
-> arrives that comes from an unknown device.
-> 
-> Based on a patch originally written by Benjamin Tissoires.
-> 
-> Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Oh well, I wonder what's the expected use of this crap...
 
-I am now applying it, will be pushing to Linus very soon, and am also 
-marking it for stable 3.2+
+Thanks, I'll fix this on v3 !
 
-Thanks to everyone involved.
 
--- 
-Jiri Kosina
-SUSE Labs
