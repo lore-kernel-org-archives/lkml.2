@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab2IUTqC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 15:46:02 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26130 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753960Ab2IUTnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 15:43:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,464,1344236400"; 
-   d="scan'208";a="225201988"
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Linda Wang <lwang@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 02/11] x86-32, mm: The WP test should be done on a kernel page
-Date: Fri, 21 Sep 2012 12:43:06 -0700
-Message-Id: <1348256595-29119-3-git-send-email-hpa@linux.intel.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1348256595-29119-1-git-send-email-hpa@linux.intel.com>
-References: <1348256595-29119-1-git-send-email-hpa@linux.intel.com>
+	id S932519Ab2IUTrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 15:47:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59255 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757555Ab2IUTrK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 15:47:10 -0400
+X-Sasl-enc: Lnn95jrizbPAuH+s7R7tkZ0W2MB7xw/tkfRu0KWtHyIt 1348256829
+Date: Fri, 21 Sep 2012 09:49:25 -0700
+From: Greg KH <greg@kroah.com>
+To: Flavio Leitner <fbl@redhat.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Niels de Vos <niels.devos@wincor-nixdorf.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH] serial: set correct baud_base for EXSYS EX-41092 Dual
+ 16950
+Message-ID: <20120921164925.GA10494@kroah.com>
+References: <1347908021-13570-1-git-send-email-fbl@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347908021-13570-1-git-send-email-fbl@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+On Mon, Sep 17, 2012 at 03:53:41PM -0300, Flavio Leitner wrote:
+> Apparently the same card model has two IDs, so this patch
+> complements the commit 39aced68d664291db3324d0fcf0985ab5626aac2
+> adding the missing one.
+> 
+> Signed-off-by: Flavio Leitner <fbl@redhat.com>
+> ---
+>  drivers/tty/serial/8250/8250_pci.c | 7 +++++--
+>  include/linux/pci_ids.h            | 3 ++-
 
-PAGE_READONLY includes user permission, but this is a page used
-exclusively by the kernel; use PAGE_KERNEL_RO instead.
+Please read the top of the pci_ids.h file for why we don't want to add
+new entries there.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/init_32.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Please fix that up and resend this.
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 575d86f..e537b35 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -712,7 +712,7 @@ static void __init test_wp_bit(void)
-   "Checking if this processor honours the WP bit even in supervisor mode...");
- 
- 	/* Any page-aligned address will do, the test is non-destructive */
--	__set_fixmap(FIX_WP_TEST, __pa(&swapper_pg_dir), PAGE_READONLY);
-+	__set_fixmap(FIX_WP_TEST, __pa(&swapper_pg_dir), PAGE_KERNEL_RO);
- 	boot_cpu_data.wp_works_ok = do_test_wp_bit();
- 	clear_fixmap(FIX_WP_TEST);
- 
--- 
-1.7.6.5
+thanks,
 
+greg k-h
