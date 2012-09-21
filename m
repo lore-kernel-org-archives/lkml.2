@@ -1,76 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab2IUIjZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 04:39:25 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31825 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab2IUIjW (ORCPT
+	id S1757012Ab2IUImX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 04:42:23 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35900 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab2IUImS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 04:39:22 -0400
-Message-ID: <505C27FE.5080205@oracle.com>
-Date: Fri, 21 Sep 2012 16:40:30 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        levinsasha928@gmail.com, Feng Jin <joe.jin@oracle.com>,
-        dan.carpenter@oracle.com, "zhenzhong.duan" <zhenzhong.duan@oracle.com>
-Subject: [PATCH -v2] mm: frontswap: fix a wrong if condition in frontswap_shrink
-Content-Type: text/plain; charset=GB2312
+	Fri, 21 Sep 2012 04:42:18 -0400
+X-IronPort-AV: E=Sophos;i="4.80,460,1344211200"; 
+   d="scan'208";a="14682919"
+Message-ID: <1348216908.3689.3.camel@oliverchick-Precision-WorkStation-T3400>
+Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk drivers
+From: Oliver Chick <oliver.chick@citrix.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 21 Sep 2012 09:41:48 +0100
+In-Reply-To: <505C30CC020000780009CDD6@nat28.tlf.novell.com>
+References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
+	 <505AF126.2050806@citrix.com>
+	 <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
+	 <505B1EB9020000780009CA6E@nat28.tlf.novell.com>
+	 <20120920134951.GC1998@localhost.localdomain>
+	 <1348150422.24539.58.camel@oliverchick-Precision-WorkStation-T3400>
+	 <20120920212407.GD27312@konrad-lan.dumpdata.com>
+	 <505C30CC020000780009CDD6@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pages_to_unuse is set to 0 to unuse all frontswap pages
-But that doesn't happen since a wrong condition in frontswap_shrink
-cancel it.
+On Fri, 2012-09-21 at 08:18 +0100, Jan Beulich wrote:
+> >>> On 20.09.12 at 23:24, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > On Thu, Sep 20, 2012 at 03:13:42PM +0100, Oliver Chick wrote:
+> >> On Thu, 2012-09-20 at 14:49 +0100, Konrad Rzeszutek Wilk wrote:
+> >> > On Thu, Sep 20, 2012 at 12:48:41PM +0100, Jan Beulich wrote:
+> >> > > >>> On 20.09.12 at 13:30, Oliver Chick <oliver.chick@citrix.com> wrote:
+> >> > > > The memory overhead, and fallback mode points are related:
+> >> > > > -Firstly, it turns out that the overhead is actually 2.75MB, not 11MB
+> >> > > > per device. I made a mistake (pointed out by Jan) as the maximum number
+> >> > > > of requests that can fit into a single-page ring is 64, not 256.
+> >> > > > -Clearly, this still scales linearly. So the problem of memory footprint
+> >> > > > will occur with more VMs, or block devices.
+> >> > > > -Whilst 2.75MB per device is probably acceptable (?), if we start using
+> >> > > > multipage rings, then we might not want to have
+> >> > > > BLKIF_MAX_PERS_REQUESTS_PER_DEVICE==__RING_SIZE, as this will cause the
+> >> > > > memory overhead to increase. This is why I have implemented the
+> >> > > > 'fallback' mode. With a multipage ring, it seems reasonable to want the
+> >> > > > first $x$ grefs seen by blkback to be treated as persistent, and any
+> >> > > > later ones to be non-persistent. Does that seem sensible?
+> >> > > 
+> >> > > From a resource usage pov, perhaps. But this will get the guest
+> >> > > entirely unpredictable performance. Plus I don't think 11Mb of
+> >> > 
+> >> > Wouldn't it fall back to the older performance?
+> >> 
+> >> I guess it would be a bit more complex than that. It would be worse than
+> >> the new performance because the grefs that get processed by the
+> >> 'fallback' mode will cause TLB shootdowns. But any early grefs will
+> >> still be processed by the persistent mode, so won't have shootdowns.
+> >> Therefore, depending on the ratio of {persistent grants}:{non-persistent
+> >> grants), allocated by blkfront, the performance will be somewhere
+> >> inbetween the two extremes.
+> >> 
+> >> I guess that the choice is between
+> >> 1) Compiling blk{front,back} with a pre-determined number of persistent
+> >> grants, and failing if this limit is exceeded. This seems rather
+> >> unflexible, as blk{front,back} must then both both use the same version,
+> >> or you will get failures.
+> >> 2 (current setup)) Have a recommended maximum number of
+> >> persistently-mapped pages, and going into a 'fallback' mode if blkfront
+> >> exceeds this limit.
+> >> 3) Having blkback inform blkfront on startup as to how many grefs it is
+> >> willing to persistently-map. We then hit the same question again though:
+> >> what should be do if blkfront ignores this limit?
+> > 
+> > How about 2 and 3 together? Meaning have a recommended maximmum number.
+> > If we fall back due to memory pressure we can tell the guest that we
+> > are entering fall-back mode. The frontend can decide what it wants to do
+> > (throttle the amount of I/Os?) or just do a printk telling the user it
+> > dropped the speed from "Insane Hot!" down to "Turbo!"... 
+> > 
+> > Or maybe not. Perhaps just reporting it in the backend that we are
+> > hitting memory pressure and using the old-style-fallback mechanism
+> > so the system admin can take actions (and tell his users why suddenly
+> > their I/Os are so slow).
+> 
+> So would either of you help me understand what memory pressure
+> we're in need of dealing with here. So far, talk was only about
+> virtual address space that's needed for mapping in the grants, and
+> even then I don't see how this space requirement varies between
+> persistent and non-persistent grants - it's being reserved during
+> backend initialization anyway.
+> 
+> Jan
+> 
 
--v2: Add comment to explain return value of __frontswap_shrink,
-as suggested by Dan Carpenter, thanks
+IIRC, the pending_pages[] used by blkback is a static array of 256
+pages, allocated during initialisation. Therefore, the memory mapped
+does not increase with the number of block devices being backed, for
+non-persistent operation. Whereas, when we become persistent, we don't
+unmap pages so can't reuse pages for different block devices, therefore
+we have to alloc more pages for each device.
 
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 6b3e71a..e38fc39 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -263,6 +263,11 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
- 	return ret;
- }
- 
-+/*
-+ * Used to check if it's necessory and feasible to unuse pages.
-+ * Return 1 when nothing to do, 0 when need to shink pages,
-+ * error code when there is an error.
-+ */
- static int __frontswap_shrink(unsigned long target_pages,
- 				unsigned long *pages_to_unuse,
- 				int *type)
-@@ -275,7 +280,7 @@ static int __frontswap_shrink(unsigned long target_pages,
- 	if (total_pages <= target_pages) {
- 		/* Nothing to do */
- 		*pages_to_unuse = 0;
--		return 0;
-+		return 1;
- 	}
- 	total_pages_to_unuse = total_pages - target_pages;
- 	return __frontswap_unuse_pages(total_pages_to_unuse, pages_to_unuse, type);
-@@ -302,7 +307,7 @@ void frontswap_shrink(unsigned long target_pages)
- 	spin_lock(&swap_lock);
- 	ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
- 	spin_unlock(&swap_lock);
--	if (ret == 0 && pages_to_unuse)
-+	if (ret == 0)
- 		try_to_unuse(type, true, pages_to_unuse);
- 	return;
- }
--- 
-1.7.3
+Does that answer your question, and make sense?
 
