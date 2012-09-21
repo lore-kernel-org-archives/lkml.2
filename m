@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab2IUQij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 12:38:39 -0400
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:40365 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578Ab2IUQih (ORCPT
+	id S1756469Ab2IUQkB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 12:40:01 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62811 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab2IUQj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 12:38:37 -0400
-X-Greylist: delayed 3795 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Sep 2012 12:38:37 EDT
-X-manitu-Original-Sender-IP: 92.74.58.115
-X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
-Message-ID: <505C8937.4040505@grandegger.com>
-Date: Fri, 21 Sep 2012 17:35:19 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 21 Sep 2012 12:39:59 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: TRACE_EVENT without ARGS
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201209211449.56906.arnd@arndb.de>
+References: <1345307035-3545-1-git-send-email-festevam@gmail.com>
+	<CAOMZO5C2ihKUeQk17JOHc9VXAB3KTeQLS3OcLOiiUC8jucsexg@mail.gmail.com>
+	<CAOMZO5C2rTBM6si0MUC7XWznwqwmUq5-LmFyekLab8UBVwaCFw@mail.gmail.com>
+	<201209211449.56906.arnd@arndb.de>
+Date: Fri, 21 Sep 2012 13:39:59 -0300
+Message-ID: <CAOMZO5DwwxFz30hHVyUWPBwEzCD+qcoxE6ef3t758MHd72JdKw@mail.gmail.com>
+Subject: Re: [PATCH 01/11] ARM: defconfig: Remove CONFIG_MISC_DEVICES
+From: Fabio Estevam <festevam@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Arnd,
 
-I would like to define trace events for functions without arguments,
-e.g. my_yield(). But TRACE_EVENT requires at least one argument to be
-defined and I also have not found an example in the kernel sources,
-apart from:
+On Fri, Sep 21, 2012 at 11:49 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-  $ cat include/trace/events/xen.h
-  ...
-  TRACE_EVENT(xen_mmu_flush_tlb,
-              TP_PROTO(int x),
-              TP_ARGS(x),
-              TP_STRUCT__entry(__array(char, x, 0)),
-              TP_fast_assign((void)x),
-              TP_printk("%s", "")
-          );
+> Sorry for not replying earlier. We could merge these through the
+> arm-soc tree, but I'm not actually sure if they are necessary.
+>
+> For all I know, listing a nonexisting configuration option in
+> a defconfig file has no effect, and the files get recreated
+> whenever the maintainers choose to.
 
-It uses a dummy argument to work around the problem. Is that the
-recommended way to handle such cases?
+My intention with this series is merely to provide a cleanup in the
+defconfigs, so that they do not include an non-existing configuration.
+I know it is not harmful to let the CONFIG_MISC_DEVICES there, but
+after my commit 7c5763 I think we should get rid of
+CONFIG_MISC_DEVICES completely.
 
-TIA,
+I saw that the ia64 Intel patch from this series was already applied
+into mainline and I also got some other Acks from different
+architectures.
 
-Wolfgang
+Regards,
+
+Fabio Estevam
