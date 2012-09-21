@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab2IUVwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 17:52:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42944 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516Ab2IUVwK (ORCPT
+	id S932663Ab2IUVwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 17:52:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54333 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755110Ab2IUVwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 17:52:10 -0400
-Date: Fri, 21 Sep 2012 14:52:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>
-Subject: Re: [PATCH] backlight: platform-lcd: Add support for device tree
- based probe
-Message-Id: <20120921145209.b57cad16.akpm@linux-foundation.org>
-In-Reply-To: <000e01cd9798$370acbd0$a5206370$%han@samsung.com>
-References: <000e01cd9798$370acbd0$a5206370$%han@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Sep 2012 17:52:40 -0400
+Message-ID: <505CE19C.6030205@pengutronix.de>
+Date: Fri, 21 Sep 2012 23:52:28 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: netdev@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Stephane Grosjean <s.grosjean@peak-system.com>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org
+Subject: Re: [PATCH] net/can:  rename peak_usb dump_mem function
+References: <1346577700-8156-1-git-send-email-geert@linux-m68k.org> <504393A7.8040007@xenotime.net> <505CDF3F.6040009@xenotime.net>
+In-Reply-To: <505CDF3F.6040009@xenotime.net>
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig2AA0C284398B8F2C9039A6D3"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Sep 2012 10:27:07 +0900
-Jingoo Han <jg1.han@samsung.com> wrote:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig2AA0C284398B8F2C9039A6D3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> This patch adds the of_match_table to platform-lcd driver to be
-> probed when platform-lcd device node is found in the device tree.
-> 
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/video/backlight/platform_lcd.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
-> index b667234..574d5ee 100644
-> --- a/drivers/video/backlight/platform_lcd.c
-> +++ b/drivers/video/backlight/platform_lcd.c
-> @@ -145,6 +145,14 @@ static SIMPLE_DEV_PM_OPS(platform_lcd_pm_ops, platform_lcd_suspend,
->  			platform_lcd_resume);
->  #endif
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id platform_lcd_of_match[] = {
-> +	{ .compatible = "platform-lcd" },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, platform_lcd_of_match);
-> +#endif
-> +
->  static struct platform_driver platform_lcd_driver = {
->  	.driver		= {
->  		.name	= "platform-lcd",
-> @@ -152,6 +160,7 @@ static struct platform_driver platform_lcd_driver = {
->  #ifdef CONFIG_PM
->  		.pm	= &platform_lcd_pm_ops,
->  #endif
-> +		.of_match_table = of_match_ptr(platform_lcd_of_match),
->  	},
->  	.probe		= platform_lcd_probe,
->  	.remove		= __devexit_p(platform_lcd_remove),
+On 09/21/2012 11:42 PM, Randy Dunlap wrote:
+> On 09/02/2012 10:13 AM, Randy Dunlap wrote:
+>=20
+>> From: Randy Dunlap <rdunlap@xenotime.net>
+>>
+>> Rename generic-sounding function dump_mem() to pcan_dump_mem()
+>> so that it does not conflict with the dump_mem() function in
+>> arch/sh/include/asm/kdebug.h.
+>>
+>> drivers/net/can/usb/peak_usb/pcan_usb_core.c: error: conflicting types=
+ for 'dump_mem':  =3D> 56:6
+>> drivers/net/can/usb/peak_usb/pcan_usb_core.h: error: conflicting types=
+ for 'dump_mem':  =3D> 134:6
+>>
+>> Not tested.
+>>
+>> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+>> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> Cc: Stephane Grosjean <s.grosjean@peak-system.com>
+>> Cc: Wolfgang Grandegger <wg@grandegger.com>
+>> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+>=20
+>=20
+> ping.
 
-This .c file includes no open-firmware headers.
+The patch is already part of can-next and will be included in the next
+pull request to David.
 
-It does happen to get a copy of of.h via fb.h->i2c.h->of.h, but that
-was just luck.
+regards, Marc
 
-I did this:
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
---- a/drivers/video/backlight/platform_lcd.c~backlight-platform-lcd-add-support-for-device-tree-based-probe-fix
-+++ a/drivers/video/backlight/platform_lcd.c
-@@ -16,6 +16,7 @@
- #include <linux/fb.h>
- #include <linux/backlight.h>
- #include <linux/lcd.h>
-+#include <linux/of.h>
- #include <linux/slab.h>
- 
- #include <video/platform_lcd.h>
-_
 
+--------------enig2AA0C284398B8F2C9039A6D3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
+
+iEYEARECAAYFAlBc4aAACgkQjTAFq1RaXHPbhQCePg2HuWElNS93vdHQ4N5K7+pd
+4nkAmwXrsPnaYoxU8piVfPbSY4wffjNj
+=0vrN
+-----END PGP SIGNATURE-----
+
+--------------enig2AA0C284398B8F2C9039A6D3--
