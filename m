@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040Ab2IUU6F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 16:58:05 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19916 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359Ab2IUU6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 16:58:02 -0400
-Date: Fri, 21 Sep 2012 16:46:46 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Oliver Chick <oliver.chick@citrix.com>, andres.lagarcavilla@gmail.com
-Cc: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Persistent grant maps for xen blk drivers
-Message-ID: <20120921204646.GB30614@phenom.dumpdata.com>
-References: <1348242767-23732-1-git-send-email-oliver.chick@citrix.com>
- <20120921184123.GA27502@phenom.dumpdata.com>
- <20120921185622.GA5042@phenom.dumpdata.com>
+	id S1758042Ab2IUU7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 16:59:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17548 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752152Ab2IUU7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 16:59:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,464,1344236400"; 
+   d="scan'208";a="210025022"
+From: Andi Kleen <andi@firstfloor.org>
+To: jason.wessel@windriver.com
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] kgdb: Fix warning with !CONFIG_DEBUG_RODATA
+Date: Fri, 21 Sep 2012 13:59:10 -0700
+Message-Id: <1348261150-12423-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120921185622.GA5042@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 02:56:22PM -0400, Konrad Rzeszutek Wilk wrote:
-> > *: With a PVHVM guest I get
-> > 
-> > [  261.927218] privcmd_fault: vma=ffff88002a31dce8 7f4edc095000-7f4edc195000, pgoff=c8, uv=00007f4edc15d000
-> > 
-> > thought if I applied your patch on top of v3.6-rc6 I didn't see the privcmd_fault but
-> > I did see the guest crash.
-> 
-> And that is due to c571898ffc24a1768e1b2dabeac0fc7dd4c14601 which I've reverted in my
-> #linux-next branch
+From: Andi Kleen <ak@linux.intel.com>
 
-Nevermind. Andres' patch by itself (so without yours) works just fine. There is
-something your patch and his aren't agreeing on.
+Fixes
+
+arch/x86/kernel/kgdb.c: In function ‘kgdb_arch_set_breakpoint’:
+arch/x86/kernel/kgdb.c:749:7: warning: unused variable ‘opc’ [-Wunused-variable]
+
+when CONFIG_DEBUG_RODATA is not defined.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/kgdb.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+index 3f61904..0e4badd 100644
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -746,7 +746,9 @@ void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long ip)
+ int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
+ {
+ 	int err;
++#ifdef CONFIG_DEBUG_RODATA
+ 	char opc[BREAK_INSTR_SIZE];
++#endif
+ 
+ 	bpt->type = BP_BREAKPOINT;
+ 	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
+-- 
+1.7.7.6
 
