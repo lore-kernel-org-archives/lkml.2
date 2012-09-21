@@ -1,230 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab2IUN2W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 09:28:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60379 "EHLO mx2.suse.de"
+	id S1755535Ab2IUN2V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 09:28:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60377 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755298Ab2IUN2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755296Ab2IUN2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Sep 2012 09:28:19 -0400
 From: Thomas Renninger <trenn@suse.de>
 To: hpa@zytor.com
 Cc: trenn@suse.de, initramfs@vger.kernel.org, robert.moore@intel.com,
         lenb@kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, yinghai@kernel.org,
-        eric.piel@tremplin-utc.net, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 1/2] lib: Add early cpio decoder
-Date: Fri, 21 Sep 2012 15:28:04 +0200
-Message-Id: <1348234085-39220-2-git-send-email-trenn@suse.de>
+        eric.piel@tremplin-utc.net
+Subject: Early cpio decoder and ACPI table override via initrd making use of it
+Date: Fri, 21 Sep 2012 15:28:03 +0200
+Message-Id: <1348234085-39220-1-git-send-email-trenn@suse.de>
 X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1348234085-39220-1-git-send-email-trenn@suse.de>
-References: <1348234085-39220-1-git-send-email-trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+Should still apply on latest Linux tree, I can resubmit if not.
+Would be great if hpa can push this into a x86 branch to get
+this into linux-next and into Linus' tree with the next merge
+window.
 
-Add a simple cpio decoder without library dependencies for the purpose
-of extracting components from the initramfs blob for early kernel
-uses.  Intended consumers so far are microcode and ACPI override.
+Thanks,
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-CC: Thomas Renninger <trenn@suse.de>
-Link: http://lkml.kernel.org/r/201203261651.29640.trenn@suse.de
-Link: https://lkml.org/lkml/2012/9/21/190
-Signed-off-by: Thomas Renninger <trenn@suse.de>
----
- include/linux/earlycpio.h |   17 +++++
- lib/Makefile              |    2 +-
- lib/earlycpio.c           |  142 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 160 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/earlycpio.h
- create mode 100644 lib/earlycpio.c
+    Thomas
 
-diff --git a/include/linux/earlycpio.h b/include/linux/earlycpio.h
-new file mode 100644
-index 0000000..111f46d
---- /dev/null
-+++ b/include/linux/earlycpio.h
-@@ -0,0 +1,17 @@
-+#ifndef _LINUX_EARLYCPIO_H
-+#define _LINUX_EARLYCPIO_H
-+
-+#include <linux/types.h>
-+
-+#define MAX_CPIO_FILE_NAME 18
-+
-+struct cpio_data {
-+	void *data;
-+	size_t size;
-+	char name[MAX_CPIO_FILE_NAME];
-+};
-+
-+struct cpio_data find_cpio_data(const char *path, void *data, size_t len,
-+				long *offset);
-+
-+#endif /* _LINUX_EARLYCPIO_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index 42d283e..0924041 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
--	 is_single_threaded.o plist.o decompress.o
-+	 is_single_threaded.o plist.o decompress.o earlycpio.o
- 
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
-diff --git a/lib/earlycpio.c b/lib/earlycpio.c
-new file mode 100644
-index 0000000..c6f1a20
---- /dev/null
-+++ b/lib/earlycpio.c
-@@ -0,0 +1,142 @@
-+/* ----------------------------------------------------------------------- *
-+ *
-+ *   Copyright 2012 Intel Corporation; author H. Peter Anvin
-+ *
-+ *   This file is part of the Linux kernel, and is made available
-+ *   under the terms of the GNU General Public License version 2, as
-+ *   published by the Free Software Foundation.
-+ *
-+ *   This program is distributed in the hope it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *   General Public License for more details.
-+ *
-+ * ----------------------------------------------------------------------- */
-+
-+/*
-+ * earlycpio.c
-+ *
-+ * Find a specific cpio member; must precede any compressed content.
-+ * This is used to locate data items in the initramfs used by the
-+ * kernel itself during early boot (before the main initramfs is
-+ * decompressed.)  It is the responsibility of the initramfs creator
-+ * to ensure that these items are uncompressed at the head of the
-+ * blob.  Depending on the boot loader or package tool that may be a
-+ * separate file or part of the same file.
-+ */
-+
-+#include <linux/earlycpio.h>
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+
-+enum cpio_fields {
-+	C_MAGIC,
-+	C_INO,
-+	C_MODE,
-+	C_UID,
-+	C_GID,
-+	C_NLINK,
-+	C_MTIME,
-+	C_FILESIZE,
-+	C_MAJ,
-+	C_MIN,
-+	C_RMAJ,
-+	C_RMIN,
-+	C_NAMESIZE,
-+	C_CHKSUM,
-+	C_NFIELDS
-+};
-+
-+/**
-+ * cpio_data find_cpio_data - Search for files in an uncompressed cpio
-+ * @path:   The directory to search for, including a slash at the end
-+ * @data:   Pointer to the the cpio archive or a header inside
-+ * @len:    Remaining length of the cpio based on data pointer
-+ * @offset: When a matching file is found, this is the offset to the
-+ *          beginning of the cpio. It can be used to iterate through
-+ *          the cpio to find all files inside of a directory path
-+ *
-+ * @return: struct cpio_data containing the address, length and
-+ *          filename (with the directory path cut off) of the found file.
-+ */
-+
-+struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
-+					  size_t len,  long *offset)
-+{
-+	const size_t cpio_header_len = 8*C_NFIELDS - 2;
-+	struct cpio_data cd = { NULL, 0, "" };
-+	const char *p, *dptr, *nptr;
-+	unsigned int ch[C_NFIELDS], *chp, v;
-+	unsigned char c, x;
-+	size_t mypathsize = strlen(path);
-+	int i, j;
-+
-+	p = data;
-+
-+	while (len > cpio_header_len) {
-+		if (!*p) {
-+			/* All cpio headers need to be 4-byte aligned */
-+			p += 4;
-+			len -= 4;
-+			continue;
-+		}
-+
-+		j = 6;		/* The magic field is only 6 characters */
-+		chp = ch;
-+		for (i = C_NFIELDS; i; i--) {
-+			v = 0;
-+			while (j--) {
-+				v <<= 4;
-+				c = *p++;
-+
-+				x = c - '0';
-+				if (x < 10) {
-+					v += x;
-+					continue;
-+				}
-+
-+				x = (c | 0x20) - 'a';
-+				if (x < 6) {
-+					v += x + 10;
-+					continue;
-+				}
-+
-+				goto quit; /* Invalid hexadecimal */
-+			}
-+			*chp++ = v;
-+			j = 8;	/* All other fields are 8 characters */
-+		}
-+
-+		if ((ch[C_MAGIC] - 0x070701) > 1)
-+			goto quit; /* Invalid magic */
-+
-+		len -= cpio_header_len;
-+
-+		dptr = PTR_ALIGN(p + ch[C_NAMESIZE], 4);
-+		nptr = PTR_ALIGN(dptr + ch[C_FILESIZE], 4);
-+
-+		if (nptr > p + len || dptr < p || nptr < dptr)
-+			goto quit; /* Buffer overrun */
-+
-+		if ((ch[C_MODE] & 0170000) == 0100000 &&
-+		    ch[C_NAMESIZE] >= mypathsize &&
-+		    !memcmp(p, path, mypathsize)) {
-+			*offset = (long)nptr - (long)data;
-+			if (ch[C_NAMESIZE] - mypathsize >= MAX_CPIO_FILE_NAME) {
-+				pr_warn(
-+				"File %s exceeding MAX_CPIO_FILE_NAME [%d]\n",
-+				p, MAX_CPIO_FILE_NAME);
-+			}
-+			strlcpy(cd.name, p + mypathsize, MAX_CPIO_FILE_NAME);
-+
-+			cd.data = (void *)dptr;
-+			cd.size = ch[C_FILESIZE];
-+			return cd; /* Found it! */
-+		}
-+		len -= (nptr - p);
-+		p = nptr;
-+	}
-+
-+quit:
-+	return cd;
-+}
--- 
-1.7.6.1
+Dmesg output of a quick test:
+ FACP ACPI table found in initrd [kernel/firmware/acpi/facp.aml][0xf4]
+ DSDT ACPI table found in initrd [kernel/firmware/acpi/dsdt.aml][0x333c]
+ e820: modified physical RAM map:
+...
+   modified: [mem 0x00000000f7fec000-0x00000000f7fef42f] ACPI data
+...
+ Disabling lock debugging due to kernel taint
+ ACPI: Override [FACP-OEMFACP ], this is unsafe: tainting kernel
+ ACPI: FACP 00000000f7ff0281 Physical table override, new table: ffffffffff4b7000
+ ACPI: FACP 00000000f7fec000 000F4 (v03 A M I  OEMFACP  08000713 INTL 20120518)
+ ACPI: Override [DSDT-0AAAA001], this is unsafe: tainting kernel
+ ACPI: DSDT 00000000f7ff0410 Physical table override, new table: ffffffffff4b70f4
+ ACPI: DSDT 00000000f7fec0f4 0333C (v01  0AAAA 0AAAA001 00000001 INTL 20120518)
+
 
