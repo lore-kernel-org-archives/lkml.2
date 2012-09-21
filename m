@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab2IUQZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 12:25:10 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60450 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab2IUQZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 12:25:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120921081614.GA17547@kroah.com>
-References: <CAB=NE6UVZ2HQU27LdkzUFe3of6N1v8YZYVMKsfA+0Wmg5nRBug@mail.gmail.com>
- <20120921081614.GA17547@kroah.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 21 Sep 2012 09:24:44 -0700
-X-Google-Sender-Auth: U9WA8D20UfmnA8hx7Uz_0KorP9Y
-Message-ID: <CAB=NE6WQg8PvuKc0kphSQWjuAhc+tRd8MEd+51tCwU3AfHwzjQ@mail.gmail.com>
-Subject: Re: Helping with backports: linux-next, linux, linux-stable - a few enhancements
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Konstantin Ryabitsev <mricon@kernel.org>, linux-kernel@vger.kernel.org,
-        backports@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1757354Ab2IUQ1A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 12:27:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757333Ab2IUQ07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 12:26:59 -0400
+From: Mark Salter <msalter@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Mark Salter <msalter@redhat.com>
+Subject: [PATCH 2/3] c6x: switch to generic kernel_execve
+Date: Fri, 21 Sep 2012 12:26:38 -0400
+Message-Id: <1348244799-16013-3-git-send-email-msalter@redhat.com>
+In-Reply-To: <1348244799-16013-1-git-send-email-msalter@redhat.com>
+References: <20120917032651.GU13973@ZenIV.linux.org.uk>
+ <1348244799-16013-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 1:16 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Sep 20, 2012 at 03:45:46PM -0700, Luis R. Rodriguez wrote:
->> Greg, Stephen, Konstantin,
->>
->> so for the Linux backports project [0] we rely on a few git trees:
->>
->>   * linux-next.git
->>   * linux-stable.git
->>   * linux.git
->>
->> The linux.git tree is required for RC releases. The linux-stable.git
->> tree for extraversion stable releases, and the linux-next.git tree for
->> daily snapshots. There is a trick for stable releases whereby we
->> accelerate the integration of pending-stable patches by cherry picking
->> them out of linux-next.git if the commit log entry has the
->> 'stable@vger.kernel.org' on the commit log, and if the stable patch
->> does not apply we require the developers to provide a backport
->> compatible port. This trick works swell on linux-next.git for RC
->> release given that we can query for rc releases there as linux-next
->> carries them but linux-next.git does not carry extra version tags.
->> Additionally the requirement of linux.git is only there given that at
->> times there are delays between which linux-stable.git will not have an
->> RC release on it. I have a way to address all these issues, namely to
->> add linux.git as a remote for my local linux-stable tree, and also by
->> adding linux-stable as a local remote for my linux-next tree. Now, I
->> document how I resolve this for backport package consumers / builders
->> but it occurs to me perhaps we can simplify this if we had:
->>
->>   * linux-next - pulling in linux-stable packs / tags
->>   * a new linux-releases.git - which has both linux.git and
->> linux-stable pulled together through a cronjob
->>
->> Would this be reasonable to accommodate to help ease of use or shall
->> we just live with folks having to do the remote / local remote hacks?
->
-> I pull the linux.git tree into linux-stable.git every few -rc releases,
-> and as it's based on linux.git, it's really not a big deal.
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ arch/c6x/include/asm/unistd.h |    2 ++
+ arch/c6x/kernel/entry.S       |   13 ++++++-------
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-Keyword: "few", which is fine for those who can / want to wait, in my
-case I need them as they come.
+diff --git a/arch/c6x/include/asm/unistd.h b/arch/c6x/include/asm/unistd.h
+index 6d54ea4..1ce3a6f 100644
+--- a/arch/c6x/include/asm/unistd.h
++++ b/arch/c6x/include/asm/unistd.h
+@@ -16,6 +16,8 @@
+ #if !defined(_ASM_C6X_UNISTD_H) || defined(__SYSCALL)
+ #define _ASM_C6X_UNISTD_H
+ 
++#define __ARCH_WANT_KERNEL_EXECVE
++
+ /* Use the standard ABI for syscalls. */
+ #include <asm-generic/unistd.h>
+ 
+diff --git a/arch/c6x/kernel/entry.S b/arch/c6x/kernel/entry.S
+index 6e6bd9d..32e3683 100644
+--- a/arch/c6x/kernel/entry.S
++++ b/arch/c6x/kernel/entry.S
+@@ -420,6 +420,12 @@ ENTRY(ret_from_kernel_thread)
+ 	BNOP	.S2	B11,5	/* jump to sys_exit */
+ ENDPROC(ret_from_kernel_thread)
+ 
++ENTRY(ret_from_kernel_execve)
++	GET_THREAD_INFO A12
++	BNOP	.S2	syscall_exit,4
++	ADD	.D2X	A4,-8,SP
++ENDPROC(ret_from_kernel_execve)
++
+ 	;;
+ 	;; These are the interrupt handlers, responsible for calling __do_IRQ()
+ 	;; int6 is used for syscalls (see _system_call entry)
+@@ -613,13 +619,6 @@ ENTRY(sys_sigaltstack)
+ 	NOP	4
+ ENDPROC(sys_sigaltstack)
+ 
+-	;; kernel_execve
+-ENTRY(kernel_execve)
+-	MVK	.S2	__NR_execve,B0
+-	SWE
+-	BNOP	.S2	B3,5
+-ENDPROC(kernel_execve)
+-
+ 	;;
+ 	;; Special system calls
+ 	;; return address is in B3
+-- 
+1.7.9.1
 
-> I don't see how pulling linux-stable into linux-next really helps anyone
-> out, linux-stable is so far behind what is in linux-next it's not funny.
-
-By pulling linux-stable into linux-next you get to be able to run
-things like this from within linux-next:
-
-git format-patch --grep="stable@vger.kernel.org" -o
-$PENDING_STABLE_DIR v3.5.4.. $MY_FILES
-
-That is, from v3.5.4 up to that day's linux-next tag.
-
-Without linux-stable linux-next does not get the v3.5.4 tags to allow
-me / users of compat-drivers to do this. We do this to accelerate the
-incorporation of stable pending-stable patches into a release based on
-a stable extraversion release.
-
-> But, if you really want it all in a single tree, can't you just do this
-> with a few 'remote' markings in your git configuration file for the repo
-> and do it locally if you want to?
->
-> Otherwise I don't see the real question here.
-
-Right, absolutely! Using a remote arrangements fixes this completely
-for me. I alone can live happy doing what I do but since I have users
-depending on using compat-drivers to make their own set of releases
-and test things it means I have to get folks using compat-drivers to
-also set up the same git remotes arrangements. That's fine but I'm
-looking to simplify it if I can for users.
-
-> confused probably due to a bad case of jet lag,
-
-No problem :) I obviously could just push my own tree to do this as
-well but as for linux-next pulling linux-stable it seemed a trusty
-cronjob would be more trustworthy than me pushing stuff regularly.
-Likewise for linux-stable pulling more regularly linux.
-
-  Luis
