@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686Ab2IUVCF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 17:02:05 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:52960 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab2IUVCE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 17:02:04 -0400
-Message-ID: <505CD5C3.3020009@windriver.com>
-Date: Fri, 21 Sep 2012 16:01:55 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1758051Ab2IUVDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 17:03:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46111 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752407Ab2IUVDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 17:03:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,464,1344236400"; 
+   d="scan'208";a="225231078"
+Message-ID: <505CD629.1070402@linux.intel.com>
+Date: Fri, 21 Sep 2012 14:03:37 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] kgdb: Fix warning with !CONFIG_DEBUG_RODATA
-References: <1348261150-12423-1-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1348261150-12423-1-git-send-email-andi@firstfloor.org>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="UTF-8"
+To: Ingo Molnar <mingo@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Kees Cook <keescook@chromium.org>, Linda Wang <lwang@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH 00/11] x86: Supervisor Mode Access Prevention
+References: <1348256595-29119-1-git-send-email-hpa@linux.intel.com> <CA+55aFwaZdMxLA1VCfOy9BDQHPp6CTwRFHYGUCXdJ4+KkQoN+g@mail.gmail.com> <20120921200846.GA25679@gmail.com>
+In-Reply-To: <20120921200846.GA25679@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2012 03:59 PM, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On 09/21/2012 01:08 PM, Ingo Molnar wrote:
 > 
-> Fixes
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
 > 
-> arch/x86/kernel/kgdb.c: In function ‘kgdb_arch_set_breakpoint’:
-> arch/x86/kernel/kgdb.c:749:7: warning: unused variable ‘opc’ [-Wunused-variable]
+>> On Fri, Sep 21, 2012 at 12:43 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>>
+>>> Supervisor Mode Access Prevention (SMAP) is a new security 
+>>> feature disclosed by Intel in revision 014 of the Intel® 
+>>> Architecture Instruction Set Extensions Programming 
+>>> Reference:
+>>
+>> Looks good.
+>>
+>> Did this find any bugs, btw? We've had a few cases where we 
+>> forgot to use the proper user access function, and code just 
+>> happened to work because it all boils down to the same thing 
+>> and never got any page faults in practice anyway..
 > 
-> when CONFIG_DEBUG_RODATA is not defined.
+> The 4g:4g patch sweeped out most of the historic ones - so what 
+> we have are perhaps newer bugs (but those should be pretty rare, 
+> most new features are cross-arch).
 > 
 
-This is already pending along with other fixes in kgdb-next / linux next for the 3.7 merge window.
+A while ago I also did a mockup patch which switched %cr3 to
+swapper_pg_dir while entering the kernel (basically where the CLAC
+instructions go, plus the SYSCALL path; a restore was obviously needed,
+too.)  The performance was atrocious, but I didn't remember running into
+any problems.
 
-Jason.
-
---
-commit 9a15c35d16cf76482be076125f631f1193e29413
-Author: Jason Wessel <jason.wessel@windriver.com>
-Date:   Wed Aug 8 21:12:19 2012 -0500
-
-    kgdb,x86: fix warning about unused variable
-    
-    When compiling without CONFIG_DEBUG_RODATA the following
-    compiler warning is generated:
-    
-    arch/x86/kernel/kgdb.c: In function 'kgdb_arch_set_breakpoint':
-    arch/x86/kernel/kgdb.c:749: warning: unused variable 'opc'
-    
-    The variable instantiation needs to be inside the #ifdef to
-    make the warning go away.
-    
-    Reported-by: Thiago Rafael Becker <trbecker@trbecker.org>
-    Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index 3f61904..836f832 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -746,7 +746,9 @@ void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long ip
- int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
- {
-        int err;
-+#ifdef CONFIG_DEBUG_RODATA
-        char opc[BREAK_INSTR_SIZE];
-+#endif /* CONFIG_DEBUG_RODATA */
- 
-        bpt->type = BP_BREAKPOINT;
-        err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
+	-hpa
 
