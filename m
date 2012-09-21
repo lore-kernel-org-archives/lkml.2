@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab2IUSWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 14:22:51 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56748 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab2IUSWt (ORCPT
+	id S1757502Ab2IUSaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 14:30:23 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:52390 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071Ab2IUSaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 14:22:49 -0400
-Date: Fri, 21 Sep 2012 14:24:33 -0400
-From: Matt Porter <mporter@ti.com>
-To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
- arm/common
-Message-ID: <20120921182433.GG16522@beef>
-References: <1348152226-13588-1-git-send-email-mporter@ti.com>
- <1348152226-13588-2-git-send-email-mporter@ti.com>
- <1BAFE6F6C881BF42822005164F1491C33EA8A6A9@DBDE01.ent.ti.com>
+	Fri, 21 Sep 2012 14:30:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EA8A6A9@DBDE01.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120921174952.GF7264@google.com>
+References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
+	<20120921174952.GF7264@google.com>
+Date: Fri, 21 Sep 2012 19:30:21 +0100
+Message-ID: <CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
+Subject: Re: Work queue questions
+From: Deepawali Verma <dverma249@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 07:10:52AM +0000, Hebbar, Gururaja wrote:
-> On Thu, Sep 20, 2012 at 20:13:34, Porter, Matt wrote:
-> > Move mach-davinci/dma.c to common/edma.c so it can be used
-> > by OMAP (specifically AM33xx atm) as well. This just moves
-> > the private EDMA API but does not support OMAP.
-> > 
-> > Signed-off-by: Matt Porter <mporter@ti.com>
-> > ---
-> >  arch/arm/Kconfig                           |    1 +
-> >  arch/arm/common/Kconfig                    |    3 +
-> >  arch/arm/common/Makefile                   |    1 +
-> >  arch/arm/common/edma.c                     | 1588 ++++++++++++++++++++++++++++
-> >  arch/arm/include/asm/mach/edma.h           |  267 +++++
-> >  arch/arm/mach-davinci/Makefile             |    2 +-
-> >  arch/arm/mach-davinci/devices.c            |    3 +-
-> >  arch/arm/mach-davinci/dm355.c              |    2 +-
-> >  arch/arm/mach-davinci/dm365.c              |    2 +-
-> >  arch/arm/mach-davinci/dm644x.c             |    2 +-
-> >  arch/arm/mach-davinci/dm646x.c             |    2 +-
-> >  arch/arm/mach-davinci/dma.c                | 1588 ----------------------------
-> 
-> 
-> Please use –M option, while generating patches via git-format-patch. 
-> This reduces the patch size if files are copied/renamed/moved.
+Hi Tejun,
 
-Yes, I didn't notice until the arm kernel list caught the >100k post.
-Will take care of this in v2.
+Actually I want to make parallelization of one task into three tasks.
+Therefore I created three single threaded work queues means divide the
+task into three tasks. You are right that I can use one work queue as
+well. But when I am doing three times schedule on different work
+queues, I am seeing only one worker thread is processing the three
+times schedule though I created three different workqueues and I
+believe from previous kernel versions that there is one worker thread
+associated with one queue. If one thread does this task then there is
+no difference between doing the same task in one thread and using
+three threads.
 
--Matt
+If we create different work queues, why always one worker thread is
+processing the all tasks instead I want another two threads also work
+in parallel?
+
+Regards,
+Deepa
+
+On Fri, Sep 21, 2012 at 6:49 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Fri, Sep 21, 2012 at 06:35:25PM +0100, Dinky Verma wrote:
+>> I have one question regarding concurrency managed workqueue. In the
+>> previous kernel versions, I was using
+>> create_singlethread_workqueue("driver_wq") e.g workqueue name is
+>> driver_wq. In my device driver with the latest kernel version, I am
+>> doing the same to have a support in my device driver for previous
+>> kernel versions and new kernel version, I started using
+>> alloc_workqueue (in intention to create single threaded workqueue)
+>> e.g.
+>>
+>> wq = alloc_workqueue("driver_wq", WQ_UNBOUND,1);
+>>
+>> create_singlethread_workqueue (Depricated) and alloc_workqueue creates
+>> work queue both work on the newer kernel versions.
+>
+> You can use alloc_ordered_workqueue() instead but do you really need
+> strict ordering among different work items?  If not, it's likely that
+> you don't need to create separate workqueues at all.
+>
+>> I have created 3 single threaded workqueues. when I do ps on linux
+>> console, I see the workqueue thread with process id. When I am queuing
+>> the work simultaneously on these worker threads, I found that threads
+>> named with Kworker/X.Y will process the work from the work queue not
+>> the one that had been created create_singlethread_workqueue.
+>>
+>> When I schedule the three works at the same time, I saw sometimes one
+>> Kworker/X.Y thread processes all work items.
+>>
+>> The question is why the main worker thread that I created does not
+>> process the work that is intended for it why instead kworker will
+>> process it? I have queued the work using queue_work(wq,
+>> worker_struct).
+>
+> The kthread named after the workqueue is the rescuer which kicks in
+> iff work execution can't make forward progress due to memory pressure.
+> Normally all work items are served by worker threads in shared worker
+> pool.  What kind of driver is it?  Does it sit in memory reclaim path?
+>
+> Thanks.
+>
+> --
+> tejun
