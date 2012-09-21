@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab2IUWlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 18:41:17 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:35206 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab2IUWlP (ORCPT
+	id S933157Ab2IUWtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 18:49:17 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:51933 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758330Ab2IUWtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 18:41:15 -0400
-Date: Fri, 21 Sep 2012 22:41:14 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: "Bruce, Becky" <bbruce@ti.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
-        "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Hunter, Jon" <jon-hunter@ti.com>,
-        "<snijsure@grid-net.com>" <snijsure@grid-net.com>
-Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
-In-Reply-To: <20120921212054.GE2454@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1209212240190.31812@utopia.booyaka.com>
-References: <alpine.DEB.2.00.1209122237080.7275@utopia.booyaka.com> <20120913011208.GT4257@linux.vnet.ibm.com> <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com> <20120920000351.GI2455@linux.vnet.ibm.com> <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com>
- <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com> <20120920220130.GN2449@linux.vnet.ibm.com> <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com> <alpine.DEB.2.00.1209211740170.8839@utopia.booyaka.com> <20120921212054.GE2454@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 21 Sep 2012 18:49:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqUNACruXFB5LFPK/2dsb2JhbABFhSK3eAIBgQOBCYIgAQEFOhwjEAgDDgouFCUDIROIBLk0FIsIcYE4gx1gA5VjkCOCeQ
+Date: Sat, 22 Sep 2012 08:49:12 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: viro@zeniv.linux.org.uk, dchinner@redhat.com, hch@infradead.org,
+        jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v4 Patch 0/4] fs/inode.c: optimization for inode lock usage
+Message-ID: <20120921224912.GA20960@dastard>
+References: <1348219866-1799-1-git-send-email-yan@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348219866-1799-1-git-send-email-yan@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Sep 2012, Paul E. McKenney wrote:
+On Fri, Sep 21, 2012 at 05:31:02PM +0800, Guo Chao wrote:
+> This patchset optimizes several places which take the per inode spin lock.
+> They have not been fully tested yet, thus they are marked as RFC. 
 
-> On Fri, Sep 21, 2012 at 05:47:31PM +0000, Paul Walmsley wrote:
->
-> > I built an OMAP kernel from Linus' commit 
-> > 4651afbbae968772efd6dc4ba461cba9b49bb9d8 ("Merge branch 'for-3.6-fixes' of 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq").  The config used 
-> > was 'omap2plus_defconfig', and enabled CONFIG_CPU_IDLE by hand.  Booted it 
-> > on a Pandaboard (OMAP4430ES2) into a very minimal Debian rootfs.
-> 
-> Did you have the patch at https://lkml.org/lkml/2012/8/30/290 applied?
+Inodes are RCU freed. The i_lock spinlock on the i_state field forms
+part of the memory barrier that allows the RCU read side to
+correctly detect a freed inode during a RCU protected cache lookup
+(hash list traversal for the VFS, or a radix tree traversal for XFS).
+The i_lock usage around the hahs list operations ensures the hash
+list operations are atomic with state changes so that such changes
+are correctly detected during RCU-protected traversals...
 
-No, it's just as described above.
+IOWs, removing the i_lock from around the i_state transitions and
+inode hash insert/remove/traversal operations will cause races in
+the RCU lookups and result in incorrectly using freed inodes instead
+of failing the lookup and creating a new one.
 
-> If not, could you please try it?  (This patch cleared up a similar
-> problem for Becky, also on OMAP.)
+So I don't think this is a good idea at all...
 
-Did not seem to help, either with or without CONFIG_CPU_IDLE.
+Cheers,
 
-
-- Paul
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
