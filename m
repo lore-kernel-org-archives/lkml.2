@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab2IUCOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 22:14:06 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:57993 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754992Ab2IUCOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 22:14:05 -0400
-Date: Thu, 20 Sep 2012 22:13:48 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Vasiliy Kulikov <segooon@gmail.com>
-Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
-Message-ID: <20120921021201.GA12851@cmpxchg.org>
-References: <20120920232408.GI13234@bbox>
+	id S1756663Ab2IUCQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 22:16:34 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48896 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754992Ab2IUCQd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 22:16:33 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-aa-505bcdfe5487
+From: Namhyung Kim <namhyung@kernel.org>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH V2] perf: Fix parallel build
+References: <505BAC5D.9020909@redhat.com> <505BBF12.4060800@redhat.com>
+Date: Fri, 21 Sep 2012 11:07:50 +0900
+In-Reply-To: <505BBF12.4060800@redhat.com> (Eric Sandeen's message of "Thu, 20
+	Sep 2012 20:12:50 -0500")
+Message-ID: <87392cyvpl.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120920232408.GI13234@bbox>
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 08:24:08AM +0900, Minchan Kim wrote:
-> On Thu, Sep 20, 2012 at 11:41:11AM -0400, Johannes Weiner wrote:
-> > On Thu, Sep 20, 2012 at 08:51:56AM +0900, Minchan Kim wrote:
-> > > From: Minchan Kim <minchan@kernel.org>
-> > > Date: Thu, 20 Sep 2012 08:39:52 +0900
-> > > Subject: [PATCH] mm: revert 0def08e3, mm/mempolicy.c: check return code of
-> > >  check_range
+Hi again,
 
-[...]
+On Thu, 20 Sep 2012 20:12:50 -0500, Eric Sandeen wrote:
+> -$(OUTPUT)util/parse-events-flex.c: util/parse-events.l
+> +$(OUTPUT)util/parse-events-flex.c: util/parse-events.l util/parse-events-bison.c
 
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Fri, 21 Sep 2012 08:17:37 +0900
-> Subject: [PATCH] mm: enhance comment and bug check
-> 
-> This patch updates comment and bug check.
-> It can be fold into [1].
-> 
-> [1] mm-revert-0def08e3-mm-mempolicyc-check-return-code-of-check_range.patch
-> 
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Suggested-by: Johannes Weiner <hannes@cmpxchg.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+I realized that the generated *-bison.c files should have $(OUTPUT)
+prefix since they can be under another directory than *.[ly] files.
 
-Thanks!  To the patch and this update:
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+>  	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+>  
+>  $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+>  	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
+>  
+> -$(OUTPUT)util/pmu-flex.c: util/pmu.l
+> +$(OUTPUT)util/pmu-flex.c: util/pmu.l util/pmu-bison.c
+
+Ditto.
+
+Thanks,
+Namhyung
+
+
+>  	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+>  
+>  $(OUTPUT)util/pmu-bison.c: util/pmu.y
