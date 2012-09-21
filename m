@@ -1,55 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab2IUE64 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 00:58:56 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:36384 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab2IUE6y (ORCPT
+	id S1753352Ab2IUE7j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 00:59:39 -0400
+Received: from cust-218-222.on4.ontelecoms.gr ([92.118.218.222]:39849 "EHLO
+	vergina.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab2IUE7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 00:58:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6841"; a="237180625"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Jan Engelhardt'" <jengelh@inai.de>
-Cc: <axboe@kernel.dk>, "'Jeff Moyer'" <jmoyer@redhat.com>,
-        <linux-arm-msm@vger.kernel.org>,
-        "'open list:DOCUMENTATION'" <linux-doc@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1344166241-18708-1-git-send-email-tlinder@codeaurora.org> <1344166241-18708-3-git-send-email-tlinder@codeaurora.org> <x49wr1cdlmg.fsf@segfault.boston.devel.redhat.com> <alpine.LNX.2.01.1209190718030.29967@nerf07.vanv.qr> <alpine.LNX.2.01.1209210631060.13993@nerf07.vanv.qr>
-In-Reply-To: <alpine.LNX.2.01.1209210631060.13993@nerf07.vanv.qr>
-Subject: RE: [RFC/PATCH 2/2] block: Adding ROW scheduling algorithm
-Date: Fri, 21 Sep 2012 07:58:19 +0300
-Message-ID: <003d01cd97b5$ba4e70b0$2eeb5210$@codeaurora.org>
+	Fri, 21 Sep 2012 00:59:38 -0400
+Message-ID: <505BF437.4090506@asyr.hopto.org>
+Date: Fri, 21 Sep 2012 07:59:35 +0300
+From: Thanasis <thanasis@asyr.hopto.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQDJuLehQ41MV6PNI9g9xYZZQALMCAF/d/PIAjSnSN0A9BjMRQGgFO0lmWm3IyA=
-Content-language: he
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        nic_swsd@realtek.com
+Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
+References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com>
+In-Reply-To: <20120920232030.GA9224@electric-eye.fr.zoreil.com>
+Content-Type: multipart/mixed;
+ boundary="------------070606070003090000020604"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan
+This is a multi-part message in MIME format.
+--------------070606070003090000020604
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-> There seems to a bug with ROW. After about 43 hours of continued
-> operation, programs (./configure was what I ran at the time this
-> happened) first become slow, then got stuck in D state within a minute.
-Ctrl-
-> C/Z worked at first, soon not, then these messages appeared in dmesg.
+on 09/21/2012 02:20 AM Francois Romieu wrote the following:
+
 > 
-> [319952.630605] row: forced dispatching is broken (nr_sorted=17), please
-> report this [319952.631174] row: forced dispatching is broken
-(nr_sorted=17),
-> please report this
+> Thanasis, can you narrow down a bit the failing revision ?
 
-Thank you very much for reporting this! 
-We're now at the testing phase as well. We didn't encounter the bug you
-observed but I'll look into it. Thanks again.
+Sure, let me know how to do it please.
+FWIW , attached full lspci -k output.
 
-Thanks,
-Tanya Brokhman
----
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
 
+--------------070606070003090000020604
+Content-Type: text/plain; charset=UTF-8;
+ name="lspci-k"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="lspci-k"
+
+MDA6MDAuMCBIb3N0IGJyaWRnZTogSW50ZWwgQ29ycG9yYXRpb24gTW9iaWxlIDk0NUdTRSBF
+eHByZXNzIE1lbW9yeSBDb250cm9sbGVyIEh1YiAocmV2IDAzKQoJU3Vic3lzdGVtOiBBY2Vy
+IEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1c2U6
+IGFncGdhcnQtaW50ZWwKMDA6MDIuMCBWR0EgY29tcGF0aWJsZSBjb250cm9sbGVyOiBJbnRl
+bCBDb3Jwb3JhdGlvbiBNb2JpbGUgOTQ1R1NFIEV4cHJlc3MgSW50ZWdyYXRlZCBHcmFwaGlj
+cyBDb250cm9sbGVyIChyZXYgMDMpCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVkIFtB
+TEldIERldmljZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogaTkxNQowMDowMi4xIERp
+c3BsYXkgY29udHJvbGxlcjogSW50ZWwgQ29ycG9yYXRpb24gTW9iaWxlIDk0NUdNL0dNUy9H
+TUUsIDk0My85NDBHTUwgRXhwcmVzcyBJbnRlZ3JhdGVkIEdyYXBoaWNzIENvbnRyb2xsZXIg
+KHJldiAwMykKCVN1YnN5c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2aWNlIDAx
+NWIKMDA6MWIuMCBBdWRpbyBkZXZpY2U6IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0ggNyBG
+YW1pbHkgSGlnaCBEZWZpbml0aW9uIEF1ZGlvIENvbnRyb2xsZXIgKHJldiAwMikKCVN1YnN5
+c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2aWNlIDAxNWIKCUtlcm5lbCBkcml2
+ZXIgaW4gdXNlOiBIREEgSW50ZWwKMDA6MWMuMCBQQ0kgYnJpZGdlOiBJbnRlbCBDb3Jwb3Jh
+dGlvbiBOMTAvSUNIIDcgRmFtaWx5IFBDSSBFeHByZXNzIFBvcnQgMSAocmV2IDAyKQoJS2Vy
+bmVsIGRyaXZlciBpbiB1c2U6IHBjaWVwb3J0CjAwOjFjLjEgUENJIGJyaWRnZTogSW50ZWwg
+Q29ycG9yYXRpb24gTjEwL0lDSCA3IEZhbWlseSBQQ0kgRXhwcmVzcyBQb3J0IDIgKHJldiAw
+MikKCUtlcm5lbCBkcml2ZXIgaW4gdXNlOiBwY2llcG9ydAowMDoxYy4yIFBDSSBicmlkZ2U6
+IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0ggNyBGYW1pbHkgUENJIEV4cHJlc3MgUG9ydCAz
+IChyZXYgMDIpCglLZXJuZWwgZHJpdmVyIGluIHVzZTogcGNpZXBvcnQKMDA6MWMuMyBQQ0kg
+YnJpZGdlOiBJbnRlbCBDb3Jwb3JhdGlvbiBOMTAvSUNIIDcgRmFtaWx5IFBDSSBFeHByZXNz
+IFBvcnQgNCAocmV2IDAyKQoJS2VybmVsIGRyaXZlciBpbiB1c2U6IHBjaWVwb3J0CjAwOjFk
+LjAgVVNCIGNvbnRyb2xsZXI6IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0ggNyBGYW1pbHkg
+VVNCIFVIQ0kgQ29udHJvbGxlciAjMSAocmV2IDAyKQoJU3Vic3lzdGVtOiBBY2VyIEluY29y
+cG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1c2U6IHVoY2lf
+aGNkCjAwOjFkLjEgVVNCIGNvbnRyb2xsZXI6IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0gg
+NyBGYW1pbHkgVVNCIFVIQ0kgQ29udHJvbGxlciAjMiAocmV2IDAyKQoJU3Vic3lzdGVtOiBB
+Y2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1
+c2U6IHVoY2lfaGNkCjAwOjFkLjIgVVNCIGNvbnRyb2xsZXI6IEludGVsIENvcnBvcmF0aW9u
+IE4xMC9JQ0ggNyBGYW1pbHkgVVNCIFVIQ0kgQ29udHJvbGxlciAjMyAocmV2IDAyKQoJU3Vi
+c3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRy
+aXZlciBpbiB1c2U6IHVoY2lfaGNkCjAwOjFkLjMgVVNCIGNvbnRyb2xsZXI6IEludGVsIENv
+cnBvcmF0aW9uIE4xMC9JQ0ggNyBGYW1pbHkgVVNCIFVIQ0kgQ29udHJvbGxlciAjNCAocmV2
+IDAyKQoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJ
+S2VybmVsIGRyaXZlciBpbiB1c2U6IHVoY2lfaGNkCjAwOjFkLjcgVVNCIGNvbnRyb2xsZXI6
+IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0ggNyBGYW1pbHkgVVNCMiBFSENJIENvbnRyb2xs
+ZXIgKHJldiAwMikKCVN1YnN5c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2aWNl
+IDAxNWIKCUtlcm5lbCBkcml2ZXIgaW4gdXNlOiBlaGNpX2hjZAowMDoxZS4wIFBDSSBicmlk
+Z2U6IEludGVsIENvcnBvcmF0aW9uIDgyODAxIE1vYmlsZSBQQ0kgQnJpZGdlIChyZXYgZTIp
+CjAwOjFmLjAgSVNBIGJyaWRnZTogSW50ZWwgQ29ycG9yYXRpb24gODI4MDFHQk0gKElDSDct
+TSkgTFBDIEludGVyZmFjZSBCcmlkZ2UgKHJldiAwMikKCVN1YnN5c3RlbTogQWNlciBJbmNv
+cnBvcmF0ZWQgW0FMSV0gRGV2aWNlIDAxNWIKMDA6MWYuMiBJREUgaW50ZXJmYWNlOiBJbnRl
+bCBDb3Jwb3JhdGlvbiA4MjgwMUdCTS9HSE0gKElDSDctTSBGYW1pbHkpIFNBVEEgQ29udHJv
+bGxlciBbSURFIG1vZGVdIChyZXYgMDIpCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVk
+IFtBTEldIERldmljZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogYXRhX3BpaXgKMDA6
+MWYuMyBTTUJ1czogSW50ZWwgQ29ycG9yYXRpb24gTjEwL0lDSCA3IEZhbWlseSBTTUJ1cyBD
+b250cm9sbGVyIChyZXYgMDIpCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVkIFtBTEld
+IERldmljZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogaTgwMV9zbWJ1cwowMTowMC4w
+IFN5c3RlbSBwZXJpcGhlcmFsOiBKTWljcm9uIFRlY2hub2xvZ3kgQ29ycC4gU0QvTU1DIEhv
+c3QgQ29udHJvbGxlcgoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZp
+Y2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1c2U6IHNkaGNpLXBjaQowMTowMC4yIFNEIEhv
+c3QgY29udHJvbGxlcjogSk1pY3JvbiBUZWNobm9sb2d5IENvcnAuIFN0YW5kYXJkIFNEIEhv
+c3QgQ29udHJvbGxlcgoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZp
+Y2UgMDE1YgowMTowMC4zIFN5c3RlbSBwZXJpcGhlcmFsOiBKTWljcm9uIFRlY2hub2xvZ3kg
+Q29ycC4gTVMgSG9zdCBDb250cm9sbGVyCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVk
+IFtBTEldIERldmljZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogam1iMzh4X21zCjAx
+OjAwLjQgU3lzdGVtIHBlcmlwaGVyYWw6IEpNaWNyb24gVGVjaG5vbG9neSBDb3JwLiB4RCBI
+b3N0IENvbnRyb2xsZXIKCVN1YnN5c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2
+aWNlIDAxNWIKMDI6MDAuMCBFdGhlcm5ldCBjb250cm9sbGVyOiBSZWFsdGVrIFNlbWljb25k
+dWN0b3IgQ28uLCBMdGQuIFJUTDgxMDFFL1JUTDgxMDJFIFBDSSBFeHByZXNzIEZhc3QgRXRo
+ZXJuZXQgY29udHJvbGxlciAocmV2IDAyKQoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRl
+ZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1c2U6IHI4MTY5CjAzOjAw
+LjAgRXRoZXJuZXQgY29udHJvbGxlcjogQXRoZXJvcyBDb21tdW5pY2F0aW9ucyBJbmMuIEFS
+MjQyeCAvIEFSNTQyeCBXaXJlbGVzcyBOZXR3b3JrIEFkYXB0ZXIgKFBDSS1FeHByZXNzKSAo
+cmV2IDAxKQoJU3Vic3lzdGVtOiBGb3hjb25uIEludGVybmF0aW9uYWwsIEluYy4gRGV2aWNl
+IGUwMDgKCUtlcm5lbCBkcml2ZXIgaW4gdXNlOiBhdGg1awowNDowMC4wIFN5c3RlbSBwZXJp
+cGhlcmFsOiBKTWljcm9uIFRlY2hub2xvZ3kgQ29ycC4gU0QvTU1DIEhvc3QgQ29udHJvbGxl
+cgoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2Vy
+bmVsIGRyaXZlciBpbiB1c2U6IHNkaGNpLXBjaQowNDowMC4yIFNEIEhvc3QgY29udHJvbGxl
+cjogSk1pY3JvbiBUZWNobm9sb2d5IENvcnAuIFN0YW5kYXJkIFNEIEhvc3QgQ29udHJvbGxl
+cgoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgowNDow
+MC4zIFN5c3RlbSBwZXJpcGhlcmFsOiBKTWljcm9uIFRlY2hub2xvZ3kgQ29ycC4gTVMgSG9z
+dCBDb250cm9sbGVyCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVkIFtBTEldIERldmlj
+ZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogam1iMzh4X21zCjA0OjAwLjQgU3lzdGVt
+IHBlcmlwaGVyYWw6IEpNaWNyb24gVGVjaG5vbG9neSBDb3JwLiB4RCBIb3N0IENvbnRyb2xs
+ZXIKCVN1YnN5c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2aWNlIDAxNWIK
+--------------070606070003090000020604--
