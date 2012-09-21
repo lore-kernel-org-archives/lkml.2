@@ -1,94 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933121Ab2IUTCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 15:02:30 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:45831 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933069Ab2IUTC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 15:02:28 -0400
-Message-ID: <505CB9BC.8040905@linux.vnet.ibm.com>
-Date: Fri, 21 Sep 2012 14:02:20 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S933124Ab2IUTET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 15:04:19 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38230 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932724Ab2IUTEQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 15:04:16 -0400
+Date: Fri, 21 Sep 2012 14:52:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        Andres Lagar-Cavilla <andres@lagarcavilla.org>,
+        xen-devel <xen-devel@lists.xen.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH] Xen backend support for paged out grant targets V4.
+Message-ID: <20120921185258.GA4931@phenom.dumpdata.com>
+References: <1347632819-13684-1-git-send-email-andres@lagarcavilla.org>
+ <1347869865.14977.15.camel@zakaz.uk.xensource.com>
+ <5B5132A4-93B2-41D0-B1A6-048810565DB5@gridcentric.ca>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Mel Gorman <mgorman@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [RFC] mm: add support for zsmalloc and zcache
-References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120921161252.GV11266@suse.de> <20120921180222.GA7220@phenom.dumpdata.com>
-In-Reply-To: <20120921180222.GA7220@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12092119-7182-0000-0000-000002AC64DF
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5B5132A4-93B2-41D0-B1A6-048810565DB5@gridcentric.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2012 01:02 PM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 21, 2012 at 05:12:52PM +0100, Mel Gorman wrote:
->> On Tue, Sep 04, 2012 at 04:34:46PM -0500, Seth Jennings wrote:
->>> zcache is the remaining piece of code required to support in-kernel
->>> memory compression.  The other two features, cleancache and frontswap,
->>> have been promoted to mainline in 3.0 and 3.5 respectively.  This
->>> patchset promotes zcache from the staging tree to mainline.
->>>
->>
->> This is a very rough review of the code simply because I was asked to
->> look at it. I'm barely aware of the history and I'm not a user of this
->> code myself so take all of this with a grain of salt.
+On Mon, Sep 17, 2012 at 05:29:24AM -0400, Andres Lagar-Cavilla wrote:
+> On Sep 17, 2012, at 4:17 AM, Ian Campbell wrote:
 > 
-> Ah fresh set of eyes! Yeey!
-
-Agreed! Thanks so much!
-
->>
->> Very broadly speaking my initial reaction before I reviewed anything was
->> that *some* sort of usable backend for cleancache or frontswap should exist
->> at this point. My understanding is that Xen is the primary user of both
->> those frontends and ramster, while interesting, is not something that a
->> typical user will benefit from.
+> > (I think I forgot to hit send on this on Friday, sorry. Also
+> > s/xen.lists.org/lists.xen.org in the CC line…)
+> I'm on a roll here…
 > 
-> Right, the majority of users do not use virtualization. Thought embedded
-> wise .. well, there are a lot of Android users - thought I am not 100%
-> sure they are using it right now (I recall seeing changelogs for the clones
-> of Android mentioning zcache).
->>
->> That said, I worry that this has bounced around a lot and as Dan (the
->> original author) has a rewrite. I'm wary of spending too much time on this
->> at all. Is Dan's new code going to replace this or what? It'd be nice to
->> find a definitive answer on that.
+> > 
+> > On Fri, 2012-09-14 at 15:26 +0100, Andres Lagar-Cavilla wrote:
+> >> Since Xen-4.2, hvm domains may have portions of their memory paged out. When a
+> >> foreign domain (such as dom0) attempts to map these frames, the map will
+> >> initially fail. The hypervisor returns a suitable errno, and kicks an
+> >> asynchronous page-in operation carried out by a helper. The foreign domain is
+> >> expected to retry the mapping operation until it eventually succeeds. The
+> >> foreign domain is not put to sleep because itself could be the one running the
+> >> pager assist (typical scenario for dom0).
+> >> 
+> >> This patch adds support for this mechanism for backend drivers using grant
+> >> mapping and copying operations. Specifically, this covers the blkback and
+> >> gntdev drivers (which map foregin grants), and the netback driver (which copies
+> > 
+> >                           foreign
+> > 
+> >> foreign grants).
+> >> 
+> >> * Add a retry method for grants that fail with GNTST_eagain (i.e. because the
+> >>  target foregin frame is paged out).
+> > 
+> >          foreign
+> > 
+> >> * Insert hooks with appropriate wrappers in the aforementioned drivers.
+> >> 
+> >> The retry loop is only invoked if the grant operation status is GNTST_eagain.
+> >> It guarantees to leave a new status code different from GNTST_eagain. Any other
+> >> status code results in identical code execution as before.
+> >> 
+> >> The retry loop performs 256 attempts with increasing time intervals through a
+> >> 32 second period. It uses msleep to yield while waiting for the next retry.
+> > [...]
+> >> Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+> > 
+> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
+> > 
+> > Since this is more about grant tables than netback this should probably
+> > go via Konrad rather than Dave, is that OK with you Dave?
 > 
-> The idea is to take parts of zcache2 as seperate patches and stick it
-> in the code you just reviewed (those that make sense as part of unstaging).
+> If that is the case hopefully Konrad can deal with the two typos? Otherwise happy to re-spin the patch.
 
-I agree with this.  Only the changes from zcache2 (Dan's
-rewrite) that are necessary for promotion should be
-considered right now.  Afaict, none of the concerns raised
-in these comments are addressed by the changes in zcache2.
+So with this patch when I launch an PVHVM guest on Xen 4.1 I get this
+in the initial domain and the guest is crashed:
 
-> The end result will be that zcache1 == zcache2 in functionality. Right
-> now we are assembling a list of TODOs for zcache that should be done as part
-> of 'unstaging'.
-> 
->>
->> Anyway, here goes
-> 
-> .. and your responses will fill the TODO with many extra line-items.
+[  261.927218] privcmd_fault: vma=ffff88002a31dce8 7f4edc095000-7f4edc195000, pgoff=c8, uv=00007f4edc15d000
 
-Great, thanks Konrad.
+guest config:
+> more /mnt/lab/latest/hvm.xm 
+kernel = "/usr/lib/xen/boot/hvmloader"
+builder='hvm'
+memory=1024
+#maxmem=1024
+maxvcpus = 2
+serial='pty'
+vcpus = 2
+disk = [ 'file:/mnt/lab/latest/root_image.iso,hdc:cdrom,r']
+boot="dn"
+#vif = [ 'type=ioemu,model=e1000,mac=00:0F:4B:00:00:71, bridge=switch' ]
+vif = [ 'type=netfront, bridge=switch' ]
+#vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
+vnc=1
+vnclisten="0.0.0.0"
+usb=1
+xen_platform_pci=1
 
-> 
-> Its going to take a bit of time to mull over your questions, so it will
-> take me some time.
-
-Same here. I'll respond asap. Thanks again, Mel!
-
---
-Seth
 
