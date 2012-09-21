@@ -1,61 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab2IUVkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 17:40:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42936 "EHLO
+	id S1758154Ab2IUVk5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 17:40:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48160 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab2IUVkH (ORCPT
+	with ESMTP id S1752979Ab2IUVkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 17:40:07 -0400
-Date: Fri, 21 Sep 2012 14:40:02 -0700
-From: Tejun Heo <tj@kernel.org>
-To: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Li Zefan <lizefan@huawei.com>, Michal Hocko <mhocko@suse.cz>,
-        Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [RFC] cgroup TODOs
-Message-ID: <20120921214002.GA7694@google.com>
-References: <20120913205827.GO7677@google.com>
+	Fri, 21 Sep 2012 17:40:55 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-pm@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Nishanth Menon <nm@ti.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] PM / Runtime: let rpm_resume() succeed if RPM_ACTIVE, even when disabled
+Organization: Deep Root Systems, LLC
+References: <Pine.LNX.4.44L0.1209211611020.1323-100000@iolanthe.rowland.org>
+Date: Fri, 21 Sep 2012 14:40:52 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1209211611020.1323-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Fri, 21 Sep 2012 16:22:13 -0400 (EDT)")
+Message-ID: <87vcf7dpgb.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120913205827.GO7677@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 01:58:27PM -0700, Tejun Heo wrote:
-> 7. Misc issues
-> 
->   * Sort & unique when listing tasks.  Even the documentation says it
->     doesn't happen but we have a good hunk of code doing it in
->     cgroup.c.  I'm gonna rip it out at some point.  Again, if you
->     don't like it, scream.
-> 
->   * At the PLC, pjt told me that assinging threads of a cgroup to
->     different cgroups is useful for some use cases but if we're to
->     have a unified hierarchy, I don't think we can continue to do
->     that.  Paul, can you please elaborate the use case?
-> 
->   * Vivek brought up the issue of distributing resources to tasks and
->     groups in the same cgroup.  I don't know.  Need to think more
->     about it.
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-* Update docs.
+> On Fri, 21 Sep 2012, Rafael J. Wysocki wrote:
+>
+>> > Kevin makes a good case that pm_runtime_resume() and related functions 
+>> > should succeed even when runtime PM is disabled, if the device is 
+>> > already in the desired state.
+>> > 
+>> > The same may be true for pm_runtime_suspend().  What do you think?
+>> 
+>> I've discussed that with Kevin.  The problem is that the runtime PM
+>> status may be changed at will when runtime PM is disabled by using
+>> __pm_runtime_set_status(), so the status generally cannod be trusted
+>> if power.disable_depth > 0.
+>
+> Hmmm.  That same argument applies even when is_suspended is true.  
+> Runtime PM might have been disabled beforehand by the driver, so you 
+> still don't know whether to believe the status.
+>
+>> During system suspend, however, runtime PM is disabled by the core and
+>> if neither the driver nor the subsystem has disabled it in the meantime,
+>> the status should be actually valid.
+>
+> I suppose you could check that .disable_depth == 1.  That would mean 
+> only the core had disabled runtime PM.
+>
+>> > The way the patch is written contradicts the documentation:
+>> > 
+>> >   * A request to execute ->runtime_resume() will cancel any pending or
+>> >     scheduled requests to execute the other callbacks for the same device,
+>> >     except for scheduled autosuspends.
+>> 
+>> I'm not sure where the contradiction is.  The patch simply changes the
+>> behavior for disabled runtime PM, which is to return a nonzero value immediately
+>> anyway.
+>
+> It changes an error return to a non-error return.
+>
+> However, if we limit the effects to times when the system is 
+> suspending then there shouldn't be any pending or scheduled requests 
+> anyway.  So okay, this isn't an issue.
+>
+>> > > > @@ -510,7 +510,8 @@ static int rpm_resume(struct device *dev, int rpmflags)
+>> > > >  	if (dev->power.runtime_error)
+>> > > >  		retval = -EINVAL;
+>> > > >  	else if (dev->power.disable_depth > 0)
+>> > > > -		retval = -EACCES;
+>> > > > +		retval = dev->power.is_suspended && 
+>> > > > +			dev->power.runtime_status == RPM_ACTIVE ? 1 : -EACCES;
+>> > > >  	if (retval)
+>> > > >  		goto out;
+>> > 
+>> > Also, the is_suspended test seems irrelevant in general -- it makes 
+>> > sense in terms of the scenario Kevin described but that's not the 
+>> > stated purpose of the patch.
+>> 
+>> Well, it is, although the changelog doesn't state it sufficiently clearly. :-)
+>
+> Good point.  The changelog needs to be improved.
+>
+>> > Both of these problems can be addressed by writing the code as follows:
+>> > 
+>> > 	if (dev->power.runtime_error)
+>> > 		retval = -EINVAL;
+>> > 	else if (dev->power.disable_depth > 0) {
+>> > 
+>> > 		/* Special case: allow this if the device is already active */
+>> > 		if (dev->power.runtime_status != RPM_ACTIVE)
+>> > 			retval = -EACCES;
+>> > 	}
+>> > 	if (retval)
+>> > 		goto out;
+>> 
+>> We could do that too, but I'm a bit concerned about the situations where
+>> runtime PM is disabled by the driver itself or by the subsystem, because
+>> in those cases whoever disables runtime PM would have to make sure that the
+>> status still reflects the actual hardware state, but that's what the runtime
+>> PM framework is for (among other things).
+>
+> All right, let's use Kevin's original scheme but add a test for 
+> disable_depth == 1.  I suggest changing the ?: operator to a regular 
+> "if" statement, because the new condition will be even longer than the 
+> old one (which I found a little hard to read in the first place).
+>
+> And of course, a comment should be added to explain the reason for the
+> exception.
+>
+> Kevin, how does this sound?
+>
 
-* Clean up cftype->read/write*() mess.
+Sounds good to me.
 
-* Use sane fs event mechanism.
+I'll respin and try to make the changelog more clear.
 
-* Drop userland helper based empty notification.  Argh...
+Thanks,
 
--- 
-tejun
+Kevin
+
+
