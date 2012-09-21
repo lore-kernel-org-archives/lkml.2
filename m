@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab2IUAK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 20:10:27 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41685 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754578Ab2IUAKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 20:10:24 -0400
-Message-ID: <1348186223.2134.1.camel@joe2Laptop>
-Subject: [PATCH net-next] net1080: Neaten netdev_dbg use
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 20 Sep 2012 17:10:23 -0700
-In-Reply-To: <20120920.175335.1128494030737237412.davem@davemloft.net>
-References: <1348077212.22122.13.camel@joe2Laptop>
-	 <20120919193536.GA13933@kroah.com> <20120919194614.GA17585@kroah.com>
-	 <20120920.175335.1128494030737237412.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752612Ab2IUAMx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 20:12:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36404 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab2IUAMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 20:12:51 -0400
+Date: Thu, 20 Sep 2012 17:06:08 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
+Subject: Re: [PATCH v2 10/26] block: Add submit_bio_wait(), remove from md
+Message-ID: <20120921000608.GJ5519@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-11-git-send-email-koverstreet@google.com>
+ <20120920235643.GQ7264@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120920235643.GQ7264@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unnecessary temporary variable and #ifdef DEBUG block.
+On Thu, Sep 20, 2012 at 04:56:43PM -0700, Tejun Heo wrote:
+> On Mon, Sep 10, 2012 at 05:22:21PM -0700, Kent Overstreet wrote:
+> > Random cleanup - this code was duplicated and it's not really specific
+> > to md.
+> > 
+> > Also added the ability to return the actual error code.
+> > 
+> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > CC: Jens Axboe <axboe@kernel.dk>
+> > CC: NeilBrown <neilb@suse.de>
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> > --- a/include/linux/bio.h
+> > +++ b/include/linux/bio.h
+> > @@ -249,6 +249,7 @@ extern void bio_endio(struct bio *, int);
+> >  struct request_queue;
+> >  extern int bio_phys_segments(struct request_queue *, struct bio *);
+> >  
+> > +extern int submit_bio_wait(int rw, struct bio *bio);
+> >  void bio_advance(struct bio *, unsigned);
+> 
+> Heh, this is one of the reasons why I don't like extern on function
+> prototypes.  It's not necessary and people end up jumping between the
+> two forms.  :(
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/usb/net1080.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/usb/net1080.c b/drivers/net/usb/net1080.c
-index 29e06e1..c062a3e 100644
---- a/drivers/net/usb/net1080.c
-+++ b/drivers/net/usb/net1080.c
-@@ -417,12 +417,9 @@ static int net1080_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	u16			hdr_len, packet_len;
- 
- 	if (!(skb->len & 0x01)) {
--#ifdef DEBUG
--		struct net_device	*net = dev->net;
- 		netdev_dbg(dev->net, "rx framesize %d range %d..%d mtu %d\n",
--			   skb->len, net->hard_header_len, dev->hard_mtu,
--			   net->mtu);
--#endif
-+			   skb->len, dev->net->hard_header_len, dev->hard_mtu,
-+			   dev->net->mtu);
- 		dev->net->stats.rx_frame_errors++;
- 		nc_ensure_sync(dev);
- 		return 0;
-
-
+Yeah, I dislike it too but I was trying to follow the style in that file
+- I did fix bio_advance() a few minutes ago.
