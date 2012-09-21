@@ -1,138 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab2IUMgx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 08:36:53 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:50215 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752143Ab2IUMgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 08:36:51 -0400
-Date: Fri, 21 Sep 2012 14:36:45 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Josh Hunt <johunt@akamai.com>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
- family 0Fh
-Message-ID: <20120921123645.GD26869@aftab.osrc.amd.com>
-References: <20120912153016.GA12103@aftab.osrc.amd.com>
- <5050AC2E.3050408@akamai.com>
- <20120912154943.GB12103@aftab.osrc.amd.com>
- <5050B708.5020308@akamai.com>
- <20120912164843.GC12103@aftab.osrc.amd.com>
- <5050BF1F.1080503@akamai.com>
- <20120912170629.GD12103@aftab.osrc.amd.com>
- <20120912172351.GE12103@aftab.osrc.amd.com>
- <50532940.10201@akamai.com>
- <50534184.1050208@akamai.com>
+	id S1754346Ab2IUMig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 08:38:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47369 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab2IUMie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 08:38:34 -0400
+Date: Fri, 21 Sep 2012 05:37:52 -0700
+From: tip-bot for Wen Congyang <wency@cn.fujitsu.com>
+Message-ID: <tip-85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa@git.kernel.org>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, minchan@kernel.org, mel@csn.ul.ie,
+        stable@vger.kernel.org, wency@cn.fujitsu.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, minchan@kernel.org, mel@csn.ul.ie,
+        stable@vger.kernel.org, wency@cn.fujitsu.com, fweisbec@gmail.com,
+        akpm@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <505AB1FF.8020104@cn.fujitsu.com>
+References: <505AB1FF.8020104@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tracing: Don't call page_to_pfn()
+  if page is NULL
+Git-Commit-ID: 85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <50534184.1050208@akamai.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 21 Sep 2012 05:37:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 09:39:00AM -0500, Josh Hunt wrote:
-> On 09/14/2012 07:55 AM, Josh Hunt wrote:
-> >
-> >Thanks to your help I was able to test your branch, but it still does
-> >not resolve the problem. Removal of the "factor=1" workaround fixes the
-> >memory size reporting on boot, but the sysfs values are still incorrect.
-> >
-> 
-> Please disregard what I said earlier about the shift still being
-> wrong. Looking at the dmesg more I see now that the # of pages are
-> correctly reported (262144), however sysfs is still wrong.
-> 
-> [   25.837588] EDAC DEBUG: init_csrows: MC node: 0, csrow: 0
-> [   25.837589] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 0, channel:
-> 0, DBAM idx: 2
-> [   25.837591] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
-> [   25.837592] EDAC amd64: CS0: Unbuffered DDR2 RAM
-> [   25.837724] EDAC DEBUG: init_csrows: Total csrow0 pages: 262144
-> [   25.837725] DBG: init_csrows: channel_count:2
-> [   25.837856] DBG: init_csrows: channel_count:2
-> [   25.837988] EDAC DEBUG: init_csrows: MC node: 0, csrow: 1
-> [   25.837989] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 1, channel:
-> 0, DBAM idx: 2
-> [   25.837991] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
-> [   25.837992] EDAC amd64: CS1: Unbuffered DDR2 RAM
-> [   25.838157] EDAC DEBUG: init_csrows: Total csrow1 pages: 262144
-> [   25.838158] DBG: init_csrows: channel_count:2
-> [   25.838289] DBG: init_csrows: channel_count:2
-> [   25.838421] EDAC DEBUG: init_csrows: MC node: 0, csrow: 2
-> [   25.838422] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 2, channel:
-> 0, DBAM idx: 2
-> [   25.838424] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
-> [   25.838425] EDAC amd64: CS2: Unbuffered DDR2 RAM
-> [   25.838556] EDAC DEBUG: init_csrows: Total csrow2 pages: 262144
-> [   25.838558] DBG: init_csrows: channel_count:2
-> [   25.838689] DBG: init_csrows: channel_count:2
-> [   25.838820] EDAC DEBUG: init_csrows: MC node: 0, csrow: 3
-> [   25.838822] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 3, channel:
-> 0, DBAM idx: 2
-> [   25.838823] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
-> [   25.838824] EDAC amd64: CS3: Unbuffered DDR2 RAM
-> [   25.838957] EDAC DEBUG: init_csrows: Total csrow3 pages: 262144
-> 
-> I looked into this and see that sysfs is doing the double counting
-> b/c it loops over the # of channels:
-> 
-> [  131.423949] DBG: csrow_size_show: i:0 nr_pages:262144 nr_channels:2
-> [  131.424112] DBG: csrow_size_show: i:1 nr_pages:524288 nr_channels:2
-> 
-> I verified this in init_csrows:
-> [   25.838958] DBG: init_csrows: channel_count:2
-> 
-> Since I don't know the details of the hardware here it's hard for me
-> to suggest a fix, but it would seem that k8_early_channel_count()
-> needs to be modified to only return 1 in this case?
+Commit-ID:  85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa
+Gitweb:     http://git.kernel.org/tip/85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa
+Author:     Wen Congyang <wency@cn.fujitsu.com>
+AuthorDate: Thu, 20 Sep 2012 14:04:47 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 20 Sep 2012 15:51:16 -0400
 
-Ok, I think this is still the old code you're looking at so it would be
-cool if you could test with my patchset I sent you last week.
+tracing: Don't call page_to_pfn() if page is NULL
 
-Because with it, it all looks fine on my K8 here:
+When allocating memory fails, page is NULL. page_to_pfn() will
+cause the kernel panicked if we don't use sparsemem vmemmap.
 
-It has 2 2048MB single-ranked DIMMs on each node and edac output looks
-like this:
+Link: http://lkml.kernel.org/r/505AB1FF.8020104@cn.fujitsu.com
 
-[   52.920302] EDAC DEBUG: amd64_debug_display_dimm_sizes: F2x080 (DRAM Bank Address Mapping): 0x00000060
-[   52.920302] EDAC MC: DCT0 chip selects:
-[   52.920304] EDAC amd64: MC: 0:     0MB 1:     0MB
-[   52.920305] EDAC amd64: MC: 2:  2048MB 3:  2048MB
-[   52.920306] EDAC amd64: MC: 4:     0MB 5:     0MB
-[   52.920308] EDAC amd64: MC: 6:     0MB 7:     0MB
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: stable <stable@vger.kernel.org>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/events/kmem.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-...
-
-[   52.920344] EDAC DEBUG: init_csrows: node 1, NBCFG=0x0ad00044[ChipKillEccCap: 1|DramEccEn: 1]
-[   52.920345] EDAC DEBUG: init_csrows: MC node: 1, csrow: 2
-[   52.920346] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 2, channel: 0, DBAM idx: 6
-[   52.920347] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 524288
-[   52.920348] EDAC amd64: CS2: Registered DDR2 RAM
-[   52.920350] EDAC DEBUG: init_csrows: Total csrow2 pages: 524288
-[   52.920351] EDAC DEBUG: init_csrows: MC node: 1, csrow: 3
-[   52.920352] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 3, channel: 0, DBAM idx: 6
-[   52.920353] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 524288
-[   52.920354] EDAC amd64: CS3: Registered DDR2 RAM
-[   52.920355] EDAC DEBUG: init_csrows: Total csrow3 pages: 524288
-
-$ cat /sys/devices/system/edac/mc/mc0/csrow2/size_mb
-2048
-$ cat /sys/devices/system/edac/mc/mc0/csrow3/size_mb
-2048
-
-So what am I missing?
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+diff --git a/include/trace/events/kmem.h b/include/trace/events/kmem.h
+index 5f889f1..08fa272 100644
+--- a/include/trace/events/kmem.h
++++ b/include/trace/events/kmem.h
+@@ -214,7 +214,7 @@ TRACE_EVENT(mm_page_alloc,
+ 
+ 	TP_printk("page=%p pfn=%lu order=%d migratetype=%d gfp_flags=%s",
+ 		__entry->page,
+-		page_to_pfn(__entry->page),
++		__entry->page ? page_to_pfn(__entry->page) : 0,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		show_gfp_flags(__entry->gfp_flags))
+@@ -240,7 +240,7 @@ DECLARE_EVENT_CLASS(mm_page,
+ 
+ 	TP_printk("page=%p pfn=%lu order=%u migratetype=%d percpu_refill=%d",
+ 		__entry->page,
+-		page_to_pfn(__entry->page),
++		__entry->page ? page_to_pfn(__entry->page) : 0,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		__entry->order == 0)
