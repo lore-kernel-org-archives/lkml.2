@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab2IUT10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 15:27:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63488 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757722Ab2IUT1Z (ORCPT
+	id S1755631Ab2IUT2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 15:28:05 -0400
+Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:46406
+	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752497Ab2IUT2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 15:27:25 -0400
-Date: Fri, 21 Sep 2012 12:27:20 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Deepawali Verma <dverma249@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Work queue questions
-Message-ID: <20120921192720.GJ7264@google.com>
-References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
- <20120921174952.GF7264@google.com>
- <CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
- <20120921183515.GI7264@google.com>
- <CAHCeSFpa28d-7ruMKSw6z2EYKYN-5udVouUJOi4cnj4dPad-TA@mail.gmail.com>
+	Fri, 21 Sep 2012 15:28:02 -0400
+Message-ID: <505CBFAA.3080604@mimc.co.uk>
+Date: Fri, 21 Sep 2012 20:27:38 +0100
+From: Mark Jackson <mpfj-list@mimc.co.uk>
+Organization: Mercury HMI Ltd
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHCeSFpa28d-7ruMKSw6z2EYKYN-5udVouUJOi4cnj4dPad-TA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-omap@vger.kernel.org
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: gpmc_cs_request() causes early boot hang
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 08:26:01PM +0100, Deepawali Verma wrote:
->      kworker/u:1-21    [000]   110.964895: task_event: MYTASKJOB2381 XStarted
->      kworker/u:1-21    [000]   110.964909: task_event: MYTASKJOB2381 Xstopped
->      kworker/u:1-21    [000]   110.965137: task_event: MYTASKJOB2382 XStarted
->      kworker/u:1-21    [000]   110.965154: task_event: MYTASKJOB2382 Xstopped
->      kworker/u:5-3724  [000]   110.965311: task_event: MYTASKJOB2383 XStarted
->      kworker/u:5-3724  [000]   110.965325: task_event: MYTASKJOB2383 Xstopped
-> 
-> I have this one big task to whom I divided into small sub tasks. These
-> are numbered 2381, 2382 and 2383, what was I expecting that task 2381,
-> 2382, 2383 run in parallel. I have put start and stop markers here so
-> that I can see how this concurrency managed work queue is distributing
-> the load.
-> 
-> I found that task no 2381 is started first and exited before starting
-> task 2382 and so on. What I expected that it should start the three
-> sub tasks in parallel, not one by one.
-> 
-> Where is concurrency here?
+I'm developing a beaglebone cape board which requires the use of a GPMC 
+chip select.
 
-If none of them blocks, there isn't much point in throwing more
-threads at them.  What are those thread doing?
+I've chosen GPMC_CS0, and in board-am335xevm.c, I have added the following:-
 
-Thanks.
+static void gpmc_test()
+{
+     unsigned long base = 0x12345678;
+     gpmc_cs_request(0, SZ_16M, &base);
+     printk(KERN_INFO "gpmc base @ 0x%08lx\n", base);
+}
 
--- 
-tejun
+... and added a call to gpmc_test() at the end of am335x_evm_init().
+
+If I try to run this code, the kernel fails to boot, and simply hangs at:-
+
+Uncompressing Linux... done, booting the kernel.
+
+If I comment out the call to gpmc_cs_request(), the system boots as 
+expected (but without my required cs).
+
+I've looked at the use of this call in other board files, and can't see 
+that their code does anything special so I'm stuck on why this simple 
+code fails to work.
+
+Can anyone shed light on what I'm doing wrong ?
+
+Do I have to initialise the gpmc beforehand in some way ?
+
+Cheers
+Mark JACKSON
+
