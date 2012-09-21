@@ -1,115 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915Ab2IUJiZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:38:25 -0400
-Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:4032 "EHLO
-	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932805Ab2IUJiV (ORCPT
+	id S932899Ab2IUJkT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:40:19 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41537 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757111Ab2IUJkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:38:21 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Federico Vaga <federico.vaga@gmail.com>
-Subject: Re: [PATCH 1/4] v4l: vb2: add prepare/finish callbacks to allocators
-Date: Fri, 21 Sep 2012 11:36:02 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc5-tschai; KDE/4.8.4; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-References: <1348219298-23273-1-git-send-email-federico.vaga@gmail.com>
-In-Reply-To: <1348219298-23273-1-git-send-email-federico.vaga@gmail.com>
+	Fri, 21 Sep 2012 05:40:17 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209211136.02263.hverkuil@xs4all.nl>
+In-Reply-To: <1347977530-29755-1-git-send-email-glommer@parallels.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
+Date: Fri, 21 Sep 2012 12:40:15 +0300
+X-Google-Sender-Auth: j84yoOVbVzIQ2txKlEAzIzkFqLg
+Message-ID: <CAOJsxLFVMYUxoVOcaCAtvwZmyMHS9mB3msP8gHn0a6NqzneLqQ@mail.gmail.com>
+Subject: Re: [PATCH v3 00/16] slab accounting for memcg
+From: Pekka Enberg <penberg@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri September 21 2012 11:21:35 Federico Vaga wrote:
-> This patch adds support for prepare/finish callbacks in VB2 allocators.
-> These callback are used for buffer flushing.
-> 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Acked-by: Federico Vaga <federico.vaga@gmail.com>
-> ---
->  drivers/media/v4l2-core/videobuf2-core.c | 11 +++++++++++
->  include/media/videobuf2-core.h           |  7 +++++++
->  2 file modificati, 18 inserzioni(+)
-> 
-> diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-> index 4da3df6..079fa79 100644
-> --- a/drivers/media/v4l2-core/videobuf2-core.c
-> +++ b/drivers/media/v4l2-core/videobuf2-core.c
-> @@ -790,6 +790,7 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
->  {
->  	struct vb2_queue *q = vb->vb2_queue;
->  	unsigned long flags;
-> +	unsigned int plane;
->  
->  	if (vb->state != VB2_BUF_STATE_ACTIVE)
->  		return;
-> @@ -800,6 +801,10 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
->  	dprintk(4, "Done processing on buffer %d, state: %d\n",
->  			vb->v4l2_buf.index, vb->state);
->  
-> +	/* sync buffers */
-> +	for (plane = 0; plane < vb->num_planes; ++plane)
-> +		call_memop(q, finish, vb->planes[plane].mem_priv);
-> +
->  	/* Add the buffer to the done buffers list */
->  	spin_lock_irqsave(&q->done_lock, flags);
->  	vb->state = state;
-> @@ -975,9 +980,15 @@ static int __qbuf_mmap(struct vb2_buffer *vb, const struct v4l2_buffer *b)
->  static void __enqueue_in_driver(struct vb2_buffer *vb)
->  {
->  	struct vb2_queue *q = vb->vb2_queue;
-> +	unsigned int plane;
->  
->  	vb->state = VB2_BUF_STATE_ACTIVE;
->  	atomic_inc(&q->queued_count);
-> +
-> +	/* sync buffers */
-> +	for (plane = 0; plane < vb->num_planes; ++plane)
-> +		call_memop(q, prepare, vb->planes[plane].mem_priv);
-> +
->  	q->ops->buf_queue(vb);
->  }
->  
-> diff --git a/include/media/videobuf2-core.h b/include/media/videobuf2-core.h
-> index 8dd9b6c..f374f99 100644
-> --- a/include/media/videobuf2-core.h
-> +++ b/include/media/videobuf2-core.h
-> @@ -41,6 +41,10 @@ struct vb2_fileio_data;
->   *		 argument to other ops in this structure
->   * @put_userptr: inform the allocator that a USERPTR buffer will no longer
->   *		 be used
-> + * @prepare:	called everytime the buffer is passed from userspace to the
+Hi Glauber,
 
-nitpick: everytime -> every time
+On Tue, Sep 18, 2012 at 5:11 PM, Glauber Costa <glommer@parallels.com> wrote:
+> This is a followup to the previous kmem series. I divided them logically
+> so it gets easier for reviewers. But I believe they are ready to be merged
+> together (although we can do a two-pass merge if people would prefer)
+>
+> Throwaway git tree found at:
+>
+>         git://git.kernel.org/pub/scm/linux/kernel/git/glommer/memcg.git kmemcg-slab
+>
+> There are mostly bugfixes since last submission.
 
-> + *		driver, usefull for cache synchronisation, optional
-> + * @finish:	called everytime the buffer is passed back from the driver
+Overall, I like this series a lot. However, I don't really see this as a
+v3.7 material because we already have largeish pending updates to the
+slab allocators. I also haven't seen any performance numbers for this
+which is a problem.
 
-ditto.
+So what I'd really like to see is this series being merged early in the
+v3.8 development cycle to maximize the number of people eyeballing the
+code and looking at performance impact.
 
-> + *		to the userspace, also optional
->   * @vaddr:	return a kernel virtual address to a given memory buffer
->   *		associated with the passed private structure or NULL if no
->   *		such mapping exists
-> @@ -65,6 +69,9 @@ struct vb2_mem_ops {
->  					unsigned long size, int write);
->  	void		(*put_userptr)(void *buf_priv);
->  
-> +	void		(*prepare)(void *buf_priv);
-> +	void		(*finish)(void *buf_priv);
-> +
->  	void		*(*vaddr)(void *buf_priv);
->  	void		*(*cookie)(void *buf_priv);
->  
-> 
+Does this sound reasonable to you Glauber?
+
+                        Pekka
