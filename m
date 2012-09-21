@@ -1,114 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757711Ab2IUTSa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 15:18:30 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:48816 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757673Ab2IUTS2 (ORCPT
+	id S1757707Ab2IUTU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 15:20:28 -0400
+Received: from cust-218-222.on4.ontelecoms.gr ([92.118.218.222]:53879 "EHLO
+	vergina.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755906Ab2IUTU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 15:18:28 -0400
-From: Yufeng Shen <miletus@chromium.org>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Yufeng Shen <miletus@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Benson Leung <bleung@chromium.org>
-Subject: [RFC/PATCH] Input: release MT fingers on device reset/disconnect
-Date: Fri, 21 Sep 2012 15:18:25 -0400
-Message-Id: <1348255105-24558-1-git-send-email-miletus@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Fri, 21 Sep 2012 15:20:27 -0400
+Message-ID: <505CBDF9.9020503@asyr.hopto.org>
+Date: Fri, 21 Sep 2012 22:20:25 +0300
+From: Thanasis <thanasis@asyr.hopto.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
+References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org> <20120921152828.GA24364@electric-eye.fr.zoreil.com> <505C98C7.20302@asyr.hopto.org> <20120921175455.GA28255@electric-eye.fr.zoreil.com>
+In-Reply-To: <20120921175455.GA28255@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are already releasing all pressed keys on device reset and
-disconnect. This patch adds the finger release for multi-touch
-device.
+So far, ping has failed *only* at this iteration of the make loop:
 
-Different than the key release logic that only the pressed keys
-are released, here all the possible fingers are released even
-it is not recorded as touched down in the input_dev's internal
-state. The motivation is that while releasing an alreay released
-finger won't do harm to downstream, it is helpful in the case
-when the downstream is out of sync with input_dev's internal
-state, we are bringing them back to in sync by cleaning up both
-input_dev and downstream's finger states.
+HEAD is now at b087148 r8169: support control of advertising.
+make -C /lib/modules/2.6.38-r8/build
+M=/mnt/usb-disk/atom/usr/src/test-r8169/r8169 modules
+make[1]: Entering directory `/usr/src/linux-2.6.38-r8'
+  CC [M]  /mnt/usb-disk/atom/usr/src/test-r8169/r8169/r8169.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /mnt/usb-disk/atom/usr/src/test-r8169/r8169/r8169.mod.o
+  LD [M]  /mnt/usb-disk/atom/usr/src/test-r8169/r8169/r8169.ko
+make[1]: Leaving directory `/usr/src/linux-2.6.38-r8'
+PING 192.168.0.1 (192.168.0.1) 56(84) bytes of data.
+>From 192.168.0.19: icmp_seq=1 Destination Host Unreachable
+>From 192.168.0.19: icmp_seq=2 Destination Host Unreachable
+>From 192.168.0.19: icmp_seq=3 Destination Host Unreachable
 
-Signed-off-by: Yufeng Shen <miletus@chromium.org>
----
- drivers/input/input.c |   34 ++++++++++++++++++++++++++++++++--
- 1 files changed, 32 insertions(+), 2 deletions(-)
+--- 192.168.0.1 ping statistics ---
+3 packets transmitted, 0 received, +3 errors, 100% packet loss, time 1999ms
+pipe 3
 
-diff --git a/drivers/input/input.c b/drivers/input/input.c
-index 768e46b..ebdc450 100644
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -584,6 +584,34 @@ void input_close_device(struct input_handle *handle)
- EXPORT_SYMBOL(input_close_device);
- 
- /*
-+ * Simulate finger release events for all possible fingers. It has no harm
-+ * to release an alreay released finger, but has the benefit that if the
-+ * downstream finger states are out of sync with input_dev's finger states,
-+ * we are helping to clean them up.
-+ * The function must be called with dev->event_lock held.
-+ */
-+static void input_dev_release_mt(struct input_dev *dev)
-+{
-+	int i;
-+
-+	if (!dev->mt)
-+		return;
-+
-+	if (!is_event_supported(EV_ABS, dev->evbit, EV_MAX) ||
-+	    !is_event_supported(ABS_MT_SLOT, dev->absbit, ABS_MAX) ||
-+	    !is_event_supported(ABS_MT_TRACKING_ID, dev->absbit, ABS_MAX))
-+		return;
-+
-+	for (i = 0; i < dev->mtsize; i++) {
-+		input_mt_set_value(&dev->mt[i], ABS_MT_TRACKING_ID, -1);
-+		input_pass_event(dev, EV_ABS, ABS_MT_SLOT, i);
-+		input_pass_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
-+	}
-+
-+	input_pass_event(dev, EV_SYN, SYN_REPORT, 1);
-+}
-+
-+/*
-  * Simulate keyup events for all keys that are marked as pressed.
-  * The function must be called with dev->event_lock held.
-  */
-@@ -627,6 +655,7 @@ static void input_disconnect_device(struct input_dev *dev)
- 	 * reach any handlers.
- 	 */
- 	input_dev_release_keys(dev);
-+	input_dev_release_mt(dev);
- 
- 	list_for_each_entry(handle, &dev->h_list, d_node)
- 		handle->open = 0;
-@@ -1569,7 +1598,7 @@ static void input_dev_toggle(struct input_dev *dev, bool activate)
-  * @dev: input device whose state needs to be reset
-  *
-  * This function tries to reset the state of an opened input device and
-- * bring internal state and state if the hardware in sync with each other.
-+ * bring internal state and state of the hardware in sync with each other.
-  * We mark all keys as released, restore LED state, repeat rate, etc.
-  */
- void input_reset_device(struct input_dev *dev)
-@@ -1581,10 +1610,11 @@ void input_reset_device(struct input_dev *dev)
- 
- 		/*
- 		 * Keys that have been pressed at suspend time are unlikely
--		 * to be still pressed when we resume.
-+		 * to be still pressed when we resume. Same logic for MT.
- 		 */
- 		spin_lock_irq(&dev->event_lock);
- 		input_dev_release_keys(dev);
-+		input_dev_release_mt(dev);
- 		spin_unlock_irq(&dev->event_lock);
- 	}
- 
--- 
-1.7.7.3
+
+Now, after 74 iterations, it looks as if the loop is stuck at the following:
+
+HEAD is now at 1ce4b16 r8169: spinlock redux.
+make -C /lib/modules/2.6.38-r8/build
+M=/mnt/usb-disk/atom/usr/src/test-r8169/r8169 modules
+make[1]: Entering directory `/usr/src/linux-2.6.38-r8'
+  CC [M]  /mnt/usb-disk/atom/usr/src/test-r8169/r8169/r8169.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /mnt/usb-disk/atom/usr/src/test-r8169/r8169/r8169.mod.o
+  LD [M]  /mnt/usb-disk/atom/usr/src/test-r8169/r8169/r8169.ko
+make[1]: Leaving directory `/usr/src/linux-2.6.38-r8'
+
+
+Should I wait for it to end?
+Do you want me to post the whole log so far?
 
