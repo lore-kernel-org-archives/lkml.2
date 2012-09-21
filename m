@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab2IUScb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 14:32:31 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36634 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071Ab2IUSc0 (ORCPT
+	id S932753Ab2IUSdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 14:33:11 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:55218 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932696Ab2IUSdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 14:32:26 -0400
-From: morten.rasmussen@arm.com
-To: paulmck@linux.vnet.ibm.com, pjt@google.com, peterz@infradead.org,
-        suresh.b.siddha@intel.com
-Cc: morten.rasmussen@arm.com, linaro-sched-sig@lists.linaro.org,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 01/10] sched: entity load-tracking load_avg_ratio
-Date: Fri, 21 Sep 2012 19:32:16 +0100
-Message-Id: <1348252345-5642-2-git-send-email-morten.rasmussen@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
-References: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 21 Sep 2012 18:32:23.0491 (UTC) FILETIME=[71420130:01CD9827]
-X-MC-Unique: 112092119322404401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 21 Sep 2012 14:33:04 -0400
+Date: Fri, 21 Sep 2012 14:34:46 -0400
+From: Matt Porter <mporter@ti.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Chris Ball <cjb@laptop.org>, "Cousson, Benoit" <b-cousson@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
+ arm/common
+Message-ID: <20120921183446.GH16522@beef>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com>
+ <1348152226-13588-2-git-send-email-mporter@ti.com>
+ <20120921092923.GA31374@n2100.arm.linux.org.uk>
+ <1BAFE6F6C881BF42822005164F1491C33EA8AA3C@DBDE01.ent.ti.com>
+ <20120921094205.GC31374@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120921094205.GC31374@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8LIXBtG011340
 
-From: Morten Rasmussen <morten.rasmussen@arm.com>
+On Fri, Sep 21, 2012 at 10:42:05AM +0100, Russell King wrote:
+> On Fri, Sep 21, 2012 at 09:33:42AM +0000, Hebbar, Gururaja wrote:
+> > On Fri, Sep 21, 2012 at 14:59:23, Russell King - ARM Linux wrote:
+> > > On Thu, Sep 20, 2012 at 10:43:34AM -0400, Matt Porter wrote:
+> > > > Move mach-davinci/dma.c to common/edma.c so it can be used
+> > > > by OMAP (specifically AM33xx atm) as well. This just moves
+> > > > the private EDMA API but does not support OMAP.
+> > > > 
+> > > > Signed-off-by: Matt Porter <mporter@ti.com>
+> > > > ---
+> > > >  arch/arm/Kconfig                           |    1 +
+> > > >  arch/arm/common/Kconfig                    |    3 +
+> > > >  arch/arm/common/Makefile                   |    1 +
+> > > >  arch/arm/common/edma.c                     | 1588 ++++++++++++++++++++++++++++
+> > > >  arch/arm/include/asm/mach/edma.h           |  267 +++++
+> > > 
+> > > asm/mach should not be used as a dumping ground for platform header files.
+> > > It is there to provide the interfaces between generic ARM architecture
+> > > code and platform code.  (At least four files that are there at the
+> > > moment need to be moved out of there - patch series to follow...)
+> > 
+> > Can this be moved to include/linux/platform_data/ ?
+> 
+> Here's the pertinant question: "is it platform data?"  Looking at the
+> file, it appears to be internal data structures and register definitions
+> for the driver itself.  Therefore, it isn't platform data, and it
+> shouldn't be living separately from the driver.
+> 
+> If the driver itself only makes use of the data structures, the data
+> structures should be defined either within the driver, or a header file
+> co-located next to the driver itself.  The same goes for register
+> definitions too.
+> 
+> The only structure that I can find which isn't internal to the driver
+> is struct edma_soc_info, struct edma_rsv_info, and the enum dma_event_q.
+> Those can go to include/linux/platform_data, but the rest should not.
 
-This patch adds load_avg_ratio to each task. The load_avg_ratio is a
-variant of load_avg_contrib which is not scaled by the task priority. It
-is calculated like this:
+Ok, but is it ok to keep the actual private EDMA API portion in
+arch/arm/include/asm/mach/? It's not a problem to move the internal
+portions to a local include and that pdata to the appropriate place.
+We still need a place independent of mach-davinci and mach-omap2 to
+keep that portion of the include. I suppose it could be put in with
+the dmaengine wrapper's include/linux/edma.h but I hate to clutter
+that up when the private API will go away later.
 
-runnable_avg_sum * NICE_0_LOAD / (runnable_avg_period + 1).
-
-Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
----
- include/linux/sched.h |    1 +
- kernel/sched/fair.c   |    3 +++
- 2 files changed, 4 insertions(+)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4dc4990..81e4e82 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1151,6 +1151,7 @@ struct sched_avg {
- 	u64 last_runnable_update;
- 	s64 decay_count;
- 	unsigned long load_avg_contrib;
-+	unsigned long load_avg_ratio;
- 	u32 usage_avg_sum;
- };
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 095d86c..3e17dd5 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1192,6 +1192,9 @@ static inline void __update_task_entity_contrib(struct sched_entity *se)
- 	contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
- 	contrib /= (se->avg.runnable_avg_period + 1);
- 	se->avg.load_avg_contrib = scale_load(contrib);
-+	contrib = se->avg.runnable_avg_sum * scale_load_down(NICE_0_LOAD);
-+	contrib /= (se->avg.runnable_avg_period + 1);
-+	se->avg.load_avg_ratio = scale_load(contrib);
- }
- 
- /* Compute the current contribution to load_avg by se, return any delta */
--- 
-1.7.9.5
-
-
+-Matt
