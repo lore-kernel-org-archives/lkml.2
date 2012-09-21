@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab2IUBtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 21:49:13 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:51020 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752714Ab2IUBtL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 21:49:11 -0400
-From: Feng Hong <hongfeng@marvell.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Serge E. Hallyn" <serge@hallyn.com>,
-        "gorcunov@openvz.org" <gorcunov@openvz.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "serge.hallyn@canonical.com" <serge.hallyn@canonical.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Sep 2012 18:45:47 -0700
-Subject: RE: [PATCH V2] poweroff: fix bug in orderly_poweroff
-Thread-Topic: [PATCH V2] poweroff: fix bug in orderly_poweroff
-Thread-Index: Ac2Xj5MJVI7DAK9HQWWm9QRQfEIGVgACqoFQ
-Message-ID: <E62404B31D39064FBDD0B843ADF05A7D2D395FCD76@SC-VEXCH4.marvell.com>
-References: <1348036677-28626-1-git-send-email-hongfeng@marvell.com>
-	<20120920170647.GA26278@mail.hallyn.com>
-	<E62404B31D39064FBDD0B843ADF05A7D2D395FCD2F@SC-VEXCH4.marvell.com>
- <20120920172513.a23d061c.akpm@linux-foundation.org>
-In-Reply-To: <20120920172513.a23d061c.akpm@linux-foundation.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	id S1755017Ab2IUBvI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 21:51:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:21226 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754127Ab2IUBvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 21:51:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,458,1344236400"; 
+   d="scan'208";a="147396611"
+Message-ID: <1348192250.8212.233.camel@yhuang-dev>
+Subject: Re: [RFC 3/3] PCI/PM: Disable PME poll for PCIe devices
+From: Huang Ying <ying.huang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Date: Fri, 21 Sep 2012 09:50:50 +0800
+In-Reply-To: <201209202131.13483.rjw@sisk.pl>
+References: <1347872076-5260-1-git-send-email-ying.huang@intel.com>
+	 <1347872076-5260-4-git-send-email-ying.huang@intel.com>
+	 <201209202131.13483.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8L1nIt4007730
 
-Hi, Serge, Andrew,
+On Thu, 2012-09-20 at 21:31 +0200, Rafael J. Wysocki wrote:
+> On Monday, September 17, 2012, Huang Ying wrote:
+> > PME poll is not necessary for PCIe devices, because PCIe devices use
+> > in-band PME message and IRQ on PCIe port to report PME.
+> 
+> Alas, not all of them as it turns out and even if they do, it doesn't
+> work for some of them. That's why we've added the PCIe devices polling
+> (quite recently, for that matter).
+> 
+> If you'd spent some time on some proper research regarding that (like browsing
+> the changelogs of git commits modifying the relevant part of drivers/pci/pci.c),
+> you'd have known that already.
+> 
+> And that actually is quite important, because I don't have to remember every
+> single PM-related change we're making in the PCI layer.  I _incidentally_ do
+> remember this one, but that may not happen next time.  Please do the research
+> _before_ proposing changes of this kind.
 
-Will following an acceptable change log ?
+Sorry.  I should have done more research before sending the patch out.
+Will do more research next time.
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-orderly_poweroff is trying to poweroff platform by two steps:
-step 1: Call user space application to poweroff
-step 2: If user space poweroff fail, then do a force power off if force param is set.
-The bug here is, step 1 is always successful with param UMH_NO_WAIT, which obey
-the design goal of orderly_poweroff.
-
-We have two choices here:
-UMH_WAIT_EXEC which means wait for the exec, but not the process;
-UMH_WAIT_PROC which means wait for the process to complete.
-we need to trade off the two choices:
-
-If using UMH_WAIT_EXEC, there is potential issue comments by Serge E. Hallyn: The exec will
-have started, but may for whatever (very unlikely) reason fail.
-
-If using UMH_WAIT_PROC, there is potential issue comments by Eric W. Biederman: If the caller
-is not running in a kernel thread then we can easily get into a case where the user space caller
-will block waiting for us when we are waiting for the user space caller.
-
-Thanks for their excellent ideas, based on the above discussion, we finally choose UMH_WAIT_EXEC,
-which is much more safe, if the user application really fails, we just complain the application
-itself, it seems a better choice here.
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
---
 Best Regards,
-Feng Hong
-Application Processor Software Engnieer 
-Marvell Technology (Shanghai) Ltd
+Huang Ying
 
 
------Original Message-----
-From: Andrew Morton [mailto:akpm@linux-foundation.org] 
-Sent: 2012ƒÍ9‘¬21»’ 8:25
-To: Feng Hong
-Cc: Serge E. Hallyn; gorcunov@openvz.org; keescook@chromium.org; serge.hallyn@canonical.com; ebiederm@xmission.com; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] poweroff: fix bug in orderly_poweroff
-
-On Thu, 20 Sep 2012 17:16:35 -0700
-Feng Hong <hongfeng@marvell.com> wrote:
-
-> I am just a graduate and it's my first time to send a patch to
-> opensource, so thank you very much for reminding me the "changelog
-> affairs", it seems this patch has been added to -mm tree as attached
-> mail, and I have no chance to change the comments, right ?  Then I must
-> remember this and be careful next time.  Thanks again for reminding me!
-
-It depends.  If the person who committed the patch was using a git tree
-then it can be difficult for them to alter a changelog.
-
-But the -mm tree is not mastered in git (for this and other reasons),
-and I alter changelogs all the time.  So please feel free to send
-replacement text and I shall copy-n-paste that text straight into the patch.
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
