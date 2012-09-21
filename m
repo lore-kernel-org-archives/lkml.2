@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab2IUQvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 12:51:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37583 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756456Ab2IUQvp (ORCPT
+	id S1757394Ab2IUQwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 12:52:24 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:39316 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756456Ab2IUQwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 12:51:45 -0400
-Date: Fri, 21 Sep 2012 17:51:37 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: add finit_module syscall to ARM
-Message-ID: <20120921165137.GB28875@flint.arm.linux.org.uk>
-References: <1348243081-6725-1-git-send-email-keescook@chromium.org>
+	Fri, 21 Sep 2012 12:52:22 -0400
+Date: Fri, 21 Sep 2012 12:41:13 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Query of zram/zsmalloc promotion
+Message-ID: <20120921164112.GD4780@phenom.dumpdata.com>
+References: <20120912023914.GA31715@bbox>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1348243081-6725-1-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120912023914.GA31715@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 08:58:00AM -0700, Kees Cook wrote:
-> Add finit_module syscall to the ARM syscall list.
+On Wed, Sep 12, 2012 at 11:39:14AM +0900, Minchan Kim wrote:
+> Hi all,
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: Russell King <rmk@arm.linux.org.uk>
-> ---
->  arch/arm/include/asm/unistd.h |    1 +
->  arch/arm/kernel/calls.S       |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
+> I would like to promote zram/zsmalloc from staging tree.
+> I already tried it https://lkml.org/lkml/2012/8/8/37 but I didn't get
+> any response from you guys.
 > 
-> diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
-> index 0cab47d..904b579 100644
-> --- a/arch/arm/include/asm/unistd.h
-> +++ b/arch/arm/include/asm/unistd.h
-> @@ -404,6 +404,7 @@
->  #define __NR_setns			(__NR_SYSCALL_BASE+375)
->  #define __NR_process_vm_readv		(__NR_SYSCALL_BASE+376)
->  #define __NR_process_vm_writev		(__NR_SYSCALL_BASE+377)
-> +#define __NR_finit_module		(__NR_SYSCALL_BASE+378)
+> I think zram/zsmalloc's code qulity is good and they
+> are used for many embedded vendors for a long time.
+> So it's proper time to promote them.
+> 
+> The zram should put on under driver/block/. I think it's not
+> arguable but the issue is which directory we should keep *zsmalloc*.
+> 
+> Now Nitin want to keep it with zram so it would be in driver/blocks/zram/
+> But I don't like it because zsmalloc touches several fields of struct page
+> freely(and AFAIRC, Andrew had a same concern with me) so I want to put
+> it under mm/.
 
-This gives us a different syscall ordering if we add the kcmp syscall.
+I like the idea of keeping it in /lib or /mm. Actually 'lib' sounds more
+appropriate since it is dealing with storing a bunch of pages in a nice
+layout for great density purposes.
+> 
+> In addtion, now zcache use it, too so it's rather awkward if we put it
+> under dirver/blocks/zram/.
+> 
+> So questions.
+> 
+> To Andrew:
+> Is it okay to put it under mm/ ? Or /lib?
+> 
+> To Jens:
+> Is it okay to put zram under drvier/block/ If you are okay, I will start sending
+> patchset after I sort out zsmalloc's location issue.
 
-That brings up another question though - when was kcmp added to x86, and
-why aren't we getting notifications from checksyscalls.sh that ARM hasn't
-been updated?
-
-It seems to be that the script was broken, and no one has noticed.
-
-commit 29dc54c673ea2531d589400badb4ada5f5f60dae
-Author: H. Peter Anvin <hpa@linux.intel.com>
-Date:   Fri Nov 11 15:57:53 2011 -0800
-
-    checksyscalls: Use arch/x86/syscalls/syscall_32.tbl as source
-
-    Use the new arch/x86/syscalls/syscall_32.tbl file as source instead of
-    arch/x86/include/asm/unistd_32.h.
-
-    Cc: Michal Marek <mmarek@suse.cz>
-    Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-    Cc: Sam Ravnborg <sam@ravnborg.org>
-    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-
-is the culpret, more specifically this fragment:
-
-+           echo <<EOF
-+#if !defined(__NR_${name}) && !defined(__IGNORE_${name})
-+#warning syscall ${name} not implemented
-+#endif
-+EOF
-
-"echo <<EOF" doesn't read from its stdin and output to stdout, so the
-above just generates a blank line for each entry in x86's syscalls_32.tbl,
-resulting in the compiler doing no checking for us.
-
-That "echo <<EOF" should be "cat <<EOF"... and with that fixed we get:
-
-<stdin>:1220:2: warning: #warning syscall kcmp not implemented
-
-So, actually, I want to add this kcmp syscall _now_ into -rc which I'm
-afraid will break your patch, and bump your syscall number on ARM to 379.
-
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+I would think it would be OK.
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
