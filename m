@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab2IUEzE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 00:55:04 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:57364 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab2IUEzC (ORCPT
+	id S1753214Ab2IUE64 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 00:58:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:36384 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab2IUE6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 00:55:02 -0400
+	Fri, 21 Sep 2012 00:58:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6841"; a="237180625"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Jan Engelhardt'" <jengelh@inai.de>
+Cc: <axboe@kernel.dk>, "'Jeff Moyer'" <jmoyer@redhat.com>,
+        <linux-arm-msm@vger.kernel.org>,
+        "'open list:DOCUMENTATION'" <linux-doc@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1344166241-18708-1-git-send-email-tlinder@codeaurora.org> <1344166241-18708-3-git-send-email-tlinder@codeaurora.org> <x49wr1cdlmg.fsf@segfault.boston.devel.redhat.com> <alpine.LNX.2.01.1209190718030.29967@nerf07.vanv.qr> <alpine.LNX.2.01.1209210631060.13993@nerf07.vanv.qr>
+In-Reply-To: <alpine.LNX.2.01.1209210631060.13993@nerf07.vanv.qr>
+Subject: RE: [RFC/PATCH 2/2] block: Adding ROW scheduling algorithm
+Date: Fri, 21 Sep 2012 07:58:19 +0300
+Message-ID: <003d01cd97b5$ba4e70b0$2eeb5210$@codeaurora.org>
 MIME-Version: 1.0
-Date: Fri, 21 Sep 2012 12:55:02 +0800
-Message-ID: <CAPgLHd8r0utq4Ts58T1mWRpWpiSLB0oCxhOw_JMSAeRudnExnQ@mail.gmail.com>
-Subject: [PATCH] hppfs: fix the return value of get_inode()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: jdike@addtoit.com, richard@nod.at
-Cc: yongjun_wei@trendmicro.com.cn, user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQDJuLehQ41MV6PNI9g9xYZZQALMCAF/d/PIAjSnSN0A9BjMRQGgFO0lmWm3IyA=
+Content-language: he
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hi Jan
 
-In case of error, the function get_inode() returns ERR_PTR().
-But the users hppfs_lookup() and hppfs_fill_super() use NULL
-test for check the return value, not IS_ERR(), so we'd better
-change the return value of get_inode() to NULL instead of
-ERR_PTR().
+> There seems to a bug with ROW. After about 43 hours of continued
+> operation, programs (./configure was what I ran at the time this
+> happened) first become slow, then got stuck in D state within a minute.
+Ctrl-
+> C/Z worked at first, soon not, then these messages appeared in dmesg.
+> 
+> [319952.630605] row: forced dispatching is broken (nr_sorted=17), please
+> report this [319952.631174] row: forced dispatching is broken
+(nr_sorted=17),
+> please report this
 
-dpatch engine is used to generated this patch.
-(https://github.com/weiyj/dpatch)
+Thank you very much for reporting this! 
+We're now at the testing phase as well. We didn't encounter the bug you
+observed but I'll look into it. Thanks again.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Thanks,
+Tanya Brokhman
 ---
- fs/hppfs/hppfs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/hppfs/hppfs.c b/fs/hppfs/hppfs.c
-index c1dffe4..31b1e85 100644
---- a/fs/hppfs/hppfs.c
-+++ b/fs/hppfs/hppfs.c
-@@ -674,7 +674,7 @@ static struct inode *get_inode(struct super_block *sb, struct dentry *dentry)
- 
- 	if (!inode) {
- 		dput(dentry);
--		return ERR_PTR(-ENOMEM);
-+		return NULL;
- 	}
- 
- 	if (S_ISDIR(dentry->d_inode->i_mode)) {
-
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
 
