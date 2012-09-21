@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933209Ab2IUUwo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 16:52:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48722 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378Ab2IUUwl (ORCPT
+	id S1757999Ab2IUUxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 16:53:23 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35399 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab2IUUxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 16:52:41 -0400
-Date: Fri, 21 Sep 2012 13:52:36 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/16] memcg: infrastructure to match an allocation
- to the right cache
-Message-ID: <20120921205236.GT7264@google.com>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
- <1347977530-29755-7-git-send-email-glommer@parallels.com>
+	Fri, 21 Sep 2012 16:53:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347977530-29755-7-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Paul Turner <pjt@google.com>
+Date: Fri, 21 Sep 2012 13:52:49 -0700
+Message-ID: <CAPM31R+mT+g0qTGOVgC1QYJk3Ju-u06UpkBwx-4tHxeh89kD3w@mail.gmail.com>
+Subject: sched: per-entity load-tracking
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Ben Segall <bsegall@google.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Missed some stuff.
+Hi all,
 
-On Tue, Sep 18, 2012 at 06:12:00PM +0400, Glauber Costa wrote:
-> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-> +						  struct kmem_cache *cachep)
-> +{
-...
-> +	memcg->slabs[idx] = new_cachep;
-...
-> +struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
-> +					  gfp_t gfp)
-> +{
-...
-> +	return memcg->slabs[idx];
+I've refreshed the load-tracking branch at:
+    http://git.kernel.org/?p=linux/kernel/git/pjt/sched.git;a=summary
+With the latest rebased version.  Similar I've got a quilt export
+below to make it easier for people to patch in.
 
-I think you need memory barriers for the above pair.
+If you prefer raw patches there's a quilt series at:
+  http://rs5.risingnet.net/~pjt/patches/load_tracking/
 
-Thanks.
+And a tar-ball at:
+  http://rs5.risingnet.net/~pjt/patches/load_tracking/series.tar.gz
 
--- 
-tejun
+There are no functional differences from the version posted at:
+  https://lkml.org/lkml/2012/8/23/267
+So I won't bother posting the series again here.  If you have find
+errors, please post them there and I'll do another round.
+
+Similarly, if you previously pulled from my git tree above; the only
+difference is that it's been re-written to current tip head, and that
+the generator for the fixed-point math constants have been added to
+the changelogs.
+
+Thanks!
+
+- Paul
