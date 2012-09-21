@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab2IUSvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 14:51:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37717 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757509Ab2IUSvW (ORCPT
+	id S933046Ab2IUSvt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 14:51:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51674 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757543Ab2IUSvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 14:51:22 -0400
-Date: Fri, 21 Sep 2012 19:50:54 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Matt Porter <mporter@ti.com>
-Cc: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Chris Ball <cjb@laptop.org>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
-	arm/common
-Message-ID: <20120921185054.GE31374@n2100.arm.linux.org.uk>
-References: <1348152226-13588-1-git-send-email-mporter@ti.com> <1348152226-13588-2-git-send-email-mporter@ti.com> <20120921092923.GA31374@n2100.arm.linux.org.uk> <1BAFE6F6C881BF42822005164F1491C33EA8AA3C@DBDE01.ent.ti.com> <20120921094205.GC31374@n2100.arm.linux.org.uk> <20120921183446.GH16522@beef>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120921183446.GH16522@beef>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 21 Sep 2012 14:51:47 -0400
+Date: Fri, 21 Sep 2012 14:51:44 -0400 (EDT)
+Message-Id: <20120921.145144.14955032475453606.davem@davemloft.net>
+To: chf.fritz@googlemail.com
+Cc: rob@landley.net, kuznet@ms2.inr.ac.ru, j.weitzel@phytec.de,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, hjk@hansjkoch.de, daniel@zonque.org
+Subject: Re: [PATCH v3] ipconfig: add nameserver IPs to kernel-parameter ip=
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1348252279.12456.2.camel@mars>
+References: <1348177730.3858.98.camel@mars>
+	<20120921.133759.1667263015470766968.davem@davemloft.net>
+	<1348252279.12456.2.camel@mars>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 02:34:46PM -0400, Matt Porter wrote:
-> On Fri, Sep 21, 2012 at 10:42:05AM +0100, Russell King wrote:
-> > Here's the pertinant question: "is it platform data?"  Looking at the
-> > file, it appears to be internal data structures and register definitions
-> > for the driver itself.  Therefore, it isn't platform data, and it
-> > shouldn't be living separately from the driver.
-> > 
-> > If the driver itself only makes use of the data structures, the data
-> > structures should be defined either within the driver, or a header file
-> > co-located next to the driver itself.  The same goes for register
-> > definitions too.
-> > 
-> > The only structure that I can find which isn't internal to the driver
-> > is struct edma_soc_info, struct edma_rsv_info, and the enum dma_event_q.
-> > Those can go to include/linux/platform_data, but the rest should not.
+From: Christoph Fritz <chf.fritz@googlemail.com>
+Date: Fri, 21 Sep 2012 20:31:19 +0200
+
+> On small systems (e.g. embedded ones) IP addresses are often configured
+> by bootloaders and get assigned to kernel via parameter "ip=".  If set to
+> "ip=dhcp", even nameserver entries from DHCP daemons are handled. These
+> entries exported in /proc/net/pnp are commonly linked by /etc/resolv.conf.
 > 
-> Ok, but is it ok to keep the actual private EDMA API portion in
-> arch/arm/include/asm/mach/? It's not a problem to move the internal
-> portions to a local include and that pdata to the appropriate place.
+> To configure nameservers for networks without DHCP, this patch adds option
+> <dns0-ip> and <dns1-ip> to kernel-parameter 'ip='.
+> 
+> Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+> Tested-by: Jan Weitzel <j.weitzel@phytec.de>
 
-Move the platform data parts to include/linux/platform_data.
-Move the driver specific parts to be either in the .c file for the
-driver, or in a .h file _along_ _side_ the .c file.
-
-Private data for drivers should be kept as close to the driver as
-possible, whether that be in the same .c file as the driver itself,
-or a header co-located with the .c file.
+Applied to net-next, thanks.
