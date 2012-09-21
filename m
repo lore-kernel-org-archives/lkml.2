@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab2IUBvI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 21:51:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:21226 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754127Ab2IUBvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 21:51:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,458,1344236400"; 
-   d="scan'208";a="147396611"
-Message-ID: <1348192250.8212.233.camel@yhuang-dev>
-Subject: Re: [RFC 3/3] PCI/PM: Disable PME poll for PCIe devices
-From: Huang Ying <ying.huang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Date: Fri, 21 Sep 2012 09:50:50 +0800
-In-Reply-To: <201209202131.13483.rjw@sisk.pl>
-References: <1347872076-5260-1-git-send-email-ying.huang@intel.com>
-	 <1347872076-5260-4-git-send-email-ying.huang@intel.com>
-	 <201209202131.13483.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755193Ab2IUBvX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 21:51:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57877 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab2IUBvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 21:51:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo58sSCPYF9Ug-o-f3odJovECkdxPOoahx9+Ob6kmP_srw@mail.gmail.com>
+References: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com>
+	<1346168638-32724-5-git-send-email-jiang.liu@huawei.com>
+	<CAE9FiQVAOEUHMSFHCpZLVK-Rbso3Rh1nUQHmfcujwb6tpUTz8A@mail.gmail.com>
+	<CAErSpo58sSCPYF9Ug-o-f3odJovECkdxPOoahx9+Ob6kmP_srw@mail.gmail.com>
+Date: Thu, 20 Sep 2012 18:51:04 -0700
+X-Google-Sender-Auth: A_SdLiPmKKPvYJpsrnX5FVAtczo
+Message-ID: <CAE9FiQWuVW6U9cE+iY0Gpua_0xhdxp6HxcWyhqqSN+L3Da_1Qg@mail.gmail.com>
+Subject: Re: [PATCH 4/5] PCI/IOV: simplify code by hotplug safe pci_get_domain_bus_and_slot()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Don Dutile <ddutile@redhat.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-20 at 21:31 +0200, Rafael J. Wysocki wrote:
-> On Monday, September 17, 2012, Huang Ying wrote:
-> > PME poll is not necessary for PCIe devices, because PCIe devices use
-> > in-band PME message and IRQ on PCIe port to report PME.
-> 
-> Alas, not all of them as it turns out and even if they do, it doesn't
-> work for some of them. That's why we've added the PCIe devices polling
-> (quite recently, for that matter).
-> 
-> If you'd spent some time on some proper research regarding that (like browsing
-> the changelogs of git commits modifying the relevant part of drivers/pci/pci.c),
-> you'd have known that already.
-> 
-> And that actually is quite important, because I don't have to remember every
-> single PM-related change we're making in the PCI layer.  I _incidentally_ do
-> remember this one, but that may not happen next time.  Please do the research
-> _before_ proposing changes of this kind.
+On Thu, Sep 20, 2012 at 4:59 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Thu, Sep 20, 2012 at 2:38 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> in that case, VFs  are stopped before PF, so they are not in device
+>> tree anymore.
+>> so pci_get_domain_bus_and_slot will not find those VFs.
+>>
+>> So the reference to PF is not released. Also vit_bus may not be released too.
+>>
+>> So you have to rework
+>>     pci_get_domain_bus_and_slot to make it work on pci devices get stopped only.
+>>
+>> or just drop this from the tree.
+>
+> pci_find_bus() is a broken interface (because there's no reference
+> counting or safety with respect to hot-plug), and if the design
+> depends on it, that means the design is broken, too.  I don't think
+> reworking pci_get_domain_bus_and_slot() is the right answer.
+>
+> It's not clear to me why we need the split between stopping and
+> removing devices.  That split leads to these zombie devices that have
+> been stopped and are no longer findable by bus_find_device() (which is
+> used by pci_get_domain_bus_and_slot()), but still "exist" in some
+> fashion until they're removed.  It's unreasonable for random PCI and
+> driver code to have to worry about that zombie state.
 
-Sorry.  I should have done more research before sending the patch out.
-Will do more research next time.
+That is not zombie state. that is driver unloaded, and not in /sys, /proc.
+that pci device only can be found under bus->devices.
 
-Best Regards,
-Huang Ying
+just like we have pci_device_add and pci_bus_add_device
+or acpi add and acpi start.
 
+Splitting stop and remove should be more clean than mixing stop and remove.
 
+>
+> I'll revert this patch for now to fix the regression.  Of course, that
+> means we will still have the old problem of using the unsafe
+> pci_find_bus().
+>
+>> BTW, Bjorn,
+>> for the similar reason,  you need to apply
+>> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=e5a50aa3dfca1331c7c783412b1524bea06d2752
+>> ...
+>> the reason is:
+>>
+>> We stop all VFs at first , stop PF
+>> before we stop PF, we can not remove VFs,
+>>
+>> otherwise virtfn_remove does not work properly to remove reference and
+>> virtfn bus while can not find vf.
+>
+> I'll apply this one, too, for now.  I put them both on the
+> pci/yinghai-revert-pci_find_bus-and-remove-cleanup branch.  Let me
+> know if that's not what you expected.
+
+Yes, they are good.
+
+>
+> I'm not happy about either reverting Jiang's patch or splitting
+> stop/remove again.  It complicates the design and the code.  I'll
+> apply them because they're regressions, and we don't have time for
+> redesign before 3.7.  But I encourage you to think about how to do
+> this more cleanly.
+
+That will need to redesign sriov implementation.
+
+Also that pci root bus add/start, stop/remove will need special
+sequence to make ioapic
+and dmar to be started early before normal pci device drivers and
+stopped after normal pci device drivers.
+
+-Yinghai
