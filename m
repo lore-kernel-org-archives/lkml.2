@@ -1,47 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab2IUMbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 08:31:00 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:57710 "EHLO gir.skynet.ie"
+	id S1754355Ab2IUMgx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 08:36:53 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:50215 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab2IUMa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 08:30:59 -0400
-Date: Fri, 21 Sep 2012 13:30:56 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm: remove vma arg from page_evictable
-Message-ID: <20120921123056.GC11157@csn.ul.ie>
-References: <alpine.LSU.2.00.1209182045370.11632@eggly.anvils>
- <alpine.LSU.2.00.1209182052030.11632@eggly.anvils>
+	id S1752143Ab2IUMgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 08:36:51 -0400
+Date: Fri, 21 Sep 2012 14:36:45 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Josh Hunt <johunt@akamai.com>
+Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
+ family 0Fh
+Message-ID: <20120921123645.GD26869@aftab.osrc.amd.com>
+References: <20120912153016.GA12103@aftab.osrc.amd.com>
+ <5050AC2E.3050408@akamai.com>
+ <20120912154943.GB12103@aftab.osrc.amd.com>
+ <5050B708.5020308@akamai.com>
+ <20120912164843.GC12103@aftab.osrc.amd.com>
+ <5050BF1F.1080503@akamai.com>
+ <20120912170629.GD12103@aftab.osrc.amd.com>
+ <20120912172351.GE12103@aftab.osrc.amd.com>
+ <50532940.10201@akamai.com>
+ <50534184.1050208@akamai.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1209182052030.11632@eggly.anvils>
+In-Reply-To: <50534184.1050208@akamai.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 08:53:45PM -0700, Hugh Dickins wrote:
-> page_evictable(page, vma) is an irritant: almost all its callers pass
-> NULL for vma.  Remove the vma arg and use mlocked_vma_newpage(vma, page)
-> explicitly in the couple of places it's needed.  But in those places we
-> don't even need page_evictable() itself!  They're dealing with a freshly
-> allocated anonymous page, which has no "mapping" and cannot be mlocked yet.
+On Fri, Sep 14, 2012 at 09:39:00AM -0500, Josh Hunt wrote:
+> On 09/14/2012 07:55 AM, Josh Hunt wrote:
+> >
+> >Thanks to your help I was able to test your branch, but it still does
+> >not resolve the problem. Removal of the "factor=1" workaround fixes the
+> >memory size reporting on boot, but the sysfs values are still incorrect.
+> >
 > 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michel Lespinasse <walken@google.com>
-> Cc: Ying Han <yinghan@google.com>
+> Please disregard what I said earlier about the shift still being
+> wrong. Looking at the dmesg more I see now that the # of pages are
+> correctly reported (262144), however sysfs is still wrong.
+> 
+> [   25.837588] EDAC DEBUG: init_csrows: MC node: 0, csrow: 0
+> [   25.837589] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 0, channel:
+> 0, DBAM idx: 2
+> [   25.837591] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
+> [   25.837592] EDAC amd64: CS0: Unbuffered DDR2 RAM
+> [   25.837724] EDAC DEBUG: init_csrows: Total csrow0 pages: 262144
+> [   25.837725] DBG: init_csrows: channel_count:2
+> [   25.837856] DBG: init_csrows: channel_count:2
+> [   25.837988] EDAC DEBUG: init_csrows: MC node: 0, csrow: 1
+> [   25.837989] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 1, channel:
+> 0, DBAM idx: 2
+> [   25.837991] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
+> [   25.837992] EDAC amd64: CS1: Unbuffered DDR2 RAM
+> [   25.838157] EDAC DEBUG: init_csrows: Total csrow1 pages: 262144
+> [   25.838158] DBG: init_csrows: channel_count:2
+> [   25.838289] DBG: init_csrows: channel_count:2
+> [   25.838421] EDAC DEBUG: init_csrows: MC node: 0, csrow: 2
+> [   25.838422] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 2, channel:
+> 0, DBAM idx: 2
+> [   25.838424] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
+> [   25.838425] EDAC amd64: CS2: Unbuffered DDR2 RAM
+> [   25.838556] EDAC DEBUG: init_csrows: Total csrow2 pages: 262144
+> [   25.838558] DBG: init_csrows: channel_count:2
+> [   25.838689] DBG: init_csrows: channel_count:2
+> [   25.838820] EDAC DEBUG: init_csrows: MC node: 0, csrow: 3
+> [   25.838822] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 3, channel:
+> 0, DBAM idx: 2
+> [   25.838823] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
+> [   25.838824] EDAC amd64: CS3: Unbuffered DDR2 RAM
+> [   25.838957] EDAC DEBUG: init_csrows: Total csrow3 pages: 262144
+> 
+> I looked into this and see that sysfs is doing the double counting
+> b/c it loops over the # of channels:
+> 
+> [  131.423949] DBG: csrow_size_show: i:0 nr_pages:262144 nr_channels:2
+> [  131.424112] DBG: csrow_size_show: i:1 nr_pages:524288 nr_channels:2
+> 
+> I verified this in init_csrows:
+> [   25.838958] DBG: init_csrows: channel_count:2
+> 
+> Since I don't know the details of the hardware here it's hard for me
+> to suggest a fix, but it would seem that k8_early_channel_count()
+> needs to be modified to only return 1 in this case?
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Ok, I think this is still the old code you're looking at so it would be
+cool if you could test with my patchset I sent you last week.
+
+Because with it, it all looks fine on my K8 here:
+
+It has 2 2048MB single-ranked DIMMs on each node and edac output looks
+like this:
+
+[   52.920302] EDAC DEBUG: amd64_debug_display_dimm_sizes: F2x080 (DRAM Bank Address Mapping): 0x00000060
+[   52.920302] EDAC MC: DCT0 chip selects:
+[   52.920304] EDAC amd64: MC: 0:     0MB 1:     0MB
+[   52.920305] EDAC amd64: MC: 2:  2048MB 3:  2048MB
+[   52.920306] EDAC amd64: MC: 4:     0MB 5:     0MB
+[   52.920308] EDAC amd64: MC: 6:     0MB 7:     0MB
+
+...
+
+[   52.920344] EDAC DEBUG: init_csrows: node 1, NBCFG=0x0ad00044[ChipKillEccCap: 1|DramEccEn: 1]
+[   52.920345] EDAC DEBUG: init_csrows: MC node: 1, csrow: 2
+[   52.920346] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 2, channel: 0, DBAM idx: 6
+[   52.920347] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 524288
+[   52.920348] EDAC amd64: CS2: Registered DDR2 RAM
+[   52.920350] EDAC DEBUG: init_csrows: Total csrow2 pages: 524288
+[   52.920351] EDAC DEBUG: init_csrows: MC node: 1, csrow: 3
+[   52.920352] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 3, channel: 0, DBAM idx: 6
+[   52.920353] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 524288
+[   52.920354] EDAC amd64: CS3: Registered DDR2 RAM
+[   52.920355] EDAC DEBUG: init_csrows: Total csrow3 pages: 524288
+
+$ cat /sys/devices/system/edac/mc/mc0/csrow2/size_mb
+2048
+$ cat /sys/devices/system/edac/mc/mc0/csrow3/size_mb
+2048
+
+So what am I missing?
+
+Thanks.
 
 -- 
-Mel Gorman
-SUSE Labs
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
