@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab2IUN0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 09:26:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57738 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab2IUN0I (ORCPT
+	id S1755565Ab2IUN0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 09:26:30 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55867 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754707Ab2IUN02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 09:26:08 -0400
-Message-ID: <505C6AD4.6030206@kernel.dk>
-Date: Fri, 21 Sep 2012 15:25:40 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	Fri, 21 Sep 2012 09:26:28 -0400
+Message-ID: <505C6B03.7020305@gmail.com>
+Date: Fri, 21 Sep 2012 15:26:27 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Joseph Glanville <joseph.glanville@orionvm.com.au>,
-        cgroups <cgroups@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] block: lift the initial queue bypass mode on blk_register_queue()
- instead of blk_init_allocated_queue()
-References: <CAOzFzEhf2LfT0BCNPAgPgxZ3=pj2KvJ4Z6kP7XF8nnxag1dfvg@mail.gmail.com> <CAOzFzEiC4313K4H9393ffzNyBo398BPYSxTk7ZEmuH4GfW5qtw@mail.gmail.com> <CAOzFzEhWk_7oQFOyW6Ri_9Cvsshj2s3pa=Oo-p8uL6r340MoTw@mail.gmail.com> <20120919194231.GF31860@redhat.com> <20120920183153.GI28934@google.com> <20120920184219.GH4681@redhat.com> <20120920191716.GI4681@redhat.com> <20120920192038.GJ28934@google.com> <20120920195759.GK4681@redhat.com> <20120920201815.GB7264@google.com> <20120920210852.GC7264@google.com>
-In-Reply-To: <20120920210852.GC7264@google.com>
+To: paulmck@linux.vnet.ibm.com
+CC: Michael Wang <wangyun@linux.vnet.ibm.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+References: <5050CCE0.4090403@gmail.com> <20120919153934.GB2455@linux.vnet.ibm.com> <5059F458.3000407@gmail.com> <20120919170648.GF2455@linux.vnet.ibm.com> <505AC6C8.9060706@linux.vnet.ibm.com> <505AC979.7000008@gmail.com> <20120920152341.GE2449@linux.vnet.ibm.com> <505C33B9.8000807@gmail.com> <20120921121346.GD2458@linux.vnet.ibm.com>
+In-Reply-To: <20120921121346.GD2458@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 11:08 PM, Tejun Heo wrote:
-> b82d4b197c ("blkcg: make request_queue bypassing on allocation") made
-> request_queues bypassed on allocation to avoid switching on and off
-> bypass mode on a queue being initialized.  Some drivers allocate and
-> then destroy a lot of queues without fully initializing them and
-> incurring bypass latency overhead on each of them could add upto
-> significant overhead.
-> 
-> Unfortunately, blk_init_allocated_queue() is never used by queues of
-> bio-based drivers, which means that all bio-based driver queues are in
-> bypass mode even after initialization and registration complete
-> successfully.
-> 
-> Due to the limited way request_queues are used by bio drivers, this
-> problem is hidden pretty well but it shows up when blk-throttle is
-> used in combination with a bio-based driver.  Trying to configure
-> (echoing to cgroupfs file) blk-throttle for a bio-based driver hangs
-> indefinitely in blkg_conf_prep() waiting for bypass mode to end.
-> 
-> This patch moves the initial blk_queue_bypass_end() call from
-> blk_init_allocated_queue() to blk_register_queue() which is called for
-> any userland-visible queues regardless of its type.
-> 
-> I believe this is correct because I don't think there is any block
-> driver which needs or wants working elevator and blk-cgroup on a queue
-> which isn't visible to userland.  If there are such users, we need a
-> different solution.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Joseph Glanville <joseph.glanville@orionvm.com.au>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: stable@vger.kernel.org
-> ---
-> Jens, while these are fixes, I think it isn't extremely urgent and
-> routing these through 3.7-rc1 should be enough.
+On 09/21/2012 02:13 PM, Paul E. McKenney wrote:
+>> This might be unrelated, but I got the following dump as well when trinity
+>> > decided it's time to reboot my guest:
+> OK, sounds like we should hold off until you reproduce, then.
 
-Agree, I'll shove them into for-3.7/core
+I'm not sure what you mean.
 
--- 
-Jens Axboe
+There are basically two issues I'm seeing now, which reproduce pretty much every
+time:
 
+ 1. The "using when idle" warning.
+ 2. The rcu related hangs during shutdown.
+
+The first one appears early on when I start fuzzing, the other one happens when
+shutting down - so both of them are reproducible in the same session.
+
+
+Thanks,
+Sasha
