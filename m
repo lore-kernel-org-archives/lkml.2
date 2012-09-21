@@ -1,124 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab2IUE7j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 00:59:39 -0400
-Received: from cust-218-222.on4.ontelecoms.gr ([92.118.218.222]:39849 "EHLO
-	vergina.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab2IUE7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 00:59:38 -0400
-Message-ID: <505BF437.4090506@asyr.hopto.org>
-Date: Fri, 21 Sep 2012 07:59:35 +0300
-From: Thanasis <thanasis@asyr.hopto.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
+	id S1753181Ab2IUFK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 01:10:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50917 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751915Ab2IUFK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 01:10:27 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <rpurdie@rpsys.net>, <thierry.reding@avionic-design.de>
+CC: <broonie@opensource.wolfsonmicro.com>, <shawn.guo@linaro.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>,
+        <gururaja.hebbar@ti.com>, "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH v2] pwm_backlight: Add device tree support for Low Threshold Brightness
+Date: Fri, 21 Sep 2012 10:21:20 +0530
+Message-ID: <1348203080-16348-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        nic_swsd@realtek.com
-Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com>
-In-Reply-To: <20120920232030.GA9224@electric-eye.fr.zoreil.com>
-Content-Type: multipart/mixed;
- boundary="------------070606070003090000020604"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070606070003090000020604
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Some backlights perform poorly when driven by a PWM with a short
+duty-cycle. For such devices, the low threshold can be used to specify a
+lower bound for the duty-cycle and should be chosen to exclude the
+problematic range.
 
-on 09/21/2012 02:20 AM Francois Romieu wrote the following:
+This patch adds support for an optional low-threshold-brightness
+property.
 
-> 
-> Thanasis, can you narrow down a bit the failing revision ?
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+---
+Changes since v1:
+        - Updated commit message.
+	- Changes to low-threshold-brightness.
+	- Merged example section to original.
 
-Sure, let me know how to do it please.
-FWIW , attached full lspci -k output.
+:100644 100644 1e4fc72... 5baebff... M	Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+:100644 100644 995f016... 29e6fe1... M	drivers/video/backlight/pwm_bl.c
+ .../bindings/video/backlight/pwm-backlight.txt     |    4 ++++
+ drivers/video/backlight/pwm_bl.c                   |    5 +++++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+index 1e4fc72..5baebff 100644
+--- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
++++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+@@ -14,6 +14,9 @@ Required properties:
+ Optional properties:
+   - pwm-names: a list of names for the PWM devices specified in the
+                "pwms" property (see PWM binding[0])
++  - low-threshold-brightness: brightness threshold low level. Low threshold
++    brightness set to value so that backlight present on low end of
++    brightness.
+ 
+ [0]: Documentation/devicetree/bindings/pwm/pwm.txt
+ 
+@@ -25,4 +28,5 @@ Example:
+ 
+ 		brightness-levels = <0 4 8 16 32 64 128 255>;
+ 		default-brightness-level = <6>;
++		low-threshold-brightness = <50>;
+ 	};
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 995f016..29e6fe1 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -143,6 +143,11 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 
+ 		data->dft_brightness = value;
+ 		data->max_brightness--;
++
++		ret = of_property_read_u32(node, "low-threshold-brightness",
++					   &value);
++		if (!ret)
++			data->lth_brightness = value;
+ 	}
+ 
+ 	/*
+-- 
+1.7.0.4
 
---------------070606070003090000020604
-Content-Type: text/plain; charset=UTF-8;
- name="lspci-k"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="lspci-k"
-
-MDA6MDAuMCBIb3N0IGJyaWRnZTogSW50ZWwgQ29ycG9yYXRpb24gTW9iaWxlIDk0NUdTRSBF
-eHByZXNzIE1lbW9yeSBDb250cm9sbGVyIEh1YiAocmV2IDAzKQoJU3Vic3lzdGVtOiBBY2Vy
-IEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1c2U6
-IGFncGdhcnQtaW50ZWwKMDA6MDIuMCBWR0EgY29tcGF0aWJsZSBjb250cm9sbGVyOiBJbnRl
-bCBDb3Jwb3JhdGlvbiBNb2JpbGUgOTQ1R1NFIEV4cHJlc3MgSW50ZWdyYXRlZCBHcmFwaGlj
-cyBDb250cm9sbGVyIChyZXYgMDMpCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVkIFtB
-TEldIERldmljZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogaTkxNQowMDowMi4xIERp
-c3BsYXkgY29udHJvbGxlcjogSW50ZWwgQ29ycG9yYXRpb24gTW9iaWxlIDk0NUdNL0dNUy9H
-TUUsIDk0My85NDBHTUwgRXhwcmVzcyBJbnRlZ3JhdGVkIEdyYXBoaWNzIENvbnRyb2xsZXIg
-KHJldiAwMykKCVN1YnN5c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2aWNlIDAx
-NWIKMDA6MWIuMCBBdWRpbyBkZXZpY2U6IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0ggNyBG
-YW1pbHkgSGlnaCBEZWZpbml0aW9uIEF1ZGlvIENvbnRyb2xsZXIgKHJldiAwMikKCVN1YnN5
-c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2aWNlIDAxNWIKCUtlcm5lbCBkcml2
-ZXIgaW4gdXNlOiBIREEgSW50ZWwKMDA6MWMuMCBQQ0kgYnJpZGdlOiBJbnRlbCBDb3Jwb3Jh
-dGlvbiBOMTAvSUNIIDcgRmFtaWx5IFBDSSBFeHByZXNzIFBvcnQgMSAocmV2IDAyKQoJS2Vy
-bmVsIGRyaXZlciBpbiB1c2U6IHBjaWVwb3J0CjAwOjFjLjEgUENJIGJyaWRnZTogSW50ZWwg
-Q29ycG9yYXRpb24gTjEwL0lDSCA3IEZhbWlseSBQQ0kgRXhwcmVzcyBQb3J0IDIgKHJldiAw
-MikKCUtlcm5lbCBkcml2ZXIgaW4gdXNlOiBwY2llcG9ydAowMDoxYy4yIFBDSSBicmlkZ2U6
-IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0ggNyBGYW1pbHkgUENJIEV4cHJlc3MgUG9ydCAz
-IChyZXYgMDIpCglLZXJuZWwgZHJpdmVyIGluIHVzZTogcGNpZXBvcnQKMDA6MWMuMyBQQ0kg
-YnJpZGdlOiBJbnRlbCBDb3Jwb3JhdGlvbiBOMTAvSUNIIDcgRmFtaWx5IFBDSSBFeHByZXNz
-IFBvcnQgNCAocmV2IDAyKQoJS2VybmVsIGRyaXZlciBpbiB1c2U6IHBjaWVwb3J0CjAwOjFk
-LjAgVVNCIGNvbnRyb2xsZXI6IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0ggNyBGYW1pbHkg
-VVNCIFVIQ0kgQ29udHJvbGxlciAjMSAocmV2IDAyKQoJU3Vic3lzdGVtOiBBY2VyIEluY29y
-cG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1c2U6IHVoY2lf
-aGNkCjAwOjFkLjEgVVNCIGNvbnRyb2xsZXI6IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0gg
-NyBGYW1pbHkgVVNCIFVIQ0kgQ29udHJvbGxlciAjMiAocmV2IDAyKQoJU3Vic3lzdGVtOiBB
-Y2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1
-c2U6IHVoY2lfaGNkCjAwOjFkLjIgVVNCIGNvbnRyb2xsZXI6IEludGVsIENvcnBvcmF0aW9u
-IE4xMC9JQ0ggNyBGYW1pbHkgVVNCIFVIQ0kgQ29udHJvbGxlciAjMyAocmV2IDAyKQoJU3Vi
-c3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRy
-aXZlciBpbiB1c2U6IHVoY2lfaGNkCjAwOjFkLjMgVVNCIGNvbnRyb2xsZXI6IEludGVsIENv
-cnBvcmF0aW9uIE4xMC9JQ0ggNyBGYW1pbHkgVVNCIFVIQ0kgQ29udHJvbGxlciAjNCAocmV2
-IDAyKQoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJ
-S2VybmVsIGRyaXZlciBpbiB1c2U6IHVoY2lfaGNkCjAwOjFkLjcgVVNCIGNvbnRyb2xsZXI6
-IEludGVsIENvcnBvcmF0aW9uIE4xMC9JQ0ggNyBGYW1pbHkgVVNCMiBFSENJIENvbnRyb2xs
-ZXIgKHJldiAwMikKCVN1YnN5c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2aWNl
-IDAxNWIKCUtlcm5lbCBkcml2ZXIgaW4gdXNlOiBlaGNpX2hjZAowMDoxZS4wIFBDSSBicmlk
-Z2U6IEludGVsIENvcnBvcmF0aW9uIDgyODAxIE1vYmlsZSBQQ0kgQnJpZGdlIChyZXYgZTIp
-CjAwOjFmLjAgSVNBIGJyaWRnZTogSW50ZWwgQ29ycG9yYXRpb24gODI4MDFHQk0gKElDSDct
-TSkgTFBDIEludGVyZmFjZSBCcmlkZ2UgKHJldiAwMikKCVN1YnN5c3RlbTogQWNlciBJbmNv
-cnBvcmF0ZWQgW0FMSV0gRGV2aWNlIDAxNWIKMDA6MWYuMiBJREUgaW50ZXJmYWNlOiBJbnRl
-bCBDb3Jwb3JhdGlvbiA4MjgwMUdCTS9HSE0gKElDSDctTSBGYW1pbHkpIFNBVEEgQ29udHJv
-bGxlciBbSURFIG1vZGVdIChyZXYgMDIpCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVk
-IFtBTEldIERldmljZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogYXRhX3BpaXgKMDA6
-MWYuMyBTTUJ1czogSW50ZWwgQ29ycG9yYXRpb24gTjEwL0lDSCA3IEZhbWlseSBTTUJ1cyBD
-b250cm9sbGVyIChyZXYgMDIpCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVkIFtBTEld
-IERldmljZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogaTgwMV9zbWJ1cwowMTowMC4w
-IFN5c3RlbSBwZXJpcGhlcmFsOiBKTWljcm9uIFRlY2hub2xvZ3kgQ29ycC4gU0QvTU1DIEhv
-c3QgQ29udHJvbGxlcgoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZp
-Y2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1c2U6IHNkaGNpLXBjaQowMTowMC4yIFNEIEhv
-c3QgY29udHJvbGxlcjogSk1pY3JvbiBUZWNobm9sb2d5IENvcnAuIFN0YW5kYXJkIFNEIEhv
-c3QgQ29udHJvbGxlcgoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZp
-Y2UgMDE1YgowMTowMC4zIFN5c3RlbSBwZXJpcGhlcmFsOiBKTWljcm9uIFRlY2hub2xvZ3kg
-Q29ycC4gTVMgSG9zdCBDb250cm9sbGVyCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVk
-IFtBTEldIERldmljZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogam1iMzh4X21zCjAx
-OjAwLjQgU3lzdGVtIHBlcmlwaGVyYWw6IEpNaWNyb24gVGVjaG5vbG9neSBDb3JwLiB4RCBI
-b3N0IENvbnRyb2xsZXIKCVN1YnN5c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2
-aWNlIDAxNWIKMDI6MDAuMCBFdGhlcm5ldCBjb250cm9sbGVyOiBSZWFsdGVrIFNlbWljb25k
-dWN0b3IgQ28uLCBMdGQuIFJUTDgxMDFFL1JUTDgxMDJFIFBDSSBFeHByZXNzIEZhc3QgRXRo
-ZXJuZXQgY29udHJvbGxlciAocmV2IDAyKQoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRl
-ZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2VybmVsIGRyaXZlciBpbiB1c2U6IHI4MTY5CjAzOjAw
-LjAgRXRoZXJuZXQgY29udHJvbGxlcjogQXRoZXJvcyBDb21tdW5pY2F0aW9ucyBJbmMuIEFS
-MjQyeCAvIEFSNTQyeCBXaXJlbGVzcyBOZXR3b3JrIEFkYXB0ZXIgKFBDSS1FeHByZXNzKSAo
-cmV2IDAxKQoJU3Vic3lzdGVtOiBGb3hjb25uIEludGVybmF0aW9uYWwsIEluYy4gRGV2aWNl
-IGUwMDgKCUtlcm5lbCBkcml2ZXIgaW4gdXNlOiBhdGg1awowNDowMC4wIFN5c3RlbSBwZXJp
-cGhlcmFsOiBKTWljcm9uIFRlY2hub2xvZ3kgQ29ycC4gU0QvTU1DIEhvc3QgQ29udHJvbGxl
-cgoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgoJS2Vy
-bmVsIGRyaXZlciBpbiB1c2U6IHNkaGNpLXBjaQowNDowMC4yIFNEIEhvc3QgY29udHJvbGxl
-cjogSk1pY3JvbiBUZWNobm9sb2d5IENvcnAuIFN0YW5kYXJkIFNEIEhvc3QgQ29udHJvbGxl
-cgoJU3Vic3lzdGVtOiBBY2VyIEluY29ycG9yYXRlZCBbQUxJXSBEZXZpY2UgMDE1YgowNDow
-MC4zIFN5c3RlbSBwZXJpcGhlcmFsOiBKTWljcm9uIFRlY2hub2xvZ3kgQ29ycC4gTVMgSG9z
-dCBDb250cm9sbGVyCglTdWJzeXN0ZW06IEFjZXIgSW5jb3Jwb3JhdGVkIFtBTEldIERldmlj
-ZSAwMTViCglLZXJuZWwgZHJpdmVyIGluIHVzZTogam1iMzh4X21zCjA0OjAwLjQgU3lzdGVt
-IHBlcmlwaGVyYWw6IEpNaWNyb24gVGVjaG5vbG9neSBDb3JwLiB4RCBIb3N0IENvbnRyb2xs
-ZXIKCVN1YnN5c3RlbTogQWNlciBJbmNvcnBvcmF0ZWQgW0FMSV0gRGV2aWNlIDAxNWIK
---------------070606070003090000020604--
