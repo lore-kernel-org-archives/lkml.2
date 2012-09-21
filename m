@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab2IUEvV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 00:51:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44422 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab2IUEvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 00:51:19 -0400
-Date: Thu, 20 Sep 2012 21:50:46 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
-Subject: Re: [PATCH v2 22/26] block: Add bio_alloc_pages()
-Message-ID: <20120921045045.GA29160@moria.home.lan>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-23-git-send-email-koverstreet@google.com>
- <20120921004711.GZ7264@google.com>
+	id S1752635Ab2IUEv1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 00:51:27 -0400
+Received: from mga14.intel.com ([143.182.124.37]:7226 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751834Ab2IUEvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 00:51:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,459,1344236400"; 
+   d="scan'208";a="147432728"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] smb347_charger: fix battery status reporting logic
+ for charger faults
+Thread-Topic: [PATCH v2] smb347_charger: fix battery status reporting logic
+ for charger faults
+Thread-Index: AQHNl3oNnREnR2Kb0UKopXTU7eVmR5eUOmhA
+Date: Fri, 21 Sep 2012 04:51:17 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD286EFB@BGSMSX102.gar.corp.intel.com>
+References: <1347985687-22676-1-git-send-email-ramakrishna.pallala@intel.com>
+ <20120919073734.GO15548@intel.com> <20120920214816.GB18223@lizard>
+In-Reply-To: <20120920214816.GB18223@lizard>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120921004711.GZ7264@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8L4pakY008254
 
-On Thu, Sep 20, 2012 at 05:47:11PM -0700, Tejun Heo wrote:
-> On Mon, Sep 10, 2012 at 05:22:33PM -0700, Kent Overstreet wrote:
-> > +	bio_for_each_segment_all(bv, bio, i) {
-> > +		bv->bv_page = alloc_page(gfp_mask);
-> > +		if (!bv->bv_page) {
-> > +			while (bv-- != bio->bi_io_vec)
-> > +				__free_page(bv->bv_page);
+> On Wed, Sep 19, 2012 at 10:37:34AM +0300, Mika Westerberg wrote:
+> > On Tue, Sep 18, 2012 at 09:58:07PM +0530, Ramakrishna Pallala wrote:
+> > > This patch checks for charger status register for determining the
+> > > battery charging status and reports Discharing/Charging/Not
+> > > Charging/Full accordingly.
+> > >
+> > > This patch also adds the interrupt support for Safety Timer Expiration.
+> > > This interrupt is helpful in debugging the cause for charger fault.
+> > >
+> > > Resending this patch because previous patch missed Anton's attention
 > 
-> I don't know.  I feel stupid.  I think it's because the loop variable
-> changes between loop condition test and actual body of loop.  How
-> about the following?  It is pointing to the member of the same array
-> so I think it's not even violating pointer comparison rules.
+> Not that it missed my attention, it's just that I'm in "apply-mode"
+> only 3-4 times per dev cycle. So, patches may lay in my "battery"
+> folder for some time.
 > 
-> 	while (--bv >= bio->bi_io_vec)
-> 		__free_page(bv->bv_page);
+> That's mostly because I have somewhat limited time, but also that way I can
+> collect Acks and give other folks a chance to take a look at the patches.  :-)
+> 
+> But if you suspect the patch missed my attention (which also happens
+> sometimes), it's totally fine to resend it or ping me, as you did.
+> 
+> > > Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+> >
+> > Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Applied, thank you guys!
 
-I can't remember why I did it that way, but I think I like yours better
-- I'll change it.
+Got it Thanks :-)
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
