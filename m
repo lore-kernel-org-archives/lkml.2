@@ -1,28 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab2IUAQg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 20:16:36 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38787 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab2IUAQf (ORCPT
+	id S1754191Ab2IUARe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 20:17:34 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49318 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225Ab2IUARc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 20:16:35 -0400
+	Thu, 20 Sep 2012 20:17:32 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 20 Sep 2012 17:17:50 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.6-rc7
+Message-ID: <20120921001750.GA18950@roeck-us.net>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
-Date: Thu, 20 Sep 2012 17:16:33 -0700
-Message-ID: <CAOesGMi8VYoptLeGQj7qZWUOyovX8P+409R64QHfH7=vGvCDgw@mail.gmail.com>
-Subject: [GIT PULL] ARM: SoC fixes for 3.6-rc
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi Linus,
 
+Please pull hwmon fixes for Linux 3.6-rc7 from signed tag:
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git =
+hwmon-for-linus
+
+There is one out-of-hwmon patch in linux/kernel.h to fix a compiler warning
+seen with W=3D1. The patch is low risk and has been in -next since yesterda=
+y.=20
+
+Thanks,
+Guenter
+------
 
 The following changes since commit 5698bd757d55b1bb87edd1a9744ab09c142abfc2:
 
@@ -30,58 +50,56 @@ The following changes since commit 5698bd757d55b1bb87edd1a9744ab09c142abfc2:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
-tags/fixes-for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git ta=
+gs/hwmon-for-linus
 
-for you to fetch changes up to 23f3f0613f6172ef1f0cbb0e971adf29f1c1fe5e:
+for you to fetch changes up to 263a523d18bca306016d75f5c8d5c57c37fe52fb:
 
-  Merge tag 'imx-fixes' of git://git.pengutronix.de/git/imx/linux-2.6
-into fixes (2012-09-18 10:16:44 -0700)
-
-----------------------------------------------------------------
-
-arm-soc: bug fixes for v3.6-rc
-
-A couple of samsung clock locking fixes, at91 device tree gpio
-configuration fix and a couple more for shmobile and i.MX.
-
-All small targeted fixes.
+  linux/kernel.h: Fix warning seen with W=3D1 due to change in DIV_ROUND_CL=
+OSEST (2012-09-19 06:51:25 -0700)
 
 ----------------------------------------------------------------
-Fabio Estevam (1):
-      ARM: imx: armadillo5x0: Fix illegal register access
+Add missing 'name' sysfs attributes to ad7314 and ads7871 drivers
+Bump maximum wait time for applesmc driver (again)
+Fix build warning seen with W=3D1 in include/linux/kernel.h, introduced
+with b6d86d3 (Fix DIV_ROUND_CLOSEST to support negative dividends)
 
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: fix missing #interrupt-cells on gpio-controller
+----------------------------------------------------------------
+Guenter Roeck (3):
+      hwmon: (ads7871) Add 'name' sysfs attribute
+      hwmon: (ad7314) Add 'name' sysfs attribute
+      linux/kernel.h: Fix warning seen with W=3D1 due to change in DIV_ROUN=
+D_CLOSEST
 
-Mandeep Singh Baines (1):
-      ARM: SAMSUNG: use spin_lock_irqsave() in clk_set_parent
+Parag Warudkar (1):
+      hwmon: (applesmc) Bump max wait
 
-Olof Johansson (4):
-      Merge branch 'v3.6-samsung-fixes-3' of
-git://git.kernel.org/.../kgene/linux-samsung into fixes
-      Merge branch 'fixes' of git://git.kernel.org/.../horms/renesas into fixes
-      Merge tag 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
-      Merge tag 'imx-fixes' of
-git://git.pengutronix.de/git/imx/linux-2.6 into fixes
+ drivers/hwmon/ad7314.c   |    8 ++++++++
+ drivers/hwmon/ads7871.c  |    9 +++++++++
+ drivers/hwmon/applesmc.c |    4 ++--
+ include/linux/kernel.h   |    2 +-
+ 4 files changed, 20 insertions(+), 3 deletions(-)
 
-Sascha Hauer (1):
-      ARM i.MX25: Make timer irq work again
+--17pEHd4RhPHOinZp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Tetsuyuki Kobayashi (1):
-      ARM: shmobile: kzm9g: bugfix: correct mmcif interrupt settings
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Tushar Behera (1):
-      ARM: SAMSUNG: Use spin_lock_{irqsave,irqrestore} in clk_set_rate
+iQIcBAEBAgAGBQJQW7IuAAoJEMsfJm/On5mB/HkP/3xhGlhoEegtuINbZtUs8kCe
+3xM+DPtw4ROyxcm0ZNGc2tgytI1CclmV4nQ/1zmHoRgcNIzLo8fo82V9b5bnEmoa
+64UUukEwAoJ0U9iQWoj9uIgcXtbp+JjLr+M/rd18QlFKE7pPH+bHdbpYaRSr6EoU
+y+kyJrAtojMqgXQfxy90c/92Ctchvutsw9vcQkO2M4Fto7nflt7jBWSQ5VcgH+Oa
+727ZnthDSAPsuFZ9xgBzfOtC1d4C/TNOiwsptQahMbcbe7Dj8HChptRUzrVhgUyb
+HRS+53OEu97YKTSDmcwsDADp8ppxcZqEoYBxSLN7Kpgf2giDIdVCnA6YfBQuosLF
+xQtdnzE9nNZ5QkUpbs+YXqKE2yaB/yfxC2+rTYO5l/tqbyJiWMAx53KtZknsgcKV
+dv4QiCi0p46Jvr+iZV+/9Ez+ACH1hs7IQZEm00ZXtZ50C5IKiMIR/3duekzY/4IG
+HgKK52PFrgd1LtSknBP8LT2ap1x5gyvG+coaHztAeQdQcBd+QOsGANrIalwVo7nY
+BXv2UYKBa3VCjN0X+JptQHlH/WXsQUGPZFLUxqIz9uqexlWs3hrFta9vQKlpE6w7
+6tSv3QkwQdpIsHJ3L1Dc6fRo+NBy5kvISHmBTqsXJkBRq9BRDjyCuD25yK+bpeSY
+4tkmIvZcAf7ou0LiAO5q
+=eRvz
+-----END PGP SIGNATURE-----
 
- arch/arm/boot/dts/at91sam9260.dtsi    |  3 +++
- arch/arm/boot/dts/at91sam9263.dtsi    |  5 +++++
- arch/arm/boot/dts/at91sam9g45.dtsi    |  5 +++++
- arch/arm/boot/dts/at91sam9n12.dtsi    |  4 ++++
- arch/arm/boot/dts/at91sam9x5.dtsi     |  4 ++++
- arch/arm/mach-imx/clk-imx25.c         |  2 +-
- arch/arm/mach-imx/mach-armadillo5x0.c |  3 ++-
- arch/arm/mach-shmobile/board-kzm9g.c  |  4 ++--
- arch/arm/plat-mxc/include/mach/mx25.h |  1 +
- arch/arm/plat-samsung/clock.c         | 10 ++++++----
- 10 files changed, 33 insertions(+), 8 deletions(-)
+--17pEHd4RhPHOinZp--
