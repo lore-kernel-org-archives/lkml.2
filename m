@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab2IURBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:01:36 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39155 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2IURBf (ORCPT
+	id S1756590Ab2IURG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:06:27 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55643 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754852Ab2IURGZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:01:35 -0400
-Date: Fri, 21 Sep 2012 12:50:26 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] PCI, x86: clear initial value for root info resources
-Message-ID: <20120921165025.GF4780@phenom.dumpdata.com>
-References: <CAE9FiQW0PpBU0N9VzJyNKK9PvaUwokCYeB6w_j4mcN9EV0geLQ@mail.gmail.com>
- <1348076941-410-1-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348076941-410-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 21 Sep 2012 13:06:25 -0400
+Message-ID: <1348247182.11116.245.camel@hornet>
+Subject: Re: [PATCH v2] arm: introduce a DTS for Xen unprivileged virtual
+ machines
+From: Pawel Moll <pawel.moll@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Date: Fri, 21 Sep 2012 18:06:22 +0100
+In-Reply-To: <1348156062-11476-1-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <1348156062-11476-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Mime-Version: 1.0
+X-OriginalArrivalTime: 21 Sep 2012 17:06:22.0760 (UTC) FILETIME=[6D38F280:01CD981B]
+X-MC-Unique: 112092118062401301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 10:49:00AM -0700, Yinghai Lu wrote:
-> Found one system one root bus hot remove get panic.
-
-Boy, this is mangled.
-
-Can you include the name of the system? Perhaps you can
-rephrase this to say:
-
-"On XYZ removing the root bus (through ACPI unplug) causes
-a panic."
-
-> Panic happens when try to release hostbridge resource.
-
-Can you include the stack trace?
+On Thu, 2012-09-20 at 16:47 +0100, Stefano Stabellini wrote:
+> Given that the xenvm machine is based on vexpress but with an extremely
+> limited selection of peripherals (the guest is supposed to use virtual
+> devices instead), add "xen,xenvm" to the list of compatible machines in
+> mach-vexpress.
 > 
-> It turns out that resource get reject during put into resource tree
-> because of conflicts.
-
-Come again? Are you saying:
-
-"The reason for this is that the resources was never initialized
-properly because of .. (what type of conflict?)"?
-
-> Also that resource parent pointer have random value.
 > 
-> That invalid value cause it pass through check __release_pci_root_info
-> and panic in release_resource.
+> Changes in v2:
 > 
-> Try to use kzalloc instead.
-
-It is not just try, it _is_ using that now.
-
+> - remove include skeleton;
+> - use #address-cells = <2> and #size-cells = <2>;
+> - remove the debug bootargs;
+> - use memory@80000000 instead of memory;
+> - remove the ranges and interrupt-map from the motherboard node;
+> - set the machine compatible to "xen,xenvm-4.2", "xen,xenvm";
+> - rename the dts file to xenvm-4.2.dts;
+> - add "xen,xenvm" to the list of compatible DT strings to mach-vexpress.
 > 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: x86@kernel.org
-> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: Pawel Moll <pawel.moll@arm.com>
+> CC: Arnd Bergmann <arnd@arndb.de>
 > ---
->  arch/x86/pci/acpi.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/pci/acpi.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/pci/acpi.c
-> +++ linux-2.6/arch/x86/pci/acpi.c
-> @@ -305,7 +305,6 @@ setup_resource(struct acpi_resource *acp
->  	res->flags = flags;
->  	res->start = start;
->  	res->end = end;
-> -	res->child = NULL;
->  
->  	if (!pci_use_crs) {
->  		dev_printk(KERN_DEBUG, &info->bridge->dev,
-> @@ -434,7 +433,7 @@ probe_pci_root_info(struct pci_root_info
->  
->  	size = sizeof(*info->res) * info->res_num;
->  	info->res_num = 0;
-> -	info->res = kmalloc(size, GFP_KERNEL);
-> +	info->res = kzalloc(size, GFP_KERNEL);
->  	if (!info->res)
->  		return;
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+>  arch/arm/boot/dts/xenvm-4.2.dts      |   64 ++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-vexpress/Makefile.boot |    3 +-
+>  arch/arm/mach-vexpress/v2m.c         |    1 +
+>  3 files changed, 67 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/xenvm-4.2.dts
+
+I'm still not 100% convinced that the DTS is really necessary there, but
+as to the v2m.c change:
+
+Acked-by: Pawel Moll <pawel.moll@arm.com>
+
+Cheers!
+
+Pawel
+
+
