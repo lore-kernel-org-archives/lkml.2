@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab2IUCbq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 22:31:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756805Ab2IUCbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 22:31:45 -0400
-Message-ID: <505BD190.40707@redhat.com>
-Date: Thu, 20 Sep 2012 21:31:44 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: kernel list <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH V3] perf: Fix parallel build
-References: <505BAC5D.9020909@redhat.com> <505BBF12.4060800@redhat.com> <87392cyvpl.fsf@sejong.aot.lge.com>
-In-Reply-To: <87392cyvpl.fsf@sejong.aot.lge.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756924Ab2IUCcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 22:32:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41545 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab2IUCcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 22:32:39 -0400
+Date: Thu, 20 Sep 2012 22:32:37 -0400 (EDT)
+Message-Id: <20120920.223237.770883586764737313.davem@davemloft.net>
+To: ecashin@coraid.com
+Cc: akpm@linux-foundation.org, bhutchings@solarflare.com, jesse@nicira.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] do not disable sg when packet requires no checksum
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1348105262.git.ecashin@coraid.com>
+References: <cover.1348105262.git.ecashin@coraid.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parallel builds of perf were failing for me on a 32p box, with:
+From: Ed Cashin <ecashin@coraid.com>
+Date: Wed, 19 Sep 2012 18:46:07 -0700
 
-    * new build flags or prefix
-util/pmu.l:7:23: error: pmu-bison.h: No such file or directory
+> This two-part patchset replaces an earlier net-only patch that
+> added an explicit check for the AoE protocol to harmonize_features
+> in net/core/dev.c.
+> 
+> Following the suggestions of Ben Hutchings, this patchset makes
+> the decision in the network layer protocol agnostic instead of
+> using ETH_P_AOE as a special case.  It relies on fresh skbs being
+> CHECKSUM_NONE but makes that explicit with an assertion.
+> 
+> Ed L. Cashin (2):
+>   aoe: assert AoE packets marked as requiring no checksum
+>   net: do not disable sg for packets requiring no checksum
 
-...
-
-make: *** [util/pmu-flex.o] Error 1
-make: *** Waiting for unfinished jobs....
-
-This can pretty quickly be seen by adding a sleep in front of
-the bison calls in tools/perf/Makefile and running make -j4 on a
-smaller box i.e.:
-
-	sleep 10; $(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
-
-Adding the following dependencies fixes it for me.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
----
-
-V2: Fix other bison dependency caught by Namhyung Kim <namhyung@kernel.org>, thanks.
-V3: Add $(OUTPUT) to generated deps, thanks again.
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 35655c3..01325cd 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -221,13 +221,13 @@ export PERL_PATH
- FLEX = flex
- BISON= bison
- 
--$(OUTPUT)util/parse-events-flex.c: util/parse-events.l
-+$(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-events-bison.c
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
- 
- $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
- 	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
- 
--$(OUTPUT)util/pmu-flex.c: util/pmu.l
-+$(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
- 
- $(OUTPUT)util/pmu-bison.c: util/pmu.y
-
-
+Applied and queued up for -stable, thanks Ed.
