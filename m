@@ -1,89 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab2IUSao (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 14:30:44 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:34311 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071Ab2IUSam (ORCPT
+	id S1757521Ab2IUSbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 14:31:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48410 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071Ab2IUSbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 14:30:42 -0400
-Date: Fri, 21 Sep 2012 14:30:39 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Cyril Chemparathy <cyril@ti.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, catalin.marinas@arm.com, grant.likely@secretlab.ca,
-        linux@arm.linux.org.uk, will.deacon@arm.com,
-        Vitaly Andrianov <vitalya@ti.com>
-Subject: Re: [PATCH v3 09/17] ARM: LPAE: use phys_addr_t for initrd location
- and size
-In-Reply-To: <1347385155-11643-10-git-send-email-cyril@ti.com>
-Message-ID: <alpine.LFD.2.02.1209211429290.6667@xanadu.home>
-References: <1347385155-11643-1-git-send-email-cyril@ti.com> <1347385155-11643-10-git-send-email-cyril@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 21 Sep 2012 14:31:33 -0400
+Subject: [PATCH v3] ipconfig: add nameserver IPs to kernel-parameter ip=
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: David Miller <davem@davemloft.net>
+Cc: rob@landley.net, kuznet@ms2.inr.ac.ru, j.weitzel@phytec.de,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, hjk@hansjkoch.de, daniel@zonque.org
+In-Reply-To: <20120921.133759.1667263015470766968.davem@davemloft.net>
+References: <1348176485.3858.92.camel@mars>
+	 <20120920.173719.1238894522809866676.davem@davemloft.net>
+	 <1348177730.3858.98.camel@mars>
+	 <20120921.133759.1667263015470766968.davem@davemloft.net>
+Content-Type: text/plain; charset="us-ascii"
+Date: Fri, 21 Sep 2012 20:31:19 +0200
+Message-ID: <1348252279.12456.2.camel@mars>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Sep 2012, Cyril Chemparathy wrote:
+On small systems (e.g. embedded ones) IP addresses are often configured
+by bootloaders and get assigned to kernel via parameter "ip=".  If set to
+"ip=dhcp", even nameserver entries from DHCP daemons are handled. These
+entries exported in /proc/net/pnp are commonly linked by /etc/resolv.conf.
 
-> From: Vitaly Andrianov <vitalya@ti.com>
-> 
-> This patch fixes the initrd setup code to use phys_addr_t instead of assuming
-> 32-bit addressing.  Without this we cannot boot on systems where initrd is
-> located above the 4G physical address limit.
-> 
-> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-> Acked-by: Nicolas Pitre <nico@linaro.org>
+To configure nameservers for networks without DHCP, this patch adds option
+<dns0-ip> and <dns1-ip> to kernel-parameter 'ip='.
 
-Nit: please adjust the patch title.  No need for phys_addr_t on the size.
+Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+Tested-by: Jan Weitzel <j.weitzel@phytec.de>
+---
+v2: - fix indent
+v3: - fix docu: add new arguments to option "ip="
+---
+ Documentation/filesystems/nfs/nfsroot.txt |   10 ++++++-
+ net/ipv4/ipconfig.c                       |   39 ++++++++++++++++++++++++++--
+ 2 files changed, 45 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/filesystems/nfs/nfsroot.txt b/Documentation/filesystems/nfs/nfsroot.txt
+index ffdd9d8..2d66ed6 100644
+--- a/Documentation/filesystems/nfs/nfsroot.txt
++++ b/Documentation/filesystems/nfs/nfsroot.txt
+@@ -78,7 +78,8 @@ nfsroot=[<server-ip>:]<root-dir>[,<nfs-options>]
+ 			flags		= hard, nointr, noposix, cto, ac
+ 
+ 
+-ip=<client-ip>:<server-ip>:<gw-ip>:<netmask>:<hostname>:<device>:<autoconf>
++ip=<client-ip>:<server-ip>:<gw-ip>:<netmask>:<hostname>:<device>:<autoconf>:
++   <dns0-ip>:<dns1-ip>
+ 
+   This parameter tells the kernel how to configure IP addresses of devices
+   and also how to set up the IP routing table. It was originally called
+@@ -158,6 +159,13 @@ ip=<client-ip>:<server-ip>:<gw-ip>:<netmask>:<hostname>:<device>:<autoconf>
+ 
+                 Default: any
+ 
++  <dns0-ip>	IP address of first nameserver.
++		Value gets exported by /proc/net/pnp which is often linked
++		on embedded systems by /etc/resolv.conf.
++
++  <dns1-ip>	IP address of secound nameserver.
++		Same as above.
++
+ 
+ nfsrootdebug
+ 
+diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
+index 67e8a6b..1c0e7e0 100644
+--- a/net/ipv4/ipconfig.c
++++ b/net/ipv4/ipconfig.c
+@@ -743,14 +743,22 @@ static void __init ic_bootp_init_ext(u8 *e)
+ 
+ 
+ /*
+- *  Initialize the DHCP/BOOTP mechanism.
++ *  Predefine Nameservers
+  */
+-static inline void __init ic_bootp_init(void)
++static inline void __init ic_nameservers_predef(void)
+ {
+ 	int i;
+ 
+ 	for (i = 0; i < CONF_NAMESERVERS_MAX; i++)
+ 		ic_nameservers[i] = NONE;
++}
++
++/*
++ *  Initialize the DHCP/BOOTP mechanism.
++ */
++static inline void __init ic_bootp_init(void)
++{
++	ic_nameservers_predef();
+ 
+ 	dev_add_pack(&bootp_packet_type);
+ }
+@@ -1379,6 +1387,7 @@ static int __init ip_auto_config(void)
+ 	int retries = CONF_OPEN_RETRIES;
+ #endif
+ 	int err;
++	unsigned int i;
+ 
+ #ifdef CONFIG_PROC_FS
+ 	proc_net_fops_create(&init_net, "pnp", S_IRUGO, &pnp_seq_fops);
+@@ -1499,7 +1508,15 @@ static int __init ip_auto_config(void)
+ 		&ic_servaddr, &root_server_addr, root_server_path);
+ 	if (ic_dev_mtu)
+ 		pr_cont(", mtu=%d", ic_dev_mtu);
+-	pr_cont("\n");
++	for (i = 0; i < CONF_NAMESERVERS_MAX; i++)
++		if (ic_nameservers[i] != NONE) {
++			pr_info("     nameserver%u=%pI4",
++				i, &ic_nameservers[i]);
++			break;
++		}
++	for (i++; i < CONF_NAMESERVERS_MAX; i++)
++		if (ic_nameservers[i] != NONE)
++			pr_cont(", nameserver%u=%pI4\n", i, &ic_nameservers[i]);
+ #endif /* !SILENT */
+ 
+ 	return 0;
+@@ -1570,6 +1587,8 @@ static int __init ip_auto_config_setup(char *addrs)
+ 		return 1;
+ 	}
+ 
++	ic_nameservers_predef();
++
+ 	/* Parse string for static IP assignment.  */
+ 	ip = addrs;
+ 	while (ip && *ip) {
+@@ -1613,6 +1632,20 @@ static int __init ip_auto_config_setup(char *addrs)
+ 					ic_enable = 0;
+ 				}
+ 				break;
++			case 7:
++				if (CONF_NAMESERVERS_MAX >= 1) {
++					ic_nameservers[0] = in_aton(ip);
++					if (ic_nameservers[0] == ANY)
++						ic_nameservers[0] = NONE;
++				}
++				break;
++			case 8:
++				if (CONF_NAMESERVERS_MAX >= 2) {
++					ic_nameservers[1] = in_aton(ip);
++					if (ic_nameservers[1] == ANY)
++						ic_nameservers[1] = NONE;
++				}
++				break;
+ 			}
+ 		}
+ 		ip = cp;
+-- 
+1.7.2.5
 
 
-> ---
->  arch/arm/mm/init.c |   13 +++++++------
->  1 file changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index 1c5151a..87ee0ec 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -36,12 +36,13 @@
->  
->  #include "mm.h"
->  
-> -static unsigned long phys_initrd_start __initdata = 0;
-> +static phys_addr_t phys_initrd_start __initdata = 0;
->  static unsigned long phys_initrd_size __initdata = 0;
->  
->  static int __init early_initrd(char *p)
->  {
-> -	unsigned long start, size;
-> +	phys_addr_t start;
-> +	unsigned long size;
->  	char *endp;
->  
->  	start = memparse(p, &endp);
-> @@ -347,14 +348,14 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
->  #ifdef CONFIG_BLK_DEV_INITRD
->  	if (phys_initrd_size &&
->  	    !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
-> -		pr_err("INITRD: 0x%08lx+0x%08lx is not a memory region - disabling initrd\n",
-> -		       phys_initrd_start, phys_initrd_size);
-> +		pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
-> +		       (u64)phys_initrd_start, phys_initrd_size);
->  		phys_initrd_start = phys_initrd_size = 0;
->  	}
->  	if (phys_initrd_size &&
->  	    memblock_is_region_reserved(phys_initrd_start, phys_initrd_size)) {
-> -		pr_err("INITRD: 0x%08lx+0x%08lx overlaps in-use memory region - disabling initrd\n",
-> -		       phys_initrd_start, phys_initrd_size);
-> +		pr_err("INITRD: 0x%08llx+0x%08lx overlaps in-use memory region - disabling initrd\n",
-> +		       (u64)phys_initrd_start, phys_initrd_size);
->  		phys_initrd_start = phys_initrd_size = 0;
->  	}
->  	if (phys_initrd_size) {
-> -- 
-> 1.7.9.5
-> 
+
