@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab2IURyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:54:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54976 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751793Ab2IURyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:54:38 -0400
-Date: Fri, 21 Sep 2012 14:54:24 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 9/9] mm: compaction: Restart compaction from near where
- it left off
-Message-ID: <20120921175424.GI6665@optiplex.redhat.com>
-References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
- <1348224383-1499-10-git-send-email-mgorman@suse.de>
+	id S1754091Ab2IUR4n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:56:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54806 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752674Ab2IUR4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 13:56:40 -0400
+Message-ID: <505CAA4F.70801@canonical.com>
+Date: Fri, 21 Sep 2012 10:56:31 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348224383-1499-10-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Morris <jmorris@namei.org>
+CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <alpine.LRH.2.02.1209211221390.16498@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.02.1209211221390.16498@tundra.namei.org>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 11:46:23AM +0100, Mel Gorman wrote:
-> This is almost entirely based on Rik's previous patches and discussions
-> with him about how this might be implemented.
+On 09/20/2012 07:22 PM, James Morris wrote:
+> On Thu, 20 Sep 2012, Kees Cook wrote:
 > 
-> Order > 0 compaction stops when enough free pages of the correct page
-> order have been coalesced.  When doing subsequent higher order allocations,
-> it is possible for compaction to be invoked many times.
+>> Earlier proposals for appending signatures to kernel modules would not be
+>> useful in Chrome OS, since it would involve adding an additional set of
+>> keys to our kernel and builds for no good reason: we already trust the
+>> contents of our root filesystem. We don't need to verify those kernel
+>> modules a second time. Having to do signature checking on module loading
+>> would slow us down and be redundant. All we need to know is where a
+>> module is coming from so we can say yes/no to loading it.
 > 
-> However, the compaction code always starts out looking for things to compact
-> at the start of the zone, and for free pages to compact things to at the
-> end of the zone.
+> Just out of interest, has anyone else expressed interest in using this 
+> feature?
 > 
-> This can cause quadratic behaviour, with isolate_freepages starting at
-> the end of the zone each time, even though previous invocations of the
-> compaction code already filled up all free memory on that end of the zone.
-> This can cause isolate_freepages to take enormous amounts of CPU with
-> certain workloads on larger memory systems.
-> 
-> This patch caches where the migration and free scanner should start from on
-> subsequent compaction invocations using the pageblock-skip information. When
-> compaction starts it begins from the cached restart points and will
-> update the cached restart points until a page is isolated or a pageblock
-> is skipped that would have been scanned by synchronous compaction.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
-
-Acked-by: Rafael Aquini <aquini@redhat.com>
+we are looking at using it in apparmor as well
 
