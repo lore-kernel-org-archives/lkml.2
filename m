@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab2IUC2l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 22:28:41 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:1202 "EHLO
+	id S1756919Ab2IUC2j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 22:28:39 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:1207 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756832Ab2IUC1j (ORCPT
+	with ESMTP id S1756840Ab2IUC1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Sep 2012 22:27:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6841"; a="237156939"
+X-IronPort-AV: E=McAfee;i="5400,1158,6841"; a="237156938"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 08/10] ARM: msm: Prepare clk_get() users in mach-msm for clock-pcom driver
-Date: Thu, 20 Sep 2012 19:26:56 -0700
-Message-Id: <1348194419-11486-9-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: [PATCH 07/10] ARM: msm: Remove clock-7x30.h include file
+Date: Thu, 20 Sep 2012 19:26:55 -0700
+Message-Id: <1348194419-11486-8-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.12.1.382.gb0576a6
 In-Reply-To: <1348194419-11486-1-git-send-email-sboyd@codeaurora.org>
 References: <1348194419-11486-1-git-send-email-sboyd@codeaurora.org>
@@ -23,117 +24,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the near future we'll be moving clock-pcom to a platform
-driver, in which case these two users of clk_get() in mach-msm
-need to be updated. Have board-trout-panel.c make the proc_comm
-call directly so that we don't have to port this board specific
-code to the driver right now and reorder the initcall order of
-dma.c so that it initializes after the clock driver probes but
-before any drivers use dma APIs.
+This file is not used outside of the two users in the clock-7x30
+array. Those two clocks are virtual "source" clocks that don't
+really need to exist outside of the clock driver. Let's remove
+them from the array, since they're not doing anything anyway, and
+then remove the clock-7x30.h include file along with it.
 
+Cc: Saravana Kannan <skannan@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/Makefile            |  9 ++++++---
- arch/arm/mach-msm/board-trout-panel.c | 19 +++++++------------
- arch/arm/mach-msm/dma.c               |  5 ++---
- 3 files changed, 15 insertions(+), 18 deletions(-)
+ arch/arm/mach-msm/clock-7x30.h      | 155 ------------------------------------
+ arch/arm/mach-msm/devices-msm7x30.c |   2 -
+ 2 files changed, 157 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/clock-7x30.h
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 17519fa..3dbae74 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -5,12 +5,15 @@ obj-$(CONFIG_DEBUG_FS) += clock-debug.o
- obj-$(CONFIG_MSM_VIC) += irq-vic.o
- obj-$(CONFIG_MSM_IOMMU) += devices-iommu.o
- 
--obj-$(CONFIG_ARCH_MSM7X00A) += dma.o irq.o
--obj-$(CONFIG_ARCH_MSM7X30) += dma.o
--obj-$(CONFIG_ARCH_QSD8X50) += dma.o sirc.o
-+obj-$(CONFIG_ARCH_MSM7X00A) += irq.o
-+obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
- 
- obj-$(CONFIG_MSM_PROC_COMM) += proc_comm.o clock-pcom.o vreg.o
- 
-+obj-$(CONFIG_ARCH_MSM7X00A) += dma.o
-+obj-$(CONFIG_ARCH_MSM7X30) += dma.o
-+obj-$(CONFIG_ARCH_QSD8X50) += dma.o
-+
- obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
- obj-$(CONFIG_MSM_SMD) += last_radio_log.o
- obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
-diff --git a/arch/arm/mach-msm/board-trout-panel.c b/arch/arm/mach-msm/board-trout-panel.c
-index 89bf6b4..0be703b 100644
---- a/arch/arm/mach-msm/board-trout-panel.c
-+++ b/arch/arm/mach-msm/board-trout-panel.c
-@@ -7,7 +7,6 @@
- #include <linux/platform_device.h>
- #include <linux/delay.h>
- #include <linux/leds.h>
--#include <linux/clk.h>
- #include <linux/err.h>
- 
- #include <asm/io.h>
-@@ -19,6 +18,7 @@
- 
- #include "board-trout.h"
- #include "proc_comm.h"
-+#include "clock-pcom.h"
- #include "devices.h"
- 
- #define TROUT_DEFAULT_BACKLIGHT_BRIGHTNESS 255
-@@ -170,7 +170,6 @@ static struct mddi_table mddi_toshiba_init_table[] = {
- #define INTMASK_VWAKEOUT (1U << 0)
- 
- 
--static struct clk *gp_clk;
- static int trout_new_backlight = 1;
- static struct vreg *vreg_mddi_1v5;
- static struct vreg *vreg_lcm_2v85;
-@@ -273,18 +272,14 @@ int __init trout_init_panel(void)
- 	} else {
- 		uint32_t config = PCOM_GPIO_CFG(27, 1, GPIO_OUTPUT,
- 						GPIO_NO_PULL, GPIO_8MA);
-+		uint32_t id = P_GP_CLK;
-+		uint32_t rate = 19200000;
-+
- 		msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &config, 0);
- 
--		gp_clk = clk_get(NULL, "gp_clk");
--		if (IS_ERR(gp_clk)) {
--			printk(KERN_ERR "trout_init_panel: could not get gp"
--			       "clock\n");
--			gp_clk = NULL;
--		}
--		rc = clk_set_rate(gp_clk, 19200000);
--		if (rc)
--			printk(KERN_ERR "trout_init_panel: set clock rate "
--			       "failed\n");
-+		msm_proc_comm(PCOM_CLKCTL_RPC_SET_RATE, &id, &rate);
-+		if (id < 0)
-+			pr_err("trout_init_panel: set clock rate failed\n");
- 	}
- 
- 	rc = platform_device_register(&msm_device_mdp);
-diff --git a/arch/arm/mach-msm/dma.c b/arch/arm/mach-msm/dma.c
-index 354b91d..37a4ddd 100644
---- a/arch/arm/mach-msm/dma.c
-+++ b/arch/arm/mach-msm/dma.c
-@@ -258,6 +258,7 @@ static int __init msm_init_datamover(void)
- 	clk = clk_get(NULL, "adm_clk");
- 	if (IS_ERR(clk))
- 		return PTR_ERR(clk);
-+	clk_prepare(clk);
- 	msm_dmov_clk = clk;
- 	ret = request_irq(INT_ADM_AARM, msm_datamover_irq_handler, 0, "msmdatamover", NULL);
- 	if (ret)
-@@ -265,6 +266,4 @@ static int __init msm_init_datamover(void)
- 	disable_irq(INT_ADM_AARM);
- 	return 0;
- }
+diff --git a/arch/arm/mach-msm/clock-7x30.h b/arch/arm/mach-msm/clock-7x30.h
+deleted file mode 100644
+index 1410445..0000000
+--- a/arch/arm/mach-msm/clock-7x30.h
++++ /dev/null
+@@ -1,155 +0,0 @@
+-/* Copyright (c) 2009, Code Aurora Forum. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 and
+- * only version 2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
 -
--arch_initcall(msm_init_datamover);
+-#ifndef __ARCH_ARM_MACH_MSM_CLOCK_7X30_H
+-#define __ARCH_ARM_MACH_MSM_CLOCK_7X30_H
 -
-+module_init(msm_init_datamover);
+-enum {
+-	L_7X30_NONE_CLK = -1,
+-	L_7X30_ADM_CLK,
+-	L_7X30_I2C_CLK,
+-	L_7X30_I2C_2_CLK,
+-	L_7X30_QUP_I2C_CLK,
+-	L_7X30_UART1DM_CLK,
+-	L_7X30_UART1DM_P_CLK,
+-	L_7X30_UART2DM_CLK,
+-	L_7X30_UART2DM_P_CLK,
+-	L_7X30_EMDH_CLK,
+-	L_7X30_EMDH_P_CLK,
+-	L_7X30_PMDH_CLK,
+-	L_7X30_PMDH_P_CLK,
+-	L_7X30_GRP_2D_CLK,
+-	L_7X30_GRP_2D_P_CLK,
+-	L_7X30_GRP_3D_SRC_CLK,
+-	L_7X30_GRP_3D_CLK,
+-	L_7X30_GRP_3D_P_CLK,
+-	L_7X30_IMEM_CLK,
+-	L_7X30_SDC1_CLK,
+-	L_7X30_SDC1_P_CLK,
+-	L_7X30_SDC2_CLK,
+-	L_7X30_SDC2_P_CLK,
+-	L_7X30_SDC3_CLK,
+-	L_7X30_SDC3_P_CLK,
+-	L_7X30_SDC4_CLK,
+-	L_7X30_SDC4_P_CLK,
+-	L_7X30_MDP_CLK,
+-	L_7X30_MDP_P_CLK,
+-	L_7X30_MDP_LCDC_PCLK_CLK,
+-	L_7X30_MDP_LCDC_PAD_PCLK_CLK,
+-	L_7X30_MDP_VSYNC_CLK,
+-	L_7X30_MI2S_CODEC_RX_M_CLK,
+-	L_7X30_MI2S_CODEC_RX_S_CLK,
+-	L_7X30_MI2S_CODEC_TX_M_CLK,
+-	L_7X30_MI2S_CODEC_TX_S_CLK,
+-	L_7X30_MI2S_M_CLK,
+-	L_7X30_MI2S_S_CLK,
+-	L_7X30_LPA_CODEC_CLK,
+-	L_7X30_LPA_CORE_CLK,
+-	L_7X30_LPA_P_CLK,
+-	L_7X30_MIDI_CLK,
+-	L_7X30_MDC_CLK,
+-	L_7X30_ROTATOR_IMEM_CLK,
+-	L_7X30_ROTATOR_P_CLK,
+-	L_7X30_SDAC_M_CLK,
+-	L_7X30_SDAC_CLK,
+-	L_7X30_UART1_CLK,
+-	L_7X30_UART2_CLK,
+-	L_7X30_UART3_CLK,
+-	L_7X30_TV_CLK,
+-	L_7X30_TV_DAC_CLK,
+-	L_7X30_TV_ENC_CLK,
+-	L_7X30_HDMI_CLK,
+-	L_7X30_TSIF_REF_CLK,
+-	L_7X30_TSIF_P_CLK,
+-	L_7X30_USB_HS_SRC_CLK,
+-	L_7X30_USB_HS_CLK,
+-	L_7X30_USB_HS_CORE_CLK,
+-	L_7X30_USB_HS_P_CLK,
+-	L_7X30_USB_HS2_CLK,
+-	L_7X30_USB_HS2_CORE_CLK,
+-	L_7X30_USB_HS2_P_CLK,
+-	L_7X30_USB_HS3_CLK,
+-	L_7X30_USB_HS3_CORE_CLK,
+-	L_7X30_USB_HS3_P_CLK,
+-	L_7X30_VFE_CLK,
+-	L_7X30_VFE_P_CLK,
+-	L_7X30_VFE_MDC_CLK,
+-	L_7X30_VFE_CAMIF_CLK,
+-	L_7X30_CAMIF_PAD_P_CLK,
+-	L_7X30_CAM_M_CLK,
+-	L_7X30_JPEG_CLK,
+-	L_7X30_JPEG_P_CLK,
+-	L_7X30_VPE_CLK,
+-	L_7X30_MFC_CLK,
+-	L_7X30_MFC_DIV2_CLK,
+-	L_7X30_MFC_P_CLK,
+-	L_7X30_SPI_CLK,
+-	L_7X30_SPI_P_CLK,
+-	L_7X30_CSI0_CLK,
+-	L_7X30_CSI0_VFE_CLK,
+-	L_7X30_CSI0_P_CLK,
+-	L_7X30_CSI1_CLK,
+-	L_7X30_CSI1_VFE_CLK,
+-	L_7X30_CSI1_P_CLK,
+-	L_7X30_GLBL_ROOT_CLK,
+-
+-	L_7X30_AXI_LI_VG_CLK,
+-	L_7X30_AXI_LI_GRP_CLK,
+-	L_7X30_AXI_LI_JPEG_CLK,
+-	L_7X30_AXI_GRP_2D_CLK,
+-	L_7X30_AXI_MFC_CLK,
+-	L_7X30_AXI_VPE_CLK,
+-	L_7X30_AXI_LI_VFE_CLK,
+-	L_7X30_AXI_LI_APPS_CLK,
+-	L_7X30_AXI_MDP_CLK,
+-	L_7X30_AXI_IMEM_CLK,
+-	L_7X30_AXI_LI_ADSP_A_CLK,
+-	L_7X30_AXI_ROTATOR_CLK,
+-
+-	L_7X30_NR_CLKS
+-};
+-
+-struct clk_ops;
+-extern struct clk_ops clk_ops_7x30;
+-
+-struct clk_ops *clk_7x30_is_local(uint32_t id);
+-int clk_7x30_init(void);
+-
+-void pll_enable(uint32_t pll);
+-void pll_disable(uint32_t pll);
+-
+-extern int internal_pwr_rail_ctl_auto(unsigned rail_id, bool enable);
+-
+-#define CLK_7X30(clk_name, clk_id, clk_dev, clk_flags) {	\
+-	.con_id = clk_name, \
+-	.dev_id = clk_dev, \
+-	.clk = &(struct clk){ \
+-		.id = L_7X30_##clk_id, \
+-		.remote_id = P_##clk_id, \
+-		.flags = clk_flags, \
+-		.dbg_name = #clk_id, \
+-	}, \
+-	}
+-
+-#define CLK_7X30S(clk_name, l_id, r_id, clk_dev, clk_flags) {	\
+-	.con_id = clk_name, \
+-	.dev_id = clk_dev, \
+-	.clk = &(struct clk){ \
+-		.id = L_7X30_##l_id, \
+-		.remote_id = P_##r_id, \
+-		.flags = clk_flags, \
+-		.dbg_name = #l_id, \
+-		.ops = &clk_ops_pcom, \
+-	}, \
+-	}
+-
+-#endif
+diff --git a/arch/arm/mach-msm/devices-msm7x30.c b/arch/arm/mach-msm/devices-msm7x30.c
+index 09b4f14..1597d43 100644
+--- a/arch/arm/mach-msm/devices-msm7x30.c
++++ b/arch/arm/mach-msm/devices-msm7x30.c
+@@ -146,7 +146,6 @@ struct clk_lookup msm_clocks_7x30[] = {
+ 	CLK_PCOM("grp_2d_pclk",	GRP_2D_P_CLK,	NULL, 0),
+ 	CLK_PCOM("grp_clk",	GRP_3D_CLK,	NULL, 0),
+ 	CLK_PCOM("grp_pclk",	GRP_3D_P_CLK,	NULL, 0),
+-	CLK_7X30S("grp_src_clk", GRP_3D_SRC_CLK, GRP_3D_CLK,	NULL, 0),
+ 	CLK_PCOM("hdmi_clk",	HDMI_CLK,	NULL, 0),
+ 	CLK_PCOM("imem_clk",	IMEM_CLK,	NULL, OFF),
+ 	CLK_PCOM("jpeg_clk",	JPEG_CLK,	NULL, OFF),
+@@ -179,7 +178,6 @@ struct clk_lookup msm_clocks_7x30[] = {
+ 	CLK_PCOM("sdac_clk",	SDAC_CLK,	NULL, OFF),
+ 	CLK_PCOM("spi_clk",	SPI_CLK,	NULL, 0),
+ 	CLK_PCOM("spi_pclk",	SPI_P_CLK,	NULL, 0),
+-	CLK_7X30S("tv_src_clk",	TV_CLK, 	TV_ENC_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
+ 	CLK_PCOM("uart_clk",	UART2_CLK,	"msm_serial.1", 0),
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
