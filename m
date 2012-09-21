@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab2IURf1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:35:27 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37030 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756718Ab2IURf0 (ORCPT
+	id S932312Ab2IURiG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:38:06 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50756 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070Ab2IURiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:35:26 -0400
-MIME-Version: 1.0
-Date: Fri, 21 Sep 2012 18:35:25 +0100
-Message-ID: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
-Subject: Work queue questions
-From: Dinky Verma <dverma249@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Sep 2012 13:38:03 -0400
+Date: Fri, 21 Sep 2012 13:37:59 -0400 (EDT)
+Message-Id: <20120921.133759.1667263015470766968.davem@davemloft.net>
+To: chf.fritz@googlemail.com
+Cc: rob@landley.net, kuznet@ms2.inr.ac.ru, j.weitzel@phytec.de,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, hjk@hansjkoch.de, daniel@zonque.org
+Subject: Re: [PATCH v2] ipconfig: add nameserver IPs to kernel-parameter ip=
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1348177730.3858.98.camel@mars>
+References: <1348176485.3858.92.camel@mars>
+	<20120920.173719.1238894522809866676.davem@davemloft.net>
+	<1348177730.3858.98.camel@mars>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Christoph Fritz <chf.fritz@googlemail.com>
+Date: Thu, 20 Sep 2012 23:48:50 +0200
 
-I have one question regarding concurrency managed workqueue. In the
-previous kernel versions, I was using
-create_singlethread_workqueue("driver_wq") e.g workqueue name is
-driver_wq. In my device driver with the latest kernel version, I am
-doing the same to have a support in my device driver for previous
-kernel versions and new kernel version, I started using
-alloc_workqueue (in intention to create single threaded workqueue)
-e.g.
+> diff --git a/Documentation/filesystems/nfs/nfsroot.txt b/Documentation/filesystems/nfs/nfsroot.txt
+> index ffdd9d8..4ed7875 100644
+> --- a/Documentation/filesystems/nfs/nfsroot.txt
+> +++ b/Documentation/filesystems/nfs/nfsroot.txt
+> @@ -158,6 +158,13 @@ ip=<client-ip>:<server-ip>:<gw-ip>:<netmask>:<hostname>:<device>:<autoconf>
+>  
+>                  Default: any
+>  
+> +  <dns0-ip>	IP address of first nameserver.
+> +		Value gets exported by /proc/net/pnp which is often linked
+> +		on embedded systems by /etc/resolv.conf.
+> +
+> +  <dns1-ip>	IP address of secound nameserver.
+> +		Same as above.
+> +
+>  
+>  nfsrootdebug
+>  
 
-wq = alloc_workqueue("driver_wq", WQ_UNBOUND,1);
+This documentation update is not sufficient.
 
-create_singlethread_workqueue (Depricated) and alloc_workqueue creates
-work queue both work on the newer kernel versions.
-
-I have created 3 single threaded workqueues. when I do ps on linux
-console, I see the workqueue thread with process id. When I am queuing
-the work simultaneously on these worker threads, I found that threads
-named with Kworker/X.Y will process the work from the work queue not
-the one that had been created create_singlethread_workqueue.
-
-When I schedule the three works at the same time, I saw sometimes one
-Kworker/X.Y thread processes all work items.
-
-The question is why the main worker thread that I created does not
-process the work that is intended for it why instead kworker will
-process it? I have queued the work using queue_work(wq,
-worker_struct).
-
-Regards,
-Deepa
+You have to properly show, in the lines above where you made your change,
+where the new settings are placed in the "ip=" option.
