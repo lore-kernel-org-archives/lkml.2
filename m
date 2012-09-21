@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756992Ab2IUP7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 11:59:13 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39416 "EHLO arroyo.ext.ti.com"
+	id S1757162Ab2IUP7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 11:59:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39410 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756820Ab2IUP53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 11:57:29 -0400
+	id S1756732Ab2IUP52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 11:57:28 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
@@ -18,9 +18,9 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <tj@kernel.org>, <vincent.guittot@linaro.org>, <vitalya@ti.com>,
         <will.deacon@arm.com>, <grant.likely@secretlab.ca>,
         Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v3 RESEND 05/17] ARM: LPAE: support 64-bit virt_to_phys patching
-Date: Fri, 21 Sep 2012 11:56:03 -0400
-Message-ID: <1348242975-19184-6-git-send-email-cyril@ti.com>
+Subject: [PATCH v3 RESEND 07/17] ARM: LPAE: use phys_addr_t in alloc_init_pud()
+Date: Fri, 21 Sep 2012 11:56:05 -0400
+Message-ID: <1348242975-19184-8-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348242975-19184-1-git-send-email-cyril@ti.com>
 References: <1348242975-19184-1-git-send-email-cyril@ti.com>
@@ -30,103 +30,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for 64-bit physical addresses in virt_to_phys()
-patching.  This does not do real 64-bit add/sub, but instead patches in the
-upper 32-bits of the phys_offset directly into the output of virt_to_phys.
+From: Vitaly Andrianov <vitalya@ti.com>
 
-There is no corresponding change on the phys_to_virt() side, because
-computations on the upper 32-bits would be discarded anyway.
+This patch fixes the alloc_init_pud() function to use phys_addr_t instead of
+unsigned long when passing in the phys argument.
 
+This is an extension to commit 97092e0c56830457af0639f6bd904537a150ea4a (ARM:
+pgtable: use phys_addr_t for physical addresses), which applied similar changes
+elsewhere in the ARM memory management code.
+
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
 ---
- arch/arm/include/asm/memory.h |   38 ++++++++++++++++++++++++++++++++++++--
- arch/arm/kernel/head.S        |    4 ++++
- arch/arm/kernel/setup.c       |    2 +-
- 3 files changed, 41 insertions(+), 3 deletions(-)
+ arch/arm/mm/mmu.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 88ca206..f3e8f88 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -154,13 +154,47 @@
- #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
- 
- extern unsigned long	__pv_offset;
--extern unsigned long	__pv_phys_offset;
-+extern phys_addr_t	__pv_phys_offset;
- #define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
- 
- static inline phys_addr_t __virt_to_phys(unsigned long x)
- {
--	unsigned long t;
-+	phys_addr_t t;
-+
-+#ifndef CONFIG_ARM_LPAE
- 	early_patch_imm8("add", t, x, __pv_offset, 0);
-+#else
-+	unsigned long __tmp;
-+
-+#ifndef __ARMEB__
-+#define PV_PHYS_HIGH	"(__pv_phys_offset + 4)"
-+#else
-+#define PV_PHYS_HIGH	"__pv_phys_offset"
-+#endif
-+
-+	early_patch_stub(
-+	/* type */		PATCH_IMM8,
-+	/* code */
-+		"ldr		%[tmp], =__pv_offset\n"
-+		"ldr		%[tmp], [%[tmp]]\n"
-+		"add		%Q[to], %[from], %[tmp]\n"
-+		"ldr		%[tmp], =" PV_PHYS_HIGH "\n"
-+		"ldr		%[tmp], [%[tmp]]\n"
-+		"mov		%R[to], %[tmp]\n",
-+	/* pad */		4,
-+	/* patch_data */
-+		".long		__pv_offset\n"
-+		"add		%Q[to], %[from], %[imm]\n"
-+		".long	"	PV_PHYS_HIGH "\n"
-+		"mov		%R[to], %[imm]\n",
-+	/* operands */
-+		: [to]	 "=r"	(t),
-+		  [tmp]	 "=&r"	(__tmp)
-+		: [from] "r"	(x),
-+		  [imm]	 "I"	(__IMM8),
-+			 "i"	(&__pv_offset),
-+			 "i"	(&__pv_phys_offset));
-+#endif
- 	return t;
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index c2fa21d..8db7c74 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -622,7 +622,8 @@ static void __init alloc_init_section(pud_t *pud, unsigned long addr,
  }
  
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index 69a3c09..61fb8df 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -530,7 +530,11 @@ ENDPROC(__fixup_pv_offsets)
- 
- 	.align
- 1:	.long	.
-+#if defined(CONFIG_ARM_LPAE) && defined(__ARMEB__)
-+	.long	__pv_phys_offset + 4
-+#else
- 	.long	__pv_phys_offset
-+#endif
- 	.long	__pv_offset
- 	.long	PAGE_OFFSET
- #endif
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 59e0f57..edb4f42 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -159,7 +159,7 @@ DEFINE_PER_CPU(struct cpuinfo_arm, cpu_data);
-  * The initializers here prevent these from landing in the BSS section.
-  */
- unsigned long __pv_offset = 0xdeadbeef;
--unsigned long __pv_phys_offset = 0xdeadbeef;
-+phys_addr_t   __pv_phys_offset = 0xdeadbeef;
- EXPORT_SYMBOL(__pv_phys_offset);
- 
- #endif
+ static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+-	unsigned long end, unsigned long phys, const struct mem_type *type)
++				  unsigned long end, phys_addr_t phys,
++				  const struct mem_type *type)
+ {
+ 	pud_t *pud = pud_offset(pgd, addr);
+ 	unsigned long next;
 -- 
 1.7.9.5
 
