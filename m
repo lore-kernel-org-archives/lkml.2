@@ -1,117 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab2IUPOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 11:14:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45372 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756147Ab2IUPOS (ORCPT
+	id S1756271Ab2IUPSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 11:18:39 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46866 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756101Ab2IUPSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 11:14:18 -0400
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: mturquette@linaro.org, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        rjw@sisk.pl
-Cc: patches@linaro.org, linaro-dev@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Subject: [PATCH v3 3/3] devfreq: Add current freq callback in device profile
-Date: Fri, 21 Sep 2012 20:41:58 +0530
-Message-Id: <1348240318-2967-4-git-send-email-rajagopal.venkat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348240318-2967-1-git-send-email-rajagopal.venkat@linaro.org>
-References: <1348240318-2967-1-git-send-email-rajagopal.venkat@linaro.org>
+	Fri, 21 Sep 2012 11:18:38 -0400
+Message-ID: <505C855F.3060301@gmail.com>
+Date: Fri, 21 Sep 2012 17:18:55 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Michael Wang <wangyun@linux.vnet.ibm.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+References: <5050CCE0.4090403@gmail.com> <20120919153934.GB2455@linux.vnet.ibm.com> <5059F458.3000407@gmail.com> <20120919170648.GF2455@linux.vnet.ibm.com> <505AC6C8.9060706@linux.vnet.ibm.com> <505AC979.7000008@gmail.com> <20120920152341.GE2449@linux.vnet.ibm.com> <505C33B9.8000807@gmail.com> <20120921121346.GD2458@linux.vnet.ibm.com> <505C6B03.7020305@gmail.com> <20120921151203.GA2454@linux.vnet.ibm.com>
+In-Reply-To: <20120921151203.GA2454@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devfreq returns governor predicted frequency as current frequency
-via sysfs interface. But device may not support all frequencies
-that governor predicts. So add a callback in device profile to get
-current freq from driver. Also add a new sysfs node to expose
-governor predicted next target frequency.
+On 09/21/2012 05:12 PM, Paul E. McKenney wrote:
+> On Fri, Sep 21, 2012 at 03:26:27PM +0200, Sasha Levin wrote:
+>> On 09/21/2012 02:13 PM, Paul E. McKenney wrote:
+>>>> This might be unrelated, but I got the following dump as well when trinity
+>>>>> decided it's time to reboot my guest:
+>>> OK, sounds like we should hold off until you reproduce, then.
+>>
+>> I'm not sure what you mean.
+>>
+>> There are basically two issues I'm seeing now, which reproduce pretty much every
+>> time:
+>>
+>>  1. The "using when idle" warning.
+>>  2. The rcu related hangs during shutdown.
+>>
+>> The first one appears early on when I start fuzzing, the other one happens when
+>> shutting down - so both of them are reproducible in the same session.
+> 
+> Ah, I misunderstood the "reboot my guest" -- I thought that you were
+> doing something like repeated modprobe/rmmod cycles on rcutorture while
+> running the guest for an extended time period.  That will teach me not
+> to reply to email so soon after waking up.  ;-)
+> 
+> That said, #2 is expected behavior given the RCU CPU stall warnings in
+> your Sept. 20 dmesg.  This is because rcutorture does rcu_barrier() on
+> the way out, which cannot complete if grace periods are not completing.
+> And the later soft lockup is also likely a consequence of the stall,
+> because CPU hotplug does a synchronize_sched() while holding the hotplug
+> lock, which will then cause get_online_cpus() to hang.
+> 
+> Looking further down, there are hung tasks that are waiting for a
+> timeout, but this is also a consequence of the hang because they
+> are waiting for MAX_SCHEDULE_TIMEOUT -- in other words, they are
+> waiting to be killed at shutdown time.  I could suppress this by using
+> schedule_timeout_interruptible() in a loop in order to reduce the noise
+> in this case.
+> 
+> The remaining traces in that email are also consequences of the stall.
+> 
+> So why the stall?
+> 
+> Using RCU from a CPU that RCU believes to be idle can cause arbitrary
+> bad behavior (possibly including stalls), but with very low probability.
+> The reason that things can go arbitrarily bad is that RCU is ignoring
+> the CPU, and thus not waiting for any RCU read-side critical sections.
+> This could of course result in abitrary corruption of memory.  The reason
+> for the low probability is that grace periods tend to be long and RCU
+> read-side critical sections tend to be short.
+> 
+> It looks like you are running -next, which has RCU grace periods driven
+> by a kthread.  Is it possible that this kthread is not getting a chance
+> to run (in fact, the "Stall ended before state dump start" is consistent
+> with that possibility), but in that case I would expect to see a soft
+> lockup from it.  Furthermore, in that case, it would be expected to
+> start running again as soon as things started going idle during shutdown.
+> 
+> Or did the system somehow manage to stay busy despite being in shutdown?
+> Or, for that matter, are you overcommitting the physical CPUs on your
+> trinity test setup?
 
-Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
----
- Documentation/ABI/testing/sysfs-class-devfreq | 11 ++++++++++-
- drivers/devfreq/devfreq.c                     | 14 ++++++++++++++
- include/linux/devfreq.h                       |  3 +++
- 3 files changed, 27 insertions(+), 1 deletion(-)
+Nope, I originally had 4 vcpus in the guest with the host running 4 physical
+cpus, but I've also tested it with just 2 vcpus and still see the warnings.
 
-diff --git a/Documentation/ABI/testing/sysfs-class-devfreq b/Documentation/ABI/testing/sysfs-class-devfreq
-index 89283b1..e6cf08e 100644
---- a/Documentation/ABI/testing/sysfs-class-devfreq
-+++ b/Documentation/ABI/testing/sysfs-class-devfreq
-@@ -19,7 +19,16 @@ Date:		September 2011
- Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
- Description:
- 		The /sys/class/devfreq/.../cur_freq shows the current
--		frequency of the corresponding devfreq object.
-+		frequency of the corresponding devfreq object. Same as
-+		target_freq when get_cur_freq() is not implemented by
-+		devfreq driver.
-+
-+What:		/sys/class/devfreq/.../target_freq
-+Date:		September 2012
-+Contact:	Rajagopal Venkat <rajagopal.venkat@linaro.org>
-+Description:
-+		The /sys/class/devfreq/.../target_freq shows the next governor
-+		predicted target frequency of the corresponding devfreq object.
- 
- What:		/sys/class/devfreq/.../polling_interval
- Date:		September 2011
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index edddb9e..33b0a33 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -453,6 +453,19 @@ static ssize_t show_governor(struct device *dev,
- static ssize_t show_freq(struct device *dev,
- 			 struct device_attribute *attr, char *buf)
- {
-+	unsigned long freq;
-+	struct devfreq *devfreq = to_devfreq(dev);
-+
-+	if (devfreq->profile->get_cur_freq &&
-+		!devfreq->profile->get_cur_freq(devfreq->dev.parent, &freq))
-+			return sprintf(buf, "%lu\n", freq);
-+
-+	return sprintf(buf, "%lu\n", devfreq->previous_freq);
-+}
-+
-+static ssize_t show_target_freq(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
- 	return sprintf(buf, "%lu\n", to_devfreq(dev)->previous_freq);
- }
- 
-@@ -552,6 +565,7 @@ static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
- static struct device_attribute devfreq_attrs[] = {
- 	__ATTR(governor, S_IRUGO, show_governor, NULL),
- 	__ATTR(cur_freq, S_IRUGO, show_freq, NULL),
-+	__ATTR(target_freq, S_IRUGO, show_target_freq, NULL),
- 	__ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
- 	       store_polling_interval),
- 	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
-diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-index 18bd3b7..f49c5d3 100644
---- a/include/linux/devfreq.h
-+++ b/include/linux/devfreq.h
-@@ -66,6 +66,8 @@ struct devfreq_dev_status {
-  *			explained above with "DEVFREQ_FLAG_*" macros.
-  * @get_dev_status	The device should provide the current performance
-  *			status to devfreq, which is used by governors.
-+ * @get_cur_freq	The device should provide the current frequency
-+ *			at which it is operating.
-  * @exit		An optional callback that is called when devfreq
-  *			is removing the devfreq object due to error or
-  *			from devfreq_remove_device() call. If the user
-@@ -79,6 +81,7 @@ struct devfreq_dev_profile {
- 	int (*target)(struct device *dev, unsigned long *freq, u32 flags);
- 	int (*get_dev_status)(struct device *dev,
- 			      struct devfreq_dev_status *stat);
-+	int (*get_cur_freq)(struct device *dev, unsigned long *freq);
- 	void (*exit)(struct device *dev);
- };
- 
--- 
-1.7.11.3
+
+Thanks,
+Sasha
 
