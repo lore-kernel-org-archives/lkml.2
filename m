@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab2IUUIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 16:08:53 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:63981 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757778Ab2IUUIv (ORCPT
+	id S1757951Ab2IUUOt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 16:14:49 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58894 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757790Ab2IUUOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 16:08:51 -0400
-Date: Fri, 21 Sep 2012 22:08:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Kees Cook <keescook@chromium.org>, Linda Wang <lwang@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 00/11] x86: Supervisor Mode Access Prevention
-Message-ID: <20120921200846.GA25679@gmail.com>
-References: <1348256595-29119-1-git-send-email-hpa@linux.intel.com>
- <CA+55aFwaZdMxLA1VCfOy9BDQHPp6CTwRFHYGUCXdJ4+KkQoN+g@mail.gmail.com>
+	Fri, 21 Sep 2012 16:14:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFwaZdMxLA1VCfOy9BDQHPp6CTwRFHYGUCXdJ4+KkQoN+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120921200733.GM7264@google.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
+	<1347977530-29755-10-git-send-email-glommer@parallels.com>
+	<00000139d9fe8595-8905906d-18ed-4d41-afdb-f4c632c2d50a-000000@email.amazonses.com>
+	<5059777E.8060906@parallels.com>
+	<CAOJsxLFgwOqUcLHEwYNERwn1Uvp4-8CmvRKTfBFAHD6p_-6c7g@mail.gmail.com>
+	<505C33D3.5000202@parallels.com>
+	<alpine.LFD.2.02.1209211240410.3619@tux.localdomain>
+	<20120921200733.GM7264@google.com>
+Date: Fri, 21 Sep 2012 23:14:45 +0300
+X-Google-Sender-Auth: 4z62gEZ6ABGIDIiJRhjsvtfrVgQ
+Message-ID: <CAOJsxLFgK3=Eu1UQt8NOSe30824UcuxZftxD1xnpkOt3MepOVg@mail.gmail.com>
+Subject: Re: [PATCH v3 09/16] sl[au]b: always get the cache from its page in kfree
+From: Pekka Enberg <penberg@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 21, 2012 at 11:07 PM, Tejun Heo <tj@kernel.org> wrote:
+> Not necessarily disagreeing, but I don't think it's helpful to set the
+> bar impossibly high.  Even static_key doesn't have "exactly *zero*"
+> impact.  Let's stick to as minimal as possible when not in use and
+> reasonable in use.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Fri, Sep 21, 2012 at 12:43 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->
-> > Supervisor Mode Access Prevention (SMAP) is a new security 
-> > feature disclosed by Intel in revision 014 of the Intel® 
-> > Architecture Instruction Set Extensions Programming 
-> > Reference:
-> 
-> Looks good.
-> 
-> Did this find any bugs, btw? We've had a few cases where we 
-> forgot to use the proper user access function, and code just 
-> happened to work because it all boils down to the same thing 
-> and never got any page faults in practice anyway..
-
-The 4g:4g patch sweeped out most of the historic ones - so what 
-we have are perhaps newer bugs (but those should be pretty rare, 
-most new features are cross-arch).
-
-Thanks,
-
-	Ingo
+For !CONFIG_MEMCG_KMEM, it should be exactly zero. No need to play
+games with static_key.
