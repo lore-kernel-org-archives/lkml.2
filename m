@@ -1,107 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084Ab2IUIp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 04:45:29 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:60888 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756772Ab2IUIp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 04:45:26 -0400
-Message-ID: <505C2856.70900@parallels.com>
-Date: Fri, 21 Sep 2012 12:41:58 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1757118Ab2IUIqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 04:46:33 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55069 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757076Ab2IUIq2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 04:46:28 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Porter, Matt" <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+CC: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: RE: [RFC PATCH 05/13] dma: Add TI EDMA device tree binding
+Thread-Topic: [RFC PATCH 05/13] dma: Add TI EDMA device tree binding
+Thread-Index: AQHNlz5dQtPA4affaUGjsWNmZ/FeYJeUeiww
+Date: Fri, 21 Sep 2012 08:45:53 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA8A819@DBDE01.ent.ti.com>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com>
+ <1348152226-13588-6-git-send-email-mporter@ti.com>
+In-Reply-To: <1348152226-13588-6-git-send-email-mporter@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: JoonSoo Kim <js1304@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-7-git-send-email-glommer@parallels.com> <CAAmzW4ONnc7n3kZbYnE6n2Cg0ZyPXW0QU2NMr0uRkyTxnGpNqQ@mail.gmail.com>
-In-Reply-To: <CAAmzW4ONnc7n3kZbYnE6n2Cg0ZyPXW0QU2NMr0uRkyTxnGpNqQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 08:05 PM, JoonSoo Kim wrote:
-> Hi, Glauber.
+On Thu, Sep 20, 2012 at 20:13:38, Porter, Matt wrote:
+> The binding definition is based on the generic DMA controller
+> binding.
 > 
-> 2012/9/18 Glauber Costa <glommer@parallels.com>:
->> +/*
->> + * We need to verify if the allocation against current->mm->owner's memcg is
->> + * possible for the given order. But the page is not allocated yet, so we'll
->> + * need a further commit step to do the final arrangements.
->> + *
->> + * It is possible for the task to switch cgroups in this mean time, so at
->> + * commit time, we can't rely on task conversion any longer.  We'll then use
->> + * the handle argument to return to the caller which cgroup we should commit
->> + * against. We could also return the memcg directly and avoid the pointer
->> + * passing, but a boolean return value gives better semantics considering
->> + * the compiled-out case as well.
->> + *
->> + * Returning true means the allocation is possible.
->> + */
->> +bool
->> +__memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
->> +{
->> +       struct mem_cgroup *memcg;
->> +       bool ret;
->> +       struct task_struct *p;
->> +
->> +       *_memcg = NULL;
->> +       rcu_read_lock();
->> +       p = rcu_dereference(current->mm->owner);
->> +       memcg = mem_cgroup_from_task(p);
->> +       rcu_read_unlock();
->> +
->> +       if (!memcg_can_account_kmem(memcg))
->> +               return true;
->> +
->> +       mem_cgroup_get(memcg);
->> +
->> +       ret = memcg_charge_kmem(memcg, gfp, PAGE_SIZE << order) == 0;
->> +       if (ret)
->> +               *_memcg = memcg;
->> +       else
->> +               mem_cgroup_put(memcg);
->> +
->> +       return ret;
->> +}
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  Documentation/devicetree/bindings/dma/ti-edma.txt |   49 +++++++++++++++++++++
+>  1 file changed, 49 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
 > 
-> "*_memcg = memcg" should be executed when "memcg_charge_kmem" is success.
-> "memcg_charge_kmem" return 0 if success in charging.
-> Therefore, I think this code is wrong.
-> If I am right, it is a serious bug that affect behavior of all the patchset.
+> diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> new file mode 100644
+> index 0000000..06402eb
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> @@ -0,0 +1,49 @@
+> +TI EDMA
+> +
+> +Required properties:
+> +- compatible : "ti,edma3"
+> +- ti,hwmods: Name of the hwmods associated to the EDMA
+> +- ti,edma-regions: Number of regions
+> +- ti,edma-slots: Number of slots
+> +- ti,edma-queue-tc-map: List of transfer control to queue mappings
+> +- ti,edma-queue-priority-map: List of queue priority mappings
+> +- ti,edma-default-queue: Default queue value
+> +
+> +Optional properties:
+> +- ti,edma-reserved-channels: List of reserved channel regions
+> +- ti,edma-reserved-slots: List of reserved slot regions
+> +
+> +Example:
+> +
+> +edma: edma@49000000 {
+> +	#address-cells = <1>;
+> +	#size-cells = <0>;
 
-Which is precisely what it does. ret is a boolean, that will be true
-when charge succeeded (== 0 test)
+address-cells & size-cells are only required when current node is a parent 
+node & it has sibling/child nodes (that too if the child node uses "reg" 
+property).
 
+
+> +	reg = <0x49000000 0x10000>;
+> +	interrupt-parent = <&intc>;
+> +	interrupts = <12 13 14>;
+> +	compatible = "ti,edma3";
+> +	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
+> +	#dma-cells = <1>;
+> +	dma-channels = <64>;
+> +	ti,edma-regions = <4>;
+> +	ti,edma-slots = <256>;
+> +	ti,edma-reserved-channels = <0  2
+> +				     14 2
+> +				     26 6
+> +				     48 4
+> +				     56 8>;
+> +	ti,edma-reserved-slots = <0  2
+> +				  14 2
+> +				  26 6
+> +				  48 4
+> +				  56 8
+> +				  64 127>;
+> +	ti,edma-queue-tc-map = <0 0
+> +				1 1
+> +				2 2>;
+> +	ti,edma-queue-priority-map = <0 0
+> +				      1 1
+> +				      2 2>;
+> +	ti,edma-default-queue = <0>;
+> +};
+> +
+> -- 
+> 1.7.9.5
 > 
->> +void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
->> +                             int order)
->> +{
->> +       struct page_cgroup *pc;
->> +
->> +       WARN_ON(mem_cgroup_is_root(memcg));
->> +
->> +       /* The page allocation failed. Revert */
->> +       if (!page) {
->> +               memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
->> +               return;
->> +       }
+> _______________________________________________
+> Davinci-linux-open-source mailing list
+> Davinci-linux-open-source@linux.davincidsp.com
+> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
 > 
-> In case of "!page ", mem_cgroup_put(memcg) is needed,
-> because we already call "mem_cgroup_get(memcg)" in
-> __memcg_kmem_newpage_charge().
-> I know that mem_cgroup_put()/get() will be removed in later patch, but
-> it is important that every patch works fine.
-
-Okay, I'll add the put here. It is indeed missing.
 
 
+Regards, 
+Gururaja
