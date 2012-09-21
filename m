@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab2IURXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:23:33 -0400
-Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:40262 "EHLO
-	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756652Ab2IURXa (ORCPT
+	id S1757000Ab2IURYC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:24:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49450 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756652Ab2IURX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:23:30 -0400
-Date: Fri, 21 Sep 2012 20:18:41 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "S, Venkatraman" <svenkatr@ti.com>
-Cc: Matt Porter <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Sekhar Nori <nsekhar@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 08/13] mmc: omap_hsmmc: limit max_segs with the EDMA
- DMAC
-Message-ID: <20120921171840.GB10409@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1348152226-13588-1-git-send-email-mporter@ti.com>
- <1348152226-13588-9-git-send-email-mporter@ti.com>
- <CANfBPZ81anOy8fWgKM1PgCtB4V2pEp2x1Qi4x1uPsq7QieMN5g@mail.gmail.com>
- <CANfBPZ-h7MD4X_NRYfwOmMnEyOKy0bTNNLNRmdbef2pe=2aHyg@mail.gmail.com>
+	Fri, 21 Sep 2012 13:23:59 -0400
+Date: Fri, 21 Sep 2012 10:23:55 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 12/13] execute the whole memcg freeing in rcu
+ callback
+Message-ID: <20120921172355.GD7264@google.com>
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
+ <1347977050-29476-13-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KFztAG8eRSV9hGtP"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANfBPZ-h7MD4X_NRYfwOmMnEyOKy0bTNNLNRmdbef2pe=2aHyg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1347977050-29476-13-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Glauber.
 
---KFztAG8eRSV9hGtP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 18, 2012 at 06:04:09PM +0400, Glauber Costa wrote:
+> A lot of the initialization we do in mem_cgroup_create() is done with softirqs
+> enabled. This include grabbing a css id, which holds &ss->id_lock->rlock, and
+> the per-zone trees, which holds rtpz->lock->rlock. All of those signal to the
+> lockdep mechanism that those locks can be used in SOFTIRQ-ON-W context. This
+> means that the freeing of memcg structure must happen in a compatible context,
+> otherwise we'll get a deadlock.
 
-On Fri, Sep 21, 2012 at 10:47:30PM +0530, S, Venkatraman wrote:
-> On Fri, Sep 21, 2012 at 10:45 PM, S, Venkatraman <svenkatr@ti.com> wrote:
-> > On Thu, Sep 20, 2012 at 8:13 PM, Matt Porter <mporter@ti.com> wrote:
-> >> The EDMA DMAC has a hardware limitation that prevents supporting
-> >> scatter gather lists with any number of segments. Since the EDMA
-> >> DMA Engine driver sets the maximum segments to 16, we do the
-> >> same.
-> >>
-> >> Note: this can be removed once the DMA Engine API supports an
-> >> API to query the DMAC's segment limitations.
-> >>
-> >
-> > I wouldn't want to bind the properties of EDMA to omap_hsmmc as this pa=
-tch
-> > suggests. Why don't we have a max_segs property, which when explicitly =
-specified
-> > in DT, will override the default ?
->=20
-> If you are adventurous, this can be a generic mmc DT binding instead
-> of restricting it to OMAP.
+Lockdep requires lock to be softirq or irq safe iff the lock is
+actually acquired from the said context.  Merely using a lock with bh
+/ irq disabled doesn't signal that to lockdep; otherwise, we'll end up
+with enormous number of spurious warnings.
 
-I say if it's a limitation in the DMAC, then DMAC's driver should handle
-it, no ? Meaning that in this case you would copy from one multi-segment
-sg into a one-segment sg and when transfer is complete, before calling
-user's callback, copy data the other way around (?)
+> The reference counting mechanism we use allows the memcg structure to be freed
+> later and outlive the actual memcg destruction from the filesystem. However, we
+> have little, if any, means to guarantee in which context the last memcg_put
+> will happen. The best we can do is test it and try to make sure no invalid
+> context releases are happening. But as we add more code to memcg, the possible
+> interactions grow in number and expose more ways to get context conflicts.
+> 
+> We already moved a part of the freeing to a worker thread to be context-safe
+> for the static branches disabling. I see no reason not to do it for the whole
+> freeing action. I consider this to be the safe choice.
 
---=20
-balbi
+And the above description too makes me scratch my head quite a bit.  I
+can see what the patch is doing but can't understand the why.
 
---KFztAG8eRSV9hGtP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+* Why was it punting the freeing to workqueue anyway?  ISTR something
+  about static_keys but my memory fails.  What changed?  Why don't we
+  need it anymore?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+* As for locking context, the above description seems a bit misleading
+  to me.  Synchronization constructs involved there currently doesn't
+  require softirq or irq safe context.  If that needs to change,
+  that's fine but that's a completely different reason than given
+  above.
 
-iQIcBAEBAgAGBQJQXKFwAAoJEIaOsuA1yqREWTUP/10iBfr1wNrAWCDghpd4U6dl
-wDjgM4HgNKsrYRl3uMn+NShEjYNyPSxtETSmODVUbSU2wo3h/AVuo/LLQwJhcHCY
-dQoF/h3Az2uEaJGZdfnwU48zv9SnQ/X//ZTstaSRzjZDkrC/WRPYiqmMtScgyklU
-qvnF+BS7mNn+MHjQk5b8QsRUi8nk4rCiUlh3AouAhUlekPXPXkM3KF2PDEgin+9e
-GKYu+8bMRy4w2/qbB2cSSCGNxVIfk250V8aAZfZ1vqNmGOMN7tD9F6qEZJYuq6OZ
-aHHaumkj+KptFOjXlfk3mL1Q5sTgMMZRC5ZZXBzRlILl8H0NW0ghXTvQyqnX2Y2V
-J7u1D11vXAQkgTSfzSr2JK7WXy9KYTnL82E/LsZhBmxrEGEVfPGGf97pKD7okt90
-NYqF0PzR3CE6S7GPwBccjJwcBsusaT23+fXNS70GaWVqH8e+eUxDTubIak4ThNZC
-MEqvjEXCNR6CDDa4L3JBdRFl9E1BQ5H1OvGKLHvxDItbSh3TTPHQCxjlaspGL2oW
-CWaPAoZTF0EajhSN7zYHZFW8TzxYdY5sCcFOpY475myucPs2q/UonzDd6VHwurah
-nINkgLb1H7HhnCdgbSHDvqbxB/a4yzCny2lJmWL5zYATVJL1g3uPsVhtVX4cz70u
-Nj0JmrafhJRUR8v5flxs
-=09if
------END PGP SIGNATURE-----
+Thanks.
 
---KFztAG8eRSV9hGtP--
+-- 
+tejun
