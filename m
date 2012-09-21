@@ -1,48 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab2IUNFb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 09:05:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59514 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014Ab2IUNFa (ORCPT
+	id S1754982Ab2IUNJm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 09:09:42 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:45476 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754587Ab2IUNJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 09:05:30 -0400
-Message-ID: <505C6617.4010801@gmail.com>
-Date: Fri, 21 Sep 2012 07:05:27 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 21 Sep 2012 09:09:40 -0400
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>, Irina Tirdea <irina.tirdea@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: Re: [PATCH 1/4] perf tools: configure tmp path at build time
-References: <1348179215-11160-1-git-send-email-irina.tirdea@gmail.com> <1348179215-11160-2-git-send-email-irina.tirdea@gmail.com> <CAOJsxLHYZyGkORudmXd5+f3_NBXTh7rmDC-Cw3=06vyVk7WZaA@mail.gmail.com>
-In-Reply-To: <CAOJsxLHYZyGkORudmXd5+f3_NBXTh7rmDC-Cw3=06vyVk7WZaA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1348230054-7402-1-git-send-email-vbyravarasu@nvidia.com>
+References: <1348230054-7402-1-git-send-email-vbyravarasu@nvidia.com>
+Date: Fri, 21 Sep 2012 18:39:37 +0530
+Message-ID: <CAAe_U6K2hANpRqzyoiiP2mR97=M2Mb35+FVor11DaaZi7W9Pnw@mail.gmail.com>
+Subject: Re: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/21/12 1:47 AM, Pekka Enberg wrote:
+Hi,
 
->> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
->> index e2e8c69..eb671d5 100644
->> --- a/tools/perf/util/symbol.c
->> +++ b/tools/perf/util/symbol.c
->> @@ -1051,7 +1051,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
->>
->>          dso->adjust_symbols = 0;
->>
->> -       if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
->> +       if (strncmp(dso->name, PERF_TMP_DIR "/perf-", 10) == 0) {
->>                  struct stat st;
+On Fri, Sep 21, 2012 at 5:50 PM, Venu Byravarasu <vbyravarasu@nvidia.com> wrote:
+> NVIDIA produces several Tegra SoCs viz Tegra20, Tegra30 etc.
+> In order to support USB PHY drivers on these SoCs, existing
+> PHY driver is split into SoC agnostic common USB PHY driver
+> and Tegra20-specific USB phy driver. This will facilitate
+> easy addition and deletion of phy drivers for Tegra SoCs.
+>
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
+> delta from v2:
+>
+> Added an if condition to check for device_node to be not NULL,
+> before dereferencing it.
+>
+>  drivers/usb/host/ehci-tegra.c                      |   26 +-
+>  drivers/usb/phy/Makefile                           |    1 +
+>  .../usb/phy/{tegra_usb_phy.c => tegra2_usb_phy.c}  |  421 +++----------
+>  drivers/usb/phy/tegra2_usb_phy.h                   |  140 ++++
+>  drivers/usb/phy/tegra_usb_phy.c                    |  688 +-------------------
+>  include/linux/usb/tegra_usb_phy.h                  |   34 +-
+>  6 files changed, 298 insertions(+), 1012 deletions(-)
+>  copy drivers/usb/phy/{tegra_usb_phy.c => tegra2_usb_phy.c} (53%)
+>  create mode 100644 drivers/usb/phy/tegra2_usb_phy.h
+>
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> index 6223d17..8199a6e 100644
+> --- a/drivers/usb/host/ehci-tegra.c
+> +++ b/drivers/usb/host/ehci-tegra.c
+> @@ -618,6 +618,9 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+>         int err = 0;
+>         int irq;
+>         int instance = pdev->id;
+> +       struct device_node *np = pdev->dev.of_node;
+> +       struct phy_params params;
+> +       int phy_type;
+>
+>         pdata = pdev->dev.platform_data;
+>         if (!pdata) {
+> @@ -701,14 +704,29 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+>                         break;
+>                 default:
+>                         err = -ENODEV;
+> -                       dev_err(&pdev->dev, "unknown usb instance\n");
+> +                       dev_err(&pdev->dev, "unknown usb inst:%d\n", instance);
+>                         goto fail_io;
+>                 }
+>         }
+>
+> +       if (np) {
+> +               phy_type = of_property_match_string(np, "phy_type", "utmi");
+> +               if (phy_type >= 0)
+> +                       params.type = TEGRA_USB_PHY_TYPE_UTMI;
+> +               else {
+> +                       phy_type = of_property_match_string(np, "phy_type", "ulpi");
+> +                       if (phy_type >= 0)
+> +                               params.type = TEGRA_USB_PHY_TYPE_ULPI;
+> +                       else
+> +                               params.type = TEGRA_USB_PHY_TYPE_INVALID;
+> +               }
+> +       }
+> +
+> +       params.mode = TEGRA_USB_PHY_MODE_HOST;
+> +       params.config = pdata->phy_config;
 
-And, with "/tmp" as a variable the 10 in the strncmp might not be right.
+I fail to understand how pdata is not NULL in dt boot. I know i've
+already given this comment and you replied that you dint see any
+crash. But I'd like to know where and how pdata gets populated.
 
-David
-
+Thanks
+Kishon
