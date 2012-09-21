@@ -1,143 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab2IUAAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 20:00:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36702 "EHLO
+	id S1756551Ab2IUADA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 20:03:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56679 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab2IUAAv (ORCPT
+	with ESMTP id S1753964Ab2IUAC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 20:00:51 -0400
-Date: Thu, 20 Sep 2012 17:00:48 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
-Subject: Re: [PATCH v2 07/26] block: Don't use bi_idx in bio_split() or
- require it to be 0
-Message-ID: <20120921000048.GH5519@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-8-git-send-email-koverstreet@google.com>
- <20120920234544.GN7264@google.com>
+	Thu, 20 Sep 2012 20:02:59 -0400
+Message-ID: <505BAEAE.4040804@gmail.com>
+Date: Fri, 21 Sep 2012 08:02:54 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120920234544.GN7264@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        Don Dutile <ddutile@redhat.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 4/5] PCI/IOV: simplify code by hotplug safe pci_get_domain_bus_and_slot()
+References: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com> <1346168638-32724-5-git-send-email-jiang.liu@huawei.com> <CAE9FiQVAOEUHMSFHCpZLVK-Rbso3Rh1nUQHmfcujwb6tpUTz8A@mail.gmail.com> <CAErSpo58sSCPYF9Ug-o-f3odJovECkdxPOoahx9+Ob6kmP_srw@mail.gmail.com>
+In-Reply-To: <CAErSpo58sSCPYF9Ug-o-f3odJovECkdxPOoahx9+Ob6kmP_srw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 04:45:44PM -0700, Tejun Heo wrote:
-> On Mon, Sep 10, 2012 at 05:22:18PM -0700, Kent Overstreet wrote:
-> > Prep work for immutable bio_vecs/efficient bio splitting: they require
-> > auditing and removing most uses of bi_idx.
-> > 
-> > So here we convert bio_split() to respect the current value of bi_idx
-> > and use the bio_iovec() macro, instead of assuming bi_idx will be 0.
+On 09/21/2012 07:59 AM, Bjorn Helgaas wrote:
+> On Thu, Sep 20, 2012 at 2:38 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Tue, Aug 28, 2012 at 8:43 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>>> Following code has a race window between pci_find_bus() and pci_get_slot()
+>>> if PCI hotplug operation happens between them which removes the pci_bus.
+>>> So use PCI hotplug safe interface pci_get_domain_bus_and_slot() instead,
+>>> which also reduces code complexity.
+>>>
+>>> struct pci_bus *pci_bus = pci_find_bus(domain, busno);
+>>> struct pci_dev *pci_dev = pci_get_slot(pci_bus, devfn);
+>>>
+>>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>>> ---
+>>>  drivers/pci/iov.c |    8 ++------
+>>>  1 file changed, 2 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+>>> index aeccc91..b0fe771 100644
+>>> --- a/drivers/pci/iov.c
+>>> +++ b/drivers/pci/iov.c
+>>> @@ -152,15 +152,11 @@ failed1:
+>>>  static void virtfn_remove(struct pci_dev *dev, int id, int reset)
+>>>  {
+>>>         char buf[VIRTFN_ID_LEN];
+>>> -       struct pci_bus *bus;
+>>>         struct pci_dev *virtfn;
+>>>         struct pci_sriov *iov = dev->sriov;
+>>>
+>>> -       bus = pci_find_bus(pci_domain_nr(dev->bus), virtfn_bus(dev, id));
+>>> -       if (!bus)
+>>> -               return;
+>>> -
+>>> -       virtfn = pci_get_slot(bus, virtfn_devfn(dev, id));
+>>> +       virtfn = pci_get_domain_bus_and_slot(pci_domain_nr(dev->bus),
+>>> +                       virtfn_bus(dev, id), virtfn_devfn(dev, id));
+>>>         if (!virtfn)
+>>>                 return;
+>>>
+>>
+>> Hi,
+>>
+>> This one cause IOV regression, when remove bridge with pci devices under that.
+>>
+>> in that case, VFs  are stopped before PF, so they are not in device
+>> tree anymore.
+>> so pci_get_domain_bus_and_slot will not find those VFs.
+>>
+>> So the reference to PF is not released. Also vit_bus may not be released too.
+>>
+>> So you have to rework
+>>     pci_get_domain_bus_and_slot to make it work on pci devices get stopped only.
+>>
+>> or just drop this from the tree.
 > 
-> I find the description a bit cryptic.
+> pci_find_bus() is a broken interface (because there's no reference
+> counting or safety with respect to hot-plug), and if the design
+> depends on it, that means the design is broken, too.  I don't think
+> reworking pci_get_domain_bus_and_slot() is the right answer.
+> 
+> It's not clear to me why we need the split between stopping and
+> removing devices.  That split leads to these zombie devices that have
+> been stopped and are no longer findable by bus_find_device() (which is
+> used by pci_get_domain_bus_and_slot()), but still "exist" in some
+> fashion until they're removed.  It's unreasonable for random PCI and
+> driver code to have to worry about that zombie state.
+> 
+> I'll revert this patch for now to fix the regression.  Of course, that
+> means we will still have the old problem of using the unsafe
+> pci_find_bus().
+Hi Bjorn,
+	I'm working on to enhance unsafe calling of pci_find_bus().
+	--Gerry
 
-Yeah, I wasn't able to come up with a better description at the time...
-how's this:
-
-Change bio_split() to respect the current value of bi_idx
-
-In the current code bio_split() won't be seeing partially completed bios
-so this doesn't change any behaviour, but this makes the code a bit
-clearer as to what bio_split() actually requires.
-
-The immediate purpose of the patch is removing unnecessary bi_idx
-references, but the end goal is to allow partial completed bios to be
-submitted, which along with immutable biovecs enables effecient bio
-splitting.
-
-
-> 
-> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > CC: Jens Axboe <axboe@kernel.dk>
-> > ---
-> >  drivers/block/drbd/drbd_req.c | 6 +++---
-> >  drivers/md/raid0.c            | 3 +--
-> >  drivers/md/raid10.c           | 3 +--
-> >  fs/bio-integrity.c            | 4 ++--
-> >  fs/bio.c                      | 7 +++----
-> >  5 files changed, 10 insertions(+), 13 deletions(-)
-> > 
-> > diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-> > index af69a96..57eb253 100644
-> > --- a/drivers/block/drbd/drbd_req.c
-> > +++ b/drivers/block/drbd/drbd_req.c
-> > @@ -1155,11 +1155,11 @@ void drbd_make_request(struct request_queue *q, struct bio *bio)
-> >  
-> >  	/* can this bio be split generically?
-> >  	 * Maybe add our own split-arbitrary-bios function. */
-> > -	if (bio->bi_vcnt != 1 || bio->bi_idx != 0 || bio->bi_size > DRBD_MAX_BIO_SIZE) {
-> > +	if (bio_segments(bio) != 1 || bio->bi_size > DRBD_MAX_BIO_SIZE) {
-> >  		/* rather error out here than BUG in bio_split */
-> >  		dev_err(DEV, "bio would need to, but cannot, be split: "
-> > -		    "(vcnt=%u,idx=%u,size=%u,sector=%llu)\n",
-> > -		    bio->bi_vcnt, bio->bi_idx, bio->bi_size,
-> > +		    "(segments=%u,size=%u,sector=%llu)\n",
-> > +		    bio_segments(bio), bio->bi_size,
-> >  		    (unsigned long long)bio->bi_sector);
-> >  		bio_endio(bio, -EINVAL);
-> >  	} else {
-> > diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-> > index 387cb89..0587450 100644
-> > --- a/drivers/md/raid0.c
-> > +++ b/drivers/md/raid0.c
-> > @@ -509,8 +509,7 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
-> >  		sector_t sector = bio->bi_sector;
-> >  		struct bio_pair *bp;
-> >  		/* Sanity check -- queue functions should prevent this happening */
-> > -		if (bio->bi_vcnt != 1 ||
-> > -		    bio->bi_idx != 0)
-> > +		if (bio_segments(bio) != 1)
-> >  			goto bad_map;
-> >  		/* This is a one page bio that upper layers
-> >  		 * refuse to split for us, so we need to split it.
-> > diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-> > index 9715aaf..bbd08f5 100644
-> > --- a/drivers/md/raid10.c
-> > +++ b/drivers/md/raid10.c
-> > @@ -1081,8 +1081,7 @@ static void make_request(struct mddev *mddev, struct bio * bio)
-> >  			 || conf->prev.near_copies < conf->prev.raid_disks))) {
-> >  		struct bio_pair *bp;
-> >  		/* Sanity check -- queue functions should prevent this happening */
-> > -		if (bio->bi_vcnt != 1 ||
-> > -		    bio->bi_idx != 0)
-> > +		if (bio_segments(bio) != 1)
-> >  			goto bad_map;
-> >  		/* This is a one page bio that upper layers
-> >  		 * refuse to split for us, so we need to split it.
-> 
-> And wonder how the description applies to the above.
-> 
-> > --- a/fs/bio.c
-> > +++ b/fs/bio.c
-> > @@ -1616,8 +1616,7 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
-> >  	trace_block_split(bdev_get_queue(bi->bi_bdev), bi,
-> >  				bi->bi_sector + first_sectors);
-> >  
-> > -	BUG_ON(bi->bi_vcnt != 1);
-> > -	BUG_ON(bi->bi_idx != 0);
-> > +	BUG_ON(bio_segments(bi) != 1);
-> >  	atomic_set(&bp->cnt, 3);
-> >  	bp->error = 0;
-> >  	bp->bio1 = *bi;
-> > @@ -1626,8 +1625,8 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
-> >  	bp->bio2.bi_size -= first_sectors << 9;
-> >  	bp->bio1.bi_size = first_sectors << 9;
-> >  
-> > -	bp->bv1 = bi->bi_io_vec[0];
-> > -	bp->bv2 = bi->bi_io_vec[0];
-> > +	bp->bv1 = *bio_iovec(bi);
-> > +	bp->bv2 = *bio_iovec(bi);
-> 
-> This conflicts with a recent commit from Martin.  You probably wanna
-> rebase.
-> 
-> Thanks.
-> 
-> -- 
-> tejun
