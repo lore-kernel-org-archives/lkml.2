@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678Ab2IUTBa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 15:01:30 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:51459 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756608Ab2IUTB2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 15:01:28 -0400
-Date: Fri, 21 Sep 2012 15:03:12 -0400
-From: Matt Porter <mporter@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "S, Venkatraman" <svenkatr@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 08/13] mmc: omap_hsmmc: limit max_segs with the EDMA
- DMAC
-Message-ID: <20120921190312.GL16522@beef>
-References: <1348152226-13588-1-git-send-email-mporter@ti.com>
- <1348152226-13588-9-git-send-email-mporter@ti.com>
- <CANfBPZ81anOy8fWgKM1PgCtB4V2pEp2x1Qi4x1uPsq7QieMN5g@mail.gmail.com>
- <20120921184721.GD31374@n2100.arm.linux.org.uk>
+	id S933121Ab2IUTCa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 15:02:30 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:45831 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933069Ab2IUTC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 15:02:28 -0400
+Message-ID: <505CB9BC.8040905@linux.vnet.ibm.com>
+Date: Fri, 21 Sep 2012 14:02:20 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120921184721.GD31374@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Mel Gorman <mgorman@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120921161252.GV11266@suse.de> <20120921180222.GA7220@phenom.dumpdata.com>
+In-Reply-To: <20120921180222.GA7220@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092119-7182-0000-0000-000002AC64DF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 07:47:21PM +0100, Russell King wrote:
-> On Fri, Sep 21, 2012 at 10:45:29PM +0530, S, Venkatraman wrote:
-> > On Thu, Sep 20, 2012 at 8:13 PM, Matt Porter <mporter@ti.com> wrote:
-> > > The EDMA DMAC has a hardware limitation that prevents supporting
-> > > scatter gather lists with any number of segments. Since the EDMA
-> > > DMA Engine driver sets the maximum segments to 16, we do the
-> > > same.
-> > >
-> > > Note: this can be removed once the DMA Engine API supports an
-> > > API to query the DMAC's segment limitations.
-> > >
-> > 
-> > I wouldn't want to bind the properties of EDMA to omap_hsmmc as this patch
-> > suggests. Why don't we have a max_segs property, which when explicitly specified
-> > in DT, will override the default ?
+On 09/21/2012 01:02 PM, Konrad Rzeszutek Wilk wrote:
+> On Fri, Sep 21, 2012 at 05:12:52PM +0100, Mel Gorman wrote:
+>> On Tue, Sep 04, 2012 at 04:34:46PM -0500, Seth Jennings wrote:
+>>> zcache is the remaining piece of code required to support in-kernel
+>>> memory compression.  The other two features, cleancache and frontswap,
+>>> have been promoted to mainline in 3.0 and 3.5 respectively.  This
+>>> patchset promotes zcache from the staging tree to mainline.
+>>>
+>>
+>> This is a very rough review of the code simply because I was asked to
+>> look at it. I'm barely aware of the history and I'm not a user of this
+>> code myself so take all of this with a grain of salt.
 > 
-> Why not have a generic way that DMA engine can export these kinds of
-> properties?
+> Ah fresh set of eyes! Yeey!
 
-That's exactly what my note above is suggesting...
+Agreed! Thanks so much!
 
-Something along the lines of:
+>>
+>> Very broadly speaking my initial reaction before I reviewed anything was
+>> that *some* sort of usable backend for cleancache or frontswap should exist
+>> at this point. My understanding is that Xen is the primary user of both
+>> those frontends and ramster, while interesting, is not something that a
+>> typical user will benefit from.
+> 
+> Right, the majority of users do not use virtualization. Thought embedded
+> wise .. well, there are a lot of Android users - thought I am not 100%
+> sure they are using it right now (I recall seeing changelogs for the clones
+> of Android mentioning zcache).
+>>
+>> That said, I worry that this has bounced around a lot and as Dan (the
+>> original author) has a rewrite. I'm wary of spending too much time on this
+>> at all. Is Dan's new code going to replace this or what? It'd be nice to
+>> find a definitive answer on that.
+> 
+> The idea is to take parts of zcache2 as seperate patches and stick it
+> in the code you just reviewed (those that make sense as part of unstaging).
 
-	struct slave_sg_caps
-	{
-		int max_segs;	/* <0 is no limit */
-	}
+I agree with this.  Only the changes from zcache2 (Dan's
+rewrite) that are necessary for promotion should be
+considered right now.  Afaict, none of the concerns raised
+in these comments are addressed by the changes in zcache2.
 
-	struct slave_sg_cap *
-	dmaengine_get_slave_sg_caps(struct dma_chan *chan);
+> The end result will be that zcache1 == zcache2 in functionality. Right
+> now we are assembling a list of TODOs for zcache that should be done as part
+> of 'unstaging'.
+> 
+>>
+>> Anyway, here goes
+> 
+> .. and your responses will fill the TODO with many extra line-items.
 
-I'm sure there are or will be other characteristics worth providing to
-slave drivers.
+Great, thanks Konrad.
 
--Matt
+> 
+> Its going to take a bit of time to mull over your questions, so it will
+> take me some time.
+
+Same here. I'll respond asap. Thanks again, Mel!
+
+--
+Seth
+
