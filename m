@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758333Ab2IUXMR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 19:12:17 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:59827 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758296Ab2IUXMP (ORCPT
+	id S1758360Ab2IUXNQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 19:13:16 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:47076 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758308Ab2IUXNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 19:12:15 -0400
-Date: Sat, 22 Sep 2012 00:53:43 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Thanasis <thanasis@asyr.hopto.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-Message-ID: <20120921225343.GA2938@electric-eye.fr.zoreil.com>
-References: <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org> <20120921152828.GA24364@electric-eye.fr.zoreil.com> <505C98C7.20302@asyr.hopto.org> <20120921175455.GA28255@electric-eye.fr.zoreil.com> <505CBDF9.9020503@asyr.hopto.org> <20120921202957.GA32502@electric-eye.fr.zoreil.com> <505CD982.2000409@asyr.hopto.org>
-Mime-Version: 1.0
+	Fri, 21 Sep 2012 19:13:15 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+dOae1FPe5YIfSSBxox5sW
+Date: Fri, 21 Sep 2012 16:13:12 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Mark Jackson <mpfj-list@mimc.co.uk>
+Cc: linux-omap@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: gpmc_cs_request() causes early boot hang
+Message-ID: <20120921231312.GO28835@atomide.com>
+References: <505CBFAA.3080604@mimc.co.uk>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <505CD982.2000409@asyr.hopto.org>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+In-Reply-To: <505CBFAA.3080604@mimc.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanasis <thanasis@asyr.hopto.org> :
-> on 09/21/2012 11:29 PM Francois Romieu wrote the following:
-[...]
-> What message? What do you mean "the usual netdev watchdog message"?
+* Mark Jackson <mpfj-list@mimc.co.uk> [120921 12:29]:
+> I'm developing a beaglebone cape board which requires the use of a
+> GPMC chip select.
+> 
+> I've chosen GPMC_CS0, and in board-am335xevm.c, I have added the following:-
+> 
+> static void gpmc_test()
+> {
+>     unsigned long base = 0x12345678;
+>     gpmc_cs_request(0, SZ_16M, &base);
+>     printk(KERN_INFO "gpmc base @ 0x%08lx\n", base);
+> }
+> 
+> ... and added a call to gpmc_test() at the end of am335x_evm_init().
+> 
+> If I try to run this code, the kernel fails to boot, and simply hangs at:-
+> 
+> Uncompressing Linux... done, booting the kernel.
+> 
+> If I comment out the call to gpmc_cs_request(), the system boots as
+> expected (but without my required cs).
+> 
+> I've looked at the use of this call in other board files, and can't
+> see that their code does anything special so I'm stuck on why this
+> simple code fails to work.
+> 
+> Can anyone shed light on what I'm doing wrong ?
+> 
+> Do I have to initialise the gpmc beforehand in some way ?
 
-No, this one (see your 3.5.4 kernel log):
+Can you enable DEBUG_LL + EARLYPRINTK and have earlyprintk in your
+cmdline? You may then get some error messages providing more info.
 
-[   23.712058] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x121/0x1a3(
-)
-[   23.712062] Hardware name: AOA110
-[   23.712067] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
+GPMC is working on many boards with various devices like smsc911x,
+onenand, tusb etc.
 
-[...]
-> > Could you perform a test with your vendor's 3.2-something kernel and its
-> > r8169 driver ?
-> > 
-> The vendor's kernel was a 2.6 series.
+Regards,
 
-You did experience a failure with a 3.5.4 kernel. Can you try a 3.2.x if
-your vendor provides one ?
-
-Thanks.
-
--- 
-Ueimor
+Tony
