@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631Ab2IUT2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 15:28:05 -0400
-Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:46406
-	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752497Ab2IUT2C (ORCPT
+	id S1754852Ab2IUT2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 15:28:49 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46675 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225Ab2IUT2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 15:28:02 -0400
-Message-ID: <505CBFAA.3080604@mimc.co.uk>
-Date: Fri, 21 Sep 2012 20:27:38 +0100
-From: Mark Jackson <mpfj-list@mimc.co.uk>
-Organization: Mercury HMI Ltd
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: linux-omap@vger.kernel.org
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: gpmc_cs_request() causes early boot hang
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 21 Sep 2012 15:28:47 -0400
+Subject: Re: [PATCH v3] ipconfig: add nameserver IPs to kernel-parameter ip=
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: David Miller <davem@davemloft.net>
+Cc: rob@landley.net, kuznet@ms2.inr.ac.ru, j.weitzel@phytec.de,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, hjk@hansjkoch.de, daniel@zonque.org
+In-Reply-To: <20120921.145144.14955032475453606.davem@davemloft.net>
+References: <1348177730.3858.98.camel@mars>
+	 <20120921.133759.1667263015470766968.davem@davemloft.net>
+	 <1348252279.12456.2.camel@mars>
+	 <20120921.145144.14955032475453606.davem@davemloft.net>
+Content-Type: text/plain; charset="us-ascii"
+Date: Fri, 21 Sep 2012 21:28:33 +0200
+Message-ID: <1348255713.12456.43.camel@mars>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm developing a beaglebone cape board which requires the use of a GPMC 
-chip select.
+On Fri, 2012-09-21 at 14:51 -0400, David Miller wrote:
+> From: Christoph Fritz <chf.fritz@googlemail.com>
+> Date: Fri, 21 Sep 2012 20:31:19 +0200
+> 
+> > On small systems (e.g. embedded ones) IP addresses are often configured
+> > by bootloaders and get assigned to kernel via parameter "ip=".  If set to
+> > "ip=dhcp", even nameserver entries from DHCP daemons are handled. These
+> > entries exported in /proc/net/pnp are commonly linked by /etc/resolv.conf.
+> > 
+> > To configure nameservers for networks without DHCP, this patch adds option
+> > <dns0-ip> and <dns1-ip> to kernel-parameter 'ip='.
+> > 
+> > Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+> > Tested-by: Jan Weitzel <j.weitzel@phytec.de>
+> 
+> Applied to net-next, thanks.
 
-I've chosen GPMC_CS0, and in board-am335xevm.c, I have added the following:-
+Thanks a lot for your reviews.
 
-static void gpmc_test()
-{
-     unsigned long base = 0x12345678;
-     gpmc_cs_request(0, SZ_16M, &base);
-     printk(KERN_INFO "gpmc base @ 0x%08lx\n", base);
-}
-
-... and added a call to gpmc_test() at the end of am335x_evm_init().
-
-If I try to run this code, the kernel fails to boot, and simply hangs at:-
-
-Uncompressing Linux... done, booting the kernel.
-
-If I comment out the call to gpmc_cs_request(), the system boots as 
-expected (but without my required cs).
-
-I've looked at the use of this call in other board files, and can't see 
-that their code does anything special so I'm stuck on why this simple 
-code fails to work.
-
-Can anyone shed light on what I'm doing wrong ?
-
-Do I have to initialise the gpmc beforehand in some way ?
-
-Cheers
-Mark JACKSON
+ -- Christoph
 
