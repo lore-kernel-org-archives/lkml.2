@@ -1,93 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab2IUPLw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 11:11:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65386 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab2IUPLu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 11:11:50 -0400
+	id S1756163Ab2IUPMl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 11:12:41 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:33504 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755926Ab2IUPMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 11:12:39 -0400
+Date: Fri, 21 Sep 2012 08:12:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+Message-ID: <20120921151203.GA2454@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5050CCE0.4090403@gmail.com>
+ <20120919153934.GB2455@linux.vnet.ibm.com>
+ <5059F458.3000407@gmail.com>
+ <20120919170648.GF2455@linux.vnet.ibm.com>
+ <505AC6C8.9060706@linux.vnet.ibm.com>
+ <505AC979.7000008@gmail.com>
+ <20120920152341.GE2449@linux.vnet.ibm.com>
+ <505C33B9.8000807@gmail.com>
+ <20120921121346.GD2458@linux.vnet.ibm.com>
+ <505C6B03.7020305@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <505C7687.1030001@redhat.com>
-References: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com>
-	<1346168638-32724-5-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQVAOEUHMSFHCpZLVK-Rbso3Rh1nUQHmfcujwb6tpUTz8A@mail.gmail.com>
-	<CAErSpo58sSCPYF9Ug-o-f3odJovECkdxPOoahx9+Ob6kmP_srw@mail.gmail.com>
-	<CAE9FiQWuVW6U9cE+iY0Gpua_0xhdxp6HxcWyhqqSN+L3Da_1Qg@mail.gmail.com>
-	<CAErSpo5zeBVBowMyQS8QgAzrVbTJOb=Tuees9r1BnUZ3x13V0A@mail.gmail.com>
-	<CAE9FiQXXB-qqWXc_pL-BVrboMzuvvPDPbEwK2To-taMg+NHu4A@mail.gmail.com>
-	<505C7687.1030001@redhat.com>
-Date: Fri, 21 Sep 2012 08:11:48 -0700
-X-Google-Sender-Auth: FaZFcFiVNSj2wPxbkZ5q1TwIgb4
-Message-ID: <CAE9FiQVALUUGFYBdU4NAsPq29ceS6B4oTmRad+FSLS1TeG2aKg@mail.gmail.com>
-Subject: Re: [PATCH 4/5] PCI/IOV: simplify code by hotplug safe pci_get_domain_bus_and_slot()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Don Dutile <ddutile@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <505C6B03.7020305@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12092115-5806-0000-0000-000019D6F698
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 7:15 AM, Don Dutile <ddutile@redhat.com> wrote:
-> On 09/21/2012 02:22 AM, Yinghai Lu wrote:
->>
->> On Thu, Sep 20, 2012 at 7:56 PM, Bjorn Helgaas<bhelgaas@google.com>
->> wrote:
->>>
->>> This is another thing I'm curious about.  How do you handle this
->>> situation today (before host bridge hot-add)?
->>>
->>> The DMAR I'm not so worried about because as far as I know, there's no
->>> such thing as a DMAR that's discovered by PCI enumeration.  We should
->>> discover it via ACPI, and that can happen before we enumerate anything
->>> behind a host bridge, so I don't really see any ordering problem
->>> between the DMAR and the PCI devices that would use it.
->>
->>
->> only need to have pci devices on that root bus scanned, and current intel
->> iommu
->> maintain one device scope to drhd with pointer to pci device... that
->> need to be fixed
->> too.
->>
-> translation: you have an ACPI-DMAR setup bug?  a drhd can have multiple
-> device
-> scopes, one of which can be "all devices under bus X uses this IOMMU".
-> If (dynamic) DMARs are scanned at root hot-plug time in ACPI hot-plug,
-> the proper dmar-init should be completed before any PCI devs are scanned
-> (and put into the proper iommu domain).
+On Fri, Sep 21, 2012 at 03:26:27PM +0200, Sasha Levin wrote:
+> On 09/21/2012 02:13 PM, Paul E. McKenney wrote:
+> >> This might be unrelated, but I got the following dump as well when trinity
+> >> > decided it's time to reboot my guest:
+> > OK, sounds like we should hold off until you reproduce, then.
+> 
+> I'm not sure what you mean.
+> 
+> There are basically two issues I'm seeing now, which reproduce pretty much every
+> time:
+> 
+>  1. The "using when idle" warning.
+>  2. The rcu related hangs during shutdown.
+> 
+> The first one appears early on when I start fuzzing, the other one happens when
+> shutting down - so both of them are reproducible in the same session.
 
-if you can check for-iommu branch,
+Ah, I misunderstood the "reboot my guest" -- I thought that you were
+doing something like repeated modprobe/rmmod cycles on rcutorture while
+running the guest for an extended time period.  That will teach me not
+to reply to email so soon after waking up.  ;-)
 
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-iommu
-current implementation:
+That said, #2 is expected behavior given the RCU CPU stall warnings in
+your Sept. 20 dmesg.  This is because rcutorture does rcu_barrier() on
+the way out, which cannot complete if grace periods are not completing.
+And the later soft lockup is also likely a consequence of the stall,
+because CPU hotplug does a synchronize_sched() while holding the hotplug
+lock, which will then cause get_online_cpus() to hang.
 
-after root bus plugged in,
-drivers/acpi/pci_root_hp.c::handle_root_bridge_insert() ==>
-acpi_bus_add ==> drivers/acpi/pci_root.c::acpi_pci_root_add ==>
-arch/x86/pci/acpi.c::pci_acpi_scan_root
-so all pci devices get scanned.
+Looking further down, there are hung tasks that are waiting for a
+timeout, but this is also a consequence of the hang because they
+are waiting for MAX_SCHEDULE_TIMEOUT -- in other words, they are
+waiting to be killed at shutdown time.  I could suppress this by using
+schedule_timeout_interruptible() in a loop in order to reduce the noise
+in this case.
 
-later
-handl_root_bridge_insert ==>acpi_bus_add ==>
-drivers/acpi/pci_root.c::acpi_pci_root_start==>
-pcibios_reserouce_survey_bus/pci_assign_unassigned_bus_resource
-and call iommu acpi_pci_driver .add aka
-drivers/iommu/dmar.c::acpi_pci_iommu_add ==> register_iommu ==>
-handle_iommu_add ==> dmar_parse_dev ==> dmar_parse_dev_scope ==>
-dmar_parse_one_dev_scope
+The remaining traces in that email are also consequences of the stall.
 
-that dmar_parse_one_dev_scope will find pci device pointer and put it
-back into dmaru device pointer array.
+So why the stall?
 
-in the boot path, it the same, dev_scope is parsed later after pci
-devices get scanned.
+Using RCU from a CPU that RCU believes to be idle can cause arbitrary
+bad behavior (possibly including stalls), but with very low probability.
+The reason that things can go arbitrarily bad is that RCU is ignoring
+the CPU, and thus not waiting for any RCU read-side critical sections.
+This could of course result in abitrary corruption of memory.  The reason
+for the low probability is that grace periods tend to be long and RCU
+read-side critical sections tend to be short.
 
-We really should remove that cache array for device pointer...
+It looks like you are running -next, which has RCU grace periods driven
+by a kthread.  Is it possible that this kthread is not getting a chance
+to run (in fact, the "Stall ended before state dump start" is consistent
+with that possibility), but in that case I would expect to see a soft
+lockup from it.  Furthermore, in that case, it would be expected to
+start running again as soon as things started going idle during shutdown.
 
--Yinghai
+Or did the system somehow manage to stay busy despite being in shutdown?
+Or, for that matter, are you overcommitting the physical CPUs on your
+trinity test setup?
+
+							Thanx, Paul
+
