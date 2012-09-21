@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab2IUJ2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:28:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54947 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab2IUJ2D (ORCPT
+	id S932720Ab2IUJ2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:28:47 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:4028 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932353Ab2IUJ2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:28:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <505C27E4.90509@parallels.com>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
-	<1347977530-29755-16-git-send-email-glommer@parallels.com>
-	<CAAmzW4NyK6gqqXHttUE35=-=h0Eve-smiYJCj3i+mHFFysQE4A@mail.gmail.com>
-	<505C27E4.90509@parallels.com>
-Date: Fri, 21 Sep 2012 18:28:02 +0900
-Message-ID: <CAAmzW4PRPBgySUpNsj=RP6VR3KLcVWv3G7rRtX=r+wiWUTDchw@mail.gmail.com>
-Subject: Re: [PATCH v3 15/16] memcg/sl[au]b: shrink dead caches
-From: JoonSoo Kim <js1304@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Sep 2012 05:28:46 -0400
+Message-ID: <1348219723.1581.5.camel@x61.thuisdomein>
+Subject: [PATCH] aic7xxx_old: silence GCC warnings
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 21 Sep 2012 11:28:43 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 Sep 2012 09:28:44.0070 (UTC) FILETIME=[7E915C60:01CD97DB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Glauber.
+Building the aic7xxx_old driver triggers these GCC warnings:
+    drivers/scsi/aic7xxx_old.c:7901:5: warning: case value '257' not in enumerated type 'ahc_chip' [-Wswitch]
+    drivers/scsi/aic7xxx_old.c:7898:5: warning: case value '513' not in enumerated type 'ahc_chip' [-Wswitch]
+    drivers/scsi/aic7xxx_old.c:8517:5: warning: case value '257' not in enumerated type 'ahc_chip' [-Wswitch]
+    drivers/scsi/aic7xxx_old.c:8510:5: warning: case value '513' not in enumerated type 'ahc_chip' [-Wswitch]
 
->> 2012/9/18 Glauber Costa <glommer@parallels.com>:
->>> diff --git a/mm/slub.c b/mm/slub.c
->>> index 0b68d15..9d79216 100644
->>> --- a/mm/slub.c
->>> +++ b/mm/slub.c
->>> @@ -2602,6 +2602,7 @@ redo:
->>>         } else
->>>                 __slab_free(s, page, x, addr);
->>>
->>> +       kmem_cache_verify_dead(s);
->>>  }
->>
->> As far as u know, I am not a expert and don't know anything about memcg.
->> IMHO, this implementation may hurt system performance in some case.
->>
->> In case of memcg is destoried, remained kmem_cache is marked "dead".
->> After it is marked,
->> every free operation to this "dead" kmem_cache call
->> kmem_cache_verify_dead() and finally call kmem_cache_shrink().
->
-> As long as it is restricted to that cache, this is a non issue.
-> dead caches are exactly what they name imply: dead.
->
-> Means that we actively want them to go away, and just don't kill them
-> right away because they have some inflight objects - which we expect not
-> to be too much.
+Fix these warnings by adopting the idiom used elsewhere in this driver.
+Since AHC_EISA and AHC_VL are only ever set for AHC_AIC7770 this fix
+should not lead to any functional change.
 
-Hmm.. I don't think so.
-We can destroy memcg whenever we want, is it right?
-If it is right, there is many inflight objects when we destory memcg.
-If there is so many inflight objects, performance of these processes
-can be hurt too much.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) I noticed these warnings while building v3.6-rc6 on current Fedora
+17, using Fedora's default config.
 
->> And, I found one case that destroying memcg's kmem_cache don't works properly.
->> If we destroy memcg after all object is freed, current implementation
->> doesn't destroy kmem_cache.
->> kmem_cache_destroy_work_func() check "cachep->memcg_params.nr_pages == 0",
->> but in this case, it return false, because kmem_cache may have
->> cpu_slab, and cpu_partials_slabs.
->> As we already free all objects, kmem_cache_verify_dead() is not invoked forever.
->> I think that we need another kmem_cache_shrink() in
->> kmem_cache_destroy_work_func().
->
-> I'll take a look here. What you describe makes sense, and can
-> potentially happen. I tried to handle this case with care in
-> destroy_all_caches, but I may have always made a mistake...
->
-> Did you see this actively happening, or are you just assuming this can
-> happen from your read of the code?
+1) Compile tested only.
 
-Just read of the code.
+2) This patch is not checkpatch clean. But this file actually triggers
+thousands of checkpatch errors and warnings:
+    total: 4779 errors, 7528 warnings, 11149 lines checked
 
-Thanks.
+So I didn't bother to fix the few errors and warnings this patch
+triggers by sticking to this file (lack of) coding style.
+
+ drivers/scsi/aic7xxx_old.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/scsi/aic7xxx_old.c b/drivers/scsi/aic7xxx_old.c
+index 5b212f0..1a381c8 100644
+--- a/drivers/scsi/aic7xxx_old.c
++++ b/drivers/scsi/aic7xxx_old.c
+@@ -7893,12 +7893,12 @@ aic7xxx_register(struct scsi_host_template *template, struct aic7xxx_host *p,
+ 
+   printk(KERN_INFO "(scsi%d) <%s> found at ", p->host_no,
+     board_names[p->board_name_index]);
+-  switch(p->chip)
++  switch(p->chip & ~AHC_CHIPID_MASK)
+   {
+-    case (AHC_AIC7770|AHC_EISA):
++    case AHC_EISA:
+       printk("EISA slot %d\n", p->pci_device_fn);
+       break;
+-    case (AHC_AIC7770|AHC_VL):
++    case AHC_VL:
+       printk("VLB slot %d\n", p->pci_device_fn);
+       break;
+     default:
+@@ -8505,16 +8505,16 @@ aic7xxx_load_seeprom(struct aic7xxx_host *p, unsigned char *sxfrctl1)
+   {
+     printk(KERN_INFO "aic7xxx: Loading serial EEPROM...");
+   }
+-  switch (p->chip)
++  switch (p->chip & ~AHC_CHIPID_MASK)
+   {
+-    case (AHC_AIC7770|AHC_EISA):  /* None of these adapters have seeproms. */
++    case AHC_EISA:  /* None of these adapters have seeproms. */
+       if (aic_inb(p, SCSICONF) & TERM_ENB)
+         p->flags |= AHC_TERM_ENB_A;
+       if ( (p->features & AHC_TWIN) && (aic_inb(p, SCSICONF + 1) & TERM_ENB) )
+         p->flags |= AHC_TERM_ENB_B;
+       break;
+ 
+-    case (AHC_AIC7770|AHC_VL):
++    case AHC_VL:
+       have_seeprom = read_284x_seeprom(p, (struct seeprom_config *) scarray);
+       break;
+ 
+-- 
+1.7.11.4
+
