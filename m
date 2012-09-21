@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab2IUVwm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 17:52:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54333 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110Ab2IUVwk (ORCPT
+	id S1758262Ab2IUWDY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 18:03:24 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39773 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab2IUWDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 17:52:40 -0400
-Message-ID: <505CE19C.6030205@pengutronix.de>
-Date: Fri, 21 Sep 2012 23:52:28 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 21 Sep 2012 18:03:22 -0400
+Date: Fri, 21 Sep 2012 15:03:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Paul Walmsley <paul@pwsan.com>, "Bruce, Becky" <bbruce@ti.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Hunter, Jon" <jon-hunter@ti.com>,
+        "<snijsure@grid-net.com>" <snijsure@grid-net.com>, fweisbec@gmail.com
+Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
+Message-ID: <20120921220302.GF2454@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com>
+ <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com>
+ <20120920220130.GN2449@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com>
+ <20120920232114.GO2449@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209211803290.8839@utopia.booyaka.com>
+ <20120921185827.GC2454@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209211900520.8839@utopia.booyaka.com>
+ <20120921195717.GD2454@linux.vnet.ibm.com>
+ <20120921203149.GI28835@atomide.com>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: netdev@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org
-Subject: Re: [PATCH] net/can:  rename peak_usb dump_mem function
-References: <1346577700-8156-1-git-send-email-geert@linux-m68k.org> <504393A7.8040007@xenotime.net> <505CDF3F.6040009@xenotime.net>
-In-Reply-To: <505CDF3F.6040009@xenotime.net>
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig2AA0C284398B8F2C9039A6D3"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120921203149.GI28835@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092122-5518-0000-0000-000007D74570
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig2AA0C284398B8F2C9039A6D3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 21, 2012 at 01:31:49PM -0700, Tony Lindgren wrote:
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> [120921 12:58]:
+> > 
+> > Just to make sure I understand the combinations:
+> > 
+> > o	All stalls have happened when running a minimal userspace.
+> > o	CONFIG_NO_HZ=n suppresses the stalls.
+> > o	CONFIG_RCU_FAST_NO_HZ (which depends on CONFIG_NO_HZ=y) has
+> > 	no observable effect on the stalls.
+> 
+> The reason why you may need minimal userspace is to cut down
+> the number of timers waking up the system with NO_HZ.
+> Booting with init=/bin/sh might also do the trick for that.
 
-On 09/21/2012 11:42 PM, Randy Dunlap wrote:
-> On 09/02/2012 10:13 AM, Randy Dunlap wrote:
->=20
->> From: Randy Dunlap <rdunlap@xenotime.net>
->>
->> Rename generic-sounding function dump_mem() to pcan_dump_mem()
->> so that it does not conflict with the dump_mem() function in
->> arch/sh/include/asm/kdebug.h.
->>
->> drivers/net/can/usb/peak_usb/pcan_usb_core.c: error: conflicting types=
- for 'dump_mem':  =3D> 56:6
->> drivers/net/can/usb/peak_usb/pcan_usb_core.h: error: conflicting types=
- for 'dump_mem':  =3D> 134:6
->>
->> Not tested.
->>
->> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
->> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> Cc: Stephane Grosjean <s.grosjean@peak-system.com>
->> Cc: Wolfgang Grandegger <wg@grandegger.com>
->> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
->=20
->=20
-> ping.
+Good point!  This does make for a very quiet system, but does not
+reproduce the problem under kvm, even after waiting for four minutes.
+I will leave it for more time, but it looks like I really might need to
+ask Linaro for remote access to a Panda.
 
-The patch is already part of can-next and will be included in the next
-pull request to David.
+							Thanx, Paul
 
-regards, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig2AA0C284398B8F2C9039A6D3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iEYEARECAAYFAlBc4aAACgkQjTAFq1RaXHPbhQCePg2HuWElNS93vdHQ4N5K7+pd
-4nkAmwXrsPnaYoxU8piVfPbSY4wffjNj
-=0vrN
------END PGP SIGNATURE-----
-
---------------enig2AA0C284398B8F2C9039A6D3--
