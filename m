@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932647Ab2IURvU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:51:20 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:34491 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab2IURvR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:51:17 -0400
-Date: Fri, 21 Sep 2012 17:51:16 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: "Bruce, Becky" <bbruce@ti.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
-        "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Hunter, Jon" <jon-hunter@ti.com>,
-        "<snijsure@grid-net.com>" <snijsure@grid-net.com>
-Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
-In-Reply-To: <alpine.DEB.2.00.1209211740170.8839@utopia.booyaka.com>
-Message-ID: <alpine.DEB.2.00.1209211748320.8839@utopia.booyaka.com>
-References: <alpine.DEB.2.00.1209122237080.7275@utopia.booyaka.com> <20120913011208.GT4257@linux.vnet.ibm.com> <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com> <20120920000351.GI2455@linux.vnet.ibm.com> <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com>
- <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com> <20120920220130.GN2449@linux.vnet.ibm.com> <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com> <alpine.DEB.2.00.1209211740170.8839@utopia.booyaka.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932680Ab2IURva (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:51:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932208Ab2IURv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 13:51:28 -0400
+Date: Fri, 21 Sep 2012 14:51:15 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] mm: compaction: Acquire the zone->lru_lock as late
+ as possible
+Message-ID: <20120921175115.GE6665@optiplex.redhat.com>
+References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
+ <1348224383-1499-6-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348224383-1499-6-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Sep 2012, Paul Walmsley wrote:
+On Fri, Sep 21, 2012 at 11:46:19AM +0100, Mel Gorman wrote:
+> Compactions migrate scanner acquires the zone->lru_lock when scanning a range
+> of pages looking for LRU pages to acquire. It does this even if there are
+> no LRU pages in the range. If multiple processes are compacting then this
+> can cause severe locking contention. To make matters worse commit b2eef8c0
+> (mm: compaction: minimise the time IRQs are disabled while isolating pages
+> for migration) releases the lru_lock every SWAP_CLUSTER_MAX pages that are
+> scanned.
+> 
+> This patch makes two changes to how the migrate scanner acquires the LRU
+> lock. First, it only releases the LRU lock every SWAP_CLUSTER_MAX pages if
+> the lock is contended. This reduces the number of times it unnecessarily
+> disables and re-enables IRQs. The second is that it defers acquiring the
+> LRU lock for as long as possible. If there are no LRU pages or the only
+> LRU pages are transhuge then the LRU lock will not be acquired at all
+> which reduces contention on zone->lru_lock.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> ---
 
-> The config used was 'omap2plus_defconfig', and enabled CONFIG_CPU_IDLE 
-> by hand. 
-
-One other thing I forgot to mention - CONFIG_RCU_CPU_STALL_INFO was 
-enabled by hand also.  Below is the diff between omap2plus_defconfig and 
-the config that was used here.
-
-
-- Paul
-
---- .config	2012-09-21 11:50:19.565972113 -0600
-+++ .testconfig	2012-09-21 11:50:12.233946950 -0600
-@@ -536,7 +536,9 @@
- # CPU Frequency scaling
- #
- # CONFIG_CPU_FREQ is not set
--# CONFIG_CPU_IDLE is not set
-+CONFIG_CPU_IDLE=y
-+CONFIG_CPU_IDLE_GOV_LADDER=y
-+CONFIG_CPU_IDLE_GOV_MENU=y
- CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED=y
- 
- #
-@@ -2535,7 +2537,7 @@
- # CONFIG_BOOT_PRINTK_DELAY is not set
- # CONFIG_RCU_TORTURE_TEST is not set
- CONFIG_RCU_CPU_STALL_TIMEOUT=60
--# CONFIG_RCU_CPU_STALL_INFO is not set
-+CONFIG_RCU_CPU_STALL_INFO=y
- # CONFIG_RCU_TRACE is not set
- # CONFIG_KPROBES_SANITY_TEST is not set
- # CONFIG_BACKTRACE_SELF_TEST is not set
+Acked-by: Rafael Aquini <aquini@redhat.com>
 
