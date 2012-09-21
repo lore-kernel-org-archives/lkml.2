@@ -1,87 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab2IUSQf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 14:16:35 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16913 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757270Ab2IUSQc convert rfc822-to-8bit (ORCPT
+	id S1757449Ab2IUSUa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 14:20:30 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61201 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379Ab2IUSU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 14:16:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 21 Sep 2012 11:14:48 -0700
-From: Krishna Reddy <vdumpa@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>, Arnd Bergmann <arnd@arndb.de>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 21 Sep 2012 11:16:00 -0700
-Subject: RE: [RFC 0/5] ARM: dma-mapping: New dma_map_ops to control IOVA
- more precisely
-Thread-Topic: [RFC 0/5] ARM: dma-mapping: New dma_map_ops to control IOVA
- more precisely
-Thread-Index: Ac2XRIMkozERLjJYQ+id46wYHBWmIwA2yB1A
-Message-ID: <401E54CE964CD94BAE1EB4A729C7087E379FDC2372@HQMAIL04.nvidia.com>
-References: <1346223335-31455-1-git-send-email-hdoyu@nvidia.com>
- <20120918124918.GK2505@amd.com>
- <20120919095843.d1db155e0f085f4fcf64ea32@nvidia.com>
- <201209190759.46174.arnd@arndb.de> <20120919125020.GQ2505@amd.com>
- <401E54CE964CD94BAE1EB4A729C7087E379FDC1EEB@HQMAIL04.nvidia.com>
- <505A7DB4.4090902@wwwdotorg.org>
- <401E54CE964CD94BAE1EB4A729C7087E379FDC1F2D@HQMAIL04.nvidia.com>
- <505B35F7.2080201@wwwdotorg.org>
-In-Reply-To: <505B35F7.2080201@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Sep 2012 14:20:27 -0400
+Date: Fri, 21 Sep 2012 14:22:11 -0400
+From: Matt Porter <mporter@ti.com>
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 00/13] DMA Engine support for AM33xx
+Message-ID: <20120921182211.GE16522@beef>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com>
+ <1BAFE6F6C881BF42822005164F1491C33EA8A79D@DBDE01.ent.ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EA8A79D@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The device(H/W controller) need to access few special memory
-> > blocks(IOVA==PA) and DRAM as well.
+On Fri, Sep 21, 2012 at 08:27:07AM +0000, Hebbar, Gururaja wrote:
+> On Thu, Sep 20, 2012 at 20:13:33, Porter, Matt wrote:
+> > This series adds DMA Engine support for AM33xx, which uses
+> > an EDMA DMAC. The EDMA DMAC has been previously supported by only
+> > a private API implementation (much like the situation with OMAP
+> > DMA) found on the DaVinci family of SoCs.
+> > 
+> > There are a mind-boggling number of dependencies for this series:
+> > 
+> > 	- Jon Hunter's OF DMA helpers series
+> > 	  https://patchwork.kernel.org/patch/1461061/
+> > 	  https://patchwork.kernel.org/patch/1461051/
+> > 	- Patch to address OF DMA helpers naming issues:
+> > 	  https://patchwork.kernel.org/patch/1477921/
+> > 	- EDMA DMA Engine wrapper driver in linux-next
+> > 	  c2dde5f8f2095d7c623ff3565c1462e190272273
+> > 	- EDMA DMA Engine wrapper driver bug fix:
+> > 	  https://patchwork.kernel.org/patch/1474411/  
+> > 	- A huge number of patches in linux-next for AM33xx boot
+> > 	  (too numerous to list)
+> > 
+> > The approach taken is similar to how OMAP DMA is being converted to
+> > DMA Engine support. With the functional EDMA private API already
+> > existing in mach-davinci/dma.c, we first move that to an ARM common
+> > area so it can be shared. Adding DT and runtime PM support to the
+> > private EDMA API implementation allows it to run on AM33xx. AM33xx
+> > *only* boots using DT so we leverage Jon's generic DT DMA helpers to
+> > register EDMA DMAC with the of_dma framework and then add support
+> > for calling the dma_request_slave_channel() API to both the mmc
+> > and spi drivers.
+> > 
+> > What works? Well, with this series we now have MMC and SPI support
+> > on AM33xx. The only caveat for MMC is that the mmc3 controller has
+> > its events on the crossbar and is not usable right now.
+> > 
+> > This is tested on BeagleBone with a SPI framebuffer driver and SD
+> > card.
+> > 
+> > After this series, the plan is to convert the last in-tree user
+> > of the private EDMA API (davinci-pcm/mcasp) and then eliminate
+> > the private EDMA API by folding its functionality into
+> > drivers/dma/edma.c.
+> > 
+> > TODO:
+> > 	add AM33xx crossbar support to the private EDMA API
+> > 	(any EDMA events on the crossbar are not supported)
+> > 
 > 
-> OK, so only /some/ of the VA space is VA==PA, and some is remapped; that's a
-> little different that what you originally implied above.
 > 
-> BTW, which HW module is this; AVP/COP or something else. This sounds like an
-> odd requirement.
+> Can you please mention the base repo you have taken as starting point.
+> (repo + extra patches ...).
 
-This is not specific to ARM7. There are protected memory regions on Tegra that
-can be accessed by some controllers like display, 2D, 3D, VDE, HDA. These are
-DRAM regions configured as protected by BootRom. These memory regions
-are not exposed to and not managed by OS page allocator. The H/W controller
- accesses to these regions still to go through IOMMU.
-The IOMMU view for all the H/W controllers is not uniform on Tegra.
-Some Controllers see entire 4GB IOVA space. i.e all accesses go though IOMMU.
-Some controllers see the IOVA Space that don't overlap with MMIO space.  i.e
-The MMIO address access bypass IOMMU and directly go to MMIO space.
-Tegra IOMMU can support multiple address spaces as well. To hide controller
-Specific behavior, the drivers should take care of one to one mapping and
-remove inaccessible iova spaces in their address space's based platform device info.
+It's mainline 3.6-rc6 and you can see the complete set of patches
+at https://github.com/ohporter/linux/tree/edma-dmaengine-am33xx-rfc-v1
+after commit 5698bd757d55b1bb87edd1a9744ab09c142abfc2
 
-In my initial mail, I referred protected memory regions as MMIO blocks, which
-is incorrect.
+> This will help us to test the code.
+> 
+> This is because I looked at the patch 12/13 and I see that mmc
+> device-node is modified. But in mainline I don’t see device 
+> node for mmc (yet).
 
+Oops. You'll need e62a3333ae450bcdefbe22229d7bc277ae0ef645 and
+fe97304557d2c6f7d0aaf1ea028ea48ffca366a9 which I forgot to include
+in this series. I'll have them in for v2.
 
+-Matt
 
-
--KR
-
+> > Matt Porter (13):
+> >   ARM: davinci: move private EDMA API to arm/common
+> >   ARM: edma: remove unused transfer controller handlers
+> >   ARM: edma: add DT and runtime PM support for AM335x
+> >   dmaengine: edma: enable build for AM335x
+> >   dma: Add TI EDMA device tree binding
+> >   ARM: omap: add hsmmc am33xx specific init
+> >   mmc: omap_hsmmc: dma_request_slave_channel() support for DT platforms
+> >   mmc: omap_hsmmc: limit max_segs with the EDMA DMAC
+> >   mmc: omap_hsmmc: add generic DMA request support to the DT binding
+> >   spi: omap2-mcspi: dma_request_slave_channel() support for DT
+> >     platforms
+> >   spi: omap2-mcspi: add generic DMA request support to the DT binding
+> >   ARM: dts: add am33xx EDMA support
+> >   Documentation: add schedule for removing private EDMA API
+> > 
+> >  Documentation/devicetree/bindings/dma/ti-edma.txt  |   49 +
+> >  .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   25 +-
+> >  Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +-
+> >  Documentation/feature-removal-schedule.txt         |   10 +
+> >  arch/arm/Kconfig                                   |    1 +
+> >  arch/arm/boot/dts/am33xx.dtsi                      |   46 +
+> >  arch/arm/common/Kconfig                            |    3 +
+> >  arch/arm/common/Makefile                           |    1 +
+> >  arch/arm/common/edma.c                             | 1779 ++++++++++++++++++++
+> >  arch/arm/include/asm/mach/edma.h                   |  267 +++
+> >  arch/arm/mach-davinci/Makefile                     |    2 +-
+> >  arch/arm/mach-davinci/devices.c                    |    3 +-
+> >  arch/arm/mach-davinci/dm355.c                      |    2 +-
+> >  arch/arm/mach-davinci/dm365.c                      |    2 +-
+> >  arch/arm/mach-davinci/dm644x.c                     |    2 +-
+> >  arch/arm/mach-davinci/dm646x.c                     |    2 +-
+> >  arch/arm/mach-davinci/dma.c                        | 1588 -----------------
+> >  arch/arm/mach-davinci/include/mach/asp.h           |    2 +-
+> >  arch/arm/mach-davinci/include/mach/da8xx.h         |    3 +-
+> >  arch/arm/mach-davinci/include/mach/edma.h          |  267 ---
+> >  arch/arm/mach-davinci/include/mach/spi.h           |    2 +-
+> >  arch/arm/mach-omap2/hsmmc.c                        |    7 +-
+> >  arch/arm/plat-omap/Kconfig                         |    1 +
+> >  drivers/dma/Kconfig                                |    2 +-
+> >  drivers/dma/edma.c                                 |    2 +-
+> >  drivers/mmc/host/omap_hsmmc.c                      |   26 +-
+> >  drivers/spi/spi-omap2-mcspi.c                      |   68 +-
+> >  27 files changed, 2296 insertions(+), 1893 deletions(-)
+> >  create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+> >  create mode 100644 arch/arm/common/edma.c
+> >  create mode 100644 arch/arm/include/asm/mach/edma.h
+> >  delete mode 100644 arch/arm/mach-davinci/dma.c
+> >  delete mode 100644 arch/arm/mach-davinci/include/mach/edma.h
+> > 
+> > -- 
+> > 1.7.9.5
+> > 
+> > _______________________________________________
+> > Davinci-linux-open-source mailing list
+> > Davinci-linux-open-source@linux.davincidsp.com
+> > http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> > 
+> 
+> 
+> Regards, 
+> Gururaja
+> _______________________________________________
+> Davinci-linux-open-source mailing list
+> Davinci-linux-open-source@linux.davincidsp.com
+> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
