@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab2IUORo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 10:17:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab2IUORm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 10:17:42 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jagdish Motwani <jagdish.motwani@elitecore.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: performance degradation on kernel upgrade (due to commit ab0a9735e06914ce4d2a94ffa41497dbc142fe7f )
-References: <505C700C.3010403@elitecore.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 21 Sep 2012 10:17:37 -0400
-In-Reply-To: <505C700C.3010403@elitecore.com> (Jagdish Motwani's message of
-	"Fri, 21 Sep 2012 19:17:56 +0530")
-Message-ID: <x49r4pvlata.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754686Ab2IUOV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 10:21:57 -0400
+Received: from forward5h.mail.yandex.net ([84.201.186.23]:59437 "EHLO
+	forward5h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753349Ab2IUOVz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 10:21:55 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <668281348234555@web30d.yandex.ru>
+References: <668281348234555@web30d.yandex.ru>
+Subject: Re: [PATCH]sched/rt.c: leaf_rt_rq_list contains empty queues. Fix it
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Message-Id: <742911348237311@web12h.yandex.ru>
+Date: Fri, 21 Sep 2012 18:21:51 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jagdish Motwani <jagdish.motwani@elitecore.com> writes:
+Second version. Add every not empty queue once. The patch:
 
-> Recently i upgraded my kernel from 2.6.29.6 to 2.6.35.14.
->
-> After upgrading i got very poor performance on my postgre database.
-[...]
-> Using git bisect, i got commit ab0a9735e06914ce4d2a94ffa41497dbc142fe7f
->
-> Is it a behavior change or am i missing something? Are there any
-> workarounds for this?
+Function __enqueue_rt_entity() adds an empty queue to leaf_rt_rq_list.
 
-commit ab0a9735e06914ce4d2a94ffa41497dbc142fe7f
-Author: Christoph Hellwig <hch@lst.de>
-Date:   Thu Oct 29 14:14:04 2009 +0100
+So, pick_next_highest_task_rt() picks empty queues. Fix it.
 
-    blkdev: flush disk cache on ->fsync
-
-This is a data integrity fix, and you really don't want to work around
-it.
-
-Cheers,
-Jeff
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+---
+ kernel/sched/rt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 944cb68..97a0954 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1103,7 +1103,7 @@ static void __enqueue_rt_entity(struct sched_rt_entity *rt_se, bool head)
+ 	if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
+ 		return;
+ 
+-	if (!rt_rq->rt_nr_running)
++	if (rt_rq->rt_nr_running == 1)
+ 		list_add_leaf_rt_rq(rt_rq);
+ 
+ 	if (head)
