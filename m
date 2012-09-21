@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933022Ab2IUVg7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 17:36:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42823 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378Ab2IUVg5 (ORCPT
+	id S932970Ab2IUViY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 17:38:24 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34270 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758113Ab2IUViW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 17:36:57 -0400
-Date: Fri, 21 Sep 2012 14:36:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/9] mm: compaction: Cache if a pageblock was scanned
- and no pages were isolated
-Message-Id: <20120921143656.60a9a6cd.akpm@linux-foundation.org>
-In-Reply-To: <1348224383-1499-9-git-send-email-mgorman@suse.de>
-References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
-	<1348224383-1499-9-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 21 Sep 2012 17:38:22 -0400
+Message-ID: <505CDE47.1090300@oracle.com>
+Date: Fri, 21 Sep 2012 16:38:15 -0500
+From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: John Jolly <jjolly@suse.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] rds: Error on offset mismatch if not loopback
+References: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
+In-Reply-To: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Sep 2012 11:46:22 +0100
-Mel Gorman <mgorman@suse.de> wrote:
-
-> When compaction was implemented it was known that scanning could potentially
-> be excessive. The ideal was that a counter be maintained for each pageblock
-> but maintaining this information would incur a severe penalty due to a
-> shared writable cache line. It has reached the point where the scanning
-> costs are an serious problem, particularly on long-lived systems where a
-> large process starts and allocates a large number of THPs at the same time.
-> 
-> Instead of using a shared counter, this patch adds another bit to the
-> pageblock flags called PG_migrate_skip. If a pageblock is scanned by
-> either migrate or free scanner and 0 pages were isolated, the pageblock
-> is marked to be skipped in the future. When scanning, this bit is checked
-> before any scanning takes place and the block skipped if set.
-> 
-> The main difficulty with a patch like this is "when to ignore the cached
-> information?" If it's ignored too often, the scanning rates will still
-> be excessive. If the information is too stale then allocations will fail
-> that might have otherwise succeeded. In this patch
-> 
-> o CMA always ignores the information
-> o If the migrate and free scanner meet then the cached information will
->   be discarded if it's at least 5 seconds since the last time the cache
->   was discarded
-> o If there are a large number of allocation failures, discard the cache.
-> 
-> The time-based heuristic is very clumsy but there are few choices for a
-> better event. Depending solely on multiple allocation failures still allows
-> excessive scanning when THP allocations are failing in quick succession
-> due to memory pressure. Waiting until memory pressure is relieved would
-> cause compaction to continually fail instead of using reclaim/compaction
-> to try allocate the page. The time-based mechanism is clumsy but a better
-> option is not obvious.
-
-ick.
-
-Wall time has sooo little relationship to what's happening in there. 
-If we *have* to use polling, cannot we clock the poll with some metric
-which is at least vaguely related to the amount of activity?  Number
-(or proportion) of pages scanned, for example?  Or reset everything on
-the Nth trip around the zone?  Or even a combination of one of these
-*and* of wall time, so the system will at least work harder when MM is
-under load.
-
-Also, what has to be done to avoid the polling altogether?  eg/ie, zap
-a pageblock's PB_migrate_skip synchronously, when something was done to
-that pageblock which justifies repolling it?
-
+On 9/21/2012 4:32 PM, John Jolly wrote:
+> Attempting an rds connection from the IP address of an IPoIB interface
+> to itself causes a kernel panic due to a BUG_ON() being triggered.
+> Making the test less strict allows rds-ping to work without crashing
+> the machine.
 >
-> ...
+> A local unprivileged user could use this flaw to crash the system.
 >
-> +static void reset_isolation_suitable(struct zone *zone)
-> +{
-> +	unsigned long start_pfn = zone->zone_start_pfn;
-> +	unsigned long end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-> +	unsigned long pfn;
-> +
-> +	/*
-> +	 * Do not reset more than once every five seconds. If allocations are
-> +	 * failing sufficiently quickly to allow this to happen then continually
-> +	 * scanning for compaction is not going to help. The choice of five
-> +	 * seconds is arbitrary but will mitigate excessive scanning.
-> +	 */
-> +	if (time_before(jiffies, zone->compact_blockskip_expire))
-> +		return;
-> +	zone->compact_blockskip_expire = jiffies + (HZ * 5);
-> +
-> +	/* Walk the zone and mark every pageblock as suitable for isolation */
-> +	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
-> +		struct page *page;
-> +		if (!pfn_valid(pfn))
-> +			continue;
-> +
-> +		page = pfn_to_page(pfn);
-> +		if (zone != page_zone(page))
-> +			continue;
-> +
-> +		clear_pageblock_skip(page);
-> +	}
-
-What's the worst-case loop count here?
-
-> +}
-> +
+> Signed-off-by: John Jolly<jjolly@suse.com>
+> ---
+>   net/rds/ib_send.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> ...
+> diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
+> index e590949..7920c85 100644
+> --- a/net/rds/ib_send.c
+> +++ b/net/rds/ib_send.c
+> @@ -544,7 +544,7 @@ int rds_ib_xmit(struct rds_connection *conn, struct rds_message *rm,
+>          int flow_controlled = 0;
+>          int nr_sig = 0;
 >
+> -       BUG_ON(off % RDS_FRAG_SIZE);
+> +       BUG_ON(!conn->c_loopback&&  off % RDS_FRAG_SIZE);
+>          BUG_ON(hdr_off != 0&&  hdr_off != sizeof(struct rds_header));
+>
+>          /* Do not send cong updates to IB loopback */
+Hi John,
 
+How do you trigger this BUG_ON ?
+With rds-ping I could not hit this condition of non-zero "off % 
+RDS_FRAG_SIZE".
+rds-ping uses zero byte messages to ping or pong back. How does the 
+"off" become non-zero ?
+
+Thanks.
+
+Venkat
