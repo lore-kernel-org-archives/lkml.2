@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933190Ab2IUUHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 16:07:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34207 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932081Ab2IUUHi (ORCPT
+	id S1758028Ab2IUUIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 16:08:53 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:63981 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757778Ab2IUUIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 16:07:38 -0400
-Date: Fri, 21 Sep 2012 13:07:33 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, Christoph Lameter <cl@linux.com>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v3 09/16] sl[au]b: always get the cache from its page
- in kfree
-Message-ID: <20120921200733.GM7264@google.com>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
- <1347977530-29755-10-git-send-email-glommer@parallels.com>
- <00000139d9fe8595-8905906d-18ed-4d41-afdb-f4c632c2d50a-000000@email.amazonses.com>
- <5059777E.8060906@parallels.com>
- <CAOJsxLFgwOqUcLHEwYNERwn1Uvp4-8CmvRKTfBFAHD6p_-6c7g@mail.gmail.com>
- <505C33D3.5000202@parallels.com>
- <alpine.LFD.2.02.1209211240410.3619@tux.localdomain>
+	Fri, 21 Sep 2012 16:08:51 -0400
+Date: Fri, 21 Sep 2012 22:08:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Kees Cook <keescook@chromium.org>, Linda Wang <lwang@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH 00/11] x86: Supervisor Mode Access Prevention
+Message-ID: <20120921200846.GA25679@gmail.com>
+References: <1348256595-29119-1-git-send-email-hpa@linux.intel.com>
+ <CA+55aFwaZdMxLA1VCfOy9BDQHPp6CTwRFHYGUCXdJ4+KkQoN+g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1209211240410.3619@tux.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFwaZdMxLA1VCfOy9BDQHPp6CTwRFHYGUCXdJ4+KkQoN+g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Fri, Sep 21, 2012 at 12:41:52PM +0300, Pekka Enberg wrote:
-> > I am already using static keys extensively in this patchset, and that is
-> > how I intend to handle this particular case.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Fri, Sep 21, 2012 at 12:43 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>
+> > Supervisor Mode Access Prevention (SMAP) is a new security 
+> > feature disclosed by Intel in revision 014 of the Intel® 
+> > Architecture Instruction Set Extensions Programming 
+> > Reference:
 > 
-> Cool.
+> Looks good.
 > 
-> The key point here is that !CONFIG_MEMCG_KMEM should have exactly *zero* 
-> performance impact and CONFIG_MEMCG_KMEM disabled at runtime should have 
-> absolute minimal impact.
+> Did this find any bugs, btw? We've had a few cases where we 
+> forgot to use the proper user access function, and code just 
+> happened to work because it all boils down to the same thing 
+> and never got any page faults in practice anyway..
 
-Not necessarily disagreeing, but I don't think it's helpful to set the
-bar impossibly high.  Even static_key doesn't have "exactly *zero*"
-impact.  Let's stick to as minimal as possible when not in use and
-reasonable in use.
+The 4g:4g patch sweeped out most of the historic ones - so what 
+we have are perhaps newer bugs (but those should be pretty rare, 
+most new features are cross-arch).
 
-And, yeah, this one can be easily solved by using static_key.
+Thanks,
 
-Thanks.
-
--- 
-tejun
+	Ingo
