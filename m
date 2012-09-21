@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab2IURuK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 13:50:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47797 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932607Ab2IURuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 13:50:05 -0400
-Date: Fri, 21 Sep 2012 13:50:03 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Kevin Hilman <khilman@deeprootsystems.com>, <linux-pm@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Nishanth Menon <nm@ti.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] PM / Runtime: let rpm_resume() succeed if
- RPM_ACTIVE, even when disabled
-In-Reply-To: <201209202358.24400.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1209211335100.1323-100000@iolanthe.rowland.org>
+	id S932596Ab2IURup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 13:50:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932403Ab2IURum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 13:50:42 -0400
+Date: Fri, 21 Sep 2012 14:50:27 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/9] mm: compaction: Abort compaction loop if lock is
+ contended or run too long
+Message-ID: <20120921175026.GD6665@optiplex.redhat.com>
+References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
+ <1348224383-1499-5-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348224383-1499-5-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Sep 2012, Rafael J. Wysocki wrote:
-
-> On Thursday, September 20, 2012, Kevin Hilman wrote:
-> > From: Kevin Hilman <khilman@ti.com>
-> > 
-> > When runtime PM is disabled, what we want is for callbacks not to be
-> > called from then on.  However, currently, when runtime PM is disabled,
-> > operations such as 'get' will also fail even if the device is
-> > currently active.
-> > 
-> > Since calling 'get' on a device that is already RPM_ACTIVE does not
-> > involve calling the callbacks, it should be allowed to succeed, even
-> > if runtime PM is disabled.
-> > 
-> > This is particularily useful in runtime PM enabled drivers that are
-> > used during system suspend.  Because runtime PM is disabled during
-> > system suspend, currently any driver's use of pm_runtime_get* will
-> > fail with -EACCES.  This is expected if the device was already runtime
-> > suspended, but if the device is actually active (due to recent usage,
-> > autosuspend timeout not expired, or pm_runtime_resume() called in
-> > ->suspend() method), the pm_runtime_get*() call should actually
-> > succeed.
+On Fri, Sep 21, 2012 at 11:46:18AM +0100, Mel Gorman wrote:
+> From: Shaohua Li <shli@fusionio.com>
 > 
-> I'd say the problem is when the drive in question uses the return value of
-> pm_runtime_get_sync(), for example, to decide whether or not it is safe
-> to access the hardware.  In that case it may decide that accessing the
-> hardware is unsafe during system suspend, although that's not really the
-> case.  So the change you're proposing allows drivers of this kind  (and there
-> may be a substantial number of them) to be simplified slightly.
-
-Kevin makes a good case that pm_runtime_resume() and related functions 
-should succeed even when runtime PM is disabled, if the device is 
-already in the desired state.
-
-The same may be true for pm_runtime_suspend().  What do you think?
-
-> > To permit the usage described above, add a check to rpm_resume() so
-> > that success is returned in the case where a driver is suspended (it's
-> > ->suspend callback has been called) but is still RPM_ACTIVE.
-> > 
-> > This patch was developed in close collaboration with Rafael J. Wysocki
-> > <rjw@sisk.pl>
-> > 
-> > Tested on AM3730/Beagle-xM where wakeup IRQ firing during the late
-> > suspend phase triggers runtime PM activity in the I2C driver since the
-> > wakeup IRQ is on an I2C-connected PMIC.
-> > 
-> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > Signed-off-by: Kevin Hilman <khilman@ti.com>
+> Changelog since V2
+> o Fix BUG_ON triggered due to pages left on cc.migratepages
+> o Make compact_zone_order() require non-NULL arg `contended'
 > 
-> OK, I wonder if anyone has any objections against this.  Alan?
+> Changelog since V1
+> o only abort the compaction if lock is contended or run too long
+> o Rearranged the code by Andrea Arcangeli.
+> 
+> isolate_migratepages_range() might isolate no pages if for example when
+> zone->lru_lock is contended and running asynchronous compaction. In this
+> case, we should abort compaction, otherwise, compact_zone will run a
+> useless loop and make zone->lru_lock is even contended.
+> 
+> [minchan@kernel.org: Putback pages isolated for migration if aborting]
+> [akpm@linux-foundation.org: compact_zone_order requires non-NULL arg contended]
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Shaohua Li <shli@fusionio.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> ---
 
-The way the patch is written contradicts the documentation:
-
-  * A request to execute ->runtime_resume() will cancel any pending or
-    scheduled requests to execute the other callbacks for the same device,
-    except for scheduled autosuspends.
-
-> > @@ -510,7 +510,8 @@ static int rpm_resume(struct device *dev, int rpmflags)
-> >  	if (dev->power.runtime_error)
-> >  		retval = -EINVAL;
-> >  	else if (dev->power.disable_depth > 0)
-> > -		retval = -EACCES;
-> > +		retval = dev->power.is_suspended && 
-> > +			dev->power.runtime_status == RPM_ACTIVE ? 1 : -EACCES;
-> >  	if (retval)
-> >  		goto out;
-
-Also, the is_suspended test seems irrelevant in general -- it makes 
-sense in terms of the scenario Kevin described but that's not the 
-stated purpose of the patch.
-
-Both of these problems can be addressed by writing the code as follows:
-
-	if (dev->power.runtime_error)
-		retval = -EINVAL;
-	else if (dev->power.disable_depth > 0) {
-
-		/* Special case: allow this if the device is already active */
-		if (dev->power.runtime_status != RPM_ACTIVE)
-			retval = -EACCES;
-	}
-	if (retval)
-		goto out;
-
-Alan Stern
+Acked-by: Rafael Aquini <aquini@redhat.com>
 
