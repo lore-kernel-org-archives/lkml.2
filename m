@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab2IUCbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 22:31:21 -0400
-Received: from tundra.namei.org ([65.99.196.166]:49492 "EHLO tundra.namei.org"
+	id S932470Ab2IUCbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 22:31:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25625 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756751Ab2IUCbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 22:31:19 -0400
-Date: Fri, 21 Sep 2012 12:22:44 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kees Cook <keescook@chromium.org>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-In-Reply-To: <1348179300-11653-1-git-send-email-keescook@chromium.org>
-Message-ID: <alpine.LRH.2.02.1209211221390.16498@tundra.namei.org>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1756805Ab2IUCbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 22:31:45 -0400
+Message-ID: <505BD190.40707@redhat.com>
+Date: Thu, 20 Sep 2012 21:31:44 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Namhyung Kim <namhyung@kernel.org>
+CC: kernel list <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH V3] perf: Fix parallel build
+References: <505BAC5D.9020909@redhat.com> <505BBF12.4060800@redhat.com> <87392cyvpl.fsf@sejong.aot.lge.com>
+In-Reply-To: <87392cyvpl.fsf@sejong.aot.lge.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Sep 2012, Kees Cook wrote:
+Parallel builds of perf were failing for me on a 32p box, with:
 
-> Earlier proposals for appending signatures to kernel modules would not be
-> useful in Chrome OS, since it would involve adding an additional set of
-> keys to our kernel and builds for no good reason: we already trust the
-> contents of our root filesystem. We don't need to verify those kernel
-> modules a second time. Having to do signature checking on module loading
-> would slow us down and be redundant. All we need to know is where a
-> module is coming from so we can say yes/no to loading it.
+    * new build flags or prefix
+util/pmu.l:7:23: error: pmu-bison.h: No such file or directory
 
-Just out of interest, has anyone else expressed interest in using this 
-feature?
+...
+
+make: *** [util/pmu-flex.o] Error 1
+make: *** Waiting for unfinished jobs....
+
+This can pretty quickly be seen by adding a sleep in front of
+the bison calls in tools/perf/Makefile and running make -j4 on a
+smaller box i.e.:
+
+	sleep 10; $(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+
+Adding the following dependencies fixes it for me.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+---
+
+V2: Fix other bison dependency caught by Namhyung Kim <namhyung@kernel.org>, thanks.
+V3: Add $(OUTPUT) to generated deps, thanks again.
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 35655c3..01325cd 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -221,13 +221,13 @@ export PERL_PATH
+ FLEX = flex
+ BISON= bison
+ 
+-$(OUTPUT)util/parse-events-flex.c: util/parse-events.l
++$(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-events-bison.c
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+ 
+ $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+ 	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
+ 
+-$(OUTPUT)util/pmu-flex.c: util/pmu.l
++$(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+ 
+ $(OUTPUT)util/pmu-bison.c: util/pmu.y
 
 
-
--- 
-James Morris
-<jmorris@namei.org>
