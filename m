@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab2IUAN2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 20:13:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51058 "EHLO
+	id S1753695Ab2IUAPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 20:15:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58180 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab2IUAN0 (ORCPT
+	with ESMTP id S1751668Ab2IUAPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 20:13:26 -0400
-Date: Thu, 20 Sep 2012 17:13:23 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
+	Thu, 20 Sep 2012 20:15:06 -0400
+Date: Thu, 20 Sep 2012 17:15:01 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
 Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
 Subject: Re: [PATCH v2 15/26] block: Add bio_copy_data()
-Message-ID: <20120921001323.GL5519@google.com>
+Message-ID: <20120921001501.GU7264@google.com>
 References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
  <1347322957-25260-16-git-send-email-koverstreet@google.com>
  <20120921000632.GS7264@google.com>
- <20120921000947.GT7264@google.com>
+ <20120921000945.GK5519@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120921000947.GT7264@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120921000945.GK5519@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 05:09:47PM -0700, Tejun Heo wrote:
+On Thu, Sep 20, 2012 at 05:09:45PM -0700, Kent Overstreet wrote:
 > On Thu, Sep 20, 2012 at 05:06:32PM -0700, Tejun Heo wrote:
 > > Hello,
 > > 
@@ -48,13 +48,16 @@ On Thu, Sep 20, 2012 at 05:09:47PM -0700, Tejun Heo wrote:
 > > Wrap these in preempt_disable/enable() to allow the function to be
 > > called from any context?
 > 
-> Ooh, and maybe return the amount of copied data?
+> I checked the implementation of kmap_atomic(), it already does
+> preempt_disable() so it's safe in process context - if I understand
+> correctly it needs local_irq_save()/restore() to be safe in any context
+> and I figured calling this from irq context is not the norm so that
+> should be the caller's responsibility.
 
-Possibly, but I think I want to wait until a user needs it before adding
-something like that.
+Ooh, that means the patch I just sent Andrew about sg_mapping_iter is
+still too strict.
 
->From looking at other code that copies bio data, a parameter that
-specifies the amount of data to be copied might be more useful.
+Thanks.
 
-I'm not sure I've seen all the places where bio data is copied yet, so
-I've just been waiting until I find more uses to make it do more.
+-- 
+tejun
