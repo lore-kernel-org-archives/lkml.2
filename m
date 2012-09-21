@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab2IUM0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 08:26:40 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:57645 "EHLO gir.skynet.ie"
+	id S1754082Ab2IUM2y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 08:28:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8881 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752384Ab2IUM0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 08:26:38 -0400
-Date: Fri, 21 Sep 2012 13:26:28 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] mm: fix invalidate_complete_page2 lock ordering
-Message-ID: <20120921122628.GB11157@csn.ul.ie>
-References: <alpine.LSU.2.00.1209182045370.11632@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1209182045370.11632@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753308Ab2IUM2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 08:28:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,462,1344236400"; 
+   d="asc'?scan'208";a="195753109"
+Subject: [GIT PULL] slave-dmaengine fixes
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Linus <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Dan Williams <djbw@fb.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-VmG4NNGgvdKSFfCy+b0Y"
+Date: Fri, 21 Sep 2012 17:54:05 +0530
+Message-ID: <1348230245.1943.185.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 08:51:47PM -0700, Hugh Dickins wrote:
-> In fuzzing with trinity, lockdep protested "possible irq lock inversion
-> dependency detected" when isolate_lru_page() reenabled interrupts while
-> still holding the supposedly irq-safe tree_lock:
-> 
-> invalidate_inode_pages2
->   invalidate_complete_page2
->     spin_lock_irq(&mapping->tree_lock)
->     clear_page_mlock
->       isolate_lru_page
->         spin_unlock_irq(&zone->lru_lock)
-> 
-> isolate_lru_page() is correct to enable interrupts unconditionally:
-> invalidate_complete_page2() is incorrect to call clear_page_mlock()
-> while holding tree_lock, which is supposed to nest inside lru_lock.
-> 
-> Both truncate_complete_page() and invalidate_complete_page() call
-> clear_page_mlock() before taking tree_lock to remove page from
-> radix_tree.  I guess invalidate_complete_page2() preferred to test
-> PageDirty (again) under tree_lock before committing to the munlock;
-> but since the page has already been unmapped, its state is already
-> somewhat inconsistent, and no worse if clear_page_mlock() moved up.
-> 
-> Reported-by: Sasha Levin <levinsasha928@gmail.com>
-> Deciphered-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michel Lespinasse <walken@google.com>
-> Cc: Ying Han <yinghan@google.com>
-> Cc: stable@vger.kernel.org
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+--=-VmG4NNGgvdKSFfCy+b0Y
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Mel Gorman
-SUSE Labs
+
+Hi Linus,
+
+Please consider pull to receive few fixes on slave dmanengine.
+There are two trivial fixes in pl330 driver and two in at_hdmac driver.
+
+The following changes since commit ffc493062ce9987156945aa21a677d83a179fc0a=
+:
+  Laxman Dewangan (1):
+        dma: tegra: enable/disable dma clock
+
+are available in the git repository at:
+
+  git://git.infradead.org/users/vkoul/slave-dma.git fixes
+
+Nicolas Ferre (2):
+      dmaengine: at_hdmac: fix comment in atc_prep_slave_sg()
+      dmaengine: at_hdmac: check that each sg data length is non-null
+
+Sachin Kamat (2):
+      DMA: PL330: Fix potential NULL pointer dereference in pl330_submit_re=
+q()
+      DMA: PL330: Check the pointer returned by kzalloc
+
+ drivers/dma/at_hdmac.c |   13 ++++++++++++-
+ drivers/dma/pl330.c    |   21 ++++++++++++++-------
+ 2 files changed, 26 insertions(+), 8 deletions(-)
+
+--=20
+~Vinod
+
+--=-VmG4NNGgvdKSFfCy+b0Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAABAgAGBQJQXFxXAAoJEHwUBw8lI4NH4zIP/jUJonH8GEekb3pZpEpY7mhW
+vMQB8A60rUFDpVWt0mbzl0ka5922oQOlHz3pUTzT0bAQbuWKpTh9xrD86ehuFEs0
+NXTkooTEiijNjK3RVSAC7S5rd3P3uGQtRdZp6gQCz2alsg9fkqYCOo4dXjSVql+8
+pyZBdDs0Tn02oaxe9a2JSaoCLcAlnPDLZ/CWDQ1cIQJ3i/BHE3F04IqYLVfGAH+Y
+o4IAkEJ4nnhJjgOwk+1vze6Al+reVs558dFAMz7u3+a9kQEp4rDuwFJjzuj/9LAl
+xDTAP2aZi4SnN+7Em+Bs+t8shbHOsoxk0Ypp+7NnHARGBRAEtJI47velxaUnfcKJ
+InX96x5ZUmag5JAZp6WMSAoSSZR1mLsfAlP+fgaHj0+ycf9tOOsumRP424xLEQ8w
+RTrCXTsYrK7OD8Z0bRpMumDQtnoz5nk/hy6nQVdwuKvL6j0vwPqqVG8Mw3AZkkMM
+YI8c028kph4iGLu/WNkdJ3VjI3Ry/UOzQExn/XzcMj8gD5uK1WTZRDA2Yf3DyKtj
+1C9NuUzZYUu3SQ4NV4fNGqj1W1jrzgqvYJCC2DJL7Tx+TkfLuovG+D34rvDztX3Q
+Enxd4mzRgeLvxB0hEwXRcGmafNHmg/e2CGXHnOmUXg1wm5GZXr+/uEhdHb1ZWOs1
+x0CAYiDwTGJr4uLBHj4Y
+=g15t
+-----END PGP SIGNATURE-----
+
+--=-VmG4NNGgvdKSFfCy+b0Y--
+
