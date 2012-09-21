@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab2IUXq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 19:46:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31775 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755872Ab2IUXqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 19:46:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,465,1344236400"; 
-   d="scan'208";a="196274388"
-Date: Fri, 21 Sep 2012 16:45:59 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, dave.jiang@intel.com,
-        nab@risingtidesystems.com
-Subject: Re: [RFC v3 1/2] PCI-Express Non-Transparent Bridge Support
-Message-ID: <20120921234558.GA6531@jonmason-lab>
-References: <1348250989-6962-1-git-send-email-jon.mason@intel.com>
- <1348250989-6962-2-git-send-email-jon.mason@intel.com>
- <20120921.141447.1146043198575242769.davem@davemloft.net>
+	id S1756921Ab2IUXy2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 19:54:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63355 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab2IUXy1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 19:54:27 -0400
+Date: Fri, 21 Sep 2012 16:51:44 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Paul Parsons <lost.distance@yahoo.com>
+Cc: dwmw2@infradead.org, philipp.zabel@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pda_power: remove ac_draw_failed goto and label
+Message-ID: <20120921235144.GC26715@lizard>
+References: <505BBB4B.3060508@yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120921.141447.1146043198575242769.davem@davemloft.net>
+In-Reply-To: <505BBB4B.3060508@yahoo.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 02:14:47PM -0400, David Miller wrote:
-> From: Jon Mason <jon.mason@intel.com>
-> Date: Fri, 21 Sep 2012 11:09:48 -0700
+On Fri, Sep 21, 2012 at 01:56:43AM +0100, Paul Parsons wrote:
+> A previous patch added the ac_draw_failed goto and label to
+> pda_power_probe(). The goto would be invoked after a failed call to
+> regulator_get().
 > 
-> > A PCI-Express non-transparent bridge (NTB) is a point-to-point PCIe bus
-> > connecting 2 systems, providing electrical isolation between the two subsystems.
-> > A non-transparent bridge is functionally similar to a transparent bridge except
-> > that both sides of the bridge have their own independent address domains.  The
-> > host on one side of the bridge will not have the visibility of the complete
-> > memory or I/O space on the other side of the bridge.  To communicate across the
-> > non-transparent bridge, each NTB endpoint has one (or more) apertures exposed to
-> > the local system.  Writes to these apertures are mirrored to memory on the
-> > remote system.  Communications can also occur through the use of doorbell
-> > registers that initiate interrupts to the alternate domain, and scratch-pad
-> > registers accessible from both sides.
-> > 
-> > The NTB device driver is needed to configure these memory windows, doorbell, and
-> > scratch-pad registers as well as use them in such a way as they can be turned
-> > into a viable communication channel to the remote system.  ntb_hw.[ch]
-> > determines the usage model (NTB to NTB or NTB to Root Port) and abstracts away
-> > the underlying hardware to provide access and a common interface to the doorbell
-> > registers, scratch pads, and memory windows.  These hardware interfaces are
-> > exported so that other, non-mainlined kernel drivers can access these.
-> > ntb_transport.[ch] also uses the exported interfaces in ntb_hw.[ch] to setup a
-> > communication channel(s) and provide a reliable way of transferring data from
-> > one side to the other, which it then exports so that "client" drivers can access
-> > them.  These client drivers are used to provide a standard kernel interface
-> > (i.e., Ethernet device) to NTB, such that Linux can transfer data from one
-> > system to the other in a standard way.
-> > 
-> > Signed-off-by: Jon Mason <jon.mason@intel.com>
+> However the way ac_draw is used - always after a check for NULL -
+> suggests that a failed call to regulator_get() was not fatal.
 > 
-> I really don't see anything that requires the TX networking processing
-> to occur in a tasklet.  I see no sleeping, strange locking, or
-> anything like that.
+> This patch removes the ac_draw_failed goto and label, partly reverting
+> the previous patch.
 > 
-> And if that's the case, it's just pure overhead.
+> This patch also removes the assignment of an error code to ret after a
+> failed call to regulator_get(), since the error code is now never used.
+> 
+> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+> Cc: Philipp Zabel <philipp.zabel@gmail.com>
+> ---
+>  drivers/power/pda_power.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
+> index d3be834d..7df7c5f 100644
+> --- a/drivers/power/pda_power.c
+> +++ b/drivers/power/pda_power.c
+> @@ -284,9 +284,7 @@ static int pda_power_probe(struct platform_device *pdev)
+>  	ac_draw = regulator_get(dev, "ac_draw");
+>  	if (IS_ERR(ac_draw)) {
+>  		dev_dbg(dev, "couldn't get ac_draw regulator\n");
+> -		ret = PTR_ERR(ac_draw);
+>  		ac_draw = NULL;
+> -		goto ac_draw_failed;
 
-Good point.  Removed (and I see a nice little perf bump).
+For some reason you have a bit different code, so your patch is not based
+on the battery tree. (In my tree ret and ac_draw assignments are swapped.)
+Maybe that's because I had to manually redo your first patch...
 
-Thanks,
-Jon
+Anyway, I repeated your patch by hand again and thus applied it.
+
+Thank you!
+
+>  	}
+> 
+>  	update_status();
+> @@ -416,7 +414,6 @@ ac_supply_failed:
+>  		regulator_put(ac_draw);
+>  		ac_draw = NULL;
+>  	}
+> -ac_draw_failed:
+>  	if (pdata->exit)
+>  		pdata->exit(dev);
+>  init_failed:
+> -- 
+> 1.7.8.6
