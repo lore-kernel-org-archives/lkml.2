@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2IUA0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 20:26:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51349 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab2IUA0A (ORCPT
+	id S1756060Ab2IUA0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 20:26:13 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53996 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab2IUA0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 20:26:00 -0400
-Date: Thu, 20 Sep 2012 17:25:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
-Subject: Re: [PATCH v2 19/26] bounce: Refactor __blk_queue_bounce to not
- use bi_io_vec
-Message-ID: <20120921002555.GV7264@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-20-git-send-email-koverstreet@google.com>
+	Thu, 20 Sep 2012 20:26:10 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-c8-505bb4203a66
+From: Namhyung Kim <namhyung@kernel.org>
+To: Irina Tirdea <irina.tirdea@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Irina Tirdea <irina.tirdea@intel.com>
+Subject: Re: [PATCH 3/4] perf annotate: configure objdump path at compile time
+References: <1348179215-11160-1-git-send-email-irina.tirdea@gmail.com>
+	<1348179215-11160-4-git-send-email-irina.tirdea@gmail.com>
+Date: Fri, 21 Sep 2012 09:17:27 +0900
+In-Reply-To: <1348179215-11160-4-git-send-email-irina.tirdea@gmail.com> (Irina
+	Tirdea's message of "Fri, 21 Sep 2012 01:13:34 +0300")
+Message-ID: <87fw6cz0tk.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347322957-25260-20-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Kent.
+Hi Irina,
 
-On Mon, Sep 10, 2012 at 05:22:30PM -0700, Kent Overstreet wrote:
-> A bunch of what __blk_queue_bounce() was doing was problematic for the
-> immutable bvec work; this cleans that up and the code is quite a bit
-> smaller, too.
-> 
-> The __bio_for_each_segment() in copy_to_high_bio_irq() was changed
-> because that one's looping over the original bio, not the bounce bio -
-> since the bounce code doesn't own that bio the __ version wasn't
-> correct.
+On Fri, 21 Sep 2012 01:13:34 +0300, Irina Tirdea wrote:
+> From: Irina Tirdea <irina.tirdea@intel.com>
+>
+> The default name for objdump is "objdump". For cross-compiling the name of
+> objdump will be different (e.g. arm-eabi-objdump in Android).
+>
+> Setting the default objdump name in the Makefile with PERF_OBJDUMP_PATH.
 
-I do like the new implementation.  I think the function is broken
-before and after tho.  Allocating from fs_bio_set from block layer is
-never safe and nothing seems to prevent multiple allocators compete in
-the bounce page mempool.  This will need a separate bioset and the
-multiple mempool allocation would have to be put inside a mutex.
+Not a big deal, but how about DEFAULT_OBJDUMP_PATH?
 
-Also, how was this tested?
 
-Thanks.
+>
+> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> ---
+>  tools/perf/Makefile        |    4 ++++
+>  tools/perf/util/annotate.c |    2 +-
+>  2 files changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 9021a1f..3d28150 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -140,6 +140,7 @@ ETC_PERFCONFIG = etc/perfconfig
+>  endif
+>  lib = lib
+>  PERF_TMP_DIR = /tmp
+> +objdump = objdump
 
--- 
-tejun
+More usual pattern would be
+
+OBJDUMP = $(CROSS_COMPILE)objdump
+
+? And it'd more fit to the description.
+
+Thanks,
+Namhyung
+
+
+>  
+>  export prefix bindir sharedir sysconfdir
+>  
+> @@ -883,6 +884,9 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+>  		'-DPREFIX="$(prefix_SQ)"' \
+>  		$<
+>  
+> +$(OUTPUT)util/annotate.o: util/annotate.c $(OUTPUT)PERF-CFLAGS
+> +	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_OBJDUMP_PATH='"$(objdump)"' $<
+> +
+>  $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+>  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+>  
+> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+> index f0a9103..a45ac77 100644
+> --- a/tools/perf/util/annotate.c
+> +++ b/tools/perf/util/annotate.c
+> @@ -824,7 +824,7 @@ fallback:
+>  		 "%s %s%s --start-address=0x%016" PRIx64
+>  		 " --stop-address=0x%016" PRIx64
+>  		 " -d %s %s -C %s|grep -v %s|expand",
+> -		 objdump_path ? objdump_path : "objdump",
+> +		 objdump_path ? objdump_path : PERF_OBJDUMP_PATH,
+>  		 disassembler_style ? "-M " : "",
+>  		 disassembler_style ? disassembler_style : "",
+>  		 map__rip_2objdump(map, sym->start),
