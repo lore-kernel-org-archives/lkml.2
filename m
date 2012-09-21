@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2IUHLj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 03:11:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57124 "EHLO bear.ext.ti.com"
+	id S1755496Ab2IUHLv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 03:11:51 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:49307 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752645Ab2IUHLg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 03:11:36 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: "Porter, Matt" <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>
-CC: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
- arm/common
-Thread-Topic: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
- arm/common
-Thread-Index: AQHNlz5P7Id64n7/pEWRn/L8Ro/of5eUXMUg
-Date: Fri, 21 Sep 2012 07:10:52 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA8A6A9@DBDE01.ent.ti.com>
-References: <1348152226-13588-1-git-send-email-mporter@ti.com>
- <1348152226-13588-2-git-send-email-mporter@ti.com>
-In-Reply-To: <1348152226-13588-2-git-send-email-mporter@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1752492Ab2IUHLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 03:11:49 -0400
+X-ASG-Debug-ID: 1348211508-0421b562ec4ada0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <505C1331.8050907@fusionio.com>
+Date: Fri, 21 Sep 2012 09:11:45 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH 01/14] userns: Convert loop to use kuid_t instead of uid_t
+References: <87k3vote43.fsf@xmission.com> <1348187330-6616-1-git-send-email-ebiederm@xmission.com> <505C0438.9060907@fusionio.com> <87sjabsvkx.fsf@xmission.com>
+X-ASG-Orig-Subj: Re: [PATCH 01/14] userns: Convert loop to use kuid_t instead of uid_t
+In-Reply-To: <87sjabsvkx.fsf@xmission.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1348211508
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.109148
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 20:13:34, Porter, Matt wrote:
-> Move mach-davinci/dma.c to common/edma.c so it can be used
-> by OMAP (specifically AM33xx atm) as well. This just moves
-> the private EDMA API but does not support OMAP.
+On 2012-09-21 09:07, Eric W. Biederman wrote:
+> Jens Axboe <jaxboe@fusionio.com> writes:
 > 
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> ---
->  arch/arm/Kconfig                           |    1 +
->  arch/arm/common/Kconfig                    |    3 +
->  arch/arm/common/Makefile                   |    1 +
->  arch/arm/common/edma.c                     | 1588 ++++++++++++++++++++++++++++
->  arch/arm/include/asm/mach/edma.h           |  267 +++++
->  arch/arm/mach-davinci/Makefile             |    2 +-
->  arch/arm/mach-davinci/devices.c            |    3 +-
->  arch/arm/mach-davinci/dm355.c              |    2 +-
->  arch/arm/mach-davinci/dm365.c              |    2 +-
->  arch/arm/mach-davinci/dm644x.c             |    2 +-
->  arch/arm/mach-davinci/dm646x.c             |    2 +-
->  arch/arm/mach-davinci/dma.c                | 1588 ----------------------------
-
-
-Please use –M option, while generating patches via git-format-patch. 
-This reduces the patch size if files are copied/renamed/moved.
-
->  arch/arm/mach-davinci/include/mach/asp.h   |    2 +-
->  arch/arm/mach-davinci/include/mach/da8xx.h |    3 +-
->  arch/arm/mach-davinci/include/mach/edma.h  |  267 -----
->  arch/arm/mach-davinci/include/mach/spi.h   |    2 +-
->  arch/arm/plat-omap/Kconfig                 |    1 +
->  17 files changed, 1872 insertions(+), 1864 deletions(-)
->  create mode 100644 arch/arm/common/edma.c
->  create mode 100644 arch/arm/include/asm/mach/edma.h
->  delete mode 100644 arch/arm/mach-davinci/dma.c
->  delete mode 100644 arch/arm/mach-davinci/include/mach/edma.h
+>> On 2012-09-21 02:28, Eric W. Biederman wrote:
+>>> From: "Eric W. Biederman" <ebiederm@xmission.com>
+>>>
+>>> Cc: Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+>>> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+>>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+>>> ---
+>>>  drivers/block/loop.c |    4 ++--
+>>>  include/linux/loop.h |    2 +-
+>>>  init/Kconfig         |    1 -
+>>>  3 files changed, 3 insertions(+), 4 deletions(-)
+>>
+>> Thanks Eric, queued for 3.7.
 > 
-
-...snip...
-...snip...
-...snip...
-
->  
-> -- 
-> 1.7.9.5
+> Would it be a problem if I also merged throug my user-namespace.git tree?
 > 
-> _______________________________________________
-> Davinci-linux-open-source mailing list
-> Davinci-linux-open-source@linux.davincidsp.com
-> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> That was the original plan and it is handy to keep all of the patches
+> together.
 > 
+> Not that it matters much in this case.
 
+Not at all, go ahead. It'll be trivial to resolve any merge conflict due
+to this.
 
-Regards, 
-Gururaja
+BTW, this:
+
+Cc: Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+
+in your original patch needs fixing up. I'm assuming it's a copy-paste
+error and meant to be a Cc, since I haven't signed-off on it.
+
+-- 
+Jens Axboe
+
