@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab2IUPrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 11:47:00 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:58511 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab2IUPq7 (ORCPT
+	id S1755481Ab2IUPvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 11:51:11 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46663 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932Ab2IUPvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 11:46:59 -0400
-Date: Fri, 21 Sep 2012 17:28:28 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Thanasis <thanasis@asyr.hopto.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-Message-ID: <20120921152828.GA24364@electric-eye.fr.zoreil.com>
-References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505BF437.4090506@asyr.hopto.org>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Fri, 21 Sep 2012 11:51:09 -0400
+Message-ID: <505C8CE9.6040201@wwwdotorg.org>
+Date: Fri, 21 Sep 2012 09:51:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: akpm@linux-foundation.org, a.zummo@towertech.it,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
+Subject: Re: [PATCH] rtc: tps65910: Use platform_get_irq to get RTC irq details
+References: <1348225223-32156-1-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1348225223-32156-1-git-send-email-vbyravarasu@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanasis <thanasis@asyr.hopto.org> :
-> on 09/21/2012 02:20 AM Francois Romieu wrote the following:
-[...]
-> > Thanasis, can you narrow down a bit the failing revision ?
-> 
-> Sure, let me know how to do it please.
+On 09/21/2012 05:00 AM, Venu Byravarasu wrote:
+> As RTC driver needs only irq number from platform data,
+> using platform_get_irq(), instead of generic dev_get_platdata().
 
-A rough kernel estimate had been enough. Nevermind.
+I assume this patch depends on "mfd: tps65910: Add alarm interrupt of
+TPS65910 RTC to mfd device list" which you posted just before? If so,
+the two patches should go through the same tree to avoid "git bisect"
+issues.
 
-You will find a hopefully not too quick 2.6.38 backport at :
+Also, I thought you needed to fix the MFD driver to call
+mfd_add_devices() only after all the IRQ stuff had been set up -
+otherwise, when the RTC driver calls devm_request_threaded_irq(), the
+parent IRQ domain that the IRQ points at won't exist, and the call will
+fail.
 
-git://violet.fr.zoreil.com/romieu/r8169
+Also, the MFD patch you sent to create add the IRQ resource into the RTC
+device's resource list sets the IRQ number to TPS65910_IRQ_RTC_ALARM,
+which is the offset within the IRQ domain, not the absolute Linux IRQ
+number. Where does the base of the IRQ domain get added on such that
+this is an actual IRQ numbmer not an offset?
 
-It does not reach the current in-kernel r8169.c state - call me lazy - but
-stops somewhere between 3.2 and 3.3. While only 76 commits long, it should
-be enough to spot a r8169 regression.
+> -	dev_dbg(&pdev->dev, "Enabling rtc-tps65910.\n");
+> +	dev_dbg(&pdev->dev, "Enabling tps65910 rtc.\n");
 
-Assuming you run a 2.6.38-something kernel whose build tree lays at the
-usual place, the included makefile will build a out-of-kernel r8169 driver.
+Unrelated change.
 
-You can use it as:
+> -	irq = pmic_plat_data->irq_base;
+> +	irq  = platform_get_irq(pdev, 0);
 
-git clone git://violet.fr.zoreil.com/romieu/r8169
-cd r8169
-git rev-list --all | tac | while read c; do
-git reset --hard $c
-make
-rmmod r8169
-sync
-insmod ./r8169.ko
-<insert your ip addr add ... / link up and test sequence here>
-done > /tmp/lets-go-shopping.log
+There are two spaces there before the =.
 
-^C when things go wrong.
+> -		"rtc-tps65910", &pdev->dev);
+> +		"tps65910-rtc", &pdev->dev);
 
-You could do a git bisect but there may be several stupidly broken
-commits and I have not checked that the top of the tree works.
+Unrelated change.
 
-Of course you are suggested to check that the code won't try to abuse
-your system.
+> -		.name	= "rtc-tps65910",
+> +		.name	= "tps65910-rtc",
 
--- 
-Ueimor
+Unrelated change.
