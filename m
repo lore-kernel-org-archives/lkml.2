@@ -1,40 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063Ab2IUS6w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 14:58:52 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51801 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679Ab2IUS6u (ORCPT
+	id S933078Ab2IUTAB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 15:00:01 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:34728 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757605Ab2IUS77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 14:58:50 -0400
-Date: Fri, 21 Sep 2012 14:58:48 -0400 (EDT)
-Message-Id: <20120921.145848.1437653204908742943.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bjorn@mork.no
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120921113009.29a296b6405b96b4d3c05f84@canb.auug.org.au>
-References: <20120921113009.29a296b6405b96b4d3c05f84@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Sep 2012 14:59:59 -0400
+Date: Fri, 21 Sep 2012 18:59:58 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: "Bruce, Becky" <bbruce@ti.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Hunter, Jon" <jon-hunter@ti.com>,
+        "<snijsure@grid-net.com>" <snijsure@grid-net.com>, fweisbec@gmail.com
+Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
+In-Reply-To: <alpine.DEB.2.00.1209211803290.8839@utopia.booyaka.com>
+Message-ID: <alpine.DEB.2.00.1209211855500.8839@utopia.booyaka.com>
+References: <alpine.DEB.2.00.1209122237080.7275@utopia.booyaka.com> <20120913011208.GT4257@linux.vnet.ibm.com> <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com> <20120920000351.GI2455@linux.vnet.ibm.com> <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com>
+ <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com> <20120920220130.GN2449@linux.vnet.ibm.com> <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com> <20120920232114.GO2449@linux.vnet.ibm.com> <alpine.DEB.2.00.1209211803290.8839@utopia.booyaka.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 21 Sep 2012 11:30:09 +1000
+Hi
 
-> Today's linux-next merge of the net-next tree got a conflict in
-> drivers/net/usb/qmi_wwan.c between commit 9db273f45686 ("net:
-> qmi_wwan: adding Huawei E367, ZTE MF683 and Pantech P4200") from the
-> net tree and commit bd877e489126 ("net: qmi_wwan: use a single bind
-> function for all device types") from the net-next tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+Just did a test with CONFIG_NO_HZ=n, and no rcu_sched stall messages 
+appeared for 60 minutes.
 
-Thanks Stephen, this should be resolved over the weekend as I plan
-to do a merge during this time.
+Following is the diff from omap2plus_defconfig.
+
+- Paul
+
+--- .config	2012-09-21 12:51:19.114938954 -0600
++++ .testconfig	2012-09-21 12:51:15.686926318 -0600
+@@ -69,7 +69,7 @@
+ # Timers subsystem
+ #
+ CONFIG_TICK_ONESHOT=y
+-CONFIG_NO_HZ=y
++# CONFIG_NO_HZ is not set
+ CONFIG_HIGH_RES_TIMERS=y
+ 
+ #
+@@ -80,7 +80,6 @@
+ CONFIG_RCU_FANOUT=32
+ CONFIG_RCU_FANOUT_LEAF=16
+ # CONFIG_RCU_FANOUT_EXACT is not set
+-# CONFIG_RCU_FAST_NO_HZ is not set
+ # CONFIG_TREE_RCU_TRACE is not set
+ CONFIG_IKCONFIG=y
+ CONFIG_IKCONFIG_PROC=y
+@@ -2535,7 +2534,7 @@
+ # CONFIG_BOOT_PRINTK_DELAY is not set
+ # CONFIG_RCU_TORTURE_TEST is not set
+ CONFIG_RCU_CPU_STALL_TIMEOUT=60
+-# CONFIG_RCU_CPU_STALL_INFO is not set
++CONFIG_RCU_CPU_STALL_INFO=y
+ # CONFIG_RCU_TRACE is not set
+ # CONFIG_KPROBES_SANITY_TEST is not set
+ # CONFIG_BACKTRACE_SELF_TEST is not set
+
