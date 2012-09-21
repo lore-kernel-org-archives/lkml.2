@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab2IUKZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 06:25:28 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:2037 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753525Ab2IUKZ0 (ORCPT
+	id S1755395Ab2IUK0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 06:26:21 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:36321 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab2IUK0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 06:25:26 -0400
-Message-ID: <1348223124.1581.15.camel@x61.thuisdomein>
-Subject: [PATCH] mISDN: suppress compiler warning
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Karsten Keil <isdn@linux-pingi.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 21 Sep 2012 12:25:24 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
-Mime-Version: 1.0
+	Fri, 21 Sep 2012 06:26:19 -0400
+Message-ID: <505C3FEB.7030606@linux.vnet.ibm.com>
+Date: Fri, 21 Sep 2012 15:52:35 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suzuki Poulose <suzuki@in.ibm.com>
+Subject: Re: [patch for-3.6] fs, debugfs: fix race in u32_array_read and allocate
+ array at open
+References: <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com> <20120918192338.GA25845@phenom.dumpdata.com> <CA+55aFy6=1vW4CN0_g8BgSKKdxZNZj9Yd2WG=0BFKjish=Vw=g@mail.gmail.com> <20120918203713.GB19300@phenom.dumpdata.com> <CA+55aFzZvFeCLF8fw=NYFN7C_8ObwJMeK13bN8xRodKQ0QJkTQ@mail.gmail.com> <20120919191652.GA14631@phenom.dumpdata.com> <alpine.DEB.2.00.1209191427460.6273@chino.kir.corp.google.com> <alpine.DEB.2.00.1209191438200.21378@chino.kir.corp.google.com> <505A7F75.8000405@linux.vnet.ibm.com> <alpine.DEB.2.00.1209191938490.10953@chino.kir.corp.google.com> <20120920211814.GB27312@konrad-lan.dumpdata.com> <alpine.DEB.2.00.1209210216000.18230@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1209210216000.18230@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Sep 2012 10:25:25.0178 (UTC) FILETIME=[69C941A0:01CD97E3]
+x-cbid: 12092110-1396-0000-0000-000001E79098
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building the hfcpci driver triggers this GCC warning:
-    drivers/isdn/hardware/mISDN/hfcpci.c:2298:2: warning: ignoring return value of 'driver_for_each_device', declared with attribute warn_unused_result [-Wunused-result]
+On 09/21/2012 02:46 PM, David Rientjes wrote:
+> u32_array_open() is racy when multiple threads read from a file with a
+> seek position of zero, i.e. when two or more simultaneous reads are
+> occurring after the non-seekable files are created.  It is possible that
+> file->private_data is double-freed because the threads races between
+>
+> 	kfree(file->private-data);
+>
+> and
+>
+> 	file->private_data = NULL;
+>
+> The fix is to only do format_array_alloc() when the file is opened and
+> free it when it is closed.  This means that any thread that holds the
+> file open and reads multiple times will see persistent data;
 
-That return value is apparently ignored because _hfcpci_softirq() will
-always return 0. Suppress this warning in the way a few other drivers do
-that too.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) I noticed this warning while building v3.6-rc6 on current Fedora 17,
-using Fedora's default config.
-
-1) Compile tested only.
-
- drivers/isdn/hardware/mISDN/hfcpci.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/isdn/hardware/mISDN/hfcpci.c b/drivers/isdn/hardware/mISDN/hfcpci.c
-index 81363ff..a547c8c 100644
---- a/drivers/isdn/hardware/mISDN/hfcpci.c
-+++ b/drivers/isdn/hardware/mISDN/hfcpci.c
-@@ -2295,8 +2295,11 @@ _hfcpci_softirq(struct device *dev, void *arg)
- static void
- hfcpci_softirq(void *arg)
- {
--	(void) driver_for_each_device(&hfc_driver.driver, NULL, arg,
-+	int ret;
-+
-+	ret = driver_for_each_device(&hfc_driver.driver, NULL, arg,
- 				      _hfcpci_softirq);
-+	(void)ret;	/* suppress compiler warning */
- 
- 	/* if next event would be in the past ... */
- 	if ((s32)(hfc_jiffies + tics - jiffies) <= 0)
--- 
-1.7.11.4
+I think you meant we can read data only once. second time onwards we 
+don't see any data. (except when fd is forked by child/ races in
+threads).
 
