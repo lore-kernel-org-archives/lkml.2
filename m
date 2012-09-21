@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932730Ab2IUJXL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:23:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62275 "EHLO
+	id S932675Ab2IUJ2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:28:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54947 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757210Ab2IUJXG (ORCPT
+	with ESMTP id S1750972Ab2IUJ2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:23:06 -0400
-Date: Fri, 21 Sep 2012 02:16:29 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suzuki Poulose <suzuki@in.ibm.com>
-Subject: [patch for-3.6] fs, debugfs: fix race in u32_array_read and allocate
- array at open
-In-Reply-To: <20120920211814.GB27312@konrad-lan.dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1209210216000.18230@chino.kir.corp.google.com>
-References: <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com> <20120918192338.GA25845@phenom.dumpdata.com> <CA+55aFy6=1vW4CN0_g8BgSKKdxZNZj9Yd2WG=0BFKjish=Vw=g@mail.gmail.com> <20120918203713.GB19300@phenom.dumpdata.com>
- <CA+55aFzZvFeCLF8fw=NYFN7C_8ObwJMeK13bN8xRodKQ0QJkTQ@mail.gmail.com> <20120919191652.GA14631@phenom.dumpdata.com> <alpine.DEB.2.00.1209191427460.6273@chino.kir.corp.google.com> <alpine.DEB.2.00.1209191438200.21378@chino.kir.corp.google.com>
- <505A7F75.8000405@linux.vnet.ibm.com> <alpine.DEB.2.00.1209191938490.10953@chino.kir.corp.google.com> <20120920211814.GB27312@konrad-lan.dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 21 Sep 2012 05:28:03 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <505C27E4.90509@parallels.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
+	<1347977530-29755-16-git-send-email-glommer@parallels.com>
+	<CAAmzW4NyK6gqqXHttUE35=-=h0Eve-smiYJCj3i+mHFFysQE4A@mail.gmail.com>
+	<505C27E4.90509@parallels.com>
+Date: Fri, 21 Sep 2012 18:28:02 +0900
+Message-ID: <CAAmzW4PRPBgySUpNsj=RP6VR3KLcVWv3G7rRtX=r+wiWUTDchw@mail.gmail.com>
+Subject: Re: [PATCH v3 15/16] memcg/sl[au]b: shrink dead caches
+From: JoonSoo Kim <js1304@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-u32_array_open() is racy when multiple threads read from a file with a
-seek position of zero, i.e. when two or more simultaneous reads are
-occurring after the non-seekable files are created.  It is possible that
-file->private_data is double-freed because the threads races between
+Hi, Glauber.
 
-	kfree(file->private-data);
+>> 2012/9/18 Glauber Costa <glommer@parallels.com>:
+>>> diff --git a/mm/slub.c b/mm/slub.c
+>>> index 0b68d15..9d79216 100644
+>>> --- a/mm/slub.c
+>>> +++ b/mm/slub.c
+>>> @@ -2602,6 +2602,7 @@ redo:
+>>>         } else
+>>>                 __slab_free(s, page, x, addr);
+>>>
+>>> +       kmem_cache_verify_dead(s);
+>>>  }
+>>
+>> As far as u know, I am not a expert and don't know anything about memcg.
+>> IMHO, this implementation may hurt system performance in some case.
+>>
+>> In case of memcg is destoried, remained kmem_cache is marked "dead".
+>> After it is marked,
+>> every free operation to this "dead" kmem_cache call
+>> kmem_cache_verify_dead() and finally call kmem_cache_shrink().
+>
+> As long as it is restricted to that cache, this is a non issue.
+> dead caches are exactly what they name imply: dead.
+>
+> Means that we actively want them to go away, and just don't kill them
+> right away because they have some inflight objects - which we expect not
+> to be too much.
 
-and
+Hmm.. I don't think so.
+We can destroy memcg whenever we want, is it right?
+If it is right, there is many inflight objects when we destory memcg.
+If there is so many inflight objects, performance of these processes
+can be hurt too much.
 
-	file->private_data = NULL;
+>> And, I found one case that destroying memcg's kmem_cache don't works properly.
+>> If we destroy memcg after all object is freed, current implementation
+>> doesn't destroy kmem_cache.
+>> kmem_cache_destroy_work_func() check "cachep->memcg_params.nr_pages == 0",
+>> but in this case, it return false, because kmem_cache may have
+>> cpu_slab, and cpu_partials_slabs.
+>> As we already free all objects, kmem_cache_verify_dead() is not invoked forever.
+>> I think that we need another kmem_cache_shrink() in
+>> kmem_cache_destroy_work_func().
+>
+> I'll take a look here. What you describe makes sense, and can
+> potentially happen. I tried to handle this case with care in
+> destroy_all_caches, but I may have always made a mistake...
+>
+> Did you see this actively happening, or are you just assuming this can
+> happen from your read of the code?
 
-The fix is to only do format_array_alloc() when the file is opened and
-free it when it is closed.  This means that any thread that holds the
-file open and reads multiple times will see persistent data; they must
-close() and open() the file again to see new data, like a simple cat of
-the file.
+Just read of the code.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Raghavendra <raghavendra.kt@linux.vnet.ibm.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- fs/debugfs/file.c |   33 +++++++++++----------------------
- 1 file changed, 11 insertions(+), 22 deletions(-)
-
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -526,12 +526,6 @@ struct array_data {
- 	u32 elements;
- };
- 
--static int u32_array_open(struct inode *inode, struct file *file)
--{
--	file->private_data = NULL;
--	return nonseekable_open(inode, file);
--}
--
- static size_t format_array(char *buf, size_t bufsize, const char *fmt,
- 			   u32 *array, u32 array_size)
- {
-@@ -573,26 +567,21 @@ static char *format_array_alloc(const char *fmt, u32 *array,
- 	return ret;
- }
- 
--static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
--			      loff_t *ppos)
-+static int u32_array_open(struct inode *inode, struct file *file)
- {
--	struct inode *inode = file->f_path.dentry->d_inode;
- 	struct array_data *data = inode->i_private;
--	size_t size;
- 
--	if (*ppos == 0) {
--		if (file->private_data) {
--			kfree(file->private_data);
--			file->private_data = NULL;
--		}
--
--		file->private_data = format_array_alloc("%u", data->array,
--							      data->elements);
--	}
-+	file->private_data = format_array_alloc("%u", data->array,
-+						      data->elements);
-+	if (!file->private_data)
-+		return -ENOMEM;
-+	return nonseekable_open(inode, file);
-+}
- 
--	size = 0;
--	if (file->private_data)
--		size = strlen(file->private_data);
-+static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
-+			      loff_t *ppos)
-+{
-+	size_t size = strlen(file->private_data);
- 
- 	return simple_read_from_buffer(buf, len, ppos,
- 					file->private_data, size);
+Thanks.
