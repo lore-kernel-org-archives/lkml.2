@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab2IUPpA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 11:45:00 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51548 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab2IUPo6 (ORCPT
+	id S1754756Ab2IUPrA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 11:47:00 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:58511 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab2IUPq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 11:44:58 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: raven@themaw.net
-Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
-        serge.hallyn@canonical.com, ebiederm@xmission.com
-Subject: Re: [PATCH 0/2] struct pid-ify autofs4
-References: <1348068576-21363-1-git-send-email-miklos@szeredi.hu>
-Date: Fri, 21 Sep 2012 17:44:48 +0200
-In-Reply-To: <1348068576-21363-1-git-send-email-miklos@szeredi.hu> (Miklos
-	Szeredi's message of "Wed, 19 Sep 2012 17:29:34 +0200")
-Message-ID: <87haqrwfbj.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
+	Fri, 21 Sep 2012 11:46:59 -0400
+Date: Fri, 21 Sep 2012 17:28:28 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Thanasis <thanasis@asyr.hopto.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
+Message-ID: <20120921152828.GA24364@electric-eye.fr.zoreil.com>
+References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <505BF437.4090506@asyr.hopto.org>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> writes:
+Thanasis <thanasis@asyr.hopto.org> :
+> on 09/21/2012 02:20 AM Francois Romieu wrote the following:
+[...]
+> > Thanasis, can you narrow down a bit the failing revision ?
+> 
+> Sure, let me know how to do it please.
 
-> These two patches change autofs4 to store struct pid pointers instead of pid_t
-> values.
->
-> Fixed various issues with the previous post.  Not tested, handle with
-> care!
+A rough kernel estimate had been enough. Nevermind.
 
-Customer gave positive test results.
+You will find a hopefully not too quick 2.6.38 backport at :
 
-Thanks,
-Miklos
+git://violet.fr.zoreil.com/romieu/r8169
 
->
-> Thanks,
-> Miklos
-> ---
->
->
-> Serge Hallyn (1):
->       autofs4: store struct pids in autofs_waitqs
->
-> Sukadev Bhattiprolu (1):
->       Replace pid_t in autofs4 with struct pid reference.
->
-> ---
->  fs/autofs4/autofs_i.h  |    8 ++++----
->  fs/autofs4/dev-ioctl.c |    3 ++-
->  fs/autofs4/inode.c     |   22 +++++++++++++++-------
->  fs/autofs4/waitq.c     |   19 +++++++++++++------
->  4 files changed, 34 insertions(+), 18 deletions(-)
+It does not reach the current in-kernel r8169.c state - call me lazy - but
+stops somewhere between 3.2 and 3.3. While only 76 commits long, it should
+be enough to spot a r8169 regression.
+
+Assuming you run a 2.6.38-something kernel whose build tree lays at the
+usual place, the included makefile will build a out-of-kernel r8169 driver.
+
+You can use it as:
+
+git clone git://violet.fr.zoreil.com/romieu/r8169
+cd r8169
+git rev-list --all | tac | while read c; do
+git reset --hard $c
+make
+rmmod r8169
+sync
+insmod ./r8169.ko
+<insert your ip addr add ... / link up and test sequence here>
+done > /tmp/lets-go-shopping.log
+
+^C when things go wrong.
+
+You could do a git bisect but there may be several stupidly broken
+commits and I have not checked that the top of the tree works.
+
+Of course you are suggested to check that the code won't try to abuse
+your system.
+
+-- 
+Ueimor
