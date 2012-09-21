@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab2IUVcY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 17:32:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55002 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753854Ab2IUVcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 17:32:22 -0400
-Date: Fri, 21 Sep 2012 15:32:40 -0600
-From: John Jolly <jjolly@suse.com>
-To: linux-kernel@vger.kernel.org
-Cc: venkat.x.venkatsubra@oracle.com, netdev@vger.kernel.org
-Subject: [PATCH] rds: Error on offset mismatch if not loopback
-Message-ID: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
+	id S932531Ab2IUVck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 17:32:40 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64861 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab2IUVci (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 17:32:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2737921.JXTsrgJ0N6@dtor-d630.eng.vmware.com>
+References: <1348163523-2062-1-git-send-email-dh.herrmann@googlemail.com>
+	<CANq1E4Q-35oF11Dz6mbNvNYpWYSfOgCXW_E4ZwJ2neZB8p_64w@mail.gmail.com>
+	<CANq1E4Rcj0UsgQr=0sohXn8rXpY92PMnHAYwXNpsPPFULHQsrw@mail.gmail.com>
+	<2737921.JXTsrgJ0N6@dtor-d630.eng.vmware.com>
+Date: Fri, 21 Sep 2012 23:32:37 +0200
+Message-ID: <CANq1E4RJk5f0nVWeWvGrGVKzCrK1A3Gue3Z_3fkb91CX_LNj4g@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] input: Dynamic Minor Numbers
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attempting an rds connection from the IP address of an IPoIB interface
-to itself causes a kernel panic due to a BUG_ON() being triggered.
-Making the test less strict allows rds-ping to work without crashing
-the machine.
+Hi Dmitry
 
-A local unprivileged user could use this flaw to crash the system.
+On Fri, Sep 21, 2012 at 10:51 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Friday, September 21, 2012 09:18:00 PM David Herrmann wrote:
+>> Hi Dmitry
+>>
+>> On Fri, Sep 21, 2012 at 11:22 AM, David Herrmann
+>>
+>> <dh.herrmann@googlemail.com> wrote:
+>> > Hi Dmitry
+>> >
+>> > On Fri, Sep 21, 2012 at 10:07 AM, Dmitry Torokhov
+>> >
+>> > <dmitry.torokhov@gmail.com> wrote:
+>> >> Thank you very much for working on this, unfortunately your patch extends
+>> >> the existing infrastructure handling of character devices in input core,
+>> >> which is quite rigid and sub-optimal.
+>> >>
+>> >> For a while now I wanted to stop input core from pre-creating character
+>> >> devices and multiplexing file operations and instead push more chardev
+>> >> handling tasks into individual input handlers and make they more
+>> >> independent from input core. So while I won't be taking your patch as is
+>> >> it was a great motivator to finally do something about current
+>> >> limitation and I would appreciate if you could take a look at the patch
+>> >> below and see if you have any issues with it.
+>> >
+>> > I didn't know why we did that, anyway. But I tried to keep that logic,
+>> > even though it is really weird. So I am quite glad that you fixed it.
+>>
+>> Sorry, compiling a kernel takes 44m here so I haven't had time earlier
+>> this day. But I just recompiled with your patch and it works like a
+>> charm. I have attached output of "ls -la /dev/input" with 900 uinput
+>> devices. Performance does suck but that is definitely another issue.
+>
+> Could you elaborate a bit on this?
 
-Signed-off-by: John Jolly <jjolly@suse.com>
----
- net/rds/ib_send.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It takes like 2s to create 100 devices. Ok, that's about 500 syscalls.
+But still, 2s seemed pretty much to me. But that's probably related to
+uinput. 1000 devices take like 10s here.
+Also the xserver crashes when connecting more than 40 or 50 devices.
+It does print "too many devices; ignoring" but there seems to be some
+error-path bug.
+I haven't noticed any runtime kernel bugs or runtime
+performance-drops, though. So as I said, there are some issues, that
+need to be solved, but they are not related to input-core. (Also,
+creating 1000 uinput devices doesn't seem like a use-case that we
+should try to optimize).
 
-diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
-index e590949..7920c85 100644
---- a/net/rds/ib_send.c
-+++ b/net/rds/ib_send.c
-@@ -544,7 +544,7 @@ int rds_ib_xmit(struct rds_connection *conn, struct rds_message *rm,
-        int flow_controlled = 0;
-        int nr_sig = 0;
- 
--       BUG_ON(off % RDS_FRAG_SIZE);
-+       BUG_ON(!conn->c_loopback && off % RDS_FRAG_SIZE);
-        BUG_ON(hdr_off != 0 && hdr_off != sizeof(struct rds_header));
- 
-        /* Do not send cong updates to IB loopback */
--- 
-1.7.7
-
+Regards
+David
