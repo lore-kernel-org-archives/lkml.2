@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2IUB1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 21:27:14 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:33315 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754700Ab2IUB1J (ORCPT
+	id S1754804Ab2IUBa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 21:30:26 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41785 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab2IUBaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 21:27:09 -0400
-X-AuditID: cbfee61a-b7f726d000000ec7-b5-505bc26b8ab1
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] backlight: platform-lcd: Add support for device tree based
- probe
-Date: Fri, 21 Sep 2012 10:27:07 +0900
-Message-id: <000e01cd9798$370acbd0$a5206370$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2XmDbORFM7Jw9CSV++7XhUivGJ2g==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t9jQd3sQ9EBBi8/21hc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MxzfeMRb85qy439TD3sC4kaOLkYNDQsBE4mpHRhcjJ5ApJnHh
-	3nq2LkYuDiGB6YwSHX0PmSCc2UwSKz89YwGpYhNQk/jy5TA7iC0iECHRPGMWM8ggZgEfic2z
-	NEHCwgLBEs9aDrOChFkEVCV6HpmBhHkFbCV2bDnADmELSvyYfA9sIrOAlsT6nceZIGx5ic1r
-	3jJDnKYu8eivLsQiPYn2VXugykUk9r14xziBUWAWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQn
-	peca6hUn5haX5qXrJefnbmIEh+QzqR2MKxssDjEKcDAq8fB2uEQHCLEmlhVX5h5ilOBgVhLh
-	fRQDFOJNSaysSi3Kjy8qzUktPsQozcGiJM4r/CkwQEggPbEkNTs1tSC1CCbLxMEp1cDIH+Xx
-	L9fcringpUx16XlFBZXZq1z2Oj2onDwzYfeqj9cLGuyae4RqXcQ23rh+UV7jQfGN3/UBilru
-	EhxbGb5IZXbOsXTc8+aZWrJ9tsAyL3Ej7Zo67S8ZwqpPGX/P+8r/Laxxsr+54McEwQgn8ynf
-	j34Trn94li0znG9Tad1C4fy83QEZt5RYijMSDbWYi4oTAZ8XpYhFAgAA
+	Thu, 20 Sep 2012 21:30:24 -0400
+Date: Fri, 21 Sep 2012 11:30:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IkJqw7hybiBNb3JrIg==?= <bjorn@mork.no>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120921113009.29a296b6405b96b4d3c05f84@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Sep_2012_11_30_09_+1000_.0CtsRlNUgBO2s0W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the of_match_table to platform-lcd driver to be
-probed when platform-lcd device node is found in the device tree.
+--Signature=_Fri__21_Sep_2012_11_30_09_+1000_.0CtsRlNUgBO2s0W
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/platform_lcd.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+Hi all,
 
-diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
-index b667234..574d5ee 100644
---- a/drivers/video/backlight/platform_lcd.c
-+++ b/drivers/video/backlight/platform_lcd.c
-@@ -145,6 +145,14 @@ static SIMPLE_DEV_PM_OPS(platform_lcd_pm_ops, platform_lcd_suspend,
- 			platform_lcd_resume);
- #endif
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id platform_lcd_of_match[] = {
-+	{ .compatible = "platform-lcd" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, platform_lcd_of_match);
-+#endif
-+
- static struct platform_driver platform_lcd_driver = {
- 	.driver		= {
- 		.name	= "platform-lcd",
-@@ -152,6 +160,7 @@ static struct platform_driver platform_lcd_driver = {
- #ifdef CONFIG_PM
- 		.pm	= &platform_lcd_pm_ops,
- #endif
-+		.of_match_table = of_match_ptr(platform_lcd_of_match),
- 	},
- 	.probe		= platform_lcd_probe,
- 	.remove		= __devexit_p(platform_lcd_remove),
--- 
-1.7.1
+Today's linux-next merge of the net-next tree got a conflict in drivers/net=
+/usb/qmi_wwan.c between commit 9db273f45686 ("net: qmi_wwan: adding Huawei =
+E367, ZTE MF683 and Pantech P4200") from the net tree and commit bd877e4891=
+26 ("net: qmi_wwan: use a single bind function for all device types") from =
+the net-next tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/usb/qmi_wwan.c
+index 3543c9e,e7b53f0..0000000
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@@ -366,21 -353,17 +353,21 @@@ static const struct usb_device_id produ
+  	},
+ =20
+  	/* 2. Combined interface devices matching on class+protocol */
+ +	{	/* Huawei E367 and possibly others in "Windows mode" */
+ +		USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, USB_CLASS_VENDOR_SPEC, =
+1, 7),
+ +		.driver_info        =3D (unsigned long)&qmi_wwan_info,
+ +	},
+  	{	/* Huawei E392, E398 and possibly others in "Windows mode" */
+  		USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, USB_CLASS_VENDOR_SPEC, =
+1, 17),
+- 		.driver_info        =3D (unsigned long)&qmi_wwan_shared,
++ 		.driver_info        =3D (unsigned long)&qmi_wwan_info,
+  	},
+ -	{	/* Pantech UML290 */
+ -		USB_DEVICE_AND_INTERFACE_INFO(0x106c, 0x3718, USB_CLASS_VENDOR_SPEC, 0x=
+f0, 0xff),
+ +	{	/* Pantech UML290, P4200 and more */
+ +		USB_VENDOR_AND_INTERFACE_INFO(0x106c, USB_CLASS_VENDOR_SPEC, 0xf0, 0xff=
+),
+- 		.driver_info        =3D (unsigned long)&qmi_wwan_shared,
++ 		.driver_info        =3D (unsigned long)&qmi_wwan_info,
+  	},
+  	{	/* Pantech UML290 - newer firmware */
+ -		USB_DEVICE_AND_INTERFACE_INFO(0x106c, 0x3718, USB_CLASS_VENDOR_SPEC, 0x=
+f1, 0xff),
+ +		USB_VENDOR_AND_INTERFACE_INFO(0x106c, USB_CLASS_VENDOR_SPEC, 0xf1, 0xff=
+),
+- 		.driver_info        =3D (unsigned long)&qmi_wwan_shared,
++ 		.driver_info        =3D (unsigned long)&qmi_wwan_info,
+  	},
+ =20
+  	/* 3. Combined interface devices matching on interface number */
+
+--Signature=_Fri__21_Sep_2012_11_30_09_+1000_.0CtsRlNUgBO2s0W
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQW8MhAAoJEECxmPOUX5FELVYQAJNJPOzFx6x8Jc7s+FNATqTT
+OIS5lEnttw1te2ha2AHCbSBVVYJ5XtfXJW14/Kf1wa8Zla6Qqb0DaTSbHu7e/jNn
+Y7dKtX4DR35t8ChH1z4hvD6/X/f5sqZ4HYyTkLU+lK/P4dCI+5w4qnzQ+IsPvzE7
+OJ+ePZMrK6e1pR693Q/e3zXdXO8iP0GPMCy87kG9lfEYRgMvYWcEfuox4el2udCY
+gfzClClSqhSmV+4Yrjr9JBDfRvpXfWWOHqqKMT/CbJDeALS1XRiCJr45wtFctGwO
+4yeduwU3q7Udwvw/r1jfFJPZAp49WW7HBYakjVMkU1ms4S09gbjesGukWLcEQ34z
+hK0p0+Zo9ndglfRO+oPLrK1oGLxvFMBDq2oll2J2RPrnRpPSq1D7K2zmpKqKkwZY
+SSCCIKDWROwsGKwUe1PF7qQ2FZmXR2tk3kCi2hJDkwEbSDcbBBP3CNnkEfcgjHOo
+R7BT6Fl6tYojBkILoG+YcFcvPlmCPoQptEykjNakNdOT+Erphhuib1TjPuXy769D
+oujVPLsGwS7rp4swNcbfDbNKXvIZoNxBQSvkbXIEixenIIdeBeUPrzuKIGBV6Q9i
+xFVekXswWwTg/fnAv0Hdu2AobOmG6pdZMdz5JL7n93PXF2LWYBfSuAu+inhZ/A0m
+uRj5Vw2KlwtY4thRkxts
+=Nhpt
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__21_Sep_2012_11_30_09_+1000_.0CtsRlNUgBO2s0W--
