@@ -1,138 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab2IUG7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 02:59:22 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:50028 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134Ab2IUG7T (ORCPT
+	id S1755850Ab2IUG7v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 02:59:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37193 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab2IUG7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 02:59:19 -0400
-Message-ID: <505C1040.6000305@linux.vnet.ibm.com>
-Date: Fri, 21 Sep 2012 14:59:12 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3 5/7] KVM: MMU: introduce FNAME(prefetch_gpte)
-References: <505C0FA8.5070007@linux.vnet.ibm.com>
-In-Reply-To: <505C0FA8.5070007@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12092106-5816-0000-0000-0000048E5749
+	Fri, 21 Sep 2012 02:59:50 -0400
+Date: Fri, 21 Sep 2012 16:59:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Jett.Zhou" <jtzhou@marvell.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: linux-next: build failure after merge of the final tree (mfd
+ and battery trees related)
+Message-Id: <20120921165934.acbb39b1e4fcce7cc5e1513f@canb.auug.org.au>
+In-Reply-To: <20120921164819.37906a76dc948e86f79cd875@canb.auug.org.au>
+References: <20120921164819.37906a76dc948e86f79cd875@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Sep_2012_16_59_34_+1000_7BfyaTVFkBFIYF2p"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only difference between FNAME(update_pte) and FNAME(pte_prefetch)
-is that the former is allowed to prefetch gfn from dirty logged slot,
-so introduce a common function to prefetch spte
+--Signature=_Fri__21_Sep_2012_16_59_34_+1000_7BfyaTVFkBFIYF2p
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/paging_tmpl.h |   58 ++++++++++++++++++-------------------------
- 1 files changed, 24 insertions(+), 34 deletions(-)
+Hi all,
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 6fd1c8b..5b1af72 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -356,33 +356,45 @@ no_present:
- 	return true;
- }
+On Fri, 21 Sep 2012 16:48:19 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>=20
+> drivers/mfd/88pm860x-core.c: In function 'device_power_init':
+> drivers/mfd/88pm860x-core.c:982:11: error: too few arguments to function =
+'mfd_add_devices'
+> include/linux/mfd/core.h:100:12: note: declared here
+>=20
+> Caused by commit a830d28b48bf ("power_supply: Enable battery-charger for
+> 88pm860x") from the battery tree interacting with commit 55692af5eb58
+> ("mfd: core: Push irqdomain mapping out into devices") from the mfd tree.
 
--static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
--			      u64 *spte, const void *pte)
-+static bool
-+FNAME(prefetch_gpte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-+		     u64 *spte, pt_element_t gpte, bool no_dirty_log)
- {
--	pt_element_t gpte;
- 	unsigned pte_access;
-+	gfn_t gfn;
- 	pfn_t pfn;
+This second patch is also in Linus' tree as of v3.6-rc6.
 
--	gpte = *(const pt_element_t *)pte;
- 	if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
--		return;
-+		return false;
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
-+
-+	gfn = gpte_to_gfn(gpte);
- 	pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte, true);
--	pfn = gfn_to_pfn_atomic(vcpu->kvm, gpte_to_gfn(gpte));
-+	pfn = pte_prefetch_gfn_to_pfn(vcpu, gfn,
-+			no_dirty_log && (pte_access & ACC_WRITE_MASK));
- 	if (is_invalid_pfn(pfn))
--		return;
-+		return false;
+--Signature=_Fri__21_Sep_2012_16_59_34_+1000_7BfyaTVFkBFIYF2p
+Content-Type: application/pgp-signature
 
- 	/*
--	 * we call mmu_set_spte() with host_writable = true because that
--	 * vcpu->arch.update_pte.pfn was fetched from get_user_pages(write = 1).
-+	 * we call mmu_set_spte() with host_writable = true because
-+	 * pte_prefetch_gfn_to_pfn always gets a writable pfn.
- 	 */
- 	mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
--		     NULL, PT_PAGE_TABLE_LEVEL,
--		     gpte_to_gfn(gpte), pfn, true, true);
-+		     NULL, PT_PAGE_TABLE_LEVEL, gfn, pfn, true, true);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
- 	if (likely(!is_noslot_pfn(pfn)))
- 		kvm_release_pfn_clean(pfn);
-+
-+	return true;
-+}
-+
-+static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-+			      u64 *spte, const void *pte)
-+{
-+	pt_element_t gpte = *(const pt_element_t *)pte;
-+
-+	FNAME(prefetch_gpte)(vcpu, sp, spte, gpte, false);
- }
+iQIcBAEBCAAGBQJQXBBWAAoJEECxmPOUX5FEki8QAINcu/jDalyKgdrqv+9YK9lz
+fEMvDMBybYxQe9a4DkKwjmVn37YvLQMwZackxjz6eCh0YwoF0oKJa2KV7RYneicV
+eFTKnh8QQsmCHbE9YrEy03w0A1l8j8RCyfRn6mVnM7QOQvE8Yb7fjCuu/l8rzZxX
+Ne6jx6I7JtoQpk1NL7uOht9SYyEVxI3sp3B3fCjxnkgWaacVkAPe0dtn/HsOyEII
+b9YNRMY+fD+czvOf2uZ226vj38o5zn+w32A8evpM4s4kH9pHo8egioT6huik6ttQ
+yOZvOL7x//pdxS/hcFe7b/Q0WB7nciZMfAfjYb7ZRVu6LWMgdr9PniS34t+XP9Yi
+0HixwmIJq4E/p+KT+ygmWxYdS0h7g8koLGYyFatTBMtTj+YlDjLNXLsUJWqn3hIA
+OCVVX2Gij+EfOJDU2AWJExaDMOlc3HtZzjWVmxiKzlqwtb5e9aaNmEaP0dz0tu8P
++X+wy9ILiuFgCNZzDXbYOtjmAzhlx+0aia5SA8cPrUswkm8GQ3r83qFr42S1+Wwo
+ooP6Gg3oiUXGK4ZZkMM7KZaLcK+zdr2QHFzlMJj32uXPpO1aDnRna1rXpKZgZKF6
+/zdJUGwprX5MrXAqo+6YTyW3GS1hXVJqQ5T8sGegi8x3aAC/JCdFRxkB1NmV7gGr
+HZzYEojF++iWFmlgDXsJ
+=WXSF
+-----END PGP SIGNATURE-----
 
- static bool FNAME(gpte_changed)(struct kvm_vcpu *vcpu,
-@@ -428,36 +440,14 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
- 	spte = sp->spt + i;
-
- 	for (i = 0; i < PTE_PREFETCH_NUM; i++, spte++) {
--		pt_element_t gpte;
--		unsigned pte_access;
--		gfn_t gfn;
--		pfn_t pfn;
--
- 		if (spte == sptep)
- 			continue;
-
- 		if (is_shadow_present_pte(*spte))
- 			continue;
-
--		gpte = gptep[i];
--
--		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
--			continue;
--
--		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte,
--								  true);
--		gfn = gpte_to_gfn(gpte);
--		pfn = pte_prefetch_gfn_to_pfn(vcpu, gfn,
--				      pte_access & ACC_WRITE_MASK);
--		if (is_invalid_pfn(pfn))
-+		if (!FNAME(prefetch_gpte)(vcpu, sp, spte, gptep[i], true))
- 			break;
--
--		mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
--			     NULL, PT_PAGE_TABLE_LEVEL, gfn,
--			     pfn, true, true);
--
--		if (likely(!is_noslot_pfn(pfn)))
--			kvm_release_pfn_clean(pfn);
- 	}
- }
-
--- 
-1.7.7.6
-
+--Signature=_Fri__21_Sep_2012_16_59_34_+1000_7BfyaTVFkBFIYF2p--
