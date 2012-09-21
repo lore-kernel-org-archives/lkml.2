@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157Ab2IUJTx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:19:53 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:43780 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757068Ab2IUJTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:19:52 -0400
-Message-ID: <505C306F.2000601@parallels.com>
-Date: Fri, 21 Sep 2012 13:16:31 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: MMTests 0.05
-References: <20120907124232.GA11266@suse.de> <505AF81C.1080404@parallels.com> <20120920153705.GQ11266@suse.de>
-In-Reply-To: <20120920153705.GQ11266@suse.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+	id S1757177Ab2IUJVv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:21:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:58097 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757075Ab2IUJVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 05:21:49 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [PATCH 1/4] v4l: vb2: add prepare/finish callbacks to allocators
+Date: Fri, 21 Sep 2012 11:21:35 +0200
+Message-Id: <1348219298-23273-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 07:37 PM, Mel Gorman wrote:
-> On Thu, Sep 20, 2012 at 03:03:56PM +0400, Glauber Costa wrote:
->> On 09/07/2012 04:42 PM, Mel Gorman wrote:
->>> ./run-mmtests.sh test-run-1
->>
->> Mel, would you share with us the command line and config tweaks you had
->> in place to run the memcg tests you presented in the memcg summit?
->>
-> 
-> Apply the following patch to mmtests 0.05 and then from within the
-> mmtests directory do
-> 
-> ./run-mmtests.sh testrun
-> 
-> At the very least you should have oprofile installed. Optionally install
-> libnuma-devel but the test will cope if it's not available. Automatic package
-> installation will be in 0.06 for opensuse at least but other distros can
-> be easily supported if I know the names of the equivalent packages.
-> 
-> The above command will run both with and without profiling. The profiles
-> will be in work/log/pft-testrun/fine-profile-timer/base/ and an annotated
-> profile will be included in the file. If you have "recode" installed the
-> annotated profile will be compressed and can be extracted with something like
-> 
-> grep -A 9999999 "=== annotate ===" oprofile-compressed.report | grep -v annotate | recode /b64..char | gunzip -c
-> 
-> Each of the memcg functions will be small but when all the functions that
-> are in mm/memcontrol.c are added together it becomes a big problem.  What I
-> actually showed at the meeting was based on piping the oprofile report
-> through another quick and dirty script to match functions to filenames.
-> 
-> The bulk of this patch is renaming  profile-disabled-hooks-a.sh to
-> profile-hooks-a.sh. Let me know if you run into problems.
+This patch adds support for prepare/finish callbacks in VB2 allocators.
+These callback are used for buffer flushing.
 
-FYI: I get this:
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Federico Vaga <federico.vaga@gmail.com>
+---
+ drivers/media/v4l2-core/videobuf2-core.c | 11 +++++++++++
+ include/media/videobuf2-core.h           |  7 +++++++
+ 2 file modificati, 18 inserzioni(+)
 
-Can't locate TLBC/Report.pm in @INC (@INC contains:
-/home/glauber/mmtests-0.05-mmtests-0.01/vmr/bin /usr/local/lib64/perl5
-/usr/local/share/perl5 /usr/lib64/perl5/vendor_perl
-/usr/share/perl5/vendor_perl /usr/lib64/perl5 /usr/share/perl5 .) at
-/home/glauber/mmtests-0.05-mmtests-0.01/vmr/bin/oprofile_map_events.pl
-line 11.
-
-Investigating, it seems that hugetlbfs packages in fedora doesn't
-install any perl scripts, unlike SuSE.
-
-I downloaded the library manually, and pointed perl path to it, and it
-seems to work.
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index 4da3df6..079fa79 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -790,6 +790,7 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
+ {
+ 	struct vb2_queue *q = vb->vb2_queue;
+ 	unsigned long flags;
++	unsigned int plane;
+ 
+ 	if (vb->state != VB2_BUF_STATE_ACTIVE)
+ 		return;
+@@ -800,6 +801,10 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
+ 	dprintk(4, "Done processing on buffer %d, state: %d\n",
+ 			vb->v4l2_buf.index, vb->state);
+ 
++	/* sync buffers */
++	for (plane = 0; plane < vb->num_planes; ++plane)
++		call_memop(q, finish, vb->planes[plane].mem_priv);
++
+ 	/* Add the buffer to the done buffers list */
+ 	spin_lock_irqsave(&q->done_lock, flags);
+ 	vb->state = state;
+@@ -975,9 +980,15 @@ static int __qbuf_mmap(struct vb2_buffer *vb, const struct v4l2_buffer *b)
+ static void __enqueue_in_driver(struct vb2_buffer *vb)
+ {
+ 	struct vb2_queue *q = vb->vb2_queue;
++	unsigned int plane;
+ 
+ 	vb->state = VB2_BUF_STATE_ACTIVE;
+ 	atomic_inc(&q->queued_count);
++
++	/* sync buffers */
++	for (plane = 0; plane < vb->num_planes; ++plane)
++		call_memop(q, prepare, vb->planes[plane].mem_priv);
++
+ 	q->ops->buf_queue(vb);
+ }
+ 
+diff --git a/include/media/videobuf2-core.h b/include/media/videobuf2-core.h
+index 8dd9b6c..f374f99 100644
+--- a/include/media/videobuf2-core.h
++++ b/include/media/videobuf2-core.h
+@@ -41,6 +41,10 @@ struct vb2_fileio_data;
+  *		 argument to other ops in this structure
+  * @put_userptr: inform the allocator that a USERPTR buffer will no longer
+  *		 be used
++ * @prepare:	called everytime the buffer is passed from userspace to the
++ *		driver, usefull for cache synchronisation, optional
++ * @finish:	called everytime the buffer is passed back from the driver
++ *		to the userspace, also optional
+  * @vaddr:	return a kernel virtual address to a given memory buffer
+  *		associated with the passed private structure or NULL if no
+  *		such mapping exists
+@@ -65,6 +69,9 @@ struct vb2_mem_ops {
+ 					unsigned long size, int write);
+ 	void		(*put_userptr)(void *buf_priv);
+ 
++	void		(*prepare)(void *buf_priv);
++	void		(*finish)(void *buf_priv);
++
+ 	void		*(*vaddr)(void *buf_priv);
+ 	void		*(*cookie)(void *buf_priv);
+ 
+-- 
+1.7.11.4
 
