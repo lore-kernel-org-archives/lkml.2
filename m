@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585Ab2IUAul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 20:50:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39290 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756663Ab2IUAuj (ORCPT
+	id S1756746Ab2IUBCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 21:02:14 -0400
+Received: from nm21.bullet.mail.ird.yahoo.com ([212.82.108.136]:33785 "HELO
+	nm21.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753351Ab2IUBCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 20:50:39 -0400
-Date: Thu, 20 Sep 2012 17:50:35 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
-Subject: Re: [PATCH v2 21/26] block: Convert some code to
- bio_for_each_segment_all()
-Message-ID: <20120921005035.GO5519@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-22-git-send-email-koverstreet@google.com>
- <20120921003832.GY7264@google.com>
+	Thu, 20 Sep 2012 21:02:13 -0400
+X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Sep 2012 21:02:13 EDT
+X-Yahoo-Newman-Id: 765765.47838.bm@smtp148.mail.ird.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: d4CXAbIVM1lA4Xay.nzMmQppNtB1HnuwDdPrgs2HnItp9_O
+ KHeVrQxZmb8OitRC6EoH0jvKly.9U8_LntWKuUcx8XnTTDMvpHBoGipzODFM
+ 6X2HKpFJ9L7ueD4V6b3TAjzJzxAtbmJrSSJCtgDWOkoqs5ifd0GX2DHBUkDR
+ 3V5SnP5ujv2qFUzIOguAFNB6iodvap1qEEL5p3QUgL.e3aRYE5sSWrfyNfdr
+ igvKw2oV852yoqO.xAMv65deU35ouRkjJJkYaUiQOpZE9vIJ5PWtzRgOhDKS
+ cgshV6tv9k6yKi4LusRs1plztykAcyLLAhnt48OzixSuBHK7UucyerEtTnyN
+ z0khY7_59U2anOrLDYgxnx4gqUkzJm1m_aJc.a.nAOpbrXYSkU6ICVvKyCfi
+ 6nocD_0AOQXeKl7I9MYyo
+X-Yahoo-SMTP: 5Vuzu2WswBCxMnJ0hjKohBcp6M6Es6bt5AQ-
+Message-ID: <505BBB4B.3060508@yahoo.com>
+Date: Fri, 21 Sep 2012 01:56:43 +0100
+From: Paul Parsons <lost.distance@yahoo.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120921003832.GY7264@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: cbou@mail.ru, dwmw2@infradead.org
+CC: philipp.zabel@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] pda_power: remove ac_draw_failed goto and label
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 05:38:32PM -0700, Tejun Heo wrote:
-> On Mon, Sep 10, 2012 at 05:22:32PM -0700, Kent Overstreet wrote:
-> > A few places in the code were either open coding or using the wrong
-> > version - fix.
-> > 
-> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > CC: Jens Axboe <axboe@kernel.dk>
-> > CC: NeilBrown <neilb@suse.de>
-> > ---
-> > --- a/drivers/md/raid1.c
-> > +++ b/drivers/md/raid1.c
-> > @@ -921,7 +921,7 @@ static void alloc_behind_pages(struct bio *bio, struct r1bio *r1_bio)
-> >  	if (unlikely(!bvecs))
-> >  		return;
-> >  
-> > -	bio_for_each_segment(bvec, bio, i) {
-> > +	bio_for_each_segment_all(bvec, bio, i) {
-> 
-> I don't get this conversion.  Why is this necessary?
+A previous patch added the ac_draw_failed goto and label to
+pda_power_probe(). The goto would be invoked after a failed call to
+regulator_get().
 
-Not necessary, just a consistency thing - this bio is a clone that md
-owns (and the clone was trimmed, so we know bi_idx is 0).
+However the way ac_draw is used - always after a check for NULL -
+suggests that a failed call to regulator_get() was not fatal.
 
-Also, it wasn't an issue here but after the patch that introduces the
-bvec iter it's no longer possible to modify the biovec through
-bio_for_each_segment_all() - it doesn't increment a pointer to the
-current bvec, you pass in a struct bio_vec (not a pointer) which is
-updated with what the current biovec would be (taking into account
-bi_bvec_done and bi_size).
+This patch removes the ac_draw_failed goto and label, partly reverting
+the previous patch.
 
-So because of that it is IMO more worthwhile to be consistent about
-bio_for_each_segment()/bio_for_each_segment_all() usage.
+This patch also removes the assignment of an error code to ret after a
+failed call to regulator_get(), since the error code is now never used.
 
-Suppose I should stick all that in the patch description.
+Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+Cc: Philipp Zabel <philipp.zabel@gmail.com>
+---
+  drivers/power/pda_power.c |    3 ---
+  1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
+index d3be834d..7df7c5f 100644
+--- a/drivers/power/pda_power.c
++++ b/drivers/power/pda_power.c
+@@ -284,9 +284,7 @@ static int pda_power_probe(struct platform_device *pdev)
+  	ac_draw = regulator_get(dev, "ac_draw");
+  	if (IS_ERR(ac_draw)) {
+  		dev_dbg(dev, "couldn't get ac_draw regulator\n");
+-		ret = PTR_ERR(ac_draw);
+  		ac_draw = NULL;
+-		goto ac_draw_failed;
+  	}
+
+  	update_status();
+@@ -416,7 +414,6 @@ ac_supply_failed:
+  		regulator_put(ac_draw);
+  		ac_draw = NULL;
+  	}
+-ac_draw_failed:
+  	if (pdata->exit)
+  		pdata->exit(dev);
+  init_failed:
+-- 
+1.7.8.6
+
