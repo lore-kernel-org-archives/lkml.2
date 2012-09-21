@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2IUMig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 08:38:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47369 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab2IUMie (ORCPT
+	id S1754441Ab2IUMlg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 08:41:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41862 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab2IUMlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 08:38:34 -0400
-Date: Fri, 21 Sep 2012 05:37:52 -0700
-From: tip-bot for Wen Congyang <wency@cn.fujitsu.com>
-Message-ID: <tip-85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa@git.kernel.org>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, minchan@kernel.org, mel@csn.ul.ie,
-        stable@vger.kernel.org, wency@cn.fujitsu.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, minchan@kernel.org, mel@csn.ul.ie,
-        stable@vger.kernel.org, wency@cn.fujitsu.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <505AB1FF.8020104@cn.fujitsu.com>
-References: <505AB1FF.8020104@cn.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tracing: Don't call page_to_pfn()
-  if page is NULL
-Git-Commit-ID: 85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 21 Sep 2012 08:41:35 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 21 Sep 2012 05:37:59 -0700 (PDT)
+Date: Fri, 21 Sep 2012 14:41:34 +0200
+Message-ID: <CAC27Lhfn+o5OWQFs6kvkaheh5cX_6jFxtJadLa8csJcfVknJLQ@mail.gmail.com>
+Subject: gma500_gfx black screen
+From: Markus H <hauschild.markus@gmail.com>
+To: Alan Cox <alan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa
-Gitweb:     http://git.kernel.org/tip/85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa
-Author:     Wen Congyang <wency@cn.fujitsu.com>
-AuthorDate: Thu, 20 Sep 2012 14:04:47 +0800
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 20 Sep 2012 15:51:16 -0400
+Hi,
 
-tracing: Don't call page_to_pfn() if page is NULL
+I am getting a black screen as soon as I am loading the gma500_gfx
+driver on a Dell Latitude ST tablet (powered by an Atom Z570, GPU
+being a GMA600 with PCIID 8086:40102).
+This happens with kernel 3.5.3 (Ubunutu 12.10 beta 1 and with
+self-built kernels from gentoo-souces) as well as several other
+kernels version past 3.0.
+I could not find any indication that this problem has been fixed yet in 3.6rc.
 
-When allocating memory fails, page is NULL. page_to_pfn() will
-cause the kernel panicked if we don't use sparsemem vmemmap.
+I am currently stuck at trying to debug the issue: I can't read any
+output (e.g. from a kernel panic) after typing modprobe gma500_gfx.
 
-Link: http://lkml.kernel.org/r/505AB1FF.8020104@cn.fujitsu.com
+I could not setup a serial console that would be useful:
+I have to use a USB to serial converter as the tablet has no serial port.
+I can't get a serial console at all with the Ubuntu stock kernel
+probably because the pl2303 driver is not built into the kernel but
+rather loaded as module.
+When booting a gentoo system with a kernel that has pl2303 built in I
+only get boot messages up to xx kb unused memory has been freed and
+nothing after that so I miss the kernel panic (if one happens).
+When booting that same system with gma500_gfx built-in I don't get any
+output on serial at all, probably because the system hangs before it
+has initialized the usb console.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: stable <stable@vger.kernel.org>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/trace/events/kmem.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/trace/events/kmem.h b/include/trace/events/kmem.h
-index 5f889f1..08fa272 100644
---- a/include/trace/events/kmem.h
-+++ b/include/trace/events/kmem.h
-@@ -214,7 +214,7 @@ TRACE_EVENT(mm_page_alloc,
- 
- 	TP_printk("page=%p pfn=%lu order=%d migratetype=%d gfp_flags=%s",
- 		__entry->page,
--		page_to_pfn(__entry->page),
-+		__entry->page ? page_to_pfn(__entry->page) : 0,
- 		__entry->order,
- 		__entry->migratetype,
- 		show_gfp_flags(__entry->gfp_flags))
-@@ -240,7 +240,7 @@ DECLARE_EVENT_CLASS(mm_page,
- 
- 	TP_printk("page=%p pfn=%lu order=%u migratetype=%d percpu_refill=%d",
- 		__entry->page,
--		page_to_pfn(__entry->page),
-+		__entry->page ? page_to_pfn(__entry->page) : 0,
- 		__entry->order,
- 		__entry->migratetype,
- 		__entry->order == 0)
+So I have two questions:
+1. What other debugging options do I have so I can help with fixing
+the gma500_gfx driver.
+2. Are there any single commits I could try on top of e.g. a stock
+3.2.x kernel to see which one caused this regression?
+
+Greetings,
+Markus
