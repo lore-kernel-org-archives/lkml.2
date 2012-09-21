@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab2IUJbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 05:31:23 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50149 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932685Ab2IUJbV (ORCPT
+	id S932782Ab2IUJd0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 05:33:26 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50352 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757143Ab2IUJdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 05:31:21 -0400
-From: Guo Chao <yan@linux.vnet.ibm.com>
-To: viro@zeniv.linux.org.uk
-Cc: dchinner@redhat.com, hch@infradead.org, jack@suse.cz,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC v4 Patch 0/4] fs/inode.c: optimization for inode lock usage
-Date: Fri, 21 Sep 2012 17:31:02 +0800
-Message-Id: <1348219866-1799-1-git-send-email-yan@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-x-cbid: 12092109-5564-0000-0000-0000048F3D52
+	Fri, 21 Sep 2012 05:33:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <5059777E.8060906@parallels.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
+	<1347977530-29755-10-git-send-email-glommer@parallels.com>
+	<00000139d9fe8595-8905906d-18ed-4d41-afdb-f4c632c2d50a-000000@email.amazonses.com>
+	<5059777E.8060906@parallels.com>
+Date: Fri, 21 Sep 2012 12:33:23 +0300
+X-Google-Sender-Auth: JiMmHb1Bdoiyn4Jml0vV_rr2vCY
+Message-ID: <CAOJsxLFgwOqUcLHEwYNERwn1Uvp4-8CmvRKTfBFAHD6p_-6c7g@mail.gmail.com>
+Subject: Re: [PATCH v3 09/16] sl[au]b: always get the cache from its page in kfree
+From: Pekka Enberg <penberg@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        devel@openvz.org, Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset optimizes several places which take the per inode spin lock.
-They have not been fully tested yet, thus they are marked as RFC. 
+On Wed, Sep 19, 2012 at 10:42 AM, Glauber Costa <glommer@parallels.com> wrote:
+>>> index f2d760c..18de3f6 100644
+>>> --- a/mm/slab.c
+>>> +++ b/mm/slab.c
+>>> @@ -3938,9 +3938,12 @@ EXPORT_SYMBOL(__kmalloc);
+>>>   * Free an object which was previously allocated from this
+>>>   * cache.
+>>>   */
+>>> -void kmem_cache_free(struct kmem_cache *cachep, void *objp)
+>>> +void kmem_cache_free(struct kmem_cache *s, void *objp)
+>>>  {
+>>>      unsigned long flags;
+>>> +    struct kmem_cache *cachep = virt_to_cache(objp);
+>>> +
+>>> +    VM_BUG_ON(!slab_equal_or_parent(cachep, s));
+>>
+>> This is an extremely hot path of the kernel and you are adding significant
+>> processing. Check how the benchmarks are influenced by this change.
+>> virt_to_cache can be a bit expensive.
+>
+> Would it be enough for you to have a separate code path for
+> !CONFIG_MEMCG_KMEM?
+>
+> I don't really see another way to do it, aside from deriving the cache
+> from the object in our case. I am open to suggestions if you do.
 
-I do limited tests after all patches applied: use two 'find' to traverse the 
-filesystems and touch all files in parallel. This runs for several days in a 
-virtual machine, no suspicious log appears. 
+We should assume that most distributions enable CONFIG_MEMCG_KMEM,
+right? Therfore, any performance impact should be dependent on whether
+or not kmem memcg is *enabled* at runtime or not.
 
-Guo Chao (4):
-  fs/inode.c: do not take i_lock on newly allocated inode
-  fs/inode.c: do not take i_lock in __(insert|remove)_inode_hash
-  fs/inode.c: do not take i_lock when identify an inode
-  fs/inode.c: always take i_lock before calling filesystem's test()
-    method
-
- fs/inode.c |   32 +++++++++-----------------------
- 1 file changed, 9 insertions(+), 23 deletions(-)
-
--- 
-1.7.9.5
-
+Can we use the "static key" thingy introduced by tracing folks for this?
