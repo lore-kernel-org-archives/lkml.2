@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab2IUP5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 11:57:30 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60306 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756508Ab2IUP5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 11:57:09 -0400
+	id S1756968Ab2IUP5d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 11:57:33 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54143 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756531Ab2IUP5Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 11:57:16 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
@@ -18,9 +19,9 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <tj@kernel.org>, <vincent.guittot@linaro.org>, <vitalya@ti.com>,
         <will.deacon@arm.com>, <grant.likely@secretlab.ca>,
         Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v3 RESEND 16/17] ARM: mm: cleanup checks for membank overlap with vmalloc area
-Date: Fri, 21 Sep 2012 11:56:14 -0400
-Message-ID: <1348242975-19184-17-git-send-email-cyril@ti.com>
+Subject: [PATCH v3 RESEND 06/17] ARM: LPAE: use signed arithmetic for mask definitions
+Date: Fri, 21 Sep 2012 11:56:04 -0400
+Message-ID: <1348242975-19184-7-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348242975-19184-1-git-send-email-cyril@ti.com>
 References: <1348242975-19184-1-git-send-email-cyril@ti.com>
@@ -30,74 +31,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Keystone platforms, physical memory is entirely outside the 32-bit
-addressible range.  Therefore, the (bank->start > ULONG_MAX) check below marks
-the entire system memory as highmem, and this causes unpleasentness all over.
+This patch applies to PAGE_MASK, PMD_MASK, and PGDIR_MASK, where forcing
+unsigned long math truncates the mask at the 32-bits.  This clearly does bad
+things on PAE systems.
 
-This patch eliminates the extra bank start check (against ULONG_MAX) by
-checking bank->start against the physical address corresponding to vmalloc_min
-instead.
-
-In the process, this patch also cleans up parts of the highmem sanity check
-code by removing what has now become a redundant check for banks that entirely
-overlap with the vmalloc range.
+This patch fixes this problem by defining these masks as signed quantities.
+We then rely on sign extension to do the right thing.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
 ---
- arch/arm/mm/mmu.c |   19 +------------------
- 1 file changed, 1 insertion(+), 18 deletions(-)
+ arch/arm/include/asm/page.h           |    2 +-
+ arch/arm/include/asm/pgtable-3level.h |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index fcdc185..e631f73 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -901,15 +901,12 @@ void __init sanity_check_meminfo(void)
- 		struct membank *bank = &meminfo.bank[j];
- 		*bank = meminfo.bank[i];
+diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
+index ecf9019..1e0fe08 100644
+--- a/arch/arm/include/asm/page.h
++++ b/arch/arm/include/asm/page.h
+@@ -13,7 +13,7 @@
+ /* PAGE_SHIFT determines the page size */
+ #define PAGE_SHIFT		12
+ #define PAGE_SIZE		(_AC(1,UL) << PAGE_SHIFT)
+-#define PAGE_MASK		(~(PAGE_SIZE-1))
++#define PAGE_MASK		(~((1 << PAGE_SHIFT) - 1))
  
--		if (bank->start > ULONG_MAX)
--			highmem = 1;
--
--#ifdef CONFIG_HIGHMEM
- 		if (bank->start >= vmalloc_limit)
- 			highmem = 1;
+ #ifndef __ASSEMBLY__
  
- 		bank->highmem = highmem;
+diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
+index b249035..ae39d11 100644
+--- a/arch/arm/include/asm/pgtable-3level.h
++++ b/arch/arm/include/asm/pgtable-3level.h
+@@ -48,16 +48,16 @@
+ #define PMD_SHIFT		21
  
-+#ifdef CONFIG_HIGHMEM
- 		/*
- 		 * Split those memory banks which are partially overlapping
- 		 * the vmalloc area greatly simplifying things later.
-@@ -932,8 +929,6 @@ void __init sanity_check_meminfo(void)
- 			bank->size = vmalloc_limit - bank->start;
- 		}
- #else
--		bank->highmem = highmem;
--
- 		/*
- 		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
- 		 */
-@@ -946,18 +941,6 @@ void __init sanity_check_meminfo(void)
- 		}
+ #define PMD_SIZE		(1UL << PMD_SHIFT)
+-#define PMD_MASK		(~(PMD_SIZE-1))
++#define PMD_MASK		(~((1 << PMD_SHIFT) - 1))
+ #define PGDIR_SIZE		(1UL << PGDIR_SHIFT)
+-#define PGDIR_MASK		(~(PGDIR_SIZE-1))
++#define PGDIR_MASK		(~((1 << PGDIR_SHIFT) - 1))
  
- 		/*
--		 * Check whether this memory bank would entirely overlap
--		 * the vmalloc area.
--		 */
--		if (bank->start >= vmalloc_limit) {
--			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
--			       "(vmalloc region overlap).\n",
--			       (unsigned long long)bank->start,
--			       (unsigned long long)bank->start + bank->size - 1);
--			continue;
--		}
--
--		/*
- 		 * Check whether this memory bank would partially overlap
- 		 * the vmalloc area.
- 		 */
+ /*
+  * section address mask and size definitions.
+  */
+ #define SECTION_SHIFT		21
+ #define SECTION_SIZE		(1UL << SECTION_SHIFT)
+-#define SECTION_MASK		(~(SECTION_SIZE-1))
++#define SECTION_MASK		(~((1 << SECTION_SHIFT) - 1))
+ 
+ #define USER_PTRS_PER_PGD	(PAGE_OFFSET / PGDIR_SIZE)
+ 
 -- 
 1.7.9.5
 
