@@ -1,94 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab2IUSdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 14:33:11 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55218 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932696Ab2IUSdE (ORCPT
+	id S932779Ab2IUSdd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 14:33:33 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38324 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757518Ab2IUSda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 14:33:04 -0400
-Date: Fri, 21 Sep 2012 14:34:46 -0400
-From: Matt Porter <mporter@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Chris Ball <cjb@laptop.org>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
- arm/common
-Message-ID: <20120921183446.GH16522@beef>
-References: <1348152226-13588-1-git-send-email-mporter@ti.com>
- <1348152226-13588-2-git-send-email-mporter@ti.com>
- <20120921092923.GA31374@n2100.arm.linux.org.uk>
- <1BAFE6F6C881BF42822005164F1491C33EA8AA3C@DBDE01.ent.ti.com>
- <20120921094205.GC31374@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120921094205.GC31374@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 21 Sep 2012 14:33:30 -0400
+From: morten.rasmussen@arm.com
+To: paulmck@linux.vnet.ibm.com, pjt@google.com, peterz@infradead.org,
+        suresh.b.siddha@intel.com
+Cc: morten.rasmussen@arm.com, linaro-sched-sig@lists.linaro.org,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 08/10] sched: Add ftrace events for entity load-tracking
+Date: Fri, 21 Sep 2012 19:32:23 +0100
+Message-Id: <1348252345-5642-9-git-send-email-morten.rasmussen@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
+References: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
+X-OriginalArrivalTime: 21 Sep 2012 18:32:27.0038 (UTC) FILETIME=[735F3BE0:01CD9827]
+X-MC-Unique: 112092119322809701
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8LIXfQT011352
 
-On Fri, Sep 21, 2012 at 10:42:05AM +0100, Russell King wrote:
-> On Fri, Sep 21, 2012 at 09:33:42AM +0000, Hebbar, Gururaja wrote:
-> > On Fri, Sep 21, 2012 at 14:59:23, Russell King - ARM Linux wrote:
-> > > On Thu, Sep 20, 2012 at 10:43:34AM -0400, Matt Porter wrote:
-> > > > Move mach-davinci/dma.c to common/edma.c so it can be used
-> > > > by OMAP (specifically AM33xx atm) as well. This just moves
-> > > > the private EDMA API but does not support OMAP.
-> > > > 
-> > > > Signed-off-by: Matt Porter <mporter@ti.com>
-> > > > ---
-> > > >  arch/arm/Kconfig                           |    1 +
-> > > >  arch/arm/common/Kconfig                    |    3 +
-> > > >  arch/arm/common/Makefile                   |    1 +
-> > > >  arch/arm/common/edma.c                     | 1588 ++++++++++++++++++++++++++++
-> > > >  arch/arm/include/asm/mach/edma.h           |  267 +++++
-> > > 
-> > > asm/mach should not be used as a dumping ground for platform header files.
-> > > It is there to provide the interfaces between generic ARM architecture
-> > > code and platform code.  (At least four files that are there at the
-> > > moment need to be moved out of there - patch series to follow...)
-> > 
-> > Can this be moved to include/linux/platform_data/ ?
-> 
-> Here's the pertinant question: "is it platform data?"  Looking at the
-> file, it appears to be internal data structures and register definitions
-> for the driver itself.  Therefore, it isn't platform data, and it
-> shouldn't be living separately from the driver.
-> 
-> If the driver itself only makes use of the data structures, the data
-> structures should be defined either within the driver, or a header file
-> co-located next to the driver itself.  The same goes for register
-> definitions too.
-> 
-> The only structure that I can find which isn't internal to the driver
-> is struct edma_soc_info, struct edma_rsv_info, and the enum dma_event_q.
-> Those can go to include/linux/platform_data, but the rest should not.
+From: Morten Rasmussen <morten.rasmussen@arm.com>
 
-Ok, but is it ok to keep the actual private EDMA API portion in
-arch/arm/include/asm/mach/? It's not a problem to move the internal
-portions to a local include and that pdata to the appropriate place.
-We still need a place independent of mach-davinci and mach-omap2 to
-keep that portion of the include. I suppose it could be put in with
-the dmaengine wrapper's include/linux/edma.h but I hate to clutter
-that up when the private API will go away later.
+Adds ftrace events for key variables related to the entity
+load-tracking to help debugging scheduler behaviour. Allows tracing
+of load contribution and runqueue residency ratio for both entities
+and runqueues as well as entity CPU usage ratio.
 
--Matt
+Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+---
+ include/trace/events/sched.h |  125 ++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/fair.c          |    7 +++
+ 2 files changed, 132 insertions(+)
+
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 5a8671e..847eb76 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -430,6 +430,131 @@ TRACE_EVENT(sched_pi_setprio,
+ 			__entry->oldprio, __entry->newprio)
+ );
+ 
++/*
++ * Tracepoint for showing tracked load contribution.
++ */
++TRACE_EVENT(sched_task_load_contrib,
++
++	TP_PROTO(struct task_struct *tsk, unsigned long load_contrib),
++
++	TP_ARGS(tsk, load_contrib),
++
++	TP_STRUCT__entry(
++		__array(char, comm, TASK_COMM_LEN)
++		__field(pid_t, pid)
++		__field(unsigned long, load_contrib)
++	),
++
++	TP_fast_assign(
++		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
++		__entry->pid            = tsk->pid;
++		__entry->load_contrib   = load_contrib;
++	),
++
++	TP_printk("comm=%s pid=%d load_contrib=%lu",
++			__entry->comm, __entry->pid,
++			__entry->load_contrib)
++);
++
++/*
++ * Tracepoint for showing tracked task runnable ratio [0..1023].
++ */
++TRACE_EVENT(sched_task_runnable_ratio,
++
++	TP_PROTO(struct task_struct *tsk, unsigned long ratio),
++
++	TP_ARGS(tsk, ratio),
++
++	TP_STRUCT__entry(
++		__array(char, comm, TASK_COMM_LEN)
++		__field(pid_t, pid)
++		__field(unsigned long, ratio)
++	),
++
++	TP_fast_assign(
++	memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
++		__entry->pid   = tsk->pid;
++		__entry->ratio = ratio;
++	),
++
++	TP_printk("comm=%s pid=%d ratio=%lu",
++			__entry->comm, __entry->pid,
++			__entry->ratio)
++);
++
++/*
++ * Tracepoint for showing tracked rq runnable ratio [0..1023].
++ */
++TRACE_EVENT(sched_rq_runnable_ratio,
++
++	TP_PROTO(int cpu, unsigned long ratio),
++
++	TP_ARGS(cpu, ratio),
++
++	TP_STRUCT__entry(
++		__field(int, cpu)
++		__field(unsigned long, ratio)
++	),
++
++	TP_fast_assign(
++		__entry->cpu   = cpu;
++		__entry->ratio = ratio;
++	),
++
++	TP_printk("cpu=%d ratio=%lu",
++			__entry->cpu,
++			__entry->ratio)
++);
++
++/*
++ * Tracepoint for showing tracked rq runnable load.
++ */
++TRACE_EVENT(sched_rq_runnable_load,
++
++	TP_PROTO(int cpu, u64 load),
++
++	TP_ARGS(cpu, load),
++
++	TP_STRUCT__entry(
++		__field(int, cpu)
++		__field(u64, load)
++	),
++
++	TP_fast_assign(
++		__entry->cpu  = cpu;
++		__entry->load = load;
++	),
++
++	TP_printk("cpu=%d load=%llu",
++			__entry->cpu,
++			__entry->load)
++);
++
++/*
++ * Tracepoint for showing tracked task cpu usage ratio [0..1023].
++ */
++TRACE_EVENT(sched_task_usage_ratio,
++
++	TP_PROTO(struct task_struct *tsk, unsigned long ratio),
++
++	TP_ARGS(tsk, ratio),
++
++	TP_STRUCT__entry(
++		__array(char, comm, TASK_COMM_LEN)
++		__field(pid_t, pid)
++		__field(unsigned long, ratio)
++	),
++
++	TP_fast_assign(
++	memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
++		__entry->pid   = tsk->pid;
++		__entry->ratio = ratio;
++	),
++
++	TP_printk("comm=%s pid=%d ratio=%lu",
++			__entry->comm, __entry->pid,
++			__entry->ratio)
++);
+ #endif /* _TRACE_SCHED_H */
+ 
+ /* This part must be outside protection */
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8f0f3b9..0be53be 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1192,9 +1192,11 @@ static inline void __update_task_entity_contrib(struct sched_entity *se)
+ 	contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
+ 	contrib /= (se->avg.runnable_avg_period + 1);
+ 	se->avg.load_avg_contrib = scale_load(contrib);
++	trace_sched_task_load_contrib(task_of(se), se->avg.load_avg_contrib);
+ 	contrib = se->avg.runnable_avg_sum * scale_load_down(NICE_0_LOAD);
+ 	contrib /= (se->avg.runnable_avg_period + 1);
+ 	se->avg.load_avg_ratio = scale_load(contrib);
++	trace_sched_task_runnable_ratio(task_of(se), se->avg.load_avg_ratio);
+ }
+ 
+ /* Compute the current contribution to load_avg by se, return any delta */
+@@ -1286,9 +1288,14 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ 
+ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ {
++	u32 contrib;
+ 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable,
+ 				     runnable);
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
++	contrib = rq->avg.runnable_avg_sum * scale_load_down(1024);
++	contrib /= (rq->avg.runnable_avg_period + 1);
++	trace_sched_rq_runnable_ratio(cpu_of(rq), scale_load(contrib));
++	trace_sched_rq_runnable_load(cpu_of(rq), rq->cfs.runnable_load_avg);
+ }
+ 
+ /* Add the load generated by se into cfs_rq's child load-average */
+-- 
+1.7.9.5
+
+
