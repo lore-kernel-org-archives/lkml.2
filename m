@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab2IUUs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 16:48:29 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:59497 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757744Ab2IUUs2 (ORCPT
+	id S932577Ab2IUUvi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 16:51:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56194 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932170Ab2IUUvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 16:48:28 -0400
-Date: Fri, 21 Sep 2012 22:29:57 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Thanasis <thanasis@asyr.hopto.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-Message-ID: <20120921202957.GA32502@electric-eye.fr.zoreil.com>
-References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org> <20120921152828.GA24364@electric-eye.fr.zoreil.com> <505C98C7.20302@asyr.hopto.org> <20120921175455.GA28255@electric-eye.fr.zoreil.com> <505CBDF9.9020503@asyr.hopto.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505CBDF9.9020503@asyr.hopto.org>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Fri, 21 Sep 2012 16:51:35 -0400
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] input: Dynamic Minor Numbers
+Date: Fri, 21 Sep 2012 13:51:30 -0700
+Message-ID: <2737921.JXTsrgJ0N6@dtor-d630.eng.vmware.com>
+User-Agent: KMail/4.8.5 (Linux/3.6.0-rc6+; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CANq1E4Rcj0UsgQr=0sohXn8rXpY92PMnHAYwXNpsPPFULHQsrw@mail.gmail.com>
+References: <1348163523-2062-1-git-send-email-dh.herrmann@googlemail.com> <CANq1E4Q-35oF11Dz6mbNvNYpWYSfOgCXW_E4ZwJ2neZB8p_64w@mail.gmail.com> <CANq1E4Rcj0UsgQr=0sohXn8rXpY92PMnHAYwXNpsPPFULHQsrw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanasis <thanasis@asyr.hopto.org> :
-> So far, ping has failed *only* at this iteration of the make loop:
-
-Ok.
-
-Without the usual netdev watchdog message I presume ?
-
-[...]
-> Now, after 74 iterations, it looks as if the loop is stuck at the following:
+On Friday, September 21, 2012 09:18:00 PM David Herrmann wrote:
+> Hi Dmitry
 > 
-> HEAD is now at 1ce4b16 r8169: spinlock redux.
-> make -C /lib/modules/2.6.38-r8/build
-> M=/mnt/usb-disk/atom/usr/src/test-r8169/r8169 modules
-> make[1]: Entering directory `/usr/src/linux-2.6.38-r8'
->   CC [M]  /mnt/usb-disk/atom/usr/src/test-r8169/r8169/r8169.o
->   Building modules, stage 2.
->   MODPOST 1 modules
->   CC      /mnt/usb-disk/atom/usr/src/test-r8169/r8169/r8169.mod.o
->   LD [M]  /mnt/usb-disk/atom/usr/src/test-r8169/r8169/r8169.ko
-> make[1]: Leaving directory `/usr/src/linux-2.6.38-r8'
+> On Fri, Sep 21, 2012 at 11:22 AM, David Herrmann
 > 
+> <dh.herrmann@googlemail.com> wrote:
+> > Hi Dmitry
+> > 
+> > On Fri, Sep 21, 2012 at 10:07 AM, Dmitry Torokhov
+> > 
+> > <dmitry.torokhov@gmail.com> wrote:
+> >> Thank you very much for working on this, unfortunately your patch extends
+> >> the existing infrastructure handling of character devices in input core,
+> >> which is quite rigid and sub-optimal.
+> >> 
+> >> For a while now I wanted to stop input core from pre-creating character
+> >> devices and multiplexing file operations and instead push more chardev
+> >> handling tasks into individual input handlers and make they more
+> >> independent from input core. So while I won't be taking your patch as is
+> >> it was a great motivator to finally do something about current
+> >> limitation and I would appreciate if you could take a look at the patch
+> >> below and see if you have any issues with it.
+> > 
+> > I didn't know why we did that, anyway. But I tried to keep that logic,
+> > even though it is really weird. So I am quite glad that you fixed it.
 > 
-> Should I wait for it to end?
+> Sorry, compiling a kernel takes 44m here so I haven't had time earlier
+> this day. But I just recompiled with your patch and it works like a
+> charm. I have attached output of "ls -la /dev/input" with 900 uinput
+> devices. Performance does suck but that is definitely another issue.
 
-No. I surely f*cked up something.
+Could you elaborate a bit on this?
 
-> Do you want me to post the whole log so far?
+> 
+> So here's my:
+> Tested-by: David Herrmann <dh.herrmann@googlemail.com>
 
-Please. It should gzip well. The complete dmesg with timestamps would be
-welcome too.
-
-Could you perform a test with your vendor's 3.2-something kernel and its
-r8169 driver ?
+Thanks for testing!
 
 -- 
-Ueimor
+Dmitry
