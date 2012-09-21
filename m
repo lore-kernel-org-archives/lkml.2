@@ -1,223 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab2IULvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 07:51:41 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:1173 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755804Ab2IULvk (ORCPT
+	id S1752169Ab2IUMDc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 08:03:32 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:50495 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab2IUMDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 07:51:40 -0400
-Message-ID: <1348228298.1581.18.camel@x61.thuisdomein>
-Subject: [PATCH] rtc: m41t80: remove disabled alarm functionality
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: John Stultz <john.stultz@linaro.org>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Date: Fri, 21 Sep 2012 13:51:38 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Sep 2012 11:51:38.0463 (UTC) FILETIME=[754DE6F0:01CD97EF]
+	Fri, 21 Sep 2012 08:03:30 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>
+Cc: Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Jiannan Ouyang <ouyang@cs.pitt.edu>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Date: Fri, 21 Sep 2012 17:29:42 +0530
+Message-Id: <20120921115942.27611.67488.sendpatchset@codeblue>
+Subject: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios in PLE handler
+x-cbid: 12092112-5140-0000-0000-0000021C1FBD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c3b79770e51ab1fd4201f3b54edf30113b9ce74f ("rtc: m41t80:
-Workaround broken alarm functionality") disabled m41t80's alarm
-functions. But since those functions were not touched, building
-this driver triggers these GCC warnings:
-    drivers/rtc/rtc-m41t80.c:216:12: warning: 'm41t80_rtc_alarm_irq_enable' defined but not used [-Wunused-function]
-    drivers/rtc/rtc-m41t80.c:238:12: warning: 'm41t80_rtc_set_alarm' defined but not used [-Wunused-function]
-    drivers/rtc/rtc-m41t80.c:308:12: warning: 'm41t80_rtc_read_alarm' defined but not used [-Wunused-function]
+In some special scenarios like #vcpu <= #pcpu, PLE handler may 
+prove very costly, because there is no need to iterate over vcpus
+and do unsuccessful yield_to burning CPU.
 
-Remove these functions (and the commented out references to them) to
-silence these warnings. Anyone wanting to fix the alarm irq
-functionality can easily find the removed code in the git log of this
-file or through some web searches.
+An idea to solve this is:
+1) As Avi had proposed we can modify hardware ple_window
+dynamically to avoid frequent PL-exit. (IMHO, it is difficult to
+decide when we have mixed type of VMs).
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Another idea, proposed in the first patch, is to identify
+non-overcommit case and just return from the PLE handler.
+
+There are are many ways to identify non-overcommit scenario.
+1) Using loadavg etc (get_avenrun/calc_global_load
+ /this_cpu_load)
+
+2) Explicitly check nr_running()/num_online_cpus()
+
+3) Check source vcpu runqueue length.
+
+Not sure how can we make use of (1) effectively/how to use it.
+(2) has significant overhead since it iterates all cpus.
+so this patch uses third method. (I feel it is uglier to export
+runqueue length, but expecting suggestion on this).
+
+In second patch, when we have large number of small guests, it is
+possible that a spinning vcpu fails to yield_to any vcpu of same 
+VM and go back and spin. This is also not effective when we are
+over-committed. Instead, we do a schedule() so that we give chance
+to other VMs to run.
+
+Raghavendra K T(2):
+ Handle undercommitted guest case in PLE handler
+ Be courteous to other VMs in overcommitted scenario in PLE handler 
+
+Results:
+base = 3.6.0-rc5 + ple handler optimization patches from kvm tree.
+patched = base + patch1 + patch2
+machine: x240 with 16 core with HT enabled (32 cpu thread).
+32 vcpu guest with 8GB RAM.
+
++-----------+-----------+-----------+------------+-----------+
+         ebizzy (record/sec higher is better)
++-----------+-----------+-----------+------------+-----------+
+   base        stddev       patched    stdev        %improve     
++-----------+-----------+-----------+------------+-----------+
+ 11293.3750   624.4378	 18209.6250   371.7061	  61.24166
+  3641.8750   468.9400	  3725.5000   253.7823	   2.29621
++-----------+-----------+-----------+------------+-----------+
+
++-----------+-----------+-----------+------------+-----------+
+        kernbench (time in sec lower is better)
++-----------+-----------+-----------+------------+-----------+
+   base        stddev       patched    stdev        %improve     
++-----------+-----------+-----------+------------+-----------+
+    30.6020     1.3018	    30.8287     1.1517	  -0.74080
+    64.0825     2.3764	    63.4721     5.0191	   0.95252
+    95.8638     8.7030	    94.5988     8.3832	   1.31958
++-----------+-----------+-----------+------------+-----------+
+
+Note:
+on mx3850x5 machine with 32 cores HT disabled I got around
+ebizzy      209%
+kernbench   6%
+improvement for 1x scenario.
+
+Thanks Srikar for his active partipation in discussing ideas and
+reviewing the patch.
+
+Please let me know your suggestions and comments.
 ---
-0) I noticed this warning while building v3.6-rc6 on current Fedora 17,
-using Fedora's default config.
-
-1) Compile tested only.
-
- drivers/rtc/rtc-m41t80.c | 157 ++---------------------------------------------
- 1 file changed, 4 insertions(+), 153 deletions(-)
-
-diff --git a/drivers/rtc/rtc-m41t80.c b/drivers/rtc/rtc-m41t80.c
-index 4e0f84a..b885bcd 100644
---- a/drivers/rtc/rtc-m41t80.c
-+++ b/drivers/rtc/rtc-m41t80.c
-@@ -213,163 +213,14 @@ static int m41t80_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	return m41t80_set_datetime(to_i2c_client(dev), tm);
- }
- 
--static int m41t80_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
--{
--	struct i2c_client *client = to_i2c_client(dev);
--	int rc;
--
--	rc = i2c_smbus_read_byte_data(client, M41T80_REG_ALARM_MON);
--	if (rc < 0)
--		goto err;
--
--	if (enabled)
--		rc |= M41T80_ALMON_AFE;
--	else
--		rc &= ~M41T80_ALMON_AFE;
--
--	if (i2c_smbus_write_byte_data(client, M41T80_REG_ALARM_MON, rc) < 0)
--		goto err;
--
--	return 0;
--err:
--	return -EIO;
--}
--
--static int m41t80_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *t)
--{
--	struct i2c_client *client = to_i2c_client(dev);
--	u8 wbuf[1 + M41T80_ALARM_REG_SIZE];
--	u8 *buf = &wbuf[1];
--	u8 *reg = buf - M41T80_REG_ALARM_MON;
--	u8 dt_addr[1] = { M41T80_REG_ALARM_MON };
--	struct i2c_msg msgs_in[] = {
--		{
--			.addr	= client->addr,
--			.flags	= 0,
--			.len	= 1,
--			.buf	= dt_addr,
--		},
--		{
--			.addr	= client->addr,
--			.flags	= I2C_M_RD,
--			.len	= M41T80_ALARM_REG_SIZE,
--			.buf	= buf,
--		},
--	};
--	struct i2c_msg msgs[] = {
--		{
--			.addr	= client->addr,
--			.flags	= 0,
--			.len	= 1 + M41T80_ALARM_REG_SIZE,
--			.buf	= wbuf,
--		 },
--	};
--
--	if (i2c_transfer(client->adapter, msgs_in, 2) < 0) {
--		dev_err(&client->dev, "read error\n");
--		return -EIO;
--	}
--	reg[M41T80_REG_ALARM_MON] &= ~(0x1f | M41T80_ALMON_AFE);
--	reg[M41T80_REG_ALARM_DAY] = 0;
--	reg[M41T80_REG_ALARM_HOUR] &= ~(0x3f | 0x80);
--	reg[M41T80_REG_ALARM_MIN] = 0;
--	reg[M41T80_REG_ALARM_SEC] = 0;
--
--	wbuf[0] = M41T80_REG_ALARM_MON; /* offset into rtc's regs */
--	reg[M41T80_REG_ALARM_SEC] |= t->time.tm_sec >= 0 ?
--		bin2bcd(t->time.tm_sec) : 0x80;
--	reg[M41T80_REG_ALARM_MIN] |= t->time.tm_min >= 0 ?
--		bin2bcd(t->time.tm_min) : 0x80;
--	reg[M41T80_REG_ALARM_HOUR] |= t->time.tm_hour >= 0 ?
--		bin2bcd(t->time.tm_hour) : 0x80;
--	reg[M41T80_REG_ALARM_DAY] |= t->time.tm_mday >= 0 ?
--		bin2bcd(t->time.tm_mday) : 0x80;
--	if (t->time.tm_mon >= 0)
--		reg[M41T80_REG_ALARM_MON] |= bin2bcd(t->time.tm_mon + 1);
--	else
--		reg[M41T80_REG_ALARM_DAY] |= 0x40;
--
--	if (i2c_transfer(client->adapter, msgs, 1) != 1) {
--		dev_err(&client->dev, "write error\n");
--		return -EIO;
--	}
--
--	if (t->enabled) {
--		reg[M41T80_REG_ALARM_MON] |= M41T80_ALMON_AFE;
--		if (i2c_smbus_write_byte_data(client, M41T80_REG_ALARM_MON,
--					      reg[M41T80_REG_ALARM_MON]) < 0) {
--			dev_err(&client->dev, "write error\n");
--			return -EIO;
--		}
--	}
--	return 0;
--}
--
--static int m41t80_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *t)
--{
--	struct i2c_client *client = to_i2c_client(dev);
--	u8 buf[M41T80_ALARM_REG_SIZE + 1]; /* all alarm regs and flags */
--	u8 dt_addr[1] = { M41T80_REG_ALARM_MON };
--	u8 *reg = buf - M41T80_REG_ALARM_MON;
--	struct i2c_msg msgs[] = {
--		{
--			.addr	= client->addr,
--			.flags	= 0,
--			.len	= 1,
--			.buf	= dt_addr,
--		},
--		{
--			.addr	= client->addr,
--			.flags	= I2C_M_RD,
--			.len	= M41T80_ALARM_REG_SIZE + 1,
--			.buf	= buf,
--		},
--	};
--
--	if (i2c_transfer(client->adapter, msgs, 2) < 0) {
--		dev_err(&client->dev, "read error\n");
--		return -EIO;
--	}
--	t->time.tm_sec = -1;
--	t->time.tm_min = -1;
--	t->time.tm_hour = -1;
--	t->time.tm_mday = -1;
--	t->time.tm_mon = -1;
--	if (!(reg[M41T80_REG_ALARM_SEC] & 0x80))
--		t->time.tm_sec = bcd2bin(reg[M41T80_REG_ALARM_SEC] & 0x7f);
--	if (!(reg[M41T80_REG_ALARM_MIN] & 0x80))
--		t->time.tm_min = bcd2bin(reg[M41T80_REG_ALARM_MIN] & 0x7f);
--	if (!(reg[M41T80_REG_ALARM_HOUR] & 0x80))
--		t->time.tm_hour = bcd2bin(reg[M41T80_REG_ALARM_HOUR] & 0x3f);
--	if (!(reg[M41T80_REG_ALARM_DAY] & 0x80))
--		t->time.tm_mday = bcd2bin(reg[M41T80_REG_ALARM_DAY] & 0x3f);
--	if (!(reg[M41T80_REG_ALARM_DAY] & 0x40))
--		t->time.tm_mon = bcd2bin(reg[M41T80_REG_ALARM_MON] & 0x1f) - 1;
--	t->time.tm_year = -1;
--	t->time.tm_wday = -1;
--	t->time.tm_yday = -1;
--	t->time.tm_isdst = -1;
--	t->enabled = !!(reg[M41T80_REG_ALARM_MON] & M41T80_ALMON_AFE);
--	t->pending = !!(reg[M41T80_REG_FLAGS] & M41T80_FLAGS_AF);
--	return 0;
--}
--
-+/*
-+ * XXX - m41t80 alarm functionality is reported broken.
-+ * until it is fixed, don't register alarm functions.
-+ */
- static struct rtc_class_ops m41t80_rtc_ops = {
- 	.read_time = m41t80_rtc_read_time,
- 	.set_time = m41t80_rtc_set_time,
--	/*
--	 * XXX - m41t80 alarm functionality is reported broken.
--	 * until it is fixed, don't register alarm functions.
--	 *
--	.read_alarm = m41t80_rtc_read_alarm,
--	.set_alarm = m41t80_rtc_set_alarm,
--	*/
- 	.proc = m41t80_rtc_proc,
--	/*
--	 * See above comment on broken alarm
--	 *
--	.alarm_irq_enable = m41t80_rtc_alarm_irq_enable,
--	*/
- };
- 
- #if defined(CONFIG_RTC_INTF_SYSFS) || defined(CONFIG_RTC_INTF_SYSFS_MODULE)
--- 
-1.7.11.4
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |    6 ++++++
+ virt/kvm/kvm_main.c   |    7 +++++++
+ 3 files changed, 14 insertions(+), 0 deletions(-)
 
