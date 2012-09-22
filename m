@@ -1,134 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab2IVAFn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 20:05:43 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:53041 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab2IVAFl (ORCPT
+	id S1757091Ab2IVAQm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 20:16:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54464 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744Ab2IVAQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 20:05:41 -0400
-Date: Fri, 21 Sep 2012 17:05:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: "Bruce, Becky" <bbruce@ti.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
-        "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Hunter, Jon" <jon-hunter@ti.com>,
-        "<snijsure@grid-net.com>" <snijsure@grid-net.com>
-Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
-Message-ID: <20120922000537.GH2454@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120913011208.GT4257@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com>
- <20120920000351.GI2455@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com>
- <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com>
- <20120920220130.GN2449@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com>
- <alpine.DEB.2.00.1209211740170.8839@utopia.booyaka.com>
- <20120921212054.GE2454@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1209212240190.31812@utopia.booyaka.com>
+	Fri, 21 Sep 2012 20:16:40 -0400
+Date: Fri, 21 Sep 2012 17:16:26 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-e59d1b0a24199db01978e6c1e89859eda93ce683@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1348256595-29119-9-git-send-email-hpa@linux.intel.com>
+References: <1348256595-29119-9-git-send-email-hpa@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/smap] x86-32, smap: Add STAC/
+ CLAC instructions to 32-bit kernel entry
+Git-Commit-ID: e59d1b0a24199db01978e6c1e89859eda93ce683
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1209212240190.31812@utopia.booyaka.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092200-5518-0000-0000-000007D7B209
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 21 Sep 2012 17:16:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 10:41:14PM +0000, Paul Walmsley wrote:
-> On Fri, 21 Sep 2012, Paul E. McKenney wrote:
-> 
-> > On Fri, Sep 21, 2012 at 05:47:31PM +0000, Paul Walmsley wrote:
-> >
-> > > I built an OMAP kernel from Linus' commit 
-> > > 4651afbbae968772efd6dc4ba461cba9b49bb9d8 ("Merge branch 'for-3.6-fixes' of 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq").  The config used 
-> > > was 'omap2plus_defconfig', and enabled CONFIG_CPU_IDLE by hand.  Booted it 
-> > > on a Pandaboard (OMAP4430ES2) into a very minimal Debian rootfs.
-> > 
-> > Did you have the patch at https://lkml.org/lkml/2012/8/30/290 applied?
-> 
-> No, it's just as described above.
-> 
-> > If not, could you please try it?  (This patch cleared up a similar
-> > problem for Becky, also on OMAP.)
-> 
-> Did not seem to help, either with or without CONFIG_CPU_IDLE.
+Commit-ID:  e59d1b0a24199db01978e6c1e89859eda93ce683
+Gitweb:     http://git.kernel.org/tip/e59d1b0a24199db01978e6c1e89859eda93ce683
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 21 Sep 2012 13:58:10 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 21 Sep 2012 14:04:27 -0700
 
-I was hoping!  ;-)
+x86-32, smap: Add STAC/CLAC instructions to 32-bit kernel entry
 
-And my init=/bin/sh kernel ran idle for more than an hour without
-any RCU CPU stall warnings...
+The changes to entry_32.S got missed in checkin:
 
-I am wondering if your system somehow figured out how to start a grace
-period that had no RCU callbacks waiting for it.  If that happened,
-then a CONFIG_NO_HZ=y system could in theory get into a state where all
-CPUs are in dyntick-idle mode, so that none of them is doing anything
-to force the grace period to complete.
+63bcff2a x86, smap: Add STAC and CLAC instructions to control user space access
 
-That should be easy to diagnose, anyway.  Please see below, which
-includes the earlier diagnostic patch.
+The resulting kernel was largely functional but SMAP protection could
+have been bypassed.
 
-							Thanx, Paul
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1348256595-29119-9-git-send-email-hpa@linux.intel.com
+---
+ arch/x86/kernel/entry_32.S |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
 
-------------------------------------------------------------------------
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 307caf1..696f189 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -879,6 +879,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
- 	unsigned long flags;
- 	int ndetected = 0;
- 	struct rcu_node *rnp = rcu_get_root(rsp);
-+	long totqlen = 0;
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 623f288..9ebbeca 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -57,6 +57,7 @@
+ #include <asm/cpufeature.h>
+ #include <asm/alternative-asm.h>
+ #include <asm/asm.h>
++#include <asm/smap.h>
  
- 	/* Only let one CPU complain about others per time interval. */
+ /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
+ #include <linux/elf-em.h>
+@@ -407,7 +408,9 @@ sysenter_past_esp:
+  */
+ 	cmpl $__PAGE_OFFSET-3,%ebp
+ 	jae syscall_fault
++	ASM_STAC
+ 1:	movl (%ebp),%ebp
++	ASM_CLAC
+ 	movl %ebp,PT_EBP(%esp)
+ 	_ASM_EXTABLE(1b,syscall_fault)
  
-@@ -923,8 +924,11 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+@@ -488,6 +491,7 @@ ENDPROC(ia32_sysenter_target)
+ 	# system call handler stub
+ ENTRY(system_call)
+ 	RING0_INT_FRAME			# can't unwind into user space anyway
++	ASM_CLAC
+ 	pushl_cfi %eax			# save orig_eax
+ 	SAVE_ALL
+ 	GET_THREAD_INFO(%ebp)
+@@ -670,6 +674,7 @@ END(syscall_exit_work)
  
- 	print_cpu_stall_info_end();
--	printk(KERN_CONT "(detected by %d, t=%ld jiffies)\n",
--	       smp_processor_id(), (long)(jiffies - rsp->gp_start));
-+	for_each_possible_cpu(cpu)
-+		totqlen += per_cpu_ptr(rsp->rda, cpu)->qlen;
-+	pr_cont("(detected by %d, t=%ld jiffies, g=%lu, c=%lu, q=%lu)\n",
-+	       smp_processor_id(), (long)(jiffies - rsp->gp_start),
-+	       rsp->gpnum, rsp->completed, totqlen);
- 	if (ndetected == 0)
- 		printk(KERN_ERR "INFO: Stall ended before state dump start\n");
- 	else if (!trigger_all_cpu_backtrace())
-@@ -939,8 +943,10 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 	RING0_INT_FRAME			# can't unwind into user space anyway
+ syscall_fault:
++	ASM_CLAC
+ 	GET_THREAD_INFO(%ebp)
+ 	movl $-EFAULT,PT_EAX(%esp)
+ 	jmp resume_userspace
+@@ -825,6 +830,7 @@ END(interrupt)
+  */
+ 	.p2align CONFIG_X86_L1_CACHE_SHIFT
+ common_interrupt:
++	ASM_CLAC
+ 	addl $-0x80,(%esp)	/* Adjust vector into the [-256,-1] range */
+ 	SAVE_ALL
+ 	TRACE_IRQS_OFF
+@@ -841,6 +847,7 @@ ENDPROC(common_interrupt)
+ #define BUILD_INTERRUPT3(name, nr, fn)	\
+ ENTRY(name)				\
+ 	RING0_INT_FRAME;		\
++	ASM_CLAC;			\
+ 	pushl_cfi $~(nr);		\
+ 	SAVE_ALL;			\
+ 	TRACE_IRQS_OFF			\
+@@ -857,6 +864,7 @@ ENDPROC(name)
  
- static void print_cpu_stall(struct rcu_state *rsp)
- {
-+	int cpu;
- 	unsigned long flags;
- 	struct rcu_node *rnp = rcu_get_root(rsp);
-+	long totqlen = 0;
+ ENTRY(coprocessor_error)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $0
+ 	pushl_cfi $do_coprocessor_error
+ 	jmp error_code
+@@ -865,6 +873,7 @@ END(coprocessor_error)
  
- 	/*
- 	 * OK, time to rat on ourselves...
-@@ -951,7 +957,10 @@ static void print_cpu_stall(struct rcu_state *rsp)
- 	print_cpu_stall_info_begin();
- 	print_cpu_stall_info(rsp, smp_processor_id());
- 	print_cpu_stall_info_end();
--	printk(KERN_CONT " (t=%lu jiffies)\n", jiffies - rsp->gp_start);
-+	for_each_possible_cpu(cpu)
-+		totqlen += per_cpu_ptr(rsp->rda, cpu)->qlen;
-+	pr_cont(" (t=%lu jiffies g=%lu c=%lu q=%lu)\n",
-+		jiffies - rsp->gp_start, rsp->gpnum, rsp->completed, totqlen);
- 	if (!trigger_all_cpu_backtrace())
- 		dump_stack();
+ ENTRY(simd_coprocessor_error)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $0
+ #ifdef CONFIG_X86_INVD_BUG
+ 	/* AMD 486 bug: invd from userspace calls exception 19 instead of #GP */
+@@ -886,6 +895,7 @@ END(simd_coprocessor_error)
  
-
+ ENTRY(device_not_available)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $-1			# mark this as an int
+ 	pushl_cfi $do_device_not_available
+ 	jmp error_code
+@@ -906,6 +916,7 @@ END(native_irq_enable_sysexit)
+ 
+ ENTRY(overflow)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $0
+ 	pushl_cfi $do_overflow
+ 	jmp error_code
+@@ -914,6 +925,7 @@ END(overflow)
+ 
+ ENTRY(bounds)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $0
+ 	pushl_cfi $do_bounds
+ 	jmp error_code
+@@ -922,6 +934,7 @@ END(bounds)
+ 
+ ENTRY(invalid_op)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $0
+ 	pushl_cfi $do_invalid_op
+ 	jmp error_code
+@@ -930,6 +943,7 @@ END(invalid_op)
+ 
+ ENTRY(coprocessor_segment_overrun)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $0
+ 	pushl_cfi $do_coprocessor_segment_overrun
+ 	jmp error_code
+@@ -938,6 +952,7 @@ END(coprocessor_segment_overrun)
+ 
+ ENTRY(invalid_TSS)
+ 	RING0_EC_FRAME
++	ASM_CLAC
+ 	pushl_cfi $do_invalid_TSS
+ 	jmp error_code
+ 	CFI_ENDPROC
+@@ -945,6 +960,7 @@ END(invalid_TSS)
+ 
+ ENTRY(segment_not_present)
+ 	RING0_EC_FRAME
++	ASM_CLAC
+ 	pushl_cfi $do_segment_not_present
+ 	jmp error_code
+ 	CFI_ENDPROC
+@@ -952,6 +968,7 @@ END(segment_not_present)
+ 
+ ENTRY(stack_segment)
+ 	RING0_EC_FRAME
++	ASM_CLAC
+ 	pushl_cfi $do_stack_segment
+ 	jmp error_code
+ 	CFI_ENDPROC
+@@ -959,6 +976,7 @@ END(stack_segment)
+ 
+ ENTRY(alignment_check)
+ 	RING0_EC_FRAME
++	ASM_CLAC
+ 	pushl_cfi $do_alignment_check
+ 	jmp error_code
+ 	CFI_ENDPROC
+@@ -966,6 +984,7 @@ END(alignment_check)
+ 
+ ENTRY(divide_error)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $0			# no error code
+ 	pushl_cfi $do_divide_error
+ 	jmp error_code
+@@ -975,6 +994,7 @@ END(divide_error)
+ #ifdef CONFIG_X86_MCE
+ ENTRY(machine_check)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $0
+ 	pushl_cfi machine_check_vector
+ 	jmp error_code
+@@ -984,6 +1004,7 @@ END(machine_check)
+ 
+ ENTRY(spurious_interrupt_bug)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $0
+ 	pushl_cfi $do_spurious_interrupt_bug
+ 	jmp error_code
+@@ -1207,6 +1228,7 @@ return_to_handler:
+ 
+ ENTRY(page_fault)
+ 	RING0_EC_FRAME
++	ASM_CLAC
+ 	pushl_cfi $do_page_fault
+ 	ALIGN
+ error_code:
+@@ -1279,6 +1301,7 @@ END(page_fault)
+ 
+ ENTRY(debug)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	cmpl $ia32_sysenter_target,(%esp)
+ 	jne debug_stack_correct
+ 	FIX_STACK 12, debug_stack_correct, debug_esp_fix_insn
+@@ -1303,6 +1326,7 @@ END(debug)
+  */
+ ENTRY(nmi)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi %eax
+ 	movl %ss, %eax
+ 	cmpw $__ESPFIX_SS, %ax
+@@ -1373,6 +1397,7 @@ END(nmi)
+ 
+ ENTRY(int3)
+ 	RING0_INT_FRAME
++	ASM_CLAC
+ 	pushl_cfi $-1			# mark this as an int
+ 	SAVE_ALL
+ 	TRACE_IRQS_OFF
+@@ -1393,6 +1418,7 @@ END(general_protection)
+ #ifdef CONFIG_KVM_GUEST
+ ENTRY(async_page_fault)
+ 	RING0_EC_FRAME
++	ASM_CLAC
+ 	pushl_cfi $do_async_page_fault
+ 	jmp error_code
+ 	CFI_ENDPROC
