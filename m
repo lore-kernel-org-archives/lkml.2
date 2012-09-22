@@ -1,82 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2IVUfH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 16:35:07 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53225 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab2IVUfF (ORCPT
+	id S1753384Ab2IVUgy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 16:36:54 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46383 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab2IVUgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 16:35:05 -0400
-Message-ID: <505E2108.2060108@gmail.com>
-Date: Sat, 22 Sep 2012 22:35:20 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
+	Sat, 22 Sep 2012 16:36:52 -0400
+Date: Sat, 22 Sep 2012 12:52:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: "Bruce, Becky" <bbruce@ti.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Hunter, Jon" <jon-hunter@ti.com>,
+        "<snijsure@grid-net.com>" <snijsure@grid-net.com>
+Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
+Message-ID: <20120922195253.GD2934@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120920000351.GI2455@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com>
+ <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com>
+ <20120920220130.GN2449@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com>
+ <alpine.DEB.2.00.1209211740170.8839@utopia.booyaka.com>
+ <20120921212054.GE2454@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209212240190.31812@utopia.booyaka.com>
+ <20120922000537.GH2454@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209221813330.10663@utopia.booyaka.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, axboe@kernel.dk
-CC: Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: blk: NULL ptr deref in blk_dequeue_request()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1209221813330.10663@utopia.booyaka.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092219-6148-0000-0000-000009E7B1C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Sat, Sep 22, 2012 at 06:16:15PM +0000, Paul Walmsley wrote:
+> Hi Paul
+> 
+> On Fri, 21 Sep 2012, Paul E. McKenney wrote:
+> 
+> > I am wondering if your system somehow figured out how to start a grace
+> > period that had no RCU callbacks waiting for it.  If that happened,
+> > then a CONFIG_NO_HZ=y system could in theory get into a state where all
+> > CPUs are in dyntick-idle mode, so that none of them is doing anything
+> > to force the grace period to complete.
+> >
+> > That should be easy to diagnose, anyway.  Please see below, which
+> > includes the earlier diagnostic patch.
+> 
+> Here you go.
+> 
+> - Paul
+> 
+> [  248.902618] INFO: rcu_sched self-detected stall on CPU
+> [  248.905456]  0: (1 ticks this GP) idle=933/1/0 
+> [  248.907897]   (t=26570 jiffies g=11 c=10 q=0)
 
-While fuzzing with trinity inside a KVM tools guest running the latest linux-next kernel, I've stumbled on the following BUG.
+Bingo!!!  (q=0, in case you were wondering.  And thank you for testing this!)
 
-I've also hit a similar trace where the 'BUG_ON(ELV_ON_HASH(rq));' above that list_del_init() gets hit, so I guess it's a race
-condition of some sorts.
+Strangely enough, I believe that I have inadvertently fixed this in
+my -rcu tree:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
 
-[    9.900299] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[    9.909508] IP: [<ffffffff819ea637>] __list_del_entry+0xb7/0xe0
-[    9.910191] PGD 0
-[    9.910191] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[    9.910191] Dumping ftrace buffer:
-[    9.910191]    (ftrace buffer empty)
-[    9.910191] CPU 2
-[    9.910191] Pid: 3996, comm: kworker/u:2 Tainted: G        W    3.6.0-rc6-next-20120921-sasha-00001-geb77a39-dirty #3
-[    9.910191] RIP: 0010:[<ffffffff819ea637>]  [<ffffffff819ea637>] __list_del_entry+0xb7/0xe0
-[    9.910191] RSP: 0000:ffff880034e11c88  EFLAGS: 00010007
-[    9.910191] RAX: 0000000000000000 RBX: ffff880034e3ec00 RCX: dead000000200200
-[    9.910191] RDX: 0000000000000000 RSI: ffffffff85366998 RDI: ffff880034e3ec00
-[    9.910191] RBP: ffff880034e11c88 R08: 0000000000000000 R09: ffff88001af60928
-[    9.910191] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
-[    9.910191] R13: ffffffff85366360 R14: 0000000000000000 R15: ffffffff85b4edd0
-[    9.910191] FS:  0000000000000000(0000) GS:ffff880029800000(0000) knlGS:0000000000000000
-[    9.910191] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[    9.910191] CR2: 0000000000000000 CR3: 0000000004c26000 CR4: 00000000000406e0
-[    9.910191] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[    9.910191] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[    9.910191] Process kworker/u:2 (pid: 3996, threadinfo ffff880034e10000, task ffff88001af60000)
-[    9.910191] Stack:
-[    9.910191]  ffff880034e11ca8 ffffffff819a1a45 ffff880034e3ec00 0000000000000000
-[    9.910191]  ffff880034e11cc8 ffffffff819a1ae1 0000000000000000 ffff880034e3ec00
-[    9.910191]  ffff880034e11ce8 ffffffff819a271e 0000000000000000 0000000000000000
-[    9.910191] Call Trace:
-[    9.910191]  [<ffffffff819a1a45>] blk_dequeue_request+0x35/0xc0
-[    9.910191]  [<ffffffff819a1ae1>] blk_start_request+0x11/0x40
-[    9.910191]  [<ffffffff819a271e>] blk_fetch_request+0x1e/0x30
-[    9.910191]  [<ffffffff81e5a89d>] redo_fd_request+0x9d/0x3f0
-[    9.910191]  [<ffffffff8112a779>] process_one_work+0x3b9/0x770
-[    9.910191]  [<ffffffff8112a628>] ? process_one_work+0x268/0x770
-[    9.910191]  [<ffffffff81177a22>] ? get_lock_stats+0x22/0x70
-[    9.910191]  [<ffffffff81e5a800>] ? start_motor+0x120/0x120
-[    9.910191]  [<ffffffff8112b0fa>] worker_thread+0x2ba/0x3f0
-[    9.910191]  [<ffffffff8112ae40>] ? rescuer_thread+0x2d0/0x2d0
-[    9.910191]  [<ffffffff81135d83>] kthread+0xe3/0xf0
-[    9.910191]  [<ffffffff81177aae>] ? put_lock_stats.isra.16+0xe/0x40
-[    9.910191]  [<ffffffff81135ca0>] ? insert_kthread_work+0x90/0x90
-[    9.910191]  [<ffffffff839f1e45>] kernel_thread_helper+0x5/0x10
-[    9.910191]  [<ffffffff81135ca0>] ? insert_kthread_work+0x90/0x90
-[    9.910191] Code: 6a 84 be 3e 00 00 00 48 c7 c7 7b d8 6a 84 31 c0 e8 8f c2 71 ff eb 2c 0f 1f 44 00 00 48 b9 00 02 20 00 00 00
-ad de 48 39 c8 74 8c <4c> 8b 00 4c 39 c7 75 a6 4c 8b 42 08 4c 39 c7 75 bc 48 89 42 08
-[    9.910191] RIP  [<ffffffff819ea637>] __list_del_entry+0xb7/0xe0
-[    9.910191]  RSP <ffff880034e11c88>
-[    9.910191] CR2: 0000000000000000
+Nevertheless, if you get a chance to try it, I would be interested to
+hear if my guess is correct.  The trick is that a kthread drives the
+grace period in -rcu, regardless of whether or not there are callbacks.
 
+However, the backport would not be something that -stable would be happy
+with, so I will be putting together a fix for mainline.  This thing
+has been in the kernel since about 2004, not sure why you didn't hit
+it earlier.
 
-Thanks,
-Sasha
+							Thanx, Paul
+
+> [  248.910339] [<c001bc90>] (unwind_backtrace+0x0/0xf0) from [<c00ad800>] (rcu_check_callbacks+0x220/0x714)
+> [  248.915527] [<c00ad800>] (rcu_check_callbacks+0x220/0x714) from [<c00532a0>] (update_process_times+0x38/0x68)
+> [  248.920928] [<c00532a0>] (update_process_times+0x38/0x68) from [<c008c9e8>] (tick_sched_timer+0x80/0xec)
+> [  248.926116] [<c008c9e8>] (tick_sched_timer+0x80/0xec) from [<c0068ed4>] (__run_hrtimer+0x7c/0x1e0)
+> [  248.930999] [<c0068ed4>] (__run_hrtimer+0x7c/0x1e0) from [<c0069cb8>] (hrtimer_interrupt+0x11c/0x2d0)
+> [  248.936035] [<c0069cb8>] (hrtimer_interrupt+0x11c/0x2d0) from [<c001a3cc>] (twd_handler+0x30/0x44)
+> [  248.940948] [<c001a3cc>] (twd_handler+0x30/0x44) from [<c00a7bd0>] (handle_percpu_devid_irq+0x90/0x13c)
+> [  248.946075] [<c00a7bd0>] (handle_percpu_devid_irq+0x90/0x13c) from [<c00a4344>] (generic_handle_irq+0x30/0x48)
+> [  248.951538] [<c00a4344>] (generic_handle_irq+0x30/0x48) from [<c0014e38>] (handle_IRQ+0x4c/0xac)
+> [  248.956329] [<c0014e38>] (handle_IRQ+0x4c/0xac) from [<c00084cc>] (gic_handle_irq+0x28/0x5c)
+> [  248.960937] [<c00084cc>] (gic_handle_irq+0x28/0x5c) from [<c04fb1a4>] (__irq_svc+0x44/0x5c)
+> [  248.965484] Exception stack(0xc0729f58 to 0xc0729fa0)
+> [  248.968231] 9f40:                                                       0003b832 00000001
+> [  248.972686] 9f60: 00000000 c074a8e8 c0728000 c07c42c8 c05065a0 c074bdc8 00000000 411fc092
+> [  248.977142] 9f80: c074bfe8 00000000 00000001 c0729fa0 0003b833 c0015130 20000113 ffffffff
+> [  248.981597] [<c04fb1a4>] (__irq_svc+0x44/0x5c) from [<c0015130>] (default_idle+0x20/0x44)
+> [  248.986083] [<c0015130>] (default_idle+0x20/0x44) from [<c001535c>] (cpu_idle+0x9c/0x114)
+> [  248.990539] [<c001535c>] (cpu_idle+0x9c/0x114) from [<c06d77b0>] (start_kernel+0x2b4/0x304)
+> 
+
