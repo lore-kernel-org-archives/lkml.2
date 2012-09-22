@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab2IVTZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 15:25:27 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34622 "EHLO
+	id S1753120Ab2IVTe3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 15:34:29 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34689 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab2IVTZ0 (ORCPT
+	with ESMTP id S1751903Ab2IVTe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 15:25:26 -0400
-Date: Sat, 22 Sep 2012 15:25:24 -0400 (EDT)
-Message-Id: <20120922.152524.1294103117346567757.davem@davemloft.net>
-To: jjolly@suse.com
-Cc: linux-kernel@vger.kernel.org, venkat.x.venkatsubra@oracle.com,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] rds: Error on offset mismatch if not loopback
+	Sat, 22 Sep 2012 15:34:28 -0400
+Date: Sat, 22 Sep 2012 15:34:26 -0400 (EDT)
+Message-Id: <20120922.153426.978507671721485161.davem@davemloft.net>
+To: peterhuewe@gmx.de
+Cc: jacmet@sunsite.dk, david.daney@cavium.com, chohnstaedt@innominate.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] net/phy/bcm87xx: Add MODULE_LICENSE("GPL") to GPL
+ driver
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
-References: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
+In-Reply-To: <1348281858-24366-1-git-send-email-peterhuewe@gmx.de>
+References: <1348281858-24366-1-git-send-email-peterhuewe@gmx.de>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -24,28 +26,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Jolly <jjolly@suse.com>
-Date: Fri, 21 Sep 2012 15:32:40 -0600
+From: Peter Huewe <peterhuewe@gmx.de>
+Date: Sat, 22 Sep 2012 04:44:18 +0200
 
-> Attempting an rds connection from the IP address of an IPoIB interface
-> to itself causes a kernel panic due to a BUG_ON() being triggered.
-> Making the test less strict allows rds-ping to work without crashing
-> the machine.
+> Currently the driver has no MODULE_LICENSE attribute in its source which
+> results in a kernel taint if I load this:
 > 
-> A local unprivileged user could use this flaw to crash the system.
+> root@(none):~# modprobe bcm87xx
+> bcm87xx: module license 'unspecified' taints kernel.
 > 
-> Signed-off-by: John Jolly <jjolly@suse.com>
+> Since the first lines of the source code clearly state:
+>  * This file is subject to the terms and conditions of the GNU General
+>  * Public License.  See the file "COPYING" in the main directory of this
+>  * archive for more details.
+> I think it's safe to add the MODULE_LICENSE("GPL") macro and thus remove
+> the kernel taint.
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 
-Besides the questions being asked of you by Venkat Venkatsubra, this
-patch has another issue.
-
-It has been completely corrupted by your email client, it has
-turned all TAB characters into spaces, making the patch useless.
-
-Please learn how to send a patch unmolested in the body of your
-email.  Test it by emailing the patch to yourself, and verifying
-that you can in fact apply the patch you receive in that email.
-Then, and only then, should you consider making a new submission
-of this patch.
-
-Use Documentation/email-clients.txt for guidance.
+Good catch, applied, thanks.
