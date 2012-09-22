@@ -1,188 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab2IVRcj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 13:32:39 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58300 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904Ab2IVRci (ORCPT
+	id S1753180Ab2IVRuR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 13:50:17 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45051 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095Ab2IVRuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 13:32:38 -0400
-Date: Sat, 22 Sep 2012 19:32:25 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: David S Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] lxt PHY: Support for the buggy LXT973 rev A2
-Message-ID: <20120922173225.GA6796@netboy.at.omicron.at>
-References: <201209221616.q8MGGnRc019864@localhost.localdomain>
+	Sat, 22 Sep 2012 13:50:15 -0400
+Message-ID: <505DFA65.3080805@gmail.com>
+Date: Sat, 22 Sep 2012 19:50:29 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201209221616.q8MGGnRc019864@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: paulmck@linux.vnet.ibm.com
+CC: Michael Wang <wangyun@linux.vnet.ibm.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com
+Subject: Re: RCU idle CPU detection is broken in linux-next
+References: <505AC979.7000008@gmail.com> <20120920152341.GE2449@linux.vnet.ibm.com> <505C33B9.8000807@gmail.com> <20120921121346.GD2458@linux.vnet.ibm.com> <505C6B03.7020305@gmail.com> <20120921151203.GA2454@linux.vnet.ibm.com> <505C855F.3060301@gmail.com> <505D7621.4040505@gmail.com> <20120922150913.GA2934@linux.vnet.ibm.com> <505DDBE7.7010706@gmail.com> <20120922155613.GB2934@linux.vnet.ibm.com>
+In-Reply-To: <20120922155613.GB2934@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 22, 2012 at 06:16:49PM +0200, Christophe Leroy wrote:
-> This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding
-> precautions linked to ERRATA Item 4:
-> 
-> Revision A2 of LXT973 chip randomly returns the contents of the previous even
-> register when you read a odd register regularly
+On 09/22/2012 05:56 PM, Paul E. McKenney wrote:
+> And now the prime suspect is the new CONFIG_RCU_USER_QS=y.  Do these
+> warnings ever show up with CONFIG_RCU_USER_QS=n?
 
-This patch does not apply to net-next.
+It seems that disabling that does make the warnings go away.
 
-Also, I have just a few stylistic comments, below.
+I'll keep the tests running in case it just reduces the chances or something
+like that.
 
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> 
-> diff -u linux-3.5-vanilla/drivers/net/phy/lxt.c linux-3.5/drivers/net/phy/lxt.c
-> --- linux-3.5-vanilla/drivers/net/phy/lxt.c	2012-07-21 22:58:29.000000000 +0200
-> +++ linux-3.5/drivers/net/phy/lxt.c	2012-09-15 19:20:34.000000000 +0200
-
-...
-
-> +int lxt973a2_read_status(struct phy_device *phydev)
-> +{
-> +	int adv;
-> +	int err;
-> +	int lpa;
-> +	int lpagb = 0;
-> +
-> +	/* Update the link, but return if there was an error */
-> +	err = lxt973a2_update_link(phydev);
-> +	if (err)
-> +		return err;
-> +
-> +	if (AUTONEG_ENABLE == phydev->autoneg) {
-> +		int retry = 1;
-> +
-> +		adv = phy_read(phydev, MII_ADVERTISE);
-> +
-> +		if (adv < 0)
-> +			return adv;
-> +
-> +		do {
-> +			lpa = phy_read(phydev, MII_LPA);
-> +
-> +			if (lpa < 0)
-> +				return lpa;
-> +
-> +			/* If both registers are equal, it is suspect but not
-> +			* impossible, hence a new try
-> +			*/
-> +		} while (lpa == adv && retry--);
-> +
-> +		lpa &= adv;
-> +
-> +		phydev->speed = SPEED_10;
-> +		phydev->duplex = DUPLEX_HALF;
-> +		phydev->pause = phydev->asym_pause = 0;
-> +
-> +		if (lpagb & (LPA_1000FULL | LPA_1000HALF)) {
-> +			phydev->speed = SPEED_1000;
-> +
-> +			if (lpagb & LPA_1000FULL)
-> +				phydev->duplex = DUPLEX_FULL;
-> +		} else if (lpa & (LPA_100FULL | LPA_100HALF)) {
-> +			phydev->speed = SPEED_100;
-> +
-> +			if (lpa & LPA_100FULL)
-> +				phydev->duplex = DUPLEX_FULL;
-> +		} else
-> +			if (lpa & LPA_10FULL)
-> +				phydev->duplex = DUPLEX_FULL;
-
-This last 'else' could use braces.
-
-> +
-> +		if (phydev->duplex == DUPLEX_FULL) {
-> +			phydev->pause = lpa & LPA_PAUSE_CAP ? 1 : 0;
-> +			phydev->asym_pause = lpa & LPA_PAUSE_ASYM ? 1 : 0;
-> +		}
-> +	} else {
-> +		int bmcr = phy_read(phydev, MII_BMCR);
-> +
-> +		if (bmcr < 0)
-> +			return bmcr;
-> +
-> +		if (bmcr & BMCR_FULLDPLX)
-> +			phydev->duplex = DUPLEX_FULL;
-> +		else
-> +			phydev->duplex = DUPLEX_HALF;
-> +
-> +		if (bmcr & BMCR_SPEED1000)
-> +			phydev->speed = SPEED_1000;
-> +		else if (bmcr & BMCR_SPEED100)
-> +			phydev->speed = SPEED_100;
-> +		else
-> +			phydev->speed = SPEED_10;
-> +
-> +		phydev->pause = phydev->asym_pause = 0;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int lxt973_read_status(struct phy_device *phydev)
-> +{
-> +	return (int)phydev->priv&PHYDEV_PRIV_REVA2 ?
-> +			lxt973a2_read_status(phydev) :
-> +			genphy_read_status(phydev);
-
-Needs spacing, like this:
-
-	return (int) phydev->priv & PHYDEV_PRIV_REVA2 ?
-		lxt973a2_read_status(phydev) : genphy_read_status(phydev);
-
-> +}
-> +
->  static int lxt973_probe(struct phy_device *phydev)
->  {
->  	int val = phy_read(phydev, MII_LXT973_PCR);
-> +	int priv = 0;
-> +
-> +	phydev->priv = NULL;
-> +
-> +	if (val < 0)
-> +		return val;
->  
->  	if (val & PCR_FIBER_SELECT) {
->  		/*
-> @@ -136,17 +272,26 @@
->  		val &= ~BMCR_ANENABLE;
->  		phy_write(phydev, MII_BMCR, val);
->  		/* Remember that the port is in fiber mode. */
-> -		phydev->priv = lxt973_probe;
-> -	} else {
-> -		phydev->priv = NULL;
-> +		priv |= PHYDEV_PRIV_FIBER;
-> +	}
-> +	val = phy_read(phydev, MII_PHYSID2);
-> +
-> +	if (val < 0)
-> +		return val;
-> +
-> +	if ((val & 0xf) == 0) { /* rev A2 */
-> +		dev_info(&phydev->dev, " LXT973 revision A2 has bugs\n");
-> +		priv |= PHYDEV_PRIV_REVA2;
->  	}
-> +	phydev->priv = (void *)priv;
-
-One space after cast, please: (void *) priv;
-
->  	return 0;
->  }
->  
->  static int lxt973_config_aneg(struct phy_device *phydev)
->  {
->  	/* Do nothing if port is in fiber mode. */
-> -	return phydev->priv ? 0 : genphy_config_aneg(phydev);
-> +	return (int)phydev->priv&PHYDEV_PRIV_FIBER ?
-> +			0 : genphy_config_aneg(phydev);
-
-Same spacing issue again.
 
 Thanks,
-Richard
+Sasha
