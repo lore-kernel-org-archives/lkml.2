@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab2IVIgs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 04:36:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15514 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab2IVIgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 04:36:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,467,1344236400"; 
-   d="scan'208";a="225224789"
-Date: Sat, 22 Sep 2012 16:10:09 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Subject: Re: [ACPI/PCI] possible recursive locking detected
-Message-ID: <20120922081009.GA5677@localhost>
-References: <20120922003557.GF5959@localhost>
- <CAE9FiQVQJQfBZn7AH4M5hibx=iNa9RbfSaBdb35FWxDiRXHvrA@mail.gmail.com>
- <CAE9FiQVQMVsqG2vHhyktTtUSJ_dDRpTpwB_x--agMWbm6PHsEg@mail.gmail.com>
+	id S1754676Ab2IVIiZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 04:38:25 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1121 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab2IVIiS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Sep 2012 04:38:18 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sat, 22 Sep 2012 01:38:16 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Date: Sat, 22 Sep 2012 14:08:11 +0530
+Subject: RE: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
+Thread-Topic: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
+Thread-Index: Ac2YFEVU4+FaZIcITGuH/Mao2aKRGwAiQy6A
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDF6014CF@BGMAIL02.nvidia.com>
+References: <1348230054-7402-1-git-send-email-vbyravarasu@nvidia.com>
+ <CAAe_U6K2hANpRqzyoiiP2mR97=M2Mb35+FVor11DaaZi7W9Pnw@mail.gmail.com>
+ <505C9282.3050001@wwwdotorg.org>
+In-Reply-To: <505C9282.3050001@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQVQMVsqG2vHhyktTtUSJ_dDRpTpwB_x--agMWbm6PHsEg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 22, 2012 at 12:04:51AM -0700, Yinghai Lu wrote:
-> On Fri, Sep 21, 2012 at 9:53 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Fri, Sep 21, 2012 at 5:35 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> >> Hi Taku,
-> >>
-> >> The below oops is pretty reproducible, and shows up first in:
-> >>
-> >> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/taku-acpi-pci-host-bridge-v3
-> >> head:   e3faec8ea9c8aa683c56fa20ff2c58a4c5857960
-> >> commit: d3c663236318a43fed5d86a643e6ea2534e9220e [5/7] PCI/ACPI: Protect acpi_pci_roots list with mutex
-> >>
-> >> [    8.613239]  (acpi_pci_root_lock){+.+.+.}, at: [<ffffffff81741e5f>] acpi_get_pci_rootbridge_handle+0x22/0x63
-> >> [    8.613239]  (acpi_pci_root_lock){+.+.+.}, at: [<ffffffff81741e5f>] acpi_get_pci_rootbridge_handle+0x22/0x63
-> >> [    8.613239]  (acpi_pci_root_lock){+.+.+.}, at: [<ffffffff81742398>] acpi_pci_register_driver+0x21/0x79
-> >> [    8.613239]   lock(acpi_pci_root_lock);
-> >> [    8.613239]   lock(acpi_pci_root_lock);
-> >> [    8.613239]  #0:  (acpi_pci_root_lock){+.+.+.}, at: [<ffffffff81742398>] acpi_pci_register_driver+0x21/0x79
-> >> [    8.613239]  [<ffffffff81741e5f>] ? acpi_get_pci_rootbridge_handle+0x22/0x63
-> >> [    8.613239]  [<ffffffff81741e5f>] ? acpi_get_pci_rootbridge_handle+0x22/0x63
-> >> [    8.613239]  [<ffffffff81741e5f>] ? acpi_get_pci_rootbridge_handle+0x22/0x63
-> >> [    8.613239]  [<ffffffff81741e5f>] acpi_get_pci_rootbridge_handle+0x22/0x63
-> >>
-> >> [    8.610859]
-> >> [    8.611385] =============================================
-> >> [    8.612505] [ INFO: possible recursive locking detected ]
-> >> [    8.613239] 3.6.0-rc1-00022-gd3c6632 #7512 Not tainted
-> >> [    8.613239] ---------------------------------------------
-> >> [    8.613239] swapper/0/1 is trying to acquire lock:
-> >> [    8.613239]  (acpi_pci_root_lock){+.+.+.}, at: [<ffffffff81741e5f>] acpi_get_pci_rootbridge_handle+0x22/0x63
-> >> [    8.613239]
-> >> [    8.613239] but task is already holding lock:
-> >> [    8.613239]  (acpi_pci_root_lock){+.+.+.}, at: [<ffffffff81742398>] acpi_pci_register_driver+0x21/0x79
-> >> [    8.613239]
-> >> [    8.613239] other info that might help us debug this:
-> >> [    8.613239]  Possible unsafe locking scenario:
-> >> [    8.613239]
-> >> [    8.613239]        CPU0
-> >> [    8.613239]        ----
-> >> [    8.613239]   lock(acpi_pci_root_lock);
-> >> [    8.613239]   lock(acpi_pci_root_lock);
-> >> [    8.613239]
-> >> [    8.613239]  *** DEADLOCK ***
-> >> [    8.613239]
-> >> [    8.613239]  May be due to missing lock nesting notation
-> >> [    8.613239]
-> >> [    8.613239] 1 lock held by swapper/0/1:
-> >> [    8.613239]  #0:  (acpi_pci_root_lock){+.+.+.}, at: [<ffffffff81742398>] acpi_pci_register_driver+0x21/0x79
-> >> [    8.613239]
-
-> > Please check attached patch that should fix the problem.
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Friday, September 21, 2012 9:45 PM
+> To: ABRAHAM, KISHON VIJAY
+> Cc: Venu Byravarasu; balbi@ti.com; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; linux-usb@vger.kernel.org
+> Subject: Re: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
 > 
-> updated more aggressive version. two patches.
+> On 09/21/2012 07:09 AM, ABRAHAM, KISHON VIJAY wrote:
+> > Hi,
+> >
+> > On Fri, Sep 21, 2012 at 5:50 PM, Venu Byravarasu
+> <vbyravarasu@nvidia.com> wrote:
+> >> NVIDIA produces several Tegra SoCs viz Tegra20, Tegra30 etc.
+> >> In order to support USB PHY drivers on these SoCs, existing
+> >> PHY driver is split into SoC agnostic common USB PHY driver
+> >> and Tegra20-specific USB phy driver. This will facilitate
+> >> easy addition and deletion of phy drivers for Tegra SoCs.
+> 
+> >> @@ -618,6 +618,9 @@ static int tegra_ehci_probe(struct platform_device
+> *pdev)
+> ...
+> >>         pdata = pdev->dev.platform_data;
+> >>         if (!pdata) {
+> 
+> Some missing lines of context are:
+> 
+>                 dev_err(&pdev->dev, "Platform data missing\n");
+>                 return -EINVAL;
+>         }
+> 
+> ...
+> >> +       params.mode = TEGRA_USB_PHY_MODE_HOST;
+> >> +       params.config = pdata->phy_config;
+> >
+> > I fail to understand how pdata is not NULL in dt boot. I know i've
+> > already given this comment and you replied that you dint see any
+> > crash. But I'd like to know where and how pdata gets populated.
+> 
+> In practice, the platform uses AUXDATA to provide platform data to the
+> driver even when it's instantiated using device tree; see
+> arch/arm/mach-tegra/board-dt-tegra20.c variables tegra_ehci*_pdata and
+> tegra20_auxdata_lookup[].
+> 
+> In the slightly (very very slightly, hopefully) longer term, I would
+> like to completely remove the AUXDATA setup from board-dt-tegra20.c;
+> tegra_ehci_probe() should do something like:
+> 
+> pdata = pdev->dev.platform_data
+> if (!pdata)
+>     pdata = parse_pdata_from_dt();
+> /* user didn't specify any in DT either */
+> if (!pdata)
+>     pdata = default_pdata_for_port();
+> 
+> ... where perhaps the use of defaults could be folded into
+> parse_pdata_from_dt().
+ 
 
-Yes they work nicely. Thank you very much!
+Thanks Stephen for the detailed explanation.
 
-Thanks,
-Fengguang
+Kishon / Felipe,
+Do you have any more questions in this related, before patch can be applied?
