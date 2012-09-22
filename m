@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab2IVKJe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 06:09:34 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61913 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab2IVKJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 06:09:33 -0400
+	id S1755101Ab2IVKi7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 06:38:59 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:43413 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752586Ab2IVKi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Sep 2012 06:38:58 -0400
+From: guanxuetao@mprc.pku.edu.cn
+Message-ID: <54114.162.105.203.8.1348310955.squirrel@mprc.pku.edu.cn>
+In-Reply-To: <20120922073207.GB2538@avionic-0098.mockup.avionic-design.de>
+References: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
+    <1347956633-15667-3-git-send-email-thierry.reding@avionic-design.de>
+    <50847.162.105.203.8.1348282590.squirrel@mprc.pku.edu.cn>
+    <20120922073207.GB2538@avionic-0098.mockup.avionic-design.de>
+Date: Sat, 22 Sep 2012 18:49:15 +0800 (CST)
+Subject: Re: [PATCH v2 2/5] unicore32: pwm: Use module_platform_driver()
+To: "Thierry Reding" <thierry.reding@avionic-design.de>
+Cc: guanxuetao@mprc.pku.edu.cn, "Guan Xuetao" <gxt@mprc.pku.edu.cn>,
+        "Qin Rui" <qinrui@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.8-4.0.1.el5
 MIME-Version: 1.0
-Date: Sat, 22 Sep 2012 18:09:32 +0800
-Message-ID: <CANEcBPR8EvBTsJ0tG+kqvn578qXnqTMwdciS_WChe9sm5yKdaw@mail.gmail.com>
-Subject: [PATCH] pppoe: drop PPPOX_ZOMBIEs in pppoe_release
-From: Xiaodong Xu <stid.smth@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;charset=GB2312
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiaodong Xu <stid.smth@gmail.com>
+> On Sat, Sep 22, 2012 at 10:56:30AM +0800, guanxuetao@mprc.pku.edu.cn
+> wrote:
+>> > Some of the boilerplate code can be eliminated by using this macro.
+>> The
+>> > driver was previously registered with an arch_initcall(), so
+>> technically
+>> > this is no longer the same, but when the driver is moved to the PWM
+>> > framework, deferred probing will take care of any driver probe
+>> ordering
+>> > issues.
+>> >
+>> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>>
+>> Tested-by: Qin Rui <qinrui@mprc.pku.edu.cn>
+>> Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+>>
+>> Thanks & Regards,
+>> Guan Xuetao
+>
+> Great! If you don't mind I'll take this through the PWM tree with your
+> Acked-by.
+>
+> Thierry
+>
 
-When PPPOE is running over a virtual ethernet interface (e.g., a
-bonding interface) and the user tries to delete the interface in case
-the PPPOE state is ZOMBIE, the kernel will loop forever while
-unregistering net_device for the reference count is not decreased to
-zero which should have been done with dev_put().
+It's my pleasure.
 
-Signed-off-by: Xiaodong Xu <stid.smth@gmail.com>
-
----
-
---- linux/drivers/net/ppp/pppoe.c.orig	2012-09-19 11:49:27.921826868 +0800
-+++ linux/drivers/net/ppp/pppoe.c	2012-09-22 17:44:03.642730082 +0800
-@@ -570,7 +570,7 @@ static int pppoe_release(struct socket *
-
- 	po = pppox_sk(sk);
-
--	if (sk->sk_state & (PPPOX_CONNECTED | PPPOX_BOUND)) {
-+	if (sk->sk_state & (PPPOX_CONNECTED | PPPOX_BOUND | PPPOX_ZOMBIE)) {
- 		dev_put(po->pppoe_dev);
- 		po->pppoe_dev = NULL;
- 	}
-
--- 
-Regards,
-Xiaodong Xu
+Thanks & Regards,
+Guan Xuetao
