@@ -1,140 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab2IVD4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 23:56:34 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:53176 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753982Ab2IVD4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 23:56:33 -0400
-From: guanxuetao@mprc.pku.edu.cn
-Message-ID: <50857.162.105.203.8.1348282622.squirrel@mprc.pku.edu.cn>
-In-Reply-To: <1347956633-15667-5-git-send-email-thierry.reding@avionic-design.de>
-References: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
-    <1347956633-15667-5-git-send-email-thierry.reding@avionic-design.de>
-Date: Sat, 22 Sep 2012 10:57:02 +0800 (CST)
-Subject: Re: [PATCH v2 4/5] unicore32: pwm: Use managed resource allocations
-To: "Thierry Reding" <thierry.reding@avionic-design.de>
-Cc: "Guan Xuetao" <gxt@mprc.pku.edu.cn>, "Qin Rui" <qinrui@mprc.pku.edu.cn>,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.8-4.0.1.el5
+	id S1752770Ab2IVEYz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 00:24:55 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:51098 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2IVEYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Sep 2012 00:24:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=GB2312
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+In-Reply-To: <CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
+References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
+	<20120921174952.GF7264@google.com>
+	<CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
+	<20120921183515.GI7264@google.com>
+	<CAHCeSFpa28d-7ruMKSw6z2EYKYN-5udVouUJOi4cnj4dPad-TA@mail.gmail.com>
+	<20120921192720.GJ7264@google.com>
+	<CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
+Date: Sat, 22 Sep 2012 09:54:53 +0530
+Message-ID: <CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
+Subject: Re: Work queue questions
+From: anish singh <anish198519851985@gmail.com>
+To: Deepawali Verma <dverma249@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This commit uses the managed resource allocation functions to simplify
-> the cleanup paths on error and removal.
+On Sat, Sep 22, 2012 at 1:05 AM, Deepawali Verma <dverma249@gmail.com> wrote:
+> Hi Tajun,
 >
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> These three tasks are writing the three chunks of data in parallel. I
+> am not getting improvement here otherwise what is difference between
+> writing these chunks one by one in single thread instead of trying to
+> write the data by scheduling the work on three different workqueues
+> means 3 worker threads?
+You should have carefully read "If none of them blocks, there
+isn't much point in throwing more threads at them.  What are those
+thread doing?" what Tejun said.
 
-Tested-by: Qin Rui <qinrui@mprc.pku.edu.cn>
-Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+I think what he means is that concurrency is the concept of keeping the
+system busy.
+If you see the below logs:
+kworker/u:1-21    [000]   110.964895: task_event: MYTASKJOB2381 XStarted
+kworker/u:1-21    [000]   110.964909: task_event: MYTASKJOB2381 Xstopped
+Here your first worker thread blocked.
 
-Thanks & Regards,
-Guan Xuetao
+So the system will try to get other workqueue started which is:
+kworker/u:1-21    [000]   110.965137: task_event: MYTASKJOB2382 XStarted
+kworker/u:1-21    [000]   110.965154: task_event: MYTASKJOB2382 Xstopped
+Here again your second worker thread blocked.
 
-> ---
->  arch/unicore32/kernel/pwm.c | 47
-> +++++++++------------------------------------
->  1 file changed, 9 insertions(+), 38 deletions(-)
+So on so forth.
+Anyway how can you write chunks of data in parallel when already some worker
+thread is writing i.e. the system is busy.
+Analogy: Suppose you are ambidextrous and you are eating.Can you eat with
+both of your hands at a time?So worker thread are like your hands and keeping
+you fed all the time is the concept of concurrency.
+
+I am not an expert on this but from Tejun's reply I could make out this.
+Please correct me If I have wrongly understood the concept based on this mail
+chain.
 >
-> diff --git a/arch/unicore32/kernel/pwm.c b/arch/unicore32/kernel/pwm.c
-> index 7e23470..724e860 100644
-> --- a/arch/unicore32/kernel/pwm.c
-> +++ b/arch/unicore32/kernel/pwm.c
-> @@ -160,19 +160,17 @@ static int __devinit pwm_probe(struct
-> platform_device *pdev)
->  {
->  	struct pwm_device *pwm;
->  	struct resource *r;
-> -	int ret = 0;
+> Regards,
+> Deepa
 >
-> -	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
-> +	pwm = devm_kzalloc(&pdev->dev, sizeof(struct pwm_device), GFP_KERNEL);
->  	if (pwm == NULL) {
->  		dev_err(&pdev->dev, "failed to allocate memory\n");
->  		return -ENOMEM;
->  	}
->
-> -	pwm->clk = clk_get(NULL, "OST_CLK");
-> -	if (IS_ERR(pwm->clk)) {
-> -		ret = PTR_ERR(pwm->clk);
-> -		goto err_free;
-> -	}
-> +	pwm->clk = devm_clk_get(&pdev->dev, "OST_CLK");
-> +	if (IS_ERR(pwm->clk))
-> +		return PTR_ERR(pwm->clk);
-> +
->  	pwm->clk_enabled = 0;
->
->  	pwm->use_count = 0;
-> @@ -182,41 +180,21 @@ static int __devinit pwm_probe(struct
-> platform_device *pdev)
->  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (r == NULL) {
->  		dev_err(&pdev->dev, "no memory resource defined\n");
-> -		ret = -ENODEV;
-> -		goto err_free_clk;
-> -	}
-> -
-> -	r = request_mem_region(r->start, resource_size(r), pdev->name);
-> -	if (r == NULL) {
-> -		dev_err(&pdev->dev, "failed to request memory resource\n");
-> -		ret = -EBUSY;
-> -		goto err_free_clk;
-> +		return -ENODEV;
->  	}
->
-> -	pwm->base = ioremap_nocache(r->start, resource_size(r));
-> -	if (pwm->base == NULL) {
-> -		dev_err(&pdev->dev, "failed to remap memory resource\n");
-> -		ret = -EADDRNOTAVAIL;
-> -		goto err_release_mem;
-> -	}
-> +	pwm->base = devm_request_and_ioremap(&pdev->dev, r);
-> +	if (pwm->base == NULL)
-> +		return -EADDRNOTAVAIL;
->
->  	__add_pwm(pwm);
->  	platform_set_drvdata(pdev, pwm);
->  	return 0;
-> -
-> -err_release_mem:
-> -	release_mem_region(r->start, resource_size(r));
-> -err_free_clk:
-> -	clk_put(pwm->clk);
-> -err_free:
-> -	kfree(pwm);
-> -	return ret;
->  }
->
->  static int __devexit pwm_remove(struct platform_device *pdev)
->  {
->  	struct pwm_device *pwm;
-> -	struct resource *r;
->
->  	pwm = platform_get_drvdata(pdev);
->  	if (pwm == NULL)
-> @@ -226,13 +204,6 @@ static int __devexit pwm_remove(struct
-> platform_device *pdev)
->  	list_del(&pwm->node);
->  	mutex_unlock(&pwm_lock);
->
-> -	iounmap(pwm->base);
-> -
-> -	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	release_mem_region(r->start, resource_size(r));
-> -
-> -	clk_put(pwm->clk);
-> -	kfree(pwm);
->  	return 0;
->  }
->
+> On Fri, Sep 21, 2012 at 8:27 PM, Tejun Heo <tj@kernel.org> wrote:
+>> On Fri, Sep 21, 2012 at 08:26:01PM +0100, Deepawali Verma wrote:
+>>>      kworker/u:1-21    [000]   110.964895: task_event: MYTASKJOB2381 XStarted
+>>>      kworker/u:1-21    [000]   110.964909: task_event: MYTASKJOB2381 Xstopped
+>>>      kworker/u:1-21    [000]   110.965137: task_event: MYTASKJOB2382 XStarted
+>>>      kworker/u:1-21    [000]   110.965154: task_event: MYTASKJOB2382 Xstopped
+>>>      kworker/u:5-3724  [000]   110.965311: task_event: MYTASKJOB2383 XStarted
+>>>      kworker/u:5-3724  [000]   110.965325: task_event: MYTASKJOB2383 Xstopped
+>>>
+>>> I have this one big task to whom I divided into small sub tasks. These
+>>> are numbered 2381, 2382 and 2383, what was I expecting that task 2381,
+>>> 2382, 2383 run in parallel. I have put start and stop markers here so
+>>> that I can see how this concurrency managed work queue is distributing
+>>> the load.
+>>>
+>>> I found that task no 2381 is started first and exited before starting
+>>> task 2382 and so on. What I expected that it should start the three
+>>> sub tasks in parallel, not one by one.
+>>>
+>>> Where is concurrency here?
+>>
+>> If none of them blocks, there isn't much point in throwing more
+>> threads at them.  What are those thread doing?
+>>
+>> Thanks.
+>>
+>> --
+>> tejun
 > --
-> 1.7.12
->
-
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
