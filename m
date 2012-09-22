@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab2IVLce (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 07:32:34 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35694 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab2IVLcc (ORCPT
+	id S1754575Ab2IVLi5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 07:38:57 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59456 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932Ab2IVLi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 07:32:32 -0400
-Date: Sat, 22 Sep 2012 13:32:26 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Linda Wang <lwang@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 00/11] x86: Supervisor Mode Access Prevention
-Message-ID: <20120922113226.GA3257@gmail.com>
-References: <1348256595-29119-1-git-send-email-hpa@linux.intel.com>
- <20120921220818.GA30959@redhat.com>
- <505CE5C8.80007@linux.intel.com>
+	Sat, 22 Sep 2012 07:38:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505CE5C8.80007@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK=WgbZbuf6PYkT4vcpP4VAejT8mN4CO3PFB9Ng-74Q=4iKTrQ@mail.gmail.com>
+References: <1348158776-23858-1-git-send-email-sjur.brandeland@stericsson.com>
+	<CAK=WgbZbuf6PYkT4vcpP4VAejT8mN4CO3PFB9Ng-74Q=4iKTrQ@mail.gmail.com>
+Date: Sat, 22 Sep 2012 13:38:54 +0200
+Message-ID: <CAJK669YswMUghd6nMA+nnuWsMZps4zNoLP0-6fD29Pa3+CzX-g@mail.gmail.com>
+Subject: Re: [PATCHv4] remoteproc: Add STE modem driver for remoteproc
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ohad,
 
-* H. Peter Anvin <hpa@linux.intel.com> wrote:
+> Thanks, it looks good.
+>
+> It might be safer though to invoke ->setup() in probe/remove, instead
+> of in start/stop (just like you essentially did before).
+>
+> This way we don't assume that stop is always called before remove (as
+> assumption that might be implicitly valid today, but may break in the
+> future).
+>
+> If you want, I can just change that before applying.
 
-> On 09/21/2012 03:08 PM, Dave Jones wrote:
-> > 
-> > Perhaps add a printk somewhere to show that it's actually been enabled maybe ?
-> > 
-> > Also, would it be feasible to add something like we have for test_nx ?
-> > If this feature regresses in some way in the future, I suspect we'd like
-> > to know about it sooner rather than later.
-> > 
-> 
-> Good idea... should add this both for SMEP and SMAP.
+Sounds good, please just go ahead and change this before applying.
+Thank you.
 
-Very much agreed - these exploit preventation hardware features 
-are really useful, and it's good to inform the user that they 
-are active.
-
-Thanks,
-
-	Ingo
+Regards,
+Sjur
