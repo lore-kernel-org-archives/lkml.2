@@ -1,727 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab2IVFXt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 01:23:49 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54929 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab2IVFXs (ORCPT
+	id S1753487Ab2IVFhJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 01:37:09 -0400
+Received: from wdmail01.wdc.com ([129.253.55.43]:26940 "EHLO wdmail01.wdc.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750884Ab2IVFhH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 01:23:48 -0400
+	Sat, 22 Sep 2012 01:37:07 -0400
+X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Sep 2012 01:37:07 EDT
+X-IronPort-AV: E=Sophos;i="4.80,465,1344236400"; 
+   d="scan'208";a="6630962"
+From: Daniel Taylor <Daniel.Taylor@wdc.com>
+To: "'anish singh'" <anish198519851985@gmail.com>,
+        Deepawali Verma <dverma249@gmail.com>
+CC: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Work queue questions
+Thread-Topic: Work queue questions
+Thread-Index: AQHNmB+2EvxSNhADc0u6rFkSYElUlpeViBoAgAALT4CAAAFfgIAADi+AgAAAXgCAAAI0gIAAk/2A//+ZcKA=
+Date: Sat, 22 Sep 2012 05:27:38 +0000
+Message-ID: <5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
+References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
+	<20120921174952.GF7264@google.com>
+	<CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
+	<20120921183515.GI7264@google.com>
+	<CAHCeSFpa28d-7ruMKSw6z2EYKYN-5udVouUJOi4cnj4dPad-TA@mail.gmail.com>
+	<20120921192720.GJ7264@google.com>
+	<CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
+ <CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
+In-Reply-To: <CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.4.44.9]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20120921234309.GB26715@lizard>
-References: <1348220977-17556-1-git-send-email-cw00.choi@samsung.com>
-	<20120921234309.GB26715@lizard>
-Date: Sat, 22 Sep 2012 14:23:46 +0900
-X-Google-Sender-Auth: 6zcnrP-CepZmguPYUKPuoNPQJ2g
-Message-ID: <CAH9JG2V7-c_r1aASoxv6ZHKvifW0y3axmo1yJAjLN_SavPO7yQ@mail.gmail.com>
-Subject: Re: [PATCH v2] charger-manager: Add support sysfs entry for charger
-From: Kyungmin Park <kyungmin.park@samsung.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, jenny.tc@intel.com,
-        ramakrishna.pallala@intel.com, myungjoo.ham@samsung.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/22/12, Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
-> On Fri, Sep 21, 2012 at 06:49:37PM +0900, Chanwoo Choi wrote:
->> This patch add support sysfs entry for each charger(regulator).
->> Charger-manager use one or more chargers for charging battery but
->> some charger isn't necessary on specific scenario. So, if some charger
->> isn't needed, can disable specific charger through 'externally_control'
->> entry while system is on state and confirm the information(name, state)
->> of charger.
-> [...]
->> the list of added sysfs entry
->> - /sys/class/power_supply/battery/chargers/charger.[index]/name
->> : show name of charger(regulator)
->> - /sys/class/power_supply/battery/chargers/charger.[index]/state
->> : show either enabled or disabled state of charger
->> -
->> /sys/class/power_supply/battery/chargers/charger.[index]/externally_control
->>
->> If 'externally_control' of specific charger is 1, Charger-manager cannot
->> enable
->> regulator for charging when charger cable is attached and charger must be
->> maintained with disabled state. If 'externally_control' is zero,
->> Charger-manager
->> usually can control to enable/disable regulator.
->>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->
-> Thanks for your work, folks!
->
-> There are some serious issues wrt. the coding standards, though.
->
-> (I must confess that because of the issues I didn't look much into the
-> logic itself, I hope it works.)
->
->>  drivers/power/charger-manager.c       |  174
->> ++++++++++++++++++++++++++++++++-
->>  include/linux/power/charger-manager.h |   19 ++++
->>  2 files changed, 192 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/power/charger-manager.c
->> b/drivers/power/charger-manager.c
->> index e92ec55..a1ab825 100644
->> --- a/drivers/power/charger-manager.c
->> +++ b/drivers/power/charger-manager.c
->> @@ -22,6 +22,7 @@
->>  #include <linux/platform_device.h>
->>  #include <linux/power/charger-manager.h>
->>  #include <linux/regulator/consumer.h>
->> +#include <linux/sysfs.h>
->>
->>  static const char * const default_event_names[] = {
->>  	[CM_EVENT_UNKNOWN] = "Unknown",
->> @@ -332,6 +333,9 @@ static int try_charger_enable(struct charger_manager
->> *cm, bool enable)
->>  		cm->charging_end_time = 0;
->>
->>  		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
->> +			if (desc->charger_regulators[i].externally_control)
->> +				continue;
->> +
->>  			err = regulator_enable(desc->charger_regulators[i].consumer);
->>  			if (err < 0) {
->>  				dev_warn(cm->dev,
->> @@ -348,6 +352,9 @@ static int try_charger_enable(struct charger_manager
->> *cm, bool enable)
->>  		cm->charging_end_time = ktime_to_ms(ktime_get());
->>
->>  		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
->> +			if (desc->charger_regulators[i].externally_control)
->> +				continue;
->> +
->>  			err = regulator_disable(desc->charger_regulators[i].consumer);
->>  			if (err < 0) {
->>  				dev_warn(cm->dev,
->> @@ -1217,12 +1224,101 @@ static int charger_extcon_init(struct
->> charger_manager *cm,
->>  	return ret;
->>  }
->>
->> +/* help function of sysfs node to control charger(regulator) */
->> +static ssize_t charger_name_show(struct device *dev,
->> +				struct device_attribute *attr, char *buf)
->> +{
->> +	struct charger_regulator *charger
->> +		= container_of(attr, struct charger_regulator, attr_name);
->
-> Here must be an empty line.
->
->> +	return sprintf(buf, "%s\n", charger->regulator_name);
->> +}
->> +
->> +static ssize_t charger_state_show(struct device *dev,
->> +				struct device_attribute *attr, char *buf)
->> +{
->> +	struct charger_regulator *charger
->> +		= container_of(attr, struct charger_regulator, attr_state);
->> +	int state = 1;
->
-> = 1 is not needed. Instead, you could rewrite it as
->
-> int state = 0;
->
-> if (!charger->externally_control)
-> 	state = regulator_is_enabled(charger->consumer);
->
->> +	if (charger->externally_control)
->> +		state = 0;
->> +	else
->> +		state = regulator_is_enabled(charger->consumer);
->> +
->> +	return sprintf(buf, "%s\n", state ? "enabled" : "disabled");
->> +}
->> +
->> +static ssize_t charger_externally_control_show(struct device *dev,
->> +				struct device_attribute *attr, char *buf)
->> +{
->> +	struct charger_regulator *charger = container_of(attr,
->> +			struct charger_regulator, attr_externally_control);
->
-> Empty line is required.
->
->> +	return sprintf(buf, "%d\n", charger->externally_control);
->> +}
->> +
->> +static ssize_t charger_externally_control_store(struct device *dev,
->> +				struct device_attribute *attr, const char *buf,
->> +				size_t count)
->> +{
->> +	struct charger_regulator *charger
->> +		= container_of(attr, struct charger_regulator,
->> +					attr_externally_control);
->> +	struct charger_manager *cm = charger->cm;
->> +	struct charger_desc *desc = cm->desc;
->> +	int i, ret;
->
-> One variable declaration per line.
->
->> +	int externally_control;
->> +
->> +	ret = sscanf(buf, "%d", &externally_control);
->> +	if (ret == 0) {
->> +		ret = -EINVAL;
->> +		return ret;
->> +	}
->> +
->> +	if (externally_control) {
->
-> By writing
->
-> if (!externally_control) {
-> 	charger->externally_control = externally_control;
-> 	return count;
-> }
->
-> You could greatly reduce indentation level (and readability).
->
->> +		int chargers_externally_control = 1;
->> +
->> +		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
->> +			if ((&desc->charger_regulators[i] != charger)
->
-> Parethesis are not needed for the != condition.
->
->> +			&& !desc->charger_regulators[i].externally_control) {
->
-> Wrong indentation for 'if' continuation line, and && should have
-> been on the previous line.
->
->> +				/*
->> +				 * At least, one charger is controlled by
->> +				 * charger-manager
->> +				 */
->> +				chargers_externally_control = 0;
->> +				break;
->> +			}
->> +		}
->> +
->> +		if (!chargers_externally_control) {
->> +			if (cm->charger_enabled) {
->> +				try_charger_enable(charger->cm, false);
->> +				charger->externally_control
->> +					= externally_control;
->> +				try_charger_enable(charger->cm, true);
->> +			} else
->> +				charger->externally_control
->> +					= externally_control;
->
-> Since you use multiline 'if', else must have opening braced as
-> well, i.e.
->
-> } else {
-> 	....
-> }
->
->> +
->> +		} else {
->> +			dev_warn(cm->dev,
->> +				"\'%s\' regulator should be controlled "
->
-> \ is not needed.
->
->> +				"in charger-manager because charger-manager "
->> +				"must need at least one charger for charging\n",
->> +				charger->regulator_name);
->> +		}
->> +	} else
->> +		charger->externally_control = externally_control;
->> +
->> +	return count;
->> +}
->> +
->>  static int charger_manager_probe(struct platform_device *pdev)
->>  {
->>  	struct charger_desc *desc = dev_get_platdata(&pdev->dev);
->>  	struct charger_manager *cm;
->>  	int ret = 0, i = 0;
->>  	int j = 0;
->> +	int chargers_externally_control = 1;
->>  	union power_supply_propval val;
->>
->>  	if (g_desc && !rtc_dev && g_desc->rtc_name) {
->> @@ -1412,6 +1508,8 @@ static int charger_manager_probe(struct
->> platform_device *pdev)
->>  	for (i = 0 ; i < desc->num_charger_regulators ; i++) {
->>  		struct charger_regulator *charger
->>  					= &desc->charger_regulators[i];
->> +		char buf[11];
->> +		char *str;
->>
->>  		charger->consumer = regulator_get(&pdev->dev,
->>  					charger->regulator_name);
->> @@ -1421,8 +1519,9 @@ static int charger_manager_probe(struct
->> platform_device *pdev)
->>  			ret = -EINVAL;
->>  			goto err_chg_get;
->>  		}
->> +		charger->cm = cm;
->>
->> -		for (j = 0 ; j < charger->num_cables ; j++) {
->> +		for (j = 0; j < charger->num_cables; j++) {
->
-> While this exact change is technically correct, it does not belong
-> to this patch.
->
->>  			struct charger_cable *cable = &charger->cables[j];
->>
->>  			ret = charger_extcon_init(cm, cable);
->> @@ -1434,6 +1533,71 @@ static int charger_manager_probe(struct
->> platform_device *pdev)
->>  			cable->charger = charger;
->>  			cable->cm = cm;
->>  		}
->> +
->> +		/* Create sysfs entry to control charger(regulator) */
->> +		snprintf(buf, 10, "charger.%d", i);
->> +		str = kzalloc(sizeof(char) * (strlen(buf) + 1), GFP_KERNEL);
->> +		if (!str) {
->> +			for (i--; i >= 0; i--) {
->> +				charger = &desc->charger_regulators[i];
->> +				kfree(charger->attr_g.name);
->> +			}
->> +			ret = -ENOMEM;
->> +
->> +			goto err_extcon;
->> +		}
->> +		strcpy(str, buf);
->> +
->> +		charger->attrs[0] = &charger->attr_name.attr;
->> +		charger->attrs[1] = &charger->attr_state.attr;
->> +		charger->attrs[2] = &charger->attr_externally_control.attr;
->> +		charger->attrs[3] = NULL;
->> +		charger->attr_g.name = str;
->> +		charger->attr_g.attrs = charger->attrs;
->> +
->> +		sysfs_attr_init(&charger->attr_name.attr);
->> +		charger->attr_name.attr.name = "name";
->> +		charger->attr_name.attr.mode = 0444;
->> +		charger->attr_name.show = charger_name_show;
->> +
->> +		sysfs_attr_init(&charger->attr_state.attr);
->> +		charger->attr_state.attr.name = "state";
->> +		charger->attr_state.attr.mode = 0444;
->> +		charger->attr_state.show = charger_state_show;
->> +
->> +		sysfs_attr_init(&charger->attr_externally_control.attr);
->> +		charger->attr_externally_control.attr.name
->> +				= "externally_control";
->> +		charger->attr_externally_control.attr.mode = 0644;
->> +		charger->attr_externally_control.show
->> +				= charger_externally_control_show;
->> +		charger->attr_externally_control.store
->> +				= charger_externally_control_store;
->> +
->> +		if (!desc->charger_regulators[i].externally_control
->> +				|| !chargers_externally_control) {
->
-> wrong || placement (should be on the previous line)
->
->> +			chargers_externally_control = 0;
->> +		}
->> +		dev_info(&pdev->dev, "\'%s\' regulator's externally_control"
->
-> \ is not needed.
->
->> +				"is %d\n", charger->regulator_name,
->> +				charger->externally_control);
->> +
->> +		ret = sysfs_create_group(&cm->charger_psy.dev->kobj,
->> +				&charger->attr_g);
->> +		if (ret < 0) {
->> +			dev_info(&pdev->dev, "Cannot create sysfs entry"
->> +					"of %s regulator\n",
->> +					charger->regulator_name);
->> +		}
->> +	}
->> +
->> +	if (chargers_externally_control) {
->> +		dev_err(&pdev->dev, "Cannot register regulator because "
->> +				"charger-manager must need at least "
->> +				"one charger for charging battery\n");
->> +
->> +		ret = -EINVAL;
->> +		goto err_chg_enable;
->>  	}
->>
->>  	ret = try_charger_enable(cm, true);
->> @@ -1459,6 +1623,14 @@ static int charger_manager_probe(struct
->> platform_device *pdev)
->>  	return 0;
->>
->>  err_chg_enable:
->> +	for (i = 0 ; i < desc->num_charger_regulators ; i++) {
->
-> No spaces before ";".
->
->> +		struct charger_regulator *charger
->> +					= &desc->charger_regulators[i];
->
-> Empty line here.
->
->> +		struct charger_regulator *charger
->> +					= &desc->charger_regulators[i];
->> +		charger = &desc->charger_regulators[i];
->
-> One of the assignments is not needed.
->
-> So pretty much every line of this patch breaks coding style rules. I fixed
-> it all myself and applied the patch (since it's pretty late, and I don't
-> want you to miss the merge window. But double check the final result, it
-> is inlined down below)
->
-> Also, please carefully (re)read Documentation/CodingStyle, and fully
-> adhere to these standards for any further patch submissions.
->
-> Thanks,
-> Anton.
->
->
-> - - - -
-> From: Chanwoo Choi <cw00.choi@samsung.com>
-> Subject: charger-manager: Add support sysfs entry for charger
->
-> This patch add support sysfs entry for each charger(regulator).
-> Charger-manager use one or more chargers for charging battery but some
-> charger isn't necessary on specific scenario. So, if some charger isn't
-> needed, can disable specific charger through 'externally_control' entry
-> while system is on state and confirm the information(name, state) of
-> charger.
->
-> The list of added sysfs entry
-> - /sys/class/power_supply/battery/chargers/charger.[index]/name
->   show name of charger(regulator)
-> - /sys/class/power_supply/battery/chargers/charger.[index]/state
->   show either enabled or disabled state of charger
-> -
-> /sys/class/power_supply/battery/chargers/charger.[index]/externally_control
->
-> If 'externally_control' of specific charger is 1, Charger-manager cannot
-> enable regulator for charging when charger cable is attached and charger
-> must be maintained with disabled state. If 'externally_control' is zero,
-> Charger-manager usually can control to enable/disable regulator.
->
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Thanks Antron.
-> ---
->  drivers/power/charger-manager.c       | 172
-> ++++++++++++++++++++++++++++++++++
->  include/linux/power/charger-manager.h |  19 ++++
->  2 files changed, 191 insertions(+)
->
-> diff --git a/drivers/power/charger-manager.c
-> b/drivers/power/charger-manager.c
-> index e92ec55..92dfa5c 100644
-> --- a/drivers/power/charger-manager.c
-> +++ b/drivers/power/charger-manager.c
-> @@ -22,6 +22,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/power/charger-manager.h>
->  #include <linux/regulator/consumer.h>
-> +#include <linux/sysfs.h>
->
->  static const char * const default_event_names[] = {
->  	[CM_EVENT_UNKNOWN] = "Unknown",
-> @@ -332,6 +333,9 @@ static int try_charger_enable(struct charger_manager
-> *cm, bool enable)
->  		cm->charging_end_time = 0;
->
->  		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
-> +			if (desc->charger_regulators[i].externally_control)
-> +				continue;
-> +
->  			err = regulator_enable(desc->charger_regulators[i].consumer);
->  			if (err < 0) {
->  				dev_warn(cm->dev,
-> @@ -348,6 +352,9 @@ static int try_charger_enable(struct charger_manager
-> *cm, bool enable)
->  		cm->charging_end_time = ktime_to_ms(ktime_get());
->
->  		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
-> +			if (desc->charger_regulators[i].externally_control)
-> +				continue;
-> +
->  			err = regulator_disable(desc->charger_regulators[i].consumer);
->  			if (err < 0) {
->  				dev_warn(cm->dev,
-> @@ -1217,12 +1224,101 @@ static int charger_extcon_init(struct
-> charger_manager *cm,
->  	return ret;
->  }
->
-> +/* help function of sysfs node to control charger(regulator) */
-> +static ssize_t charger_name_show(struct device *dev,
-> +				struct device_attribute *attr, char *buf)
-> +{
-> +	struct charger_regulator *charger
-> +		= container_of(attr, struct charger_regulator, attr_name);
-> +
-> +	return sprintf(buf, "%s\n", charger->regulator_name);
-> +}
-> +
-> +static ssize_t charger_state_show(struct device *dev,
-> +				struct device_attribute *attr, char *buf)
-> +{
-> +	struct charger_regulator *charger
-> +		= container_of(attr, struct charger_regulator, attr_state);
-> +	int state = 0;
-> +
-> +	if (!charger->externally_control)
-> +		state = regulator_is_enabled(charger->consumer);
-> +
-> +	return sprintf(buf, "%s\n", state ? "enabled" : "disabled");
-> +}
-> +
-> +static ssize_t charger_externally_control_show(struct device *dev,
-> +				struct device_attribute *attr, char *buf)
-> +{
-> +	struct charger_regulator *charger = container_of(attr,
-> +			struct charger_regulator, attr_externally_control);
-> +
-> +	return sprintf(buf, "%d\n", charger->externally_control);
-> +}
-> +
-> +static ssize_t charger_externally_control_store(struct device *dev,
-> +				struct device_attribute *attr, const char *buf,
-> +				size_t count)
-> +{
-> +	struct charger_regulator *charger
-> +		= container_of(attr, struct charger_regulator,
-> +					attr_externally_control);
-> +	struct charger_manager *cm = charger->cm;
-> +	struct charger_desc *desc = cm->desc;
-> +	int i;
-> +	int ret;
-> +	int externally_control;
-> +	int chargers_externally_control = 1;
-> +
-> +	ret = sscanf(buf, "%d", &externally_control);
-> +	if (ret == 0) {
-> +		ret = -EINVAL;
-> +		return ret;
-> +	}
-> +
-> +	if (!externally_control) {
-> +		charger->externally_control = 0;
-> +		return count;
-> +	}
-> +
-> +	for (i = 0; i < desc->num_charger_regulators; i++) {
-> +		if (&desc->charger_regulators[i] != charger &&
-> +			      !desc->charger_regulators[i].externally_control) {
-> +			/*
-> +			 * At least, one charger is controlled by
-> +			 * charger-manager
-> +			 */
-> +			chargers_externally_control = 0;
-> +			break;
-> +		}
-> +	}
-> +
-> +	if (!chargers_externally_control) {
-> +		if (cm->charger_enabled) {
-> +			try_charger_enable(charger->cm, false);
-> +			charger->externally_control = externally_control;
-> +			try_charger_enable(charger->cm, true);
-> +		} else {
-> +			charger->externally_control = externally_control;
-> +		}
-> +	} else {
-> +		dev_warn(cm->dev,
-> +			"'%s' regulator should be controlled "
-> +			"in charger-manager because charger-manager "
-> +			"must need at least one charger for charging\n",
-> +			charger->regulator_name);
-> +	}
-> +
-> +	return count;
-> +}
-> +
->  static int charger_manager_probe(struct platform_device *pdev)
->  {
->  	struct charger_desc *desc = dev_get_platdata(&pdev->dev);
->  	struct charger_manager *cm;
->  	int ret = 0, i = 0;
->  	int j = 0;
-> +	int chargers_externally_control = 1;
->  	union power_supply_propval val;
->
->  	if (g_desc && !rtc_dev && g_desc->rtc_name) {
-> @@ -1412,6 +1508,8 @@ static int charger_manager_probe(struct
-> platform_device *pdev)
->  	for (i = 0 ; i < desc->num_charger_regulators ; i++) {
->  		struct charger_regulator *charger
->  					= &desc->charger_regulators[i];
-> +		char buf[11];
-> +		char *str;
->
->  		charger->consumer = regulator_get(&pdev->dev,
->  					charger->regulator_name);
-> @@ -1421,6 +1519,7 @@ static int charger_manager_probe(struct
-> platform_device *pdev)
->  			ret = -EINVAL;
->  			goto err_chg_get;
->  		}
-> +		charger->cm = cm;
->
->  		for (j = 0 ; j < charger->num_cables ; j++) {
->  			struct charger_cable *cable = &charger->cables[j];
-> @@ -1434,6 +1533,71 @@ static int charger_manager_probe(struct
-> platform_device *pdev)
->  			cable->charger = charger;
->  			cable->cm = cm;
->  		}
-> +
-> +		/* Create sysfs entry to control charger(regulator) */
-> +		snprintf(buf, 10, "charger.%d", i);
-> +		str = kzalloc(sizeof(char) * (strlen(buf) + 1), GFP_KERNEL);
-> +		if (!str) {
-> +			for (i--; i >= 0; i--) {
-> +				charger = &desc->charger_regulators[i];
-> +				kfree(charger->attr_g.name);
-> +			}
-> +			ret = -ENOMEM;
-> +
-> +			goto err_extcon;
-> +		}
-> +		strcpy(str, buf);
-> +
-> +		charger->attrs[0] = &charger->attr_name.attr;
-> +		charger->attrs[1] = &charger->attr_state.attr;
-> +		charger->attrs[2] = &charger->attr_externally_control.attr;
-> +		charger->attrs[3] = NULL;
-> +		charger->attr_g.name = str;
-> +		charger->attr_g.attrs = charger->attrs;
-> +
-> +		sysfs_attr_init(&charger->attr_name.attr);
-> +		charger->attr_name.attr.name = "name";
-> +		charger->attr_name.attr.mode = 0444;
-> +		charger->attr_name.show = charger_name_show;
-> +
-> +		sysfs_attr_init(&charger->attr_state.attr);
-> +		charger->attr_state.attr.name = "state";
-> +		charger->attr_state.attr.mode = 0444;
-> +		charger->attr_state.show = charger_state_show;
-> +
-> +		sysfs_attr_init(&charger->attr_externally_control.attr);
-> +		charger->attr_externally_control.attr.name
-> +				= "externally_control";
-> +		charger->attr_externally_control.attr.mode = 0644;
-> +		charger->attr_externally_control.show
-> +				= charger_externally_control_show;
-> +		charger->attr_externally_control.store
-> +				= charger_externally_control_store;
-> +
-> +		if (!desc->charger_regulators[i].externally_control ||
-> +				!chargers_externally_control) {
-> +			chargers_externally_control = 0;
-> +		}
-> +		dev_info(&pdev->dev, "'%s' regulator's externally_control"
-> +				"is %d\n", charger->regulator_name,
-> +				charger->externally_control);
-> +
-> +		ret = sysfs_create_group(&cm->charger_psy.dev->kobj,
-> +				&charger->attr_g);
-> +		if (ret < 0) {
-> +			dev_info(&pdev->dev, "Cannot create sysfs entry"
-> +					"of %s regulator\n",
-> +					charger->regulator_name);
-> +		}
-> +	}
-> +
-> +	if (chargers_externally_control) {
-> +		dev_err(&pdev->dev, "Cannot register regulator because "
-> +				"charger-manager must need at least "
-> +				"one charger for charging battery\n");
-> +
-> +		ret = -EINVAL;
-> +		goto err_chg_enable;
->  	}
->
->  	ret = try_charger_enable(cm, true);
-> @@ -1459,6 +1623,14 @@ static int charger_manager_probe(struct
-> platform_device *pdev)
->  	return 0;
->
->  err_chg_enable:
-> +	for (i = 0; i < desc->num_charger_regulators; i++) {
-> +		struct charger_regulator *charger;
-> +
-> +		charger = &desc->charger_regulators[i];
-> +		sysfs_remove_group(&cm->charger_psy.dev->kobj,
-> +				&charger->attr_g);
-> +		kfree(charger->attr_g.name);
-> +	}
->  err_extcon:
->  	for (i = 0 ; i < desc->num_charger_regulators ; i++) {
->  		struct charger_regulator *charger
-> diff --git a/include/linux/power/charger-manager.h
-> b/include/linux/power/charger-manager.h
-> index a7b388e..0e86840 100644
-> --- a/include/linux/power/charger-manager.h
-> +++ b/include/linux/power/charger-manager.h
-> @@ -109,24 +109,43 @@ struct charger_cable {
->   * struct charger_regulator
->   * @regulator_name: the name of regulator for using charger.
->   * @consumer: the regulator consumer for the charger.
-> + * @externally_control:
-> + *	Set if the charger-manager cannot control charger,
-> + *	the charger will be maintained with disabled state.
->   * @cables:
->   *	the array of charger cables to enable/disable charger
->   *	and set current limit according to constratint data of
->   *	struct charger_cable if only charger cable included
->   *	in the array of charger cables is attached/detached.
->   * @num_cables: the number of charger cables.
-> + * @attr_g: Attribute group for the charger(regulator)
-> + * @attr_name: "name" sysfs entry
-> + * @attr_state: "state" sysfs entry
-> + * @attr_externally_control: "externally_control" sysfs entry
-> + * @attrs: Arrays pointing to attr_name/state/externally_control for
-> attr_g
->   */
->  struct charger_regulator {
->  	/* The name of regulator for charging */
->  	const char *regulator_name;
->  	struct regulator *consumer;
->
-> +	/* charger never on when system is on */
-> +	int externally_control;
-> +
->  	/*
->  	 * Store constraint information related to current limit,
->  	 * each cable have different condition for charging.
->  	 */
->  	struct charger_cable *cables;
->  	int num_cables;
-> +
-> +	struct attribute_group attr_g;
-> +	struct device_attribute attr_name;
-> +	struct device_attribute attr_state;
-> +	struct device_attribute attr_externally_control;
-> +	struct attribute *attrs[4];
-> +
-> +	struct charger_manager *cm;
->  };
->
->  /**
+ 
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org 
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of anish singh
+> Sent: Friday, September 21, 2012 9:25 PM
+> To: Deepawali Verma
+> Cc: Tejun Heo; linux-kernel@vger.kernel.org
+> Subject: Re: Work queue questions
+> 
+> On Sat, Sep 22, 2012 at 1:05 AM, Deepawali Verma 
+> <dverma249@gmail.com> wrote:
+> > Hi Tajun,
+> >
+> > These three tasks are writing the three chunks of data in 
+> parallel. I
+> > am not getting improvement here otherwise what is difference between
+> > writing these chunks one by one in single thread instead of 
+> trying to
+> > write the data by scheduling the work on three different workqueues
+> > means 3 worker threads?
+> You should have carefully read "If none of them blocks, there
+> isn't much point in throwing more threads at them.  What are those
+> thread doing?" what Tejun said.
+> 
+> I think what he means is that concurrency is the concept of 
+> keeping the
+> system busy.
+> If you see the below logs:
+> kworker/u:1-21    [000]   110.964895: task_event: 
+> MYTASKJOB2381 XStarted
+> kworker/u:1-21    [000]   110.964909: task_event: 
+> MYTASKJOB2381 Xstopped
+> Here your first worker thread blocked.
+> 
+> So the system will try to get other workqueue started which is:
+> kworker/u:1-21    [000]   110.965137: task_event: 
+> MYTASKJOB2382 XStarted
+> kworker/u:1-21    [000]   110.965154: task_event: 
+> MYTASKJOB2382 Xstopped
+> Here again your second worker thread blocked.
+> 
+> So on so forth.
+> Anyway how can you write chunks of data in parallel when 
+> already some worker
+> thread is writing i.e. the system is busy.
+> Analogy: Suppose you are ambidextrous and you are eating.Can 
+> you eat with
+> both of your hands at a time?So worker thread are like your 
+> hands and keeping
+> you fed all the time is the concept of concurrency.
+> 
+> I am not an expert on this but from Tejun's reply I could 
+> make out this.
+> Please correct me If I have wrongly understood the concept 
+> based on this mail
+
+I don't know how many cores are in the CPU Deepawali's using, but if I have four,
+for example, I could do something simplistic like copy pages A-G with one, pages
+H-O with another, and pages Q-Z with a third.  There are memory and cache bottlenecks
+(like the mouth, in your example), but all three copies could be running concurrently.
+
+Copying, of course, is a silly, trivial example, and I hope there's a better reason
+than that for the concurrency, but, if, for example, your needed to byte-swap, XOR,
+or checksum, as core functionality of an embedded system, and the processing units were
+available to do these things in parallel, then interleaving those operations with memory
+accesses could provide higher throughput.
+
+I think what he's asking is why there's no apparent concurrency, presuming that NONE
+of his threads has a real reason to block.  With examining his code, I cannot tell,
+but it looks like, from the messages, that the kernel did not attempt concurrency.
+Perhaps he needs to pass additional state to the scheduler?
+
+
+> chain.
+> >
+> > Regards,
+> > Deepa
+> >
+> > On Fri, Sep 21, 2012 at 8:27 PM, Tejun Heo <tj@kernel.org> wrote:
+> >> On Fri, Sep 21, 2012 at 08:26:01PM +0100, Deepawali Verma wrote:
+> >>>      kworker/u:1-21    [000]   110.964895: task_event: 
+> MYTASKJOB2381 XStarted
+> >>>      kworker/u:1-21    [000]   110.964909: task_event: 
+> MYTASKJOB2381 Xstopped
+> >>>      kworker/u:1-21    [000]   110.965137: task_event: 
+> MYTASKJOB2382 XStarted
+> >>>      kworker/u:1-21    [000]   110.965154: task_event: 
+> MYTASKJOB2382 Xstopped
+> >>>      kworker/u:5-3724  [000]   110.965311: task_event: 
+> MYTASKJOB2383 XStarted
+> >>>      kworker/u:5-3724  [000]   110.965325: task_event: 
+> MYTASKJOB2383 Xstopped
+> >>>
+> >>> I have this one big task to whom I divided into small sub 
+> tasks. These
+> >>> are numbered 2381, 2382 and 2383, what was I expecting 
+> that task 2381,
+> >>> 2382, 2383 run in parallel. I have put start and stop 
+> markers here so
+> >>> that I can see how this concurrency managed work queue is 
+> distributing
+> >>> the load.
+> >>>
+> >>> I found that task no 2381 is started first and exited 
+> before starting
+> >>> task 2382 and so on. What I expected that it should start 
+> the three
+> >>> sub tasks in parallel, not one by one.
+> >>>
+> >>> Where is concurrency here?
+> >>
+> >> If none of them blocks, there isn't much point in throwing more
+> >> threads at them.  What are those thread doing?
+> >>
+> >> Thanks.
+> >>
+> >> --
+> >> tejun
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 > --
-> 1.7.11.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
->
+> 
