@@ -1,48 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab2IVQVl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 12:21:41 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:22779 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752176Ab2IVQVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 12:21:40 -0400
-Message-ID: <505DE592.8060103@c-s.fr>
-Date: Sat, 22 Sep 2012 18:21:38 +0200
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Lutz Jaenicke <ljaenicke@innominate.com>
-CC: David S Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] lxt PHY: Support for the buggy LXT973 rev A2
-References: <201209101545.q8AFjn7u021483@localhost.localdomain> <20120910181747.GA5960@lutz.bln.innominate.local>
-In-Reply-To: <20120910181747.GA5960@lutz.bln.innominate.local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752987Ab2IVQzJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 12:55:09 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:57402 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab2IVQzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Sep 2012 12:55:08 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: shawn.guo@linaro.org
+Cc: rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        mturquette@linaro.org, Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] clk: mxs: Use a better name for the USB PHY clock
+Date: Sat, 22 Sep 2012 13:54:55 -0300
+Message-Id: <1348332895-26966-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Le 10/09/2012 20:17, Lutz Jaenicke a écrit :
-> On Mon, Sep 10, 2012 at 05:45:49PM +0200, Christophe Leroy wrote:
->> This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding
->> precautions linked to ERRATA Item 4:
->>
->> Item 4: MDIO Interface and Repeated Polling
->> Problem: Repeated polling of odd-numbered registers via the MDIO interface
->> 	randomly returns the contents of the previous even register.
->> Implication: Managed applications may not obtain the correct register contents
->> 	when a particular register is monitored for device status.
->> Workaround: None.
->> Status: This erratum has been previously fixed (in rev A3)
-> Hmm. Were did you get the hardware from? We have been using LXT973 in
-> our products and the A2 was replaced by A3 in 2003.
->
-> Best regards,
-> 	Lutz
-They are custom boards that my company manufactures. Most boards 
-manufactured before 2006 or 2007 have this buggy chip.
+Use a better name for the USB PHY clock.
 
-Regards
-Christophe
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ .../devicetree/bindings/clock/imx23-clock.txt      |    2 +-
+ .../devicetree/bindings/clock/imx28-clock.txt      |    4 ++--
+ drivers/clk/mxs/clk-imx23.c                        |    6 +++---
+ drivers/clk/mxs/clk-imx28.c                        |   10 +++++-----
+ 4 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/clock/imx23-clock.txt b/Documentation/devicetree/bindings/clock/imx23-clock.txt
+index a0b867e..baadbb1 100644
+--- a/Documentation/devicetree/bindings/clock/imx23-clock.txt
++++ b/Documentation/devicetree/bindings/clock/imx23-clock.txt
+@@ -52,7 +52,7 @@ clocks and IDs.
+ 	lcdif		38
+ 	etm		39
+ 	usb		40
+-	usb_pwr		41
++	usb_phy		41
+ 
+ Examples:
+ 
+diff --git a/Documentation/devicetree/bindings/clock/imx28-clock.txt b/Documentation/devicetree/bindings/clock/imx28-clock.txt
+index aa2af28..52a49a4 100644
+--- a/Documentation/devicetree/bindings/clock/imx28-clock.txt
++++ b/Documentation/devicetree/bindings/clock/imx28-clock.txt
+@@ -73,8 +73,8 @@ clocks and IDs.
+ 	can1		59
+ 	usb0		60
+ 	usb1		61
+-	usb0_pwr	62
+-	usb1_pwr	63
++	usb0_phy	62
++	usb1_phy	63
+ 	enet_out	64
+ 
+ Examples:
+diff --git a/drivers/clk/mxs/clk-imx23.c b/drivers/clk/mxs/clk-imx23.c
+index f00dffb..8dd476e 100644
+--- a/drivers/clk/mxs/clk-imx23.c
++++ b/drivers/clk/mxs/clk-imx23.c
+@@ -85,7 +85,7 @@ enum imx23_clk {
+ 	cpu_xtal, hbus, xbus, lcdif_div, ssp_div, gpmi_div, emi_pll,
+ 	emi_xtal, etm_div, saif_div, clk32k_div, rtc, adc, spdif_div,
+ 	clk32k, dri, pwm, filt, uart, ssp, gpmi, spdif, emi, saif,
+-	lcdif, etm, usb, usb_pwr,
++	lcdif, etm, usb, usb_phy,
+ 	clk_max
+ };
+ 
+@@ -143,8 +143,8 @@ int __init mx23_clocks_init(void)
+ 	clks[saif] = mxs_clk_gate("saif", "saif_div", SAIF, 31);
+ 	clks[lcdif] = mxs_clk_gate("lcdif", "lcdif_div", PIX, 31);
+ 	clks[etm] = mxs_clk_gate("etm", "etm_div", ETM, 31);
+-	clks[usb] = mxs_clk_gate("usb", "usb_pwr", DIGCTRL, 2);
+-	clks[usb_pwr] = clk_register_gate(NULL, "usb_pwr", "pll", 0, PLLCTRL0, 18, 0, &mxs_lock);
++	clks[usb] = mxs_clk_gate("usb", "usb_phy", DIGCTRL, 2);
++	clks[usb_phy] = clk_register_gate(NULL, "usb_phy", "pll", 0, PLLCTRL0, 18, 0, &mxs_lock);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(clks); i++)
+ 		if (IS_ERR(clks[i])) {
+diff --git a/drivers/clk/mxs/clk-imx28.c b/drivers/clk/mxs/clk-imx28.c
+index 42978f1b..db3af08 100644
+--- a/drivers/clk/mxs/clk-imx28.c
++++ b/drivers/clk/mxs/clk-imx28.c
+@@ -140,7 +140,7 @@ enum imx28_clk {
+ 	emi_xtal, lcdif_div, etm_div, ptp, saif0_div, saif1_div,
+ 	clk32k_div, rtc, lradc, spdif_div, clk32k, pwm, uart, ssp0,
+ 	ssp1, ssp2, ssp3, gpmi, spdif, emi, saif0, saif1, lcdif, etm,
+-	fec, can0, can1, usb0, usb1, usb0_pwr, usb1_pwr, enet_out,
++	fec, can0, can1, usb0, usb1, usb0_phy, usb1_phy, enet_out,
+ 	clk_max
+ };
+ 
+@@ -218,10 +218,10 @@ int __init mx28_clocks_init(void)
+ 	clks[fec] = mxs_clk_gate("fec", "hbus", ENET, 30);
+ 	clks[can0] = mxs_clk_gate("can0", "ref_xtal", FLEXCAN, 30);
+ 	clks[can1] = mxs_clk_gate("can1", "ref_xtal", FLEXCAN, 28);
+-	clks[usb0] = mxs_clk_gate("usb0", "usb0_pwr", DIGCTRL, 2);
+-	clks[usb1] = mxs_clk_gate("usb1", "usb1_pwr", DIGCTRL, 16);
+-	clks[usb0_pwr] = clk_register_gate(NULL, "usb0_pwr", "pll0", 0, PLL0CTRL0, 18, 0, &mxs_lock);
+-	clks[usb1_pwr] = clk_register_gate(NULL, "usb1_pwr", "pll1", 0, PLL1CTRL0, 18, 0, &mxs_lock);
++	clks[usb0] = mxs_clk_gate("usb0", "usb0_phy", DIGCTRL, 2);
++	clks[usb1] = mxs_clk_gate("usb1", "usb1_phy", DIGCTRL, 16);
++	clks[usb0_phy] = clk_register_gate(NULL, "usb0_phy", "pll0", 0, PLL0CTRL0, 18, 0, &mxs_lock);
++	clks[usb1_phy] = clk_register_gate(NULL, "usb1_phy", "pll1", 0, PLL1CTRL0, 18, 0, &mxs_lock);
+ 	clks[enet_out] = clk_register_gate(NULL, "enet_out", "pll2", 0, ENET, 18, 0, &mxs_lock);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(clks); i++)
+-- 
+1.7.9.5
+
