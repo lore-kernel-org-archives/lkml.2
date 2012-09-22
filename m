@@ -1,227 +1,727 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab2IVFIy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 01:08:54 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:48327 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab2IVFIw (ORCPT
+	id S1753308Ab2IVFXt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 01:23:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54929 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab2IVFXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 01:08:52 -0400
+	Sat, 22 Sep 2012 01:23:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <2048611.Sb6fiWUyvr@avalon>
-References: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com>
- <1347626804-5703-2-git-send-email-prabhakar.lad@ti.com> <2048611.Sb6fiWUyvr@avalon>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Sat, 22 Sep 2012 10:38:31 +0530
-Message-ID: <CA+V-a8uCa4YhMSPQTRRkg1Cn9TD-xR=u=gT7tzm0ciRKW9uowg@mail.gmail.com>
-Subject: Re: [PATCH 01/14] davinci: vpfe: add dm3xx IPIPEIF hardware support module
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>
+In-Reply-To: <20120921234309.GB26715@lizard>
+References: <1348220977-17556-1-git-send-email-cw00.choi@samsung.com>
+	<20120921234309.GB26715@lizard>
+Date: Sat, 22 Sep 2012 14:23:46 +0900
+X-Google-Sender-Auth: 6zcnrP-CepZmguPYUKPuoNPQJ2g
+Message-ID: <CAH9JG2V7-c_r1aASoxv6ZHKvifW0y3axmo1yJAjLN_SavPO7yQ@mail.gmail.com>
+Subject: Re: [PATCH v2] charger-manager: Add support sysfs entry for charger
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, jenny.tc@intel.com,
+        ramakrishna.pallala@intel.com, myungjoo.ham@samsung.com,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
-
-Thanks for the review.
-
-On Thu, Sep 20, 2012 at 3:31 AM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Prabhakar,
->
-> Thanks for the patch.
->
-> On Friday 14 September 2012 18:16:31 Prabhakar Lad wrote:
->> From: Manjunath Hadli <manjunath.hadli@ti.com>
+On 9/22/12, Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+> On Fri, Sep 21, 2012 at 06:49:37PM +0900, Chanwoo Choi wrote:
+>> This patch add support sysfs entry for each charger(regulator).
+>> Charger-manager use one or more chargers for charging battery but
+>> some charger isn't necessary on specific scenario. So, if some charger
+>> isn't needed, can disable specific charger through 'externally_control'
+>> entry while system is on state and confirm the information(name, state)
+>> of charger.
+> [...]
+>> the list of added sysfs entry
+>> - /sys/class/power_supply/battery/chargers/charger.[index]/name
+>> : show name of charger(regulator)
+>> - /sys/class/power_supply/battery/chargers/charger.[index]/state
+>> : show either enabled or disabled state of charger
+>> -
+>> /sys/class/power_supply/battery/chargers/charger.[index]/externally_control
 >>
->> add support for dm3xx IPIPEIF hardware setup. This is the
->> lowest software layer for the dm3x vpfe driver which directly
->> accesses hardware. Add support for features like default
->> pixel correction, dark frame substraction and hardware setup.
+>> If 'externally_control' of specific charger is 1, Charger-manager cannot
+>> enable
+>> regulator for charging when charger cable is attached and charger must be
+>> maintained with disabled state. If 'externally_control' is zero,
+>> Charger-manager
+>> usually can control to enable/disable regulator.
 >>
->> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 >> ---
->>  drivers/media/platform/davinci/dm3xx_ipipeif.c |  318 +++++++++++++++++++++
->>  drivers/media/platform/davinci/dm3xx_ipipeif.h |  262 +++++++++++++++++++
->>  include/linux/dm3xx_ipipeif.h                  |   62 +++++
 >
+> Thanks for your work, folks!
 >
->>  3 files changed, 642 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/media/platform/davinci/dm3xx_ipipeif.c
->>  create mode 100644 drivers/media/platform/davinci/dm3xx_ipipeif.h
->>  create mode 100644 include/linux/dm3xx_ipipeif.h
+> There are some serious issues wrt. the coding standards, though.
+>
+> (I must confess that because of the issues I didn't look much into the
+> logic itself, I hope it works.)
+>
+>>  drivers/power/charger-manager.c       |  174
+>> ++++++++++++++++++++++++++++++++-
+>>  include/linux/power/charger-manager.h |   19 ++++
+>>  2 files changed, 192 insertions(+), 1 deletions(-)
 >>
->> diff --git a/drivers/media/platform/davinci/dm3xx_ipipeif.c
->> b/drivers/media/platform/davinci/dm3xx_ipipeif.c new file mode 100644
->> index 0000000..7961a74
->> --- /dev/null
->> +++ b/drivers/media/platform/davinci/dm3xx_ipipeif.c
->
-> [snip]
->
->> +#include <linux/io.h>
->> +#include <linux/module.h>
->> +#include <linux/kernel.h>
->> +#include <linux/uaccess.h>
->> +#include <linux/v4l2-mediabus.h>
->> +#include <linux/platform_device.h>
->
-> Just a side note, I usually sort headers alphabetically, but feel free to use
-> whatever convention you like.
->
-Ok I'll sort to.
-
->> +#include "dm3xx_ipipeif.h"
+>> diff --git a/drivers/power/charger-manager.c
+>> b/drivers/power/charger-manager.c
+>> index e92ec55..a1ab825 100644
+>> --- a/drivers/power/charger-manager.c
+>> +++ b/drivers/power/charger-manager.c
+>> @@ -22,6 +22,7 @@
+>>  #include <linux/platform_device.h>
+>>  #include <linux/power/charger-manager.h>
+>>  #include <linux/regulator/consumer.h>
+>> +#include <linux/sysfs.h>
+>>
+>>  static const char * const default_event_names[] = {
+>>  	[CM_EVENT_UNKNOWN] = "Unknown",
+>> @@ -332,6 +333,9 @@ static int try_charger_enable(struct charger_manager
+>> *cm, bool enable)
+>>  		cm->charging_end_time = 0;
+>>
+>>  		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
+>> +			if (desc->charger_regulators[i].externally_control)
+>> +				continue;
 >> +
->> +static void *__iomem ipipeif_base_addr;
->
-> That's not good. You shouldn't have global constants like that. The value
-> should instead be stored in your device structure, that you will need to pass
-> around to all functions.
->
-Ok.
-
->> +static inline u32 regr_if(u32 offset)
+>>  			err = regulator_enable(desc->charger_regulators[i].consumer);
+>>  			if (err < 0) {
+>>  				dev_warn(cm->dev,
+>> @@ -348,6 +352,9 @@ static int try_charger_enable(struct charger_manager
+>> *cm, bool enable)
+>>  		cm->charging_end_time = ktime_to_ms(ktime_get());
+>>
+>>  		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
+>> +			if (desc->charger_regulators[i].externally_control)
+>> +				continue;
+>> +
+>>  			err = regulator_disable(desc->charger_regulators[i].consumer);
+>>  			if (err < 0) {
+>>  				dev_warn(cm->dev,
+>> @@ -1217,12 +1224,101 @@ static int charger_extcon_init(struct
+>> charger_manager *cm,
+>>  	return ret;
+>>  }
+>>
+>> +/* help function of sysfs node to control charger(regulator) */
+>> +static ssize_t charger_name_show(struct device *dev,
+>> +				struct device_attribute *attr, char *buf)
 >> +{
->> +     return readl(ipipeif_base_addr + offset);
+>> +	struct charger_regulator *charger
+>> +		= container_of(attr, struct charger_regulator, attr_name);
+>
+> Here must be an empty line.
+>
+>> +	return sprintf(buf, "%s\n", charger->regulator_name);
 >> +}
 >> +
->> +static inline void regw_if(u32 val, u32 offset)
+>> +static ssize_t charger_state_show(struct device *dev,
+>> +				struct device_attribute *attr, char *buf)
 >> +{
->> +     writel(val, ipipeif_base_addr + offset);
->> +}
+>> +	struct charger_regulator *charger
+>> +		= container_of(attr, struct charger_regulator, attr_state);
+>> +	int state = 1;
 >
-> Maybe ipipeif_read() and ipipeif_write() ?
+> = 1 is not needed. Instead, you could rewrite it as
 >
->> +void ipipeif_set_enable()
->> +{
->> +     regw_if(1, IPIPEIF_ENABLE);
->> +}
+> int state = 0;
 >
-> Please define constants in a header file for register values, masks and shifts
-> instead of hardcoding the raw numbers.
+> if (!charger->externally_control)
+> 	state = regulator_is_enabled(charger->consumer);
 >
-Ok.
-
-> [snip]
->
->> +static int __devinit dm3xx_ipipeif_probe(struct platform_device *pdev)
->> +{
->> +     static resource_size_t  res_len;
->> +     struct resource *res;
->> +     int status;
+>> +	if (charger->externally_control)
+>> +		state = 0;
+>> +	else
+>> +		state = regulator_is_enabled(charger->consumer);
 >> +
->> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +     if (!res)
->> +             return -ENOENT;
->> +
->> +     res_len = resource_size(res);
->> +
->> +     res = request_mem_region(res->start, res_len, res->name);
->> +     if (!res)
->> +             return -EBUSY;
->> +
->> +     ipipeif_base_addr = ioremap_nocache(res->start, res_len);
->> +     if (!ipipeif_base_addr) {
->> +             status = -EBUSY;
->> +             goto fail;
->> +     }
->> +     return 0;
->> +
->> +fail:
->> +     release_mem_region(res->start, res_len);
->> +
->> +     return status;
+>> +	return sprintf(buf, "%s\n", state ? "enabled" : "disabled");
 >> +}
 >> +
->> +static int dm3xx_ipipeif_remove(struct platform_device *pdev)
+>> +static ssize_t charger_externally_control_show(struct device *dev,
+>> +				struct device_attribute *attr, char *buf)
 >> +{
->> +     struct resource *res;
->> +
->> +     iounmap(ipipeif_base_addr);
->> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +     if (res)
->> +             release_mem_region(res->start, resource_size(res));
->> +     return 0;
+>> +	struct charger_regulator *charger = container_of(attr,
+>> +			struct charger_regulator, attr_externally_control);
+>
+> Empty line is required.
+>
+>> +	return sprintf(buf, "%d\n", charger->externally_control);
 >> +}
 >> +
->> +static struct platform_driver dm3xx_ipipeif_driver = {
->> +     .driver = {
->> +             .name   = "dm3xx_ipipeif",
->> +             .owner = THIS_MODULE,
->> +     },
->> +     .remove = __devexit_p(dm3xx_ipipeif_remove),
->> +     .probe = dm3xx_ipipeif_probe,
->> +};
->> +
->> +static int dm3xx_ipipeif_init(void)
+>> +static ssize_t charger_externally_control_store(struct device *dev,
+>> +				struct device_attribute *attr, const char *buf,
+>> +				size_t count)
 >> +{
->> +     return platform_driver_register(&dm3xx_ipipeif_driver);
+>> +	struct charger_regulator *charger
+>> +		= container_of(attr, struct charger_regulator,
+>> +					attr_externally_control);
+>> +	struct charger_manager *cm = charger->cm;
+>> +	struct charger_desc *desc = cm->desc;
+>> +	int i, ret;
+>
+> One variable declaration per line.
+>
+>> +	int externally_control;
+>> +
+>> +	ret = sscanf(buf, "%d", &externally_control);
+>> +	if (ret == 0) {
+>> +		ret = -EINVAL;
+>> +		return ret;
+>> +	}
+>> +
+>> +	if (externally_control) {
+>
+> By writing
+>
+> if (!externally_control) {
+> 	charger->externally_control = externally_control;
+> 	return count;
+> }
+>
+> You could greatly reduce indentation level (and readability).
+>
+>> +		int chargers_externally_control = 1;
+>> +
+>> +		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
+>> +			if ((&desc->charger_regulators[i] != charger)
+>
+> Parethesis are not needed for the != condition.
+>
+>> +			&& !desc->charger_regulators[i].externally_control) {
+>
+> Wrong indentation for 'if' continuation line, and && should have
+> been on the previous line.
+>
+>> +				/*
+>> +				 * At least, one charger is controlled by
+>> +				 * charger-manager
+>> +				 */
+>> +				chargers_externally_control = 0;
+>> +				break;
+>> +			}
+>> +		}
+>> +
+>> +		if (!chargers_externally_control) {
+>> +			if (cm->charger_enabled) {
+>> +				try_charger_enable(charger->cm, false);
+>> +				charger->externally_control
+>> +					= externally_control;
+>> +				try_charger_enable(charger->cm, true);
+>> +			} else
+>> +				charger->externally_control
+>> +					= externally_control;
+>
+> Since you use multiline 'if', else must have opening braced as
+> well, i.e.
+>
+> } else {
+> 	....
+> }
+>
+>> +
+>> +		} else {
+>> +			dev_warn(cm->dev,
+>> +				"\'%s\' regulator should be controlled "
+>
+> \ is not needed.
+>
+>> +				"in charger-manager because charger-manager "
+>> +				"must need at least one charger for charging\n",
+>> +				charger->regulator_name);
+>> +		}
+>> +	} else
+>> +		charger->externally_control = externally_control;
+>> +
+>> +	return count;
 >> +}
 >> +
->> +static void dm3xx_ipipeif_exit(void)
->> +{
->> +     platform_driver_unregister(&dm3xx_ipipeif_driver);
->> +}
+>>  static int charger_manager_probe(struct platform_device *pdev)
+>>  {
+>>  	struct charger_desc *desc = dev_get_platdata(&pdev->dev);
+>>  	struct charger_manager *cm;
+>>  	int ret = 0, i = 0;
+>>  	int j = 0;
+>> +	int chargers_externally_control = 1;
+>>  	union power_supply_propval val;
+>>
+>>  	if (g_desc && !rtc_dev && g_desc->rtc_name) {
+>> @@ -1412,6 +1508,8 @@ static int charger_manager_probe(struct
+>> platform_device *pdev)
+>>  	for (i = 0 ; i < desc->num_charger_regulators ; i++) {
+>>  		struct charger_regulator *charger
+>>  					= &desc->charger_regulators[i];
+>> +		char buf[11];
+>> +		char *str;
+>>
+>>  		charger->consumer = regulator_get(&pdev->dev,
+>>  					charger->regulator_name);
+>> @@ -1421,8 +1519,9 @@ static int charger_manager_probe(struct
+>> platform_device *pdev)
+>>  			ret = -EINVAL;
+>>  			goto err_chg_get;
+>>  		}
+>> +		charger->cm = cm;
+>>
+>> -		for (j = 0 ; j < charger->num_cables ; j++) {
+>> +		for (j = 0; j < charger->num_cables; j++) {
+>
+> While this exact change is technically correct, it does not belong
+> to this patch.
+>
+>>  			struct charger_cable *cable = &charger->cables[j];
+>>
+>>  			ret = charger_extcon_init(cm, cable);
+>> @@ -1434,6 +1533,71 @@ static int charger_manager_probe(struct
+>> platform_device *pdev)
+>>  			cable->charger = charger;
+>>  			cable->cm = cm;
+>>  		}
 >> +
->> +module_init(dm3xx_ipipeif_init);
->> +module_exit(dm3xx_ipipeif_exit);
+>> +		/* Create sysfs entry to control charger(regulator) */
+>> +		snprintf(buf, 10, "charger.%d", i);
+>> +		str = kzalloc(sizeof(char) * (strlen(buf) + 1), GFP_KERNEL);
+>> +		if (!str) {
+>> +			for (i--; i >= 0; i--) {
+>> +				charger = &desc->charger_regulators[i];
+>> +				kfree(charger->attr_g.name);
+>> +			}
+>> +			ret = -ENOMEM;
+>> +
+>> +			goto err_extcon;
+>> +		}
+>> +		strcpy(str, buf);
+>> +
+>> +		charger->attrs[0] = &charger->attr_name.attr;
+>> +		charger->attrs[1] = &charger->attr_state.attr;
+>> +		charger->attrs[2] = &charger->attr_externally_control.attr;
+>> +		charger->attrs[3] = NULL;
+>> +		charger->attr_g.name = str;
+>> +		charger->attr_g.attrs = charger->attrs;
+>> +
+>> +		sysfs_attr_init(&charger->attr_name.attr);
+>> +		charger->attr_name.attr.name = "name";
+>> +		charger->attr_name.attr.mode = 0444;
+>> +		charger->attr_name.show = charger_name_show;
+>> +
+>> +		sysfs_attr_init(&charger->attr_state.attr);
+>> +		charger->attr_state.attr.name = "state";
+>> +		charger->attr_state.attr.mode = 0444;
+>> +		charger->attr_state.show = charger_state_show;
+>> +
+>> +		sysfs_attr_init(&charger->attr_externally_control.attr);
+>> +		charger->attr_externally_control.attr.name
+>> +				= "externally_control";
+>> +		charger->attr_externally_control.attr.mode = 0644;
+>> +		charger->attr_externally_control.show
+>> +				= charger_externally_control_show;
+>> +		charger->attr_externally_control.store
+>> +				= charger_externally_control_store;
+>> +
+>> +		if (!desc->charger_regulators[i].externally_control
+>> +				|| !chargers_externally_control) {
 >
-> I'm not sure to like this. You're registering a module for a device that
-> essentially sits there without doing anything, except providing functions that
-> can be called by other modules.
+> wrong || placement (should be on the previous line)
 >
-> I somehow feel that the way the code is split amongst the different layers
-> isn't optimal. Could you briefly explain the rationale behind the current
-> architecture ?
+>> +			chargers_externally_control = 0;
+>> +		}
+>> +		dev_info(&pdev->dev, "\'%s\' regulator's externally_control"
 >
-> (BTW, please use the module_platform_driver() macro instead of
-> module_init/module_exit)
+> \ is not needed.
 >
-As discussed over the IRC, I am working on new design, hopefully
-you will be happy this time :)
-
-> [snip]
+>> +				"is %d\n", charger->regulator_name,
+>> +				charger->externally_control);
+>> +
+>> +		ret = sysfs_create_group(&cm->charger_psy.dev->kobj,
+>> +				&charger->attr_g);
+>> +		if (ret < 0) {
+>> +			dev_info(&pdev->dev, "Cannot create sysfs entry"
+>> +					"of %s regulator\n",
+>> +					charger->regulator_name);
+>> +		}
+>> +	}
+>> +
+>> +	if (chargers_externally_control) {
+>> +		dev_err(&pdev->dev, "Cannot register regulator because "
+>> +				"charger-manager must need at least "
+>> +				"one charger for charging battery\n");
+>> +
+>> +		ret = -EINVAL;
+>> +		goto err_chg_enable;
+>>  	}
+>>
+>>  	ret = try_charger_enable(cm, true);
+>> @@ -1459,6 +1623,14 @@ static int charger_manager_probe(struct
+>> platform_device *pdev)
+>>  	return 0;
+>>
+>>  err_chg_enable:
+>> +	for (i = 0 ; i < desc->num_charger_regulators ; i++) {
 >
->> diff --git a/include/linux/dm3xx_ipipeif.h b/include/linux/dm3xx_ipipeif.h
->> new file mode 100644
->> index 0000000..1c1a830
->> --- /dev/null
->> +++ b/include/linux/dm3xx_ipipeif.h
+> No spaces before ";".
 >
-> [snip]
+>> +		struct charger_regulator *charger
+>> +					= &desc->charger_regulators[i];
 >
->> +#include <media/davinci/vpfe_types.h>
->> +#include <media/davinci/vpfe.h>
+> Empty line here.
 >
-> This header file defines part of the userspace API, but includes media/
-> headers that are not exported to userspace.
+>> +		struct charger_regulator *charger
+>> +					= &desc->charger_regulators[i];
+>> +		charger = &desc->charger_regulators[i];
 >
-> Header files should be split between 3 directories:
+> One of the assignments is not needed.
 >
-> - Definitions required by platform data used to go to media/ but the new
-> include/linux/platform_data/ directory might be preferred nowadays. I have no
-> strong opinion on this, as other headers are already in media/ you can
-> probably keep using it for now.
+> So pretty much every line of this patch breaks coding style rules. I fixed
+> it all myself and applied the patch (since it's pretty late, and I don't
+> want you to miss the merge window. But double check the final result, it
+> is inlined down below)
 >
-> - Definitions requires by userspace should go to include/linux/
+> Also, please carefully (re)read Documentation/CodingStyle, and fully
+> adhere to these standards for any further patch submissions.
 >
-> - The rest should go to drivers/media/platform/davinci/.
+> Thanks,
+> Anton.
 >
-Ok, I'll follow the same convention.
-
-Thanks and Regards,
---Prabhakar Lad
-
+>
+> - - - -
+> From: Chanwoo Choi <cw00.choi@samsung.com>
+> Subject: charger-manager: Add support sysfs entry for charger
+>
+> This patch add support sysfs entry for each charger(regulator).
+> Charger-manager use one or more chargers for charging battery but some
+> charger isn't necessary on specific scenario. So, if some charger isn't
+> needed, can disable specific charger through 'externally_control' entry
+> while system is on state and confirm the information(name, state) of
+> charger.
+>
+> The list of added sysfs entry
+> - /sys/class/power_supply/battery/chargers/charger.[index]/name
+>   show name of charger(regulator)
+> - /sys/class/power_supply/battery/chargers/charger.[index]/state
+>   show either enabled or disabled state of charger
+> -
+> /sys/class/power_supply/battery/chargers/charger.[index]/externally_control
+>
+> If 'externally_control' of specific charger is 1, Charger-manager cannot
+> enable regulator for charging when charger cable is attached and charger
+> must be maintained with disabled state. If 'externally_control' is zero,
+> Charger-manager usually can control to enable/disable regulator.
+>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Thanks Antron.
+> ---
+>  drivers/power/charger-manager.c       | 172
+> ++++++++++++++++++++++++++++++++++
+>  include/linux/power/charger-manager.h |  19 ++++
+>  2 files changed, 191 insertions(+)
+>
+> diff --git a/drivers/power/charger-manager.c
+> b/drivers/power/charger-manager.c
+> index e92ec55..92dfa5c 100644
+> --- a/drivers/power/charger-manager.c
+> +++ b/drivers/power/charger-manager.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/power/charger-manager.h>
+>  #include <linux/regulator/consumer.h>
+> +#include <linux/sysfs.h>
+>
+>  static const char * const default_event_names[] = {
+>  	[CM_EVENT_UNKNOWN] = "Unknown",
+> @@ -332,6 +333,9 @@ static int try_charger_enable(struct charger_manager
+> *cm, bool enable)
+>  		cm->charging_end_time = 0;
+>
+>  		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
+> +			if (desc->charger_regulators[i].externally_control)
+> +				continue;
+> +
+>  			err = regulator_enable(desc->charger_regulators[i].consumer);
+>  			if (err < 0) {
+>  				dev_warn(cm->dev,
+> @@ -348,6 +352,9 @@ static int try_charger_enable(struct charger_manager
+> *cm, bool enable)
+>  		cm->charging_end_time = ktime_to_ms(ktime_get());
+>
+>  		for (i = 0 ; i < desc->num_charger_regulators ; i++) {
+> +			if (desc->charger_regulators[i].externally_control)
+> +				continue;
+> +
+>  			err = regulator_disable(desc->charger_regulators[i].consumer);
+>  			if (err < 0) {
+>  				dev_warn(cm->dev,
+> @@ -1217,12 +1224,101 @@ static int charger_extcon_init(struct
+> charger_manager *cm,
+>  	return ret;
+>  }
+>
+> +/* help function of sysfs node to control charger(regulator) */
+> +static ssize_t charger_name_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	struct charger_regulator *charger
+> +		= container_of(attr, struct charger_regulator, attr_name);
+> +
+> +	return sprintf(buf, "%s\n", charger->regulator_name);
+> +}
+> +
+> +static ssize_t charger_state_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	struct charger_regulator *charger
+> +		= container_of(attr, struct charger_regulator, attr_state);
+> +	int state = 0;
+> +
+> +	if (!charger->externally_control)
+> +		state = regulator_is_enabled(charger->consumer);
+> +
+> +	return sprintf(buf, "%s\n", state ? "enabled" : "disabled");
+> +}
+> +
+> +static ssize_t charger_externally_control_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	struct charger_regulator *charger = container_of(attr,
+> +			struct charger_regulator, attr_externally_control);
+> +
+> +	return sprintf(buf, "%d\n", charger->externally_control);
+> +}
+> +
+> +static ssize_t charger_externally_control_store(struct device *dev,
+> +				struct device_attribute *attr, const char *buf,
+> +				size_t count)
+> +{
+> +	struct charger_regulator *charger
+> +		= container_of(attr, struct charger_regulator,
+> +					attr_externally_control);
+> +	struct charger_manager *cm = charger->cm;
+> +	struct charger_desc *desc = cm->desc;
+> +	int i;
+> +	int ret;
+> +	int externally_control;
+> +	int chargers_externally_control = 1;
+> +
+> +	ret = sscanf(buf, "%d", &externally_control);
+> +	if (ret == 0) {
+> +		ret = -EINVAL;
+> +		return ret;
+> +	}
+> +
+> +	if (!externally_control) {
+> +		charger->externally_control = 0;
+> +		return count;
+> +	}
+> +
+> +	for (i = 0; i < desc->num_charger_regulators; i++) {
+> +		if (&desc->charger_regulators[i] != charger &&
+> +			      !desc->charger_regulators[i].externally_control) {
+> +			/*
+> +			 * At least, one charger is controlled by
+> +			 * charger-manager
+> +			 */
+> +			chargers_externally_control = 0;
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (!chargers_externally_control) {
+> +		if (cm->charger_enabled) {
+> +			try_charger_enable(charger->cm, false);
+> +			charger->externally_control = externally_control;
+> +			try_charger_enable(charger->cm, true);
+> +		} else {
+> +			charger->externally_control = externally_control;
+> +		}
+> +	} else {
+> +		dev_warn(cm->dev,
+> +			"'%s' regulator should be controlled "
+> +			"in charger-manager because charger-manager "
+> +			"must need at least one charger for charging\n",
+> +			charger->regulator_name);
+> +	}
+> +
+> +	return count;
+> +}
+> +
+>  static int charger_manager_probe(struct platform_device *pdev)
+>  {
+>  	struct charger_desc *desc = dev_get_platdata(&pdev->dev);
+>  	struct charger_manager *cm;
+>  	int ret = 0, i = 0;
+>  	int j = 0;
+> +	int chargers_externally_control = 1;
+>  	union power_supply_propval val;
+>
+>  	if (g_desc && !rtc_dev && g_desc->rtc_name) {
+> @@ -1412,6 +1508,8 @@ static int charger_manager_probe(struct
+> platform_device *pdev)
+>  	for (i = 0 ; i < desc->num_charger_regulators ; i++) {
+>  		struct charger_regulator *charger
+>  					= &desc->charger_regulators[i];
+> +		char buf[11];
+> +		char *str;
+>
+>  		charger->consumer = regulator_get(&pdev->dev,
+>  					charger->regulator_name);
+> @@ -1421,6 +1519,7 @@ static int charger_manager_probe(struct
+> platform_device *pdev)
+>  			ret = -EINVAL;
+>  			goto err_chg_get;
+>  		}
+> +		charger->cm = cm;
+>
+>  		for (j = 0 ; j < charger->num_cables ; j++) {
+>  			struct charger_cable *cable = &charger->cables[j];
+> @@ -1434,6 +1533,71 @@ static int charger_manager_probe(struct
+> platform_device *pdev)
+>  			cable->charger = charger;
+>  			cable->cm = cm;
+>  		}
+> +
+> +		/* Create sysfs entry to control charger(regulator) */
+> +		snprintf(buf, 10, "charger.%d", i);
+> +		str = kzalloc(sizeof(char) * (strlen(buf) + 1), GFP_KERNEL);
+> +		if (!str) {
+> +			for (i--; i >= 0; i--) {
+> +				charger = &desc->charger_regulators[i];
+> +				kfree(charger->attr_g.name);
+> +			}
+> +			ret = -ENOMEM;
+> +
+> +			goto err_extcon;
+> +		}
+> +		strcpy(str, buf);
+> +
+> +		charger->attrs[0] = &charger->attr_name.attr;
+> +		charger->attrs[1] = &charger->attr_state.attr;
+> +		charger->attrs[2] = &charger->attr_externally_control.attr;
+> +		charger->attrs[3] = NULL;
+> +		charger->attr_g.name = str;
+> +		charger->attr_g.attrs = charger->attrs;
+> +
+> +		sysfs_attr_init(&charger->attr_name.attr);
+> +		charger->attr_name.attr.name = "name";
+> +		charger->attr_name.attr.mode = 0444;
+> +		charger->attr_name.show = charger_name_show;
+> +
+> +		sysfs_attr_init(&charger->attr_state.attr);
+> +		charger->attr_state.attr.name = "state";
+> +		charger->attr_state.attr.mode = 0444;
+> +		charger->attr_state.show = charger_state_show;
+> +
+> +		sysfs_attr_init(&charger->attr_externally_control.attr);
+> +		charger->attr_externally_control.attr.name
+> +				= "externally_control";
+> +		charger->attr_externally_control.attr.mode = 0644;
+> +		charger->attr_externally_control.show
+> +				= charger_externally_control_show;
+> +		charger->attr_externally_control.store
+> +				= charger_externally_control_store;
+> +
+> +		if (!desc->charger_regulators[i].externally_control ||
+> +				!chargers_externally_control) {
+> +			chargers_externally_control = 0;
+> +		}
+> +		dev_info(&pdev->dev, "'%s' regulator's externally_control"
+> +				"is %d\n", charger->regulator_name,
+> +				charger->externally_control);
+> +
+> +		ret = sysfs_create_group(&cm->charger_psy.dev->kobj,
+> +				&charger->attr_g);
+> +		if (ret < 0) {
+> +			dev_info(&pdev->dev, "Cannot create sysfs entry"
+> +					"of %s regulator\n",
+> +					charger->regulator_name);
+> +		}
+> +	}
+> +
+> +	if (chargers_externally_control) {
+> +		dev_err(&pdev->dev, "Cannot register regulator because "
+> +				"charger-manager must need at least "
+> +				"one charger for charging battery\n");
+> +
+> +		ret = -EINVAL;
+> +		goto err_chg_enable;
+>  	}
+>
+>  	ret = try_charger_enable(cm, true);
+> @@ -1459,6 +1623,14 @@ static int charger_manager_probe(struct
+> platform_device *pdev)
+>  	return 0;
+>
+>  err_chg_enable:
+> +	for (i = 0; i < desc->num_charger_regulators; i++) {
+> +		struct charger_regulator *charger;
+> +
+> +		charger = &desc->charger_regulators[i];
+> +		sysfs_remove_group(&cm->charger_psy.dev->kobj,
+> +				&charger->attr_g);
+> +		kfree(charger->attr_g.name);
+> +	}
+>  err_extcon:
+>  	for (i = 0 ; i < desc->num_charger_regulators ; i++) {
+>  		struct charger_regulator *charger
+> diff --git a/include/linux/power/charger-manager.h
+> b/include/linux/power/charger-manager.h
+> index a7b388e..0e86840 100644
+> --- a/include/linux/power/charger-manager.h
+> +++ b/include/linux/power/charger-manager.h
+> @@ -109,24 +109,43 @@ struct charger_cable {
+>   * struct charger_regulator
+>   * @regulator_name: the name of regulator for using charger.
+>   * @consumer: the regulator consumer for the charger.
+> + * @externally_control:
+> + *	Set if the charger-manager cannot control charger,
+> + *	the charger will be maintained with disabled state.
+>   * @cables:
+>   *	the array of charger cables to enable/disable charger
+>   *	and set current limit according to constratint data of
+>   *	struct charger_cable if only charger cable included
+>   *	in the array of charger cables is attached/detached.
+>   * @num_cables: the number of charger cables.
+> + * @attr_g: Attribute group for the charger(regulator)
+> + * @attr_name: "name" sysfs entry
+> + * @attr_state: "state" sysfs entry
+> + * @attr_externally_control: "externally_control" sysfs entry
+> + * @attrs: Arrays pointing to attr_name/state/externally_control for
+> attr_g
+>   */
+>  struct charger_regulator {
+>  	/* The name of regulator for charging */
+>  	const char *regulator_name;
+>  	struct regulator *consumer;
+>
+> +	/* charger never on when system is on */
+> +	int externally_control;
+> +
+>  	/*
+>  	 * Store constraint information related to current limit,
+>  	 * each cable have different condition for charging.
+>  	 */
+>  	struct charger_cable *cables;
+>  	int num_cables;
+> +
+> +	struct attribute_group attr_g;
+> +	struct device_attribute attr_name;
+> +	struct device_attribute attr_state;
+> +	struct device_attribute attr_externally_control;
+> +	struct attribute *attrs[4];
+> +
+> +	struct charger_manager *cm;
+>  };
+>
+>  /**
 > --
-> Regards,
+> 1.7.11.5
 >
-> Laurent Pinchart
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
