@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab2IVKjF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 06:39:05 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:43414 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753045Ab2IVKi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 06:38:59 -0400
-From: guanxuetao@mprc.pku.edu.cn
-Message-ID: <54116.162.105.203.8.1348310959.squirrel@mprc.pku.edu.cn>
-In-Reply-To: <20120922073207.GB2538@avionic-0098.mockup.avionic-design.de>
-References: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
-    <1347956633-15667-3-git-send-email-thierry.reding@avionic-design.de>
-    <50847.162.105.203.8.1348282590.squirrel@mprc.pku.edu.cn>
-    <20120922073207.GB2538@avionic-0098.mockup.avionic-design.de>
-Date: Sat, 22 Sep 2012 18:49:19 +0800 (CST)
-Subject: Re: [PATCH v2 2/5] unicore32: pwm: Use module_platform_driver()
-To: "Thierry Reding" <thierry.reding@avionic-design.de>
-Cc: guanxuetao@mprc.pku.edu.cn, "Guan Xuetao" <gxt@mprc.pku.edu.cn>,
-        "Qin Rui" <qinrui@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.8-4.0.1.el5
+	id S1753623Ab2IVK4p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 06:56:45 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:47061 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab2IVK4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Sep 2012 06:56:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=GB2312
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Date: Sat, 22 Sep 2012 12:56:42 +0200
+X-Google-Sender-Auth: 6VDjRa6QOaFna-ZcJqGE_3HKdJQ
+Message-ID: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
+Subject: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to ARM)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, Sep 22, 2012 at 10:56:30AM +0800, guanxuetao@mprc.pku.edu.cn
-> wrote:
->> > Some of the boilerplate code can be eliminated by using this macro.
->> The
->> > driver was previously registered with an arch_initcall(), so
->> technically
->> > this is no longer the same, but when the driver is moved to the PWM
->> > framework, deferred probing will take care of any driver probe
->> ordering
->> > issues.
->> >
->> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->>
->> Tested-by: Qin Rui <qinrui@mprc.pku.edu.cn>
->> Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
->>
->> Thanks & Regards,
->> Guan Xuetao
+On Fri, Sep 21, 2012 at 6:51 PM, Russell King <rmk@arm.linux.org.uk> wrote:
+> That brings up another question though - when was kcmp added to x86, and
+> why aren't we getting notifications from checksyscalls.sh that ARM hasn't
+> been updated?
 >
-> Great! If you don't mind I'll take this through the PWM tree with your
-> Acked-by.
->
-> Thierry
->
+> It seems to be that the script was broken, and no one has noticed.
 
-It's my pleasure.
+It seems Heiko did notice: http://www.serverphorums.com/read.php?12,559093
 
-Thanks & Regards,
-Guan Xuetao
+Now, I'm a bit puzzled by what follows: Heiko proposes a patch to
+ignore sys_kcmp,
+as it's x86-specific, which is acked by Cyrill. Then it suddenly
+switches to Heiko
+enabling it on s390 anyway?
+
+> commit 29dc54c673ea2531d589400badb4ada5f5f60dae
+> Author: H. Peter Anvin <hpa@linux.intel.com>
+> Date:   Fri Nov 11 15:57:53 2011 -0800
+>
+>     checksyscalls: Use arch/x86/syscalls/syscall_32.tbl as source
+>
+>     Use the new arch/x86/syscalls/syscall_32.tbl file as source instead of
+>     arch/x86/include/asm/unistd_32.h.
+>
+>     Cc: Michal Marek <mmarek@suse.cz>
+>     Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+>     Cc: Sam Ravnborg <sam@ravnborg.org>
+>     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>
+> is the culpret, more specifically this fragment:
+>
+> +           echo <<EOF
+> +#if !defined(__NR_${name}) && !defined(__IGNORE_${name})
+> +#warning syscall ${name} not implemented
+> +#endif
+> +EOF
+>
+> "echo <<EOF" doesn't read from its stdin and output to stdout, so the
+> above just generates a blank line for each entry in x86's syscalls_32.tbl,
+> resulting in the compiler doing no checking for us.
+>
+> That "echo <<EOF" should be "cat <<EOF"... and with that fixed we get:
+>
+> <stdin>:1220:2: warning: #warning syscall kcmp not implemented
+>
+> So, actually, I want to add this kcmp syscall _now_ into -rc which I'm
+> afraid will break your patch, and bump your syscall number on ARM to 379.
+
+With a CC to stable for v3.5? ;-)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
