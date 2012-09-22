@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933203Ab2IVBfz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 21:35:55 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:56148 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932701Ab2IVBfu (ORCPT
+	id S933233Ab2IVBgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 21:36:13 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:56149 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933200Ab2IVBfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 21:35:50 -0400
+	Fri, 21 Sep 2012 21:35:54 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-fsdevel@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
         Linux Containers <containers@lists.linux-foundation.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        reiserfs-devel@vger.kernel.org
-Date: Fri, 21 Sep 2012 18:35:08 -0700
-Message-Id: <1348277712-30055-7-git-send-email-ebiederm@xmission.com>
+        Phillip Lougher <phillip@squashfs.org.uk>
+Date: Fri, 21 Sep 2012 18:35:09 -0700
+Message-Id: <1348277712-30055-8-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348277712-30055-1-git-send-email-ebiederm@xmission.com>
 References: <877grmj115.fsf@xmission.com>
  <1348277712-30055-1-git-send-email-ebiederm@xmission.com>
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19jIg1vepUctekQzFPJGGHChkezEkO9HAA=
+X-XM-AID: U2FsdGVkX1/M9RXd5AUzEvwFO2tPi83UwcoC3bKpuoc=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0493]
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0056]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1]
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
 	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 
-X-Spam-Combo: ****;<linux-fsdevel@vger.kernel.org>
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH 07/11] userns: Convert reiserfs to use kuid and kgid where appropriate
+Subject: [PATCH 08/11] userns: Convert squashfs to use kuid/kgid where appropriate
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -46,157 +46,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Cc: reiserfs-devel@vger.kernel.org
+Cc: Phillip Lougher <phillip@squashfs.org.uk>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/reiserfs/inode.c     |   26 +++++++++++++-------------
- fs/reiserfs/xattr_acl.c |   20 +++++++++++++++++---
- init/Kconfig            |    1 -
- 3 files changed, 30 insertions(+), 17 deletions(-)
+ fs/squashfs/inode.c |    8 ++++++--
+ init/Kconfig        |    1 -
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index a6d4268..7119f48 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -1155,8 +1155,8 @@ static void init_inode(struct inode *inode, struct treepath *path)
- 		set_inode_sd_version(inode, STAT_DATA_V1);
- 		inode->i_mode = sd_v1_mode(sd);
- 		set_nlink(inode, sd_v1_nlink(sd));
--		inode->i_uid = sd_v1_uid(sd);
--		inode->i_gid = sd_v1_gid(sd);
-+		i_uid_write(inode, sd_v1_uid(sd));
-+		i_gid_write(inode, sd_v1_gid(sd));
- 		inode->i_size = sd_v1_size(sd);
- 		inode->i_atime.tv_sec = sd_v1_atime(sd);
- 		inode->i_mtime.tv_sec = sd_v1_mtime(sd);
-@@ -1200,9 +1200,9 @@ static void init_inode(struct inode *inode, struct treepath *path)
+diff --git a/fs/squashfs/inode.c b/fs/squashfs/inode.c
+index 81afbcc..a1ce5ce 100644
+--- a/fs/squashfs/inode.c
++++ b/fs/squashfs/inode.c
+@@ -56,16 +56,20 @@
+ static int squashfs_new_inode(struct super_block *sb, struct inode *inode,
+ 				struct squashfs_base_inode *sqsh_ino)
+ {
++	uid_t i_uid;
++	gid_t i_gid;
+ 	int err;
  
- 		inode->i_mode = sd_v2_mode(sd);
- 		set_nlink(inode, sd_v2_nlink(sd));
--		inode->i_uid = sd_v2_uid(sd);
-+		i_uid_write(inode, sd_v2_uid(sd));
- 		inode->i_size = sd_v2_size(sd);
--		inode->i_gid = sd_v2_gid(sd);
-+		i_gid_write(inode, sd_v2_gid(sd));
- 		inode->i_mtime.tv_sec = sd_v2_mtime(sd);
- 		inode->i_atime.tv_sec = sd_v2_atime(sd);
- 		inode->i_ctime.tv_sec = sd_v2_ctime(sd);
-@@ -1258,9 +1258,9 @@ static void inode2sd(void *sd, struct inode *inode, loff_t size)
+-	err = squashfs_get_id(sb, le16_to_cpu(sqsh_ino->uid), &inode->i_uid);
++	err = squashfs_get_id(sb, le16_to_cpu(sqsh_ino->uid), &i_uid);
+ 	if (err)
+ 		return err;
  
- 	set_sd_v2_mode(sd_v2, inode->i_mode);
- 	set_sd_v2_nlink(sd_v2, inode->i_nlink);
--	set_sd_v2_uid(sd_v2, inode->i_uid);
-+	set_sd_v2_uid(sd_v2, i_uid_read(inode));
- 	set_sd_v2_size(sd_v2, size);
--	set_sd_v2_gid(sd_v2, inode->i_gid);
-+	set_sd_v2_gid(sd_v2, i_gid_read(inode));
- 	set_sd_v2_mtime(sd_v2, inode->i_mtime.tv_sec);
- 	set_sd_v2_atime(sd_v2, inode->i_atime.tv_sec);
- 	set_sd_v2_ctime(sd_v2, inode->i_ctime.tv_sec);
-@@ -1280,8 +1280,8 @@ static void inode2sd_v1(void *sd, struct inode *inode, loff_t size)
- 	struct stat_data_v1 *sd_v1 = (struct stat_data_v1 *)sd;
+-	err = squashfs_get_id(sb, le16_to_cpu(sqsh_ino->guid), &inode->i_gid);
++	err = squashfs_get_id(sb, le16_to_cpu(sqsh_ino->guid), &i_gid);
+ 	if (err)
+ 		return err;
  
- 	set_sd_v1_mode(sd_v1, inode->i_mode);
--	set_sd_v1_uid(sd_v1, inode->i_uid);
--	set_sd_v1_gid(sd_v1, inode->i_gid);
-+	set_sd_v1_uid(sd_v1, i_uid_read(inode));
-+	set_sd_v1_gid(sd_v1, i_gid_read(inode));
- 	set_sd_v1_nlink(sd_v1, inode->i_nlink);
- 	set_sd_v1_size(sd_v1, size);
- 	set_sd_v1_atime(sd_v1, inode->i_atime.tv_sec);
-@@ -1869,7 +1869,7 @@ int reiserfs_new_inode(struct reiserfs_transaction_handle *th,
- 		goto out_bad_inode;
- 	}
- 	if (old_format_only(sb)) {
--		if (inode->i_uid & ~0xffff || inode->i_gid & ~0xffff) {
-+		if (i_uid_read(inode) & ~0xffff || i_gid_read(inode) & ~0xffff) {
- 			pathrelse(&path_to_key);
- 			/* i_uid or i_gid is too big to be stored in stat data v3.5 */
- 			err = -EINVAL;
-@@ -3140,16 +3140,16 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
- 		}
- 	}
- 
--	if ((((attr->ia_valid & ATTR_UID) && (attr->ia_uid & ~0xffff)) ||
--	     ((attr->ia_valid & ATTR_GID) && (attr->ia_gid & ~0xffff))) &&
-+	if ((((attr->ia_valid & ATTR_UID) && (from_kuid(&init_user_ns, attr->ia_uid) & ~0xffff)) ||
-+	     ((attr->ia_valid & ATTR_GID) && (from_kgid(&init_user_ns, attr->ia_gid) & ~0xffff))) &&
- 	    (get_inode_sd_version(inode) == STAT_DATA_V1)) {
- 		/* stat data of format v3.5 has 16 bit uid and gid */
- 		error = -EINVAL;
- 		goto out;
- 	}
- 
--	if ((ia_valid & ATTR_UID && attr->ia_uid != inode->i_uid) ||
--	    (ia_valid & ATTR_GID && attr->ia_gid != inode->i_gid)) {
-+	if ((ia_valid & ATTR_UID && !uid_eq(attr->ia_uid, inode->i_uid)) ||
-+	    (ia_valid & ATTR_GID && !gid_eq(attr->ia_gid, inode->i_gid))) {
- 		struct reiserfs_transaction_handle th;
- 		int jbegin_count =
- 		    2 *
-diff --git a/fs/reiserfs/xattr_acl.c b/fs/reiserfs/xattr_acl.c
-index 87d6911..d7c01ef 100644
---- a/fs/reiserfs/xattr_acl.c
-+++ b/fs/reiserfs/xattr_acl.c
-@@ -121,15 +121,23 @@ static struct posix_acl *posix_acl_from_disk(const void *value, size_t size)
- 		case ACL_OTHER:
- 			value = (char *)value +
- 			    sizeof(reiserfs_acl_entry_short);
--			acl->a_entries[n].e_id = ACL_UNDEFINED_ID;
- 			break;
- 
- 		case ACL_USER:
-+			value = (char *)value + sizeof(reiserfs_acl_entry);
-+			if ((char *)value > end)
-+				goto fail;
-+			acl->a_entries[n].e_uid = 
-+				make_kuid(&init_user_ns,
-+					  le32_to_cpu(entry->e_id));
-+			break;
- 		case ACL_GROUP:
- 			value = (char *)value + sizeof(reiserfs_acl_entry);
- 			if ((char *)value > end)
- 				goto fail;
--			acl->a_entries[n].e_id = le32_to_cpu(entry->e_id);
-+			acl->a_entries[n].e_gid =
-+				make_kgid(&init_user_ns,
-+					  le32_to_cpu(entry->e_id));
- 			break;
- 
- 		default:
-@@ -164,13 +172,19 @@ static void *posix_acl_to_disk(const struct posix_acl *acl, size_t * size)
- 	ext_acl->a_version = cpu_to_le32(REISERFS_ACL_VERSION);
- 	e = (char *)ext_acl + sizeof(reiserfs_acl_header);
- 	for (n = 0; n < acl->a_count; n++) {
-+		const struct posix_acl_entry *acl_e = &acl->a_entries[n];
- 		reiserfs_acl_entry *entry = (reiserfs_acl_entry *) e;
- 		entry->e_tag = cpu_to_le16(acl->a_entries[n].e_tag);
- 		entry->e_perm = cpu_to_le16(acl->a_entries[n].e_perm);
- 		switch (acl->a_entries[n].e_tag) {
- 		case ACL_USER:
-+			entry->e_id = cpu_to_le32(
-+				from_kuid(&init_user_ns, acl_e->e_uid));
-+			e += sizeof(reiserfs_acl_entry);
-+			break;
- 		case ACL_GROUP:
--			entry->e_id = cpu_to_le32(acl->a_entries[n].e_id);
-+			entry->e_id = cpu_to_le32(
-+				from_kgid(&init_user_ns, acl_e->e_gid));
- 			e += sizeof(reiserfs_acl_entry);
- 			break;
- 
++	i_uid_write(inode, i_uid);
++	i_gid_write(inode, i_gid);
+ 	inode->i_ino = le32_to_cpu(sqsh_ino->inode_number);
+ 	inode->i_mtime.tv_sec = le32_to_cpu(sqsh_ino->mtime);
+ 	inode->i_atime.tv_sec = inode->i_mtime.tv_sec;
 diff --git a/init/Kconfig b/init/Kconfig
-index 20d4a1b..8b11f29 100644
+index 8b11f29..d88f945 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -939,7 +939,6 @@ config UIDGID_CONVERTED
  	depends on NFSD = n
  	depends on NFS_FS = n
  	depends on OCFS2_FS = n
--	depends on REISERFS_FS = n
- 	depends on SQUASHFS = n
+-	depends on SQUASHFS = n
  	depends on UBIFS_FS = n
  	depends on UDF_FS = n
+ 	depends on UFS_FS = n
 -- 
 1.7.5.4
 
