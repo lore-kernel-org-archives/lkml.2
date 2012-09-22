@@ -1,73 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab2IVSQS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 14:16:18 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:36157 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab2IVSQQ (ORCPT
+	id S1751982Ab2IVSeT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 14:34:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61613 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab2IVSeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 14:16:16 -0400
-Date: Sat, 22 Sep 2012 18:16:15 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: "Bruce, Becky" <bbruce@ti.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
-        "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Hunter, Jon" <jon-hunter@ti.com>,
-        "<snijsure@grid-net.com>" <snijsure@grid-net.com>
-Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
-In-Reply-To: <20120922000537.GH2454@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1209221813330.10663@utopia.booyaka.com>
-References: <20120913011208.GT4257@linux.vnet.ibm.com> <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com> <20120920000351.GI2455@linux.vnet.ibm.com> <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com> <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com>
- <20120920220130.GN2449@linux.vnet.ibm.com> <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com> <alpine.DEB.2.00.1209211740170.8839@utopia.booyaka.com> <20120921212054.GE2454@linux.vnet.ibm.com> <alpine.DEB.2.00.1209212240190.31812@utopia.booyaka.com>
- <20120922000537.GH2454@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 22 Sep 2012 14:34:17 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1346233758-27009-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1346233758-27009-1-git-send-email-nicolas.ferre@atmel.com>
+Date: Sat, 22 Sep 2012 20:34:16 +0200
+Message-ID: <CAGhQ9VwZVn38oC1iZdpBPfb1i-4x4Pa4j30UJQ9mRsaCPcR2Mw@mail.gmail.com>
+Subject: Re: [PATCH] USB: ohci-at91: fix PIO handling in relation with number
+ of ports
+From: Joachim Eastwood <manabian@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        plagnioj@jcrosoft.com, gregkh@linuxfoundation.org,
+        klaus.falkner@solectrix.de, ludovic.desroches@atmel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul
-
-On Fri, 21 Sep 2012, Paul E. McKenney wrote:
-
-> I am wondering if your system somehow figured out how to start a grace
-> period that had no RCU callbacks waiting for it.  If that happened,
-> then a CONFIG_NO_HZ=y system could in theory get into a state where all
-> CPUs are in dyntick-idle mode, so that none of them is doing anything
-> to force the grace period to complete.
+On Wed, Aug 29, 2012 at 11:49 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> If the number of ports present on the SoC/board is not the maximum
+> and that the platform data is not filled with all data, there is
+> an easy way to mess the PIO setup for this interface.
+> This quick fix addresses mis-configuration in USB host platform data
+> that is common in at91 boards since commit 0ee6d1e (USB: ohci-at91:
+> change maximum number of ports) that did not modified the associatd
+> board files.
 >
-> That should be easy to diagnose, anyway.  Please see below, which
-> includes the earlier diagnostic patch.
+> Reported-by: Klaus Falkner <klaus.falkner@solectrix.de>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-usb@vger.kernel.org
+> Cc: Stable <stable@vger.kernel.org> [3.4+]
+> ---
+>  drivers/usb/host/ohci-at91.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+> index a665b3e..aaa8d2b 100644
+> --- a/drivers/usb/host/ohci-at91.c
+> +++ b/drivers/usb/host/ohci-at91.c
+> @@ -570,6 +570,16 @@ static int __devinit ohci_hcd_at91_drv_probe(struct platform_device *pdev)
+>
+>         if (pdata) {
+>                 at91_for_each_port(i) {
+> +                       /*
+> +                        * do not configure PIO if not in relation with
+> +                        * real USB port on board
+> +                        */
+> +                       if (i >= pdata->ports) {
+> +                               pdata->vbus_pin[i] = -EINVAL;
+> +                               pdata->overcurrent_pin[i] = -EINVAL;
+> +                               break;
+> +                       }
+> +
+>                         if (!gpio_is_valid(pdata->vbus_pin[i]))
+>                                 continue;
+>                         gpio = pdata->vbus_pin[i];
+> --
+> 1.7.10
+>
 
-Here you go.
- 
-- Paul
+Hi,
 
-[  248.902618] INFO: rcu_sched self-detected stall on CPU
-[  248.905456]  0: (1 ticks this GP) idle=933/1/0 
-[  248.907897]   (t=26570 jiffies g=11 c=10 q=0)
-[  248.910339] [<c001bc90>] (unwind_backtrace+0x0/0xf0) from [<c00ad800>] (rcu_check_callbacks+0x220/0x714)
-[  248.915527] [<c00ad800>] (rcu_check_callbacks+0x220/0x714) from [<c00532a0>] (update_process_times+0x38/0x68)
-[  248.920928] [<c00532a0>] (update_process_times+0x38/0x68) from [<c008c9e8>] (tick_sched_timer+0x80/0xec)
-[  248.926116] [<c008c9e8>] (tick_sched_timer+0x80/0xec) from [<c0068ed4>] (__run_hrtimer+0x7c/0x1e0)
-[  248.930999] [<c0068ed4>] (__run_hrtimer+0x7c/0x1e0) from [<c0069cb8>] (hrtimer_interrupt+0x11c/0x2d0)
-[  248.936035] [<c0069cb8>] (hrtimer_interrupt+0x11c/0x2d0) from [<c001a3cc>] (twd_handler+0x30/0x44)
-[  248.940948] [<c001a3cc>] (twd_handler+0x30/0x44) from [<c00a7bd0>] (handle_percpu_devid_irq+0x90/0x13c)
-[  248.946075] [<c00a7bd0>] (handle_percpu_devid_irq+0x90/0x13c) from [<c00a4344>] (generic_handle_irq+0x30/0x48)
-[  248.951538] [<c00a4344>] (generic_handle_irq+0x30/0x48) from [<c0014e38>] (handle_IRQ+0x4c/0xac)
-[  248.956329] [<c0014e38>] (handle_IRQ+0x4c/0xac) from [<c00084cc>] (gic_handle_irq+0x28/0x5c)
-[  248.960937] [<c00084cc>] (gic_handle_irq+0x28/0x5c) from [<c04fb1a4>] (__irq_svc+0x44/0x5c)
-[  248.965484] Exception stack(0xc0729f58 to 0xc0729fa0)
-[  248.968231] 9f40:                                                       0003b832 00000001
-[  248.972686] 9f60: 00000000 c074a8e8 c0728000 c07c42c8 c05065a0 c074bdc8 00000000 411fc092
-[  248.977142] 9f80: c074bfe8 00000000 00000001 c0729fa0 0003b833 c0015130 20000113 ffffffff
-[  248.981597] [<c04fb1a4>] (__irq_svc+0x44/0x5c) from [<c0015130>] (default_idle+0x20/0x44)
-[  248.986083] [<c0015130>] (default_idle+0x20/0x44) from [<c001535c>] (cpu_idle+0x9c/0x114)
-[  248.990539] [<c001535c>] (cpu_idle+0x9c/0x114) from [<c06d77b0>] (start_kernel+0x2b4/0x304)
+This commit causes a NULL point exception on my board with the
+following message:
+[    7.740000] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[    7.810000] Unable to handle kernel NULL pointer dereference at
+virtual address 00000028
+[    7.810000] pgd = c3a38000
+[    7.810000] [00000028] *pgd=23a8c831, *pte=00000000, *ppte=00000000
+[    7.810000] Internal error: Oops: 17 [#1] PREEMPT ARM
+[    7.810000] Modules linked in: ohci_hcd(+) regmap_i2c snd_pcm
+usbcore snd_page_alloc at91_cf snd_timer pcmcia_rsrc snd soundcore
+gpio_keys regmap_spi pcmcia_core usb_common nls_base
+[    7.810000] CPU: 0    Not tainted  (3.6.0-rc6-mpa+ #264)
+[    7.810000] PC is at __gpio_to_irq+0x18/0x40
+[    7.810000] LR is at ohci_hcd_at91_overcurrent_irq+0x24/0xb4 [ohci_hcd]
+[    7.810000] pc : [<c01392d4>]    lr : [<bf08f694>]    psr: 40000093
+[    7.810000] sp : c3a11c40  ip : c3a11c50  fp : c3a11c4c
+[    7.810000] r10: 00000000  r9 : c02dcd6e  r8 : fefff400
+[    7.810000] r7 : 00000000  r6 : c02cc928  r5 : 00000030  r4 : c02dd168
+[    7.810000] r3 : c02e7350  r2 : ffffffea  r1 : c02cc928  r0 : 00000000
+[    7.810000] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM
+Segment user
+[    7.810000] Control: c000717f  Table: 23a38000  DAC: 00000015
+[    7.810000] Process modprobe (pid: 285, stack limit = 0xc3a10270)
+[    7.810000] Stack: (0xc3a11c40 to 0xc3a12000)
+[    7.810000] 1c40: c3a11c6c c3a11c50 bf08f694 c01392cc c3a11c84
+c2c38b00 c3806900 00000030
+[    7.810000] 1c60: c3a11ca4 c3a11c70 c0051264 bf08f680 c3a11cac
+c3a11c80 c003e764 c3806900
+[    7.810000] 1c80: c2c38b00 c02cb05c c02cb000 fefff400 c3806930
+c3a11cf4 c3a11cbc c3a11ca8
+[    7.810000] 1ca0: c005142c c005123c c3806900 c3805a00 c3a11cd4
+c3a11cc0 c0053f24 c00513e4
+[    7.810000] 1cc0: c3a11cf4 00000030 c3a11cec c3a11cd8 c005120c
+c0053e88 00000000 00000000
+[    7.810000] 1ce0: c3a11d1c c3a11cf0 c00124d0 c00511e0 01400000
+00000001 00000012 00000000
+[    7.810000] 1d00: ffffffff c3a11d94 00000030 00000000 c3a11d34
+c3a11d20 c005120c c0012438
+[    7.810000] 1d20: c001dac4 00000012 c3a11d4c c3a11d38 c0009b08
+c00511e0 c00523fc 60000013
+[    7.810000] 1d40: c3a11d5c c3a11d50 c0008510 c0009ab4 c3a11ddc
+c3a11d60 c0008eb4 c00084f0
+[    7.810000] 1d60: 00000000 00000030 00000000 00000080 60000013
+bf08f670 c3806900 c2c38b00
+[    7.810000] 1d80: 00000030 c3806930 00000000 c3a11ddc c3a11d88
+c3a11da8 c0054190 c00523fc
+[    7.810000] 1da0: 60000013 ffffffff c3a11dec c3a11db8 00000000
+c2c38b00 bf08f670 c3806900
+[    7.810000] 1dc0: 00000000 00000080 c02cc928 00000030 c3a11e0c
+c3a11de0 c0052764 c00520d8
+[    7.810000] 1de0: c3a11dfc 00000000 00000000 00000002 bf090f61
+00000004 c02cc930 c02cc928
+[    7.810000] 1e00: c3a11e4c c3a11e10 bf090978 c005269c bf090f61
+c02cc928 bf093000 c02dd170
+[    7.810000] 1e20: c3a11e3c c02cc930 c02cc930 bf0911d0 bf0911d0
+bf093000 c3a10000 00000000
+[    7.810000] 1e40: c3a11e5c c3a11e50 c0155b7c bf090808 c3a11e7c
+c3a11e60 c0154690 c0155b6c
+[    7.810000] 1e60: c02cc930 c02cc964 bf0911d0 c3a11ea0 c3a11e9c
+c3a11e80 c015484c c01545e8
+[    7.810000] 1e80: 00000000 00000000 c01547e4 bf0911d0 c3a11ec4
+c3a11ea0 c0152e58 c01547f4
+[    7.810000] 1ea0: c381b88c c384ab10 c2c10540 bf0911d0 00000000
+c02d7518 c3a11ed4 c3a11ec8
+[    7.810000] 1ec0: c01544c0 c0152e0c c3a11efc c3a11ed8 c01536cc
+c01544b0 bf091075 c3a11ee8
+[    7.810000] 1ee0: bf049af0 bf09120c bf0911d0 00000000 c3a11f1c
+c3a11f00 c0154e9c c0153628
+[    7.810000] 1f00: bf049af0 bf09120c 000ae190 00000000 c3a11f2c
+c3a11f20 c0155f58 c0154e04
+[    7.810000] 1f20: c3a11f44 c3a11f30 bf093054 c0155f1c 00000000
+00006a4f c3a11f7c c3a11f48
+[    7.810000] 1f40: c0008638 bf093010 bf09120c 000ae190 00000000
+c00093c4 00006a4f bf09120c
+[    7.810000] 1f60: 000ae190 00000000 c00093c4 00000000 c3a11fa4
+c3a11f80 c004fdc4 c000859c
+[    7.810000] 1f80: c3a11fa4 000ae190 00006a4f 00016eb8 000ad018
+00000080 00000000 c3a11fa8
+[    7.810000] 1fa0: c0009260 c004fd58 00006a4f 00016eb8 000ae190
+00006a4f 000ae100 00000000
+[    7.810000] 1fc0: 00006a4f 00016eb8 000ad018 00000080 000adba0
+000ad208 00000000 000ad3d8
+[    7.810000] 1fe0: beaf7ae8 beaf7ad8 000172b8 b6e4e940 20000010
+000ae190 00000000 00000000
+[    7.810000] Backtrace:
+[    7.810000] [<c01392bc>] (__gpio_to_irq+0x0/0x40) from [<bf08f694>]
+(ohci_hcd_at91_overcurrent_irq+0x24/0xb4 [ohci_hcd])
+[    7.810000] [<bf08f670>] (ohci_hcd_at91_overcurrent_irq+0x0/0xb4
+[ohci_hcd]) from [<c0051264>] (handle_irq_event_percpu+0x38/0x1a8)
+[    7.810000]  r6:00000030 r5:c3806900 r4:c2c38b00
+[    7.810000] [<c005122c>] (handle_irq_event_percpu+0x0/0x1a8) from
+[<c005142c>] (handle_irq_event+0x58/0x7c)
+[    7.810000] [<c00513d4>] (handle_irq_event+0x0/0x7c) from
+[<c0053f24>] (handle_simple_irq+0xac/0xd8)
+[    7.810000]  r5:c3805a00 r4:c3806900
+[    7.810000] [<c0053e78>] (handle_simple_irq+0x0/0xd8) from
+[<c005120c>] (generic_handle_irq+0x3c/0x48)
+[    7.810000]  r4:00000030
+[    7.810000] [<c00511d0>] (generic_handle_irq+0x0/0x48) from
+[<c00124d0>] (gpio_irq_handler+0xa8/0xfc)
+[    7.810000]  r4:00000000
+[    7.810000] [<c0012428>] (gpio_irq_handler+0x0/0xfc) from
+[<c005120c>] (generic_handle_irq+0x3c/0x48)
+[    7.810000] [<c00511d0>] (generic_handle_irq+0x0/0x48) from
+[<c0009b08>] (handle_IRQ+0x64/0x88)
+[    7.810000]  r4:00000012
+[    7.810000] [<c0009aa4>] (handle_IRQ+0x0/0x88) from [<c0008510>]
+(at91_aic_handle_irq+0x30/0x38)
+[    7.810000]  r5:60000013 r4:c00523fc
+[    7.810000] [<c00084e0>] (at91_aic_handle_irq+0x0/0x38) from
+[<c0008eb4>] (__irq_svc+0x34/0x60)
+[    7.810000] Exception stack(0xc3a11d60 to 0xc3a11da8)
+[    7.810000] 1d60: 00000000 00000030 00000000 00000080 60000013
+bf08f670 c3806900 c2c38b00
+[    7.810000] 1d80: 00000030 c3806930 00000000 c3a11ddc c3a11d88
+c3a11da8 c0054190 c00523fc
+[    7.810000] 1da0: 60000013 ffffffff
+[    7.810000] [<c00520c8>] (__setup_irq+0x0/0x458) from [<c0052764>]
+(request_threaded_irq+0xd8/0x134)
+[    7.810000] [<c005268c>] (request_threaded_irq+0x0/0x134) from
+[<bf090978>] (ohci_hcd_at91_drv_probe+0x180/0x41c [ohci_hcd])
+[    7.810000] [<bf0907f8>] (ohci_hcd_at91_drv_probe+0x0/0x41c
+[ohci_hcd]) from [<c0155b7c>] (platform_drv_probe+0x20/0x24)
+[    7.810000] [<c0155b5c>] (platform_drv_probe+0x0/0x24) from
+[<c0154690>] (driver_probe_device+0xb8/0x20c)
+[    7.810000] [<c01545d8>] (driver_probe_device+0x0/0x20c) from
+[<c015484c>] (__driver_attach+0x68/0x88)
+[    7.810000]  r7:c3a11ea0 r6:bf0911d0 r5:c02cc964 r4:c02cc930
+[    7.810000] [<c01547e4>] (__driver_attach+0x0/0x88) from
+[<c0152e58>] (bus_for_each_dev+0x5c/0x9c)
+[    7.810000]  r6:bf0911d0 r5:c01547e4 r4:00000000
+[    7.810000] [<c0152dfc>] (bus_for_each_dev+0x0/0x9c) from
+[<c01544c0>] (driver_attach+0x20/0x28)
+[    7.810000]  r7:c02d7518 r6:00000000 r5:bf0911d0 r4:c2c10540
+[    7.810000] [<c01544a0>] (driver_attach+0x0/0x28) from [<c01536cc>]
+(bus_add_driver+0xb4/0x22c)
+[    7.810000] [<c0153618>] (bus_add_driver+0x0/0x22c) from
+[<c0154e9c>] (driver_register+0xa8/0x144)
+[    7.810000]  r7:00000000 r6:bf0911d0 r5:bf09120c r4:bf049af0
+[    7.810000] [<c0154df4>] (driver_register+0x0/0x144) from
+[<c0155f58>] (platform_driver_register+0x4c/0x60)
+[    7.810000]  r7:00000000 r6:000ae190 r5:bf09120c r4:bf049af0
+[    7.810000] [<c0155f0c>] (platform_driver_register+0x0/0x60) from
+[<bf093054>] (ohci_hcd_mod_init+0x54/0x8c [ohci_hcd])
+[    7.810000] [<bf093000>] (ohci_hcd_mod_init+0x0/0x8c [ohci_hcd])
+from [<c0008638>] (do_one_initcall+0xac/0x174)
+[    7.810000]  r4:00006a4f
+[    7.810000] [<c000858c>] (do_one_initcall+0x0/0x174) from
+[<c004fdc4>] (sys_init_module+0x7c/0x1a0)
+[    7.810000] [<c004fd48>] (sys_init_module+0x0/0x1a0) from
+[<c0009260>] (ret_fast_syscall+0x0/0x2c)
+[    7.810000]  r7:00000080 r6:000ad018 r5:00016eb8 r4:00006a4f
+[    7.810000] Code: e24cb004 e59f3028 e1a02000 e7930180 (e5903028)
+[    7.810000] ---[ end trace 85aa37ed128143b5 ]---
+[    7.810000] Kernel panic - not syncing: Fatal exception in interrupt
+
+Reverting it from Linus master (commit 6fffb77c839315) makes the NULL
+pointer go away.
+
+[    7.990000] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[    8.110000] at91_ohci at91_ohci: can't request overcurrent gpio 0
+[    8.110000] at91_ohci at91_ohci: AT91 OHCI
+[    8.270000] at91_ohci at91_ohci: new USB bus registered, assigned
+bus number 1
+[    8.340000] at91_ohci at91_ohci: irq 39, io mem 0x00300000
+[    8.520000] hub 1-0:1.0: USB hub found
+[    8.660000] hub 1-0:1.0: 1 port detected
+I assume this commit tried to fix the "can't request overcurrent gpio
+0" message.
+
+I am running a custom board with AT91RM9200 and 1 USB host port.
+
+regards
+Joachim Eastwood
