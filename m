@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab2IVT7Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 15:59:25 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54315 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2IVT7X (ORCPT
+	id S1753275Ab2IVUAb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 16:00:31 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35079 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab2IVUA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 15:59:23 -0400
-Date: Sat, 22 Sep 2012 21:59:13 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>, Matt Sealey <matt@genesi-usa.com>,
-        Mike Thompson <mpthompson@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Linux-Arm-Kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-ext4@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Tracking down suspend/resume ext3/mmc issues on imx233
-Message-ID: <20120922195912.GA25644@elf.ucw.cz>
-References: <CAEOSq-O3SfuAEhMsjX1y1ZgQuWBKef+XZzMR1b4yJhKhaRdymA@mail.gmail.com>
- <20120907060552.GL26709@S2101-09.ap.freescale.net>
- <CAEOSq-PV+7c2nvu3uauOLJcV7WKa1jmd-df0a1H0qY5K4CM5MA@mail.gmail.com>
- <CAKGA1bnug8nqcideOBZyLQZmiVo=G5L3aRHq4k4SNZyH132Y=g@mail.gmail.com>
- <20120910163345.GB3942@thunk.org>
- <20120919232349.GA24132@elf.ucw.cz>
- <20120920000110.GA16672@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120920000110.GA16672@thunk.org>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 22 Sep 2012 16:00:29 -0400
+Date: Sat, 22 Sep 2012 16:00:27 -0400 (EDT)
+Message-Id: <20120922.160027.1528491047223302539.davem@davemloft.net>
+To: benh@kernel.crashing.org
+Cc: sfr@canb.auug.org.au, paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
+        mika.westerberg@linux.intel.com, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (net-next tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1348264000.1132.63.camel@pasglop>
+References: <1348179764.1132.35.camel@pasglop>
+	<20120920.185315.576326460331670020.davem@davemloft.net>
+	<1348264000.1132.63.camel@pasglop>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Sat, 22 Sep 2012 07:46:40 +1000
 
-On Wed 2012-09-19 20:01:10, Theodore Ts'o wrote:
-> On Thu, Sep 20, 2012 at 01:23:49AM +0200, Pavel Machek wrote:
-> > 
-> > I'm not sure I agree.
-> > 
-> > If you treat root fs as removable, you'll get "crash". You'll need to
-> > replay the journal, but data is safe.
-> > 
-> > If you treat it as non-removable, and someone manages to remove it,
-> > mount, and reinsert, you'll get silent data corruption.
+> Right, but on ppc, GFP_DMA is a nop (no separate ZONE_DMA, or rather all
+> of memory is ZONE_DMA). It's always been like that afaik.
 > 
-> We could detect this case; if the file system gets mounted, the last
-> mount time will change.  So one of the things we could do is have the
-> file system code freeze the file system at suspend time, so the file
-> system is consistent (which will reduce the probability of data loss
-> if the system never comes back up after the suspend), and save the
-> last mount time and last write time in memory.  When the system comes
-> back from resume, have the file system code check the last mount and
-> last write time, and if they have changed, it can refuse the resume
-> and abort the system to avoid data corruption.  It would require
-> making ext3/ext4 suspend-aware, but it would be doable, if we really
-> wanted to support this.
+> We could support ISA device limited addressability using the iommu but
+> that would involve a map/unmap type API (which I remember we did support
+> in the old days by passing NULL to pci_map_*, but we dropped that along
+> the way).
 
-Yes please; I'd love to see this done.
+I think I'm going to just end up restricting this driver to X86
+as was originally suggested.
 
-We used to do sync() to get filesystem in consistent state, and I
-believe that these days we are doing filesystem freeze; but code
-validating the last mount time is certainly missing.
+There seems to be no real consistent Kconfig protection for users
+of isa_virt_to_bus() and friends.
 
-Looking forward,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+We know that ISA_DMA_API doesn't do it, and ISA doesn't do it either
+as powerpc also allows that to bet set for CHRP and friends.
+
+Thanks.
