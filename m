@@ -1,181 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab2IVILV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 04:11:21 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:52186 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754418Ab2IVIKJ (ORCPT
+	id S1754366Ab2IVIZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 04:25:59 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50682 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398Ab2IVIZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 04:10:09 -0400
-Message-ID: <505D725A.4010708@metafoo.de>
-Date: Sat, 22 Sep 2012 10:10:02 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
+	Sat, 22 Sep 2012 04:25:55 -0400
+Message-ID: <505D7621.4040505@gmail.com>
+Date: Sat, 22 Sep 2012 10:26:09 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
-CC: Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: OOPS/panic in iio_dummy (v3.6-rc6-176-gabef3bd)
-References: <201209220413.36295.PeterHuewe@gmx.de>
-In-Reply-To: <201209220413.36295.PeterHuewe@gmx.de>
-X-Enigmail-Version: 1.0.1
+To: paulmck@linux.vnet.ibm.com
+CC: Michael Wang <wangyun@linux.vnet.ibm.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+References: <5050CCE0.4090403@gmail.com> <20120919153934.GB2455@linux.vnet.ibm.com> <5059F458.3000407@gmail.com> <20120919170648.GF2455@linux.vnet.ibm.com> <505AC6C8.9060706@linux.vnet.ibm.com> <505AC979.7000008@gmail.com> <20120920152341.GE2449@linux.vnet.ibm.com> <505C33B9.8000807@gmail.com> <20120921121346.GD2458@linux.vnet.ibm.com> <505C6B03.7020305@gmail.com> <20120921151203.GA2454@linux.vnet.ibm.com> <505C855F.3060301@gmail.com>
+In-Reply-To: <505C855F.3060301@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2012 04:13 AM, Peter Hüwe wrote:
-> Hi,
+On 09/21/2012 05:18 PM, Sasha Levin wrote:
+> On 09/21/2012 05:12 PM, Paul E. McKenney wrote:
+>> On Fri, Sep 21, 2012 at 03:26:27PM +0200, Sasha Levin wrote:
+>>> On 09/21/2012 02:13 PM, Paul E. McKenney wrote:
+>>>>> This might be unrelated, but I got the following dump as well when trinity
+>>>>>> decided it's time to reboot my guest:
+>>>> OK, sounds like we should hold off until you reproduce, then.
+>>>
+>>> I'm not sure what you mean.
+>>>
+>>> There are basically two issues I'm seeing now, which reproduce pretty much every
+>>> time:
+>>>
+>>>  1. The "using when idle" warning.
+>>>  2. The rcu related hangs during shutdown.
+>>>
+>>> The first one appears early on when I start fuzzing, the other one happens when
+>>> shutting down - so both of them are reproducible in the same session.
+>>
+>> Ah, I misunderstood the "reboot my guest" -- I thought that you were
+>> doing something like repeated modprobe/rmmod cycles on rcutorture while
+>> running the guest for an extended time period.  That will teach me not
+>> to reply to email so soon after waking up.  ;-)
+>>
+>> That said, #2 is expected behavior given the RCU CPU stall warnings in
+>> your Sept. 20 dmesg.  This is because rcutorture does rcu_barrier() on
+>> the way out, which cannot complete if grace periods are not completing.
+>> And the later soft lockup is also likely a consequence of the stall,
+>> because CPU hotplug does a synchronize_sched() while holding the hotplug
+>> lock, which will then cause get_online_cpus() to hang.
+>>
+>> Looking further down, there are hung tasks that are waiting for a
+>> timeout, but this is also a consequence of the hang because they
+>> are waiting for MAX_SCHEDULE_TIMEOUT -- in other words, they are
+>> waiting to be killed at shutdown time.  I could suppress this by using
+>> schedule_timeout_interruptible() in a loop in order to reduce the noise
+>> in this case.
+>>
+>> The remaining traces in that email are also consequences of the stall.
+>>
+>> So why the stall?
+>>
+>> Using RCU from a CPU that RCU believes to be idle can cause arbitrary
+>> bad behavior (possibly including stalls), but with very low probability.
+>> The reason that things can go arbitrarily bad is that RCU is ignoring
+>> the CPU, and thus not waiting for any RCU read-side critical sections.
+>> This could of course result in abitrary corruption of memory.  The reason
+>> for the low probability is that grace periods tend to be long and RCU
+>> read-side critical sections tend to be short.
+>>
+>> It looks like you are running -next, which has RCU grace periods driven
+>> by a kthread.  Is it possible that this kthread is not getting a chance
+>> to run (in fact, the "Stall ended before state dump start" is consistent
+>> with that possibility), but in that case I would expect to see a soft
+>> lockup from it.  Furthermore, in that case, it would be expected to
+>> start running again as soon as things started going idle during shutdown.
+>>
+>> Or did the system somehow manage to stay busy despite being in shutdown?
+>> Or, for that matter, are you overcommitting the physical CPUs on your
+>> trinity test setup?
 > 
-> loading iio_dummy results in kernel panic as the call to 
-> iio_buffer_register in iio_dummy_probe is performed with indio_dev->buffer == 
-> NULL and thus the access to indio_dev->buffer->attrs results in this 
-> oops/panic.
-> 
-> Thanks,
-> Peter
-> 
+> Nope, I originally had 4 vcpus in the guest with the host running 4 physical
+> cpus, but I've also tested it with just 2 vcpus and still see the warnings.
 
-Hi,
+Some more info that might help, I'm also occasionally seeing:
 
-I sent a patch or this a couple of days ago. See
-http://comments.gmane.org/gmane.linux.kernel.iio/5550
+[   42.389345] ------------[ cut here ]------------
+[   42.389348] WARNING: at kernel/rcutree.c:375 rcu_eqs_enter+0x5c/0xc0()
+[   42.389350] Pid: 0, comm: swapper/2 Tainted: G        W
+3.6.0-rc6-next-20120921-sasha-00002-ge9c9495-dirty #378
+[   42.389351] Call Trace:
+[   42.389354]  [<ffffffff811c653c>] ? rcu_eqs_enter+0x5c/0xc0
+[   42.389356]  [<ffffffff81106886>] warn_slowpath_common+0x86/0xb0
+[   42.389359]  [<ffffffff81106975>] warn_slowpath_null+0x15/0x20
+[   42.389361]  [<ffffffff811c653c>] rcu_eqs_enter+0x5c/0xc0
+[   42.389364]  [<ffffffff811c66f3>] rcu_idle_enter+0x43/0xa0
+[   42.389366]  [<ffffffff81078956>] cpu_idle+0x126/0x160
+[   42.389369]  [<ffffffff83985a64>] start_secondary+0x26e/0x276
+[   42.389370] ---[ end trace 04c11301284d64ee ]---
+[   42.389394] ------------[ cut here ]------------
+[   42.389396] WARNING: at kernel/rcutree.c:350 rcu_eqs_enter_common+0x709/0x970()
+[   42.389398] Pid: 0, comm: swapper/2 Tainted: G        W
+3.6.0-rc6-next-20120921-sasha-00002-ge9c9495-dirty #378
+[   42.389399] Call Trace:
+[   42.389402]  [<ffffffff811c6019>] ? rcu_eqs_enter_common+0x709/0x970
+[   42.389405]  [<ffffffff81106886>] warn_slowpath_common+0x86/0xb0
+[   42.389407]  [<ffffffff81106975>] warn_slowpath_null+0x15/0x20
+[   42.389410]  [<ffffffff811c6019>] rcu_eqs_enter_common+0x709/0x970
+[   42.389412]  [<ffffffff811c658f>] rcu_eqs_enter+0xaf/0xc0
+[   42.389414]  [<ffffffff811c66f3>] rcu_idle_enter+0x43/0xa0
+[   42.389417]  [<ffffffff81078956>] cpu_idle+0x126/0x160
+[   42.389420]  [<ffffffff83985a64>] start_secondary+0x26e/0x276
+[   42.389421] ---[ end trace 04c11301284d64ef ]---
+[   42.389424] ------------[ cut here ]------------
+[   42.389426] WARNING: at kernel/rcutree.c:527 rcu_eqs_exit+0x4f/0xb0()
+[   42.389427] Pid: 0, comm: swapper/2 Tainted: G        W
+3.6.0-rc6-next-20120921-sasha-00002-ge9c9495-dirty #378
+[   42.389428] Call Trace:
+[   42.389431]  [<ffffffff811c6d9f>] ? rcu_eqs_exit+0x4f/0xb0
+[   42.389433]  [<ffffffff81106886>] warn_slowpath_common+0x86/0xb0
+[   42.389436]  [<ffffffff81106975>] warn_slowpath_null+0x15/0x20
+[   42.389438]  [<ffffffff811c6d9f>] rcu_eqs_exit+0x4f/0xb0
+[   42.389441]  [<ffffffff811c6f13>] rcu_idle_exit+0x43/0xa0
+[   42.389443]  [<ffffffff8107896d>] cpu_idle+0x13d/0x160
+[   42.389445]  [<ffffffff83985a64>] start_secondary+0x26e/0x276
+[   42.389447] ---[ end trace 04c11301284d64f0 ]---
+[   42.389448] ------------[ cut here ]------------
+[   42.389450] WARNING: at kernel/rcutree.c:501 rcu_eqs_exit_common+0x4a/0x3a0()
+[   42.389451] Pid: 0, comm: swapper/2 Tainted: G        W
+3.6.0-rc6-next-20120921-sasha-00002-ge9c9495-dirty #378
+[   42.389452] Call Trace:
+[   42.389455]  [<ffffffff811c679a>] ? rcu_eqs_exit_common+0x4a/0x3a0
+[   42.389458]  [<ffffffff81106886>] warn_slowpath_common+0x86/0xb0
+[   42.389460]  [<ffffffff81106975>] warn_slowpath_null+0x15/0x20
+[   42.389462]  [<ffffffff811c679a>] rcu_eqs_exit_common+0x4a/0x3a0
+[   42.389465]  [<ffffffff811c6dec>] rcu_eqs_exit+0x9c/0xb0
+[   42.389467]  [<ffffffff811c6f13>] rcu_idle_exit+0x43/0xa0
+[   42.389470]  [<ffffffff8107896d>] cpu_idle+0x13d/0x160
+[   42.389472]  [<ffffffff83985a64>] start_secondary+0x26e/0x276
+[   42.389474] ---[ end trace 04c11301284d64f1 ]---
 
-- Lars
 
-
-> Steps to reproduce:
-> 
-> #modprobe iio_dummy
-> iio_dummy: module is from the staging directory, the quality is unknown, you 
-> have been warned.
-> 
-> Modules linked in: iio_dummy(C+) industrialio
-> Pid: 615, comm: modprobe Tainted: G         C   3.6.0-rc6-00180-g68d0383-dirty
-> RIP: 0033:[<00000000a089d846>]
-> RSP: 000000009f4ffd30  EFLAGS: 00010206
-> RAX: 0000000000000004 RBX: 00000000a08be6a0 RCX: 0000000000000000
-> RDX: 000000006036a320 RSI: 0000000000000008 RDI: 0000000000000000
-> RBP: 000000009f4ffda0 R08: 000000009f4ff900 R09: 0000000060406da8
-> R10: 000000000000004a R11: 0000000000000246 R12: 00000000602a58bc
-> R13: 0000000000000005 R14: 000000006005f170 R15: 000000009f6b0400
-> Call Trace: 
-> 603675d8:  [<6001d53d>] segv+0x1bd/0x340
-> 603675f8:  [<6008b8ab>] handle_irq_event_percpu+0xab/0x1b0
-> 60367620:  [<6008b9b0>] handle_irq_event+0x0/0x40
-> 60367630:  [<6002e09c>] os_waiting_for_events+0x0/0xc5
-> 60367658:  [<6008fccf>] rcu_irq_exit+0x5f/0xb0
-> 603676a8:  [<6001d713>] segv_handler+0x53/0xb0
-> 603676c8:  [<60019b5c>] sigio_handler+0xac/0xc0
-> 603676f8:  [<6002ff5a>] sig_handler_common+0xa4/0xb9
-> 60367708:  [<6005f170>] __mutex_init+0x0/0x20
-> 60367718:  [<602a58bc>] printk+0x0/0xa8
-> 60367780:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 60367818:  [<60016c34>] _einittext+0x2572/0x38f6
-> 60367828:  [<60016728>] _einittext+0x2066/0x38f6
-> 60367908:  [<60016c34>] _einittext+0x2572/0x38f6
-> 603679a8:  [<60019b70>] to_irq_stack+0x0/0xe0
-> 60367a28:  [<60019b70>] to_irq_stack+0x0/0xe0
-> 60367a38:  [<600300b5>] sig_handler+0x4a/0x5d
-> 60367a58:  [<6002fb81>] hard_handler+0x89/0xd8
-> 60367a90:  [<602a58bc>] printk+0x0/0xa8
-> 60367aa0:  [<6005f170>] __mutex_init+0x0/0x20
-> 60367b08:  [<602a58bc>] printk+0x0/0xa8
-> 60367b18:  [<6005f170>] __mutex_init+0x0/0x20
-> 60367b68:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 
-> Kernel panic - not syncing: Kernel mode fault at addr 0x68, ip 0xa089d846
-> Call Trace: 
-> 603674b0:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 603674c8:  [<602a5751>] panic+0x146/0x2b1
-> 60367500:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 60367508:  [<602a560b>] panic+0x0/0x2b1
-> 60367520:  [<6007a4d4>] __module_text_address+0x14/0x70
-> 60367538:  [<6007ec20>] is_module_text_address+0x10/0x20
-> 60367548:  [<600582c7>] __kernel_text_address+0x87/0xc0
-> 60367568:  [<6001bc1f>] show_trace+0x7f/0xf0
-> 60367598:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 603675c0:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 603675d8:  [<6001d55b>] segv+0x1db/0x340
-> 603675f8:  [<6008b8ab>] handle_irq_event_percpu+0xab/0x1b0
-> 60367620:  [<6008b9b0>] handle_irq_event+0x0/0x40
-> 60367630:  [<6002e09c>] os_waiting_for_events+0x0/0xc5
-> 60367658:  [<6008fccf>] rcu_irq_exit+0x5f/0xb0
-> 603676a8:  [<6001d713>] segv_handler+0x53/0xb0
-> 603676c8:  [<60019b5c>] sigio_handler+0xac/0xc0
-> 603676f8:  [<6002ff5a>] sig_handler_common+0xa4/0xb9
-> 60367708:  [<6005f170>] __mutex_init+0x0/0x20
-> 60367718:  [<602a58bc>] printk+0x0/0xa8
-> 60367780:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 60367818:  [<60016c34>] _einittext+0x2572/0x38f6
-> 60367828:  [<60016728>] _einittext+0x2066/0x38f6
-> 60367908:  [<60016c34>] _einittext+0x2572/0x38f6
-> 603679a8:  [<60019b70>] to_irq_stack+0x0/0xe0
-> 60367a28:  [<60019b70>] to_irq_stack+0x0/0xe0
-> 60367a38:  [<600300b5>] sig_handler+0x4a/0x5d
-> 60367a58:  [<6002fb81>] hard_handler+0x89/0xd8
-> 60367a90:  [<602a58bc>] printk+0x0/0xa8
-> 60367aa0:  [<6005f170>] __mutex_init+0x0/0x20
-> 60367b08:  [<602a58bc>] printk+0x0/0xa8
-> 60367b18:  [<6005f170>] __mutex_init+0x0/0x20
-> 60367b68:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 
-> 
-> Modules linked in: iio_dummy(C+) industrialio
-> Pid: 615, comm: modprobe Tainted: G         C   3.6.0-rc6-00180-g68d0383-dirty
-> RIP: 0033:[<00000000402eff9a>]
-> RSP: 0000007fbfbf6798  EFLAGS: 00000246
-> RAX: ffffffffffffffda RBX: 0000000000000000 RCX: ffffffffffffffff
-> RDX: 000000000060e110 RSI: 00000000000148c9 RDI: 0000000040024000
-> RBP: 0000000000611b70 R08: 000000000060e100 R09: 0000000000000000
-> R10: 0000000000000000 R11: 0000000000000246 R12: 000000000060e110
-> R13: 0000000000000000 R14: 000000000060e010 R15: 0000000000611b88
-> Call Trace: 
-> 60367448:  [<6001db1e>] panic_exit+0x3e/0x60
-> 60367478:  [<600616ad>] notifier_call_chain+0x4d/0x70
-> 603674a0:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 603674b8:  [<60061708>] atomic_notifier_call_chain+0x18/0x20
-> 603674c8:  [<602a5784>] panic+0x179/0x2b1
-> 60367500:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 60367508:  [<602a560b>] panic+0x0/0x2b1
-> 60367520:  [<6007a4d4>] __module_text_address+0x14/0x70
-> 60367538:  [<6007ec20>] is_module_text_address+0x10/0x20
-> 60367548:  [<600582c7>] __kernel_text_address+0x87/0xc0
-> 60367568:  [<6001bc1f>] show_trace+0x7f/0xf0
-> 60367598:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 603675c0:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 603675d8:  [<6001d55b>] segv+0x1db/0x340
-> 603675f8:  [<6008b8ab>] handle_irq_event_percpu+0xab/0x1b0
-> 60367620:  [<6008b9b0>] handle_irq_event+0x0/0x40
-> 60367630:  [<6002e09c>] os_waiting_for_events+0x0/0xc5
-> 60367658:  [<6008fccf>] rcu_irq_exit+0x5f/0xb0
-> 603676a8:  [<6001d713>] segv_handler+0x53/0xb0
-> 603676c8:  [<60019b5c>] sigio_handler+0xac/0xc0
-> 603676f8:  [<6002ff5a>] sig_handler_common+0xa4/0xb9
-> 60367708:  [<6005f170>] __mutex_init+0x0/0x20
-> 60367718:  [<602a58bc>] printk+0x0/0xa8
-> 60367780:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 60367818:  [<60016c34>] _einittext+0x2572/0x38f6
-> 60367828:  [<60016728>] _einittext+0x2066/0x38f6
-> 60367908:  [<60016c34>] _einittext+0x2572/0x38f6
-> 603679a8:  [<60019b70>] to_irq_stack+0x0/0xe0
-> 60367a28:  [<60019b70>] to_irq_stack+0x0/0xe0
-> 60367a38:  [<600300b5>] sig_handler+0x4a/0x5d
-> 60367a58:  [<6002fb81>] hard_handler+0x89/0xd8
-> 60367a90:  [<602a58bc>] printk+0x0/0xa8
-> 60367aa0:  [<6005f170>] __mutex_init+0x0/0x20
-> 60367b08:  [<602a58bc>] printk+0x0/0xa8
-> 60367b18:  [<6005f170>] __mutex_init+0x0/0x20
-> 60367b68:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
-> 
-> 
-> Tested on recent linus' tree (v3.6-rc6-176-gabef3bd)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+Thanks,
+Sasha
