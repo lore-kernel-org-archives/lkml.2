@@ -1,207 +1,628 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab2IVLtd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 07:49:33 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:41635 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896Ab2IVLtc (ORCPT
+	id S1751635Ab2IVNG3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 09:06:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63456 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab2IVNG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 07:49:32 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 4/5] fat (exportfs): rebuild directory-inode if fat_dget() fails
-References: <1347798181-2731-1-git-send-email-linkinjeon@gmail.com>
-Date: Sat, 22 Sep 2012 20:49:29 +0900
-In-Reply-To: <1347798181-2731-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Sun, 16 Sep 2012 08:23:01 -0400")
-Message-ID: <87d31e8egm.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 22 Sep 2012 09:06:27 -0400
+Subject: Re: [PATCH] [V3]power: battery: Generic battery driver using IIO
+From: anish kumar <anish198519851985@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, dwmw2@infradead.org,
+        lars@metafoo.de, jic23@cam.ac.uk, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org
+In-Reply-To: <505D8A02.9070305@kernel.org>
+References: <1348243814-4197-1-git-send-email-anish198519851985@gmail.com>
+	 <20120921225221.GA26715@lizard>  <505D8A02.9070305@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 22 Sep 2012 18:36:13 +0530
+Message-ID: <1348319173.27637.4.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Sat, 2012-09-22 at 10:50 +0100, Jonathan Cameron wrote:
+> On 09/21/2012 11:52 PM, Anton Vorontsov wrote:
+> > On Fri, Sep 21, 2012 at 09:40:14PM +0530, anish kumar wrote:
+> >> From: anish kumar <anish198519851985@gmail.com>
+> >>
+> >> In last version:
+> >> Addressed concerns raised by lars:
+> >> a. made the adc_bat per device.
+> >> b. get the IIO channel using hardcoded channel names.
+> >> c. Minor issues related to gpio_is_valid and some code
+> >>    refactoring.
+> > 
+> > In the commit message itself it usually good idea to write a short
+> > description for the patch: the rationale behind the driver. Just a few
+> > sentences will work.
+> I've hacked in a very short description whilst merging this
+> (I'm a bit pushed for time in the coming week and don't want to delay
+> this long enough for Anish to get back to me and then miss the merge window.)
+> 
+> 'Driver to allow use of the ADC drivers supported by the IIO
+> subsystem for battery status monitoring. Connecting this
+> driver to the relevant IIO device requires registration of
+> the appropriate iio_map structure array by the IIO device
+> driver (usually from platform data).  If specified the driver
+> will also make use of a gpio to provide interrupt driven
+> notification that the battery is fully charged.'
+> 
+> Hope no one minds that and that I haven't missed any important elements.
+> 
+> I've also taken to_generic_bat and gab_prop_to_chan static to avoid some
+> warnings from sparse (and the inevitable follow up patch when the autobuilders
+> hit this ;)
+> 
+> Anyhow the result of these trivial changes is now in the
+> togreg branch of
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+> 
+> and will go to GregKH sometime later today / tomorrow.
+> 
+> Note this will merge through the staging tree.  This is no
+> reflection on the driver or indeed anything it actually depends on.
+> Greg is taking IIO patches through there purely because we have so
+> many other drivers still in staging and it would be very fiddly to
+> do it otherwise for the time being!
+> 
+> Thanks for your hard work on this Anish,
+Thanks to Lars for coming up with this idea, Anton for reviewing
+and last but not the least yourself to comeup with IIO framework 
+itself.
+> 
+> Jonathan
+> 
+> > 
+> > And changelog usually goes below the "---" separator, as we don't want it
+> > in the commit log ("git am" command ignores anything below "---").
+> > 
+> >> In V1:
+> >> Addressed concerns raised by Anton:
+> >> a. changed the struct name to gab(generic adc battery).
+> >> b. Added some functions to neaten the code.
+> >> c. Some minor coding guidelines changes.
+> >> d. Used the latest function introduce by lars:
+> >>    iio_read_channel_processed to streamline the code.
+> >>
+> >> In V2:
+> >> Addressed concerns by lars:
+> >> a. No need of allocating memory for channels.Make it array.
+> >> b. Code restructring, coding style and following kernel guidelines changes
+> >>    suggested by him.
+> >>
+> >> In V3:
+> >> Addressed conerns by Anton:
+> >> a. Added the copyright.
+> >> b. Coding guidelines changes suggested by him.
+> >> c. Added Makefile and Kconfig
+> >>
+> >> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> >> ---
+> > 
+> > OK, I belive it is good enough, and as it depends on IIO changes,
+> > I believe now it's IIO maintainer's worry to pick it up. :-)
+> > 
+> > Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> > 
+> > Thanks a lot for your work!
+> > 
+> >>  drivers/power/Kconfig                     |    7 +
+> >>  drivers/power/Makefile                    |    1 +
+> >>  drivers/power/generic-adc-battery.c       |  422 +++++++++++++++++++++++++++++
+> >>  include/linux/power/generic-adc-battery.h |   29 ++
+> >>  4 files changed, 459 insertions(+), 0 deletions(-)
+> >>  create mode 100644 drivers/power/generic-adc-battery.c
+> >>  create mode 100644 include/linux/power/generic-adc-battery.h
+> >>
+> >> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+> >> index fcc1bb0..30a173a 100644
+> >> --- a/drivers/power/Kconfig
+> >> +++ b/drivers/power/Kconfig
+> >> @@ -29,6 +29,13 @@ config APM_POWER
+> >>  	  Say Y here to enable support APM status emulation using
+> >>  	  battery class devices.
+> >>  
+> >> +config GENERIC_ADC_BATTERY
+> >> +	tristate "Generic battery support using IIO"
+> >> +	depends on IIO
+> >> +	help
+> >> +	  Say Y here to enable support for the generic battery driver
+> >> +	  which uses IIO framework to read adc.
+> >> +
+> >>  config MAX8925_POWER
+> >>  	tristate "MAX8925 battery charger support"
+> >>  	depends on MFD_MAX8925
+> >> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+> >> index ee58afb..e0b4d42 100644
+> >> --- a/drivers/power/Makefile
+> >> +++ b/drivers/power/Makefile
+> >> @@ -5,6 +5,7 @@ power_supply-$(CONFIG_SYSFS)		+= power_supply_sysfs.o
+> >>  power_supply-$(CONFIG_LEDS_TRIGGERS)	+= power_supply_leds.o
+> >>  
+> >>  obj-$(CONFIG_POWER_SUPPLY)	+= power_supply.o
+> >> +obj-$(CONFIG_GENERIC_ADC_BATTERY)	+= generic-adc-battery.o
+> >>  
+> >>  obj-$(CONFIG_PDA_POWER)		+= pda_power.o
+> >>  obj-$(CONFIG_APM_POWER)		+= apm_power.o
+> >> diff --git a/drivers/power/generic-adc-battery.c b/drivers/power/generic-adc-battery.c
+> >> new file mode 100644
+> >> index 0000000..a34d52a
+> >> --- /dev/null
+> >> +++ b/drivers/power/generic-adc-battery.c
+> >> @@ -0,0 +1,422 @@
+> >> +/*
+> >> + * Generic battery driver code using IIO
+> >> + * Copyright (C) 2012, Anish Kumar <anish198519851985@gmail.com>
+> >> + * based on jz4740-battery.c
+> >> + * based on s3c_adc_battery.c
+> >> + *
+> >> + * This file is subject to the terms and conditions of the GNU General Public
+> >> + * License.  See the file COPYING in the main directory of this archive for
+> >> + * more details.
+> >> + *
+> >> + */
+> >> +#include <linux/interrupt.h>
+> >> +#include <linux/platform_device.h>
+> >> +#include <linux/power_supply.h>
+> >> +#include <linux/gpio.h>
+> >> +#include <linux/err.h>
+> >> +#include <linux/timer.h>
+> >> +#include <linux/jiffies.h>
+> >> +#include <linux/errno.h>
+> >> +#include <linux/init.h>
+> >> +#include <linux/module.h>
+> >> +#include <linux/slab.h>
+> >> +#include <linux/iio/consumer.h>
+> >> +#include <linux/iio/types.h>
+> >> +#include <linux/power/generic-adc-battery.h>
+> >> +
+> >> +#define JITTER_DEFAULT 10 /* hope 10ms is enough */
+> >> +
+> >> +enum gab_chan_type {
+> >> +	GAB_VOLTAGE = 0,
+> >> +	GAB_CURRENT,
+> >> +	GAB_POWER,
+> >> +	GAB_MAX_CHAN_TYPE
+> >> +};
+> >> +
+> >> +/*
+> >> + * gab_chan_name suggests the standard channel names for commonly used
+> >> + * channel types.
+> >> + */
+> >> +static const char *const gab_chan_name[] = {
+> >> +	[GAB_VOLTAGE]	= "voltage",
+> >> +	[GAB_CURRENT]	= "current",
+> >> +	[GAB_POWER]		= "power",
+> >> +};
+> >> +
+> >> +struct gab {
+> >> +	struct power_supply	psy;
+> >> +	struct iio_channel	*channel[GAB_MAX_CHAN_TYPE];
+> >> +	struct gab_platform_data	*pdata;
+> >> +	struct delayed_work bat_work;
+> >> +	int	level;
+> >> +	int	status;
+> >> +	bool cable_plugged;
+> >> +};
+> >> +
+> >> +struct gab *to_generic_bat(struct power_supply *psy)
+> >> +{
+> >> +	return container_of(psy, struct gab, psy);
+> >> +}
+> >> +
+> >> +static void gab_ext_power_changed(struct power_supply *psy)
+> >> +{
+> >> +	struct gab *adc_bat = to_generic_bat(psy);
+> >> +
+> >> +	schedule_delayed_work(&adc_bat->bat_work, msecs_to_jiffies(0));
+> >> +}
+> >> +
+> >> +static const enum power_supply_property gab_props[] = {
+> >> +	POWER_SUPPLY_PROP_STATUS,
+> >> +	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+> >> +	POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN,
+> >> +	POWER_SUPPLY_PROP_CHARGE_NOW,
+> >> +	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+> >> +	POWER_SUPPLY_PROP_CURRENT_NOW,
+> >> +	POWER_SUPPLY_PROP_TECHNOLOGY,
+> >> +	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+> >> +	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
+> >> +	POWER_SUPPLY_PROP_MODEL_NAME,
+> >> +};
+> >> +
+> >> +/*
+> >> + * This properties are set based on the received platform data and this
+> >> + * should correspond one-to-one with enum chan_type.
+> >> + */
+> >> +static const enum power_supply_property gab_dyn_props[] = {
+> >> +	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+> >> +	POWER_SUPPLY_PROP_CURRENT_NOW,
+> >> +	POWER_SUPPLY_PROP_POWER_NOW,
+> >> +};
+> >> +
+> >> +static bool gab_charge_finished(struct gab *adc_bat)
+> >> +{
+> >> +	struct gab_platform_data *pdata = adc_bat->pdata;
+> >> +	bool ret = gpio_get_value(pdata->gpio_charge_finished);
+> >> +	bool inv = pdata->gpio_inverted;
+> >> +
+> >> +	if (!gpio_is_valid(pdata->gpio_charge_finished))
+> >> +		return false;
+> >> +	return ret ^ inv;
+> >> +}
+> >> +
+> >> +static int gab_get_status(struct gab *adc_bat)
+> >> +{
+> >> +	struct gab_platform_data *pdata = adc_bat->pdata;
+> >> +	struct power_supply_info *bat_info;
+> >> +
+> >> +	bat_info = &pdata->battery_info;
+> > 
+> > bat_info can also go into the initializer.
+> > 
+> >> +	if (adc_bat->level == bat_info->charge_full_design)
+> >> +		return POWER_SUPPLY_STATUS_FULL;
+> >> +	return adc_bat->status;
+> >> +}
+> >> +
+> >> +enum gab_chan_type gab_prop_to_chan(enum power_supply_property psp)
+> >> +{
+> >> +	switch (psp) {
+> >> +	case POWER_SUPPLY_PROP_POWER_NOW:
+> >> +		return GAB_POWER;
+> >> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+> >> +		return GAB_VOLTAGE;
+> >> +	case POWER_SUPPLY_PROP_CURRENT_NOW:
+> >> +		return GAB_CURRENT;
+> >> +	default:
+> >> +		WARN_ON(1);
+> >> +		break;
+> >> +	}
+> >> +	return GAB_POWER;
+> >> +}
+> >> +
+> >> +static int read_channel(struct gab *adc_bat, enum power_supply_property psp,
+> >> +		int *result)
+> >> +{
+> >> +	int ret;
+> >> +	int chan_index;
+> >> +
+> >> +	chan_index = gab_prop_to_chan(psp);
+> >> +	ret = iio_read_channel_processed(adc_bat->channel[chan_index],
+> >> +			result);
+> >> +	if (ret < 0)
+> >> +		pr_err("read channel error\n");
+> >> +	return ret;
+> >> +}
+> >> +
+> >> +static int gab_get_property(struct power_supply *psy,
+> >> +		enum power_supply_property psp, union power_supply_propval *val)
+> >> +{
+> >> +	struct gab *adc_bat;
+> >> +	struct gab_platform_data *pdata;
+> >> +	struct power_supply_info *bat_info;
+> >> +	int result = 0;
+> >> +	int ret = 0;
+> >> +
+> >> +	adc_bat = to_generic_bat(psy);
+> >> +	if (!adc_bat) {
+> >> +		dev_err(psy->dev, "no battery infos ?!\n");
+> >> +		return -EINVAL;
+> >> +	}
+> >> +	pdata = adc_bat->pdata;
+> >> +	bat_info = &pdata->battery_info;
+> >> +
+> >> +	switch (psp) {
+> >> +	case POWER_SUPPLY_PROP_STATUS:
+> >> +		gab_get_status(adc_bat);
+> >> +		break;
+> >> +	case POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN:
+> >> +		val->intval = 0;
+> >> +		break;
+> >> +	case POWER_SUPPLY_PROP_CHARGE_NOW:
+> >> +		val->intval = pdata->cal_charge(result);
+> >> +		break;
+> >> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+> >> +	case POWER_SUPPLY_PROP_CURRENT_NOW:
+> >> +	case POWER_SUPPLY_PROP_POWER_NOW:
+> >> +		ret = read_channel(adc_bat, psp, &result);
+> >> +		if (ret < 0)
+> >> +			goto err;
+> >> +		val->intval = result;
+> >> +		break;
+> >> +	case POWER_SUPPLY_PROP_TECHNOLOGY:
+> >> +		val->intval = bat_info->technology;
+> >> +		break;
+> >> +	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
+> >> +		val->intval = bat_info->voltage_min_design;
+> >> +		break;
+> >> +	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
+> >> +		val->intval = bat_info->voltage_max_design;
+> >> +		break;
+> >> +	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+> >> +		val->intval = bat_info->charge_full_design;
+> >> +		break;
+> >> +	case POWER_SUPPLY_PROP_MODEL_NAME:
+> >> +		val->strval = bat_info->name;
+> >> +		break;
+> >> +	default:
+> >> +		return -EINVAL;
+> >> +	}
+> >> +err:
+> >> +	return ret;
+> >> +}
+> >> +
+> >> +static void gab_work(struct work_struct *work)
+> >> +{
+> >> +	struct gab *adc_bat;
+> >> +	struct gab_platform_data *pdata;
+> >> +	struct delayed_work *delayed_work;
+> >> +	bool is_plugged;
+> >> +	int status;
+> >> +
+> >> +	delayed_work = container_of(work, struct delayed_work, work);
+> >> +	adc_bat = container_of(delayed_work, struct gab, bat_work);
+> >> +	pdata = adc_bat->pdata;
+> >> +	status = adc_bat->status;
+> >> +
+> >> +	is_plugged = power_supply_am_i_supplied(&adc_bat->psy);
+> >> +	adc_bat->cable_plugged = is_plugged;
+> >> +
+> >> +	if (!is_plugged)
+> >> +		adc_bat->status =  POWER_SUPPLY_STATUS_DISCHARGING;
+> >> +	else if (gab_charge_finished(adc_bat))
+> >> +		adc_bat->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+> >> +	else
+> >> +		adc_bat->status = POWER_SUPPLY_STATUS_CHARGING;
+> >> +
+> >> +	if (status != adc_bat->status)
+> >> +		power_supply_changed(&adc_bat->psy);
+> >> +}
+> >> +
+> >> +static irqreturn_t gab_charged(int irq, void *dev_id)
+> >> +{
+> >> +	struct gab *adc_bat = dev_id;
+> >> +	struct gab_platform_data *pdata = adc_bat->pdata;
+> >> +	int delay;
+> >> +
+> >> +	delay = pdata->jitter_delay ? pdata->jitter_delay : JITTER_DEFAULT;
+> >> +	schedule_delayed_work(&adc_bat->bat_work,
+> >> +			msecs_to_jiffies(delay));
+> >> +	return IRQ_HANDLED;
+> >> +}
+> >> +
+> >> +static int __devinit gab_probe(struct platform_device *pdev)
+> >> +{
+> >> +	struct gab *adc_bat;
+> >> +	struct power_supply *psy;
+> >> +	struct gab_platform_data *pdata = pdev->dev.platform_data;
+> >> +	enum power_supply_property *properties;
+> >> +	int ret = 0;
+> >> +	int chan;
+> >> +	int index = 0;
+> >> +
+> >> +	adc_bat = devm_kzalloc(&pdev->dev, sizeof(*adc_bat), GFP_KERNEL);
+> >> +	if (!adc_bat) {
+> >> +		dev_err(&pdev->dev, "failed to allocate memory\n");
+> >> +		return -ENOMEM;
+> >> +	}
+> >> +
+> >> +	psy = &adc_bat->psy;
+> >> +	psy->name = pdata->battery_info.name;
+> >> +
+> >> +	/* bootup default values for the battery */
+> >> +	adc_bat->cable_plugged = false;
+> >> +	adc_bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
+> >> +	psy->type = POWER_SUPPLY_TYPE_BATTERY;
+> >> +	psy->get_property = gab_get_property;
+> >> +	psy->external_power_changed = gab_ext_power_changed;
+> >> +	adc_bat->pdata = pdata;
+> >> +
+> >> +	/* calculate the total number of channels */
+> >> +	chan = ARRAY_SIZE(gab_chan_name);
+> >> +
+> >> +	/*
+> >> +	 * copying the static properties and allocating extra memory for holding
+> >> +	 * the extra configurable properties received from platform data.
+> >> +	 */
+> >> +	psy->properties = kcalloc(ARRAY_SIZE(gab_props) +
+> >> +					ARRAY_SIZE(gab_chan_name),
+> >> +					sizeof(*psy->properties), GFP_KERNEL);
+> >> +	if (!psy->properties) {
+> >> +		ret = -ENOMEM;
+> >> +		goto first_mem_fail;
+> >> +	}
+> >> +
+> >> +	memcpy(psy->properties, gab_props, sizeof(gab_props));
+> >> +	properties = psy->properties + sizeof(gab_props);
+> >> +
+> >> +	/*
+> >> +	 * getting channel from iio and copying the battery properties
+> >> +	 * based on the channel supported by consumer device.
+> >> +	 */
+> >> +	for (chan = 0; chan < ARRAY_SIZE(gab_chan_name); chan++) {
+> >> +		adc_bat->channel[chan] = iio_channel_get(dev_name(&pdev->dev),
+> >> +						gab_chan_name[chan]);
+> >> +		if (IS_ERR(adc_bat->channel[chan])) {
+> >> +			ret = PTR_ERR(adc_bat->channel[chan]);
+> >> +		} else {
+> >> +			/* copying properties for supported channels only */
+> >> +			memcpy(properties + sizeof(*(psy->properties)) * index,
+> >> +					&gab_dyn_props[chan],
+> >> +					sizeof(gab_dyn_props[chan]));
+> >> +			index++;
+> >> +		}
+> >> +	}
+> >> +
+> >> +	/* none of the channels are supported so let's bail out */
+> >> +	if (index == ARRAY_SIZE(gab_chan_name))
+> >> +		goto second_mem_fail;
+> >> +
+> >> +	/*
+> >> +	 * Total number of properties is equal to static properties
+> >> +	 * plus the dynamic properties.Some properties may not be set
+> >> +	 * as come channels may be not be supported by the device.So
+> >> +	 * we need to take care of that.
+> >> +	 */
+> >> +	psy->num_properties = ARRAY_SIZE(gab_props) + index;
+> >> +
+> >> +	ret = power_supply_register(&pdev->dev, psy);
+> >> +	if (ret)
+> >> +		goto err_reg_fail;
+> >> +
+> >> +	INIT_DELAYED_WORK(&adc_bat->bat_work, gab_work);
+> >> +
+> >> +	if (gpio_is_valid(pdata->gpio_charge_finished)) {
+> >> +		int irq;
+> >> +		ret = gpio_request(pdata->gpio_charge_finished, "charged");
+> >> +		if (ret)
+> >> +			goto gpio_req_fail;
+> >> +
+> >> +		irq = gpio_to_irq(pdata->gpio_charge_finished);
+> >> +		ret = request_any_context_irq(irq, gab_charged,
+> >> +				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+> >> +				"battery charged", adc_bat);
+> >> +		if (ret)
+> >> +			goto err_gpio;
+> >> +	}
+> >> +
+> >> +	platform_set_drvdata(pdev, adc_bat);
+> >> +
+> >> +	/* Schedule timer to check current status */
+> >> +	schedule_delayed_work(&adc_bat->bat_work,
+> >> +			msecs_to_jiffies(0));
+> >> +	return 0;
+> >> +
+> >> +err_gpio:
+> >> +	gpio_free(pdata->gpio_charge_finished);
+> >> +gpio_req_fail:
+> >> +	power_supply_unregister(psy);
+> >> +err_reg_fail:
+> >> +	for (chan = 0; ARRAY_SIZE(gab_chan_name); chan++)
+> >> +		iio_channel_release(adc_bat->channel[chan]);
+> >> +second_mem_fail:
+> >> +	kfree(psy->properties);
+> >> +first_mem_fail:
+> >> +	return ret;
+> >> +}
+> >> +
+> >> +static int __devexit gab_remove(struct platform_device *pdev)
+> >> +{
+> >> +	int chan;
+> >> +	struct gab *adc_bat = platform_get_drvdata(pdev);
+> >> +	struct gab_platform_data *pdata = adc_bat->pdata;
+> >> +
+> >> +	power_supply_unregister(&adc_bat->psy);
+> >> +
+> >> +	if (gpio_is_valid(pdata->gpio_charge_finished)) {
+> >> +		free_irq(gpio_to_irq(pdata->gpio_charge_finished), adc_bat);
+> >> +		gpio_free(pdata->gpio_charge_finished);
+> >> +	}
+> >> +
+> >> +	for (chan = 0; ARRAY_SIZE(gab_chan_name); chan++)
+> >> +		iio_channel_release(adc_bat->channel[chan]);
+> >> +
+> >> +	kfree(adc_bat->psy.properties);
+> >> +	cancel_delayed_work(&adc_bat->bat_work);
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +#ifdef CONFIG_PM
+> >> +static int gab_suspend(struct device *dev)
+> >> +{
+> >> +	struct gab *adc_bat = dev_get_drvdata(dev);
+> >> +
+> >> +	cancel_delayed_work_sync(&adc_bat->bat_work);
+> >> +	adc_bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +static int gab_resume(struct device *dev)
+> >> +{
+> >> +	struct gab *adc_bat = dev_get_drvdata(dev);
+> >> +	struct gab_platform_data *pdata = adc_bat->pdata;
+> >> +	int delay;
+> >> +
+> >> +	delay = pdata->jitter_delay ? pdata->jitter_delay : JITTER_DEFAULT;
+> >> +
+> >> +	/* Schedule timer to check current status */
+> >> +	schedule_delayed_work(&adc_bat->bat_work,
+> >> +			msecs_to_jiffies(delay));
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +static const struct dev_pm_ops gab_pm_ops = {
+> >> +	.suspend        = gab_suspend,
+> >> +	.resume         = gab_resume,
+> >> +};
+> >> +
+> >> +#define GAB_PM_OPS       (&gab_pm_ops)
+> >> +#else
+> >> +#define GAB_PM_OPS       (NULL)
+> >> +#endif
+> >> +
+> >> +static struct platform_driver gab_driver = {
+> >> +	.driver		= {
+> >> +		.name	= "generic-adc-battery",
+> >> +		.owner	= THIS_MODULE,
+> >> +		.pm	= GAB_PM_OPS
+> >> +	},
+> >> +	.probe		= gab_probe,
+> >> +	.remove		= __devexit_p(gab_remove),
+> >> +};
+> >> +module_platform_driver(gab_driver);
+> >> +
+> >> +MODULE_AUTHOR("anish kumar <anish198519851985@gmail.com>");
+> >> +MODULE_DESCRIPTION("generic battery driver using IIO");
+> >> +MODULE_LICENSE("GPL");
+> >> diff --git a/include/linux/power/generic-adc-battery.h b/include/linux/power/generic-adc-battery.h
+> >> new file mode 100644
+> >> index 0000000..b1ebe08
+> >> --- /dev/null
+> >> +++ b/include/linux/power/generic-adc-battery.h
+> >> @@ -0,0 +1,29 @@
+> >> +/*
+> >> + * Copyright (C) 2012, Anish Kumar <anish198519851985@gmail.com>
+> >> + * This program is free software; you can redistribute it and/or modify
+> >> + * it under the terms of the GNU General Public License version 2 as
+> >> + * published by the Free Software Foundation.
+> >> + */
+> >> +
+> >> +#ifndef GENERIC_ADC_BATTERY_H
+> >> +#define GENERIC_ADC_BATTERY_H
+> >> +
+> >> +/**
+> >> + * struct gab_platform_data - platform_data for generic adc iio battery driver.
+> >> + * @battery_info:         recommended structure to specify static power supply
+> >> + *			   parameters
+> >> + * @cal_charge:           calculate charge level.
+> >> + * @gpio_charge_finished: gpio for the charger.
+> >> + * @gpio_inverted:        Should be 1 if the GPIO is active low otherwise 0
+> >> + * @jitter_delay:         delay required after the interrupt to check battery
+> >> + *			  status.Default set is 10ms.
+> >> + */
+> >> +struct gab_platform_data {
+> >> +	struct power_supply_info battery_info;
+> >> +	int	(*cal_charge)(long value);
+> >> +	int	gpio_charge_finished;
+> >> +	bool	gpio_inverted;
+> >> +	int     jitter_delay;
+> >> +};
+> >> +
+> >> +#endif /* GENERIC_ADC_BATTERY_H */
+> >> -- 
+> >> 1.7.1
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
 
-> From: Namjae Jeon <namjae.jeon@samsung.com>
->
-> This patch enables rebuilding of directory inodes which are not present
-> in the cache.This is done by traversing the disk clusters to find the
-> directory entry of the parent directory and using its i_pos to build the
-> inode.
 
-Hmm... Is this functionality is necessary to work correctly? If we
-didn't provide this, which case do server return ESTALE?
-
-Well, this looks like duplication of lookup, we may need to consolidate.
-
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
-> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-> ---
->  fs/fat/nfs.c |  132 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 128 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
-> index 3cf5412..bb4262c 100644
-> --- a/fs/fat/nfs.c
-> +++ b/fs/fat/nfs.c
-> @@ -104,6 +104,93 @@ struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fid,
->  }
->  
->  /*
-> + * Read the directory entries of 'search_clus' and find the entry
-> + * which contains 'match_ipos' for the starting cluster.If the entry
-> + * is found, rebuild its inode.
-> + */
-> +static struct inode *fat_traverse_cluster(struct super_block *sb,
-> +				int search_clus, int match_ipos)
-> +{
-> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-> +	struct buffer_head *bh;
-> +	sector_t blknr;
-> +	int parent_ipos, search_ipos;
-> +	int i;
-> +	struct msdos_dir_entry *de;
-> +	struct inode *inode = NULL;
-> +	int iterations = sbi->cluster_size >> sb->s_blocksize_bits;
-> +	blknr = fat_clus_to_blknr(sbi, search_clus);
-> +
-> +	do {
-> +		bh = sb_bread(sb, blknr);
-> +		if (!bh) {
-> +			fat_msg(sb, KERN_ERR,
-> +				 "NFS:unable to read block(%llu) while traversing cluster(%d)",
-> +				(llu)blknr, search_clus);
-> +			inode = ERR_PTR(-EIO);
-> +			goto out;
-> +		}
-> +		de = (struct msdos_dir_entry *)bh->b_data;
-> +		for (i = 0; i < sbi->dir_per_block; i++) {
-> +			if (de[i].name[0] == FAT_ENT_FREE) {
-> +				/*Reached end of directory*/
-> +				brelse(bh);
-> +				inode = ERR_PTR(-ENODATA);
-> +				goto out;
-> +			}
-> +			if (de[i].name[0] == DELETED_FLAG)
-> +				continue;
-> +			if (de[i].attr == ATTR_EXT)
-> +				continue;
-> +			if (!(de[i].attr & ATTR_DIR))
-> +				continue;
-> +			else {
-> +				search_ipos = fat_get_start(sbi, &de[i]);
-> +				if (search_ipos == match_ipos) {
-> +					/*Success.Now build the inode*/
-> +					parent_ipos = (loff_t)i +
-> +					 (blknr << sbi->dir_per_block_bits);
-> +					inode = fat_build_inode(sb, &de[i],
-> +								parent_ipos);
-> +					brelse(bh);
-> +					goto out;
-> +				}
-> +			}
-> +		}
-> +		brelse(bh);
-> +		blknr += 1;
-> +	} while (--iterations > 0);
-> +out:
-> +	return inode;
-> +}
-> +
-> +/*
-> + * Read the FAT to find the next cluster in the chain
-> + * corresponding to 'search_clus'.
-> + */
-> +static int fat_read_next_clus(struct super_block *sb, int search_clus)
-> +{
-> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-> +	/*bits 31 to 7 give relative sector number*/
-> +	sector_t blknr = search_clus >> 7;
-> +	/*bits 6 to 0 give offset*/
-> +	unsigned int offset = search_clus & 0x7F;
-> +	__le32 *address;
-> +	unsigned int next_cluster;
-> +	struct buffer_head *bh = sb_bread(sb, blknr + sbi->fat_start);
-> +	if (!bh) {
-> +		fat_msg(sb, KERN_ERR,
-> +			"NFS:unable to read block(%llu) for finding the next cluster in FAT chain",
-> +			(llu)blknr);
-> +		return -EIO;
-> +	}
-> +	address = (__le32 *) bh->b_data;
-> +	next_cluster = (le32_to_cpu(address[offset])) & 0x0FFFFFFF;
-> +	brelse(bh);
-> +	return next_cluster;
-> +}
-> +
-> +/*
->   * Find the parent for a directory that is not currently connected to
->   * the filesystem root.
->   *
-> @@ -112,15 +199,52 @@ struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fid,
->  struct dentry *fat_get_parent(struct dentry *child_dir)
->  {
->  	struct super_block *sb = child_dir->d_sb;
-> -	struct buffer_head *bh = NULL;
-> +	struct buffer_head *dotdot_bh = NULL, *parent_bh = NULL;
->  	struct msdos_dir_entry *de;
->  	struct inode *parent_inode = NULL;
-> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-> +	int parent_logstart;
-> +	int search_clus, clus_to_match;
-> +	sector_t blknr;
->  
-> -	if (!fat_get_dotdot_entry(child_dir->d_inode, &bh, &de)) {
-> -		int parent_logstart = fat_get_start(MSDOS_SB(sb), de);
-> +	if (!fat_get_dotdot_entry(child_dir->d_inode, &dotdot_bh, &de)) {
-> +		parent_logstart = fat_get_start(sbi, de);
->  		parent_inode = fat_dget(sb, parent_logstart);
-> +		if (parent_inode || sbi->options.nfs != FAT_NFS_LIMITED)
-> +			goto out;
-> +		if (!parent_logstart)
-> +			/*logstart of dotdot entry is zero if
-> +			* if the directory's parent is root
-> +			*/
-> +			parent_inode = sb->s_root->d_inode;
-> +		else {
-> +			blknr = fat_clus_to_blknr(sbi, parent_logstart);
-> +			parent_bh = sb_bread(sb, blknr);
-> +			if (!parent_bh) {
-> +				fat_msg(sb, KERN_ERR,
-> +					"NFS:unable to read cluster of parent directory");
-> +				goto out;
-> +			}
-> +			de = (struct msdos_dir_entry *) parent_bh->b_data;
-> +			clus_to_match = fat_get_start(sbi, &de[0]);
-> +			search_clus = fat_get_start(sbi, &de[1]);
-> +			if (!search_clus)
-> +				search_clus = sbi->root_cluster;
-> +			brelse(parent_bh);
-> +			do {
-> +				parent_inode =  fat_traverse_cluster(sb,
-> +						search_clus, clus_to_match);
-> +				if (IS_ERR(parent_inode) || parent_inode)
-> +					break;
-> +				search_clus = fat_read_next_clus(sb,
-> +								search_clus);
-> +				if (search_clus < 0)
-> +					break;
-> +			} while (search_clus != FAT_ENT_EOF);
-> +		}
->  	}
-> -	brelse(bh);
-> +out:
-> +	brelse(dotdot_bh);
->  
->  	return d_obtain_alias(parent_inode);
->  }
-
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
