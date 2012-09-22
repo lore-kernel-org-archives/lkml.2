@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab2IVKGg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 06:06:36 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37981 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab2IVKGf (ORCPT
+	id S1755333Ab2IVKJe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 06:09:34 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61913 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754936Ab2IVKJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 06:06:35 -0400
-Date: Sat, 22 Sep 2012 11:06:05 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/3] Introduce devm_clk_register()
-Message-ID: <20120922100604.GI15609@n2100.arm.linux.org.uk>
-References: <1348034730-16473-1-git-send-email-sboyd@codeaurora.org>
+	Sat, 22 Sep 2012 06:09:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348034730-16473-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Date: Sat, 22 Sep 2012 18:09:32 +0800
+Message-ID: <CANEcBPR8EvBTsJ0tG+kqvn578qXnqTMwdciS_WChe9sm5yKdaw@mail.gmail.com>
+Subject: [PATCH] pppoe: drop PPPOX_ZOMBIEs in pppoe_release
+From: Xiaodong Xu <stid.smth@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 11:05:27PM -0700, Stephen Boyd wrote:
-> The first patch in this series fixes error checking in the wm831x clock
-> driver and is here to prevent context conflicts in the third patch.
-> I split it out in case it needed to merge sooner rather than later.
-> 
-> The goal of this series is to add devm_clk_register() so I can use it in
-> some MSM clock code I'm sending out in the near future. The second 
-> patch adds the API and the third patch moves over an existing user of
-> clk_unregister() to the devm API.
+From: Xiaodong Xu <stid.smth@gmail.com>
 
-Can we guarantee that the clocks are unused when the module is removed?
-If we can't make that guarantee, then devm_* should not be used here,
-and instead there should be refcounting done in the clocks (that's what
-the __clk_get() and __clk_put() hooks are there for.)
+When PPPOE is running over a virtual ethernet interface (e.g., a
+bonding interface) and the user tries to delete the interface in case
+the PPPOE state is ZOMBIE, the kernel will loop forever while
+unregistering net_device for the reference count is not decreased to
+zero which should have been done with dev_put().
+
+Signed-off-by: Xiaodong Xu <stid.smth@gmail.com>
+
+---
+
+--- linux/drivers/net/ppp/pppoe.c.orig	2012-09-19 11:49:27.921826868 +0800
++++ linux/drivers/net/ppp/pppoe.c	2012-09-22 17:44:03.642730082 +0800
+@@ -570,7 +570,7 @@ static int pppoe_release(struct socket *
+
+ 	po = pppox_sk(sk);
+
+-	if (sk->sk_state & (PPPOX_CONNECTED | PPPOX_BOUND)) {
++	if (sk->sk_state & (PPPOX_CONNECTED | PPPOX_BOUND | PPPOX_ZOMBIE)) {
+ 		dev_put(po->pppoe_dev);
+ 		po->pppoe_dev = NULL;
+ 	}
+
+-- 
+Regards,
+Xiaodong Xu
