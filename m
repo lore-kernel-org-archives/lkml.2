@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab2IVKi7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 06:38:59 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:43413 "EHLO mprc.pku.edu.cn"
+	id S1755410Ab2IVKjF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 06:39:05 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:43414 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752586Ab2IVKi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 06:38:58 -0400
+	id S1753045Ab2IVKi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Sep 2012 06:38:59 -0400
 From: guanxuetao@mprc.pku.edu.cn
-Message-ID: <54114.162.105.203.8.1348310955.squirrel@mprc.pku.edu.cn>
+Message-ID: <54116.162.105.203.8.1348310959.squirrel@mprc.pku.edu.cn>
 In-Reply-To: <20120922073207.GB2538@avionic-0098.mockup.avionic-design.de>
 References: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
     <1347956633-15667-3-git-send-email-thierry.reding@avionic-design.de>
     <50847.162.105.203.8.1348282590.squirrel@mprc.pku.edu.cn>
     <20120922073207.GB2538@avionic-0098.mockup.avionic-design.de>
-Date: Sat, 22 Sep 2012 18:49:15 +0800 (CST)
+Date: Sat, 22 Sep 2012 18:49:19 +0800 (CST)
 Subject: Re: [PATCH v2 2/5] unicore32: pwm: Use module_platform_driver()
 To: "Thierry Reding" <thierry.reding@avionic-design.de>
 Cc: guanxuetao@mprc.pku.edu.cn, "Guan Xuetao" <gxt@mprc.pku.edu.cn>,
