@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab2IVSkk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 14:40:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48527 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664Ab2IVSkj (ORCPT
+	id S1752674Ab2IVSmK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 14:42:10 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:36192 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab2IVSmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 14:40:39 -0400
-Date: Sat, 22 Sep 2012 11:47:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to
- ARM)
-Message-Id: <20120922114723.d7f07fb6.akpm@linux-foundation.org>
-In-Reply-To: <20120922132046.GA4260@flint.arm.linux.org.uk>
-References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
-	<20120922114549.GA11610@moon>
-	<20120922132046.GA4260@flint.arm.linux.org.uk>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 22 Sep 2012 14:42:09 -0400
+Date: Sat, 22 Sep 2012 18:42:08 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: "Bruce, Becky" <bbruce@ti.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Hunter, Jon" <jon-hunter@ti.com>,
+        "<snijsure@grid-net.com>" <snijsure@grid-net.com>, fweisbec@gmail.com
+Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
+In-Reply-To: <20120921195717.GD2454@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1209221836070.10663@utopia.booyaka.com>
+References: <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com> <20120920000351.GI2455@linux.vnet.ibm.com> <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com> <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com> <20120920220130.GN2449@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com> <20120920232114.GO2449@linux.vnet.ibm.com> <alpine.DEB.2.00.1209211803290.8839@utopia.booyaka.com> <20120921185827.GC2454@linux.vnet.ibm.com> <alpine.DEB.2.00.1209211900520.8839@utopia.booyaka.com>
+ <20120921195717.GD2454@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Sep 2012 14:20:46 +0100 Russell King <rmk@arm.linux.org.uk> wrote:
+On Fri, 21 Sep 2012, Paul E. McKenney wrote:
 
-> On Sat, Sep 22, 2012 at 03:45:49PM +0400, Cyrill Gorcunov wrote:
-> > On Sat, Sep 22, 2012 at 12:56:42PM +0200, Geert Uytterhoeven wrote:
-> > > On Fri, Sep 21, 2012 at 6:51 PM, Russell King <rmk@arm.linux.org.uk> wrote:
-> > > > That brings up another question though - when was kcmp added to x86, and
-> > > > why aren't we getting notifications from checksyscalls.sh that ARM hasn't
-> > > > been updated?
-> > > >
-> > > > It seems to be that the script was broken, and no one has noticed.
-> > > 
-> > > It seems Heiko did notice: http://www.serverphorums.com/read.php?12,559093
-> > > 
-> > > Now, I'm a bit puzzled by what follows: Heiko proposes a patch to
-> > > ignore sys_kcmp,
-> > > as it's x86-specific, which is acked by Cyrill. Then it suddenly
-> > 
-> > hpa@ pointed that better approach is to implement kcmp on other archs
-> > after i've acked the patch. so then Heiko provided a patch for s390.
+> Could you please point me to a recipe for creating a minimal userspace?
+> Just in case it is the userspac erather than the architecture/hardware
+> that makes the difference.
+
+Tony's suggestion is pretty good.  Note that there may also be differences 
+in kernel timers -- either between x86 and ARM architectures, or loaded 
+device drivers -- that may confound the problem.
+
+> Just to make sure I understand the combinations:
 > 
-> I discussed with hpa yesterday, and it seems the situation is as follows:
+> o	All stalls have happened when running a minimal userspace.
+> o	CONFIG_NO_HZ=n suppresses the stalls.
+> o	CONFIG_RCU_FAST_NO_HZ (which depends on CONFIG_NO_HZ=y) has
+> 	no observable effect on the stalls.
 > 
-> 1. There exists a patch to fix checksyscalls.sh, and it's allegedly sitting
->    in akpm's tree, and no one knows why it's just sitting there and hasn't
->    been merged upstream.
+> Did I get that right, or am I missing a combination?
 
-People sometimes just reply to my commit emails, ignoring the
-reply-to:lkml and the "Before you just go and hit reply" request.  I could
-start cc'ing the lists like tip-bot, but that seems a bit noisy.
+That's correct.
 
-> 2. There allegedly exists a patch to remove x86isms from sys_kcmp -
->    allegedly also in akpm's tree.  However, I've looked through the code in
->    mainline, and nothing stands out.  Ralf Beachle also said yesterday that
->    he has looked through from the MIPS PoV and also can't see any x86isms,
->    so we're both thinking that it should merely have the x86 dependency
->    removed.
+> Indeed, rcu_idle_gp_timer_func() is a bit strange in that it is 
+> cancelled upon exit from idle, and therefore should (almost) never 
+> actually execute. Its sole purpose is to wake up the CPU.  ;-)
 
-http://ozlabs.org/~akpm/mmotm/broken-out/syscalls-make-kcmp-syscall-available-for-all-architectures.patch
+Right.  Just curious, what would wake up the kernel from idle to handle a 
+grace period expiration when CONFIG_RCU_FAST_NO_HZ=n?  On a very idle 
+system, the time between timer ticks could potentially be several tens of 
+seconds.
 
-I have that queued for 3.7.  There is of course a little risk here.  We
-do have a test in tools/testing/selftests/kcmp/ - I suggest that arch
-people run it!  In fact all the tools/testing/selftests should execute
-successfully on all architectures - if not, please let's fix things
-up.
 
-> 3. Until the x86 dependency is gone (that depends on what akpm proposes to
->    do with the patches he's allegedly sitting on), non-x86 arches can only
->    reserve the syscall, and add an IGNORE for it.
-> 
-> Maybe akpm can provide some input to this thread, and let us know what the
-> intentions are for checksyscalls.sh and kernel/kcmp.c, and whether he does
-> indeed have outstanding patches for these.
-> 
-> It would be good to at least get checksyscalls.sh fixed so arch maintainers
-> get their warnings for new syscalls back.
-
-http://ozlabs.org/~akpm/mmotm/broken-out/checksyscalls-fix-here-document-handling.patch
-
-I had it queued for 3.7.  I now see that was a mistake and I'll get it
-into 3.6.
+- Paul
