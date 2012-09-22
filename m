@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab2IUXy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 19:54:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63355 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab2IUXy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 19:54:27 -0400
-Date: Fri, 21 Sep 2012 16:51:44 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Paul Parsons <lost.distance@yahoo.com>
-Cc: dwmw2@infradead.org, philipp.zabel@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pda_power: remove ac_draw_failed goto and label
-Message-ID: <20120921235144.GC26715@lizard>
-References: <505BBB4B.3060508@yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <505BBB4B.3060508@yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754888Ab2IVAEq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 20:04:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40312 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753014Ab2IVAEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 20:04:43 -0400
+From: Flavio Leitner <fbl@redhat.com>
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Flavio Leitner <fbl@redhat.com>
+Subject: [PATCH v2] serial: set correct baud_base for EXSYS EX-41092 Dual 16950
+Date: Fri, 21 Sep 2012 21:04:34 -0300
+Message-Id: <1348272274-19269-1-git-send-email-fbl@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 01:56:43AM +0100, Paul Parsons wrote:
-> A previous patch added the ac_draw_failed goto and label to
-> pda_power_probe(). The goto would be invoked after a failed call to
-> regulator_get().
-> 
-> However the way ac_draw is used - always after a check for NULL -
-> suggests that a failed call to regulator_get() was not fatal.
-> 
-> This patch removes the ac_draw_failed goto and label, partly reverting
-> the previous patch.
-> 
-> This patch also removes the assignment of an error code to ret after a
-> failed call to regulator_get(), since the error code is now never used.
-> 
-> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
-> Cc: Philipp Zabel <philipp.zabel@gmail.com>
-> ---
->  drivers/power/pda_power.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
-> index d3be834d..7df7c5f 100644
-> --- a/drivers/power/pda_power.c
-> +++ b/drivers/power/pda_power.c
-> @@ -284,9 +284,7 @@ static int pda_power_probe(struct platform_device *pdev)
->  	ac_draw = regulator_get(dev, "ac_draw");
->  	if (IS_ERR(ac_draw)) {
->  		dev_dbg(dev, "couldn't get ac_draw regulator\n");
-> -		ret = PTR_ERR(ac_draw);
->  		ac_draw = NULL;
-> -		goto ac_draw_failed;
+Apparently the same card model has two IDs, so this patch
+complements the commit 39aced68d664291db3324d0fcf0985ab5626aac2
+adding the missing one.
 
-For some reason you have a bit different code, so your patch is not based
-on the battery tree. (In my tree ret and ac_draw assignments are swapped.)
-Maybe that's because I had to manually redo your first patch...
+Signed-off-by: Flavio Leitner <fbl@redhat.com>
+---
+ drivers/tty/serial/8250/8250_pci.c | 9 +++++++--
+ include/linux/pci_ids.h            | 1 -
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-Anyway, I repeated your patch by hand again and thus applied it.
+Changelog:
+V2
+	moved IDs from pci_ids.h to 8250_pci.c
+        requested by greg k-h
 
-Thank you!
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 28e7c7c..6b8fcb4 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1164,6 +1164,8 @@ pci_xr17c154_setup(struct serial_private *priv,
+ #define PCI_SUBDEVICE_ID_OCTPRO422	0x0208
+ #define PCI_SUBDEVICE_ID_POCTAL232	0x0308
+ #define PCI_SUBDEVICE_ID_POCTAL422	0x0408
++#define PCI_SUBDEVICE_ID_SIIG_DUAL_00	0x2500
++#define PCI_SUBDEVICE_ID_SIIG_DUAL_30	0x2530
+ #define PCI_VENDOR_ID_ADVANTECH		0x13fe
+ #define PCI_DEVICE_ID_INTEL_CE4100_UART 0x2e66
+ #define PCI_DEVICE_ID_ADVANTECH_PCI3620	0x3620
+@@ -3232,8 +3234,11 @@ static struct pci_device_id serial_pci_tbl[] = {
+ 		 * For now just used the hex ID 0x950a.
+ 		 */
+ 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
+-		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL, 0, 0,
+-		pbn_b0_2_115200 },
++		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_00,
++		0, 0, pbn_b0_2_115200 },
++	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
++		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_30,
++		0, 0, pbn_b0_2_115200 },
+ 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
+ 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
+ 		pbn_b0_2_1130000 },
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 6b4565c..8d3c427 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1847,7 +1847,6 @@
+ #define PCI_DEVICE_ID_SIIG_8S_20x_650	0x2081
+ #define PCI_DEVICE_ID_SIIG_8S_20x_850	0x2082
+ #define PCI_SUBDEVICE_ID_SIIG_QUARTET_SERIAL	0x2050
+-#define PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL	0x2530
+ 
+ #define PCI_VENDOR_ID_RADISYS		0x1331
+ 
+-- 
+1.7.11.4
 
->  	}
-> 
->  	update_status();
-> @@ -416,7 +414,6 @@ ac_supply_failed:
->  		regulator_put(ac_draw);
->  		ac_draw = NULL;
->  	}
-> -ac_draw_failed:
->  	if (pdata->exit)
->  		pdata->exit(dev);
->  init_failed:
-> -- 
-> 1.7.8.6
