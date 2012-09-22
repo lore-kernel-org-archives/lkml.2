@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab2IVGFg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 02:05:36 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:50385 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753178Ab2IVGFf (ORCPT
+	id S1753802Ab2IVGND (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 02:13:03 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:33529 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192Ab2IVGNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 02:05:35 -0400
+	Sat, 22 Sep 2012 02:13:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
+In-Reply-To: <CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
 References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
 	<20120921174952.GF7264@google.com>
 	<CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
@@ -18,149 +18,35 @@ References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
 	<CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
 	<CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
 	<5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
-Date: Sat, 22 Sep 2012 11:35:34 +0530
-Message-ID: <CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
+	<CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
+Date: Fri, 21 Sep 2012 23:12:59 -0700
+X-Google-Sender-Auth: lX-d_Dy8WNcC3YxbvZGAbsypJ_g
+Message-ID: <CAOS58YPyMJrqLYno1YXUkFop9XTE8r=dCg8AsCK_Fr0yBq5ZWg@mail.gmail.com>
 Subject: Re: Work queue questions
-From: anish singh <anish198519851985@gmail.com>
-To: Daniel Taylor <Daniel.Taylor@wdc.com>
-Cc: Deepawali Verma <dverma249@gmail.com>, Tejun Heo <tj@kernel.org>,
+From: Tejun Heo <tj@kernel.org>
+To: anish singh <anish198519851985@gmail.com>
+Cc: Daniel Taylor <Daniel.Taylor@wdc.com>,
+        Deepawali Verma <dverma249@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 22, 2012 at 10:57 AM, Daniel Taylor <Daniel.Taylor@wdc.com> wrote:
->
->
->> -----Original Message-----
->> From: linux-kernel-owner@vger.kernel.org
->> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of anish singh
->> Sent: Friday, September 21, 2012 9:25 PM
->> To: Deepawali Verma
->> Cc: Tejun Heo; linux-kernel@vger.kernel.org
->> Subject: Re: Work queue questions
->>
->> On Sat, Sep 22, 2012 at 1:05 AM, Deepawali Verma
->> <dverma249@gmail.com> wrote:
->> > Hi Tajun,
->> >
->> > These three tasks are writing the three chunks of data in
->> parallel. I
->> > am not getting improvement here otherwise what is difference between
->> > writing these chunks one by one in single thread instead of
->> trying to
->> > write the data by scheduling the work on three different workqueues
->> > means 3 worker threads?
->> You should have carefully read "If none of them blocks, there
->> isn't much point in throwing more threads at them.  What are those
->> thread doing?" what Tejun said.
->>
->> I think what he means is that concurrency is the concept of
->> keeping the
->> system busy.
->> If you see the below logs:
->> kworker/u:1-21    [000]   110.964895: task_event:
->> MYTASKJOB2381 XStarted
->> kworker/u:1-21    [000]   110.964909: task_event:
->> MYTASKJOB2381 Xstopped
->> Here your first worker thread blocked.
->>
->> So the system will try to get other workqueue started which is:
->> kworker/u:1-21    [000]   110.965137: task_event:
->> MYTASKJOB2382 XStarted
->> kworker/u:1-21    [000]   110.965154: task_event:
->> MYTASKJOB2382 Xstopped
->> Here again your second worker thread blocked.
->>
->> So on so forth.
->> Anyway how can you write chunks of data in parallel when
->> already some worker
->> thread is writing i.e. the system is busy.
->> Analogy: Suppose you are ambidextrous and you are eating.Can
->> you eat with
->> both of your hands at a time?So worker thread are like your
->> hands and keeping
->> you fed all the time is the concept of concurrency.
->>
->> I am not an expert on this but from Tejun's reply I could
->> make out this.
->> Please correct me If I have wrongly understood the concept
->> based on this mail
->
-> I don't know how many cores are in the CPU Deepawali's using, but if I have four,
-Assuming single core,Is my explanation correct about concurrency?
-> for example, I could do something simplistic like copy pages A-G with one, pages
-> H-O with another, and pages Q-Z with a third.  There are memory and cache bottlenecks
-> (like the mouth, in your example), but all three copies could be running concurrently.
->
-> Copying, of course, is a silly, trivial example, and I hope there's a better reason
-> than that for the concurrency, but, if, for example, your needed to byte-swap, XOR,
-> or checksum, as core functionality of an embedded system, and the processing units were
-> available to do these things in parallel, then interleaving those operations with memory
-> accesses could provide higher throughput.
->
-> I think what he's asking is why there's no apparent concurrency, presuming that NONE
-> of his threads has a real reason to block.  With examining his code, I cannot tell,
-> but it looks like, from the messages, that the kernel did not attempt concurrency.
-> Perhaps he needs to pass additional state to the scheduler?
->
->
->> chain.
->> >
->> > Regards,
->> > Deepa
->> >
->> > On Fri, Sep 21, 2012 at 8:27 PM, Tejun Heo <tj@kernel.org> wrote:
->> >> On Fri, Sep 21, 2012 at 08:26:01PM +0100, Deepawali Verma wrote:
->> >>>      kworker/u:1-21    [000]   110.964895: task_event:
->> MYTASKJOB2381 XStarted
->> >>>      kworker/u:1-21    [000]   110.964909: task_event:
->> MYTASKJOB2381 Xstopped
->> >>>      kworker/u:1-21    [000]   110.965137: task_event:
->> MYTASKJOB2382 XStarted
->> >>>      kworker/u:1-21    [000]   110.965154: task_event:
->> MYTASKJOB2382 Xstopped
->> >>>      kworker/u:5-3724  [000]   110.965311: task_event:
->> MYTASKJOB2383 XStarted
->> >>>      kworker/u:5-3724  [000]   110.965325: task_event:
->> MYTASKJOB2383 Xstopped
->> >>>
->> >>> I have this one big task to whom I divided into small sub
->> tasks. These
->> >>> are numbered 2381, 2382 and 2383, what was I expecting
->> that task 2381,
->> >>> 2382, 2383 run in parallel. I have put start and stop
->> markers here so
->> >>> that I can see how this concurrency managed work queue is
->> distributing
->> >>> the load.
->> >>>
->> >>> I found that task no 2381 is started first and exited
->> before starting
->> >>> task 2382 and so on. What I expected that it should start
->> the three
->> >>> sub tasks in parallel, not one by one.
->> >>>
->> >>> Where is concurrency here?
->> >>
->> >> If none of them blocks, there isn't much point in throwing more
->> >> threads at them.  What are those thread doing?
->> >>
->> >> Thanks.
->> >>
->> >> --
->> >> tejun
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe
->> linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->> --
->> To unsubscribe from this list: send the line "unsubscribe
->> linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
+Hello,
+
+On Fri, Sep 21, 2012 at 11:05 PM, anish singh
+<anish198519851985@gmail.com> wrote:
+> Assuming single core,Is my explanation correct about concurrency?
+
+Yes, for bound workqueues, that's correct. Concurrency management
+doesn't apply to unbound ones tho. Didn't notice Deepawali's test case
+either just didn't take long enough for the scheduler to interleave
+the workers or is using a workqueue w/ max_active == 1. I'm afraid
+this won't be a particularly productive discussion without the source
+code. For more details, please read Documentation/workqueue.txt.
+
+Thanks.
+
+-- 
+tejun
