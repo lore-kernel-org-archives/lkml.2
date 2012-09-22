@@ -1,76 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab2IVAlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 20:41:47 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:56012 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754747Ab2IVAlq (ORCPT
+	id S1757028Ab2IVA7s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 20:59:48 -0400
+Received: from nm20.bullet.mail.ukl.yahoo.com ([217.146.183.194]:37238 "HELO
+	nm20.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756301Ab2IVA7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 20:41:46 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Linda Wang <lwang@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>
-References: <1348256595-29119-1-git-send-email-hpa@linux.intel.com>
-	<877grnows4.fsf@xmission.com> <505CE638.1030405@linux.intel.com>
-Date: Fri, 21 Sep 2012 17:41:34 -0700
-In-Reply-To: <505CE638.1030405@linux.intel.com> (H. Peter Anvin's message of
-	"Fri, 21 Sep 2012 15:12:08 -0700")
-Message-ID: <87sjaaj3cx.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 21 Sep 2012 20:59:47 -0400
+X-Yahoo-Newman-Id: 641627.79099.bm@smtp132.mail.ukl.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: SSYXHnwVM1ku12fCVm514dp7Xsg5DJ5pT2Fkdf0IKK8OCaj
+ 0e_Dx8NwQ5CI6G23V0EwSyPg0qQofogKffwE5__lE7Cgo7GR2HXhGFt258h1
+ 4BVfV1jo0Qm4vth90wWdA4UCinM1VuXs.WPuNsyvQRJQ8mqXxT6OkM5EeacJ
+ 3h8SDm.bmRiVIPtEi8PN_ia23hRZHNidn_DKWtqQXNdo8zTxJQ7exuu3UjqY
+ h5VHYUvIyE0k9fxKhAWpFy8ryMmB3Y1XzRjzoRF4uXCfY0doXjMRowPu3Q0z
+ 6e7veZCSOJQp5_zIxoNPwBSDyCaDPAoX9Wu4zGYBM40B4sqkg2HlVk0by2IM
+ LRdZ7BcvvstEy.LweA4UIV5Gknm6HRVTlHM8hGmzaBYdZliZgUAr375EcccZ
+ EYb02I6vz31pcEIKo9H0skA--
+X-Yahoo-SMTP: 5Vuzu2WswBCxMnJ0hjKohBcp6M6Es6bt5AQ-
+Message-ID: <505D0D80.40402@yahoo.com>
+Date: Sat, 22 Sep 2012 01:59:44 +0100
+From: Paul Parsons <lost.distance@yahoo.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+4YdxiIX21sal+zSocpMPelgR7EhQVvLs=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"H. Peter Anvin" <hpa@linux.intel.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 00/11] x86: Supervisor Mode Access Prevention
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: dwmw2@infradead.org, philipp.zabel@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pda_power: remove ac_draw_failed goto and label
+References: <505BBB4B.3060508@yahoo.com> <20120921235144.GC26715@lizard>
+In-Reply-To: <20120921235144.GC26715@lizard>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@linux.intel.com> writes:
+Hello Anton,
 
-> On 09/21/2012 03:07 PM, Eric W. Biederman wrote:
->> 
->> Have you tested kexec in this environment?
->> 
->> This is the kind of cpu feature that when we enable it, frequently we
->> have to do something on the kexec path.
->> 
->> At a quick skim it looks like the kexec path is using kernel page table
->> entries and clearing all bits from cr4 except X86_CR4_PAE so I don't
->> actually expect this change will require anything on the kexec path.
->> 
+On 22/09/12 00:51, Anton Vorontsov wrote:
+> On Fri, Sep 21, 2012 at 01:56:43AM +0100, Paul Parsons wrote:
+>> A previous patch added the ac_draw_failed goto and label to
+>> pda_power_probe(). The goto would be invoked after a failed call to
+>> regulator_get().
+>>
+>> However the way ac_draw is used - always after a check for NULL -
+>> suggests that a failed call to regulator_get() was not fatal.
+>>
+>> This patch removes the ac_draw_failed goto and label, partly reverting
+>> the previous patch.
+>>
+>> This patch also removes the assignment of an error code to ret after a
+>> failed call to regulator_get(), since the error code is now never used.
+>>
+>> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+>> Cc: Philipp Zabel <philipp.zabel@gmail.com>
+>> ---
+>>   drivers/power/pda_power.c |    3 ---
+>>   1 files changed, 0 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
+>> index d3be834d..7df7c5f 100644
+>> --- a/drivers/power/pda_power.c
+>> +++ b/drivers/power/pda_power.c
+>> @@ -284,9 +284,7 @@ static int pda_power_probe(struct platform_device *pdev)
+>>   	ac_draw = regulator_get(dev, "ac_draw");
+>>   	if (IS_ERR(ac_draw)) {
+>>   		dev_dbg(dev, "couldn't get ac_draw regulator\n");
+>> -		ret = PTR_ERR(ac_draw);
+>>   		ac_draw = NULL;
+>> -		goto ac_draw_failed;
 >
-> I have not, no, but as you quite correctly point out that shouldn't
-> affect things.
+> For some reason you have a bit different code, so your patch is not based
+> on the battery tree. (In my tree ret and ac_draw assignments are swapped.)
+> Maybe that's because I had to manually redo your first patch...
 >
-> We should also change the kernel to start clean with CR4 -- the purpose
-> of CR4 is to indicate which CPU features the OS is opting into.
->
-> I think we do on x86-64 but not on x86-32 at the moment.
->
-> This is an unrelated problem, though, and can be addressed later.
+> Anyway, I repeated your patch by hand again and thus applied it.
 
-Agreed.  I just was just curious where things stood.
+Yes, in my first patch I had swapped the ret and ac_draw assignments
+when I moved the regulator_get() call to before the update_charger()
+call. This was because the original order of the assignments:
 
-Eric
+ac_draw = NULL;
+ret = PTR_ERR(ac_draw);
+
+is obviously incorrect; the ac_draw assignment overwrites the error
+code that should be returned by PTR_ERR().
+
+Anyway, thank you for sorting this out!
+
+Regards,
+Paul
+
+> Thank you!
+>
+>>   	}
+>>
+>>   	update_status();
+>> @@ -416,7 +414,6 @@ ac_supply_failed:
+>>   		regulator_put(ac_draw);
+>>   		ac_draw = NULL;
+>>   	}
+>> -ac_draw_failed:
+>>   	if (pdata->exit)
+>>   		pdata->exit(dev);
+>>   init_failed:
+>> --
+>> 1.7.8.6
 
