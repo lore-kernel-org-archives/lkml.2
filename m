@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab2IVNjE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 09:39:04 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:60642 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab2IVNjB (ORCPT
+	id S1752509Ab2IVNlH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 09:41:07 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:49704 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab2IVNlF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 09:39:01 -0400
-Date: Sat, 22 Sep 2012 15:38:47 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to
- ARM)
-Message-ID: <20120922133847.GC20003@linux-mips.org>
-References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
- <20120922114549.GA11610@moon>
- <20120922132046.GA4260@flint.arm.linux.org.uk>
+	Sat, 22 Sep 2012 09:41:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120922132046.GA4260@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [85.250.96.155]
+In-Reply-To: <CAJK669Z3YSW85wMXK7if3X8Zb9i1+v_Z2d-UZ1oueYRG4oCDNQ@mail.gmail.com>
+References: <1348158776-23858-1-git-send-email-sjur.brandeland@stericsson.com>
+ <CAK=WgbZbuf6PYkT4vcpP4VAejT8mN4CO3PFB9Ng-74Q=4iKTrQ@mail.gmail.com>
+ <CAJK669YswMUghd6nMA+nnuWsMZps4zNoLP0-6fD29Pa3+CzX-g@mail.gmail.com>
+ <CAK=WgbYMjeGb7X9V7G-27iL=p4PhAL+CFsJxAo=F7LJ+2c0fCg@mail.gmail.com> <CAJK669Z3YSW85wMXK7if3X8Zb9i1+v_Z2d-UZ1oueYRG4oCDNQ@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sat, 22 Sep 2012 16:40:44 +0300
+Message-ID: <CAK=WgbarKvbwRzjb9E=PEj_qQ46UxxrFTRuU9qOiDYSV+XQFxQ@mail.gmail.com>
+Subject: Re: [PATCHv4] remoteproc: Add STE modem driver for remoteproc
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 22, 2012 at 02:20:46PM +0100, Russell King wrote:
+On Sat, Sep 22, 2012 at 4:33 PM, Sjur Brændeland <sjurbren@gmail.com> wrote:
+>>>> It might be safer though to invoke ->setup() in probe/remove, instead
+>>>> of in start/stop (just like you essentially did before).
+>>>>
+>>>> This way we don't assume that stop is always called before remove (as
+>>>> assumption that might be implicitly valid today, but may break in the
+>>>> future).
+>>>>
+>>>> If you want, I can just change that before applying.
+>>>
+>>> Sounds good, please just go ahead and change this before applying.
+>>> Thank you.
+>>
+>> I'm going to squash the below into the patch - please ack before I
+>> apply and push - thanks!
+>
+> Looks good, thanks.
+>
+> Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.om>
 
-> 2. There allegedly exists a patch to remove x86isms from sys_kcmp -
->    allegedly also in akpm's tree.  However, I've looked through the code in
->    mainline, and nothing stands out.  Ralf Beachle also said yesterday that
->    he has looked through from the MIPS PoV and also can't see any x86isms,
->    so we're both thinking that it should merely have the x86 dependency
->    removed.
-> 
-> 3. Until the x86 dependency is gone (that depends on what akpm proposes to
->    do with the patches he's allegedly sitting on), non-x86 arches can only
->    reserve the syscall, and add an IGNORE for it.
-
-There is a weak definition provided in kernel/sys_ni.c so it actually can
-be properly wired up in preparation for the day when the dependency in
-Kconfig gets fixed.
-
-> It would be good to at least get checksyscalls.sh fixed so arch maintainers
-> get their warnings for new syscalls back.
-
-Indeed.  That script has become just too important.
-
-  Ralf
+Thanks, applied and pushed to remoteproc's for-next branch.
