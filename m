@@ -1,71 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab2IVGSe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 02:18:34 -0400
-Received: from wdmail02.wdc.com ([129.253.55.42]:25127 "EHLO wdmail02.wdc.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753564Ab2IVGSd convert rfc822-to-8bit (ORCPT
+	id S1754061Ab2IVGUj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 02:20:39 -0400
+Received: from cust-218-222.on4.ontelecoms.gr ([92.118.218.222]:55152 "EHLO
+	vergina.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563Ab2IVGUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 02:18:33 -0400
-X-IronPort-AV: E=Sophos;i="4.80,465,1344236400"; 
-   d="scan'208";a="6480371"
-From: Daniel Taylor <Daniel.Taylor@wdc.com>
-To: "'anish singh'" <anish198519851985@gmail.com>
-CC: Deepawali Verma <dverma249@gmail.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Work queue questions
-Thread-Topic: Work queue questions
-Thread-Index: AQHNmB+2EvxSNhADc0u6rFkSYElUlpeViBoAgAALT4CAAAFfgIAADi+AgAAAXgCAAAI0gIAAk/2A//+ZcKCAAIKxAP//jWeQ
-Date: Sat, 22 Sep 2012 06:18:33 +0000
-Message-ID: <5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
-References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
-	<20120921174952.GF7264@google.com>
-	<CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
-	<20120921183515.GI7264@google.com>
-	<CAHCeSFpa28d-7ruMKSw6z2EYKYN-5udVouUJOi4cnj4dPad-TA@mail.gmail.com>
-	<20120921192720.GJ7264@google.com>
-	<CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
-	<CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
-	<5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
- <CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
-In-Reply-To: <CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.4.44.9]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 22 Sep 2012 02:20:38 -0400
+Message-ID: <505D58B3.4090008@asyr.hopto.org>
+Date: Sat, 22 Sep 2012 09:20:35 +0300
+From: Thanasis <thanasis@asyr.hopto.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
+References: <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org> <20120921152828.GA24364@electric-eye.fr.zoreil.com> <505C98C7.20302@asyr.hopto.org> <20120921175455.GA28255@electric-eye.fr.zoreil.com> <505CBDF9.9020503@asyr.hopto.org> <20120921202957.GA32502@electric-eye.fr.zoreil.com> <505CD982.2000409@asyr.hopto.org> <20120921225343.GA2938@electric-eye.fr.zoreil.com>
+In-Reply-To: <20120921225343.GA2938@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+on 09/22/2012 01:53 AM Francois Romieu wrote the following:
 
-...
+> You did experience a failure with a 3.5.4 kernel. Can you try a 3.2.x if
+> your vendor provides one ?
+> 
 
-> >> So on so forth.
-> >> Anyway how can you write chunks of data in parallel when
-> >> already some worker
-> >> thread is writing i.e. the system is busy.
-> >> Analogy: Suppose you are ambidextrous and you are eating.Can
-> >> you eat with
-> >> both of your hands at a time?So worker thread are like your
-> >> hands and keeping
-> >> you fed all the time is the concept of concurrency.
-> >>
-> >> I am not an expert on this but from Tejun's reply I could
-> >> make out this.
-> >> Please correct me If I have wrongly understood the concept
-> >> based on this mail
-> >
-> > I don't know how many cores are in the CPU Deepawali's 
-> using, but if I have four,
-> Assuming single core,Is my explanation correct about concurrency?
+The vendor does not provide a 3.x kernel. But I will compile one.
+Do you want me to run the r8169 make tests, if the r8169 of the 3.2.x works?
 
-It is possible for his tasks to complete before scheduling occurs
-again.  Consuming all of the CPU and having no blocking action,
-yes, then the tasks will run consecutively.
-
-...
