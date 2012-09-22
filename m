@@ -1,51 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab2IVUAb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 16:00:31 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35079 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2IVUA3 (ORCPT
+	id S1753260Ab2IVUG4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 16:06:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50724 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645Ab2IVUGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 16:00:29 -0400
-Date: Sat, 22 Sep 2012 16:00:27 -0400 (EDT)
-Message-Id: <20120922.160027.1528491047223302539.davem@davemloft.net>
-To: benh@kernel.crashing.org
-Cc: sfr@canb.auug.org.au, paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
-        mika.westerberg@linux.intel.com, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (net-next tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1348264000.1132.63.camel@pasglop>
-References: <1348179764.1132.35.camel@pasglop>
-	<20120920.185315.576326460331670020.davem@davemloft.net>
-	<1348264000.1132.63.camel@pasglop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 22 Sep 2012 16:06:33 -0400
+Date: Sat, 22 Sep 2012 13:06:29 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [Intel-gfx] [PATCH] console: implement lockdep support for
+ console_lock
+Message-ID: <20120922200629.GC14004@kroah.com>
+References: <87627b9453.fsf@intel.com>
+ <1348336331-20957-1-git-send-email-daniel.vetter@ffwll.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348336331-20957-1-git-send-email-daniel.vetter@ffwll.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Sat, 22 Sep 2012 07:46:40 +1000
-
-> Right, but on ppc, GFP_DMA is a nop (no separate ZONE_DMA, or rather all
-> of memory is ZONE_DMA). It's always been like that afaik.
+On Sat, Sep 22, 2012 at 07:52:11PM +0200, Daniel Vetter wrote:
+> Dave Airlie recently discovered a locking bug in the fbcon layer,
+> where a timer_del_sync (for the blinking cursor) deadlocks with the
+> timer itself, since both (want to) hold the console_lock:
 > 
-> We could support ISA device limited addressability using the iommu but
-> that would involve a map/unmap type API (which I remember we did support
-> in the old days by passing NULL to pci_map_*, but we dropped that along
-> the way).
+> https://lkml.org/lkml/2012/8/21/36
+> 
+> Unfortunately the console_lock isn't a plain mutex and hence has no
+> lockdep support. Which resulted in a few days wasted of tracking down
+> this bug (complicated by the fact that printk doesn't show anything
+> when the console is locked) instead of noticing the bug much earlier
+> with the lockdep splat.
+> 
+> Hence I've figured I need to fix that for the next deadlock involving
+> console_lock - and with kms/drm growing ever more complex locking
+> that'll eventually happen.
+> 
+> Now the console_lock has rather funky semantics, so after a quick irc
+> discussion with Thomas Gleixner and Dave Airlie I've quickly ditched
+> the original idead of switching to a real mutex (since it won't work)
+> and instead opted to annotate the console_lock with lockdep
+> information manually.
+> 
+> There are a few special cases:
+> - The console_lock state is protected by the console_sem, and usually
+>   grabbed/dropped at _lock/_unlock time. But the suspend/resume code
+>   drops the semaphore without dropping the console_lock (see
+>   suspend_console/resume_console). But since the same thread that did
+>   the suspend will do the resume, we don't need to fix up anything.
+> 
+> - In the printk code there's a special trylock, only used to kick off
+>   the logbuffer printk'ing in console_unlock. But all that happens
+>   while lockdep is disable (since printk does a few other evil
+>   tricks). So no issue there, either.
+> 
+> - The console_lock can also be acquired form irq context (but only
+>   with a trylock). lockdep already handles that.
+> 
+> This all leaves us with annotating the normal console_lock, _unlock
+> and _trylock functions.
+> 
+> And yes, it works - simply unloading a drm kms driver resulted in
+> lockdep complaining about the deadlock in fbcon_deinit:
+> 
+> ======================================================
+> [ INFO: possible circular locking dependency detected ]
+> 3.6.0-rc2+ #552 Not tainted
+> -------------------------------------------------------
+> kms-reload/3577 is trying to acquire lock:
+>  ((&info->queue)){+.+...}, at: [<ffffffff81058c70>] wait_on_work+0x0/0xa7
+> 
+> but task is already holding lock:
+>  (console_lock){+.+.+.}, at: [<ffffffff81264686>] bind_con_driver+0x38/0x263
+> 
+> which lock already depends on the new lock.
+> 
+> the existing dependency chain (in reverse order) is:
+> 
+> -> #1 (console_lock){+.+.+.}:
+>        [<ffffffff81087440>] lock_acquire+0x95/0x105
+>        [<ffffffff81040190>] console_lock+0x59/0x5b
+>        [<ffffffff81209cb6>] fb_flashcursor+0x2e/0x12c
+>        [<ffffffff81057c3e>] process_one_work+0x1d9/0x3b4
+>        [<ffffffff810584a2>] worker_thread+0x1a7/0x24b
+>        [<ffffffff8105ca29>] kthread+0x7f/0x87
+>        [<ffffffff813b1204>] kernel_thread_helper+0x4/0x10
+> 
+> -> #0 ((&info->queue)){+.+...}:
+>        [<ffffffff81086cb3>] __lock_acquire+0x999/0xcf6
+>        [<ffffffff81087440>] lock_acquire+0x95/0x105
+>        [<ffffffff81058cab>] wait_on_work+0x3b/0xa7
+>        [<ffffffff81058dd6>] __cancel_work_timer+0xbf/0x102
+>        [<ffffffff81058e33>] cancel_work_sync+0xb/0xd
+>        [<ffffffff8120a3b3>] fbcon_deinit+0x11c/0x1dc
+>        [<ffffffff81264793>] bind_con_driver+0x145/0x263
+>        [<ffffffff81264a45>] unbind_con_driver+0x14f/0x195
+>        [<ffffffff8126540c>] store_bind+0x1ad/0x1c1
+>        [<ffffffff8127cbb7>] dev_attr_store+0x13/0x1f
+>        [<ffffffff8116d884>] sysfs_write_file+0xe9/0x121
+>        [<ffffffff811145b2>] vfs_write+0x9b/0xfd
+>        [<ffffffff811147b7>] sys_write+0x3e/0x6b
+>        [<ffffffff813b0039>] system_call_fastpath+0x16/0x1b
+> 
+> other info that might help us debug this:
+> 
+>  Possible unsafe locking scenario:
+> 
+>        CPU0                    CPU1
+>        ----                    ----
+>   lock(console_lock);
+>                                lock((&info->queue));
+>                                lock(console_lock);
+>   lock((&info->queue));
+> 
+>  *** DEADLOCK ***
+> 
+> v2: Mark the lockdep_map static, noticed by Jani Nikula.
+> 
+> Cc: Dave Airlie <airlied@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> ---
+>  kernel/printk.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
 
-I think I'm going to just end up restricting this driver to X86
-as was originally suggested.
+So I'm guessing I should take this through the tty tree, right?  Any
+objections to that for 3.7?
 
-There seems to be no real consistent Kconfig protection for users
-of isa_virt_to_bus() and friends.
+thanks,
 
-We know that ISA_DMA_API doesn't do it, and ISA doesn't do it either
-as powerpc also allows that to bet set for CHRP and friends.
-
-Thanks.
+greg k-h
