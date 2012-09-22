@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab2IVA7s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 20:59:48 -0400
-Received: from nm20.bullet.mail.ukl.yahoo.com ([217.146.183.194]:37238 "HELO
-	nm20.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756301Ab2IVA7r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 20:59:47 -0400
-X-Yahoo-Newman-Id: 641627.79099.bm@smtp132.mail.ukl.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: SSYXHnwVM1ku12fCVm514dp7Xsg5DJ5pT2Fkdf0IKK8OCaj
- 0e_Dx8NwQ5CI6G23V0EwSyPg0qQofogKffwE5__lE7Cgo7GR2HXhGFt258h1
- 4BVfV1jo0Qm4vth90wWdA4UCinM1VuXs.WPuNsyvQRJQ8mqXxT6OkM5EeacJ
- 3h8SDm.bmRiVIPtEi8PN_ia23hRZHNidn_DKWtqQXNdo8zTxJQ7exuu3UjqY
- h5VHYUvIyE0k9fxKhAWpFy8ryMmB3Y1XzRjzoRF4uXCfY0doXjMRowPu3Q0z
- 6e7veZCSOJQp5_zIxoNPwBSDyCaDPAoX9Wu4zGYBM40B4sqkg2HlVk0by2IM
- LRdZ7BcvvstEy.LweA4UIV5Gknm6HRVTlHM8hGmzaBYdZliZgUAr375EcccZ
- EYb02I6vz31pcEIKo9H0skA--
-X-Yahoo-SMTP: 5Vuzu2WswBCxMnJ0hjKohBcp6M6Es6bt5AQ-
-Message-ID: <505D0D80.40402@yahoo.com>
-Date: Sat, 22 Sep 2012 01:59:44 +0100
-From: Paul Parsons <lost.distance@yahoo.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1756930Ab2IVBGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 21:06:43 -0400
+Received: from mail.digium.com ([216.207.245.2]:32788 "EHLO mail.digium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753468Ab2IVBGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Sep 2012 21:06:41 -0400
+Date: Fri, 21 Sep 2012 19:59:05 -0500
+From: Shaun Ruffell <sruffell@digium.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>,
+        Kim Phillips <kim.phillips@freescale.com>, linux-edac@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: Linux 3.6-rc6
+Message-ID: <20120922005905.GA8335@digium.com>
+References: <CA+55aFxMmqG32dJXhUe7N+aS=M1q_5hf7iTfsnPKDU4d610EoQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: dwmw2@infradead.org, philipp.zabel@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pda_power: remove ac_draw_failed goto and label
-References: <505BBB4B.3060508@yahoo.com> <20120921235144.GC26715@lizard>
-In-Reply-To: <20120921235144.GC26715@lizard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxMmqG32dJXhUe7N+aS=M1q_5hf7iTfsnPKDU4d610EoQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Anton,
+On Sun, Sep 16, 2012 at 03:59:09PM -0700, Linus Torvalds wrote:
+> 
+> Please do test things out, I'd really like to be able to do the final
+> 3.6 soonish..
 
-On 22/09/12 00:51, Anton Vorontsov wrote:
-> On Fri, Sep 21, 2012 at 01:56:43AM +0100, Paul Parsons wrote:
->> A previous patch added the ac_draw_failed goto and label to
->> pda_power_probe(). The goto would be invoked after a failed call to
->> regulator_get().
->>
->> However the way ac_draw is used - always after a check for NULL -
->> suggests that a failed call to regulator_get() was not fatal.
->>
->> This patch removes the ac_draw_failed goto and label, partly reverting
->> the previous patch.
->>
->> This patch also removes the assignment of an error code to ret after a
->> failed call to regulator_get(), since the error code is now never used.
->>
->> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
->> Cc: Philipp Zabel <philipp.zabel@gmail.com>
->> ---
->>   drivers/power/pda_power.c |    3 ---
->>   1 files changed, 0 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
->> index d3be834d..7df7c5f 100644
->> --- a/drivers/power/pda_power.c
->> +++ b/drivers/power/pda_power.c
->> @@ -284,9 +284,7 @@ static int pda_power_probe(struct platform_device *pdev)
->>   	ac_draw = regulator_get(dev, "ac_draw");
->>   	if (IS_ERR(ac_draw)) {
->>   		dev_dbg(dev, "couldn't get ac_draw regulator\n");
->> -		ret = PTR_ERR(ac_draw);
->>   		ac_draw = NULL;
->> -		goto ac_draw_failed;
->
-> For some reason you have a bit different code, so your patch is not based
-> on the battery tree. (In my tree ret and ac_draw assignments are swapped.)
-> Maybe that's because I had to manually redo your first patch...
->
-> Anyway, I repeated your patch by hand again and thus applied it.
+Linus,
 
-Yes, in my first patch I had swapped the ret and ac_draw assignments
-when I moved the regulator_get() call to before the update_charger()
-call. This was because the original order of the assignments:
+Just a heads up in case you are about to tag v3.6.
 
-ac_draw = NULL;
-ret = PTR_ERR(ac_draw);
+v3.6-rc6 still has a regression with edac_mc_alloc()/edac_mc_free()
+introduced in commit de3910eb79ac8c0f29a11224661c0ebaaf813039.
+edac_mc_free() assumes that struct mem_ctl_info is registered in
+sysfs but there are error paths where this is not always the case.
 
-is obviously incorrect; the ac_draw assignment overwrites the error
-code that should be returned by PTR_ERR().
+I posted patches [1,2,3] that resolve the issue for me. Shaohui Xie
+also hit the issue and posted a slightly different patch [4]. The
+patches are currently waiting for Mauro, who I understand is
+catching up since returning from San Diego, to check them out.
 
-Anyway, thank you for sorting this out!
+[1] http://marc.info/?l=linux-kernel&m=134764595921752&w=2
+[2] http://marc.info/?l=linux-kernel&m=134764594721747&w=2
+[3] http://marc.info/?l=linux-kernel&m=134764597921761&w=2
+[4] http://marc.info/?l=linux-kernel&m=134753579818528&w=2
 
-Regards,
-Paul
+Without the patches I'll always hit on boot:
 
-> Thank you!
->
->>   	}
->>
->>   	update_status();
->> @@ -416,7 +414,6 @@ ac_supply_failed:
->>   		regulator_put(ac_draw);
->>   		ac_draw = NULL;
->>   	}
->> -ac_draw_failed:
->>   	if (pdata->exit)
->>   		pdata->exit(dev);
->>   init_failed:
->> --
->> 1.7.8.6
+[  36.703479] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[  36.703479] IP: [<c045e195>] __wake_up_common+0x1a/0x6a
+[  36.703479] *pde = 7f0c6067
+[  36.703479] Oops: 0000 [#1] SMP
+[  36.703479] Modules linked in: parport_pc parport floppy e7xxx_edac(+) ide_cd_mod edac_core intel_rng cdrom microcode(+) dm_snapshot dm_zero dm_mirror dm_region_hash d
+[  36.703479] Pid: 933, comm: modprobe Tainted: G        W    3.6.0-rc2-00111-gc1999ee #12 Dell Computer Corporation PowerEdge 2600             /0F0364
+[  36.703479] EIP: 0060:[<c045e195>] EFLAGS: 00010093 CPU: 3
+[  36.703479] EIP is at __wake_up_common+0x1a/0x6a
+[  36.703479] EAX: f47b0984 EBX: fffffff4 ECX: 00000000 EDX: 00000003
+[  36.703479] ESI: f47b0984 EDI: 00000282 EBP: f3dc7d38 ESP: f3dc7d1c
+[  36.703479]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  36.703479] CR0: 8005003b CR2: 00000000 CR3: 347d4000 CR4: 000007d0
+[  36.703479] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[  36.703479] DR6: ffff0ff0 DR7: 00000400
+[  36.703479] Process modprobe (pid: 933, ti=f3dc6000 task=f3db9520 task.ti=f3dc6000)
+[  36.703479] Stack:
+[  36.703479]  00000000 00000000 00000003 c046701a f47b0980 f47b0984 00000282 f3dc7d54
+[  36.703479]  c046703f 00000000 00000000 f47b08b0 f47b08b0 00000000 f3dc7d74 c06961ce
+[  36.703479]  f3dc7d74 f3dc7d80 c05e2837 c094c4cc f47b08b0 f47b08b0 f3dc7d88 c068d56d
+[  36.703479] Call Trace:
+[  36.703479]  [<c046701a>] ? complete_all+0x1a/0x50
+[  36.703479]  [<c046703f>] complete_all+0x3f/0x50
+[  36.703479]  [<c06961ce>] device_pm_remove+0x23/0xa2
+[  36.703479]  [<c05e2837>] ? kobject_put+0x5b/0x5d
+[  36.703479]  [<c068d56d>] device_del+0x34/0x142
+[  36.703479]  [<f8547884>] edac_unregister_sysfs+0x3b/0x5c [edac_core]
+[  36.703479]  [<f8545041>] edac_mc_free+0x29/0x2f [edac_core]
+[  36.703479]  [<f860163f>] e7xxx_probe1+0x268/0x311 [e7xxx_edac]
+[  36.703479]  [<c0603d00>] ? __pci_enable_device_flags+0x8f/0xd3
+[  36.703479]  [<f8601b0b>] e7xxx_init_one+0x56/0x61 [e7xxx_edac]
+[  36.703479]  [<c0604f85>] local_pci_probe+0x13/0x15
+...
 
+Cheers,
+Shaun
