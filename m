@@ -1,48 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab2IVIBl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 04:01:41 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60323 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab2IVIBj (ORCPT
+	id S1754530Ab2IVILV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 04:11:21 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:52186 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754418Ab2IVIKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 04:01:39 -0400
-Subject: Re: [PATCH net-next v1] net: use a per task frag allocator
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Vijay Subramanian <subramanian.vijay@gmail.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-In-Reply-To: <CAGK4HS98RG78Auvaai3Ny6zz5c_hccO-ShD3GuT=moRRm4+RUA@mail.gmail.com>
-References: <1348073761.26523.1095.camel@edumazet-glaptop>
-	 <20120920.174827.1245530945282009606.davem@davemloft.net>
-	 <1348239433.2669.522.camel@edumazet-glaptop>
-	 <CAGK4HS98RG78Auvaai3Ny6zz5c_hccO-ShD3GuT=moRRm4+RUA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Sep 2012 23:11:11 +0200
-Message-ID: <1348261871.2669.962.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sat, 22 Sep 2012 04:10:09 -0400
+Message-ID: <505D725A.4010708@metafoo.de>
+Date: Sat, 22 Sep 2012 10:10:02 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: OOPS/panic in iio_dummy (v3.6-rc6-176-gabef3bd)
+References: <201209220413.36295.PeterHuewe@gmx.de>
+In-Reply-To: <201209220413.36295.PeterHuewe@gmx.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-21 at 13:27 -0700, Vijay Subramanian wrote:
-> I get the following compile error with the newer version of the patch
+On 09/22/2012 04:13 AM, Peter H�we wrote:
+> Hi,
 > 
-> net/sched/em_meta.c: In function ‘meta_int_sk_sendmsg_off’:
-> net/sched/em_meta.c:464: error: ‘struct sock’ has no member named
-> ‘sk_sndmsg_off’
-> make[1]: *** [net/sched/em_meta.o] Error 1
-> make: *** [net/sched/em_meta.o] Error 2
+> loading iio_dummy results in kernel panic as the call to 
+> iio_buffer_register in iio_dummy_probe is performed with indio_dev->buffer == 
+> NULL and thus the access to indio_dev->buffer->attrs results in this 
+> oops/panic.
 > 
+> Thanks,
+> Peter
 > 
-> 
-> Vijay
 
-Oh well, I wonder what's the expected use of this crap...
+Hi,
 
-Thanks, I'll fix this on v3 !
+I sent a patch or this a couple of days ago. See
+http://comments.gmane.org/gmane.linux.kernel.iio/5550
 
+- Lars
+
+
+> Steps to reproduce:
+> 
+> #modprobe iio_dummy
+> iio_dummy: module is from the staging directory, the quality is unknown, you 
+> have been warned.
+> 
+> Modules linked in: iio_dummy(C+) industrialio
+> Pid: 615, comm: modprobe Tainted: G         C   3.6.0-rc6-00180-g68d0383-dirty
+> RIP: 0033:[<00000000a089d846>]
+> RSP: 000000009f4ffd30  EFLAGS: 00010206
+> RAX: 0000000000000004 RBX: 00000000a08be6a0 RCX: 0000000000000000
+> RDX: 000000006036a320 RSI: 0000000000000008 RDI: 0000000000000000
+> RBP: 000000009f4ffda0 R08: 000000009f4ff900 R09: 0000000060406da8
+> R10: 000000000000004a R11: 0000000000000246 R12: 00000000602a58bc
+> R13: 0000000000000005 R14: 000000006005f170 R15: 000000009f6b0400
+> Call Trace: 
+> 603675d8:  [<6001d53d>] segv+0x1bd/0x340
+> 603675f8:  [<6008b8ab>] handle_irq_event_percpu+0xab/0x1b0
+> 60367620:  [<6008b9b0>] handle_irq_event+0x0/0x40
+> 60367630:  [<6002e09c>] os_waiting_for_events+0x0/0xc5
+> 60367658:  [<6008fccf>] rcu_irq_exit+0x5f/0xb0
+> 603676a8:  [<6001d713>] segv_handler+0x53/0xb0
+> 603676c8:  [<60019b5c>] sigio_handler+0xac/0xc0
+> 603676f8:  [<6002ff5a>] sig_handler_common+0xa4/0xb9
+> 60367708:  [<6005f170>] __mutex_init+0x0/0x20
+> 60367718:  [<602a58bc>] printk+0x0/0xa8
+> 60367780:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 60367818:  [<60016c34>] _einittext+0x2572/0x38f6
+> 60367828:  [<60016728>] _einittext+0x2066/0x38f6
+> 60367908:  [<60016c34>] _einittext+0x2572/0x38f6
+> 603679a8:  [<60019b70>] to_irq_stack+0x0/0xe0
+> 60367a28:  [<60019b70>] to_irq_stack+0x0/0xe0
+> 60367a38:  [<600300b5>] sig_handler+0x4a/0x5d
+> 60367a58:  [<6002fb81>] hard_handler+0x89/0xd8
+> 60367a90:  [<602a58bc>] printk+0x0/0xa8
+> 60367aa0:  [<6005f170>] __mutex_init+0x0/0x20
+> 60367b08:  [<602a58bc>] printk+0x0/0xa8
+> 60367b18:  [<6005f170>] __mutex_init+0x0/0x20
+> 60367b68:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 
+> Kernel panic - not syncing: Kernel mode fault at addr 0x68, ip 0xa089d846
+> Call Trace: 
+> 603674b0:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 603674c8:  [<602a5751>] panic+0x146/0x2b1
+> 60367500:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 60367508:  [<602a560b>] panic+0x0/0x2b1
+> 60367520:  [<6007a4d4>] __module_text_address+0x14/0x70
+> 60367538:  [<6007ec20>] is_module_text_address+0x10/0x20
+> 60367548:  [<600582c7>] __kernel_text_address+0x87/0xc0
+> 60367568:  [<6001bc1f>] show_trace+0x7f/0xf0
+> 60367598:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 603675c0:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 603675d8:  [<6001d55b>] segv+0x1db/0x340
+> 603675f8:  [<6008b8ab>] handle_irq_event_percpu+0xab/0x1b0
+> 60367620:  [<6008b9b0>] handle_irq_event+0x0/0x40
+> 60367630:  [<6002e09c>] os_waiting_for_events+0x0/0xc5
+> 60367658:  [<6008fccf>] rcu_irq_exit+0x5f/0xb0
+> 603676a8:  [<6001d713>] segv_handler+0x53/0xb0
+> 603676c8:  [<60019b5c>] sigio_handler+0xac/0xc0
+> 603676f8:  [<6002ff5a>] sig_handler_common+0xa4/0xb9
+> 60367708:  [<6005f170>] __mutex_init+0x0/0x20
+> 60367718:  [<602a58bc>] printk+0x0/0xa8
+> 60367780:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 60367818:  [<60016c34>] _einittext+0x2572/0x38f6
+> 60367828:  [<60016728>] _einittext+0x2066/0x38f6
+> 60367908:  [<60016c34>] _einittext+0x2572/0x38f6
+> 603679a8:  [<60019b70>] to_irq_stack+0x0/0xe0
+> 60367a28:  [<60019b70>] to_irq_stack+0x0/0xe0
+> 60367a38:  [<600300b5>] sig_handler+0x4a/0x5d
+> 60367a58:  [<6002fb81>] hard_handler+0x89/0xd8
+> 60367a90:  [<602a58bc>] printk+0x0/0xa8
+> 60367aa0:  [<6005f170>] __mutex_init+0x0/0x20
+> 60367b08:  [<602a58bc>] printk+0x0/0xa8
+> 60367b18:  [<6005f170>] __mutex_init+0x0/0x20
+> 60367b68:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 
+> 
+> Modules linked in: iio_dummy(C+) industrialio
+> Pid: 615, comm: modprobe Tainted: G         C   3.6.0-rc6-00180-g68d0383-dirty
+> RIP: 0033:[<00000000402eff9a>]
+> RSP: 0000007fbfbf6798  EFLAGS: 00000246
+> RAX: ffffffffffffffda RBX: 0000000000000000 RCX: ffffffffffffffff
+> RDX: 000000000060e110 RSI: 00000000000148c9 RDI: 0000000040024000
+> RBP: 0000000000611b70 R08: 000000000060e100 R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000246 R12: 000000000060e110
+> R13: 0000000000000000 R14: 000000000060e010 R15: 0000000000611b88
+> Call Trace: 
+> 60367448:  [<6001db1e>] panic_exit+0x3e/0x60
+> 60367478:  [<600616ad>] notifier_call_chain+0x4d/0x70
+> 603674a0:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 603674b8:  [<60061708>] atomic_notifier_call_chain+0x18/0x20
+> 603674c8:  [<602a5784>] panic+0x179/0x2b1
+> 60367500:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 60367508:  [<602a560b>] panic+0x0/0x2b1
+> 60367520:  [<6007a4d4>] __module_text_address+0x14/0x70
+> 60367538:  [<6007ec20>] is_module_text_address+0x10/0x20
+> 60367548:  [<600582c7>] __kernel_text_address+0x87/0xc0
+> 60367568:  [<6001bc1f>] show_trace+0x7f/0xf0
+> 60367598:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 603675c0:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 603675d8:  [<6001d55b>] segv+0x1db/0x340
+> 603675f8:  [<6008b8ab>] handle_irq_event_percpu+0xab/0x1b0
+> 60367620:  [<6008b9b0>] handle_irq_event+0x0/0x40
+> 60367630:  [<6002e09c>] os_waiting_for_events+0x0/0xc5
+> 60367658:  [<6008fccf>] rcu_irq_exit+0x5f/0xb0
+> 603676a8:  [<6001d713>] segv_handler+0x53/0xb0
+> 603676c8:  [<60019b5c>] sigio_handler+0xac/0xc0
+> 603676f8:  [<6002ff5a>] sig_handler_common+0xa4/0xb9
+> 60367708:  [<6005f170>] __mutex_init+0x0/0x20
+> 60367718:  [<602a58bc>] printk+0x0/0xa8
+> 60367780:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 60367818:  [<60016c34>] _einittext+0x2572/0x38f6
+> 60367828:  [<60016728>] _einittext+0x2066/0x38f6
+> 60367908:  [<60016c34>] _einittext+0x2572/0x38f6
+> 603679a8:  [<60019b70>] to_irq_stack+0x0/0xe0
+> 60367a28:  [<60019b70>] to_irq_stack+0x0/0xe0
+> 60367a38:  [<600300b5>] sig_handler+0x4a/0x5d
+> 60367a58:  [<6002fb81>] hard_handler+0x89/0xd8
+> 60367a90:  [<602a58bc>] printk+0x0/0xa8
+> 60367aa0:  [<6005f170>] __mutex_init+0x0/0x20
+> 60367b08:  [<602a58bc>] printk+0x0/0xa8
+> 60367b18:  [<6005f170>] __mutex_init+0x0/0x20
+> 60367b68:  [<a089d846>] iio_buffer_register+0x46/0x610 [industrialio]
+> 
+> 
+> Tested on recent linus' tree (v3.6-rc6-176-gabef3bd)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
