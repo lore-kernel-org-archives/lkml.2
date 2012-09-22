@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab2IVNip (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 09:38:45 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48324 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab2IVNin (ORCPT
+	id S1752834Ab2IVNjE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 09:39:04 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:60642 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab2IVNjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 09:38:43 -0400
-Message-ID: <505DBF72.3000208@gmail.com>
-Date: Sat, 22 Sep 2012 15:38:58 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Mel Gorman <mgorman@suse.de>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Sat, 22 Sep 2012 09:39:01 -0400
+Date: Sat, 22 Sep 2012 15:38:47 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [RFC] mm: add support for zsmalloc and zcache
-References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120921161252.GV11266@suse.de> <15c1d12a-0e29-478f-97e0-ee4063e2cba5@default> <505DBDC5.3010503@gmail.com>
-In-Reply-To: <505DBDC5.3010503@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to
+ ARM)
+Message-ID: <20120922133847.GC20003@linux-mips.org>
+References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
+ <20120922114549.GA11610@moon>
+ <20120922132046.GA4260@flint.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120922132046.GA4260@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2012 03:31 PM, Sasha Levin wrote:
-> On 09/21/2012 09:14 PM, Dan Magenheimer wrote:
->>>> +#define MAX_CLIENTS 16
->>>>
->>>> Seems a bit arbitrary. Why 16?
->> Sasha Levin posted a patch to fix this but it was tied in to
->> the proposed KVM implementation, so was never merged.
->>
+On Sat, Sep 22, 2012 at 02:20:46PM +0100, Russell King wrote:
+
+> 2. There allegedly exists a patch to remove x86isms from sys_kcmp -
+>    allegedly also in akpm's tree.  However, I've looked through the code in
+>    mainline, and nothing stands out.  Ralf Beachle also said yesterday that
+>    he has looked through from the MIPS PoV and also can't see any x86isms,
+>    so we're both thinking that it should merely have the x86 dependency
+>    removed.
 > 
-> My patch changed the max pools per client, not the maximum amount of clients.
-> That patch has already found it's way in.
-> 
-> (MAX_CLIENTS does look like an arbitrary number though).
+> 3. Until the x86 dependency is gone (that depends on what akpm proposes to
+>    do with the patches he's allegedly sitting on), non-x86 arches can only
+>    reserve the syscall, and add an IGNORE for it.
 
-btw, while we're on the subject of KVM, the implementation of tmem/kvm was
-blocked due to insufficient performance caused by the lack of multi-page
-ops/batching.
+There is a weak definition provided in kernel/sys_ni.c so it actually can
+be properly wired up in preparation for the day when the dependency in
+Kconfig gets fixed.
 
-Are there any plans to make it better in the future?
+> It would be good to at least get checksyscalls.sh fixed so arch maintainers
+> get their warnings for new syscalls back.
 
+Indeed.  That script has become just too important.
 
-Thanks,
-Sasha
-
+  Ralf
