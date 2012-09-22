@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab2IVJHL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 05:07:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49346 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab2IVJHJ (ORCPT
+	id S1754906Ab2IVJOQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 05:14:16 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:52740 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab2IVJOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 05:07:09 -0400
-Message-ID: <505D7FBF.1080505@gmail.com>
-Date: Sat, 22 Sep 2012 17:07:11 +0800
-From: Zhao Hongjiang <zhaohongjiang37@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Sat, 22 Sep 2012 05:14:14 -0400
+Message-ID: <505D8168.8000003@kernel.org>
+Date: Sat, 22 Sep 2012 10:14:16 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: axboe@kernel.dk
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] block: change return values from -EACCES to -EPERM
+To: "Kim, Milo" <Milo.Kim@ti.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, Lars-Peter Clausen <lars@metafoo.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] iio: inkern: put the IIO device when it fails to
+ allocate memory
+References: <A874F61F95741C4A9BA573A70FE3998F41EF5397@DQHE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF5397@DQHE02.ent.ti.com>
+X-Enigmail-Version: 1.4.3
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhao Hongjiang <zhaohongjiang@huawei.com>
+On 09/18/2012 05:55 AM, Kim, Milo wrote:
+>  The reference count of the IIO device is increased if the IIO map has
+>  matched consumer name.
+>  After then, it tries to allocate the iio_channel which is used by the consumer.
+>  If it fails to allocate memory, the reference count should be decreased.
+> 
+>  This patch enables restoring the reference count of the IIO device.
+> 
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+Thanks add to togreg branch of iio.git
 
-Change return value from -EACCES to -EPERM when the permission check fails.
-
-Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
----
-
-This patch is based on linux-next tree http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git
-
----
- block/compat_ioctl.c |    2 +-
- block/ioctl.c        |   12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/block/compat_ioctl.c b/block/compat_ioctl.c
-index 7c668c8..a21bf98 100644
---- a/block/compat_ioctl.c
-+++ b/block/compat_ioctl.c
-@@ -725,7 +725,7 @@ long compat_blkdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
- 	case BLKRASET: /* compatible, but no compat_ptr (!) */
- 	case BLKFRASET:
- 		if (!capable(CAP_SYS_ADMIN))
--			return -EACCES;
-+			return -EPERM;
- 		bdi = blk_get_backing_dev_info(bdev);
- 		if (bdi == NULL)
- 			return -ENOTTY;
-diff --git a/block/ioctl.c b/block/ioctl.c
-index a31d91d..b7d6f07 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -21,7 +21,7 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
- 	int partno;
-
- 	if (!capable(CAP_SYS_ADMIN))
--		return -EACCES;
-+		return -EPERM;
- 	if (copy_from_user(&a, arg, sizeof(struct blkpg_ioctl_arg)))
- 		return -EFAULT;
- 	if (copy_from_user(&p, a.data, sizeof(struct blkpg_partition)))
-@@ -158,7 +158,7 @@ static int blkdev_reread_part(struct block_device *bdev)
- 	if (!disk_part_scan_enabled(disk) || bdev != bdev->bd_contains)
- 		return -EINVAL;
- 	if (!capable(CAP_SYS_ADMIN))
--		return -EACCES;
-+		return -EPERM;
- 	if (!mutex_trylock(&bdev->bd_mutex))
- 		return -EBUSY;
- 	res = rescan_partitions(disk, bdev);
-@@ -282,7 +282,7 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 	switch(cmd) {
- 	case BLKFLSBUF:
- 		if (!capable(CAP_SYS_ADMIN))
--			return -EACCES;
-+			return -EPERM;
-
- 		ret = __blkdev_driver_ioctl(bdev, mode, cmd, arg);
- 		if (!is_unrecognized_ioctl(ret))
-@@ -297,7 +297,7 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 		if (!is_unrecognized_ioctl(ret))
- 			return ret;
- 		if (!capable(CAP_SYS_ADMIN))
--			return -EACCES;
-+			return -EPERM;
- 		if (get_user(n, (int __user *)(arg)))
- 			return -EFAULT;
- 		set_device_ro(bdev, n);
-@@ -381,7 +381,7 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 	case BLKRASET:
- 	case BLKFRASET:
- 		if(!capable(CAP_SYS_ADMIN))
--			return -EACCES;
-+			return -EPERM;
- 		bdi = blk_get_backing_dev_info(bdev);
- 		if (bdi == NULL)
- 			return -ENOTTY;
-@@ -390,7 +390,7 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 	case BLKBSZSET:
- 		/* set the logical block size */
- 		if (!capable(CAP_SYS_ADMIN))
--			return -EACCES;
-+			return -EPERM;
- 		if (!arg)
- 			return -EINVAL;
- 		if (get_user(n, (int __user *) arg))
--- 1.7.1
+> ---
+>  drivers/iio/inkern.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+> index 13748c0..aff034b 100644
+> --- a/drivers/iio/inkern.c
+> +++ b/drivers/iio/inkern.c
+> @@ -132,7 +132,7 @@ struct iio_channel *iio_channel_get(const char *name, const char *channel_name)
+>  
+>  	channel = kzalloc(sizeof(*channel), GFP_KERNEL);
+>  	if (channel == NULL)
+> -		return ERR_PTR(-ENOMEM);
+> +		goto error_no_mem;
+>  
+>  	channel->indio_dev = c->indio_dev;
+>  
+> @@ -151,6 +151,9 @@ error_no_chan:
+>  	iio_device_put(c->indio_dev);
+>  	kfree(channel);
+>  	return ERR_PTR(-EINVAL);
+> +error_no_mem:
+> +	iio_device_put(c->indio_dev);
+> +	return ERR_PTR(-ENOMEM);
+>  }
+>  EXPORT_SYMBOL_GPL(iio_channel_get);
+>  
+> 
