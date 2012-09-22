@@ -1,238 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab2IVRP1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 13:15:27 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55247 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403Ab2IVRPY (ORCPT
+	id S1753105Ab2IVRcj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 13:32:39 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58300 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752904Ab2IVRci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 13:15:24 -0400
-Date: Sat, 22 Sep 2012 13:13:42 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	Sat, 22 Sep 2012 13:32:38 -0400
+Date: Sat, 22 Sep 2012 19:32:25 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: David S Miller <davem@davemloft.net>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2012-09-22
-Message-ID: <20120922171341.GB2101@tuxdriver.com>
+Subject: Re: [PATCH v3] lxt PHY: Support for the buggy LXT973 rev A2
+Message-ID: <20120922173225.GA6796@netboy.at.omicron.at>
+References: <201209221616.q8MGGnRc019864@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201209221616.q8MGGnRc019864@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 22, 2012 at 06:16:49PM +0200, Christophe Leroy wrote:
+> This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding
+> precautions linked to ERRATA Item 4:
+> 
+> Revision A2 of LXT973 chip randomly returns the contents of the previous even
+> register when you read a odd register regularly
 
---fdj2RfSjLxBAspz7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch does not apply to net-next.
 
-commit 1199992df2417dc9a1db1b19930ea4d0a697a61e
+Also, I have just a few stylistic comments, below.
 
-Dave,
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> 
+> diff -u linux-3.5-vanilla/drivers/net/phy/lxt.c linux-3.5/drivers/net/phy/lxt.c
+> --- linux-3.5-vanilla/drivers/net/phy/lxt.c	2012-07-21 22:58:29.000000000 +0200
+> +++ linux-3.5/drivers/net/phy/lxt.c	2012-09-15 19:20:34.000000000 +0200
 
-Please pull this last(?) batch of fixes intended for 3.6...
+...
 
-For the Bluetooth bits, Gustavo says this:
+> +int lxt973a2_read_status(struct phy_device *phydev)
+> +{
+> +	int adv;
+> +	int err;
+> +	int lpa;
+> +	int lpagb = 0;
+> +
+> +	/* Update the link, but return if there was an error */
+> +	err = lxt973a2_update_link(phydev);
+> +	if (err)
+> +		return err;
+> +
+> +	if (AUTONEG_ENABLE == phydev->autoneg) {
+> +		int retry = 1;
+> +
+> +		adv = phy_read(phydev, MII_ADVERTISE);
+> +
+> +		if (adv < 0)
+> +			return adv;
+> +
+> +		do {
+> +			lpa = phy_read(phydev, MII_LPA);
+> +
+> +			if (lpa < 0)
+> +				return lpa;
+> +
+> +			/* If both registers are equal, it is suspect but not
+> +			* impossible, hence a new try
+> +			*/
+> +		} while (lpa == adv && retry--);
+> +
+> +		lpa &= adv;
+> +
+> +		phydev->speed = SPEED_10;
+> +		phydev->duplex = DUPLEX_HALF;
+> +		phydev->pause = phydev->asym_pause = 0;
+> +
+> +		if (lpagb & (LPA_1000FULL | LPA_1000HALF)) {
+> +			phydev->speed = SPEED_1000;
+> +
+> +			if (lpagb & LPA_1000FULL)
+> +				phydev->duplex = DUPLEX_FULL;
+> +		} else if (lpa & (LPA_100FULL | LPA_100HALF)) {
+> +			phydev->speed = SPEED_100;
+> +
+> +			if (lpa & LPA_100FULL)
+> +				phydev->duplex = DUPLEX_FULL;
+> +		} else
+> +			if (lpa & LPA_10FULL)
+> +				phydev->duplex = DUPLEX_FULL;
 
-"Here goes probably my last update to 3.6. It includes the two patches
-you were ok last week(from Andrzej Kaczmarek), those are critical
-ones, and two other fixes one for a system crash and the other for
-a missing lockdep annotation."
+This last 'else' could use braces.
 
-The referenced fixes from Andrzej prevent attempts to configure devices
-that are powered-off.
+> +
+> +		if (phydev->duplex == DUPLEX_FULL) {
+> +			phydev->pause = lpa & LPA_PAUSE_CAP ? 1 : 0;
+> +			phydev->asym_pause = lpa & LPA_PAUSE_ASYM ? 1 : 0;
+> +		}
+> +	} else {
+> +		int bmcr = phy_read(phydev, MII_BMCR);
+> +
+> +		if (bmcr < 0)
+> +			return bmcr;
+> +
+> +		if (bmcr & BMCR_FULLDPLX)
+> +			phydev->duplex = DUPLEX_FULL;
+> +		else
+> +			phydev->duplex = DUPLEX_HALF;
+> +
+> +		if (bmcr & BMCR_SPEED1000)
+> +			phydev->speed = SPEED_1000;
+> +		else if (bmcr & BMCR_SPEED100)
+> +			phydev->speed = SPEED_100;
+> +		else
+> +			phydev->speed = SPEED_10;
+> +
+> +		phydev->pause = phydev->asym_pause = 0;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int lxt973_read_status(struct phy_device *phydev)
+> +{
+> +	return (int)phydev->priv&PHYDEV_PRIV_REVA2 ?
+> +			lxt973a2_read_status(phydev) :
+> +			genphy_read_status(phydev);
 
-Along with the Bluetooth fixes, there are a couple of 802.11 fixes.
-Emmanuel Grumbach gives us an iwlwifi fix to prevent releasing an
-interrupt twice.  Luis R. Rodriguez provides a fix for a possible
-circular lock dependency in the cfg80211 regulatory enforcement code.
+Needs spacing, like this:
 
-All of these have been in linux-next for a few days.  I hope they are
-not too late to make the 3.6 release!
+	return (int) phydev->priv & PHYDEV_PRIV_REVA2 ?
+		lxt973a2_read_status(phydev) : genphy_read_status(phydev);
+
+> +}
+> +
+>  static int lxt973_probe(struct phy_device *phydev)
+>  {
+>  	int val = phy_read(phydev, MII_LXT973_PCR);
+> +	int priv = 0;
+> +
+> +	phydev->priv = NULL;
+> +
+> +	if (val < 0)
+> +		return val;
+>  
+>  	if (val & PCR_FIBER_SELECT) {
+>  		/*
+> @@ -136,17 +272,26 @@
+>  		val &= ~BMCR_ANENABLE;
+>  		phy_write(phydev, MII_BMCR, val);
+>  		/* Remember that the port is in fiber mode. */
+> -		phydev->priv = lxt973_probe;
+> -	} else {
+> -		phydev->priv = NULL;
+> +		priv |= PHYDEV_PRIV_FIBER;
+> +	}
+> +	val = phy_read(phydev, MII_PHYSID2);
+> +
+> +	if (val < 0)
+> +		return val;
+> +
+> +	if ((val & 0xf) == 0) { /* rev A2 */
+> +		dev_info(&phydev->dev, " LXT973 revision A2 has bugs\n");
+> +		priv |= PHYDEV_PRIV_REVA2;
+>  	}
+> +	phydev->priv = (void *)priv;
+
+One space after cast, please: (void *) priv;
+
+>  	return 0;
+>  }
+>  
+>  static int lxt973_config_aneg(struct phy_device *phydev)
+>  {
+>  	/* Do nothing if port is in fiber mode. */
+> -	return phydev->priv ? 0 : genphy_config_aneg(phydev);
+> +	return (int)phydev->priv&PHYDEV_PRIV_FIBER ?
+> +			0 : genphy_config_aneg(phydev);
+
+Same spacing issue again.
 
 Thanks,
-
-John
-
----
-
-The following changes since commit abef3bd71029b80ec1bdd6c6244b5b0b99f56633:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-09-21=
- 14:32:55 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
-avem
-
-for you to fetch changes up to 1199992df2417dc9a1db1b19930ea4d0a697a61e:
-
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
-nville/wireless into for-davem (2012-09-22 12:19:22 -0400)
-
-----------------------------------------------------------------
-
-Andrei Emeltchenko (1):
-      Bluetooth: Fix freeing uninitialized delayed works
-
-Andrzej Kaczmarek (2):
-      Bluetooth: mgmt: Fix enabling SSP while powered off
-      Bluetooth: mgmt: Fix enabling LE while powered off
-
-Emmanuel Grumbach (1):
-      iwlwifi: don't double free the interrupt in failure path
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
-nto for-davem
-
-Luis R. Rodriguez (1):
-      cfg80211: fix possible circular lock on reg_regdb_search()
-
-Vinicius Costa Gomes (1):
-      Bluetooth: Fix not removing power_off delayed work
-
- drivers/net/wireless/iwlwifi/pcie/trans.c |  1 +
- net/bluetooth/hci_core.c                  |  2 ++
- net/bluetooth/l2cap_core.c                |  2 +-
- net/bluetooth/mgmt.c                      | 16 ++++++++++++++++
- net/wireless/reg.c                        | 12 +++++++++---
- 5 files changed, 29 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wirele=
-ss/iwlwifi/pcie/trans.c
-index 1e86ea2..dbeebef 100644
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -1442,6 +1442,7 @@ static int iwl_trans_pcie_start_hw(struct iwl_trans *=
-trans)
- 	return err;
-=20
- err_free_irq:
-+	trans_pcie->irq_requested =3D false;
- 	free_irq(trans_pcie->irq, trans);
- error:
- 	iwl_free_isr_ict(trans);
-diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
-index d4de5db..0b997c8 100644
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -734,6 +734,8 @@ static int hci_dev_do_close(struct hci_dev *hdev)
-=20
- 	cancel_work_sync(&hdev->le_scan);
-=20
-+	cancel_delayed_work(&hdev->power_off);
-+
- 	hci_req_cancel(hdev, ENODEV);
- 	hci_req_lock(hdev);
-=20
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index 4ea1710..38c00f1 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -1008,7 +1008,7 @@ static void l2cap_send_disconn_req(struct l2cap_conn =
-*conn, struct l2cap_chan *c
- 	if (!conn)
- 		return;
-=20
--	if (chan->mode =3D=3D L2CAP_MODE_ERTM) {
-+	if (chan->mode =3D=3D L2CAP_MODE_ERTM && chan->state =3D=3D BT_CONNECTED)=
- {
- 		__clear_retrans_timer(chan);
- 		__clear_monitor_timer(chan);
- 		__clear_ack_timer(chan);
-diff --git a/net/bluetooth/mgmt.c b/net/bluetooth/mgmt.c
-index ad6613d..eba022d 100644
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -2875,6 +2875,22 @@ int mgmt_powered(struct hci_dev *hdev, u8 powered)
- 		if (scan)
- 			hci_send_cmd(hdev, HCI_OP_WRITE_SCAN_ENABLE, 1, &scan);
-=20
-+		if (test_bit(HCI_SSP_ENABLED, &hdev->dev_flags)) {
-+			u8 ssp =3D 1;
-+
-+			hci_send_cmd(hdev, HCI_OP_WRITE_SSP_MODE, 1, &ssp);
-+		}
-+
-+		if (test_bit(HCI_LE_ENABLED, &hdev->dev_flags)) {
-+			struct hci_cp_write_le_host_supported cp;
-+
-+			cp.le =3D 1;
-+			cp.simul =3D !!(hdev->features[6] & LMP_SIMUL_LE_BR);
-+
-+			hci_send_cmd(hdev, HCI_OP_WRITE_LE_HOST_SUPPORTED,
-+				     sizeof(cp), &cp);
-+		}
-+
- 		update_class(hdev);
- 		update_name(hdev, hdev->dev_name);
- 		update_eir(hdev);
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index 2ded3c7..72d170c 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -350,6 +350,9 @@ static void reg_regdb_search(struct work_struct *work)
- 	struct reg_regdb_search_request *request;
- 	const struct ieee80211_regdomain *curdom, *regdom;
- 	int i, r;
-+	bool set_reg =3D false;
-+
-+	mutex_lock(&cfg80211_mutex);
-=20
- 	mutex_lock(&reg_regdb_search_mutex);
- 	while (!list_empty(&reg_regdb_search_list)) {
-@@ -365,9 +368,7 @@ static void reg_regdb_search(struct work_struct *work)
- 				r =3D reg_copy_regd(&regdom, curdom);
- 				if (r)
- 					break;
--				mutex_lock(&cfg80211_mutex);
--				set_regdom(regdom);
--				mutex_unlock(&cfg80211_mutex);
-+				set_reg =3D true;
- 				break;
- 			}
- 		}
-@@ -375,6 +376,11 @@ static void reg_regdb_search(struct work_struct *work)
- 		kfree(request);
- 	}
- 	mutex_unlock(&reg_regdb_search_mutex);
-+
-+	if (set_reg)
-+		set_regdom(regdom);
-+
-+	mutex_unlock(&cfg80211_mutex);
- }
-=20
- static DECLARE_WORK(reg_regdb_work, reg_regdb_search);
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---fdj2RfSjLxBAspz7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQXfHFAAoJEJctW/TcYTgGreUP/RTMyeMKMv27VXxxuizAcKUR
-ytLUU5W7Btyd6N/dVqMeLyq9gKCRZjCu+v+tLtnMHzvkJmO929i98aCkDCe8NRUj
-gvx/X/0wcSMIqg5AF+WgIX3BVZBSXsqN1YldJPMfEvExigW7T7MSFMDZuE2kzQp0
-Airv35EWkrSlzeqp6EoOtRun3OhAA/fmaUeATgTfMLQmtzoA32JRz0Hw4ka1oL1l
-uCaS2TPfu/ixLJFPekUDgDMCRiB8NSI2EO73FZgpxDOqBjRKgHIme7EcyC/+t8Jx
-u5RIcZQHSBkuTOnE6PvKbGej4yYWLPybP/RKx9la18Tu0EVibP01SzdK3wI4BY4Q
-WCQ8T5YxL0PiEH7ezybXTX4nCgfQJX925qsVefj7Jb7BbZsUCF9n8U5ZuH+zwjxI
-yH9Hv7k1mVUZ1O1/8fj+AqEohvaVmhY+XfCRp4UUjzu+9GT9osCh7P2i+w9+2T7j
-6RyIbh54zuQdUrmZ69wf3dxRTXf6FNb9wFYV9DXs7Q2HRa2AuNdIhl23CGVgj1Xj
-+J13qoP4hnr5aBkNMSThmx7pR9Af26Mi/TpAhtNtOSeSGrRI0bANKJdOP5FQ7TJF
-TDnfhOJdx4/+rJmtWpqztrGW2U0KMR0Zy5jA3YmUanCpk1SXIOFnLbprBfZ+0ZAY
-VBTEoITy+H/xGXNSTITH
-=oTzo
------END PGP SIGNATURE-----
-
---fdj2RfSjLxBAspz7--
+Richard
