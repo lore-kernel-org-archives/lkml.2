@@ -1,141 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab2IVVmz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 17:42:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42559 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364Ab2IVVmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 17:42:50 -0400
-Message-ID: <505E3084.80307@ti.com>
-Date: Sat, 22 Sep 2012 17:41:24 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-Reply-To: <cyril@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1753421Ab2IVVwj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 17:52:39 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57687 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab2IVVwi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Sep 2012 17:52:38 -0400
+Date: Sun, 23 Sep 2012 01:52:32 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
+Message-ID: <20120922215232.GA25778@moon>
+References: <20120913095623.GB28508@moon>
+ <20120913135131.5b251797@pyramind.ukuu.org.uk>
+ <20120913125401.GK19956@moon>
+ <20120913172507.5039e3c6@pyramind.ukuu.org.uk>
+ <20120922180639.GC11610@moon>
+ <20120922200731.GD14004@kroah.com>
+ <20120922201144.GD11610@moon>
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <arnd@arndb.de>,
-        <catalin.marinas@arm.com>, <davidb@codeaurora.org>,
-        <frank.rowand@am.sony.com>, <hsweeten@visionengravers.com>,
-        <linus.walleij@linaro.org>, <marc.zyngier@arm.com>,
-        <paul.gortmaker@windriver.com>, <plagnioj@jcrosoft.com>,
-        <rabin@rab.in>, <rmallon@gmail.com>, <rob.herring@calxeda.com>,
-        <sboyd@codeaurora.org>, <sjg@chromium.org>, <tglx@linutronix.de>,
-        <tj@kernel.org>, <vincent.guittot@linaro.org>, <vitalya@ti.com>,
-        <will.deacon@arm.com>, <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 RESEND 01/17] ARM: add mechanism for late code patching
-References: <1348242975-19184-1-git-send-email-cyril@ti.com> <1348242975-19184-2-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1209221037561.6667@xanadu.home>
-In-Reply-To: <alpine.LFD.2.02.1209221037561.6667@xanadu.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120922201144.GD11610@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/12 11:10, Nicolas Pitre wrote:
-> On Fri, 21 Sep 2012, Cyril Chemparathy wrote:
+On Sun, Sep 23, 2012 at 12:11:44AM +0400, Cyrill Gorcunov wrote:
 >
->> The original phys_to_virt/virt_to_phys patching implementation relied on early
->> patching prior to MMU initialization.  On PAE systems running out of >4G
->> address space, this would have entailed an additional round of patching after
->> switching over to the high address space.
->>
->> The approach implemented here conceptually extends the original PHYS_OFFSET
->> patching implementation with the introduction of "early" patch stubs.  Early
->> patch code is required to be functional out of the box, even before the patch
->> is applied.  This is implemented by inserting functional (but inefficient)
->> load code into the .runtime.patch.code init section.  Having functional code
->> out of the box then allows us to defer the init time patch application until
->> later in the init sequence.
->>
->> In addition to fitting better with our need for physical address-space
->> switch-over, this implementation should be somewhat more extensible by virtue
->> of its more readable (and hackable) C implementation.  This should prove
->> useful for other similar init time specialization needs, especially in light
->> of our multi-platform kernel initiative.
->>
->> This code has been boot tested in both ARM and Thumb-2 modes on an ARMv7
->> (Cortex-A8) device.
->>
->> Note: the obtuse use of stringified symbols in patch_stub() and
->> early_patch_stub() is intentional.  Theoretically this should have been
->> accomplished with formal operands passed into the asm block, but this requires
->> the use of the 'c' modifier for instantiating the long (e.g. .long %c0).
->> However, the 'c' modifier has been found to ICE certain versions of GCC, and
->> therefore we resort to stringified symbols here.
->>
->> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
->> Reviewed-by: Nicolas Pitre <nico@linaro.org>
->
-> There is another problem with this.
->
-> [...]
->> diff --git a/arch/arm/include/asm/runtime-patch.h b/arch/arm/include/asm/runtime-patch.h
->> new file mode 100644
->> index 0000000..366444d
->> --- /dev/null
->> +++ b/arch/arm/include/asm/runtime-patch.h
->> @@ -0,0 +1,208 @@
->> +/*
->> + * arch/arm/include/asm/runtime-patch.h
->> + * Note: this file should not be included by non-asm/.h files
->> + *
->> + * Copyright 2012 Texas Instruments, Inc.
->> + *
->> + * This program is free software; you can redistribute it and/or modify it
->> + * under the terms and conditions of the GNU General Public License,
->> + * version 2, as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope it will be useful, but WITHOUT
->> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
->> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
->> + * more details.
->> + *
->> + * You should have received a copy of the GNU General Public License along with
->> + * this program.  If not, see <http://www.gnu.org/licenses/>.
->> + */
->> +#ifndef __ASM_ARM_RUNTIME_PATCH_H
->> +#define __ASM_ARM_RUNTIME_PATCH_H
->> +
->> +#include <linux/stringify.h>
->> +
->> +#ifndef __ASSEMBLY__
->> +
->> +#ifdef CONFIG_ARM_RUNTIME_PATCH
->> +
->> +struct patch_info {
->> +	void		*insn;
->> +	u16		 type;
->> +	u8		 insn_size;
->> +	u8		 data_size;
->> +	u32		 data[0];
->> +};
->
-> This causes the following compilation error:
->
->    CC      sound/core/pcm.o
-> In file included from sound/core/pcm.c:293:0:
-> include/linux/soundcard.h:223:8: error: redefinition of 'struct patch_info'
-> arch/arm/include/asm/runtime-patch.h:28:8: note: originally defined here
-> make[2]: *** [sound/core/pcm.o] Error 1
->
-> The problem is that asm/runtime-patch.h gets included by asm/memory.h
-> and asm/memory.h is included by almost the entire kernel. Something like
-> "struct patch_info" is a bit too generic a name to be exported to the
-> world as the likelihood of a name collision with some private definition
-> in a driver or the like is rather high.
->
-> In that context it might be worth moving everything that is not required
-> for the patch stub definitions out of asm/runtime-patch.h.  For example,
-> the definition of struct patch_info, struct patch_info_imm8,
-> patch_next() and patch_data() could be moved to runtime-patch.c directly
-> instead.  And then patch_stub() should be renamed to
-> runtime_patch_stub(), early_patch_stub() to early_runtime_patch_stub(),
-> patch_imm8() to runtime_patch_imm8(), etc.  Even the __IMM8 symbol name
-> is rather weak for kernel wide scope.
->
+> > Sysfs is one value per file, you have three values here, please make 3
+> > files.
+> > 
+> > And document them in Documentation/ABI/.
+> 
+> Hmm, sure Greg, I'll update. Thanks!
 
-Thanks for trying this out.  I'll take this up in the next rev.
+Something like below I suppose? Look, if there will be no complains
+on tech aspects on the patch (locking and tty refs) -- I'll update
+Documentation. Just want be sure I've made no mistakes here.
 
--- Cyril.
+Another question -- would not it be worth to wrap code with
+CONFIG_CHECKPOINT_RESTORE?
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: tty, pty: Add sysfs attributes for pty device to fetch flags
+
+For checkpoint/restore we need to know if pty has exclusive or packet
+mode set, as well as if pty is currently locked (just to be able
+to restore this characteristics).
+
+To serve this the following attrubutes: lock, exclusive, packet,
+are introduced for pty devices.
+
+For example
+
+ | cat /sys/devices/virtual/tty/ptmp1/lock
+ | 1
+ | cat /sys/devices/virtual/tty/ptmp1/exclusive
+ | 0
+ | cat /sys/devices/virtual/tty/ptmp1/packet
+ | 0
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jiri Slaby <jslaby@suse.cz>
+CC: Pavel Emelyanov <xemul@parallels.com>
+---
+ drivers/tty/pty.c |   71 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 70 insertions(+), 1 deletion(-)
+
+Index: tty.git/drivers/tty/pty.c
+===================================================================
+--- tty.git.orig/drivers/tty/pty.c
++++ tty.git/drivers/tty/pty.c
+@@ -283,6 +283,72 @@ done:
+ 	return 0;
+ }
+ 
++static ssize_t pty_show_lock(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct tty_struct *tty = dev_get_drvdata(dev);
++	int lock;
++
++	tty_lock(tty);
++	lock = test_bit(TTY_PTY_LOCK, &tty->flags);
++	tty_unlock(tty);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", lock);
++}
++
++static ssize_t pty_show_exclusive(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct tty_struct *tty = dev_get_drvdata(dev);
++	int exclusive;
++
++	tty_lock(tty);
++	exclusive = test_bit(TTY_EXCLUSIVE, &tty->flags);
++	tty_unlock(tty);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", exclusive);
++}
++
++static ssize_t pty_show_packet(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct tty_struct *tty = dev_get_drvdata(dev);
++	int packet;
++
++	tty_lock(tty);
++	packet = tty->packet;
++	tty_unlock(tty);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", packet);
++}
++
++static DEVICE_ATTR(lock, S_IRUSR | S_IRGRP, pty_show_lock, NULL);
++static DEVICE_ATTR(exclusive, S_IRUSR | S_IRGRP, pty_show_exclusive, NULL);
++static DEVICE_ATTR(packet, S_IRUSR | S_IRGRP, pty_show_packet, NULL);
++
++static struct attribute *pty_attrs[] = {
++	&dev_attr_lock.attr,
++	&dev_attr_exclusive.attr,
++	&dev_attr_packet.attr,
++	NULL,
++};
++
++static const struct attribute_group pty_attrs_group = {
++	.attrs = pty_attrs,
++};
++
++static const struct attribute_group *pty_attr_groups[] = {
++	&pty_attrs_group,
++	NULL,
++};
++
++static int pty_register_attr(struct tty_driver *driver, struct tty_struct *tty)
++{
++	struct device *dev = tty_register_device_attr(driver, tty->index, tty->dev,
++						      (void *)tty, pty_attr_groups);
++	return PTR_RET(dev);
++}
++
+ /**
+  *	pty_common_install		-	set up the pty pair
+  *	@driver: the pty driver
+@@ -351,7 +417,9 @@ static int pty_common_install(struct tty
+ 
+ 	tty_driver_kref_get(driver);
+ 	tty->count++;
+-	return 0;
++
++	return pty_register_attr(driver, tty);
++
+ err_free_termios:
+ 	if (legacy)
+ 		tty_free_termios(tty);
+@@ -368,6 +436,7 @@ err:
+ 
+ static void pty_cleanup(struct tty_struct *tty)
+ {
++	tty_unregister_device(tty->driver, tty->index);
+ 	kfree(tty->port);
+ }
+ 
