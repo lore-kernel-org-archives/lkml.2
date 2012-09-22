@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab2IVLQS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 07:16:18 -0400
-Received: from outbound-mail02.westnet.com.au ([203.10.1.243]:27981 "EHLO
-	outbound-mail02.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752947Ab2IVLQQ (ORCPT
+	id S1754358Ab2IVL2P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 07:28:15 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:41613 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519Ab2IVL2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 07:16:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvgCACGdXVB787/Z/2dsb2JhbAANOL0eBASELAEBAQQ4QAEQCxIGCRYPCQMCAQIBNw4GDQEHAQGHbgEdpRSTWYschioDlnqSBg
-X-IronPort-AV: E=Sophos;i="4.80,467,1344182400"; 
-   d="scan'208";a="268336530"
-Message-ID: <505D9DFB.8080002@westnet.com.au>
-Date: Sat, 22 Sep 2012 21:16:11 +1000
-From: Greg Ungerer <gregungerer@westnet.com.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Sat, 22 Sep 2012 07:28:14 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v3 1/5] fat: modify nfs mount option
+References: <1347798130-2626-1-git-send-email-linkinjeon@gmail.com>
+Date: Sat, 22 Sep 2012 20:28:04 +0900
+In-Reply-To: <1347798130-2626-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sun, 16 Sep 2012 08:22:10 -0400")
+Message-ID: <87pq5e8fgb.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC] status of execve() work - per-architecture patches solicited
-References: <20120917032651.GU13973@ZenIV.linux.org.uk> <1348244799-16013-1-git-send-email-msalter@redhat.com> <20120921183934.GK13973@ZenIV.linux.org.uk>
-In-Reply-To: <20120921183934.GK13973@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2012 04:39 AM, Al Viro wrote:
-> On Fri, Sep 21, 2012 at 12:26:36PM -0400, Mark Salter wrote:
->> Here are a set of c6x patches to work with your experimental-kernel_thread
->> branch.
->>
->> Mark Salter (3):
->>    c6x: add ret_from_kernel_thread(), simplify kernel_thread()
->>    c6x: switch to generic kernel_execve
->>    c6x: switch to generic sys_execve
->
-> Applied and pushed...
->
-> FWIW, the current status:
->
-> alpha - done, tested on hardware
-> arm - done, tested on qemu
-> c6x - done by maintainer
-> frv - done, untested
-> m68k - done, tested on aranym; there's a known issue in copy_thread() in
-> case of coldfire-MMU, presumably to be handled in m68k tree (I can do it
-> in this one instead, if m68k folks would prefer it that way)
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-I sent the patch to the m68k-linux list. Its been acked by Geert.
+> +		case Opt_nfs_full:
+> +			opts->nfs = FAT_NFS_FULL;
+> +			break;
+> +		case Opt_nfs_limited:
+> +			opts->nfs = FAT_NFS_LIMITED;
+> +			sb->s_flags |= MS_RDONLY;
+> +			break;
 
-  http://marc.info/?l=linux-m68k&m=134742688015639&w=2
+Check opt->nfs at end of parse_option(). Otherwise, multiple nfs options
+would confuse it.
 
-I was going to push it through the m68knommu git tree, but I don't mind
-if you would rather take it with your changes.
+E.g.
 
-Regards
-Greg
+	mount -o nfs=limited_stable,nfs=full_unstable
 
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
