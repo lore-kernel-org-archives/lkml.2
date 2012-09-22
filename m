@@ -1,116 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab2IVQzJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 12:55:09 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:57402 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2IVQzI (ORCPT
+	id S1752778Ab2IVRP1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 13:15:27 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55247 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab2IVRPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 12:55:08 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: shawn.guo@linaro.org
-Cc: rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        mturquette@linaro.org, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] clk: mxs: Use a better name for the USB PHY clock
-Date: Sat, 22 Sep 2012 13:54:55 -0300
-Message-Id: <1348332895-26966-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 22 Sep 2012 13:15:24 -0400
+Date: Sat, 22 Sep 2012 13:13:42 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2012-09-22
+Message-ID: <20120922171341.GB2101@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Use a better name for the USB PHY clock.
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+commit 1199992df2417dc9a1db1b19930ea4d0a697a61e
+
+Dave,
+
+Please pull this last(?) batch of fixes intended for 3.6...
+
+For the Bluetooth bits, Gustavo says this:
+
+"Here goes probably my last update to 3.6. It includes the two patches
+you were ok last week(from Andrzej Kaczmarek), those are critical
+ones, and two other fixes one for a system crash and the other for
+a missing lockdep annotation."
+
+The referenced fixes from Andrzej prevent attempts to configure devices
+that are powered-off.
+
+Along with the Bluetooth fixes, there are a couple of 802.11 fixes.
+Emmanuel Grumbach gives us an iwlwifi fix to prevent releasing an
+interrupt twice.  Luis R. Rodriguez provides a fix for a possible
+circular lock dependency in the cfg80211 regulatory enforcement code.
+
+All of these have been in linux-next for a few days.  I hope they are
+not too late to make the 3.6 release!
+
+Thanks,
+
+John
+
 ---
- .../devicetree/bindings/clock/imx23-clock.txt      |    2 +-
- .../devicetree/bindings/clock/imx28-clock.txt      |    4 ++--
- drivers/clk/mxs/clk-imx23.c                        |    6 +++---
- drivers/clk/mxs/clk-imx28.c                        |   10 +++++-----
- 4 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/imx23-clock.txt b/Documentation/devicetree/bindings/clock/imx23-clock.txt
-index a0b867e..baadbb1 100644
---- a/Documentation/devicetree/bindings/clock/imx23-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/imx23-clock.txt
-@@ -52,7 +52,7 @@ clocks and IDs.
- 	lcdif		38
- 	etm		39
- 	usb		40
--	usb_pwr		41
-+	usb_phy		41
- 
- Examples:
- 
-diff --git a/Documentation/devicetree/bindings/clock/imx28-clock.txt b/Documentation/devicetree/bindings/clock/imx28-clock.txt
-index aa2af28..52a49a4 100644
---- a/Documentation/devicetree/bindings/clock/imx28-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/imx28-clock.txt
-@@ -73,8 +73,8 @@ clocks and IDs.
- 	can1		59
- 	usb0		60
- 	usb1		61
--	usb0_pwr	62
--	usb1_pwr	63
-+	usb0_phy	62
-+	usb1_phy	63
- 	enet_out	64
- 
- Examples:
-diff --git a/drivers/clk/mxs/clk-imx23.c b/drivers/clk/mxs/clk-imx23.c
-index f00dffb..8dd476e 100644
---- a/drivers/clk/mxs/clk-imx23.c
-+++ b/drivers/clk/mxs/clk-imx23.c
-@@ -85,7 +85,7 @@ enum imx23_clk {
- 	cpu_xtal, hbus, xbus, lcdif_div, ssp_div, gpmi_div, emi_pll,
- 	emi_xtal, etm_div, saif_div, clk32k_div, rtc, adc, spdif_div,
- 	clk32k, dri, pwm, filt, uart, ssp, gpmi, spdif, emi, saif,
--	lcdif, etm, usb, usb_pwr,
-+	lcdif, etm, usb, usb_phy,
- 	clk_max
- };
- 
-@@ -143,8 +143,8 @@ int __init mx23_clocks_init(void)
- 	clks[saif] = mxs_clk_gate("saif", "saif_div", SAIF, 31);
- 	clks[lcdif] = mxs_clk_gate("lcdif", "lcdif_div", PIX, 31);
- 	clks[etm] = mxs_clk_gate("etm", "etm_div", ETM, 31);
--	clks[usb] = mxs_clk_gate("usb", "usb_pwr", DIGCTRL, 2);
--	clks[usb_pwr] = clk_register_gate(NULL, "usb_pwr", "pll", 0, PLLCTRL0, 18, 0, &mxs_lock);
-+	clks[usb] = mxs_clk_gate("usb", "usb_phy", DIGCTRL, 2);
-+	clks[usb_phy] = clk_register_gate(NULL, "usb_phy", "pll", 0, PLLCTRL0, 18, 0, &mxs_lock);
- 
- 	for (i = 0; i < ARRAY_SIZE(clks); i++)
- 		if (IS_ERR(clks[i])) {
-diff --git a/drivers/clk/mxs/clk-imx28.c b/drivers/clk/mxs/clk-imx28.c
-index 42978f1b..db3af08 100644
---- a/drivers/clk/mxs/clk-imx28.c
-+++ b/drivers/clk/mxs/clk-imx28.c
-@@ -140,7 +140,7 @@ enum imx28_clk {
- 	emi_xtal, lcdif_div, etm_div, ptp, saif0_div, saif1_div,
- 	clk32k_div, rtc, lradc, spdif_div, clk32k, pwm, uart, ssp0,
- 	ssp1, ssp2, ssp3, gpmi, spdif, emi, saif0, saif1, lcdif, etm,
--	fec, can0, can1, usb0, usb1, usb0_pwr, usb1_pwr, enet_out,
-+	fec, can0, can1, usb0, usb1, usb0_phy, usb1_phy, enet_out,
- 	clk_max
- };
- 
-@@ -218,10 +218,10 @@ int __init mx28_clocks_init(void)
- 	clks[fec] = mxs_clk_gate("fec", "hbus", ENET, 30);
- 	clks[can0] = mxs_clk_gate("can0", "ref_xtal", FLEXCAN, 30);
- 	clks[can1] = mxs_clk_gate("can1", "ref_xtal", FLEXCAN, 28);
--	clks[usb0] = mxs_clk_gate("usb0", "usb0_pwr", DIGCTRL, 2);
--	clks[usb1] = mxs_clk_gate("usb1", "usb1_pwr", DIGCTRL, 16);
--	clks[usb0_pwr] = clk_register_gate(NULL, "usb0_pwr", "pll0", 0, PLL0CTRL0, 18, 0, &mxs_lock);
--	clks[usb1_pwr] = clk_register_gate(NULL, "usb1_pwr", "pll1", 0, PLL1CTRL0, 18, 0, &mxs_lock);
-+	clks[usb0] = mxs_clk_gate("usb0", "usb0_phy", DIGCTRL, 2);
-+	clks[usb1] = mxs_clk_gate("usb1", "usb1_phy", DIGCTRL, 16);
-+	clks[usb0_phy] = clk_register_gate(NULL, "usb0_phy", "pll0", 0, PLL0CTRL0, 18, 0, &mxs_lock);
-+	clks[usb1_phy] = clk_register_gate(NULL, "usb1_phy", "pll1", 0, PLL1CTRL0, 18, 0, &mxs_lock);
- 	clks[enet_out] = clk_register_gate(NULL, "enet_out", "pll2", 0, ENET, 18, 0, &mxs_lock);
- 
- 	for (i = 0; i < ARRAY_SIZE(clks); i++)
--- 
-1.7.9.5
+The following changes since commit abef3bd71029b80ec1bdd6c6244b5b0b99f56633:
 
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-09-21=
+ 14:32:55 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
+avem
+
+for you to fetch changes up to 1199992df2417dc9a1db1b19930ea4d0a697a61e:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
+nville/wireless into for-davem (2012-09-22 12:19:22 -0400)
+
+----------------------------------------------------------------
+
+Andrei Emeltchenko (1):
+      Bluetooth: Fix freeing uninitialized delayed works
+
+Andrzej Kaczmarek (2):
+      Bluetooth: mgmt: Fix enabling SSP while powered off
+      Bluetooth: mgmt: Fix enabling LE while powered off
+
+Emmanuel Grumbach (1):
+      iwlwifi: don't double free the interrupt in failure path
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
+nto for-davem
+
+Luis R. Rodriguez (1):
+      cfg80211: fix possible circular lock on reg_regdb_search()
+
+Vinicius Costa Gomes (1):
+      Bluetooth: Fix not removing power_off delayed work
+
+ drivers/net/wireless/iwlwifi/pcie/trans.c |  1 +
+ net/bluetooth/hci_core.c                  |  2 ++
+ net/bluetooth/l2cap_core.c                |  2 +-
+ net/bluetooth/mgmt.c                      | 16 ++++++++++++++++
+ net/wireless/reg.c                        | 12 +++++++++---
+ 5 files changed, 29 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wirele=
+ss/iwlwifi/pcie/trans.c
+index 1e86ea2..dbeebef 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -1442,6 +1442,7 @@ static int iwl_trans_pcie_start_hw(struct iwl_trans *=
+trans)
+ 	return err;
+=20
+ err_free_irq:
++	trans_pcie->irq_requested =3D false;
+ 	free_irq(trans_pcie->irq, trans);
+ error:
+ 	iwl_free_isr_ict(trans);
+diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+index d4de5db..0b997c8 100644
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -734,6 +734,8 @@ static int hci_dev_do_close(struct hci_dev *hdev)
+=20
+ 	cancel_work_sync(&hdev->le_scan);
+=20
++	cancel_delayed_work(&hdev->power_off);
++
+ 	hci_req_cancel(hdev, ENODEV);
+ 	hci_req_lock(hdev);
+=20
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index 4ea1710..38c00f1 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -1008,7 +1008,7 @@ static void l2cap_send_disconn_req(struct l2cap_conn =
+*conn, struct l2cap_chan *c
+ 	if (!conn)
+ 		return;
+=20
+-	if (chan->mode =3D=3D L2CAP_MODE_ERTM) {
++	if (chan->mode =3D=3D L2CAP_MODE_ERTM && chan->state =3D=3D BT_CONNECTED)=
+ {
+ 		__clear_retrans_timer(chan);
+ 		__clear_monitor_timer(chan);
+ 		__clear_ack_timer(chan);
+diff --git a/net/bluetooth/mgmt.c b/net/bluetooth/mgmt.c
+index ad6613d..eba022d 100644
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2875,6 +2875,22 @@ int mgmt_powered(struct hci_dev *hdev, u8 powered)
+ 		if (scan)
+ 			hci_send_cmd(hdev, HCI_OP_WRITE_SCAN_ENABLE, 1, &scan);
+=20
++		if (test_bit(HCI_SSP_ENABLED, &hdev->dev_flags)) {
++			u8 ssp =3D 1;
++
++			hci_send_cmd(hdev, HCI_OP_WRITE_SSP_MODE, 1, &ssp);
++		}
++
++		if (test_bit(HCI_LE_ENABLED, &hdev->dev_flags)) {
++			struct hci_cp_write_le_host_supported cp;
++
++			cp.le =3D 1;
++			cp.simul =3D !!(hdev->features[6] & LMP_SIMUL_LE_BR);
++
++			hci_send_cmd(hdev, HCI_OP_WRITE_LE_HOST_SUPPORTED,
++				     sizeof(cp), &cp);
++		}
++
+ 		update_class(hdev);
+ 		update_name(hdev, hdev->dev_name);
+ 		update_eir(hdev);
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index 2ded3c7..72d170c 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -350,6 +350,9 @@ static void reg_regdb_search(struct work_struct *work)
+ 	struct reg_regdb_search_request *request;
+ 	const struct ieee80211_regdomain *curdom, *regdom;
+ 	int i, r;
++	bool set_reg =3D false;
++
++	mutex_lock(&cfg80211_mutex);
+=20
+ 	mutex_lock(&reg_regdb_search_mutex);
+ 	while (!list_empty(&reg_regdb_search_list)) {
+@@ -365,9 +368,7 @@ static void reg_regdb_search(struct work_struct *work)
+ 				r =3D reg_copy_regd(&regdom, curdom);
+ 				if (r)
+ 					break;
+-				mutex_lock(&cfg80211_mutex);
+-				set_regdom(regdom);
+-				mutex_unlock(&cfg80211_mutex);
++				set_reg =3D true;
+ 				break;
+ 			}
+ 		}
+@@ -375,6 +376,11 @@ static void reg_regdb_search(struct work_struct *work)
+ 		kfree(request);
+ 	}
+ 	mutex_unlock(&reg_regdb_search_mutex);
++
++	if (set_reg)
++		set_regdom(regdom);
++
++	mutex_unlock(&cfg80211_mutex);
+ }
+=20
+ static DECLARE_WORK(reg_regdb_work, reg_regdb_search);
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
+
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQXfHFAAoJEJctW/TcYTgGreUP/RTMyeMKMv27VXxxuizAcKUR
+ytLUU5W7Btyd6N/dVqMeLyq9gKCRZjCu+v+tLtnMHzvkJmO929i98aCkDCe8NRUj
+gvx/X/0wcSMIqg5AF+WgIX3BVZBSXsqN1YldJPMfEvExigW7T7MSFMDZuE2kzQp0
+Airv35EWkrSlzeqp6EoOtRun3OhAA/fmaUeATgTfMLQmtzoA32JRz0Hw4ka1oL1l
+uCaS2TPfu/ixLJFPekUDgDMCRiB8NSI2EO73FZgpxDOqBjRKgHIme7EcyC/+t8Jx
+u5RIcZQHSBkuTOnE6PvKbGej4yYWLPybP/RKx9la18Tu0EVibP01SzdK3wI4BY4Q
+WCQ8T5YxL0PiEH7ezybXTX4nCgfQJX925qsVefj7Jb7BbZsUCF9n8U5ZuH+zwjxI
+yH9Hv7k1mVUZ1O1/8fj+AqEohvaVmhY+XfCRp4UUjzu+9GT9osCh7P2i+w9+2T7j
+6RyIbh54zuQdUrmZ69wf3dxRTXf6FNb9wFYV9DXs7Q2HRa2AuNdIhl23CGVgj1Xj
++J13qoP4hnr5aBkNMSThmx7pR9Af26Mi/TpAhtNtOSeSGrRI0bANKJdOP5FQ7TJF
+TDnfhOJdx4/+rJmtWpqztrGW2U0KMR0Zy5jA3YmUanCpk1SXIOFnLbprBfZ+0ZAY
+VBTEoITy+H/xGXNSTITH
+=oTzo
+-----END PGP SIGNATURE-----
+
+--fdj2RfSjLxBAspz7--
