@@ -1,178 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933238Ab2IVBgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Sep 2012 21:36:40 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:60519 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933111Ab2IVBgg (ORCPT
+	id S933246Ab2IVBhS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Sep 2012 21:37:18 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:56159 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932636Ab2IVBgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Sep 2012 21:36:36 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+ve8tK6cWvo+luEYnhpoGiI4GUXhkJg/pxRgOjMC
-	AbG1ByUYTrZoqz
-From: Peter Huewe <peterhuewe@gmx.de>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>, stable@vger.kernel.org
-Subject: [PATCH 1/2] extcon: Unregister compat class at module unload to fix oops
-Date: Sat, 22 Sep 2012 03:41:09 +0200
-Message-Id: <1348278070-22202-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	Fri, 21 Sep 2012 21:36:04 -0400
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <linux-fsdevel@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Jan Kara <jack@suse.cz>
+Date: Fri, 21 Sep 2012 18:35:11 -0700
+Message-Id: <1348277712-30055-10-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1348277712-30055-1-git-send-email-ebiederm@xmission.com>
+References: <877grmj115.fsf@xmission.com>
+ <1348277712-30055-1-git-send-email-ebiederm@xmission.com>
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/HIrlYPzjIL47J5dI3vn3W63LhxXc3KL4=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0792]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 
+X-Spam-Combo: ****;<linux-fsdevel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 10/11] userns: Convert the udf filesystem to use kuid/kgid where appropriate
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you compile extcon with CONFIG_ANDROID and then load and unload the
-module you get a simple oops as the driver does not unregister its
-compat class and thus cannot register it again.
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Full trace:
-
-root@(none):~# modprobe extcon_class
-root@(none):~# rmmod extcon_class
-root@(none):~# modprobe extcon_class
-------------[ cut here ]------------
-WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0xde/0x100()
-sysfs: cannot create duplicate filename '/class/switch'
-Modules linked in: extcon_class(+) [last unloaded: extcon_class]
-Call Trace:
-9f451a00:  [<602a58bc>] printk+0x0/0xa8
-9f451a18:  [<60039b43>] warn_slowpath_common+0x93/0xd0
-9f451a28:  [<6012c6de>] sysfs_add_one+0xde/0x100
-9f451a50:  [<601d3d90>] strcat+0x0/0x40
-9f451a68:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
-9f451a90:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451ab0:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
-9f451ac0:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451ae8:  [<6012bd97>] sysfs_pathname.isra.10+0x57/0x70
-9f451b00:  [<601d3d90>] strcat+0x0/0x40
-9f451b18:  [<6012bd97>] sysfs_pathname.isra.10+0x57/0x70
-9f451b48:  [<6012c6de>] sysfs_add_one+0xde/0x100
-9f451b78:  [<6012c96f>] create_dir+0x8f/0x100
-9f451bc0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451bd8:  [<6012cda6>] sysfs_create_dir+0xa6/0x1c0
-9f451be8:  [<601d89f1>] kvasprintf+0x81/0xa0
-9f451bf8:  [<601cf0f0>] kobject_get+0x0/0x50
-9f451c18:  [<601cf396>] kobject_add_internal+0x96/0x280
-9f451c60:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451c78:  [<601cfb93>] kobject_add+0xd3/0x140
-9f451cc0:  [<601cfac0>] kobject_add+0x0/0x140
-9f451cd0:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451cf8:  [<6002fffc>] set_signals+0x29/0x3f
-9f451d28:  [<600c1de1>] kmem_cache_alloc+0xe1/0x100
-9f451d78:  [<601cffa0>] kobject_create_and_add+0x50/0xa0
-9f451da8:  [<601fbe76>] class_compat_register+0x56/0x80
-9f451dc8:  [<a085d118>] create_extcon_class+0x88/0xd0 [extcon_class]
-9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
-9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
-9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
-9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
-9f451ea8:  [<60033370>] userspace+0x405/0x531
-9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
-9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
-9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
-
----[ end trace dd512cc03fe1c367 ]---
-------------[ cut here ]------------
-WARNING: at lib/kobject.c:196 kobject_add_internal+0x26e/0x280()
-kobject_add_internal failed for switch with -EEXIST, don't try to
-register things with the same name in the same directory.
-Modules linked in: extcon_class(+) [last unloaded: extcon_class]
-Call Trace:
-9f451ad0:  [<602a58bc>] printk+0x0/0xa8
-9f451ae8:  [<60039b43>] warn_slowpath_common+0x93/0xd0
-9f451af8:  [<601cf56e>] kobject_add_internal+0x26e/0x280
-9f451b18:  [<601cf140>] kobject_put+0x0/0x70
-9f451b20:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451b38:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
-9f451b88:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
-9f451bc0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451bd8:  [<6012cda6>] sysfs_create_dir+0xa6/0x1c0
-9f451be8:  [<601d89f1>] kvasprintf+0x81/0xa0
-9f451bf8:  [<601cf0f0>] kobject_get+0x0/0x50
-9f451c18:  [<601cf56e>] kobject_add_internal+0x26e/0x280
-9f451c60:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451c78:  [<601cfb93>] kobject_add+0xd3/0x140
-9f451cc0:  [<601cfac0>] kobject_add+0x0/0x140
-9f451cd0:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451cf8:  [<6002fffc>] set_signals+0x29/0x3f
-9f451d28:  [<600c1de1>] kmem_cache_alloc+0xe1/0x100
-9f451d78:  [<601cffa0>] kobject_create_and_add+0x50/0xa0
-9f451da8:  [<601fbe76>] class_compat_register+0x56/0x80
-9f451dc8:  [<a085d118>] create_extcon_class+0x88/0xd0 [extcon_class]
-9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
-9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
-9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
-9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
-9f451ea8:  [<60033370>] userspace+0x405/0x531
-9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
-9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
-9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
-
----[ end trace dd512cc03fe1c368 ]---
-kobject_create_and_add: kobject_add error: -17
-------------[ cut here ]------------
-WARNING: at drivers/extcon/extcon_class.c:545
-create_extcon_class+0xbc/0xd0 [extcon_class]()
-cannot allocate
-Modules linked in: extcon_class(+) [last unloaded: extcon_class]
-Call Trace:
-9f451c80:  [<602a58bc>] printk+0x0/0xa8
-9f451c98:  [<60039b43>] warn_slowpath_common+0x93/0xd0
-9f451ca0:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451ca8:  [<a085d14c>] create_extcon_class+0xbc/0xd0 [extcon_class]
-9f451cd0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451ce8:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
-9f451d20:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451d28:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
-9f451d48:  [<6002fffc>] set_signals+0x29/0x3f
-9f451d58:  [<601cf172>] kobject_put+0x32/0x70
-9f451d78:  [<600c22c3>] kfree+0xb3/0x100
-9f451da8:  [<601fbe9a>] class_compat_register+0x7a/0x80
-9f451dc8:  [<a085d14c>] create_extcon_class+0xbc/0xd0 [extcon_class]
-9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
-9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
-9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
-9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
-9f451ea8:  [<60033370>] userspace+0x405/0x531
-9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
-9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
-9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
-
----[ end trace dd512cc03fe1c369 ]---
-FATAL: Error inserting extcon_class
-(/lib/modules/3.6.0-rc6-00178-g811315f/kernel/drivers/extcon/extcon_class.ko):
-Cannot allocate memory
-
-This patch fixes this.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Cc: Jan Kara <jack@suse.cz>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- drivers/extcon/extcon_class.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ fs/udf/inode.c |   20 ++++++++++++--------
+ init/Kconfig   |    1 -
+ 2 files changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
-index f6419f9..6e914d0 100644
---- a/drivers/extcon/extcon_class.c
-+++ b/drivers/extcon/extcon_class.c
-@@ -821,6 +821,9 @@ module_init(extcon_class_init);
+diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+index fafaad7..2e6fb4d 100644
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -1250,6 +1250,8 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
+ 	struct udf_sb_info *sbi = UDF_SB(inode->i_sb);
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
+ 	unsigned int link_count;
++	uid_t i_uid;
++	gid_t i_gid;
  
- static void __exit extcon_class_exit(void)
- {
-+#if defined(CONFIG_ANDROID)
-+	class_compat_unregister(switch_class);
-+#endif
- 	class_destroy(extcon_class);
- }
- module_exit(extcon_class_exit);
+ 	fe = (struct fileEntry *)bh->b_data;
+ 	efe = (struct extendedFileEntry *)bh->b_data;
+@@ -1309,17 +1311,19 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
+ 	}
+ 
+ 	read_lock(&sbi->s_cred_lock);
+-	inode->i_uid = le32_to_cpu(fe->uid);
+-	if (inode->i_uid == -1 ||
++	i_uid = le32_to_cpu(fe->uid);
++	if (i_uid == -1 ||
+ 	    UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_UID_IGNORE) ||
+ 	    UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_UID_SET))
+-		inode->i_uid = UDF_SB(inode->i_sb)->s_uid;
++		i_uid = UDF_SB(inode->i_sb)->s_uid;
++	i_uid_write(inode, i_uid);
+ 
+-	inode->i_gid = le32_to_cpu(fe->gid);
+-	if (inode->i_gid == -1 ||
++	i_gid = le32_to_cpu(fe->gid);
++	if (i_gid == -1 ||
+ 	    UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_GID_IGNORE) ||
+ 	    UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_GID_SET))
+-		inode->i_gid = UDF_SB(inode->i_sb)->s_gid;
++		i_gid = UDF_SB(inode->i_sb)->s_gid;
++	i_gid_write(inode, i_gid);
+ 
+ 	if (fe->icbTag.fileType != ICBTAG_FILE_TYPE_DIRECTORY &&
+ 			sbi->s_fmode != UDF_INVALID_MODE)
+@@ -1539,12 +1543,12 @@ static int udf_update_inode(struct inode *inode, int do_sync)
+ 	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_UID_FORGET))
+ 		fe->uid = cpu_to_le32(-1);
+ 	else
+-		fe->uid = cpu_to_le32(inode->i_uid);
++		fe->uid = cpu_to_le32(i_uid_read(inode));
+ 
+ 	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_GID_FORGET))
+ 		fe->gid = cpu_to_le32(-1);
+ 	else
+-		fe->gid = cpu_to_le32(inode->i_gid);
++		fe->gid = cpu_to_le32(i_gid_read(inode));
+ 
+ 	udfperms = ((inode->i_mode & S_IRWXO)) |
+ 		   ((inode->i_mode & S_IRWXG) << 2) |
+diff --git a/init/Kconfig b/init/Kconfig
+index 21adc1c..6f9819a 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -939,7 +939,6 @@ config UIDGID_CONVERTED
+ 	depends on NFSD = n
+ 	depends on NFS_FS = n
+ 	depends on OCFS2_FS = n
+-	depends on UDF_FS = n
+ 	depends on UFS_FS = n
+ 	depends on XFS_FS = n
+ 
 -- 
-1.7.8.6
+1.7.5.4
 
