@@ -1,171 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab2IWUTG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 16:19:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754200Ab2IWUSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 16:18:03 -0400
-Date: Sun, 23 Sep 2012 22:19:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] uprobes: Introduce copy_opcode(), kill read_opcode()
-Message-ID: <20120923201948.GA27453@redhat.com>
+	id S1754391Ab2IWU1x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 16:27:53 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:41595 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab2IWU1w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 16:27:52 -0400
+Date: Sun, 23 Sep 2012 23:27:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Flavio Leitner <fbl@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>,
+        Tejun Heo <tj@kernel.org>, ianfang.cn@gmail.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kexec/kdump kernel fails to start
+Message-ID: <20120923202727.GA28937@mwanda>
+References: <20120904143215.5bbbb2a4@obelix.rh>
+ <CAM_iQpVVCjJ0Bde9RS9Rm-0RJ=CtTyX3eUH45+oaaepvdAvAmQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120923201921.GA27424@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAM_iQpVVCjJ0Bde9RS9Rm-0RJ=CtTyX3eUH45+oaaepvdAvAmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes, preparations.
+On Wed, Sep 05, 2012 at 11:34:25PM +0800, Cong Wang wrote:
+> On Wed, Sep 5, 2012 at 1:32 AM, Flavio Leitner <fbl@redhat.com> wrote:
+> > Hi folks,
+> >
+> > I have system that no longer boots kdump kernel. Basically,
+> >
+> > # echo c > /proc/sysrq-trigger
+> >
+> > to dump a vmcore doesn't work. It just hangs after showing the usual
+> > panic messages. I've bisected the problem and the commit introducing
+> > the issue is the one below.
+> >
+> > Any idea?
+> >
+> > commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> > Author: WANG Cong <xiyou.wangcong@gmail.com>  2012-03-05 20:05:13
+> > Committer: Ingo Molnar <mingo@elte.hu>  2012-03-06 05:38:26
+> > Parent: 550cf00dbc8ee402bef71628cb71246493dd4500 (Merge tag 'mmc-fixes-for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
+> > Child:  a6fca40f1d7f3e232c9de27c1cebbb9f787fbc4f (x86, tlb: Switch cr3 in leave_mm() only when needed)
+> > Branches: master, remotes/origin/master
+> > Follows: v3.3-rc6
+> > Precedes: v3.5-rc1
+> >
+> >     x86/mm: Fix the size calculation of mapping tables
+> 
+> There was some attempt to fix this:
+> https://patchwork.kernel.org/patch/1195751/
+> 
+> but for some reason it is not accepted.
 
-1. Extract the kmap-and-memcpy code from read_opcode() into the
-   new trivial helper, copy_opcode(). The next patch will add
-   another user.
+I filed a bug for this:
+https://bugzilla.kernel.org/show_bug.cgi?id=47881
 
-2. read_opcode() becomes really trivial, fold it into its single
-   caller, is_swbp_at_addr().
+Is it fixed now?
 
-3. Remove "auprobe" argument from write_opcode(), it is not used
-   since f403072c6.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |   63 ++++++++++++++--------------------------------
- 1 files changed, 19 insertions(+), 44 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 04f3259..100a920 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -183,19 +183,25 @@ bool __weak is_swbp_insn(uprobe_opcode_t *insn)
- 	return *insn == UPROBE_SWBP_INSN;
- }
- 
-+static void copy_opcode(struct page *page, unsigned long vaddr, uprobe_opcode_t *opcode)
-+{
-+	void *kaddr = kmap_atomic(page);
-+	memcpy(opcode, kaddr + (vaddr & ~PAGE_MASK), UPROBE_SWBP_INSN_SIZE);
-+	kunmap_atomic(kaddr);
-+}
-+
- /*
-  * NOTE:
-  * Expect the breakpoint instruction to be the smallest size instruction for
-  * the architecture. If an arch has variable length instruction and the
-  * breakpoint instruction is not of the smallest length instruction
-- * supported by that architecture then we need to modify read_opcode /
-+ * supported by that architecture then we need to modify is_swbp_at_addr and
-  * write_opcode accordingly. This would never be a problem for archs that
-  * have fixed length instructions.
-  */
- 
- /*
-  * write_opcode - write the opcode at a given virtual address.
-- * @auprobe: arch breakpointing information.
-  * @mm: the probed process address space.
-  * @vaddr: the virtual address to store the opcode.
-  * @opcode: opcode to be written at @vaddr.
-@@ -206,8 +212,8 @@ bool __weak is_swbp_insn(uprobe_opcode_t *insn)
-  * For mm @mm, write the opcode at @vaddr.
-  * Return 0 (success) or a negative errno.
-  */
--static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
--			unsigned long vaddr, uprobe_opcode_t opcode)
-+static int write_opcode(struct mm_struct *mm, unsigned long vaddr,
-+			uprobe_opcode_t opcode)
- {
- 	struct page *old_page, *new_page;
- 	void *vaddr_old, *vaddr_new;
-@@ -253,40 +259,9 @@ put_old:
- 	return ret;
- }
- 
--/**
-- * read_opcode - read the opcode at a given virtual address.
-- * @mm: the probed process address space.
-- * @vaddr: the virtual address to read the opcode.
-- * @opcode: location to store the read opcode.
-- *
-- * Called with mm->mmap_sem held (for read and with a reference to
-- * mm.
-- *
-- * For mm @mm, read the opcode at @vaddr and store it in @opcode.
-- * Return 0 (success) or a negative errno.
-- */
--static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_t *opcode)
--{
--	struct page *page;
--	void *vaddr_new;
--	int ret;
--
--	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 1, &page, NULL);
--	if (ret <= 0)
--		return ret;
--
--	vaddr_new = kmap_atomic(page);
--	vaddr &= ~PAGE_MASK;
--	memcpy(opcode, vaddr_new + vaddr, UPROBE_SWBP_INSN_SIZE);
--	kunmap_atomic(vaddr_new);
--
--	put_page(page);
--
--	return 0;
--}
--
- static int is_swbp_at_addr(struct mm_struct *mm, unsigned long vaddr)
- {
-+	struct page *page;
- 	uprobe_opcode_t opcode;
- 	int result;
- 
-@@ -300,14 +275,14 @@ static int is_swbp_at_addr(struct mm_struct *mm, unsigned long vaddr)
- 			goto out;
- 	}
- 
--	result = read_opcode(mm, vaddr, &opcode);
--	if (result)
-+	result = get_user_pages(NULL, mm, vaddr, 1, 0, 1, &page, NULL);
-+	if (result < 0)
- 		return result;
--out:
--	if (is_swbp_insn(&opcode))
--		return 1;
- 
--	return 0;
-+	copy_opcode(page, vaddr, &opcode);
-+	put_page(page);
-+ out:
-+	return is_swbp_insn(&opcode);
- }
- 
- /**
-@@ -321,7 +296,7 @@ out:
-  */
- int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
- {
--	return write_opcode(auprobe, mm, vaddr, UPROBE_SWBP_INSN);
-+	return write_opcode(mm, vaddr, UPROBE_SWBP_INSN);
- }
- 
- /**
-@@ -345,7 +320,7 @@ set_orig_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long v
- 	if (result != 1)
- 		return result;
- 
--	return write_opcode(auprobe, mm, vaddr, *(uprobe_opcode_t *)auprobe->insn);
-+	return write_opcode(mm, vaddr, *(uprobe_opcode_t *)auprobe->insn);
- }
- 
- static int match_uprobe(struct uprobe *l, struct uprobe *r)
--- 
-1.5.5.1
+regards,
+dan carpenter
 
