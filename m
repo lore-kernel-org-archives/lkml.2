@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab2IWHel (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 03:34:41 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33877 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751337Ab2IWHek (ORCPT
+	id S1753019Ab2IWHzx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 03:55:53 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:36730 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab2IWHzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 03:34:40 -0400
-Message-ID: <1348385675.2549.19.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [RFC] mm: add support for zsmalloc and zcache
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Date: Sun, 23 Sep 2012 08:34:35 +0100
-In-Reply-To: <20120922010733.GX11266@suse.de>
-References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	 <20120921161252.GV11266@suse.de>
-	 <20120921180222.GA7220@phenom.dumpdata.com>
-	 <505CB9BC.8040905@linux.vnet.ibm.com>
-	 <42d62a30-bd6c-4bd7-97d1-bec2f237756b@default>
-	 <20120922010733.GX11266@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 23 Sep 2012 03:55:51 -0400
+Date: Sun, 23 Sep 2012 07:55:50 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: "Bruce, Becky" <bbruce@ti.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Hunter, Jon" <jon-hunter@ti.com>,
+        "<snijsure@grid-net.com>" <snijsure@grid-net.com>, fweisbec@gmail.com
+Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
+In-Reply-To: <20120922231121.GH2934@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1209230753120.7868@utopia.booyaka.com>
+References: <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com> <20120920232114.GO2449@linux.vnet.ibm.com> <alpine.DEB.2.00.1209211803290.8839@utopia.booyaka.com> <20120921185827.GC2454@linux.vnet.ibm.com> <alpine.DEB.2.00.1209211900520.8839@utopia.booyaka.com>
+ <20120921195717.GD2454@linux.vnet.ibm.com> <alpine.DEB.2.00.1209221836070.10663@utopia.booyaka.com> <20120922201043.GE2934@linux.vnet.ibm.com> <20120922215923.GA13161@linux.vnet.ibm.com> <alpine.DEB.2.00.1209222223080.22590@utopia.booyaka.com>
+ <20120922231121.GH2934@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-09-22 at 02:07 +0100, Mel Gorman wrote:
-> > The two proposals:
-> > A) Recreate all the work done for zcache2 as a proper sequence of
-> >    independent patches and apply them to zcache1. (Seth/Konrad)
-> > B) Add zsmalloc back in to zcache2 as an alternative allocator
-> >    for frontswap pages. (Dan)
+On Sat, 22 Sep 2012, Paul E. McKenney wrote:
+
+> On Sat, Sep 22, 2012 at 10:25:59PM +0000, Paul Walmsley wrote:
 > 
-> Throwing it out there but ....
+> > The recent tests here have been on Pandaboard, which is dual-CPU, but my 
+> > recollection is that I also observed the warnings on a single-core 
+> > Beagleboard.  Will re-test.
 > 
-> C) Merge both, but freeze zcache1 except for critical fixes. Only
-> allow
->    future work on zcache2. Document limitations of zcache1 and
->    workarounds until zcache2 is fully production ready.
-> 
-Actually, there is a fourth option, which is the one we'd have usually
-used when staging wasn't around:  Throw the old code out as a successful
-prototype which showed the author how to do it better (i.e. flush it
-from staging) and start again from the new code which has all the
-benefits learned from the old code.
+> Anxiously awaiting the results.
 
-Staging isn't supposed to be some magical set of history that we have to
-adhere to no matter what (unlike the rest of the tree). It's supposed to
-be an accelerator to get stuff into the kernel and not become a
-hindrance to it.
+The same problem exists on BeagleBoard XM (OMAP3730, single-core 
+Cortex-A8):
 
-There also seem to be a couple of process issues here that could do with
-sorting:  Firstly that rewrites on better reflection, while not common,
-are also not unusual so we need a mechanism for coping with them.  This
-is actually a serious process problem: everyone becomes so attached to
-the code they helped clean up that they're hugely unwilling to
-countenance a rewrite which would in their (probably correct) opinion
-have the cleanups start from ground zero again. Secondly, we've got a
-set of use cases and add ons which grew up around code in staging that
-act as a bit of a barrier to ABI/API evolution, even as they help to
-demonstrate the problems.
+   http://www.pwsan.com/omap/transcripts/20120922-beaglexm-rcu-stall-debug-pre-fix.txt
 
-I think the first process issue really crystallises the problem we're
-having in staging:  we need to get the design approximately right before
-we start on the code cleanups.  What I think this means is that we start
-on the list where the people who understand the design issues reside
-then, when they're happy with the design, we can begin cleaning it up
-afterwards if necessary.  I don't think this is hard and fast: there is,
-of course, code so bad that even the experts can't penetrate it to see
-the design without having their eyes bleed but we should at least always
-try to begin with design.
+and the same patch fixes it:
 
-James
+   http://www.pwsan.com/omap/transcripts/20120922-beaglexm-rcu-stall-debug-post-fix.txt
+
+Please feel free to update my Tested-by:, if you wish.
+
+Tested-by: Paul Walmsley <paul@pwsan.com>  # OMAP3730, OMAP4430
 
 
+- Paul
