@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab2IWEfj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 00:35:39 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:49268 "EHLO
+	id S1753845Ab2IWEjJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 00:39:09 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41520 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab2IWEek (ORCPT
+	with ESMTP id S1751159Ab2IWEfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 00:34:40 -0400
+	Sun, 23 Sep 2012 00:35:34 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
-        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 06/23] ACPICA: GPE Support: Update debug info for GPE tracing.
-Date: Sun, 23 Sep 2012 00:33:54 -0400
-Message-Id: <e1154ebd4d0215937528016c41e2f13d30a28082.1348371388.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: [PATCH 23/23] tools/power/acpi/acpidump: create acpidump(8), local make install targets
+Date: Sun, 23 Sep 2012 00:34:11 -0400
+Message-Id: <0e7cc27935cda92c7a39a00791d0d4bbffeab117.1348371388.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.1.396.g16eed7c
 In-Reply-To: <1348374851-20378-1-git-send-email-lenb@kernel.org>
 References: <1348374851-20378-1-git-send-email-lenb@kernel.org>
@@ -25,57 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Moore <robert.moore@intel.com>
+From: Len Brown <len.brown@intel.com>
 
-Add additional debug info to assist with GPE debugging.
-
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/evgpe.c | 21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+ tools/power/acpi/Makefile   |  4 +++
+ tools/power/acpi/acpidump.8 | 59 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 63 insertions(+)
+ create mode 100644 tools/power/acpi/acpidump.8
 
-diff --git a/drivers/acpi/acpica/evgpe.c b/drivers/acpi/acpica/evgpe.c
-index afbd5cb..3db3c56 100644
---- a/drivers/acpi/acpica/evgpe.c
-+++ b/drivers/acpi/acpica/evgpe.c
-@@ -379,6 +379,18 @@ u32 acpi_ev_gpe_detect(struct acpi_gpe_xrupt_info * gpe_xrupt_list)
- 			 */
- 			if (!(gpe_register_info->enable_for_run |
- 			      gpe_register_info->enable_for_wake)) {
-+				ACPI_DEBUG_PRINT((ACPI_DB_INTERRUPTS,
-+						  "Ignore disabled registers for GPE%02X-GPE%02X: "
-+						  "RunEnable=%02X, WakeEnable=%02X\n",
-+						  gpe_register_info->
-+						  base_gpe_number,
-+						  gpe_register_info->
-+						  base_gpe_number +
-+						  (ACPI_GPE_REGISTER_WIDTH - 1),
-+						  gpe_register_info->
-+						  enable_for_run,
-+						  gpe_register_info->
-+						  enable_for_wake));
- 				continue;
- 			}
+diff --git a/tools/power/acpi/Makefile b/tools/power/acpi/Makefile
+index dad79a6..6b9cf7a 100644
+--- a/tools/power/acpi/Makefile
++++ b/tools/power/acpi/Makefile
+@@ -12,3 +12,7 @@ CLEANFILES= $(PROG)
+ clean : 
+ 	rm -f $(CLEANFILES) $(patsubst %.c,%.o, $(SRCS)) *~
  
-@@ -401,9 +413,14 @@ u32 acpi_ev_gpe_detect(struct acpi_gpe_xrupt_info * gpe_xrupt_list)
- 			}
- 
- 			ACPI_DEBUG_PRINT((ACPI_DB_INTERRUPTS,
--					  "Read GPE Register at GPE%02X: Status=%02X, Enable=%02X\n",
-+					  "Read registers for GPE%02X-GPE%02X: Status=%02X, Enable=%02X, "
-+					  "RunEnable=%02X, WakeEnable=%02X\n",
- 					  gpe_register_info->base_gpe_number,
--					  status_reg, enable_reg));
-+					  gpe_register_info->base_gpe_number +
-+					  (ACPI_GPE_REGISTER_WIDTH - 1),
-+					  status_reg, enable_reg,
-+					  gpe_register_info->enable_for_run,
-+					  gpe_register_info->enable_for_wake));
- 
- 			/* Check if there is anything active at all in this register */
- 
++install :
++	install acpidump /usr/bin/acpidump
++	install acpidump.8 /usr/share/man/man8
++
+diff --git a/tools/power/acpi/acpidump.8 b/tools/power/acpi/acpidump.8
+new file mode 100644
+index 0000000..adfa991
+--- /dev/null
++++ b/tools/power/acpi/acpidump.8
+@@ -0,0 +1,59 @@
++.TH ACPIDUMP 8
++.SH NAME
++acpidump \- Dump system's ACPI tables to an ASCII file.
++.SH SYNOPSIS
++.ft B
++.B acpidump > acpidump.out
++.SH DESCRIPTION
++\fBacpidump \fP dumps the systems ACPI tables to an ASCII file
++appropriate for attaching to a bug report.
++
++Subsequently, they can be processed by utilities in the ACPICA package.
++.SS Options
++no options worth worrying about.
++.PP
++.SH EXAMPLE
++
++.nf
++# acpidump > acpidump.out
++
++$ acpixtract -a acpidump.out
++        Acpi table [DSDT] -  15974 bytes written to DSDT.dat
++        Acpi table [FACS] -     64 bytes written to FACS.dat
++        Acpi table [FACP] -    116 bytes written to FACP.dat
++        Acpi table [APIC] -    120 bytes written to APIC.dat
++        Acpi table [MCFG] -     60 bytes written to MCFG.dat
++        Acpi table [SSDT] -    444 bytes written to SSDT1.dat
++        Acpi table [SSDT] -    439 bytes written to SSDT2.dat
++        Acpi table [SSDT] -    439 bytes written to SSDT3.dat
++        Acpi table [SSDT] -    439 bytes written to SSDT4.dat
++        Acpi table [SSDT] -    439 bytes written to SSDT5.dat
++        Acpi table [RSDT] -     76 bytes written to RSDT.dat
++        Acpi table [RSDP] -     20 bytes written to RSDP.dat
++
++$ iasl -d *.dat
++...
++.fi
++creates *.dsl, a human readable form which can be edited
++and compiled using iasl.
++
++
++.SH NOTES
++
++.B "acpidump "
++must be run as root.
++
++.SH REFERENCES
++ACPICA: https://acpica.org/
++
++.SH FILES
++.ta
++.nf
++/dev/mem
++/sys/firmware/acpi/tables/dynamic/*
++.fi
++
++.PP
++.SH AUTHOR
++.nf
++Written by Len Brown <len.brown@intel.com>
 -- 
 1.7.12.1.396.g16eed7c
 
