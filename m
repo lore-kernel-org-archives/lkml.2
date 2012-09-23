@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab2IWM6d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 08:58:33 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:37951 "EHLO e6.ny.us.ibm.com"
+	id S1754131Ab2IWM6b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 08:58:31 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:53750 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753895Ab2IWM5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 08:57:46 -0400
+	id S1753883Ab2IWM52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 08:57:28 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
@@ -14,274 +14,252 @@ Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
         marco.stornelli@gmail.com, david@fromorbit.com,
         stroetmann@ontolinux.com, diegocg@gmail.com, chris@csamuel.org,
         Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v2 08/10] vfs: add 3 new ioctl interfaces
-Date: Sun, 23 Sep 2012 20:56:33 +0800
-Message-Id: <1348404995-14372-9-git-send-email-zwu.kernel@gmail.com>
+Subject: [RFC v2 05/10] vfs: introduce one hash table
+Date: Sun, 23 Sep 2012 20:56:30 +0800
+Message-Id: <1348404995-14372-6-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
 References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
-x-cbid: 12092312-1976-0000-0000-000011A65E41
+x-cbid: 12092312-5930-0000-0000-00000C610928
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  FS_IOC_GET_HEAT_INFO: return a struct containing the various
-metrics collected in btrfs_freq_data structs, and also return a
-calculated data temperature based on those metrics. Optionally, retrieve
-the temperature from the hot data hash list instead of recalculating it.
-
-  FS_IOC_GET_HEAT_OPTS: return an integer representing the current
-state of hot data tracking and migration:
-
-0 = do nothing
-1 = track frequency of access
-
-  FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
-migration, as described above.
+  Adds a hash table structure which contains
+a lot of hash list and is used to efficiently
+look up the data temperature of a file or its
+ranges.
+  In each hash list of hash table, the hash node
+will keep track of temperature info.
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/compat_ioctl.c            |    8 +++
- fs/ioctl.c                   |  130 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h           |   11 ++++
- include/linux/hot_tracking.h |   12 ++++
- 4 files changed, 161 insertions(+), 0 deletions(-)
+ fs/hot_tracking.c            |   77 ++++++++++++++++++++++++++++++++++++++++-
+ include/linux/hot_tracking.h |   35 +++++++++++++++++++
+ 2 files changed, 110 insertions(+), 2 deletions(-)
 
-diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
-index debdfe0..a88c7de 100644
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -1390,6 +1390,11 @@ COMPATIBLE_IOCTL(TIOCSTART)
- COMPATIBLE_IOCTL(TIOCSTOP)
- #endif
- 
-+/*Hot data tracking*/
-+COMPATIBLE_IOCTL(FS_IOC_GET_HEAT_INFO)
-+COMPATIBLE_IOCTL(FS_IOC_SET_HEAT_OPTS)
-+COMPATIBLE_IOCTL(FS_IOC_GET_HEAT_OPTS)
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index fa89f70..5f96442 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
+@@ -16,6 +16,7 @@
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
+ #include <linux/hardirq.h>
++#include <linux/hash.h>
+ #include <linux/fs.h>
+ #include <linux/blkdev.h>
+ #include <linux/types.h>
+@@ -24,6 +25,9 @@
+ /* kmem_cache pointers for slab caches */
+ static struct kmem_cache *hot_inode_item_cache;
+ static struct kmem_cache *hot_range_item_cache;
++static struct kmem_cache *hot_hash_node_cache;
 +
- /* fat 'r' ioctls. These are handled by fat with ->compat_ioctl,
-    but we don't want warnings on other file systems. So declare
-    them as compatible here. */
-@@ -1572,6 +1577,9 @@ asmlinkage long compat_sys_ioctl(unsigned int fd, unsigned int cmd,
- 	case FIBMAP:
- 	case FIGETBSZ:
- 	case FIONREAD:
-+	case FS_IOC_GET_HEAT_INFO:
-+	case FS_IOC_SET_HEAT_OPTS:
-+	case FS_IOC_GET_HEAT_OPTS:
- 		if (S_ISREG(filp->f_path.dentry->d_inode->i_mode))
- 			break;
- 		/*FALL THROUGH*/
-diff --git a/fs/ioctl.c b/fs/ioctl.c
-index 29167be..394975e 100644
---- a/fs/ioctl.c
-+++ b/fs/ioctl.c
-@@ -15,6 +15,7 @@
- #include <linux/writeback.h>
- #include <linux/buffer_head.h>
- #include <linux/falloc.h>
-+#include "hot_tracking.h"
++static void hot_hash_node_init(void *_node);
  
- #include <asm/ioctls.h>
+ /*
+  * Initialize the inode tree. Should be called for each new inode
+@@ -57,6 +61,10 @@ void hot_rb_inode_item_init(void *_item)
+ 	memset(he, 0, sizeof(*he));
+ 	kref_init(&he->refs);
+ 	spin_lock_init(&he->lock);
++	he->heat_node = kmem_cache_alloc(hot_hash_node_cache,
++					GFP_KERNEL | GFP_NOFS);
++	hot_hash_node_init(he->heat_node);
++	he->heat_node->hot_freq_data = &he->hot_freq_data;
+ 	he->hot_freq_data.avg_delta_reads = (u64) -1;
+ 	he->hot_freq_data.avg_delta_writes = (u64) -1;
+ 	he->hot_freq_data.flags = FREQ_DATA_TYPE_INODE;
+@@ -75,6 +83,10 @@ static void hot_rb_range_item_init(void *_item)
+ 	memset(hr, 0, sizeof(*hr));
+ 	kref_init(&hr->refs);
+ 	spin_lock_init(&hr->lock);
++	hr->heat_node = kmem_cache_alloc(hot_hash_node_cache,
++				GFP_KERNEL | GFP_NOFS);
++	hot_hash_node_init(hr->heat_node);
++	hr->heat_node->hot_freq_data = &hr->hot_freq_data;
+ 	hr->hot_freq_data.avg_delta_reads = (u64) -1;
+ 	hr->hot_freq_data.avg_delta_writes = (u64) -1;
+ 	hr->hot_freq_data.flags = FREQ_DATA_TYPE_RANGE;
+@@ -105,6 +117,18 @@ inode_err:
+ 	return -ENOMEM;
+ }
  
-@@ -537,6 +538,126 @@ static int ioctl_fsthaw(struct file *filp)
++static void hot_rb_inode_item_exit(void)
++{
++	if (hot_inode_item_cache)
++		kmem_cache_destroy(hot_inode_item_cache);
++}
++
++static void hot_rb_range_item_exit(void)
++{
++	if (hot_range_item_cache)
++		kmem_cache_destroy(hot_range_item_cache);
++}
++
+ /*
+  * Drops the reference out on hot_inode_item by one and free the structure
+  * if the reference count hits zero
+@@ -510,6 +534,48 @@ void hot_rb_update_freqs(struct inode *inode, u64 start,
  }
  
  /*
-+ * Retrieve information about access frequency for the given file. Return it in
-+ * a userspace-friendly struct for btrfsctl (or another tool) to parse.
-+ *
-+ * The temperature that is returned can be "live" -- that is, recalculated when
-+ * the ioctl is called -- or it can be returned from the hashtable, reflecting
-+ * the (possibly old) value that the system will use when considering files
-+ * for migration. This behavior is determined by hot_heat_info->live.
++ * Initialize hash node.
 + */
-+static int ioctl_heat_info(struct file *file, void __user *argp)
++static void hot_hash_node_init(void *_node)
 +{
-+	struct inode *mnt_inode = file->f_path.dentry->d_inode;
-+	struct inode *file_inode;
-+	struct file *file_filp;
-+	struct hot_info *root = &(mnt_inode->i_sb->s_hotinfo);
-+	struct hot_heat_info *heat_info;
-+	struct hot_inode_tree *hitree;
-+	struct hot_inode_item *he;
-+	int ret;
++	struct hot_hash_node *node = _node;
 +
-+	heat_info = kmalloc(sizeof(struct hot_heat_info),
-+				GFP_KERNEL | GFP_NOFS);
++	memset(node, 0, sizeof(*node));
++	INIT_HLIST_NODE(&node->hashnode);
++	node->hot_freq_data = NULL;
++	node->hlist = NULL;
++	spin_lock_init(&node->lock);
++	kref_init(&node->refs);
++}
 +
-+	if (copy_from_user((void *) heat_info,
-+			argp,
-+			sizeof(struct hot_heat_info)) != 0) {
-+		ret = -EFAULT;
-+		goto err;
-+	}
++static int __init hot_hash_node_cache_init(void)
++{
++	hot_hash_node_cache = kmem_cache_create("hot_hash_node",
++				sizeof(struct hot_hash_node),
++				0,
++				SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD,
++				hot_hash_node_init);
++	if (!hot_hash_node_cache)
++		return -ENOMEM;
 +
-+	file_filp = filp_open(heat_info->filename, O_RDONLY, 0);
-+	file_inode = file_filp->f_dentry->d_inode;
-+	filp_close(file_filp, NULL);
-+
-+	hitree = &root->hot_inode_tree;
-+	read_lock(&hitree->lock);
-+	he = hot_rb_lookup_hot_inode_item(hitree, file_inode->i_ino);
-+	read_unlock(&hitree->lock);
-+	if (!he) {
-+		/* we don't have any info on this file yet */
-+		ret = -ENODATA;
-+		goto err;
-+	}
-+
-+	spin_lock(&he->lock);
-+	heat_info->avg_delta_reads =
-+			(__u64) he->hot_freq_data.avg_delta_reads;
-+	heat_info->avg_delta_writes =
-+			(__u64) he->hot_freq_data.avg_delta_writes;
-+	heat_info->last_read_time =
-+			(__u64) timespec_to_ns(&he->hot_freq_data.last_read_time);
-+	heat_info->last_write_time =
-+			(__u64) timespec_to_ns(&he->hot_freq_data.last_write_time);
-+	heat_info->num_reads =
-+			(__u32) he->hot_freq_data.nr_reads;
-+	heat_info->num_writes =
-+			(__u32) he->hot_freq_data.nr_writes;
-+
-+	if (heat_info->live > 0) {
-+		/* got a request for live temperature,
-+		 * call hot_hash_calc_temperature to recalculate
-+		 */
-+		heat_info->temperature =
-+			hot_hash_calc_temperature(&he->hot_freq_data);
-+	} else {
-+		/* not live temperature, get it from the hashlist */
-+		read_lock(&he->heat_node->hlist->rwlock);
-+		heat_info->temperature = he->heat_node->hlist->temperature;
-+		read_unlock(&he->heat_node->hlist->rwlock);
-+	}
-+	spin_unlock(&he->lock);
-+
-+	hot_rb_free_hot_inode_item(he);
-+
-+	if (copy_to_user(argp, (void *) heat_info,
-+			sizeof(struct hot_heat_info))) {
-+		ret = -EFAULT;
-+		goto err;
-+	}
-+
-+	kfree(heat_info);
 +	return 0;
-+
-+err:
-+	kfree(heat_info);
-+	return ret;
-+}
-+
-+static int ioctl_heat_opts(struct file *file, void __user *argp, int set)
-+{
-+	struct inode *inode = file->f_path.dentry->d_inode;
-+	int arg, ret = 0;
-+
-+	if (!set) {
-+		arg = TRACK_THIS_INODE(inode) ? 1 : 0;
-+
-+		if (copy_to_user(argp, (void *) &arg, sizeof(int)) != 0)
-+			ret = -EFAULT;
-+	} else {
-+		if (copy_from_user((void *) &arg, argp, sizeof(int)) != 0) {
-+			ret = -EFAULT;
-+		} else {
-+			switch (arg) {
-+			case 0: /* track nothing */
-+				/* set S_NOHOTDATATRACK */
-+				inode->i_flags |= S_NOHOTDATATRACK;
-+				break;
-+			case 1: /* do tracking */
-+				/* clear S_NOHOTDATATRACK */
-+				inode->i_flags &= ~S_NOHOTDATATRACK;
-+				break;
-+			default:
-+				ret = -EINVAL;
-+			}
-+		}
-+	}
-+
-+	return ret;
 +}
 +
 +/*
-  * When you add any new common ioctls to the switches above and below
-  * please update compat_sys_ioctl() too.
-  *
-@@ -591,6 +712,15 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
- 	case FIGETBSZ:
- 		return put_user(inode->i_sb->s_blocksize, argp);
- 
-+	case FS_IOC_GET_HEAT_INFO:
-+		return ioctl_heat_info(filp, argp);
-+
-+	case FS_IOC_SET_HEAT_OPTS:
-+		return ioctl_heat_opts(filp, argp, 1);
-+
-+	case FS_IOC_GET_HEAT_OPTS:
-+		return ioctl_heat_opts(filp, argp, 0);
-+
- 	default:
- 		if (S_ISREG(inode->i_mode))
- 			error = file_ioctl(filp, cmd, arg);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index db1a144..277791f 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -256,6 +256,7 @@ struct inodes_stat_t {
- #define S_IMA		1024	/* Inode has an associated IMA struct */
- #define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
- #define S_NOSEC		4096	/* no suid or xattr security attributes */
-+#define S_NOHOTDATATRACK (1 << 13)	/* hot data tracking */
- 
- /*
-  * Note that nosuid etc flags are inode-specific: setting some file-system
-@@ -354,6 +355,16 @@ struct inodes_stat_t {
- #define FS_IOC32_SETVERSION		_IOW('v', 2, int)
- 
- /*
-+ * Hot data tracking ioctls:
-+ *
-+ * HOT_INFO - retrieve info on frequency of access
++ * Initialize inode/range hash lists.
 + */
-+#define FS_IOC_GET_HEAT_INFO _IOR('f', 17, \
-+				struct hot_heat_info)
-+#define FS_IOC_SET_HEAT_OPTS _IOW('f', 18, int)
-+#define FS_IOC_GET_HEAT_OPTS _IOR('f', 19, int)
++static void hot_hash_table_init(struct hot_info *root)
++{
++	int i;
++	for (i = 0; i < HEAT_HASH_SIZE; i++) {
++		root->heat_inode_hl[i].temperature = i;
++		root->heat_range_hl[i].temperature = i;
++		rwlock_init(&root->heat_inode_hl[i].rwlock);
++		rwlock_init(&root->heat_range_hl[i].rwlock);
++	}
++}
 +
 +/*
-  * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
+  * Regular mount options parser for -hottrack option.
+  * return false if no -hottrack is specified;
+  * otherwise return true. And the -hottrack will be
+@@ -544,13 +610,18 @@ bool hot_track_parse_options(char *options)
+ }
+ 
+ /*
+- * Initialize kmem cache for hot_inode_item
+- * and hot_range_item
++ * Initialize kmem cache for hot_inode_item,
++ * hot_range_item and hot_hash_node
   */
- #define	FS_SECRM_FL			0x00000001 /* Secure deletion */
+ void __init hot_track_cache_init(void)
+ {
+ 	if (hot_rb_item_cache_init())
+ 		return;
++
++	if (hot_hash_node_cache_init()) {
++		hot_rb_inode_item_exit();
++		hot_rb_range_item_exit();
++	}
+ }
+ 
+ /*
+@@ -560,10 +631,12 @@ void hot_track_init(struct super_block *sb, const char *name)
+ {
+ 	sb->s_hotinfo.mount_opt |= HOT_MOUNT_HOT_TRACK;
+ 	hot_rb_inode_tree_init(&sb->s_hotinfo.hot_inode_tree);
++	hot_hash_table_init(&sb->s_hotinfo);
+ }
+ 
+ void hot_track_exit(struct super_block *sb)
+ {
+ 	sb->s_hotinfo.mount_opt &= ~HOT_MOUNT_HOT_TRACK;
++	hot_hash_table_free(&sb->s_hotinfo);
+ 	hot_rb_inode_tree_free(&sb->s_hotinfo);
+ }
 diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index 1ec90a6..b0a2705 100644
+index bb2a41c..635ffb6 100644
 --- a/include/linux/hot_tracking.h
 +++ b/include/linux/hot_tracking.h
-@@ -63,6 +63,18 @@ struct hot_freq_data {
+@@ -20,6 +20,9 @@
+ #include <linux/rbtree.h>
+ #include <linux/kref.h>
+ 
++#define HEAT_HASH_BITS 8
++#define HEAT_HASH_SIZE (1 << HEAT_HASH_BITS)
++
+ /*
+  * Flags for hot data tracking mount options.
+  */
+@@ -52,6 +55,28 @@ struct hot_freq_data {
  	u32 last_temperature;
  };
  
-+struct hot_heat_info {
-+	__u64 avg_delta_reads;
-+	__u64 avg_delta_writes;
-+	__u64 last_read_time;
-+	__u64 last_write_time;
-+	__u32 num_reads;
-+	__u32 num_writes;
-+	__u32 temperature;
-+	__u8 live;
-+	char filename[PATH_MAX];
++/* Hash list heads for hot hash table */
++struct hot_hash_head {
++	struct hlist_head hashhead;
++	rwlock_t rwlock;
++	u32 temperature;
 +};
 +
- /* Hash list heads for hot hash table */
- struct hot_hash_head {
- 	struct hlist_head hashhead;
++/* Nodes stored in each hash list of hash table */
++struct hot_hash_node {
++	struct hlist_node hashnode;
++	struct list_head node;
++	struct hot_freq_data *hot_freq_data;
++	struct hot_hash_head *hlist;
++	spinlock_t lock; /* protects hlist */
++
++	/*
++	 * number of references to this node
++	 * equals 1 (hashlist entry)
++	 */
++	struct kref refs;
++};
++
+ /* An item representing an inode and its access frequency */
+ struct hot_inode_item {
+ 	/* node for hot_inode_tree rb_tree */
+@@ -68,6 +93,8 @@ struct hot_inode_item {
+ 	spinlock_t lock;
+ 	/* prevents kfree */
+ 	struct kref refs;
++	/* hashlist node for this inode */
++	struct hot_hash_node *heat_node;
+ };
+ 
+ /*
+@@ -91,6 +118,8 @@ struct hot_range_item {
+ 	spinlock_t lock;
+ 	/* prevents kfree */
+ 	struct kref refs;
++	/* hashlist node for this range */
++	struct hot_hash_node *heat_node;
+ };
+ 
+ struct hot_info {
+@@ -98,6 +127,12 @@ struct hot_info {
+ 
+ 	/* red-black tree that keeps track of fs-wide hot data */
+ 	struct hot_inode_tree hot_inode_tree;
++
++	/* hash map of inode temperature */
++	struct hot_hash_head heat_inode_hl[HEAT_HASH_SIZE];
++
++	/* hash map of range temperature */
++	struct hot_hash_head heat_range_hl[HEAT_HASH_SIZE];
+ };
+ 
+ #endif  /* _LINUX_HOTTRACK_H */
 -- 
 1.7.6.5
 
