@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab2IWEjc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 00:39:32 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:49268 "EHLO
+	id S1753705Ab2IWEfc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 00:35:32 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41520 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140Ab2IWEfd (ORCPT
+	with ESMTP id S1752140Ab2IWEeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 00:35:33 -0400
+	Sun, 23 Sep 2012 00:34:31 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 22/23] tools/power/acpi/acpidump: version 20101221 - find dynamic tables in sysfs
-Date: Sun, 23 Sep 2012 00:34:10 -0400
-Message-Id: <d4bb1c90c850c5163f28b1c04d16c5d85aaaf815.1348371388.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
+        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 04/23] ACPICA: Comment update: Fix some typos in actble.h
+Date: Sun, 23 Sep 2012 00:33:52 -0400
+Message-Id: <80187431762989ebade986468d3c548287a12689.1348371388.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.1.396.g16eed7c
 In-Reply-To: <1348374851-20378-1-git-send-email-lenb@kernel.org>
 References: <1348374851-20378-1-git-send-email-lenb@kernel.org>
@@ -24,309 +25,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+From: Bob Moore <robert.moore@intel.com>
 
-This is unchanged version 20101221, plus a small bit in
-DEFINE_ALTERNATE_TYPES to enable building with latest kernel headers.
+No functional change.
 
-This version finds dynamic tables exported by Linux in
-/sys/firmware/acpi/tables/dynamic
-
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- tools/power/acpi/acpidump.c | 187 +++++++++++++++++++++-----------------------
- 1 file changed, 89 insertions(+), 98 deletions(-)
+ include/acpi/actbl.h | 48 ++++++++++++++++++++++++------------------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/tools/power/acpi/acpidump.c b/tools/power/acpi/acpidump.c
-index a63dee9..0777987 100644
---- a/tools/power/acpi/acpidump.c
-+++ b/tools/power/acpi/acpidump.c
-@@ -1,6 +1,5 @@
- /*
-  * (c) Alexey Starikovskiy, Intel, 2005-2006.
-- * (c) Len Brown, Intel, 2007.
-  * All rights reserved.
+diff --git a/include/acpi/actbl.h b/include/acpi/actbl.h
+index 59a73e1..d54e358 100644
+--- a/include/acpi/actbl.h
++++ b/include/acpi/actbl.h
+@@ -94,7 +94,7 @@
+ struct acpi_table_header {
+ 	char signature[ACPI_NAME_SIZE];	/* ASCII table signature */
+ 	u32 length;		/* Length of table in bytes, including this header */
+-	u8 revision;		/* ACPI Specification minor version # */
++	u8 revision;		/* ACPI Specification minor version number */
+ 	u8 checksum;		/* To make sum of entire table == 0 */
+ 	char oem_id[ACPI_OEM_ID_SIZE];	/* ASCII OEM identification */
+ 	char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];	/* ASCII OEM table identification */
+@@ -108,7 +108,7 @@ struct acpi_table_header {
+  * GAS - Generic Address Structure (ACPI 2.0+)
   *
-  * Redistribution and use in source and binary forms, with or without
-@@ -63,6 +62,8 @@ typedef long long			s64;
- #include <unistd.h>
- #include <getopt.h>
+  * Note: Since this structure is used in the ACPI tables, it is byte aligned.
+- * If misaliged access is not supported by the hardware, accesses to the
++ * If misaligned access is not supported by the hardware, accesses to the
+  * 64-bit Address field must be performed with care.
+  *
+  ******************************************************************************/
+@@ -210,18 +210,18 @@ struct acpi_table_fadt {
+ 	u8 preferred_profile;	/* Conveys preferred power management profile to OSPM. */
+ 	u16 sci_interrupt;	/* System vector of SCI interrupt */
+ 	u32 smi_command;	/* 32-bit Port address of SMI command port */
+-	u8 acpi_enable;		/* Value to write to smi_cmd to enable ACPI */
+-	u8 acpi_disable;	/* Value to write to smi_cmd to disable ACPI */
+-	u8 s4_bios_request;	/* Value to write to SMI CMD to enter S4BIOS state */
++	u8 acpi_enable;		/* Value to write to SMI_CMD to enable ACPI */
++	u8 acpi_disable;	/* Value to write to SMI_CMD to disable ACPI */
++	u8 s4_bios_request;	/* Value to write to SMI_CMD to enter S4BIOS state */
+ 	u8 pstate_control;	/* Processor performance state control */
+-	u32 pm1a_event_block;	/* 32-bit Port address of Power Mgt 1a Event Reg Blk */
+-	u32 pm1b_event_block;	/* 32-bit Port address of Power Mgt 1b Event Reg Blk */
+-	u32 pm1a_control_block;	/* 32-bit Port address of Power Mgt 1a Control Reg Blk */
+-	u32 pm1b_control_block;	/* 32-bit Port address of Power Mgt 1b Control Reg Blk */
+-	u32 pm2_control_block;	/* 32-bit Port address of Power Mgt 2 Control Reg Blk */
+-	u32 pm_timer_block;	/* 32-bit Port address of Power Mgt Timer Ctrl Reg Blk */
+-	u32 gpe0_block;		/* 32-bit Port address of General Purpose Event 0 Reg Blk */
+-	u32 gpe1_block;		/* 32-bit Port address of General Purpose Event 1 Reg Blk */
++	u32 pm1a_event_block;	/* 32-bit port address of Power Mgt 1a Event Reg Blk */
++	u32 pm1b_event_block;	/* 32-bit port address of Power Mgt 1b Event Reg Blk */
++	u32 pm1a_control_block;	/* 32-bit port address of Power Mgt 1a Control Reg Blk */
++	u32 pm1b_control_block;	/* 32-bit port address of Power Mgt 1b Control Reg Blk */
++	u32 pm2_control_block;	/* 32-bit port address of Power Mgt 2 Control Reg Blk */
++	u32 pm_timer_block;	/* 32-bit port address of Power Mgt Timer Ctrl Reg Blk */
++	u32 gpe0_block;		/* 32-bit port address of General Purpose Event 0 Reg Blk */
++	u32 gpe1_block;		/* 32-bit port address of General Purpose Event 1 Reg Blk */
+ 	u8 pm1_event_length;	/* Byte Length of ports at pm1x_event_block */
+ 	u8 pm1_control_length;	/* Byte Length of ports at pm1x_control_block */
+ 	u8 pm2_control_length;	/* Byte Length of ports at pm2_control_block */
+@@ -229,12 +229,12 @@ struct acpi_table_fadt {
+ 	u8 gpe0_block_length;	/* Byte Length of ports at gpe0_block */
+ 	u8 gpe1_block_length;	/* Byte Length of ports at gpe1_block */
+ 	u8 gpe1_base;		/* Offset in GPE number space where GPE1 events start */
+-	u8 cst_control;		/* Support for the _CST object and C States change notification */
++	u8 cst_control;		/* Support for the _CST object and C-States change notification */
+ 	u16 c2_latency;		/* Worst case HW latency to enter/exit C2 state */
+ 	u16 c3_latency;		/* Worst case HW latency to enter/exit C3 state */
+-	u16 flush_size;		/* Processor's memory cache line width, in bytes */
++	u16 flush_size;		/* Processor memory cache line width, in bytes */
+ 	u16 flush_stride;	/* Number of flush strides that need to be read */
+-	u8 duty_offset;		/* Processor duty cycle index in processor's P_CNT reg */
++	u8 duty_offset;		/* Processor duty cycle index in processor P_CNT reg */
+ 	u8 duty_width;		/* Processor duty cycle value bit width in P_CNT register */
+ 	u8 day_alarm;		/* Index to day-of-month alarm in RTC CMOS RAM */
+ 	u8 month_alarm;		/* Index to month-of-year alarm in RTC CMOS RAM */
+@@ -255,11 +255,11 @@ struct acpi_table_fadt {
+ 	struct acpi_generic_address xpm_timer_block;	/* 64-bit Extended Power Mgt Timer Ctrl Reg Blk address */
+ 	struct acpi_generic_address xgpe0_block;	/* 64-bit Extended General Purpose Event 0 Reg Blk address */
+ 	struct acpi_generic_address xgpe1_block;	/* 64-bit Extended General Purpose Event 1 Reg Blk address */
+-	struct acpi_generic_address sleep_control;	/* 64-bit Sleep Control register */
+-	struct acpi_generic_address sleep_status;	/* 64-bit Sleep Status register */
++	struct acpi_generic_address sleep_control;	/* 64-bit Sleep Control register (ACPI 5.0) */
++	struct acpi_generic_address sleep_status;	/* 64-bit Sleep Status register (ACPI 5.0) */
+ };
  
-+#include <sys/types.h>
-+#include <dirent.h>
+-/* Masks for FADT Boot Architecture Flags (boot_flags) */
++/* Masks for FADT Boot Architecture Flags (boot_flags) [Vx]=Introduced in this FADT revision */
  
- #include <acpi/acconfig.h>
- #include <acpi/platform/acenv.h>
-@@ -186,40 +187,6 @@ static void acpi_show_data(int fd, u8 * data, int size)
- /*
-  * Output ACPI table
-  */
--
--#define MAX_TABLES 128
--int next_table_dump;
--u64 dumped_tables[MAX_TABLES];
--
--void
--set_table_dumped(u64 address) {
--	if (next_table_dump >= MAX_TABLES) {
--		printf("increase MAX_TABLES\n");
--		exit(1);
--	}
--	dumped_tables[next_table_dump++] = address;
--}
--
--/*
-- * list the tables as they are dumped
-- * check the list so that they are not dumped twice.
-- *
-- * this is needed because we follow both the XSDT and RSDT
-- * which generally point to all duplicate tables
-- * except the FADT
-- */
--int
--check_table_dumped(u64 address) {
--	int i;
--
--	for (i = 0; i < MAX_TABLES; ++i) {
--		if (address == dumped_tables[i])
--			return 1;
--		if (dumped_tables[i] == 0)
--			return 0;
--	}
--	return 0;
--}
- static void acpi_show_table(int fd, struct acpi_table_header *table, unsigned long addr)
- {
- 	char buff[80];
-@@ -233,10 +200,6 @@ static void acpi_show_table(int fd, struct acpi_table_header *table, unsigned lo
- static void write_table(int fd, struct acpi_table_header *tbl, unsigned long addr)
- {
- 	static int select_done = 0;
--
--	if (check_table_dumped((u64)addr))
--		return;
--
- 	if (!select_sig[0]) {
- 		if (print) {
- 			acpi_show_table(fd, tbl, addr);
-@@ -255,7 +218,6 @@ static void write_table(int fd, struct acpi_table_header *tbl, unsigned long add
- 		}
- 		select_done = 1;
- 	}
--	set_table_dumped((u64) addr);
- }
+ #define ACPI_FADT_LEGACY_DEVICES    (1)  	/* 00: [V2] System has LPC or ISA bus devices */
+ #define ACPI_FADT_8042              (1<<1)	/* 01: [V3] System has an 8042 controller on port 60/64 */
+@@ -272,13 +272,13 @@ struct acpi_table_fadt {
  
- static void acpi_dump_FADT(int fd, struct acpi_table_header *tbl, unsigned long xaddr) {
-@@ -312,26 +274,30 @@ no_facs:
- 	write_table(fd, (struct acpi_table_header *)&x, xaddr);
- }
+ /* Masks for FADT flags */
  
--
--static int acpi_dump_RSDT(int fd, struct acpi_rsdp_descriptor *rsdp)
-+static int acpi_dump_SDT(int fd, struct acpi_rsdp_descriptor *rsdp)
- {
- 	struct acpi_table_header *sdt, *tbl = 0;
--	int i, num;
-+	int xsdt = 1, i, num;
- 	char *offset;
- 	unsigned long addr;
--
--	tbl = acpi_map_table(rsdp->rsdt_physical_address, "RSDT");
-+	if (rsdp->revision > 1 && rsdp->xsdt_physical_address) {
-+		tbl = acpi_map_table(rsdp->xsdt_physical_address, "XSDT");
-+	}
-+	if (!tbl && rsdp->rsdt_physical_address) {
-+		xsdt = 0;
-+		tbl = acpi_map_table(rsdp->rsdt_physical_address, "RSDT");
-+	}
- 	if (!tbl) return 0;
--
- 	sdt = malloc(tbl->length);
- 	memcpy(sdt, tbl, tbl->length);
- 	acpi_unmap_table(tbl);
- 	if (checksum((u8 *)sdt, sdt->length))
--		fprintf(stderr, "Wrong checksum for %s!\n", "RSDT");
--	num = (sdt->length - sizeof(struct acpi_table_header))/sizeof(u32);
-+		fprintf(stderr, "Wrong checksum for %s!\n", (xsdt)?"XSDT":"RSDT");
-+	num = (sdt->length - sizeof(struct acpi_table_header))/((xsdt)?sizeof(u64):sizeof(u32));
- 	offset = (char *)sdt + sizeof(struct acpi_table_header);
--	for (i = 0; i < num; ++i, offset += sizeof(u32)) {
--		addr = (unsigned long)(*(u32 *)offset);
-+	for (i = 0; i < num; ++i, offset += ((xsdt) ? sizeof(u64) : sizeof(u32))) {
-+		addr = (xsdt) ? (unsigned long)(*(u64 *)offset):
-+				(unsigned long)(*(u32 *)offset);
- 		if (!addr) continue;
- 		tbl = acpi_map_table(addr, 0);
- 		if (!tbl) continue;
-@@ -339,66 +305,92 @@ static int acpi_dump_RSDT(int fd, struct acpi_rsdp_descriptor *rsdp)
- 			acpi_dump_FADT(fd, tbl, addr);
- 		} else {
- 			if (checksum((u8 *)tbl, tbl->length))
--				fprintf(stderr, "Wrong checksum for %.4s!\n", tbl->signature);
-+				fprintf(stderr, "Wrong checksum for generic table!\n");
- 			write_table(fd, tbl, addr);
- 		}
- 		acpi_unmap_table(tbl);
- 		if (connect) {
--			(*(u32*)offset) = lseek(fd, 0, SEEK_CUR);
-+			if (xsdt)
-+				(*(u64*)offset) = lseek(fd, 0, SEEK_CUR);
-+			else
-+				(*(u32*)offset) = lseek(fd, 0, SEEK_CUR);
- 		}
- 	}
--	addr = (unsigned long)rsdp->rsdt_physical_address;
--	if (connect) {
--		rsdp->rsdt_physical_address = lseek(fd, 0, SEEK_CUR);
-+	if (xsdt) {
-+		addr = (unsigned long)rsdp->xsdt_physical_address;
-+		if (connect) {
-+			rsdp->xsdt_physical_address = lseek(fd, 0, SEEK_CUR);
-+		}
-+	} else {
-+		addr = (unsigned long)rsdp->rsdt_physical_address;
-+		if (connect) {
-+			rsdp->rsdt_physical_address = lseek(fd, 0, SEEK_CUR);
-+		}
- 	}
- 	write_table(fd, sdt, addr);
- 	free (sdt);
- 	return 1;
- }
+-#define ACPI_FADT_WBINVD            (1)	/* 00: [V1] The wbinvd instruction works properly */
+-#define ACPI_FADT_WBINVD_FLUSH      (1<<1)	/* 01: [V1] wbinvd flushes but does not invalidate caches */
++#define ACPI_FADT_WBINVD            (1)	/* 00: [V1] The WBINVD instruction works properly */
++#define ACPI_FADT_WBINVD_FLUSH      (1<<1)	/* 01: [V1] WBINVD flushes but does not invalidate caches */
+ #define ACPI_FADT_C1_SUPPORTED      (1<<2)	/* 02: [V1] All processors support C1 state */
+ #define ACPI_FADT_C2_MP_SUPPORTED   (1<<3)	/* 03: [V1] C2 state works on MP system */
+ #define ACPI_FADT_POWER_BUTTON      (1<<4)	/* 04: [V1] Power button is handled as a control method device */
+ #define ACPI_FADT_SLEEP_BUTTON      (1<<5)	/* 05: [V1] Sleep button is handled as a control method device */
+-#define ACPI_FADT_FIXED_RTC         (1<<6)	/* 06: [V1] RTC wakeup status not in fixed register space */
++#define ACPI_FADT_FIXED_RTC         (1<<6)	/* 06: [V1] RTC wakeup status is not in fixed register space */
+ #define ACPI_FADT_S4_RTC_WAKE       (1<<7)	/* 07: [V1] RTC alarm can wake system from S4 */
+ #define ACPI_FADT_32BIT_TIMER       (1<<8)	/* 08: [V1] ACPI timer width is 32-bit (0=24-bit) */
+ #define ACPI_FADT_DOCKING_SUPPORTED (1<<9)	/* 09: [V1] Docking supported */
+@@ -297,7 +297,7 @@ struct acpi_table_fadt {
  
-+#define DYNAMIC_SSDT	"/sys/firmware/acpi/tables/dynamic"
+ /* Values for preferred_profile (Preferred Power Management Profiles) */
  
--static int acpi_dump_XSDT(int fd, struct acpi_rsdp_descriptor *rsdp)
-+static void acpi_dump_dynamic_SSDT(int fd)
- {
--	struct acpi_table_header *sdt, *tbl = 0;
--	int i, num;
--	char *offset;
--	unsigned long addr;
--	if (rsdp->revision > 1 && rsdp->xsdt_physical_address) {
--		tbl = acpi_map_table(rsdp->xsdt_physical_address, "XSDT");
-+	struct stat file_stat;
-+	char filename[256], *ptr;
-+	DIR *tabledir;
-+	struct dirent *entry;
-+	FILE *fp;
-+	int count, readcount, length;
-+	struct acpi_table_header table_header, *ptable;
-+
-+	if (stat(DYNAMIC_SSDT, &file_stat) == -1) {
-+		/* The directory doesn't exist */
-+		return;
- 	}
--	if (!tbl) return 0;
--
--	sdt = malloc(tbl->length);
--	memcpy(sdt, tbl, tbl->length);
--	acpi_unmap_table(tbl);
--	if (checksum((u8 *)sdt, sdt->length))
--		fprintf(stderr, "Wrong checksum for %s!\n", "XSDT");
--	num = (sdt->length - sizeof(struct acpi_table_header))/sizeof(u64);
--	offset = (char *)sdt + sizeof(struct acpi_table_header);
--	for (i = 0; i < num; ++i, offset += sizeof(u64)) {
--		addr = (unsigned long)(*(u64 *)offset);
--		if (!addr) continue;
--		tbl = acpi_map_table(addr, 0);
--		if (!tbl) continue;
--		if (!memcmp(tbl->signature, FADT_SIG, 4)) {
--			acpi_dump_FADT(fd, tbl, addr);
--		} else {
--			if (checksum((u8 *)tbl, tbl->length))
--				fprintf(stderr, "Wrong checksum for %.4s\n", tbl->signature);
--			write_table(fd, tbl, addr);
-+	tabledir = opendir(DYNAMIC_SSDT);
-+	if(!tabledir){
-+		/*can't open the directory */
-+		return;
-+         }
-+
-+	while ((entry = readdir(tabledir)) != 0){
-+		/* skip the file of . /.. */
-+		if (entry->d_name[0] == '.')
-+			continue;
-+
-+		sprintf(filename, "%s/%s", DYNAMIC_SSDT, entry->d_name);
-+		fp = fopen(filename, "r");
-+		if (fp == NULL) {
-+			fprintf(stderr, "Can't open the file of %s\n",
-+						filename);
-+			continue;
- 		}
--		acpi_unmap_table(tbl);
--		if (connect) {
--			(*(u64*)offset) = lseek(fd, 0, SEEK_CUR);
-+		/* Read the Table header to parse the table length */
-+		count = fread(&table_header, 1, sizeof(struct acpi_table_header), fp);
-+		if (count < sizeof(table_header)) {
-+			/* the length is lessn than ACPI table header. skip it */
-+			fclose(fp);
-+			continue;
- 		}
-+		length = table_header.length;
-+		ptr = malloc(table_header.length);
-+		fseek(fp, 0, SEEK_SET);
-+		readcount = 0;
-+		while(!feof(fp) && readcount < length) {
-+			count = fread(ptr + readcount, 1, 256, fp);
-+			readcount += count;
-+		}
-+		fclose(fp);
-+		ptable = (struct acpi_table_header *) ptr;
-+		if (checksum((u8 *) ptable, ptable->length))
-+			fprintf(stderr, "Wrong checksum "
-+					"for dynamic SSDT table!\n");
-+		write_table(fd, ptable, 0);
-+		free(ptr);
- 	}
--	addr = (unsigned long)rsdp->xsdt_physical_address;
--	if (connect) {
--		rsdp->xsdt_physical_address = lseek(fd, 0, SEEK_CUR);
--	}
--	write_table(fd, sdt, addr);
--	free (sdt);
--	return 1;
-+	closedir(tabledir);
-+	return;
- }
- 
- static void usage(const char *progname)
-@@ -518,6 +510,7 @@ int main(int argc, char **argv)
- 			goto not_found;
- 		write(fd, raw, length);
- 		acpi_unmap_memory(raw, length);
-+		close(fd);
- 		return 0;
- 	}
- 
-@@ -540,12 +533,7 @@ int main(int argc, char **argv)
- 	if (connect) {
- 		lseek(fd, sizeof(struct acpi_rsdp_descriptor), SEEK_SET);
- 	}
--	if (rsdpx.revision > 1 && rsdpx.xsdt_physical_address) {
--		/* ACPIDUMP uses xsdt table */
--		if (!acpi_dump_XSDT(fd, &rsdpx))
--			goto not_found;
--	}
--	if (!acpi_dump_RSDT(fd, &rsdpx))
-+	if (!acpi_dump_SDT(fd, &rsdpx))
- 		goto not_found;
- 	if (connect) {
- 		lseek(fd, 0, SEEK_SET);
-@@ -560,8 +548,11 @@ int main(int argc, char **argv)
- 		buff[0] = '\n';
- 		write(fd, buff, 1);
- 	}
-+	acpi_dump_dynamic_SSDT(fd);
-+	close(fd);
- 	return 0;
- not_found:
-+	close(fd);
- 	fprintf(stderr, "ACPI tables were not found. If you know location "
- 		"of RSD PTR table (from dmesg, etc), "
- 		"supply it with either --addr or -a option\n");
+-enum acpi_prefered_pm_profiles {
++enum acpi_preferred_pm_profiles {
+ 	PM_UNSPECIFIED = 0,
+ 	PM_DESKTOP = 1,
+ 	PM_MOBILE = 2,
+@@ -335,7 +335,7 @@ union acpi_name_union {
+ struct acpi_table_desc {
+ 	acpi_physical_address address;
+ 	struct acpi_table_header *pointer;
+-	u32 length;		/* Length fixed at 32 bits */
++	u32 length;		/* Length fixed at 32 bits (fixed in table header) */
+ 	union acpi_name_union signature;
+ 	acpi_owner_id owner_id;
+ 	u8 flags;
 -- 
 1.7.12.1.396.g16eed7c
 
