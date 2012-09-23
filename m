@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab2IWEff (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 00:35:35 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:43694 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab2IWEee (ORCPT
+	id S1754071Ab2IWEf6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 00:35:58 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:49268 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab2IWEfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 00:34:34 -0400
+	Sun, 23 Sep 2012 00:35:11 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
-        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 05/23] ACPICA: Add Windows8/Server2012 string for _OSI method.
-Date: Sun, 23 Sep 2012 00:33:53 -0400
-Message-Id: <a57f7f9175b8ccbc9df83ac13860488913115de4.1348371388.git.len.brown@intel.com>
+        Lv Zheng <lv.zheng@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 15/23] ACPICA: Headers: Add new ACPI 5 HEST notify type values.
+Date: Sun, 23 Sep 2012 00:34:03 -0400
+Message-Id: <ca4a03143f6c911189f708a3a3c7eae3dfb8678c.1348371388.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.1.396.g16eed7c
 In-Reply-To: <1348374851-20378-1-git-send-email-lenb@kernel.org>
 References: <1348374851-20378-1-git-send-email-lenb@kernel.org>
@@ -27,44 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bob Moore <robert.moore@intel.com>
 
-This change adds a new _OSI string, "Windows 2012" for both Windows 8
-and Windows Server 2012.
-
->From Microsoft document "How to Identify the Windows Version in ACPI
-by Using _OSI", July 13, 2012.
+Add values 5 (CMCI) and 6 (MCE).
 
 Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/aclocal.h | 1 +
- drivers/acpi/acpica/utosi.c   | 1 +
- 2 files changed, 2 insertions(+)
+ include/acpi/actbl1.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
-index cc80fe1..493529a 100644
---- a/drivers/acpi/acpica/aclocal.h
-+++ b/drivers/acpi/acpica/aclocal.h
-@@ -932,6 +932,7 @@ struct acpi_bit_register_info {
- #define ACPI_OSI_WIN_VISTA_SP1          0x09
- #define ACPI_OSI_WIN_VISTA_SP2          0x0A
- #define ACPI_OSI_WIN_7                  0x0B
-+#define ACPI_OSI_WIN_8                  0x0C
+diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
+index c41d6f9..280fc45 100644
+--- a/include/acpi/actbl1.h
++++ b/include/acpi/actbl1.h
+@@ -495,7 +495,9 @@ enum acpi_hest_notify_types {
+ 	ACPI_HEST_NOTIFY_LOCAL = 2,
+ 	ACPI_HEST_NOTIFY_SCI = 3,
+ 	ACPI_HEST_NOTIFY_NMI = 4,
+-	ACPI_HEST_NOTIFY_RESERVED = 5	/* 5 and greater are reserved */
++	ACPI_HEST_NOTIFY_CMCI = 5,	/* ACPI 5.0 */
++	ACPI_HEST_NOTIFY_MCE = 6,	/* ACPI 5.0 */
++	ACPI_HEST_NOTIFY_RESERVED = 7	/* 7 and greater are reserved */
+ };
  
- #define ACPI_ALWAYS_ILLEGAL             0x00
- 
-diff --git a/drivers/acpi/acpica/utosi.c b/drivers/acpi/acpica/utosi.c
-index 34ef0bd..676285d 100644
---- a/drivers/acpi/acpica/utosi.c
-+++ b/drivers/acpi/acpica/utosi.c
-@@ -73,6 +73,7 @@ static struct acpi_interface_info acpi_default_supported_interfaces[] = {
- 	{"Windows 2006 SP1", NULL, 0, ACPI_OSI_WIN_VISTA_SP1},	/* Windows Vista SP1 - Added 09/2009 */
- 	{"Windows 2006 SP2", NULL, 0, ACPI_OSI_WIN_VISTA_SP2},	/* Windows Vista SP2 - Added 09/2010 */
- 	{"Windows 2009", NULL, 0, ACPI_OSI_WIN_7},	/* Windows 7 and Server 2008 R2 - Added 09/2009 */
-+	{"Windows 2012", NULL, 0, ACPI_OSI_WIN_8},	/* Windows 8 and Server 2012 - Added 08/2012 */
- 
- 	/* Feature Group Strings */
- 
+ /* Values for config_write_enable bitfield above */
 -- 
 1.7.12.1.396.g16eed7c
 
