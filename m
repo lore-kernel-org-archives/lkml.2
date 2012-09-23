@@ -1,111 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab2IWRq4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 13:46:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60687 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361Ab2IWRqy (ORCPT
+	id S1754437Ab2IWSHP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 14:07:15 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49679 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754362Ab2IWSHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 13:46:54 -0400
+	Sun, 23 Sep 2012 14:07:12 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: "Maxin B. John" <maxin.john@gmail.com>
+Cc: "Jean Delvare \(PC drivers\,core\)" <khali@linux-fr.org>,
+        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
+        "Wolfram Sang \(embedded platforms\)" <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 1/2] i2c: busses: i2c-ocores: Fix documentation filename
+References: <20120923133012.GA22830@linux-3ix0.site>
+Date: Sun, 23 Sep 2012 20:07:07 +0200
+In-Reply-To: <20120923133012.GA22830@linux-3ix0.site> (Maxin B. John's message
+	of "Sun, 23 Sep 2012 09:30:12 -0400")
+Message-ID: <878vc0aa0k.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <505F4949.2090509@redhat.com>
-References: <1346775269-12191-1-git-send-email-peter.senna@gmail.com>
-	<505F4949.2090509@redhat.com>
-Date: Sun, 23 Sep 2012 19:46:53 +0200
-Message-ID: <CA+MoWDree3U=o8kiMoz5L-3EKC8oBWov+qPbUr5VWMpGKnAZdA@mail.gmail.com>
-Subject: Re: [PATCH 5/5] drivers/media/platform/omap3isp/isp.c: fix error
- return code
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 23, 2012 at 7:39 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> Laurent,
->
-> Could you please review this patch?
->
-> Peter,
->
-> Please, always c/c the driver maintainer/author on patches you submit.
->
-> You can check it with scripts/get_maintainer.pl.
-Sorry for that. I'll be more careful next time. Thanks!
+>>>>> "Maxin" == Maxin B John <maxin.john@gmail.com> writes:
 
->
-> Regards,
-> Mauro
->
-> -------- Mensagem original --------
-> Assunto: [PATCH 5/5] drivers/media/platform/omap3isp/isp.c: fix error return code
-> Data: Tue,  4 Sep 2012 18:14:25 +0200
-> De: Peter Senna Tschudin <peter.senna@gmail.com>
-> Para: Mauro Carvalho Chehab <mchehab@infradead.org>
-> CC: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr, linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
->
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> Convert a nonnegative error return code to a negative one, as returned
-> elsewhere in the function.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
->
-> // </smpl>
->
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> ---
->  drivers/media/platform/omap3isp/isp.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/media/platform/omap3isp/isp.c b/drivers/media/platform/omap3isp/isp.c
-> index e0096e0..91fcaef 100644
-> --- a/drivers/media/platform/omap3isp/isp.c
-> +++ b/drivers/media/platform/omap3isp/isp.c
-> @@ -2102,8 +2102,10 @@ static int __devinit isp_probe(struct platform_device *pdev)
->         if (ret < 0)
->                 goto error;
->
-> -       if (__omap3isp_get(isp, false) == NULL)
-> +       if (__omap3isp_get(isp, false) == NULL) {
-> +               ret = -EBUSY; /* Not sure if EBUSY is best for here */
->                 goto error;
-> +       }
->
->         ret = isp_reset(isp);
->         if (ret < 0)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+ Maxin> Fixes the wrong filename.
+ Maxin> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
 
-
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
 
 -- 
-Peter
+Bye, Peter Korsgaard
