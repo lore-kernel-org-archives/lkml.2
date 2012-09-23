@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2IWM6b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 08:58:31 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:53750 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753883Ab2IWM52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 08:57:28 -0400
+	id S1753866Ab2IWM63 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 08:58:29 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:54636 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab2IWM5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 08:57:21 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
@@ -14,252 +15,165 @@ Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
         marco.stornelli@gmail.com, david@fromorbit.com,
         stroetmann@ontolinux.com, diegocg@gmail.com, chris@csamuel.org,
         Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v2 05/10] vfs: introduce one hash table
-Date: Sun, 23 Sep 2012 20:56:30 +0800
-Message-Id: <1348404995-14372-6-git-send-email-zwu.kernel@gmail.com>
+Subject: [RFC v2 04/10] vfs: add init and exit support
+Date: Sun, 23 Sep 2012 20:56:29 +0800
+Message-Id: <1348404995-14372-5-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
 References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
-x-cbid: 12092312-5930-0000-0000-00000C610928
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092312-5518-0000-0000-000007DD3CE5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Adds a hash table structure which contains
-a lot of hash list and is used to efficiently
-look up the data temperature of a file or its
-ranges.
-  In each hash list of hash table, the hash node
-will keep track of temperature info.
+  Add initialization function to create some
+key data structures when hot tracking is enabled;
+Clean up them when hot tracking is disabled
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/hot_tracking.c            |   77 ++++++++++++++++++++++++++++++++++++++++-
- include/linux/hot_tracking.h |   35 +++++++++++++++++++
- 2 files changed, 110 insertions(+), 2 deletions(-)
+ fs/hot_tracking.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/hot_tracking.h |    2 +
+ fs/namespace.c    |    4 +++
+ fs/super.c        |    6 +++++
+ 4 files changed, 72 insertions(+), 0 deletions(-)
 
 diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index fa89f70..5f96442 100644
+index f97e8a6..fa89f70 100644
 --- a/fs/hot_tracking.c
 +++ b/fs/hot_tracking.c
-@@ -16,6 +16,7 @@
- #include <linux/module.h>
- #include <linux/spinlock.h>
- #include <linux/hardirq.h>
-+#include <linux/hash.h>
- #include <linux/fs.h>
- #include <linux/blkdev.h>
- #include <linux/types.h>
-@@ -24,6 +25,9 @@
- /* kmem_cache pointers for slab caches */
- static struct kmem_cache *hot_inode_item_cache;
- static struct kmem_cache *hot_range_item_cache;
-+static struct kmem_cache *hot_hash_node_cache;
-+
-+static void hot_hash_node_init(void *_node);
- 
- /*
-  * Initialize the inode tree. Should be called for each new inode
-@@ -57,6 +61,10 @@ void hot_rb_inode_item_init(void *_item)
- 	memset(he, 0, sizeof(*he));
- 	kref_init(&he->refs);
- 	spin_lock_init(&he->lock);
-+	he->heat_node = kmem_cache_alloc(hot_hash_node_cache,
-+					GFP_KERNEL | GFP_NOFS);
-+	hot_hash_node_init(he->heat_node);
-+	he->heat_node->hot_freq_data = &he->hot_freq_data;
- 	he->hot_freq_data.avg_delta_reads = (u64) -1;
- 	he->hot_freq_data.avg_delta_writes = (u64) -1;
- 	he->hot_freq_data.flags = FREQ_DATA_TYPE_INODE;
-@@ -75,6 +83,10 @@ static void hot_rb_range_item_init(void *_item)
- 	memset(hr, 0, sizeof(*hr));
- 	kref_init(&hr->refs);
- 	spin_lock_init(&hr->lock);
-+	hr->heat_node = kmem_cache_alloc(hot_hash_node_cache,
-+				GFP_KERNEL | GFP_NOFS);
-+	hot_hash_node_init(hr->heat_node);
-+	hr->heat_node->hot_freq_data = &hr->hot_freq_data;
- 	hr->hot_freq_data.avg_delta_reads = (u64) -1;
- 	hr->hot_freq_data.avg_delta_writes = (u64) -1;
- 	hr->hot_freq_data.flags = FREQ_DATA_TYPE_RANGE;
-@@ -105,6 +117,18 @@ inode_err:
- 	return -ENOMEM;
+@@ -135,6 +135,51 @@ static void hot_rb_free_hot_range_item(struct hot_range_item *hr)
+ 	}
  }
  
-+static void hot_rb_inode_item_exit(void)
++static int hot_rb_remove_hot_inode_item(struct hot_inode_tree *tree,
++                                struct hot_inode_item *he)
 +{
-+	if (hot_inode_item_cache)
-+		kmem_cache_destroy(hot_inode_item_cache);
++        int ret = 0;
++        rb_erase(&he->rb_node, &tree->map);
++        he->in_tree = 0;
++        return ret;
 +}
 +
-+static void hot_rb_range_item_exit(void)
++static int hot_rb_remove_hot_range_item(struct hot_range_tree *tree,
++                                struct hot_range_item *hr)
 +{
-+	if (hot_range_item_cache)
-+		kmem_cache_destroy(hot_range_item_cache);
++        int ret = 0;
++        rb_erase(&hr->rb_node, &tree->map);
++        hr->in_tree = 0;
++        return ret;
 +}
 +
- /*
-  * Drops the reference out on hot_inode_item by one and free the structure
-  * if the reference count hits zero
-@@ -510,6 +534,48 @@ void hot_rb_update_freqs(struct inode *inode, u64 start,
- }
- 
- /*
-+ * Initialize hash node.
-+ */
-+static void hot_hash_node_init(void *_node)
++/* Frees the entire hot_inode_tree. */
++static void hot_rb_inode_tree_free(struct hot_info *root)
 +{
-+	struct hot_hash_node *node = _node;
++	struct rb_node *node, *node2;
++	struct hot_inode_item *he;
++	struct hot_range_item *hr;
 +
-+	memset(node, 0, sizeof(*node));
-+	INIT_HLIST_NODE(&node->hashnode);
-+	node->hot_freq_data = NULL;
-+	node->hlist = NULL;
-+	spin_lock_init(&node->lock);
-+	kref_init(&node->refs);
-+}
++	/* Free hot inode and range trees on fs root */
++	node = rb_first(&root->hot_inode_tree.map);
 +
-+static int __init hot_hash_node_cache_init(void)
-+{
-+	hot_hash_node_cache = kmem_cache_create("hot_hash_node",
-+				sizeof(struct hot_hash_node),
-+				0,
-+				SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD,
-+				hot_hash_node_init);
-+	if (!hot_hash_node_cache)
-+		return -ENOMEM;
++	while (node) {
++		he = rb_entry(node, struct hot_inode_item, rb_node);
 +
-+	return 0;
-+}
++		node2 = rb_first(&he->hot_range_tree.map);
++		while (node2) {
++			hr = rb_entry(node2, struct hot_range_item, rb_node);
++			hot_rb_remove_hot_range_item(&he->hot_range_tree, hr);
++			hot_rb_free_hot_range_item(hr);
++			node2 = rb_first(&he->hot_range_tree.map);
++		}
 +
-+/*
-+ * Initialize inode/range hash lists.
-+ */
-+static void hot_hash_table_init(struct hot_info *root)
-+{
-+	int i;
-+	for (i = 0; i < HEAT_HASH_SIZE; i++) {
-+		root->heat_inode_hl[i].temperature = i;
-+		root->heat_range_hl[i].temperature = i;
-+		rwlock_init(&root->heat_inode_hl[i].rwlock);
-+		rwlock_init(&root->heat_range_hl[i].rwlock);
++		hot_rb_remove_hot_inode_item(&root->hot_inode_tree, he);
++		hot_rb_free_hot_inode_item(he);
++		node = rb_first(&root->hot_inode_tree.map);
 +	}
 +}
 +
-+/*
-  * Regular mount options parser for -hottrack option.
-  * return false if no -hottrack is specified;
-  * otherwise return true. And the -hottrack will be
-@@ -544,13 +610,18 @@ bool hot_track_parse_options(char *options)
- }
- 
- /*
-- * Initialize kmem cache for hot_inode_item
-- * and hot_range_item
-+ * Initialize kmem cache for hot_inode_item,
-+ * hot_range_item and hot_hash_node
-  */
- void __init hot_track_cache_init(void)
- {
+ static struct rb_node *hot_rb_insert_hot_inode_item(struct rb_root *root,
+ 						unsigned long inode_num,
+ 						struct rb_node *node)
+@@ -507,3 +552,18 @@ void __init hot_track_cache_init(void)
  	if (hot_rb_item_cache_init())
  		return;
-+
-+	if (hot_hash_node_cache_init()) {
-+		hot_rb_inode_item_exit();
-+		hot_rb_range_item_exit();
-+	}
  }
- 
- /*
-@@ -560,10 +631,12 @@ void hot_track_init(struct super_block *sb, const char *name)
- {
- 	sb->s_hotinfo.mount_opt |= HOT_MOUNT_HOT_TRACK;
- 	hot_rb_inode_tree_init(&sb->s_hotinfo.hot_inode_tree);
-+	hot_hash_table_init(&sb->s_hotinfo);
- }
- 
- void hot_track_exit(struct super_block *sb)
- {
- 	sb->s_hotinfo.mount_opt &= ~HOT_MOUNT_HOT_TRACK;
-+	hot_hash_table_free(&sb->s_hotinfo);
- 	hot_rb_inode_tree_free(&sb->s_hotinfo);
- }
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index bb2a41c..635ffb6 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -20,6 +20,9 @@
- #include <linux/rbtree.h>
- #include <linux/kref.h>
- 
-+#define HEAT_HASH_BITS 8
-+#define HEAT_HASH_SIZE (1 << HEAT_HASH_BITS)
 +
- /*
-  * Flags for hot data tracking mount options.
-  */
-@@ -52,6 +55,28 @@ struct hot_freq_data {
- 	u32 last_temperature;
- };
- 
-+/* Hash list heads for hot hash table */
-+struct hot_hash_head {
-+	struct hlist_head hashhead;
-+	rwlock_t rwlock;
-+	u32 temperature;
-+};
++/*
++ * Initialize the data structures for hot data tracking.
++ */
++void hot_track_init(struct super_block *sb, const char *name)
++{
++	sb->s_hotinfo.mount_opt |= HOT_MOUNT_HOT_TRACK;
++	hot_rb_inode_tree_init(&sb->s_hotinfo.hot_inode_tree);
++}
 +
-+/* Nodes stored in each hash list of hash table */
-+struct hot_hash_node {
-+	struct hlist_node hashnode;
-+	struct list_head node;
-+	struct hot_freq_data *hot_freq_data;
-+	struct hot_hash_head *hlist;
-+	spinlock_t lock; /* protects hlist */
-+
-+	/*
-+	 * number of references to this node
-+	 * equals 1 (hashlist entry)
-+	 */
-+	struct kref refs;
-+};
-+
- /* An item representing an inode and its access frequency */
- struct hot_inode_item {
- 	/* node for hot_inode_tree rb_tree */
-@@ -68,6 +93,8 @@ struct hot_inode_item {
- 	spinlock_t lock;
- 	/* prevents kfree */
- 	struct kref refs;
-+	/* hashlist node for this inode */
-+	struct hot_hash_node *heat_node;
- };
++void hot_track_exit(struct super_block *sb)
++{
++	sb->s_hotinfo.mount_opt &= ~HOT_MOUNT_HOT_TRACK;
++	hot_rb_inode_tree_free(&sb->s_hotinfo);
++}
+diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
+index 6bd09eb..3a8d398 100644
+--- a/fs/hot_tracking.h
++++ b/fs/hot_tracking.h
+@@ -39,5 +39,7 @@ void hot_rb_update_freqs(struct inode *inode, u64 start, u64 len,
  
- /*
-@@ -91,6 +118,8 @@ struct hot_range_item {
- 	spinlock_t lock;
- 	/* prevents kfree */
- 	struct kref refs;
-+	/* hashlist node for this range */
-+	struct hot_hash_node *heat_node;
- };
+ bool hot_track_parse_options(char *options);
+ void __init hot_track_cache_init(void);
++void hot_track_init(struct super_block *sb, const char *name);
++void hot_track_exit(struct super_block *sb);
  
- struct hot_info {
-@@ -98,6 +127,12 @@ struct hot_info {
+ #endif /* __HOT_TRACKING__ */
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 4d31f73..55006c8 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -20,6 +20,7 @@
+ #include <linux/fs_struct.h>	/* get_fs_root et.al. */
+ #include <linux/fsnotify.h>	/* fsnotify_vfsmount_delete */
+ #include <linux/uaccess.h>
++#include "hot_tracking.h"
+ #include "pnode.h"
+ #include "internal.h"
  
- 	/* red-black tree that keeps track of fs-wide hot data */
- 	struct hot_inode_tree hot_inode_tree;
+@@ -1215,6 +1216,9 @@ static int do_umount(struct mount *mnt, int flags)
+ 		return retval;
+ 	}
+ 
++	if (sb->s_hotinfo.mount_opt & HOT_MOUNT_HOT_TRACK)
++		hot_track_exit(sb);
 +
-+	/* hash map of inode temperature */
-+	struct hot_hash_head heat_inode_hl[HEAT_HASH_SIZE];
-+
-+	/* hash map of range temperature */
-+	struct hot_hash_head heat_range_hl[HEAT_HASH_SIZE];
- };
+ 	down_write(&namespace_sem);
+ 	br_write_lock(&vfsmount_lock);
+ 	event++;
+diff --git a/fs/super.c b/fs/super.c
+index 7eb3b0c..0999d5c 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1153,6 +1153,9 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
+ 	WARN_ON(sb->s_bdi == &default_backing_dev_info);
+ 	sb->s_flags |= MS_BORN;
  
- #endif  /* _LINUX_HOTTRACK_H */
++	if (hottrack)
++		hot_track_init(sb, name);
++
+ 	error = security_sb_kern_mount(sb, flags, secdata);
+ 	if (error)
+ 		goto out_sb;
+@@ -1170,6 +1173,9 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
+ 	free_secdata(secdata);
+ 	return root;
+ out_sb:
++	if (hottrack)
++		hot_track_exit(sb);
++
+ 	dput(root);
+ 	deactivate_locked_super(sb);
+ out_free_secdata:
 -- 
 1.7.6.5
 
