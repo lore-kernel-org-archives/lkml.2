@@ -1,88 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab2IWV0t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 17:26:49 -0400
-Received: from mail.us.es ([193.147.175.20]:49740 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754496Ab2IWV0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 17:26:46 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.5/15393. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-99.7/7.5):. 
- Processed in 2.286017 secs); 23 Sep 2012 21:26:43 -0000
-X-Envelope-From: pneira@us.es
-Date: Sun, 23 Sep 2012 23:26:36 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, JP Abgrall <jpa@google.com>,
-        netdev@vger.kernel.org, Ashish Sharma <ashishsharma@google.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH 2/7][RFC] netfilter: add xt_qtaguid matching module
-Message-ID: <20120923212636.GA1141@1984>
-References: <1348279853-44499-1-git-send-email-john.stultz@linaro.org>
- <1348279853-44499-3-git-send-email-john.stultz@linaro.org>
+	id S1754563Ab2IWV3C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 17:29:02 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59545 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440Ab2IWV3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 17:29:00 -0400
+Date: Sun, 23 Sep 2012 23:28:57 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+cc: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: Re: Fwd: [PATCH 1/14] drivers/media/platform/soc_camera/soc_camera.c:
+ fix error return code
+In-Reply-To: <505F643C.3020203@redhat.com>
+Message-ID: <Pine.LNX.4.64.1209232255350.31250@axis700.grange>
+References: <1346945041-26676-13-git-send-email-peter.senna@gmail.com>
+ <505F643C.3020203@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348279853-44499-3-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:AF+6i22CgeQh4A5LXuYRBUiwuA4ON1hDmgnvjWocdjd
+ PEf5K5tPArs1/d/hmUOBn3DPxfj9Da1reA5egm5o5l7Hau8MJE
+ zouZBi1wK4fspYg+bxXzjwJdrj1Zg9ExrGJbkX5UioRStNW/H9
+ PVOtYhy9iS4/s3CzLhieTdhUnHTuo3v+3b+Kdw2PWQ4Fa28i1b
+ MTJDh9Qv7vQF38f3u54cN24XZJ3IszcYir++tPQnJWXUdhnmOE
+ VE38O/9MIE8umjDwWlwHOyKR7vtwq4D7ZhU8DIW8XoTxHS46Yu
+ 6pFU/ejfDtmBFkpI4x4oRpeexdRcZK4MjENFy10vvg0HG48JNF
+ 85psCwsIofNQf5cuX6IAebf9SBrodvag/aGwjb5EmCl5lAA88l
+ XIQP29KiF3LiA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+Hi Mauro, Peter
 
-Cc'ing netfilter-devel (better than only netdev, to attract the
-attention from other Netfilter hacker fellows).
+On Sun, 23 Sep 2012, Mauro Carvalho Chehab wrote:
 
-Some comments on this:
-
-On Fri, Sep 21, 2012 at 10:10:48PM -0400, John Stultz wrote:
-> From: JP Abgrall <jpa@google.com>
+> Please review.
+> Please review.
 > 
-> This module allows tracking stats at the socket level for given UIDs.
-> It replaces xt_owner.
-> If the --uid-owner is not specified, it will just count stats based on
-> who the skb belongs to. This will even happen on incoming skbs as it
-> looks into the skb via xt_socket magic to see who owns it.
-> If an skb is lost, it will be assigned to uid=0.
+> Regards,
+> Mauro.
 > 
-> To control what sockets of what UIDs are tagged by what, one uses:
->   echo t $sock_fd $accounting_tag $the_billed_uid \
->      > /proc/net/xt_qtaguid/ctrl
->  So whenever an skb belongs to a sock_fd, it will be accounted against
->    $the_billed_uid
->   and matching stats will show up under the uid with the given
->    $accounting_tag.
+> -------- Mensagem original --------
+> Assunto: [PATCH 1/14] drivers/media/platform/soc_camera/soc_camera.c: fix error return code
+> Data: Thu,  6 Sep 2012 17:24:00 +0200
+> De: Peter Senna Tschudin <peter.senna@gmail.com>
+> Para: Mauro Carvalho Chehab <mchehab@infradead.org>
+> CC: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr, linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 > 
-> Because the number of allocations for the stats structs is not that big:
->   ~500 apps * 32 per app
-> we'll just do it atomic. This avoids walking lists many times, and
-> the fancy worker thread handling. Slabs will grow when needed later.
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
 > 
-> It use netdevice and inetaddr notifications instead of hooks in the core dev
-> code to track when a device comes and goes. This removes the need for
-> exposed iface_stat.h.
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
 > 
-> Put procfs dirs in /proc/net/xt_qtaguid/
->   ctrl
->   stats
->   iface_stat/<iface>/...
-> The uid stats are obtainable in ./stats.
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+> 
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> ---
+>  drivers/media/platform/soc_camera/soc_camera.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/media/platform/soc_camera/soc_camera.c b/drivers/media/platform/soc_camera/soc_camera.c
+> index 10b57f8..a4beb6c 100644
+> --- a/drivers/media/platform/soc_camera/soc_camera.c
+> +++ b/drivers/media/platform/soc_camera/soc_camera.c
+> @@ -1184,7 +1184,8 @@ static int soc_camera_probe(struct soc_camera_device *icd)
+>  	sd->grp_id = soc_camera_grp_id(icd);
+>  	v4l2_set_subdev_hostdata(sd, icd);
+>  
+> -	if (v4l2_ctrl_add_handler(&icd->ctrl_handler, sd->ctrl_handler))
+> +	ret = v4l2_ctrl_add_handler(&icd->ctrl_handler, sd->ctrl_handler);
+> +	if (ret)
+>  		goto ectrl;
 
-Unless I'm missing anything worth in this patch, this seems to me like
-a combo match of owner + nfacct infrastructure.
+Yes, this is a correct fix. I'm actually also fixing it in one of my 
+current experimental patches, I don't think it's occurring too often in 
+real life, so, I didn't bother sending a separate fix:-) But yes, let's 
+fix it properly. Please, update the other patch to mx2_camera and I'll 
+send a "fixes" pull request with these two and an ov2640 fix.
 
-I guess you can probably get all done with one single rule, but that
-is not enough to justify its inclusion in mainline.
+Thanks
+Guennadi
 
-In case you are not familiar with the nfacct infrastructure:
+>  
+>  	/* At this point client .probe() should have run already */
 
-http://lwn.net/Articles/472094/
-
-I'd be happy anyway if you provide more examples on you use this, so I
-can assure you we can do this with the existing infrastructure in
-mainstream.
-
-Thanks!
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
