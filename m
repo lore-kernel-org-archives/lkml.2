@@ -1,293 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab2IWVi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 17:38:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50542 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462Ab2IWViY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 17:38:24 -0400
-Message-ID: <505F814B.4040709@tremplin-utc.net>
-Date: Sun, 23 Sep 2012 23:38:19 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1754573Ab2IWVl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 17:41:59 -0400
+Received: from mail.us.es ([193.147.175.20]:50732 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754464Ab2IWVl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 17:41:57 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.5/15393. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-99.7/7.5):. 
+ Processed in 2.472291 secs); 23 Sep 2012 21:41:55 -0000
+X-Envelope-From: pneira@us.es
+Date: Sun, 23 Sep 2012 23:41:52 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, JP Abgrall <jpa@google.com>,
+        netdev@vger.kernel.org, Ashish Sharma <ashishsharma@google.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: Re: [PATCH 6/7][RFC] netfilter: xt_IDLETIMER: Add new netlink msg
+ type
+Message-ID: <20120923214152.GB1141@1984>
+References: <1348279853-44499-1-git-send-email-john.stultz@linaro.org>
+ <1348279853-44499-7-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-To: AnilKumar Ch <anilkumar@ti.com>
-CC: arnd@arndb.de, gregkh@linuxfoundation.org, jic23@cam.ac.uk, greg@kroah.com,
-        akpm@linux-foundation.org, broonie@opensource.wolfsonmicro.com,
-        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
- accelerometer
-References: <1345617039-27469-1-git-send-email-anilkumar@ti.com>
-In-Reply-To: <1345617039-27469-1-git-send-email-anilkumar@ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348279853-44499-7-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22-08-12 08:30, AnilKumar Ch wrote:
-> This patch adds support for lis331dlh digital accelerometer to the
-> lis3lv02d driver family. Adds ID field for detecting the lis331dlh
-> module, based on this ID field lis3lv02d driver will export the
-> lis331dlh module functionality.
+On Fri, Sep 21, 2012 at 10:10:52PM -0400, John Stultz wrote:
+> From: JP Abgrall <jpa@google.com>
+> 
+> Send notifications when the label becomes active after an idle period.
+> Send netlink message notifications in addition to sysfs notifications.
+> Using a uevent with
+>   subsystem=xt_idletimer
+>   INTERFACE=...
+>   STATE={active,inactive}
+> 
+> This is backport from common android-3.0
+> commit: beb914e987cbbd368988d2b94a6661cb907c4d5a
+> with uevent support instead of a new netlink message type.
 
-Hello AnilKumar,
+I think this can be candidate to be included once some comestical
+issues are fixed.
 
-Sorry for taking so long to review your patch. Overall, it looks great :-)
-
-There are just a few points that almost code-style/comment that needs to 
-be fixed. See below. Could you fix these small issues, and submit a new 
-patch for Andrew to pick it in his queue?
-
-Here is my:
-Reviewed-by: Éric Piel <eric.piel@tremplin-utc.net>
-
-
->
-> Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+> Cc: netdev@vger.kernel.org
+> Cc: JP Abgrall <jpa@google.com>
+> Cc: Ashish Sharma <ashishsharma@google.com>
+> Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> Signed-off-by: Ashish Sharma <ashishsharma@google.com>
+> Signed-off-by: JP Abgrall <jpa@google.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 > ---
-> Changes from v1:
-> 	- Removed G range sysfs entry from v1
-> 	- Modified documentation to specify lis331dlh is supported
->
->   Documentation/misc-devices/lis3lv02d   |    3 ++-
->   drivers/misc/lis3lv02d/lis3lv02d.c     |   42 +++++++++++++++++++++++++++++-
->   drivers/misc/lis3lv02d/lis3lv02d.h     |   44 +++++++++++++++++++++++++++-----
->   drivers/misc/lis3lv02d/lis3lv02d_i2c.c |    7 ++++-
->   4 files changed, 87 insertions(+), 9 deletions(-)
->
-> diff --git a/Documentation/misc-devices/lis3lv02d b/Documentation/misc-devices/lis3lv02d
-> index f1a4ec8..af815b9 100644
-> --- a/Documentation/misc-devices/lis3lv02d
-> +++ b/Documentation/misc-devices/lis3lv02d
-> @@ -4,7 +4,8 @@ Kernel driver lis3lv02d
->   Supported chips:
->
->     * STMicroelectronics LIS3LV02DL, LIS3LV02DQ (12 bits precision)
-> -  * STMicroelectronics LIS302DL, LIS3L02DQ, LIS331DL (8 bits)
-> +  * STMicroelectronics LIS302DL, LIS3L02DQ, LIS331DL (8 bits) and
-> +    LIS331DLH (16 bits)
->
->   Authors:
->           Yan Burman <burman.yan@gmail.com>
-> diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
-> index 29d12a7..c0a9199 100644
-> --- a/drivers/misc/lis3lv02d/lis3lv02d.c
-> +++ b/drivers/misc/lis3lv02d/lis3lv02d.c
-> @@ -80,6 +80,14 @@
->   #define LIS3_SENSITIVITY_12B		((LIS3_ACCURACY * 1000) / 1024)
->   #define LIS3_SENSITIVITY_8B		(18 * LIS3_ACCURACY)
->
-> +/*
-> + * LIS3331DLH spec says 1LSBs corresponds 4G/1024 -> 1LSB is 1000/1024 mG.
-> + * Sensitivity values for +/-2G, outdata in 12 bits for +/-2G scale. so 4
-> + * bits adjustment is required
-> + */
-> +#define LIS3DLH_SENSITIVITY_2G		((LIS3_ACCURACY * 1000) / 1024)
-> +#define SHIFT_ADJ_2G			4
+>  include/linux/netfilter/xt_IDLETIMER.h |    8 ++++
+>  net/netfilter/xt_IDLETIMER.c           |   78 +++++++++++++++++++++++++++++---
+>  2 files changed, 79 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/netfilter/xt_IDLETIMER.h b/include/linux/netfilter/xt_IDLETIMER.h
+> index 208ae93..faaa28b 100644
+> --- a/include/linux/netfilter/xt_IDLETIMER.h
+> +++ b/include/linux/netfilter/xt_IDLETIMER.h
+> @@ -4,6 +4,7 @@
+>   * Header file for Xtables timer target module.
+>   *
+>   * Copyright (C) 2004, 2010 Nokia Corporation
+> + *
+
+we can live without that extra line above.
+
+>   * Written by Timo Teras <ext-timo.teras@nokia.com>
+>   *
+>   * Converted to x_tables and forward-ported to 2.6.34
+> @@ -32,12 +33,19 @@
+>  #include <linux/types.h>
+>  
+>  #define MAX_IDLETIMER_LABEL_SIZE 28
+> +#define NLMSG_MAX_SIZE 64
+
+better define this NLMSG_MAX_SIZE inside xt_IDLETIMER.c, this header
+is exported to user-space and that definition is not useful.
+
 > +
-You said later:
->
-> Typo mistake this should be 4G/4096
-Could you fix the comment. Even better, change LIS3331DLH to LIS331DLH
+> +#define NL_EVENT_TYPE_INACTIVE 0
+> +#define NL_EVENT_TYPE_ACTIVE 1
+>  
+>  struct idletimer_tg_info {
+>  	__u32 timeout;
+>  
+>  	char label[MAX_IDLETIMER_LABEL_SIZE];
+>  
+> +	/* Use netlink messages for notification in addition to sysfs */
+> +	__u8 send_nl_msg;
+> +
+>  	/* for kernel module internal use only */
+>  	struct idletimer_tg *timer __attribute__((aligned(8)));
+>  };
 
-Also, if I understand correctly, there is currently no support for 
-changing the sensitivity. It stays at 2G all the time, right? In such 
-case, please add a sentence in this comment that the driver does only 
-support the 2G sensitivity for now.
+you have to define two structures:
 
+struct idletimer_tg_info
+struct idletimer_tg_info_v1
 
->   #define LIS3_DEFAULT_FUZZ_12B		3
->   #define LIS3_DEFAULT_FLAT_12B		3
->   #define LIS3_DEFAULT_FUZZ_8B		1
-> @@ -133,6 +141,19 @@ static s16 lis3lv02d_read_12(struct lis3lv02d *lis3, int reg)
->   	return (s16)((hi << 8) | lo);
->   }
->
-> +/* 12bits for 2G range, 13 bits for 4G range and 14 bits for 8G range */
-> +static s16 lis3lv02d_read_16(struct lis3lv02d *lis3, int reg)
+and register both revisions. This (rudimentary) mechanism allows us to
+keep backward compatibility.
+
+See net/netfilter/xt_socket.c for instance.
+
+> diff --git a/net/netfilter/xt_IDLETIMER.c b/net/netfilter/xt_IDLETIMER.c
+> index f407ebc1..df91e26 100644
+> --- a/net/netfilter/xt_IDLETIMER.c
+> +++ b/net/netfilter/xt_IDLETIMER.c
+> @@ -5,6 +5,7 @@
+>   * After timer expires a kevent will be sent.
+>   *
+>   * Copyright (C) 2004, 2010 Nokia Corporation
+> + *
+>   * Written by Timo Teras <ext-timo.teras@nokia.com>
+>   *
+>   * Converted to x_tables and reworked for upstream inclusion
+> @@ -38,8 +39,10 @@
+>  #include <linux/netfilter/xt_IDLETIMER.h>
+>  #include <linux/kdev_t.h>
+>  #include <linux/kobject.h>
+> +#include <linux/skbuff.h>
+>  #include <linux/workqueue.h>
+>  #include <linux/sysfs.h>
+> +#include <net/net_namespace.h>
+>  
+>  struct idletimer_tg_attr {
+>  	struct attribute attr;
+> @@ -56,6 +59,8 @@ struct idletimer_tg {
+>  	struct idletimer_tg_attr attr;
+>  
+>  	unsigned int refcnt;
+> +	bool send_nl_msg;
+> +	bool active;
+>  };
+>  
+>  static LIST_HEAD(idletimer_tg_list);
+> @@ -63,6 +68,32 @@ static DEFINE_MUTEX(list_mutex);
+>  
+>  static struct kobject *idletimer_tg_kobj;
+>  
+> +static void notify_netlink_uevent(const char *iface, struct idletimer_tg *timer)
 > +{
-> +	u8 lo, hi;
-> +	int v;
+> +	char iface_msg[NLMSG_MAX_SIZE];
+> +	char state_msg[NLMSG_MAX_SIZE];
+> +	char *envp[] = { iface_msg, state_msg, NULL };
+> +	int res;
 > +
-> +	lis3->read(lis3, reg - 1, &lo);
-> +	lis3->read(lis3, reg, &hi);
-> +	v = (int) ((hi << 8) | lo);
+> +	res = snprintf(iface_msg, NLMSG_MAX_SIZE, "INTERFACE=%s",
+> +		       iface);
+> +	if (NLMSG_MAX_SIZE <= res) {
+> +		pr_err("message too long (%d)", res);
+> +		return;
+> +	}
+> +	res = snprintf(state_msg, NLMSG_MAX_SIZE, "STATE=%s",
+> +		       timer->active ? "active" : "inactive");
+> +	if (NLMSG_MAX_SIZE <= res) {
+> +		pr_err("message too long (%d)", res);
+> +		return;
+> +	}
+> +	pr_debug("putting nlmsg: <%s> <%s>\n", iface_msg, state_msg);
+> +	kobject_uevent_env(idletimer_tg_kobj, KOBJ_CHANGE, envp);
+> +	return;
 > +
-> +	return (s16) v >> lis3->shift_adj;
+> +
+
+extra lines.
+
 > +}
-As the method reads 12, 13, or 14 bits, it's a bit tricky to call it 
-"*_read_16". I'd suggest maybe "lis3lv02d_read_12_14", 
-"lis3lv02d_read_adj_16", or even "lis331dlh_read_data". Pick the one you 
-prefer :-)
-
-
-
->   /**
->    * lis3lv02d_get_axis - For the given axis, give the value converted
->    * @axis:      1,2,3 - can also be negative
-> @@ -193,6 +214,7 @@ static void lis3lv02d_get_xyz(struct lis3lv02d *lis3, int *x, int *y, int *z)
->   static int lis3_12_rates[4] = {40, 160, 640, 2560};
->   static int lis3_8_rates[2] = {100, 400};
->   static int lis3_3dc_rates[16] = {0, 1, 10, 25, 50, 100, 200, 400, 1600, 5000};
-> +static int lis3_3dlh_rates[4] = {50, 100, 400, 1000};
->
->   /* ODR is Output Data Rate */
->   static int lis3lv02d_get_odr(struct lis3lv02d *lis3)
-> @@ -265,7 +287,7 @@ static int lis3lv02d_selftest(struct lis3lv02d *lis3, s16 results[3])
->   				(LIS3_IRQ1_DATA_READY | LIS3_IRQ2_DATA_READY));
->   	}
->
-> -	if (lis3->whoami == WAI_3DC) {
-> +	if ((lis3->whoami == WAI_3DC) || (lis3->whoami == WAI_3DLH)) {
->   		ctlreg = CTRL_REG4;
->   		selftest = CTRL4_ST0;
->   	} else {
-> @@ -396,9 +418,17 @@ int lis3lv02d_poweron(struct lis3lv02d *lis3)
->   		lis3->read(lis3, CTRL_REG2, &reg);
->   		if (lis3->whoami ==  WAI_12B)
->   			reg |= CTRL2_BDU | CTRL2_BOOT;
-> +		else if (lis3->whoami ==  WAI_3DLH)
-> +			reg |= CTRL2_BOOT_3DLH;
->   		else
->   			reg |= CTRL2_BOOT_8B;
->   		lis3->write(lis3, CTRL_REG2, reg);
 > +
-> +		if (lis3->whoami ==  WAI_3DLH) {
-> +			lis3->read(lis3, CTRL_REG4, &reg);
-> +			reg |= CTRL4_BDU;
-> +			lis3->write(lis3, CTRL_REG4, reg);
-> +		}
->   	}
->
->   	err = lis3lv02d_get_pwron_wait(lis3);
-> @@ -954,6 +984,16 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3)
->   		lis3->odr_mask = CTRL1_ODR0|CTRL1_ODR1|CTRL1_ODR2|CTRL1_ODR3;
->   		lis3->scale = LIS3_SENSITIVITY_8B;
->   		break;
-> +	case WAI_3DLH:
-> +		pr_info("16 bits 3DLH sensor found\n");
-> +		lis3->read_data = lis3lv02d_read_16;
-> +		lis3->mdps_max_val = 2048; /* 12 bits for 2G */
-> +		lis3->shift_adj = SHIFT_ADJ_2G;
-> +		lis3->pwron_delay = LIS3_PWRON_DELAY_WAI_8B;
-> +		lis3->odrs = lis3_3dlh_rates;
-> +		lis3->odr_mask = CTRL1_DR0 | CTRL1_DR1;
-> +		lis3->scale = LIS3DLH_SENSITIVITY_2G;
-> +		break;
->   	default:
->   		pr_err("unknown sensor type 0x%X\n", lis3->whoami);
->   		return -EINVAL;
-> diff --git a/drivers/misc/lis3lv02d/lis3lv02d.h b/drivers/misc/lis3lv02d/lis3lv02d.h
-> index 2b1482a..c1a545e 100644
-> --- a/drivers/misc/lis3lv02d/lis3lv02d.h
-> +++ b/drivers/misc/lis3lv02d/lis3lv02d.h
-> @@ -26,12 +26,12 @@
->   /*
->    * This driver tries to support the "digital" accelerometer chips from
->    * STMicroelectronics such as LIS3LV02DL, LIS302DL, LIS3L02DQ, LIS331DL,
-> - * LIS35DE, or LIS202DL. They are very similar in terms of programming, with
-> - * almost the same registers. In addition to differing on physical properties,
-> - * they differ on the number of axes (2/3), precision (8/12 bits), and special
-> - * features (freefall detection, click...). Unfortunately, not all the
-> - * differences can be probed via a register.
-> - * They can be connected either via I²C or SPI.
-> + * LIS331DLH, LIS35DE, or LIS202DL. They are very similar in terms of
-> + * programming, with almost the same registers. In addition to differing
-> + * on physical properties, they differ on the number of axes (2/3),
-> + * precision (8/12 bits), and special features (freefall detection,
-> + * click...). Unfortunately, not all the differences can be probed via
-> + * a register. They can be connected either via I²C or SPI.
->    */
->
->   #include <linux/lis3lv02d.h>
-> @@ -96,12 +96,22 @@ enum lis3lv02d_reg {
->   };
->
->   enum lis3_who_am_i {
-> +	WAI_3DLH	= 0x32,	/* 16 bits: LIS331DLH */
->   	WAI_3DC		= 0x33,	/* 8 bits: LIS3DC, HP3DC */
->   	WAI_12B		= 0x3A, /* 12 bits: LIS3LV02D[LQ]... */
->   	WAI_8B		= 0x3B, /* 8 bits: LIS[23]02D[LQ]... */
->   	WAI_6B		= 0x52, /* 6 bits: LIS331DLF - not supported */
->   };
->
-> +enum lis3_type {
-> +	LIS3DC,
-> +	HP3DC,
-> +	LIS3LV02D,
-> +	LIS2302D,
-> +	LIS331DLF,
-> +	LIS331DLH,
-> +};
-> +
->   enum lis3lv02d_ctrl1_12b {
->   	CTRL1_Xen	= 0x01,
->   	CTRL1_Yen	= 0x02,
-> @@ -129,6 +139,27 @@ enum lis3lv02d_ctrl1_3dc {
->   	CTRL1_ODR3	= 0x80,
->   };
->
-> +enum lis331dlh_ctrl1 {
-> +	CTRL1_DR0	= 0x08,
-> +	CTRL1_DR1	= 0x10,
-> +	CTRL1_PM0	= 0x20,
-> +	CTRL1_PM1	= 0x40,
-> +	CTRL1_PM2	= 0x80,
-> +};
-> +
-> +enum lis331dlh_ctrl2 {
-> +	CTRL2_HPEN1	= 0x04,
-> +	CTRL2_HPEN2	= 0x08,
-> +	CTRL2_FDS_3DLH	= 0x10,
-> +	CTRL2_BOOT_3DLH	= 0x80,
-> +};
-> +
-> +enum lis331dlh_ctrl4 {
-> +	CTRL4_STSIGN	= 0x08,
-> +	CTRL4_BLE	= 0x40,
-> +	CTRL4_BDU	= 0x80,
-> +};
-> +
->   enum lis3lv02d_ctrl2 {
->   	CTRL2_DAS	= 0x01,
->   	CTRL2_SIM	= 0x02,
-> @@ -279,6 +310,7 @@ struct lis3lv02d {
->   	int                     data_ready_count[2];
->   	atomic_t		wake_thread;
->   	unsigned char           irq_cfg;
-> +	unsigned int		shift_adj;
->
->   	struct lis3lv02d_platform_data *pdata;	/* for passing board config */
->   	struct mutex		mutex;     /* Serialize poll and selftest */
-> diff --git a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-> index c02fea0..98cf9ba 100644
-> --- a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-> +++ b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-> @@ -90,7 +90,11 @@ static int lis3_i2c_init(struct lis3lv02d *lis3)
->   	if (ret < 0)
->   		return ret;
->
-> -	reg |= CTRL1_PD0 | CTRL1_Xen | CTRL1_Yen | CTRL1_Zen;
-> +	if (lis3->whoami == WAI_3DLH)
-> +		reg |= CTRL1_PM0 | CTRL1_Xen | CTRL1_Yen | CTRL1_Zen;
+>  static
+>  struct idletimer_tg *__idletimer_tg_find_by_label(const char *label)
+>  {
+> @@ -83,6 +114,7 @@ static ssize_t idletimer_tg_show(struct kobject *kobj, struct attribute *attr,
+>  {
+>  	struct idletimer_tg *timer;
+>  	unsigned long expires = 0;
+> +	unsigned long now = jiffies;
+>  
+>  	mutex_lock(&list_mutex);
+>  
+> @@ -92,11 +124,15 @@ static ssize_t idletimer_tg_show(struct kobject *kobj, struct attribute *attr,
+>  
+>  	mutex_unlock(&list_mutex);
+>  
+> -	if (time_after(expires, jiffies))
+> +	if (time_after(expires, now))
+>  		return sprintf(buf, "%u\n",
+> -			       jiffies_to_msecs(expires - jiffies) / 1000);
+> +			       jiffies_to_msecs(expires - now) / 1000);
+>  
+> -	return sprintf(buf, "0\n");
+> +	if (timer->send_nl_msg)
+> +		return sprintf(buf, "0 %d\n",
+> +			jiffies_to_msecs(now - expires) / 1000);
 > +	else
-> +		reg |= CTRL1_PD0 | CTRL1_Xen | CTRL1_Yen | CTRL1_Zen;
+> +		return sprintf(buf, "0\n");
+>  }
+>  
+>  static void idletimer_tg_work(struct work_struct *work)
+> @@ -105,6 +141,9 @@ static void idletimer_tg_work(struct work_struct *work)
+>  						  work);
+>  
+>  	sysfs_notify(idletimer_tg_kobj, NULL, timer->attr.attr.name);
 > +
->   	return lis3->write(lis3, CTRL_REG1, reg);
->   }
->
-> @@ -232,6 +236,7 @@ static int lis3_i2c_runtime_resume(struct device *dev)
->
->   static const struct i2c_device_id lis3lv02d_id[] = {
->   	{"lis3lv02d", 0 },
-> +	{"lis331dlh", LIS331DLH},
-I'm not fully grasping the meaning of this table. But as there seems to 
-be no user of the second value, I imagine this value just has to be 
-different for each entry? If so, I'd recommend to change the 0 to 
-LIS3LV02D, to make it clear that LIS331DLH != 0. Or is this value 
-meaningful for the user, in which case we cannot change it anymore?
+> +	if (timer->send_nl_msg)
+> +		notify_netlink_uevent(timer->attr.attr.name, timer);
+>  }
+>  
+>  static void idletimer_tg_expired(unsigned long data)
+> @@ -113,6 +152,7 @@ static void idletimer_tg_expired(unsigned long data)
+>  
+>  	pr_debug("timer %s expired\n", timer->attr.attr.name);
+>  
+> +	timer->active = false;
+>  	schedule_work(&timer->work);
+>  }
+>  
+> @@ -145,6 +185,8 @@ static int idletimer_tg_create(struct idletimer_tg_info *info)
+>  	setup_timer(&info->timer->timer, idletimer_tg_expired,
+>  		    (unsigned long) info->timer);
+>  	info->timer->refcnt = 1;
+> +	info->timer->send_nl_msg = (info->send_nl_msg == 0) ? false : true;
+> +	info->timer->active = true;
+>  
+>  	mod_timer(&info->timer->timer,
+>  		  msecs_to_jiffies(info->timeout * 1000) + jiffies);
+> @@ -168,14 +210,24 @@ static unsigned int idletimer_tg_target(struct sk_buff *skb,
+>  					 const struct xt_action_param *par)
+>  {
+>  	const struct idletimer_tg_info *info = par->targinfo;
+> +	unsigned long now = jiffies;
+>  
+>  	pr_debug("resetting timer %s, timeout period %u\n",
+>  		 info->label, info->timeout);
+>  
+>  	BUG_ON(!info->timer);
+>  
+> +	info->timer->active = true;
+> +
+> +	if (time_before(info->timer->timer.expires, now)) {
+> +		schedule_work(&info->timer->work);
+> +		pr_debug("Starting timer %s (Expired, Jiffies): %lu, %lu\n",
+> +			 info->label, info->timer->timer.expires, now);
+> +	}
 
-Cheers,
-Éric
+AFAICS, this seems to fix the case in which timer has expired and we
+refresh it without sending the notification.
+
+Should go in a different patch.
+
+> +
+> +	/* TODO: Avoid modifying timers on each packet */
+>  	mod_timer(&info->timer->timer,
+> -		  msecs_to_jiffies(info->timeout * 1000) + jiffies);
+> +		  msecs_to_jiffies(info->timeout * 1000) + now);
+>  
+>  	return XT_CONTINUE;
+>  }
+> @@ -184,8 +236,9 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
+>  {
+>  	struct idletimer_tg_info *info = par->targinfo;
+>  	int ret;
+> +	unsigned long now = jiffies;
+>  
+> -	pr_debug("checkentry targinfo%s\n", info->label);
+> +	pr_debug("checkentry targinfo %s\n", info->label);
+>  
+>  	if (info->timeout == 0) {
+>  		pr_debug("timeout value is zero\n");
+> @@ -204,8 +257,16 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
+>  	info->timer = __idletimer_tg_find_by_label(info->label);
+>  	if (info->timer) {
+>  		info->timer->refcnt++;
+> +		info->timer->active = true;
+> +
+> +		if (time_before(info->timer->timer.expires, now)) {
+> +			schedule_work(&info->timer->work);
+> +			pr_debug("Starting Checkentry timer (Expired, Jiffies): %lu, %lu\n",
+> +				info->timer->timer.expires, now);
+> +		}
+> +
+>  		mod_timer(&info->timer->timer,
+> -			  msecs_to_jiffies(info->timeout * 1000) + jiffies);
+> +			  msecs_to_jiffies(info->timeout * 1000) + now);
+>  
+>  		pr_debug("increased refcnt of timer %s to %u\n",
+>  			 info->label, info->timer->refcnt);
+> @@ -219,6 +280,7 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
+>  	}
+>  
+>  	mutex_unlock(&list_mutex);
+> +
+
+we don't need this.
+
+>  	return 0;
+>  }
+>  
+> @@ -240,7 +302,7 @@ static void idletimer_tg_destroy(const struct xt_tgdtor_param *par)
+>  		kfree(info->timer);
+>  	} else {
+>  		pr_debug("decreased refcnt of timer %s to %u\n",
+> -			 info->label, info->timer->refcnt);
+> +		info->label, info->timer->refcnt);
+
+remove this change.
+
+>  	}
+>  
+>  	mutex_unlock(&list_mutex);
+> @@ -248,6 +310,7 @@ static void idletimer_tg_destroy(const struct xt_tgdtor_param *par)
+>  
+>  static struct xt_target idletimer_tg __read_mostly = {
+>  	.name		= "IDLETIMER",
+> +	.revision	= 1,
+>  	.family		= NFPROTO_UNSPEC,
+>  	.target		= idletimer_tg_target,
+>  	.targetsize     = sizeof(struct idletimer_tg_info),
+> @@ -313,3 +376,4 @@ MODULE_DESCRIPTION("Xtables: idle time monitor");
+>  MODULE_LICENSE("GPL v2");
+>  MODULE_ALIAS("ipt_IDLETIMER");
+>  MODULE_ALIAS("ip6t_IDLETIMER");
+> +MODULE_ALIAS("arpt_IDLETIMER");
+
+Interesting, they are really using this with arptables?
+
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
