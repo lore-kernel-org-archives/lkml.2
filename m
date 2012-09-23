@@ -1,151 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2IWBmN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 21:42:13 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:36495 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab2IWBmL (ORCPT
+	id S1753195Ab2IWBns (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 21:43:48 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:33699 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621Ab2IWBnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 21:42:11 -0400
-Date: Sun, 23 Sep 2012 01:42:10 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: "Bruce, Becky" <bbruce@ti.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
-        "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Hunter, Jon" <jon-hunter@ti.com>,
-        "<snijsure@grid-net.com>" <snijsure@grid-net.com>, fweisbec@gmail.com
-Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
-In-Reply-To: <alpine.DEB.2.00.1209222223080.22590@utopia.booyaka.com>
-Message-ID: <alpine.DEB.2.00.1209230136320.28806@utopia.booyaka.com>
-References: <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com> <20120920220130.GN2449@linux.vnet.ibm.com> <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com> <20120920232114.GO2449@linux.vnet.ibm.com> <alpine.DEB.2.00.1209211803290.8839@utopia.booyaka.com>
- <20120921185827.GC2454@linux.vnet.ibm.com> <alpine.DEB.2.00.1209211900520.8839@utopia.booyaka.com> <20120921195717.GD2454@linux.vnet.ibm.com> <alpine.DEB.2.00.1209221836070.10663@utopia.booyaka.com> <20120922201043.GE2934@linux.vnet.ibm.com>
- <20120922215923.GA13161@linux.vnet.ibm.com> <alpine.DEB.2.00.1209222223080.22590@utopia.booyaka.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 22 Sep 2012 21:43:47 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Slaby <jslaby@suse.cz>
+References: <20120913095623.GB28508@moon>
+	<20120913135131.5b251797@pyramind.ukuu.org.uk>
+	<20120913125401.GK19956@moon>
+	<20120913172507.5039e3c6@pyramind.ukuu.org.uk>
+	<20120922180639.GC11610@moon>
+Date: Sat, 22 Sep 2012 18:43:37 -0700
+In-Reply-To: <20120922180639.GC11610@moon> (Cyrill Gorcunov's message of "Sat,
+	22 Sep 2012 22:06:39 +0400")
+Message-ID: <87txupfr92.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18HzXwUGQU+9nZ6gyDf4SbGmaO1eQ3Nfx8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: openvz.org]
+	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;Cyrill Gorcunov <gorcunov@openvz.org>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul
 
-On Sat, 22 Sep 2012, Paul Walmsley wrote:
+I don't know where this conversation comes from but putting ptys in
+sysfs in combination with the newinstance mount option is completely
+broken unless the device name and device number duplication is handled,
+which I don't see here.
 
-> On Sat, 22 Sep 2012, Paul E. McKenney wrote:
-> 
-> > And here is a patch.  I am still having trouble reproducing the problem,
-> > but figured that I should avoid serializing things.
-> 
-> Thanks, testing this now on v3.6-rc6.
-
-Looks like you solved it!
-
-Tested v3.6-rc6 + your stall diagnostic patch:
-
-    http://marc.info/?l=linux-arm-kernel&m=134827237215882&w=2
-
-on OMAP4430ES2 Pandaboard using omap2plus_defconfig and 
-CONFIG_RCU_CPU_STALL_INFO=y; got the stall warnings.
-
-Then added "rcu: Fix day-one dyntick-idle stall-warning bug" from:
-
-    http://marc.info/?l=linux-arm-kernel&m=134835120600590&w=2
-
-Booted that, and the stall warnings did not appear within 30 minutes.
-
-To confirm that the problem being solved matched your hypothesis, the
-debugging patch below[1] was added to the RCU idle entry/exit code.
-
-Without the bugfix patch, a boot log transcript was obtained
-indicating that the idle loop was entered with tick_nohz_enabled=1
-during a grace period with no callbacks present:
-
-    http://www.pwsan.com/omap/transcripts/20120922-rcu-stall-debug-pre-fix.txt
-
-The debugging events started to appear at 1.867370 seconds into the
-boot.  ENTER was pressed about 464 seconds in; this triggered the
-rcu_sched stall traceback.
-
-With the bugfix patch, a boot log transcript was obtained that
-indicated that the condition under test never occurred after waiting
-about 20 minutes:
-
-    http://www.pwsan.com/omap/transcripts/20120922-rcu-stall-debug-post-fix.txt
-
-Thanks for being so willing to root-cause the issue, Paul; it's 
-appreciated, and it's been quite instructive as well.  Will address some 
-remaining loose ends in follow-up E-mails.
-
-
-- Paul
-
-
-[1] Debugging patch to printk() if the previous idle loop entry occurred 
-with tick_nohz_enabled=1 during a grace period with no RCU callbacks 
-present:
-
-
----
- kernel/rcutree.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index f1eb7ad..f42941b 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -60,6 +60,9 @@
- 
- /* Data structures. */
- 
-+extern int tick_nohz_enabled;
-+static int no_cbs_idle_entry_count;
-+
- static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
- 
- #define RCU_STATE_INITIALIZER(sname, cr) { \
-@@ -400,8 +403,12 @@ void rcu_idle_enter(void)
- 	unsigned long flags;
- 	long long oldval;
- 	struct rcu_dynticks *rdtp;
-+	int cpu;
-+	long totqlen = 0;
-+	struct rcu_data *rdp;
- 
- 	local_irq_save(flags);
-+	rdp = &__get_cpu_var(rcu_sched_data);
- 	rdtp = &__get_cpu_var(rcu_dynticks);
- 	oldval = rdtp->dynticks_nesting;
- 	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
-@@ -410,6 +417,12 @@ void rcu_idle_enter(void)
- 	else
- 		rdtp->dynticks_nesting -= DYNTICK_TASK_NEST_VALUE;
- 	rcu_idle_enter_common(rdtp, oldval);
-+	if (tick_nohz_enabled && rcu_gp_in_progress(rdp->rsp)) {
-+		for_each_possible_cpu(cpu)
-+			totqlen += per_cpu_ptr(rdp->rsp->rda, cpu)->qlen;
-+		if (totqlen == 0)
-+			no_cbs_idle_entry_count = 1;
-+	}
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_enter);
-@@ -503,6 +516,10 @@ void rcu_idle_exit(void)
- 		rdtp->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
- 	rcu_idle_exit_common(rdtp, oldval);
- 	local_irq_restore(flags);
-+	if (no_cbs_idle_entry_count) {
-+		no_cbs_idle_entry_count = 0;
-+		pr_err("* Tickless idle was entered with zero RCU callbacks\n");
-+	}
- }
- EXPORT_SYMBOL_GPL(rcu_idle_exit);
- 
--- 
-1.7.10.4
-
+Cyrill Gorcunov <gorcunov@openvz.org> writes:
+>
+> Guys, you mean something like below? Look, I must admit I'm not really
+> sure if I've done all locking right, and there is no need for additional
+> kref counting on tty_struct. Could you please check if it looks more-less
+> sane (I've tested it but still...)
+>
+> ---
+> From: Cyrill Gorcunov <gorcunov@openvz.org>
+> Subject: tty, pty: Add pty_state attribute to fetch tty flags
+>
+> For checkpoint/restore we need to know if tty has
+> exclusive or packet mode set, as well as if pty
+> is currently locked (just to be able to restore
+> this characteristics).
+>
+> To serve this the pty_state attribute is introduced
+> for pty devices. A typical output looks like
+>
+>  | [root@neptune ~]# cat /sys/devices/virtual/tty/ptmp0/pty_state
+>  | locked: 0 exclusive: 0 packet: 0
+>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: Jiri Slaby <jslaby@suse.cz>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> ---
+>  drivers/tty/pty.c |   45 ++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 44 insertions(+), 1 deletion(-)
+>
+> Index: tty.git/drivers/tty/pty.c
+> ===================================================================
+> --- tty.git.orig/drivers/tty/pty.c
+> +++ tty.git/drivers/tty/pty.c
+> @@ -283,6 +283,46 @@ done:
+>  	return 0;
+>  }
+>  
+> +static ssize_t pty_show_state(struct device *dev,
+> +			      struct device_attribute *attr,
+> +			      char *buf)
+> +{
+> +	struct tty_struct *tty = dev_get_drvdata(dev);
+> +	int locked, exclusive, packet;
+> +
+> +	tty_lock(tty);
+> +	locked = test_bit(TTY_PTY_LOCK, &tty->flags);
+> +	exclusive = test_bit(TTY_EXCLUSIVE, &tty->flags);
+> +	packet = tty->packet;
+> +	tty_unlock(tty);
+> +
+> +	return snprintf(buf, PAGE_SIZE, "locked: %d exclusive: %d packet: %d\n",
+> +			locked, exclusive, packet);
+> +}
+> +
+> +static DEVICE_ATTR(pty_state, S_IRUSR | S_IRGRP, pty_show_state, NULL);
+> +
+> +static struct attribute *pty_state_dev_attrs[] = {
+> +	&dev_attr_pty_state.attr,
+> +	NULL,
+> +};
+> +
+> +static const struct attribute_group pty_dev_attr_group = {
+> +	.attrs = pty_state_dev_attrs,
+> +};
+> +
+> +static const struct attribute_group *pty_dev_attr_groups[] = {
+> +	&pty_dev_attr_group,
+> +	NULL,
+> +};
+> +
+> +static int pty_register_attr(struct tty_driver *driver, struct tty_struct *tty)
+> +{
+> +	struct device *dev = tty_register_device_attr(driver, tty->index, tty->dev,
+> +						      (void *)tty, pty_dev_attr_groups);
+> +	return PTR_RET(dev);
+> +}
+> +
+>  /**
+>   *	pty_common_install		-	set up the pty pair
+>   *	@driver: the pty driver
+> @@ -351,7 +391,9 @@ static int pty_common_install(struct tty
+>  
+>  	tty_driver_kref_get(driver);
+>  	tty->count++;
+> -	return 0;
+> +
+> +	return pty_register_attr(driver, tty);
+> +
+>  err_free_termios:
+>  	if (legacy)
+>  		tty_free_termios(tty);
+> @@ -368,6 +410,7 @@ err:
+>  
+>  static void pty_cleanup(struct tty_struct *tty)
+>  {
+> +	tty_unregister_device(tty->driver, tty->index);
+>  	kfree(tty->port);
+>  }
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
