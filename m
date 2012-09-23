@@ -1,53 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab2IWRo5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 13:44:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43116 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754322Ab2IWRo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 13:44:56 -0400
-Message-ID: <505F4A85.6050403@zytor.com>
-Date: Sun, 23 Sep 2012 10:44:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1754422Ab2IWRq4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 13:46:56 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60687 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754361Ab2IWRqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 13:46:54 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        containers@lists.linux-foundation.org,
-        Dave Hansen <haveblue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>, sukadev@linux.vnet.ibm.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH 0/4] devpts: fix devpts mount behavior
-References: <20120124000517.GA28878@sergelap> <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com> <20120124002555.GA29534@sergelap> <CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com> <20120124010758.GJ23916@ZenIV.linux.org.uk> <m1k44gj1cu.fsf@fess.ebiederm.org> <20120124220247.GA26353@hallyn.com> <CAPXgP13_gczQmG_USAp0p2AuTfxkzAvzHvjbZY_rbbLH-4rDyg@mail.gmail.com> <20120124231601.GA4470@sergelap> <CAPXgP12REAwmDORzdGJhsxZKU8nhiauCxoVdKa8Eifw4MWWtgA@mail.gmail.com> <20120128195103.GA11299@sergelap> <87txup763i.fsf_-_@xmission.com> <505F3D48.7080103@zytor.com> <87txuo3abb.fsf@xmission.com>
-In-Reply-To: <87txuo3abb.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <505F4949.2090509@redhat.com>
+References: <1346775269-12191-1-git-send-email-peter.senna@gmail.com>
+	<505F4949.2090509@redhat.com>
+Date: Sun, 23 Sep 2012 19:46:53 +0200
+Message-ID: <CA+MoWDree3U=o8kiMoz5L-3EKC8oBWov+qPbUr5VWMpGKnAZdA@mail.gmail.com>
+Subject: Re: [PATCH 5/5] drivers/media/platform/omap3isp/isp.c: fix error
+ return code
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2012 10:42 AM, Eric W. Biederman wrote:
+On Sun, Sep 23, 2012 at 7:39 PM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+> Laurent,
 >
->> Greg, Kay, any idea how to make ptmx show up in devtmpfs as a symlink
->> to pts/pmtx instead of as a device node?
+> Could you please review this patch?
 >
-> The conversation stalled in January with that very question.
+> Peter,
 >
-> What I am proposing doesn't conflict with any effort like that.
+> Please, always c/c the driver maintainer/author on patches you submit.
+>
+> You can check it with scripts/get_maintainer.pl.
+Sorry for that. I'll be more careful next time. Thanks!
+
+>
+> Regards,
+> Mauro
+>
+> -------- Mensagem original --------
+> Assunto: [PATCH 5/5] drivers/media/platform/omap3isp/isp.c: fix error return code
+> Data: Tue,  4 Sep 2012 18:14:25 +0200
+> De: Peter Senna Tschudin <peter.senna@gmail.com>
+> Para: Mauro Carvalho Chehab <mchehab@infradead.org>
+> CC: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr, linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+>
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+>
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+>
+> // </smpl>
+>
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> ---
+>  drivers/media/platform/omap3isp/isp.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/media/platform/omap3isp/isp.c b/drivers/media/platform/omap3isp/isp.c
+> index e0096e0..91fcaef 100644
+> --- a/drivers/media/platform/omap3isp/isp.c
+> +++ b/drivers/media/platform/omap3isp/isp.c
+> @@ -2102,8 +2102,10 @@ static int __devinit isp_probe(struct platform_device *pdev)
+>         if (ret < 0)
+>                 goto error;
+>
+> -       if (__omap3isp_get(isp, false) == NULL)
+> +       if (__omap3isp_get(isp, false) == NULL) {
+> +               ret = -EBUSY; /* Not sure if EBUSY is best for here */
+>                 goto error;
+> +       }
+>
+>         ret = isp_reset(isp);
+>         if (ret < 0)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 >
 
-I just looked at the archive, and it apparently really comes down to 
-"noone wants to take responsibility for it".  The real problem appears 
-to be that with devtmpfs device name policy is actually split between 
-user space and kernel, which is the worst possible configuration.
 
-	-hpa
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Peter
