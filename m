@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab2IWNCd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 09:02:33 -0400
-Received: from ares07.inai.de ([5.9.24.206]:46406 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753267Ab2IWNCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 09:02:31 -0400
-Date: Sun, 23 Sep 2012 15:02:30 +0200 (CEST)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Miklos Szeredi <miklos@szeredi.hu>
-cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>, viro@ZenIV.linux.org.uk,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        dhowells@redhat.com, sedat.dilek@googlemail.com
-Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v15)
-In-Reply-To: <877grozaih.fsf@tucsk.pomaz.szeredi.hu>
-Message-ID: <alpine.LNX.2.01.1209231500400.15692@nerf07.vanv.qr>
-References: <1348167330-30288-1-git-send-email-miklos@szeredi.hu> <9647.1348169684@jrobl> <877grozaih.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1753554Ab2IWN12 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 09:27:28 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61713 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab2IWN1Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 09:27:25 -0400
+Date: Sun, 23 Sep 2012 09:30:12 -0400
+From: "Maxin B. John" <maxin.john@gmail.com>
+To: Peter Korsgaard <jacmet@sunsite.dk>,
+        "Jean Delvare (PC drivers,core)" <khali@linux-fr.org>
+Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 1/2] i2c: busses: i2c-ocores: Fix documentation filename
+Message-ID: <20120923133012.GA22830@linux-3ix0.site>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fixes the wrong filename.
 
-On Thursday 2012-09-20 22:48, Miklos Szeredi wrote:
->
->> Miklos, how do you think about this?
->> <http://marc.info/?l=linux-kernel&m=123938533724484&w=2>
->> Do you think UnionMount is totally gone?
->
->Unionmount provides almost the same functionality as overlayfs.  The big
->difference between the two is that unionmounts resides 100% in the VFS
->while 95% of overlayfs is plain filesystem code.  I think that's the
->biggest advantage: filesystem code is easier to maintain, has less
->impact on core complexity, etc.
-
-The big advantage is actually that the unioned view is in a separate
-namespace (vfsmount).
-
->Aufs provides much better filesystem semantics than either unionmounts
->or overlayfs.  But that does come at a price:
->
->aufs:       98 files changed, 29893 insertions(+), 7 deletions(-)
->overlayfs:  22 files changed, 2981 insertions(+), 10 deletions(-)
-
-In two years time when sufficient user requests have come in,
-overlayfs is likely to have wrong as much.
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
+index bffd550..e39c122 100644
+--- a/drivers/i2c/busses/i2c-ocores.c
++++ b/drivers/i2c/busses/i2c-ocores.c
+@@ -11,7 +11,7 @@
+ 
+ /*
+  * This driver can be used from the device tree, see
+- *     Documentation/devicetree/bindings/i2c/ocore-i2c.txt
++ *     Documentation/devicetree/bindings/i2c/i2c-ocores.txt
+  */
+ #include <linux/kernel.h>
+ #include <linux/module.h>
