@@ -1,120 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2IWRji (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 13:39:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32673 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119Ab2IWRjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 13:39:37 -0400
-Message-ID: <505F4949.2090509@redhat.com>
-Date: Sun, 23 Sep 2012 14:39:21 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1754369Ab2IWRmn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 13:42:43 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:46949 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290Ab2IWRml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 13:42:41 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        containers@lists.linux-foundation.org,
+        Dave Hansen <haveblue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>, sukadev@linux.vnet.ibm.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+References: <20120124000517.GA28878@sergelap>
+	<CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
+	<20120124002555.GA29534@sergelap>
+	<CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
+	<20120124010758.GJ23916@ZenIV.linux.org.uk>
+	<m1k44gj1cu.fsf@fess.ebiederm.org> <20120124220247.GA26353@hallyn.com>
+	<CAPXgP13_gczQmG_USAp0p2AuTfxkzAvzHvjbZY_rbbLH-4rDyg@mail.gmail.com>
+	<20120124231601.GA4470@sergelap>
+	<CAPXgP12REAwmDORzdGJhsxZKU8nhiauCxoVdKa8Eifw4MWWtgA@mail.gmail.com>
+	<20120128195103.GA11299@sergelap> <87txup763i.fsf_-_@xmission.com>
+	<505F3D48.7080103@zytor.com>
+Date: Sun, 23 Sep 2012 10:42:32 -0700
+In-Reply-To: <505F3D48.7080103@zytor.com> (H. Peter Anvin's message of "Sun,
+	23 Sep 2012 09:48:08 -0700")
+Message-ID: <87txuo3abb.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Fwd: [PATCH 5/5] drivers/media/platform/omap3isp/isp.c: fix error
- return code
-References: <1346775269-12191-1-git-send-email-peter.senna@gmail.com>
-In-Reply-To: <1346775269-12191-1-git-send-email-peter.senna@gmail.com>
-X-Enigmail-Version: 1.4.4
-X-Forwarded-Message-Id: <1346775269-12191-1-git-send-email-peter.senna@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------090503090104080708050501"
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18QboWlK56yesR1Hf5gqixHCeMwow9D1cs=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 0/4] devpts: fix devpts mount behavior
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090503090104080708050501
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+"H. Peter Anvin" <hpa@zytor.com> writes:
 
-Laurent,
+> On 09/22/2012 08:47 PM, Eric W. Biederman wrote:
+>> Making /dev/ptmx a symlink sounds simple, but in practice no one could
+>> actually figure out how to make it happen.
+>
+> This feels particularly ridiculous since udev now requires devtmpfs
+> (as in it will no longer work without it), which means this is all
+> done in the kernel, so we should just be able to fix this in the
+> kernel.
 
-Could you please review this patch?
+Some versions of udev require devtmpfs.  At best we could have something
+conditional in the kernel that does this.
 
-Peter,
+> Greg, Kay, any idea how to make ptmx show up in devtmpfs as a symlink
+> to pts/pmtx instead of as a device node?
 
-Please, always c/c the driver maintainer/author on patches you submit.
+The conversation stalled in January with that very question.
 
-You can check it with scripts/get_maintainer.pl.
+What I am proposing doesn't conflict with any effort like that.
 
-Regards,
-Mauro
-
--------- Mensagem original --------
-Assunto: [PATCH 5/5] drivers/media/platform/omap3isp/isp.c: fix error return code
-Data: Tue,  4 Sep 2012 18:14:25 +0200
-De: Peter Senna Tschudin <peter.senna@gmail.com>
-Para: Mauro Carvalho Chehab <mchehab@infradead.org>
-CC: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr, linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
-
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
----
- drivers/media/platform/omap3isp/isp.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/media/platform/omap3isp/isp.c b/drivers/media/platform/omap3isp/isp.c
-index e0096e0..91fcaef 100644
---- a/drivers/media/platform/omap3isp/isp.c
-+++ b/drivers/media/platform/omap3isp/isp.c
-@@ -2102,8 +2102,10 @@ static int __devinit isp_probe(struct platform_device *pdev)
- 	if (ret < 0)
- 		goto error;
- 
--	if (__omap3isp_get(isp, false) == NULL)
-+	if (__omap3isp_get(isp, false) == NULL) {
-+		ret = -EBUSY; /* Not sure if EBUSY is best for here */
- 		goto error;
-+	}
- 
- 	ret = isp_reset(isp);
- 	if (ret < 0)
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-media" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
---------------090503090104080708050501
-Content-Type: text/plain; charset=UTF-8;
- name="=?ISO-8859-1?Q?Se=E7=E3o_da_mensagem_anexada?="
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename*0*=ISO-8859-1''%53%65%E7%E3%6F%20%64%61%20%6D%65%6E%73%61%67%65;
- filename*1*=%6D%20%61%6E%65%78%61%64%61
-
-
---------------090503090104080708050501--
+Eric
