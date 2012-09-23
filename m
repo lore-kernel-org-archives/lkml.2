@@ -1,33 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2IWEeU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 00:34:20 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:55806 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab2IWEeS (ORCPT
+	id S1753747Ab2IWEff (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 00:35:35 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:43694 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab2IWEee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 00:34:18 -0400
+	Sun, 23 Sep 2012 00:34:34 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: ACPICA related patch queue for Linux-3.7
-Date: Sun, 23 Sep 2012 00:33:48 -0400
-Message-Id: <1348374851-20378-1-git-send-email-lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
+        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 05/23] ACPICA: Add Windows8/Server2012 string for _OSI method.
+Date: Sun, 23 Sep 2012 00:33:53 -0400
+Message-Id: <a57f7f9175b8ccbc9df83ac13860488913115de4.1348371388.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.1.396.g16eed7c
+In-Reply-To: <1348374851-20378-1-git-send-email-lenb@kernel.org>
+References: <1348374851-20378-1-git-send-email-lenb@kernel.org>
+In-Reply-To: <a950c135e5b2be6ef7518d54d98a7901db1b377a.1348371388.git.len.brown@intel.com>
+References: <a950c135e5b2be6ef7518d54d98a7901db1b377a.1348371388.git.len.brown@intel.com>
+Reply-To: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is my ACPICA branch queued for Linux-3.7
+From: Bob Moore <robert.moore@intel.com>
 
-Please let me know if you see troubles with any of them.
+This change adds a new _OSI string, "Windows 2012" for both Windows 8
+and Windows Server 2012.
 
-Note that the acpidump utility is also in here.
-Since it lost its home on kernel.org in pmtools,
-and it depends on kernel headers, it seemed to
-make sense to put it here.  Yes, it is a bit dusty,
-and could use some clean-up...
+>From Microsoft document "How to Identify the Windows Version in ACPI
+by Using _OSI", July 13, 2012.
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/acpica/aclocal.h | 1 +
+ drivers/acpi/acpica/utosi.c   | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
+index cc80fe1..493529a 100644
+--- a/drivers/acpi/acpica/aclocal.h
++++ b/drivers/acpi/acpica/aclocal.h
+@@ -932,6 +932,7 @@ struct acpi_bit_register_info {
+ #define ACPI_OSI_WIN_VISTA_SP1          0x09
+ #define ACPI_OSI_WIN_VISTA_SP2          0x0A
+ #define ACPI_OSI_WIN_7                  0x0B
++#define ACPI_OSI_WIN_8                  0x0C
+ 
+ #define ACPI_ALWAYS_ILLEGAL             0x00
+ 
+diff --git a/drivers/acpi/acpica/utosi.c b/drivers/acpi/acpica/utosi.c
+index 34ef0bd..676285d 100644
+--- a/drivers/acpi/acpica/utosi.c
++++ b/drivers/acpi/acpica/utosi.c
+@@ -73,6 +73,7 @@ static struct acpi_interface_info acpi_default_supported_interfaces[] = {
+ 	{"Windows 2006 SP1", NULL, 0, ACPI_OSI_WIN_VISTA_SP1},	/* Windows Vista SP1 - Added 09/2009 */
+ 	{"Windows 2006 SP2", NULL, 0, ACPI_OSI_WIN_VISTA_SP2},	/* Windows Vista SP2 - Added 09/2010 */
+ 	{"Windows 2009", NULL, 0, ACPI_OSI_WIN_7},	/* Windows 7 and Server 2008 R2 - Added 09/2009 */
++	{"Windows 2012", NULL, 0, ACPI_OSI_WIN_8},	/* Windows 8 and Server 2012 - Added 08/2012 */
+ 
+ 	/* Feature Group Strings */
+ 
+-- 
+1.7.12.1.396.g16eed7c
 
