@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2IWEfx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 00:35:53 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:59900 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab2IWEfA (ORCPT
+	id S1753938Ab2IWEfv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 00:35:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41520 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab2IWEez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 00:35:00 -0400
+	Sun, 23 Sep 2012 00:34:55 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
         Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 12/23] ACPICA: Update version to 20120816.
-Date: Sun, 23 Sep 2012 00:34:00 -0400
-Message-Id: <7560452c1a4934049811fb6622fb753e8ad1c647.1348371388.git.len.brown@intel.com>
+Subject: [PATCH 11/23] ACPICA: Add struct header support for _FDE, _GRT, _GTM, and _SRT names.
+Date: Sun, 23 Sep 2012 00:33:59 -0400
+Message-Id: <84be5d687f8060ad96d5a4a060e207a0ec5cc016.1348371388.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.1.396.g16eed7c
 In-Reply-To: <1348374851-20378-1-git-send-email-lenb@kernel.org>
 References: <1348374851-20378-1-git-send-email-lenb@kernel.org>
@@ -27,28 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bob Moore <robert.moore@intel.com>
 
-Version 20120816.
+Added structs for the buffers related to these predefined names,
+in acbuffer.h
 
 Signed-off-by: Bob Moore <robert.moore@intel.com>
 Signed-off-by: Feng Tang <feng.tang@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- include/acpi/acpixf.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/acpi/acbuffer.h | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
 
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index 270517d..03457a9 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -47,7 +47,7 @@
+diff --git a/include/acpi/acbuffer.h b/include/acpi/acbuffer.h
+index 2c3b447..a1e45cd 100644
+--- a/include/acpi/acbuffer.h
++++ b/include/acpi/acbuffer.h
+@@ -45,6 +45,11 @@
+ #define __ACBUFFER_H__
  
- /* Current ACPICA subsystem version in YYYYMMDD format */
+ /*
++ * Contains buffer structures for these predefined names:
++ * _FDE, _GRT, _GTM, _PLD, _SRT
++ */
++
++/*
+  * Note: C bitfields are not used for this reason:
+  *
+  * "Bitfields are great and easy to read, but unfortunately the C language
+@@ -56,6 +61,44 @@
+  * See http://stackoverflow.com/a/1053662/41661
+  */
  
--#define ACPI_CA_VERSION                 0x20120711
-+#define ACPI_CA_VERSION                 0x20120816
- 
- #include "acconfig.h"
- #include "actypes.h"
++/* _FDE return value */
++
++struct acpi_fde_info {
++	u32 floppy0;
++	u32 floppy1;
++	u32 floppy2;
++	u32 floppy3;
++	u32 tape;
++};
++
++/*
++ * _GRT return value
++ * _SRT input value
++ */
++struct acpi_grt_info {
++	u16 year;
++	u8 month;
++	u8 day;
++	u8 hour;
++	u8 minute;
++	u8 second;
++	u8 valid;
++	u16 milliseconds;
++	u16 timezone;
++	u8 daylight;
++	u8 reserved[3];
++};
++
++/* _GTM return value */
++
++struct acpi_gtm_info {
++	u32 pio_speed0;
++	u32 dma_speed0;
++	u32 pio_speed1;
++	u32 dma_speed1;
++	u32 flags;
++};
++
+ /*
+  * Formatted _PLD return value. The minimum size is a package containing
+  * one buffer.
 -- 
 1.7.12.1.396.g16eed7c
 
