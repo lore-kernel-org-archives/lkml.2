@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab2IWSW7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 14:22:59 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38187 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753922Ab2IWSWa (ORCPT
+	id S1754068Ab2IWSod (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 14:44:33 -0400
+Received: from host2.bln.innominate.com ([77.245.32.75]:59680 "EHLO
+	home.innominate.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753842Ab2IWSoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 14:22:30 -0400
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: "Maxin B. John" <maxin.john@gmail.com>
-Cc: "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
-        "Wolfram Sang \(embedded platforms\)" <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        "Jean Delvare \(PC drivers\, core\)" <khali@linux-fr.org>
-Subject: Re: [PATCH 2/2] i2c: busses: i2c-ocores: switch to devm_request_and_ioremap
-References: <20120923133358.GA22861@linux-3ix0.site>
-Date: Sun, 23 Sep 2012 20:22:26 +0200
-In-Reply-To: <20120923133358.GA22861@linux-3ix0.site> (Maxin B. John's message
-	of "Sun, 23 Sep 2012 09:33:58 -0400")
-Message-ID: <874nmoa9b1.fsf@macbook.be.48ers.dk>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
+	Sun, 23 Sep 2012 14:44:32 -0400
+Date: Sun, 23 Sep 2012 20:44:30 +0200
+From: Lutz Jaenicke <ljaenicke@innominate.com>
+To: leroy christophe <christophe.leroy@c-s.fr>
+Cc: David S Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] lxt PHY: Support for the buggy LXT973 rev A2
+Message-ID: <20120923184430.GA29119@lutz.bln.innominate.local>
+Mail-Followup-To: leroy christophe <christophe.leroy@c-s.fr>,
+	David S Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <201209101545.q8AFjn7u021483@localhost.localdomain>
+ <20120910181747.GA5960@lutz.bln.innominate.local>
+ <505DE592.8060103@c-s.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <505DE592.8060103@c-s.fr>
+Organization: Innominate Security Technologies AG
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Maxin" == Maxin B John <maxin.john@gmail.com> writes:
+On Sat, Sep 22, 2012 at 06:21:38PM +0200, leroy christophe wrote:
+> 
+> Le 10/09/2012 20:17, Lutz Jaenicke a écrit :
+> >On Mon, Sep 10, 2012 at 05:45:49PM +0200, Christophe Leroy wrote:
+> >>This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding
+> >>precautions linked to ERRATA Item 4:
+> >>
+> >>Item 4: MDIO Interface and Repeated Polling
+> >>Problem: Repeated polling of odd-numbered registers via the MDIO interface
+> >>	randomly returns the contents of the previous even register.
+> >>Implication: Managed applications may not obtain the correct register contents
+> >>	when a particular register is monitored for device status.
+> >>Workaround: None.
+> >>Status: This erratum has been previously fixed (in rev A3)
+> >Hmm. Were did you get the hardware from? We have been using LXT973 in
+> >our products and the A2 was replaced by A3 in 2003.
+> >
+> >Best regards,
+> >	Lutz
+> They are custom boards that my company manufactures. Most boards
+> manufactured before 2006 or 2007 have this buggy chip.
 
- Maxin> This drops a few lines of code and allows common APIs to handle
- Maxin> those for us.
+Ok, so this problem indeed is related to (very) old hardware.
+I would not be sure whether the hack needed to work around
+this bug should be added one decade after the chip has
+been fixed.
 
- Maxin> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-
-Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
-
+Best regards,
+	Lutz
+PS.Yes, we have used the same workaround with such hardware, fortunately
+we only had a few first boards using A2 and the series production
+started just with A3 at that time.
 -- 
-Bye, Peter Korsgaard
+Dr.-Ing. Lutz Jänicke
+CTO
+Innominate Security Technologies AG  /protecting industrial networks/
+tel: +49.30.921028-200
+fax: +49.30.921028-020
+Rudower Chaussee 13
+D-12489 Berlin, Germany
+www.innominate.com
+
+Register Court: AG Charlottenburg, HR B 81603
+Management Board: Dirk Seewald
+Chairman of the Supervisory Board: Christoph Leifer
