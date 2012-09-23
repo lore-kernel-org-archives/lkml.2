@@ -1,127 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab2IWNdG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 09:33:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750964Ab2IWNdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 09:33:04 -0400
-Message-ID: <505F0F74.1040508@redhat.com>
-Date: Sun, 23 Sep 2012 10:32:36 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1752993Ab2IWN4y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 09:56:54 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:48692 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab2IWN4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 09:56:52 -0400
+Date: Sun, 23 Sep 2012 15:56:35 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Antony Pavlov <antonynpavlov@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Maarten ter Huurne <maarten@treewalker.org>
+Subject: Re: [PATCH v2 0/3] MIPS: JZ4740: Move PWM driver to PWM framework
+Message-ID: <20120923135635.GB13842@linux-mips.org>
+References: <1347278719-15276-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120922074144.GC2538@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Shaun Ruffell <sruffell@digium.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Kim Phillips <kim.phillips@freescale.com>, linux-edac@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: Linux 3.6-rc6
-References: <CA+55aFxMmqG32dJXhUe7N+aS=M1q_5hf7iTfsnPKDU4d610EoQ@mail.gmail.com> <20120922005905.GA8335@digium.com> <CA+55aFzCzF5DZvR6i=Jg+0abSzN_nbAVr7Ef1dzmR3_NNLWmfw@mail.gmail.com>
-In-Reply-To: <CA+55aFzCzF5DZvR6i=Jg+0abSzN_nbAVr7Ef1dzmR3_NNLWmfw@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120922074144.GC2538@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sat, Sep 22, 2012 at 09:41:45AM +0200, Thierry Reding wrote:
 
-Em 22-09-2012 15:57, Linus Torvalds escreveu:
-> On Fri, Sep 21, 2012 at 5:59 PM, Shaun Ruffell <sruffell@digium.com> wrote:
->>
->> I posted patches [1,2,3] that resolve the issue for me. Shaohui Xie
->> also hit the issue and posted a slightly different patch [4]. The
->> patches are currently waiting for Mauro, who I understand is
->> catching up since returning from San Diego, to check them out.
->>
->> [1] http://marc.info/?l=linux-kernel&m=134764595921752&w=2
->> [2] http://marc.info/?l=linux-kernel&m=134764594721747&w=2
->> [3] http://marc.info/?l=linux-kernel&m=134764597921761&w=2
->> [4] http://marc.info/?l=linux-kernel&m=134753579818528&w=2
+> Have you had a chance to look at this? It is the last remaining PWM
+> driver that isn't moved to the PWM framework yet. All the others are
+> either in linux-next already and queued for 3.7 or have recently got
+> Acked-by the respective maintainers (Unicore32). Patches 2 and 3 were
+> already acked and tested by Lars-Peter who did the initial porting.
+> Patch 1 can probably be dropped since I seem to be the only one running
+> into that issue.
 > 
-> That first patch needs a sign-off from you, since you are passing on
-> somebody elses patch.
-> 
-> Looking at that patch, the patch seems to be a memory leak (?) leaking
-> the "channels" allocation, along with fixing an odd and incorrect
-> kfree (and access) of mci->csrows[i]. If that is correct, please write
-> a proper changelog. The current changelog for that thing is totally
-> pointless, and doesn't actually explain what the patch *does*.
-> 
-> I'd also like some ack's from people, and I'd love to know which
-> commit introduced the problem(s). If this problem is new to 3.6, I
-> want to know what caused it, and if it is *not* new, then the thing
-> needs to be marked for stable. Please?
+> I really want to take this in for 3.7 so I can use the 3.7 cycle to
+> transition from the legacy API to the new API and possibly even get rid
+> of the legacy parts altogether. However I don't want to do this without
+> the Acked-by from the MIPS maintainer.
 
-This was caused by the edac core rewrite I made, merged for 3.6, that
-replaced the usage of raw kobj in order to use, instead, struct device.
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
-I tested the patches on several machines and they're OK. It took
-me some time to test them, as I got flooded with ~400 patches for
-review while I was out for KS/2012... It is taking some time for me to
-dig into each of them, especially since I hit into some internal dead
-lines.
+for 2/3 and 3/3.
 
-The good news is that we are equipping several machines at Red Hat labs
-with different memory configurations, with is allowing us to do a
-comprehensive testset on the EDAC x86 drivers. We've got already 
-some longstanding bugs there, as well as a few recent regressions.
+I now can reproduce the build error that 1/3 is supposed to fix.  The issue
+is not as first suspected an odd bug in just your compiler.  The tree
+(I was testing on today's -next) is building fine when compiling in-tree
+but fails out of tree:
 
-So, in addition to the bugs noticed by Shaun and Fengguang, 
-I also got bug fixes for 3 EDAC drivers (sb_edac, i3200 and i5000).
+  CC      arch/mips/jz4740/irq.o
+In file included from /home/ralf/src/linux/linux-jz4740/arch/mips/include/asm/irq.h:18:0,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/irq.h:27,
+                 from /home/ralf/src/linux/linux-jz4740/include/asm-generic/hardirq.h:12,
+                 from /home/ralf/src/linux/linux-jz4740/arch/mips/include/asm/hardirq.h:16,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/hardirq.h:7,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/interrupt.h:12,
+                 from /home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c:19:
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.h:20:39: error: ‘struct irq_data’ declared inside parameter list [-Werror]
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.h:20:39: error: its scope is only this definition or declaration, which is probably not what you want [-Werror]
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.h:21:38: error: ‘struct irq_data’ declared inside parameter list [-Werror]
+In file included from /home/ralf/src/linux/linux-jz4740/include/linux/irq.h:356:0,
+                 from /home/ralf/src/linux/linux-jz4740/include/asm-generic/hardirq.h:12,
+                 from /home/ralf/src/linux/linux-jz4740/arch/mips/include/asm/hardirq.h:16,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/hardirq.h:7,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/interrupt.h:12,
+                 from /home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c:19:
+/home/ralf/src/linux/linux-jz4740/include/linux/irqdesc.h:73:33: error: ‘NR_IRQS’ undeclared here (not in a function)
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c: In function ‘jz4740_cascade’:
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c:49:39: error: ‘JZ4740_IRQ_BASE’ undeclared (first use in this function)
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c:49:39: note: each undeclared identifier is reported only once for each function it appears in
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c: At top level:
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c:62:6: error: conflicting types for ‘jz4740_irq_suspend’
+In file included from /home/ralf/src/linux/linux-jz4740/arch/mips/include/asm/irq.h:18:0,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/irq.h:27,
+                 from /home/ralf/src/linux/linux-jz4740/include/asm-generic/hardirq.h:12,
+                 from /home/ralf/src/linux/linux-jz4740/arch/mips/include/asm/hardirq.h:16,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/hardirq.h:7,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/interrupt.h:12,
+                 from /home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c:19:
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.h:20:13: note: previous declaration of ‘jz4740_irq_suspend’ was here
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c:68:6: error: conflicting types for ‘jz4740_irq_resume’
+In file included from /home/ralf/src/linux/linux-jz4740/arch/mips/include/asm/irq.h:18:0,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/irq.h:27,
+                 from /home/ralf/src/linux/linux-jz4740/include/asm-generic/hardirq.h:12,
+                 from /home/ralf/src/linux/linux-jz4740/arch/mips/include/asm/hardirq.h:16,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/hardirq.h:7,
+                 from /home/ralf/src/linux/linux-jz4740/include/linux/interrupt.h:12,
+                 from /home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c:19:
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.h:21:13: note: previous declaration of ‘jz4740_irq_resume’ was here
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c: In function ‘arch_init_irq’:
+/home/ralf/src/linux/linux-jz4740/arch/mips/jz4740/irq.c:91:41: error: ‘JZ4740_IRQ_BASE’ undeclared (first use in this function)
 
-> Finally, if I'm supposed to apply patches, I really *really* want to
-> see the patches sent to me explicitly, instead of having people post
-> pointers to them on the web. I don't apply random stuff on the web, I
-> want the "please take this patch" to be a case of people *explicitly*
-> sending it to me with the proper sign-offs in place etc.
-> 
-> IOW, the "hey, you should apply that random patch that wasn't even
-> sent to you" approach is not something I accept.
+Which (while your patch is probably fine, I haven't tested) this seems to
+be a build system issue, so should be preferably be fixed there.
 
-I just updated the patches today on my git tree (so, they should be
-popping up tomorrow at -next).
+Marek, the whole email exchange is archived at
+http://www.linux-mips.org/archives/linux-mips/2012-09/threads.html
 
-So, I will send you tomorrow a pull request with all fixes I'm aware 
-of for edac, after the -next merging.
-
-If you prefer otherwise to merge them today, you can get those patches
-with my SOB at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
-
-
-Thanks!
-Mauro
-
--
-
-The following changes since commit 5698bd757d55b1bb87edd1a9744ab09c142abfc2:
-
-  Linux 3.6-rc6 (2012-09-16 14:58:51 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
-
-for you to fetch changes up to ded6223cfb75c4b5f61a285eee10df98a0291460:
-
-  sb_edac: Avoid overflow errors at memory size calculation (2012-09-23 10:16:36 -0300)
-
-----------------------------------------------------------------
-Fengguang Wu (1):
-      edac_mc: fix kfree calls in the error path
-
-Mauro Carvalho Chehab (3):
-      i3200_edac: Fix memory rank size
-      i5000: Fix the memory size calculation with 2R memories
-      sb_edac: Avoid overflow errors at memory size calculation
-
-Shaun Ruffell (2):
-      edac: edac_mc_free() cannot assume mem_ctl_info is registered in sysfs
-      edac: edac_mc no longer deals with kobjects directly
-
-
+  Ralf
