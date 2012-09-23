@@ -1,244 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab2IWVsd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 17:48:33 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41052 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab2IWVsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 17:48:32 -0400
-From: Irina Tirdea <irina.tirdea@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v2 1/1] perf stat: implement --big-num grouping
-Date: Mon, 24 Sep 2012 00:48:13 +0300
-Message-Id: <1348436893-4307-1-git-send-email-irina.tirdea@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347574063-22521-3-git-send-email-irina.tirdea@intel.com>
-References: <1347574063-22521-3-git-send-email-irina.tirdea@intel.com>
+	id S1754600Ab2IWV77 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 17:59:59 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754527Ab2IWV75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 17:59:57 -0400
+Message-ID: <505F864C.2000103@nod.at>
+Date: Sun, 23 Sep 2012 23:59:40 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Serge Hallyn <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH 05/14] userns: Convert hostfs to use kuid and kgid where
+ appropriate
+References: <87k3vote43.fsf@xmission.com> <1348187330-6616-1-git-send-email-ebiederm@xmission.com> <1348187330-6616-5-git-send-email-ebiederm@xmission.com>
+In-Reply-To: <1348187330-6616-5-git-send-email-ebiederm@xmission.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig670CD0EC8234AD49ECC064C4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig670CD0EC8234AD49ECC064C4
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-In glibc, printf supports ' to group numbers with thousands' grouping
-characters. Bionic does not support ' for printf.
+Am 21.09.2012 02:28, schrieb Eric W. Biederman:
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+>=20
+> Cc: Jeff Dike <jdike@addtoit.com>
+> Cc: Richard Weinberger <richard@nod.at>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> ---
 
-Implement thousands's grouping for numbers according to locale.
-The implementation uses the algorithm from glibc
-(http://www.gnu.org/software/libc/).
+Looks sane to me.
 
-Bionic does not implement locales, so we need to add a configuration
-option NO_LOCALE. If NO_LOCALE is defined, default values for thousands
-separator and grouping are used.
+Acked-by: Richard Weinberger <richard@nod.at>
 
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
----
+BTW: How you do test your user namespace patches?
+Is there a generic way to compare/verify uids within a namespace vs. the =
+initial namespace?
 
-Changes in v2:
-This is a rewrite of http://lkml.org/lkml/2012/9/13/574
-Instead of disabling big num for Android, I added the implementation in perf
-(as Ingo suggested).
+Thanks,
+//richard
 
- tools/perf/Makefile                 |    8 +++
- tools/perf/builtin-stat.c           |  112 ++++++++++++++++++++++++++++++++---
- tools/perf/config/feature-tests.mak |   18 ++++++
- 3 files changed, 131 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 5077f8e..74e21cf 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -769,6 +769,14 @@ else
-        endif
- endif
- 
-+ifdef NO_LOCALE
-+	BASIC_CFLAGS += -DNO_LOCALE
-+else
-+	ifneq ($(call try-cc,$(SOURCE_LOCALE),),y)
-+		BASIC_CFLAGS += -DNO_LOCALE
-+	endif
-+endif
-+
- ifdef ASCIIDOC8
- 	export ASCIIDOC8
- endif
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index e0f65fe..cb8b399 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -60,6 +60,8 @@
- #include <sys/prctl.h>
- #include <locale.h>
- 
-+/* max double number have E+308 + \0 + sign */
-+#define MAX_NR_STR 310
- #define DEFAULT_SEPARATOR	" "
- #define CNTR_NOT_SUPPORTED	"<not supported>"
- #define CNTR_NOT_COUNTED	"<not counted>"
-@@ -744,18 +746,112 @@ static void print_ll_cache_misses(int cpu,
- 	fprintf(output, " of all LL-cache hits   ");
- }
- 
-+/* Group the digits according to the grouping rules of the current locale.
-+   The interpretation of GROUPING is as in `struct lconv' from <locale.h>.  */
-+static int group_number_locale(char *number, char **gnumber)
-+{
-+	const char *thousands_sep = NULL, *grouping = NULL;
-+	int glen, tlen, dest_alloc_size, src_size, ret = 0, cnt;
-+	char *dest_alloc_ptr, *dest_end, *src_start, *src_end;
-+
-+#ifdef NO_LOCALE
-+	thousands_sep = ",";
-+	grouping = "\x3";
-+#else
-+	struct lconv *lc = localeconv();
-+	if (lc != NULL) {
-+		thousands_sep = lc->thousands_sep;
-+		grouping = lc->grouping;
-+	}
-+#endif
-+
-+	*gnumber = NULL;
-+	/* No grouping */
-+	if (thousands_sep == NULL || grouping == NULL ||
-+	    *thousands_sep == '\0' || *grouping == CHAR_MAX || *grouping <= 0) {
-+		*gnumber = strdup(number);
-+		if (*gnumber == NULL)
-+			ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	glen = *grouping++;
-+	tlen = strlen(thousands_sep);
-+
-+	src_size = strlen(number);
-+	/* Worst case scenario we have 1-character grouping */
-+	dest_alloc_size = (src_size + src_size * tlen) * sizeof(char);
-+	dest_alloc_ptr = zalloc(dest_alloc_size);
-+	if (dest_alloc_ptr == NULL) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+	/* -1 for '\0' */
-+	dest_end = dest_alloc_ptr + dest_alloc_size - 1;
-+
-+	src_start = number;
-+	src_end = number + src_size;
-+
-+	while (src_end > src_start) {
-+		*--dest_end = *--src_end;
-+		if (--glen == 0 && src_end > src_start) {
-+			/* A new group */
-+			cnt = tlen;
-+			do
-+				*--dest_end = thousands_sep[--cnt];
-+			while (cnt > 0);
-+
-+			if (*grouping == CHAR_MAX || *grouping < 0) {
-+				/* No further grouping to be done.
-+				   Copy the rest of the number. */
-+				do
-+					*--dest_end = *--src_end;
-+				while (src_end > src_start);
-+				break;
-+			} else if (*grouping != '\0') {
-+				glen = *grouping++;
-+			} else {
-+				/* The previous grouping repeats ad infinitum */
-+				glen = grouping[-1];
-+			}
-+		}
-+	}
-+
-+	/* Make a copy with the exact needed size of the grouped number */
-+	*gnumber = strdup(dest_end);
-+	if (*gnumber == NULL) {
-+		ret = -ENOMEM;
-+		goto out_free_dest;
-+	}
-+
-+	/* fall through */
-+out_free_dest:
-+	free(dest_alloc_ptr);
-+out:
-+	return ret;
-+}
-+
- static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- {
- 	double total, ratio = 0.0;
- 	char cpustr[16] = { '\0', };
- 	const char *fmt;
-+	char avgstr[MAX_NR_STR], *pavgstr;
-+	int ret;
- 
--	if (csv_output)
--		fmt = "%s%.0f%s%s";
--	else if (big_num)
--		fmt = "%s%'18.0f%s%-25s";
--	else
--		fmt = "%s%18.0f%s%-25s";
-+	sprintf(avgstr, "%.0f", avg);
-+	pavgstr = avgstr;
-+
-+	if (csv_output) {
-+		fmt = "%s%s%s%s";
-+	} else {
-+		fmt = "%s%18s%s%-25s";
-+		if (big_num) {
-+			ret = group_number_locale(avgstr, &pavgstr);
-+			if (ret < 0)
-+				pavgstr = avgstr;
-+		}
-+	}
- 
- 	if (no_aggr)
- 		sprintf(cpustr, "CPU%*d%s",
-@@ -764,7 +860,9 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	else
- 		cpu = 0;
- 
--	fprintf(output, fmt, cpustr, avg, csv_sep, perf_evsel__name(evsel));
-+	fprintf(output, fmt, cpustr, pavgstr, csv_sep, perf_evsel__name(evsel));
-+	if (pavgstr != avgstr)
-+		free(pavgstr);
- 
- 	if (evsel->cgrp)
- 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 116690a..7e5c005 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -193,3 +193,21 @@ int main(void)
- }
- endef
- endif
-+
-+ifndef NO_LOCALE
-+define SOURCE_LOCALE
-+#include <locale.h>
-+
-+int main(void)
-+{
-+	char *thousands_sep, *grouping;
-+
-+	struct lconv *lc = localeconv();
-+	if (lc != NULL) {
-+		thousands_sep = lc->thousands_sep;
-+		grouping = lc->grouping;
-+	}
-+	return 0;
-+}
-+endef
-+endif
--- 
-1.7.9.5
+--------------enig670CD0EC8234AD49ECC064C4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJQX4ZRAAoJEN9758yqZn9eZkMH/3PMootkUYID2/hTZXChfFpL
+T7/YE7JSuJh9Eg3xRPVxkgOOmNA/T5lziEkjsclRhcAEWD3HBs+g1AEQyRWVtJIa
+kjbY/b1dnK9QM2/c8gAEaX5YWGsP1aPsHS5TIeP/dIn175MH59aA2tN/YfLPkYAm
+kKKDEE31YAwb3jKyDN/dxS2XRleNeYIoUNebF76vAqFdVXjDyfi6ST/0VltVekRX
+FHEo+m4xVORD0J6r5jGunTopVVPxhSSGFy5ZlcxV5gPLr4L4LC+5QEdbpLyQd87g
+iVPZIPp+hw4yCMEACfbjlGNVnUZTIwvtR2DTUxiiqZKBbgFc5xNF/RiJ7j8z6Xk=
+=trgK
+-----END PGP SIGNATURE-----
+
+--------------enig670CD0EC8234AD49ECC064C4--
