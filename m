@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab2IWWMm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 18:12:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56783 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754538Ab2IWWMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 18:12:40 -0400
-Date: Mon, 24 Sep 2012 00:12:36 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: jeffm@suse.de, mark.asselstine@windriver.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild rc fixes
-Message-ID: <20120923221236.GA7412@sepie.suse.cz>
-MIME-Version: 1.0
+	id S1754624Ab2IWWhw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 18:37:52 -0400
+Received: from ppsw-43.csi.cam.ac.uk ([131.111.8.143]:45857 "EHLO
+	ppsw-43.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab2IWWht convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 18:37:49 -0400
+X-Greylist: delayed 1168 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Sep 2012 18:37:49 EDT
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: cifs: fix return value in cifsConvertToUTF16
+Mime-Version: 1.0 (Mac OS X Mail 6.1 \(1498\))
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <20120922202809.250DB3402DF@ra.kernel.org>
+Date: Sun, 23 Sep 2012 23:18:19 +0100
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Unix Support <unix-support@ucs.cam.ac.uk>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <96965BD0-8BA7-41C0-A459-7F4DC871F607@cam.ac.uk>
+References: <20120922202809.250DB3402DF@ra.kernel.org>
+To: Steve French <sfrench@samba.org>
+X-Mailer: Apple Mail (2.1498)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Steve,
 
-there are two more kbuild fixes for 3.6. One fixes a race between x86's
-archscripts target and the rule (re)building scripts/basic/fixdep. The
-second is a fix for the previous attempt at fixing make firmware_install
-with make 3.82. This new solution should work with any version of GNU make.
+Hey, I sent you that exact same patch on the 12th June!  Would have saved you and others some valuable time if you hadn't ignored it then!  (-;
 
-Thanks,
-Michal
+Told you it was an obvious logic bug!  (-;
 
-The following changes since commit 6c7080a61fc7b46b3ac8573952b5a3e9d5f68bc4:
+Best regards,
 
-  firmware: fix directory creation rule matching with make 3.82 (2012-08-30 16:27:13 +0200)
+	Anton
 
-are available in the git repository at:
+On 22 Sep 2012, at 21:28, Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=c73f693989d7a7d99ec66a7065295a0c93d0b127
+> Commit:     c73f693989d7a7d99ec66a7065295a0c93d0b127
+> Parent:     4651afbbae968772efd6dc4ba461cba9b49bb9d8
+> Author:     Jeff Layton <jlayton@redhat.com>
+> AuthorDate: Tue Sep 18 14:21:01 2012 -0400
+> Committer:  Steve French <smfrench@gmail.com>
+> CommitDate: Tue Sep 18 15:35:25 2012 -0500
+> 
+>    cifs: fix return value in cifsConvertToUTF16
+> 
+>    This function returns the wrong value, which causes the callers to get
+>    the length of the resulting pathname wrong when it contains non-ASCII
+>    characters.
+> 
+>    This seems to fix https://bugzilla.samba.org/show_bug.cgi?id=6767
+> 
+>    Cc: <stable@vger.kernel.org>
+>    Reported-by: Baldvin Kovacs <baldvin.kovacs@gmail.com>
+>    Reported-and-Tested-by: Nicolas Lefebvre <nico.lefebvre@gmail.com>
+>    Signed-off-by: Jeff Layton <jlayton@redhat.com>
+>    Signed-off-by: Steve French <smfrench@gmail.com>
+> ---
+> fs/cifs/cifs_unicode.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
+> index 7dab9c0..53cf2aa 100644
+> --- a/fs/cifs/cifs_unicode.c
+> +++ b/fs/cifs/cifs_unicode.c
+> @@ -328,7 +328,7 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
+> 	}
+> 
+> ctoUTF16_out:
+> -	return i;
+> +	return j;
+> }
+> 
+> #ifdef CONFIG_CIFS_SMB2
 
-for you to fetch changes up to 24cc7fb69a5b5edfdff1d38c6a213d6a33648829:
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
 
-  x86/kbuild: archscripts depends on scripts_basic (2012-09-21 13:49:47 +0200)
-
-----------------------------------------------------------------
-Jeff Mahoney (1):
-      x86/kbuild: archscripts depends on scripts_basic
-
-Mark Asselstine (1):
-      firmware: fix directory creation rule matching with make 3.80
-
- arch/x86/Makefile       |    2 +-
- scripts/Makefile.fwinst |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
