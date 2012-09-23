@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab2IWLDo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 07:03:44 -0400
-Received: from orion.CARNet.hr ([161.53.160.90]:41611 "EHLO orion.carnet.hr"
+	id S1753056Ab2IWLug (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 07:50:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25308 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752462Ab2IWLDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 07:03:42 -0400
-X-Greylist: delayed 2418 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Sep 2012 07:03:42 EDT
-Date: Sun, 23 Sep 2012 12:23:18 +0200
-From: Josip Rodin <joy@debbugs.entuzijast.net>
-To: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        685360@bugs.debian.org, john.ettedgui@gmail.com, barz621@gmail.com,
-        dh.herrmann@googlemail.com
-Subject: Re: [PATCH 1/1] HID: Fix missing Unifying device issue
-Message-ID: <20120923102318.GA12946@entuzijast.net>
-References: <1348222894-6767-1-git-send-email-nlopezcasad@logitech.com>
+	id S1752508Ab2IWLuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 07:50:35 -0400
+Message-ID: <505EF784.7060504@redhat.com>
+Date: Sun, 23 Sep 2012 13:50:28 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348222894-6767-1-git-send-email-nlopezcasad@logitech.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11] kvm: Add resampling irqfds for level triggered interrupts
+References: <20120921175601.32604.63271.stgit@bling.home>
+In-Reply-To: <20120921175601.32604.63271.stgit@bling.home>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 12:21:34PM +0200, Nestor Lopez Casado wrote:
-> This patch fixes an issue introduced after commit 4ea5454203d991ec
-> 
-> After that commit, hid-core silently discards any incoming packet
-> that arrives while any hid driver's probe function is being executed.
+On 09/21/2012 08:58 PM, Alex Williamson wrote:
+> To emulate level triggered interrupts, add a resample option to
+> KVM_IRQFD.  When specified, a new resamplefd is provided that notifies
+> the user when the irqchip has been resampled by the VM.  This may, for
+> instance, indicate an EOI.  Also in this mode, posting of an interrupt
+> through an irqfd only asserts the interrupt.  On resampling, the
+> interrupt is automatically de-asserted prior to user notification.
+> This enables level triggered interrupts to be posted and re-enabled
+> from vfio with no userspace intervention.
+>
+> All resampling irqfds can make use of a single irq source ID, so we
+> reserve a new one for this interface.
+>
 
-I managed to test this now, on top of Linux 3.5, but it didn't fix my
-keyboard. I still get the same sequence of messages with hid.debug=1:
-
-+usb 5-2: new full-speed USB device number 3 using ohci_hcd
-+drivers/hid/usbhid/hid-core.c: HID probe called for ifnum 0
-+drivers/hid/hid-logitech-dj.c: logi_dj_probe called for ifnum 0
-+drivers/hid/hid-logitech-dj.c: logi_dj_probe: ignoring ifnum 0
-+drivers/hid/usbhid/hid-core.c: HID probe called for ifnum 1
-+drivers/hid/hid-logitech-dj.c: logi_dj_probe called for ifnum 1
-+drivers/hid/hid-logitech-dj.c: logi_dj_probe: ignoring ifnum 1
-+drivers/hid/usbhid/hid-core.c: HID probe called for ifnum 2
-+drivers/hid/hid-logitech-dj.c: logi_dj_probe called for ifnum 2
-+drivers/hid/usbhid/hid-core.c: submitting ctrl urb: Get_Report wValue=0x0110 wIndex=0x0002 wLength=7
-+drivers/hid/usbhid/hid-core.c: submitting ctrl urb: Get_Report wValue=0x0111 wIndex=0x0002 wLength=20
-+drivers/hid/usbhid/hid-core.c: submitting ctrl urb: Get_Report wValue=0x0120 wIndex=0x0002 wLength=15
-+drivers/hid/usbhid/hid-core.c: submitting ctrl urb: Get_Report wValue=0x0121 wIndex=0x0002 wLength=32
-+logitech-djreceiver 0003:046D:C52B.0005: claimed by neither input, hiddev nor hidraw
-+logitech-djreceiver 0003:046D:C52B.0005: logi_dj_probe:hid_hw_start returned error
+Thanks, applied.
 
 -- 
-     2. That which causes joy or happiness.
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
