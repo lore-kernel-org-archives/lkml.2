@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab2IWV77 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 17:59:59 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	id S1754612Ab2IWWMm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 18:12:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56783 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754527Ab2IWV75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 17:59:57 -0400
-Message-ID: <505F864C.2000103@nod.at>
-Date: Sun, 23 Sep 2012 23:59:40 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1754538Ab2IWWMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 18:12:40 -0400
+Date: Mon, 24 Sep 2012 00:12:36 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: jeffm@suse.de, mark.asselstine@windriver.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild rc fixes
+Message-ID: <20120923221236.GA7412@sepie.suse.cz>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Jeff Dike <jdike@addtoit.com>
-Subject: Re: [PATCH 05/14] userns: Convert hostfs to use kuid and kgid where
- appropriate
-References: <87k3vote43.fsf@xmission.com> <1348187330-6616-1-git-send-email-ebiederm@xmission.com> <1348187330-6616-5-git-send-email-ebiederm@xmission.com>
-In-Reply-To: <1348187330-6616-5-git-send-email-ebiederm@xmission.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig670CD0EC8234AD49ECC064C4"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig670CD0EC8234AD49ECC064C4
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-Am 21.09.2012 02:28, schrieb Eric W. Biederman:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
->=20
-> Cc: Jeff Dike <jdike@addtoit.com>
-> Cc: Richard Weinberger <richard@nod.at>
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
-
-Looks sane to me.
-
-Acked-by: Richard Weinberger <richard@nod.at>
-
-BTW: How you do test your user namespace patches?
-Is there a generic way to compare/verify uids within a namespace vs. the =
-initial namespace?
+there are two more kbuild fixes for 3.6. One fixes a race between x86's
+archscripts target and the rule (re)building scripts/basic/fixdep. The
+second is a fix for the previous attempt at fixing make firmware_install
+with make 3.82. This new solution should work with any version of GNU make.
 
 Thanks,
-//richard
+Michal
 
+The following changes since commit 6c7080a61fc7b46b3ac8573952b5a3e9d5f68bc4:
 
---------------enig670CD0EC8234AD49ECC064C4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+  firmware: fix directory creation rule matching with make 3.82 (2012-08-30 16:27:13 +0200)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+are available in the git repository at:
 
-iQEcBAEBAgAGBQJQX4ZRAAoJEN9758yqZn9eZkMH/3PMootkUYID2/hTZXChfFpL
-T7/YE7JSuJh9Eg3xRPVxkgOOmNA/T5lziEkjsclRhcAEWD3HBs+g1AEQyRWVtJIa
-kjbY/b1dnK9QM2/c8gAEaX5YWGsP1aPsHS5TIeP/dIn175MH59aA2tN/YfLPkYAm
-kKKDEE31YAwb3jKyDN/dxS2XRleNeYIoUNebF76vAqFdVXjDyfi6ST/0VltVekRX
-FHEo+m4xVORD0J6r5jGunTopVVPxhSSGFy5ZlcxV5gPLr4L4LC+5QEdbpLyQd87g
-iVPZIPp+hw4yCMEACfbjlGNVnUZTIwvtR2DTUxiiqZKBbgFc5xNF/RiJ7j8z6Xk=
-=trgK
------END PGP SIGNATURE-----
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
 
---------------enig670CD0EC8234AD49ECC064C4--
+for you to fetch changes up to 24cc7fb69a5b5edfdff1d38c6a213d6a33648829:
+
+  x86/kbuild: archscripts depends on scripts_basic (2012-09-21 13:49:47 +0200)
+
+----------------------------------------------------------------
+Jeff Mahoney (1):
+      x86/kbuild: archscripts depends on scripts_basic
+
+Mark Asselstine (1):
+      firmware: fix directory creation rule matching with make 3.80
+
+ arch/x86/Makefile       |    2 +-
+ scripts/Makefile.fwinst |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
