@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab2IWPZb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 11:25:31 -0400
-Received: from nm7-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.192]:46036 "HELO
-	nm7-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753990Ab2IWPZa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 11:25:30 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 862385.81394.bm@omp1054.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=H5+hFpdoy2ziZgX9s2ck+4dcIpJrx0BdHJeBJc369ZZOxa7aNlXLl8L864+bNV4XTG8oISoncNHiOYqVYFW1Gg3dWZzRUqo42pUv8/HxJ07mnMFLyVaq45Cb9Y0bUeoLlma76yee2RJffR2GWWa9bdRK96qlUmVCjn09Nzs0954=;
-X-YMail-OSG: l7H4qPQVM1ktZHlUeWIFpQ2_66YV7if5x_2OTlwT1O5WHF5
- q_0kzE1MwnXh..KGrBc_dPQWxBDAHU10x.wq.jWqbAnbX.iJZpkdhBIUwi.u
- gMZ4roCIzxmibfJWp1s4PMYEBPT5mT9xz5wRHTZ7HANJdBdYdFPGnCJ04.SB
- 7KpKYXWqIV4pauWDmZ.ySZ7Qu2a0B4rWlha6SQtyJaVuO4cuKPsy7Ej5FqVw
- T2ffmf9f7RTBb8Gx9dQUg2qC_Nsfh0zzqwfhkTn0kJq6dqsWhNIGII2PXnYx
- pCHizCQmuF2pCGX7B0qDR0CCE1uCn4cU7CyA6shF41BhHNffIRYWygcFFX.U
- ULCaZ_FMkNhWyZgqFm2QVzPf3sHHKsHNtgK6rMlf6zt9vwwpyWymr_0MUxYw
- ttWf9xD6CrC8AXte3sM39fLhjf7PsiE57BtBBuEax.X8d.G7sDF6bWqelxfh
- RwV2wXtKoK92YT7PoYtk-
-X-Mailer: YahooMailWebService/0.8.121.416
-References: <1348413437.76222.YahooMailNeo@web111705.mail.gq1.yahoo.com>
-Message-ID: <1348413929.48938.YahooMailNeo@web111717.mail.gq1.yahoo.com>
-Date: Sun, 23 Sep 2012 08:25:29 -0700 (PDT)
-From: Mahmood Naderan <nt_mahmood@yahoo.com>
-Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Subject: enable or change debug verbosity for kernel modules
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1348413437.76222.YahooMailNeo@web111705.mail.gq1.yahoo.com>
+	id S1754128Ab2IWP0S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 11:26:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61860 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753995Ab2IWP0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 11:26:15 -0400
+Message-ID: <505F2A01.7010109@gmail.com>
+Date: Sun, 23 Sep 2012 23:25:53 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+        Julia Lawall <julia@diku.dk>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 01/40] PCI: fix default vga ref_count
+References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com> <1348080894-23412-1-git-send-email-yinghai@kernel.org> <1348080894-23412-2-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1348080894-23412-2-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On 09/20/2012 02:54 AM, Yinghai Lu wrote:
+> when __ARCH_HAS_VGA_DEFAULT_DEVICE is not defined, aka EFIFB is not used,
+> for static path, vga_default setting is through vga_arbiter_add_pci_device.
+> and later x86 pci_fixup_video, will skip setting again.
+> - subsys_initcall(vga_arb_device_init) come first to call vga_arbiter_add_pci_device. It will call pci_get_dev to hold one reference.
+> 
+> for hotplug add path, even vga_arbiter_add_pci_device is called via notifier,
+> but it will check VGA_RSRC_LEGACY_MASK that is not set for hotplug path.
+> So x86 pci_fixup_video will take over to call vga_set_default_device().
+> It will not hold one refrence.
+> 
+> Later for hotplug remove path, vga_arbiter_del_pci_device that does not check
+> VGA_RSRC_LEGACY_MASK will call put_device and it will cause ref_count to
+> decrease extra. that will have that pci device get deleted early wrongly.
+> 
+> Need to make get/put balance for both cases.
+> 
+> -v2: According to Bjorn, update vga_set_default_device instead...
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: x86@kernel.org
+> Cc: Dave Airlie <airlied@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Julia Lawall <julia@diku.dk>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> ---
+>  drivers/gpu/vga/vgaarb.c |   14 +++++++++-----
+>  1 files changed, 9 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
+> index b6852b7..0888951e 100644
+> --- a/drivers/gpu/vga/vgaarb.c
+> +++ b/drivers/gpu/vga/vgaarb.c
+> @@ -141,6 +141,12 @@ EXPORT_SYMBOL_GPL(vga_default_device);
+>  
+>  void vga_set_default_device(struct pci_dev *pdev)
+>  {
+> +	if (vga_default)
+> +		pci_dev_put(vga_default);
+> +
+> +	if (pdev)
+> +		pdev = pci_dev_get(pdev);
+> +
+>  	vga_default = pdev;
+>  }
+Seems it could be simplified as
+void vga_set_default_device(struct pci_dev *pdev)
+{
+	pci_dev_put(vga_default);
+ 	vga_default = pci_dev_get(pdev);
+}
+--Gerry
 
-I don't know if my question is really related to this 
-list but need some helps.
-I used modinfo to get some information about a 
-kernel module. In the output I see a line:
-parm:           debug:Debug verbosity level (0=none, ..., 16=all) (int)
+>  #endif
+> @@ -577,7 +583,7 @@ static bool vga_arbiter_add_pci_device(struct pci_dev *pdev)
+>  #ifndef __ARCH_HAS_VGA_DEFAULT_DEVICE
+>  	if (vga_default == NULL &&
+>  	    ((vgadev->owns & VGA_RSRC_LEGACY_MASK) == VGA_RSRC_LEGACY_MASK))
+> -		vga_default = pci_dev_get(pdev);
+> +		vga_set_default_device(pdev);
+>  #endif
+>  
+>  	vga_arbiter_check_bridge_sharing(vgadev);
+> @@ -613,10 +619,8 @@ static bool vga_arbiter_del_pci_device(struct pci_dev *pdev)
+>  	}
+>  
+>  #ifndef __ARCH_HAS_VGA_DEFAULT_DEVICE
+> -	if (vga_default == pdev) {
+> -		pci_dev_put(vga_default);
+> -		vga_default = NULL;
+> -	}
+> +	if (vga_default == pdev)
+> +		vga_set_default_device(NULL);
+>  #endif
+>  
+>  	if (vgadev->decodes & (VGA_RSRC_LEGACY_IO | VGA_RSRC_LEGACY_MEM))
+> 
 
-My question is how can I enable/change that debug 
-verbosity?
-
- 
-Regards,
-Mahmood
