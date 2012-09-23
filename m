@@ -1,219 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab2IWMrb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 08:47:31 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54448 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab2IWMr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 08:47:29 -0400
-Message-ID: <505F04DC.2020500@googlemail.com>
-Date: Sun, 23 Sep 2012 14:47:24 +0200
-From: Michael Langer <michael.brainbug.langer@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Alessandro Zummo <a.zummo@towertech.it>
-CC: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] rtc: add wakealarm support for rtc-s35390A rtc chip
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1753703Ab2IWM5B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 08:57:01 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:43571 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753530Ab2IWM46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 08:56:58 -0400
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, cmm@us.ibm.com, tytso@mit.edu,
+        marco.stornelli@gmail.com, david@fromorbit.com,
+        stroetmann@ontolinux.com, diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC v2 00/10] vfs: hot data tracking
+Date: Sun, 23 Sep 2012 20:56:25 +0800
+Message-Id: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+x-cbid: 12092312-8974-0000-0000-00000E43EE08
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00176596; UDB=6.00039989; UTC=2012-09-23
+ 12:56:57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-this patch will add get/set alarm functionality to QNAP TS-219P+ NAS.
-I have tested it against a debian wheezy kernel (3.2.23, armel) . After
-that I applied the patch against HEAD of linus master branch and
-compiled, not tested, successfully.
+NOTE:
 
-Regards
-Michael
+  The patchset is currently post out mainly to make sure
+it is going in the correct direction and hope to get some
+helpful comments from other guys.
+  For more infomation, please check hot_tracking.txt in Documentation
 
->From a01affe35c049f66fc83ee151d760f3c943aa327 Mon Sep 17 00:00:00 2001
-From: Michael Langer <michael.brainbug.langer@googlemail.com>
-Date: Sun, 23 Sep 2012 08:27:24 +0200
-Subject: [PATCH] rtc: add wakealarm support for rtc-s35390A rtc chip
+TODO List:
 
-This adds basic get/set alarm support for the Seiko Instruments S-35390A.
-The chip is used on the QNAP TS-219P+ NAS device.
+ 1.) Need to do scalability or performance tests.
+ 2.) Turn some Micro into be tunable
+       TIME_TO_KICK, and HEAT_UPDATE_DELAY
+ 3.) Rafactor hot_hash_is_aging()
+       If you just made the timeout value a timespec and compared
+     the _timespecs_, you would be doing a lot fewer conversions.
+ 4.) Cleanup some unnecessary lock protect
+ 5.) Add more comments to explain how to calc temperature
+       How to "read" the avg read/write time (nanoseconds,
+     microseconds, jiffies....??)
+ 6.) Make updating tempreture more parallel
+ 7.) How to save the file tempreture among the umount to be able to
+     preserve the file tempreture after reboot
+ 8.) Add one new ioctl inteface to set temperature value.
 
-Signed-off-by: Michael Langer <michael.brainbug.langer@googlemail.com>
----
- drivers/rtc/rtc-s35390a.c |  116
-+++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 116 insertions(+)
+Ben Chociej, Matt Lupfer and Conor Scott originally wrote this code to
+ be very btrfs-specific.  I've taken their code and attempted to
+make it more generic and integrate it at the VFS level.
 
-diff --git a/drivers/rtc/rtc-s35390a.c b/drivers/rtc/rtc-s35390a.c
-index c9562ce..ef41e7e 100644
---- a/drivers/rtc/rtc-s35390a.c
-+++ b/drivers/rtc/rtc-s35390a.c
-@@ -19,6 +19,8 @@
- #define S35390A_CMD_STATUS1    0
- #define S35390A_CMD_STATUS2    1
- #define S35390A_CMD_TIME1    2
-+#define S35390A_CMD_TIME2    3
-+#define S35390A_CMD_INT2_REG1    5
- 
- #define S35390A_BYTE_YEAR    0
- #define S35390A_BYTE_MONTH    1
-@@ -28,12 +30,23 @@
- #define S35390A_BYTE_MINS    5
- #define S35390A_BYTE_SECS    6
- 
-+#define S35390A_ALRM_BYTE_WDAY    0
-+#define S35390A_ALRM_BYTE_HOURS    1
-+#define S35390A_ALRM_BYTE_MINS    2
-+
- #define S35390A_FLAG_POC    0x01
- #define S35390A_FLAG_BLD    0x02
- #define S35390A_FLAG_24H    0x40
- #define S35390A_FLAG_RESET    0x80
- #define S35390A_FLAG_TEST    0x01
- 
-+#define S35390A_INT2_MODE_MASK        0xF0
-+
-+#define S35390A_INT2_MODE_NOINTR    0x00
-+#define S35390A_INT2_MODE_FREQ        0x10
-+#define S35390A_INT2_MODE_ALARM        0x40
-+#define S35390A_INT2_MODE_PMIN_EDG    0x20
-+
- static const struct i2c_device_id s35390a_id[] = {
-     { "s35390a", 0 },
-     { }
-@@ -184,6 +197,104 @@ static int s35390a_get_datetime(struct i2c_client
-*client, struct rtc_time *tm)
-     return rtc_valid_tm(tm);
- }
- 
-+static int s35390a_set_alarm(struct i2c_client *client, struct
-rtc_wkalrm *alm)
-+{
-+    struct s35390a *s35390a = i2c_get_clientdata(client);
-+    char buf[3], sts = 0;
-+    int err, i;
-+
-+    dev_dbg(&client->dev, "%s: alm is secs=%d, mins=%d, hours=%d
-mday=%d, "\
-+        "mon=%d, year=%d, wday=%d\n", __func__, alm->time.tm_sec,
-+        alm->time.tm_min, alm->time.tm_hour, alm->time.tm_mday,
-+        alm->time.tm_mon, alm->time.tm_year, alm->time.tm_wday);
-+
-+    /* disable interrupt */
-+    err = s35390a_set_reg(s35390a, S35390A_CMD_STATUS2, &sts, sizeof(sts));
-+    if (err < 0)
-+        return err;
-+
-+    /* clear pending interrupt, if any */
-+    err = s35390a_get_reg(s35390a, S35390A_CMD_STATUS1, &sts, sizeof(sts));
-+    if (err < 0)
-+        return err;
-+
-+    if (alm->enabled)
-+        sts = S35390A_INT2_MODE_ALARM;
-+    else
-+        sts = S35390A_INT2_MODE_NOINTR;
-+
-+    /* This chip expects the bits of each byte to be in reverse order */
-+    sts = bitrev8(sts);
-+
-+    /* set interupt mode*/
-+    err = s35390a_set_reg(s35390a, S35390A_CMD_STATUS2, &sts, sizeof(sts));
-+    if (err < 0)
-+        return err;
-+
-+    if (alm->time.tm_wday != -1)
-+        buf[S35390A_ALRM_BYTE_WDAY] = bin2bcd(alm->time.tm_wday) | 0x80;
-+
-+    buf[S35390A_ALRM_BYTE_HOURS] = s35390a_hr2reg(s35390a,
-+            alm->time.tm_hour) | 0x80;
-+    buf[S35390A_ALRM_BYTE_MINS] = bin2bcd(alm->time.tm_min) | 0x80;
-+
-+    if (alm->time.tm_hour >= 12)
-+        buf[S35390A_ALRM_BYTE_HOURS] |= 0x40;
-+
-+    for (i = 0; i < 3; ++i)
-+        buf[i] = bitrev8(buf[i]);
-+
-+    err = s35390a_set_reg(s35390a, S35390A_CMD_INT2_REG1, buf,
-+                                sizeof(buf));
-+
-+    return err;
-+}
-+
-+static int s35390a_read_alarm(struct i2c_client *client, struct
-rtc_wkalrm *alm)
-+{
-+    struct s35390a *s35390a = i2c_get_clientdata(client);
-+    char buf[3], sts;
-+    int i, err;
-+
-+    err = s35390a_get_reg(s35390a, S35390A_CMD_STATUS2, &sts, sizeof(sts));
-+    if (err < 0)
-+        return err;
-+
-+    if (bitrev8(sts) != S35390A_INT2_MODE_ALARM)
-+        return -EINVAL;
-+
-+    err = s35390a_get_reg(s35390a, S35390A_CMD_INT2_REG1, buf,
-sizeof(buf));
-+    if (err < 0)
-+        return err;
-+
-+    /* This chip returns the bits of each byte in reverse order */
-+    for (i = 0; i < 3; ++i) {
-+        buf[i] = bitrev8(buf[i]);
-+        buf[i] &= ~0x80;
-+    }
-+
-+    alm->time.tm_wday = bcd2bin(buf[S35390A_ALRM_BYTE_WDAY]);
-+    alm->time.tm_hour = s35390a_reg2hr(s35390a,
-+                        buf[S35390A_ALRM_BYTE_HOURS]);
-+    alm->time.tm_min = bcd2bin(buf[S35390A_ALRM_BYTE_MINS]);
-+
-+    dev_dbg(&client->dev, "%s: alm is mins=%d, hours=%d, wday=%d\n",
-+            __func__, alm->time.tm_min, alm->time.tm_hour,
-+            alm->time.tm_wday);
-+
-+    return 0;
-+}
-+
-+static int s35390a_rtc_read_alarm(struct device *dev, struct rtc_wkalrm
-*alm)
-+{
-+    return s35390a_read_alarm(to_i2c_client(dev), alm);
-+}
-+
-+static int s35390a_rtc_set_alarm(struct device *dev, struct rtc_wkalrm
-*alm)
-+{
-+    return s35390a_set_alarm(to_i2c_client(dev), alm);
-+}
-+
- static int s35390a_rtc_read_time(struct device *dev, struct rtc_time *tm)
- {
-     return s35390a_get_datetime(to_i2c_client(dev), tm);
-@@ -197,6 +308,9 @@ static int s35390a_rtc_set_time(struct device *dev,
-struct rtc_time *tm)
- static const struct rtc_class_ops s35390a_rtc_ops = {
-     .read_time    = s35390a_rtc_read_time,
-     .set_time    = s35390a_rtc_set_time,
-+    .set_alarm    = s35390a_rtc_set_alarm,
-+    .read_alarm    = s35390a_rtc_read_alarm,
-+
- };
- 
- static struct i2c_driver s35390a_driver;
-@@ -261,6 +375,8 @@ static int s35390a_probe(struct i2c_client *client,
-     if (s35390a_get_datetime(client, &tm) < 0)
-         dev_warn(&client->dev, "clock needs to be set\n");
- 
-+    device_set_wakeup_capable(&client->dev, 1);
-+
-     s35390a->rtc = rtc_device_register(s35390a_driver.driver.name,
-                 &client->dev, &s35390a_rtc_ops, THIS_MODULE);
- 
+Changelog from v1:
+ 1.) Reduce new files and put all in fs/hot_tracking.[ch] [Dave Chinner]
+ 2.) The first three patches can probably just be flattened into one.
+					[Marco Stornelli , Dave Chinner]
+
+Zhi Yong Wu (10):
+  vfs: introduce private rb structures
+  vfs: add support for updating access frequency
+  vfs: add one new mount option '-o hottrack'
+  vfs: add init and exit support
+  vfs: introduce one hash table
+  vfs: enable hot data tracking
+  vfs: fork one kthread to update data temperature
+  vfs: add 3 new ioctl interfaces
+  vfs: add debugfs support
+  vfs: add documentation
+
+ Documentation/filesystems/hot_tracking.txt |  106 ++
+ fs/Makefile                                |    2 +-
+ fs/compat_ioctl.c                          |    8 +
+ fs/dcache.c                                |    2 +
+ fs/direct-io.c                             |   10 +
+ fs/hot_tracking.c                          | 1563 ++++++++++++++++++++++++++++
+ fs/hot_tracking.h                          |  163 +++
+ fs/ioctl.c                                 |  130 +++
+ fs/namespace.c                             |   10 +
+ fs/super.c                                 |   11 +
+ include/linux/fs.h                         |   15 +
+ include/linux/hot_tracking.h               |  164 +++
+ mm/filemap.c                               |    8 +
+ mm/page-writeback.c                        |   21 +
+ mm/readahead.c                             |    9 +
+ 15 files changed, 2221 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/filesystems/hot_tracking.txt
+ create mode 100644 fs/hot_tracking.c
+ create mode 100644 fs/hot_tracking.h
+ create mode 100644 include/linux/hot_tracking.h
+
 -- 
-1.7.10.4
+1.7.6.5
 
