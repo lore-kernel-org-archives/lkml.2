@@ -1,341 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab2IWVl7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 17:41:59 -0400
-Received: from mail.us.es ([193.147.175.20]:50732 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754464Ab2IWVl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 17:41:57 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.5/15393. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-99.7/7.5):. 
- Processed in 2.472291 secs); 23 Sep 2012 21:41:55 -0000
-X-Envelope-From: pneira@us.es
-Date: Sun, 23 Sep 2012 23:41:52 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, JP Abgrall <jpa@google.com>,
-        netdev@vger.kernel.org, Ashish Sharma <ashishsharma@google.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [PATCH 6/7][RFC] netfilter: xt_IDLETIMER: Add new netlink msg
- type
-Message-ID: <20120923214152.GB1141@1984>
-References: <1348279853-44499-1-git-send-email-john.stultz@linaro.org>
- <1348279853-44499-7-git-send-email-john.stultz@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348279853-44499-7-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754579Ab2IWVsd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 17:48:33 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41052 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754504Ab2IWVsc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 17:48:32 -0400
+From: Irina Tirdea <irina.tirdea@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: [PATCH v2 1/1] perf stat: implement --big-num grouping
+Date: Mon, 24 Sep 2012 00:48:13 +0300
+Message-Id: <1348436893-4307-1-git-send-email-irina.tirdea@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1347574063-22521-3-git-send-email-irina.tirdea@intel.com>
+References: <1347574063-22521-3-git-send-email-irina.tirdea@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 10:10:52PM -0400, John Stultz wrote:
-> From: JP Abgrall <jpa@google.com>
-> 
-> Send notifications when the label becomes active after an idle period.
-> Send netlink message notifications in addition to sysfs notifications.
-> Using a uevent with
->   subsystem=xt_idletimer
->   INTERFACE=...
->   STATE={active,inactive}
-> 
-> This is backport from common android-3.0
-> commit: beb914e987cbbd368988d2b94a6661cb907c4d5a
-> with uevent support instead of a new netlink message type.
+From: Irina Tirdea <irina.tirdea@intel.com>
 
-I think this can be candidate to be included once some comestical
-issues are fixed.
+In glibc, printf supports ' to group numbers with thousands' grouping
+characters. Bionic does not support ' for printf.
 
-> Cc: netdev@vger.kernel.org
-> Cc: JP Abgrall <jpa@google.com>
-> Cc: Ashish Sharma <ashishsharma@google.com>
-> Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> Signed-off-by: Ashish Sharma <ashishsharma@google.com>
-> Signed-off-by: JP Abgrall <jpa@google.com>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> ---
->  include/linux/netfilter/xt_IDLETIMER.h |    8 ++++
->  net/netfilter/xt_IDLETIMER.c           |   78 +++++++++++++++++++++++++++++---
->  2 files changed, 79 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/netfilter/xt_IDLETIMER.h b/include/linux/netfilter/xt_IDLETIMER.h
-> index 208ae93..faaa28b 100644
-> --- a/include/linux/netfilter/xt_IDLETIMER.h
-> +++ b/include/linux/netfilter/xt_IDLETIMER.h
-> @@ -4,6 +4,7 @@
->   * Header file for Xtables timer target module.
->   *
->   * Copyright (C) 2004, 2010 Nokia Corporation
-> + *
+Implement thousands's grouping for numbers according to locale.
+The implementation uses the algorithm from glibc
+(http://www.gnu.org/software/libc/).
 
-we can live without that extra line above.
+Bionic does not implement locales, so we need to add a configuration
+option NO_LOCALE. If NO_LOCALE is defined, default values for thousands
+separator and grouping are used.
 
->   * Written by Timo Teras <ext-timo.teras@nokia.com>
->   *
->   * Converted to x_tables and forward-ported to 2.6.34
-> @@ -32,12 +33,19 @@
->  #include <linux/types.h>
->  
->  #define MAX_IDLETIMER_LABEL_SIZE 28
-> +#define NLMSG_MAX_SIZE 64
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+---
 
-better define this NLMSG_MAX_SIZE inside xt_IDLETIMER.c, this header
-is exported to user-space and that definition is not useful.
+Changes in v2:
+This is a rewrite of http://lkml.org/lkml/2012/9/13/574
+Instead of disabling big num for Android, I added the implementation in perf
+(as Ingo suggested).
 
-> +
-> +#define NL_EVENT_TYPE_INACTIVE 0
-> +#define NL_EVENT_TYPE_ACTIVE 1
->  
->  struct idletimer_tg_info {
->  	__u32 timeout;
->  
->  	char label[MAX_IDLETIMER_LABEL_SIZE];
->  
-> +	/* Use netlink messages for notification in addition to sysfs */
-> +	__u8 send_nl_msg;
-> +
->  	/* for kernel module internal use only */
->  	struct idletimer_tg *timer __attribute__((aligned(8)));
->  };
+ tools/perf/Makefile                 |    8 +++
+ tools/perf/builtin-stat.c           |  112 ++++++++++++++++++++++++++++++++---
+ tools/perf/config/feature-tests.mak |   18 ++++++
+ 3 files changed, 131 insertions(+), 7 deletions(-)
 
-you have to define two structures:
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 5077f8e..74e21cf 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -769,6 +769,14 @@ else
+        endif
+ endif
+ 
++ifdef NO_LOCALE
++	BASIC_CFLAGS += -DNO_LOCALE
++else
++	ifneq ($(call try-cc,$(SOURCE_LOCALE),),y)
++		BASIC_CFLAGS += -DNO_LOCALE
++	endif
++endif
++
+ ifdef ASCIIDOC8
+ 	export ASCIIDOC8
+ endif
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index e0f65fe..cb8b399 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -60,6 +60,8 @@
+ #include <sys/prctl.h>
+ #include <locale.h>
+ 
++/* max double number have E+308 + \0 + sign */
++#define MAX_NR_STR 310
+ #define DEFAULT_SEPARATOR	" "
+ #define CNTR_NOT_SUPPORTED	"<not supported>"
+ #define CNTR_NOT_COUNTED	"<not counted>"
+@@ -744,18 +746,112 @@ static void print_ll_cache_misses(int cpu,
+ 	fprintf(output, " of all LL-cache hits   ");
+ }
+ 
++/* Group the digits according to the grouping rules of the current locale.
++   The interpretation of GROUPING is as in `struct lconv' from <locale.h>.  */
++static int group_number_locale(char *number, char **gnumber)
++{
++	const char *thousands_sep = NULL, *grouping = NULL;
++	int glen, tlen, dest_alloc_size, src_size, ret = 0, cnt;
++	char *dest_alloc_ptr, *dest_end, *src_start, *src_end;
++
++#ifdef NO_LOCALE
++	thousands_sep = ",";
++	grouping = "\x3";
++#else
++	struct lconv *lc = localeconv();
++	if (lc != NULL) {
++		thousands_sep = lc->thousands_sep;
++		grouping = lc->grouping;
++	}
++#endif
++
++	*gnumber = NULL;
++	/* No grouping */
++	if (thousands_sep == NULL || grouping == NULL ||
++	    *thousands_sep == '\0' || *grouping == CHAR_MAX || *grouping <= 0) {
++		*gnumber = strdup(number);
++		if (*gnumber == NULL)
++			ret = -ENOMEM;
++		goto out;
++	}
++
++	glen = *grouping++;
++	tlen = strlen(thousands_sep);
++
++	src_size = strlen(number);
++	/* Worst case scenario we have 1-character grouping */
++	dest_alloc_size = (src_size + src_size * tlen) * sizeof(char);
++	dest_alloc_ptr = zalloc(dest_alloc_size);
++	if (dest_alloc_ptr == NULL) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	/* -1 for '\0' */
++	dest_end = dest_alloc_ptr + dest_alloc_size - 1;
++
++	src_start = number;
++	src_end = number + src_size;
++
++	while (src_end > src_start) {
++		*--dest_end = *--src_end;
++		if (--glen == 0 && src_end > src_start) {
++			/* A new group */
++			cnt = tlen;
++			do
++				*--dest_end = thousands_sep[--cnt];
++			while (cnt > 0);
++
++			if (*grouping == CHAR_MAX || *grouping < 0) {
++				/* No further grouping to be done.
++				   Copy the rest of the number. */
++				do
++					*--dest_end = *--src_end;
++				while (src_end > src_start);
++				break;
++			} else if (*grouping != '\0') {
++				glen = *grouping++;
++			} else {
++				/* The previous grouping repeats ad infinitum */
++				glen = grouping[-1];
++			}
++		}
++	}
++
++	/* Make a copy with the exact needed size of the grouped number */
++	*gnumber = strdup(dest_end);
++	if (*gnumber == NULL) {
++		ret = -ENOMEM;
++		goto out_free_dest;
++	}
++
++	/* fall through */
++out_free_dest:
++	free(dest_alloc_ptr);
++out:
++	return ret;
++}
++
+ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ {
+ 	double total, ratio = 0.0;
+ 	char cpustr[16] = { '\0', };
+ 	const char *fmt;
++	char avgstr[MAX_NR_STR], *pavgstr;
++	int ret;
+ 
+-	if (csv_output)
+-		fmt = "%s%.0f%s%s";
+-	else if (big_num)
+-		fmt = "%s%'18.0f%s%-25s";
+-	else
+-		fmt = "%s%18.0f%s%-25s";
++	sprintf(avgstr, "%.0f", avg);
++	pavgstr = avgstr;
++
++	if (csv_output) {
++		fmt = "%s%s%s%s";
++	} else {
++		fmt = "%s%18s%s%-25s";
++		if (big_num) {
++			ret = group_number_locale(avgstr, &pavgstr);
++			if (ret < 0)
++				pavgstr = avgstr;
++		}
++	}
+ 
+ 	if (no_aggr)
+ 		sprintf(cpustr, "CPU%*d%s",
+@@ -764,7 +860,9 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	else
+ 		cpu = 0;
+ 
+-	fprintf(output, fmt, cpustr, avg, csv_sep, perf_evsel__name(evsel));
++	fprintf(output, fmt, cpustr, pavgstr, csv_sep, perf_evsel__name(evsel));
++	if (pavgstr != avgstr)
++		free(pavgstr);
+ 
+ 	if (evsel->cgrp)
+ 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 116690a..7e5c005 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -193,3 +193,21 @@ int main(void)
+ }
+ endef
+ endif
++
++ifndef NO_LOCALE
++define SOURCE_LOCALE
++#include <locale.h>
++
++int main(void)
++{
++	char *thousands_sep, *grouping;
++
++	struct lconv *lc = localeconv();
++	if (lc != NULL) {
++		thousands_sep = lc->thousands_sep;
++		grouping = lc->grouping;
++	}
++	return 0;
++}
++endef
++endif
+-- 
+1.7.9.5
 
-struct idletimer_tg_info
-struct idletimer_tg_info_v1
-
-and register both revisions. This (rudimentary) mechanism allows us to
-keep backward compatibility.
-
-See net/netfilter/xt_socket.c for instance.
-
-> diff --git a/net/netfilter/xt_IDLETIMER.c b/net/netfilter/xt_IDLETIMER.c
-> index f407ebc1..df91e26 100644
-> --- a/net/netfilter/xt_IDLETIMER.c
-> +++ b/net/netfilter/xt_IDLETIMER.c
-> @@ -5,6 +5,7 @@
->   * After timer expires a kevent will be sent.
->   *
->   * Copyright (C) 2004, 2010 Nokia Corporation
-> + *
->   * Written by Timo Teras <ext-timo.teras@nokia.com>
->   *
->   * Converted to x_tables and reworked for upstream inclusion
-> @@ -38,8 +39,10 @@
->  #include <linux/netfilter/xt_IDLETIMER.h>
->  #include <linux/kdev_t.h>
->  #include <linux/kobject.h>
-> +#include <linux/skbuff.h>
->  #include <linux/workqueue.h>
->  #include <linux/sysfs.h>
-> +#include <net/net_namespace.h>
->  
->  struct idletimer_tg_attr {
->  	struct attribute attr;
-> @@ -56,6 +59,8 @@ struct idletimer_tg {
->  	struct idletimer_tg_attr attr;
->  
->  	unsigned int refcnt;
-> +	bool send_nl_msg;
-> +	bool active;
->  };
->  
->  static LIST_HEAD(idletimer_tg_list);
-> @@ -63,6 +68,32 @@ static DEFINE_MUTEX(list_mutex);
->  
->  static struct kobject *idletimer_tg_kobj;
->  
-> +static void notify_netlink_uevent(const char *iface, struct idletimer_tg *timer)
-> +{
-> +	char iface_msg[NLMSG_MAX_SIZE];
-> +	char state_msg[NLMSG_MAX_SIZE];
-> +	char *envp[] = { iface_msg, state_msg, NULL };
-> +	int res;
-> +
-> +	res = snprintf(iface_msg, NLMSG_MAX_SIZE, "INTERFACE=%s",
-> +		       iface);
-> +	if (NLMSG_MAX_SIZE <= res) {
-> +		pr_err("message too long (%d)", res);
-> +		return;
-> +	}
-> +	res = snprintf(state_msg, NLMSG_MAX_SIZE, "STATE=%s",
-> +		       timer->active ? "active" : "inactive");
-> +	if (NLMSG_MAX_SIZE <= res) {
-> +		pr_err("message too long (%d)", res);
-> +		return;
-> +	}
-> +	pr_debug("putting nlmsg: <%s> <%s>\n", iface_msg, state_msg);
-> +	kobject_uevent_env(idletimer_tg_kobj, KOBJ_CHANGE, envp);
-> +	return;
-> +
-> +
-
-extra lines.
-
-> +}
-> +
->  static
->  struct idletimer_tg *__idletimer_tg_find_by_label(const char *label)
->  {
-> @@ -83,6 +114,7 @@ static ssize_t idletimer_tg_show(struct kobject *kobj, struct attribute *attr,
->  {
->  	struct idletimer_tg *timer;
->  	unsigned long expires = 0;
-> +	unsigned long now = jiffies;
->  
->  	mutex_lock(&list_mutex);
->  
-> @@ -92,11 +124,15 @@ static ssize_t idletimer_tg_show(struct kobject *kobj, struct attribute *attr,
->  
->  	mutex_unlock(&list_mutex);
->  
-> -	if (time_after(expires, jiffies))
-> +	if (time_after(expires, now))
->  		return sprintf(buf, "%u\n",
-> -			       jiffies_to_msecs(expires - jiffies) / 1000);
-> +			       jiffies_to_msecs(expires - now) / 1000);
->  
-> -	return sprintf(buf, "0\n");
-> +	if (timer->send_nl_msg)
-> +		return sprintf(buf, "0 %d\n",
-> +			jiffies_to_msecs(now - expires) / 1000);
-> +	else
-> +		return sprintf(buf, "0\n");
->  }
->  
->  static void idletimer_tg_work(struct work_struct *work)
-> @@ -105,6 +141,9 @@ static void idletimer_tg_work(struct work_struct *work)
->  						  work);
->  
->  	sysfs_notify(idletimer_tg_kobj, NULL, timer->attr.attr.name);
-> +
-> +	if (timer->send_nl_msg)
-> +		notify_netlink_uevent(timer->attr.attr.name, timer);
->  }
->  
->  static void idletimer_tg_expired(unsigned long data)
-> @@ -113,6 +152,7 @@ static void idletimer_tg_expired(unsigned long data)
->  
->  	pr_debug("timer %s expired\n", timer->attr.attr.name);
->  
-> +	timer->active = false;
->  	schedule_work(&timer->work);
->  }
->  
-> @@ -145,6 +185,8 @@ static int idletimer_tg_create(struct idletimer_tg_info *info)
->  	setup_timer(&info->timer->timer, idletimer_tg_expired,
->  		    (unsigned long) info->timer);
->  	info->timer->refcnt = 1;
-> +	info->timer->send_nl_msg = (info->send_nl_msg == 0) ? false : true;
-> +	info->timer->active = true;
->  
->  	mod_timer(&info->timer->timer,
->  		  msecs_to_jiffies(info->timeout * 1000) + jiffies);
-> @@ -168,14 +210,24 @@ static unsigned int idletimer_tg_target(struct sk_buff *skb,
->  					 const struct xt_action_param *par)
->  {
->  	const struct idletimer_tg_info *info = par->targinfo;
-> +	unsigned long now = jiffies;
->  
->  	pr_debug("resetting timer %s, timeout period %u\n",
->  		 info->label, info->timeout);
->  
->  	BUG_ON(!info->timer);
->  
-> +	info->timer->active = true;
-> +
-> +	if (time_before(info->timer->timer.expires, now)) {
-> +		schedule_work(&info->timer->work);
-> +		pr_debug("Starting timer %s (Expired, Jiffies): %lu, %lu\n",
-> +			 info->label, info->timer->timer.expires, now);
-> +	}
-
-AFAICS, this seems to fix the case in which timer has expired and we
-refresh it without sending the notification.
-
-Should go in a different patch.
-
-> +
-> +	/* TODO: Avoid modifying timers on each packet */
->  	mod_timer(&info->timer->timer,
-> -		  msecs_to_jiffies(info->timeout * 1000) + jiffies);
-> +		  msecs_to_jiffies(info->timeout * 1000) + now);
->  
->  	return XT_CONTINUE;
->  }
-> @@ -184,8 +236,9 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
->  {
->  	struct idletimer_tg_info *info = par->targinfo;
->  	int ret;
-> +	unsigned long now = jiffies;
->  
-> -	pr_debug("checkentry targinfo%s\n", info->label);
-> +	pr_debug("checkentry targinfo %s\n", info->label);
->  
->  	if (info->timeout == 0) {
->  		pr_debug("timeout value is zero\n");
-> @@ -204,8 +257,16 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
->  	info->timer = __idletimer_tg_find_by_label(info->label);
->  	if (info->timer) {
->  		info->timer->refcnt++;
-> +		info->timer->active = true;
-> +
-> +		if (time_before(info->timer->timer.expires, now)) {
-> +			schedule_work(&info->timer->work);
-> +			pr_debug("Starting Checkentry timer (Expired, Jiffies): %lu, %lu\n",
-> +				info->timer->timer.expires, now);
-> +		}
-> +
->  		mod_timer(&info->timer->timer,
-> -			  msecs_to_jiffies(info->timeout * 1000) + jiffies);
-> +			  msecs_to_jiffies(info->timeout * 1000) + now);
->  
->  		pr_debug("increased refcnt of timer %s to %u\n",
->  			 info->label, info->timer->refcnt);
-> @@ -219,6 +280,7 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
->  	}
->  
->  	mutex_unlock(&list_mutex);
-> +
-
-we don't need this.
-
->  	return 0;
->  }
->  
-> @@ -240,7 +302,7 @@ static void idletimer_tg_destroy(const struct xt_tgdtor_param *par)
->  		kfree(info->timer);
->  	} else {
->  		pr_debug("decreased refcnt of timer %s to %u\n",
-> -			 info->label, info->timer->refcnt);
-> +		info->label, info->timer->refcnt);
-
-remove this change.
-
->  	}
->  
->  	mutex_unlock(&list_mutex);
-> @@ -248,6 +310,7 @@ static void idletimer_tg_destroy(const struct xt_tgdtor_param *par)
->  
->  static struct xt_target idletimer_tg __read_mostly = {
->  	.name		= "IDLETIMER",
-> +	.revision	= 1,
->  	.family		= NFPROTO_UNSPEC,
->  	.target		= idletimer_tg_target,
->  	.targetsize     = sizeof(struct idletimer_tg_info),
-> @@ -313,3 +376,4 @@ MODULE_DESCRIPTION("Xtables: idle time monitor");
->  MODULE_LICENSE("GPL v2");
->  MODULE_ALIAS("ipt_IDLETIMER");
->  MODULE_ALIAS("ip6t_IDLETIMER");
-> +MODULE_ALIAS("arpt_IDLETIMER");
-
-Interesting, they are really using this with arptables?
-
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
