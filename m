@@ -1,79 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab2IWRaa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 13:30:30 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58675 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab2IWRa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 13:30:29 -0400
-From: Michal Nazarewicz <mpn@google.com>
-To: George Spelvin <linux@horizon.com>, vda.linux@googlemail.com
-Cc: hughd@google.com, linux-kernel@vger.kernel.org, linux@horizon.com
-Subject: Re: [PATCH 2/4] lib: vsprintf: Optimize division by 10000
-In-Reply-To: <1343971271-13355-2-git-send-email-linux@horizon.com>
-Organization: Google Inc
-References: <1343971271-13355-1-git-send-email-linux@horizon.com> <1343971271-13355-2-git-send-email-linux@horizon.com>
-User-Agent: Notmuch/0.14+22~g8bdc16b (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Sun, 23 Sep 2012 19:30:20 +0200
-Message-ID: <xa1twqzk640j.fsf@mina86.com>
+	id S1754348Ab2IWRji (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 13:39:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32673 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754119Ab2IWRjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 13:39:37 -0400
+Message-ID: <505F4949.2090509@redhat.com>
+Date: Sun, 23 Sep 2012 14:39:21 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+CC: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Fwd: [PATCH 5/5] drivers/media/platform/omap3isp/isp.c: fix error
+ return code
+References: <1346775269-12191-1-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1346775269-12191-1-git-send-email-peter.senna@gmail.com>
+X-Enigmail-Version: 1.4.4
+X-Forwarded-Message-Id: <1346775269-12191-1-git-send-email-peter.senna@gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------090503090104080708050501"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+This is a multi-part message in MIME format.
+--------------090503090104080708050501
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-On Fri, Aug 03 2012, George Spelvin wrote:
-> The same multiply-by-inverse technique can be used to
-> convert division by 10000 to a 32x32->64-bit multiply.
->
-> Signed-off-by: George Spelvin <linux@horizon.com>
+Laurent,
 
-You are using a 64-bit multiply in a path that is designed for 32-bit
-processors, which makes me feel that it will be slower.
+Could you please review this patch?
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Peter,
 
---==-=-=
-Content-Type: text/plain
+Please, always c/c the driver maintainer/author on patches you submit.
+
+You can check it with scripts/get_maintainer.pl.
+
+Regards,
+Mauro
+
+-------- Mensagem original --------
+Assunto: [PATCH 5/5] drivers/media/platform/omap3isp/isp.c: fix error return code
+Data: Tue,  4 Sep 2012 18:14:25 +0200
+De: Peter Senna Tschudin <peter.senna@gmail.com>
+Para: Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr, linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
+
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+ drivers/media/platform/omap3isp/isp.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/omap3isp/isp.c b/drivers/media/platform/omap3isp/isp.c
+index e0096e0..91fcaef 100644
+--- a/drivers/media/platform/omap3isp/isp.c
++++ b/drivers/media/platform/omap3isp/isp.c
+@@ -2102,8 +2102,10 @@ static int __devinit isp_probe(struct platform_device *pdev)
+ 	if (ret < 0)
+ 		goto error;
+ 
+-	if (__omap3isp_get(isp, false) == NULL)
++	if (__omap3isp_get(isp, false) == NULL) {
++		ret = -EBUSY; /* Not sure if EBUSY is best for here */
+ 		goto error;
++	}
+ 
+ 	ret = isp_reset(isp);
+ 	if (ret < 0)
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-media" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
---==-=-=
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+--------------090503090104080708050501
+Content-Type: text/plain; charset=UTF-8;
+ name="=?ISO-8859-1?Q?Se=E7=E3o_da_mensagem_anexada?="
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename*0*=ISO-8859-1''%53%65%E7%E3%6F%20%64%61%20%6D%65%6E%73%61%67%65;
+ filename*1*=%6D%20%61%6E%65%78%61%64%61
 
-iQIcBAEBAgAGBQJQX0csAAoJECBgQBJQdR/0OeEP/2Sf8+wGJcaYa/KotLFECZ/0
-ST0d5SkTtm/SyC1KAxMRWZXhbpIFU4zmiyrLp/8aw/8GVlabUKHbuoemoOzkGNEo
-FMTPz1d4jD4xZFyp2534R10NYDPLk4NRKy9dyrEOnx4pSa5KHMTRqzlt6DYfTVdz
-myrvYMAt1HbkP70HzjHQIkbKGj1XRE2NF/vWGCoyHhcCaJlUZW5YYzYkurcE9Tyd
-fs6RZv/FSxWmSCykVXTlzCo8TaKNiJyDfIJ6KW2jg54hGFAo7jDS77PxU8/deWvD
-zMCLbNa1rXcl9OcVKymEHxtcR8nTTjtZ/tXIQm7sntOgfIsfOX1R6shA1K75GNmd
-mBYa+X5MsAwbaMHNpVo71xAeG68yOTYo6wgDtdd+hEhl/GU0WXTFd49NazE2ety9
-CrveN4sbo+YPJoPUF8KOsw+peTwLm6ZBDWuZSNWTvlQF/8SPqESjHkX0rm6gTNrq
-28UJgCGmjLlES/NJEcxwN40IfwhuU+Jvnb6F4D5FNZDOsmz09RD1GAeh3AP9CABj
-FTxq+6/kWIkraA92GZ7J75yqay1AzwQft8miPabcYHwRZuqiRg69kCD7VPso7KLW
-JJNNT8QoM00TzKOIpIZ9mcpM0w8BtEBe7SbAl3MICuOPuTmll8b/kV8+UZi8VJpx
-pJieVGUoN9U9bKqJjwdC
-=QZya
------END PGP SIGNATURE-----
---==-=-=--
 
---=-=-=--
+--------------090503090104080708050501--
