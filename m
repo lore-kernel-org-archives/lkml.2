@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab2IWAPa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Sep 2012 20:15:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22967 "EHLO mga11.intel.com"
+	id S1753259Ab2IWASU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Sep 2012 20:18:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57344 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab2IWAP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Sep 2012 20:15:27 -0400
+	id S1751636Ab2IWASS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Sep 2012 20:18:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,469,1344236400"; 
-   d="scan'208";a="225350900"
-Date: Sun, 23 Sep 2012 08:15:22 +0800
+   d="scan'208";a="225351234"
+Date: Sun, 23 Sep 2012 08:18:06 +0800
 From: Fengguang Wu <fengguang.wu@intel.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Shaun Ruffell <sruffell@digium.com>,
@@ -17,8 +17,8 @@ Cc: Shaun Ruffell <sruffell@digium.com>,
         Shaohui Xie <Shaohui.Xie@freescale.com>,
         Kim Phillips <kim.phillips@freescale.com>, linux-edac@vger.kernel.org,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: Linux 3.6-rc6
-Message-ID: <20120923001522.GA8383@localhost>
+Subject: [PATCH] edac_mc: fix messy kfree calls in the error path
+Message-ID: <20120923001806.GB8383@localhost>
 References: <CA+55aFxMmqG32dJXhUe7N+aS=M1q_5hf7iTfsnPKDU4d610EoQ@mail.gmail.com>
  <20120922005905.GA8335@digium.com>
  <CA+55aFzCzF5DZvR6i=Jg+0abSzN_nbAVr7Ef1dzmR3_NNLWmfw@mail.gmail.com>
@@ -31,43 +31,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 22, 2012 at 11:57:23AM -0700, Linus Torvalds wrote:
-> On Fri, Sep 21, 2012 at 5:59 PM, Shaun Ruffell <sruffell@digium.com> wrote:
-> >
-> > I posted patches [1,2,3] that resolve the issue for me. Shaohui Xie
-> > also hit the issue and posted a slightly different patch [4]. The
-> > patches are currently waiting for Mauro, who I understand is
-> > catching up since returning from San Diego, to check them out.
-> >
-> > [1] http://marc.info/?l=linux-kernel&m=134764595921752&w=2
-> > [2] http://marc.info/?l=linux-kernel&m=134764594721747&w=2
-> > [3] http://marc.info/?l=linux-kernel&m=134764597921761&w=2
-> > [4] http://marc.info/?l=linux-kernel&m=134753579818528&w=2
-> 
-> That first patch needs a sign-off from you, since you are passing on
-> somebody elses patch.
-> 
-> Looking at that patch, the patch seems to be a memory leak (?) leaking
-> the "channels" allocation, along with fixing an odd and incorrect
+coccinelle warns about:
 
-Yes.
++ drivers/edac/edac_mc.c:429:9-23: ERROR: reference preceded by free on line 429
 
-> kfree (and access) of mci->csrows[i]. If that is correct, please write
+   421         if (mci->csrows) {
+ > 422                 for (chn = 0; chn < tot_channels; chn++) {
+   423                         csr = mci->csrows[chn];
+   424                         if (csr) {
+ > 425                                 for (chn = 0; chn < tot_channels; chn++)
+   426                                          kfree(csr->channels[chn]);
+   427                                  kfree(csr);
+   428                          }
+ > 429                          kfree(mci->csrows[i]);
+   430                  }
+   431                  kfree(mci->csrows);
+   432          }
 
-Right.
+and that code block seem to mess things up in several ways (double free, memory
+leak, out-of-bound reads etc.):
 
-> a proper changelog. The current changelog for that thing is totally
-> pointless, and doesn't actually explain what the patch *does*.
- 
-Sorry I'll send the fix with more complete changelog in a standalone
-patch for review.
+L422: The iterator "chn" and bound "tot_channels" are totally wrong. Should be
+      "row" and "tot_csrows" respectively. Which means either memory leak, or
+      out-of-bound reads (which if does not trigger an immediate page fault
+      error, will further lead to kfree() on random addresses).
 
-> I'd also like some ack's from people, and I'd love to know which
-> commit introduced the problem(s). If this problem is new to 3.6, I
-> want to know what caused it, and if it is *not* new, then the thing
-> needs to be marked for stable. Please?
+L425: The inner loop is reusing the same iterator "chn" as the outer loop,
+      which could lead to premature end of the outer loop, and hence memory leak.
 
-It's a new bug to 3.6.
+L429: The array index 'i' in mci->csrows[i] is a temporary value used in
+      previous loops, and won't change at all in the current loop. Which
+      means either out-of-bound read and possibly kfree(random number), or the
+      same mci->csrows[i] get freed once and again, and possibly double free
+      for the kfree(csr) in L427.
 
-Thanks,
-Fengguang
+L426/L427: a kfree(csr->channels) is needed in between to avoid leaking the memory.
+
+The buggy code was introduced by commit de3910eb ("edac: change the mem
+allocation scheme to make Documentation/kobject.txt happy") in the 3.6-rc1
+merge window. Fix it by freeing up resources in this order: 
+
+  free csrows[i]->channels[j]
+  free csrows[i]->channels
+  free csrows[i]
+  free csrows
+
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Shaun Ruffell <sruffell@digium.com>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ drivers/edac/edac_mc.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+--- linux.orig/drivers/edac/edac_mc.c	2012-08-12 10:10:38.115520521 +0800
++++ linux/drivers/edac/edac_mc.c	2012-09-23 07:30:40.382206820 +0800
+@@ -419,14 +419,16 @@ error:
+ 		kfree(mci->dimms);
+ 	}
+ 	if (mci->csrows) {
+-		for (chn = 0; chn < tot_channels; chn++) {
+-			csr = mci->csrows[chn];
++		for (row = 0; row < tot_csrows; row++) {
++			csr = mci->csrows[row];
+ 			if (csr) {
+-				for (chn = 0; chn < tot_channels; chn++)
+-					kfree(csr->channels[chn]);
++				if (csr->channels) {
++					for (chn = 0; chn < tot_channels; chn++)
++						kfree(csr->channels[chn]);
++					kfree(csr->channels);
++				}
+ 				kfree(csr);
+ 			}
+-			kfree(mci->csrows[i]);
+ 		}
+ 		kfree(mci->csrows);
+ 	}
