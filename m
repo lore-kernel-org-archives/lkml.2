@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab2IWNBR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 09:01:17 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:44901 "EHLO e1.ny.us.ibm.com"
+	id S1753963Ab2IWM6S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 08:58:18 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:53674 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753563Ab2IWM6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 08:58:20 -0400
+	id S1753728Ab2IWM5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 08:57:08 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
@@ -14,137 +14,367 @@ Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
         marco.stornelli@gmail.com, david@fromorbit.com,
         stroetmann@ontolinux.com, diegocg@gmail.com, chris@csamuel.org,
         Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v2 10/10] vfs: add documentation
-Date: Sun, 23 Sep 2012 20:56:35 +0800
-Message-Id: <1348404995-14372-11-git-send-email-zwu.kernel@gmail.com>
+Subject: [RFC v2 01/10] vfs: introduce private rb structures
+Date: Sun, 23 Sep 2012 20:56:26 +0800
+Message-Id: <1348404995-14372-2-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
 References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
-x-cbid: 12092312-6078-0000-0000-00000FE677E0
+x-cbid: 12092312-5930-0000-0000-00000C610894
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
+  One root structure hot_info is defined, is hooked
+up in super_block, and will be used to hold rb trees
+root, hash list root and some other information, etc.
+  Adds hot_inode_tree struct to keep track of
+frequently accessed files, and be keyed by {inode, offset}.
+Trees contain hot_inode_items representing those files
+and ranges.
+  Having these trees means that vfs can quickly determine the
+temperature of some data by doing some calculations on the
+hot_freq_data struct that hangs off of the tree item.
+  Define two items hot_inode_item and hot_range_item,
+one of them represents one tracked file
+to keep track of its access frequency and the tree of
+ranges in this file, while the latter represents
+a file range of one inode.
+  Each of the two structures contains a hot_freq_data
+struct with its frequency of access metrics (number of
+{reads, writes}, last {read,write} time, frequency of
+{reads,writes}).
+  Also, each hot_inode_item contains one hot_range_tree
+struct which is keyed by {inode, offset, length}
+and used to keep track of all the ranges in this file.
+
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- Documentation/filesystems/hot_tracking.txt |  106 ++++++++++++++++++++++++++++
- 1 files changed, 106 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/filesystems/hot_tracking.txt
+ fs/Makefile                  |    2 +-
+ fs/dcache.c                  |    2 +
+ fs/hot_tracking.c            |  116 ++++++++++++++++++++++++++++++++++++++++++
+ fs/hot_tracking.h            |   27 ++++++++++
+ include/linux/fs.h           |    4 ++
+ include/linux/hot_tracking.h |   96 ++++++++++++++++++++++++++++++++++
+ 6 files changed, 246 insertions(+), 1 deletions(-)
+ create mode 100644 fs/hot_tracking.c
+ create mode 100644 fs/hot_tracking.h
+ create mode 100644 include/linux/hot_tracking.h
 
-diff --git a/Documentation/filesystems/hot_tracking.txt b/Documentation/filesystems/hot_tracking.txt
+diff --git a/fs/Makefile b/fs/Makefile
+index 2fb9779..9d29618 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -11,7 +11,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
+ 		attr.o bad_inode.o file.o filesystems.o namespace.o \
+ 		seq_file.o xattr.o libfs.o fs-writeback.o \
+ 		pnode.o drop_caches.o splice.o sync.o utimes.o \
+-		stack.o fs_struct.o statfs.o
++		stack.o fs_struct.o statfs.o hot_tracking.o
+ 
+ ifeq ($(CONFIG_BLOCK),y)
+ obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 8086636..92470a1 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -37,6 +37,7 @@
+ #include <linux/rculist_bl.h>
+ #include <linux/prefetch.h>
+ #include <linux/ratelimit.h>
++#include "hot_tracking.h"
+ #include "internal.h"
+ #include "mount.h"
+ 
+@@ -3164,6 +3165,7 @@ void __init vfs_caches_init(unsigned long mempages)
+ 	inode_init();
+ 	files_init(mempages);
+ 	mnt_init();
++	hot_track_cache_init();
+ 	bdev_cache_init();
+ 	chrdev_init();
+ }
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
 new file mode 100644
-index 0000000..340df45
+index 0000000..173054b
 --- /dev/null
-+++ b/Documentation/filesystems/hot_tracking.txt
-@@ -0,0 +1,106 @@
-+Hot Data Tracking
++++ b/fs/hot_tracking.c
+@@ -0,0 +1,116 @@
++/*
++ * fs/hot_tracking.c
++ *
++ * Copyright (C) 2012 IBM Corp. All rights reserved.
++ * Written by Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
++ *            Ben Chociej <bchociej@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public
++ * License v2 as published by the Free Software Foundation.
++ */
 +
-+Introduction
-+-------------------------------------------------------------------------------
++#include <linux/list.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/spinlock.h>
++#include <linux/hardirq.h>
++#include <linux/fs.h>
++#include <linux/blkdev.h>
++#include <linux/types.h>
++#include "hot_tracking.h"
 +
-+  The feature adds experimental support for tracking data temperature
-+information in VFS layer.  Essentially, this means maintaining some key
-+stats(like number of reads/writes, last read/write time, frequency of
-+reads/writes), then distilling those numbers down to a single
-+"temperature" value that reflects what data is "hot," and using that
-+temperature to move data to SSDs.
++/* kmem_cache pointers for slab caches */
++static struct kmem_cache *hot_inode_item_cache;
++static struct kmem_cache *hot_range_item_cache;
 +
-+  The long-term goal of the feature is to allow some FSs,
-+e.g. Btrfs to intelligently utilize SSDs in a heterogenous volume.
-+Incidentally, this project has been motivated by
-+the Project Ideas page on the Btrfs wiki.
++/*
++ * Initialize the inode tree. Should be called for each new inode
++ * access or other user of the hot_inode interface.
++ */
++static void hot_rb_inode_tree_init(struct hot_inode_tree *tree)
++{
++	tree->map = RB_ROOT;
++	rwlock_init(&tree->lock);
++}
 +
-+  Of course, users are warned not to run this code outside of development
-+environments. These patches are EXPERIMENTAL, and as such they might eat
-+your data and/or memory. That said, the code should be relatively safe
-+when the hottrack mount option are disabled.
++/*
++ * Initialize the hot range tree. Should be called for each new inode
++ * access or other user of the hot_range interface.
++ */
++void hot_rb_range_tree_init(struct hot_range_tree *tree)
++{
++	tree->map = RB_ROOT;
++	rwlock_init(&tree->lock);
++}
 +
-+Motivation
-+-------------------------------------------------------------------------------
++/*
++ * Initialize a new hot_inode_item structure. The new structure is
++ * returned with a reference count of one and needs to be
++ * freed using free_inode_item()
++ */
++void hot_rb_inode_item_init(void *_item)
++{
++	struct hot_inode_item *he = _item;
 +
-+  The overall goal of enabling hot data relocation to SSD has been
-+motivated by the Project Ideas page on the Btrfs wiki at
-+<https://btrfs.wiki.kernel.org/index.php/Project_ideas>.
-+It will divide into two steps. VFS provide hot data tracking function
-+while specific FS will provide hot data relocation function.
-+So as the first step of this goal, it is hoped that the patchset
-+for hot data tracking will eventually mature into VFS.
++	memset(he, 0, sizeof(*he));
++	kref_init(&he->refs);
++	spin_lock_init(&he->lock);
++	he->hot_freq_data.avg_delta_reads = (u64) -1;
++	he->hot_freq_data.avg_delta_writes = (u64) -1;
++	he->hot_freq_data.flags = FREQ_DATA_TYPE_INODE;
++	hot_rb_range_tree_init(&he->hot_range_tree);
++}
 +
-+  This is essentially the traditional cache argument: SSD is fast and
-+expensive; HDD is cheap but slow. ZFS, for example, can already take
-+advantage of SSD caching. Btrfs should also be able to take advantage of
-+hybrid storage without many broad, sweeping changes to existing code.
++/*
++ * Initialize a new hot_range_item structure. The new structure is
++ * returned with a reference count of one and needs to be
++ * freed using free_range_item()
++ */
++static void hot_rb_range_item_init(void *_item)
++{
++	struct hot_range_item *hr = _item;
 +
-+Main Parts Description
-+-------------------------------------------------------------------------------
++	memset(hr, 0, sizeof(*hr));
++	kref_init(&hr->refs);
++	spin_lock_init(&hr->lock);
++	hr->hot_freq_data.avg_delta_reads = (u64) -1;
++	hr->hot_freq_data.avg_delta_writes = (u64) -1;
++	hr->hot_freq_data.flags = FREQ_DATA_TYPE_RANGE;
++}
 +
-+These include the following parts:
-+    * Hooks in existing vfs functions to track data access frequency
-+    * New rbtrees for tracking access frequency of inodes and sub-file
-+ranges (hot_rb.c)
-+    The relationship between super_block and rbtree is as below:
-+super_block->s_hotinfo.hot_inode_tree
-+    In include/linux/fs.h, one struct hot_info s_hotinfo is added to
-+super_block struct. Each FS instance can find hot tracking info
-+s_hotinfo via its super_block. In this hot_info, it store a lot of hot
-+tracking info such as hot_inode_tree, inode and range hash list, etc.
-+    * A hash list for indexing data by its temperature (hot_hash.c)
-+    * A debugfs interface for dumping data from the rbtrees (hot_debugfs.c)
-+    * A background kthread for updating inode heat info
-+    * Mount options for enabling temperature tracking(-o hottrack,
-+default mean disabled) (hot_track.c)
-+    * An ioctl to retrieve the frequency information collected for a certain
-+file
-+    * Ioctls to enable/disable frequency tracking per inode.
++/* init hot_inode_item and hot_range_item kmem cache */
++static int __init hot_rb_item_cache_init(void)
++{
++	hot_inode_item_cache = kmem_cache_create("hot_inode_item",
++			sizeof(struct hot_inode_item), 0,
++			SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD,
++			hot_rb_inode_item_init);
++	if (!hot_inode_item_cache)
++		goto inode_err;
 +
-+Git Development Tree
-+-------------------------------------------------------------------------------
++	hot_range_item_cache = kmem_cache_create("hot_range_item",
++					sizeof(struct hot_range_item), 0,
++					SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD,
++					hot_rb_range_item_init);
++	if (!hot_range_item_cache)
++		goto range_err;
 +
-+  The feature is still on development and review, so if you're interested,
-+you can pull from the git repository at the following location:
-+  https://github.com/wuzhy/kernel.git hot_tracking
-+  git://github.com/wuzhy/kernel.git hot_tracking
++	return 0;
 +
-+Usage Example
-+-------------------------------------------------------------------------------
-+To use hot tracking, you should mount like this:
++range_err:
++	kmem_cache_destroy(hot_inode_item_cache);
++inode_err:
++	return -ENOMEM;
++}
 +
-+$ mount -o hottrack /dev/sdb /mnt
-+[ 1505.894078] device label test devid 1 transid 29 /dev/sdb
-+[ 1505.952977] btrfs: disk space caching is enabled
-+[ 1506.069678] vfs: turning on hot data tracking
++/*
++ * Initialize kmem cache for hot_inode_item
++ * and hot_range_item
++ */
++void __init hot_track_cache_init(void)
++{
++	if (hot_rb_item_cache_init())
++		return;
++}
+diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
+new file mode 100644
+index 0000000..269b67a
+--- /dev/null
++++ b/fs/hot_tracking.h
+@@ -0,0 +1,27 @@
++/*
++ * fs/hot_tracking.h
++ *
++ * Copyright (C) 2012 IBM Corp. All rights reserved.
++ * Written by Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
++ *            Ben Chociej <bchociej@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public
++ * License v2 as published by the Free Software Foundation.
++ */
 +
-+Mount debugfs at first:
++#ifndef __HOT_TRACKING__
++#define __HOT_TRACKING__
 +
-+$ mount -t debugfs none /sys/kernel/debug
-+$ ls -l /sys/kernel/debug/vfs_hotdata/
-+total 0
-+drwxr-xr-x 2 root root 0 Aug  8 04:40 sdb
-+$ ls -l /sys/kernel/debug/vfs_hotdata/sdb
-+total 0
-+-rw-r--r-- 1 root root 0 Aug  8 04:40 inode_data
-+-rw-r--r-- 1 root root 0 Aug  8 04:40 range_data
++#include <linux/rbtree.h>
++#include <linux/hot_tracking.h>
 +
-+View information about hot tracking from debugfs:
++/* values for hot_freq_data flags */
++/* freq data struct is for an inode */
++#define FREQ_DATA_TYPE_INODE (1 << 0)
++/* freq data struct is for a range */
++#define FREQ_DATA_TYPE_RANGE (1 << 1)
 +
-+$ echo "hot tracking test" > /mnt/file
-+$ cat /sys/kernel/debug/hot_track/sdb/inode_data
-+inode #279, reads 0, writes 1, avg read time 18446744073709551615,
-+avg write time 5251566408153596, temp 109
-+$ cat /sys/kernel/debug/hot_track/sdb/range_data
-+inode #279, range start 0 (range len 1048576) reads 0, writes 1,
-+avg read time 18446744073709551615, avg write time 1128690176623144209, temp 64
++void __init hot_track_cache_init(void);
 +
-+$ echo "hot data tracking test" >> /mnt/file
-+$ cat /sys/kernel/debug/hot_track/sdb/inode_data
-+inode #279, reads 0, writes 2, avg read time 18446744073709551615,
-+avg write time 4923343766042451, temp 109
-+$ cat /sys/kernel/debug/hot_track/sdb/range_data
-+inode #279, range start 0 (range len 1048576) reads 0, writes 2,
-+avg read time 18446744073709551615, avg write time 1058147040842596150, temp 64
++#endif /* __HOT_TRACKING__ */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index aa11047..db1a144 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -415,6 +415,7 @@ struct inodes_stat_t {
+ #include <linux/migrate_mode.h>
+ #include <linux/uidgid.h>
+ #include <linux/lockdep.h>
++#include <linux/hot_tracking.h>
+ 
+ #include <asm/byteorder.h>
+ 
+@@ -1578,6 +1579,9 @@ struct super_block {
+ 
+ 	/* Being remounted read-only */
+ 	int s_readonly_remount;
 +
++	/* Hot data tracking info*/
++	struct hot_info s_hotinfo;
+ };
+ 
+ /* superblock cache pruning functions */
+diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+new file mode 100644
+index 0000000..a566f91
+--- /dev/null
++++ b/include/linux/hot_tracking.h
+@@ -0,0 +1,96 @@
++/*
++ *  include/linux/hot_tracking.h
++ *
++ * This file has definitions for VFS hot data tracking
++ * structures etc.
++ *
++ * Copyright (C) 2012 IBM Corp. All rights reserved.
++ * Written by Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
++ *            Ben Chociej <bchociej@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public
++ * License v2 as published by the Free Software Foundation.
++ */
++
++#ifndef _LINUX_HOTTRACK_H
++#define _LINUX_HOTTRACK_H
++
++#include <linux/types.h>
++#include <linux/rbtree.h>
++#include <linux/kref.h>
++
++/* A tree that sits on the hot_info */
++struct hot_inode_tree {
++	struct rb_root map;
++	rwlock_t lock;
++};
++
++/* A tree of ranges for each inode in the hot_inode_tree */
++struct hot_range_tree {
++	struct rb_root map;
++	rwlock_t lock;
++};
++
++/* A frequency data struct holds values that are used to
++ * determine temperature of files and file ranges. These structs
++ * are members of hot_inode_item and hot_range_item
++ */
++struct hot_freq_data {
++	struct timespec last_read_time;
++	struct timespec last_write_time;
++	u32 nr_reads;
++	u32 nr_writes;
++	u64 avg_delta_reads;
++	u64 avg_delta_writes;
++	u8 flags;
++	u32 last_temperature;
++};
++
++/* An item representing an inode and its access frequency */
++struct hot_inode_item {
++	/* node for hot_inode_tree rb_tree */
++	struct rb_node rb_node;
++	/* tree of ranges in this inode */
++	struct hot_range_tree hot_range_tree;
++	/* frequency data for this inode */
++	struct hot_freq_data hot_freq_data;
++	/* inode number, copied from inode */
++	unsigned long i_ino;
++	/* used to check for errors in ref counting */
++	u8 in_tree;
++	/* protects hot_freq_data, i_no, in_tree */
++	spinlock_t lock;
++	/* prevents kfree */
++	struct kref refs;
++};
++
++/*
++ * An item representing a range inside of an inode whose frequency
++ * is being tracked
++ */
++struct hot_range_item {
++	/* node for hot_range_tree rb_tree */
++	struct rb_node rb_node;
++	/* frequency data for this range */
++	struct hot_freq_data hot_freq_data;
++	/* the hot_inode_item associated with this hot_range_item */
++	struct hot_inode_item *hot_inode;
++	/* starting offset of this range */
++	u64 start;
++	/* length of this range */
++	u64 len;
++	/* used to check for errors in ref counting */
++	u8 in_tree;
++	/* protects hot_freq_data, start, len, and in_tree */
++	spinlock_t lock;
++	/* prevents kfree */
++	struct kref refs;
++};
++
++struct hot_info {
++	/* red-black tree that keeps track of fs-wide hot data */
++	struct hot_inode_tree hot_inode_tree;
++};
++
++#endif  /* _LINUX_HOTTRACK_H */
 -- 
 1.7.6.5
 
