@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab2IWGTA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 02:19:00 -0400
-Received: from mail.agmk.net ([91.192.224.71]:53921 "EHLO mail.agmk.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753607Ab2IWGS5 convert rfc822-to-8bit (ORCPT
+	id S1753819Ab2IWGaz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 02:30:55 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45508 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753606Ab2IWGay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 02:18:57 -0400
-X-Greylist: delayed 542 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Sep 2012 02:18:57 EDT
-From: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, torvalds@linux-foundation.org,
-        arekm@pld-linux.org, baggins@pld-linux.org
-Subject: [2.6.38-3.x] [BUG] soft lockup - CPU#X stuck for 23s! (vfs, autofs, vserver)
-Date: Sun, 23 Sep 2012 08:09:48 +0200
-Message-ID: <5092540.GORQ1kUuNX@localhost>
-User-Agent: KMail/4.9.1 (Linux/3.5.3; KDE/4.9.1; x86_64; ; )
+	Sun, 23 Sep 2012 02:30:54 -0400
+Date: Sun, 23 Sep 2012 07:30:38 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        containers@lists.linux-foundation.org,
+        Dave Hansen <haveblue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>, sukadev@linux.vnet.ibm.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH 3/4] devpts: Make the newinstance option historical
+Message-ID: <20120923063038.GO13973@ZenIV.linux.org.uk>
+References: <m1k44gj1cu.fsf@fess.ebiederm.org>
+ <20120124220247.GA26353@hallyn.com>
+ <CAPXgP13_gczQmG_USAp0p2AuTfxkzAvzHvjbZY_rbbLH-4rDyg@mail.gmail.com>
+ <20120124231601.GA4470@sergelap>
+ <CAPXgP12REAwmDORzdGJhsxZKU8nhiauCxoVdKa8Eifw4MWWtgA@mail.gmail.com>
+ <20120128195103.GA11299@sergelap>
+ <87txup763i.fsf_-_@xmission.com>
+ <87d31d75yj.fsf_-_@xmission.com>
+ <20120923041906.GM13973@ZenIV.linux.org.uk>
+ <87bogx5lg7.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bogx5lg7.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Sep 22, 2012 at 10:59:04PM -0700, Eric W. Biederman wrote:
 
-a long time ago i reported an ugly soft lock of heavy loaded opteron system without usable backtraces :(
-recently, i've logged on 3.4.6 via serial console backtraces from all 16 cores which show some kind
-of vfs lock (http://pluto.agmk.net/kernel/oops.txt). this lock occurs on heavy loaded system with
-frequent autofs unmount (timeout=1s) in action with vserver patch applied.
+> The test:
+> >> +	if (filp->f_vfsmnt->mnt_root == filp->f_dentry)
+> kicks in and no redirection is performed.
 
-i've isolated the vserver function that exposes problem: mnt_is_reachable()
-http://vserver.13thfloor.at/Experimental/patch-3.4.6-vs2.3.3.6.diff:
-
-static int mnt_is_reachable(struct vfsmount *vfsmnt)
-{
-	struct path root;
-	struct dentry *point;
-	struct mount *mnt = real_mount(vfsmnt);
-	struct mount *root_mnt;
-	int ret;
-
-	if (mnt == mnt->mnt_ns->root)
-		return 1;
-
-	br_read_lock(vfsmount_lock);
-	root = current->fs->root;
-	root_mnt = real_mount(root.mnt);
-	point = root.dentry;
-
-	while ((mnt != mnt->mnt_parent) && (mnt != root_mnt)) {
-		point = mnt->mnt_mountpoint;
-		mnt = mnt->mnt_parent;
-	}
-
-	ret = (mnt == root_mnt) && is_subdir(point, root.dentry);
-
-	br_read_unlock(vfsmount_lock);
-
-	return ret;
-}
-
-the vserver developer (Herbert Poetzl) said that locking scheme used in this function looks correct,
-so it might be a hidden vfs bug accidentaly exposed by vserver patch. i'm not a kernel developer,
-so i'd like to ask you for help in solving this problem. afaics the problem starts with 2.6.38
-release which introduced some major vfs changes.
-
-please CC me on reply.
-
-BR,
-Paweł.
-
+Umm...  OK, after the first round of recursion.  Unless you bind /something/pts
+on /something.  Or simply create a symlink.  Hell, if static /dev is on the
+same fs as /tmp, it can even be done by unpriveleged attacker -
+mkdir /tmp/pts
+ln /dev/ptmx /tmp
+ln -s /tmp/ptmx /tmp/pts/ptmx
+exec </tmp/ptmx
+and enjoy the stack overflow in kernel mode.  It's not particulary common
+setup, of course, but I think it demonstrates that you are playing with
+fire...
