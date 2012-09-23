@@ -1,107 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab2IWTuW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 15:50:22 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49948 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230Ab2IWTuV (ORCPT
+	id S1754401Ab2IWTwN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 15:52:13 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:35376 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754155Ab2IWTwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 15:50:21 -0400
-From: Irina Tirdea <irina.tirdea@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v3 4/4] perf tools: configure addr2line path at compile time
-Date: Sun, 23 Sep 2012 22:49:59 +0300
-Message-Id: <1348429799-28473-1-git-send-email-irina.tirdea@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348428446-28245-5-git-send-email-irina.tirdea@gmail.com>
-References: <1348428446-28245-5-git-send-email-irina.tirdea@gmail.com>
+	Sun, 23 Sep 2012 15:52:12 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/ohrtm0dLohvNpqLNyxYg4N6DQ+fz7V/dMsuVBAV
+	8ZUS+5FtgNHIQx
+Message-ID: <505F6860.7000908@gmx.de>
+Date: Sun, 23 Sep 2012 19:52:00 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
+MIME-Version: 1.0
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+CC: paul.gortmaker@windriver.com, hsweeten@visionengravers.com, agust@denx.de,
+        davidb@codeaurora.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 01/10] drivers/video/mb862xx/mb862xxfbdrv.c: fix error
+ return code
+References: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+Applied all 10 patches of this series.
 
-The default name for addr2line is hardcoded to "addr2line".
-When cross-compiling the name of addr2line will be different
-(e.g. arm-eabi-addr2line in Android).
 
-Set the default addr2line name in the Makefile with DEFAULT_ADDR2LINE_PATH.
+Thanks,
 
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
----
+Florian Tobias Schandinat
 
-Changes in v3:
- () Fixed typo in commit message.
 
- tools/perf/Makefile        |    6 +++++-
- tools/perf/util/annotate.c |    3 ++-
- tools/perf/util/sort.c     |    2 +-
- 3 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 7a3f572..745d12b 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -141,6 +141,7 @@ endif
- lib = lib
- PERF_TMP_DIR = /tmp
- OBJDUMP = $(CROSS_COMPILE)objdump
-+ADDR2LINE = $(CROSS_COMPILE)addr2line
- 
- export prefix bindir sharedir sysconfdir
- 
-@@ -885,7 +886,7 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
- 		$<
- 
- $(OUTPUT)util/annotate.o: util/annotate.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DDEFAULT_OBJDUMP_PATH='"$(OBJDUMP)"' $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DDEFAULT_OBJDUMP_PATH='"$(OBJDUMP)"' -DDEFAULT_ADDR2LINE_PATH='"$(ADDR2LIN)"' $<
- 
- $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
-@@ -896,6 +897,9 @@ $(OUTPUT)util/dso-test-data.o: util/dso-test-data.c $(OUTPUT)PERF-CFLAGS
- $(OUTPUT)util/map.o: util/map.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
- 
-+$(OUTPUT)util/sort.o: util/sort.c $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DDEFAULT_ADDR2LINE_PATH='"$(addr2line)"' $<
-+
- $(OUTPUT)util/symbol.o: util/symbol.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
- 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index d7036b3..7734a03 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -915,7 +915,8 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 			continue;
- 
- 		offset = start + i;
--		sprintf(cmd, "addr2line -e %s %016" PRIx64, filename, offset);
-+		sprintf(cmd, DEFAULT_ADDR2LINE_PATH " -e %s %016" PRIx64,
-+			filename, offset);
- 		fp = popen(cmd, "r");
- 		if (!fp)
- 			continue;
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index b5b1b92..357dfc8 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -260,7 +260,7 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
- 	if (path != NULL)
- 		goto out_path;
- 
--	snprintf(cmd, sizeof(cmd), "addr2line -e %s %016" PRIx64,
-+	snprintf(cmd, sizeof(cmd), DEFAULT_ADDR2LINE_PATH " -e %s %016" PRIx64,
- 		 self->ms.map->dso->long_name, self->ip);
- 	fp = popen(cmd, "r");
- 	if (!fp)
--- 
-1.7.9.5
+On 09/18/2012 12:07 PM, Peter Senna Tschudin wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> ---
+>  drivers/video/mb862xx/mb862xxfbdrv.c | 10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/video/mb862xx/mb862xxfbdrv.c b/drivers/video/mb862xx/mb862xxfbdrv.c
+> index 57d940b..d68e332 100644
+> --- a/drivers/video/mb862xx/mb862xxfbdrv.c
+> +++ b/drivers/video/mb862xx/mb862xxfbdrv.c
+> @@ -1052,12 +1052,14 @@ static int __devinit mb862xx_pci_probe(struct pci_dev *pdev,
+>  		break;
+>  	default:
+>  		/* should never occur */
+> +		ret = -EIO;
+>  		goto rel_reg;
+>  	}
+>  
+>  	par->fb_base = ioremap(par->fb_base_phys, par->mapped_vram);
+>  	if (par->fb_base == NULL) {
+>  		dev_err(dev, "Cannot map framebuffer\n");
+> +		ret = -EIO;
+>  		goto rel_reg;
+>  	}
+>  
+> @@ -1073,11 +1075,13 @@ static int __devinit mb862xx_pci_probe(struct pci_dev *pdev,
+>  	dev_dbg(dev, "mmio phys 0x%llx 0x%lx\n",
+>  		(unsigned long long)par->mmio_base_phys, (ulong)par->mmio_len);
+>  
+> -	if (mb862xx_pci_gdc_init(par))
+> +	ret = mb862xx_pci_gdc_init(par);
+> +	if (ret)
+>  		goto io_unmap;
+>  
+> -	if (request_irq(par->irq, mb862xx_intr, IRQF_SHARED,
+> -			DRV_NAME, (void *)par)) {
+> +	ret = request_irq(par->irq, mb862xx_intr, IRQF_SHARED,
+> +			  DRV_NAME, (void *)par);
+> +	if (ret) {
+>  		dev_err(dev, "Cannot request irq\n");
+>  		goto io_unmap;
+>  	}
 
