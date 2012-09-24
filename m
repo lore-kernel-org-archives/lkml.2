@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab2IXX6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 19:58:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52881 "EHLO mx2.suse.de"
+	id S1751648Ab2IXX6b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 19:58:31 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:45025 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509Ab2IXX6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 19:58:04 -0400
-Date: Tue, 25 Sep 2012 09:57:55 +1000
-From: NeilBrown <neilb@suse.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: lkml <linux-kernel@vger.kernel.org>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH] block: export trace_block_unplug
-Message-ID: <20120925095755.048903e8@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/WyFDM00HCpxZiuQMyVpwswK"; protocol="application/pgp-signature"
+	id S1750829Ab2IXX6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 19:58:30 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH 22/30] perf tools: bfd.h/libbfd detection fails with recent binutils
+Date: Mon, 24 Sep 2012 19:58:30 -0400
+User-Agent: KMail/1.13.7 (Linux/3.5.2; KDE/4.6.5; x86_64; ; )
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+References: <1348502384-14442-1-git-send-email-acme@infradead.org> <1348502384-14442-23-git-send-email-acme@infradead.org>
+In-Reply-To: <1348502384-14442-23-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1890150.uHzCySCp9i";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209241958.33449.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/WyFDM00HCpxZiuQMyVpwswK
-Content-Type: text/plain; charset=US-ASCII
+--nextPart1890150.uHzCySCp9i
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
+On Monday 24 September 2012 11:59:36 Arnaldo Carvalho de Melo wrote:
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+>
+> -		FLAGS_BFD=3D$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
+> +		FLAGS_BFD=3D$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE=3D'perf'=
+ -
 
-Hi Jens,
- is there any chance this can be in the next merge window?  I'm
-adding block tracing to md and found I need another export.
-
-Thanks,
-NeilBrown
-
-
-This allows stacked devices (like md/raid5) to provide blktrace
-tracing, including unplug events.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 4b4dbdf..ef55ae0 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -40,6 +40,7 @@
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_complete);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_unplug);
+in this case, if you were to expand PACKAGE, you'd get back the symbol perf=
 =20
- DEFINE_IDA(blk_queue_ida);
-=20
+(which most likely will be an error, but maybe it won't).  i think this sho=
+uld=20
+be instead:
+	-DPACKAGE=3D'"perf"'
 
---Sig_/WyFDM00HCpxZiuQMyVpwswK
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+>
+> +#define PACKAGE 'perf'
+
+this isn't valid C anywhere.  pretty sure this should be:
+	#define PACKAGE "perf"
+=2Dmike
+
+--nextPart1890150.uHzCySCp9i
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-iQIVAwUBUGDzgznsnt1WYoG5AQKeSBAApDDlSFsbgIEdVXJRzUPV7n8IV9eRCMYx
-h3Z5aKGk1tAun+yWPCdPVLdgmfrCfGZzu+e2tg7qc2zbzziuyLlcMgpece/riCGx
-PX6W5OiRyhfpgspndf5nvP7RQaA+7NB3ZT42aWBmMV4bIvTXTN/qwZkxn3eqKUA4
-t+gDf+0Fndn+NWN8npDivZ4S9OobWIdt1rKHMh12b1hODVlyKI1vfP/wtIPhY0+O
-L9V7N9C4Tv20wzTgMzoFKv1hZTGbUd7tflDoNXIKGU2nxb4Tw2rIQDUnOMGdG81K
-fc/9s53/gHCGuv4ZXPKV94/zKV5Su8iiY3nWuyz1IrABRQIEq24hgljxoeO7wlWs
-CTQuRAW8uzo9h/J8509fvFcQgpExmorhiNmBGJnUqmgwbGCFW43SSlw8iHG9SUpo
-BRBK7aIpwEjzxN2vZaAHw6VgiGZfR9y6yEMKBBeMorWvmxQRmuL20+m5ztJFDFno
-6KZOE+D9RKZyb0Tva3hs9qJLQm+43rI+EseqVu/3QbhIdMH2DItCLJ90U7VaMBFy
-ctVGX2F4qWhGTnzejy1D8fICSdUxDMOLBYcfGUY1hDJyqgcxVxGlqgYwGFZ4Pfet
-lFT2H76srbZ+fiCaV0O4Q2ETrdWh4p+bOj3cI54wC94wS03gEJQlomoS8a1N580v
-/TxA1gibLL8=
-=7a1E
+iQIcBAABAgAGBQJQYPOpAAoJEEFjO5/oN/WBMewP/35UqJ7XWQRIHea+eSAzSIEp
+WT8Wyab2ZHLEIyNqz0t0gWoqpOhAkrvWQ+1yrhkL5xmq/bdZJsKcouDhy0GWBgEk
+s3ekvQcwuOmDUKnKmsqJeheI9WRUq7MfXq4I9bXk4GfWBxoIhnv2Ra/NhjgVHHzi
+wycHP8u3cvr+K1tg9Q1lc4o2NxaHaTnDo9AXQafzoRx6G5ulJMfOGWr44UN7vu+8
+DgMEd5IG8YnZsR6RDcP+CqXXmHxMslvDpYDlQnZ88EoqeTwzo3hOEsmV9tRroZBr
+cUFelsPu1vDisZUekILtzKBOM/+lX0fF5CxnnjcDbmMp1rRY1L9IPjA0QfwUSNwW
+DTKwiP2ULfqNpYE/YiFIBaaVu4LSKFfxnfbo0dnnGJzvfyexM+wc50Zsl27bvDMz
+HHSY2cEAMALxa6jtu/VIFWbE8yLzTZIPrujg09Mj3jPpd0KPgLRrpcqUwWdyIeFs
+xVaRgo3Y9fyUQ457D3RyDBuIwjDAwgeCzSgdydib6iUK/MvEaWya9fLEJ03Ji+4g
+5+HmqULByYX7oSvlVk4zvq8bGM/XwTMlWIpeVCD+eE31gBpiisU6HnM0SGrPpak5
+EtR9SbaZTDbLRvdwiLrC+lwrqrd/SUWteji7SjprmH63qnnnnImGWTJJkhKlap+N
+S/LymiiVJGGkZNcfQllG
+=WAdb
 -----END PGP SIGNATURE-----
 
---Sig_/WyFDM00HCpxZiuQMyVpwswK--
+--nextPart1890150.uHzCySCp9i--
