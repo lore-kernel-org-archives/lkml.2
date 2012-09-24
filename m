@@ -1,365 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab2IXIwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:52:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51012 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751424Ab2IXIwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:52:44 -0400
-Date: Mon, 24 Sep 2012 09:52:38 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/9] mm: compaction: Acquire the zone->lock as late as
- possible
-Message-ID: <20120924085238.GY11266@suse.de>
-References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
- <1348224383-1499-7-git-send-email-mgorman@suse.de>
- <20120921143557.fe490819.akpm@linux-foundation.org>
+	id S1753965Ab2IXIzh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:55:37 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:16904 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab2IXIzg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 04:55:36 -0400
+Date: Mon, 24 Sep 2012 11:55:28 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: yvahk-xreary@zacglen.net
+Cc: dheitmueller@kernellabs.com, linux-kernel@vger.kernel.org,
+        mijhail.moreyra@gmail.com, stoth@kernellabs.com
+Subject: Re: Freeze or Oops on recent kernels
+Message-ID: <20120924085528.GJ4587@mwanda>
+References: <20120924063641.GB28937@mwanda>
+ <201209240652.q8O6qWGf012411.zacglen.com@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120921143557.fe490819.akpm@linux-foundation.org>
+In-Reply-To: <201209240652.q8O6qWGf012411.zacglen.com@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 02:35:57PM -0700, Andrew Morton wrote:
-> On Fri, 21 Sep 2012 11:46:20 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > Compactions free scanner acquires the zone->lock when checking for PageBuddy
-> > pages and isolating them. It does this even if there are no PageBuddy pages
-> > in the range.
-> > 
-> > This patch defers acquiring the zone lock for as long as possible. In the
-> > event there are no free pages in the pageblock then the lock will not be
-> > acquired at all which reduces contention on zone->lock.
+On Mon, Sep 24, 2012 at 04:52:32PM +1000, yvahk-xreary@zacglen.net wrote:
 > >
-> > ...
+> >HINT: We only care about the very most recent kernel.  If you can
+> >take a photo of the stack trace, then file a bug report and attach
+> >the .jpg.
 > >
-> > --- a/mm/compaction.c
-> > +++ b/mm/compaction.c
-> > @@ -93,6 +93,28 @@ static inline bool compact_trylock_irqsave(spinlock_t *lock,
-> >  	return compact_checklock_irqsave(lock, flags, false, cc);
-> >  }
-> >  
-> > +/* Returns true if the page is within a block suitable for migration to */
-> > +static bool suitable_migration_target(struct page *page)
-> > +{
-> > +
 > 
-> stray newline
+> After a bit of experimentation my guess is that is is all
+> about bad Intel DX58SO2 motherboard.
+> 
+> And my guess is that it has something to do with memory
+> mapping during an interrupt. Don't know much about memory
+> mapping but I suspect that something quite fundamental
+> goes wrong with this motherboard only.
+> 
+> Exact same type of oops also happens with a PCIe RS232 serial card.
 > 
 
-Fixed.
+There is not enough information here for us to help you.  Sorry.
 
-> > +	int migratetype = get_pageblock_migratetype(page);
-> > +
-> > +	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
-> > +	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
-> > +		return false;
-> > +
-> > +	/* If the page is a large free page, then allow migration */
-> > +	if (PageBuddy(page) && page_order(page) >= pageblock_order)
-> > +		return true;
-> > +
-> > +	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
-> > +	if (migrate_async_suitable(migratetype))
-> > +		return true;
-> > +
-> > +	/* Otherwise skip the block */
-> > +	return false;
-> > +}
-> > +
-> >
-> > ...
-> >
-> > @@ -168,23 +193,38 @@ static unsigned long isolate_freepages_block(unsigned long blockpfn,
-> >  		int isolated, i;
-> >  		struct page *page = cursor;
-> >  
-> > -		if (!pfn_valid_within(blockpfn)) {
-> > -			if (strict)
-> > -				return 0;
-> > -			continue;
-> > -		}
-> > +		if (!pfn_valid_within(blockpfn))
-> > +			goto strict_check;
-> >  		nr_scanned++;
-> >  
-> > -		if (!PageBuddy(page)) {
-> > -			if (strict)
-> > -				return 0;
-> > -			continue;
-> > -		}
-> > +		if (!PageBuddy(page))
-> > +			goto strict_check;
-> > +
-> > +		/*
-> > +		 * The zone lock must be held to isolate freepages. This
-> > +		 * unfortunately this is a very coarse lock and can be
-> 
-> this this
-> 
+regards,
+dan carpenter
 
-Fixed.
-
-> > +		 * heavily contended if there are parallel allocations
-> > +		 * or parallel compactions. For async compaction do not
-> > +		 * spin on the lock and we acquire the lock as late as
-> > +		 * possible.
-> > +		 */
-> > +		locked = compact_checklock_irqsave(&cc->zone->lock, &flags,
-> > +								locked, cc);
-> > +		if (!locked)
-> > +			break;
-> > +
-> > +		/* Recheck this is a suitable migration target under lock */
-> > +		if (!strict && !suitable_migration_target(page))
-> > +			break;
-> > +
-> > +		/* Recheck this is a buddy page under lock */
-> > +		if (!PageBuddy(page))
-> > +			goto strict_check;
-> >  
-> >  		/* Found a free page, break it into order-0 pages */
-> >  		isolated = split_free_page(page);
-> >  		if (!isolated && strict)
-> > -			return 0;
-> > +			goto strict_check;
-> >  		total_isolated += isolated;
-> >  		for (i = 0; i < isolated; i++) {
-> >  			list_add(&page->lru, freelist);
-> > @@ -196,9 +236,23 @@ static unsigned long isolate_freepages_block(unsigned long blockpfn,
-> >  			blockpfn += isolated - 1;
-> >  			cursor += isolated - 1;
-> >  		}
-> > +
-> > +		continue;
-> > +
-> > +strict_check:
-> > +		/* Abort isolation if the caller requested strict isolation */
-> > +		if (strict) {
-> > +			total_isolated = 0;
-> > +			goto out;
-> > +		}
-> >  	}
-> >  
-> >  	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
-> > +
-> > +out:
-> > +	if (locked)
-> > +		spin_unlock_irqrestore(&cc->zone->lock, flags);
-> > +
-> >  	return total_isolated;
-> >  }
-> 
-> A a few things about this function.
-> 
-> Would it be cleaner if we did
-> 
-> 	if (!strict) {
-> 		if (!suitable_migration_target(page))
-> 			break;
-> 	} else {
-> 		if (!PageBuddy(page))
-> 			goto strict_check;
-> 	}
-> 
-> and then remove the test of `strict' from strict_check (which then
-> should be renamed)?
-> 
-
-I was not able to implement what you suggested without breakage.
-However, I can do something very similar if "strict" mode does not bail
-out ASAP and instead double checks at the end that everything was
-isolated correctly. This does mean that CMAs failure case is slightly
-more expensive but that really is a corner case and I think it's
-acceptable if the code is easier to follow as a result.
-
-> Which perhaps means that the whole `strict_check' block can go away:
-> 
-> 	if (!strict) {
-> 		if (!suitable_migration_target(page))
-> 			break;
-> 	} else {
-> 		if (!PageBuddy(page)) {
-> 			total_isolated = 0;
-> 			goto out;
-> 	}
-> 
-> Have a think about it?  The function is a little straggly.
-> 
-
-Proposal below.
-
-> Secondly, it is correct/desirable to skip the (now misnamed
-> `trace_mm_compaction_isolate_freepages') tracepoint generation if we
-> baled out of the loop?  The fact that we entered
-> isolate_freepages_block() but failed to isolate anything is data which
-> people might be interested in?
-> 
-
-You're right, it may be interesting for someone debugging CMA to know that
-nr_scanned != nr_isolated at the time of allocation failure. 
-
-> Thirdly, that (existing) comment "This assumes the block is valid" is
-> either too vague or wrong.  If it's valid, why wo we check
-> pfn_valid_within()?
-> 
-
-Comment is stale and should be removed.
-
-> > @@ -218,13 +272,18 @@ static unsigned long isolate_freepages_block(unsigned long blockpfn,
-> >  unsigned long
-> >  isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
-> >  {
-> > -	unsigned long isolated, pfn, block_end_pfn, flags;
-> > +	unsigned long isolated, pfn, block_end_pfn;
-> >  	struct zone *zone = NULL;
-> >  	LIST_HEAD(freelist);
-> > +	struct compact_control cc;
-> >  
-> >  	if (pfn_valid(start_pfn))
-> >  		zone = page_zone(pfn_to_page(start_pfn));
-> >  
-> > +	/* cc needed for isolate_freepages_block to acquire zone->lock */
-> > +	cc.zone = zone;
-> > +	cc.sync = true;
-> 
-> We initialise two of cc's fields, leave the other 12 fields containing
-> random garbage, then start using it.  I see no bug here, but...
-> 
-
-I get your point. At the very least we should initialise it with zeros.
-
-How about this?
-
----8<---
-mm: compaction: Iron out isolate_freepages_block() and isolate_freepages_range()
-
-Andrew pointed out that isolate_freepages_block() is "straggly" and
-isolate_freepages_range() is making assumptions on how compact_control is
-used which is delicate. This patch straightens isolate_freepages_block()
-and makes it fly straight and initialses compact_control to zeros in
-isolate_freepages_range(). The code should be easier to follow and
-is functionally equivalent. The CMA failure path is now a little more
-expensive but that is a marginal corner-case.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/compaction.c |   47 ++++++++++++++++++++++-------------------------
- 1 file changed, 22 insertions(+), 25 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 9276bc8..5ffe9a5 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -154,7 +154,6 @@ static inline bool compact_trylock_irqsave(spinlock_t *lock,
- /* Returns true if the page is within a block suitable for migration to */
- static bool suitable_migration_target(struct page *page)
- {
--
- 	int migratetype = get_pageblock_migratetype(page);
- 
- 	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
-@@ -246,23 +245,23 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 
- 	cursor = pfn_to_page(blockpfn);
- 
--	/* Isolate free pages. This assumes the block is valid */
-+	/* Isolate free pages. */
- 	for (; blockpfn < end_pfn; blockpfn++, cursor++) {
- 		int isolated, i;
- 		struct page *page = cursor;
- 
--		if (!pfn_valid_within(blockpfn))
--			goto strict_check;
- 		nr_scanned++;
-+		if (!pfn_valid_within(blockpfn))
-+			continue;
- 		if (!valid_page)
- 			valid_page = page;
- 
- 		if (!PageBuddy(page))
--			goto strict_check;
-+			continue;
- 
- 		/*
--		 * The zone lock must be held to isolate freepages. This
--		 * unfortunately this is a very coarse lock and can be
-+		 * The zone lock must be held to isolate freepages.
-+		 * Unfortunately this is a very coarse lock and can be
- 		 * heavily contended if there are parallel allocations
- 		 * or parallel compactions. For async compaction do not
- 		 * spin on the lock and we acquire the lock as late as
-@@ -279,12 +278,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 
- 		/* Recheck this is a buddy page under lock */
- 		if (!PageBuddy(page))
--			goto strict_check;
-+			continue;
- 
- 		/* Found a free page, break it into order-0 pages */
- 		isolated = split_free_page(page);
- 		if (!isolated && strict)
--			goto strict_check;
-+			break;
- 		total_isolated += isolated;
- 		for (i = 0; i < isolated; i++) {
- 			list_add(&page->lru, freelist);
-@@ -296,20 +295,18 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 			blockpfn += isolated - 1;
- 			cursor += isolated - 1;
- 		}
--
--		continue;
--
--strict_check:
--		/* Abort isolation if the caller requested strict isolation */
--		if (strict) {
--			total_isolated = 0;
--			goto out;
--		}
- 	}
- 
- 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
- 
--out:
-+	/*
-+	 * If strict isolation is requested by CMA then check that all the
-+	 * pages scanned were isolated. If there were any failures, 0 is
-+	 * returned and CMA will fail.
-+	 */
-+	if (strict && nr_scanned != total_isolated)
-+		total_isolated = 0;
-+
- 	if (locked)
- 		spin_unlock_irqrestore(&cc->zone->lock, flags);
- 
-@@ -339,14 +336,14 @@ isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
- 	unsigned long isolated, pfn, block_end_pfn;
- 	struct zone *zone = NULL;
- 	LIST_HEAD(freelist);
--	struct compact_control cc;
--
--	if (pfn_valid(start_pfn))
--		zone = page_zone(pfn_to_page(start_pfn));
- 
- 	/* cc needed for isolate_freepages_block to acquire zone->lock */
--	cc.zone = zone;
--	cc.sync = true;
-+	struct compact_control cc = {
-+		.sync = true,
-+	};
-+
-+	if (pfn_valid(start_pfn))
-+		cc.zone = zone = page_zone(pfn_to_page(start_pfn));
- 
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
- 		if (!pfn_valid(pfn) || zone != page_zone(pfn_to_page(pfn)))
