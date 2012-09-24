@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab2IXPse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:48:34 -0400
-Received: from science.horizon.com ([71.41.210.146]:60184 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756029Ab2IXPsd (ORCPT
+	id S1756635Ab2IXPtW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:49:22 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:52918 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756438Ab2IXPtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:48:33 -0400
-Date: 24 Sep 2012 11:48:32 -0400
-Message-ID: <20120924154832.12150.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: geert@linux-m68k.org, linux@horizon.com
-Subject: Re: [PATCH 2/4] lib: vsprintf: Optimize division by 10000
-Cc: hughd@google.com, linux-kernel@vger.kernel.org, mpn@google.com,
-        vda.linux@googlemail.com
-In-Reply-To: <CAMuHMdUt3WvLgt73L39BZ4D5_qDr7ZCYhTz6RDEsH4qV2vSa7g@mail.gmail.com>
+	Mon, 24 Sep 2012 11:49:20 -0400
+Date: Mon, 24 Sep 2012 10:48:21 -0500
+From: key@linux.vnet.ibm.com
+To: key@linux.vnet.ibm.com
+Cc: James Morris <jmorris@namei.org>, Ashley Lai <adlai@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org, rcj@linux.vnet.ibm.com,
+        adlai@us.ibm.com
+Subject: Re: [PATCH 1/1] drivers/char/tpm: remove tasklet and cleanup
+Message-ID: <20120924154821.GA16007@ennui.austin.ibm.com>
+References: <1345670263.25124.7.camel@footlong>
+ <1347472190.27058.5.camel@footlong>
+ <alpine.LRH.2.02.1209241225230.678@tundra.namei.org>
+ <20120924141041.GA2741@ennui.austin.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120924141041.GA2741@ennui.austin.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092415-5406-0000-0000-0000008A1D89
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Mon, Sep 24, 2012 at 3:56 PM, George Spelvin <linux@horizon.com> wrote:
->> SPARCv8 UMUL puts the high half of the 64-bit result into the Y
->> register, and SPARCv7 has a multiply-step instruction (MULScc) which
->> does likewise.
->
-> Early SPARCs don't even have a multiply instruction.
+On Mon, Sep 24, 2012 at 09:10:41AM -0500, key@linux.vnet.ibm.com wrote:
+> On Mon, Sep 24, 2012 at 12:26:05PM +1000, James Morris wrote:
+> > On Wed, 12 Sep 2012, Ashley Lai wrote:
+> > 
+> > > This patch removed the tasklet and moved the wait queue into the
+> > > private structure.  It also cleaned up the response CRQ path.
+> > > 
+> > > Signed-off-by: Ashley Lai <adlai@us.ibm.com>
+> > 
+> > 
+> > Kent: any comment on this?  You should probably push this to me via your 
+> > tree.
+> 
+>   Oh, I thought we were waiting on Ben. This looks good to me, I'll get
+> this to you today.
 
-Are you sure we're not talking about the same thing?  Early SPARCs didn't
-have a *single* multiply instruction, but *did* have a multiply step
-instruction, which can be iterated to produce a 32x32->64-bit multiply.
+  Ashley tells me Ben's review is in the works, so I'll send once we
+have it.
 
-That's what I was referring to.  All multiplies were slow, but widening
-multiply was no slower.
+Kent
 
-And SPARCv7 had no divide support at all, so that was *really* slow.
+> 
+>   Kent
+> 
 
-SPARClite added a divide step, but also added an integer multiply
-instruction, so again widening multiply beat the pants off divide.
