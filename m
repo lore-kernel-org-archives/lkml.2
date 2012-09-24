@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab2IXPRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:17:36 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:26978 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab2IXPRf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:17:35 -0400
-Date: Mon, 24 Sep 2012 11:06:16 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
-Cc: Oliver Chick <oliver.chick@citrix.com>, xen-devel@lists.xen.org,
+	id S1756328Ab2IXPVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:21:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63266 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756271Ab2IXPVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 11:21:48 -0400
+Date: Mon, 24 Sep 2012 17:23:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Persistent grant maps for xen blk drivers
-Message-ID: <20120924150616.GA694@phenom.dumpdata.com>
-References: <1348242767-23732-1-git-send-email-oliver.chick@citrix.com>
- <20120921184123.GA27502@phenom.dumpdata.com>
- <20120921185622.GA5042@phenom.dumpdata.com>
- <20120921204646.GB30614@phenom.dumpdata.com>
- <43E8FEC9-DE7D-4352-87F2-63FB8984D556@gridcentric.ca>
+Subject: Re: [PATCH 1/4] uprobes: Kill set_swbp()->is_swbp_at_addr()
+Message-ID: <20120924152302.GA13098@redhat.com>
+References: <20120923201945.GA27446@redhat.com> <1348477426.11847.6.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <43E8FEC9-DE7D-4352-87F2-63FB8984D556@gridcentric.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1348477426.11847.6.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 10:38:48AM -0400, Andres Lagar-Cavilla wrote:
-> On Sep 21, 2012, at 4:46 PM, Konrad Rzeszutek Wilk wrote:
-> 
-> > On Fri, Sep 21, 2012 at 02:56:22PM -0400, Konrad Rzeszutek Wilk wrote:
-> >>> *: With a PVHVM guest I get
-> >>> 
-> >>> [  261.927218] privcmd_fault: vma=ffff88002a31dce8 7f4edc095000-7f4edc195000, pgoff=c8, uv=00007f4edc15d000
-> >>> 
-> >>> thought if I applied your patch on top of v3.6-rc6 I didn't see the privcmd_fault but
-> >>> I did see the guest crash.
-> >> 
-> >> And that is due to c571898ffc24a1768e1b2dabeac0fc7dd4c14601 which I've reverted in my
-> >> #linux-next branch
-> > 
-> > Nevermind. Andres' patch by itself (so without yours) works just fine. There is
-> > something your patch and his aren't agreeing on.
-> 
-> Apart from interacting badly in combination, would either patch in isolation work well?
+On 09/24, Peter Zijlstra wrote:
+>
+> On Sun, 2012-09-23 at 22:19 +0200, Oleg Nesterov wrote:
+> > A separate patch for better documentation.
+> >
+> > set_swbp()->is_swbp_at_addr() is not needed for correctness, it is
+> > harmless to do the unnecessary __replace_page(old_page, new_page)
+> > when these 2 pages are identical.
+> >
+> > And it can not be counted as optimization. mmap/register races are
+> > very unlikely, while in the likely case is_swbp_at_addr() adds the
+> > extra get_user_pages() even if the caller is uprobe_mmap(current->mm)
+> > and returns false.
+>
+> It does save a page of memory though...
 
-"work well" is not exactly the right phase I would use.
+No, it doesn't, I think.
 
-Your patch by itself (so on top v3.6-rc6) works great.
-On top of #linux-next (so v3.6-rc6 + lot of other patches for v3.7) works great.
+If this page has int3 it is not file-backed, it was already COW'ed by
+uprobes or gdb.
 
-Oliver's patch for blkback/blkfront on top of v3.6-rc6 falls flat on its face in the guest.
-Oliver's patch for blkback/blkfront on top of v3.6-rc6 + lot of other patches for v3.7 - your patch)
-falls flat on its face in the guest.
+Note the !UPROBE_COPY_INSN code in install breakpoint which has another
+is_swbp_insn(). Yes, this logic is not 100% correct and needs more fixes.
 
-Oliver's patch for blkback/blkfront on top of v3.6-rc6 + lot of other patches for v3.7 + your patch)
-falls flat on its face in the backend with the privcmd_fault.
+So it can only prevent the unnecessary alloc_page() + replace_page() +
+free_page(old_page), but only in unlikely case.
 
-I think I need to figure on what tree does Oliver's patch work properly and
-figure out why it dies first in the guest and then find out why in the backend
-it dies with your patch.
+And please note that 3/4 restores this optimization, but avoids the
+extra get_user_pages(). This will be more important when we add the
+filtering, uprobe_register() will need to call register_for_each_vma()
+every time when the new consumer comes.
 
-Your patch is still on the train for v3.7
+> > Note also that the semantics/usage of is_swbp_at_addr() in uprobe.c
+> > is confusing. set_swbp() uses it to detect the case when this insn
+> > was already modified by uprobes, that is why it should always compare
+> > the opcode with UPROBE_SWBP_INSN even if the hardware (like powerpc)
+> > has other trap insns. It doesn't matter if this "int3" was in fact
+> > installed by gdb or application itself, we are going to "steal" this
+> > breakpoint anyway and execute the original insn from vm_file even if
+> > it no longer matches the memory.
+> >
+> > OTOH, handle_swbp()->find_active_uprobe() uses is_swbp_at_addr() to
+> > figure out whether we need to send SIGTRAP or not if we can not find
+> > uprobe, so in this case it should return true for all trap variants,
+> > not only for UPROBE_SWBP_INSN.
+> >
+> > This patch removes set_swbp()->is_swbp_at_addr(), the next patches
+> > will remove it from set_orig_insn() which is similar to set_swbp()
+> > in this respect. So the only caller will be handle_swbp() and we
+> > can make its semantics clear.
+>
+> This does leave me with the question of _why_ you're removing it..
 
-> 
-> I can think of only one hunk in my patch disagreeing with blkback stuff:
+Again, 3/4 restores this optimization, and imho this series can be
+counted as a cleanup/simplification and makes sense anyway.
 
-I can try it out.. but I am not going to get to it today or in the next
-few days.
+But the main reason is dufferent. Once again. Lets ignore the problems
+with gdb which can install breakpoints too.
 
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index eea81cf..f5681c8 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -836,6 +883,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  	if (ret)
->  		return ret;
->  
-> +	/* Retry eagain maps */
-> +	for (i = 0; i < count; i++)
-> +		if (map_ops[i].status == GNTST_eagain)
-> +			gnttab_retry_eagain_gop(GNTTABOP_map_grant_ref, map_ops + i,
-> +                                    &map_ops[i].status, __func__);
-> +
->  	if (xen_feature(XENFEAT_auto_translated_physmap))
->  		return ret;
->  
-> How would you like to proceed?
-> Andres
-> 
-> > 
+
+set_swbp() and set_orig_insn() use is_swbp_at_addr() to figure out
+whether this opcode was modified by uprobes or not. So in this case
+is_swbp_insn() has to compare the opcode with UPROBE_SWBP_INSN used
+by set_swbp().
+
+But handle_swbp()->find_active_uprobe()->is_swbp_at_addr() is different,
+it needs to decide should we send SIGTRAP or not if uprobe was not
+found. On x86 this is the same, but powerpc has other insns which
+can trigger powerpc's do_int3() counterpart, so in this case
+is_swbp_insn() should return true for all trap variants.
+
+Oleg.
+
