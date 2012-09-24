@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab2IXT5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 15:57:42 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:58158 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab2IXT5l (ORCPT
+	id S932189Ab2IXUAZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 16:00:25 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51294 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757831Ab2IXUAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 15:57:41 -0400
+	Mon, 24 Sep 2012 16:00:23 -0400
+Date: Mon, 24 Sep 2012 15:54:22 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2012-09-18
+Message-ID: <20120924195422.GF32351@tuxdriver.com>
+References: <20120919013113.GG24689@joana>
+ <CAB=NE6XKNSMeS3_uzcGsGBhcm6ZKtJwJ=DdAq_DoWmKTXQvV=Q@mail.gmail.com>
+ <20120924184622.GA7922@joana>
 MIME-Version: 1.0
-In-Reply-To: <20120924181025.GG7694@google.com>
-References: <20120921192720.GJ7264@google.com>
-	<CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
-	<CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
-	<5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
-	<CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
-	<5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
-	<CAHCeSFp2=CzO1-dw_Ym_s4Pn04nsC_kQUerFJ+uFLh8iinX+Ug@mail.gmail.com>
-	<CAK-9PRB7KvPNgcsXiNG08-7OdrkkNc2ushusXh9rVm93J0xcHA@mail.gmail.com>
-	<CAHCeSFqmeOkKySxMUXgtnev+HL-NC6MdmeuDYONymYaNczb7RA@mail.gmail.com>
-	<CAHCeSFq31fQuZd+Phgx-dQ1AEeDTh268WH14bDqEKqneOLpqxQ@mail.gmail.com>
-	<20120924181025.GG7694@google.com>
-Date: Mon, 24 Sep 2012 20:57:40 +0100
-Message-ID: <CAHCeSFr4stF6BNGL7=7oPYzKqOZ-Ya8VUD02rjFRq1thMULFXw@mail.gmail.com>
-Subject: Re: Work queue questions
-From: Deepawali Verma <dverma249@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Chinmay V S <cvs268@gmail.com>, Daniel Taylor <Daniel.Taylor@wdc.com>,
-        anish singh <anish198519851985@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120924184622.GA7922@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Mon, Sep 24, 2012 at 03:46:22PM -0300, Gustavo Padovan wrote:
+> * Luis R. Rodriguez <mcgrof@do-not-panic.com> [2012-09-21 18:06:42 -0700]:
+> 
+> > On Tue, Sep 18, 2012 at 6:31 PM, Gustavo Padovan <gustavo@padovan.org> wrote:
+> > 
+> > > Johan Hedberg (2):
+> > >       Bluetooth: mgmt: Implement support for passkey notification
+> > 
+> > Too late now... but why did we allow this a stable fix? I get its a
+> > feature that is important and likely overlooked / someone had a brain
+> > fart, but from what I gather this is not on v3.5.4 and yet may make it
+> > to v3.5.5. At least for backporting this was a bitch:
 
-May be I misunderstood, I read in the documentation about max_active.
-In this case, max_active is 1, but I created three workqueues, do you
-mean to say for this case, single thread can process three requests
-queued up in the three different workqueues.
+<snip>
 
-Sorry, if I misunderstood.
+> Yes, this patch is wrongly marked as stable, it is not even going to 3.5. I'm
+> just removing the tag from it and resending the pull request to John.
 
-Regards,
-Deepa
+Hmmm...well, I already pulled it, and I just pushed it out.  Can we live with it?
 
-
-
-On Mon, Sep 24, 2012 at 7:10 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Mon, Sep 24, 2012 at 05:56:10PM +0100, Deepawali Verma wrote:
->> Hi,
->>
->> This is sample code snippet as I cannot post my project code. In
->> reality here, this work handler is copying the big chunks of data that
->> code is
->>  here in my driver. This is running on quad core cortex A9 Thats why I
->> asked. If there are 4 cpu cores, then there must be parallelism. Now
->> Tajun, what do you say?
->
-> My name is Tejun and please lose the frigging attitude when you're
-> asking things.
->
->> >>> alloc_workqueue(obj[i].my_obj_wq_name,WQ_UNBOUND,1);
->
-> Especially if you're not properly reading any of the documentation,
-> function comment and my explicit response mentioning @max_active. :(
->
-> --
-> tejun
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
