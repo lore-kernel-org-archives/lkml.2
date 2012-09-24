@@ -1,89 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab2IXJbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 05:31:13 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40041 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab2IXJbL (ORCPT
+	id S1752573Ab2IXJdI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 05:33:08 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36150 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751181Ab2IXJdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 05:31:11 -0400
-Date: Mon, 24 Sep 2012 19:31:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Vinod Koul <vinod.koul@linux.intel.com>
-Subject: linux-next: manual merge of the arm-soc tree with the slave-dma
- tree
-Message-Id: <20120924193108.f399195b821a835e0d3db08a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 24 Sep 2012 05:33:05 -0400
+Message-ID: <1348479181.2467.28.camel@dabdike>
+Subject: Re: [PATCH scsi] Add NULL checking of return value from
+ scsi_cmd_to_driver()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Martin K. Petersen" <mkp@mkp.net>
+Date: Mon, 24 Sep 2012 13:33:01 +0400
+In-Reply-To: <1348478750.2475.51.camel@ThinkPad-T420>
+References: <1348464626.2475.13.camel@ThinkPad-T420>
+	 <1348465493.2467.3.camel@dabdike> <1348470210.2475.47.camel@ThinkPad-T420>
+	 <1348472104.2467.8.camel@dabdike> <1348478750.2475.51.camel@ThinkPad-T420>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_19_31_08_+1000_59XR_D6=0fTI2e1Y"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_19_31_08_+1000_59XR_D6=0fTI2e1Y
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-09-24 at 17:25 +0800, Li Zhong wrote:
+> On Mon, 2012-09-24 at 11:35 +0400, James Bottomley wrote:
+> > On Mon, 2012-09-24 at 15:03 +0800, Li Zhong wrote:
+> > > On Mon, 2012-09-24 at 09:44 +0400, James Bottomley wrote:
+> > > > On Mon, 2012-09-24 at 13:30 +0800, Li Zhong wrote:
+> > > > > Just noticed that after commit 919f797, it is possible that 
+> > > > > scsi_cmd_to_driver() returns NULL. This patch adds the NULL checking for drv 
+> > > > > returned from the above function. 
+> > > > > 
+> > > > > Maybe it is not possible at run time, but from the code itself, we'd better
+> > > > > have this check?  
+> > > > 
+> > > > There's not much point having a check that never trips, unless it's an
+> > > > assert, in which case a NULL deref does that.  All it does is add
+> > > > pointless instructions to the critical path.  only REQ_TYPE_BLOCK_PC
+> > > > commands can be submitted without a driver, so the check above would
+> > > > seem to preclude that.
+> > > 
+> > > Hi James, 
+> > > 
+> > > Thank you, it sounds reasonable to me. Let's drop it. 
+> > 
+> > Well, there is another thing you might do: The path length of
+> > scsi_cmd_to_driver() increased a lot thanks to 18a4d0a22ed6 it might be
+> > worth getting it back to what it was (this looks to be doable with the
+> > same != REQ_TYPE_BLOCK_PC test in the error handler.  Plus, I think it
+> > fixes a bug where you get different behaviours from REQ_TYPE_BLOCK_PC
+> > commands when a driver is and isn't attached (I've cc'd Martin to see
+> > what he thinks).
+> 
+> Hi James, 
+> 
+> Do you mean something like this: 
 
-Hi all,
+Pretty much, yes.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/mmc/host/davinci_mmc.c between commit b5daabbd3d18 ("mmc:
-davinci_mmc: convert to DMA engine API") from the slave-dma tree and
-commit ec2a0833e515 ("ARM: davinci: move platform_data definitions") from
-the arm-soc tree.
+James
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> =======
+> 
+> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+> index de2337f..c1b05a8 100644
+> --- a/drivers/scsi/scsi_error.c
+> +++ b/drivers/scsi/scsi_error.c
+> @@ -789,7 +789,6 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
+>  			     int cmnd_size, int timeout, unsigned sense_bytes)
+>  {
+>  	struct scsi_device *sdev = scmd->device;
+> -	struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
+>  	struct Scsi_Host *shost = sdev->host;
+>  	DECLARE_COMPLETION_ONSTACK(done);
+>  	unsigned long timeleft;
+> @@ -845,8 +844,11 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
+>  
+>  	scsi_eh_restore_cmnd(scmd, &ses);
+>  
+> -	if (sdrv && sdrv->eh_action)
+> -		rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
+> +	if (scmd->request->cmd_type != REQ_TYPE_BLOCK_PC) {
+> +		struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
+> +		if (sdrv->eh_action)
+> +			rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
+> +	}
+>  
+>  	return rtn;
+>  }
+> diff --git a/include/scsi/scsi_cmnd.h b/include/scsi/scsi_cmnd.h
+> index ac06cc5..377df4a 100644
+> --- a/include/scsi/scsi_cmnd.h
+> +++ b/include/scsi/scsi_cmnd.h
+> @@ -134,16 +134,7 @@ struct scsi_cmnd {
+>  
+>  static inline struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
+>  {
+> -	struct scsi_driver **sdp;
+> -
+> -	if (!cmd->request->rq_disk)
+> -		return NULL;
+> -
+> -	sdp = (struct scsi_driver **)cmd->request->rq_disk->private_data;
+> -	if (!sdp)
+> -		return NULL;
+> -
+> -	return *sdp;
+> +	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
+>  }
+>  
+>  extern struct scsi_cmnd *scsi_get_command(struct scsi_device *, gfp_t);
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/mmc/host/davinci_mmc.c
-index c5e1eeb,3dfd347..0000000
---- a/drivers/mmc/host/davinci_mmc.c
-+++ b/drivers/mmc/host/davinci_mmc.c
-@@@ -30,12 -30,11 +30,12 @@@
-  #include <linux/io.h>
-  #include <linux/irq.h>
-  #include <linux/delay.h>
- +#include <linux/dmaengine.h>
-  #include <linux/dma-mapping.h>
- +#include <linux/edma.h>
-  #include <linux/mmc/mmc.h>
- =20
-- #include <mach/mmc.h>
-+ #include <linux/platform_data/mmc-davinci.h>
- -#include <mach/edma.h>
- =20
-  /*
-   * Register Definitions
 
---Signature=_Mon__24_Sep_2012_19_31_08_+1000_59XR_D6=0fTI2e1Y
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYChcAAoJEECxmPOUX5FE31gP/ipG/Z2g4QvYT359l5mpM28B
-s7w/Q/jDNkMuE+WMBXsKoJBMTrFaI9TmBg8xcSBwzUlOBl+sA6yuzg09KSWkFRF9
-Ge1VMtr1OFQPO4+eEVb6xdaoYD+IwqgJWmLwOIV309Dju9Y3qf4F453+8Ebovsx6
-e+UrFl7IBE1K0HD70hcrKnzBNvS1QbcSjRF5EuDefZp5xFwKnfzBXf/4+j7e/gqO
-qZEy13rK1HU1oCfcjNvsjjAm5C9La39NVltyE/zdJGAlAF1ZNtA4pz/s8ibsHgwG
-tj037rRsndvEV2pYjE7yKrdkFvznO7Jk0a7f48KdU8k5KBobY2IBNBuWPsmGmdOx
-rYIVo5a+X1K8jR1v4tEbdYbG74Szz2f4s3j36jiiQYi2rylJGeYLVN7jZHPYDBTP
-C6IAworY0kwQ787Rl1tkAMKRwgCsLSGcHojsa4XEZhqfTP9CKeGDa/e6D2UncV/h
-v2fNptAepbdxtW/CSLXjqQ+sQhLzeP/erAig3KjAdiTldtqcGme+GbMKlIvie/nn
-QDfjYwOdl0MPdGAtB03mlkMRUN2vErZnrqi9UUtsujEqTPu5oCtrqy74gNsrBHk9
-68r4bY41DOxtOZzxp7LgpyP2vc8l43Je7DJz2whgCPHr9JUAFnW0/QkzzSIsA5Ux
-gu1xAGWhDldbCV8hUoYG
-=zBOU
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Sep_2012_19_31_08_+1000_59XR_D6=0fTI2e1Y--
