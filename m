@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab2IXMYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:24:24 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53380 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593Ab2IXMYX (ORCPT
+	id S1754883Ab2IXMYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 08:24:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50086 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877Ab2IXMYv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:24:23 -0400
-Date: Mon, 24 Sep 2012 22:24:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wade Farnsworth <wade_farnsworth@mentor.com>,
-        Steven Walter <stevenrwalter@gmail.com>,
-        Will Deacon <will.deacon@arm.com>, Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the signal tree with the arm tree
-Message-Id: <20120924222415.80bb88f62c547dfc09e6ddc7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 24 Sep 2012 08:24:51 -0400
+Message-ID: <1348489478.11847.55.camel@twins>
+Subject: Re: [PATCH 2/2] [RESEND] console: implement lockdep support for
+ console_lock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Mon, 24 Sep 2012 14:24:38 +0200
+In-Reply-To: <1348489027.11847.53.camel@twins>
+References: <1347923013-4253-1-git-send-email-daniel.vetter@ffwll.ch>
+	 <1347923013-4253-2-git-send-email-daniel.vetter@ffwll.ch>
+	 <1348489027.11847.53.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_22_24_15_+1000_sRqI.UrvdN=88EoO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_22_24_15_+1000_sRqI.UrvdN=88EoO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-09-24 at 14:17 +0200, Peter Zijlstra wrote:
+> On Tue, 2012-09-18 at 01:03 +0200, Daniel Vetter wrote:
+> > - In the printk code there's a special trylock, only used to kick off
+> >   the logbuffer printk'ing in console_unlock. But all that happens
+> >   while lockdep is disable (since printk does a few other evil
+> >   tricks). So no issue there, either. 
+> 
+> Not particularly evil, just plain broken.
+> 
+> See this series:
+> 
+>   http://marc.info/?l=linux-kernel&m=132446644123326&w=2
+> 
+> In particular see patches 1-4. The problem with lockdep is that lockdep
+> uses printk and printk's recursion stuff is utterly broken.
+> 
+> Console drivers being on crack simply doesn't help :-) Note that I would
+> never recommend drm/ksm to anybody who really cares about their console
+> output.
 
-Hi Al,
-
-Today's linux-next merge of the signal tree got a conflict in
-arch/arm/include/asm/thread_info.h between commit 1f66e06fb641 ("ARM:
-7524/1: support syscall tracing") from the arm tree and commit
-8ecd548d5fff ("sanitize tsk_is_polling()") from the signal tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/include/asm/thread_info.h
-index f71cdab,b2d6b41..0000000
---- a/arch/arm/include/asm/thread_info.h
-+++ b/arch/arm/include/asm/thread_info.h
-@@@ -150,8 -148,6 +150,7 @@@ extern int vfp_restore_user_hwstate(str
-  #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
-  #define TIF_SYSCALL_TRACE	8
-  #define TIF_SYSCALL_AUDIT	9
- +#define TIF_SYSCALL_TRACEPOINT	10
-- #define TIF_POLLING_NRFLAG	16
-  #define TIF_USING_IWMMXT	17
-  #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
-  #define TIF_RESTORE_SIGMASK	20
-@@@ -163,8 -159,6 +162,7 @@@
-  #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
-  #define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
-  #define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
- +#define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
-- #define _TIF_POLLING_NRFLAG	(1 << TIF_POLLING_NRFLAG)
-  #define _TIF_USING_IWMMXT	(1 << TIF_USING_IWMMXT)
-  #define _TIF_SECCOMP		(1 << TIF_SECCOMP)
- =20
-
---Signature=_Mon__24_Sep_2012_22_24_15_+1000_sRqI.UrvdN=88EoO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYFDvAAoJEECxmPOUX5FE3BEP/iDpsTZy6D21GotIvOkDHcYb
-QehOxWV+AmhEqxoTMl0ulJNJan/AfHt6UQ+pz7NlmGZXmTW6lBNloNnC2D3/QeZH
-dykugyNT8dx5N2bNMFExRu9j3cE3q3yx1sG+62e0dinXJfZUkLab02pFLVxjErOt
-q8FZJy++rF7PmQquFk0NcovHTfiRuWittSd1WzQqchp1FSbMDAoNRAlLXia2Q19o
-qM/TNr1T+t6959ILgzKoGX1+fM/o12liOc747xUohrY2ItuEKmzxeLx9UHiDTpMT
-DsvCkDoqpM2G5paRDluBLn145n0w+lQHGVfIljEbqkaz6XJn76WOZqJ7CXaQ/WzC
-IDtvnOoBYVI1UsAhXdnzR0d97MwbIq3LvFdcB6c552enMvoUzIpAOGfYGG9gzvZC
-vbhTLGxZNlohCSoXQuxCOe4iDLRE/0CF1leW54sNXBUO3/yG/gds3fSyTE7+2pNj
-uhwWv1X+fMv+ZWDvA/U5eEN+0CRvEWC6DJqYVFgwSAOJxmUkw/Ha/bpG0TZPiv8m
-PYHUEegxSRFb9zwKL5E8zPUDXGcf4USC5yZ1uLCNquW+UuYmWzgPYaWvXcKpQ6nw
-nMqmIC9PcLA2bBiXGaBrbMi9b2nIlU1GDA5rAEDDnLjxudZ4qWyLB0MewwHhun7S
-Jz/XL+zfJsDuc1s/19zJ
-=VU3u
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Sep_2012_22_24_15_+1000_sRqI.UrvdN=88EoO--
+Also, don't cross-post with a subscribe only list.
