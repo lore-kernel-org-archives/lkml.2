@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab2IXHc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:32:57 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45227 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab2IXHc4 (ORCPT
+	id S1755001Ab2IXHfL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 03:35:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35625 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752146Ab2IXHfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:32:56 -0400
-Date: Mon, 24 Sep 2012 17:32:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: linux-next: manual merge of the arm-soc tree with the sound tree
-Message-Id: <20120924173253.ffdff508e51d05f667b76bde@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 24 Sep 2012 03:35:09 -0400
+Message-ID: <1348472104.2467.8.camel@dabdike>
+Subject: Re: [PATCH scsi] Add NULL checking of return value from
+ scsi_cmd_to_driver()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Martin K. Petersen" <mkp@mkp.net>
+Date: Mon, 24 Sep 2012 11:35:04 +0400
+In-Reply-To: <1348470210.2475.47.camel@ThinkPad-T420>
+References: <1348464626.2475.13.camel@ThinkPad-T420>
+	 <1348465493.2467.3.camel@dabdike> <1348470210.2475.47.camel@ThinkPad-T420>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_17_32_53_+1000_fN/CIiWsXVzE6RPc"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_17_32_53_+1000_fN/CIiWsXVzE6RPc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-09-24 at 15:03 +0800, Li Zhong wrote:
+> On Mon, 2012-09-24 at 09:44 +0400, James Bottomley wrote:
+> > On Mon, 2012-09-24 at 13:30 +0800, Li Zhong wrote:
+> > > Just noticed that after commit 919f797, it is possible that 
+> > > scsi_cmd_to_driver() returns NULL. This patch adds the NULL checking for drv 
+> > > returned from the above function. 
+> > > 
+> > > Maybe it is not possible at run time, but from the code itself, we'd better
+> > > have this check?  
+> > 
+> > There's not much point having a check that never trips, unless it's an
+> > assert, in which case a NULL deref does that.  All it does is add
+> > pointless instructions to the critical path.  only REQ_TYPE_BLOCK_PC
+> > commands can be submitted without a driver, so the check above would
+> > seem to preclude that.
+> 
+> Hi James, 
+> 
+> Thank you, it sounds reasonable to me. Let's drop it. 
 
-Hi all,
+Well, there is another thing you might do: The path length of
+scsi_cmd_to_driver() increased a lot thanks to 18a4d0a22ed6 it might be
+worth getting it back to what it was (this looks to be doable with the
+same != REQ_TYPE_BLOCK_PC test in the error handler.  Plus, I think it
+fixes a bug where you get different behaviours from REQ_TYPE_BLOCK_PC
+commands when a driver is and isn't attached (I've cc'd Martin to see
+what he thinks).
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-davinci/dm355.c between commit 896f66b7de29 ("ASoC/ARM:
-Davinci: McASP: split asp header into platform and audio specific") from
-the sound tree and commit ec2a0833e515 ("ARM: davinci: move platform_data
-definitions") from the arm-soc tree.
+James
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-davinci/dm355.c
-index e47a3f0,adbde33..0000000
---- a/arch/arm/mach-davinci/dm355.c
-+++ b/arch/arm/mach-davinci/dm355.c
-@@@ -26,7 -26,8 +26,7 @@@
-  #include <mach/time.h>
-  #include <mach/serial.h>
-  #include <mach/common.h>
-- #include <mach/spi.h>
- -#include <mach/asp.h>
-+ #include <linux/platform_data/spi-davinci.h>
-  #include <mach/gpio-davinci.h>
- =20
-  #include "davinci.h"
-
---Signature=_Mon__24_Sep_2012_17_32_53_+1000_fN/CIiWsXVzE6RPc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYAylAAoJEECxmPOUX5FEfKcQAKkt4kklVgnTbomfbl7sGk9J
-8oLu3DcToD5+yQRNX1f1dbNg64Y1tdC8pI1wzce8iwDG7PkvyisKl0jpOEYsDMPw
-TNl9WSF/KggNBDT0dqSKLb83GtwnNDfgw8htLwWEnhUy6r97hMTcksniSZlTSaZl
-HHDMp3HisDiewRe81a4xISg4CVKQPqFMgsHJIJCX3pn0zympXn39QfkJtGwLx3Wy
-Y95L3hmdFajvSqrHzqzj6b5gIL2gWqvF/k0aQGU65YyHqGKG023yGDGcd5D4uVwS
-/V/ylmar79sWbBENwpXtVf/mU5MiACjmf/lnFvKV5KOjVY9IRVnMZ2HL5LcYltB+
-gol15MFlP+sLMPWexnvXQk8uLaYqgpIhixt4qVvi2gQW5qledMTaySZdAfo0qSa5
-GhMpIfekvnH+LZoFmF9uYVie4bEbIB+CrYlQWmvoc7c/vUJxinP4w5pzWZAa7LNB
-vm22MI87dpaKzPPXzd7q8fWal7k4r82ubLtwZvTivZ8EkWst2pGcYT517ctRlaVW
-HYKKMwXv6CI+jZTRyU/qerZ2n2/OITc1G0uGEn7bSZyjWKhd2g5m5Zkm46kZUpj6
-t/acRajHZT6V51rweveBJl5Lsuidw3jUSyDNhOQqr0gbGJNj+SD4ahwRtjwNovdE
-ps9QF0jrmo8BYXOl+uuk
-=bhtN
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Sep_2012_17_32_53_+1000_fN/CIiWsXVzE6RPc--
