@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab2IXPkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:40:19 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:52171 "EHLO mx2.parallels.com"
+	id S1756596Ab2IXPlo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:41:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6148 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756396Ab2IXPkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:40:18 -0400
-Message-ID: <50607E0C.7020606@parallels.com>
-Date: Mon, 24 Sep 2012 19:36:44 +0400
-From: Glauber Costa <glommer@parallels.com>
+	id S1756413Ab2IXPln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 11:41:43 -0400
+Message-ID: <50607F1F.2040704@redhat.com>
+Date: Mon, 24 Sep 2012 17:41:19 +0200
+From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<cgroups@vger.kernel.org>" <cgroups@vger.kernel.org>,
-        "<kamezawa.hiroyu@jp.fujitsu.com>" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "<devel@openvz.org>" <devel@openvz.org>,
-        "<linux-mm@kvack.org>" <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 05/16] consider a memcg parameter in kmem_create_cache
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-6-git-send-email-glommer@parallels.com> <20120921181458.GG7264@google.com> <506015E7.8030900@parallels.com> <00000139f84bdedc-aae672a6-2908-4cb8-8ed3-8fedf67a21af-000000@email.amazonses.com> <50605500.5050606@parallels.com> <00000139f8836571-6ddc9d5b-1d5f-4542-92f9-ad11070e5b7d-000000@email.amazonses.com> <506063B8.70305@parallels.com> <00000139f890a302-980aee84-40b2-433f-8dbd-e7b1d219f00d-000000@email.amazonses.com> <506066E3.6050705@parallels.com> <CAOJsxLGFWQFNUUN3sDeB2sn0S-QM-6Ut_d02HjmF6mB5aMytoA@mail.gmail.com>
-In-Reply-To: <CAOJsxLGFWQFNUUN3sDeB2sn0S-QM-6Ut_d02HjmF6mB5aMytoA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com>
+In-Reply-To: <505CA2EB.7050403@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 07:38 PM, Pekka Enberg wrote:
-> On 09/24/2012 05:56 PM, Christoph Lameter wrote:
->>> On Mon, 24 Sep 2012, Glauber Costa wrote:
+On 09/21/2012 08:24 PM, Raghavendra K T wrote:
+> On 09/21/2012 06:32 PM, Rik van Riel wrote:
+>> On 09/21/2012 08:00 AM, Raghavendra K T wrote:
+>>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 >>>
->>>> The reason I say it is orthogonal, is that people will still want to see
->>>> their caches in /proc/slabinfo, regardless of wherever else they'll be.
->>>> It was a requirement from Pekka in one of the first times I posted this,
->>>> IIRC.
+>>> When total number of VCPUs of system is less than or equal to physical
+>>> CPUs,
+>>> PLE exits become costly since each VCPU can have dedicated PCPU, and
+>>> trying to find a target VCPU to yield_to just burns time in PLE handler.
 >>>
->>> They want to see total counts there true. But as I said we already have a
->>> duplication of the statistics otherwise. We have never done the scheme
->>> that you propose. That is unexpected. I would not expect the numbers to be
->>> there.
-> 
-> On Mon, Sep 24, 2012 at 4:57 PM, Glauber Costa <glommer@parallels.com> wrote:
->> I myself personally believe it can potentially clutter slabinfo, and
->> won't put my energy in defending the current implementation. What I
->> don't want is to keep switching between implementations.
+>>> This patch reduces overhead, by simply doing a return in such
+>>> scenarios by
+>>> checking the length of current cpu runqueue.
 >>
->> Pekka, Tejun, what do you guys say here?
+>> I am not convinced this is the way to go.
+>>
+>> The VCPU that is holding the lock, and is not releasing it,
+>> probably got scheduled out. That implies that VCPU is on a
+>> runqueue with at least one other task.
 > 
-> So Christoph is proposing that the new caches appear somewhere under
-> the cgroups directory and /proc/slabinfo includes aggregated counts,
-> right? I'm certainly OK with that.
+> I see your point here, we have two cases:
 > 
-Just for clarification, I am not sure about the aggregate counts -
-although it surely makes sense.
+> case 1)
+> 
+> rq1 : vcpu1->wait(lockA) (spinning)
+> rq2 : vcpu2->holding(lockA) (running)
+> 
+> Here Ideally vcpu1 should not enter PLE handler, since it would surely
+> get the lock within ple_window cycle. (assuming ple_window is tuned for
+> that workload perfectly).
+> 
+> May be this explains why we are not seeing benefit with kernbench.
+> 
+> On the other side, Since we cannot have a perfect ple_window tuned for
+> all type of workloads, for those workloads, which may need more than
+> 4096 cycles, we gain. thinking is it that we are seeing in benefited
+> cases?
 
-Christoph, is that what you're proposing ?
+Maybe we need to increase the ple window regardless.  4096 cycles is 2
+microseconds or less (call it t_spin).  The overhead from
+kvm_vcpu_on_spin() and the associated task switches is at least a few
+microseconds, increasing as contention is added (call it t_tield).  The
+time for a natural context switch is several milliseconds (call it
+t_slice).  There is also the time the lock holder owns the lock,
+assuming no contention (t_hold).
+
+If t_yield > t_spin, then in the undercommitted case it dominates
+t_spin.  If t_hold > t_spin we lose badly.
+
+If t_spin > t_yield, then the undercommitted case doesn't suffer as much
+as most of the spinning happens in the guest instead of the host, so it
+can pick up the unlock timely.  We don't lose too much in the
+overcommitted case provided the values aren't too far apart (say a
+factor of 3).
+
+Obviously t_spin must be significantly smaller than t_slice, otherwise
+it accomplishes nothing.
+
+Regarding t_hold: if it is small, then a larger t_spin helps avoid false
+exits.  If it is large, then we're not very sensitive to t_spin.  It
+doesn't matter if it takes us 2 usec or 20 usec to yield, if we end up
+yielding for several milliseconds.
+
+So I think it's worth trying again with ple_window of 20000-40000.
+
+> 
+> case 2)
+> rq1 : vcpu1->wait(lockA) (spinning)
+> rq2 : vcpu3 (running) ,  vcpu2->holding(lockA) [scheduled out]
+> 
+> I agree that checking rq1 length is not proper in this case, and as you
+> rightly pointed out, we are in trouble here.
+> nr_running()/num_online_cpus() would give more accurate picture here,
+> but it seemed costly. May be load balancer save us a bit here in not
+> running to such sort of cases. ( I agree load balancer is far too
+> complex).
+
+In theory preempt notifier can tell us whether a vcpu is preempted or
+not (except for exits to userspace), so we can keep track of whether
+it's we're overcommitted in kvm itself.  It also avoids false positives
+from other guests and/or processes being overcommitted while our vm is fine.
 
 
+-- 
+error compiling committee.c: too many arguments to function
