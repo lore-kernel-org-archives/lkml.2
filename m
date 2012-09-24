@@ -1,191 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab2IXMBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:01:08 -0400
-Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:2889 "EHLO
-	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab2IXMBH (ORCPT
+	id S1754883Ab2IXMDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 08:03:22 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62500 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab2IXMDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:01:07 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH v2] media: davinci: vpif: display: separate out subdev from output
-Date: Mon, 24 Sep 2012 13:59:09 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc3-durdane; KDE/4.8.4; x86_64; ; )
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        VGER <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-References: <1348483451-20668-1-git-send-email-prabhakar.lad@ti.com> <201209241259.11570.hverkuil@xs4all.nl> <201209241350.00893.hverkuil@xs4all.nl>
-In-Reply-To: <201209241350.00893.hverkuil@xs4all.nl>
+	Mon, 24 Sep 2012 08:03:19 -0400
+Date: Mon, 24 Sep 2012 08:05:12 -0400
+From: Matt Porter <mporter@ti.com>
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 00/13] DMA Engine support for AM33xx
+Message-ID: <20120924120512.GM16522@beef>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com>
+ <1BAFE6F6C881BF42822005164F1491C33EA8A79D@DBDE01.ent.ti.com>
+ <20120921182211.GE16522@beef>
+ <1BAFE6F6C881BF42822005164F1491C33EA8E07D@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209241359.09089.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EA8E07D@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon September 24 2012 13:50:00 Hans Verkuil wrote:
-> On Mon September 24 2012 12:59:11 Hans Verkuil wrote:
-> > On Mon September 24 2012 12:44:11 Prabhakar wrote:
-> > > From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On Mon, Sep 24, 2012 at 11:26:55AM +0000, Hebbar, Gururaja wrote:
+> On Fri, Sep 21, 2012 at 23:52:11, Porter, Matt wrote:
+> > On Fri, Sep 21, 2012 at 08:27:07AM +0000, Hebbar, Gururaja wrote:
+> > > On Thu, Sep 20, 2012 at 20:13:33, Porter, Matt wrote:
+> > > > This series adds DMA Engine support for AM33xx, which uses
+> > > > an EDMA DMAC. The EDMA DMAC has been previously supported by only
+> > > > a private API implementation (much like the situation with OMAP
+> > > > DMA) found on the DaVinci family of SoCs.
+> > > > 
+> > > > There are a mind-boggling number of dependencies for this series:
+> > > > 
+> > > > 	- Jon Hunter's OF DMA helpers series
+> > > > 	  https://patchwork.kernel.org/patch/1461061/
+> > > > 	  https://patchwork.kernel.org/patch/1461051/
+> > > > 	- Patch to address OF DMA helpers naming issues:
+> > > > 	  https://patchwork.kernel.org/patch/1477921/
+> > > > 	- EDMA DMA Engine wrapper driver in linux-next
+> > > > 	  c2dde5f8f2095d7c623ff3565c1462e190272273
+> > > > 	- EDMA DMA Engine wrapper driver bug fix:
+> > > > 	  https://patchwork.kernel.org/patch/1474411/  
+> > > > 	- A huge number of patches in linux-next for AM33xx boot
+> > > > 	  (too numerous to list)
+> > > > 
+> > > > The approach taken is similar to how OMAP DMA is being converted to
+> > > > DMA Engine support. With the functional EDMA private API already
+> > > > existing in mach-davinci/dma.c, we first move that to an ARM common
+> > > > area so it can be shared. Adding DT and runtime PM support to the
+> > > > private EDMA API implementation allows it to run on AM33xx. AM33xx
+> > > > *only* boots using DT so we leverage Jon's generic DT DMA helpers to
+> > > > register EDMA DMAC with the of_dma framework and then add support
+> > > > for calling the dma_request_slave_channel() API to both the mmc
+> > > > and spi drivers.
+> > > > 
+> > > > What works? Well, with this series we now have MMC and SPI support
+> > > > on AM33xx. The only caveat for MMC is that the mmc3 controller has
+> > > > its events on the crossbar and is not usable right now.
+> > > > 
+> > > > This is tested on BeagleBone with a SPI framebuffer driver and SD
+> > > > card.
+> > > > 
+> > > > After this series, the plan is to convert the last in-tree user
+> > > > of the private EDMA API (davinci-pcm/mcasp) and then eliminate
+> > > > the private EDMA API by folding its functionality into
+> > > > drivers/dma/edma.c.
+> > > > 
+> > > > TODO:
+> > > > 	add AM33xx crossbar support to the private EDMA API
+> > > > 	(any EDMA events on the crossbar are not supported)
+> > > > 
 > > > 
-> > > vpif_display relied on a 1-1 mapping of output and subdev. This is not
-> > > necessarily the case. Separate the two. So there is a list of subdevs
-> > > and a list of outputs. Each output refers to a subdev and has routing
-> > > information. An output does not have to have a subdev.
 > > > 
-> > > The initial output for each channel is set to the fist output.
-> > > 
-> > > Currently missing is support for associating multiple subdevs with
-> > > an output.
-> > > 
-> > > Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> > > Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> > > Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> > > Cc: Sekhar Nori <nsekhar@ti.com>
+> > > Can you please mention the base repo you have taken as starting point.
+> > > (repo + extra patches ...).
 > > 
-> > Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+> > It's mainline 3.6-rc6 and you can see the complete set of patches
+> > at https://github.com/ohporter/linux/tree/edma-dmaengine-am33xx-rfc-v1
+> > after commit 5698bd757d55b1bb87edd1a9744ab09c142abfc2
+
 > 
-> I'm retracting this Ack. I did see something that wasn't right but I thought
-> it was harmless, but after thinking some more I believe it should be fixed.
-> Luckily, it's easy to fix. See below. Since we need a new version anyway I
-> also added a comment to a few minor issues that can be fixed at the same time.
+> Thanks for the link. However, I was looking for the mainline kernel repo/branch
+> That you first used as baseline. 
+
+Linus 3.6-rc6 is the baseline. This inital version was created before any
+of the am33xx base support patches got pulled to linux-next. v2 is being
+rebased against that to slim down the stack of patches necessary for
+testing.
+
+> > > This will help us to test the code.
+> > > 
+> > > This is because I looked at the patch 12/13 and I see that mmc
+> > > device-node is modified. But in mainline I don’t see device 
+> > > node for mmc (yet).
+> > 
+> > Oops. You'll need e62a3333ae450bcdefbe22229d7bc277ae0ef645 and
+> > fe97304557d2c6f7d0aaf1ea028ea48ffca366a9 which I forgot to include
+> > in this series. I'll have them in for v2.
+> > 
+> > -Matt
+> > 
+> > > > Matt Porter (13):
+> > > >   ARM: davinci: move private EDMA API to arm/common
+> > > >   ARM: edma: remove unused transfer controller handlers
+> > > >   ARM: edma: add DT and runtime PM support for AM335x
+> > > >   dmaengine: edma: enable build for AM335x
+> > > >   dma: Add TI EDMA device tree binding
+> > > >   ARM: omap: add hsmmc am33xx specific init
+> > > >   mmc: omap_hsmmc: dma_request_slave_channel() support for DT platforms
+> > > >   mmc: omap_hsmmc: limit max_segs with the EDMA DMAC
+> > > >   mmc: omap_hsmmc: add generic DMA request support to the DT binding
+> > > >   spi: omap2-mcspi: dma_request_slave_channel() support for DT
+> > > >     platforms
+> > > >   spi: omap2-mcspi: add generic DMA request support to the DT binding
+> > > >   ARM: dts: add am33xx EDMA support
+> > > >   Documentation: add schedule for removing private EDMA API
+> > > > 
+> > > >  Documentation/devicetree/bindings/dma/ti-edma.txt  |   49 +
+> > > >  .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   25 +-
+> > > >  Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +-
+> > > >  Documentation/feature-removal-schedule.txt         |   10 +
+> > > >  arch/arm/Kconfig                                   |    1 +
+> > > >  arch/arm/boot/dts/am33xx.dtsi                      |   46 +
+> > > >  arch/arm/common/Kconfig                            |    3 +
+> > > >  arch/arm/common/Makefile                           |    1 +
+> > > >  arch/arm/common/edma.c                             | 1779 ++++++++++++++++++++
+> > > >  arch/arm/include/asm/mach/edma.h                   |  267 +++
+> > > >  arch/arm/mach-davinci/Makefile                     |    2 +-
+> > > >  arch/arm/mach-davinci/devices.c                    |    3 +-
+> > > >  arch/arm/mach-davinci/dm355.c                      |    2 +-
+> > > >  arch/arm/mach-davinci/dm365.c                      |    2 +-
+> > > >  arch/arm/mach-davinci/dm644x.c                     |    2 +-
+> > > >  arch/arm/mach-davinci/dm646x.c                     |    2 +-
+> > > >  arch/arm/mach-davinci/dma.c                        | 1588 -----------------
+> > > >  arch/arm/mach-davinci/include/mach/asp.h           |    2 +-
+> > > >  arch/arm/mach-davinci/include/mach/da8xx.h         |    3 +-
+> > > >  arch/arm/mach-davinci/include/mach/edma.h          |  267 ---
+> > > >  arch/arm/mach-davinci/include/mach/spi.h           |    2 +-
+> > > >  arch/arm/mach-omap2/hsmmc.c                        |    7 +-
+> > > >  arch/arm/plat-omap/Kconfig                         |    1 +
+> > > >  drivers/dma/Kconfig                                |    2 +-
+> > > >  drivers/dma/edma.c                                 |    2 +-
+> > > >  drivers/mmc/host/omap_hsmmc.c                      |   26 +-
+> > > >  drivers/spi/spi-omap2-mcspi.c                      |   68 +-
+> > > >  27 files changed, 2296 insertions(+), 1893 deletions(-)
+> > > >  create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+> > > >  create mode 100644 arch/arm/common/edma.c
+> > > >  create mode 100644 arch/arm/include/asm/mach/edma.h
+> > > >  delete mode 100644 arch/arm/mach-davinci/dma.c
+> > > >  delete mode 100644 arch/arm/mach-davinci/include/mach/edma.h
+> > > > 
+> > > > -- 
+> > > > 1.7.9.5
+> > > > 
+> > > > _______________________________________________
+> > > > Davinci-linux-open-source mailing list
+> > > > Davinci-linux-open-source@linux.davincidsp.com
+> > > > http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> > > > 
+> > > 
+> > > 
+> > > Regards, 
+> > > Gururaja
+> > > _______________________________________________
+> > > Davinci-linux-open-source mailing list
+> > > Davinci-linux-open-source@linux.davincidsp.com
+> > > http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> > 
 > 
-> > 
-> > Regards,
-> > 
-> > 	Hans
-> > 
-> > > ---
-> > >  This patch is dependent on the patch series from Hans
-> > >  (http://www.mail-archive.com/linux-media@vger.kernel.org/msg52270.html)
-> > > 
-> > >  Changes for V2:
-> > >  1: Changed v4l2_device_call_until_err() call to v4l2_subdev_call() for
-> > >     s_routing, since this call is for specific subdev, pointed out by Hans.
-> > > 
-> > >  arch/arm/mach-davinci/board-da850-evm.c       |   29 +++++-
-> > >  arch/arm/mach-davinci/board-dm646x-evm.c      |   39 ++++++-
-> > >  drivers/media/platform/davinci/vpif_display.c |  136 ++++++++++++++++++++-----
-> > >  include/media/davinci/vpif_types.h            |   20 +++-
-> > >  4 files changed, 183 insertions(+), 41 deletions(-)
-> > > 
-> > > diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-> > > index 3081ea4..23a7012 100644
-> > > --- a/arch/arm/mach-davinci/board-da850-evm.c
-> > > +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> > > @@ -46,6 +46,7 @@
-> > >  #include <mach/spi.h>
-> > >  
-> > >  #include <media/tvp514x.h>
-> > > +#include <media/adv7343.h>
-> > >  
-> > >  #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
-> > >  #define DA850_LCD_PWR_PIN		GPIO_TO_PIN(2, 8)
-> > > @@ -1257,16 +1258,34 @@ static struct vpif_subdev_info da850_vpif_subdev[] = {
-> > >  	},
-> > >  };
-> > >  
-> > > -static const char const *vpif_output[] = {
-> > > -		"Composite",
-> > > -		"S-Video",
-> > > +static const struct vpif_output da850_ch0_outputs[] = {
-> > > +	{
-> > > +		.output = {
-> > > +			.index = 0,
-> > > +			.name = "Composite",
-> > > +			.type = V4L2_OUTPUT_TYPE_ANALOG,
-> > > +		},
-> > > +		.subdev_name = "adv7343",
-> > > +		.output_route = ADV7343_COMPOSITE_ID,
-> > > +	},
-> > > +	{
-> > > +		.output = {
-> > > +			.index = 1,
-> > > +			.name = "S-Video",
-> > > +			.type = V4L2_OUTPUT_TYPE_ANALOG,
-> > > +		},
-> > > +		.subdev_name = "adv7343",
-> > > +		.output_route = ADV7343_SVIDEO_ID,
-> > > +	},
-> > >  };
-> > >  
-> > >  static struct vpif_display_config da850_vpif_display_config = {
-> > >  	.subdevinfo   = da850_vpif_subdev,
-> > >  	.subdev_count = ARRAY_SIZE(da850_vpif_subdev),
-> > > -	.output       = vpif_output,
-> > > -	.output_count = ARRAY_SIZE(vpif_output),
-> > > +	.chan_config[0] = {
-> > > +		.outputs = da850_ch0_outputs,
-> > > +		.output_count = ARRAY_SIZE(da850_ch0_outputs),
-> > > +	},
-> > >  	.card_name    = "DA850/OMAP-L138 Video Display",
-> > >  };
-> > >  
-> > > diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-> > > index ad249c7..c206768 100644
-> > > --- a/arch/arm/mach-davinci/board-dm646x-evm.c
-> > > +++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-> > > @@ -26,6 +26,7 @@
-> > >  #include <linux/i2c/pcf857x.h>
-> > >  
-> > >  #include <media/tvp514x.h>
-> > > +#include <media/adv7343.h>
-> > >  
-> > >  #include <linux/mtd/mtd.h>
-> > >  #include <linux/mtd/nand.h>
-> > > @@ -496,18 +497,44 @@ static struct vpif_subdev_info dm646x_vpif_subdev[] = {
-> > >  	},
-> > >  };
-> > >  
-> > > -static const char *output[] = {
-> > > -	"Composite",
-> > > -	"Component",
-> > > -	"S-Video",
-> > > +static const struct vpif_output dm6467_ch0_outputs[] = {
-> > > +	{
-> > > +		.output = {
-> > > +			.index = 0,
-> > > +			.name = "Composite",
-> > > +			.type = V4L2_OUTPUT_TYPE_ANALOG,
-> > > +		},
-> > > +		.subdev_name = "adv7343",
-> > > +		.output_route = ADV7343_COMPOSITE_ID,
-> > > +	},
-> > > +	{
-> > > +		.output = {
-> > > +			.index = 1,
-> > > +			.name = "Component",
-> > > +			.type = V4L2_OUTPUT_TYPE_ANALOG,
-> > > +		},
-> > > +		.subdev_name = "adv7343",
-> > > +		.output_route = ADV7343_COMPONENT_ID,
-> > > +	},
-> > > +	{
-> > > +		.output = {
-> > > +			.index = 2,
-> > > +			.name = "S-Video",
-> > > +			.type = V4L2_OUTPUT_TYPE_ANALOG,
-> > > +		},
-> > > +		.subdev_name = "adv7343",
-> > > +		.output_route = ADV7343_SVIDEO_ID,
-> > > +	},
-> > >  };
-
-Oops, and another thing: for both struct v4l2_input and struct v4l2_output
-you should also fill in the capabilities field in the board files.
-
-This should be either V4L2_IN_CAP_STD (SDTV) or V4L2_IN_CAP_CUSTOM_TIMINGS
-(HDTV) for input and the V4L2_OUT_ variants for v4l2_output.
-
-Regards,
-
-	Hans
+> 
+> Regards, 
+> Gururaja
+> _______________________________________________
+> Davinci-linux-open-source mailing list
+> Davinci-linux-open-source@linux.davincidsp.com
+> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
