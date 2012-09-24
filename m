@@ -1,153 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab2IXNdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 09:33:39 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:51201 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569Ab2IXNdh (ORCPT
+	id S1755383Ab2IXNeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 09:34:21 -0400
+Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:1615 "EHLO
+	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab2IXNeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 09:33:37 -0400
-Message-ID: <50606050.309@linux.vnet.ibm.com>
-Date: Mon, 24 Sep 2012 18:59:52 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Mon, 24 Sep 2012 09:34:20 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH v2] media: davinci: vpif: display: separate out subdev from output
+Date: Mon, 24 Sep 2012 15:32:20 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc3-durdane; KDE/4.8.4; x86_64; ; )
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        VGER <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+References: <1348483451-20668-1-git-send-email-prabhakar.lad@ti.com> <201209241350.00893.hverkuil@xs4all.nl> <CA+V-a8t5qYBAY4xjFQOM5UcdrLRfuta-mbeO0qbTZ-EFR8=LwA@mail.gmail.com>
+In-Reply-To: <CA+V-a8t5qYBAY4xjFQOM5UcdrLRfuta-mbeO0qbTZ-EFR8=LwA@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
- in PLE handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue> <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com> <1348490165.11847.58.camel@twins>
-In-Reply-To: <1348490165.11847.58.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12092413-5490-0000-0000-0000022FB11E
+Message-Id: <201209241532.21024.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 06:06 PM, Peter Zijlstra wrote:
-> On Mon, 2012-09-24 at 17:22 +0530, Raghavendra K T wrote:
->> On 09/24/2012 05:04 PM, Peter Zijlstra wrote:
->>> On Fri, 2012-09-21 at 17:29 +0530, Raghavendra K T wrote:
->>>> In some special scenarios like #vcpu<= #pcpu, PLE handler may
->>>> prove very costly, because there is no need to iterate over vcpus
->>>> and do unsuccessful yield_to burning CPU.
->>>
->>> What's the costly thing? The vm-exit, the yield (which should be a nop
->>> if its the only task there) or something else entirely?
->>>
->> Both vmexit and yield_to() actually,
->>
->> because unsuccessful yield_to() overall is costly in PLE handler.
->>
->> This is because when we have large guests, say 32/16 vcpus, and one
->> vcpu is holding lock, rest of the vcpus waiting for the lock, when they
->> do PL-exit, each of the vcpu try to iterate over rest of vcpu list in
->> the VM and try to do directed yield (unsuccessful). (O(n^2) tries).
->>
->> this results is fairly high amount of cpu burning and double run queue
->> lock contention.
->>
->> (if they were spinning probably lock progress would have been faster).
->> As Avi/Chegu Vinod had felt it is better to avoid vmexit itself, which
->> seems little complex to achieve currently.
->
-> OK, so the vmexit stays and we need to improve yield_to.
->
-> How about something like the below, that would allow breaking out of the
-> for-each-vcpu loop and simply going back into the vm, right?
->
-> ---
->   kernel/sched/core.c | 25 +++++++++++++++++++------
->   1 file changed, 19 insertions(+), 6 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b38f00e..5d5b355 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4272,7 +4272,10 @@ EXPORT_SYMBOL(yield);
->    * It's the caller's job to ensure that the target task struct
->    * can't go away on us before we can do any checks.
->    *
-> - * Returns true if we indeed boosted the target task.
-> + * Returns:
-> + *   true (>0) if we indeed boosted the target task.
-> + *   false (0) if we failed to boost the target.
-> + *   -ESRCH if there's no task to yield to.
->    */
->   bool __sched yield_to(struct task_struct *p, bool preempt)
->   {
-> @@ -4284,6 +4287,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
->   	local_irq_save(flags);
->   	rq = this_rq();
->
-> +	/*
-> +	 * If we're the only runnable task on the rq, there's absolutely no
-> +	 * point in yielding.
-> +	 */
-> +	if (rq->nr_running == 1) {
-> +		yielded = -ESRCH;
-> +		goto out_irq;
-> +	}
-> +
->   again:
->   	p_rq = task_rq(p);
->   	double_rq_lock(rq, p_rq);
-> @@ -4293,13 +4305,13 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
->   	}
->
->   	if (!curr->sched_class->yield_to_task)
-> -		goto out;
-> +		goto out_unlock;
->
->   	if (curr->sched_class != p->sched_class)
-> -		goto out;
-> +		goto out_unlock;
->
->   	if (task_running(p_rq, p) || p->state)
-> -		goto out;
-> +		goto out_unlock;
->
->   	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
->   	if (yielded) {
-> @@ -4312,11 +4324,12 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
->   			resched_task(p_rq->curr);
->   	}
->
-> -out:
-> +out_unlock:
->   	double_rq_unlock(rq, p_rq);
-> +out_irq:
->   	local_irq_restore(flags);
->
-> -	if (yielded)
-> +	if (yielded>  0)
->   		schedule();
->
->   	return yielded;
->
->
+On Mon September 24 2012 15:21:44 Prabhakar Lad wrote:
+> Hi Hans,
+> 
+> On Mon, Sep 24, 2012 at 5:20 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> > On Mon September 24 2012 12:59:11 Hans Verkuil wrote:
+> >> On Mon September 24 2012 12:44:11 Prabhakar wrote:
+> >> > From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> >> >
+> >> > vpif_display relied on a 1-1 mapping of output and subdev. This is not
+> >> > necessarily the case. Separate the two. So there is a list of subdevs
+> >> > and a list of outputs. Each output refers to a subdev and has routing
+> >> > information. An output does not have to have a subdev.
+> >> >
+> >> > The initial output for each channel is set to the fist output.
+> >> >
+> >> > Currently missing is support for associating multiple subdevs with
+> >> > an output.
+> >> >
+> >> > Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> >> > Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> >> > Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> >> > Cc: Sekhar Nori <nsekhar@ti.com>
+> >>
+> >> Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+> >
+> > I'm retracting this Ack. I did see something that wasn't right but I thought
+> > it was harmless, but after thinking some more I believe it should be fixed.
+> > Luckily, it's easy to fix. See below. Since we need a new version anyway I
+> > also added a comment to a few minor issues that can be fixed at the same time.
+> >
+> >>
+> >> Regards,
+> >>
+> >>       Hans
+> >>
+> >> > ---
+> >> >  This patch is dependent on the patch series from Hans
+> >> >  (http://www.mail-archive.com/linux-media@vger.kernel.org/msg52270.html)
+> >> >
+> >> >  Changes for V2:
+> >> >  1: Changed v4l2_device_call_until_err() call to v4l2_subdev_call() for
+> >> >     s_routing, since this call is for specific subdev, pointed out by Hans.
+> >> >
+> >> >  arch/arm/mach-davinci/board-da850-evm.c       |   29 +++++-
+> >> >  arch/arm/mach-davinci/board-dm646x-evm.c      |   39 ++++++-
+> >> >  drivers/media/platform/davinci/vpif_display.c |  136 ++++++++++++++++++++-----
+> >> >  include/media/davinci/vpif_types.h            |   20 +++-
+> >> >  4 files changed, 183 insertions(+), 41 deletions(-)
+> >> >
+> >> > diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+> >> > index 3081ea4..23a7012 100644
+> >> > --- a/arch/arm/mach-davinci/board-da850-evm.c
+> >> > +++ b/arch/arm/mach-davinci/board-da850-evm.c
+> >> > @@ -46,6 +46,7 @@
+> >> >  #include <mach/spi.h>
+> >> >
+> >> >  #include <media/tvp514x.h>
+> >> > +#include <media/adv7343.h>
+> >> >
+> >> >  #define DA850_EVM_PHY_ID           "davinci_mdio-0:00"
+> >> >  #define DA850_LCD_PWR_PIN          GPIO_TO_PIN(2, 8)
+> >> > @@ -1257,16 +1258,34 @@ static struct vpif_subdev_info da850_vpif_subdev[] = {
+> >> >     },
+> >> >  };
+> >> >
+> >> > -static const char const *vpif_output[] = {
+> >> > -           "Composite",
+> >> > -           "S-Video",
+> >> > +static const struct vpif_output da850_ch0_outputs[] = {
+> >> > +   {
+> >> > +           .output = {
+> >> > +                   .index = 0,
+> >> > +                   .name = "Composite",
+> >> > +                   .type = V4L2_OUTPUT_TYPE_ANALOG,
+> >> > +           },
+> >> > +           .subdev_name = "adv7343",
+> >> > +           .output_route = ADV7343_COMPOSITE_ID,
+> >> > +   },
+> >> > +   {
+> >> > +           .output = {
+> >> > +                   .index = 1,
+> >> > +                   .name = "S-Video",
+> >> > +                   .type = V4L2_OUTPUT_TYPE_ANALOG,
+> >> > +           },
+> >> > +           .subdev_name = "adv7343",
+> >> > +           .output_route = ADV7343_SVIDEO_ID,
+> >> > +   },
+> >> >  };
+> >> >
+> >> >  static struct vpif_display_config da850_vpif_display_config = {
+> >> >     .subdevinfo   = da850_vpif_subdev,
+> >> >     .subdev_count = ARRAY_SIZE(da850_vpif_subdev),
+> >> > -   .output       = vpif_output,
+> >> > -   .output_count = ARRAY_SIZE(vpif_output),
+> >> > +   .chan_config[0] = {
+> >> > +           .outputs = da850_ch0_outputs,
+> >> > +           .output_count = ARRAY_SIZE(da850_ch0_outputs),
+> >> > +   },
+> >> >     .card_name    = "DA850/OMAP-L138 Video Display",
+> >> >  };
+> >> >
+> >> > diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+> >> > index ad249c7..c206768 100644
+> >> > --- a/arch/arm/mach-davinci/board-dm646x-evm.c
+> >> > +++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+> >> > @@ -26,6 +26,7 @@
+> >> >  #include <linux/i2c/pcf857x.h>
+> >> >
+> >> >  #include <media/tvp514x.h>
+> >> > +#include <media/adv7343.h>
+> >> >
+> >> >  #include <linux/mtd/mtd.h>
+> >> >  #include <linux/mtd/nand.h>
+> >> > @@ -496,18 +497,44 @@ static struct vpif_subdev_info dm646x_vpif_subdev[] = {
+> >> >     },
+> >> >  };
+> >> >
+> >> > -static const char *output[] = {
+> >> > -   "Composite",
+> >> > -   "Component",
+> >> > -   "S-Video",
+> >> > +static const struct vpif_output dm6467_ch0_outputs[] = {
+> >> > +   {
+> >> > +           .output = {
+> >> > +                   .index = 0,
+> >> > +                   .name = "Composite",
+> >> > +                   .type = V4L2_OUTPUT_TYPE_ANALOG,
+> >> > +           },
+> >> > +           .subdev_name = "adv7343",
+> >> > +           .output_route = ADV7343_COMPOSITE_ID,
+> >> > +   },
+> >> > +   {
+> >> > +           .output = {
+> >> > +                   .index = 1,
+> >> > +                   .name = "Component",
+> >> > +                   .type = V4L2_OUTPUT_TYPE_ANALOG,
+> >> > +           },
+> >> > +           .subdev_name = "adv7343",
+> >> > +           .output_route = ADV7343_COMPONENT_ID,
+> >> > +   },
+> >> > +   {
+> >> > +           .output = {
+> >> > +                   .index = 2,
+> >> > +                   .name = "S-Video",
+> >> > +                   .type = V4L2_OUTPUT_TYPE_ANALOG,
+> >> > +           },
+> >> > +           .subdev_name = "adv7343",
+> >> > +           .output_route = ADV7343_SVIDEO_ID,
+> >> > +   },
+> >> >  };
+> >> >
+> >> >  static struct vpif_display_config dm646x_vpif_display_config = {
+> >> >     .set_clock      = set_vpif_clock,
+> >> >     .subdevinfo     = dm646x_vpif_subdev,
+> >> >     .subdev_count   = ARRAY_SIZE(dm646x_vpif_subdev),
+> >> > -   .output         = output,
+> >> > -   .output_count   = ARRAY_SIZE(output),
+> >> > +   .chan_config[0] = {
+> >> > +           .outputs = dm6467_ch0_outputs,
+> >> > +           .output_count = ARRAY_SIZE(dm6467_ch0_outputs),
+> >> > +   },
+> >> >     .card_name      = "DM646x EVM",
+> >> >  };
+> >> >
+> >> > diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
+> >> > index 8d1ce09..f68780f 100644
+> >> > --- a/drivers/media/platform/davinci/vpif_display.c
+> >> > +++ b/drivers/media/platform/davinci/vpif_display.c
+> >> > @@ -308,7 +308,7 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+> >> >             channel2_intr_assert();
+> >> >             channel2_intr_enable(1);
+> >> >             enable_channel2(1);
+> >> > -           if (vpif_config_data->ch2_clip_en)
+> >> > +           if (vpif_config_data->chan_config[VPIF_CHANNEL2_VIDEO].clip_en)
+> >> >                     channel2_clipping_enable(1);
+> >> >     }
+> >> >
+> >> > @@ -317,7 +317,7 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+> >> >             channel3_intr_assert();
+> >> >             channel3_intr_enable(1);
+> >> >             enable_channel3(1);
+> >> > -           if (vpif_config_data->ch3_clip_en)
+> >> > +           if (vpif_config_data->chan_config[VPIF_CHANNEL3_VIDEO].clip_en)
+> >> >                     channel3_clipping_enable(1);
+> >> >     }
+> >> >
+> >> > @@ -1174,14 +1174,16 @@ static int vpif_streamoff(struct file *file, void *priv,
+> >> >     if (buftype == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
+> >> >             /* disable channel */
+> >> >             if (VPIF_CHANNEL2_VIDEO == ch->channel_id) {
+> >> > -                   if (vpif_config_data->ch2_clip_en)
+> >> > +                   if (vpif_config_data->
+> >> > +                           chan_config[VPIF_CHANNEL2_VIDEO].clip_en)
+> >> >                             channel2_clipping_enable(0);
+> >> >                     enable_channel2(0);
+> >> >                     channel2_intr_enable(0);
+> >> >             }
+> >> >             if ((VPIF_CHANNEL3_VIDEO == ch->channel_id) ||
+> >> >                                     (2 == common->started)) {
+> >> > -                   if (vpif_config_data->ch3_clip_en)
+> >> > +                   if (vpif_config_data->
+> >> > +                           chan_config[VPIF_CHANNEL3_VIDEO].clip_en)
+> >> >                             channel3_clipping_enable(0);
+> >> >                     enable_channel3(0);
+> >> >                     channel3_intr_enable(0);
+> >> > @@ -1214,41 +1216,118 @@ static int vpif_enum_output(struct file *file, void *fh,
+> >> >  {
+> >> >
+> >> >     struct vpif_display_config *config = vpif_dev->platform_data;
+> >> > +   struct vpif_display_chan_config *chan_cfg;
+> >> > +   struct vpif_fh *vpif_handler = fh;
+> >> > +   struct channel_obj *ch = vpif_handler->channel;
+> >> >
+> >> > -   if (output->index >= config->output_count) {
+> >> > +   chan_cfg = &config->chan_config[ch->channel_id];
+> >> > +   if (output->index >= chan_cfg->output_count) {
+> >> >             vpif_dbg(1, debug, "Invalid output index\n");
+> >> >             return -EINVAL;
+> >> >     }
+> >> >
+> >> > -   strcpy(output->name, config->output[output->index]);
+> >> > -   output->type = V4L2_OUTPUT_TYPE_ANALOG;
+> >> > +   memcpy(output, &chan_cfg->outputs[output->index].output,
+> >> > +           sizeof(*output));
+> >
+> >         *output = chan_cfg->outputs[output->index].output;
+> >
+> >> >     output->std = VPIF_V4L2_STD;
+> >
+> Should I move 'VPIF_V4L2_STD' this macro to vpif_types.h ?
 
-Yes, I think this is a nice idea. Any future users of yield_to
-also would benefit from this. we will have to iterate only till first
-attempt to yield_to.
+No. VPIF_V4L2_STD == V4L2_STD_ALL, so just use V4L2_STD_ALL directly.
 
-I 'll run the test with this patch.
+> > This should be part of chan_cfg->outputs[output->index].output and not be
+> > overridden. If the output is a HDTV output, then std should be 0, otherwise
+> > it should be whatever the std is that is supported by the output.
+> >
+> > Really no different to what we do in vpif_capture.
+> >
+> Ok
+> 
+> >> >
+> >> >     return 0;
+> >> >  }
+> >> >
+> >> > +/**
+> >> > + * vpif_output_to_subdev() - Maps output to sub device
+> >> > + * @vpif_cfg - global config ptr
+> >> > + * @chan_cfg - channel config ptr
+> >> > + * @index - Given output index from application
+> >> > + *
+> >> > + * lookup the sub device information for a given output index.
+> >> > + * we report all the output to application. output table also
+> >> > + * has sub device name for the each output
+> >> > + */
+> >> > +static int
+> >> > +vpif_output_to_subdev(struct vpif_display_config *vpif_cfg,
+> >> > +                 struct vpif_display_chan_config *chan_cfg, int index)
+> >> > +{
+> >> > +   struct vpif_subdev_info *subdev_info;
+> >> > +   const char *subdev_name;
+> >> > +   int i;
+> >> > +
+> >> > +   vpif_dbg(2, debug, "vpif_output_to_subdev\n");
+> >> > +
+> >> > +   if (chan_cfg->outputs == NULL)
+> >> > +           return -1;
+> >> > +
+> >> > +   subdev_name = chan_cfg->outputs[index].subdev_name;
+> >> > +   if (subdev_name == NULL)
+> >> > +           return -1;
+> >> > +
+> >> > +   /* loop through the sub device list to get the sub device info */
+> >> > +   for (i = 0; i < vpif_cfg->subdev_count; i++) {
+> >> > +           subdev_info = &vpif_cfg->subdevinfo[i];
+> >> > +           if (!strcmp(subdev_info->name, subdev_name))
+> >> > +                   return i;
+> >> > +   }
+> >> > +   return -1;
+> >> > +}
+> >> > +
+> >> > +/**
+> >> > + * vpif_set_output() - Select an output
+> >> > + * @vpif_cfg - global config ptr
+> >> > + * @ch - channel
+> >> > + * @index - Given output index from application
+> >> > + *
+> >> > + * Select the given output.
+> >> > + */
+> >> > +static int vpif_set_output(struct vpif_display_config *vpif_cfg,
+> >> > +                 struct channel_obj *ch, int index)
+> >> > +{
+> >> > +   struct vpif_display_chan_config *chan_cfg =
+> >> > +           &vpif_cfg->chan_config[ch->channel_id];
+> >> > +   struct vpif_subdev_info *subdev_info = NULL;
+> >> > +   struct v4l2_subdev *sd = NULL;
+> >> > +   u32 input = 0, output = 0;
+> >> > +   int sd_index;
+> >> > +   int ret;
+> >> > +
+> >> > +   sd_index = vpif_output_to_subdev(vpif_cfg, chan_cfg, index);
+> >> > +   if (sd_index >= 0) {
+> >> > +           sd = vpif_obj.sd[sd_index];
+> >> > +           subdev_info = &vpif_cfg->subdevinfo[sd_index];
+> >> > +   }
+> >> > +
+> >> > +   if (sd) {
+> >> > +           input = chan_cfg->outputs[index].input_route;
+> >> > +           output = chan_cfg->outputs[index].output_route;
+> >> > +           ret = v4l2_subdev_call(sd, video, s_routing, input, output, 0);
+> >> > +           if (ret < 0) {
+> >
+> > Replace with:
+> >
+> >                 if (ret < 0 && ret != -ENOIOCTLCMD) {
+> >
+> > It's OK if the subdev doesn't support this s_routing operation.
+> >
+> Ok
+> 
+> >> > +                   vpif_err("Failed to set output\n");
+> >> > +                   return ret;
+> >> > +           }
+> >> > +
+> >> > +   }
+> >> > +   ch->output_idx = index;
+> >> > +   ch->sd = sd;
+> >
+> > Just like in the capture case you should update tvnorms:
+> >
+> >         ch->video_dev->tvnorms = chan_cfg->inputs[index].output.std;
+> >
+> > Make sure tvnorms is no longer set in vpif_video_template.
+> > Ditto for current_norm. Since vpif_display.c supports g_std the current_norm
+> > field shouldn't be used anymore.
+> >
+> > The capture case also updates vpifparams.iface:
+> >
+> >         ch->vpifparams.iface = chan_cfg->vpif_if;
+> >
+> > Isn't that needed for output as well?
+> >
+> The iface is never used  in display, so there isnt any necessity to assign it.
 
-However Rik had a genuine concern in the cases where runqueue is not
-equally distributed and lockholder might actually be on a different run 
-queue but not running.
+But it is used in vpif.c through vpif_set_video_params()!
 
-Do you think instead of using rq->nr_running, we could get a global 
-sense of load using avenrun (something like avenrun/num_onlinecpus)
+Regards,
 
+	Hans
