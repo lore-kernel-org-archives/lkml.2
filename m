@@ -1,293 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab2IXOL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 10:11:26 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:39624 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755671Ab2IXOLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 10:11:24 -0400
-Date: Mon, 24 Sep 2012 09:10:41 -0500
-From: key@linux.vnet.ibm.com
-To: James Morris <jmorris@namei.org>
-Cc: Ashley Lai <adlai@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, adlai@us.ibm.com
-Subject: Re: [PATCH 1/1] drivers/char/tpm: remove tasklet and cleanup
-Message-ID: <20120924141041.GA2741@ennui.austin.ibm.com>
-References: <1345670263.25124.7.camel@footlong>
- <1347472190.27058.5.camel@footlong>
- <alpine.LRH.2.02.1209241225230.678@tundra.namei.org>
+	id S1755682Ab2IXOOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 10:14:48 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57570 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755452Ab2IXOOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 10:14:46 -0400
+Date: Mon, 24 Sep 2012 18:14:41 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Pavel Emelyanov <xemul@parallels.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
+Message-ID: <20120924141441.GD16532@moon>
+References: <20120913135131.5b251797@pyramind.ukuu.org.uk>
+ <20120913125401.GK19956@moon>
+ <20120913172507.5039e3c6@pyramind.ukuu.org.uk>
+ <20120922180639.GC11610@moon>
+ <20120922200731.GD14004@kroah.com>
+ <20120922201144.GD11610@moon>
+ <20120922215232.GA25778@moon>
+ <20120923010953.GA17663@kroah.com>
+ <20120923064007.GA2994@moon>
+ <34f6ba7b-2c50-492e-9267-52d328a8d37f@email.android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1209241225230.678@tundra.namei.org>
+In-Reply-To: <34f6ba7b-2c50-492e-9267-52d328a8d37f@email.android.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12092414-9360-0000-0000-00000AF883CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 12:26:05PM +1000, James Morris wrote:
-> On Wed, 12 Sep 2012, Ashley Lai wrote:
+On Sun, Sep 23, 2012 at 07:46:24AM -0700, H. Peter Anvin wrote:
+> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 > 
-> > This patch removed the tasklet and moved the wait queue into the
-> > private structure.  It also cleaned up the response CRQ path.
-> > 
-> > Signed-off-by: Ashley Lai <adlai@us.ibm.com>
+> >On Sat, Sep 22, 2012 at 06:09:53PM -0700, Greg Kroah-Hartman wrote:
+> >> On Sun, Sep 23, 2012 at 01:52:32AM +0400, Cyrill Gorcunov wrote:
+> >> > On Sun, Sep 23, 2012 at 12:11:44AM +0400, Cyrill Gorcunov wrote:
+> >> > >
+> >> > > > Sysfs is one value per file, you have three values here, please
+> >make 3
+> >> > > > files.
+> >> > > > 
+> >> > > > And document them in Documentation/ABI/.
+> >> > > 
+> >> > > Hmm, sure Greg, I'll update. Thanks!
+> >> > 
+> >> > Something like below I suppose? Look, if there will be no complains
+> >> > on tech aspects on the patch (locking and tty refs) -- I'll update
+> >> > Documentation. Just want be sure I've made no mistakes here.
+> >> > 
+> >> > Another question -- would not it be worth to wrap code with
+> >> > CONFIG_CHECKPOINT_RESTORE?
+> >> 
+> >> Alan's point stands, what's the use of this if it can instantly
+> >> change after you read the value?
+> >
+> >We use it when we do a checkpoint, ie when tasks are stopped. I think
+> >it's close to data obtained from procfs (ie valid once you read it but can
+> >be changed right after that operation). Maybe I should put everything to
+> >procfs, or stick back with ioctl calls?
 > 
-> 
-> Kent: any comment on this?  You should probably push this to me via your 
-> tree.
+> The problem as I see it is that you don't know if your process is the lock holder.
 
-  Oh, I thought we were waiting on Ben. This looks good to me, I'll get
-this to you today.
+Guys, after being trying sysfs approach I think ioctls is a bit better, because
+it requires only local changes not propagated to devpts, also this calls are
+allowed via file descriptor owner only.
 
-  Kent
+Actually I thought what if extend existing set-(lock,packet-mode,exclusive)
+calls to return previous state of appropriate variable, but this will break
+abi so i had to refuse this idea.
 
-> 
-> 
-> > ---
-> > James,
-> > 
-> > This patch is based on your "next" branch.
-> > git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git
-> > 
-> > Thanks,
-> > Ashley Lai
-> > ---
-> >  drivers/char/tpm/tpm_ibmvtpm.c | 81 +++++++++++++++---------------------------
-> >  drivers/char/tpm/tpm_ibmvtpm.h |  5 ++-
-> >  2 files changed, 30 insertions(+), 56 deletions(-)
-> > 
-> > diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-> > index efc4ab3..88a95ea 100644
-> > --- a/drivers/char/tpm/tpm_ibmvtpm.c
-> > +++ b/drivers/char/tpm/tpm_ibmvtpm.c
-> > @@ -38,8 +38,6 @@ static struct vio_device_id tpm_ibmvtpm_device_table[] __devinitdata = {
-> >  };
-> >  MODULE_DEVICE_TABLE(vio, tpm_ibmvtpm_device_table);
-> >  
-> > -DECLARE_WAIT_QUEUE_HEAD(wq);
-> > -
-> >  /**
-> >   * ibmvtpm_send_crq - Send a CRQ request
-> >   * @vdev:	vio device struct
-> > @@ -83,6 +81,7 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
-> >  {
-> >  	struct ibmvtpm_dev *ibmvtpm;
-> >  	u16 len;
-> > +	int sig;
-> >  
-> >  	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
-> >  
-> > @@ -91,22 +90,23 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
-> >  		return 0;
-> >  	}
-> >  
-> > -	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
-> > +	sig = wait_event_interruptible(ibmvtpm->wq, ibmvtpm->res_len != 0);
-> > +	if (sig)
-> > +		return -EINTR;
-> > +
-> > +	len = ibmvtpm->res_len;
-> >  
-> > -	if (count < ibmvtpm->crq_res.len) {
-> > +	if (count < len) {
-> >  		dev_err(ibmvtpm->dev,
-> >  			"Invalid size in recv: count=%ld, crq_size=%d\n",
-> > -			count, ibmvtpm->crq_res.len);
-> > +			count, len);
-> >  		return -EIO;
-> >  	}
-> >  
-> >  	spin_lock(&ibmvtpm->rtce_lock);
-> > -	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, ibmvtpm->crq_res.len);
-> > -	memset(ibmvtpm->rtce_buf, 0, ibmvtpm->crq_res.len);
-> > -	ibmvtpm->crq_res.valid = 0;
-> > -	ibmvtpm->crq_res.msg = 0;
-> > -	len = ibmvtpm->crq_res.len;
-> > -	ibmvtpm->crq_res.len = 0;
-> > +	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, len);
-> > +	memset(ibmvtpm->rtce_buf, 0, len);
-> > +	ibmvtpm->res_len = 0;
-> >  	spin_unlock(&ibmvtpm->rtce_lock);
-> >  	return len;
-> >  }
-> > @@ -273,7 +273,6 @@ static int __devexit tpm_ibmvtpm_remove(struct vio_dev *vdev)
-> >  	int rc = 0;
-> >  
-> >  	free_irq(vdev->irq, ibmvtpm);
-> > -	tasklet_kill(&ibmvtpm->tasklet);
-> >  
-> >  	do {
-> >  		if (rc)
-> > @@ -372,7 +371,6 @@ static int ibmvtpm_reset_crq(struct ibmvtpm_dev *ibmvtpm)
-> >  static int tpm_ibmvtpm_resume(struct device *dev)
-> >  {
-> >  	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
-> > -	unsigned long flags;
-> >  	int rc = 0;
-> >  
-> >  	do {
-> > @@ -387,10 +385,11 @@ static int tpm_ibmvtpm_resume(struct device *dev)
-> >  		return rc;
-> >  	}
-> >  
-> > -	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> > -	vio_disable_interrupts(ibmvtpm->vdev);
-> > -	tasklet_schedule(&ibmvtpm->tasklet);
-> > -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> > +	rc = vio_enable_interrupts(ibmvtpm->vdev);
-> > +	if (rc) {
-> > +		dev_err(dev, "Error vio_enable_interrupts rc=%d\n", rc);
-> > +		return rc;
-> > +	}
-> >  
-> >  	rc = ibmvtpm_crq_send_init(ibmvtpm);
-> >  	if (rc)
-> > @@ -467,7 +466,7 @@ static struct ibmvtpm_crq *ibmvtpm_crq_get_next(struct ibmvtpm_dev *ibmvtpm)
-> >  	if (crq->valid & VTPM_MSG_RES) {
-> >  		if (++crq_q->index == crq_q->num_entry)
-> >  			crq_q->index = 0;
-> > -		rmb();
-> > +		smp_rmb();
-> >  	} else
-> >  		crq = NULL;
-> >  	return crq;
-> > @@ -535,11 +534,9 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
-> >  			ibmvtpm->vtpm_version = crq->data;
-> >  			return;
-> >  		case VTPM_TPM_COMMAND_RES:
-> > -			ibmvtpm->crq_res.valid = crq->valid;
-> > -			ibmvtpm->crq_res.msg = crq->msg;
-> > -			ibmvtpm->crq_res.len = crq->len;
-> > -			ibmvtpm->crq_res.data = crq->data;
-> > -			wake_up_interruptible(&wq);
-> > +			/* len of the data in rtce buffer */
-> > +			ibmvtpm->res_len = crq->len;
-> > +			wake_up_interruptible(&ibmvtpm->wq);
-> >  			return;
-> >  		default:
-> >  			return;
-> > @@ -559,38 +556,19 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
-> >  static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
-> >  {
-> >  	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
-> > -	unsigned long flags;
-> > -
-> > -	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> > -	vio_disable_interrupts(ibmvtpm->vdev);
-> > -	tasklet_schedule(&ibmvtpm->tasklet);
-> > -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> > -
-> > -	return IRQ_HANDLED;
-> > -}
-> > -
-> > -/**
-> > - * ibmvtpm_tasklet - Interrupt handler tasklet
-> > - * @data:	ibm vtpm device struct
-> > - *
-> > - * Returns:
-> > - *	Nothing
-> > - **/
-> > -static void ibmvtpm_tasklet(void *data)
-> > -{
-> > -	struct ibmvtpm_dev *ibmvtpm = data;
-> >  	struct ibmvtpm_crq *crq;
-> > -	unsigned long flags;
-> >  
-> > -	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> > +	/* while loop is needed for initial setup (get version and
-> > +	 * get rtce_size). There should be only one tpm request at any
-> > +	 * given time.
-> > +	 */
-> >  	while ((crq = ibmvtpm_crq_get_next(ibmvtpm)) != NULL) {
-> >  		ibmvtpm_crq_process(crq, ibmvtpm);
-> >  		crq->valid = 0;
-> > -		wmb();
-> > +		smp_wmb();
-> >  	}
-> >  
-> > -	vio_enable_interrupts(ibmvtpm->vdev);
-> > -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> > +	return IRQ_HANDLED;
-> >  }
-> >  
-> >  /**
-> > @@ -650,9 +628,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
-> >  		goto reg_crq_cleanup;
-> >  	}
-> >  
-> > -	tasklet_init(&ibmvtpm->tasklet, (void *)ibmvtpm_tasklet,
-> > -		     (unsigned long)ibmvtpm);
-> > -
-> >  	rc = request_irq(vio_dev->irq, ibmvtpm_interrupt, 0,
-> >  			 tpm_ibmvtpm_driver_name, ibmvtpm);
-> >  	if (rc) {
-> > @@ -666,13 +641,14 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
-> >  		goto init_irq_cleanup;
-> >  	}
-> >  
-> > +	init_waitqueue_head(&ibmvtpm->wq);
-> > +
-> >  	crq_q->index = 0;
-> >  
-> >  	ibmvtpm->dev = dev;
-> >  	ibmvtpm->vdev = vio_dev;
-> >  	chip->vendor.data = (void *)ibmvtpm;
-> >  
-> > -	spin_lock_init(&ibmvtpm->lock);
-> >  	spin_lock_init(&ibmvtpm->rtce_lock);
-> >  
-> >  	rc = ibmvtpm_crq_send_init(ibmvtpm);
-> > @@ -689,7 +665,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
-> >  
-> >  	return rc;
-> >  init_irq_cleanup:
-> > -	tasklet_kill(&ibmvtpm->tasklet);
-> >  	do {
-> >  		rc1 = plpar_hcall_norets(H_FREE_CRQ, vio_dev->unit_address);
-> >  	} while (rc1 == H_BUSY || H_IS_LONG_BUSY(rc1));
-> > diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
-> > index 4296eb4..bd82a79 100644
-> > --- a/drivers/char/tpm/tpm_ibmvtpm.h
-> > +++ b/drivers/char/tpm/tpm_ibmvtpm.h
-> > @@ -38,13 +38,12 @@ struct ibmvtpm_dev {
-> >  	struct vio_dev *vdev;
-> >  	struct ibmvtpm_crq_queue crq_queue;
-> >  	dma_addr_t crq_dma_handle;
-> > -	spinlock_t lock;
-> > -	struct tasklet_struct tasklet;
-> >  	u32 rtce_size;
-> >  	void __iomem *rtce_buf;
-> >  	dma_addr_t rtce_dma_handle;
-> >  	spinlock_t rtce_lock;
-> > -	struct ibmvtpm_crq crq_res;
-> > +	wait_queue_head_t wq;
-> > +	u16 res_len;
-> >  	u32 vtpm_version;
-> >  };
-> >  
-> > -- 
-> > 1.7.11.2
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
-> -- 
-> James Morris
-> <jmorris@namei.org>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+As to Alan's point on "what's the use of this if it can instantly change
+after you read the value" I guess it's the same as what we have when we
+simply set the value. Imagine we have two tasks fork'ed, first task do
+lock the pty while another task does unlock it immediately after that,
+as far as I see there is nothing preventing user space to do that, thus
+first task will think it has locked the peer while in real the peer remains
+unlocked. Same here with reading this value -- it's valid once read but
+can be changed right after. Isn't it?
