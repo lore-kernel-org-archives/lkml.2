@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab2IXFai (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 01:30:38 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:59188 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab2IXFag (ORCPT
+	id S1752854Ab2IXFjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 01:39:24 -0400
+Received: from mailhost.elitecore.com ([203.88.135.194]:55210 "EHLO
+	elitecore.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750792Ab2IXFjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 01:30:36 -0400
-Message-ID: <1348464626.2475.13.camel@ThinkPad-T420>
-Subject: [PATCH scsi] Add NULL checking of return value from
- scsi_cmd_to_driver()
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 24 Sep 2012 13:30:26 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 24 Sep 2012 01:39:22 -0400
+Message-ID: <505FF35E.6020506@elitecore.com>
+Date: Mon, 24 Sep 2012 11:15:02 +0530
+From: Jagdish Motwani <jagdish.motwani@elitecore.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Andres Freund <andres@anarazel.de>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: performance degradation on kernel upgrade (due to commit ab0a9735e06914ce4d2a94ffa41497dbc142fe7f)
+References: <505C700C.3010403@elitecore.com> <201209211625.42895.andres@anarazel.de>
+In-Reply-To: <201209211625.42895.andres@anarazel.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12092405-0260-0000-0000-000001E33C09
+X-Cyberoam-smtpxy-version: 1.0.6.3
+X-Cyberoam-AV-Policy: Default Rule
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just noticed that after commit 919f797, it is possible that 
-scsi_cmd_to_driver() returns NULL. This patch adds the NULL checking for drv 
-returned from the above function. 
+On 09/21/2012 07:55 PM, Andres Freund wrote:
+> Hi,
+>
+> On Friday, September 21, 2012 03:47:56 PM Jagdish Motwani wrote:
+>> Recently i upgraded my kernel from 2.6.29.6 to 2.6.35.14.
+>>
+>> After upgrading i got very poor performance on my postgre database.
+>>
+>>
+>> My test.sql contains 10000 postgre insert query
+>>
+>>
+>> Linux  2.6.29.6
+>>
+>> time psql -U user -d database -f test.sql  > /dev/null
+>> real    0m 7.23s
+>> user    0m 0.38s
+>> sys     0m 0.12s
+>>
+>>
+>>
+>> Linux  2.6.35.14
+>>
+>> # time psql -U user -d database -f test.sql  > /dev/null
+>> real    1m 4.05s
+>> user    0m 0.44s
+>> sys    0m 0.12
+> How do the results to this look if you use psql -1/--single-transaction?
+Using single transaction solves the problem - but that's not what i 
+really want.
+>
+>> I even tried Linux 3.5.4 and got similar results.
+>>
+>> Using git bisect, i got commit ab0a9735e06914ce4d2a94ffa41497dbc142fe7f
+>>
+>> Is it a behavior change or am i missing something? Are there any
+>> workarounds for this?
+> I guess youre using some form of virtualization? I think what youre observing
+> is just that access via raw devices previously lied about consistency. As the
+> commit observes several virtualization solutions can use raw device access.
+>
+> If all those 10000 inserts above happen in individual transactions - which
+> would happen if youre not using transactions explicitly -  each and every one
+> of them will cause a single disk write if they are executed sequentially.
+> A typical rotating disks can do between 80-160 such writes. If you devide 10k
+> transactions by 150 synchronous writes a second you get ~66s which pretty
+> nicely fits your time above.
+>
+> If you don't care about loosing a very small amount of transactions (up to a
+> second with the default settings) you can disable the synchronous_commit
+> setting in postgres. No earlier commits/changes will be lost/corrupted.
+> You can change that setting per transaction, per session/connection, per user,
+> per database or globally.
+>
+> Greetings,
+>
+> Andres
+Thanks Andres,
 
-Maybe it is not possible at run time, but from the code itself, we'd better
-have this check?  
+I disabled synchronous_commit, and got results similar to 2.6.32.
 
-This patch actually is a delta of my previous patch 
-[https://lkml.org/lkml/2012/4/11/814] and commit 919f797
-
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
----
-
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 2936b44..b9dd7f0 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -832,7 +832,7 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
-         if (cmd->request->cmd_type != REQ_TYPE_BLOCK_PC) {
- 		int old_good_bytes = good_bytes;
- 		drv = scsi_cmd_to_driver(cmd);
--		if (drv->done)
-+		if (drv && drv->done)
- 			good_bytes = drv->done(cmd);
- 		/*
- 		 * USB may not give sense identifying bad sector and
-
-
+Regards,
+Jagdish Motwani
