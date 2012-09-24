@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab2IXMcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:32:06 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:42408 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754199Ab2IXMcE (ORCPT
+	id S1755127Ab2IXMc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 08:32:26 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:50555 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754956Ab2IXMcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:32:04 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
-References: <1347798148-2660-1-git-send-email-linkinjeon@gmail.com>
-	<87lig28fak.fsf@devron.myhome.or.jp>
-	<CAKYAXd-6k7=RmrweR=wTOET50hy8Y7LokCSe1c2JtYd7pzPmsQ@mail.gmail.com>
-	<87ipb45914.fsf@devron.myhome.or.jp>
-	<CAKYAXd9EzKH_x1GaXvSZ7pRebfOcwQqNp6-oEnc2z2evuNo23g@mail.gmail.com>
-	<87ehls53ug.fsf@devron.myhome.or.jp>
-	<87a9wg53mc.fsf@devron.myhome.or.jp>
-	<CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
-	<87392768dj.fsf@devron.myhome.or.jp>
-	<CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
-	<87y5jz4rio.fsf@devron.myhome.or.jp>
-	<CAKYAXd_OmVgxtmHOLRdi5yr=yTa9ppmatQUf1GO6Qjg5ym8LuA@mail.gmail.com>
-Date: Mon, 24 Sep 2012 21:32:00 +0900
-In-Reply-To: <CAKYAXd_OmVgxtmHOLRdi5yr=yTa9ppmatQUf1GO6Qjg5ym8LuA@mail.gmail.com>
-	(Namjae Jeon's message of "Mon, 24 Sep 2012 20:20:59 +0900")
-Message-ID: <87txun4n5r.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Mon, 24 Sep 2012 08:32:24 -0400
+Message-ID: <506052D1.5000006@linux.vnet.ibm.com>
+Date: Mon, 24 Sep 2012 20:32:17 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 1/7] KVM: MMU: fix release noslot pfn
+References: <505C0FA8.5070007@linux.vnet.ibm.com> <505C0FCF.2070308@linux.vnet.ibm.com> <20120923091335.GA20907@redhat.com> <505FE8B4.8030309@linux.vnet.ibm.com> <20120924112416.GA23096@redhat.com> <506048D1.70403@linux.vnet.ibm.com> <20120924120424.GB23096@redhat.com>
+In-Reply-To: <20120924120424.GB23096@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092412-5490-0000-0000-0000022FA380
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
-
-> 2012/9/24, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
->> Namjae Jeon <linkinjeon@gmail.com> writes:
->>
->>>> I see. fileid seems to be stat.ino on nfsd4. inode->i_ino is actually
->>>> just a hash key of inode hash (exception is only in audit, iirc).
+On 09/24/2012 08:04 PM, Gleb Natapov wrote:
+> On Mon, Sep 24, 2012 at 07:49:37PM +0800, Xiao Guangrong wrote:
+>> On 09/24/2012 07:24 PM, Gleb Natapov wrote:
+>>> On Mon, Sep 24, 2012 at 12:59:32PM +0800, Xiao Guangrong wrote:
+>>>> On 09/23/2012 05:13 PM, Gleb Natapov wrote:
+>>>>> On Fri, Sep 21, 2012 at 02:57:19PM +0800, Xiao Guangrong wrote:
+>>>>>> We can not directly call kvm_release_pfn_clean to release the pfn
+>>>>>> since we can meet noslot pfn which is used to cache mmio info into
+>>>>>> spte
+>>>>>>
+>>>>> Wouldn't it be better to move the check into kvm_release_pfn_clean()?
 >>>>
->>>> So, what happens if we set "stat->ino = i_pos" on fat_getattr().
->>>>
->>>> int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct
->>>> kstat
->>>> *stat)
->>>> {
->>>> 	struct inode *inode = dentry->d_inode;
->>>> 	generic_fillattr(inode, stat);
->>>> 	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
->>>> 	if (opts->nfs == FAT_NFS_LIMITED) {
->>>> 		/* Use i_pos for ino. This is used as fileid of nfs. */
->>>> 		stat->ino = MSDOS_SB(inode->i_sb)->i_pos;
+>>>> I think there is no reason for us to prefer to adding this branch in
+>>>> the common code. :)
+>>>
+>>> Is the function performance critical? Is function called without the check
+>>> on a hot path?  The function already contains much heavier kvm_is_mmio_pfn()
+>>> check. If most/all function invocation require check before call it's
+>>> better to move it inside.
 >>
->> 		stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb), inode);
->>
->> Ouch, I forgot to use fat_i_pos_read().
->>
-> There is some unclear thing.
-> When I see first mail, I think maybe you don't want to use i_pos for inode->ino.
-> FAT allocate inode->ino from i_unique on server side and If NFS client
-> use i_pos for inode->ino in fat_get_attr, inode numbers on each
-> client/server will still be mismatched.
->
-> Would you plz give me hint ?
+>> It is not most/all functions need do this check - it is only needed on x86 mmu
+>> page-fault/prefetch path.
+> At least on x86 there 7 calls to kvm_release_pfn_clean(), 5 of them are
+> guarded by is_noslot_pfn() (after this patch) 
 
-->i_ino is long. It can't hold i_pos fully on 32bit arch, so we can't
-use ->i_no to store i_pos, and changing ->i_ino is unnecessary. If
-getattr() returned i_pos as ino, nobody see ->i_ino anymore except
-internal of kernel.
+3 places after the whole patchset (There are some cleanups after this patch).
 
-Furthermore I think there is no issue even if server and client didn't
-have same ino. Because client just uses FH (nfs4 seems to be using
-stat.ino though).
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> and one by even stronger is_error_pfn(). 
+
+This one is:
+
+|	if (!is_error_pfn(pfn)) {
+|                kvm_release_pfn_clean(pfn);
+|                return true;
+|	}
+|
+|	return false;
+
+We can change it to:
+
+| if (is_error_pfn(pfn))
+|	return false;
+|
+| kvm_release_pfn_clean(pfn);
+| return true;
+
+> I guess when/if other architectures will add MMIO MMU
+> caching they will need to guard kvm_release_pfn_clean() by is_noslot_pfn()
+> too in most cases. I am not insisting, but as this patch shows it is
+> easy to miss the check before calling the function.
+
+Sounds reasonable. I will consider it if Avi/Marcelo have no object on
+it.
+
+
+
