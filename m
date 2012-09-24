@@ -1,91 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab2IXHH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:07:59 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48673 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab2IXHHv (ORCPT
+	id S1755177Ab2IXHJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 03:09:09 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57038 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755064Ab2IXHJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:07:51 -0400
-Date: Mon, 24 Sep 2012 17:07:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: linux-next: manual merge of the staging tree with the vfs tree
-Message-Id: <20120924170741.34abbc462d1c405b0b447b72@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_17_07_41_+1000_iZL0nXGuwyz1JiOT"
+	Mon, 24 Sep 2012 03:09:07 -0400
+Date: Mon, 24 Sep 2012 15:08:52 +0800
+From: Guo Chao <yan@linux.vnet.ibm.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@zeniv.linux.org.uk, dchinner@redhat.com, hch@infradead.org,
+        jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v4 Patch 0/4] fs/inode.c: optimization for inode lock usage
+Message-ID: <20120924070852.GA10280@yanx>
+References: <1348219866-1799-1-git-send-email-yan@linux.vnet.ibm.com>
+ <20120921224912.GA20960@dastard>
+ <20120924024221.GB7984@yanx>
+ <20120924042343.GC20960@dastard>
+ <20120924061205.GA27244@yanx>
+ <20120924062812.GD20960@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120924062812.GD20960@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12092407-3568-0000-0000-000002811EB2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_17_07_41_+1000_iZL0nXGuwyz1JiOT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 24, 2012 at 04:28:12PM +1000, Dave Chinner wrote:
+> On Mon, Sep 24, 2012 at 02:12:05PM +0800, Guo Chao wrote:
+> > On Mon, Sep 24, 2012 at 02:23:43PM +1000, Dave Chinner wrote:
+> > > On Mon, Sep 24, 2012 at 10:42:21AM +0800, Guo Chao wrote:
+> > > > On Sat, Sep 22, 2012 at 08:49:12AM +1000, Dave Chinner wrote:
+> > > > 
+> > > > > On Fri, Sep 21, 2012 at 05:31:02PM +0800, Guo Chao wrote:
+> > > > > > This patchset optimizes several places which take the per inode spin lock.
+> > > > > > They have not been fully tested yet, thus they are marked as RFC. 
+> > > > > 
+> > > > > Inodes are RCU freed. The i_lock spinlock on the i_state field forms
+> > > > > part of the memory barrier that allows the RCU read side to
+> > > > > correctly detect a freed inode during a RCU protected cache lookup
+> > > > > (hash list traversal for the VFS, or a radix tree traversal for XFS).
+> > > > > The i_lock usage around the hahs list operations ensures the hash
+> > > > > list operations are atomic with state changes so that such changes
+> > > > > are correctly detected during RCU-protected traversals...
+> > > > > 
+> > > > > IOWs, removing the i_lock from around the i_state transitions and
+> > > > > inode hash insert/remove/traversal operations will cause races in
+> > > > > the RCU lookups and result in incorrectly using freed inodes instead
+> > > > > of failing the lookup and creating a new one.
+> > > > > 
+> > > > > So I don't think this is a good idea at all...
+> .....
+> > > The inode hash lookup needs to check i_state atomically during the
+> > > traversal so inodes being freed are skipped (e.g. I_FREEING,
+> > > I_WILL_FREE). those i_state flags are set only with the i_lock held,
+> > > and so inode hash lookups need to take the i_lock to guarantee the
+> > > i_state field is correct. This inode data field synchronisation is
+> > > separate to the cache hash list traversal protection.
+> > > 
+> > > The only way to do this is to have an inner lock (inode->i_lock)
+> > > that protects both the inode->i_hash_list and inode->i_state fields,
+> > > and a lock order that provides outer list traversal protections
+> > > (inode_hash_lock). Whether the outer lock is the inode_hash_lock or
+> > > rcu_read_lock(), the lock order and the data fields the locks are
+> > > protecting are the same....
+> > > 
+> > > > Of course, maybe they are there for something. Could you speak
+> > > > more about the race this change (patch 1,2?) brings up? Thank you.
+> > > 
+> > > When you drop the lock from the i_state initialisation, you end up
+> > > dropping the implicit unlock->lock memory barrier that the
+> > > inode->i_lock provides. i.e. you get this in iget_locked():
+> > > 
+> > > 
+> > > 	thread 1			thread 2
+> > > 
+> > > 	lock(inode_hash_lock)
+> > > 	for_each_hash_item()
+> > > 
+> > > 					inode->i_state = I_NEW
+> > > 					hash_list_insert
+> > > 
+> > > 	<finds newly inserted inode>
+> > > 		lock(inode->i_lock)
+> > > 		unlock(inode->i_lock)
+> > > 	unlock(inode_hash_lock)
+> > > 
+> > > 	wait_on_inode()
+> > > 		<see inode->i_state = 0 >
+> > > 		<uses inode before initialisation
+> > > 		 is complete>
+> > > 
+> > > IOWs, there is no unlock->lock transition occurring on any lock, so
+> > > there are no implicit memory barriers in this code, and so other
+> > > CPUs are not guaranteed to see the "inode->i_state = I_NEW" write
+> > > that thread 2 did. The lock/unlock pair around this I_NEW assignment
+> > > guarantees that thread 1 will see the change to i_state correctly.
+> > > 
+> > > So even without RCU, dropping the i_lock from these
+> > > i_state/hash insert/remove operations will result in races
+> > > occurring...
+> >
+> > This interleave can never happen because of inode_hash_lock.
+> 
+> Ah, sorry, I'm context switching too much right now.
+> 
+> s/lock(inode_hash_lock)/rcu_read_lock.
+> 
+> And that's the race condition the the locking order is *intended* to
+> avoid. It's just that we haven't done the last piece of the work,
+> which is replacing the read side inode_hash_lock usage with
+> rcu_read_lock.
+> 
+> > > Seriously, if you want to improve the locking of this code, go back
+> > > an resurrect the basic RCU hash traversal patches (i.e. Nick's
+> > > original patch rather than my SLAB_DESTROY_BY_RCU based ones). That
+> > > has much more benefit to many more workloads than just removing a
+> > > non-global, uncontended locks like this patch set does.
+> > > 
+> > 
+> > Ah, this is intended to be a code clean patchset actually. I thought these
+> > locks are redundant in an obvious and trivial manner. If, on the contrary, 
+> > they are such tricky, then never mind :) Thanks for your patient.
+> 
+> The RCU conversion is actually trivial - everything is already set
+> up for it to be done, and is simpler than this patch set. It pretty
+> much is simply replacing all the read side inode_hash_lock pairs
+> with rcu_read_lock()/rcu_read_unlock() pairs. Like I said, if you
+> want to clean up this code, then RCU traversals are the conversion
+> to make.
+>
 
-Hi Greg,
+Thanks for your suggestion. Though I doubt it's such trivial, I will try this
+after a little investigation.
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/android/binder.c between commit 004223461eee ("new
-helper: __alloc_fd()") from the vfs tree and commits efde99cd281a
-("Staging: android: binder: Make task_get_unused_fd_flags function
-static") and bf2023614201 ("Staging: android: binder: Remove an
-inconsequential conditional macro") from the staging tree.
+Regards,
+Guo Chao
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/staging/android/binder.c
-index f71d624,a807129..0000000
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@@ -362,9 -362,14 +362,9 @@@ struct binder_transaction=20
-  static void
-  binder_defer_work(struct binder_proc *proc, enum binder_deferred_state de=
-fer);
- =20
-- int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
- -/*
- - * copied from get_unused_fd_flags
- - */
-+ static int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
-  {
-  	struct files_struct *files =3D proc->files;
- -	int fd, error;
- -	struct fdtable *fdt;
-  	unsigned long rlim_cur;
-  	unsigned long irqs;
- =20
-
---Signature=_Mon__24_Sep_2012_17_07_41_+1000_iZL0nXGuwyz1JiOT
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYAa9AAoJEECxmPOUX5FE5vAQAJMBr6cjaNzEK+M3AREnKBNG
-qGhKGVe+B8F+mx02C8/+WrslMub+BH9+1s8D+/spEwLJxtH6FfP5sTnV+UBoPwSF
-pnnVu6jUv+VtNJ2Dkcfa5ym4INztPT2g1z1bq5o0PZgyPl3CUdS0OQiyCd1SQtLR
-bine+cd8X1pSzEb1cLnZzKcncqupC39jbsqH0+hCTHv2wzu4psks1n5FRCKaf8d/
-9u7hpVXS0W+7/xQiefH6611ty5l6lK7GLamwmm9enfGj55HAHsXSfhNO/F0an19H
-0UHxYDENJpF8IACxi+ckGdWucas91fJdNrAqya9VJCRWR0yQ5oGnUe4ZM0mk1DFY
-GN8mHGQ6FYbGy2JL45cgBkqXD99lh4/W3bGUu9FXg7L0NKrDs0gBjKUl1paOx9Eb
-4aQiY1nTNFcv0Urp8mQzw5rwvZMuOdpJ7jV77oXx6zMbAmUUErwJDNyLc4ulCfli
-aW170qIC/r1ztDREvewAZE+Bl2wbi2ypp7tlAZsaqWZmadw/gQhE/e7KhHNlLo4J
-XMlC/vx/qlm0EKcCIqzN6d5Xkf7WsiT7Xxf7DIYdwzBfBXpWgjwf7DpmXOptRHhi
-Btk/lsDg8ssc9Wstv168fA7eX8sjfZKNuMymH21OkMSjGhUdOtaKTFk1IbYiEOjE
-kDSE9PTfEaJcz70DPyID
-=SybL
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Sep_2012_17_07_41_+1000_iZL0nXGuwyz1JiOT--
