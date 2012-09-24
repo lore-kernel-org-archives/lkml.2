@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab2IXQF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:05:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41437 "EHLO
+	id S1757315Ab2IXQF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:05:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41445 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677Ab2IXP76 (ORCPT
+	with ESMTP id S1756680Ab2IXP77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:59:58 -0400
+	Mon, 24 Sep 2012 11:59:59 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Dong Hao <haodong@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Dong Hao <haodong@linux.vnet.ibm.com>, Avi Kivity <avi@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/30] KVM: x86: Export svm/vmx exit code and vector code to userspace
-Date: Mon, 24 Sep 2012 12:59:19 -0300
-Message-Id: <1348502384-14442-6-git-send-email-acme@infradead.org>
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: [PATCH 07/30] perf kvm: Use perf_evsel__intval
+Date: Mon, 24 Sep 2012 12:59:21 -0300
+Message-Id: <1348502384-14442-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1348502384-14442-1-git-send-email-acme@infradead.org>
 References: <1348502384-14442-1-git-send-email-acme@infradead.org>
@@ -28,560 +31,282 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Exporting KVM exit information to userspace to be consumed by perf.
+Using plain raw_field_value(evsel->tp_format) will look at the common
+fields as well, and since this tool doesn't need those, speed it up a
+bit by looking at just the event specific fields.
 
-Signed-off-by: Dong Hao <haodong@linux.vnet.ibm.com>
-[ Dong Hao <haodong@linux.vnet.ibm.com>: rebase it on acme's git tree ]
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Acked-by: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
+Also in general use just evsel and sample, just like was done in 'perf
+sched'.
+
+v2: Fixed up test against evsel->name, that contains the subsys name
+too, by David Ahern.
+
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org
+Cc: Dong Hao <haodong@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1347870675-31495-2-git-send-email-haodong@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/n/tip-v9x3q9rv4caxtox7wtjpchq5@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/include/asm/kvm.h      |   16 +++
- arch/x86/include/asm/kvm_host.h |   16 ---
- arch/x86/include/asm/svm.h      |  205 +++++++++++++++++++++++++--------------
- arch/x86/include/asm/vmx.h      |  127 ++++++++++++++++--------
- arch/x86/kvm/trace.h            |   89 -----------------
- 5 files changed, 230 insertions(+), 223 deletions(-)
+ tools/perf/builtin-kvm.c |  130 ++++++++++++++++++++++++----------------------
+ 1 files changed, 67 insertions(+), 63 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm.h b/arch/x86/include/asm/kvm.h
-index 246617e..41e08cb 100644
---- a/arch/x86/include/asm/kvm.h
-+++ b/arch/x86/include/asm/kvm.h
-@@ -9,6 +9,22 @@
- #include <linux/types.h>
- #include <linux/ioctl.h>
- 
-+#define DE_VECTOR 0
-+#define DB_VECTOR 1
-+#define BP_VECTOR 3
-+#define OF_VECTOR 4
-+#define BR_VECTOR 5
-+#define UD_VECTOR 6
-+#define NM_VECTOR 7
-+#define DF_VECTOR 8
-+#define TS_VECTOR 10
-+#define NP_VECTOR 11
-+#define SS_VECTOR 12
-+#define GP_VECTOR 13
-+#define PF_VECTOR 14
-+#define MF_VECTOR 16
-+#define MC_VECTOR 18
-+
- /* Select x86 specific features in <linux/kvm.h> */
- #define __KVM_HAVE_PIT
- #define __KVM_HAVE_IOAPIC
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 09155d6..1eaa6b0 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -75,22 +75,6 @@
- #define KVM_HPAGE_MASK(x)	(~(KVM_HPAGE_SIZE(x) - 1))
- #define KVM_PAGES_PER_HPAGE(x)	(KVM_HPAGE_SIZE(x) / PAGE_SIZE)
- 
--#define DE_VECTOR 0
--#define DB_VECTOR 1
--#define BP_VECTOR 3
--#define OF_VECTOR 4
--#define BR_VECTOR 5
--#define UD_VECTOR 6
--#define NM_VECTOR 7
--#define DF_VECTOR 8
--#define TS_VECTOR 10
--#define NP_VECTOR 11
--#define SS_VECTOR 12
--#define GP_VECTOR 13
--#define PF_VECTOR 14
--#define MF_VECTOR 16
--#define MC_VECTOR 18
--
- #define SELECTOR_TI_MASK (1 << 2)
- #define SELECTOR_RPL_MASK 0x03
- 
-diff --git a/arch/x86/include/asm/svm.h b/arch/x86/include/asm/svm.h
-index f2b83bc..cdf5674 100644
---- a/arch/x86/include/asm/svm.h
-+++ b/arch/x86/include/asm/svm.h
-@@ -1,6 +1,135 @@
- #ifndef __SVM_H
- #define __SVM_H
- 
-+#define SVM_EXIT_READ_CR0      0x000
-+#define SVM_EXIT_READ_CR3      0x003
-+#define SVM_EXIT_READ_CR4      0x004
-+#define SVM_EXIT_READ_CR8      0x008
-+#define SVM_EXIT_WRITE_CR0     0x010
-+#define SVM_EXIT_WRITE_CR3     0x013
-+#define SVM_EXIT_WRITE_CR4     0x014
-+#define SVM_EXIT_WRITE_CR8     0x018
-+#define SVM_EXIT_READ_DR0      0x020
-+#define SVM_EXIT_READ_DR1      0x021
-+#define SVM_EXIT_READ_DR2      0x022
-+#define SVM_EXIT_READ_DR3      0x023
-+#define SVM_EXIT_READ_DR4      0x024
-+#define SVM_EXIT_READ_DR5      0x025
-+#define SVM_EXIT_READ_DR6      0x026
-+#define SVM_EXIT_READ_DR7      0x027
-+#define SVM_EXIT_WRITE_DR0     0x030
-+#define SVM_EXIT_WRITE_DR1     0x031
-+#define SVM_EXIT_WRITE_DR2     0x032
-+#define SVM_EXIT_WRITE_DR3     0x033
-+#define SVM_EXIT_WRITE_DR4     0x034
-+#define SVM_EXIT_WRITE_DR5     0x035
-+#define SVM_EXIT_WRITE_DR6     0x036
-+#define SVM_EXIT_WRITE_DR7     0x037
-+#define SVM_EXIT_EXCP_BASE     0x040
-+#define SVM_EXIT_INTR          0x060
-+#define SVM_EXIT_NMI           0x061
-+#define SVM_EXIT_SMI           0x062
-+#define SVM_EXIT_INIT          0x063
-+#define SVM_EXIT_VINTR         0x064
-+#define SVM_EXIT_CR0_SEL_WRITE 0x065
-+#define SVM_EXIT_IDTR_READ     0x066
-+#define SVM_EXIT_GDTR_READ     0x067
-+#define SVM_EXIT_LDTR_READ     0x068
-+#define SVM_EXIT_TR_READ       0x069
-+#define SVM_EXIT_IDTR_WRITE    0x06a
-+#define SVM_EXIT_GDTR_WRITE    0x06b
-+#define SVM_EXIT_LDTR_WRITE    0x06c
-+#define SVM_EXIT_TR_WRITE      0x06d
-+#define SVM_EXIT_RDTSC         0x06e
-+#define SVM_EXIT_RDPMC         0x06f
-+#define SVM_EXIT_PUSHF         0x070
-+#define SVM_EXIT_POPF          0x071
-+#define SVM_EXIT_CPUID         0x072
-+#define SVM_EXIT_RSM           0x073
-+#define SVM_EXIT_IRET          0x074
-+#define SVM_EXIT_SWINT         0x075
-+#define SVM_EXIT_INVD          0x076
-+#define SVM_EXIT_PAUSE         0x077
-+#define SVM_EXIT_HLT           0x078
-+#define SVM_EXIT_INVLPG        0x079
-+#define SVM_EXIT_INVLPGA       0x07a
-+#define SVM_EXIT_IOIO          0x07b
-+#define SVM_EXIT_MSR           0x07c
-+#define SVM_EXIT_TASK_SWITCH   0x07d
-+#define SVM_EXIT_FERR_FREEZE   0x07e
-+#define SVM_EXIT_SHUTDOWN      0x07f
-+#define SVM_EXIT_VMRUN         0x080
-+#define SVM_EXIT_VMMCALL       0x081
-+#define SVM_EXIT_VMLOAD        0x082
-+#define SVM_EXIT_VMSAVE        0x083
-+#define SVM_EXIT_STGI          0x084
-+#define SVM_EXIT_CLGI          0x085
-+#define SVM_EXIT_SKINIT        0x086
-+#define SVM_EXIT_RDTSCP        0x087
-+#define SVM_EXIT_ICEBP         0x088
-+#define SVM_EXIT_WBINVD        0x089
-+#define SVM_EXIT_MONITOR       0x08a
-+#define SVM_EXIT_MWAIT         0x08b
-+#define SVM_EXIT_MWAIT_COND    0x08c
-+#define SVM_EXIT_XSETBV        0x08d
-+#define SVM_EXIT_NPF           0x400
-+
-+#define SVM_EXIT_ERR           -1
-+
-+#define SVM_EXIT_REASONS \
-+	{ SVM_EXIT_READ_CR0,    "read_cr0" }, \
-+	{ SVM_EXIT_READ_CR3,    "read_cr3" }, \
-+	{ SVM_EXIT_READ_CR4,    "read_cr4" }, \
-+	{ SVM_EXIT_READ_CR8,    "read_cr8" }, \
-+	{ SVM_EXIT_WRITE_CR0,   "write_cr0" }, \
-+	{ SVM_EXIT_WRITE_CR3,   "write_cr3" }, \
-+	{ SVM_EXIT_WRITE_CR4,   "write_cr4" }, \
-+	{ SVM_EXIT_WRITE_CR8,   "write_cr8" }, \
-+	{ SVM_EXIT_READ_DR0,    "read_dr0" }, \
-+	{ SVM_EXIT_READ_DR1,    "read_dr1" }, \
-+	{ SVM_EXIT_READ_DR2,    "read_dr2" }, \
-+	{ SVM_EXIT_READ_DR3,    "read_dr3" }, \
-+	{ SVM_EXIT_WRITE_DR0,   "write_dr0" }, \
-+	{ SVM_EXIT_WRITE_DR1,   "write_dr1" }, \
-+	{ SVM_EXIT_WRITE_DR2,   "write_dr2" }, \
-+	{ SVM_EXIT_WRITE_DR3,   "write_dr3" }, \
-+	{ SVM_EXIT_WRITE_DR5,   "write_dr5" }, \
-+	{ SVM_EXIT_WRITE_DR7,   "write_dr7" }, \
-+	{ SVM_EXIT_EXCP_BASE + DB_VECTOR,       "DB excp" }, \
-+	{ SVM_EXIT_EXCP_BASE + BP_VECTOR,       "BP excp" }, \
-+	{ SVM_EXIT_EXCP_BASE + UD_VECTOR,       "UD excp" }, \
-+	{ SVM_EXIT_EXCP_BASE + PF_VECTOR,       "PF excp" }, \
-+	{ SVM_EXIT_EXCP_BASE + NM_VECTOR,       "NM excp" }, \
-+	{ SVM_EXIT_EXCP_BASE + MC_VECTOR,       "MC excp" }, \
-+	{ SVM_EXIT_INTR,        "interrupt" }, \
-+	{ SVM_EXIT_NMI,         "nmi" }, \
-+	{ SVM_EXIT_SMI,         "smi" }, \
-+	{ SVM_EXIT_INIT,        "init" }, \
-+	{ SVM_EXIT_VINTR,       "vintr" }, \
-+	{ SVM_EXIT_CPUID,       "cpuid" }, \
-+	{ SVM_EXIT_INVD,        "invd" }, \
-+	{ SVM_EXIT_HLT,         "hlt" }, \
-+	{ SVM_EXIT_INVLPG,      "invlpg" }, \
-+	{ SVM_EXIT_INVLPGA,     "invlpga" }, \
-+	{ SVM_EXIT_IOIO,        "io" }, \
-+	{ SVM_EXIT_MSR,         "msr" }, \
-+	{ SVM_EXIT_TASK_SWITCH, "task_switch" }, \
-+	{ SVM_EXIT_SHUTDOWN,    "shutdown" }, \
-+	{ SVM_EXIT_VMRUN,       "vmrun" }, \
-+	{ SVM_EXIT_VMMCALL,     "hypercall" }, \
-+	{ SVM_EXIT_VMLOAD,      "vmload" }, \
-+	{ SVM_EXIT_VMSAVE,      "vmsave" }, \
-+	{ SVM_EXIT_STGI,        "stgi" }, \
-+	{ SVM_EXIT_CLGI,        "clgi" }, \
-+	{ SVM_EXIT_SKINIT,      "skinit" }, \
-+	{ SVM_EXIT_WBINVD,      "wbinvd" }, \
-+	{ SVM_EXIT_MONITOR,     "monitor" }, \
-+	{ SVM_EXIT_MWAIT,       "mwait" }, \
-+	{ SVM_EXIT_XSETBV,      "xsetbv" }, \
-+	{ SVM_EXIT_NPF,         "npf" }
-+
-+#ifdef __KERNEL__
-+
- enum {
- 	INTERCEPT_INTR,
- 	INTERCEPT_NMI,
-@@ -264,81 +393,6 @@ struct __attribute__ ((__packed__)) vmcb {
- 
- #define SVM_EXITINFO_REG_MASK 0x0F
- 
--#define	SVM_EXIT_READ_CR0 	0x000
--#define	SVM_EXIT_READ_CR3 	0x003
--#define	SVM_EXIT_READ_CR4 	0x004
--#define	SVM_EXIT_READ_CR8 	0x008
--#define	SVM_EXIT_WRITE_CR0 	0x010
--#define	SVM_EXIT_WRITE_CR3 	0x013
--#define	SVM_EXIT_WRITE_CR4 	0x014
--#define	SVM_EXIT_WRITE_CR8 	0x018
--#define	SVM_EXIT_READ_DR0 	0x020
--#define	SVM_EXIT_READ_DR1 	0x021
--#define	SVM_EXIT_READ_DR2 	0x022
--#define	SVM_EXIT_READ_DR3 	0x023
--#define	SVM_EXIT_READ_DR4 	0x024
--#define	SVM_EXIT_READ_DR5 	0x025
--#define	SVM_EXIT_READ_DR6 	0x026
--#define	SVM_EXIT_READ_DR7 	0x027
--#define	SVM_EXIT_WRITE_DR0 	0x030
--#define	SVM_EXIT_WRITE_DR1 	0x031
--#define	SVM_EXIT_WRITE_DR2 	0x032
--#define	SVM_EXIT_WRITE_DR3 	0x033
--#define	SVM_EXIT_WRITE_DR4 	0x034
--#define	SVM_EXIT_WRITE_DR5 	0x035
--#define	SVM_EXIT_WRITE_DR6 	0x036
--#define	SVM_EXIT_WRITE_DR7 	0x037
--#define SVM_EXIT_EXCP_BASE      0x040
--#define SVM_EXIT_INTR		0x060
--#define SVM_EXIT_NMI		0x061
--#define SVM_EXIT_SMI		0x062
--#define SVM_EXIT_INIT		0x063
--#define SVM_EXIT_VINTR		0x064
--#define SVM_EXIT_CR0_SEL_WRITE	0x065
--#define SVM_EXIT_IDTR_READ	0x066
--#define SVM_EXIT_GDTR_READ	0x067
--#define SVM_EXIT_LDTR_READ	0x068
--#define SVM_EXIT_TR_READ	0x069
--#define SVM_EXIT_IDTR_WRITE	0x06a
--#define SVM_EXIT_GDTR_WRITE	0x06b
--#define SVM_EXIT_LDTR_WRITE	0x06c
--#define SVM_EXIT_TR_WRITE	0x06d
--#define SVM_EXIT_RDTSC		0x06e
--#define SVM_EXIT_RDPMC		0x06f
--#define SVM_EXIT_PUSHF		0x070
--#define SVM_EXIT_POPF		0x071
--#define SVM_EXIT_CPUID		0x072
--#define SVM_EXIT_RSM		0x073
--#define SVM_EXIT_IRET		0x074
--#define SVM_EXIT_SWINT		0x075
--#define SVM_EXIT_INVD		0x076
--#define SVM_EXIT_PAUSE		0x077
--#define SVM_EXIT_HLT		0x078
--#define SVM_EXIT_INVLPG		0x079
--#define SVM_EXIT_INVLPGA	0x07a
--#define SVM_EXIT_IOIO		0x07b
--#define SVM_EXIT_MSR		0x07c
--#define SVM_EXIT_TASK_SWITCH	0x07d
--#define SVM_EXIT_FERR_FREEZE	0x07e
--#define SVM_EXIT_SHUTDOWN	0x07f
--#define SVM_EXIT_VMRUN		0x080
--#define SVM_EXIT_VMMCALL	0x081
--#define SVM_EXIT_VMLOAD		0x082
--#define SVM_EXIT_VMSAVE		0x083
--#define SVM_EXIT_STGI		0x084
--#define SVM_EXIT_CLGI		0x085
--#define SVM_EXIT_SKINIT		0x086
--#define SVM_EXIT_RDTSCP		0x087
--#define SVM_EXIT_ICEBP		0x088
--#define SVM_EXIT_WBINVD		0x089
--#define SVM_EXIT_MONITOR	0x08a
--#define SVM_EXIT_MWAIT		0x08b
--#define SVM_EXIT_MWAIT_COND	0x08c
--#define SVM_EXIT_XSETBV		0x08d
--#define SVM_EXIT_NPF  		0x400
--
--#define SVM_EXIT_ERR		-1
--
- #define SVM_CR0_SELECTIVE_MASK (X86_CR0_TS | X86_CR0_MP)
- 
- #define SVM_VMLOAD ".byte 0x0f, 0x01, 0xda"
-@@ -350,3 +404,4 @@ struct __attribute__ ((__packed__)) vmcb {
- 
- #endif
- 
-+#endif
-diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
-index 74fcb96..36ec21c 100644
---- a/arch/x86/include/asm/vmx.h
-+++ b/arch/x86/include/asm/vmx.h
-@@ -25,6 +25,88 @@
-  *
-  */
- 
-+#define VMX_EXIT_REASONS_FAILED_VMENTRY         0x80000000
-+
-+#define EXIT_REASON_EXCEPTION_NMI       0
-+#define EXIT_REASON_EXTERNAL_INTERRUPT  1
-+#define EXIT_REASON_TRIPLE_FAULT        2
-+
-+#define EXIT_REASON_PENDING_INTERRUPT   7
-+#define EXIT_REASON_NMI_WINDOW          8
-+#define EXIT_REASON_TASK_SWITCH         9
-+#define EXIT_REASON_CPUID               10
-+#define EXIT_REASON_HLT                 12
-+#define EXIT_REASON_INVD                13
-+#define EXIT_REASON_INVLPG              14
-+#define EXIT_REASON_RDPMC               15
-+#define EXIT_REASON_RDTSC               16
-+#define EXIT_REASON_VMCALL              18
-+#define EXIT_REASON_VMCLEAR             19
-+#define EXIT_REASON_VMLAUNCH            20
-+#define EXIT_REASON_VMPTRLD             21
-+#define EXIT_REASON_VMPTRST             22
-+#define EXIT_REASON_VMREAD              23
-+#define EXIT_REASON_VMRESUME            24
-+#define EXIT_REASON_VMWRITE             25
-+#define EXIT_REASON_VMOFF               26
-+#define EXIT_REASON_VMON                27
-+#define EXIT_REASON_CR_ACCESS           28
-+#define EXIT_REASON_DR_ACCESS           29
-+#define EXIT_REASON_IO_INSTRUCTION      30
-+#define EXIT_REASON_MSR_READ            31
-+#define EXIT_REASON_MSR_WRITE           32
-+#define EXIT_REASON_INVALID_STATE       33
-+#define EXIT_REASON_MWAIT_INSTRUCTION   36
-+#define EXIT_REASON_MONITOR_INSTRUCTION 39
-+#define EXIT_REASON_PAUSE_INSTRUCTION   40
-+#define EXIT_REASON_MCE_DURING_VMENTRY  41
-+#define EXIT_REASON_TPR_BELOW_THRESHOLD 43
-+#define EXIT_REASON_APIC_ACCESS         44
-+#define EXIT_REASON_EPT_VIOLATION       48
-+#define EXIT_REASON_EPT_MISCONFIG       49
-+#define EXIT_REASON_WBINVD              54
-+#define EXIT_REASON_XSETBV              55
-+#define EXIT_REASON_INVPCID             58
-+
-+#define VMX_EXIT_REASONS \
-+	{ EXIT_REASON_EXCEPTION_NMI,         "EXCEPTION_NMI" }, \
-+	{ EXIT_REASON_EXTERNAL_INTERRUPT,    "EXTERNAL_INTERRUPT" }, \
-+	{ EXIT_REASON_TRIPLE_FAULT,          "TRIPLE_FAULT" }, \
-+	{ EXIT_REASON_PENDING_INTERRUPT,     "PENDING_INTERRUPT" }, \
-+	{ EXIT_REASON_NMI_WINDOW,            "NMI_WINDOW" }, \
-+	{ EXIT_REASON_TASK_SWITCH,           "TASK_SWITCH" }, \
-+	{ EXIT_REASON_CPUID,                 "CPUID" }, \
-+	{ EXIT_REASON_HLT,                   "HLT" }, \
-+	{ EXIT_REASON_INVLPG,                "INVLPG" }, \
-+	{ EXIT_REASON_RDPMC,                 "RDPMC" }, \
-+	{ EXIT_REASON_RDTSC,                 "RDTSC" }, \
-+	{ EXIT_REASON_VMCALL,                "VMCALL" }, \
-+	{ EXIT_REASON_VMCLEAR,               "VMCLEAR" }, \
-+	{ EXIT_REASON_VMLAUNCH,              "VMLAUNCH" }, \
-+	{ EXIT_REASON_VMPTRLD,               "VMPTRLD" }, \
-+	{ EXIT_REASON_VMPTRST,               "VMPTRST" }, \
-+	{ EXIT_REASON_VMREAD,                "VMREAD" }, \
-+	{ EXIT_REASON_VMRESUME,              "VMRESUME" }, \
-+	{ EXIT_REASON_VMWRITE,               "VMWRITE" }, \
-+	{ EXIT_REASON_VMOFF,                 "VMOFF" }, \
-+	{ EXIT_REASON_VMON,                  "VMON" }, \
-+	{ EXIT_REASON_CR_ACCESS,             "CR_ACCESS" }, \
-+	{ EXIT_REASON_DR_ACCESS,             "DR_ACCESS" }, \
-+	{ EXIT_REASON_IO_INSTRUCTION,        "IO_INSTRUCTION" }, \
-+	{ EXIT_REASON_MSR_READ,              "MSR_READ" }, \
-+	{ EXIT_REASON_MSR_WRITE,             "MSR_WRITE" }, \
-+	{ EXIT_REASON_MWAIT_INSTRUCTION,     "MWAIT_INSTRUCTION" }, \
-+	{ EXIT_REASON_MONITOR_INSTRUCTION,   "MONITOR_INSTRUCTION" }, \
-+	{ EXIT_REASON_PAUSE_INSTRUCTION,     "PAUSE_INSTRUCTION" }, \
-+	{ EXIT_REASON_MCE_DURING_VMENTRY,    "MCE_DURING_VMENTRY" }, \
-+	{ EXIT_REASON_TPR_BELOW_THRESHOLD,   "TPR_BELOW_THRESHOLD" }, \
-+	{ EXIT_REASON_APIC_ACCESS,           "APIC_ACCESS" }, \
-+	{ EXIT_REASON_EPT_VIOLATION,         "EPT_VIOLATION" }, \
-+	{ EXIT_REASON_EPT_MISCONFIG,         "EPT_MISCONFIG" }, \
-+	{ EXIT_REASON_WBINVD,                "WBINVD" }
-+
-+#ifdef __KERNEL__
-+
- #include <linux/types.h>
- 
- /*
-@@ -241,49 +323,6 @@ enum vmcs_field {
- 	HOST_RIP                        = 0x00006c16,
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 1878947..3eb53e3 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -33,46 +33,49 @@ struct event_key {
  };
  
--#define VMX_EXIT_REASONS_FAILED_VMENTRY         0x80000000
--
--#define EXIT_REASON_EXCEPTION_NMI       0
--#define EXIT_REASON_EXTERNAL_INTERRUPT  1
--#define EXIT_REASON_TRIPLE_FAULT        2
--
--#define EXIT_REASON_PENDING_INTERRUPT   7
--#define EXIT_REASON_NMI_WINDOW		8
--#define EXIT_REASON_TASK_SWITCH         9
--#define EXIT_REASON_CPUID               10
--#define EXIT_REASON_HLT                 12
--#define EXIT_REASON_INVD                13
--#define EXIT_REASON_INVLPG              14
--#define EXIT_REASON_RDPMC               15
--#define EXIT_REASON_RDTSC               16
--#define EXIT_REASON_VMCALL              18
--#define EXIT_REASON_VMCLEAR             19
--#define EXIT_REASON_VMLAUNCH            20
--#define EXIT_REASON_VMPTRLD             21
--#define EXIT_REASON_VMPTRST             22
--#define EXIT_REASON_VMREAD              23
--#define EXIT_REASON_VMRESUME            24
--#define EXIT_REASON_VMWRITE             25
--#define EXIT_REASON_VMOFF               26
--#define EXIT_REASON_VMON                27
--#define EXIT_REASON_CR_ACCESS           28
--#define EXIT_REASON_DR_ACCESS           29
--#define EXIT_REASON_IO_INSTRUCTION      30
--#define EXIT_REASON_MSR_READ            31
--#define EXIT_REASON_MSR_WRITE           32
--#define EXIT_REASON_INVALID_STATE	33
--#define EXIT_REASON_MWAIT_INSTRUCTION   36
--#define EXIT_REASON_MONITOR_INSTRUCTION 39
--#define EXIT_REASON_PAUSE_INSTRUCTION   40
--#define EXIT_REASON_MCE_DURING_VMENTRY	 41
--#define EXIT_REASON_TPR_BELOW_THRESHOLD 43
--#define EXIT_REASON_APIC_ACCESS         44
--#define EXIT_REASON_EPT_VIOLATION       48
--#define EXIT_REASON_EPT_MISCONFIG       49
--#define EXIT_REASON_WBINVD		54
--#define EXIT_REASON_XSETBV		55
--#define EXIT_REASON_INVPCID		58
--
- /*
-  * Interruption-information format
-  */
-@@ -488,3 +527,5 @@ enum vm_instruction_error_number {
+ struct kvm_events_ops {
+-	bool (*is_begin_event)(struct event_format *event, void *data,
+-				struct event_key *key);
+-	bool (*is_end_event)(struct event_format *event, void *data,
+-				struct event_key *key);
++	bool (*is_begin_event)(struct perf_evsel *evsel,
++			       struct perf_sample *sample,
++			       struct event_key *key);
++	bool (*is_end_event)(struct perf_evsel *evsel,
++			     struct perf_sample *sample, struct event_key *key);
+ 	void (*decode_key)(struct event_key *key, char decode[20]);
+ 	const char *name;
  };
  
- #endif
-+
-+#endif
-diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-index a71faf7..bca63f0 100644
---- a/arch/x86/kvm/trace.h
-+++ b/arch/x86/kvm/trace.h
-@@ -183,95 +183,6 @@ TRACE_EVENT(kvm_apic,
- #define KVM_ISA_VMX   1
- #define KVM_ISA_SVM   2
+-static void exit_event_get_key(struct event_format *event, void *data,
+-				struct event_key *key)
++static void exit_event_get_key(struct perf_evsel *evsel,
++			       struct perf_sample *sample,
++			       struct event_key *key)
+ {
+ 	key->info = 0;
+-	key->key = raw_field_value(event, "exit_reason", data);
++	key->key = perf_evsel__intval(evsel, sample, "exit_reason");
+ }
  
--#define VMX_EXIT_REASONS \
--	{ EXIT_REASON_EXCEPTION_NMI,		"EXCEPTION_NMI" }, \
--	{ EXIT_REASON_EXTERNAL_INTERRUPT,	"EXTERNAL_INTERRUPT" }, \
--	{ EXIT_REASON_TRIPLE_FAULT,		"TRIPLE_FAULT" }, \
--	{ EXIT_REASON_PENDING_INTERRUPT,	"PENDING_INTERRUPT" }, \
--	{ EXIT_REASON_NMI_WINDOW,		"NMI_WINDOW" }, \
--	{ EXIT_REASON_TASK_SWITCH,		"TASK_SWITCH" }, \
--	{ EXIT_REASON_CPUID,			"CPUID" }, \
--	{ EXIT_REASON_HLT,			"HLT" }, \
--	{ EXIT_REASON_INVLPG,			"INVLPG" }, \
--	{ EXIT_REASON_RDPMC,			"RDPMC" }, \
--	{ EXIT_REASON_RDTSC,			"RDTSC" }, \
--	{ EXIT_REASON_VMCALL,			"VMCALL" }, \
--	{ EXIT_REASON_VMCLEAR,			"VMCLEAR" }, \
--	{ EXIT_REASON_VMLAUNCH,			"VMLAUNCH" }, \
--	{ EXIT_REASON_VMPTRLD,			"VMPTRLD" }, \
--	{ EXIT_REASON_VMPTRST,			"VMPTRST" }, \
--	{ EXIT_REASON_VMREAD,			"VMREAD" }, \
--	{ EXIT_REASON_VMRESUME,			"VMRESUME" }, \
--	{ EXIT_REASON_VMWRITE,			"VMWRITE" }, \
--	{ EXIT_REASON_VMOFF,			"VMOFF" }, \
--	{ EXIT_REASON_VMON,			"VMON" }, \
--	{ EXIT_REASON_CR_ACCESS,		"CR_ACCESS" }, \
--	{ EXIT_REASON_DR_ACCESS,		"DR_ACCESS" }, \
--	{ EXIT_REASON_IO_INSTRUCTION,		"IO_INSTRUCTION" }, \
--	{ EXIT_REASON_MSR_READ,			"MSR_READ" }, \
--	{ EXIT_REASON_MSR_WRITE,		"MSR_WRITE" }, \
--	{ EXIT_REASON_MWAIT_INSTRUCTION,	"MWAIT_INSTRUCTION" }, \
--	{ EXIT_REASON_MONITOR_INSTRUCTION,	"MONITOR_INSTRUCTION" }, \
--	{ EXIT_REASON_PAUSE_INSTRUCTION,	"PAUSE_INSTRUCTION" }, \
--	{ EXIT_REASON_MCE_DURING_VMENTRY,	"MCE_DURING_VMENTRY" }, \
--	{ EXIT_REASON_TPR_BELOW_THRESHOLD,	"TPR_BELOW_THRESHOLD" },	\
--	{ EXIT_REASON_APIC_ACCESS,		"APIC_ACCESS" }, \
--	{ EXIT_REASON_EPT_VIOLATION,		"EPT_VIOLATION" }, \
--	{ EXIT_REASON_EPT_MISCONFIG,		"EPT_MISCONFIG" }, \
--	{ EXIT_REASON_WBINVD,			"WBINVD" }
+-static bool kvm_exit_event(struct event_format *event)
++static bool kvm_exit_event(struct perf_evsel *evsel)
+ {
+-	return !strcmp(event->name, "kvm_exit");
++	return !strcmp(evsel->name, "kvm:kvm_exit");
+ }
+ 
+-static bool exit_event_begin(struct event_format *event, void *data,
+-				struct event_key *key)
++static bool exit_event_begin(struct perf_evsel *evsel,
++			     struct perf_sample *sample, struct event_key *key)
+ {
+-	if (kvm_exit_event(event)) {
+-		exit_event_get_key(event, data, key);
++	if (kvm_exit_event(evsel)) {
++		exit_event_get_key(evsel, sample, key);
+ 		return true;
+ 	}
+ 
+ 	return false;
+ }
+ 
+-static bool kvm_entry_event(struct event_format *event)
++static bool kvm_entry_event(struct perf_evsel *evsel)
+ {
+-	return !strcmp(event->name, "kvm_entry");
++	return !strcmp(evsel->name, "kvm:kvm_entry");
+ }
+ 
+-static bool exit_event_end(struct event_format *event, void *data __maybe_unused,
+-				struct event_key *key __maybe_unused)
++static bool exit_event_end(struct perf_evsel *evsel,
++			   struct perf_sample *sample __maybe_unused,
++			   struct event_key *key __maybe_unused)
+ {
+-	return kvm_entry_event(event);
++	return kvm_entry_event(evsel);
+ }
+ 
+ struct exit_reasons_table {
+@@ -130,45 +133,45 @@ static struct kvm_events_ops exit_events = {
+      * the time of MMIO write: kvm_mmio(KVM_TRACE_MMIO_WRITE...) -> kvm_entry
+      * the time of MMIO read: kvm_exit -> kvm_mmio(KVM_TRACE_MMIO_READ...).
+      */
+-static void mmio_event_get_key(struct event_format *event, void *data,
+-				struct event_key *key)
++static void mmio_event_get_key(struct perf_evsel *evsel, struct perf_sample *sample,
++			       struct event_key *key)
+ {
+-	key->key = raw_field_value(event, "gpa", data);
+-	key->info = raw_field_value(event, "type", data);
++	key->key  = perf_evsel__intval(evsel, sample, "gpa");
++	key->info = perf_evsel__intval(evsel, sample, "type");
+ }
+ 
+ #define KVM_TRACE_MMIO_READ_UNSATISFIED 0
+ #define KVM_TRACE_MMIO_READ 1
+ #define KVM_TRACE_MMIO_WRITE 2
+ 
+-static bool mmio_event_begin(struct event_format *event, void *data,
+-				struct event_key *key)
++static bool mmio_event_begin(struct perf_evsel *evsel,
++			     struct perf_sample *sample, struct event_key *key)
+ {
+ 	/* MMIO read begin event in kernel. */
+-	if (kvm_exit_event(event))
++	if (kvm_exit_event(evsel))
+ 		return true;
+ 
+ 	/* MMIO write begin event in kernel. */
+-	if (!strcmp(event->name, "kvm_mmio") &&
+-		raw_field_value(event, "type", data) == KVM_TRACE_MMIO_WRITE) {
+-		mmio_event_get_key(event, data, key);
++	if (!strcmp(evsel->name, "kvm:kvm_mmio") &&
++	    perf_evsel__intval(evsel, sample, "type") == KVM_TRACE_MMIO_WRITE) {
++		mmio_event_get_key(evsel, sample, key);
+ 		return true;
+ 	}
+ 
+ 	return false;
+ }
+ 
+-static bool mmio_event_end(struct event_format *event,  void *data,
+-			struct event_key *key)
++static bool mmio_event_end(struct perf_evsel *evsel, struct perf_sample *sample,
++			   struct event_key *key)
+ {
+ 	/* MMIO write end event in kernel. */
+-	if (kvm_entry_event(event))
++	if (kvm_entry_event(evsel))
+ 		return true;
+ 
+ 	/* MMIO read end event in kernel.*/
+-	if (!strcmp(event->name, "kvm_mmio") &&
+-		raw_field_value(event, "type", data) == KVM_TRACE_MMIO_READ) {
+-		mmio_event_get_key(event, data, key);
++	if (!strcmp(evsel->name, "kvm:kvm_mmio") &&
++	    perf_evsel__intval(evsel, sample, "type") == KVM_TRACE_MMIO_READ) {
++		mmio_event_get_key(evsel, sample, key);
+ 		return true;
+ 	}
+ 
+@@ -189,31 +192,31 @@ static struct kvm_events_ops mmio_events = {
+ };
+ 
+  /* The time of emulation pio access is from kvm_pio to kvm_entry. */
+-static void ioport_event_get_key(struct event_format *event, void *data,
+-			struct event_key *key)
++static void ioport_event_get_key(struct perf_evsel *evsel,
++				 struct perf_sample *sample,
++				 struct event_key *key)
+ {
+-	key->key = raw_field_value(event, "port", data);
+-	key->info = raw_field_value(event, "rw", data);
++	key->key  = perf_evsel__intval(evsel, sample, "port");
++	key->info = perf_evsel__intval(evsel, sample, "rw");
+ }
+ 
+-static bool ioport_event_begin(struct event_format *event, void *data,
+-			struct event_key *key)
++static bool ioport_event_begin(struct perf_evsel *evsel,
++			       struct perf_sample *sample,
++			       struct event_key *key)
+ {
+-	if (!strcmp(event->name, "kvm_pio")) {
+-		ioport_event_get_key(event, data, key);
++	if (!strcmp(evsel->name, "kvm:kvm_pio")) {
++		ioport_event_get_key(evsel, sample, key);
+ 		return true;
+ 	}
+ 
+ 	return false;
+ }
+ 
+-static bool ioport_event_end(struct event_format *event, void *data __maybe_unused,
++static bool ioport_event_end(struct perf_evsel *evsel,
++			     struct perf_sample *sample __maybe_unused,
+ 			     struct event_key *key __maybe_unused)
+ {
+-	if (kvm_entry_event(event))
+-		return true;
 -
--#define SVM_EXIT_REASONS \
--	{ SVM_EXIT_READ_CR0,			"read_cr0" }, \
--	{ SVM_EXIT_READ_CR3,			"read_cr3" }, \
--	{ SVM_EXIT_READ_CR4,			"read_cr4" }, \
--	{ SVM_EXIT_READ_CR8,			"read_cr8" }, \
--	{ SVM_EXIT_WRITE_CR0,			"write_cr0" }, \
--	{ SVM_EXIT_WRITE_CR3,			"write_cr3" }, \
--	{ SVM_EXIT_WRITE_CR4,			"write_cr4" }, \
--	{ SVM_EXIT_WRITE_CR8,			"write_cr8" }, \
--	{ SVM_EXIT_READ_DR0,			"read_dr0" }, \
--	{ SVM_EXIT_READ_DR1,			"read_dr1" }, \
--	{ SVM_EXIT_READ_DR2,			"read_dr2" }, \
--	{ SVM_EXIT_READ_DR3,			"read_dr3" }, \
--	{ SVM_EXIT_WRITE_DR0,			"write_dr0" }, \
--	{ SVM_EXIT_WRITE_DR1,			"write_dr1" }, \
--	{ SVM_EXIT_WRITE_DR2,			"write_dr2" }, \
--	{ SVM_EXIT_WRITE_DR3,			"write_dr3" }, \
--	{ SVM_EXIT_WRITE_DR5,			"write_dr5" }, \
--	{ SVM_EXIT_WRITE_DR7,			"write_dr7" }, \
--	{ SVM_EXIT_EXCP_BASE + DB_VECTOR,	"DB excp" }, \
--	{ SVM_EXIT_EXCP_BASE + BP_VECTOR,	"BP excp" }, \
--	{ SVM_EXIT_EXCP_BASE + UD_VECTOR,	"UD excp" }, \
--	{ SVM_EXIT_EXCP_BASE + PF_VECTOR,	"PF excp" }, \
--	{ SVM_EXIT_EXCP_BASE + NM_VECTOR,	"NM excp" }, \
--	{ SVM_EXIT_EXCP_BASE + MC_VECTOR,	"MC excp" }, \
--	{ SVM_EXIT_INTR,			"interrupt" }, \
--	{ SVM_EXIT_NMI,				"nmi" }, \
--	{ SVM_EXIT_SMI,				"smi" }, \
--	{ SVM_EXIT_INIT,			"init" }, \
--	{ SVM_EXIT_VINTR,			"vintr" }, \
--	{ SVM_EXIT_CPUID,			"cpuid" }, \
--	{ SVM_EXIT_INVD,			"invd" }, \
--	{ SVM_EXIT_HLT,				"hlt" }, \
--	{ SVM_EXIT_INVLPG,			"invlpg" }, \
--	{ SVM_EXIT_INVLPGA,			"invlpga" }, \
--	{ SVM_EXIT_IOIO,			"io" }, \
--	{ SVM_EXIT_MSR,				"msr" }, \
--	{ SVM_EXIT_TASK_SWITCH,			"task_switch" }, \
--	{ SVM_EXIT_SHUTDOWN,			"shutdown" }, \
--	{ SVM_EXIT_VMRUN,			"vmrun" }, \
--	{ SVM_EXIT_VMMCALL,			"hypercall" }, \
--	{ SVM_EXIT_VMLOAD,			"vmload" }, \
--	{ SVM_EXIT_VMSAVE,			"vmsave" }, \
--	{ SVM_EXIT_STGI,			"stgi" }, \
--	{ SVM_EXIT_CLGI,			"clgi" }, \
--	{ SVM_EXIT_SKINIT,			"skinit" }, \
--	{ SVM_EXIT_WBINVD,			"wbinvd" }, \
--	{ SVM_EXIT_MONITOR,			"monitor" }, \
--	{ SVM_EXIT_MWAIT,			"mwait" }, \
--	{ SVM_EXIT_XSETBV,			"xsetbv" }, \
--	{ SVM_EXIT_NPF,				"npf" }
--
- /*
-  * Tracepoint for kvm guest exit:
-  */
+-	return false;
++	return kvm_entry_event(evsel);
+ }
+ 
+ static void ioport_event_decode_key(struct event_key *key, char decode[20])
+@@ -430,41 +433,43 @@ static bool handle_end_event(struct vcpu_event_record *vcpu_record,
+ 	return update_kvm_event(event, vcpu_record->vcpu_id, time_diff);
+ }
+ 
+-static struct vcpu_event_record
+-*per_vcpu_record(struct thread *thread, struct event_format *event, void *data)
++static
++struct vcpu_event_record *per_vcpu_record(struct thread *thread,
++					  struct perf_evsel *evsel,
++					  struct perf_sample *sample)
+ {
+ 	/* Only kvm_entry records vcpu id. */
+-	if (!thread->priv && kvm_entry_event(event)) {
++	if (!thread->priv && kvm_entry_event(evsel)) {
+ 		struct vcpu_event_record *vcpu_record;
+ 
+-		vcpu_record = zalloc(sizeof(struct vcpu_event_record));
++		vcpu_record = zalloc(sizeof(*vcpu_record));
+ 		if (!vcpu_record) {
+-			pr_err("Not enough memory\n");
++			pr_err("%s: Not enough memory\n", __func__);
+ 			return NULL;
+ 		}
+ 
+-		vcpu_record->vcpu_id = raw_field_value(event, "vcpu_id", data);
++		vcpu_record->vcpu_id = perf_evsel__intval(evsel, sample, "vcpu_id");
+ 		thread->priv = vcpu_record;
+ 	}
+ 
+-	return (struct vcpu_event_record *)thread->priv;
++	return thread->priv;
+ }
+ 
+-static bool handle_kvm_event(struct thread *thread, struct event_format *event,
+-			     void *data, u64 timestamp)
++static bool handle_kvm_event(struct thread *thread, struct perf_evsel *evsel,
++			     struct perf_sample *sample)
+ {
+ 	struct vcpu_event_record *vcpu_record;
+ 	struct event_key key = {.key = INVALID_KEY};
+ 
+-	vcpu_record = per_vcpu_record(thread, event, data);
++	vcpu_record = per_vcpu_record(thread, evsel, sample);
+ 	if (!vcpu_record)
+ 		return true;
+ 
+-	if (events_ops->is_begin_event(event, data, &key))
+-		return handle_begin_event(vcpu_record, &key, timestamp);
++	if (events_ops->is_begin_event(evsel, sample, &key))
++		return handle_begin_event(vcpu_record, &key, sample->time);
+ 
+-	if (events_ops->is_end_event(event, data, &key))
+-		return handle_end_event(vcpu_record, &key, timestamp);
++	if (events_ops->is_end_event(evsel, sample, &key))
++		return handle_end_event(vcpu_record, &key, sample->time);
+ 
+ 	return true;
+ }
+@@ -645,8 +650,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 		return -1;
+ 	}
+ 
+-	if (!handle_kvm_event(thread, evsel->tp_format, sample->raw_data,
+-			 sample->time))
++	if (!handle_kvm_event(thread, evsel, sample))
+ 		return -1;
+ 
+ 	return 0;
 -- 
 1.7.1
 
