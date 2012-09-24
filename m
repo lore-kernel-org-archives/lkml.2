@@ -1,114 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab2IXLus (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 07:50:48 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9264 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab2IXLuq convert rfc822-to-8bit (ORCPT
+	id S1754237Ab2IXLvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 07:51:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37468 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab2IXLvl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 07:50:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 24 Sep 2012 04:41:13 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>
-CC: "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@HansenPartnership.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, Krishna Reddy <vdumpa@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 24 Sep 2012 13:50:14 +0200
-Subject: Re: How to specify IOMMU'able devices in DT
-Thread-Topic: How to specify IOMMU'able devices in DT
-Thread-Index: Ac2aSsYb9RQ2QGYASjKk2Crlo6u6/Q==
-Message-ID: <20120924.145014.1452596970914043018.hdoyu@nvidia.com>
-References: <1348478881.2467.27.camel@dabdike><20120924124452.41070ed2ee9944d930cffffc@nvidia.com><054901cd9a45$db1a7ea0$914f7be0$%szyprowski@samsung.com>
-In-Reply-To: <054901cd9a45$db1a7ea0$914f7be0$%szyprowski@samsung.com>
+	Mon, 24 Sep 2012 07:51:41 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: Wim Van Sebroeck <wim@iguana.be>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: RE: [GIT PULL REQUEST] watchdog - v3.6-rc5 Fixes
+Thread-Topic: [GIT PULL REQUEST] watchdog - v3.6-rc5 Fixes
+Thread-Index: AQHNlwf5E9j+r9WZNEKoNRT28E+Cs5eZZHqA
+Date: Mon, 24 Sep 2012 11:51:15 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B7041DB389@DFLE12.ent.ti.com>
+References: <20120920081429.GC16482@spo001.leaseweb.com>
+In-Reply-To: <20120920081429.GC16482@spo001.leaseweb.com>
 Accept-Language: en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+>> -----Original Message-----
+>> From: linux-watchdog-owner@vger.kernel.org [mailto:linux-watchdog-
+>> owner@vger.kernel.org] On Behalf Of Wim Van Sebroeck
+>> Sent: Thursday, September 20, 2012 4:14 AM
+>> To: Linus Torvalds
+>> Cc: Andrew Morton; LKML; Linux Watchdog Mailing List; Wei Yongjun; Toshi Kani
+>> Subject: [GIT PULL REQUEST] watchdog - v3.6-rc5 Fixes
+>> 
+>> Hi Linus,
+>> 
+>> Please pull from 'master' branch of
+>> 	git://www.linux-watchdog.org/linux-watchdog.git
+>> 
+>> It will fix a kdump issue in hpwdt and a possible NULL dereference.
+>> 
+>> This will update the following files:
+>> 
+>>  hpwdt.c         |    3 +++
+>>  watchdog_core.c |    3 ++-
+>>  2 files changed, 5 insertions(+), 1 deletion(-)
+>> 
+>> with these Changes:
+>> 
+>> commit b232a70a1735c004f9ee6fdf363def527b9234b6
+>> Author: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>> Date:   Mon Sep 10 12:41:15 2012 +0800
+>> 
+>>     watchdog: move the dereference below the NULL test
+>> 
+>>     The dereference should be moved below the NULL test.
+>> 
+>>     spatch with a semantic match is used to found this.
+>>     (http://coccinelle.lip6.fr/)
+>> 
+>>     Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>>     Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+>> 
+>> commit 308b135e4fcc00c80c07e0e04e7afa8edf78583c
+>> Author: Toshi Kani <toshi.kani@hp.com>
+>> Date:   Mon Aug 27 12:52:24 2012 -0600
+>> 
+>>     hpwdt: Fix kdump issue in hpwdt
+>> 
+>>     kdump can be interrupted by watchdog timer when the timer is left
+>>     activated on the crash kernel. Changed the hpwdt driver to disable
+>>     watchdog timer at boot-time. This assures that watchdog timer is
+>>     disabled until /dev/watchdog is opened, and prevents watchdog timer
+>>     to be left running on the crash kernel.
+>> 
+>>     Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+>>     Tested-by: Lisa Mitchell <lisa.mitchell@hp.com>
+>>     Signed-off-by: Thomas Mingarelli <Thomas.Mingarelli@hp.com>
+>>     Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+>>     Cc: stable <stable@vger.kernel.org>
+>> 
+>> For completeness, I added the overal diff below.
+>> 
+>> Greetings,
+>> Wim.
+>> 
+>> ========================================================
+>> ========================
+>> diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+>> index 1eff743..ae60406 100644
+>> --- a/drivers/watchdog/hpwdt.c
+>> +++ b/drivers/watchdog/hpwdt.c
+>> @@ -814,6 +814,9 @@ static int __devinit hpwdt_init_one(struct pci_dev *dev,
+>>  	hpwdt_timer_reg = pci_mem_addr + 0x70;
+>>  	hpwdt_timer_con = pci_mem_addr + 0x72;
+>> 
+>> +	/* Make sure that timer is disabled until /dev/watchdog is opened */
+>> +	hpwdt_stop();
+>> +
+>>  	/* Make sure that we have a valid soft_margin */
+>>  	if (hpwdt_change_timer(soft_margin))
+>>  		hpwdt_change_timer(DEFAULT_MARGIN);
+>> diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
+>> index 6aa46a9..3796434 100644
+>> --- a/drivers/watchdog/watchdog_core.c
+>> +++ b/drivers/watchdog/watchdog_core.c
+>> @@ -128,11 +128,12 @@ EXPORT_SYMBOL_GPL(watchdog_register_device);
+>>  void watchdog_unregister_device(struct watchdog_device *wdd)
+>>  {
+>>  	int ret;
+>> -	int devno = wdd->cdev.dev;
+>> +	int devno;
+>> 
+>>  	if (wdd == NULL)
+>>  		return;
+>> 
+>> +	devno = wdd->cdev.dev;
+>>  	ret = watchdog_dev_unregister(wdd);
+>>  	if (ret)
+>>  		pr_err("error unregistering /dev/watchdog (err=%d)\n", ret);
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Marek Szyprowski <m.szyprowski@samsung.com> wrote @ Mon, 24 Sep 2012 13:14:51 +0200:
+Wim,
 
-> Hello,
-> 
-> On Monday, September 24, 2012 11:45 AM Hiroshi Doyu wrote:
-> 
-> > On Mon, 24 Sep 2012 11:28:01 +0200
-> > James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
-> > 
-> > > On Mon, 2012-09-24 at 12:04 +0300, Hiroshi Doyu wrote:
-> > > > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> > > > index a1a7225..9eae3be 100644
-> > > > --- a/drivers/base/platform.c
-> > > > +++ b/drivers/base/platform.c
-> > > > @@ -21,6 +21,8 @@
-> > > >  #include <linux/slab.h>
-> > > >  #include <linux/pm_runtime.h>
-> > > >
-> > > > +#include <asm/dma-iommu.h>
-> > > > +
-> > > >  #include "base.h"
-> > > >
-> > > >  #define to_platform_driver(drv)        (container_of((drv), struct
-> > > > platform_driver, \
-> > > > @@ -305,8 +307,19 @@ int platform_device_add(struct platform_device
-> > > > *pdev)
-> > > >                  dev_name(&pdev->dev), dev_name(pdev->dev.parent));
-> > > >
-> > > >         ret = device_add(&pdev->dev);
-> > > > -       if (ret == 0)
-> > > > -               return ret;
-> > > > +       if (ret)
-> > > > +               goto failed;
-> > > > +
-> > > > +#ifdef CONFIG_PLATFORM_ENABLE_IOMMU
-> > > > +       if (platform_bus_type.map && !pdev->dev.archdata.mapping) {
-> > > > +               ret = arm_iommu_attach_device(&pdev->dev,
-> > > > +                                             platform_bus_type.map);
-> > > > +               if (ret)
-> > > > +                       goto failed;
-> > >
-> > > This is horrible ... you're adding an architecture specific callback
-> > > into our generic code; that's really a no-no.  If the concept of
-> > > CONFIG_PLATFORM_ENABE_IOMMU is useful to more than just arm, then this
-> > > could become a generic callback.
-> > 
-> > As mentioned in the original, this is a heck to explain what is
-> > needed. I am looking for some generic solution for how to specify
-> > IOMMU info for each platform devices. I'm guessing that some other SoC
-> > may have the similar requirements on the above. As you mentioned, this
-> > solution should be a generic, not arch specific.
-> 
-> Please read more about bus notifiers. IMHO a good example is provided in 
-> the following thread:
-> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg12238.html
+Could you take the watchdog davinci patch as well?  http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg23630.html
 
-This bus notifier seems enough flexible to afford the variation of
-IOMMU map info, like Tegra ASID, which could be platform-specific, and
-the other could be common too. There's already iommu_bus_notifier
-too. I'll try to implement something base on this.
+I have tried 2 times to send the patch to the linux-watchdog list, but the server is rejecting it for some reason. The second time I tried registering my email id to the list and re-sent, but no success.
 
-Thanks for the good info.
+Murali
