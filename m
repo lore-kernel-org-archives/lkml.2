@@ -1,126 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab2IXHZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:25:56 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:41607 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab2IXHZy (ORCPT
+	id S1755057Ab2IXHal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 03:30:41 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44167 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753045Ab2IXHaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:25:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
-References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
-	<20120921174952.GF7264@google.com>
-	<CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
-	<20120921183515.GI7264@google.com>
-	<CAHCeSFpa28d-7ruMKSw6z2EYKYN-5udVouUJOi4cnj4dPad-TA@mail.gmail.com>
-	<20120921192720.GJ7264@google.com>
-	<CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
-	<CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
-	<5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
-	<CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
-	<5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
-Date: Mon, 24 Sep 2012 08:25:54 +0100
-Message-ID: <CAHCeSFp2=CzO1-dw_Ym_s4Pn04nsC_kQUerFJ+uFLh8iinX+Ug@mail.gmail.com>
-Subject: Re: Work queue questions
-From: Deepawali Verma <dverma249@gmail.com>
-To: Daniel Taylor <Daniel.Taylor@wdc.com>
-Cc: anish singh <anish198519851985@gmail.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Sep 2012 03:30:39 -0400
+Date: Mon, 24 Sep 2012 17:30:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: linux-next: manual merge of the arm-soc tree with the sound tree
+Message-Id: <20120924173024.f102e9efb9b24d2b275509be@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Sep_2012_17_30_24_+1000_zuZTd9kjn8VnFYnq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+--Signature=_Mon__24_Sep_2012_17_30_24_+1000_zuZTd9kjn8VnFYnq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here are some code snippets from my device driver:
+Hi all,
 
-#defind NUMBER_OF_SUBTASKS 3
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-davinci/davinci.h between commit 896f66b7de29 ("ASoC/ARM:
+Davinci: McASP: split asp header into platform and audio specific") from
+the sound tree and commit ec2a0833e515 ("ARM: davinci: move platform_data
+definitions") from the arm-soc tree.
 
-struct my_driver_object
-{
-        struct workqueue_struct *sub_task_wq;
-        struct work_struct sub_task_work;
-        char my_obj_wq_name[80];
-        int task_id;
-};
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-struct my_driver_object obj[3];
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/arm/mach-davinci/davinci.h
+index 8661b20,a37fc44..0000000
+--- a/arch/arm/mach-davinci/davinci.h
++++ b/arch/arm/mach-davinci/davinci.h
+@@@ -22,11 -22,10 +22,11 @@@
+  #include <linux/davinci_emac.h>
+  #include <linux/platform_device.h>
+  #include <linux/spi/spi.h>
+ +#include <linux/platform_data/davinci_asp.h>
+ =20
+- #include <mach/keyscan.h>
+ -#include <mach/asp.h>
++ #include <linux/platform_data/keyscan-davinci.h>
+  #include <mach/hardware.h>
+ +#include <mach/edma.h>
+ =20
+  #include <media/davinci/vpfe_capture.h>
+  #include <media/davinci/vpif_types.h>
 
-void my_driver_init(void)
-{
-   int i =0;
-   memset(my_obj_wq_name,0,80);
-  --------------------------------------
-  for (i =0; i<3; i++)
-  {
-      snprintf(obj[i].my_obj_wq_name,80, "Task-wq:%d",i);
-      obj.sub_task_wq = alloc_workqueue(obj[i].my_obj_wq_name,WQ_UNBOUND,1);
-      INIT_WORK(&obj[i].sub_task_work, sub_task_work_handler);
-  }
+--Signature=_Mon__24_Sep_2012_17_30_24_+1000_zuZTd9kjn8VnFYnq
+Content-Type: application/pgp-signature
 
-  --------------------------------------
-}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-void start_sub_tasks()
-{
-   int i =0;
-   for (i =0; i<3; i++)
-   {
-        queue_work(obj[i].sub_task_wq, &obj[i].sub_task_work);
+iQIcBAEBCAAGBQJQYAwQAAoJEECxmPOUX5FEZHgP/R1uYvA2QQwoqdmTH+34Oo0j
+WMarzBDC2FzW5zD0j+Hfxo94/zPNWvj6paw7Zk+WI8/TmvgFNYRS86r3Bqv5RNfe
+AwYk1gxqAoG7lIYecnZUNSTbMQ38Kg57XoXsoA4v0+tXc4hC0FJbxoG9ynRYFrKs
+FkSUzjYCtovwCn4UnczP/q/uGiICZDBzJf6Wfs6dPB4UTmThwAd1maTB3I5PmudV
+8MtVTuvWaLNV2MFVq2lLXOGSzqZwIYH6/ahI2YeCrscB4WZuqyXwv1z3ztRPA3G4
+AtsVtvOrZvg1quq5Gyx4PWQ77fsKO++XIZE3kWjQy1TaoEcgF/96yqiIcLX55J9z
+UU4xs0f/2ZDBDX2HfgPSgXVN76mmMoV7jzH/oWWmWZ0p1WRl+pk7hqmzjYhF8zXi
+MWtzvNVv796BJqE3qwHQeWVpmktJxspyvHg6yoluYx4aEh3hC1y2u2UkO0QilNLu
+sMYA6xwF+ZKYwN3517IX6Y5ymy7NM6J95Fc69aqAccQ0T6cAtQ6Ka+OBLdP0HYSW
++kFFvN3cw4cXy4m9Fhd1l5XcuI9mwXUYO7s6IK1f9X26Nb0Qf7eebx1LhQFw2g+W
+xUlDUXG4yZWwrJ44aoaD413MJNWcWoAi8KCRCKM0zbr3GPCv52l/OLxUkh2NlinD
+Ji9iZIzEfxV5Oyav8Kqf
+=EMm4
+-----END PGP SIGNATURE-----
 
-   }
-
-
-}
-
-static void sub_task_work_handler(struct work_struct work)
-{
-    Ftrace marker start;
-
-    Ftrace marker end
-}
-
-Ideally I was expecting when work is queued to three different work
-queues, it should run in parallel but it is not doing as per expected.
-Let me know about this.
-
-Regards,
-Deepa
-
-
-
-
-
-
-
-On Sat, Sep 22, 2012 at 7:18 AM, Daniel Taylor <Daniel.Taylor@wdc.com> wrote:
->
-> ...
->
->> >> So on so forth.
->> >> Anyway how can you write chunks of data in parallel when
->> >> already some worker
->> >> thread is writing i.e. the system is busy.
->> >> Analogy: Suppose you are ambidextrous and you are eating.Can
->> >> you eat with
->> >> both of your hands at a time?So worker thread are like your
->> >> hands and keeping
->> >> you fed all the time is the concept of concurrency.
->> >>
->> >> I am not an expert on this but from Tejun's reply I could
->> >> make out this.
->> >> Please correct me If I have wrongly understood the concept
->> >> based on this mail
->> >
->> > I don't know how many cores are in the CPU Deepawali's
->> using, but if I have four,
->> Assuming single core,Is my explanation correct about concurrency?
->
-> It is possible for his tasks to complete before scheduling occurs
-> again.  Consuming all of the CPU and having no blocking action,
-> yes, then the tasks will run consecutively.
->
-> ...
+--Signature=_Mon__24_Sep_2012_17_30_24_+1000_zuZTd9kjn8VnFYnq--
