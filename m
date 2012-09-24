@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab2IXSOj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 14:14:39 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:22820
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757174Ab2IXSOi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 14:14:38 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dIc89bh1be0I1432Id6f1izz1202h1d1ah1d2ahzz8275bh8275dh15d4Iz2dh668h839hd24he5bhf0ah107ah1288h12a5h12bdh137ah139eh34h1155h)
-X-WSS-ID: 0MAV9C4-02-9GX-02
-X-M-MSG: 
-Date: Mon, 24 Sep 2012 20:16:50 +0200
-From: Conny Seidel <conny.seidel@amd.com>
-To: Borislav Petkov <bp@amd64.org>, Jan Kara <jack@suse.cz>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
-Message-ID: <20120924201650.6574af64.conny.seidel@amd.com>
-In-Reply-To: <20120924143609.GH22303@aftab.osrc.amd.com>
-References: <20120924102324.GA22303@aftab.osrc.amd.com>
-	<20120924142305.GD12264@quack.suse.cz>
-	<20120924143609.GH22303@aftab.osrc.amd.com>
-Organization: Advanced Micro Devices GmbH; Einsteinring 24; 85609 Dornach
- bei Muenchen; Geschaeftsfuehrer: Alberto Bozzo; Sitz: Dornach, Gemeinde
- Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr. 43632
-X-Mailer: Claws Mail 3.8.1cvs53 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
-	boundary="Sig_/43nlnw0jZPor8M=ZYFfSof7";
-	protocol="application/pgp-signature"
-X-OriginatorOrg: amd.com
+	id S1757535Ab2IXSQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 14:16:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45779 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756754Ab2IXSQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 14:16:31 -0400
+Subject: Re: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to
+ ARM)
+From: Mark Salter <msalter@redhat.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Date: Mon, 24 Sep 2012 14:16:09 -0400
+In-Reply-To: <20120924174256.GD24172@moon>
+References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
+	 <20120922114549.GA11610@moon>
+	 <20120922132046.GA4260@flint.arm.linux.org.uk>
+	 <20120922114723.d7f07fb6.akpm@linux-foundation.org>
+	 <1348503709.20929.40.camel@deneb.redhat.com> <20120924164942.GH16532@moon>
+	 <20120924174256.GD24172@moon>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1348510573.20929.44.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/43nlnw0jZPor8M=ZYFfSof7
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-09-24 at 21:42 +0400, Cyrill Gorcunov wrote:
+> On Mon, Sep 24, 2012 at 08:49:42PM +0400, Cyrill Gorcunov wrote:
+> > > I got past that with:
+> > > 
+> > > diff --git a/include/linux/security.h b/include/linux/security.h
+> > > index 01ef030..14e394d 100644
+> > > --- a/include/linux/security.h
+> > > +++ b/include/linux/security.h
+> > > @@ -118,6 +118,7 @@ void reset_security_ops(void);
+> > >  extern unsigned long mmap_min_addr;
+> > >  extern unsigned long dac_mmap_min_addr;
+> > >  #else
+> > > +#define mmap_min_addr          0UL
+> > >  #define dac_mmap_min_addr      0UL
+> > >  #endif
+> > > 
+> 
+> I think better to add CONFIG_MMU test here.
 
-Hi,
+Well, my patch was just something quick to get the kernel to build, but
+thinking about it a bit, I still prefer it. The CONFIG_MMU check is in
+security.h already so I think it is less clutter and better for future
+code which may use mmap_min_addr. In any case, the compiler will drop
+any test for "x < 0UL" so the end result is the same.
 
-On Mon, 24 Sep 2012 16:36:09 +0200
-Borislav Petkov <bp@amd64.org> wrote:
->[ =E2=80=A6 ]
->
->Conny, would you test pls?
+> ---
+> From: Cyrill Gorcunov <gorcunov@openvz.org>
+> Subject: prctl: prctl_set_mm -- Don't test for mmap_min_addr on non-MMU config
+> 
+> In case if CONFIG_MMU is not set the @mmap_min_addr
+> is undefined leading to build error. Thus test for
+> it iif CONFIG_MMU is present.
+> 
+> Note this code snippet depends on CONFIG_CHECKPOINT_RESTORE=y.
+> 
+> Reported-by: Mark Salter <msalter@redhat.com>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> ---
+>  kernel/sys.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> Index: linux-2.6.git/kernel/sys.c
+> ===================================================================
+> --- linux-2.6.git.orig/kernel/sys.c
+> +++ linux-2.6.git/kernel/sys.c
+> @@ -1865,7 +1865,11 @@ static int prctl_set_mm(int opt, unsigne
+>  	if (opt == PR_SET_MM_EXE_FILE)
+>  		return prctl_set_mm_exe_file(mm, (unsigned int)addr);
+>  
+> +#ifdef CONFIG_MMU
+>  	if (addr >= TASK_SIZE || addr < mmap_min_addr)
+> +#else
+> +	if (addr >= TASK_SIZE)
+> +#endif
+>  		return -EINVAL;
+>  
+>  	error = -EINVAL;
 
-Sure thing.
-Out of ~25 runs I only triggered it once, without the patch the
-trigger-rate is higher.
 
-[   55.098249] Broke affinity for irq 81
-[   55.105108] smpboot: CPU 1 is now offline
-[   55.311216] smpboot: Booting Node 0 Processor 1 APIC 0x11
-[   55.333022] LVT offset 0 assigned for vector 0x400
-[   55.545877] smpboot: CPU 2 is now offline
-[   55.753050] smpboot: Booting Node 0 Processor 2 APIC 0x12
-[   55.775582] LVT offset 0 assigned for vector 0x400
-[   55.986747] smpboot: CPU 3 is now offline
-[   56.193839] smpboot: Booting Node 0 Processor 3 APIC 0x13
-[   56.212643] LVT offset 0 assigned for vector 0x400
-[   56.423201] Got negative events: -25
-
-The Divide error wasn't triggered with the patch applied.
-
-
---
-Kind regards.
-
-Conny Seidel
-
-##################################################################
-# Email : conny.seidel@amd.com            GnuPG-Key : 0xA6AB055D #
-# Fingerprint: 17C4 5DB2 7C4C C1C7 1452 8148 F139 7C09 A6AB 055D #
-##################################################################
-# Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach      #
-# General Managers: Alberto Bozzo                                #
-# Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen #
-#               HRB Nr. 43632                                    #
-##################################################################
-
---Sig_/43nlnw0jZPor8M=ZYFfSof7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlBgo5MACgkQ8Tl8CaarBV3cIACfS8zIzyGd/CwVRbjaxJPGWaS6
-DKgAn2p0sHybxD+L7HqOmxp59ejajOWd
-=Z6fT
------END PGP SIGNATURE-----
-
---Sig_/43nlnw0jZPor8M=ZYFfSof7--
