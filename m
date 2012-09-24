@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab2IXUfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 16:35:21 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52222 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757874Ab2IXUfT (ORCPT
+	id S1758018Ab2IXUfm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 16:35:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39278 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757874Ab2IXUfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 16:35:19 -0400
-Date: Tue, 25 Sep 2012 00:35:12 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Mark Salter <msalter@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: sys_kcmp
-Message-ID: <20120924203512.GF24172@moon>
-References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
- <20120922114549.GA11610@moon>
- <20120922132046.GA4260@flint.arm.linux.org.uk>
- <20120922114723.d7f07fb6.akpm@linux-foundation.org>
- <1348503709.20929.40.camel@deneb.redhat.com>
- <20120924164942.GH16532@moon>
- <20120924174256.GD24172@moon>
- <87lifzuvey.fsf@xmission.com>
- <20120924185119.GI16532@moon>
+	Mon, 24 Sep 2012 16:35:41 -0400
+Date: Mon, 24 Sep 2012 21:35:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/3] Introduce devm_clk_register()
+Message-ID: <20120924203524.GH26454@n2100.arm.linux.org.uk>
+References: <1348034730-16473-1-git-send-email-sboyd@codeaurora.org> <20120922100604.GI15609@n2100.arm.linux.org.uk> <5060C09A.6080706@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120924185119.GI16532@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5060C09A.6080706@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 10:51:19PM +0400, Cyrill Gorcunov wrote:
-> > I expect what you want is a call to access_ok, rather than hard coding
-> > details about task layout here.  This test certainly looks wrong
-> > for a 32bit process on a 64bit kernel. If I read your test right it
-> > appears I can set values of say 0x100000000 on a 32bit process...
-> > 
-> > As for mmap_min_addr I would expect your find_vma check would make that
-> > test unnecessary, simply by not finding a vma...
+On Mon, Sep 24, 2012 at 01:20:42PM -0700, Stephen Boyd wrote:
+> On 09/22/12 03:06, Russell King - ARM Linux wrote:
+> > On Tue, Sep 18, 2012 at 11:05:27PM -0700, Stephen Boyd wrote:
+> >> The first patch in this series fixes error checking in the wm831x clock
+> >> driver and is here to prevent context conflicts in the third patch.
+> >> I split it out in case it needed to merge sooner rather than later.
+> >>
+> >> The goal of this series is to add devm_clk_register() so I can use it in
+> >> some MSM clock code I'm sending out in the near future. The second 
+> >> patch adds the API and the third patch moves over an existing user of
+> >> clk_unregister() to the devm API.
+> > Can we guarantee that the clocks are unused when the module is removed?
+> > If we can't make that guarantee, then devm_* should not be used here,
+> > and instead there should be refcounting done in the clocks (that's what
+> > the __clk_get() and __clk_put() hooks are there for.)
 > 
-> Good point, Eric, thanks! I'm cooking a new patch now.
+> We could guarantee that when clk_unregister() is actually implemented.
+> __clk_get() would need to forward a call to the module providing the
+> clock via try_module_get(). Similarly we would call module_put() in
+> __clk_put(). That would prevent unbinding the driver from the device via
+> module removal.
 
-Btw, Eric, I somehow miss one bit -- how would you set this 0x100000000
-if TASK_SIZE is a macro which does check for TIF_ADDR32 and sets limit
-acordingly? What i'm missing?
+Strangely enough... mach-integrator's clkdev.h... precisely because it
+has a module which may provide a clock.
+
+static inline int __clk_get(struct clk *clk)
+{
+        return try_module_get(clk->owner);
+}
+
+static inline void __clk_put(struct clk *clk)
+{
+        module_put(clk->owner);
+}
+
