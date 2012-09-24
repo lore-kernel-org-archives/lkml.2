@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab2IXIVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:21:10 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:55440 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755274Ab2IXIVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:21:08 -0400
-Message-ID: <50601721.6040805@parallels.com>
-Date: Mon, 24 Sep 2012 12:17:37 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/16] memcg: infrastructure to match an allocation
- to the right cache
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-7-git-send-email-glommer@parallels.com> <20120921205236.GT7264@google.com>
-In-Reply-To: <20120921205236.GT7264@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755354Ab2IXIXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:23:33 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42779 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755264Ab2IXIXc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 04:23:32 -0400
+X-AuditID: 9c93016f-b7c19ae000000e6d-d1-50601882b5a1
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCH 0/6] perf header: Save and reuse feature information in header (v5)
+Date: Mon, 24 Sep 2012 17:14:57 +0900
+Message-Id: <1348474503-15070-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2012 12:52 AM, Tejun Heo wrote:
-> Missed some stuff.
-> 
-> On Tue, Sep 18, 2012 at 06:12:00PM +0400, Glauber Costa wrote:
->> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->> +						  struct kmem_cache *cachep)
->> +{
-> ...
->> +	memcg->slabs[idx] = new_cachep;
-> ...
->> +struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
->> +					  gfp_t gfp)
->> +{
-> ...
->> +	return memcg->slabs[idx];
-> 
-> I think you need memory barriers for the above pair.
-> 
-> Thanks.
-> 
+Hi,
 
-Why is that?
+Currently the perf header information is used only at initial setup
+time and discarded.  If it's saved we could reuse the information for
+various purpose - for instance, perf kvm stat needs to know cpuid so
+it had to invent an accessor.
 
-We'll either see a value, or NULL. If we see NULL, we assume the cache
-is not yet created. Not a big deal.
+Thanks,
+Namhyung
+
+
+v4 -> v5:
+ * Use saved cpuid info for perf kvm (David)
+
+v3 -> v4:
+ * rename perf_header_info to perf_session_env (Arnaldo)
+
+v2 -> v3:
+ * patch 1-3 in v2 merged into tip
+ * rebased on current acme/perf/core
+
+v1 -> v2:
+ * not touch EVENT_DESC feature handling
+ * split out struct perf_header_info
+ * simplify multi-string handling
+ * add some cleanup patches
+
+Namhyung Kim (6):
+  perf header: Add struct perf_session_env
+  perf header: Add ->process callbacks to most of features
+  perf header: Use pre-processed session env when printing
+  perf header: Remove unused @feat arg from ->process callback
+  perf kvm: Use perf_session_env for reading cpuid
+  perf header: Remove perf_header__read_feature
+
+ tools/perf/builtin-kvm.c |  10 +-
+ tools/perf/util/header.c | 598 ++++++++++++++++++++++++++++++-----------------
+ tools/perf/util/header.h |  25 +-
+ 3 files changed, 406 insertions(+), 227 deletions(-)
+
+-- 
+1.7.11.4
 
