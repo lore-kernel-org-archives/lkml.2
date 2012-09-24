@@ -1,64 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab2IXMf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:35:29 -0400
-Received: from science.horizon.com ([71.41.210.146]:59139 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754674Ab2IXMf2 (ORCPT
+	id S1755254Ab2IXMgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 08:36:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37716 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab2IXMgW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:35:28 -0400
-Date: 24 Sep 2012 08:35:27 -0400
-Message-ID: <20120924123527.9284.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, vda.linux@googlemail.com
-Subject: Re: [PATCH 2/4] lib: vsprintf: Optimize division by 10000
-Cc: hughd@google.com, linux-kernel@vger.kernel.org, mina86@mina86.com
-In-Reply-To: <CAK1hOcOO7MoDDzJgKJ+2dra5n3ogyKR+mKyTh+o_isgRi3yRxQ@mail.gmail.com>
+	Mon, 24 Sep 2012 08:36:22 -0400
+Message-ID: <1348490165.11847.58.camel@twins>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Date: Mon, 24 Sep 2012 14:36:05 +0200
+In-Reply-To: <50604988.2030506@linux.vnet.ibm.com>
+References: <20120921115942.27611.67488.sendpatchset@codeblue>
+	 <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Here is the comparison of the x86-32 assembly
-> of the fragment which does "x / 10000" thing,
-> before and after the patch:
-
-> -01 c6                  add    %eax,%esi
-> -b8 59 17 b7 d1         mov    $0xd1b71759,%eax
-> -f7 e6                  mul    %esi
-> -89 d3                  mov    %edx,%ebx
-> -89 f2                  mov    %esi,%edx
-> -c1 eb 0d               shr    $0xd,%ebx
+On Mon, 2012-09-24 at 17:22 +0530, Raghavendra K T wrote:
+> On 09/24/2012 05:04 PM, Peter Zijlstra wrote:
+> > On Fri, 2012-09-21 at 17:29 +0530, Raghavendra K T wrote:
+> >> In some special scenarios like #vcpu<= #pcpu, PLE handler may
+> >> prove very costly, because there is no need to iterate over vcpus
+> >> and do unsuccessful yield_to burning CPU.
+> >
+> > What's the costly thing? The vm-exit, the yield (which should be a nop
+> > if its the only task there) or something else entirely?
+> >
+> Both vmexit and yield_to() actually,
 > 
-> +01 c7                  add    %eax,%edi
-> +b8 d7 c5 6d 34         mov    $0x346dc5d7,%eax
-> +f7 e7                  mul    %edi
-> +89 55 e8               mov    %edx,-0x18(%ebp)
-> +8b 5d e8               mov    -0x18(%ebp),%ebx
-> +89 fa                  mov    %edi,%edx
-> +89 45 e4               mov    %eax,-0x1c(%ebp)
-> +c1 eb 0b               shr    $0xb,%ebx
+> because unsuccessful yield_to() overall is costly in PLE handler.
 > 
-> Poor gcc got confused, and generated somewhat
-> worse code (spilling and immediately reloading upper
-> part of 32x32->64 multiply).
+> This is because when we have large guests, say 32/16 vcpus, and one
+> vcpu is holding lock, rest of the vcpus waiting for the lock, when they
+> do PL-exit, each of the vcpu try to iterate over rest of vcpu list in
+> the VM and try to do directed yield (unsuccessful). (O(n^2) tries).
+> 
+> this results is fairly high amount of cpu burning and double run queue
+> lock contention.
+> 
+> (if they were spinning probably lock progress would have been faster).
+> As Avi/Chegu Vinod had felt it is better to avoid vmexit itself, which
+> seems little complex to achieve currently.
 
-> Please test and benchmark your changes to this code
-> before submitting them.
+OK, so the vmexit stays and we need to improve yield_to.
 
-Thanks for the feedback!  It very much *was* intended to start a
-conversation with you, but the 7 week response delay somewhat interfered
-with that process.
+How about something like the below, that would allow breaking out of the
+for-each-vcpu loop and simply going back into the vm, right?
 
-I was playing with it on ARM, where the results are a bit different.
+---
+ kernel/sched/core.c | 25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
-As you can see, it fell out of some other word which *did* make a
-useful difference.  I just hadn't tested this change in isolation,
-which I realized as I wrote the final commit comment while cleaning
-up the series for publication.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b38f00e..5d5b355 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4272,7 +4272,10 @@ EXPORT_SYMBOL(yield);
+  * It's the caller's job to ensure that the target task struct
+  * can't go away on us before we can do any checks.
+  *
+- * Returns true if we indeed boosted the target task.
++ * Returns:
++ *   true (>0) if we indeed boosted the target task.
++ *   false (0) if we failed to boost the target.
++ *   -ESRCH if there's no task to yield to.
+  */
+ bool __sched yield_to(struct task_struct *p, bool preempt)
+ {
+@@ -4284,6 +4287,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+ 	local_irq_save(flags);
+ 	rq = this_rq();
+ 
++	/*
++	 * If we're the only runnable task on the rq, there's absolutely no
++	 * point in yielding.
++	 */
++	if (rq->nr_running == 1) {
++		yielded = -ESRCH;
++		goto out_irq;
++	}
++
+ again:
+ 	p_rq = task_rq(p);
+ 	double_rq_lock(rq, p_rq);
+@@ -4293,13 +4305,13 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+ 	}
+ 
+ 	if (!curr->sched_class->yield_to_task)
+-		goto out;
++		goto out_unlock;
+ 
+ 	if (curr->sched_class != p->sched_class)
+-		goto out;
++		goto out_unlock;
+ 
+ 	if (task_running(p_rq, p) || p->state)
+-		goto out;
++		goto out_unlock;
+ 
+ 	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+ 	if (yielded) {
+@@ -4312,11 +4324,12 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+ 			resched_task(p_rq->curr);
+ 	}
+ 
+-out:
++out_unlock:
+ 	double_rq_unlock(rq, p_rq);
++out_irq:
+ 	local_irq_restore(flags);
+ 
+-	if (yielded)
++	if (yielded > 0)
+ 		schedule();
+ 
+ 	return yielded;
 
-(And please excuse me if there's some paging delay on my part
-to swap the whole business back in; it's been a while.)
-
-I'll see if I can come up with something that provides the cleaner code
-(do you agree that the source *looks* nicer?) and still makes GCC do
-the right thing.
