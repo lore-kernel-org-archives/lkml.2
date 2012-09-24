@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab2IXMYw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:24:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50086 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab2IXMYv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:24:51 -0400
-Message-ID: <1348489478.11847.55.camel@twins>
-Subject: Re: [PATCH 2/2] [RESEND] console: implement lockdep support for
- console_lock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Mon, 24 Sep 2012 14:24:38 +0200
-In-Reply-To: <1348489027.11847.53.camel@twins>
-References: <1347923013-4253-1-git-send-email-daniel.vetter@ffwll.ch>
-	 <1347923013-4253-2-git-send-email-daniel.vetter@ffwll.ch>
-	 <1348489027.11847.53.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1754899Ab2IXM3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 08:29:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:51460 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753877Ab2IXM3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 08:29:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,474,1344236400"; 
+   d="scan'208";a="225732892"
+Date: Mon, 24 Sep 2012 20:29:00 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Conny Seidel <conny.seidel@amd.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
+Message-ID: <20120924122900.GA28627@localhost>
+References: <20120924102324.GA22303@aftab.osrc.amd.com>
+ <50603829.9050904@linux.vnet.ibm.com>
+ <20120924110554.GC22303@aftab.osrc.amd.com>
+ <50604047.7000908@linux.vnet.ibm.com>
+ <20120924113447.GA25182@localhost>
+ <20120924122053.GD22303@aftab.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120924122053.GD22303@aftab.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-24 at 14:17 +0200, Peter Zijlstra wrote:
-> On Tue, 2012-09-18 at 01:03 +0200, Daniel Vetter wrote:
-> > - In the printk code there's a special trylock, only used to kick off
-> >   the logbuffer printk'ing in console_unlock. But all that happens
-> >   while lockdep is disable (since printk does a few other evil
-> >   tricks). So no issue there, either. 
+On Mon, Sep 24, 2012 at 02:20:53PM +0200, Borislav Petkov wrote:
+> On Mon, Sep 24, 2012 at 07:34:47PM +0800, Fengguang Wu wrote:
+> > Will you test such a line? At least the generic do_div() only uses the
+> > lower 32bits for division.
+> > 
+> >         WARN_ON(!(den & 0xffffffff));
 > 
-> Not particularly evil, just plain broken.
+> But, but, the asm output says:
 > 
-> See this series:
+>   28:   48 89 c8                mov    %rcx,%rax
+>   2b:*  48 f7 f7                div    %rdi     <-- trapping instruction
+>   2e:   31 d2                   xor    %edx,%edx
 > 
->   http://marc.info/?l=linux-kernel&m=132446644123326&w=2
+> and this version of DIV does an unsigned division of RDX:RAX by the
+> contents of a *64-bit register* ... in our case %rdi.
 > 
-> In particular see patches 1-4. The problem with lockdep is that lockdep
-> uses printk and printk's recursion stuff is utterly broken.
+> Srivatsa's oops  shows the same:
 > 
-> Console drivers being on crack simply doesn't help :-) Note that I would
-> never recommend drm/ksm to anybody who really cares about their console
-> output.
+>   28:   48 89 f0                mov    %rsi,%rax
+>   2b:*  48 f7 f7                div    %rdi     <-- trapping instruction
+>   2e:   41 8b 94 24 74 02 00    mov    0x274(%r12),%edx
+> 
+> Right?
 
-Also, don't cross-post with a subscribe only list.
+Right, that's why I said "at least". As for x86, I'm as clueless as you..
+
+Thanks,
+Fengguang
