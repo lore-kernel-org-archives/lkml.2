@@ -1,432 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab2IXKC4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 06:02:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38348 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2IXKCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 06:02:54 -0400
-From: Prabhakar <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        VGER <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH] media: davinci: vpif: display: separate out subdev from output
-Date: Mon, 24 Sep 2012 15:32:26 +0530
-Message-Id: <1348480946-17186-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753888Ab2IXKFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 06:05:25 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59251 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753494Ab2IXKFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 06:05:16 -0400
+X-IronPort-AV: E=Sophos;i="4.80,474,1344182400"; 
+   d="scan'208";a="5907214"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 07/10] workqueue: simplify flush_workqueue_prep_cwqs()
+Date: Mon, 24 Sep 2012 18:07:09 +0800
+Message-Id: <1348481238-6138-8-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1348481238-6138-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1348481238-6138-1-git-send-email-laijs@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/24 18:05:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/24 18:05:28,
+	Serialize complete at 2012/09/24 18:05:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+Move the advance of wq->work_color into flush_workqueue_prep_cwqs()
+and rename flush_workqueue_prep_cwqs() to workqueue_start_flush(),
+It will simplify the caller.
 
-vpif_display relied on a 1-1 mapping of output and subdev. This is not
-necessarily the case. Separate the two. So there is a list of subdevs
-and a list of outputs. Each output refers to a subdev and has routing
-information. An output does not have to have a subdev.
+Since the @flush_color and @work_color can't be -1, so we remove
+the test in workqueue_start_flush() and fix the indent.
 
-The initial output for each channel is set to the fist output.
+Since the @flush_color is always equals to wq->work_color(before advance),
+so we remove the @flush_color argument. @flush_color becomes a
+local variable.
 
-Currently missing is support for associating multiple subdevs with
-an output.
+Since the @work_color is always equals to work_next_color(flush_color),
+so we remove the @work_color argument. @work_color is renamed to
+@next_color and becomes a local variable
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
+This patch doesn't make any functional difference.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- This patch is dependent on the patch series from Hans
- (http://www.mail-archive.com/linux-media@vger.kernel.org/msg52270.html)
+ kernel/workqueue.c |   69 +++++++++++++++++++--------------------------------
+ 1 files changed, 26 insertions(+), 43 deletions(-)
 
- arch/arm/mach-davinci/board-da850-evm.c       |   29 +++++-
- arch/arm/mach-davinci/board-dm646x-evm.c      |   39 ++++++-
- drivers/media/platform/davinci/vpif_display.c |  138 ++++++++++++++++++++-----
- include/media/davinci/vpif_types.h            |   20 +++-
- 4 files changed, 185 insertions(+), 41 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index 3081ea4..23a7012 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -46,6 +46,7 @@
- #include <mach/spi.h>
- 
- #include <media/tvp514x.h>
-+#include <media/adv7343.h>
- 
- #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
- #define DA850_LCD_PWR_PIN		GPIO_TO_PIN(2, 8)
-@@ -1257,16 +1258,34 @@ static struct vpif_subdev_info da850_vpif_subdev[] = {
- 	},
- };
- 
--static const char const *vpif_output[] = {
--		"Composite",
--		"S-Video",
-+static const struct vpif_output da850_ch0_outputs[] = {
-+	{
-+		.output = {
-+			.index = 0,
-+			.name = "Composite",
-+			.type = V4L2_OUTPUT_TYPE_ANALOG,
-+		},
-+		.subdev_name = "adv7343",
-+		.output_route = ADV7343_COMPOSITE_ID,
-+	},
-+	{
-+		.output = {
-+			.index = 1,
-+			.name = "S-Video",
-+			.type = V4L2_OUTPUT_TYPE_ANALOG,
-+		},
-+		.subdev_name = "adv7343",
-+		.output_route = ADV7343_SVIDEO_ID,
-+	},
- };
- 
- static struct vpif_display_config da850_vpif_display_config = {
- 	.subdevinfo   = da850_vpif_subdev,
- 	.subdev_count = ARRAY_SIZE(da850_vpif_subdev),
--	.output       = vpif_output,
--	.output_count = ARRAY_SIZE(vpif_output),
-+	.chan_config[0] = {
-+		.outputs = da850_ch0_outputs,
-+		.output_count = ARRAY_SIZE(da850_ch0_outputs),
-+	},
- 	.card_name    = "DA850/OMAP-L138 Video Display",
- };
- 
-diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-index ad249c7..c206768 100644
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -26,6 +26,7 @@
- #include <linux/i2c/pcf857x.h>
- 
- #include <media/tvp514x.h>
-+#include <media/adv7343.h>
- 
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/nand.h>
-@@ -496,18 +497,44 @@ static struct vpif_subdev_info dm646x_vpif_subdev[] = {
- 	},
- };
- 
--static const char *output[] = {
--	"Composite",
--	"Component",
--	"S-Video",
-+static const struct vpif_output dm6467_ch0_outputs[] = {
-+	{
-+		.output = {
-+			.index = 0,
-+			.name = "Composite",
-+			.type = V4L2_OUTPUT_TYPE_ANALOG,
-+		},
-+		.subdev_name = "adv7343",
-+		.output_route = ADV7343_COMPOSITE_ID,
-+	},
-+	{
-+		.output = {
-+			.index = 1,
-+			.name = "Component",
-+			.type = V4L2_OUTPUT_TYPE_ANALOG,
-+		},
-+		.subdev_name = "adv7343",
-+		.output_route = ADV7343_COMPONENT_ID,
-+	},
-+	{
-+		.output = {
-+			.index = 2,
-+			.name = "S-Video",
-+			.type = V4L2_OUTPUT_TYPE_ANALOG,
-+		},
-+		.subdev_name = "adv7343",
-+		.output_route = ADV7343_SVIDEO_ID,
-+	},
- };
- 
- static struct vpif_display_config dm646x_vpif_display_config = {
- 	.set_clock	= set_vpif_clock,
- 	.subdevinfo	= dm646x_vpif_subdev,
- 	.subdev_count	= ARRAY_SIZE(dm646x_vpif_subdev),
--	.output		= output,
--	.output_count	= ARRAY_SIZE(output),
-+	.chan_config[0] = {
-+		.outputs = dm6467_ch0_outputs,
-+		.output_count = ARRAY_SIZE(dm6467_ch0_outputs),
-+	},
- 	.card_name	= "DM646x EVM",
- };
- 
-diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index 8d1ce09..b218f3a 100644
---- a/drivers/media/platform/davinci/vpif_display.c
-+++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -308,7 +308,7 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- 		channel2_intr_assert();
- 		channel2_intr_enable(1);
- 		enable_channel2(1);
--		if (vpif_config_data->ch2_clip_en)
-+		if (vpif_config_data->chan_config[VPIF_CHANNEL2_VIDEO].clip_en)
- 			channel2_clipping_enable(1);
- 	}
- 
-@@ -317,7 +317,7 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- 		channel3_intr_assert();
- 		channel3_intr_enable(1);
- 		enable_channel3(1);
--		if (vpif_config_data->ch3_clip_en)
-+		if (vpif_config_data->chan_config[VPIF_CHANNEL3_VIDEO].clip_en)
- 			channel3_clipping_enable(1);
- 	}
- 
-@@ -1174,14 +1174,16 @@ static int vpif_streamoff(struct file *file, void *priv,
- 	if (buftype == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
- 		/* disable channel */
- 		if (VPIF_CHANNEL2_VIDEO == ch->channel_id) {
--			if (vpif_config_data->ch2_clip_en)
-+			if (vpif_config_data->
-+				chan_config[VPIF_CHANNEL2_VIDEO].clip_en)
- 				channel2_clipping_enable(0);
- 			enable_channel2(0);
- 			channel2_intr_enable(0);
- 		}
- 		if ((VPIF_CHANNEL3_VIDEO == ch->channel_id) ||
- 					(2 == common->started)) {
--			if (vpif_config_data->ch3_clip_en)
-+			if (vpif_config_data->
-+				chan_config[VPIF_CHANNEL3_VIDEO].clip_en)
- 				channel3_clipping_enable(0);
- 			enable_channel3(0);
- 			channel3_intr_enable(0);
-@@ -1214,41 +1216,120 @@ static int vpif_enum_output(struct file *file, void *fh,
- {
- 
- 	struct vpif_display_config *config = vpif_dev->platform_data;
-+	struct vpif_display_chan_config *chan_cfg;
-+	struct vpif_fh *vpif_handler = fh;
-+	struct channel_obj *ch = vpif_handler->channel;
- 
--	if (output->index >= config->output_count) {
-+	chan_cfg = &config->chan_config[ch->channel_id];
-+	if (output->index >= chan_cfg->output_count) {
- 		vpif_dbg(1, debug, "Invalid output index\n");
- 		return -EINVAL;
- 	}
- 
--	strcpy(output->name, config->output[output->index]);
--	output->type = V4L2_OUTPUT_TYPE_ANALOG;
-+	memcpy(output, &chan_cfg->outputs[output->index].output,
-+		sizeof(*output));
- 	output->std = VPIF_V4L2_STD;
- 
- 	return 0;
- }
- 
-+/**
-+ * vpif_output_to_subdev() - Maps output to sub device
-+ * @vpif_cfg - global config ptr
-+ * @chan_cfg - channel config ptr
-+ * @index - Given output index from application
-+ *
-+ * lookup the sub device information for a given output index.
-+ * we report all the output to application. output table also
-+ * has sub device name for the each output
-+ */
-+static int
-+vpif_output_to_subdev(struct vpif_display_config *vpif_cfg,
-+		      struct vpif_display_chan_config *chan_cfg, int index)
-+{
-+	struct vpif_subdev_info *subdev_info;
-+	const char *subdev_name;
-+	int i;
-+
-+	vpif_dbg(2, debug, "vpif_output_to_subdev\n");
-+
-+	if (chan_cfg->outputs == NULL)
-+		return -1;
-+
-+	subdev_name = chan_cfg->outputs[index].subdev_name;
-+	if (subdev_name == NULL)
-+		return -1;
-+
-+	/* loop through the sub device list to get the sub device info */
-+	for (i = 0; i < vpif_cfg->subdev_count; i++) {
-+		subdev_info = &vpif_cfg->subdevinfo[i];
-+		if (!strcmp(subdev_info->name, subdev_name))
-+			return i;
-+	}
-+	return -1;
-+}
-+
-+/**
-+ * vpif_set_output() - Select an output
-+ * @vpif_cfg - global config ptr
-+ * @ch - channel
-+ * @index - Given output index from application
-+ *
-+ * Select the given output.
-+ */
-+static int vpif_set_output(struct vpif_display_config *vpif_cfg,
-+		      struct channel_obj *ch, int index)
-+{
-+	struct vpif_display_chan_config *chan_cfg =
-+		&vpif_cfg->chan_config[ch->channel_id];
-+	struct vpif_subdev_info *subdev_info = NULL;
-+	struct v4l2_subdev *sd = NULL;
-+	u32 input = 0, output = 0;
-+	int sd_index;
-+	int ret;
-+
-+	sd_index = vpif_output_to_subdev(vpif_cfg, chan_cfg, index);
-+	if (sd_index >= 0) {
-+		sd = vpif_obj.sd[sd_index];
-+		subdev_info = &vpif_cfg->subdevinfo[sd_index];
-+	}
-+
-+	if (sd) {
-+		input = chan_cfg->outputs[index].input_route;
-+		output = chan_cfg->outputs[index].output_route;
-+		ret = v4l2_device_call_until_err(&vpif_obj.v4l2_dev, 1, video,
-+						s_routing, input, output, 0);
-+
-+		if (ret < 0) {
-+			vpif_err("Failed to set output\n");
-+			return ret;
-+		}
-+
-+	}
-+	ch->output_idx = index;
-+	ch->sd = sd;
-+	return 0;
-+}
-+
- static int vpif_s_output(struct file *file, void *priv, unsigned int i)
- {
-+	struct vpif_display_config *config = vpif_dev->platform_data;
-+	struct vpif_display_chan_config *chan_cfg;
- 	struct vpif_fh *fh = priv;
- 	struct channel_obj *ch = fh->channel;
- 	struct common_obj *common = &ch->common[VPIF_VIDEO_INDEX];
--	int ret = 0;
-+
-+	chan_cfg = &config->chan_config[ch->channel_id];
-+
-+	if (i >= chan_cfg->output_count)
-+		return -EINVAL;
- 
- 	if (common->started) {
- 		vpif_err("Streaming in progress\n");
- 		return -EBUSY;
- 	}
- 
--	ret = v4l2_device_call_until_err(&vpif_obj.v4l2_dev, 1, video,
--							s_routing, 0, i, 0);
--
--	if (ret < 0)
--		vpif_err("Failed to set output standard\n");
--
--	ch->output_idx = i;
--	if (vpif_obj.sd[i])
--		ch->sd = vpif_obj.sd[i];
--	return ret;
-+	return vpif_set_output(config, ch, i);
- }
- 
- static int vpif_g_output(struct file *file, void *priv, unsigned int *i)
-@@ -1291,9 +1372,12 @@ vpif_enum_dv_timings(struct file *file, void *priv,
- {
- 	struct vpif_fh *fh = priv;
- 	struct channel_obj *ch = fh->channel;
-+	int ret;
- 
--	return v4l2_subdev_call(vpif_obj.sd[ch->output_idx],
--			video, enum_dv_timings, timings);
-+	ret = v4l2_subdev_call(ch->sd, video, enum_dv_timings, timings);
-+	if (ret == -ENOIOCTLCMD && ret == -ENODEV)
-+		return -EINVAL;
-+	return ret;
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 803a22c..be407e1 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2531,40 +2531,37 @@ static void insert_wq_barrier(struct cpu_workqueue_struct *cwq,
  }
  
  /**
-@@ -1320,12 +1404,9 @@ static int vpif_s_dv_timings(struct file *file, void *priv,
+- * flush_workqueue_prep_cwqs - prepare cwqs for workqueue flushing
++ * workqueue_start_flush - start workqueue flushing
+  * @wq: workqueue being flushed
+- * @flush_color: new flush color, < 0 for no-op
+- * @work_color: new work color, < 0 for no-op
+  *
+- * Prepare cwqs for workqueue flushing.
++ * Start a new flush color and prepare cwqs for workqueue flushing.
+  *
+- * The caller should have initialized @wq->first_flusher prior to
+- * calling this function with non-negative @flush_color.  If
+- * @flush_color is negative, no flush color update is done and %false
+- * is returned.
++ * Called with color space is not full.  The current work_color
++ * becomes new flush_color and work_color is advanced by one.
++ * All cwq's work_color are set to new work_color(advanced by one).
+  *
+- * If @work_color is non-negative, all cwqs should have the same
+- * work_color which is previous to @work_color and all will be
+- * advanced to @work_color.
++ * The caller should have initialized @wq->first_flusher prior to
++ * calling this function.
+  *
+  * CONTEXT:
+  * mutex_lock(wq->flush_mutex).
+  *
+  * RETURNS:
+- * %true if @flush_color >= 0 and there's something to flush.  %false
+- * otherwise.
++ * %true if there's some cwqs to flush.  %false otherwise.
+  */
+-static bool flush_workqueue_prep_cwqs(struct workqueue_struct *wq,
+-				      int flush_color, int work_color)
++static bool workqueue_start_flush(struct workqueue_struct *wq)
+ {
++	int flush_color = wq->work_color;
++	int next_color = work_next_color(wq->work_color);
+ 	bool wait = false;
+ 	unsigned int cpu;
  
- 	/* Configure subdevice timings, if any */
- 	ret = v4l2_subdev_call(ch->sd, video, s_dv_timings, timings);
--	if (ret == -ENOIOCTLCMD) {
--		vpif_dbg(2, debug, "Custom DV timings not supported by "
--				"subdevice\n");
--		return -ENODATA;
+-	if (flush_color >= 0) {
+-		BUG_ON(atomic_read(&wq->nr_cwqs_to_flush[flush_color]));
+-		/* this ref is held by first flusher */
+-		atomic_set(&wq->nr_cwqs_to_flush[flush_color], 1);
 -	}
--	if (ret < 0 && ret != -ENODEV) {
-+	if (ret == -ENOIOCTLCMD || ret == -ENODEV)
-+		ret = 0;
-+	if (ret < 0) {
- 		vpif_dbg(2, debug, "Error setting custom DV timings\n");
- 		return ret;
++	BUG_ON(next_color == wq->flush_color);
++	wq->work_color = next_color;
++
++	BUG_ON(atomic_read(&wq->nr_cwqs_to_flush[flush_color]));
++	/* this ref is held by first flusher */
++	atomic_set(&wq->nr_cwqs_to_flush[flush_color], 1);
+ 
+ 	for_each_cwq_cpu(cpu, wq) {
+ 		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
+@@ -2572,17 +2569,13 @@ static bool flush_workqueue_prep_cwqs(struct workqueue_struct *wq,
+ 
+ 		spin_lock_irq(&gcwq->lock);
+ 
+-		if (flush_color >= 0) {
+-			if (cwq->nr_in_flight[flush_color]) {
+-				atomic_inc(&wq->nr_cwqs_to_flush[flush_color]);
+-				wait = true;
+-			}
++		if (cwq->nr_in_flight[flush_color]) {
++			atomic_inc(&wq->nr_cwqs_to_flush[flush_color]);
++			wait = true;
+ 		}
+ 
+-		if (work_color >= 0) {
+-			BUG_ON(work_color != work_next_color(cwq->work_color));
+-			cwq->work_color = work_color;
+-		}
++		BUG_ON(next_color != work_next_color(cwq->work_color));
++		cwq->work_color = next_color;
+ 
+ 		spin_unlock_irq(&gcwq->lock);
  	}
-@@ -1754,6 +1835,11 @@ static __init int vpif_probe(struct platform_device *pdev)
- 		ch->video_dev->lock = &common->lock;
- 		video_set_drvdata(ch->video_dev, ch);
+@@ -2622,14 +2615,9 @@ void flush_workqueue(struct workqueue_struct *wq)
+ 	next_color = work_next_color(wq->work_color);
  
-+		/* select output 0 */
-+		err = vpif_set_output(config, ch, 0);
-+		if (err)
-+			goto probe_out;
-+
- 		/* register video device */
- 		vpif_dbg(1, debug, "channel=%x,channel->video_dev=%x\n",
- 				(int)ch, (int)&ch->video_dev);
-diff --git a/include/media/davinci/vpif_types.h b/include/media/davinci/vpif_types.h
-index 65e8fe1..4b297eb 100644
---- a/include/media/davinci/vpif_types.h
-+++ b/include/media/davinci/vpif_types.h
-@@ -20,6 +20,7 @@
- #include <linux/i2c.h>
+ 	if (next_color != wq->flush_color) {
+-		/*
+-		 * Color space is not full.  The current work_color
+-		 * becomes our flush_color and work_color is advanced
+-		 * by one.
+-		 */
++		/* Color space is not full */
+ 		BUG_ON(!list_empty(&wq->flusher_overflow));
+ 		this_flusher.flush_color = flush_color;
+-		wq->work_color = next_color;
  
- #define VPIF_CAPTURE_MAX_CHANNELS	2
-+#define VPIF_DISPLAY_MAX_CHANNELS	2
+ 		if (!wq->first_flusher) {
+ 			/* no flush in progress, become the first flusher */
+@@ -2637,8 +2625,7 @@ void flush_workqueue(struct workqueue_struct *wq)
  
- enum vpif_if_type {
- 	VPIF_IF_BT656,
-@@ -39,15 +40,26 @@ struct vpif_subdev_info {
- 	struct i2c_board_info board_info;
- };
+ 			wq->first_flusher = &this_flusher;
  
-+struct vpif_output {
-+	struct v4l2_output output;
-+	const char *subdev_name;
-+	u32 input_route;
-+	u32 output_route;
-+};
-+
-+struct vpif_display_chan_config {
-+	struct vpif_interface vpif_if;
-+	const struct vpif_output *outputs;
-+	int output_count;
-+	bool clip_en;
-+};
-+
- struct vpif_display_config {
- 	int (*set_clock)(int, int);
- 	struct vpif_subdev_info *subdevinfo;
- 	int subdev_count;
--	const char **output;
--	int output_count;
-+	struct vpif_display_chan_config chan_config[VPIF_DISPLAY_MAX_CHANNELS];
- 	const char *card_name;
--	bool ch2_clip_en;
--	bool ch3_clip_en;
- };
+-			if (!flush_workqueue_prep_cwqs(wq, flush_color,
+-						       wq->work_color)) {
++			if (!workqueue_start_flush(wq)) {
+ 				/* nothing to flush, done */
+ 				wq_dec_flusher_ref(wq, flush_color);
+ 				wq->flush_color = next_color;
+@@ -2651,8 +2638,7 @@ void flush_workqueue(struct workqueue_struct *wq)
+ 			/* wait in queue */
+ 			BUG_ON(wq->flush_color == this_flusher.flush_color);
+ 			list_add_tail(&this_flusher.list, &wq->flusher_queue);
+-			flush_workqueue_prep_cwqs(wq, flush_color,
+-						  wq->work_color);
++			workqueue_start_flush(wq);
+ 		}
+ 	} else {
+ 		/*
+@@ -2707,12 +2693,9 @@ void flush_workqueue(struct workqueue_struct *wq)
+ 		list_for_each_entry(tmp, &wq->flusher_overflow, list)
+ 			tmp->flush_color = wq->work_color;
  
- struct vpif_input {
+-		flush_color = wq->work_color;
+-		wq->work_color = work_next_color(wq->work_color);
+-
+ 		list_splice_tail_init(&wq->flusher_overflow,
+ 				      &wq->flusher_queue);
+-		flush_workqueue_prep_cwqs(wq, flush_color, wq->work_color);
++		workqueue_start_flush(wq);
+ 	}
+ 
+ 	if (list_empty(&wq->flusher_queue)) {
 -- 
-1.7.4.1
+1.7.4.4
 
