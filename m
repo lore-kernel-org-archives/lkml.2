@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab2IXENU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 00:13:20 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:36237 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab2IXENT (ORCPT
+	id S1751858Ab2IXETe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 00:19:34 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50361 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab2IXETd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 00:13:19 -0400
+	Mon, 24 Sep 2012 00:19:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <87haqq8et5.fsf@devron.myhome.or.jp>
-References: <1347798163-2697-1-git-send-email-linkinjeon@gmail.com>
-	<87haqq8et5.fsf@devron.myhome.or.jp>
-Date: Mon, 24 Sep 2012 13:13:17 +0900
-Message-ID: <CAKYAXd8Zpe8sAfMs-GVBaiafJSU7jO4Yj=qRmFo2w+ho9GD5sQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] fat (exportfs): rebuild inode if ilookup() fails
+In-Reply-To: <87d31e8egm.fsf@devron.myhome.or.jp>
+References: <1347798181-2731-1-git-send-email-linkinjeon@gmail.com>
+	<87d31e8egm.fsf@devron.myhome.or.jp>
+Date: Mon, 24 Sep 2012 13:19:31 +0900
+Message-ID: <CAKYAXd82Pf5U_+9xi=QOToorStHL7sN86pqyN2zwg1dd_m3_qQ@mail.gmail.com>
+Subject: Re: [PATCH v3 4/5] fat (exportfs): rebuild directory-inode if
+ fat_dget() fails
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
@@ -28,46 +29,192 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2012/9/22, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
 > Namjae Jeon <linkinjeon@gmail.com> writes:
 >
->> +	if (inode == NULL && MSDOS_SB(sb)->options.nfs == FAT_NFS_LIMITED) {
->> +		struct buffer_head *bh = NULL;
->> +		struct msdos_dir_entry *de ;
->> +		loff_t i_pos = (loff_t)ino;
->> +		int bits = MSDOS_SB(sb)->dir_per_block_bits;
->> +		loff_t blocknr = i_pos >> bits;
->> +		bh = sb_bread(sb, blocknr);
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> This patch enables rebuilding of directory inodes which are not present
+>> in the cache.This is done by traversing the disk clusters to find the
+>> directory entry of the parent directory and using its i_pos to build the
+>> inode.
+>
+> Hmm... Is this functionality is necessary to work correctly? If we
+> didn't provide this, which case do server return ESTALE?
+Yes, we should rebuild parent inode if parent directory is not
+connected(parent inode eviction).
+So this function is surely needed.
+
+Let me know your opinion if you have any question.
+
+Thanks for review. OGAWA!.
+>
+> Well, this looks like duplication of lookup, we may need to consolidate.
+>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
+>> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+>> ---
+>>  fs/fat/nfs.c |  132
+>> ++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>>  1 file changed, 128 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
+>> index 3cf5412..bb4262c 100644
+>> --- a/fs/fat/nfs.c
+>> +++ b/fs/fat/nfs.c
+>> @@ -104,6 +104,93 @@ struct dentry *fat_fh_to_parent(struct super_block
+>> *sb, struct fid *fid,
+>>  }
+>>
+>>  /*
+>> + * Read the directory entries of 'search_clus' and find the entry
+>> + * which contains 'match_ipos' for the starting cluster.If the entry
+>> + * is found, rebuild its inode.
+>> + */
+>> +static struct inode *fat_traverse_cluster(struct super_block *sb,
+>> +				int search_clus, int match_ipos)
+>> +{
+>> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>> +	struct buffer_head *bh;
+>> +	sector_t blknr;
+>> +	int parent_ipos, search_ipos;
+>> +	int i;
+>> +	struct msdos_dir_entry *de;
+>> +	struct inode *inode = NULL;
+>> +	int iterations = sbi->cluster_size >> sb->s_blocksize_bits;
+>> +	blknr = fat_clus_to_blknr(sbi, search_clus);
+>> +
+>> +	do {
+>> +		bh = sb_bread(sb, blknr);
 >> +		if (!bh) {
 >> +			fat_msg(sb, KERN_ERR,
->> +				 "unable to read block(%llu) for building NFS inode",
->> +				(llu)blocknr);
->> +			return inode;
+>> +				 "NFS:unable to read block(%llu) while traversing cluster(%d)",
+>> +				(llu)blknr, search_clus);
+>> +			inode = ERR_PTR(-EIO);
+>> +			goto out;
 >> +		}
 >> +		de = (struct msdos_dir_entry *)bh->b_data;
->> +		/* If a file is deleted on server and client is not updated
->> +		 * yet, we must not build the inode upon a lookup call.
->> +		 */
->> +		if (de[i_pos&((1<<bits)-1)].name[0] == DELETED_FLAG)
->
-> IS_FREE() would be better.
-Okay~ I will change.
->
->> +
->> +			inode = NULL;
->> +		else
->> +			inode = fat_build_inode(sb, &de[i_pos&((1<<bits)-1)],
->> +					i_pos);
+>> +		for (i = 0; i < sbi->dir_per_block; i++) {
+>> +			if (de[i].name[0] == FAT_ENT_FREE) {
+>> +				/*Reached end of directory*/
+>> +				brelse(bh);
+>> +				inode = ERR_PTR(-ENODATA);
+>> +				goto out;
+>> +			}
+>> +			if (de[i].name[0] == DELETED_FLAG)
+>> +				continue;
+>> +			if (de[i].attr == ATTR_EXT)
+>> +				continue;
+>> +			if (!(de[i].attr & ATTR_DIR))
+>> +				continue;
+>> +			else {
+>> +				search_ipos = fat_get_start(sbi, &de[i]);
+>> +				if (search_ipos == match_ipos) {
+>> +					/*Success.Now build the inode*/
+>> +					parent_ipos = (loff_t)i +
+>> +					 (blknr << sbi->dir_per_block_bits);
+>> +					inode = fat_build_inode(sb, &de[i],
+>> +								parent_ipos);
+>> +					brelse(bh);
+>> +					goto out;
+>> +				}
+>> +			}
+>> +		}
 >> +		brelse(bh);
+>> +		blknr += 1;
+>> +	} while (--iterations > 0);
+>> +out:
+>> +	return inode;
+>> +}
+>> +
+>> +/*
+>> + * Read the FAT to find the next cluster in the chain
+>> + * corresponding to 'search_clus'.
+>> + */
+>> +static int fat_read_next_clus(struct super_block *sb, int search_clus)
+>> +{
+>> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>> +	/*bits 31 to 7 give relative sector number*/
+>> +	sector_t blknr = search_clus >> 7;
+>> +	/*bits 6 to 0 give offset*/
+>> +	unsigned int offset = search_clus & 0x7F;
+>> +	__le32 *address;
+>> +	unsigned int next_cluster;
+>> +	struct buffer_head *bh = sb_bread(sb, blknr + sbi->fat_start);
+>> +	if (!bh) {
+>> +		fat_msg(sb, KERN_ERR,
+>> +			"NFS:unable to read block(%llu) for finding the next cluster in FAT
+>> chain",
+>> +			(llu)blknr);
+>> +		return -EIO;
 >> +	}
+>> +	address = (__le32 *) bh->b_data;
+>> +	next_cluster = (le32_to_cpu(address[offset])) & 0x0FFFFFFF;
+>> +	brelse(bh);
+>> +	return next_cluster;
+>> +}
+>> +
+>> +/*
+>>   * Find the parent for a directory that is not currently connected to
+>>   * the filesystem root.
+>>   *
+>> @@ -112,15 +199,52 @@ struct dentry *fat_fh_to_parent(struct super_block
+>> *sb, struct fid *fid,
+>>  struct dentry *fat_get_parent(struct dentry *child_dir)
+>>  {
+>>  	struct super_block *sb = child_dir->d_sb;
+>> -	struct buffer_head *bh = NULL;
+>> +	struct buffer_head *dotdot_bh = NULL, *parent_bh = NULL;
+>>  	struct msdos_dir_entry *de;
+>>  	struct inode *parent_inode = NULL;
+>> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>> +	int parent_logstart;
+>> +	int search_clus, clus_to_match;
+>> +	sector_t blknr;
 >>
->>  	return inode;
+>> -	if (!fat_get_dotdot_entry(child_dir->d_inode, &bh, &de)) {
+>> -		int parent_logstart = fat_get_start(MSDOS_SB(sb), de);
+>> +	if (!fat_get_dotdot_entry(child_dir->d_inode, &dotdot_bh, &de)) {
+>> +		parent_logstart = fat_get_start(sbi, de);
+>>  		parent_inode = fat_dget(sb, parent_logstart);
+>> +		if (parent_inode || sbi->options.nfs != FAT_NFS_LIMITED)
+>> +			goto out;
+>> +		if (!parent_logstart)
+>> +			/*logstart of dotdot entry is zero if
+>> +			* if the directory's parent is root
+>> +			*/
+>> +			parent_inode = sb->s_root->d_inode;
+>> +		else {
+>> +			blknr = fat_clus_to_blknr(sbi, parent_logstart);
+>> +			parent_bh = sb_bread(sb, blknr);
+>> +			if (!parent_bh) {
+>> +				fat_msg(sb, KERN_ERR,
+>> +					"NFS:unable to read cluster of parent directory");
+>> +				goto out;
+>> +			}
+>> +			de = (struct msdos_dir_entry *) parent_bh->b_data;
+>> +			clus_to_match = fat_get_start(sbi, &de[0]);
+>> +			search_clus = fat_get_start(sbi, &de[1]);
+>> +			if (!search_clus)
+>> +				search_clus = sbi->root_cluster;
+>> +			brelse(parent_bh);
+>> +			do {
+>> +				parent_inode =  fat_traverse_cluster(sb,
+>> +						search_clus, clus_to_match);
+>> +				if (IS_ERR(parent_inode) || parent_inode)
+>> +					break;
+>> +				search_clus = fat_read_next_clus(sb,
+>> +								search_clus);
+>> +				if (search_clus < 0)
+>> +					break;
+>> +			} while (search_clus != FAT_ENT_EOF);
+>> +		}
+>>  	}
+>> -	brelse(bh);
+>> +out:
+>> +	brelse(dotdot_bh);
+>>
+>>  	return d_obtain_alias(parent_inode);
 >>  }
 >
-> 1 << bits == sbi->dir_per_block
->
-> It would be better to add helper to decode i_pos to blocknr and offset.
-> And it should be shared on fat_write_inode and this.
-Okay, I will change.
-
-Thanks.
 > --
 > OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 >
