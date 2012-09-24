@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab2IXF2K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 01:28:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50500 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab2IXF2I (ORCPT
+	id S1754977Ab2IXFai (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 01:30:38 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:59188 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426Ab2IXFag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 01:28:08 -0400
-Date: Mon, 24 Sep 2012 15:27:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shaun Ruffell <sruffell@digium.com>
-Subject: linux-next: manual merge of the edac tree with Linus' tree
-Message-Id: <20120924152757.eee2b749725e6bc08f7e7d4f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 24 Sep 2012 01:30:36 -0400
+Message-ID: <1348464626.2475.13.camel@ThinkPad-T420>
+Subject: [PATCH scsi] Add NULL checking of return value from
+ scsi_cmd_to_driver()
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Mon, 24 Sep 2012 13:30:26 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_15_27_57_+1000_dOywbGvd8WosKXs7"
+x-cbid: 12092405-0260-0000-0000-000001E33C09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_15_27_57_+1000_dOywbGvd8WosKXs7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just noticed that after commit 919f797, it is possible that 
+scsi_cmd_to_driver() returns NULL. This patch adds the NULL checking for drv 
+returned from the above function. 
 
-Hi Mauro,
+Maybe it is not possible at run time, but from the code itself, we'd better
+have this check?  
 
-Today's linux-next merge of the edac tree got a conflict in drivers/edac/ed=
-ac_mc.c between commit faa2ad09c01c ("edac_mc: edac_mc_free() cannot assume=
- mem_ctl_info is registered in sysfs") from Linus' tree and commit 12c3ab94=
-22cc ("edac: edac_mc_free() cannot assume mem_ctl_info is registered in sys=
-fs") from the edac tree.
+This patch actually is a delta of my previous patch 
+[https://lkml.org/lkml/2012/4/11/814] and commit 919f797
 
-Two versions of the same patch. I just used the version from the edac
-tree and can carry the fix as necessary (no action is required).
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 2936b44..b9dd7f0 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -832,7 +832,7 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
+         if (cmd->request->cmd_type != REQ_TYPE_BLOCK_PC) {
+ 		int old_good_bytes = good_bytes;
+ 		drv = scsi_cmd_to_driver(cmd);
+-		if (drv->done)
++		if (drv && drv->done)
+ 			good_bytes = drv->done(cmd);
+ 		/*
+ 		 * USB may not give sense identifying bad sector and
 
---Signature=_Mon__24_Sep_2012_15_27_57_+1000_dOywbGvd8WosKXs7
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQX+9dAAoJEECxmPOUX5FEte4P+gKYTsrjBg7MenncZNDzJcCB
-pyX3lQrcZhkAvxKvb6d0w8SQGNT19xKb673oiUY3dYIyz5Ln9g/0CPAoOxydHex0
-QW/o8WLtrsbstQHBuN8JQAQh7E1MVUCnETI9BfDnKmrhFHAdD25rQeWHJDuKSdBd
-B101G7pTpuFHNTYYTT3TRqyP544xzMCbpiGsHJPLb90D+SjyN66Hn+J7h+PrR6f4
-mp97RrYK58oEh73n+m0Vo7bbxIAHaW+o+NwSJwr82XfV+iN52Tfi5c6jcHO2Zq6R
-xoviLkq8XgSqdUraezzm/YEq7qbfh1GQLUnaZJmGSxpk5XilECN/4wJdYbWHGIcq
-aqiOKXS8N1SexC3OFTzu8HBCyH3pI5sojgGagOPiafKnkwnIzP0Q6E6/XcAuc3z0
-vUolHR/JMN8TAvo1j70wbjyQ5OBRxnarBnwAoKjwxP6whzqM1oqV1ponM/h5D/ji
-hNh6fS0VJsHOZ1m9dkz18rVjREcE3sJ7JZeJcGybHIual+jadIhPqFkJVRgCecmG
-5qwl4wKYmh+jwqIhjavBdtF1V7DNMayFTP6Gp5Cx1CijNw6g6W/ooaQDW4ye27L3
-ePy+PogF4lsHcdCIJrUmyIsp8vX+Gl2tqsRYzTlDFlH7Cui1BA7UbZiqJTmlHsQt
-XYyRLXR3aF4a99zQz81q
-=GPYe
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Sep_2012_15_27_57_+1000_dOywbGvd8WosKXs7--
