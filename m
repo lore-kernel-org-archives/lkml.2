@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab2IXIIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:08:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:59837 "EHLO mga11.intel.com"
+	id S1755305Ab2IXIIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:08:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18289 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752932Ab2IXIIP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:08:15 -0400
+	id S1752932Ab2IXIIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 04:08:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,474,1344236400"; 
-   d="scan'208";a="225659729"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "linux-pml@vger.kernel.org" <linux-pml@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Amit Kachhap <amit.kachhap@linaro.org>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Subject: RE: [PATCH] Thermal: Fix bug on generic thermal framework.
-Thread-Topic: [PATCH] Thermal: Fix bug on generic thermal framework.
-Thread-Index: AQHNmfku8E6bpIrCOkCTPS4tjG7crZeZIuoQ
-Date: Mon, 24 Sep 2012 08:08:10 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB591C98E6@BGSMSX102.gar.corp.intel.com>
-References: <1348452350-1021-1-git-send-email-jonghwa3.lee@samsung.com>
-In-Reply-To: <1348452350-1021-1-git-send-email-jonghwa3.lee@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="225659838"
+Message-ID: <5060150C.3080503@linux.intel.com>
+Date: Mon, 24 Sep 2012 16:08:44 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120306 Thunderbird/3.1.20
 MIME-Version: 1.0
+To: Haicheng Li <haicheng.li@linux.intel.com>,
+        Takahiroi Shimizu <tshimizu818@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        haicheng.lee@gmail.com
+Subject: [Updated PATCH 1/2] Fix build error caused by broken PCH_PTP module
+ dependency.
+References: <506009A4.8000202@linux.intel.com>
+In-Reply-To: <506009A4.8000202@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+this version would be more clean:
 
-Patch is fine, but I think you have to re-base on top of
-Rui's -next branch here:
-git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git
+ From 898e3214b3406c620571cedf704719784b0df049 Mon Sep 17 00:00:00 2001
+From: Haicheng Li <haicheng.li@linux.intel.com>
+Date: Mon, 24 Sep 2012 15:52:30 +0800
+Subject: [PATCH 1/2] Fix build error caused by broken PCH_PTP module dependency.
 
-Also, adding Rui to this mail, not sure whether he is in LKML/pm.
+The .config is:
+         CONFIG_PCH_GBE=y
+         CONFIG_PCH_PTP=y
+         CONFIG_PTP_1588_CLOCK=m
 
-Thanks,
-Durga
+The build error:
 
-> -----Original Message-----
-> From: Jonghwa Lee [mailto:jonghwa3.lee@samsung.com]
-> Sent: Monday, September 24, 2012 7:36 AM
-> To: linux-pml@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; Brown, Len; Rafael J. Wysocki; Andrew
-> Morton; Amit Kachhap; R, Durgadoss; Jonghwa Lee
-> Subject: [PATCH] Thermal: Fix bug on generic thermal framework.
-> 
-> When system fails to bind cooling devices to thermal zone device during
-> registering thermal zone device, it leaves registering without canceling
-> delayed work. It probably makes panic if polling rate is not enough to release
-> that work from workqueue. So it is better to ignore initialization of polling
-> work to prevent that unexpected state.
-> 
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> ---
->  drivers/thermal/thermal_sys.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index 2ab31e4..744e69d 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -1351,12 +1351,14 @@ struct thermal_zone_device
-> *thermal_zone_device_register(const char *type,
->  		}
->  	mutex_unlock(&thermal_list_lock);
-> 
-> +	if (result)
-> +		goto unregister;
-> +
->  	INIT_DELAYED_WORK(&(tz->poll_queue),
-> thermal_zone_device_check);
-> 
->  	thermal_zone_device_update(tz);
-> 
-> -	if (!result)
-> -		return tz;
-> +	return tz;
-> 
->  unregister:
->  	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
-> --
-> 1.7.4.1
+drivers/built-in.o: In function `pch_tx_timestamp':
+.../pch_gbe_main.c:215: undefined reference to `pch_ch_event_read'
+.../pch_gbe_main.c:225: undefined reference to `pch_tx_snap_read'
+.../pch_gbe_main.c:231: undefined reference to `pch_ch_event_write'
+
+.../pch_gbe_main.c:170: undefined reference to `pch_ch_event_read'
+.../pch_gbe_main.c:175: undefined reference to `pch_src_uuid_lo_read'
+.../pch_gbe_main.c:176: undefined reference to `pch_src_uuid_hi_read'
+.../pch_gbe_main.c:190: undefined reference to `pch_ch_event_write'
+.../pch_gbe_main.c:184: undefined reference to `pch_rx_snap_read'
+
+.../pch_gbe_main.c:267: undefined reference to `pch_ch_control_write'
+.../pch_gbe_main.c:271: undefined reference to `pch_ch_control_write'
+.../pch_gbe_main.c:275: undefined reference to `pch_ch_control_write'
+.../pch_gbe_main.c:281: undefined reference to `pch_ch_control_write'
+.../pch_gbe_main.c:283: undefined reference to `pch_set_station_address'
+.../pch_gbe_main.c:290: undefined reference to `pch_ch_event_write'
+
+Signed-off-by: Haicheng Li <haicheng.lee@gmail.com>
+---
+  drivers/net/ethernet/oki-semi/pch_gbe/Kconfig |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig 
+b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
+index bce0164..6c8aed4 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
+@@ -26,7 +26,7 @@ if PCH_GBE
+  config PCH_PTP
+  	bool "PCH PTP clock support"
+  	default n
+-	depends on PTP_1588_CLOCK_PCH
++	depends on PTP_1588_CLOCK_PCH = PCH_GBE
+  	---help---
+  	  Say Y here if you want to use Precision Time Protocol (PTP) in the
+  	  driver. PTP is a method to precisely synchronize distributed clocks
+-- 
+1.7.1
 
