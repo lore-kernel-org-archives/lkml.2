@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab2IXQT4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:19:56 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:52797 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756658Ab2IXQTz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:19:55 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+YWKTSq9ERu3isdigmqQNZ
-Date: Mon, 24 Sep 2012 09:19:45 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the arm-soc tree with the
- omap_dss2 tree
-Message-ID: <20120924161944.GC28835@atomide.com>
-References: <20120924195305.588277e94ce701abc5e5a6c5@canb.auug.org.au>
- <201209241243.39462.arnd@arndb.de>
- <1348492306.2361.48.camel@deskari>
+	id S1756748Ab2IXQUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:20:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756663Ab2IXQUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 12:20:30 -0400
+Message-ID: <5060883C.4050901@redhat.com>
+Date: Mon, 24 Sep 2012 18:20:12 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348492306.2361.48.camel@deskari>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue>   <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com>   <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com>  <1348494895.11847.64.camel@twins> <50608176.1040805@redhat.com> <1348502600.11847.90.camel@twins>
+In-Reply-To: <1348502600.11847.90.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tomi Valkeinen <tomi.valkeinen@ti.com> [120924 06:12]:
-> Hi Arnd,
+On 09/24/2012 06:03 PM, Peter Zijlstra wrote:
+> On Mon, 2012-09-24 at 17:51 +0200, Avi Kivity wrote:
+>> On 09/24/2012 03:54 PM, Peter Zijlstra wrote:
+>> > On Mon, 2012-09-24 at 18:59 +0530, Raghavendra K T wrote:
+>> >> However Rik had a genuine concern in the cases where runqueue is not
+>> >> equally distributed and lockholder might actually be on a different run 
+>> >> queue but not running.
+>> > 
+>> > Load should eventually get distributed equally -- that's what the
+>> > load-balancer is for -- so this is a temporary situation.
+>> 
+>> What's the expected latency?  This is the whole problem.  Eventually the
+>> scheduler would pick the lock holder as well, the problem is that it's
+>> in the millisecond scale while lock hold times are in the microsecond
+>> scale, leading to a 1000x slowdown.
 > 
-> On Mon, 2012-09-24 at 12:43 +0000, Arnd Bergmann wrote:
-> > On Monday 24 September 2012, Stephen Rothwell wrote:
-> > > Today's linux-next merge of the arm-soc tree got a conflict in
-> > > drivers/video/omap/lcd_ams_delta.c between commit 9586778de558 ("OMAPFB1:
-> > > remove unnecessary includes") from the  tree and commit e27e35ec735f
-> > > ("ARM: OMAP1: Move board-ams-delta.h from plat to mach") from the arm-soc
-> > > tree.
-> > > 
-> > > The latter removed a superset of the former (as far as include files is
-> > > concerned), so I used that and can carry the fix as necessary (no action
-> > > is required).
-> > > 
-> > 
-> > Hi Stephen,
-> > 
-> > I looked at all your reports and your fixes are looking good to me.
-> > 
-> > I'm already building all ARM defconfigs now and have fixup patches for the
-> > instances that went wrong or introduced new warnings, I'll do that again
-> > on top of today's linux-next tree.
-> > 
-> > The merge window is going to be fun with all those conflicts, but I don't
-> > have a better idea either.
+> Yeah I know.. Heisenberg's uncertainty applied to SMP computing becomes
+> something like accurate or fast, never both.
 > 
-> If there's a stable branch for the OMAP platform changes, I could merge
-> it to omapdss tree and fix the conflicts. But if I've understood right,
-> Linus doesn't really like merges just for the sake of fixing conflicts.
+>> If we want to yield, we really want to boost someone.
 > 
-> So far all the omapdss conflicts seem trivial, though.
+> Now if only you knew which someone ;-) This non-modified guest nonsense
+> is such a snake pit.. but you know how I feel about all that.
 
-Trivial ones should be OK, but maybe you find something
-minimal with the following to find tags that you can pull
-into your branch make things easier:
+Actually if I knew that in addition to boosting someone, I also unboost
+myself enough to be preempted, it wouldn't matter.  While boosting the
+lock holder is good, the main point is not spinning and doing useful
+work instead.  We can detect spinners and avoid boosting them.
 
-$ git log --pretty=oneline --merges v3.6-rc7..arm-soc/for-next arch/arm/*omap*/* | grep "Merge tag" | grep omap
+That's the motivation for the "donate vruntime" approach I wanted earlier.
 
-Regards,
+> 
+>> > We already try and favour the non running vcpu in this case, that's what
+>> > yield_to_task_fair() is about. If its still not eligible to run, tough
+>> > luck.
+>> 
+>> Crazy idea: instead of yielding, just run that other vcpu in the thread
+>> that would otherwise spin.  I can see about a million objections to this
+>> already though.
+> 
+> Yah.. you want me to list a few? :-) It would require synchronization
+> with the other cpu to pull its task -- one really wants to avoid it also
+> running it.
 
-Tony
+Yeah, it's quite a horrible idea.
+
+> 
+> Do this at a high enough frequency and you're dead too.
+> 
+> Anyway, you can do this inside the KVM stuff, simply flip the vcpu state
+> associated with a vcpu thread and use the preemption notifiers to sort
+> things against the scheduler or somesuch.
+
+That's what I thought when I wrote this, but I can't, I might be
+preempted in random kvm code.  So my state includes the host stack and
+registers.  Maybe we can special-case when we interrupt guest mode.
+
+> 
+>> >> Do you think instead of using rq->nr_running, we could get a global 
+>> >> sense of load using avenrun (something like avenrun/num_onlinecpus) 
+>> > 
+>> > To what purpose? Also, global stuff is expensive, so you should try and
+>> > stay away from it as hard as you possibly can.
+>> 
+>> Spinning is also expensive.  How about we do the global stuff every N
+>> times, to amortize the cost (and reduce contention)?
+> 
+> Nah, spinning isn't expensive, its a waste of time, similar end result
+> for someone who wants to do useful work though, but not the same cause.
+> 
+> Pick N and I'll come up with a scenario for which its wrong ;-)
+
+Sure.  But if it's rare enough, then that's okay for us.
+
+> Anyway, its an ugly problem and one I really want to contain inside the
+> insanity that created it (virt), lets not taint the rest of the kernel
+> more than we need to. 
+
+Agreed.  Though given that postgres and others use userspace spinlocks,
+maybe it's not just virt.
+
+-- 
+error compiling committee.c: too many arguments to function
