@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab2IXWli (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:41:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47788 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546Ab2IXWfi (ORCPT
+	id S1751534Ab2IXWfg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:35:36 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63509 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479Ab2IXWfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:35:38 -0400
+	Mon, 24 Sep 2012 18:35:33 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         neilb@suse.de, vgoyal@redhat.com,
-        Lars Ellenberg <drbd-dev@lists.linbit.com>,
-        Jiri Kosina <jkosina@suse.cz>, Alasdair Kergon <agk@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        Chris Mason <chris.mason@fusionio.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH v3 06/26] block: Add bio_end_sector()
-Date: Mon, 24 Sep 2012 15:34:46 -0700
-Message-Id: <1348526106-17074-7-git-send-email-koverstreet@google.com>
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [PATCH v3 02/26] block: Convert integrity to bvec_alloc_bs()
+Date: Mon, 24 Sep 2012 15:34:42 -0700
+Message-Id: <1348526106-17074-3-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1348526106-17074-1-git-send-email-koverstreet@google.com>
 References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
@@ -28,324 +23,391 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a little convenience macro - main reason to add it now is preparing
-for immutable bio vecs, it'll reduce the size of the patch that puts
-bi_sector/bi_size/bi_idx into a struct bvec_iter.
+This adds a pointer to the bvec array to struct bio_integrity_payload,
+instead of the bvecs always being inline; then the bvecs are allocated
+with bvec_alloc_bs().
+
+Changed bvec_alloc_bs() and bvec_free_bs() to take a pointer to a
+mempool instead of the bioset, so that bio integrity can use a different
+mempool for its bvecs, and thus avoid a potential deadlock.
+
+This is eventually for immutable bio vecs - immutable bvecs aren't
+useful if we still have to copy them, hence the need for the pointer.
+Less code is always nice too, though.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-CC: Lars Ellenberg <drbd-dev@lists.linbit.com>
-CC: Jiri Kosina <jkosina@suse.cz>
-CC: Alasdair Kergon <agk@redhat.com>
-CC: dm-devel@redhat.com
-CC: Neil Brown <neilb@suse.de>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: linux-s390@vger.kernel.org
-CC: Chris Mason <chris.mason@fusionio.com>
-CC: Steven Whitehouse <swhiteho@redhat.com>
-Acked-by: Steven Whitehouse <swhiteho@redhat.com>
+CC: Martin K. Petersen <martin.petersen@oracle.com>
 ---
- block/blk-core.c              |  2 +-
- block/cfq-iosched.c           |  7 ++-----
- block/deadline-iosched.c      |  2 +-
- drivers/block/drbd/drbd_req.c |  2 +-
- drivers/block/pktcdvd.c       |  6 +++---
- drivers/md/dm-stripe.c        |  2 +-
- drivers/md/dm-verity.c        |  2 +-
- drivers/md/faulty.c           |  6 ++----
- drivers/md/linear.c           |  3 +--
- drivers/md/raid1.c            |  4 ++--
- drivers/md/raid5.c            | 14 +++++++-------
- drivers/s390/block/dcssblk.c  |  3 +--
- fs/btrfs/extent_io.c          |  3 +--
- fs/gfs2/lops.c                |  2 +-
- include/linux/bio.h           |  1 +
- 15 files changed, 26 insertions(+), 33 deletions(-)
+ fs/bio-integrity.c  | 132 +++++++++++++++++++---------------------------------
+ fs/bio.c            |  34 ++++++--------
+ include/linux/bio.h |  13 ++++--
+ 3 files changed, 72 insertions(+), 107 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index a8a1a9e..df9bb5f 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1550,7 +1550,7 @@ static void handle_bad_sector(struct bio *bio)
- 	printk(KERN_INFO "%s: rw=%ld, want=%Lu, limit=%Lu\n",
- 			bdevname(bio->bi_bdev, b),
- 			bio->bi_rw,
--			(unsigned long long)bio->bi_sector + bio_sectors(bio),
-+			(unsigned long long)bio_end_sector(bio),
- 			(long long)(i_size_read(bio->bi_bdev->bd_inode) >> 9));
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index c7b6b52..65b708d 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -27,48 +27,11 @@
+ #include <linux/workqueue.h>
+ #include <linux/slab.h>
  
- 	set_bit(BIO_EOF, &bio->bi_flags);
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index fb52df9..59b64b7 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1883,11 +1883,8 @@ cfq_find_rq_fmerge(struct cfq_data *cfqd, struct bio *bio)
- 		return NULL;
- 
- 	cfqq = cic_to_cfqq(cic, cfq_bio_sync(bio));
--	if (cfqq) {
--		sector_t sector = bio->bi_sector + bio_sectors(bio);
+-struct integrity_slab {
+-	struct kmem_cache *slab;
+-	unsigned short nr_vecs;
+-	char name[8];
+-};
 -
--		return elv_rb_find(&cfqq->sort_list, sector);
+-#define IS(x) { .nr_vecs = x, .name = "bip-"__stringify(x) }
+-struct integrity_slab bip_slab[BIOVEC_NR_POOLS] __read_mostly = {
+-	IS(1), IS(4), IS(16), IS(64), IS(128), IS(BIO_MAX_PAGES),
+-};
+-#undef IS
++#define BIP_INLINE_VECS	4
+ 
++static struct kmem_cache *bip_slab;
+ static struct workqueue_struct *kintegrityd_wq;
+ 
+-static inline unsigned int vecs_to_idx(unsigned int nr)
+-{
+-	switch (nr) {
+-	case 1:
+-		return 0;
+-	case 2 ... 4:
+-		return 1;
+-	case 5 ... 16:
+-		return 2;
+-	case 17 ... 64:
+-		return 3;
+-	case 65 ... 128:
+-		return 4;
+-	case 129 ... BIO_MAX_PAGES:
+-		return 5;
+-	default:
+-		BUG();
 -	}
-+	if (cfqq)
-+		return elv_rb_find(&cfqq->sort_list, bio_end_sector(bio));
+-}
+-
+-static inline int use_bip_pool(unsigned int idx)
+-{
+-	if (idx == BIOVEC_MAX_IDX)
+-		return 1;
+-
+-	return 0;
+-}
+-
+ /**
+  * bio_integrity_alloc - Allocate integrity payload and attach it to bio
+  * @bio:	bio to attach integrity metadata to
+@@ -84,37 +47,39 @@ struct bio_integrity_payload *bio_integrity_alloc(struct bio *bio,
+ 						  unsigned int nr_vecs)
+ {
+ 	struct bio_integrity_payload *bip;
+-	unsigned int idx = vecs_to_idx(nr_vecs);
+ 	struct bio_set *bs = bio->bi_pool;
++	unsigned long idx = BIO_POOL_NONE;
++	unsigned inline_vecs;
++
++	if (!bs) {
++		bip = kmalloc(sizeof(struct bio_integrity_payload) +
++			      sizeof(struct bio_vec) * nr_vecs, gfp_mask);
++		inline_vecs = nr_vecs;
++	} else {
++		bip = mempool_alloc(bs->bio_integrity_pool, gfp_mask);
++		inline_vecs = BIP_INLINE_VECS;
++	}
  
- 	return NULL;
+-	if (!bs)
+-		bs = fs_bio_set;
+-
+-	BUG_ON(bio == NULL);
+-	bip = NULL;
+-
+-	/* Lower order allocations come straight from slab */
+-	if (!use_bip_pool(idx))
+-		bip = kmem_cache_alloc(bip_slab[idx].slab, gfp_mask);
++	if (unlikely(!bip))
++		return NULL;
+ 
+-	/* Use mempool if lower order alloc failed or max vecs were requested */
+-	if (bip == NULL) {
+-		idx = BIOVEC_MAX_IDX;  /* so we free the payload properly later */
+-		bip = mempool_alloc(bs->bio_integrity_pool, gfp_mask);
++	memset(bip, 0, sizeof(struct bio_integrity_payload));
+ 
+-		if (unlikely(bip == NULL)) {
+-			printk(KERN_ERR "%s: could not alloc bip\n", __func__);
+-			return NULL;
+-		}
++	if (nr_vecs > inline_vecs) {
++		bip->bip_vec = bvec_alloc_bs(gfp_mask, nr_vecs, &idx,
++					     bs->bvec_integrity_pool);
++		if (!bip->bip_vec)
++			goto err;
+ 	}
+ 
+-	memset(bip, 0, sizeof(*bip));
+-
+ 	bip->bip_slab = idx;
+ 	bip->bip_bio = bio;
+ 	bio->bi_integrity = bip;
+ 
+ 	return bip;
++err:
++	mempool_free(bip, bs->bio_integrity_pool);
++	return NULL;
  }
-diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
-index 599b12e..ef19d5f 100644
---- a/block/deadline-iosched.c
-+++ b/block/deadline-iosched.c
-@@ -132,7 +132,7 @@ deadline_merge(struct request_queue *q, struct request **req, struct bio *bio)
- 	 * check for front merge
+ EXPORT_SYMBOL(bio_integrity_alloc);
+ 
+@@ -130,20 +95,20 @@ void bio_integrity_free(struct bio *bio)
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct bio_set *bs = bio->bi_pool;
+ 
+-	if (!bs)
+-		bs = fs_bio_set;
+-
+-	BUG_ON(bip == NULL);
+-
+ 	/* A cloned bio doesn't own the integrity metadata */
+ 	if (!bio_flagged(bio, BIO_CLONED) && !bio_flagged(bio, BIO_FS_INTEGRITY)
+ 	    && bip->bip_buf != NULL)
+ 		kfree(bip->bip_buf);
+ 
+-	if (use_bip_pool(bip->bip_slab))
++	if (bs) {
++		if (bip->bip_slab != BIO_POOL_NONE)
++			bvec_free_bs(bs->bvec_integrity_pool, bip->bip_vec,
++				     bip->bip_slab);
++
+ 		mempool_free(bip, bs->bio_integrity_pool);
+-	else
+-		kmem_cache_free(bip_slab[bip->bip_slab].slab, bip);
++	} else {
++		kfree(bip);
++	}
+ 
+ 	bio->bi_integrity = NULL;
+ }
+@@ -697,6 +662,9 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
+ 	bp->iv1 = bip->bip_vec[0];
+ 	bp->iv2 = bip->bip_vec[0];
+ 
++	bp->bip1.bip_vec = &bp->iv1;
++	bp->bip2.bip_vec = &bp->iv2;
++
+ 	bp->iv1.bv_len = sectors * bi->tuple_size;
+ 	bp->iv2.bv_offset += sectors * bi->tuple_size;
+ 	bp->iv2.bv_len -= sectors * bi->tuple_size;
+@@ -743,13 +711,14 @@ EXPORT_SYMBOL(bio_integrity_clone);
+ 
+ int bioset_integrity_create(struct bio_set *bs, int pool_size)
+ {
+-	unsigned int max_slab = vecs_to_idx(BIO_MAX_PAGES);
+-
+ 	if (bs->bio_integrity_pool)
+ 		return 0;
+ 
+-	bs->bio_integrity_pool =
+-		mempool_create_slab_pool(pool_size, bip_slab[max_slab].slab);
++	bs->bio_integrity_pool = mempool_create_slab_pool(pool_size, bip_slab);
++
++	bs->bvec_integrity_pool = biovec_create_pool(bs, pool_size);
++	if (!bs->bvec_integrity_pool)
++		return -1;
+ 
+ 	if (!bs->bio_integrity_pool)
+ 		return -1;
+@@ -762,13 +731,14 @@ void bioset_integrity_free(struct bio_set *bs)
+ {
+ 	if (bs->bio_integrity_pool)
+ 		mempool_destroy(bs->bio_integrity_pool);
++
++	if (bs->bvec_integrity_pool)
++		mempool_destroy(bs->bio_integrity_pool);
+ }
+ EXPORT_SYMBOL(bioset_integrity_free);
+ 
+ void __init bio_integrity_init(void)
+ {
+-	unsigned int i;
+-
+ 	/*
+ 	 * kintegrityd won't block much but may burn a lot of CPU cycles.
+ 	 * Make it highpri CPU intensive wq with max concurrency of 1.
+@@ -778,14 +748,10 @@ void __init bio_integrity_init(void)
+ 	if (!kintegrityd_wq)
+ 		panic("Failed to create kintegrityd\n");
+ 
+-	for (i = 0 ; i < BIOVEC_NR_POOLS ; i++) {
+-		unsigned int size;
+-
+-		size = sizeof(struct bio_integrity_payload)
+-			+ bip_slab[i].nr_vecs * sizeof(struct bio_vec);
+-
+-		bip_slab[i].slab =
+-			kmem_cache_create(bip_slab[i].name, size, 0,
+-					  SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
+-	}
++	bip_slab = kmem_cache_create("bio_integrity_payload",
++				     sizeof(struct bio_integrity_payload) +
++				     sizeof(struct bio_vec) * BIP_INLINE_VECS,
++				     0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
++	if (!bip_slab)
++		panic("Failed to create slab\n");
+ }
+diff --git a/fs/bio.c b/fs/bio.c
+index 63f05a9..ac8b443 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -158,12 +158,12 @@ unsigned int bvec_nr_vecs(unsigned short idx)
+ 	return bvec_slabs[idx].nr_vecs;
+ }
+ 
+-void bvec_free_bs(struct bio_set *bs, struct bio_vec *bv, unsigned int idx)
++void bvec_free_bs(mempool_t *pool, struct bio_vec *bv, unsigned int idx)
+ {
+ 	BIO_BUG_ON(idx >= BIOVEC_NR_POOLS);
+ 
+ 	if (idx == BIOVEC_MAX_IDX)
+-		mempool_free(bv, bs->bvec_pool);
++		mempool_free(bv, pool);
+ 	else {
+ 		struct biovec_slab *bvs = bvec_slabs + idx;
+ 
+@@ -172,7 +172,7 @@ void bvec_free_bs(struct bio_set *bs, struct bio_vec *bv, unsigned int idx)
+ }
+ 
+ struct bio_vec *bvec_alloc_bs(gfp_t gfp_mask, int nr, unsigned long *idx,
+-			      struct bio_set *bs)
++			      mempool_t *pool)
+ {
+ 	struct bio_vec *bvl;
+ 
+@@ -208,7 +208,7 @@ struct bio_vec *bvec_alloc_bs(gfp_t gfp_mask, int nr, unsigned long *idx,
  	 */
- 	if (dd->front_merges) {
--		sector_t sector = bio->bi_sector + bio_sectors(bio);
-+		sector_t sector = bio_end_sector(bio);
- 
- 		__rq = elv_rb_find(&dd->sort_list[bio_data_dir(bio)], sector);
- 		if (__rq) {
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 01b2ac6..d90a1fd 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -1144,7 +1144,7 @@ void drbd_make_request(struct request_queue *q, struct bio *bio)
- 	/* to make some things easier, force alignment of requests within the
- 	 * granularity of our hash tables */
- 	s_enr = bio->bi_sector >> HT_SHIFT;
--	e_enr = bio->bi_size ? (bio->bi_sector+(bio->bi_size>>9)-1) >> HT_SHIFT : s_enr;
-+	e_enr = (bio_end_sector(bio) - 1) >> HT_SHIFT;
- 
- 	if (likely(s_enr == e_enr)) {
- 		do {
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index 2e7de7a..26938e8 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -901,7 +901,7 @@ static void pkt_iosched_process_queue(struct pktcdvd_device *pd)
- 			pd->iosched.successive_reads += bio->bi_size >> 10;
- 		else {
- 			pd->iosched.successive_reads = 0;
--			pd->iosched.last_write = bio->bi_sector + bio_sectors(bio);
-+			pd->iosched.last_write = bio_end_sector(bio);
- 		}
- 		if (pd->iosched.successive_reads >= HI_SPEED_SWITCH) {
- 			if (pd->read_speed == pd->write_speed) {
-@@ -2454,7 +2454,7 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
- 	zone = ZONE(bio->bi_sector, pd);
- 	VPRINTK("pkt_make_request: start = %6llx stop = %6llx\n",
- 		(unsigned long long)bio->bi_sector,
--		(unsigned long long)(bio->bi_sector + bio_sectors(bio)));
-+		(unsigned long long)bio_end_sector(bio));
- 
- 	/* Check if we have to split the bio */
- 	{
-@@ -2462,7 +2462,7 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
- 		sector_t last_zone;
- 		int first_sectors;
- 
--		last_zone = ZONE(bio->bi_sector + bio_sectors(bio) - 1, pd);
-+		last_zone = ZONE(bio_end_sector(bio) - 1, pd);
- 		if (last_zone != zone) {
- 			BUG_ON(last_zone != zone + pd->settings.size);
- 			first_sectors = last_zone - bio->bi_sector;
-diff --git a/drivers/md/dm-stripe.c b/drivers/md/dm-stripe.c
-index a087bf2..ac1a8cd 100644
---- a/drivers/md/dm-stripe.c
-+++ b/drivers/md/dm-stripe.c
-@@ -257,7 +257,7 @@ static int stripe_map_discard(struct stripe_c *sc, struct bio *bio,
- 	sector_t begin, end;
- 
- 	stripe_map_range_sector(sc, bio->bi_sector, target_stripe, &begin);
--	stripe_map_range_sector(sc, bio->bi_sector + bio_sectors(bio),
-+	stripe_map_range_sector(sc, bio_end_sector(bio),
- 				target_stripe, &end);
- 	if (begin < end) {
- 		bio->bi_bdev = sc->stripe[target_stripe].dev->bdev;
-diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
-index 254d192..8f95664 100644
---- a/drivers/md/dm-verity.c
-+++ b/drivers/md/dm-verity.c
-@@ -477,7 +477,7 @@ static int verity_map(struct dm_target *ti, struct bio *bio,
- 		return -EIO;
- 	}
- 
--	if ((bio->bi_sector + bio_sectors(bio)) >>
-+	if (bio_end_sector(bio) >>
- 	    (v->data_dev_block_bits - SECTOR_SHIFT) > v->data_blocks) {
- 		DMERR_LIMIT("io out of range");
- 		return -EIO;
-diff --git a/drivers/md/faulty.c b/drivers/md/faulty.c
-index 45135f6..4a5ca4b 100644
---- a/drivers/md/faulty.c
-+++ b/drivers/md/faulty.c
-@@ -185,8 +185,7 @@ static void make_request(struct mddev *mddev, struct bio *bio)
- 			return;
- 		}
- 
--		if (check_sector(conf, bio->bi_sector, bio->bi_sector+(bio->bi_size>>9),
--				 WRITE))
-+		if (check_sector(conf, bio->bi_sector, bio_end_sector(bio), WRITE))
- 			failit = 1;
- 		if (check_mode(conf, WritePersistent)) {
- 			add_sector(conf, bio->bi_sector, WritePersistent);
-@@ -196,8 +195,7 @@ static void make_request(struct mddev *mddev, struct bio *bio)
- 			failit = 1;
+ 	if (*idx == BIOVEC_MAX_IDX) {
+ fallback:
+-		bvl = mempool_alloc(bs->bvec_pool, gfp_mask);
++		bvl = mempool_alloc(pool, gfp_mask);
  	} else {
- 		/* read request */
--		if (check_sector(conf, bio->bi_sector, bio->bi_sector + (bio->bi_size>>9),
--				 READ))
-+		if (check_sector(conf, bio->bi_sector, bio_end_sector(bio), READ))
- 			failit = 1;
- 		if (check_mode(conf, ReadTransient))
- 			failit = 1;
-diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-index fa211d8..af391db 100644
---- a/drivers/md/linear.c
-+++ b/drivers/md/linear.c
-@@ -304,8 +304,7 @@ static void linear_make_request(struct mddev *mddev, struct bio *bio)
- 		bio_io_error(bio);
- 		return;
- 	}
--	if (unlikely(bio->bi_sector + (bio->bi_size >> 9) >
--		     tmp_dev->end_sector)) {
-+	if (unlikely(bio_end_sector(bio) > tmp_dev->end_sector)) {
- 		/* This bio crosses a device boundary, so we have to
- 		 * split it.
- 		 */
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 611b5f7..32eab5b 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1010,7 +1010,7 @@ static void make_request(struct mddev *mddev, struct bio * bio)
- 	md_write_start(mddev, bio); /* wait on superblock update early */
+ 		struct biovec_slab *bvs = bvec_slabs + *idx;
+ 		gfp_t __gfp_mask = gfp_mask & ~(__GFP_WAIT | __GFP_IO);
+@@ -251,7 +251,7 @@ static void bio_free(struct bio *bio)
  
- 	if (bio_data_dir(bio) == WRITE &&
--	    bio->bi_sector + bio->bi_size/512 > mddev->suspend_lo &&
-+	    bio_end_sector(bio) > mddev->suspend_lo &&
- 	    bio->bi_sector < mddev->suspend_hi) {
- 		/* As the suspend_* range is controlled by
- 		 * userspace, we want an interruptible
-@@ -1021,7 +1021,7 @@ static void make_request(struct mddev *mddev, struct bio * bio)
- 			flush_signals(current);
- 			prepare_to_wait(&conf->wait_barrier,
- 					&w, TASK_INTERRUPTIBLE);
--			if (bio->bi_sector + bio->bi_size/512 <= mddev->suspend_lo ||
-+			if (bio_end_sector(bio) <= mddev->suspend_lo ||
- 			    bio->bi_sector >= mddev->suspend_hi)
- 				break;
- 			schedule();
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index adda94d..45a632c 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -2377,11 +2377,11 @@ static int add_stripe_bio(struct stripe_head *sh, struct bio *bi, int dd_idx, in
- 	} else
- 		bip = &sh->dev[dd_idx].toread;
- 	while (*bip && (*bip)->bi_sector < bi->bi_sector) {
--		if ((*bip)->bi_sector + ((*bip)->bi_size >> 9) > bi->bi_sector)
-+		if (bio_end_sector(*bip) > bi->bi_sector)
- 			goto overlap;
- 		bip = & (*bip)->bi_next;
- 	}
--	if (*bip && (*bip)->bi_sector < bi->bi_sector + ((bi->bi_size)>>9))
-+	if (*bip && (*bip)->bi_sector < bio_end_sector(bi))
- 		goto overlap;
+ 	if (bs) {
+ 		if (bio_has_allocated_vec(bio))
+-			bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
++			bvec_free_bs(bs->bvec_pool, bio->bi_io_vec, BIO_POOL_IDX(bio));
  
- 	BUG_ON(*bip && bi->bi_next && (*bip) != bi->bi_next);
-@@ -2397,8 +2397,8 @@ static int add_stripe_bio(struct stripe_head *sh, struct bio *bi, int dd_idx, in
- 		     sector < sh->dev[dd_idx].sector + STRIPE_SECTORS &&
- 			     bi && bi->bi_sector <= sector;
- 		     bi = r5_next_bio(bi, sh->dev[dd_idx].sector)) {
--			if (bi->bi_sector + (bi->bi_size>>9) >= sector)
--				sector = bi->bi_sector + (bi->bi_size>>9);
-+			if (bio_end_sector(bi) >= sector)
-+				sector = bio_end_sector(bi);
+ 		/*
+ 		 * If we have front padding, adjust the bio pointer before freeing
+@@ -440,11 +440,11 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+ 	bio_init(bio);
+ 
+ 	if (nr_iovecs > inline_vecs) {
+-		bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs);
++		bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs->bvec_pool);
+ 		if (!bvl && gfp_mask != saved_gfp) {
+ 			punt_bios_to_rescuer(bs);
+ 			gfp_mask = saved_gfp;
+-			bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs);
++			bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs->bvec_pool);
  		}
- 		if (sector >= sh->dev[dd_idx].sector + STRIPE_SECTORS)
- 			set_bit(R5_OVERWRITE, &sh->dev[dd_idx].flags);
-@@ -3908,7 +3908,7 @@ static int chunk_aligned_read(struct mddev *mddev, struct bio * raid_bio)
- 						    0,
- 						    &dd_idx, NULL);
  
--	end_sector = align_bi->bi_sector + (align_bi->bi_size >> 9);
-+	end_sector = bio_end_sector(align_bi);
- 	rcu_read_lock();
- 	rdev = rcu_dereference(conf->disks[dd_idx].replacement);
- 	if (!rdev || test_bit(Faulty, &rdev->flags) ||
-@@ -4090,7 +4090,7 @@ static void make_request(struct mddev *mddev, struct bio * bi)
- 		return;
+ 		if (unlikely(!bvl))
+@@ -1655,20 +1655,11 @@ EXPORT_SYMBOL(bio_sector_offset);
+  * create memory pools for biovec's in a bio_set.
+  * use the global biovec slabs created for general use.
+  */
+-static int biovec_create_pools(struct bio_set *bs, int pool_entries)
++mempool_t *biovec_create_pool(struct bio_set *bs, int pool_entries)
+ {
+ 	struct biovec_slab *bp = bvec_slabs + BIOVEC_MAX_IDX;
  
- 	logical_sector = bi->bi_sector & ~((sector_t)STRIPE_SECTORS-1);
--	last_sector = bi->bi_sector + (bi->bi_size>>9);
-+	last_sector = bio_end_sector(bi);
- 	bi->bi_next = NULL;
- 	bi->bi_phys_segments = 1;	/* over-loaded to count active stripes */
+-	bs->bvec_pool = mempool_create_slab_pool(pool_entries, bp->slab);
+-	if (!bs->bvec_pool)
+-		return -ENOMEM;
+-
+-	return 0;
+-}
+-
+-static void biovec_free_pools(struct bio_set *bs)
+-{
+-	mempool_destroy(bs->bvec_pool);
++	return mempool_create_slab_pool(pool_entries, bp->slab);
+ }
  
-@@ -4553,7 +4553,7 @@ static int  retry_aligned_read(struct r5conf *conf, struct bio *raid_bio)
- 	logical_sector = raid_bio->bi_sector & ~((sector_t)STRIPE_SECTORS-1);
- 	sector = raid5_compute_sector(conf, logical_sector,
- 				      0, &dd_idx, NULL);
--	last_sector = raid_bio->bi_sector + (raid_bio->bi_size>>9);
-+	last_sector = bio_end_sector(raid_bio);
+ void bioset_free(struct bio_set *bs)
+@@ -1679,8 +1670,10 @@ void bioset_free(struct bio_set *bs)
+ 	if (bs->bio_pool)
+ 		mempool_destroy(bs->bio_pool);
  
- 	for (; logical_sector < last_sector;
- 	     logical_sector += STRIPE_SECTORS,
-diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
-index a5a55da..1d2826b 100644
---- a/drivers/s390/block/dcssblk.c
-+++ b/drivers/s390/block/dcssblk.c
-@@ -832,8 +832,7 @@ dcssblk_make_request(struct request_queue *q, struct bio *bio)
- 	if ((bio->bi_sector & 7) != 0 || (bio->bi_size & 4095) != 0)
- 		/* Request is not page-aligned. */
- 		goto fail;
--	if (((bio->bi_size >> 9) + bio->bi_sector)
--			> get_capacity(bio->bi_bdev->bd_disk)) {
-+	if (bio_end_sector(bio) > get_capacity(bio->bi_bdev->bd_disk)) {
- 		/* Request beyond end of DCSS segment. */
- 		goto fail;
- 	}
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 4c87847..e1122a6 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2480,8 +2480,7 @@ static int submit_extent_page(int rw, struct extent_io_tree *tree,
- 		if (old_compressed)
- 			contig = bio->bi_sector == sector;
- 		else
--			contig = bio->bi_sector + (bio->bi_size >> 9) ==
--				sector;
-+			contig = bio_end_sector(bio) == sector;
++	if (bs->bvec_pool)
++		mempool_destroy(bs->bvec_pool);
++
+ 	bioset_integrity_free(bs);
+-	biovec_free_pools(bs);
+ 	bio_put_slab(bs);
  
- 		if (prev_bio_flags != bio_flags || !contig ||
- 		    merge_bio(tree, page, offset, page_size, bio, bio_flags) ||
-diff --git a/fs/gfs2/lops.c b/fs/gfs2/lops.c
-index 8ff95a2..4245a7e 100644
---- a/fs/gfs2/lops.c
-+++ b/fs/gfs2/lops.c
-@@ -300,7 +300,7 @@ static struct bio *gfs2_log_get_bio(struct gfs2_sbd *sdp, u64 blkno)
- 	u64 nblk;
+ 	kfree(bs);
+@@ -1725,7 +1718,8 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
+ 	if (!bs->bio_pool)
+ 		goto bad;
  
- 	if (bio) {
--		nblk = bio->bi_sector + bio_sectors(bio);
-+		nblk = bio_end_sector(bio);
- 		nblk >>= sdp->sd_fsb2bb_shift;
- 		if (blkno == nblk)
- 			return bio;
+-	if (biovec_create_pools(bs, pool_size))
++	bs->bvec_pool = biovec_create_pool(bs, pool_size);
++	if (!bs->bvec_pool)
+ 		goto bad;
+ 
+ 	bs->rescue_workqueue = alloc_workqueue("bioset", WQ_MEM_RECLAIM, 0);
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 4e32be1..d985e90 100644
+index 8e2d108..a7c021d 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -67,6 +67,7 @@
- #define bio_offset(bio)		bio_iovec((bio))->bv_offset
- #define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_idx)
- #define bio_sectors(bio)	((bio)->bi_size >> 9)
-+#define bio_end_sector(bio)	((bio)->bi_sector + bio_sectors(bio))
+@@ -182,7 +182,10 @@ struct bio_integrity_payload {
+ 	unsigned short		bip_idx;	/* current bip_vec index */
  
- static inline unsigned int bio_cur_bytes(struct bio *bio)
- {
+ 	struct work_struct	bip_work;	/* I/O completion */
+-	struct bio_vec		bip_vec[0];	/* embedded bvec array */
++
++	struct bio_vec		*bip_vec;
++	struct bio_vec		bip_inline_vecs[0];/* embedded bvec array */
++
+ };
+ #endif /* CONFIG_BLK_DEV_INTEGRITY */
+ 
+@@ -213,6 +216,7 @@ extern void bio_pair_release(struct bio_pair *dbio);
+ 
+ extern struct bio_set *bioset_create(unsigned int, unsigned int);
+ extern void bioset_free(struct bio_set *);
++mempool_t *biovec_create_pool(struct bio_set *bs, int pool_entries);
+ 
+ extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
+ extern void bio_put(struct bio *);
+@@ -288,8 +292,8 @@ extern struct bio *bio_copy_user_iov(struct request_queue *,
+ 				     int, int, gfp_t);
+ extern int bio_uncopy_user(struct bio *);
+ void zero_fill_bio(struct bio *bio);
+-extern struct bio_vec *bvec_alloc_bs(gfp_t, int, unsigned long *, struct bio_set *);
+-extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
++extern struct bio_vec *bvec_alloc_bs(gfp_t, int, unsigned long *, mempool_t *);
++extern void bvec_free_bs(mempool_t *, struct bio_vec *, unsigned int);
+ extern unsigned int bvec_nr_vecs(unsigned short idx);
+ 
+ #ifdef CONFIG_BLK_CGROUP
+@@ -511,10 +515,11 @@ struct bio_set {
+ 	unsigned int front_pad;
+ 
+ 	mempool_t *bio_pool;
++	mempool_t *bvec_pool;
+ #if defined(CONFIG_BLK_DEV_INTEGRITY)
+ 	mempool_t *bio_integrity_pool;
++	mempool_t *bvec_integrity_pool;
+ #endif
+-	mempool_t *bvec_pool;
+ 
+ 	/*
+ 	 * Deadlock avoidance for stacking block drivers: see comments in
 -- 
 1.7.12
 
