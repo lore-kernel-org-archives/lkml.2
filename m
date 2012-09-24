@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab2IXHYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:24:24 -0400
+	id S1755214Ab2IXHYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 03:24:22 -0400
 Received: from mailout1.samsung.com ([203.254.224.24]:39893 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab2IXHYV (ORCPT
+	with ESMTP id S1753103Ab2IXHYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:24:21 -0400
-X-AuditID: cbfee61b-b7f2b6d000000f14-48-50600aa4eaa6
-Message-id: <50600AA0.3080907@samsung.com>
-Date: Mon, 24 Sep 2012 16:24:16 +0900
+	Mon, 24 Sep 2012 03:24:20 -0400
+X-AuditID: cbfee61b-b7f2b6d000000f14-2b-50600aa3602d
+Message-id: <50600A9E.5080009@samsung.com>
+Date: Mon, 24 Sep 2012 16:24:14 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
  Thunderbird/10.0.2
@@ -17,78 +17,58 @@ MIME-version: 1.0
 To: Peter Huewe <peterhuewe@gmx.de>
 Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
         stable@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 2/2] extcon: unregister compat link on cleanup
+Subject: Re: [PATCH 1/2] extcon: Unregister compat class at module unload to
+ fix oops
 References: <1348278070-22202-1-git-send-email-peterhuewe@gmx.de>
- <1348278070-22202-2-git-send-email-peterhuewe@gmx.de>
-In-reply-to: <1348278070-22202-2-git-send-email-peterhuewe@gmx.de>
+In-reply-to: <1348278070-22202-1-git-send-email-peterhuewe@gmx.de>
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t9jAd0lXAkBBkf3W1hc3jWHzWLBxkeM
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGXs6djCXnCcv+LUJvYGxlbeLkZODgkBE4nTe68yQdhi
-	EhfurWfrYuTiEBJYxCixZt1xJgjnJaPEyZ+bmUGqeAW0JFrvfweq4uBgEVCVODc3GyTMBhTe
-	/+IGWFhUIELiVz8HRLWgxI/J91hAbBEBZYn9r/axg4xkFuhklDi1qo0RJCEs4CSxbONzVhBb
-	SKBS4tDsE2A2J1B85bY3bCA2s4COxP7WaVC2vMTmNW+ZJzAKzEKyYxaSsllIyhYwMq9iFE0t
-	SC4oTkrPNdIrTswtLs1L10vOz93ECA7EZ9I7GFc1WBxiFOBgVOLh3XAmPkCINbGsuDL3EKME
-	B7OSCG/EM6AQb0piZVVqUX58UWlOavEhRmkOFiVxXuFPgQFCAumJJanZqakFqUUwWSYOTqkG
-	RumPz46ZSSkpO/k80I3R4xB7rxZY077B2/Jn8YXzPX+un1TYO3HJoiWH7l9bv0j3g8LSMoW2
-	Smtmrc7aiwm33b8Xrn+x7Ertv7p/dWovfnLKr9f9+MpX5N/xp11JL527PdKqbvvt+V1g/W6K
-	VJe3Ve2EaezFc3PMxRlEZ5i5Olw+b6IoHsiiqMRSnJFoqMVcVJwIABqRpnFAAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t9jAd3FXAkBBisuiVhc3jWHzWLBxkeM
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGU0L5nDVNDNXtH8dQl7A+Mr1i5GTg4JAROJjTvvQ9li
+	EhfurWfrYuTiEBJYxChxeMtzZgjnJaPE5JlHmboYOTh4BbQk9n+SA2lgEVCVOLxsGzOIzQYS
+	fnGDDaREVCBC4lc/B0iYV0BQ4sfkeywgtoiAssT+V/vYQUYyC3QySpxa1cYIkhAWCJdYe/sj
+	O4gtJOAose7JW3aQOZwCThKvLjOBhJkFdCT2t05jg7DlJTavecs8gVFgFpIVs5CUzUJStoCR
+	eRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcCA+k97BuKrB4hCjAAejEg/vhjPxAUKsiWXF
+	lbmHGCU4mJVEeCOeAYV4UxIrq1KL8uOLSnNSiw8xSnOwKInzCn8KDBASSE8sSc1OTS1ILYLJ
+	MnFwSjUwJou88nlW8W1l/fJ/ez+9X+4fZfDJdFnG3GCnogee0XcXtQUvnvhjufWhJtXb11ee
+	XG93OG/d3uCgP9yh77d860tflDXpWOu2FWb2t6bN8n40b+HD9GOb3z38OGPNnIwP8pEcDEcS
+	1Q645MlEr9ySErHo2077S3duv9cJv+VbIlHp2B+/68TLlm9KLMUZiYZazEXFiQCz/7L7QAIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2012 10:41 AM, Peter Huewe wrote:
+[...]
 
-> Since extcon registers this compat link at device registration
-> (extcon_dev_register), we should probably remove them at deregistration/cleanup.
+> 
+> ---[ end trace dd512cc03fe1c369 ]---
+> FATAL: Error inserting extcon_class
+> (/lib/modules/3.6.0-rc6-00178-g811315f/kernel/drivers/extcon/extcon_class.ko):
+> Cannot allocate memory
+> 
+> This patch fixes this.
 > 
 > Cc: stable@vger.kernel.org
 > Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 > ---
 
-Applied, thank you.
 
-Also, there were some minor issue, but I fixed them up.
+Applied, thank you
+
+There was issue, but I fixed them up:
+
+>  drivers/extcon/extcon_class.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
+
+
+extcon_class.c was renamed to comply with the standard naming.
+If you will write patch about extcon, please work patch based on below
+git repository.
 
 You will check it after some hours on below git repository.
 -
 http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
-
-
->  drivers/extcon/extcon_class.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
-> index 6e914d0..7610b4e 100644
-> --- a/drivers/extcon/extcon_class.c
-> +++ b/drivers/extcon/extcon_class.c
-> @@ -575,6 +575,11 @@ static void extcon_cleanup(struct extcon_dev *edev, bool skip)
->  			kfree(edev->cables);
->  		}
->  
-> +#if defined(CONFIG_ANDROID)
-> +		if (switch_class)
-> +			ret = class_compat_remove_link(switch_class, edev->dev,
-> +						       NULL);
-> +#endif /* CONFIG_ANDROID */
-
-
-This patch have build break which show below log because 'ret' variable
-isn't defined on extcon_cleanup function and class_compat_remove_link
-function return void type after function call. So, I remove 'ret' variable.
-
-drivers/extcon/extcon-class.c: In function 'extcon_cleanup':
-drivers/extcon/extcon-class.c:574: error: 'ret' undeclared (first use in
-this function)
-drivers/extcon/extcon-class.c:574: error: (Each undeclared identifier is
-reported only once
-drivers/extcon/extcon-class.c:574: error: for each function it appears in.)
-drivers/extcon/extcon-class.c: In function 'extcon_class_exit':
-drivers/extcon/extcon-class.c:825: warning: extra tokens at end of
-#ifdef directive
-make[2]: *** [drivers/extcon/extcon-class.o] Error 1
-make[1]: *** [drivers/extcon] Error 2
-make[1]: *** Waiting for unfinished jobs....
 
 Thanks,
 Chanwoo Choi
