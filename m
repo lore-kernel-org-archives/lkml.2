@@ -1,136 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab2IXQzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:55:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34220 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757174Ab2IXQzg (ORCPT
+	id S1757178Ab2IXQ4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:56:13 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42513 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757114Ab2IXQ4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:55:36 -0400
+	Mon, 24 Sep 2012 12:56:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120924132753.GB21402@home.goodmis.org>
-References: <20120919012935.23551.12099.stgit@dungbeetle.mtv.corp.google.com>
-	<20120924132753.GB21402@home.goodmis.org>
-Date: Mon, 24 Sep 2012 09:55:35 -0700
-Message-ID: <CAKUOC8V_bdrcP5zstq8Pb-71j5AenBfPHk=233bb7ZP_R654_w@mail.gmail.com>
-Subject: Re: [PATCH] x86: Don't clobber top of pt_regs in nested NMI
-From: Salman Qazi <sqazi@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAHCeSFqmeOkKySxMUXgtnev+HL-NC6MdmeuDYONymYaNczb7RA@mail.gmail.com>
+References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
+	<20120921174952.GF7264@google.com>
+	<CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
+	<20120921183515.GI7264@google.com>
+	<CAHCeSFpa28d-7ruMKSw6z2EYKYN-5udVouUJOi4cnj4dPad-TA@mail.gmail.com>
+	<20120921192720.GJ7264@google.com>
+	<CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
+	<CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
+	<5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
+	<CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
+	<5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
+	<CAHCeSFp2=CzO1-dw_Ym_s4Pn04nsC_kQUerFJ+uFLh8iinX+Ug@mail.gmail.com>
+	<CAK-9PRB7KvPNgcsXiNG08-7OdrkkNc2ushusXh9rVm93J0xcHA@mail.gmail.com>
+	<CAHCeSFqmeOkKySxMUXgtnev+HL-NC6MdmeuDYONymYaNczb7RA@mail.gmail.com>
+Date: Mon, 24 Sep 2012 17:56:10 +0100
+Message-ID: <CAHCeSFq31fQuZd+Phgx-dQ1AEeDTh268WH14bDqEKqneOLpqxQ@mail.gmail.com>
+Subject: Re: Work queue questions
+From: Deepawali Verma <dverma249@gmail.com>
+To: Chinmay V S <cvs268@gmail.com>
+Cc: Daniel Taylor <Daniel.Taylor@wdc.com>,
+        anish singh <anish198519851985@gmail.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 6:27 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, Sep 18, 2012 at 06:29:35PM -0700, Salman Qazi wrote:
->> The nested NMI modifies the place (instruction, flags and stack)
->> that the first NMI will iret to.  However, the copy of registers
->> modified is exactly the one that is the part of pt_regs in
->> the first NMI.  This can change the behaviour of the first NMI.
->>
->> In particular, Google's arch_trigger_all_cpu_backtrace handler
->> also prints regions of memory surrounding addresses appearing in
->> registers.  This results in handled exceptions, after which nested NMIs
->> start coming in.  These nested NMIs change the value of registers
->> in pt_regs.  This can cause the original NMI handler to produce
->> incorrect output.
->
-> Hmm, interesting problem.
->
->>
->> We solve this problem by introducing an extra copy of the iret
->> registers that are exclusively a part of pt_regs and are not modified
->> elsewhere.
->
-> Yuck, 4 copies of the stack frame?
->
->> The downside is that the do_nmi function can no longer
->> change the control flow, as any values it writes to these five
->> registers will be discarded.
->
-> I consider this a feature.
->
->>
->> Signed-off-by: Salman Qazi <sqazi@google.com>
->> ---
->>  arch/x86/kernel/entry_64.S |   20 +++++++++++++++++++-
->>  1 files changed, 19 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
->> index 69babd8..40ddb6d 100644
->> --- a/arch/x86/kernel/entry_64.S
->> +++ b/arch/x86/kernel/entry_64.S
->> @@ -1724,6 +1724,18 @@ repeat_nmi:
->>  end_repeat_nmi:
->>
->>       /*
->> +      * We went a running NMI handling routine to have a consistent
->> +      * picture of register state.  This should hold true even if
->> +      * there is a nested NMI.  Therefore, we let the nested NMI
->> +      * play with the previous copy of these registers and leave this
->> +      * new copy unmodified for do_nmi()
->> +      */
->> +     .rept 5
->> +     pushq_cfi 4*8(%rsp)
->> +     .endr
->> +     CFI_DEF_CFA_OFFSET SS+8-RIP
->
-> Hmm, another solution that can be done without an extra copy, is to swap
-> the return stack frame with the copy stack frame. This way, the copy is
-> seen by the pt_regs and will always be correct. The end would basically
-> be the same as you have below, just skip the copy and return.
->
-> Now this breaks the idea that anything below the sp pointer is not safe
-> to use. But this is the NMI stack in the controlled part of the NMI
-> Handler (no breakpoints allowed here). The NMI stack is special, which
-> is why we have all this crap in the first place.
->
-> It would be safe to save the copy stack below the stack pointer because
-> the only thing that could possible interrupt us here is another NMI,
-> which would just reset the stack pointer to the top again, and notice
-> that this is a nested NMI and return after modifying the return stack.
-> Which is OK.
->
-> At least this way, we avoid copying the stack frame a third time (two
-> was enough).
+Hi,
 
-Yes.  This is better.  For some reason, I thought about this and
-decided against it.  But, I can't remember what crossed my mind.  I'll
-try this.
+This is sample code snippet as I cannot post my project code. In
+reality here, this work handler is copying the big chunks of data that
+code is
+ here in my driver. This is running on quad core cortex A9 Thats why I
+asked. If there are 4 cpu cores, then there must be parallelism. Now
+Tajun, what do you say?
 
->
-> -- Steve
->
->
->> +
->> +     /*
->>        * Everything below this point can be preempted by a nested
->>        * NMI if the first NMI took an exception and reset our iret stack
->>        * so that we repeat another NMI.
->> @@ -1771,7 +1783,13 @@ nmi_swapgs:
->>  nmi_restore:
->>       RESTORE_ALL 8
->>       /* Clear the NMI executing stack variable */
->> -     movq $0, 10*8(%rsp)
->> +     movq $0, 15*8(%rsp)
->> +
->> +     /* Pop the extra copy of iret context that was saved above
->> +      * just for do_nmi()
->> +      */
->> +     addq $5*8, %rsp
->> +
->>       jmp irq_return
->>       CFI_ENDPROC
->>  END(nmi)
+ Regards,
+ Deepa
+
+
+> On Monday, September 24, 2012, Chinmay V S wrote:
 >>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>> There is nothing in the sub_task_work_handler() to keep the CPU occupied.
+>> Try adding a significant amount of work in it to keep it occupied. Also
+>> are
+>> you running on a SMP(multicore) system?...
+>>
+>> On Mon, Sep 24, 2012 at 12:55 PM, Deepawali Verma <dverma249@gmail.com>
+>> wrote:
+>>>
+>>> Hi Tejun,
+>>>
+>>> Here are some code snippets from my device driver:
+>>>
+>>> #defind NUMBER_OF_SUBTASKS 3
+>>>
+>>> struct my_driver_object
+>>> {
+>>>         struct workqueue_struct *sub_task_wq;
+>>>         struct work_struct sub_task_work;
+>>>         char my_obj_wq_name[80];
+>>>         int task_id;
+>>> };
+>>>
+>>> struct my_driver_object obj[3];
+>>>
+>>>
+>>> void my_driver_init(void)
+>>> {
+>>>    int i =0;
+>>>    memset(my_obj_wq_name,0,80);
+>>>   --------------------------------------
+>>>   for (i =0; i<3; i++)
+>>>   {
+>>>       snprintf(obj[i].my_obj_wq_name,80, "Task-wq:%d",i);
+>>>       obj.sub_task_wq =
+>>> alloc_workqueue(obj[i].my_obj_wq_name,WQ_UNBOUND,1);
+>>>       INIT_WORK(&obj[i].sub_task_work, sub_task_work_handler);
+>>>   }
+>>>
+>>>   --------------------------------------
+>>> }
+>>>
+>>> void start_sub_tasks()
+>>> {
+>>>    int i =0;
+>>>    for (i =0; i<3; i++)
+>>>    {
+>>>         queue_work(obj[i].sub_task_wq, &obj[i].sub_task_work);
+>>>
+>>>    }
+>>>
+>>>
+>>> }
+>>>
+>>> static void sub_task_work_handler(struct work_struct work)
+>>> {
+>>>     Ftrace marker start;
+>>>
+>>>     Ftrace marker end
+>>> }
+>>>
+>>> Ideally I was expecting when work is queued to three different work
+>>> queues, it should run in parallel but it is not doing as per expected.
+>>> Let me know about this.
+>>>
+>>> Regards,
+>>> Deepa
+>>>
+>>>
+>>>
+>>>
+>>>
+>>>
+>>>
+>>> On Sat, Sep 22, 2012 at 7:18 AM, Daniel Taylor <Daniel.Taylor@wdc.com>
+>>> wrote:
+>>> >
+>>> > ...
+>>> >
+>>> >> >> So on so forth.
+>>> >> >> Anyway how can you write chunks of data in parallel when
+>>> >> >> already some worker
+>>> >> >> thread is writing i.e. the system is busy.
+>>> >> >> Analogy: Suppose you are ambidextrous and you are eating.Can
+>>> >> >> you eat with
+>>> >> >> both of your hands at a time?So worker thread are like your
+>>> >> >> hands and keeping
+>>> >> >> you fed all the time is the concept of concurrency.
+>>> >> >>
+>>> >> >> I am not an expert on this but from Tejun's reply I could
+>>> >> >> make out this.
+>>> >> >> Please correct me If I have wrongly understood the concept
+>>> >> >> based on this mail
+>>> >> >
+>>> >> > I don't know how many cores are in the CPU Deepawali's
+>>> >> using, but if I have four,
+>>> >> Assuming single core,Is my explanation correct about concurrency?
+>>> >
+>>> > It is possible for his tasks to complete before scheduling occurs
+>>> > again.  Consuming all of the CPU and having no blocking action,
+>>> > yes, then the tasks will run consecutively.
+>>> >
+>>> > ...
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>
