@@ -1,77 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab2IXKaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 06:30:00 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:38215 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab2IXK37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 06:29:59 -0400
+	id S1753702Ab2IXKcB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 06:32:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59434 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753369Ab2IXKb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 06:31:59 -0400
+Date: Mon, 24 Sep 2012 11:31:50 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+Message-ID: <20120924103150.GA11266@suse.de>
+References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20120921161252.GV11266@suse.de>
+ <20120921180222.GA7220@phenom.dumpdata.com>
+ <505CB9BC.8040905@linux.vnet.ibm.com>
+ <42d62a30-bd6c-4bd7-97d1-bec2f237756b@default>
+ <20120922010733.GX11266@suse.de>
+ <589fd823-40f1-418c-81ad-ca8daa3f064d@default>
 MIME-Version: 1.0
-In-Reply-To: <87392768dj.fsf@devron.myhome.or.jp>
-References: <1347798148-2660-1-git-send-email-linkinjeon@gmail.com>
-	<87lig28fak.fsf@devron.myhome.or.jp>
-	<CAKYAXd-6k7=RmrweR=wTOET50hy8Y7LokCSe1c2JtYd7pzPmsQ@mail.gmail.com>
-	<87ipb45914.fsf@devron.myhome.or.jp>
-	<CAKYAXd9EzKH_x1GaXvSZ7pRebfOcwQqNp6-oEnc2z2evuNo23g@mail.gmail.com>
-	<87ehls53ug.fsf@devron.myhome.or.jp>
-	<87a9wg53mc.fsf@devron.myhome.or.jp>
-	<CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
-	<87392768dj.fsf@devron.myhome.or.jp>
-Date: Mon, 24 Sep 2012 19:29:58 +0900
-Message-ID: <CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <589fd823-40f1-418c-81ad-ca8daa3f064d@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/24, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>> This means - which code returns error?
->> Sorry, My explanation may be insufficient.
->>
->> nfs_update_inode()-> on NFS client
->> if ((fattr->valid & NFS_ATTR_FATTR_FILEID) && nfsi->fileid !=
->> fattr->fileid) {
->> 		printk(KERN_ERR "NFS: server %s error: fileid changed\n"
->> 			"fsid %s: expected fileid 0x%Lx, got 0x%Lx\n",
->> 			NFS_SERVER(inode)->nfs_client->cl_hostname,
->> 			inode->i_sb->s_id, (long long)nfsi->fileid,
->> 			(long long)fattr->fileid);
->> 		goto out_err;
->> 	}
->>
->> that the problem in that case will occur with the file handle on NFS
->> Client because the file handle on NFS client is still referring the
->> old inode number even though the i-pos is same
->
-> I see. fileid seems to be stat.ino on nfsd4. inode->i_ino is actually
-> just a hash key of inode hash (exception is only in audit, iirc).
->
-> So, what happens if we set "stat->ino = i_pos" on fat_getattr().
->
-> int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat
-> *stat)
-> {
-> 	struct inode *inode = dentry->d_inode;
-> 	generic_fillattr(inode, stat);
-> 	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
-> 	if (opts->nfs == FAT_NFS_LIMITED) {
-> 		/* Use i_pos for ino. This is used as fileid of nfs. */
-> 		stat->ino = MSDOS_SB(inode->i_sb)->i_pos;
-> 	}
-> 	return 0;
-> }
-Okay, Thanks for your help.
-I will share the result after checking.
+On Sat, Sep 22, 2012 at 02:18:44PM -0700, Dan Magenheimer wrote:
+> > From: Mel Gorman [mailto:mgorman@suse.de]
+> > Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+> > 
+> > On Fri, Sep 21, 2012 at 01:35:15PM -0700, Dan Magenheimer wrote:
+> > > > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> > > > Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+> > > The two proposals:
+> > > A) Recreate all the work done for zcache2 as a proper sequence of
+> > >    independent patches and apply them to zcache1. (Seth/Konrad)
+> > > B) Add zsmalloc back in to zcache2 as an alternative allocator
+> > >    for frontswap pages. (Dan)
+> > 
+> > Throwing it out there but ....
+> > 
+> > C) Merge both, but freeze zcache1 except for critical fixes. Only allow
+> >    future work on zcache2. Document limitations of zcache1 and
+> >    workarounds until zcache2 is fully production ready.
+> 
+> Hi Mel (with request for Seth below) --
+> 
+> (C) may be the politically-expedient solution but, personally,
+> I think it is a bit insane and I suspect that any mm developer
+> who were to deeply review both codebases side-by-side would come to
+> the same conclusion. 
 
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+I have not read zcache2 and maybe it is the case that no one in their
+right mind would use zcache1 if zcache2 was available but the discussion
+keeps going in circles.
+
+> The cost in developer/maintainer time,
+> and the confusion presented to the user/distro base if both
+> are promoted/merged would be way too high, and IMHO completely
+> unwarranted.  Let me try to explain...
+> 
+
+What would the impact be if zcache2 and zcache1 were mutually exclusive
+in Kconfig and the naming was as follows?
+
+CONFIG_ZCACHE_DEPRECATED	(zcache1)
+CONFIG_ZCACHE			(zcache2)
+
+That would make it absolutely clear to distributions which one they should
+be enabling and also make it clear that all future development happen
+on zcache2.
+
+I know it looks insane to promote something that is instantly deprecated
+but none of the other alternatives seem to be gaining traction either.
+This would at least allow the people who are currently heavily behind
+zcache1 to continue supporting it and applying critical fixes until they
+move to zcache2.
+
+> I use the terms "zcache1" and "zcache2" only to clarify which
+> codebase, not because they are dramatically different. I estimate
+> that 85%-90% of the code in zcache1 and zcache2 is identical, not
+> counting the allocator or comments/whitespace/janitorial!
+> 
+
+If 85-90% of the code is identicial then they really should be sharing
+the code rather than making copies. That will result in some monolithic
+patches but it's unavoidable. I expect it would end up looking like
+
+Patch 1		promote zcache1
+Patch 2		promote zcache2
+Patch 3		move shared code for zcache1,zcache2 to common files
+
+If the shared code is really shared and not copied it may reduce some of
+the friction between the camps.
+
+> Zcache2 _is_ zcache1 with some good stuff added and with zsmalloc
+> dropped.  I think after careful study, there would be wide agreement
+> among mm developers that the stuff added is all moving in the direction
+> of making zcache "production-ready".  IMHO, zcache1 has _never_
+> been production-ready, and zcache2 is merely a big step in the right
+> direction.
+> 
+
+zcache1 does appear to have a few snarls that would make me wary of having
+to support it. I don't know if zcache2 suffers the same problems or not
+as I have not read it.
+
+> (Quick logistical aside: zcache2 is in staging-next and linux-next,
+> currently housed under the drivers/staging/ramster directory...
+> with !CONFIG_RAMSTER, ramster _is_ zcache2.)
+> 
+
+Unfortunately, I'm not going to get the chance to review it in the
+short-term. However, if zcache1 and zcache2 shared code in common files
+it would at least reduce the amount of new code I have to read :)
+
+> Seth (and IBM) seems to have a bee in his bonnet that the existing
+> zcache1 code _must_ be promoted _soon_ with as little change as possible.
+> Other than the fact that he didn't like my patching approach [1],
+> the only technical objection Seth has raised to zcache2 is that he
+> thinks zsmalloc is the best choice of allocator [2] for his limited
+> benchmarking [3].
+> 
+
+FWIW, I would fear that kernbench is not that interesting a benchmark for
+something like zcache. From an MM perspective, I would be wary that the
+data compresses too well and fits too neatly in the different buckets and
+make zsmalloc appear to behave much better than it would for a more general
+workload.  Of greater concern is that the allocations for zcache would be
+too short lived to measure if external fragmentation was a real problem
+or not. This is pure guesswork as I didn't read zsmalloc but this is the
+sort of problem I'd be looking out for if I did review it. In practice,
+I would probably prefer to depend on zbud because it avoids the external
+fragmentation problem even if it wasted memory but that's just me being
+cautious.
+
+> I've offered to put zsmalloc back in to zcache2 as an optional
+> (even default) allocator, but that doesn't seem to be good enough
+> for Seth.  Any other technical objections to zcache2, or explanation
+> for his urgent desire to promote zcache1, Seth (and IBM) is keeping
+> close to his vest, which I find to be a bit disingenuous.
+> 
+
+I can only guess what the reasons might be for this and none of the
+guesses will help resolve this problem.
+
+> So, I'd like to challenge Seth with a simple question:
+> 
+> If zcache2 offers zsmalloc as an alternative (even default) allocator,
+> what remaining _technical_ objections do you (Seth) have to merging
+> zcache2 _instead_ of zcache1?
+> 
+> If Mel agrees that your objections are worth the costs of bifurcating
+> zcache and will still endorse merging both into core mm, I agree to move
+> forward with Mel's alternative (C) (and will then repost
+> https://lkml.org/lkml/2012/7/31/573).
+> 
+
+If you go with C), please also add another patch on top *if possible*
+that actually shares any common code between zcache1 and zcache2.
+
+> Personally, I would _really_ like to get back to writing code to make
+> zcacheN more suitable for production so would really like to see this
+> resolved!
+> 
+> Dan
+> 
+> [1] Monolithic, because GregKH seemed to be unwilling to take further
+> patches to zcache before it was promoted, and because I thought
+> a number of things had to be fixed before I would feel comfortable
+> presenting zcache to be reviewed by mm developers
+> [2] Note, zsmalloc is used in zcache1 only for frontswap pages...
+> zbud is used in both zcache1 and zcache2 for cleancache pages.
+> [3] I've never seen any benchmark results posted for zcache other
+> than some variation of kernbench.  IMHO that's an issue all in itself.
+
+-- 
+Mel Gorman
+SUSE Labs
