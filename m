@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757800Ab2IXSzz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 14:55:55 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55856 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab2IXSzx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 14:55:53 -0400
-Date: Mon, 24 Sep 2012 22:55:46 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to
- ARM)
-Message-ID: <20120924185546.GJ16532@moon>
-References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
- <20120922114549.GA11610@moon>
- <20120922132046.GA4260@flint.arm.linux.org.uk>
- <20120922114723.d7f07fb6.akpm@linux-foundation.org>
- <1348503709.20929.40.camel@deneb.redhat.com>
- <20120924164942.GH16532@moon>
- <20120924174256.GD24172@moon>
- <1348510573.20929.44.camel@deneb.redhat.com>
+	id S1757781Ab2IXTAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 15:00:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756949Ab2IXTAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 15:00:45 -0400
+Date: Mon, 24 Sep 2012 15:00:35 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 3/6] dyndbg: add more info to -E2BIG log warning
+Message-ID: <20120924190034.GF2492@redhat.com>
+References: <1348011407-24108-1-git-send-email-jim.cromie@gmail.com>
+ <1348011407-24108-4-git-send-email-jim.cromie@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1348510573.20929.44.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1348011407-24108-4-git-send-email-jim.cromie@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 02:16:09PM -0400, Mark Salter wrote:
-> > > >  #else
-> > > > +#define mmap_min_addr          0UL
-> > > >  #define dac_mmap_min_addr      0UL
-> > > >  #endif
-> > > > 
-> > 
-> > I think better to add CONFIG_MMU test here.
+On Tue, Sep 18, 2012 at 05:36:44PM -0600, Jim Cromie wrote:
+> Tell user how big the attempted write was, in case its not obvious.
+> This helped identify a missing flush in my stress-test script.
 > 
-> Well, my patch was just something quick to get the kernel to build, but
-> thinking about it a bit, I still prefer it. The CONFIG_MMU check is in
-> security.h already so I think it is less clutter and better for future
-> code which may use mmap_min_addr. In any case, the compiler will drop
-> any test for "x < 0UL" so the end result is the same.
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> ---
+>  lib/dynamic_debug.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+> index 43ae319..85258a8 100644
+> --- a/lib/dynamic_debug.c
+> +++ b/lib/dynamic_debug.c
+> @@ -693,7 +693,8 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+>  	if (len == 0)
+>  		return 0;
+>  	if (len > USER_BUF_PAGE - 1) {
+> -		pr_warn("expected <%d bytes into control\n", USER_BUF_PAGE);
+> +		pr_warn("expected <%d bytes into control, you wrote %d\n",
+> +			USER_BUF_PAGE, (int) len);
 
-Well, sure compiler should optimize it out but frankly i prefer #ifdef here.
-Anyway, i'm cooking some new patch. Will post once it's ready and tested.
+The style here, I think, is generally to leave out the space, ie: (int)len.
+
+Thanks,
+
+-Jason
+
