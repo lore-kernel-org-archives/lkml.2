@@ -1,127 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab2IXGUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 02:20:47 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4715 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755025Ab2IXGUp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 02:20:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sun, 23 Sep 2012 23:20:43 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>, "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Date: Mon, 24 Sep 2012 11:50:39 +0530
-Subject: RE: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
-Thread-Topic: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
-Thread-Index: Ac2aHGHrWQkknqWSS16Zl73wm0SibwAADgOA
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDF601595@BGMAIL02.nvidia.com>
-References: <1348230054-7402-1-git-send-email-vbyravarasu@nvidia.com>
-	<CAAe_U6K2hANpRqzyoiiP2mR97=M2Mb35+FVor11DaaZi7W9Pnw@mail.gmail.com>
-	<505C9282.3050001@wwwdotorg.org>
-	<D958900912E20642BCBC71664EFECE3E6DDF6014CF@BGMAIL02.nvidia.com>
- <CAAe_U6K3hcyv4Hi_8LM364qFakUagKfVdGh_2M4f7dFd-_kC4Q@mail.gmail.com>
-In-Reply-To: <CAAe_U6K3hcyv4Hi_8LM364qFakUagKfVdGh_2M4f7dFd-_kC4Q@mail.gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755078Ab2IXGVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 02:21:45 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:25619 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755043Ab2IXGVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 02:21:43 -0400
+Date: Mon, 24 Sep 2012 08:20:18 +0200
+Message-Id: <201209240620.q8O6KINT029454@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Alan Cox <alan@linux.intel.com>, Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>
+CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] Powerpc 8xx CPM_UART maxidl should not depend on fifo size
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: ABRAHAM, KISHON VIJAY [mailto:kishon@ti.com]
-> Sent: Monday, September 24, 2012 11:48 AM
-> To: Venu Byravarasu
-> Cc: Stephen Warren; balbi@ti.com; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; linux-usb@vger.kernel.org
-> Subject: Re: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
-> 
-> Hi,
-> 
-> On Sat, Sep 22, 2012 at 2:08 PM, Venu Byravarasu
-> <vbyravarasu@nvidia.com> wrote:
-> >> -----Original Message-----
-> >> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> >> Sent: Friday, September 21, 2012 9:45 PM
-> >> To: ABRAHAM, KISHON VIJAY
-> >> Cc: Venu Byravarasu; balbi@ti.com; gregkh@linuxfoundation.org; linux-
-> >> kernel@vger.kernel.org; linux-usb@vger.kernel.org
-> >> Subject: Re: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
-> >>
-> >> On 09/21/2012 07:09 AM, ABRAHAM, KISHON VIJAY wrote:
-> >> > Hi,
-> >> >
-> >> > On Fri, Sep 21, 2012 at 5:50 PM, Venu Byravarasu
-> >> <vbyravarasu@nvidia.com> wrote:
-> >> >> NVIDIA produces several Tegra SoCs viz Tegra20, Tegra30 etc.
-> >> >> In order to support USB PHY drivers on these SoCs, existing
-> >> >> PHY driver is split into SoC agnostic common USB PHY driver
-> >> >> and Tegra20-specific USB phy driver. This will facilitate
-> >> >> easy addition and deletion of phy drivers for Tegra SoCs.
-> >>
-> >> >> @@ -618,6 +618,9 @@ static int tegra_ehci_probe(struct
-> platform_device
-> >> *pdev)
-> >> ...
-> >> >>         pdata = pdev->dev.platform_data;
-> >> >>         if (!pdata) {
-> >>
-> >> Some missing lines of context are:
-> >>
-> >>                 dev_err(&pdev->dev, "Platform data missing\n");
-> >>                 return -EINVAL;
-> >>         }
-> >>
-> >> ...
-> >> >> +       params.mode = TEGRA_USB_PHY_MODE_HOST;
-> >> >> +       params.config = pdata->phy_config;
-> >> >
-> >> > I fail to understand how pdata is not NULL in dt boot. I know i've
-> >> > already given this comment and you replied that you dint see any
-> >> > crash. But I'd like to know where and how pdata gets populated.
-> >>
-> >> In practice, the platform uses AUXDATA to provide platform data to the
-> >> driver even when it's instantiated using device tree; see
-> >> arch/arm/mach-tegra/board-dt-tegra20.c variables tegra_ehci*_pdata
-> and
-> >> tegra20_auxdata_lookup[].
-> >>
-> >> In the slightly (very very slightly, hopefully) longer term, I would
-> >> like to completely remove the AUXDATA setup from board-dt-tegra20.c;
-> >> tegra_ehci_probe() should do something like:
-> >>
-> >> pdata = pdev->dev.platform_data
-> >> if (!pdata)
-> >>     pdata = parse_pdata_from_dt();
-> >> /* user didn't specify any in DT either */
-> >> if (!pdata)
-> >>     pdata = default_pdata_for_port();
-> >>
-> >> ... where perhaps the use of defaults could be folded into
-> >> parse_pdata_from_dt().
-> >
-> >
-> > Thanks Stephen for the detailed explanation.
-> >
-> > Kishon / Felipe,
-> > Do you have any more questions in this related, before patch can be
-> applied?
-> 
-> I don't have any further comments.
-> 
+maxidl register was set to fifo size. There is no reason to set this
+register to same value as fifo size. Setting it now to 0x10 by default
+as in the UCC UART driver.
 
-Thanks Kishon for your quick response.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+
+--- linux-3.5-vanilla/drivers/tty/serial/cpm_uart/cpm_uart_core.c	2012-07-21 22:58:29.000000000 +0200
++++ linux-3.5/drivers/tty/serial/cpm_uart/cpm_uart_core.c	2012-08-09 17:38:37.000000000 +0200
+@@ -799,7 +799,7 @@
+ 	cpm_set_scc_fcr(sup);
  
-
-> Thanks
-> Kishon
+ 	out_be16(&sup->scc_genscc.scc_mrblr, pinfo->rx_fifosize);
+-	out_be16(&sup->scc_maxidl, pinfo->rx_fifosize);
++	out_be16(&sup->scc_maxidl, 0x10);
+ 	out_be16(&sup->scc_brkcr, 1);
+ 	out_be16(&sup->scc_parec, 0);
+ 	out_be16(&sup->scc_frmec, 0);
+@@ -873,7 +873,7 @@
+ 
+ 	/* Using idle character time requires some additional tuning.  */
+ 	out_be16(&up->smc_mrblr, pinfo->rx_fifosize);
+-	out_be16(&up->smc_maxidl, pinfo->rx_fifosize);
++	out_be16(&up->smc_maxidl, 0x10);
+ 	out_be16(&up->smc_brklen, 0);
+ 	out_be16(&up->smc_brkec, 0);
+ 	out_be16(&up->smc_brkcr, 1);
