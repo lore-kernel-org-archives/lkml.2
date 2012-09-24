@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab2IXRgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 13:36:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47842 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755502Ab2IXRgo (ORCPT
+	id S1757342Ab2IXRiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 13:38:20 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:56523 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755601Ab2IXRiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 13:36:44 -0400
-Date: Mon, 24 Sep 2012 10:36:33 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>
-Cc: linux-kernel@vger.kernel.org, arekm@pld-linux.org, baggins@pld-linux.org
-Subject: Re: [3.5.4] rcu_sched self-detected stall on CPU { 1}  (t=54862991
- jiffies)
-Message-ID: <20120924173633.GA2451@kroah.com>
-References: <1377033.GMb6SBRYYa@pawels>
+	Mon, 24 Sep 2012 13:38:19 -0400
+Date: Mon, 24 Sep 2012 17:38:17 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: Pekka Enberg <penberg@kernel.org>, Tejun Heo <tj@kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<cgroups@vger.kernel.org>" <cgroups@vger.kernel.org>,
+        "<kamezawa.hiroyu@jp.fujitsu.com>" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "<devel@openvz.org>" <devel@openvz.org>,
+        "<linux-mm@kvack.org>" <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 05/16] consider a memcg parameter in
+ kmem_create_cache
+In-Reply-To: <50607E0C.7020606@parallels.com>
+Message-ID: <00000139f95ba955-a9faffde-33d6-420c-97ee-5dd7f728ef9b-000000@email.amazonses.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-6-git-send-email-glommer@parallels.com> <20120921181458.GG7264@google.com> <506015E7.8030900@parallels.com> <00000139f84bdedc-aae672a6-2908-4cb8-8ed3-8fedf67a21af-000000@email.amazonses.com>
+ <50605500.5050606@parallels.com> <00000139f8836571-6ddc9d5b-1d5f-4542-92f9-ad11070e5b7d-000000@email.amazonses.com> <506063B8.70305@parallels.com> <00000139f890a302-980aee84-40b2-433f-8dbd-e7b1d219f00d-000000@email.amazonses.com> <506066E3.6050705@parallels.com>
+ <CAOJsxLGFWQFNUUN3sDeB2sn0S-QM-6Ut_d02HjmF6mB5aMytoA@mail.gmail.com> <50607E0C.7020606@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1377033.GMb6SBRYYa@pawels>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 10:05:23AM +0200, Paweł Sikora wrote:
-> Hi,
-> 
-> with the new stable line i'm observing strange locks on my old amd-phenom-II mini-server.
-> here's a dmesg:
+On Mon, 24 Sep 2012, Glauber Costa wrote:
 
-Did this show up in 3.5.3?  If not, can you run 'git bisect' to find the
-problem patch?
+> > So Christoph is proposing that the new caches appear somewhere under
+> > the cgroups directory and /proc/slabinfo includes aggregated counts,
+> > right? I'm certainly OK with that.
+> >
+> Just for clarification, I am not sure about the aggregate counts -
+> although it surely makes sense.
+>
+> Christoph, is that what you're proposing ?
 
-thanks,
+Yes. Make it similar to the way /proc/meminfo is handled.
 
-greg k-h
