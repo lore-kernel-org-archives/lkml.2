@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab2IXOkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 10:40:12 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:31757 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab2IXOkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 10:40:10 -0400
-Message-ID: <506070C7.9020507@c-s.fr>
-Date: Mon, 24 Sep 2012 16:40:07 +0200
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1756088Ab2IXOno (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 10:43:44 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:46670 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755921Ab2IXOnm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 10:43:42 -0400
+From: Ulf Hansson <ulf.hansson@stericsson.com>
+To: <linux-arm-kernel@lists.infradead.org>, Mike Turquette <mturquette@ti.com>,
+        Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Philippe Begnic <philippe.begnic@st.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 0/3] clk: ux500: Set sdmmc clock to 100MHz
+Date: Mon, 24 Sep 2012 16:43:16 +0200
+Message-ID: <1348497799-32143-1-git-send-email-ulf.hansson@stericsson.com>
+X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: David S Miller <davem@davemloft.net>,
-        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] lxt PHY: Support for the buggy LXT973 rev A2
-References: <201209241400.q8OE0w38011790@localhost.localdomain> <AE90C24D6B3A694183C094C60CF0A2F6026B7004@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7004@saturn3.aculab.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ulf Hansson <ulf.hansson@linaro.org>
 
-Le 24/09/2012 16:13, David Laight a écrit :
->> This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding
->> precautions linked to ERRATA Item 4:
->>
->> Revision A2 of LXT973 chip randomly returns the contents of the previous even
->> register when you read a odd register regularly
-> Does reading the PHY registers involve bit-banging an MII interface?
-> If so this code is likely to stall the system for significant
-> periods (ready phy registers at all can be a problem).
->
-> I know some ethernet mac have hardware blocks for reading MII
-> and even polling one MII register for changes.
->
-> Maybe some of this code ought to be using async software
-> bit-bang - especially when just polling for link status change.
-> I'm sure it ought to be possible to do one bit-bang action
-> per clock tick instead of spinning for the required delays.
->
-> 	David
->
-Not sure I understand what you mean. We have been using this code 
-without any problem for about 2 years on our Hardware.
-It does almost same as genphy_read_status() except that it also reads 
-the BMCR register (which is the register preceeding the BMSR) in order 
-to detect the unlikely happening of the bug reported by the ERRATA. In 
-case it happens (which is really seldom), it does a re-read.
-We are not spinning on any delays here.
+The reason behind this change is that we would like to enable all
+the mmc/sd/sdio features from a hardware perspective (ARM PL18x).
+It is then required that the frequency must be 100MHz.
 
-Christophe
+Ulf Hansson (3):
+  mfd: dbx500: Export prmcu_request_ape_opp_100_voltage
+  clk: ux500: Support prcmu ape opp voltage clock
+  clk: ux500: Update sdmmc clock to 100MHz for u8500
+
+ drivers/clk/ux500/clk-prcmu.c    |   55 ++++++++++++++++++++++++++++++++++++++
+ drivers/clk/ux500/clk.h          |    6 +++++
+ drivers/clk/ux500/u8500_clk.c    |    5 ++--
+ drivers/mfd/db8500-prcmu.c       |    4 +--
+ include/linux/mfd/db8500-prcmu.h |    4 +--
+ include/linux/mfd/dbx500-prcmu.h |   10 +++++++
+ 6 files changed, 78 insertions(+), 6 deletions(-)
+
+-- 
+1.7.10
+
