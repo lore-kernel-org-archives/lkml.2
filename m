@@ -1,92 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2IXLLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 07:11:46 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33922 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab2IXLLo convert rfc822-to-8bit (ORCPT
+	id S1753546Ab2IXLNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 07:13:37 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35316 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab2IXLNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 07:11:44 -0400
+	Mon, 24 Sep 2012 07:13:35 -0400
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Mark Jackson <mpfj-list@mimc.co.uk>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "tony@atomide.com >> Tony Lindgren" <tony@atomide.com>
+Subject: RE: gpmc_cs_request() causes early boot hang
+Thread-Topic: gpmc_cs_request() causes early boot hang
+Thread-Index: AQHNmC9WQXyKDMW1okeEKCbWWvFUTZeY7CwAgAAMaQCAAF9BgA==
+Date: Mon, 24 Sep 2012 11:13:14 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93E9E7881@DBDE01.ent.ti.com>
+References: <505CBFAA.3080604@mimc.co.uk>
+ <C8443D0743D26F4388EA172BF4E2A7A93E9E7628@DBDE01.ent.ti.com>
+ <50603B3C.8070402@mimc.co.uk>
+In-Reply-To: <50603B3C.8070402@mimc.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <505FB01C.4060905@gmail.com>
-References: <1348296014.12906.2.camel@phoenix> <505FB01C.4060905@gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Mon, 24 Sep 2012 19:11:22 +0800
-X-Google-Sender-Auth: tLT9TjiJdqbvtQcD1q5E4ecfhBc
-Message-ID: <CAK5ve-+eHrp7wW5fotjpa2bcN8HkzLdV1VPHJUTGHjtkpYunRg@mail.gmail.com>
-Subject: Re: [PATCH] leds: lm3642: Use regmap_update_bits() in lm3642_chip_init()
-To: gshark <gshark.jeong@gmail.com>
-Cc: Axel Lin <axel.lin@ingics.com>, Richard Purdie <rpurdie@rpsys.net>,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8OBDfvK019860
 
-On Mon, Sep 24, 2012 at 8:58 AM, gshark <gshark.jeong@gmail.com> wrote:
-> 2012³â 09¿ù 22ÀÏ 15:40, Axel Lin ¾´ ±Û:
->
->> Use regmap_update_bits() to replace regmap_read() + regmap_write().
->> With this patch, we only show the error message when regmap_update_bits()
->> fails.
->
->     Looks good..You're right.  Thank you Alex.
->>
->>
->> Signed-off-by: Axel Lin <axel.lin@ingics.com>
->
->     Acked-by: G.Shark Jeong<gshark.jeong@gmail.com>
->
+Hi Mark,
 
-Thanks, applied to my for-next.
+On Mon, Sep 24, 2012 at 16:21:40, Mark Jackson wrote:
+> On 24/09/12 05:51, Mohammed, Afzal wrote:
 
--Bryan
+> > It seems you are using PSP Kernel.
+> > 
+> > Invoking omap_init_gpmc before gpmc request should help.
+> 
+> Okay ... I'm now using earlyprintk and omap_init_gpmc(), but I still get boot hangs.
 
+> Surely omap-gpmc needs to be setup before any calls such as gpmc_cs_request() ?
+> 
+> Is there a method to delay my test code, or maybe get the omap-gpmc registered earlier ?
 
->> ---
->>   drivers/leds/leds-lm3642.c |   15 +++------------
->>   1 file changed, 3 insertions(+), 12 deletions(-)
->>
->> diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
->> index 924853b..3285006 100644
->> --- a/drivers/leds/leds-lm3642.c
->> +++ b/drivers/leds/leds-lm3642.c
->> @@ -95,23 +95,14 @@ struct lm3642_chip_data {
->>   /* chip initialize */
->>   static int __devinit lm3642_chip_init(struct lm3642_chip_data *chip)
->>   {
->> -       unsigned int reg_val;
->>         int ret;
->>         struct lm3642_platform_data *pdata = chip->pdata;
->>         /* set enable register */
->> -       ret = regmap_read(chip->regmap, REG_ENABLE, &reg_val);
->> +       ret = regmap_update_bits(chip->regmap, REG_ENABLE,
->> EX_PIN_ENABLE_MASK,
->> +                                pdata->tx_pin);
->>         if (ret < 0)
->> -               goto out;
->> -
->> -       reg_val &= (~EX_PIN_ENABLE_MASK);
->> -       reg_val |= pdata->tx_pin;
->> -       ret = regmap_write(chip->regmap, REG_ENABLE, reg_val);
->> -       if (ret < 0)
->> -               goto out;
->> -
->> -out:
->> -       dev_err(chip->dev, "Failed to read REG_ENABLE Register\n");
->> +               dev_err(chip->dev, "Failed to update REG_ENABLE
->> Register\n");
->>         return ret;
->>   }
->>
->
->
+Hope below patch helps you (untested)
 
+Regards
+Afzal
 
+----8<-------------------
 
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+index 1c53c05..a4c6912 100644
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -827,7 +827,19 @@ static struct platform_driver gpmc_driver = {
+        },
+ };
+ 
+-module_platform_driver(gpmc_driver);
++static __init int gpmc_init(void)
++{
++        return platform_driver_register(&gpmc_driver);
++}
++
++static __exit void gpmc_exit(void)
++{
++        platform_driver_unregister(&gpmc_driver);
++
++}
++
++postcore_initcall(gpmc_init);
++module_exit(gpmc_exit);
+ 
+ int gpmc_suspend(void)
+ {
+----8<----------------
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
