@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab2IXWlz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:41:55 -0400
+	id S1751761Ab2IXWm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:42:26 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:43938 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab2IXWfg (ORCPT
+	with ESMTP id S1751498Ab2IXWff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:35:36 -0400
+	Mon, 24 Sep 2012 18:35:35 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         neilb@suse.de, vgoyal@redhat.com
-Subject: [PATCH v3 05/26] md: Convert md_trim_bio() to use bio_advance()
-Date: Mon, 24 Sep 2012 15:34:45 -0700
-Message-Id: <1348526106-17074-6-git-send-email-koverstreet@google.com>
+Subject: [PATCH v3 04/26] block: Refactor blk_update_request()
+Date: Mon, 24 Sep 2012 15:34:44 -0700
+Message-Id: <1348526106-17074-5-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1348526106-17074-1-git-send-email-koverstreet@google.com>
 References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
@@ -22,48 +22,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Converts it to use bio_advance(), simplifying it quite a bit in the
+process.
+
+Note that req_bio_endio() now always calls bio_advance() - which means
+it always loops over the biovec, not just on partial completions. Don't
+expect it to affect performance, but worth noting.
+
+Tested it by forcing partial updates, and dumping before and after on
+various bio/bvec fields when doing a partial update.
+
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-CC: NeilBrown <neilb@suse.de>
 ---
- drivers/md/md.c | 19 +++++--------------
- 1 file changed, 5 insertions(+), 14 deletions(-)
+ block/blk-core.c | 80 +++++++++-----------------------------------------------
+ 1 file changed, 12 insertions(+), 68 deletions(-)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 7a2b079..51ce48c 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -190,25 +190,16 @@ void md_trim_bio(struct bio *bio, int offset, int size)
- 	struct bio_vec *bvec;
- 	int sofar = 0;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index a17869f..a8a1a9e 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -158,20 +158,10 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
+ 	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+ 		error = -EIO;
  
--	size <<= 9;
- 	if (offset == 0 && size == bio->bi_size)
- 		return;
- 
--	bio->bi_sector += offset;
--	bio->bi_size = size;
--	offset <<= 9;
- 	clear_bit(BIO_SEG_VALID, &bio->bi_flags);
- 
--	while (bio->bi_idx < bio->bi_vcnt &&
--	       bio->bi_io_vec[bio->bi_idx].bv_len <= offset) {
--		/* remove this whole bio_vec */
--		offset -= bio->bi_io_vec[bio->bi_idx].bv_len;
--		bio->bi_idx++;
+-	if (unlikely(nbytes > bio->bi_size)) {
+-		printk(KERN_ERR "%s: want %u bytes done, %u left\n",
+-		       __func__, nbytes, bio->bi_size);
+-		nbytes = bio->bi_size;
 -	}
--	if (bio->bi_idx < bio->bi_vcnt) {
--		bio->bi_io_vec[bio->bi_idx].bv_offset += offset;
--		bio->bi_io_vec[bio->bi_idx].bv_len -= offset;
+-
+ 	if (unlikely(rq->cmd_flags & REQ_QUIET))
+ 		set_bit(BIO_QUIET, &bio->bi_flags);
+ 
+-	bio->bi_size -= nbytes;
+-	bio->bi_sector += (nbytes >> 9);
+-
+-	if (bio_integrity(bio))
+-		bio_integrity_advance(bio, nbytes);
++	bio_advance(bio, nbytes);
+ 
+ 	/* don't actually finish bio if it's part of flush sequence */
+ 	if (bio->bi_size == 0 && !(rq->cmd_flags & REQ_FLUSH_SEQ))
+@@ -2219,8 +2209,7 @@ EXPORT_SYMBOL(blk_fetch_request);
+  **/
+ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
+ {
+-	int total_bytes, bio_nbytes, next_idx = 0;
+-	struct bio *bio;
++	int total_bytes;
+ 
+ 	if (!req->bio)
+ 		return false;
+@@ -2264,56 +2253,21 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
+ 
+ 	blk_account_io_completion(req, nr_bytes);
+ 
+-	total_bytes = bio_nbytes = 0;
+-	while ((bio = req->bio) != NULL) {
+-		int nbytes;
++	total_bytes = 0;
++	while (req->bio) {
++		struct bio *bio = req->bio;
++		unsigned bio_bytes = min(bio->bi_size, nr_bytes);
+ 
+-		if (nr_bytes >= bio->bi_size) {
++		if (bio_bytes == bio->bi_size)
+ 			req->bio = bio->bi_next;
+-			nbytes = bio->bi_size;
+-			req_bio_endio(req, bio, nbytes, error);
+-			next_idx = 0;
+-			bio_nbytes = 0;
+-		} else {
+-			int idx = bio->bi_idx + next_idx;
+-
+-			if (unlikely(idx >= bio->bi_vcnt)) {
+-				blk_dump_rq_flags(req, "__end_that");
+-				printk(KERN_ERR "%s: bio idx %d >= vcnt %d\n",
+-				       __func__, idx, bio->bi_vcnt);
+-				break;
+-			}
+-
+-			nbytes = bio_iovec_idx(bio, idx)->bv_len;
+-			BIO_BUG_ON(nbytes > bio->bi_size);
+-
+-			/*
+-			 * not a complete bvec done
+-			 */
+-			if (unlikely(nbytes > nr_bytes)) {
+-				bio_nbytes += nr_bytes;
+-				total_bytes += nr_bytes;
+-				break;
+-			}
+ 
+-			/*
+-			 * advance to the next vector
+-			 */
+-			next_idx++;
+-			bio_nbytes += nbytes;
+-		}
++		req_bio_endio(req, bio, bio_bytes, error);
+ 
+-		total_bytes += nbytes;
+-		nr_bytes -= nbytes;
++		total_bytes += bio_bytes;
++		nr_bytes -= bio_bytes;
+ 
+-		bio = req->bio;
+-		if (bio) {
+-			/*
+-			 * end more in this run, or just return 'not-done'
+-			 */
+-			if (unlikely(nr_bytes <= 0))
+-				break;
+-		}
++		if (!nr_bytes)
++			break;
+ 	}
+ 
+ 	/*
+@@ -2329,16 +2283,6 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
+ 		return false;
+ 	}
+ 
+-	/*
+-	 * if the request wasn't completed, update state
+-	 */
+-	if (bio_nbytes) {
+-		req_bio_endio(req, bio, bio_nbytes, error);
+-		bio->bi_idx += next_idx;
+-		bio_iovec(bio)->bv_offset += nr_bytes;
+-		bio_iovec(bio)->bv_len -= nr_bytes;
 -	}
-+	bio_advance(bio, offset << 9);
-+
-+	size <<= 9;
-+	bio->bi_size = size;
-+
- 	/* avoid any complications with bi_idx being non-zero*/
- 	if (bio->bi_idx) {
- 		memmove(bio->bi_io_vec, bio->bi_io_vec+bio->bi_idx,
+-
+ 	req->__data_len -= total_bytes;
+ 	req->buffer = bio_data(req->bio);
+ 
 -- 
 1.7.12
 
