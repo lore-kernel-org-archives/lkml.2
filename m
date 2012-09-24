@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab2IXGlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 02:41:14 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:25698 "EHLO mailhub1.si.c-s.fr"
+	id S1754344Ab2IXGnC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 02:43:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44931 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab2IXGlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 02:41:10 -0400
-Date: Mon, 24 Sep 2012 08:39:44 +0200
-Message-Id: <201209240639.q8O6di6f029596@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Alan Cox <alan@linux.intel.com>, Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>
-CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH] Powerpc 8xx CPM_UART setting MAXIDL register proportionaly to baud rate
+	id S1752246Ab2IXGm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 02:42:59 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 2/2] ACPI: Override arbitrary ACPI tables via initrd for debugging
+Date: Mon, 24 Sep 2012 08:40:28 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34.10-0.4-desktop; KDE/4.4.4; x86_64; ; )
+Cc: hpa@zytor.com, initramfs@vger.kernel.org, robert.moore@intel.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        yinghai@kernel.org, eric.piel@tremplin-utc.net, vojcek@tlen.pl
+References: <1348234085-39220-1-git-send-email-trenn@suse.de> <201209230317.04050.trenn@suse.de> <505E8F44.9020208@kernel.org>
+In-Reply-To: <505E8F44.9020208@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209240840.29342.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAXIDL is the timeout after which a receive buffer is closed when not full if
-no more characters are received. We calculate it from the baudrate so that the
-duration is always the same at standard rates: about 4ms. At 9600 bauds it gives
-a timeout of 4 characters, which is the timeout on the 8250 UART.
+On Sunday 23 September 2012 06:25:40 Len Brown wrote:
+> > +config ACPI_INITRD_TABLE_OVERRIDE
+> > +       bool
+> > +       default y
+> 
+> Do distros in addition to SuSE concur they want to ship this way?
+Whether distros ship this in their enterprise, community or just in
+a -debug kernel flavor is up to them.
+I cannot see why this cannot be enabled by default on all.
+That is what the TAINT flag is for...
+ 
+> The last time we tried to make debugging easier we added
+> ACPI_CUSTOM_METHOD, which allowed root to over-ride an AML method
+> on a running system.  Distro security-minded people were not amused.
+Yep and therefore you have to remove this one from the tools for
+ACPI debugging you listed.
+The issue is/was, that root can inject code at runtime which is then
+executed in kernel environment.
+Afaik there are "security" provisions or say setups, which do
+hide modprobe/insmod and do not allow root to load any kernel drivers 
+or similar.
+If one can write the kernel or initrd which gets booted, I guess there
+are not much security restrictions anymore you could put on this user...
+But thanks for the pointer, I'll go and double check with some
+security guys.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> thanks,
+> -Len Brown, Intel Open Source Technology Center
+> 
+> ps I noticed your reference to acpidump in the README.
+> That reminded me to push it to the kernel source tree.
+> Its new home will be tools/power/acpi
+This is the one which I tried to/did adjust to acpica headers?
+This sounds like a very good idea. I'll adjust the docs.
 
---- linux-3.5-vanilla/drivers/tty/serial/cpm_uart/cpm_uart_core.c	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.5/drivers/tty/serial/cpm_uart/cpm_uart_core.c	2012-08-09 17:38:37.000000000 +0200
-@@ -501,6 +501,7 @@
- 	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
- 	smc_t __iomem *smcp = pinfo->smcp;
- 	scc_t __iomem *sccp = pinfo->sccp;
-+	int maxidl;
- 
- 	pr_debug("CPM uart[%d]:set_termios\n", port->line);
- 
-@@ -511,6 +512,17 @@
- 	else
- 		pinfo->rx_fifosize = RX_BUF_SIZE;
- 
-+	/* MAXIDL is the timeout after which a receive buffer is closed
-+	 * when not full if no more characters are received.
-+	 * We calculate it from the baudrate so that the duration is
-+	 * always the same at standard rates: about 4ms.
-+	 */
-+	maxidl = baud / 2400;
-+	if (maxidl < 1)
-+		maxidl = 1;
-+	if (maxidl > 0x10)
-+		maxidl = 0x10;
-+
- 	/* Character length programmed into the mode register is the
- 	 * sum of: 1 start bit, number of data bits, 0 or 1 parity bit,
- 	 * 1 or 2 stop bits, minus 1.
-@@ -611,6 +623,7 @@
- 		 * SMC/SCC receiver is disabled.
- 		 */
- 		out_be16(&pinfo->smcup->smc_mrblr, pinfo->rx_fifosize);
-+		out_be16(&pinfo->smcup->smc_maxidl, maxidl);
- 
- 		/* Set the mode register.  We want to keep a copy of the
- 		 * enables, because we want to put them back if they were
-@@ -623,6 +636,7 @@
- 		    SMCMR_SM_UART | prev_mode);
- 	} else {
- 		out_be16(&pinfo->sccup->scc_genscc.scc_mrblr, pinfo->rx_fifosize);
-+		out_be16(&pinfo->sccup->scc_maxidl, maxidl);
- 		out_be16(&sccp->scc_psmr, (sbits << 12) | scval);
- 	}
- 
+pss: Can this tool live there as well:
+ftp://ftp.suse.com/pub/people/trenn/sources/ec/ec_access.c
+It's the userspace tool for examining EC values (and changes) via
+ec_sys debug driver and a corresponding /sys/kernel/debug/.. file.
+It's more ore less doing the same what the old thinkpad_acpi driver
+could, but offers this to all machines with an EC device.
+
+    Thomas
