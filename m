@@ -1,51 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab2IXOAs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 10:00:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44880 "EHLO bear.ext.ti.com"
+	id S1755658Ab2IXOBF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 10:01:05 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:31170 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755391Ab2IXOAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 10:00:46 -0400
-Message-ID: <50606768.3080300@ti.com>
-Date: Mon, 24 Sep 2012 10:00:08 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-Reply-To: <cyril@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, <catalin.marinas@arm.com>, <davidb@codeaurora.org>,
-        <frank.rowand@am.sony.com>, <hsweeten@visionengravers.com>,
-        <linus.walleij@linaro.org>, <marc.zyngier@arm.com>, <nico@linaro.org>,
-        <paul.gortmaker@windriver.com>, <plagnioj@jcrosoft.com>,
-        <rabin@rab.in>, <rmallon@gmail.com>, <rob.herring@calxeda.com>,
-        <sboyd@codeaurora.org>, <sjg@chromium.org>, <tglx@linutronix.de>,
-        <tj@kernel.org>, <vincent.guittot@linaro.org>, <vitalya@ti.com>,
-        <will.deacon@arm.com>, <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 RESEND 09/17] ARM: LPAE: use phys_addr_t for initrd
- location and size
-References: <1348242975-19184-1-git-send-email-cyril@ti.com> <1348242975-19184-10-git-send-email-cyril@ti.com> <20120924133826.GA26454@n2100.arm.linux.org.uk>
-In-Reply-To: <20120924133826.GA26454@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755453Ab2IXOBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 10:01:03 -0400
+Date: Mon, 24 Sep 2012 16:00:58 +0200
+Message-Id: <201209241400.q8OE0w38011790@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: David S Miller <davem@davemloft.net>,
+        Richard Cochran <richardcochran@gmail.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4] lxt PHY: Support for the buggy LXT973 rev A2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/12 09:38, Russell King - ARM Linux wrote:
-> On Fri, Sep 21, 2012 at 11:56:07AM -0400, Cyril Chemparathy wrote:
->> From: Vitaly Andrianov <vitalya@ti.com>
->>
->> This patch fixes the initrd setup code to use phys_addr_t instead of assuming
->> 32-bit addressing.  Without this we cannot boot on systems where initrd is
->> located above the 4G physical address limit.
->
-> The description needs updating.  You're no longer using phys_addr_t for the
-> initrd size.
->
+This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding
+precautions linked to ERRATA Item 4:
 
-Thanks.  Nico had pointed this out earlier.  I've fixed for v4.
+Revision A2 of LXT973 chip randomly returns the contents of the previous even
+register when you read a odd register regularly
 
-Thanks
--- Cyril.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+
+diff -u a/drivers/net/phy/lxt.c b/drivers/net/phy/lxt.c
+--- a/drivers/net/phy/lxt.c	2012-09-23 03:08:48.000000000 +0200
++++ b/drivers/net/phy/lxt.c	2012-09-23 03:18:00.000000000 +0200
+@@ -122,6 +122,123 @@
+ 	return err;
+ }
+ 
++/*
++ * A2 version of LXT973 chip has an ERRATA: it randomly return the contents
++ * of the previous even register when you read a odd register regularly
++ */
++
++static int lxt973a2_update_link(struct phy_device *phydev)
++{
++	int status;
++	int control;
++	int retry = 8; /* we try 8 times */
++
++	/* Do a fake read */
++	status = phy_read(phydev, MII_BMSR);
++
++	if (status < 0)
++		return status;
++
++	control = phy_read(phydev, MII_BMCR);
++	if (control < 0)
++		return control;
++
++	do {
++		/* Read link and autonegotiation status */
++		status = phy_read(phydev, MII_BMSR);
++	} while (status >= 0 && retry-- && status == control);
++
++	if (status < 0)
++		return status;
++
++	if ((status & BMSR_LSTATUS) == 0)
++		phydev->link = 0;
++	else
++		phydev->link = 1;
++
++	return 0;
++}
++
++int lxt973a2_read_status(struct phy_device *phydev)
++{
++	int adv;
++	int err;
++	int lpa;
++	int lpagb = 0;
++
++	/* Update the link, but return if there was an error */
++	err = lxt973a2_update_link(phydev);
++	if (err)
++		return err;
++
++	if (AUTONEG_ENABLE == phydev->autoneg) {
++		int retry = 1;
++
++		adv = phy_read(phydev, MII_ADVERTISE);
++
++		if (adv < 0)
++			return adv;
++
++		do {
++			lpa = phy_read(phydev, MII_LPA);
++
++			if (lpa < 0)
++				return lpa;
++
++			/* If both registers are equal, it is suspect but not
++			* impossible, hence a new try
++			*/
++		} while (lpa == adv && retry--);
++
++		lpa &= adv;
++
++		phydev->speed = SPEED_10;
++		phydev->duplex = DUPLEX_HALF;
++		phydev->pause = phydev->asym_pause = 0;
++
++		if (lpagb & (LPA_1000FULL | LPA_1000HALF)) {
++			phydev->speed = SPEED_1000;
++
++			if (lpagb & LPA_1000FULL)
++				phydev->duplex = DUPLEX_FULL;
++		} else if (lpa & (LPA_100FULL | LPA_100HALF)) {
++			phydev->speed = SPEED_100;
++
++			if (lpa & LPA_100FULL)
++				phydev->duplex = DUPLEX_FULL;
++		} else {
++			if (lpa & LPA_10FULL)
++				phydev->duplex = DUPLEX_FULL;
++		}
++
++		if (phydev->duplex == DUPLEX_FULL) {
++			phydev->pause = lpa & LPA_PAUSE_CAP ? 1 : 0;
++			phydev->asym_pause = lpa & LPA_PAUSE_ASYM ? 1 : 0;
++		}
++	} else {
++		int bmcr = phy_read(phydev, MII_BMCR);
++
++		if (bmcr < 0)
++			return bmcr;
++
++		if (bmcr & BMCR_FULLDPLX)
++			phydev->duplex = DUPLEX_FULL;
++		else
++			phydev->duplex = DUPLEX_HALF;
++
++		if (bmcr & BMCR_SPEED1000)
++			phydev->speed = SPEED_1000;
++		else if (bmcr & BMCR_SPEED100)
++			phydev->speed = SPEED_100;
++		else
++			phydev->speed = SPEED_10;
++
++		phydev->pause = phydev->asym_pause = 0;
++	}
++
++	return 0;
++}
++
+ static int lxt973_probe(struct phy_device *phydev)
+ {
+ 	int val = phy_read(phydev, MII_LXT973_PCR);
+@@ -175,6 +292,16 @@
+ 	.driver		= { .owner = THIS_MODULE,},
+ }, {
+ 	.phy_id		= 0x00137a10,
++	.name		= "LXT973-A2",
++	.phy_id_mask	= 0xffffffff,
++	.features	= PHY_BASIC_FEATURES,
++	.flags		= 0,
++	.probe		= lxt973_probe,
++	.config_aneg	= lxt973_config_aneg,
++	.read_status	= lxt973a2_read_status,
++	.driver		= { .owner = THIS_MODULE,},
++}, {
++	.phy_id		= 0x00137a10,
+ 	.name		= "LXT973",
+ 	.phy_id_mask	= 0xfffffff0,
+ 	.features	= PHY_BASIC_FEATURES,
