@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab2IXFZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 01:25:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42621 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754938Ab2IXFYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 01:24:46 -0400
-Date: Mon, 24 Sep 2012 07:24:42 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 10/11] userns: Convert the udf filesystem to use
- kuid/kgid where appropriate
-Message-ID: <20120924052442.GA12264@quack.suse.cz>
-References: <877grmj115.fsf@xmission.com>
- <1348277712-30055-1-git-send-email-ebiederm@xmission.com>
- <1348277712-30055-10-git-send-email-ebiederm@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348277712-30055-10-git-send-email-ebiederm@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754950Ab2IXF2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 01:28:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50500 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab2IXF2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 01:28:08 -0400
+Date: Mon, 24 Sep 2012 15:27:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shaun Ruffell <sruffell@digium.com>
+Subject: linux-next: manual merge of the edac tree with Linus' tree
+Message-Id: <20120924152757.eee2b749725e6bc08f7e7d4f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Sep_2012_15_27_57_+1000_dOywbGvd8WosKXs7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 21-09-12 18:35:11, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> Cc: Jan Kara <jack@suse.cz>
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-  The patch looks good. You can add:
-Acked-by: Jan Kara <jack@suse.cz>
+--Signature=_Mon__24_Sep_2012_15_27_57_+1000_dOywbGvd8WosKXs7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-							Honza
-> ---
->  fs/udf/inode.c |   20 ++++++++++++--------
->  init/Kconfig   |    1 -
->  2 files changed, 12 insertions(+), 9 deletions(-)
-> 
-> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-> index fafaad7..2e6fb4d 100644
-> --- a/fs/udf/inode.c
-> +++ b/fs/udf/inode.c
-> @@ -1250,6 +1250,8 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
->  	struct udf_sb_info *sbi = UDF_SB(inode->i_sb);
->  	struct udf_inode_info *iinfo = UDF_I(inode);
->  	unsigned int link_count;
-> +	uid_t i_uid;
-> +	gid_t i_gid;
->  
->  	fe = (struct fileEntry *)bh->b_data;
->  	efe = (struct extendedFileEntry *)bh->b_data;
-> @@ -1309,17 +1311,19 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
->  	}
->  
->  	read_lock(&sbi->s_cred_lock);
-> -	inode->i_uid = le32_to_cpu(fe->uid);
-> -	if (inode->i_uid == -1 ||
-> +	i_uid = le32_to_cpu(fe->uid);
-> +	if (i_uid == -1 ||
->  	    UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_UID_IGNORE) ||
->  	    UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_UID_SET))
-> -		inode->i_uid = UDF_SB(inode->i_sb)->s_uid;
-> +		i_uid = UDF_SB(inode->i_sb)->s_uid;
-> +	i_uid_write(inode, i_uid);
->  
-> -	inode->i_gid = le32_to_cpu(fe->gid);
-> -	if (inode->i_gid == -1 ||
-> +	i_gid = le32_to_cpu(fe->gid);
-> +	if (i_gid == -1 ||
->  	    UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_GID_IGNORE) ||
->  	    UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_GID_SET))
-> -		inode->i_gid = UDF_SB(inode->i_sb)->s_gid;
-> +		i_gid = UDF_SB(inode->i_sb)->s_gid;
-> +	i_gid_write(inode, i_gid);
->  
->  	if (fe->icbTag.fileType != ICBTAG_FILE_TYPE_DIRECTORY &&
->  			sbi->s_fmode != UDF_INVALID_MODE)
-> @@ -1539,12 +1543,12 @@ static int udf_update_inode(struct inode *inode, int do_sync)
->  	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_UID_FORGET))
->  		fe->uid = cpu_to_le32(-1);
->  	else
-> -		fe->uid = cpu_to_le32(inode->i_uid);
-> +		fe->uid = cpu_to_le32(i_uid_read(inode));
->  
->  	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_GID_FORGET))
->  		fe->gid = cpu_to_le32(-1);
->  	else
-> -		fe->gid = cpu_to_le32(inode->i_gid);
-> +		fe->gid = cpu_to_le32(i_gid_read(inode));
->  
->  	udfperms = ((inode->i_mode & S_IRWXO)) |
->  		   ((inode->i_mode & S_IRWXG) << 2) |
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 21adc1c..6f9819a 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -939,7 +939,6 @@ config UIDGID_CONVERTED
->  	depends on NFSD = n
->  	depends on NFS_FS = n
->  	depends on OCFS2_FS = n
-> -	depends on UDF_FS = n
->  	depends on UFS_FS = n
->  	depends on XFS_FS = n
->  
-> -- 
-> 1.7.5.4
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Hi Mauro,
+
+Today's linux-next merge of the edac tree got a conflict in drivers/edac/ed=
+ac_mc.c between commit faa2ad09c01c ("edac_mc: edac_mc_free() cannot assume=
+ mem_ctl_info is registered in sysfs") from Linus' tree and commit 12c3ab94=
+22cc ("edac: edac_mc_free() cannot assume mem_ctl_info is registered in sys=
+fs") from the edac tree.
+
+Two versions of the same patch. I just used the version from the edac
+tree and can carry the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__24_Sep_2012_15_27_57_+1000_dOywbGvd8WosKXs7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQX+9dAAoJEECxmPOUX5FEte4P+gKYTsrjBg7MenncZNDzJcCB
+pyX3lQrcZhkAvxKvb6d0w8SQGNT19xKb673oiUY3dYIyz5Ln9g/0CPAoOxydHex0
+QW/o8WLtrsbstQHBuN8JQAQh7E1MVUCnETI9BfDnKmrhFHAdD25rQeWHJDuKSdBd
+B101G7pTpuFHNTYYTT3TRqyP544xzMCbpiGsHJPLb90D+SjyN66Hn+J7h+PrR6f4
+mp97RrYK58oEh73n+m0Vo7bbxIAHaW+o+NwSJwr82XfV+iN52Tfi5c6jcHO2Zq6R
+xoviLkq8XgSqdUraezzm/YEq7qbfh1GQLUnaZJmGSxpk5XilECN/4wJdYbWHGIcq
+aqiOKXS8N1SexC3OFTzu8HBCyH3pI5sojgGagOPiafKnkwnIzP0Q6E6/XcAuc3z0
+vUolHR/JMN8TAvo1j70wbjyQ5OBRxnarBnwAoKjwxP6whzqM1oqV1ponM/h5D/ji
+hNh6fS0VJsHOZ1m9dkz18rVjREcE3sJ7JZeJcGybHIual+jadIhPqFkJVRgCecmG
+5qwl4wKYmh+jwqIhjavBdtF1V7DNMayFTP6Gp5Cx1CijNw6g6W/ooaQDW4ye27L3
+ePy+PogF4lsHcdCIJrUmyIsp8vX+Gl2tqsRYzTlDFlH7Cui1BA7UbZiqJTmlHsQt
+XYyRLXR3aF4a99zQz81q
+=GPYe
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__24_Sep_2012_15_27_57_+1000_dOywbGvd8WosKXs7--
