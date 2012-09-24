@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab2IXLex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 07:34:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36688 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab2IXLev convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 07:34:51 -0400
-Message-ID: <1348486479.11847.46.camel@twins>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
- in PLE handler
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Date: Mon, 24 Sep 2012 13:34:39 +0200
-In-Reply-To: <20120921115942.27611.67488.sendpatchset@codeblue>
-References: <20120921115942.27611.67488.sendpatchset@codeblue>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1754473Ab2IXLe5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 07:34:57 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41089 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754270Ab2IXLey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 07:34:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,474,1344236400"; 
+   d="scan'208";a="225718507"
+Date: Mon, 24 Sep 2012 19:34:47 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@amd64.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Conny Seidel <conny.seidel@amd.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
+Message-ID: <20120924113447.GA25182@localhost>
+References: <20120924102324.GA22303@aftab.osrc.amd.com>
+ <50603829.9050904@linux.vnet.ibm.com>
+ <20120924110554.GC22303@aftab.osrc.amd.com>
+ <50604047.7000908@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50604047.7000908@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-21 at 17:29 +0530, Raghavendra K T wrote:
-> In some special scenarios like #vcpu <= #pcpu, PLE handler may 
-> prove very costly, because there is no need to iterate over vcpus
-> and do unsuccessful yield_to burning CPU. 
+On Mon, Sep 24, 2012 at 04:43:11PM +0530, Srivatsa S. Bhat wrote:
+> On 09/24/2012 04:35 PM, Borislav Petkov wrote:
+> > On Mon, Sep 24, 2012 at 04:08:33PM +0530, Srivatsa S. Bhat wrote:
+> >> On 09/24/2012 03:53 PM, Borislav Petkov wrote:
+> >>> Hi all,
+> >>>
+> >>> we're able to trigger the oops below when doing CPU hotplug tests.
+> >>>
+> >>
+> >> I hit this problem as well, which I reported here, a few days ago:
+> >> https://lkml.org/lkml/2012/9/13/222
+> > 
+> > Ok, your case shows even more info:
+> > 
+> > [  526.024180] divide error: 0000 [#1] SMP 
+> > [  526.028144] Modules linked in: ipv6 cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse loop dm_mod iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm cdc_ether pcspkr usbnet shpchp pci_hotplug i2c_i801 i2c_core ioatdma mii crc32c_intel serio_raw microcode lpc_ich mfd_core i7core_edac bnx2 dca edac_core tpm_tis tpm sg tpm_bios rtc_cmos button uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif edd ext3 mbcache jbd fan processor mptsas mptscsih mptbase scsi_transport_sas scsi_mod thermal thermal_sys hwmon
+> > [  526.028145] CPU 9 
+> > [  526.028145] Pid: 2235, comm: flush-8:0 Not tainted 3.6.0-rc1-tglx-hotplug-0.0.0.28.36b5ec9-default #1 IBM IBM System x -[7870C4Q]-/68Y8033 
+> > [  526.028145] RIP: 0010:[<ffffffff811276f6>]  [<ffffffff811276f6>] bdi_dirty_limit+0x66/0xc0
+> > [  526.028145] RSP: 0018:ffff8811530bfcc0  EFLAGS: 00010206
+> > [  526.028145] RAX: 0000000000b9877e RBX: 00000000001a8112 RCX: 28f5c28f5c28f5c3
+> > [  526.028145] RDX: 0000000000000000 RSI: 0000000000b9877e RDI: 0000000000000000
+> > 
+> > %rax contains something != 0 but %rdi definitely is 0.
+> > 
+> 
+> Yep.. So I tried putting a BUG_ON(!den) in fprop_fraction_percpu() to
+> catch if we really got the code wrong somehow.. but unfortunately, with
+> that added, I haven't been successful in reproducing the bug :(
 
-What's the costly thing? The vm-exit, the yield (which should be a nop
-if its the only task there) or something else entirely?
+Will you test such a line? At least the generic do_div() only uses the
+lower 32bits for division.
 
+        WARN_ON(!(den & 0xffffffff));
 
+Thanks,
+Fengguang
