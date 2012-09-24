@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab2IXOzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 10:55:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34567 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab2IXOzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 10:55:49 -0400
-Date: Mon, 24 Sep 2012 09:55:34 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-security-module@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/14] userns: Convert hostfs to use kuid and kgid where
- appropriate
-Message-ID: <20120924145534.GA5193@sergelap>
-References: <87k3vote43.fsf@xmission.com>
- <1348187330-6616-1-git-send-email-ebiederm@xmission.com>
- <1348187330-6616-5-git-send-email-ebiederm@xmission.com>
- <505F864C.2000103@nod.at>
+	id S1755674Ab2IXO5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 10:57:49 -0400
+Received: from fieldses.org ([174.143.236.118]:57382 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754091Ab2IXO5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 10:57:47 -0400
+Date: Mon, 24 Sep 2012 10:57:43 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
+Message-ID: <20120924145743.GA3301@fieldses.org>
+References: <87ipb45914.fsf@devron.myhome.or.jp>
+ <CAKYAXd9EzKH_x1GaXvSZ7pRebfOcwQqNp6-oEnc2z2evuNo23g@mail.gmail.com>
+ <87ehls53ug.fsf@devron.myhome.or.jp>
+ <87a9wg53mc.fsf@devron.myhome.or.jp>
+ <CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
+ <87392768dj.fsf@devron.myhome.or.jp>
+ <CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
+ <87y5jz4rio.fsf@devron.myhome.or.jp>
+ <CAKYAXd_OmVgxtmHOLRdi5yr=yTa9ppmatQUf1GO6Qjg5ym8LuA@mail.gmail.com>
+ <87txun4n5r.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <505F864C.2000103@nod.at>
+In-Reply-To: <87txun4n5r.fsf@devron.myhome.or.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Richard Weinberger (richard@nod.at):
-> Am 21.09.2012 02:28, schrieb Eric W. Biederman:
-> > From: "Eric W. Biederman" <ebiederm@xmission.com>
-> > 
-> > Cc: Jeff Dike <jdike@addtoit.com>
-> > Cc: Richard Weinberger <richard@nod.at>
-> > Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> > Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> > ---
+On Mon, Sep 24, 2012 at 09:32:00PM +0900, OGAWA Hirofumi wrote:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
 > 
-> Looks sane to me.
+> > 2012/9/24, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> >> Namjae Jeon <linkinjeon@gmail.com> writes:
+> >>
+> >>>> I see. fileid seems to be stat.ino on nfsd4. inode->i_ino is actually
+> >>>> just a hash key of inode hash (exception is only in audit, iirc).
+> >>>>
+> >>>> So, what happens if we set "stat->ino = i_pos" on fat_getattr().
+> >>>>
+> >>>> int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct
+> >>>> kstat
+> >>>> *stat)
+> >>>> {
+> >>>> 	struct inode *inode = dentry->d_inode;
+> >>>> 	generic_fillattr(inode, stat);
+> >>>> 	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
+> >>>> 	if (opts->nfs == FAT_NFS_LIMITED) {
+> >>>> 		/* Use i_pos for ino. This is used as fileid of nfs. */
+> >>>> 		stat->ino = MSDOS_SB(inode->i_sb)->i_pos;
+> >>
+> >> 		stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb), inode);
+> >>
+> >> Ouch, I forgot to use fat_i_pos_read().
+> >>
+> > There is some unclear thing.
+> > When I see first mail, I think maybe you don't want to use i_pos for inode->ino.
+> > FAT allocate inode->ino from i_unique on server side and If NFS client
+> > use i_pos for inode->ino in fat_get_attr, inode numbers on each
+> > client/server will still be mismatched.
+> >
+> > Would you plz give me hint ?
 > 
-> Acked-by: Richard Weinberger <richard@nod.at>
-> 
-> BTW: How you do test your user namespace patches?
+> ->i_ino is long. It can't hold i_pos fully on 32bit arch, so we can't
+> use ->i_no to store i_pos, and changing ->i_ino is unnecessary. If
+> getattr() returned i_pos as ino, nobody see ->i_ino anymore except
+> internal of kernel.
 
-I've got a few specific tests of the new functionality in the usernstest.c
-in the nsexec package at
-https://launchpad.net/~serge-hallyn/+archive/userns-natty/+sourcepub/2530252/+listing-archive-extra .
-Of course LTP already has a good set of test cases for the regular
-functionality.
+The NFS server must always return the same inode number for the same
+filehandle.  To do otherwise is a bug.
 
-> Is there a generic way to compare/verify uids within a namespace vs. the initial namespace?
+> Furthermore I think there is no issue even if server and client didn't
+> have same ino. Because client just uses FH (nfs4 seems to be using
+> stat.ino though).
 
-It's good to look at output of 'id' in the task versus 'ps' from the initial ns,
-as well as create a file and look at the stat output from both namespaces.
+The client may expose a different inode number to userspace, but it's
+probably the server-provided inode number that it's checking.
 
--serge
+(And even if the Linux client didn't currently happen to do that check,
+this would still be a bug.)
+
+--b.
