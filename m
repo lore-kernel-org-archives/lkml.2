@@ -1,274 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab2IXChZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 22:37:25 -0400
-Received: from tundra.namei.org ([65.99.196.166]:50963 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754410Ab2IXChX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 22:37:23 -0400
-Date: Mon, 24 Sep 2012 12:26:05 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Ashley Lai <adlai@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, adlai@us.ibm.com
-Subject: Re: [PATCH 1/1] drivers/char/tpm: remove tasklet and cleanup
-In-Reply-To: <1347472190.27058.5.camel@footlong>
-Message-ID: <alpine.LRH.2.02.1209241225230.678@tundra.namei.org>
-References: <1345670263.25124.7.camel@footlong> <1347472190.27058.5.camel@footlong>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1754821Ab2IXCjP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 22:39:15 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:42201 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465Ab2IXCjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 22:39:13 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Serge Hallyn <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Jeff Dike <jdike@addtoit.com>
+In-Reply-To: <505F864C.2000103@nod.at> (Richard Weinberger's message of "Sun,
+	23 Sep 2012 23:59:40 +0200")
+References: <87k3vote43.fsf@xmission.com>
+	<1348187330-6616-1-git-send-email-ebiederm@xmission.com>
+	<1348187330-6616-5-git-send-email-ebiederm@xmission.com>
+	<505F864C.2000103@nod.at>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Date: Sun, 23 Sep 2012 19:39:02 -0700
+Message-ID: <87obkwxhyx.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+MXa6BTSnoJtxP2w3Rcl13WXdCJzVOBLc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0003]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Richard Weinberger <richard@nod.at>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 05/14] userns: Convert hostfs to use kuid and kgid where appropriate
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Sep 2012, Ashley Lai wrote:
+Richard Weinberger <richard@nod.at> writes:
 
-> This patch removed the tasklet and moved the wait queue into the
-> private structure.  It also cleaned up the response CRQ path.
-> 
-> Signed-off-by: Ashley Lai <adlai@us.ibm.com>
+> Am 21.09.2012 02:28, schrieb Eric W. Biederman:
+>> From: "Eric W. Biederman" <ebiederm@xmission.com>
+>> 
+>> Cc: Jeff Dike <jdike@addtoit.com>
+>> Cc: Richard Weinberger <richard@nod.at>
+>> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+>> ---
+>
+> Looks sane to me.
+>
+> Acked-by: Richard Weinberger <richard@nod.at>
+>
+> BTW: How you do test your user namespace patches?
+> Is there a generic way to compare/verify uids within a namespace
+> vs. the initial namespace?
 
+I start with a well tested set of primites, and a simple design.
 
-Kent: any comment on this?  You should probably push this to me via your 
-tree.
+Ultimately the goal is to get the conversion functions make_kuid and
+from_kuid inserted into the proper locations.
 
+When user namespaces are enabled kuid_t and uid_t are not assignment
+compatible so in most places where something needs to be done I get
+a compile error.
 
-> ---
-> James,
-> 
-> This patch is based on your "next" branch.
-> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git
-> 
-> Thanks,
-> Ashley Lai
-> ---
->  drivers/char/tpm/tpm_ibmvtpm.c | 81 +++++++++++++++---------------------------
->  drivers/char/tpm/tpm_ibmvtpm.h |  5 ++-
->  2 files changed, 30 insertions(+), 56 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-> index efc4ab3..88a95ea 100644
-> --- a/drivers/char/tpm/tpm_ibmvtpm.c
-> +++ b/drivers/char/tpm/tpm_ibmvtpm.c
-> @@ -38,8 +38,6 @@ static struct vio_device_id tpm_ibmvtpm_device_table[] __devinitdata = {
->  };
->  MODULE_DEVICE_TABLE(vio, tpm_ibmvtpm_device_table);
->  
-> -DECLARE_WAIT_QUEUE_HEAD(wq);
-> -
->  /**
->   * ibmvtpm_send_crq - Send a CRQ request
->   * @vdev:	vio device struct
-> @@ -83,6 +81,7 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
->  {
->  	struct ibmvtpm_dev *ibmvtpm;
->  	u16 len;
-> +	int sig;
->  
->  	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
->  
-> @@ -91,22 +90,23 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
->  		return 0;
->  	}
->  
-> -	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
-> +	sig = wait_event_interruptible(ibmvtpm->wq, ibmvtpm->res_len != 0);
-> +	if (sig)
-> +		return -EINTR;
-> +
-> +	len = ibmvtpm->res_len;
->  
-> -	if (count < ibmvtpm->crq_res.len) {
-> +	if (count < len) {
->  		dev_err(ibmvtpm->dev,
->  			"Invalid size in recv: count=%ld, crq_size=%d\n",
-> -			count, ibmvtpm->crq_res.len);
-> +			count, len);
->  		return -EIO;
->  	}
->  
->  	spin_lock(&ibmvtpm->rtce_lock);
-> -	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, ibmvtpm->crq_res.len);
-> -	memset(ibmvtpm->rtce_buf, 0, ibmvtpm->crq_res.len);
-> -	ibmvtpm->crq_res.valid = 0;
-> -	ibmvtpm->crq_res.msg = 0;
-> -	len = ibmvtpm->crq_res.len;
-> -	ibmvtpm->crq_res.len = 0;
-> +	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, len);
-> +	memset(ibmvtpm->rtce_buf, 0, len);
-> +	ibmvtpm->res_len = 0;
->  	spin_unlock(&ibmvtpm->rtce_lock);
->  	return len;
->  }
-> @@ -273,7 +273,6 @@ static int __devexit tpm_ibmvtpm_remove(struct vio_dev *vdev)
->  	int rc = 0;
->  
->  	free_irq(vdev->irq, ibmvtpm);
-> -	tasklet_kill(&ibmvtpm->tasklet);
->  
->  	do {
->  		if (rc)
-> @@ -372,7 +371,6 @@ static int ibmvtpm_reset_crq(struct ibmvtpm_dev *ibmvtpm)
->  static int tpm_ibmvtpm_resume(struct device *dev)
->  {
->  	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
-> -	unsigned long flags;
->  	int rc = 0;
->  
->  	do {
-> @@ -387,10 +385,11 @@ static int tpm_ibmvtpm_resume(struct device *dev)
->  		return rc;
->  	}
->  
-> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> -	vio_disable_interrupts(ibmvtpm->vdev);
-> -	tasklet_schedule(&ibmvtpm->tasklet);
-> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> +	rc = vio_enable_interrupts(ibmvtpm->vdev);
-> +	if (rc) {
-> +		dev_err(dev, "Error vio_enable_interrupts rc=%d\n", rc);
-> +		return rc;
-> +	}
->  
->  	rc = ibmvtpm_crq_send_init(ibmvtpm);
->  	if (rc)
-> @@ -467,7 +466,7 @@ static struct ibmvtpm_crq *ibmvtpm_crq_get_next(struct ibmvtpm_dev *ibmvtpm)
->  	if (crq->valid & VTPM_MSG_RES) {
->  		if (++crq_q->index == crq_q->num_entry)
->  			crq_q->index = 0;
-> -		rmb();
-> +		smp_rmb();
->  	} else
->  		crq = NULL;
->  	return crq;
-> @@ -535,11 +534,9 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
->  			ibmvtpm->vtpm_version = crq->data;
->  			return;
->  		case VTPM_TPM_COMMAND_RES:
-> -			ibmvtpm->crq_res.valid = crq->valid;
-> -			ibmvtpm->crq_res.msg = crq->msg;
-> -			ibmvtpm->crq_res.len = crq->len;
-> -			ibmvtpm->crq_res.data = crq->data;
-> -			wake_up_interruptible(&wq);
-> +			/* len of the data in rtce buffer */
-> +			ibmvtpm->res_len = crq->len;
-> +			wake_up_interruptible(&ibmvtpm->wq);
->  			return;
->  		default:
->  			return;
-> @@ -559,38 +556,19 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
->  static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
->  {
->  	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
-> -	unsigned long flags;
-> -
-> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> -	vio_disable_interrupts(ibmvtpm->vdev);
-> -	tasklet_schedule(&ibmvtpm->tasklet);
-> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> -
-> -	return IRQ_HANDLED;
-> -}
-> -
-> -/**
-> - * ibmvtpm_tasklet - Interrupt handler tasklet
-> - * @data:	ibm vtpm device struct
-> - *
-> - * Returns:
-> - *	Nothing
-> - **/
-> -static void ibmvtpm_tasklet(void *data)
-> -{
-> -	struct ibmvtpm_dev *ibmvtpm = data;
->  	struct ibmvtpm_crq *crq;
-> -	unsigned long flags;
->  
-> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> +	/* while loop is needed for initial setup (get version and
-> +	 * get rtce_size). There should be only one tpm request at any
-> +	 * given time.
-> +	 */
->  	while ((crq = ibmvtpm_crq_get_next(ibmvtpm)) != NULL) {
->  		ibmvtpm_crq_process(crq, ibmvtpm);
->  		crq->valid = 0;
-> -		wmb();
-> +		smp_wmb();
->  	}
->  
-> -	vio_enable_interrupts(ibmvtpm->vdev);
-> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> +	return IRQ_HANDLED;
->  }
->  
->  /**
-> @@ -650,9 +628,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
->  		goto reg_crq_cleanup;
->  	}
->  
-> -	tasklet_init(&ibmvtpm->tasklet, (void *)ibmvtpm_tasklet,
-> -		     (unsigned long)ibmvtpm);
-> -
->  	rc = request_irq(vio_dev->irq, ibmvtpm_interrupt, 0,
->  			 tpm_ibmvtpm_driver_name, ibmvtpm);
->  	if (rc) {
-> @@ -666,13 +641,14 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
->  		goto init_irq_cleanup;
->  	}
->  
-> +	init_waitqueue_head(&ibmvtpm->wq);
-> +
->  	crq_q->index = 0;
->  
->  	ibmvtpm->dev = dev;
->  	ibmvtpm->vdev = vio_dev;
->  	chip->vendor.data = (void *)ibmvtpm;
->  
-> -	spin_lock_init(&ibmvtpm->lock);
->  	spin_lock_init(&ibmvtpm->rtce_lock);
->  
->  	rc = ibmvtpm_crq_send_init(ibmvtpm);
-> @@ -689,7 +665,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
->  
->  	return rc;
->  init_irq_cleanup:
-> -	tasklet_kill(&ibmvtpm->tasklet);
->  	do {
->  		rc1 = plpar_hcall_norets(H_FREE_CRQ, vio_dev->unit_address);
->  	} while (rc1 == H_BUSY || H_IS_LONG_BUSY(rc1));
-> diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
-> index 4296eb4..bd82a79 100644
-> --- a/drivers/char/tpm/tpm_ibmvtpm.h
-> +++ b/drivers/char/tpm/tpm_ibmvtpm.h
-> @@ -38,13 +38,12 @@ struct ibmvtpm_dev {
->  	struct vio_dev *vdev;
->  	struct ibmvtpm_crq_queue crq_queue;
->  	dma_addr_t crq_dma_handle;
-> -	spinlock_t lock;
-> -	struct tasklet_struct tasklet;
->  	u32 rtce_size;
->  	void __iomem *rtce_buf;
->  	dma_addr_t rtce_dma_handle;
->  	spinlock_t rtce_lock;
-> -	struct ibmvtpm_crq crq_res;
-> +	wait_queue_head_t wq;
-> +	u16 res_len;
->  	u32 vtpm_version;
->  };
->  
-> -- 
-> 1.7.11.2
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+If the other value is an internal kernel value I change it's type.
+If the other value is a userspace or on disk value I insert a conversion
+function.
 
--- 
-James Morris
-<jmorris@namei.org>
+So as a first approximation I can test just by enabling usernamespace
+support and compiling the code.
+
+My second line of defense is to keep my patches simple and easily
+reviewable.
+
+I impose upon myself the discipline of letting my patches set for a
+while so that I review them with a fresh mind before sending them
+out to the list.
+
+I am careful when making my patches to actually read the code and
+understand what is going on, so hopefully I catch the tricky cases.
+
+With the user namespace support disabled the code performs the same with
+except for the conversion functions so things like my conversion of the
+core kernel in 3.5 continue to be tested for correctness in general.
+
+Right now for filesystems I am converting them so they will work when
+all of the user space interfaces have values coming to the filesystem in
+kuid_t and kgid_t, but the values in the filesystem are stored in
+the initial user namespace.  So it is trivial to know that I have
+useful the correct conversions.
+
+Since my big question is do I have the conversions in all of the
+locations needed, compile errors and the discipline of pushing kuid_t
+and kgid_t as deep as possible into the kernel data structures as
+possible are my primary means of where conversions need to go.
+
+Beyond that I actually run a kernel with all of my patches applied and I
+do some spot testing, and I have had my development tree with everything
+patched out for a while so that other people can play with it as well.
+
+I also compile test each patch with allyesconfig and with as much
+enabled as I can and still leave the usernamespace support enabled,
+ensuring each patch is good and safe on it's own (at least compilewise).
+
+So that is how I test.
+
+As to a generic way to compare/verify uids within a namespace vs the
+initial namespace hmm.  I don't know that there is a generic tool.  The
+mappings are available in /proc/<pid>/uid_maps, and /proc/<pid>/gid_maps
+so it isn't hard to look to see if the expected conversion is happening
+by looking from outside the namespace. But there isn't a generic tool
+that I know of at this point.
+
+Eric
