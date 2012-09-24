@@ -1,110 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab2IXDSq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 23:18:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45963 "EHLO
+	id S1754890Ab2IXDjd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 23:39:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34625 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab2IXDSo (ORCPT
+	with ESMTP id S1751326Ab2IXDjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 23:18:44 -0400
-Date: Mon, 24 Sep 2012 13:18:34 +1000
+	Sun, 23 Sep 2012 23:39:32 -0400
+Date: Mon, 24 Sep 2012 13:39:23 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
+To: Takashi Iwai <tiwai@suse.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Wang Xingchao <xingchao.wang@intel.com>
-Subject: linux-next: build failure after merge of the drm tree
-Message-Id: <20120924131834.348fa5e6ecfa48521391ea62@canb.auug.org.au>
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: linux-next: build failure after merge of the sound and sound-asoc
+ trees
+Message-Id: <20120924133923.130c4db72aa8105cb5647d7a@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_13_18_34_+1000_B0fr62ZiKN4rBZFH"
+ boundary="Signature=_Mon__24_Sep_2012_13_39_23_+1000_AlwBkNuiICzS1f86"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_13_18_34_+1000_B0fr62ZiKN4rBZFH
+--Signature=_Mon__24_Sep_2012_13_39_23_+1000_AlwBkNuiICzS1f86
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
+Hi all,
 
-After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+After merging the sound tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-drivers/gpu/drm/i915/intel_hdmi.c: In function 'intel_enable_hdmi':
-drivers/gpu/drm/i915/intel_hdmi.c:633:31: error: 'mode' undeclared (first u=
-se in this function)
+In file included from include/linux/skbuff.h:31:0,
+                 from include/linux/if_ether.h:135,
+                 from include/linux/netdevice.h:29,
+                 from arch/powerpc/net/bpf_jit_comp.c:14:
+include/linux/dmaengine.h: In function 'dmaengine_prep_dma_cyclic':
+include/linux/dmaengine.h:659:24: error: 'flags' undeclared (first use in t=
+his function)
 
-Caused by commit b98b60167279 ("drm/i915: HDMI - Clear Audio Enable bit
-for Hot Plug") from Linus' tree interacting with commit 5ab432ef4997
-("drm/i915/hdmi: convert to encoder->disable/enable") from the drm tree.
+and lots more similar.
 
-I added the following merge fix patch (which may be wrong, of course):
+Caused by commit ec8b5e48c037 ("dmaengine: Pass flags via
+device_prep_dma_cyclic() callback").  Was this version of this patch
+build tested at all?
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 24 Sep 2012 13:14:40 +1000
-Subject: [PATCH] drm/i915: HDMI: update for API change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/gpu/drm/i915/intel_hdmi.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_hdmi.c b/drivers/gpu/drm/i915/intel=
-_hdmi.c
-index 2ec9c76..d39ed58 100644
---- a/drivers/gpu/drm/i915/intel_hdmi.c
-+++ b/drivers/gpu/drm/i915/intel_hdmi.c
-@@ -630,7 +630,7 @@ static void intel_enable_hdmi(struct intel_encoder *enc=
-oder)
- 	u32 temp;
- 	u32 enable_bits =3D SDVO_ENABLE;
-=20
--	if (intel_hdmi->has_audio || mode !=3D DRM_MODE_DPMS_ON)
-+	if (intel_hdmi->has_audio)
- 		enable_bits |=3D SDVO_AUDIO_ENABLE;
-=20
- 	temp =3D I915_READ(intel_hdmi->sdvox_reg);
-@@ -676,8 +676,7 @@ static void intel_disable_hdmi(struct intel_encoder *en=
-coder)
- 	u32 temp;
- 	u32 enable_bits =3D SDVO_ENABLE;
-=20
--	if (intel_hdmi->has_audio)
--		enable_bits |=3D SDVO_AUDIO_ENABLE;
-+	enable_bits |=3D SDVO_AUDIO_ENABLE;
-=20
- 	temp =3D I915_READ(intel_hdmi->sdvox_reg);
-=20
---=20
-1.7.10.280.gaa39
-
+I have used the sound and sound-asoc trees from next-20120921 for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__24_Sep_2012_13_18_34_+1000_B0fr62ZiKN4rBZFH
+--Signature=_Mon__24_Sep_2012_13_39_23_+1000_AlwBkNuiICzS1f86
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQX9EKAAoJEECxmPOUX5FEFrUP/1UOqKYRmXP4/ln/iatSj+be
-UW7bKd3TsMHFv06vmOZUxeQm7nhkQxvnrif5w8xX/b7eI6nhsL+HmydK3Kmpvk2M
-zXHkzXtOP5vXIJ6l4CVjGaB8WhxSXLTVJx5GbQHaCJ7WIGfg8aHqbpJztz2G/9as
-xSm5rfACtWsQFAI0VQu3kQRze1cf/uj2Z6/JR+4CBbsCy8qO1325O8zaTvsOIFg/
-GHBP5n78Y5OCgKQtqHtBN/kHaagHpDhjpKYncOvC3L5J3kOFdkn0faeMTxPOdkkH
-eJcNGADqJWKPuBS6jAk5qDq8m5HcJFL5Zi6AdE+Hu4u7KEW3riYJ+m3pGEjkKhsw
-Y1LKslNZsKyaEbF3+7eeMF38jb2OfYyiPHJA1p/M/DuHB/MNNkfwOy1tHrwRR180
-ycs7qKtkqgofT3A1hDUax2L0VQvdUX6iqpUJ6TG41uIniQCkntHPzc47N2CxaeH1
-MNRU1xTF55ZVWdXlnZJp4T/677a6idtXoQ0P5VU1fQE6cnw0GPlPkyWEvLz4YQAS
-qIjWEa2a2PI/pKuTXL7qpMjO/8XciwNqQ4mf7UVHlURMwK9FMZLzMrTyCSXvWc5s
-IropfbJnr1XwqDpevQ7P3Nfh6z92tOaNaY7ZXks+iyrw8XW73I6+jgkkMNp/Uu5i
-TR5S7Yzb0Fm+H/HYz819
-=ikzt
+iQIcBAEBCAAGBQJQX9XrAAoJEECxmPOUX5FEomYP/3ugmM8ymdx/mX9QmLFv4+o7
+ElD48nWimg1oh9CaD+qJv0eAbKp/wGL625RVnQhxxwUMkh+eJs0uuU4k5Gdw8nmE
+yStNzFvOpozJbEtyHjbL8l5u6Ws8YxgpuGuFfDGe3yxHVuGd1l2mwWRklW8ep+AN
+hxAndC7Ka1f9n3I0yAxcI78dS+hDK2v5hNk/sZHmo5YJjBUssZH3ajzh4lKmy+OS
+EHZdnLmvtjVe6ZURC1inL0ERU+cCWMjmbiXvROC1ph6OwbtUJPLwYfN+q1qvWEXo
+GNE888EuiwpcV6BZxE+cUz8cisDje4GrYHT0wQF1cHhsuc/rSTmsvVh+eZkEqV0q
+ALHt5fJj9EXKKNhMxLGGkhHQ8utnWdWkT5aq7P+3jC+3p12aBiB4XlcSpEAzifdL
+1JgkhYh1X0xa8RSVE21vE4Dx9c1qkGCc7zV7NMI7mUZnPkXOt3b8xxnIzMBh3IkI
+A3XTNFmL4DcUynLUrZzNvcGlmLglwjU5rHeYJ1WHfTG0ZbGnaODdEtPxrYBPrymC
+yJdH6/TbVuL3wpN+Ng4s7Pmqfx7TmL8nLeYdUdidaBfZ0hJ31w3937AcUPN3GGhK
+HyRk39CIxBid+T3eam45dmvGNABz2CIwLCpp2nSONsT2xROEmeOD4+zbsBP/NNZd
+/1gNlb4BKsaCEHy6iZx4
+=nKjm
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__24_Sep_2012_13_18_34_+1000_B0fr62ZiKN4rBZFH--
+--Signature=_Mon__24_Sep_2012_13_39_23_+1000_AlwBkNuiICzS1f86--
