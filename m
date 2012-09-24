@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab2IXWgg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:36:36 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63509 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab2IXWgB (ORCPT
+	id S1751959Ab2IXWg6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:36:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47788 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab2IXWf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:36:01 -0400
+	Mon, 24 Sep 2012 18:35:58 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        neilb@suse.de, vgoyal@redhat.com,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH v3 25/26] bio-integrity: Add explicit field for owner of bip_buf
-Date: Mon, 24 Sep 2012 15:35:05 -0700
-Message-Id: <1348526106-17074-26-git-send-email-koverstreet@google.com>
+        neilb@suse.de, vgoyal@redhat.com
+Subject: [PATCH v3 23/26] block: Add bio_alloc_pages()
+Date: Mon, 24 Sep 2012 15:35:03 -0700
+Message-Id: <1348526106-17074-24-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1348526106-17074-1-git-send-email-koverstreet@google.com>
 References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
@@ -23,52 +22,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was the only real user of BIO_CLONED, which didn't have very clear
-semantics. Convert to its own flag so we can get rid of BIO_CLONED.
+More utility code to replace stuff that's getting open coded.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-CC: Martin K. Petersen <martin.petersen@oracle.com>
+CC: NeilBrown <neilb@suse.de>
 ---
- fs/bio-integrity.c  | 5 ++---
- include/linux/bio.h | 1 +
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/md/raid1.c  | 16 +++-------------
+ fs/bio.c            | 28 ++++++++++++++++++++++++++++
+ include/linux/bio.h |  1 +
+ 3 files changed, 32 insertions(+), 13 deletions(-)
 
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index f175814..c5f33b4 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -95,9 +95,7 @@ void bio_integrity_free(struct bio *bio)
- 	struct bio_integrity_payload *bip = bio->bi_integrity;
- 	struct bio_set *bs = bio->bi_pool;
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index dff0473..97f80b9 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -92,7 +92,6 @@ static void r1bio_pool_free(void *r1_bio, void *data)
+ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
+ {
+ 	struct pool_info *pi = data;
+-	struct page *page;
+ 	struct r1bio *r1_bio;
+ 	struct bio *bio;
+ 	int i, j;
+@@ -122,14 +121,10 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
+ 		j = 1;
+ 	while(j--) {
+ 		bio = r1_bio->bios[j];
+-		for (i = 0; i < RESYNC_PAGES; i++) {
+-			page = alloc_page(gfp_flags);
+-			if (unlikely(!page))
+-				goto out_free_pages;
++		bio->bi_vcnt = RESYNC_PAGES;
  
--	/* A cloned bio doesn't own the integrity metadata */
--	if (!bio_flagged(bio, BIO_CLONED) && !bio_flagged(bio, BIO_FS_INTEGRITY)
--	    && bip->bip_buf != NULL)
-+	if (bip->bip_owns_buf)
- 		kfree(bip->bip_buf);
- 
- 	if (bs) {
-@@ -384,6 +382,7 @@ int bio_integrity_prep(struct bio *bio)
- 		return -EIO;
+-			bio->bi_io_vec[i].bv_page = page;
+-			bio->bi_vcnt = i+1;
+-		}
++		if (bio_alloc_pages(bio, gfp_flags))
++			goto out_free_bio;
  	}
+ 	/* If not user-requests, copy the page pointers to all bios */
+ 	if (!test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery)) {
+@@ -143,11 +138,6 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
  
-+	bip->bip_owns_buf = 1;
- 	bip->bip_buf = buf;
- 	bip->bip_size = len;
- 	bip->bip_sector = bio->bi_sector;
+ 	return r1_bio;
+ 
+-out_free_pages:
+-	for (j=0 ; j < pi->raid_disks; j++)
+-		for (i=0; i < r1_bio->bios[j]->bi_vcnt ; i++)
+-			put_page(r1_bio->bios[j]->bi_io_vec[i].bv_page);
+-	j = -1;
+ out_free_bio:
+ 	while (++j < pi->raid_disks)
+ 		bio_put(r1_bio->bios[j]);
+diff --git a/fs/bio.c b/fs/bio.c
+index 6ba9f27..8e10d49 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -828,6 +828,34 @@ void bio_advance(struct bio *bio, unsigned bytes)
+ EXPORT_SYMBOL(bio_advance);
+ 
+ /**
++ * bio_alloc_pages - allocates a single page for each bvec in a bio
++ * @bio: bio to allocate pages for
++ * @gfp_mask: flags for allocation
++ *
++ * Allocates pages up to @bio->bi_vcnt.
++ *
++ * Returns 0 on success, -ENOMEM on failure. On failure, any allocated pages are
++ * freed.
++ */
++int bio_alloc_pages(struct bio *bio, gfp_t gfp_mask)
++{
++	int i;
++	struct bio_vec *bv;
++
++	bio_for_each_segment_all(bv, bio, i) {
++		bv->bv_page = alloc_page(gfp_mask);
++		if (!bv->bv_page) {
++			while (--bv >= bio->bi_io_vec)
++				__free_page(bv->bv_page);
++			return -ENOMEM;
++		}
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(bio_alloc_pages);
++
++/**
+  * bio_copy_data - copy contents of data buffers from one chain of bios to
+  * another
+  * @src: source bio list
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index bd130b6..d316fb3 100644
+index 32966c9..5a55ce5 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -178,6 +178,7 @@ struct bio_integrity_payload {
- 	unsigned short		bip_slab;	/* slab the bip came from */
- 	unsigned short		bip_vcnt;	/* # of integrity bio_vecs */
- 	unsigned short		bip_idx;	/* current bip_vec index */
-+	unsigned		bip_owns_buf:1;	/* should free bip_buf */
+@@ -292,6 +292,7 @@ static inline void bio_flush_dcache_pages(struct bio *bi)
+ #endif
  
- 	struct work_struct	bip_work;	/* I/O completion */
+ extern void bio_copy_data(struct bio *dst, struct bio *src);
++extern int bio_alloc_pages(struct bio *bio, gfp_t gfp);
  
+ extern struct bio *bio_copy_user(struct request_queue *, struct rq_map_data *,
+ 				 unsigned long, unsigned int, int, gfp_t);
 -- 
 1.7.12
 
