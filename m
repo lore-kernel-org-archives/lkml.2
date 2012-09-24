@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab2IXRjv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 13:39:51 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:57569 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757309Ab2IXRju (ORCPT
+	id S1757375Ab2IXRnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 13:43:03 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46090 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757338Ab2IXRnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 13:39:50 -0400
-Date: Mon, 24 Sep 2012 17:39:49 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Pekka Enberg <penberg@kernel.org>
-cc: Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<cgroups@vger.kernel.org>" <cgroups@vger.kernel.org>,
-        "<kamezawa.hiroyu@jp.fujitsu.com>" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "<devel@openvz.org>" <devel@openvz.org>,
-        "<linux-mm@kvack.org>" <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 05/16] consider a memcg parameter in
- kmem_create_cache
-In-Reply-To: <CAOJsxLGFWQFNUUN3sDeB2sn0S-QM-6Ut_d02HjmF6mB5aMytoA@mail.gmail.com>
-Message-ID: <00000139f95d0ed4-ead604f1-6566-452f-85e9-6ea2cf5a05fa-000000@email.amazonses.com>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-6-git-send-email-glommer@parallels.com> <20120921181458.GG7264@google.com> <506015E7.8030900@parallels.com> <00000139f84bdedc-aae672a6-2908-4cb8-8ed3-8fedf67a21af-000000@email.amazonses.com>
- <50605500.5050606@parallels.com> <00000139f8836571-6ddc9d5b-1d5f-4542-92f9-ad11070e5b7d-000000@email.amazonses.com> <506063B8.70305@parallels.com> <00000139f890a302-980aee84-40b2-433f-8dbd-e7b1d219f00d-000000@email.amazonses.com> <506066E3.6050705@parallels.com>
- <CAOJsxLGFWQFNUUN3sDeB2sn0S-QM-6Ut_d02HjmF6mB5aMytoA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 24 Sep 2012 13:43:01 -0400
+Date: Mon, 24 Sep 2012 21:42:56 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Mark Salter <msalter@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to
+ ARM)
+Message-ID: <20120924174256.GD24172@moon>
+References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
+ <20120922114549.GA11610@moon>
+ <20120922132046.GA4260@flint.arm.linux.org.uk>
+ <20120922114723.d7f07fb6.akpm@linux-foundation.org>
+ <1348503709.20929.40.camel@deneb.redhat.com>
+ <20120924164942.GH16532@moon>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120924164942.GH16532@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Sep 2012, Pekka Enberg wrote:
+On Mon, Sep 24, 2012 at 08:49:42PM +0400, Cyrill Gorcunov wrote:
+> > I got past that with:
+> > 
+> > diff --git a/include/linux/security.h b/include/linux/security.h
+> > index 01ef030..14e394d 100644
+> > --- a/include/linux/security.h
+> > +++ b/include/linux/security.h
+> > @@ -118,6 +118,7 @@ void reset_security_ops(void);
+> >  extern unsigned long mmap_min_addr;
+> >  extern unsigned long dac_mmap_min_addr;
+> >  #else
+> > +#define mmap_min_addr          0UL
+> >  #define dac_mmap_min_addr      0UL
+> >  #endif
+> > 
 
-> So Christoph is proposing that the new caches appear somewhere under
-> the cgroups directory and /proc/slabinfo includes aggregated counts,
-> right? I'm certainly OK with that.
+I think better to add CONFIG_MMU test here.
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: prctl: prctl_set_mm -- Don't test for mmap_min_addr on non-MMU config
 
-Caches would appear either in cgroup/slabinfo (which would have the same
-format as /proc/slabinfo) or in cgroup/slab/<slabname>/<fieldname>
-(similar to /sys/kernel/slab/...)
+In case if CONFIG_MMU is not set the @mmap_min_addr
+is undefined leading to build error. Thus test for
+it iif CONFIG_MMU is present.
 
+Note this code snippet depends on CONFIG_CHECKPOINT_RESTORE=y.
 
+Reported-by: Mark Salter <msalter@redhat.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ kernel/sys.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-
+Index: linux-2.6.git/kernel/sys.c
+===================================================================
+--- linux-2.6.git.orig/kernel/sys.c
++++ linux-2.6.git/kernel/sys.c
+@@ -1865,7 +1865,11 @@ static int prctl_set_mm(int opt, unsigne
+ 	if (opt == PR_SET_MM_EXE_FILE)
+ 		return prctl_set_mm_exe_file(mm, (unsigned int)addr);
+ 
++#ifdef CONFIG_MMU
+ 	if (addr >= TASK_SIZE || addr < mmap_min_addr)
++#else
++	if (addr >= TASK_SIZE)
++#endif
+ 		return -EINVAL;
+ 
+ 	error = -EINVAL;
