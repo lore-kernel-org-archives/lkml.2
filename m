@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab2IXCjP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 22:39:15 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:42201 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab2IXCjN (ORCPT
+	id S1754840Ab2IXCmg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 22:42:36 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:50172 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688Ab2IXCme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 22:39:13 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Jeff Dike <jdike@addtoit.com>
-In-Reply-To: <505F864C.2000103@nod.at> (Richard Weinberger's message of "Sun,
-	23 Sep 2012 23:59:40 +0200")
-References: <87k3vote43.fsf@xmission.com>
-	<1348187330-6616-1-git-send-email-ebiederm@xmission.com>
-	<1348187330-6616-5-git-send-email-ebiederm@xmission.com>
-	<505F864C.2000103@nod.at>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-Date: Sun, 23 Sep 2012 19:39:02 -0700
-Message-ID: <87obkwxhyx.fsf@xmission.com>
+	Sun, 23 Sep 2012 22:42:34 -0400
+Date: Mon, 24 Sep 2012 10:42:21 +0800
+From: Guo Chao <yan@linux.vnet.ibm.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@zeniv.linux.org.uk, dchinner@redhat.com, hch@infradead.org,
+        jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v4 Patch 0/4] fs/inode.c: optimization for inode lock usage
+Message-ID: <20120924024221.GB7984@yanx>
+References: <1348219866-1799-1-git-send-email-yan@linux.vnet.ibm.com>
+ <20120921224912.GA20960@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+MXa6BTSnoJtxP2w3Rcl13WXdCJzVOBLc=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0003]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Richard Weinberger <richard@nod.at>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 05/14] userns: Convert hostfs to use kuid and kgid where appropriate
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120921224912.GA20960@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12092402-9264-0000-0000-00000262BD91
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger <richard@nod.at> writes:
+On Sat, Sep 22, 2012 at 08:49:12AM +1000, Dave Chinner wrote:
 
-> Am 21.09.2012 02:28, schrieb Eric W. Biederman:
->> From: "Eric W. Biederman" <ebiederm@xmission.com>
->> 
->> Cc: Jeff Dike <jdike@addtoit.com>
->> Cc: Richard Weinberger <richard@nod.at>
->> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
->> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->> ---
+> On Fri, Sep 21, 2012 at 05:31:02PM +0800, Guo Chao wrote:
+> > This patchset optimizes several places which take the per inode spin lock.
+> > They have not been fully tested yet, thus they are marked as RFC. 
+> 
+> Inodes are RCU freed. The i_lock spinlock on the i_state field forms
+> part of the memory barrier that allows the RCU read side to
+> correctly detect a freed inode during a RCU protected cache lookup
+> (hash list traversal for the VFS, or a radix tree traversal for XFS).
+> The i_lock usage around the hahs list operations ensures the hash
+> list operations are atomic with state changes so that such changes
+> are correctly detected during RCU-protected traversals...
+> 
+> IOWs, removing the i_lock from around the i_state transitions and
+> inode hash insert/remove/traversal operations will cause races in
+> the RCU lookups and result in incorrectly using freed inodes instead
+> of failing the lookup and creating a new one.
+> 
+> So I don't think this is a good idea at all...
 >
-> Looks sane to me.
->
-> Acked-by: Richard Weinberger <richard@nod.at>
->
-> BTW: How you do test your user namespace patches?
-> Is there a generic way to compare/verify uids within a namespace
-> vs. the initial namespace?
 
-I start with a well tested set of primites, and a simple design.
+Hello, Dave:
 
-Ultimately the goal is to get the conversion functions make_kuid and
-from_kuid inserted into the proper locations.
+  Thanks for your explanation.
+ 
+  Though I can't fully understand it, your concern seems to be that
+RCU inode lookup will be bothered by this change. But we do not have 
+RCU inode lookup in VFS: inode lookup is done by rather a tranditional
+way. 
 
-When user namespaces are enabled kuid_t and uid_t are not assignment
-compatible so in most places where something needs to be done I get
-a compile error.
+  XFS gives me the impression that it implements its own inode cache.
+There may be such thing there. I have little knowledge on XFS, but I
+guess it's unlikely impacted by the change of code implementing VFS 
+inode cache.
 
-If the other value is an internal kernel value I change it's type.
-If the other value is a userspace or on disk value I insert a conversion
-function.
+  As far as I can see, RCU inode free is for RCU dentry lookup, which
+seems have nothing to do with 'detect a freed inode'. Taking i_lock in these
+places looks like to me a result of following old lock scheme blindly when 
+breaking the big global inode lock. Of course, maybe they are there for
+something. Could you speak more about the race this change (patch 1,2?) brings 
+up? Thank you.
 
-So as a first approximation I can test just by enabling usernamespace
-support and compiling the code.
+Regards,
+Guo Chao
 
-My second line of defense is to keep my patches simple and easily
-reviewable.
+> Cheers,
+> 
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
 
-I impose upon myself the discipline of letting my patches set for a
-while so that I review them with a fresh mind before sending them
-out to the list.
-
-I am careful when making my patches to actually read the code and
-understand what is going on, so hopefully I catch the tricky cases.
-
-With the user namespace support disabled the code performs the same with
-except for the conversion functions so things like my conversion of the
-core kernel in 3.5 continue to be tested for correctness in general.
-
-Right now for filesystems I am converting them so they will work when
-all of the user space interfaces have values coming to the filesystem in
-kuid_t and kgid_t, but the values in the filesystem are stored in
-the initial user namespace.  So it is trivial to know that I have
-useful the correct conversions.
-
-Since my big question is do I have the conversions in all of the
-locations needed, compile errors and the discipline of pushing kuid_t
-and kgid_t as deep as possible into the kernel data structures as
-possible are my primary means of where conversions need to go.
-
-Beyond that I actually run a kernel with all of my patches applied and I
-do some spot testing, and I have had my development tree with everything
-patched out for a while so that other people can play with it as well.
-
-I also compile test each patch with allyesconfig and with as much
-enabled as I can and still leave the usernamespace support enabled,
-ensuring each patch is good and safe on it's own (at least compilewise).
-
-So that is how I test.
-
-As to a generic way to compare/verify uids within a namespace vs the
-initial namespace hmm.  I don't know that there is a generic tool.  The
-mappings are available in /proc/<pid>/uid_maps, and /proc/<pid>/gid_maps
-so it isn't hard to look to see if the expected conversion is happening
-by looking from outside the namespace. But there isn't a generic tool
-that I know of at this point.
-
-Eric
