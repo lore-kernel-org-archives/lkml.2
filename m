@@ -1,39 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab2IXU06 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 16:26:58 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:38166 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757974Ab2IXU05 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 16:26:57 -0400
-Message-ID: <5060C1B3.2050000@us.ibm.com>
-Date: Mon, 24 Sep 2012 13:25:23 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S932233Ab2IXU2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 16:28:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56724 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757981Ab2IXU2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 16:28:09 -0400
+Message-ID: <5060C234.80006@zytor.com>
+Date: Mon, 24 Sep 2012 13:27:32 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, "Molnar, Ingo" <mingo@elte.hu>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Time/alarmtimer changes for 3.7
-References: <50608EE1.3050401@linaro.org>
-In-Reply-To: <50608EE1.3050401@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Len Brown <lenb@kernel.org>
+CC: Thomas Renninger <trenn@suse.de>, initramfs@vger.kernel.org,
+        robert.moore@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, yinghai@kernel.org,
+        eric.piel@tremplin-utc.net, vojcek@tlen.pl,
+        Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH 2/2] ACPI: Override arbitrary ACPI tables via initrd for
+ debugging
+References: <1348234085-39220-1-git-send-email-trenn@suse.de> <1348234085-39220-3-git-send-email-trenn@suse.de> <505DD65F.9080203@kernel.org>
+In-Reply-To: <505DD65F.9080203@kernel.org>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092420-6148-0000-0000-000009F2F445
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 09:48 AM, John Stultz wrote:
-> Hey Thomas, Ingo,
-[snip]
-> PS: Just a reminder that there is still a pending change in
-> tip/timers/urgent that I'd hope to get into 3.6.
+On 09/22/2012 08:16 AM, Len Brown wrote:
+> This isn't a NAK, but I'm at best, "like warm" on this.
+> 
+> I'm not convinced it is a good thing to have - enabled by default -
+> the ability for users to easily over-ride ACPI tables.
 
-Oh, ignore that. Just updated my tree and it looks like it landed over 
-the weekend.
+For the record: I'm fine with the implementation from a technical
+standpoint now; I'm completely agnostic on the policy.  Since Len is the
+ACPI maintainer this is up to him.
 
-Sorry for the noise.
--john
+	-hpa
 
