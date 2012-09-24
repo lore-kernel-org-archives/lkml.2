@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab2IXPgl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:36:41 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33069 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358Ab2IXPgk (ORCPT
+	id S1756567Ab2IXPiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:38:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58430 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756393Ab2IXPiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:36:40 -0400
+	Mon, 24 Sep 2012 11:38:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120924221752.6537996620e5e8ef5a4965a7@canb.auug.org.au>
-References: <20120924214116.211935861448f95b82f7f722@canb.auug.org.au> <20120924221752.6537996620e5e8ef5a4965a7@canb.auug.org.au>
-From: Peter Moody <pmoody@google.com>
-Date: Mon, 24 Sep 2012 08:36:08 -0700
-Message-ID: <CALnj_=7AJCsuabWAz9s4OtM=dbqKyrJXFWUYOjR5Pdwh16CkPA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the userns tree with the security tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
+In-Reply-To: <506066E3.6050705@parallels.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
+	<1347977530-29755-6-git-send-email-glommer@parallels.com>
+	<20120921181458.GG7264@google.com>
+	<506015E7.8030900@parallels.com>
+	<00000139f84bdedc-aae672a6-2908-4cb8-8ed3-8fedf67a21af-000000@email.amazonses.com>
+	<50605500.5050606@parallels.com>
+	<00000139f8836571-6ddc9d5b-1d5f-4542-92f9-ad11070e5b7d-000000@email.amazonses.com>
+	<506063B8.70305@parallels.com>
+	<00000139f890a302-980aee84-40b2-433f-8dbd-e7b1d219f00d-000000@email.amazonses.com>
+	<506066E3.6050705@parallels.com>
+Date: Mon, 24 Sep 2012 18:38:48 +0300
+X-Google-Sender-Auth: 5cBhFeJfcGil568E5JXRJYInX3o
+Message-ID: <CAOJsxLGFWQFNUUN3sDeB2sn0S-QM-6Ut_d02HjmF6mB5aMytoA@mail.gmail.com>
+Subject: Re: [PATCH v3 05/16] consider a memcg parameter in kmem_create_cache
+From: Pekka Enberg <penberg@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<cgroups@vger.kernel.org>" <cgroups@vger.kernel.org>,
+        "<kamezawa.hiroyu@jp.fujitsu.com>" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "<devel@openvz.org>" <devel@openvz.org>,
+        "<linux-mm@kvack.org>" <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Eric (Paris),
-
-this is the second time I've been notified of a merge issue with this
-audit patch; Is there something I need to do (or should have done
-earlier) to keep this from continuing to be an issue?
-
-Cheers,
-peter
-
-On Mon, Sep 24, 2012 at 5:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi,
->
-> On Mon, 24 Sep 2012 21:41:16 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On 09/24/2012 05:56 PM, Christoph Lameter wrote:
+>> On Mon, 24 Sep 2012, Glauber Costa wrote:
 >>
->> diff --cc kernel/auditsc.c
->> index 37f52f2,ff4798f..0000000
->> --- a/kernel/auditsc.c
->> +++ b/kernel/auditsc.c
->> @@@ -1160,32 -1151,8 +1152,38 @@@ void audit_log_task_info(struct audit_b
->>       char name[sizeof(tsk->comm)];
->>       struct mm_struct *mm = tsk->mm;
->>       struct vm_area_struct *vma;
->>  +    char *tty;
->>  +
->>  +    if (!ab)
->>  +            return;
+>>> The reason I say it is orthogonal, is that people will still want to see
+>>> their caches in /proc/slabinfo, regardless of wherever else they'll be.
+>>> It was a requirement from Pekka in one of the first times I posted this,
+>>> IIRC.
 >>
->>       /* tsk == current */
->>  +    cred = current_cred();
->>  +
->>  +    spin_lock_irq(&tsk->sighand->siglock);
->>  +    if (tsk->signal && tsk->signal->tty && tsk->signal->tty->name)
->>  +            tty = tsk->signal->tty->name;
->>  +    else
->>  +            tty = "(none)";
->>  +    spin_unlock_irq(&tsk->sighand->siglock);
->>  +
->>  +
->>  +    audit_log_format(ab,
->>  +                     " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
->>  +                     " euid=%u suid=%u fsuid=%u"
->>  +                     " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
->>  +                     sys_getppid(),
->>  +                     tsk->pid,
->> -                      tsk->loginuid, cred->uid, cred->gid,
->> -                      cred->euid, cred->suid, cred->fsuid,
->> -                      cred->egid, cred->sgid, cred->fsgid,
->> ++                     from_kuid(&init_user_ns, tsk->loginuid),
->> ++                     from_kuid(&init_user_ns, context->uid),
->> ++                     from_kgid(&init_user_ns, context->gid),
->> ++                     from_kuid(&init_user_ns, context->euid),
->> ++                     from_kuid(&init_user_ns, context->suid),
->> ++                     from_kuid(&init_user_ns, context->fsuid),
->> ++                     from_kgid(&init_user_ns, context->egid),
->> ++                     from_kgid(&init_user_ns, context->sgid),
->> ++                     from_kgid(&init_user_ns, context->fsgid),
+>> They want to see total counts there true. But as I said we already have a
+>> duplication of the statistics otherwise. We have never done the scheme
+>> that you propose. That is unexpected. I would not expect the numbers to be
+>> there.
+
+On Mon, Sep 24, 2012 at 4:57 PM, Glauber Costa <glommer@parallels.com> wrote:
+> I myself personally believe it can potentially clutter slabinfo, and
+> won't put my energy in defending the current implementation. What I
+> don't want is to keep switching between implementations.
 >
-> These should all be "cred" not "context", of course.  I fixed this in my
-> tree.
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> Pekka, Tejun, what do you guys say here?
 
-
-
--- 
-Peter Moody      Google    1.650.253.7306
-Security Engineer  pgp:0xC3410038
+So Christoph is proposing that the new caches appear somewhere under
+the cgroups directory and /proc/slabinfo includes aggregated counts,
+right? I'm certainly OK with that.
