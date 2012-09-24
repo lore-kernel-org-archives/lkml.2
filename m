@@ -1,246 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953Ab2IXRXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 13:23:16 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57229 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755502Ab2IXRXO (ORCPT
+	id S1757265Ab2IXRY0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 13:24:26 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55518 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755495Ab2IXRYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 13:23:14 -0400
+	Mon, 24 Sep 2012 13:24:25 -0400
+Message-ID: <50609746.6020702@wwwdotorg.org>
+Date: Mon, 24 Sep 2012 11:24:22 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1347461277-25302-1-git-send-email-elezegarcia@gmail.com>
-References: <1347461277-25302-1-git-send-email-elezegarcia@gmail.com>
-Date: Mon, 24 Sep 2012 14:23:14 -0300
-Message-ID: <CALF0-+UequmiTTPi9RnYjEkBeW1mtxpS-fDiXLnfgwjG8UWGdQ@mail.gmail.com>
-Subject: Re: [PATCH v4] trace: Move trace event enable from fs_initcall to core_initcall
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Cc: Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Subject: Re: [PATCH] rtc: tps65910: Use platform_get_irq to get RTC irq details
+References: <1348225223-32156-1-git-send-email-vbyravarasu@nvidia.com> <505C8CE9.6040201@wwwdotorg.org> <D958900912E20642BCBC71664EFECE3E6DDF60158F@BGMAIL02.nvidia.com>
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDF60158F@BGMAIL02.nvidia.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven,
+On 09/24/2012 12:18 AM, Venu Byravarasu wrote:
+>> -----Original Message-----
+>> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+>> Sent: Friday, September 21, 2012 9:21 PM
+>> To: Venu Byravarasu
+>> Cc: akpm@linux-foundation.org; a.zummo@towertech.it; linux-
+>> kernel@vger.kernel.org; rtc-linux@googlegroups.com
+>> Subject: Re: [PATCH] rtc: tps65910: Use platform_get_irq to get RTC irq
+>> details
+>>
+>> On 09/21/2012 05:00 AM, Venu Byravarasu wrote:
+>>> As RTC driver needs only irq number from platform data,
+>>> using platform_get_irq(), instead of generic dev_get_platdata().
+>>
+>> I assume this patch depends on "mfd: tps65910: Add alarm interrupt of
+>> TPS65910 RTC to mfd device list" which you posted just before? If so,
+>> the two patches should go through the same tree to avoid "git bisect"
+>> issues.
+>>
+>> Also, I thought you needed to fix the MFD driver to call
+>> mfd_add_devices() only after all the IRQ stuff had been set up -
+>> otherwise, when the RTC driver calls devm_request_threaded_irq(), the
+>> parent IRQ domain that the IRQ points at won't exist, and the call will
+>> fail.
+> 
+> No, I do not agree completely here.
+> Current patch just changes the way to get irq info in the RTC driver.
+> If proper irq number is passed from MFD, then it proceeds further and deals with it.
+> In case of missing valid irq info, this returns error as in earlier case.
+> 
+> I agree with you that this patch alone cannot make RTC completely functional,
+> till we get mfd patch as well.
+> 
+> However should lack of mfd changes really block this patch, as these two are
+> independent  drivers.
 
-On Wed, Sep 12, 2012 at 11:47 AM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
-> This patch splits trace event initialization in two stages:
->  * ftrace enable
->  * sysfs event entry creation
->
-> This allows to capture trace events from an earlier point
-> by using 'trace_event' kernel parameter and is important
-> to trace boot-up allocations.
->
-> Note that, in order to enable events at core_initcall,
-> it's necessary to move init_ftrace_syscalls() from
-> core_initcall to early_initcall.
->
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
-> ---
-> Changes from v1:
->   * Rework code as requested by Steven.
->
-> Changes from v2:
->    * Move init_ftrace_syscalls() to early_initcall,
->      so syscalls self-test pass.
->
-> Changes from v3:
->    * Fix issue reported by Steven:
->      event_trace_init() now iterates on added events (instead of full array).
->      This way we don't create an event dir for events that failed to enable.
->
->  kernel/trace/trace_events.c   |  108 +++++++++++++++++++++++++++--------------
->  kernel/trace/trace_syscalls.c |    2 +-
->  2 files changed, 73 insertions(+), 37 deletions(-)
->
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 29111da..437202d 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -1199,6 +1199,31 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
->         return 0;
->  }
->
-> +static void event_remove(struct ftrace_event_call *call)
-> +{
-> +       ftrace_event_enable_disable(call, 0);
-> +       if (call->event.funcs)
-> +               __unregister_ftrace_event(&call->event);
-> +       list_del(&call->list);
-> +}
-> +
-> +static int event_init(struct ftrace_event_call *call)
-> +{
-> +       int ret = 0;
-> +
-> +       if (WARN_ON(!call->name))
-> +               return -EINVAL;
-> +
-> +       if (call->class->raw_init) {
-> +               ret = call->class->raw_init(call);
-> +               if (ret < 0 && ret != -ENOSYS)
-> +                       pr_warn("Could not initialize trace events/%s\n",
-> +                               call->name);
-> +       }
-> +
-> +       return ret;
-> +}
-> +
->  static int
->  __trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
->                        const struct file_operations *id,
-> @@ -1209,19 +1234,9 @@ __trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
->         struct dentry *d_events;
->         int ret;
->
-> -       /* The linker may leave blanks */
-> -       if (!call->name)
-> -               return -EINVAL;
-> -
-> -       if (call->class->raw_init) {
-> -               ret = call->class->raw_init(call);
-> -               if (ret < 0) {
-> -                       if (ret != -ENOSYS)
-> -                               pr_warning("Could not initialize trace events/%s\n",
-> -                                          call->name);
-> -                       return ret;
-> -               }
-> -       }
-> +       ret = event_init(call);
-> +       if (ret < 0)
-> +               return ret;
->
->         d_events = event_trace_events_dir();
->         if (!d_events)
-> @@ -1272,13 +1287,10 @@ static void remove_subsystem_dir(const char *name)
->   */
->  static void __trace_remove_event_call(struct ftrace_event_call *call)
->  {
-> -       ftrace_event_enable_disable(call, 0);
-> -       if (call->event.funcs)
-> -               __unregister_ftrace_event(&call->event);
-> -       debugfs_remove_recursive(call->dir);
-> -       list_del(&call->list);
-> +       event_remove(call);
->         trace_destroy_fields(call);
->         destroy_preds(call);
-> +       debugfs_remove_recursive(call->dir);
->         remove_subsystem_dir(call->class->system);
->  }
->
-> @@ -1450,15 +1462,43 @@ static __init int setup_trace_event(char *str)
->  }
->  __setup("trace_event=", setup_trace_event);
->
-> +static __init int event_trace_enable(void)
-> +{
-> +       struct ftrace_event_call **iter, *call;
-> +       char *buf = bootup_event_buf;
-> +       char *token;
-> +       int ret;
-> +
-> +       for_each_event(iter, __start_ftrace_events, __stop_ftrace_events) {
-> +
-> +               call = *iter;
-> +               ret = event_init(call);
-> +               if (!ret)
-> +                       list_add(&call->list, &ftrace_events);
-> +       }
-> +
-> +       while (true) {
-> +               token = strsep(&buf, ",");
-> +
-> +               if (!token)
-> +                       break;
-> +               if (!*token)
-> +                       continue;
-> +
-> +               ret = ftrace_set_clr_event(token, 1);
-> +               if (ret)
-> +                       pr_warn("Failed to enable trace event: %s\n", token);
-> +       }
-> +       return 0;
-> +}
-> +
->  static __init int event_trace_init(void)
->  {
-> -       struct ftrace_event_call **call;
-> +       struct ftrace_event_call *call;
->         struct dentry *d_tracer;
->         struct dentry *entry;
->         struct dentry *d_events;
->         int ret;
-> -       char *buf = bootup_event_buf;
-> -       char *token;
->
->         d_tracer = tracing_init_dentry();
->         if (!d_tracer)
-> @@ -1497,24 +1537,19 @@ static __init int event_trace_init(void)
->         if (trace_define_common_fields())
->                 pr_warning("tracing: Failed to allocate common fields");
->
-> -       for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
-> -               __trace_add_event_call(*call, NULL, &ftrace_event_id_fops,
-> +       /*
-> +        * Early initialization already enabled ftrace event.
-> +        * Now it's only necessary to create the event directory.
-> +        */
-> +       list_for_each_entry(call, &ftrace_events, list) {
-> +
-> +               ret = event_create_dir(call, d_events,
-> +                                      &ftrace_event_id_fops,
->                                        &ftrace_enable_fops,
->                                        &ftrace_event_filter_fops,
->                                        &ftrace_event_format_fops);
-> -       }
-> -
-> -       while (true) {
-> -               token = strsep(&buf, ",");
-> -
-> -               if (!token)
-> -                       break;
-> -               if (!*token)
-> -                       continue;
-> -
-> -               ret = ftrace_set_clr_event(token, 1);
-> -               if (ret)
-> -                       pr_warning("Failed to enable trace event: %s\n", token);
-> +               if (ret < 0)
-> +                       event_remove(call);
->         }
->
->         ret = register_module_notifier(&trace_module_nb);
-> @@ -1523,6 +1558,7 @@ static __init int event_trace_init(void)
->
->         return 0;
->  }
-> +core_initcall(event_trace_enable);
->  fs_initcall(event_trace_init);
->
->  #ifdef CONFIG_FTRACE_STARTUP_TEST
-> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-> index 96fc733..07b4e5a 100644
-> --- a/kernel/trace/trace_syscalls.c
-> +++ b/kernel/trace/trace_syscalls.c
-> @@ -487,7 +487,7 @@ int __init init_ftrace_syscalls(void)
->
->         return 0;
->  }
-> -core_initcall(init_ftrace_syscalls);
-> +early_initcall(init_ftrace_syscalls);
->
->  #ifdef CONFIG_PERF_EVENTS
->
-> --
-> 1.7.8.6
->
-
-Did you have time to take a look into this?
-Will you be able to add it for your v3.7 pull request?
-Let me know if there's something I should redo.
-
-Thanks,
-Ezequiel.
+OK, if this feature (either the RTC as a whole, or the RTC driver
+retrieving and using the interrupt) doesn't already work, then as you
+say there are no dependencies, so this is fine.
