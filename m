@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab2IXJsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 05:48:36 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58034 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab2IXJsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 05:48:33 -0400
+	id S1753546Ab2IXJtD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 05:49:03 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34921 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752446Ab2IXJtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 05:49:00 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <rtc-linux@googlegroups.com>
 CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
         <a.zummo@towertech.it>, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv2 1/7] rtc: Convert struct i2c_msg initialization to C99 format
-Date: Mon, 24 Sep 2012 15:17:40 +0530
-Message-ID: <1348480066-3132-2-git-send-email-shubhrajyoti@ti.com>
+Subject: [PATCHv2 2/7] rtc: Convert struct i2c_msg initialization to C99 format
+Date: Mon, 24 Sep 2012 15:17:41 +0530
+Message-ID: <1348480066-3132-3-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348480066-3132-1-git-send-email-shubhrajyoti@ti.com>
 References: <1348480066-3132-1-git-send-email-shubhrajyoti@ti.com>
@@ -29,53 +28,154 @@ like transferred are added in future.
 
 Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- drivers/rtc/rtc-ds1672.c |   26 ++++++++++++++++++++++----
- 1 files changed, 22 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-x1205.c |   92 +++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 78 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ds1672.c b/drivers/rtc/rtc-ds1672.c
-index 7fa67d0..577dbae 100644
---- a/drivers/rtc/rtc-ds1672.c
-+++ b/drivers/rtc/rtc-ds1672.c
-@@ -37,8 +37,17 @@ static int ds1672_get_datetime(struct i2c_client *client, struct rtc_time *tm)
- 	unsigned char buf[4];
+diff --git a/drivers/rtc/rtc-x1205.c b/drivers/rtc/rtc-x1205.c
+index 403b3d4..9b46875 100644
+--- a/drivers/rtc/rtc-x1205.c
++++ b/drivers/rtc/rtc-x1205.c
+@@ -97,8 +97,17 @@ static int x1205_get_datetime(struct i2c_client *client, struct rtc_time *tm,
+ 	int i;
  
  	struct i2c_msg msgs[] = {
--		{client->addr, 0, 1, &addr},	/* setup read ptr */
--		{client->addr, I2C_M_RD, 4, buf},	/* read date */
+-		{ client->addr, 0, 2, dt_addr },	/* setup read ptr */
+-		{ client->addr, I2C_M_RD, 8, buf },	/* read date */
 +		{/* setup read ptr */
 +			.addr = client->addr,
-+			.len = 1,
-+			.buf = &addr
++			.len = 2,
++			.buf = dt_addr
 +		},
-+		{/* setup read ptr */
++		{/* read date */
 +			.addr = client->addr,
 +			.flags = I2C_M_RD,
-+			.len = 4,
++			.len = 8,
 +			.buf = buf
 +		},
  	};
  
  	/* read date registers */
-@@ -99,8 +108,17 @@ static int ds1672_get_control(struct i2c_client *client, u8 *status)
- 	unsigned char addr = DS1672_REG_CONTROL;
+@@ -142,8 +151,17 @@ static int x1205_get_status(struct i2c_client *client, unsigned char *sr)
+ 	static unsigned char sr_addr[2] = { 0, X1205_REG_SR };
  
  	struct i2c_msg msgs[] = {
--		{client->addr, 0, 1, &addr},	/* setup read ptr */
--		{client->addr, I2C_M_RD, 1, status},	/* read control */
-+		{/* setup read ptr */
+-		{ client->addr, 0, 2, sr_addr },	/* setup read ptr */
+-		{ client->addr, I2C_M_RD, 1, sr },	/* read status */
++		{     /* setup read ptr */
 +			.addr = client->addr,
-+			.len = 1,
-+			.buf = &addr
++			.len = 2,
++			.buf = sr_addr
 +		},
-+		{/* read control */
++		{    /* read status */
 +			.addr = client->addr,
 +			.flags = I2C_M_RD,
 +			.len = 1,
-+			.buf = status
++			.buf = sr
 +		},
  	};
  
- 	/* read control register */
+ 	/* read status register */
+@@ -279,8 +297,17 @@ static int x1205_get_dtrim(struct i2c_client *client, int *trim)
+ 	static unsigned char dtr_addr[2] = { 0, X1205_REG_DTR };
+ 
+ 	struct i2c_msg msgs[] = {
+-		{ client->addr, 0, 2, dtr_addr },	/* setup read ptr */
+-		{ client->addr, I2C_M_RD, 1, &dtr }, 	/* read dtr */
++		{	/* setup read ptr */
++			.addr = client->addr,
++			.len = 2,
++			.buf = dtr_addr
++		},
++		{      /* read dtr */
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.len = 1,
++			.buf = &dtr
++		},
+ 	};
+ 
+ 	/* read dtr register */
+@@ -311,8 +338,17 @@ static int x1205_get_atrim(struct i2c_client *client, int *trim)
+ 	static unsigned char atr_addr[2] = { 0, X1205_REG_ATR };
+ 
+ 	struct i2c_msg msgs[] = {
+-		{ client->addr, 0, 2, atr_addr },	/* setup read ptr */
+-		{ client->addr, I2C_M_RD, 1, &atr }, 	/* read atr */
++		{/* setup read ptr */
++			.addr = client->addr,
++			.len = 2,
++			.buf = atr_addr
++		},
++		{/* read atr */
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.len = 1,
++			.buf = &atr
++		},
+ 	};
+ 
+ 	/* read atr register */
+@@ -381,8 +417,17 @@ static int x1205_validate_client(struct i2c_client *client)
+ 		unsigned char addr[2] = { 0, probe_zero_pattern[i] };
+ 
+ 		struct i2c_msg msgs[2] = {
+-			{ client->addr, 0, 2, addr },
+-			{ client->addr, I2C_M_RD, 1, &buf },
++			{
++				.addr = client->addr,
++				.len = 2,
++				.buf = addr
++			},
++			{
++				.addr = client->addr,
++				.flags = I2C_M_RD,
++				.len = 1,
++				.buf = &buf
++			},
+ 		};
+ 
+ 		if ((xfer = i2c_transfer(client->adapter, msgs, 2)) != 2) {
+@@ -409,8 +454,17 @@ static int x1205_validate_client(struct i2c_client *client)
+ 		unsigned char addr[2] = { 0, probe_limits_pattern[i].reg };
+ 
+ 		struct i2c_msg msgs[2] = {
+-			{ client->addr, 0, 2, addr },
+-			{ client->addr, I2C_M_RD, 1, &reg },
++			{
++				.addr = client->addr,
++				.len = 2,
++				.buf = addr
++			},
++			{
++				.addr = client->addr,
++				.flags = I2C_M_RD,
++				.len = 1,
++				.buf = &reg
++			},
+ 		};
+ 
+ 		if ((xfer = i2c_transfer(client->adapter, msgs, 2)) != 2) {
+@@ -444,8 +498,18 @@ static int x1205_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	static unsigned char int_addr[2] = { 0, X1205_REG_INT };
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct i2c_msg msgs[] = {
+-		{ client->addr, 0, 2, int_addr },        /* setup read ptr */
+-		{ client->addr, I2C_M_RD, 1, &intreg },  /* read INT register */
++		{ /* setup read ptr */
++			.addr = client->addr,
++			.len = 2,
++			.buf = int_addr
++		},
++		{/* read INT register */
++
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.len = 1,
++			.buf = &intreg
++		},
+ 	};
+ 
+ 	/* read interrupt register and status register */
 -- 
 1.7.5.4
 
