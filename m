@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab2IXI2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:28:31 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:44098 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755213Ab2IXI2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:28:30 -0400
-Message-ID: <506018DC.2020907@parallels.com>
-Date: Mon, 24 Sep 2012 12:25:00 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 15/16] memcg/sl[au]b: shrink dead caches
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-16-git-send-email-glommer@parallels.com> <20120921204035.GQ7264@google.com>
-In-Reply-To: <20120921204035.GQ7264@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755407Ab2IXIax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:30:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51519 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213Ab2IXIav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 04:30:51 -0400
+Date: Mon, 24 Sep 2012 18:30:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: linux-next: manual merge of the arm-soc tree with the sound tree
+Message-Id: <20120924183049.44bc374d9dc8b8504e504d99@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Sep_2012_18_30_49_+1000_JvnT5wJkvFnfMlw2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2012 12:40 AM, Tejun Heo wrote:
-> Hello, Glauber.
-> 
-> On Tue, Sep 18, 2012 at 06:12:09PM +0400, Glauber Costa wrote:
->> @@ -764,10 +777,21 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->>  		goto out;
->>  	}
->>  
->> +	/*
->> +	 * Because the cache is expected to duplicate the string,
->> +	 * we must make sure it has opportunity to copy its full
->> +	 * name. Only now we can remove the dead part from it
->> +	 */
->> +	name = (char *)new_cachep->name;
->> +	if (name)
->> +		name[strlen(name) - 4] = '\0';
-> 
-> This is kinda nasty.  Do we really need to do this?  How long would a
-> dead cache stick around?
+--Signature=_Mon__24_Sep_2012_18_30_49_+1000_JvnT5wJkvFnfMlw2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Without targeted shrinking, until all objects are manually freed, which
-may need to wait global reclaim to kick in.
+Hi all,
 
-In general, if we agree with duplicating the caches, the problem that
-they may stick around for some time will not be avoidable. If you have
-any suggestions about alternative ways for it, I'm all ears.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-davinci/include/mach/da8xx.h between commit 896f66b7de29
+(ASoC/ARM: Davinci: McASP: split asp header into platform and audio
+specific"") from the sound tree and commit ec2a0833e515 ("ARM: davinci:
+move platform_data definitions") from the arm-soc tree.
 
-> 
->> diff --git a/mm/slab.c b/mm/slab.c
->> index bd9928f..6cb4abf 100644
->> --- a/mm/slab.c
->> +++ b/mm/slab.c
->> @@ -3785,6 +3785,8 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
->>  	}
->>  
->>  	ac_put_obj(cachep, ac, objp);
->> +
->> +	kmem_cache_verify_dead(cachep);
-> 
-> Reaping dead caches doesn't exactly sound like a high priority thing
-> and adding a branch to hot path for that might not be the best way to
-> do it.  Why not schedule an extremely lazy deferrable delayed_work
-> which polls for emptiness, say, every miniute or whatever?
-> 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Because this branch is marked as unlikely, I would expect it not to be a
-big problem. It will be not taken most of the time, and becomes a very
-cheap branch. I considered this to be simpler than a deferred work
-mechanism.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-If even then, you guys believe this is still too high, I can resort to that.
+diff --cc arch/arm/mach-davinci/include/mach/da8xx.h
+index c74a6ab,33e78ae..0000000
+--- a/arch/arm/mach-davinci/include/mach/da8xx.h
++++ b/arch/arm/mach-davinci/include/mach/da8xx.h
+@@@ -20,11 -19,12 +20,11 @@@
+ =20
+  #include <mach/serial.h>
+  #include <mach/edma.h>
+- #include <mach/i2c.h>
+- #include <mach/mmc.h>
+- #include <mach/usb.h>
+ -#include <mach/asp.h>
+  #include <mach/pm.h>
+- #include <mach/spi.h>
++ #include <linux/platform_data/i2c-davinci.h>
++ #include <linux/platform_data/mmc-davinci.h>
++ #include <linux/platform_data/usb-davinci.h>
++ #include <linux/platform_data/spi-davinci.h>
+ =20
+  extern void __iomem *da8xx_syscfg0_base;
+  extern void __iomem *da8xx_syscfg1_base;
 
+--Signature=_Mon__24_Sep_2012_18_30_49_+1000_JvnT5wJkvFnfMlw2
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> Thanks.
-> 
+iQIcBAEBCAAGBQJQYBo5AAoJEECxmPOUX5FEzIYP/3OVLTwrgQjeJZqDUXo1uoAH
+/4AYQH8b/aex/VavyeFZU+piyVCg/w8hp/7aAw5EuqL3SLGV/up+XHKJR4+w96+I
+J2H6FWart7/kptXP2lmZcxJpYk3DiadA8T32Vpktz5LWNAwjoV7VMWbyALRh3qhR
+oHVRqERu6VGy99Y+RaLJnRsuZQ9I9EhaDXNEfAeHEPT8hweGY1Qk3l7AwAiBf7ES
+/Y2KU8/qNJn9AyuKZeSXL3SjbgSmCeYCP+6/J88bgkM50+AcR2xTnD0JH4Em5L17
+RgQfh8U8eKh7HTNe8cFk19THNenVUdE0bnzWZRQf7xLOdblN835KlxuOhRsZ/L63
+6oCcJd1oJngE74IrK1YOvCsarZAuKSratQoLC8vE1XYf4y7qPUPYAR/IDOTnfAni
+nXLigBlaEHuQocDqenuI+LfMIizaupvnDiq2EFNxti8AKuGNMq5QROO6lEXLxFJt
+5xM1r6GOU4OYRIiNa4giCzkkuZpq10eHPrhZ1lVKEBx/Q00gSyc2JpIALZJVvAGA
+Y+Vlp3oKUOOHpCEoZYyPBUW0JP+3EOljhpQmMZaV8OCZ1bAbn3NixNZ42Wd84eCu
+Y0Jsd4sOo97CNB7Lv7Dx9mx7bgH96b1wkcU0pcoTu59nrc2GN3QBSxdtEgZDBMbk
+QmXG9gcX8Xnd1sGwyCE7
+=1jMQ
+-----END PGP SIGNATURE-----
 
+--Signature=_Mon__24_Sep_2012_18_30_49_+1000_JvnT5wJkvFnfMlw2--
