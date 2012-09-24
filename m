@@ -1,368 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757017Ab2IXQDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:03:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58826 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756706Ab2IXQAD (ORCPT
+	id S1756882Ab2IXQD3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:03:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41458 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756705Ab2IXQAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:00:03 -0400
+	Mon, 24 Sep 2012 12:00:02 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/30] perf header: Use pre-processed session env when printing
-Date: Mon, 24 Sep 2012 12:59:27 -0300
-Message-Id: <1348502384-14442-14-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 10/30] perf timechart: Use zalloc and fix a couple leaks
+Date: Mon, 24 Sep 2012 12:59:24 -0300
+Message-Id: <1348502384-14442-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1348502384-14442-1-git-send-email-acme@infradead.org>
 References: <1348502384-14442-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
->From now on each feature information is processed and saved in perf
-header so that it can be used for printing.  The event desc and branch
-stack features are not touched since they're not saved.
+Use zalloc for the malloc+memset open coded sequence.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Fix leak on the #ifdef'ed C state handling and when detecting invalid
+data in p_state_change().
+
+Cc: Arjan van de Ven <arjan@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1348474503-15070-4-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/n/tip-v9x3q9rv4caxtox7wtjpchq5@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c |  207 +++++++++++++++-------------------------------
- 1 files changed, 66 insertions(+), 141 deletions(-)
+ tools/perf/builtin-timechart.c |   40 ++++++++++++++--------------------------
+ 1 files changed, 14 insertions(+), 26 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index d74b58d..b2929d7 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1103,118 +1103,80 @@ static int write_branch_stack(int fd __maybe_unused,
- 	return 0;
- }
- 
--static void print_hostname(struct perf_header *ph, int fd, FILE *fp)
-+static void print_hostname(struct perf_header *ph, int fd __maybe_unused,
-+			   FILE *fp)
- {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# hostname : %s\n", str);
--	free(str);
-+	fprintf(fp, "# hostname : %s\n", ph->env.hostname);
- }
- 
--static void print_osrelease(struct perf_header *ph, int fd, FILE *fp)
-+static void print_osrelease(struct perf_header *ph, int fd __maybe_unused,
-+			    FILE *fp)
- {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# os release : %s\n", str);
--	free(str);
-+	fprintf(fp, "# os release : %s\n", ph->env.os_release);
- }
- 
--static void print_arch(struct perf_header *ph, int fd, FILE *fp)
-+static void print_arch(struct perf_header *ph, int fd __maybe_unused, FILE *fp)
- {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# arch : %s\n", str);
--	free(str);
-+	fprintf(fp, "# arch : %s\n", ph->env.arch);
- }
- 
--static void print_cpudesc(struct perf_header *ph, int fd, FILE *fp)
-+static void print_cpudesc(struct perf_header *ph, int fd __maybe_unused,
-+			  FILE *fp)
- {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# cpudesc : %s\n", str);
--	free(str);
-+	fprintf(fp, "# cpudesc : %s\n", ph->env.cpu_desc);
- }
- 
--static void print_nrcpus(struct perf_header *ph, int fd, FILE *fp)
-+static void print_nrcpus(struct perf_header *ph, int fd __maybe_unused,
-+			 FILE *fp)
- {
--	ssize_t ret;
--	u32 nr;
--
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		nr = -1; /* interpreted as error */
--
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
--
--	fprintf(fp, "# nrcpus online : %u\n", nr);
--
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		nr = -1; /* interpreted as error */
--
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
--
--	fprintf(fp, "# nrcpus avail : %u\n", nr);
-+	fprintf(fp, "# nrcpus online : %u\n", ph->env.nr_cpus_online);
-+	fprintf(fp, "# nrcpus avail : %u\n", ph->env.nr_cpus_avail);
- }
- 
--static void print_version(struct perf_header *ph, int fd, FILE *fp)
-+static void print_version(struct perf_header *ph, int fd __maybe_unused,
-+			  FILE *fp)
- {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# perf version : %s\n", str);
--	free(str);
-+	fprintf(fp, "# perf version : %s\n", ph->env.version);
- }
- 
--static void print_cmdline(struct perf_header *ph, int fd, FILE *fp)
-+static void print_cmdline(struct perf_header *ph, int fd __maybe_unused,
-+			  FILE *fp)
- {
--	ssize_t ret;
-+	int nr, i;
- 	char *str;
--	u32 nr, i;
--
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		return;
- 
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
-+	nr = ph->env.nr_cmdline;
-+	str = ph->env.cmdline;
- 
- 	fprintf(fp, "# cmdline : ");
- 
- 	for (i = 0; i < nr; i++) {
--		str = do_read_string(fd, ph);
- 		fprintf(fp, "%s ", str);
--		free(str);
-+		str += strlen(str) + 1;
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 55a3a6c..b1a8a3b 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -168,9 +168,8 @@ static struct per_pid *find_create_pid(int pid)
+ 			return cursor;
+ 		cursor = cursor->next;
  	}
- 	fputc('\n', fp);
- }
- 
--static void print_cpu_topology(struct perf_header *ph, int fd, FILE *fp)
-+static void print_cpu_topology(struct perf_header *ph, int fd __maybe_unused,
-+			       FILE *fp)
- {
--	ssize_t ret;
--	u32 nr, i;
-+	int nr, i;
- 	char *str;
- 
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		return;
--
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
-+	nr = ph->env.nr_sibling_cores;
-+	str = ph->env.sibling_cores;
- 
- 	for (i = 0; i < nr; i++) {
--		str = do_read_string(fd, ph);
- 		fprintf(fp, "# sibling cores   : %s\n", str);
--		free(str);
-+		str += strlen(str) + 1;
+-	cursor = malloc(sizeof(struct per_pid));
++	cursor = zalloc(sizeof(*cursor));
+ 	assert(cursor != NULL);
+-	memset(cursor, 0, sizeof(struct per_pid));
+ 	cursor->pid = pid;
+ 	cursor->next = all_data;
+ 	all_data = cursor;
+@@ -195,9 +194,8 @@ static void pid_set_comm(int pid, char *comm)
+ 		}
+ 		c = c->next;
+ 	}
+-	c = malloc(sizeof(struct per_pidcomm));
++	c = zalloc(sizeof(*c));
+ 	assert(c != NULL);
+-	memset(c, 0, sizeof(struct per_pidcomm));
+ 	c->comm = strdup(comm);
+ 	p->current = c;
+ 	c->next = p->all;
+@@ -239,17 +237,15 @@ pid_put_sample(int pid, int type, unsigned int cpu, u64 start, u64 end)
+ 	p = find_create_pid(pid);
+ 	c = p->current;
+ 	if (!c) {
+-		c = malloc(sizeof(struct per_pidcomm));
++		c = zalloc(sizeof(*c));
+ 		assert(c != NULL);
+-		memset(c, 0, sizeof(struct per_pidcomm));
+ 		p->current = c;
+ 		c->next = p->all;
+ 		p->all = c;
  	}
  
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		return;
--
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
-+	nr = ph->env.nr_sibling_threads;
-+	str = ph->env.sibling_threads;
+-	sample = malloc(sizeof(struct cpu_sample));
++	sample = zalloc(sizeof(*sample));
+ 	assert(sample != NULL);
+-	memset(sample, 0, sizeof(struct cpu_sample));
+ 	sample->start_time = start;
+ 	sample->end_time = end;
+ 	sample->type = type;
+@@ -373,11 +369,10 @@ static void c_state_start(int cpu, u64 timestamp, int state)
  
- 	for (i = 0; i < nr; i++) {
--		str = do_read_string(fd, ph);
- 		fprintf(fp, "# sibling threads : %s\n", str);
--		free(str);
-+		str += strlen(str) + 1;
- 	}
- }
- 
-@@ -1375,126 +1337,89 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
- 	free_event_desc(events);
- }
- 
--static void print_total_mem(struct perf_header *h __maybe_unused, int fd,
-+static void print_total_mem(struct perf_header *ph, int fd __maybe_unused,
- 			    FILE *fp)
+ static void c_state_end(int cpu, u64 timestamp)
  {
--	uint64_t mem;
--	ssize_t ret;
--
--	ret = read(fd, &mem, sizeof(mem));
--	if (ret != sizeof(mem))
--		goto error;
--
--	if (h->needs_swap)
--		mem = bswap_64(mem);
--
--	fprintf(fp, "# total memory : %"PRIu64" kB\n", mem);
--	return;
--error:
--	fprintf(fp, "# total memory : unknown\n");
-+	fprintf(fp, "# total memory : %Lu kB\n", ph->env.total_mem);
- }
- 
--static void print_numa_topology(struct perf_header *h __maybe_unused, int fd,
-+static void print_numa_topology(struct perf_header *ph, int fd __maybe_unused,
- 				FILE *fp)
- {
--	ssize_t ret;
- 	u32 nr, c, i;
--	char *str;
-+	char *str, *tmp;
- 	uint64_t mem_total, mem_free;
- 
- 	/* nr nodes */
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		goto error;
--
--	if (h->needs_swap)
--		nr = bswap_32(nr);
-+	nr = ph->env.nr_numa_nodes;
-+	str = ph->env.numa_nodes;
- 
- 	for (i = 0; i < nr; i++) {
--
- 		/* node number */
--		ret = read(fd, &c, sizeof(c));
--		if (ret != (ssize_t)sizeof(c))
-+		c = strtoul(str, &tmp, 0);
-+		if (*tmp != ':')
- 			goto error;
- 
--		if (h->needs_swap)
--			c = bswap_32(c);
--
--		ret = read(fd, &mem_total, sizeof(u64));
--		if (ret != sizeof(u64))
-+		str = tmp + 1;
-+		mem_total = strtoull(str, &tmp, 0);
-+		if (*tmp != ':')
- 			goto error;
- 
--		ret = read(fd, &mem_free, sizeof(u64));
--		if (ret != sizeof(u64))
-+		str = tmp + 1;
-+		mem_free = strtoull(str, &tmp, 0);
-+		if (*tmp != ':')
- 			goto error;
- 
--		if (h->needs_swap) {
--			mem_total = bswap_64(mem_total);
--			mem_free = bswap_64(mem_free);
--		}
--
- 		fprintf(fp, "# node%u meminfo  : total = %"PRIu64" kB,"
- 			    " free = %"PRIu64" kB\n",
--			c,
--			mem_total,
--			mem_free);
-+			c, mem_total, mem_free);
- 
--		str = do_read_string(fd, h);
-+		str = tmp + 1;
- 		fprintf(fp, "# node%u cpu list : %s\n", c, str);
--		free(str);
- 	}
- 	return;
- error:
- 	fprintf(fp, "# numa topology : not available\n");
- }
- 
--static void print_cpuid(struct perf_header *ph, int fd, FILE *fp)
-+static void print_cpuid(struct perf_header *ph, int fd __maybe_unused, FILE *fp)
- {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# cpuid : %s\n", str);
--	free(str);
-+	fprintf(fp, "# cpuid : %s\n", ph->env.cpuid);
- }
- 
- static void print_branch_stack(struct perf_header *ph __maybe_unused,
--			       int fd __maybe_unused,
--			       FILE *fp)
-+			       int fd __maybe_unused, FILE *fp)
- {
- 	fprintf(fp, "# contains samples with branch stack\n");
- }
- 
--static void print_pmu_mappings(struct perf_header *ph, int fd, FILE *fp)
-+static void print_pmu_mappings(struct perf_header *ph, int fd __maybe_unused,
-+			       FILE *fp)
- {
- 	const char *delimiter = "# pmu mappings: ";
--	char *name;
--	int ret;
-+	char *str, *tmp;
- 	u32 pmu_num;
- 	u32 type;
- 
--	ret = read(fd, &pmu_num, sizeof(pmu_num));
--	if (ret != sizeof(pmu_num))
--		goto error;
--
--	if (ph->needs_swap)
--		pmu_num = bswap_32(pmu_num);
--
-+	pmu_num = ph->env.nr_pmu_mappings;
- 	if (!pmu_num) {
- 		fprintf(fp, "# pmu mappings: not available\n");
+-	struct power_event *pwr;
+-	pwr = malloc(sizeof(struct power_event));
++	struct power_event *pwr = zalloc(sizeof(*pwr));
++
+ 	if (!pwr)
  		return;
- 	}
+-	memset(pwr, 0, sizeof(struct power_event));
  
-+	str = ph->env.pmu_mappings;
-+
- 	while (pmu_num) {
--		if (read(fd, &type, sizeof(type)) != sizeof(type))
--			break;
--		if (ph->needs_swap)
--			type = bswap_32(type);
-+		type = strtoul(str, &tmp, 0);
-+		if (*tmp != ':')
-+			goto error;
-+
-+		str = tmp + 1;
-+		fprintf(fp, "%s%s = %" PRIu32, delimiter, str, type);
+ 	pwr->state = cpus_cstate_state[cpu];
+ 	pwr->start_time = cpus_cstate_start_times[cpu];
+@@ -392,14 +387,13 @@ static void c_state_end(int cpu, u64 timestamp)
+ static void p_state_change(int cpu, u64 timestamp, u64 new_freq)
+ {
+ 	struct power_event *pwr;
+-	pwr = malloc(sizeof(struct power_event));
  
--		name = do_read_string(fd, ph);
--		if (!name)
--			break;
--		pmu_num--;
--		fprintf(fp, "%s%s = %" PRIu32, delimiter, name, type);
--		free(name);
- 		delimiter = ", ";
-+		str += strlen(str) + 1;
-+		pmu_num--;
- 	}
+ 	if (new_freq > 8000000) /* detect invalid data */
+ 		return;
  
- 	fprintf(fp, "\n");
++	pwr = zalloc(sizeof(*pwr));
+ 	if (!pwr)
+ 		return;
+-	memset(pwr, 0, sizeof(struct power_event));
+ 
+ 	pwr->state = cpus_pstate_state[cpu];
+ 	pwr->start_time = cpus_pstate_start_times[cpu];
+@@ -429,15 +423,13 @@ static void p_state_change(int cpu, u64 timestamp, u64 new_freq)
+ static void
+ sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te)
+ {
+-	struct wake_event *we;
+ 	struct per_pid *p;
+ 	struct wakeup_entry *wake = (void *)te;
++	struct wake_event *we = zalloc(sizeof(*we));
+ 
+-	we = malloc(sizeof(struct wake_event));
+ 	if (!we)
+ 		return;
+ 
+-	memset(we, 0, sizeof(struct wake_event));
+ 	we->time = timestamp;
+ 	we->waker = pid;
+ 
+@@ -579,13 +571,12 @@ static void end_sample_processing(void)
+ 	struct power_event *pwr;
+ 
+ 	for (cpu = 0; cpu <= numcpus; cpu++) {
+-		pwr = malloc(sizeof(struct power_event));
++		/* C state */
++#if 0
++		pwr = zalloc(sizeof(*pwr));
+ 		if (!pwr)
+ 			return;
+-		memset(pwr, 0, sizeof(struct power_event));
+ 
+-		/* C state */
+-#if 0
+ 		pwr->state = cpus_cstate_state[cpu];
+ 		pwr->start_time = cpus_cstate_start_times[cpu];
+ 		pwr->end_time = last_time;
+@@ -597,10 +588,9 @@ static void end_sample_processing(void)
+ #endif
+ 		/* P state */
+ 
+-		pwr = malloc(sizeof(struct power_event));
++		pwr = zalloc(sizeof(*pwr));
+ 		if (!pwr)
+ 			return;
+-		memset(pwr, 0, sizeof(struct power_event));
+ 
+ 		pwr->state = cpus_pstate_state[cpu];
+ 		pwr->start_time = cpus_pstate_start_times[cpu];
+@@ -830,11 +820,9 @@ static void draw_process_bars(void)
+ 
+ static void add_process_filter(const char *string)
+ {
+-	struct process_filter *filt;
+-	int pid;
++	int pid = strtoull(string, NULL, 10);
++	struct process_filter *filt = malloc(sizeof(*filt));
+ 
+-	pid = strtoull(string, NULL, 10);
+-	filt = malloc(sizeof(struct process_filter));
+ 	if (!filt)
+ 		return;
+ 
 -- 
 1.7.1
 
