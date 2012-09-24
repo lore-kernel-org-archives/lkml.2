@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab2IXHYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:24:22 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:39893 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab2IXHYU (ORCPT
+	id S1755218Ab2IXHZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 03:25:56 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41607 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753103Ab2IXHZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:24:20 -0400
-X-AuditID: cbfee61b-b7f2b6d000000f14-2b-50600aa3602d
-Message-id: <50600A9E.5080009@samsung.com>
-Date: Mon, 24 Sep 2012 16:24:14 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/2] extcon: Unregister compat class at module unload to
- fix oops
-References: <1348278070-22202-1-git-send-email-peterhuewe@gmx.de>
-In-reply-to: <1348278070-22202-1-git-send-email-peterhuewe@gmx.de>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t9jAd3FXAkBBisuiVhc3jWHzWLBxkeM
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGU0L5nDVNDNXtH8dQl7A+Mr1i5GTg4JAROJjTvvQ9li
-	EhfurWfrYuTiEBJYxChxeMtzZgjnJaPE5JlHmboYOTh4BbQk9n+SA2lgEVCVOLxsGzOIzQYS
-	fnGDDaREVCBC4lc/B0iYV0BQ4sfkeywgtoiAssT+V/vYQUYyC3QySpxa1cYIkhAWCJdYe/sj
-	O4gtJOAose7JW3aQOZwCThKvLjOBhJkFdCT2t05jg7DlJTavecs8gVFgFpIVs5CUzUJStoCR
-	eRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcCA+k97BuKrB4hCjAAejEg/vhjPxAUKsiWXF
-	lbmHGCU4mJVEeCOeAYV4UxIrq1KL8uOLSnNSiw8xSnOwKInzCn8KDBASSE8sSc1OTS1ILYLJ
-	MnFwSjUwJou88nlW8W1l/fJ/ez+9X+4fZfDJdFnG3GCnogee0XcXtQUvnvhjufWhJtXb11ee
-	XG93OG/d3uCgP9yh77d860tflDXpWOu2FWb2t6bN8n40b+HD9GOb3z38OGPNnIwP8pEcDEcS
-	1Q645MlEr9ySErHo2077S3duv9cJv+VbIlHp2B+/68TLlm9KLMUZiYZazEXFiQCz/7L7QAIA	AA==
+	Mon, 24 Sep 2012 03:25:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
+References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
+	<20120921174952.GF7264@google.com>
+	<CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
+	<20120921183515.GI7264@google.com>
+	<CAHCeSFpa28d-7ruMKSw6z2EYKYN-5udVouUJOi4cnj4dPad-TA@mail.gmail.com>
+	<20120921192720.GJ7264@google.com>
+	<CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
+	<CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
+	<5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
+	<CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
+	<5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
+Date: Mon, 24 Sep 2012 08:25:54 +0100
+Message-ID: <CAHCeSFp2=CzO1-dw_Ym_s4Pn04nsC_kQUerFJ+uFLh8iinX+Ug@mail.gmail.com>
+Subject: Re: Work queue questions
+From: Deepawali Verma <dverma249@gmail.com>
+To: Daniel Taylor <Daniel.Taylor@wdc.com>
+Cc: anish singh <anish198519851985@gmail.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+Hi Tejun,
 
-> 
-> ---[ end trace dd512cc03fe1c369 ]---
-> FATAL: Error inserting extcon_class
-> (/lib/modules/3.6.0-rc6-00178-g811315f/kernel/drivers/extcon/extcon_class.ko):
-> Cannot allocate memory
-> 
-> This patch fixes this.
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
+Here are some code snippets from my device driver:
 
+#defind NUMBER_OF_SUBTASKS 3
 
-Applied, thank you
+struct my_driver_object
+{
+        struct workqueue_struct *sub_task_wq;
+        struct work_struct sub_task_work;
+        char my_obj_wq_name[80];
+        int task_id;
+};
 
-There was issue, but I fixed them up:
-
->  drivers/extcon/extcon_class.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
+struct my_driver_object obj[3];
 
 
-extcon_class.c was renamed to comply with the standard naming.
-If you will write patch about extcon, please work patch based on below
-git repository.
+void my_driver_init(void)
+{
+   int i =0;
+   memset(my_obj_wq_name,0,80);
+  --------------------------------------
+  for (i =0; i<3; i++)
+  {
+      snprintf(obj[i].my_obj_wq_name,80, "Task-wq:%d",i);
+      obj.sub_task_wq = alloc_workqueue(obj[i].my_obj_wq_name,WQ_UNBOUND,1);
+      INIT_WORK(&obj[i].sub_task_work, sub_task_work_handler);
+  }
 
-You will check it after some hours on below git repository.
--
-http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
+  --------------------------------------
+}
 
-Thanks,
-Chanwoo Choi
+void start_sub_tasks()
+{
+   int i =0;
+   for (i =0; i<3; i++)
+   {
+        queue_work(obj[i].sub_task_wq, &obj[i].sub_task_work);
 
+   }
+
+
+}
+
+static void sub_task_work_handler(struct work_struct work)
+{
+    Ftrace marker start;
+
+    Ftrace marker end
+}
+
+Ideally I was expecting when work is queued to three different work
+queues, it should run in parallel but it is not doing as per expected.
+Let me know about this.
+
+Regards,
+Deepa
+
+
+
+
+
+
+
+On Sat, Sep 22, 2012 at 7:18 AM, Daniel Taylor <Daniel.Taylor@wdc.com> wrote:
+>
+> ...
+>
+>> >> So on so forth.
+>> >> Anyway how can you write chunks of data in parallel when
+>> >> already some worker
+>> >> thread is writing i.e. the system is busy.
+>> >> Analogy: Suppose you are ambidextrous and you are eating.Can
+>> >> you eat with
+>> >> both of your hands at a time?So worker thread are like your
+>> >> hands and keeping
+>> >> you fed all the time is the concept of concurrency.
+>> >>
+>> >> I am not an expert on this but from Tejun's reply I could
+>> >> make out this.
+>> >> Please correct me If I have wrongly understood the concept
+>> >> based on this mail
+>> >
+>> > I don't know how many cores are in the CPU Deepawali's
+>> using, but if I have four,
+>> Assuming single core,Is my explanation correct about concurrency?
+>
+> It is possible for his tasks to complete before scheduling occurs
+> again.  Consuming all of the CPU and having no blocking action,
+> yes, then the tasks will run consecutively.
+>
+> ...
