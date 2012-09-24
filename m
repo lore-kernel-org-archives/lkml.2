@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab2IXJiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 05:38:06 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:41943 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab2IXJiE (ORCPT
+	id S1753612Ab2IXJjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 05:39:12 -0400
+Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:64244 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab2IXJjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 05:38:04 -0400
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, benh@kernel.crashing.org, grant.likely@secretlab.ca,
-        Mike Qiu <qiudayu@linux.vnet.ibm.com>
-Subject: [PATCH] No need to call irq_domain_legacy_revmap() for twice
-Date: Mon, 24 Sep 2012 17:37:55 +0800
-Message-Id: <1348479475-13074-1-git-send-email-qiudayu@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.7.6
-x-cbid: 12092409-2674-0000-0000-00000616D977
+	Mon, 24 Sep 2012 05:39:08 -0400
+X-Greylist: delayed 478 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Sep 2012 05:39:08 EDT
+Message-ID: <50602849.70506@cs.tu-berlin.de>
+Date: Mon, 24 Sep 2012 11:30:49 +0200
+From: =?ISO-8859-15?Q?=22Jan_H=2E_Sch=F6nherr=22?= 
+	<schnhrr@cs.tu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120919 Thunderbird/10.0.7
+MIME-Version: 1.0
+To: pjt@google.com
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Ben Segall <bsegall@google.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [patch 00/16] sched: per-entity load-tracking
+References: <20120823141422.444396696@google.com>
+In-Reply-To: <20120823141422.444396696@google.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function irq_create_mapping() calls irq_find_mapping(). The later
-function has checked if the indicated IRQ domain has hw IRQ mapped to
-virtual IRQ through legacy mode or not and return the value of the
-legacy irq number by call irq_domain_legacy_revmap(). We needn't
-to call irq_domain_legacy_revmap() to do same check in
-irq_create_mapping() again.
+Hi Paul.
 
-The patch removes the duplicate call.
+Am 23.08.2012 16:14, schrieb pjt@google.com:
+> Please find attached the latest version for CFS load-tracking.
 
-Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
----
- kernel/irq/irqdomain.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+Originally, I thought, this series also takes care of
+the leaf-cfs-runqueue ordering issue described here:
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 49a7772..286d672 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -547,9 +547,12 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
- 		return virq;
- 	}
- 
--	/* Get a virtual interrupt number */
-+	/*
-+	 * For IRQ domain with type of IRQ_DOMAIN_MAP_LEGACY, we needn't
-+	 * create the IRQ mapping for non-existing one, so just return 0.
-+	 */
- 	if (domain->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
--		return irq_domain_legacy_revmap(domain, hwirq);
-+		return 0;
- 
- 	/* Allocate a virtual interrupt number */
- 	hint = hwirq % nr_irqs;
--- 
-1.7.7.6
+http://lkml.org/lkml/2011/7/18/86
 
+Now, that I had a closer look, I see that it does not take
+care of it.
+
+Is there still any reason why the leaf_cfs_rq-list must be sorted?
+Or could we just get rid of the ordering requirement, now?
+
+(That seems easier than to fix the issue, as I suspect that
+__update_blocked_averages_cpu() might still punch some holes
+in the hierarchy in some edge cases.)
+
+I'd like to see that issue resolved. :)
+
+Regards
+Jan
