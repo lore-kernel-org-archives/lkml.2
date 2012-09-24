@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab2IXQtB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:49:01 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:40720 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753548Ab2IXQtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:49:00 -0400
-Message-ID: <50608EE1.3050401@linaro.org>
-Date: Mon, 24 Sep 2012 09:48:33 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1757077Ab2IXQts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:49:48 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49429 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756397Ab2IXQtq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 12:49:46 -0400
+Date: Mon, 24 Sep 2012 20:49:42 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Mark Salter <msalter@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to
+ ARM)
+Message-ID: <20120924164942.GH16532@moon>
+References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
+ <20120922114549.GA11610@moon>
+ <20120922132046.GA4260@flint.arm.linux.org.uk>
+ <20120922114723.d7f07fb6.akpm@linux-foundation.org>
+ <1348503709.20929.40.camel@deneb.redhat.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, "Molnar, Ingo" <mingo@elte.hu>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Time/alarmtimer changes for 3.7
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12092416-9360-0000-0000-00000AFB3C95
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348503709.20929.40.camel@deneb.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas, Ingo,
-	Here's my queue for 3.7 for tip/timers/core. Unfortunately
-tip/timers/core is still 3.5 based, and this depends on items that
-landed in 3.6 (and that are waiting in tip/timers/urgent), so its based
-off of tip/timers/urgent, but merges cleanly with tip/timers/core.
+On Mon, Sep 24, 2012 at 12:21:46PM -0400, Mark Salter wrote:
+> diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
+> index 991ef01..3748ec9 100644
+> --- a/include/asm-generic/unistd.h
+> +++ b/include/asm-generic/unistd.h
+> @@ -691,9 +691,11 @@ __SC_COMP(__NR_process_vm_readv, sys_process_vm_readv, \
+>  #define __NR_process_vm_writev 271
+>  __SC_COMP(__NR_process_vm_writev, sys_process_vm_writev, \
+>            compat_sys_process_vm_writev)
+> +#define __NR_kcmp 272
+> +__SYSCALL(__NR_kcmp, sys_kcmp)
+>  
+>  #undef __NR_syscalls
+> -#define __NR_syscalls 272
+> +#define __NR_syscalls 273
+> 
+> > 
+> > I have that queued for 3.7.  There is of course a little risk here.  We
+> > do have a test in tools/testing/selftests/kcmp/ - I suggest that arch
+> > people run it!  In fact all the tools/testing/selftests should execute
+> > successfully on all architectures - if not, please let's fix things
+> > up.
+> 
+> I ran into a build error on C6X (no-MMU) when I enabled CHECKPOINT_RESTORE:
+> 
+>   linux-next/kernel/sys.c: In function 'prctl_set_mm':
+>   linux-next/kernel/sys.c:1869:34: error: 'mmap_min_addr' undeclared (first use in this function)
+> 
+> I got past that with:
+> 
+> diff --git a/include/linux/security.h b/include/linux/security.h
+> index 01ef030..14e394d 100644
+> --- a/include/linux/security.h
+> +++ b/include/linux/security.h
+> @@ -118,6 +118,7 @@ void reset_security_ops(void);
+>  extern unsigned long mmap_min_addr;
+>  extern unsigned long dac_mmap_min_addr;
+>  #else
+> +#define mmap_min_addr          0UL
+>  #define dac_mmap_min_addr      0UL
+>  #endif
+> 
+> Looking at kcmp_test.c, it uses fork, so won't work without MMU. Is
+> the kcmp syscall even meaningful for no-MMU? I suppose some of the
+> tests in kcmp_test.c could be accomplished using clone directly
+> rather than fork.
 
-Let me know if you have any thoughts or requests for changes here.
-
-thanks
--john
-
-PS: Just a reminder that there is still a pending change in
-tip/timers/urgent that I'd hope to get into 3.6.
-
-
-The following changes since commit ec145babe754f9ea1079034a108104b6001e001c:
-
-   time: Fix timeekeping_get_ns overflow on 32bit systems (2012-09-13 17:39:14 +0200)
-
-are available in the git repository at:
-
-   git://git.linaro.org/people/jstultz/linux.git fortglx/3.7/time
-
-for you to fetch changes up to 650ea02475106e8d6bdf561896d2ffe0d1c0ebb4:
-
-   time: Convert x86_64 to using new update_vsyscall (2012-09-24 12:38:09 -0400)
-
-----------------------------------------------------------------
-John Stultz (11):
-       alarmtimer: Use hrtimer per-alarm instead of per-base
-       alarmtimer: Remove unused helpers & defines
-       alarmtimer: Rename alarmtimer_remove to alarmtimer_dequeue
-       jiffies: Kill unused TICK_USEC_TO_NSEC
-       jiffies: Remove compile time assumptions about CLOCK_TICK_RATE
-       time: Move timekeeper structure to timekeeper_internal.h for vsyscall changes
-       time: Move update_vsyscall definitions to timekeeper_internal.h
-       time: Convert CONFIG_GENERIC_TIME_VSYSCALL to CONFIG_GENERIC_TIME_VSYSCALL_OLD
-       time: Introduce new GENERIC_TIME_VSYSCALL
-       time: Only do nanosecond rounding on GENERIC_TIME_VSYSCALL_OLD systems
-       time: Convert x86_64 to using new update_vsyscall
-
-Todd Poynor (1):
-       alarmtimer: Implement minimum alarm interval for allowing suspend
-
-  arch/ia64/Kconfig                   |    2 +-
-  arch/ia64/kernel/time.c             |    4 +-
-  arch/powerpc/Kconfig                |    2 +-
-  arch/powerpc/kernel/time.c          |    4 +-
-  arch/s390/Kconfig                   |    2 +-
-  arch/s390/kernel/time.c             |    4 +-
-  arch/x86/include/asm/vgtod.h        |    4 +-
-  arch/x86/kernel/setup.c             |    3 +
-  arch/x86/kernel/vsyscall_64.c       |   49 +++++++++------
-  arch/x86/vdso/vclock_gettime.c      |   22 ++++---
-  include/linux/alarmtimer.h          |   31 +--------
-  include/linux/clocksource.h         |   16 -----
-  include/linux/jiffies.h             |   21 +------
-  include/linux/timekeeper_internal.h |  108 ++++++++++++++++++++++++++++++++
-  kernel/time.c                       |    2 +-
-  kernel/time/Kconfig                 |    4 ++
-  kernel/time/alarmtimer.c            |  118 +++++++++++++----------------------
-  kernel/time/jiffies.c               |   32 +++++++++-
-  kernel/time/timekeeping.c           |  115 ++++++++++------------------------
-  19 files changed, 281 insertions(+), 262 deletions(-)
-  create mode 100644 include/linux/timekeeper_internal.h
-
+Hi Mark, good catch! I think it should be two patches then. As to kcmp_test.c,
+I've been using fork there simply because it was simplier. The clone could
+be used as well. (kcmp should work even with mmu emulated i think).
