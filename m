@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab2IXBin (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 21:38:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5545 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754729Ab2IXBim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 21:38:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,471,1344236400"; 
-   d="scan'208";a="225772376"
-Message-ID: <505FB96E.8050608@intel.com>
-Date: Mon, 24 Sep 2012 09:37:50 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-CC: x86@kernel.org, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86: Distinguish TLB shootdown interrupts from other
- functions call interrupts
-References: <505A6EFD.4070802@intel.com> <20120920085033.14512.98190.stgit@hpxw>
-In-Reply-To: <20120920085033.14512.98190.stgit@hpxw>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754786Ab2IXBqA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 21:46:00 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36782 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab2IXBpr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 21:45:47 -0400
+Date: Mon, 24 Sep 2012 11:45:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the vfs tree with the  tree
+Message-Id: <20120924114537.2e8ef981e32ecbcb5a17bdda@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Sep_2012_11_45_37_+1000_P2GjN0VMAtqAuhoi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 04:50 PM, Tomoki Sekiyama wrote:
+--Signature=_Mon__24_Sep_2012_11_45_37_+1000_P2GjN0VMAtqAuhoi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  	unsigned int irq_resched_count;
->  	unsigned int irq_call_count;
-> +	/* irq_tlb_count is double-counted in irq_call_count, so it must be
-> +	   subtracted from irq_call_count when displaying irq_call_count */
->  	unsigned int irq_tlb_count;
+Hi Al,
 
+Today's linux-next merge of the vfs tree got a conflict in
+kernel/events/core.c between commit a6fa941d94b4 ("perf_event: Switch to
+internal refcount, fix race with close()") from Linus' and the vfs trees
+and commit 19ba95358327 ("switch simple cases of fget_light to fdget")
+from the vfs tree.
 
-Review again this patch, above comments is not kernel compatible format.
-Could you change it like standard comment format:
+I just used the vfs tree version and can carry the fix as necessary (no
+action is required).
 
-/*
- * xxxxxxx
- * xxxx
- */
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Thanks
-    Alex
+--Signature=_Mon__24_Sep_2012_11_45_37_+1000_P2GjN0VMAtqAuhoi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQX7tBAAoJEECxmPOUX5FEHDEP/0ZTKgFD8Avk85Rwv0eoH/Pz
+UTNF/fPwfAtyUAZdSmEFmS9ncqKj/8OFyScqK+zdo6sB7dVJ7A3J1CCFbNs3T6zf
+yEzXVNNcTGC/wly4/p2xDTFfKmSwK4GfxzIJIuUOQQwvOnuutycq9u0kHc/0qoOe
+gZsVwI6n2tmbyBamoaTsH08auWVc4GxIUbDIP0CkrlUSaYcOXbBheWHUs2ozcVyH
+Deben5+/KZTrnTSal0JuvN3bRugA+BayD5xKI6OAAT6TxAteMfr9vyOM2dNJeYX5
+x3+CWXv2HIZAYchT6mID30BwhCT3Y7qjJN2q0+JqhP5oZBJaP0JHxQqezlx1Ds+c
+gJAXO2dPGCk/JMTzClQdGVNeEc9xyiihUG/8ZcdaHnG9DrnKrF5hgunDpbXB/gcJ
+Y4pXz0w6RPdW+d+xul3DKvEDJM3QEt5WJlYY9hiljyGAq1y7pnlbDit9M7cvhwnE
+EBPTxD2FhOw+W2w5FLbcblJSB0eBBcLK0Gd9mGmkDvyxOLnwWry06uC4lU28us3D
+IeuP4bqDGAMinkGqRCivuVblQ5dercyrF+4Tv+qLiHECr+asP/txVPYmYN5WixWN
+o5NEY0SylcJZ+ylj+J0B4s1RCvseZOKyjPU0wwGpQctaylwiuXViD8v3ptS3NeKK
+f5LRlIRtkRWdHD//ldwu
+=W+fT
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__24_Sep_2012_11_45_37_+1000_P2GjN0VMAtqAuhoi--
