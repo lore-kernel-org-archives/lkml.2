@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab2IXK4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 06:56:45 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:65158 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab2IXK4n (ORCPT
+	id S1754151Ab2IXK54 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 06:57:56 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:42367 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753845Ab2IXK5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 06:56:43 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        Federico Vaga <federico.vaga@gmail.com>
-Subject: [PATCH v3 4/4] adv7180: remove {query/g_/s_}ctrl
-Date: Mon, 24 Sep 2012 12:58:52 +0200
-Message-Id: <1348484332-8106-4-git-send-email-federico.vaga@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com>
-References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com>
+	Mon, 24 Sep 2012 06:57:54 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
+References: <1347798148-2660-1-git-send-email-linkinjeon@gmail.com>
+	<87lig28fak.fsf@devron.myhome.or.jp>
+	<CAKYAXd-6k7=RmrweR=wTOET50hy8Y7LokCSe1c2JtYd7pzPmsQ@mail.gmail.com>
+	<87ipb45914.fsf@devron.myhome.or.jp>
+	<CAKYAXd9EzKH_x1GaXvSZ7pRebfOcwQqNp6-oEnc2z2evuNo23g@mail.gmail.com>
+	<87ehls53ug.fsf@devron.myhome.or.jp>
+	<87a9wg53mc.fsf@devron.myhome.or.jp>
+	<CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
+	<87392768dj.fsf@devron.myhome.or.jp>
+	<CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
+Date: Mon, 24 Sep 2012 19:57:51 +0900
+In-Reply-To: <CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
+	(Namjae Jeon's message of "Mon, 24 Sep 2012 19:29:58 +0900")
+Message-ID: <87y5jz4rio.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All drivers which use this subdevice use also the control framework.
-The v4l2_subdev_core_ops operations {query/g_/s_}ctrl are useless because
-device drivers will inherit controls from this subdevice.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
----
- drivers/media/i2c/adv7180.c | 3 ---
- 1 file modificato, 3 rimozioni(-)
+>> I see. fileid seems to be stat.ino on nfsd4. inode->i_ino is actually
+>> just a hash key of inode hash (exception is only in audit, iirc).
+>>
+>> So, what happens if we set "stat->ino = i_pos" on fat_getattr().
+>>
+>> int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat
+>> *stat)
+>> {
+>> 	struct inode *inode = dentry->d_inode;
+>> 	generic_fillattr(inode, stat);
+>> 	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
+>> 	if (opts->nfs == FAT_NFS_LIMITED) {
+>> 		/* Use i_pos for ino. This is used as fileid of nfs. */
+>> 		stat->ino = MSDOS_SB(inode->i_sb)->i_pos;
 
-diff --git a/drivers/media/i2c/adv7180.c b/drivers/media/i2c/adv7180.c
-index 45ecf8d..43bc2b9 100644
---- a/drivers/media/i2c/adv7180.c
-+++ b/drivers/media/i2c/adv7180.c
-@@ -402,9 +402,6 @@ static const struct v4l2_subdev_video_ops adv7180_video_ops = {
- static const struct v4l2_subdev_core_ops adv7180_core_ops = {
- 	.g_chip_ident = adv7180_g_chip_ident,
- 	.s_std = adv7180_s_std,
--	.queryctrl = v4l2_subdev_queryctrl,
--	.g_ctrl = v4l2_subdev_g_ctrl,
--	.s_ctrl = v4l2_subdev_s_ctrl,
- };
- 
- static const struct v4l2_subdev_ops adv7180_ops = {
+		stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb), inode);
+
+Ouch, I forgot to use fat_i_pos_read().
+
+>> 	}
+>> 	return 0;
+>> }
+> Okay, Thanks for your help.
+> I will share the result after checking.
 -- 
-1.7.11.4
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
