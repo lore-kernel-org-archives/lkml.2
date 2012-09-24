@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab2IXRNG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 13:13:06 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39770 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756754Ab2IXRNE (ORCPT
+	id S1757129Ab2IXRQi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 13:16:38 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45012 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398Ab2IXRQg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 13:13:04 -0400
+	Mon, 24 Sep 2012 13:16:36 -0400
+From: Benjamin Segall <bsegall@google.com>
+To: =?utf-8?Q?Jan_H=2E_Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: pjt@google.com, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [patch 00/16] sched: per-entity load-tracking
+References: <20120823141422.444396696@google.com>
+	<50602849.70506@cs.tu-berlin.de>
+Date: Mon, 24 Sep 2012 10:16:31 -0700
+In-Reply-To: <50602849.70506@cs.tu-berlin.de> ("Jan H. =?utf-8?Q?Sch=C3=B6?=
+ =?utf-8?Q?nherr=22's?= message of
+	"Mon, 24 Sep 2012 11:30:49 +0200")
+Message-ID: <xm26zk4fbats.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1209091427160.13346@chino.kir.corp.google.com>
-References: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
-	<1347137279-17568-2-git-send-email-elezegarcia@gmail.com>
-	<alpine.DEB.2.00.1209091427160.13346@chino.kir.corp.google.com>
-Date: Mon, 24 Sep 2012 14:13:03 -0300
-Message-ID: <CALF0-+V9wpWoLe2jmCqpS-y0S89i3sS52cMXn9UvE+mNT-t10Q@mail.gmail.com>
-Subject: Re: [PATCH 02/10] mm, slob: Use NUMA_NO_NODE instead of -1
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>, Matt Mackall <mpm@selenic.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pekka,
+"Jan H. Schönherr" <schnhrr@cs.tu-berlin.de> writes:
 
-On Sun, Sep 9, 2012 at 6:27 PM, David Rientjes <rientjes@google.com> wrote:
-> On Sat, 8 Sep 2012, Ezequiel Garcia wrote:
+> Hi Paul.
 >
->> Cc: Pekka Enberg <penberg@kernel.org>
->> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+> Am 23.08.2012 16:14, schrieb pjt@google.com:
+>> Please find attached the latest version for CFS load-tracking.
 >
-> Acked-by: David Rientjes <rientjes@google.com>
+> Originally, I thought, this series also takes care of
+> the leaf-cfs-runqueue ordering issue described here:
 >
+> http://lkml.org/lkml/2011/7/18/86
+>
+> Now, that I had a closer look, I see that it does not take
+> care of it.
+>
+> Is there still any reason why the leaf_cfs_rq-list must be sorted?
+> Or could we just get rid of the ordering requirement, now?
 
-Will you pick this (and the rest of cleanup patches)
-for v3.7 pull request?
-Or is there anything for me to redo?
+Ideally yes, since a parent's __update_cfs_rq_tg_load_contrib and
+update_cfs_shares still depend on accurate values in
+runnable_load_avg/blocked_load_avg from its children. That said, nothing
+should completely fall over, it would make load decay take longer to
+propogate to the root.
+>
+> (That seems easier than to fix the issue, as I suspect that
+> __update_blocked_averages_cpu() might still punch some holes
+> in the hierarchy in some edge cases.)
 
-Thanks,
-Ezequiel.
+Yeah, I suspect it's possible that the parent ends up with a slightly
+lower runnable_avg_sum if they're both hovering around the max value
+since it isn't quite continuous, and it might be the case that this
+difference is large enough to require one more tick to decay to zero.
