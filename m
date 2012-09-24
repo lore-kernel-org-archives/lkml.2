@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab2IXI6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:58:40 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:46902
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751181Ab2IXI6j (ORCPT
+	id S1752573Ab2IXI6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:58:45 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:13162 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751181Ab2IXI6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:58:39 -0400
+	Mon, 24 Sep 2012 04:58:41 -0400
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VPS2(zz98dI936eI1432Ic8kd6f1izz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ahbe9i1155h)
-Subject: Re: [Patch v1 3/7] DA9055 RTC driver
+X-SpamScore: 7
+X-BigFish: VPS7(zz98dI936eI1432Ic84fmc8kd6f1izz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ahbe9i1155h)
+Subject: Re: [Patch v1 6/7] DA9055 Watchdog driver
 From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-CC: Samuel Ortiz <sameo@linux.intel.com>, <rtc-linux@googlegroups.com>,
+To: Wim Van Sebroeck <wim@iguana.be>
+CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-watchdog@vger.kernel.org>,
         David Dajun Chen <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <1347629318.18587.13.camel@dhruva>
-References: <1347629318.18587.13.camel@dhruva>
+In-Reply-To: <1347629604.18587.19.camel@dhruva>
+References: <1347629604.18587.19.camel@dhruva>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 Sep 2012 14:37:46 +0530
-Message-ID: <1348477666.1639.3.camel@dhruva>
+Date: Mon, 24 Sep 2012 14:38:20 +0530
+Message-ID: <1348477700.1639.4.camel@dhruva>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -30,69 +30,66 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Any update on this patch?
-On Fri, 2012-09-14 at 18:58 +0530, Ashish Jangam wrote:
-> This is the RTC patch for the DA9055 PMIC. This patch has got dependency
-> on the DA9055 MFD core.
+On Fri, 2012-09-14 at 19:03 +0530, Ashish Jangam wrote:
+> This is the Watchdog patch for the DA9055 PMIC. This patch has got
+> dependency on the DA9055 MFD core.
 > 
-> This patch is functionally tested on Samsung SMDKV6410.
+> This patch is functionally tested on SMDK6410
 > 
 > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 > ---
->  drivers/rtc/Kconfig      |   10 +
->  drivers/rtc/Makefile     |    1 +
->  drivers/rtc/rtc-da9055.c |  430 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 441 insertions(+), 0 deletions(-)
->  mode change 100644 => 100755 drivers/rtc/Kconfig
->  create mode 100644 drivers/rtc/rtc-da9055.c
+>  drivers/watchdog/Kconfig      |   10 ++
+>  drivers/watchdog/Makefile     |    1 +
+>  drivers/watchdog/da9055_wdt.c |  227 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 238 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/watchdog/da9055_wdt.c
 > 
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> old mode 100644
-> new mode 100755
-> index fabc99a..6050f8b
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -571,6 +571,16 @@ config RTC_DRV_DA9052
->  	  Say y here to support the RTC driver for Dialog Semiconductor
->  	  DA9052-BC and DA9053-AA/Bx PMICs.
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index 53d7571..eb51bf2 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -76,6 +76,16 @@ config DA9052_WATCHDOG
+>            Alternatively say M to compile the driver as a module,
+>            which will be called da9052_wdt.
 >  
-> +config RTC_DRV_DA9055
-> +	tristate "Dialog Semiconductor DA9055 RTC"
+> +config DA9055_WATCHDOG
+> +	tristate "Dialog Semiconductor DA9055 Watchdog"
 > +	depends on MFD_DA9055
 > +	help
-> +	  If you say yes here you will get support for the
-> +	  RTC of the Dialog DA9055 PMIC.
+> +	  If you say yes here you get support for watchdog on the Dialog
+> +	  Semiconductor DA9055 PMIC.
 > +
-> +	  This driver can also be built as a module. If so, the module
-> +	  will be called rtc-da9055
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called da9055_wdt.
 > +
->  config RTC_DRV_EFI
->  	tristate "EFI RTC"
->  	depends on IA64
-> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> index 0d5b2b6..b4c162f 100644
-> --- a/drivers/rtc/Makefile
-> +++ b/drivers/rtc/Makefile
-> @@ -29,6 +29,7 @@ obj-$(CONFIG_RTC_DRV_BQ4802)	+= rtc-bq4802.o
->  obj-$(CONFIG_RTC_DRV_CMOS)	+= rtc-cmos.o
->  obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
->  obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
-> +obj-$(CONFIG_RTC_DRV_DA9055)	+= rtc-da9055.o
->  obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
->  obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
->  obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
-> diff --git a/drivers/rtc/rtc-da9055.c b/drivers/rtc/rtc-da9055.c
+>  config WM831X_WATCHDOG
+>  	tristate "WM831x watchdog"
+>  	depends on MFD_WM831X
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 572b39b..97bbdb3 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -164,6 +164,7 @@ obj-$(CONFIG_XEN_WDT) += xen_wdt.o
+>  
+>  # Architecture Independent
+>  obj-$(CONFIG_DA9052_WATCHDOG) += da9052_wdt.o
+> +obj-$(CONFIG_DA9055_WATCHDOG) += da9055_wdt.o
+>  obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
+>  obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
+>  obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
+> diff --git a/drivers/watchdog/da9055_wdt.c b/drivers/watchdog/da9055_wdt.c
 > new file mode 100644
-> index 0000000..80f7738
+> index 0000000..4cb8689
 > --- /dev/null
-> +++ b/drivers/rtc/rtc-da9055.c
-> @@ -0,0 +1,430 @@
+> +++ b/drivers/watchdog/da9055_wdt.c
+> @@ -0,0 +1,227 @@
 > +/*
-> + * Real time clock driver for DA9055
+> + * System monitoring driver for DA9055 PMICs.
 > + *
 > + * Copyright(c) 2012 Dialog Semiconductor Ltd.
 > + *
-> + * Author: Dajun Dajun Chen <dajun.chen@diasemi.com>
+> + * Author: David Dajun Chen <dchen@diasemi.com>
 > + *
 > + * This program is free software; you can redistribute it and/or modify
 > + * it under the terms of the GNU General Public License as published by
@@ -102,420 +99,217 @@ On Fri, 2012-09-14 at 18:58 +0530, Ashish Jangam wrote:
 > + */
 > +
 > +#include <linux/module.h>
+> +#include <linux/types.h>
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
 > +#include <linux/platform_device.h>
-> +#include <linux/rtc.h>
+> +#include <linux/watchdog.h>
+> +#include <linux/watchdog.h>
+> +#include <linux/delay.h>
 > +
 > +#include <linux/mfd/da9055/core.h>
 > +#include <linux/mfd/da9055/reg.h>
-> +#include <linux/mfd/da9055/pdata.h>
 > +
-> +struct da9055_rtc {
-> +	struct rtc_device *rtc;
+> +static bool nowayout = WATCHDOG_NOWAYOUT;
+> +module_param(nowayout, bool, 0);
+> +MODULE_PARM_DESC(nowayout,
+> +		 "Watchdog cannot be stopped once started (default="
+> +		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> +
+> +#define DA9055_DEF_TIMEOUT	4
+> +#define DA9055_TWDMIN		256
+> +
+> +struct da9055_wdt_data {
+> +	struct watchdog_device wdt;
 > +	struct da9055 *da9055;
-> +	int alarm_enable;
+> +	struct kref kref;
 > +};
 > +
-> +static int da9055_rtc_enable_alarm(struct da9055_rtc *rtc, bool enable)
+> +static const struct {
+> +	u8 reg_val;
+> +	int user_time;  /* In seconds */
+> +} da9055_wdt_maps[] = {
+> +	{ 0, 0 },
+> +	{ 1, 2 },
+> +	{ 2, 4 },
+> +	{ 3, 8 },
+> +	{ 4, 16 },
+> +	{ 5, 32 },
+> +	{ 5, 33 },  /* Actual time  32.768s so included both 32s and 33s */
+> +	{ 6, 65 },
+> +	{ 6, 66 },  /* Actual time 65.536s so include both, 65s and 66s */
+> +	{ 7, 131 },
+> +};
+> +
+> +static int da9055_wdt_set_timeout(struct watchdog_device *wdt_dev,
+> +				  unsigned int timeout)
 > +{
-> +	int ret;
-> +	if (enable) {
-> +		ret = da9055_reg_update(rtc->da9055, DA9055_REG_ALARM_Y,
-> +					DA9055_RTC_ALM_EN,
-> +					DA9055_RTC_ALM_EN);
-> +		if (ret != 0)
-> +			dev_err(rtc->da9055->dev, "Failed to enable ALM: %d\n",
-> +				ret);
-> +		rtc->alarm_enable = 1;
-> +	} else {
-> +		ret = da9055_reg_update(rtc->da9055, DA9055_REG_ALARM_Y,
-> +					DA9055_RTC_ALM_EN, 0);
-> +		if (ret != 0)
-> +			dev_err(rtc->da9055->dev,
-> +				"Failed to disable ALM: %d\n", ret);
-> +		rtc->alarm_enable = 0;
-> +	}
-> +	return ret;
-> +}
+> +	struct da9055_wdt_data *driver_data = watchdog_get_drvdata(wdt_dev);
+> +	struct da9055 *da9055 = driver_data->da9055;
+> +	int ret, i;
 > +
-> +static irqreturn_t da9055_rtc_alm_irq(int irq, void *data)
-> +{
-> +	struct da9055_rtc *rtc = data;
+> +	for (i = 0; i < ARRAY_SIZE(da9055_wdt_maps); i++)
+> +		if (da9055_wdt_maps[i].user_time == timeout)
+> +			break;
 > +
-> +	da9055_rtc_enable_alarm(rtc, 0);
-> +	rtc_update_irq(rtc->rtc, 1, RTC_IRQF | RTC_AF);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int da9055_read_alarm(struct da9055 *da9055, struct rtc_time *rtc_tm)
-> +{
-> +	int ret;
-> +	uint8_t v[5];
-> +
-> +	ret = da9055_group_read(da9055, DA9055_REG_ALARM_MI, 5, v);
-> +	if (ret != 0) {
-> +		dev_err(da9055->dev, "Failed to group read ALM: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	rtc_tm->tm_year = (v[4] & DA9055_RTC_ALM_YEAR) + 100;
-> +	rtc_tm->tm_mon  = (v[3] & DA9055_RTC_ALM_MONTH) - 1;
-> +	rtc_tm->tm_mday = v[2] & DA9055_RTC_ALM_DAY;
-> +	rtc_tm->tm_hour = v[1] & DA9055_RTC_ALM_HOUR;
-> +	rtc_tm->tm_min  = v[0] & DA9055_RTC_ALM_MIN;
-> +
-> +	return rtc_valid_tm(rtc_tm);
-> +}
-> +
-> +static int da9055_set_alarm(struct da9055 *da9055, struct rtc_time *rtc_tm)
-> +{
-> +	int ret;
-> +	uint8_t v[2];
-> +
-> +	rtc_tm->tm_year -= 100;
-> +	rtc_tm->tm_mon += 1;
-> +
-> +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_MI,
-> +				DA9055_RTC_ALM_MIN, rtc_tm->tm_min);
-> +	if (ret != 0) {
-> +		dev_err(da9055->dev, "Failed to write ALRM MIN: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	v[0] = rtc_tm->tm_hour;
-> +	v[1] = rtc_tm->tm_mday;
-> +
-> +	ret = da9055_group_write(da9055, DA9055_REG_ALARM_H, 2, v);
+> +	if (i == ARRAY_SIZE(da9055_wdt_maps))
+> +		ret = -EINVAL;
+> +	else
+> +		ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
+> +					DA9055_TWDSCALE_MASK,
+> +					da9055_wdt_maps[i].reg_val <<
+> +					DA9055_TWDSCALE_SHIFT);
 > +	if (ret < 0)
-> +		return ret;
+> +		dev_err(da9055->dev,
+> +			"Failed to update timescale bit, %d\n", ret);
 > +
-> +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_MO,
-> +				DA9055_RTC_ALM_MONTH, rtc_tm->tm_mon);
-> +	if (ret < 0)
-> +		dev_err(da9055->dev, "Failed to write ALM Month:%d\n", ret);
-> +
-> +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_Y,
-> +				DA9055_RTC_ALM_YEAR, rtc_tm->tm_year);
-> +	if (ret < 0)
-> +		dev_err(da9055->dev, "Failed to write ALM Year:%d\n", ret);
+> +	wdt_dev->timeout = timeout;
 > +
 > +	return ret;
 > +}
 > +
-> +static int da9055_rtc_get_alarm_status(struct da9055 *da9055)
+> +static int da9055_wdt_ping(struct watchdog_device *wdt_dev)
 > +{
+> +	struct da9055_wdt_data *driver_data = watchdog_get_drvdata(wdt_dev);
+> +	struct da9055 *da9055 = driver_data->da9055;
 > +	int ret;
-> +
-> +	ret = da9055_reg_read(da9055, DA9055_REG_ALARM_Y);
-> +	if (ret < 0) {
-> +		dev_err(da9055->dev, "Failed to read ALM: %d\n", ret);
-> +		return ret;
-> +	}
-> +	ret &= DA9055_RTC_ALM_EN;
-> +	return (ret > 0) ? 1 : 0;
-> +}
-> +
-> +static int da9055_rtc_read_time(struct device *dev, struct rtc_time *rtc_tm)
-> +{
-> +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
-> +	uint8_t v[6];
-> +	int ret;
-> +
-> +	ret = da9055_reg_read(rtc->da9055, DA9055_REG_COUNT_S);
-> +	if (ret < 0)
-> +		return ret;
 > +
 > +	/*
-> +	 * Registers are only valid when RTC_READ
-> +	 * status bit is asserted
+> +	 * We have a minimum time for watchdog window called TWDMIN. A write
+> +	 * to the watchdog before this elapsed time will cause an error.
 > +	 */
-> +	if (!(ret & DA9055_RTC_READ))
-> +		return -EBUSY;
+> +	mdelay(DA9055_TWDMIN);
 > +
-> +	ret = da9055_group_read(rtc->da9055, DA9055_REG_COUNT_S, 6, v);
-> +	if (ret < 0) {
-> +		dev_err(rtc->da9055->dev, "Failed to read RTC time : %d\n",
-> +				ret);
-> +		return ret;
-> +	}
-> +
-> +	rtc_tm->tm_year = (v[5] & DA9055_RTC_YEAR) + 100;
-> +	rtc_tm->tm_mon  = (v[4] & DA9055_RTC_MONTH) - 1;
-> +	rtc_tm->tm_mday = v[3] & DA9055_RTC_DAY;
-> +	rtc_tm->tm_hour = v[2] & DA9055_RTC_HOUR;
-> +	rtc_tm->tm_min  = v[1] & DA9055_RTC_MIN;
-> +	rtc_tm->tm_sec  = v[0] & DA9055_RTC_SEC;
-> +
-> +	return rtc_valid_tm(rtc_tm);
-> +}
-> +
-> +static int da9055_rtc_set_time(struct device *dev, struct rtc_time *tm)
-> +{
-> +	struct da9055_rtc *rtc;
-> +	uint8_t v[6];
-> +
-> +	rtc = dev_get_drvdata(dev);
-> +
-> +	v[0] = tm->tm_sec;
-> +	v[1] = tm->tm_min;
-> +	v[2] = tm->tm_hour;
-> +	v[3] = tm->tm_mday;
-> +	v[4] = tm->tm_mon + 1;
-> +	v[5] = tm->tm_year - 100;
-> +
-> +	return da9055_group_write(rtc->da9055, DA9055_REG_COUNT_S, 6, v);
-> +}
-> +
-> +static int da9055_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-> +{
-> +	int ret;
-> +	struct rtc_time *tm = &alrm->time;
-> +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
-> +
-> +	ret = da9055_read_alarm(rtc->da9055, tm);
-> +
-> +	if (ret)
-> +		return ret;
-> +
-> +	alrm->enabled = da9055_rtc_get_alarm_status(rtc->da9055);
-> +
-> +	return 0;
-> +}
-> +
-> +static int da9055_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-> +{
-> +	int ret;
-> +	struct rtc_time *tm = &alrm->time;
-> +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
-> +
-> +	ret = da9055_rtc_enable_alarm(rtc, 0);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = da9055_set_alarm(rtc->da9055, tm);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = da9055_rtc_enable_alarm(rtc, 1);
+> +	/* Reset the watchdog timer */
+> +	ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_E,
+> +				DA9055_WATCHDOG_MASK, 1);
 > +
 > +	return ret;
 > +}
 > +
-> +static int da9055_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+> +static void da9055_wdt_release_resources(struct kref *r)
 > +{
-> +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
+> +	struct da9055_wdt_data *driver_data =
+> +		container_of(r, struct da9055_wdt_data, kref);
 > +
-> +	return da9055_rtc_enable_alarm(rtc, enabled);
+> +	kfree(driver_data);
 > +}
 > +
-> +static const struct rtc_class_ops da9055_rtc_ops = {
-> +	.read_time	= da9055_rtc_read_time,
-> +	.set_time	= da9055_rtc_set_time,
-> +	.read_alarm	= da9055_rtc_read_alarm,
-> +	.set_alarm	= da9055_rtc_set_alarm,
-> +	.alarm_irq_enable = da9055_rtc_alarm_irq_enable,
+> +static void da9055_wdt_ref(struct watchdog_device *wdt_dev)
+> +{
+> +	struct da9055_wdt_data *driver_data = watchdog_get_drvdata(wdt_dev);
+> +
+> +	kref_get(&driver_data->kref);
+> +}
+> +
+> +static void da9055_wdt_unref(struct watchdog_device *wdt_dev)
+> +{
+> +	struct da9055_wdt_data *driver_data = watchdog_get_drvdata(wdt_dev);
+> +
+> +	kref_put(&driver_data->kref, da9055_wdt_release_resources);
+> +}
+> +
+> +static int da9055_wdt_start(struct watchdog_device *wdt_dev)
+> +{
+> +	return da9055_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
+> +}
+> +
+> +static int da9055_wdt_stop(struct watchdog_device *wdt_dev)
+> +{
+> +	return da9055_wdt_set_timeout(wdt_dev, 0);
+> +}
+> +
+> +static struct watchdog_info da9055_wdt_info = {
+> +	.options	= WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
+> +	.identity	= "DA9055 Watchdog",
 > +};
 > +
-> +static int __init da9055_rtc_device_init(struct da9055 *da9055,
-> +				  struct da9055_pdata *pdata)
+> +static const struct watchdog_ops da9055_wdt_ops = {
+> +	.owner = THIS_MODULE,
+> +	.start = da9055_wdt_start,
+> +	.stop = da9055_wdt_stop,
+> +	.ping = da9055_wdt_ping,
+> +	.set_timeout = da9055_wdt_set_timeout,
+> +	.ref = da9055_wdt_ref,
+> +	.unref = da9055_wdt_unref,
+> +};
+> +
+> +static int __devinit da9055_wdt_probe(struct platform_device *pdev)
 > +{
+> +	struct da9055 *da9055 = dev_get_drvdata(pdev->dev.parent);
+> +	struct da9055_wdt_data *driver_data;
+> +	struct watchdog_device *da9055_wdt;
 > +	int ret;
 > +
-> +	/* Enable RTC and the internal Crystal */
-> +	ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
-> +				DA9055_RTC_EN, DA9055_RTC_EN);
-> +	if (ret < 0)
-> +		return ret;
-> +	ret = da9055_reg_update(da9055, DA9055_REG_EN_32K,
-> +				DA9055_CRYSTAL_EN, DA9055_CRYSTAL_EN);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* Enable RTC in Power Down mode */
-> +	ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
-> +				DA9055_RTC_MODE_PD, DA9055_RTC_MODE_PD);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* Enable RTC in Reset mode */
-> +	if (pdata && pdata->reset_enable) {
-> +		ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
-> +					DA9055_RTC_MODE_SD,
-> +					DA9055_RTC_MODE_SD <<
-> +					DA9055_RTC_MODE_SD_SHIFT);
-> +		if (ret < 0)
-> +			return ret;
-> +	}
-> +
-> +	/* Disable the RTC TICK ALM */
-> +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_MO,
-> +				DA9055_RTC_TICK_WAKE_MASK, 0);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static int __devinit da9055_rtc_probe(struct platform_device *pdev)
-> +{
-> +	struct da9055_rtc *rtc;
-> +	struct da9055_pdata *pdata = NULL;
-> +	int ret, alm_irq;
-> +
-> +	rtc = devm_kzalloc(&pdev->dev, sizeof(struct da9055_rtc), GFP_KERNEL);
-> +	if (!rtc)
+> +	driver_data = devm_kzalloc(&pdev->dev, sizeof(*driver_data),
+> +				   GFP_KERNEL);
+> +	if (!driver_data) {
+> +		dev_err(da9055->dev, "Failed to allocate watchdog device\n");
 > +		return -ENOMEM;
-> +
-> +	rtc->da9055 = dev_get_drvdata(pdev->dev.parent);
-> +	pdata = rtc->da9055->dev->platform_data;
-> +	platform_set_drvdata(pdev, rtc);
-> +
-> +	ret = da9055_rtc_device_init(rtc->da9055, pdata);
-> +	if (ret < 0)
-> +		goto err_rtc;
-> +
-> +	ret = da9055_reg_read(rtc->da9055, DA9055_REG_ALARM_Y);
-> +	if (ret < 0)
-> +		goto err_rtc;
-> +
-> +	if (ret & DA9055_RTC_ALM_EN)
-> +		rtc->alarm_enable = 1;
-> +
-> +	device_init_wakeup(&pdev->dev, 1);
-> +
-> +	rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
-> +				       &da9055_rtc_ops, THIS_MODULE);
-> +	if (IS_ERR(rtc->rtc)) {
-> +		ret = PTR_ERR(rtc->rtc);
-> +		goto err_rtc;
 > +	}
 > +
-> +	alm_irq = platform_get_irq_byname(pdev, "ALM");
-> +	ret = request_threaded_irq(alm_irq, NULL, da9055_rtc_alm_irq,
-> +				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-> +				   "ALM", rtc);
-> +	if (ret != 0) {
-> +		dev_err(rtc->da9055->dev, "irq registration failed: %d\n", ret);
-> +		goto err_free_irq;
+> +	driver_data->da9055 = da9055;
+> +
+> +	da9055_wdt = &driver_data->wdt;
+> +
+> +	da9055_wdt->timeout = DA9055_DEF_TIMEOUT;
+> +	da9055_wdt->info = &da9055_wdt_info;
+> +	da9055_wdt->ops = &da9055_wdt_ops;
+> +	watchdog_set_nowayout(da9055_wdt, nowayout);
+> +	watchdog_set_drvdata(da9055_wdt, driver_data);
+> +
+> +	kref_init(&driver_data->kref);
+> +
+> +	ret = da9055_wdt_stop(da9055_wdt);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "Failed to stop watchdog, %d\n", ret);
+> +		goto err;
 > +	}
 > +
-> +	return 0;
+> +	dev_set_drvdata(&pdev->dev, driver_data);
 > +
-> +err_free_irq:
-> +	free_irq(alm_irq, rtc);
-> +err_rtc:
+> +	ret = watchdog_register_device(&driver_data->wdt);
+> +	if (ret != 0)
+> +		dev_err(da9055->dev, "watchdog_register_device() failed: %d\n",
+> +			ret);
+> +
+> +err:
 > +	return ret;
 > +}
 > +
-> +static int __devexit da9055_rtc_remove(struct platform_device *pdev)
+> +static int __devexit da9055_wdt_remove(struct platform_device *pdev)
 > +{
-> +	struct da9055_rtc *rtc = pdev->dev.platform_data;
-> +	int alm_irq;
+> +	struct da9055_wdt_data *driver_data = dev_get_drvdata(&pdev->dev);
 > +
-> +	alm_irq = platform_get_irq_byname(pdev, "ALM");
-> +
-> +	free_irq(alm_irq, rtc);
-> +	rtc_device_unregister(rtc->rtc);
-> +	platform_set_drvdata(pdev, NULL);
+> +	watchdog_unregister_device(&driver_data->wdt);
+> +	kref_put(&driver_data->kref, da9055_wdt_release_resources);
 > +
 > +	return 0;
 > +}
 > +
-> +#ifdef CONFIG_PM
-> +/* Turn off the alarm if it should not be a wake source. */
-> +static int da9055_rtc_suspend(struct device *dev)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct da9055_rtc *rtc = dev_get_drvdata(&pdev->dev);
-> +	int ret;
-> +
-> +	if (!device_may_wakeup(&pdev->dev)) {
-> +		/* Disable the ALM IRQ */
-> +		ret = da9055_rtc_enable_alarm(rtc, 0);
-> +		if (ret < 0)
-> +			dev_err(&pdev->dev, "Failed to disable RTC ALM\n");
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/* Enable the alarm if it should be enabled (in case it was disabled to
-> + * prevent use as a wake source).
-> + */
-> +static int da9055_rtc_resume(struct device *dev)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct da9055_rtc *rtc = dev_get_drvdata(&pdev->dev);
-> +	int ret;
-> +
-> +	if (!device_may_wakeup(&pdev->dev)) {
-> +		if (rtc->alarm_enable) {
-> +			ret = da9055_rtc_enable_alarm(rtc, 1);
-> +			if (ret < 0)
-> +				dev_err(&pdev->dev,
-> +						"Failed to restart RTC ALM\n");
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/* Unconditionally disable the alarm */
-> +static int da9055_rtc_freeze(struct device *dev)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct da9055_rtc *rtc = dev_get_drvdata(&pdev->dev);
-> +	int ret;
-> +
-> +	ret = da9055_rtc_enable_alarm(rtc, 0);
-> +	if (ret < 0)
-> +		dev_err(&pdev->dev, "Failed to freeze RTC ALMs\n");
-> +
-> +	return 0;
-> +
-> +}
-> +#else
-> +#define da9055_rtc_suspend NULL
-> +#define da9055_rtc_resume NULL
-> +#define da9055_rtc_freeze NULL
-> +#endif
-> +
-> +static const struct dev_pm_ops da9055_rtc_pm_ops = {
-> +	.suspend = da9055_rtc_suspend,
-> +	.resume = da9055_rtc_resume,
-> +
-> +	.freeze = da9055_rtc_freeze,
-> +	.thaw = da9055_rtc_resume,
-> +	.restore = da9055_rtc_resume,
-> +
-> +	.poweroff = da9055_rtc_suspend,
-> +};
-> +
-> +static struct platform_driver da9055_rtc_driver = {
-> +	.probe	= da9055_rtc_probe,
-> +	.remove	= __devexit_p(da9055_rtc_remove),
+> +static struct platform_driver da9055_wdt_driver = {
+> +	.probe = da9055_wdt_probe,
+> +	.remove = __devexit_p(da9055_wdt_remove),
 > +	.driver = {
-> +		.name	= "da9055-rtc",
-> +		.owner	= THIS_MODULE,
-> +		.pm = &da9055_rtc_pm_ops,
+> +		.name	= "da9055-watchdog",
 > +	},
 > +};
 > +
-> +static int __init da9055_rtc_init(void)
+> +static int __init da9055_wdt_init(void)
 > +{
-> +	return platform_driver_register(&da9055_rtc_driver);
+> +	return platform_driver_register(&da9055_wdt_driver);
 > +}
-> +module_init(da9055_rtc_init);
+> +module_init(da9055_wdt_init);
 > +
-> +static void __exit da9055_rtc_exit(void)
+> +static void __exit da9055_wdt_exit(void)
 > +{
-> +	platform_driver_unregister(&da9055_rtc_driver);
+> +	platform_driver_unregister(&da9055_wdt_driver);
 > +}
-> +module_exit(da9055_rtc_exit);
+> +module_exit(da9055_wdt_exit);
 > +
 > +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-> +MODULE_DESCRIPTION("RTC driver for Dialog DA9055 PMIC");
+> +MODULE_DESCRIPTION("DA9055 watchdog");
 > +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:da9055-rtc");
+> +MODULE_ALIAS("platform:da9055-watchdog");
 
 
