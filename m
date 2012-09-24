@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab2IXR4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 13:56:25 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:61052 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757310Ab2IXR4Y (ORCPT
+	id S1757474Ab2IXR5F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 13:57:05 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34476 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757310Ab2IXR5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 13:56:24 -0400
-Date: Mon, 24 Sep 2012 10:56:19 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/16] memcg: infrastructure to match an allocation
- to the right cache
-Message-ID: <20120924175619.GD7694@google.com>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
- <1347977530-29755-7-git-send-email-glommer@parallels.com>
- <20120921183217.GH7264@google.com>
- <50601DEB.10705@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50601DEB.10705@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 24 Sep 2012 13:57:02 -0400
+From: Pawel Moll <pawel.moll@arm.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>
+Subject: [RFC] regulator: core: Support for continuous voltage range
+Date: Mon, 24 Sep 2012 18:56:53 +0100
+Message-Id: <1348509414-21261-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-OriginalArrivalTime: 24 Sep 2012 17:57:00.0076 (UTC) FILETIME=[FED7D6C0:01CD9A7D]
+X-MC-Unique: 112092418570001001
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8OHvBWh021716
 
-Hello, Glauber.
+Some regulators can set any voltage within the constraints range,
+not being limited to specified operating points.
 
-On Mon, Sep 24, 2012 at 12:46:35PM +0400, Glauber Costa wrote:
-> >> +#ifdef CONFIG_MEMCG_KMEM
-> >> +	/* Slab accounting */
-> >> +	struct kmem_cache *slabs[MAX_KMEM_CACHE_TYPES];
-> >> +#endif
-> > 
-> > Bah, 400 entry array in struct mem_cgroup.  Can't we do something a
-> > bit more flexible?
-> > 
-> 
-> I guess. I still would like it to be an array, so we can easily access
-> its fields. There are two ways around this:
-> 
-> 1) Do like the events mechanism and allocate this in a separate
-> structure. Add a pointer chase in the access, and I don't think it helps
-> much because it gets allocated anyway. But we could at least
-> defer it to the time when we limit the cache.
+This patch makes it possible to describe such regulator and makes
+the regulator_is_supported_voltage() function behave correctly.
 
-Start at some reasonable size and then double it as usage grows?  How
-many kmem_caches do we typically end up using?
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+---
+ drivers/regulator/core.c         |    5 +++++
+ include/linux/regulator/driver.h |    3 +++
+ 2 files changed, 8 insertions(+)
 
-> >> +	if (memcg->slabs[idx] == NULL) {
-> >> +		memcg_create_cache_enqueue(memcg, cachep);
-> > 
-> > Do we want to wait for the work item if @gfp allows?
-> > 
-> 
-> I tried this once, and it got complicated enough that I deemed as "not
-> worth it". I honestly don't remember much of the details now, it was one
-> of the first things I tried, and a bunch of time has passed. If you
-> think it is absolutely worth it, I can try it again. But at the very
-> best, I view this as an optimization.
+Hi Mark,
 
-I don't know.  It seems like a logical thing to try and depends on how
-complex it gets.  I don't think it's a must.  The whole thing is
-somewhat opportunistic after all.
+This is roughly what we discussed last week. Alternatively, it could be
+also a "universal" unsigned regulator_desc.flags field with #define
+REGULATOR_FLAG_CONTINUOUS_VOLTAGE_RAGE 0x1.
 
-Thanks.
+Regards
 
+Pawel
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 4838531..808928a 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1947,6 +1947,11 @@ int regulator_is_supported_voltage(struct regulator *regulator,
+ 			return ret;
+ 	}
+ 
++	/* Any voltage within constrains range is fine? */
++	if (rdev->desc->continuous_voltage_range)
++		return min_uV >= rdev->constraints->min_uV &&
++				max_uV <= rdev->constraints->max_uV;
++
+ 	ret = regulator_count_voltages(regulator);
+ 	if (ret < 0)
+ 		return ret;
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index bac4c87..2f915b9 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -171,6 +171,8 @@ enum regulator_type {
+  * @type: Indicates if the regulator is a voltage or current regulator.
+  * @owner: Module providing the regulator, used for refcounting.
+  *
++ * @continuous_voltage_range: Indicates if the regulator can set any
++ *                            voltage within constrains range.
+  * @n_voltages: Number of selectors available for ops.list_voltage().
+  *
+  * @min_uV: Voltage given by the lowest selector (if linear mapping)
+@@ -189,6 +191,7 @@ struct regulator_desc {
+ 	const char *name;
+ 	const char *supply_name;
+ 	int id;
++	bool continuous_voltage_range;
+ 	unsigned n_voltages;
+ 	struct regulator_ops *ops;
+ 	int irq;
 -- 
-tejun
+1.7.9.5
+
+
