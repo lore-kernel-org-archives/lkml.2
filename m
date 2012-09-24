@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757725Ab2IXSta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 14:49:30 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42654 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757648Ab2IXSt1 (ORCPT
+	id S1757630Ab2IXSvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 14:51:25 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42430 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757325Ab2IXSvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 14:49:27 -0400
-Message-ID: <5060AB0E.3070809@linux.vnet.ibm.com>
-Date: Tue, 25 Sep 2012 00:18:46 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Conny Seidel <conny.seidel@amd.com>, Jan Kara <jack@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Mon, 24 Sep 2012 14:51:23 -0400
+Date: Mon, 24 Sep 2012 22:51:19 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Mark Salter <msalter@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
-References: <20120924102324.GA22303@aftab.osrc.amd.com> <20120924142305.GD12264@quack.suse.cz> <20120924143609.GH22303@aftab.osrc.amd.com> <20120924201650.6574af64.conny.seidel@amd.com> <20120924181927.GA25762@aftab.osrc.amd.com>
-In-Reply-To: <20120924181927.GA25762@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-x-cbid: 12092418-9574-0000-0000-0000049117C4
+        Russell King <rmk@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: sys_kcmp
+Message-ID: <20120924185119.GI16532@moon>
+References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
+ <20120922114549.GA11610@moon>
+ <20120922132046.GA4260@flint.arm.linux.org.uk>
+ <20120922114723.d7f07fb6.akpm@linux-foundation.org>
+ <1348503709.20929.40.camel@deneb.redhat.com>
+ <20120924164942.GH16532@moon>
+ <20120924174256.GD24172@moon>
+ <87lifzuvey.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lifzuvey.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 11:49 PM, Borislav Petkov wrote:
-> On Mon, Sep 24, 2012 at 08:16:50PM +0200, Conny Seidel wrote:
->> Hi,
->>
->> On Mon, 24 Sep 2012 16:36:09 +0200
->> Borislav Petkov <bp@amd64.org> wrote:
->>> [ … ]
->>>
->>> Conny, would you test pls?
->>
->> Sure thing.
->> Out of ~25 runs I only triggered it once, without the patch the
->> trigger-rate is higher.
->>
->> [   55.098249] Broke affinity for irq 81
->> [   55.105108] smpboot: CPU 1 is now offline
->> [   55.311216] smpboot: Booting Node 0 Processor 1 APIC 0x11
->> [   55.333022] LVT offset 0 assigned for vector 0x400
->> [   55.545877] smpboot: CPU 2 is now offline
->> [   55.753050] smpboot: Booting Node 0 Processor 2 APIC 0x12
->> [   55.775582] LVT offset 0 assigned for vector 0x400
->> [   55.986747] smpboot: CPU 3 is now offline
->> [   56.193839] smpboot: Booting Node 0 Processor 3 APIC 0x13
->> [   56.212643] LVT offset 0 assigned for vector 0x400
->> [   56.423201] Got negative events: -25
+On Mon, Sep 24, 2012 at 11:29:09AM -0700, Eric W. Biederman wrote:
+> >  
+> > +#ifdef CONFIG_MMU
+> >  	if (addr >= TASK_SIZE || addr < mmap_min_addr)
+> > +#else
+> > +	if (addr >= TASK_SIZE)
+> > +#endif
 > 
-> I see it:
+> I expect what you want is a call to access_ok, rather than hard coding
+> details about task layout here.  This test certainly looks wrong
+> for a 32bit process on a 64bit kernel. If I read your test right it
+> appears I can set values of say 0x100000000 on a 32bit process...
 > 
-> __percpu_counter_sum does for_each_online_cpu without doing
-> get/put_online_cpus().
-> 
+> As for mmap_min_addr I would expect your find_vma check would make that
+> test unnecessary, simply by not finding a vma...
 
-Maybe I'm missing something, but that doesn't immediately tell me
-what's the exact source of the bug.. Note that there is a hotplug
-callback percpu_counter_hotcpu_callback() that takes the same
-fbc->lock before updating/resetting the percpu counters of offline
-CPU. So, though the synchronization is a bit weird, I don't
-immediately see a problematic race condition there.
-
-And, speaking of hotplug callbacks, on a slightly different note,
-I see one defined as ratelimit_handler(), which calls
-writeback_set_ratelimit() for *every single* state change in the
-hotplug sequence! Is that really intentional? num_online_cpus()
-changes its value only -once- for every hotplug :-)
-
-Regards,
-Srivatsa S. Bhat
-
+Good point, Eric, thanks! I'm cooking a new patch now.
