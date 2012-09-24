@@ -1,114 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751247Ab2IXXhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 19:37:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52297 "EHLO mx2.suse.de"
+	id S1751473Ab2IXXiu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 19:38:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55968 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763Ab2IXXhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 19:37:52 -0400
-Date: Tue, 25 Sep 2012 09:37:43 +1000
-From: NeilBrown <neilb@suse.de>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@fusionio.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: makes bio_split support bio without data
-Message-ID: <20120925093743.757f0a95@notabene.brown>
-In-Reply-To: <87txunyg15.fsf@sejong.aot.lge.com>
-References: <20120924145639.3b65fd8b@notabene.brown>
-	<87txunyg15.fsf@sejong.aot.lge.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/t2PTMmK7wxzSKIISuKGFVE0"; protocol="application/pgp-signature"
+	id S1750814Ab2IXXit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 19:38:49 -0400
+Message-ID: <5060EE61.1000902@ti.com>
+Date: Mon, 24 Sep 2012 18:36:01 -0500
+From: Ricardo Neri <ricardo.neri@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        <alsa-devel@alsa-project.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [alsa-devel] [PATCH v3 00/15] ASoC: OMAP: Convert to use dmaengine
+References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/t2PTMmK7wxzSKIISuKGFVE0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Peter, Mark,
 
-On Mon, 24 Sep 2012 17:35:34 +0900 Namhyung Kim <namhyung@kernel.org> wrote:
+On 09/14/2012 07:05 AM, Peter Ujfalusi wrote:
+> Hello,
+>
+> Changes since v2:
+> - As it has been discussed the no_wakeup parameter has been replaced with flags
+>    for the dmaengine APIs
+>
+> Changes since v1:
+> - Support for pause/resume for OMAP audio via dmaengine
+> - dmaengine: support for NO_PERIOD_WAKEUP in cyclic mode
+>   - OMAP to keep supporting NO_PERIOD_WAKEUP for audio
+>   - Other plaforms can also try to enable this mode since we have now generic
+>     interface to do so.
+>
+> This series will switch the OMAP audio to use dmaengine.
+> The final patch which does the switch was based on Russell King's earlier patch.
+>
+> The first 10 patch is to prepare the OMAP audio drivers for a smooth change to
+> dmaengine:
+> - sDMA FRAME sync mode is removed and replaced with PACKET mode
+> - dai drivers no longer need to configure sDMA sync mode
+> - dai drivers does not need to specify the DMA word length - with the exception
+>    of the omap-hdmi driver which requires 32bit word length regardless of the
+>    audio format in use
+> - the McPDM driver used (to my surprise) hackish way of getting the DMA channel
+>    and address - via defines from some header files
+>
+> After the conversion OMAP audio support should have the same features as before,
+> no regressions expected.
+>
+> I have tested the series on:
+> - BeagleBoard (audio via McBSP):
+>   - aplay/arecord. In element mode and in threshold mode with different period
+>     sizes
+>   - mplayer -ao alsa: for direct ALSA access
+>   - mplayer -ao pulse: via PulseAudio to test NO_PERIOD_WAKEUP feature
+> - OMAP4 Blaze (audio via McPDM and DMIC)
+>   - aplay/arecord
+>   - mplayer -ao alsa: for direct ALSA access
+>   - mplayer -ao pulse: via PulseAudio to test NO_PERIOD_WAKEUP feature
+>
+> The patches has been generated against:
+> git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git for-3.7
+>
+> Janusz: Can you retest this series on OMAP1 to be sure I have not broken it?
+> Ricardo: Can you test the omap-hmdi if it is still working?
 
-> Hi,
->=20
-> On Mon, 24 Sep 2012 14:56:39 +1000, NeilBrown wrote:
-> > Hi Jens,
-> >  this patch has been sitting in my -next tree for a little while and I =
-was
-> >  hoping for it to go in for the next merge window.
-> >  It simply allows bio_split() to be used on bios without a payload, suc=
-h as
-> >  'discard'.
-> >  Are you happy with it going in though my 'md' tree, or would you rathe=
-r take
-> >  it though your 'block' tree?
-> >
-> > Thanks,
-> > NeilBrown
-> >
-> >
-> > From: Shaohua Li <shli@fusionio.com>
-> > Date: Thu, 20 Sep 2012 09:36:03 +1000
-> > Subject: [PATCH] block: makes bio_split support bio without data
-> >
-> > discard bio hasn't data attached. We hit a BUG_ON with such bio. This m=
-akes
-> > bio_split works for such bio.
-> >
-> > Signed-off-by: Shaohua Li <shli@fusionio.com>
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> >
-> > diff --git a/fs/bio.c b/fs/bio.c
-> > index 71072ab..dbb7a6c 100644
-> > --- a/fs/bio.c
-> > +++ b/fs/bio.c
-> > @@ -1501,7 +1501,7 @@ struct bio_pair *bio_split(struct bio *bi, int fi=
-rst_sectors)
-> >  	trace_block_split(bdev_get_queue(bi->bi_bdev), bi,
-> >  				bi->bi_sector + first_sectors);
-> > =20
-> > -	BUG_ON(bi->bi_vcnt !=3D 1);
-> > +	BUG_ON(bi->bi_vcnt !=3D 1 && bi->bi_vcnt !=3D 0);
->=20
-> Why not
-> 	BUG_ON(bi->bi_vcnt > 1);
-> ?
+I tested these changes from Mark's for-3.7 branch. HDMI audio is working 
+fine after applying patch 03. Such patch is missing in Mark's branch and 
+this causes a build break with omap2plus_defconfig. Not sure if this is 
+expected, Most likely not.
 
-Either is fine with me.
-'1' and '0' are the cases that bio_split explicitly supports.
-'>1' are the cases which will cause problems.
+Tested-by: Ricardo Neri <ricardo.neri@ti.com>
 
-As bi_vnt is unsigned, both conditions should produce exactly the same
-machine code.
-
-As I see no reason to prefer one over the other, I'm happy to go with what =
-the
-original author wrote.
-
-Thanks,
-NeilBrown
-
---Sig_/t2PTMmK7wxzSKIISuKGFVE0
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUGDuxznsnt1WYoG5AQLrbA/+NoOwxfTRXpsJgOi3oe859XLNSJ/3V9sG
-69StsAAMszxKWN2iqamd59m7a9gScZDABWVw45HPak6sRNiMf1oRgufszkqTZmrV
-wEfu2zlYwV/9x2G2Hu2tOwzVfw6399VFlfoYAKJWQfmlf3DaBsYsCss2rmUKJl29
-SHgzaSZJa7s+O4vOtX6GFCnmMI1Do3U8CdCeDahi2WdymCAcsDk1fWv7PihrdhC/
-kMQ0Tpoqsyye3YvSp8XLlG0gvJrmE7AI2coZm8RXfNsBw89Hw/4K+iFi/g7QIYgf
-l/E2dUZtlGZAgCbza/nBuO+LgvUh0tu47MVyI199rHiw07vcr0rdd0PouBQhT5yM
-aEMXCHuReev955DpbYYKciJR3+8enCO6F9Z6zEAH4BLoHemjRfnZjxK9+jmsGj2b
-+ykPhGzeCSjnoD+6huTBt/lJGbeAC/pemFOfhnWdR7XHDKQlxTkWs+eTXOWNMKfm
-kE6negAhVxUWEhIJ2jYzK4M/hDky/kXg09eW8GMuPwSw6Y2TLo3KUafK6h2kAm3Q
-tpUQUYqL64k4YAXeE0apUjk+3ttzoPsdwY0baosSMOsK05U4AbwCvZ660V7RHom4
-7vDYVzhsumFLi7YAeLuODueAfEL+RyumCt2M4bVX4MorDiDjMzqFr+D4pmT+vJvQ
-U1buLp6a8nA=
-=Mq98
------END PGP SIGNATURE-----
-
---Sig_/t2PTMmK7wxzSKIISuKGFVE0--
+Ricardo
