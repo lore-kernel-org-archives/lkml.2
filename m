@@ -1,76 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab2IXXOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 19:14:48 -0400
-Received: from jim.sh ([75.150.123.25]:53261 "EHLO psychosis.jim.sh"
+	id S1751384Ab2IXX1X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 19:27:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18656 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab2IXXOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 19:14:46 -0400
-X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Sep 2012 19:14:46 EDT
-Date: Mon, 24 Sep 2012 19:04:50 -0400
-From: Jim Paris <jim@jtan.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tj@kernel.org, axboe@kernel.dk, neilb@suse.de,
-        vgoyal@redhat.com, "Ed L. Cashin" <ecashin@coraid.com>,
-        Nick Piggin <npiggin@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
-        Geoff Levand <geoff@infradead.org>, Alasdair Kergon <agk@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v3 07/26] block: Use bio_sectors() more consistently
-Message-ID: <20120924230449.GA2040@psychosis.jim.sh>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
- <1348526106-17074-8-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348526106-17074-8-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750831Ab2IXX1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 19:27:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,477,1344236400"; 
+   d="scan'208";a="226194786"
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Woodhouse <dwmw2@infradead.org>, Vivek Goyal <vgoyal@in.ibm.com>,
+        Andres Salomon <dilinger@queued.net>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [RFC PATCH] x86-32: Start out eflags and cr4 clean
+Date: Mon, 24 Sep 2012 16:27:19 -0700
+Message-Id: <1348529239-17943-1-git-send-email-hpa@linux.intel.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <87sjaaj3cx.fsf@xmission.com>
+References: <87sjaaj3cx.fsf@xmission.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet wrote:
-> Bunch of places in the code weren't using it where they could be -
-> this'll reduce the size of the patch that puts bi_sector/bi_size/bi_idx
-> into a struct bvec_iter.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> CC: Jens Axboe <axboe@kernel.dk>
-> CC: "Ed L. Cashin" <ecashin@coraid.com>
-> CC: Nick Piggin <npiggin@kernel.dk>
-> CC: Jiri Kosina <jkosina@suse.cz>
-> CC: Jim Paris <jim@jtan.com>
-> CC: Geoff Levand <geoff@infradead.org>
-> CC: Alasdair Kergon <agk@redhat.com>
-> CC: dm-devel@redhat.com
-> CC: Neil Brown <neilb@suse.de>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  drivers/block/aoe/aoecmd.c   |  2 +-
->  drivers/block/brd.c          |  3 +--
->  drivers/block/pktcdvd.c      |  2 +-
->  drivers/block/ps3vram.c      |  2 +-
->  drivers/md/dm-raid1.c        |  2 +-
->  drivers/md/raid0.c           |  6 +++---
->  drivers/md/raid1.c           | 17 ++++++++---------
->  drivers/md/raid10.c          | 24 +++++++++++-------------
->  drivers/md/raid5.c           |  8 ++++----
->  include/trace/events/block.h | 10 +++++-----
->  10 files changed, 36 insertions(+), 40 deletions(-)
-...
-> diff --git a/drivers/block/ps3vram.c b/drivers/block/ps3vram.c
-> index f58cdcf..1ff38e8 100644
-> --- a/drivers/block/ps3vram.c
-> +++ b/drivers/block/ps3vram.c
-> @@ -553,7 +553,7 @@ static struct bio *ps3vram_do_bio(struct ps3_system_bus_device *dev,
->  	struct ps3vram_priv *priv = ps3_system_bus_get_drvdata(dev);
->  	int write = bio_data_dir(bio) == WRITE;
->  	const char *op = write ? "write" : "read";
-> -	loff_t offset = bio->bi_sector << 9;
-> +	loff_t offset = bio_sectors(bio);
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-This doesn't look right to me: bio_sectors(bio) is (bio->bi_size>>9),
-not (bio->bi_sector<<9~)?
+%cr4 is supposed to reflect a set of features into which the operating
+system is opting in.  If the BIOS or bootloader leaks bits here, this
+is not desirable.  Consider a bootloader passing in %cr4.pae set to a
+legacy paging kernel, for example -- it will not have any immediate
+effect, but the kernel would crash when turning paging on.
 
--jim
+A similar argument applies to %eflags, and since we have to look for
+%eflags.id being settable we can use a sequence which clears %eflags
+as a side effect.
+
+Note that we already do this for x86-64.
+
+I would like opinions on this especially from the PV crowd and
+nonstandard platforms (e.g. OLPC) to make sure we don't screw them up.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/head_32.S |   31 ++++++++++++++++---------------
+ 1 files changed, 16 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index d42ab17..957a47a 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -287,27 +287,28 @@ ENTRY(startup_32_smp)
+ 	leal -__PAGE_OFFSET(%ecx),%esp
+ 
+ default_entry:
+-
+ /*
+  *	New page tables may be in 4Mbyte page mode and may
+  *	be using the global pages. 
+  *
+  *	NOTE! If we are on a 486 we may have no cr4 at all!
+- *	So we do not try to touch it unless we really have
+- *	some bits in it to set.  This won't work if the BSP
+- *	implements cr4 but this AP does not -- very unlikely
+- *	but be warned!  The same applies to the pse feature
+- *	if not equally supported. --macro
+- *
+- *	NOTE! We have to correct for the fact that we're
+- *	not yet offset PAGE_OFFSET..
++ *	Specifically, cr4 exists if and only if CPUID exists,
++ *	which in turn exists if and only if EFLAGS.ID exists.
+  */
+-#define cr4_bits pa(mmu_cr4_features)
+-	movl cr4_bits,%edx
+-	andl %edx,%edx
+-	jz 6f
+-	movl %cr4,%eax		# Turn on paging options (PSE,PAE,..)
+-	orl %edx,%eax
++	movl $X86_EFLAGS_ID,%ecx
++	pushl %ecx
++	popfl
++	pushfl
++	popl %eax
++	pushl $0
++	popfl
++	pushfl
++	popl %edx
++	xorl %edx,%eax
++	testl %ecx,%eax
++	jz 6f			# No ID flag = no CPUID = no CR4
++
++	movl pa(mmu_cr4_features),%eax
+ 	movl %eax,%cr4
+ 
+ 	testb $X86_CR4_PAE, %al		# check if PAE is enabled
+-- 
+1.7.6.5
 
