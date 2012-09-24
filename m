@@ -1,41 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab2IXKwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 06:52:38 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18832 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab2IXKwh (ORCPT
+	id S1754112Ab2IXKzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 06:55:36 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49429 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab2IXKzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 06:52:37 -0400
-Date: Mon, 24 Sep 2012 13:52:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Gorskin Ilya <revent82@gmail.com>
-Cc: gregkh@linuxfoundation.org, klmckinney1@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging:bcm: fix coding style issue in Bcmchar.c
-Message-ID: <20120924105226.GI13767@mwanda>
-References: <1348483483-32545-1-git-send-email-revent82@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348483483-32545-1-git-send-email-revent82@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 24 Sep 2012 06:55:35 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [PATCH v3 1/4] v4l: vb2: add prepare/finish callbacks to allocators
+Date: Mon, 24 Sep 2012 12:58:49 +0200
+Message-Id: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 04:44:43PM +0600, Gorskin Ilya wrote:
-> This is a patch to the Bcmchar.c file that fixes up a coding style
-> warning found by the checkpatch.pl tool
-> 
+This patch adds support for prepare/finish callbacks in VB2 allocators.
+These callback are used for buffer flushing.
 
-The right way to fix this is to choose better variable names and to
-get rid of the bogus BCM_DEBUG_PRINT() macro.  It's better to leave
-the warnings in for now.
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Federico Vaga <federico.vaga@gmail.com>
+---
+ drivers/media/v4l2-core/videobuf2-core.c | 11 +++++++++++
+ include/media/videobuf2-core.h           |  7 +++++++
+ 2 file modificati, 18 inserzioni(+)
 
-checkpatch.pl is not the king of us.
-
-regards,
-dan carpenter
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index 4da3df6..079fa79 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -790,6 +790,7 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
+ {
+ 	struct vb2_queue *q = vb->vb2_queue;
+ 	unsigned long flags;
++	unsigned int plane;
+ 
+ 	if (vb->state != VB2_BUF_STATE_ACTIVE)
+ 		return;
+@@ -800,6 +801,10 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
+ 	dprintk(4, "Done processing on buffer %d, state: %d\n",
+ 			vb->v4l2_buf.index, vb->state);
+ 
++	/* sync buffers */
++	for (plane = 0; plane < vb->num_planes; ++plane)
++		call_memop(q, finish, vb->planes[plane].mem_priv);
++
+ 	/* Add the buffer to the done buffers list */
+ 	spin_lock_irqsave(&q->done_lock, flags);
+ 	vb->state = state;
+@@ -975,9 +980,15 @@ static int __qbuf_mmap(struct vb2_buffer *vb, const struct v4l2_buffer *b)
+ static void __enqueue_in_driver(struct vb2_buffer *vb)
+ {
+ 	struct vb2_queue *q = vb->vb2_queue;
++	unsigned int plane;
+ 
+ 	vb->state = VB2_BUF_STATE_ACTIVE;
+ 	atomic_inc(&q->queued_count);
++
++	/* sync buffers */
++	for (plane = 0; plane < vb->num_planes; ++plane)
++		call_memop(q, prepare, vb->planes[plane].mem_priv);
++
+ 	q->ops->buf_queue(vb);
+ }
+ 
+diff --git a/include/media/videobuf2-core.h b/include/media/videobuf2-core.h
+index 8dd9b6c..2508609 100644
+--- a/include/media/videobuf2-core.h
++++ b/include/media/videobuf2-core.h
+@@ -41,6 +41,10 @@ struct vb2_fileio_data;
+  *		 argument to other ops in this structure
+  * @put_userptr: inform the allocator that a USERPTR buffer will no longer
+  *		 be used
++ * @prepare:	called every time the buffer is passed from userspace to the
++ *		driver, usefull for cache synchronisation, optional
++ * @finish:	called every time the buffer is passed back from the driver
++ *		to the userspace, also optional
+  * @vaddr:	return a kernel virtual address to a given memory buffer
+  *		associated with the passed private structure or NULL if no
+  *		such mapping exists
+@@ -65,6 +69,9 @@ struct vb2_mem_ops {
+ 					unsigned long size, int write);
+ 	void		(*put_userptr)(void *buf_priv);
+ 
++	void		(*prepare)(void *buf_priv);
++	void		(*finish)(void *buf_priv);
++
+ 	void		*(*vaddr)(void *buf_priv);
+ 	void		*(*cookie)(void *buf_priv);
+ 
+-- 
+1.7.11.4
 
