@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab2IXH5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:57:23 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:51214 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755216Ab2IXH5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:57:16 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 2/2] ARM: SAMSUNG: dma-ops: Fix dmaengine_prep_dma_cyclic() parameter list
-Date: Mon, 24 Sep 2012 10:58:05 +0300
-Message-Id: <1348473485-5081-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1348473485-5081-1-git-send-email-peter.ujfalusi@ti.com>
-References: <20120924133923.130c4db72aa8105cb5647d7a@canb.auug.org.au>
- <1348473485-5081-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1755242Ab2IXIAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:00:06 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53898 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754205Ab2IXIAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 04:00:03 -0400
+Date: Mon, 24 Sep 2012 09:59:58 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Franklin Wei <frankhwei536@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Masami Hiramatsu <mhiramat@redhat.com>
+Subject: Re: arch/x86/lib/inat.c Error
+Message-ID: <20120924075957.GA5151@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Franklin Wei <frankhwei536@gmail.com>, linux-kernel@vger.kernel.org,
+	Masami Hiramatsu <mhiramat@redhat.com>
+References: <CAEMuUziMGAM4UOeOGWwG9jiceU9K7NSzqbryMxHwFDfmOfqQdA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEMuUziMGAM4UOeOGWwG9jiceU9K7NSzqbryMxHwFDfmOfqQdA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a new flags parameter for the function.
+On Sun, Sep 23, 2012 at 04:34:24PM -0400, Franklin Wei wrote:
+> Something wrong with lines 29-86
+> Error message when compiling:
+>   CC      arch/x86/lib/inat.o
+> arch/x86/lib/inat.c: In function ‘inat_get_opcode_attribute’:
+> arch/x86/lib/inat.c:29: error: ‘inat_primary_table’ undeclared (first
+> use in this function)
+> arch/x86/lib/inat.c:29: error: (Each undeclared identifier is reported only once
+> arch/x86/lib/inat.c:29: error: for each function it appears in.)
+> arch/x86/lib/inat.c: In function ‘inat_get_escape_attribute’:
+> arch/x86/lib/inat.c:48: error: ‘inat_escape_tables’ undeclared (first
+> use in this function)
+> arch/x86/lib/inat.c: In function ‘inat_get_group_attribute’:
+> arch/x86/lib/inat.c:67: error: ‘inat_group_tables’ undeclared (first
+> use in this function)
+> arch/x86/lib/inat.c: In function ‘inat_get_avx_attribute’:
+> arch/x86/lib/inat.c:86: error: ‘inat_avx_tables’ undeclared (first use
+> in this function)
+> make[1]: *** [arch/x86/lib/inat.o] Error 1
+> make: *** [arch/x86/lib] Error 2
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/plat-samsung/dma-ops.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+That's because all those _tables thingies are included from a
+"inat-tables.c" in the same directory but it somehow doesn't get
+included?!
 
-diff --git a/arch/arm/plat-samsung/dma-ops.c b/arch/arm/plat-samsung/dma-ops.c
-index c38d754..d088afa 100644
---- a/arch/arm/plat-samsung/dma-ops.c
-+++ b/arch/arm/plat-samsung/dma-ops.c
-@@ -91,7 +91,8 @@ static int samsung_dmadev_prepare(unsigned ch,
- 		break;
- 	case DMA_CYCLIC:
- 		desc = dmaengine_prep_dma_cyclic(chan, param->buf,
--			param->len, param->period, param->direction);
-+			param->len, param->period, param->direction,
-+			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 		break;
- 	default:
- 		dev_err(&chan->dev->device, "unsupported format\n");
+Can we get your .config pls? Also, you're doing a "normal" kernel build
+on the command line, right?
+
+Thanks.
+
 -- 
-1.7.12
-
+Regards/Gruss,
+    Boris.
