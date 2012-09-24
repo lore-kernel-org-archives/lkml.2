@@ -1,145 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab2IXHJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:09:09 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57038 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755064Ab2IXHJH (ORCPT
+	id S1755193Ab2IXHNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 03:13:44 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:48317 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab2IXHNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:09:07 -0400
-Date: Mon, 24 Sep 2012 15:08:52 +0800
-From: Guo Chao <yan@linux.vnet.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: viro@zeniv.linux.org.uk, dchinner@redhat.com, hch@infradead.org,
-        jack@suse.cz, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v4 Patch 0/4] fs/inode.c: optimization for inode lock usage
-Message-ID: <20120924070852.GA10280@yanx>
-References: <1348219866-1799-1-git-send-email-yan@linux.vnet.ibm.com>
- <20120921224912.GA20960@dastard>
- <20120924024221.GB7984@yanx>
- <20120924042343.GC20960@dastard>
- <20120924061205.GA27244@yanx>
- <20120924062812.GD20960@dastard>
+	Mon, 24 Sep 2012 03:13:43 -0400
+X-AuditID: b753bd60-97c52ba000002f78-fe-506008242d2b
+X-AuditID: b753bd60-97c52ba000002f78-fe-506008242d2b
+Message-ID: <5060081C.3060903@hitachi.com>
+Date: Mon, 24 Sep 2012 16:13:32 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120924062812.GD20960@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12092407-3568-0000-0000-000002811EB2
+To: irina.tirdea@gmail.com
+Cc: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        rostedt@goodmis.org, paulus@samba.org, dsahern@gmail.com,
+        namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
+        Irina Tirdea <irina.tirdea@intel.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH v2 1/1] perf tools: remove sscanf extension %as
+References: <1347574063-22521-2-git-send-email-irina.tirdea@intel.com> <1348173470-4936-1-git-send-email-irina.tirdea@gmail.com>
+In-Reply-To: <1348173470-4936-1-git-send-email-irina.tirdea@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 04:28:12PM +1000, Dave Chinner wrote:
-> On Mon, Sep 24, 2012 at 02:12:05PM +0800, Guo Chao wrote:
-> > On Mon, Sep 24, 2012 at 02:23:43PM +1000, Dave Chinner wrote:
-> > > On Mon, Sep 24, 2012 at 10:42:21AM +0800, Guo Chao wrote:
-> > > > On Sat, Sep 22, 2012 at 08:49:12AM +1000, Dave Chinner wrote:
-> > > > 
-> > > > > On Fri, Sep 21, 2012 at 05:31:02PM +0800, Guo Chao wrote:
-> > > > > > This patchset optimizes several places which take the per inode spin lock.
-> > > > > > They have not been fully tested yet, thus they are marked as RFC. 
-> > > > > 
-> > > > > Inodes are RCU freed. The i_lock spinlock on the i_state field forms
-> > > > > part of the memory barrier that allows the RCU read side to
-> > > > > correctly detect a freed inode during a RCU protected cache lookup
-> > > > > (hash list traversal for the VFS, or a radix tree traversal for XFS).
-> > > > > The i_lock usage around the hahs list operations ensures the hash
-> > > > > list operations are atomic with state changes so that such changes
-> > > > > are correctly detected during RCU-protected traversals...
-> > > > > 
-> > > > > IOWs, removing the i_lock from around the i_state transitions and
-> > > > > inode hash insert/remove/traversal operations will cause races in
-> > > > > the RCU lookups and result in incorrectly using freed inodes instead
-> > > > > of failing the lookup and creating a new one.
-> > > > > 
-> > > > > So I don't think this is a good idea at all...
-> .....
-> > > The inode hash lookup needs to check i_state atomically during the
-> > > traversal so inodes being freed are skipped (e.g. I_FREEING,
-> > > I_WILL_FREE). those i_state flags are set only with the i_lock held,
-> > > and so inode hash lookups need to take the i_lock to guarantee the
-> > > i_state field is correct. This inode data field synchronisation is
-> > > separate to the cache hash list traversal protection.
-> > > 
-> > > The only way to do this is to have an inner lock (inode->i_lock)
-> > > that protects both the inode->i_hash_list and inode->i_state fields,
-> > > and a lock order that provides outer list traversal protections
-> > > (inode_hash_lock). Whether the outer lock is the inode_hash_lock or
-> > > rcu_read_lock(), the lock order and the data fields the locks are
-> > > protecting are the same....
-> > > 
-> > > > Of course, maybe they are there for something. Could you speak
-> > > > more about the race this change (patch 1,2?) brings up? Thank you.
-> > > 
-> > > When you drop the lock from the i_state initialisation, you end up
-> > > dropping the implicit unlock->lock memory barrier that the
-> > > inode->i_lock provides. i.e. you get this in iget_locked():
-> > > 
-> > > 
-> > > 	thread 1			thread 2
-> > > 
-> > > 	lock(inode_hash_lock)
-> > > 	for_each_hash_item()
-> > > 
-> > > 					inode->i_state = I_NEW
-> > > 					hash_list_insert
-> > > 
-> > > 	<finds newly inserted inode>
-> > > 		lock(inode->i_lock)
-> > > 		unlock(inode->i_lock)
-> > > 	unlock(inode_hash_lock)
-> > > 
-> > > 	wait_on_inode()
-> > > 		<see inode->i_state = 0 >
-> > > 		<uses inode before initialisation
-> > > 		 is complete>
-> > > 
-> > > IOWs, there is no unlock->lock transition occurring on any lock, so
-> > > there are no implicit memory barriers in this code, and so other
-> > > CPUs are not guaranteed to see the "inode->i_state = I_NEW" write
-> > > that thread 2 did. The lock/unlock pair around this I_NEW assignment
-> > > guarantees that thread 1 will see the change to i_state correctly.
-> > > 
-> > > So even without RCU, dropping the i_lock from these
-> > > i_state/hash insert/remove operations will result in races
-> > > occurring...
-> >
-> > This interleave can never happen because of inode_hash_lock.
+(2012/09/21 5:37), irina.tirdea@gmail.com wrote:
+> From: Irina Tirdea <irina.tirdea@intel.com>
 > 
-> Ah, sorry, I'm context switching too much right now.
+> perf uses sscanf extension %as to read and allocate a
+> string in the same step. This is a non-standard extension
+> only present in new versions of glibc.
 > 
-> s/lock(inode_hash_lock)/rcu_read_lock.
-> 
-> And that's the race condition the the locking order is *intended* to
-> avoid. It's just that we haven't done the last piece of the work,
-> which is replacing the read side inode_hash_lock usage with
-> rcu_read_lock.
-> 
-> > > Seriously, if you want to improve the locking of this code, go back
-> > > an resurrect the basic RCU hash traversal patches (i.e. Nick's
-> > > original patch rather than my SLAB_DESTROY_BY_RCU based ones). That
-> > > has much more benefit to many more workloads than just removing a
-> > > non-global, uncontended locks like this patch set does.
-> > > 
-> > 
-> > Ah, this is intended to be a code clean patchset actually. I thought these
-> > locks are redundant in an obvious and trivial manner. If, on the contrary, 
-> > they are such tricky, then never mind :) Thanks for your patient.
-> 
-> The RCU conversion is actually trivial - everything is already set
-> up for it to be done, and is simpler than this patch set. It pretty
-> much is simply replacing all the read side inode_hash_lock pairs
-> with rcu_read_lock()/rcu_read_unlock() pairs. Like I said, if you
-> want to clean up this code, then RCU traversals are the conversion
-> to make.
->
+> Replacing the use of sscanf and %as with strtok_r calls
+> in order to parse a given string into its components.
+> This is needed in Android since bionic does not support
+> %as extension for sscanf.
 
-Thanks for your suggestion. Though I doubt it's such trivial, I will try this
-after a little investigation.
+OK, I've reviewed and tested, looks good! :)
 
-Regards,
-Guo Chao
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you!
+
+> 
+> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> ---
+>  tools/perf/util/probe-event.c       |   36 ++++++++++++++++++++++++++++-------
+>  tools/perf/util/trace-event-parse.c |   18 ++++++++----------
+>  2 files changed, 37 insertions(+), 17 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 4ce04c2..49a256e 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -1100,6 +1100,7 @@ static int parse_probe_trace_command(const char *cmd,
+>  	struct probe_trace_point *tp = &tev->point;
+>  	char pr;
+>  	char *p;
+> +	char *argv0_str = NULL, *fmt, *fmt1_str, *fmt2_str, *fmt3_str;
+>  	int ret, i, argc;
+>  	char **argv;
+>  
+> @@ -1116,14 +1117,27 @@ static int parse_probe_trace_command(const char *cmd,
+>  	}
+>  
+>  	/* Scan event and group name. */
+> -	ret = sscanf(argv[0], "%c:%a[^/ \t]/%a[^ \t]",
+> -		     &pr, (float *)(void *)&tev->group,
+> -		     (float *)(void *)&tev->event);
+> -	if (ret != 3) {
+> +	argv0_str = strdup(argv[0]);
+> +	if (argv0_str == NULL) {
+> +		ret = -ENOMEM;
+> +		goto out;
+> +	}
+> +	fmt1_str = strtok_r(argv0_str, ":", &fmt);
+> +	fmt2_str = strtok_r(NULL, "/", &fmt);
+> +	fmt3_str = strtok_r(NULL, " \t", &fmt);
+> +	if (fmt1_str == NULL || strlen(fmt1_str) != 1 || fmt2_str == NULL
+> +	    || fmt3_str == NULL) {
+>  		semantic_error("Failed to parse event name: %s\n", argv[0]);
+>  		ret = -EINVAL;
+>  		goto out;
+>  	}
+> +	pr = fmt1_str[0];
+> +	tev->group = strdup(fmt2_str);
+> +	tev->event = strdup(fmt3_str);
+> +	if (tev->group == NULL || tev->event == NULL) {
+> +		ret = -ENOMEM;
+> +		goto out;
+> +	}
+>  	pr_debug("Group:%s Event:%s probe:%c\n", tev->group, tev->event, pr);
+>  
+>  	tp->retprobe = (pr == 'r');
+> @@ -1135,10 +1149,17 @@ static int parse_probe_trace_command(const char *cmd,
+>  		p++;
+>  	} else
+>  		p = argv[1];
+> -	ret = sscanf(p, "%a[^+]+%lu", (float *)(void *)&tp->symbol,
+> -		     &tp->offset);
+> -	if (ret == 1)
+> +	fmt1_str = strtok_r(p, "+", &fmt);
+> +	tp->symbol = strdup(fmt1_str);
+> +	if (tp->symbol == NULL) {
+> +		ret = -ENOMEM;
+> +		goto out;
+> +	}
+> +	fmt2_str = strtok_r(NULL, "", &fmt);
+> +	if (fmt2_str == NULL)
+>  		tp->offset = 0;
+> +	else
+> +		tp->offset = strtoul(fmt2_str, NULL, 10);
+>  
+>  	tev->nargs = argc - 2;
+>  	tev->args = zalloc(sizeof(struct probe_trace_arg) * tev->nargs);
+> @@ -1162,6 +1183,7 @@ static int parse_probe_trace_command(const char *cmd,
+>  	}
+>  	ret = 0;
+>  out:
+> +	free(argv0_str);
+>  	argv_free(argv);
+>  	return ret;
+>  }
+> diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+> index aa4c860..3aabcd6 100644
+> --- a/tools/perf/util/trace-event-parse.c
+> +++ b/tools/perf/util/trace-event-parse.c
+> @@ -229,24 +229,22 @@ void parse_proc_kallsyms(struct pevent *pevent,
+>  	char *next = NULL;
+>  	char *addr_str;
+>  	char *mod;
+> -	char ch;
+> +	char *fmt;
+>  
+>  	line = strtok_r(file, "\n", &next);
+>  	while (line) {
+>  		mod = NULL;
+> -		sscanf(line, "%as %c %as\t[%as",
+> -		       (float *)(void *)&addr_str, /* workaround gcc warning */
+> -		       &ch, (float *)(void *)&func, (float *)(void *)&mod);
+> +		addr_str = strtok_r(line, " ", &fmt);
+>  		addr = strtoull(addr_str, NULL, 16);
+> -		free(addr_str);
+> -
+> -		/* truncate the extra ']' */
+> +		/* skip character */
+> +		strtok_r(NULL, " ", &fmt);
+> +		func = strtok_r(NULL, "\t", &fmt);
+> +		mod = strtok_r(NULL, "]", &fmt);
+> +		/* truncate the extra '[' */
+>  		if (mod)
+> -			mod[strlen(mod) - 1] = 0;
+> +			mod = mod + 1;
+>  
+>  		pevent_register_function(pevent, func, addr, mod);
+> -		free(func);
+> -		free(mod);
+>  
+>  		line = strtok_r(NULL, "\n", &next);
+>  	}
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
