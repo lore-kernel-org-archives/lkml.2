@@ -1,37 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985Ab2IXTvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 15:51:52 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53704 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756260Ab2IXTvu (ORCPT
+	id S1757943Ab2IXTzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 15:55:54 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:41350 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab2IXTzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 15:51:50 -0400
-Date: Mon, 24 Sep 2012 15:51:48 -0400 (EDT)
-Message-Id: <20120924.155148.1513263823536378183.davem@davemloft.net>
-To: maxin.john@gmail.com
-Cc: cxzhang@watson.ibm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: scm: moving dereference after NULL check
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120923170330.GA5038@linux-3ix0.site>
-References: <20120923170330.GA5038@linux-3ix0.site>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Sep 2012 15:55:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1348130883-11329-1-git-send-email-stigge@antcom.de>
+References: <1348130883-11329-1-git-send-email-stigge@antcom.de>
+Date: Mon, 24 Sep 2012 21:55:51 +0200
+Message-ID: <CACRpkdZo5kR+Tyhos_StEFZbw3WHF_RFRknHjtU2Pz4XpFTZCA@mail.gmail.com>
+Subject: Re: [PATCH] gpio-lpc32xx: Fix value handling of gpio_direction_output()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, aletes.xgr@gmail.com,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Maxin B. John" <maxin.john@gmail.com>
-Date: Sun, 23 Sep 2012 13:03:30 -0400
+On Thu, Sep 20, 2012 at 10:48 AM, Roland Stigge <stigge@antcom.de> wrote:
 
-> scm_destroy_cred() dereferences 'scm' before null check
-> 
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+> For GPIOs of gpio-lpc32xx, gpio_direction_output() ignores the value argument
+> (initial value of output). This patch fixes this by setting the level
+> accordingly.
+>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Every caller of scm_destroy() passes a non-NULL scm, so the
-NULL test can be removed entirely.
+Applied with Alexandre's ACK, should go into stable right?
+So tagging this with Cc: stable and sending for the -rc:s.
 
-I'll do this in net-next, thanks.
+Thanks,
+Linus Walleij
