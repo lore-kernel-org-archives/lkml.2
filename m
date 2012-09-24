@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab2IXUHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 16:07:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41674 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932180Ab2IXUHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 16:07:41 -0400
-Date: Mon, 24 Sep 2012 22:07:37 +0200
-From: Jan Kara <jack@suse.cz>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Conny Seidel <conny.seidel@amd.com>, Jan Kara <jack@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
-Message-ID: <20120924200737.GA30997@quack.suse.cz>
-References: <20120924102324.GA22303@aftab.osrc.amd.com>
- <20120924142305.GD12264@quack.suse.cz>
- <20120924143609.GH22303@aftab.osrc.amd.com>
- <20120924201650.6574af64.conny.seidel@amd.com>
- <20120924181927.GA25762@aftab.osrc.amd.com>
- <5060AB0E.3070809@linux.vnet.ibm.com>
- <20120924193135.GB25762@aftab.osrc.amd.com>
+	id S932256Ab2IXUIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 16:08:15 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36814 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180Ab2IXUIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 16:08:14 -0400
+Date: Mon, 24 Sep 2012 13:08:09 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Deepawali Verma <dverma249@gmail.com>
+Cc: Chinmay V S <cvs268@gmail.com>, Daniel Taylor <Daniel.Taylor@wdc.com>,
+        anish singh <anish198519851985@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Work queue questions
+Message-ID: <20120924200809.GC29689@google.com>
+References: <CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
+ <5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
+ <CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
+ <5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
+ <CAHCeSFp2=CzO1-dw_Ym_s4Pn04nsC_kQUerFJ+uFLh8iinX+Ug@mail.gmail.com>
+ <CAK-9PRB7KvPNgcsXiNG08-7OdrkkNc2ushusXh9rVm93J0xcHA@mail.gmail.com>
+ <CAHCeSFqmeOkKySxMUXgtnev+HL-NC6MdmeuDYONymYaNczb7RA@mail.gmail.com>
+ <CAHCeSFq31fQuZd+Phgx-dQ1AEeDTh268WH14bDqEKqneOLpqxQ@mail.gmail.com>
+ <20120924181025.GG7694@google.com>
+ <CAHCeSFr4stF6BNGL7=7oPYzKqOZ-Ya8VUD02rjFRq1thMULFXw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120924193135.GB25762@aftab.osrc.amd.com>
+In-Reply-To: <CAHCeSFr4stF6BNGL7=7oPYzKqOZ-Ya8VUD02rjFRq1thMULFXw@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 24-09-12 21:31:35, Borislav Petkov wrote:
-> On Tue, Sep 25, 2012 at 12:18:46AM +0530, Srivatsa S. Bhat wrote:
-> > >> Sure thing.
-> > >> Out of ~25 runs I only triggered it once, without the patch the
-> > >> trigger-rate is higher.
-> > >>
-> > >> [   55.098249] Broke affinity for irq 81
-> > >> [   55.105108] smpboot: CPU 1 is now offline
-> > >> [   55.311216] smpboot: Booting Node 0 Processor 1 APIC 0x11
-> > >> [   55.333022] LVT offset 0 assigned for vector 0x400
-> > >> [   55.545877] smpboot: CPU 2 is now offline
-> > >> [   55.753050] smpboot: Booting Node 0 Processor 2 APIC 0x12
-> > >> [   55.775582] LVT offset 0 assigned for vector 0x400
-> > >> [   55.986747] smpboot: CPU 3 is now offline
-> > >> [   56.193839] smpboot: Booting Node 0 Processor 3 APIC 0x13
-> > >> [   56.212643] LVT offset 0 assigned for vector 0x400
-> > >> [   56.423201] Got negative events: -25
-> > > 
-> > > I see it:
-> > > 
-> > > __percpu_counter_sum does for_each_online_cpu without doing
-> > > get/put_online_cpus().
-> > > 
-> > 
-> > Maybe I'm missing something, but that doesn't immediately tell me
-> > what's the exact source of the bug.. Note that there is a hotplug
-> > callback percpu_counter_hotcpu_callback() that takes the same
-> > fbc->lock before updating/resetting the percpu counters of offline
-> > CPU. So, though the synchronization is a bit weird, I don't
-> > immediately see a problematic race condition there.
-> 
-> Well, those oopses both happen when a cpu comes online.
-> 
-> According to when percpu_counter_hotcpu_callback is run (at CPU_DEAD)
-> then those percpu variables should have correctly updated values.
-> 
-> So there has to be some other case where we read garbage which is a
-> negative value - otherwise we wouldn't be seeing the debug output.
-> 
-> For example, look at the log output above: we bring down cpu 3 just to
-> bring it right back online. So there has to be something fishy along
-> that codepath...
-  Well, I think the race happens when a CPU is dying and we call
-percpu_counter_sum() after it is marked offline but before callbacks are
-run. percpu_counter_sum() then does not add died CPU's counter in the sum
-and thus total can go negative. If get/put_online_cpus() fixes this race,
-I'd be happy.
+Hello,
 
-  OTOH in theory, percpu_counter_sum() can return negative values even
-without CPU hotplug when percpu_counter_sum() races with cpu local
-operations. It cannot happen with the current flexible proportion code
-but I think making the code more robust is a good idea. I'll send a patch
-for this. Still fixing the percpu counters would be nice as these races
-could cause random errors to computed proportions and that's bad for
-writeback.
+On Mon, Sep 24, 2012 at 08:57:40PM +0100, Deepawali Verma wrote:
+> May be I misunderstood, I read in the documentation about max_active.
+> In this case, max_active is 1, but I created three workqueues, do you
 
-								Honza
+I see.  Why are you doing that?  Is there ordering requirement?  Why
+not just use system_unbound_wq?
+
+> mean to say for this case, single thread can process three requests
+> queued up in the three different workqueues.
+
+In the following execution log you posted,
+
+  kworker/u:1-21    [000]   110.964895: task_event: MYTASKJOB2381 XStarted
+  kworker/u:1-21    [000]   110.964909: task_event: MYTASKJOB2381 Xstopped
+  kworker/u:1-21    [000]   110.965137: task_event: MYTASKJOB2382 XStarted
+  kworker/u:1-21    [000]   110.965154: task_event: MYTASKJOB2382 Xstopped
+  kworker/u:5-3724  [000]   110.965311: task_event: MYTASKJOB2383 XStarted
+  kworker/u:5-3724  [000]   110.965325: task_event: MYTASKJOB2383 Xstopped
+
+The first two got executed on the same worker thread but the third one
+is on a different one.  It really looks like you just don't have large
+enough work for scheduler to interleave them or migrate workers to
+different CPUs.
+
+Thanks.
+
+-- 
+tejun
