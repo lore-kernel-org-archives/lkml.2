@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751318Ab2IXW12 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:27:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50537 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861Ab2IXW10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:27:26 -0400
-Date: Tue, 25 Sep 2012 00:27:24 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Borislav Petkov <bp@amd64.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Conny Seidel <conny.seidel@amd.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
-Message-ID: <20120924222724.GD30997@quack.suse.cz>
-References: <20120924102324.GA22303@aftab.osrc.amd.com>
- <20120924142305.GD12264@quack.suse.cz>
- <20120924143609.GH22303@aftab.osrc.amd.com>
- <20120924201650.6574af64.conny.seidel@amd.com>
- <20120924181927.GA25762@aftab.osrc.amd.com>
- <5060AB0E.3070809@linux.vnet.ibm.com>
- <20120924193135.GB25762@aftab.osrc.amd.com>
- <20120924200737.GA30997@quack.suse.cz>
- <20120924201726.GB30997@quack.suse.cz>
- <20120924142100.52a1e7b7.akpm@linux-foundation.org>
+	id S1751444Ab2IXWb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:31:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59212 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab2IXWb5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 18:31:57 -0400
+Date: Mon, 24 Sep 2012 19:31:49 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2012-09-18
+Message-ID: <20120924223149.GB7922@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	"Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+	linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20120919013113.GG24689@joana>
+ <CAB=NE6XKNSMeS3_uzcGsGBhcm6ZKtJwJ=DdAq_DoWmKTXQvV=Q@mail.gmail.com>
+ <20120924184622.GA7922@joana>
+ <20120924195422.GF32351@tuxdriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120924142100.52a1e7b7.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120924195422.GF32351@tuxdriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 24-09-12 14:21:00, Andrew Morton wrote:
-> On Mon, 24 Sep 2012 22:17:26 +0200
-> Jan Kara <jack@suse.cz> wrote:
-> 
-> >   In the attachment is a fix. Fengguang, can you please merge it? Thanks!
-> 
-> I grabbed it.  I also added the (missing, important) text "This bug causes
-> a divide-by-zero oops in bdi_dirty_limit() in Borislav's 3.6.0-rc6
-> based kernel." And I stuck a cc:stable onto it.
-  Thanks!
+* John W. Linville <linville@tuxdriver.com> [2012-09-24 15:54:22 -0400]:
 
-								Honza
+> On Mon, Sep 24, 2012 at 03:46:22PM -0300, Gustavo Padovan wrote:
+> > * Luis R. Rodriguez <mcgrof@do-not-panic.com> [2012-09-21 18:06:42 -0700]:
+> > 
+> > > On Tue, Sep 18, 2012 at 6:31 PM, Gustavo Padovan <gustavo@padovan.org> wrote:
+> > > 
+> > > > Johan Hedberg (2):
+> > > >       Bluetooth: mgmt: Implement support for passkey notification
+> > > 
+> > > Too late now... but why did we allow this a stable fix? I get its a
+> > > feature that is important and likely overlooked / someone had a brain
+> > > fart, but from what I gather this is not on v3.5.4 and yet may make it
+> > > to v3.5.5. At least for backporting this was a bitch:
+> 
+> <snip>
+> 
+> > Yes, this patch is wrongly marked as stable, it is not even going to 3.5. I'm
+> > just removing the tag from it and resending the pull request to John.
+> 
+> Hmmm...well, I already pulled it, and I just pushed it out.  Can we live with it?
+
+Yes, that would be ok for me.
+
+	Gustavo
