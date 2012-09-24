@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab2IXEjo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 00:39:44 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:42212 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab2IXEjn (ORCPT
+	id S1752920Ab2IXEtm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 00:49:42 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:43093 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab2IXEtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 00:39:43 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
-References: <1347798148-2660-1-git-send-email-linkinjeon@gmail.com>
-	<87lig28fak.fsf@devron.myhome.or.jp>
-	<CAKYAXd-6k7=RmrweR=wTOET50hy8Y7LokCSe1c2JtYd7pzPmsQ@mail.gmail.com>
-Date: Mon, 24 Sep 2012 13:39:35 +0900
-In-Reply-To: <CAKYAXd-6k7=RmrweR=wTOET50hy8Y7LokCSe1c2JtYd7pzPmsQ@mail.gmail.com>
-	(Namjae Jeon's message of "Mon, 24 Sep 2012 13:11:11 +0900")
-Message-ID: <87ipb45914.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Mon, 24 Sep 2012 00:49:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <505F27B1.4000600@iki.fi>
+References: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com> <505F27B1.4000600@iki.fi>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 24 Sep 2012 10:19:20 +0530
+Message-ID: <CA+V-a8s8dhtTAmCaWNLTAMudFfei-7QH3yQD6G9qVsf9UNYoLw@mail.gmail.com>
+Subject: Re: [PATCH 00/14] Media Controller capture driver for DM365
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+Hi Sakari,
 
->> I think we don't need this. Because FH and ino is not necessary to have
->> relation.
->>
->> Can we re-introduce ->encode_fh() handler, and export i_pos again?  With
->> this, I think we can get i_pos correctly. Otherwise, ino may not contain
->> all bits of i_pos.
-> I already tried to fix this issue using encode_fh without stable ino before.
-> But I reached conclusion that we should use stable inode number.
+On Sun, Sep 23, 2012 at 8:46 PM, Sakari Ailus <sakari.ailus@iki.fi> wrote:
+> Hi Prabhakar,
 >
-> e.g. If we rebuild inode number using i_pos of fh, inode number is
-> changed by i_unique.
-> And It is not match with inode number of FH on NFS client. So estale
-> error will happen.
+>
+> Prabhakar Lad wrote:
+>>
+>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>>
+>> This patch set adds media controller based capture driver for
+>> DM365.
+>
+>
+> Thanks for the set. Do you happen to have an updated version of the same
+> documentation you posted to the list a while ago?
+>
+Yes I have included the documentation patch in same series.
+'Documentation/video4linux/davinci-vpfe-mc.txt' is the one
+which contains the documentation.
 
-What is problem if i_ino + i_generation is not match? I think, even if
-those didn't match, i_pos in FH should resolve issue, no?
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Regards,
+--Prabhakar Lad
+
+> Kind regards,
+>
+> --
+> Sakari Ailus
+> sakari.ailus@iki.fi
