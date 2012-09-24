@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab2IXUyi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 16:54:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36784 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932187Ab2IXUyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 16:54:37 -0400
-Date: Mon, 24 Sep 2012 13:54:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Deepawali Verma <dverma249@gmail.com>
-Cc: Chinmay V S <cvs268@gmail.com>, Daniel Taylor <Daniel.Taylor@wdc.com>,
-        anish singh <anish198519851985@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Work queue questions
-Message-ID: <20120924205432.GE29689@google.com>
-References: <CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
- <5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
- <CAHCeSFp2=CzO1-dw_Ym_s4Pn04nsC_kQUerFJ+uFLh8iinX+Ug@mail.gmail.com>
- <CAK-9PRB7KvPNgcsXiNG08-7OdrkkNc2ushusXh9rVm93J0xcHA@mail.gmail.com>
- <CAHCeSFqmeOkKySxMUXgtnev+HL-NC6MdmeuDYONymYaNczb7RA@mail.gmail.com>
- <CAHCeSFq31fQuZd+Phgx-dQ1AEeDTh268WH14bDqEKqneOLpqxQ@mail.gmail.com>
- <20120924181025.GG7694@google.com>
- <CAHCeSFr4stF6BNGL7=7oPYzKqOZ-Ya8VUD02rjFRq1thMULFXw@mail.gmail.com>
- <20120924200809.GC29689@google.com>
- <CAHCeSFpYZRVasw26q01HO7fj9972wdNiTV0mikiNUuDMi9M0sw@mail.gmail.com>
+	id S1758044Ab2IXU7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 16:59:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8510 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751747Ab2IXU7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 16:59:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,477,1344236400"; 
+   d="scan'208";a="212184169"
+Date: Mon, 24 Sep 2012 22:59:04 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com, arnd@arndb.de
+Subject: Re: [PATCH 1/1] mfd: Provide the PRCMU with its own IRQ domain
+Message-ID: <20120924205904.GF28670@sortiz-mobl>
+References: <1348474306-25155-1-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbmDtsb7cxWLeuBKyz0RYDX6uQjnm0uHd_ndY+NKdnHhw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHCeSFpYZRVasw26q01HO7fj9972wdNiTV0mikiNUuDMi9M0sw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACRpkdbmDtsb7cxWLeuBKyz0RYDX6uQjnm0uHd_ndY+NKdnHhw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 09:52:14PM +0100, Deepawali Verma wrote:
-> I do not have ordering as requirement. I can use system work queue as
-> well. what is max_active by default for system wq per cpu?
+Hi Linus,
 
-For system_unbound_wq, it's the larger one of 512 and 4 * #cpus.
+On Mon, Sep 24, 2012 at 10:14:02PM +0200, Linus Walleij wrote:
+> On Mon, Sep 24, 2012 at 10:11 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > The PRCMU has its own USB, Thermal, GPIO, Modem, HSI and RTC drivers,
+> > amongst other things. This patch allows those subordinate devices to
+> > use it as an interrupt controller as and when they are DT enabled.
+> >
+> > CC: Samuel Ortiz <sameo@linux.intel.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> This is good stuff.
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Sam, please pick this up, IRQdomains are a pathway to many
+> good things.
+Yes, I asked Lee to re-spin this one so that I could pick it up.
+Applied and pushed now, thanks guys.
+
+Cheers,
+Samuel.
 
 -- 
-tejun
+Intel Open Source Technology Centre
+http://oss.intel.com/
