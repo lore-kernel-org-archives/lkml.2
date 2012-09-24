@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab2IXPWj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:22:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40362 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756315Ab2IXPWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:22:38 -0400
-Date: Mon, 24 Sep 2012 17:23:53 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] uprobes: Kill set_orig_insn()->is_swbp_at_addr()
-Message-ID: <20120924152353.GB13098@redhat.com>
-References: <20120923201950.GA27456@redhat.com> <1348477990.11847.11.camel@twins>
+	id S1756357Ab2IXPXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:23:40 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54174 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756297Ab2IXPXj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 11:23:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348477990.11847.11.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120924150048.GB11266@suse.de>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	<20120914212717.GA29307@liondog.tnic>
+	<CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	<20120924150048.GB11266@suse.de>
+Date: Mon, 24 Sep 2012 18:23:37 +0300
+Message-ID: <CA+MedizYAzdKDkGb0qX5XXTTodgWPuX4=ttCY103UXYLi_0Ocg@mail.gmail.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Nikolay Ulyanitsky <lystor@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24, Peter Zijlstra wrote:
->
-> On Sun, 2012-09-23 at 22:19 +0200, Oleg Nesterov wrote:
->
-> > @@ -226,6 +245,10 @@ retry:
->
-> Could you use:
->
-> $ cat ~/.gitconfig
-> [diff "default"]
-> 	xfuncname = "^[[:alpha:]$_].*[^:]$"
->
-> This avoids git-diff it using labels as function names.
+On 24 September 2012 18:00, Mel Gorman <mgorman@suse.de> wrote:
+> Reverting Mike's patch might fix this Postgres regression but it reintroduces the overhead caused
+> by commit 4dcfe102 for other cases.
 
-Aha. Will do, thanks!
+I just tested pgbench on kernel 3.6-rc7.
+There is no performance regression between 3.5.3 and 3.6-rc7 on AMD X6.
+Thx
 
-Oleg.
-
+--
+With best regards,
+Nikolay
