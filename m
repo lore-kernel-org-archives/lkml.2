@@ -1,131 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab2IXIME (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:12:04 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37326 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051Ab2IXIMB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:12:01 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 1/1] mfd: Provide the PRCMU with its own IRQ domain
-Date: Mon, 24 Sep 2012 09:11:46 +0100
-Message-Id: <1348474306-25155-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755299Ab2IXINW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:13:22 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:44801 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752932Ab2IXINV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 04:13:21 -0400
+Message-ID: <50601551.7070705@parallels.com>
+Date: Mon, 24 Sep 2012 12:09:53 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-5-git-send-email-glommer@parallels.com> <20120921163404.GC7264@google.com>
+In-Reply-To: <20120921163404.GC7264@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PRCMU has its own USB, Thermal, GPIO, Modem, HSI and RTC drivers,
-amongst other things. This patch allows those subordinate devices to
-use it as an interrupt controller as and when they are DT enabled.
 
-CC: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/db8500-prcmu.c |   48 ++++++++++++++++++++++++++++++++------------
- 1 file changed, 35 insertions(+), 13 deletions(-)
+>> +
+>> +#ifdef CONFIG_MEMCG_KMEM
+>> +		WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
+>> +					   kmem_cgroup_files));
+>> +#endif
+>> +
+> 
+> Why not just make it part of mem_cgroup_files[]?
+> 
+> Thanks.
+> 
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 0e63cdd..9d51585 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -270,6 +270,8 @@ static struct {
- 	struct prcmu_fw_version version;
- } fw_info;
- 
-+static struct irq_domain *db8500_irq_domain;
-+
- /*
-  * This vector maps irq numbers to the bits in the bit field used in
-  * communication with the PRCMU firmware.
-@@ -2583,7 +2585,7 @@ static void prcmu_irq_mask(struct irq_data *d)
- 
- 	spin_lock_irqsave(&mb0_transfer.dbb_irqs_lock, flags);
- 
--	mb0_transfer.req.dbb_irqs &= ~prcmu_irq_bit[d->irq - IRQ_PRCMU_BASE];
-+	mb0_transfer.req.dbb_irqs &= ~prcmu_irq_bit[d->hwirq];
- 
- 	spin_unlock_irqrestore(&mb0_transfer.dbb_irqs_lock, flags);
- 
-@@ -2597,7 +2599,7 @@ static void prcmu_irq_unmask(struct irq_data *d)
- 
- 	spin_lock_irqsave(&mb0_transfer.dbb_irqs_lock, flags);
- 
--	mb0_transfer.req.dbb_irqs |= prcmu_irq_bit[d->irq - IRQ_PRCMU_BASE];
-+	mb0_transfer.req.dbb_irqs |= prcmu_irq_bit[d->hwirq];
- 
- 	spin_unlock_irqrestore(&mb0_transfer.dbb_irqs_lock, flags);
- 
-@@ -2637,9 +2639,37 @@ static char *fw_project_name(u8 project)
- 	}
- }
- 
-+static int db8500_irq_map(struct irq_domain *d, unsigned int virq,
-+				irq_hw_number_t hwirq)
-+{
-+	irq_set_chip_and_handler(virq, &prcmu_irq_chip,
-+				handle_simple_irq);
-+	set_irq_flags(virq, IRQF_VALID);
-+
-+	return 0;
-+}
-+
-+static struct irq_domain_ops db8500_irq_ops = {
-+        .map    = db8500_irq_map,
-+        .xlate  = irq_domain_xlate_twocell,
-+};
-+
-+static int db8500_irq_init(struct device_node *np)
-+{
-+	db8500_irq_domain = irq_domain_add_legacy(
-+		np, NUM_PRCMU_WAKEUPS, IRQ_PRCMU_BASE,
-+		0, &db8500_irq_ops, NULL);
-+
-+	if (!db8500_irq_domain) {
-+		pr_err("Failed to create irqdomain\n");
-+		return -ENOSYS;
-+	}
-+
-+	return 0;
-+}
-+
- void __init db8500_prcmu_early_init(void)
- {
--	unsigned int i;
- 	if (cpu_is_u8500v2()) {
- 		void *tcpm_base = ioremap_nocache(U8500_PRCMU_TCPM_BASE, SZ_4K);
- 
-@@ -2683,16 +2713,6 @@ void __init db8500_prcmu_early_init(void)
- 	init_completion(&mb5_transfer.work);
- 
- 	INIT_WORK(&mb0_transfer.mask_work, prcmu_mask_work);
--
--	/* Initalize irqs. */
--	for (i = 0; i < NUM_PRCMU_WAKEUPS; i++) {
--		unsigned int irq;
--
--		irq = IRQ_PRCMU_BASE + i;
--		irq_set_chip_and_handler(irq, &prcmu_irq_chip,
--					 handle_simple_irq);
--		set_irq_flags(irq, IRQF_VALID);
--	}
- }
- 
- static void __init init_prcm_registers(void)
-@@ -2999,6 +3019,8 @@ static int __devinit db8500_prcmu_probe(struct platform_device *pdev)
- 		goto no_irq_return;
- 	}
- 
-+	db8500_irq_init(np);
-+
- 	for (i = 0; i < ARRAY_SIZE(db8500_prcmu_devs); i++) {
- 		if (!strcmp(db8500_prcmu_devs[i].name, "ab8500-core")) {
- 			db8500_prcmu_devs[i].platform_data = ab8500_platdata;
--- 
-1.7.9.5
+Done.
+
 
