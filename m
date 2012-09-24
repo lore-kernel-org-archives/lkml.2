@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab2IXPtW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:49:22 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52918 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438Ab2IXPtU (ORCPT
+	id S1756642Ab2IXPuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:50:11 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:37835 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755956Ab2IXPuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:49:20 -0400
-Date: Mon, 24 Sep 2012 10:48:21 -0500
-From: key@linux.vnet.ibm.com
-To: key@linux.vnet.ibm.com
-Cc: James Morris <jmorris@namei.org>, Ashley Lai <adlai@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org, rcj@linux.vnet.ibm.com,
-        adlai@us.ibm.com
-Subject: Re: [PATCH 1/1] drivers/char/tpm: remove tasklet and cleanup
-Message-ID: <20120924154821.GA16007@ennui.austin.ibm.com>
-References: <1345670263.25124.7.camel@footlong>
- <1347472190.27058.5.camel@footlong>
- <alpine.LRH.2.02.1209241225230.678@tundra.namei.org>
- <20120924141041.GA2741@ennui.austin.ibm.com>
+	Mon, 24 Sep 2012 11:50:09 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18dyVVdlaYahcGv6m2of8o7CC49m1Ljm4U=
+Date: Mon, 24 Sep 2012 11:50:02 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the l2-mtd
+ tree
+Message-ID: <20120924155002.GP5469@titan.lakedaemon.net>
+References: <20120924193934.76d4feafb689b265ff49c5c3@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120924141041.GA2741@ennui.austin.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092415-5406-0000-0000-0000008A1D89
+In-Reply-To: <20120924193934.76d4feafb689b265ff49c5c3@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 09:10:41AM -0500, key@linux.vnet.ibm.com wrote:
-> On Mon, Sep 24, 2012 at 12:26:05PM +1000, James Morris wrote:
-> > On Wed, 12 Sep 2012, Ashley Lai wrote:
-> > 
-> > > This patch removed the tasklet and moved the wait queue into the
-> > > private structure.  It also cleaned up the response CRQ path.
-> > > 
-> > > Signed-off-by: Ashley Lai <adlai@us.ibm.com>
-> > 
-> > 
-> > Kent: any comment on this?  You should probably push this to me via your 
-> > tree.
+On Mon, Sep 24, 2012 at 07:39:34PM +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
->   Oh, I thought we were waiting on Ben. This looks good to me, I'll get
-> this to you today.
-
-  Ashley tells me Ben's review is in the works, so I'll send once we
-have it.
-
-Kent
-
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> drivers/mtd/nand/orion_nand.c between commit 11a3910e730e ("mtd:
+> orion_nand: remove <mach/hardware.h> include") from the l2-mtd tree and
+> commit c02cecb92ed4 ("ARM: orion: move platform_data definitions") from
+> the arm-soc tree.
 > 
->   Kent
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+
+The change below is correct, thanks.
+
+thx,
+
+Jason.
+
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
+> diff --cc drivers/mtd/nand/orion_nand.c
+> index 9ee436d,131b58a..0000000
+> --- a/drivers/mtd/nand/orion_nand.c
+> +++ b/drivers/mtd/nand/orion_nand.c
+> @@@ -21,7 -21,8 +21,7 @@@
+>   #include <linux/err.h>
+>   #include <asm/io.h>
+>   #include <asm/sizes.h>
+> - #include <plat/orion_nand.h>
+>  -#include <mach/hardware.h>
+> + #include <linux/platform_data/mtd-orion_nand.h>
+>   
+>   static void orion_nand_cmd_ctrl(struct mtd_info *mtd, int cmd, unsigned int ctrl)
+>   {
+
+
+
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
