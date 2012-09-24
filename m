@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab2IXI1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:27:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42564 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab2IXI1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:27:07 -0400
-Date: Mon, 24 Sep 2012 18:26:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: linux-next: manual merge of the arm-soc tree with the sound tree
-Message-Id: <20120924182656.c0daf6d68a9d1447ace4bf8a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_18_26_56_+1000_ap7JuZPpYDAxo/ux"
+	id S1755394Ab2IXI2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:28:31 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:44098 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755213Ab2IXI2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 04:28:30 -0400
+Message-ID: <506018DC.2020907@parallels.com>
+Date: Mon, 24 Sep 2012 12:25:00 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 15/16] memcg/sl[au]b: shrink dead caches
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-16-git-send-email-glommer@parallels.com> <20120921204035.GQ7264@google.com>
+In-Reply-To: <20120921204035.GQ7264@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_18_26_56_+1000_ap7JuZPpYDAxo/ux
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/22/2012 12:40 AM, Tejun Heo wrote:
+> Hello, Glauber.
+> 
+> On Tue, Sep 18, 2012 at 06:12:09PM +0400, Glauber Costa wrote:
+>> @@ -764,10 +777,21 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+>>  		goto out;
+>>  	}
+>>  
+>> +	/*
+>> +	 * Because the cache is expected to duplicate the string,
+>> +	 * we must make sure it has opportunity to copy its full
+>> +	 * name. Only now we can remove the dead part from it
+>> +	 */
+>> +	name = (char *)new_cachep->name;
+>> +	if (name)
+>> +		name[strlen(name) - 4] = '\0';
+> 
+> This is kinda nasty.  Do we really need to do this?  How long would a
+> dead cache stick around?
 
-Hi all,
+Without targeted shrinking, until all objects are manually freed, which
+may need to wait global reclaim to kick in.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-davinci/dm365.c between commit 896f66b7de29 ("ASoC/ARM:
-Davinci: McASP: split asp header into platform and audio specific") from
-the  tree and commit ec2a0833e515 ("ARM: davinci: move platform_data
-definitions") from the arm-soc tree.
+In general, if we agree with duplicating the caches, the problem that
+they may stick around for some time will not be avoidable. If you have
+any suggestions about alternative ways for it, I'm all ears.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> 
+>> diff --git a/mm/slab.c b/mm/slab.c
+>> index bd9928f..6cb4abf 100644
+>> --- a/mm/slab.c
+>> +++ b/mm/slab.c
+>> @@ -3785,6 +3785,8 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
+>>  	}
+>>  
+>>  	ac_put_obj(cachep, ac, objp);
+>> +
+>> +	kmem_cache_verify_dead(cachep);
+> 
+> Reaping dead caches doesn't exactly sound like a high priority thing
+> and adding a branch to hot path for that might not be the best way to
+> do it.  Why not schedule an extremely lazy deferrable delayed_work
+> which polls for emptiness, say, every miniute or whatever?
+> 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Because this branch is marked as unlikely, I would expect it not to be a
+big problem. It will be not taken most of the time, and becomes a very
+cheap branch. I considered this to be simpler than a deferred work
+mechanism.
 
-diff --cc arch/arm/mach-davinci/dm365.c
-index f473745,719e22f..0000000
---- a/arch/arm/mach-davinci/dm365.c
-+++ b/arch/arm/mach-davinci/dm365.c
-@@@ -29,8 -29,9 +29,8 @@@
-  #include <mach/time.h>
-  #include <mach/serial.h>
-  #include <mach/common.h>
-- #include <mach/keyscan.h>
-- #include <mach/spi.h>
- -#include <mach/asp.h>
-+ #include <linux/platform_data/keyscan-davinci.h>
-+ #include <linux/platform_data/spi-davinci.h>
-  #include <mach/gpio-davinci.h>
- =20
-  #include "davinci.h"
+If even then, you guys believe this is still too high, I can resort to that.
 
---Signature=_Mon__24_Sep_2012_18_26_56_+1000_ap7JuZPpYDAxo/ux
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQYBlQAAoJEECxmPOUX5FECHMP/i+pXjS8qKXFuWNiXX9wBES7
-6xIwzSh8zLzvoQ8G6ZiJjQewRwYKJicks1G34TXMlpe6Yb3z5x8I7lJ6py0zt3eu
-IDhPuJW5L4w5Ps3DBB98WX3+SehDBEWecQxw907Eu6X4DvlSVbHZtNiHis5Rr2+I
-qWAUWTBjUinldej2/xIVYB+s2qTJ0tsYMJL73J68bYC3cNx1bn3FDAmda70Jd2Qc
-w9U/50ZVdcV8TfUhYW72rn58bNcT+RpGMoO0wvDiMTz3dXMraixIy47TI6CIybeA
-Az4NS53tk1gSAFehawHt3cTD09DcGecodfP3aPeR24luEB0I7hbPEd3uaF8JfTo7
-yu1wgU2B45x02W4LiBx4WBNDc8gY9SefWy88T+FBU5Ffq/3pFSa3gkyEHvrKC9VY
-ZML05S30Rhl93Lx2I9prqNBDtILtC77msIU/JP6E2aUBTijLNsLqVQMQJ/jFD78a
-cryd5DQcCSxZsLuAcBruTlwMvVnkTb+1hrtuh2a5xDiPyOOyp9zp8iRQHM2mGH1m
-8znP9EUVBpdtaZxkVwv9ha0wCqwra10G1I4cRJotxfJUYIUTTDi6Kw2K8mkoFmjS
-MPGkNSv8o4DPldyasJkytYhVpvZjgOaRAO0TEYTxB5OoYfYyxZswbvgltix3k7gb
-C/Rwdc3QRgvJFaaFfUgs
-=H/Uf
------END PGP SIGNATURE-----
+> Thanks.
+> 
 
---Signature=_Mon__24_Sep_2012_18_26_56_+1000_ap7JuZPpYDAxo/ux--
