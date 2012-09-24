@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab2IXJ0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 05:26:04 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43500 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab2IXJ0A (ORCPT
+	id S1753356Ab2IXJ2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 05:28:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36118 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752482Ab2IXJ2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 05:26:00 -0400
-Message-ID: <1348478750.2475.51.camel@ThinkPad-T420>
-Subject: Re: [PATCH scsi] Add NULL checking of return value from
- scsi_cmd_to_driver()
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Martin K. Petersen" <mkp@mkp.net>
-Date: Mon, 24 Sep 2012 17:25:50 +0800
-In-Reply-To: <1348472104.2467.8.camel@dabdike>
-References: <1348464626.2475.13.camel@ThinkPad-T420>
-	 <1348465493.2467.3.camel@dabdike> <1348470210.2475.47.camel@ThinkPad-T420>
-	 <1348472104.2467.8.camel@dabdike>
+	Mon, 24 Sep 2012 05:28:08 -0400
+Message-ID: <1348478881.2467.27.camel@dabdike>
+Subject: Re: How to specify IOMMU'able devices in DT (was: [RFC 0/5] ARM:
+ dma-mapping: New dma_map_ops to control IOVA more precisely)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, Arnd Bergmann <arnd@arndb.de>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "subashrp@gmail.com" <subashrp@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 24 Sep 2012 13:28:01 +0400
+In-Reply-To: <20120924120415.8e6929a34c422185a98d3f82@nvidia.com>
+References: <1346223335-31455-1-git-send-email-hdoyu@nvidia.com>
+	 <20120918124918.GK2505@amd.com>
+	 <20120919095843.d1db155e0f085f4fcf64ea32@nvidia.com>
+	 <201209190759.46174.arnd@arndb.de> <20120919125020.GQ2505@amd.com>
+	 <401E54CE964CD94BAE1EB4A729C7087E379FDC1EEB@HQMAIL04.nvidia.com>
+	 <505A7DB4.4090902@wwwdotorg.org>
+	 <401E54CE964CD94BAE1EB4A729C7087E379FDC1F2D@HQMAIL04.nvidia.com>
+	 <505B35F7.2080201@wwwdotorg.org>
+	 <401E54CE964CD94BAE1EB4A729C7087E379FDC2372@HQMAIL04.nvidia.com>
+	 <20120924120415.8e6929a34c422185a98d3f82@nvidia.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.4.4 
 Mime-Version: 1.0
-x-cbid: 12092409-8256-0000-0000-0000044C7452
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-24 at 11:35 +0400, James Bottomley wrote:
-> On Mon, 2012-09-24 at 15:03 +0800, Li Zhong wrote:
-> > On Mon, 2012-09-24 at 09:44 +0400, James Bottomley wrote:
-> > > On Mon, 2012-09-24 at 13:30 +0800, Li Zhong wrote:
-> > > > Just noticed that after commit 919f797, it is possible that 
-> > > > scsi_cmd_to_driver() returns NULL. This patch adds the NULL checking for drv 
-> > > > returned from the above function. 
-> > > > 
-> > > > Maybe it is not possible at run time, but from the code itself, we'd better
-> > > > have this check?  
-> > > 
-> > > There's not much point having a check that never trips, unless it's an
-> > > assert, in which case a NULL deref does that.  All it does is add
-> > > pointless instructions to the critical path.  only REQ_TYPE_BLOCK_PC
-> > > commands can be submitted without a driver, so the check above would
-> > > seem to preclude that.
-> > 
-> > Hi James, 
-> > 
-> > Thank you, it sounds reasonable to me. Let's drop it. 
+On Mon, 2012-09-24 at 12:04 +0300, Hiroshi Doyu wrote:
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index a1a7225..9eae3be 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -21,6 +21,8 @@
+>  #include <linux/slab.h>
+>  #include <linux/pm_runtime.h>
 > 
-> Well, there is another thing you might do: The path length of
-> scsi_cmd_to_driver() increased a lot thanks to 18a4d0a22ed6 it might be
-> worth getting it back to what it was (this looks to be doable with the
-> same != REQ_TYPE_BLOCK_PC test in the error handler.  Plus, I think it
-> fixes a bug where you get different behaviours from REQ_TYPE_BLOCK_PC
-> commands when a driver is and isn't attached (I've cc'd Martin to see
-> what he thinks).
+> +#include <asm/dma-iommu.h>
+> +
+>  #include "base.h"
+> 
+>  #define to_platform_driver(drv)        (container_of((drv), struct
+> platform_driver, \
+> @@ -305,8 +307,19 @@ int platform_device_add(struct platform_device
+> *pdev)
+>                  dev_name(&pdev->dev), dev_name(pdev->dev.parent));
+> 
+>         ret = device_add(&pdev->dev);
+> -       if (ret == 0)
+> -               return ret;
+> +       if (ret)
+> +               goto failed;
+> +
+> +#ifdef CONFIG_PLATFORM_ENABLE_IOMMU
+> +       if (platform_bus_type.map && !pdev->dev.archdata.mapping) {
+> +               ret = arm_iommu_attach_device(&pdev->dev,
+> +                                             platform_bus_type.map);
+> +               if (ret)
+> +                       goto failed;
 
-Hi James, 
+This is horrible ... you're adding an architecture specific callback
+into our generic code; that's really a no-no.  If the concept of
+CONFIG_PLATFORM_ENABE_IOMMU is useful to more than just arm, then this
+could become a generic callback.
 
-Do you mean something like this: 
-
-=======
-
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index de2337f..c1b05a8 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -789,7 +789,6 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
- 			     int cmnd_size, int timeout, unsigned sense_bytes)
- {
- 	struct scsi_device *sdev = scmd->device;
--	struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
- 	struct Scsi_Host *shost = sdev->host;
- 	DECLARE_COMPLETION_ONSTACK(done);
- 	unsigned long timeleft;
-@@ -845,8 +844,11 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
- 
- 	scsi_eh_restore_cmnd(scmd, &ses);
- 
--	if (sdrv && sdrv->eh_action)
--		rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
-+	if (scmd->request->cmd_type != REQ_TYPE_BLOCK_PC) {
-+		struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
-+		if (sdrv->eh_action)
-+			rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
-+	}
- 
- 	return rtn;
- }
-diff --git a/include/scsi/scsi_cmnd.h b/include/scsi/scsi_cmnd.h
-index ac06cc5..377df4a 100644
---- a/include/scsi/scsi_cmnd.h
-+++ b/include/scsi/scsi_cmnd.h
-@@ -134,16 +134,7 @@ struct scsi_cmnd {
- 
- static inline struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
- {
--	struct scsi_driver **sdp;
--
--	if (!cmd->request->rq_disk)
--		return NULL;
--
--	sdp = (struct scsi_driver **)cmd->request->rq_disk->private_data;
--	if (!sdp)
--		return NULL;
--
--	return *sdp;
-+	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
- }
- 
- extern struct scsi_cmnd *scsi_get_command(struct scsi_device *, gfp_t);
+James
 
 
