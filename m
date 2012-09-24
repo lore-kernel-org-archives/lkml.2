@@ -1,60 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab2IXSas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 14:30:48 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56110 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756781Ab2IXSaq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 14:30:46 -0400
-Date: Mon, 24 Sep 2012 20:30:35 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: David S Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] lxt PHY: Support for the buggy LXT973 rev A2
-Message-ID: <20120924183035.GA2252@netboy.at.omicron.at>
-References: <201209241400.q8OE0w38011790@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201209241400.q8OE0w38011790@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757642Ab2IXSby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 14:31:54 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47839 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757595Ab2IXSbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 14:31:50 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        Heinz.Egger@linutronix.de, artem.bityutskiy@linux.intel.com,
+        tim.bird@am.sony.com, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 05/10] UBI: Add fastmap bits to build.c
+Date: Mon, 24 Sep 2012 20:31:27 +0200
+Message-Id: <1348511492-91606-6-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1348511492-91606-1-git-send-email-richard@nod.at>
+References: <1348511492-91606-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 04:00:58PM +0200, Christophe Leroy wrote:
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/mtd/ubi/build.c |   71 ++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 67 insertions(+), 4 deletions(-)
 
-> diff -u a/drivers/net/phy/lxt.c b/drivers/net/phy/lxt.c
-> --- a/drivers/net/phy/lxt.c	2012-09-23 03:08:48.000000000 +0200
-> +++ b/drivers/net/phy/lxt.c	2012-09-23 03:18:00.000000000 +0200
+diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+index 3497703..cc7c03c 100644
+--- a/drivers/mtd/ubi/build.c
++++ b/drivers/mtd/ubi/build.c
+@@ -76,7 +76,10 @@ static int __initdata mtd_devs;
+ 
+ /* MTD devices specification parameters */
+ static struct mtd_dev_param __initdata mtd_dev_param[UBI_MAX_DEVICES];
+-
++#ifdef CONFIG_MTD_UBI_FASTMAP
++/* UBI module parameter to enable fastmap automatically on non-fastmap images */
++static bool fm_autoconvert;
++#endif
+ /* Root UBI "class" object (corresponds to '/<sysfs>/class/ubi/') */
+ struct class *ubi_class;
+ 
+@@ -153,6 +156,19 @@ int ubi_volume_notify(struct ubi_device *ubi, struct ubi_volume *vol, int ntype)
+ 
+ 	ubi_do_get_device_info(ubi, &nt.di);
+ 	ubi_do_get_volume_info(ubi, vol, &nt.vi);
++
++#ifdef CONFIG_MTD_UBI_FASTMAP
++	switch (ntype) {
++	case UBI_VOLUME_ADDED:
++	case UBI_VOLUME_REMOVED:
++	case UBI_VOLUME_RESIZED:
++	case UBI_VOLUME_RENAMED:
++		if (ubi_update_fastmap(ubi)) {
++			ubi_err("Unable to update fastmap!");
++			ubi_ro_mode(ubi);
++		}
++	}
++#endif
+ 	return blocking_notifier_call_chain(&ubi_notifiers, ntype, &nt);
+ }
+ 
+@@ -918,10 +934,40 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num,
+ 	ubi->vid_hdr_offset = vid_hdr_offset;
+ 	ubi->autoresize_vol_id = -1;
+ 
++#ifdef CONFIG_MTD_UBI_FASTMAP
++	ubi->fm_pool.used = ubi->fm_pool.size = 0;
++	ubi->fm_wl_pool.used = ubi->fm_wl_pool.size = 0;
++
++	/*
++	 * fm_pool.max_size is 5% of the total number of PEBs but it's also
++	 * between UBI_FM_MAX_POOL_SIZE and UBI_FM_MIN_POOL_SIZE.
++	 */
++	ubi->fm_pool.max_size = min(((int)mtd_div_by_eb(ubi->mtd->size,
++		ubi->mtd) / 100) * 5, UBI_FM_MAX_POOL_SIZE);
++	if (ubi->fm_pool.max_size < UBI_FM_MIN_POOL_SIZE)
++		ubi->fm_pool.max_size = UBI_FM_MIN_POOL_SIZE;
++
++	ubi->fm_wl_pool.max_size = UBI_FM_WL_POOL_SIZE;
++	ubi->fm_disabled = !fm_autoconvert;
++
++	if (!ubi->fm_disabled && (int)mtd_div_by_eb(ubi->mtd->size, ubi->mtd)
++	    <= UBI_FM_MAX_START) {
++		ubi_err("More than %i PEBs are needed for fastmap, sorry.",
++			UBI_FM_MAX_START);
++		ubi->fm_disabled = 1;
++	}
++
++	ubi_msg("default fastmap pool size: %d", ubi->fm_pool.max_size);
++	ubi_msg("default fastmap WL pool size: %d", ubi->fm_wl_pool.max_size);
++#else
++	ubi->fm_disabled = 1;
++#endif
+ 	mutex_init(&ubi->buf_mutex);
+ 	mutex_init(&ubi->ckvol_mutex);
+ 	mutex_init(&ubi->device_mutex);
+ 	spin_lock_init(&ubi->volumes_lock);
++	mutex_init(&ubi->fm_mutex);
++	init_rwsem(&ubi->fm_sem);
+ 
+ 	ubi_msg("attaching mtd%d to ubi%d", mtd->index, ubi_num);
+ 
+@@ -934,11 +980,17 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num,
+ 	if (!ubi->peb_buf)
+ 		goto out_free;
+ 
++#ifdef CONFIG_MTD_UBI_FASTMAP
++	ubi->fm_size = ubi_calc_fm_size(ubi);
++	ubi->fm_buf = vzalloc(ubi->fm_size);
++	if (!ubi->fm_buf)
++		goto out_free;
++#endif
+ 	err = ubi_debugging_init_dev(ubi);
+ 	if (err)
+ 		goto out_free;
+ 
+-	err = ubi_attach(ubi);
++	err = ubi_attach(ubi, 0);
+ 	if (err) {
+ 		ubi_err("failed to attach mtd%d, error %d", mtd->index, err);
+ 		goto out_debugging;
+@@ -1012,6 +1064,7 @@ out_debugging:
+ 	ubi_debugging_exit_dev(ubi);
+ out_free:
+ 	vfree(ubi->peb_buf);
++	vfree(ubi->fm_buf);
+ 	if (ref)
+ 		put_device(&ubi->dev);
+ 	else
+@@ -1061,7 +1114,11 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
+ 	ubi_assert(ubi_num == ubi->ubi_num);
+ 	ubi_notify_all(ubi, UBI_VOLUME_REMOVED, NULL);
+ 	ubi_msg("detaching mtd%d from ubi%d", ubi->mtd->index, ubi_num);
+-
++#ifdef CONFIG_MTD_UBI_FASTMAP
++	/* If we don't write a new fastmap at detach time we lose all
++	 * EC updates that have been made since the last written fastmap. */
++	ubi_update_fastmap(ubi);
++#endif
+ 	/*
+ 	 * Before freeing anything, we have to stop the background thread to
+ 	 * prevent it from doing anything on this device while we are freeing.
+@@ -1077,12 +1134,14 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
+ 
+ 	ubi_debugfs_exit_dev(ubi);
+ 	uif_close(ubi);
++
+ 	ubi_wl_close(ubi);
+ 	ubi_free_internal_volumes(ubi);
+ 	vfree(ubi->vtbl);
+ 	put_mtd_device(ubi->mtd);
+ 	ubi_debugging_exit_dev(ubi);
+ 	vfree(ubi->peb_buf);
++	vfree(ubi->fm_buf);
+ 	ubi_msg("mtd%d is detached from ubi%d", ubi->mtd->index, ubi->ubi_num);
+ 	put_device(&ubi->dev);
+ 	return 0;
+@@ -1404,7 +1463,11 @@ MODULE_PARM_DESC(mtd, "MTD devices to attach. Parameter format: mtd=<name|num|pa
+ 		      "Example 2: mtd=content,1984 mtd=4 - attach MTD device with name \"content\" using VID header offset 1984, and MTD device number 4 with default VID header offset.\n"
+ 		      "Example 3: mtd=/dev/mtd1,0,25 - attach MTD device /dev/mtd1 using default VID header offset and reserve 25*nand_size_in_blocks/1024 erase blocks for bad block handling.\n"
+ 		      "\t(e.g. if the NAND *chipset* has 4096 PEB, 100 will be reserved for this UBI device).");
+-
++#ifdef CONFIG_MTD_UBI_FASTMAP
++module_param(fm_autoconvert, bool, 0644);
++MODULE_PARM_DESC(fm_autoconvert, "Set this parameter to enable fastmap "
++				 "automatically on images without a fastmap.");
++#endif
+ MODULE_VERSION(__stringify(UBI_VERSION));
+ MODULE_DESCRIPTION("UBI - Unsorted Block Images");
+ MODULE_AUTHOR("Artem Bityutskiy");
+-- 
+1.7.6.5
 
-...
-
-> @@ -175,6 +292,16 @@
->  	.driver		= { .owner = THIS_MODULE,},
->  }, {
->  	.phy_id		= 0x00137a10,
-> +	.name		= "LXT973-A2",
-> +	.phy_id_mask	= 0xffffffff,
-> +	.features	= PHY_BASIC_FEATURES,
-> +	.flags		= 0,
-> +	.probe		= lxt973_probe,
-> +	.config_aneg	= lxt973_config_aneg,
-> +	.read_status	= lxt973a2_read_status,
-
-I like this way of matching the A2 chips much better than what you had
-before. But are you sure this will work correctly?
-
-What do A3 chips have in the last nibble of phy_id?
-
-> +	.driver		= { .owner = THIS_MODULE,},
-> +}, {
-> +	.phy_id		= 0x00137a10,
->  	.name		= "LXT973",
->  	.phy_id_mask	= 0xfffffff0,
->  	.features	= PHY_BASIC_FEATURES,
-
-Thanks,
-Richard
