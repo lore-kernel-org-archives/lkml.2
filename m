@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab2IXLGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 07:06:04 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:60430 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753808Ab2IXLGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 07:06:02 -0400
-Date: Mon, 24 Sep 2012 13:05:54 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@amd64.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Conny Seidel <conny.seidel@amd.com>
-Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
-Message-ID: <20120924110554.GC22303@aftab.osrc.amd.com>
-References: <20120924102324.GA22303@aftab.osrc.amd.com>
- <50603829.9050904@linux.vnet.ibm.com>
+	id S1754241Ab2IXLLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 07:11:46 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33922 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab2IXLLo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 07:11:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50603829.9050904@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <505FB01C.4060905@gmail.com>
+References: <1348296014.12906.2.camel@phoenix> <505FB01C.4060905@gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Mon, 24 Sep 2012 19:11:22 +0800
+X-Google-Sender-Auth: tLT9TjiJdqbvtQcD1q5E4ecfhBc
+Message-ID: <CAK5ve-+eHrp7wW5fotjpa2bcN8HkzLdV1VPHJUTGHjtkpYunRg@mail.gmail.com>
+Subject: Re: [PATCH] leds: lm3642: Use regmap_update_bits() in lm3642_chip_init()
+To: gshark <gshark.jeong@gmail.com>
+Cc: Axel Lin <axel.lin@ingics.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 04:08:33PM +0530, Srivatsa S. Bhat wrote:
-> On 09/24/2012 03:53 PM, Borislav Petkov wrote:
-> > Hi all,
-> > 
-> > we're able to trigger the oops below when doing CPU hotplug tests.
-> > 
-> 
-> I hit this problem as well, which I reported here, a few days ago:
-> https://lkml.org/lkml/2012/9/13/222
+On Mon, Sep 24, 2012 at 8:58 AM, gshark <gshark.jeong@gmail.com> wrote:
+> 2012년 09월 22일 15:40, Axel Lin 쓴 글:
+>
+>> Use regmap_update_bits() to replace regmap_read() + regmap_write().
+>> With this patch, we only show the error message when regmap_update_bits()
+>> fails.
+>
+>     Looks good..You're right.  Thank you Alex.
+>>
+>>
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>
+>     Acked-by: G.Shark Jeong<gshark.jeong@gmail.com>
+>
 
-Ok, your case shows even more info:
+Thanks, applied to my for-next.
 
-[  526.024180] divide error: 0000 [#1] SMP 
-[  526.028144] Modules linked in: ipv6 cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse loop dm_mod iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm cdc_ether pcspkr usbnet shpchp pci_hotplug i2c_i801 i2c_core ioatdma mii crc32c_intel serio_raw microcode lpc_ich mfd_core i7core_edac bnx2 dca edac_core tpm_tis tpm sg tpm_bios rtc_cmos button uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif edd ext3 mbcache jbd fan processor mptsas mptscsih mptbase scsi_transport_sas scsi_mod thermal thermal_sys hwmon
-[  526.028145] CPU 9 
-[  526.028145] Pid: 2235, comm: flush-8:0 Not tainted 3.6.0-rc1-tglx-hotplug-0.0.0.28.36b5ec9-default #1 IBM IBM System x -[7870C4Q]-/68Y8033 
-[  526.028145] RIP: 0010:[<ffffffff811276f6>]  [<ffffffff811276f6>] bdi_dirty_limit+0x66/0xc0
-[  526.028145] RSP: 0018:ffff8811530bfcc0  EFLAGS: 00010206
-[  526.028145] RAX: 0000000000b9877e RBX: 00000000001a8112 RCX: 28f5c28f5c28f5c3
-[  526.028145] RDX: 0000000000000000 RSI: 0000000000b9877e RDI: 0000000000000000
+-Bryan
 
-%rax contains something != 0 but %rdi definitely is 0.
+
+>> ---
+>>   drivers/leds/leds-lm3642.c |   15 +++------------
+>>   1 file changed, 3 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
+>> index 924853b..3285006 100644
+>> --- a/drivers/leds/leds-lm3642.c
+>> +++ b/drivers/leds/leds-lm3642.c
+>> @@ -95,23 +95,14 @@ struct lm3642_chip_data {
+>>   /* chip initialize */
+>>   static int __devinit lm3642_chip_init(struct lm3642_chip_data *chip)
+>>   {
+>> -       unsigned int reg_val;
+>>         int ret;
+>>         struct lm3642_platform_data *pdata = chip->pdata;
+>>         /* set enable register */
+>> -       ret = regmap_read(chip->regmap, REG_ENABLE, &reg_val);
+>> +       ret = regmap_update_bits(chip->regmap, REG_ENABLE,
+>> EX_PIN_ENABLE_MASK,
+>> +                                pdata->tx_pin);
+>>         if (ret < 0)
+>> -               goto out;
+>> -
+>> -       reg_val &= (~EX_PIN_ENABLE_MASK);
+>> -       reg_val |= pdata->tx_pin;
+>> -       ret = regmap_write(chip->regmap, REG_ENABLE, reg_val);
+>> -       if (ret < 0)
+>> -               goto out;
+>> -
+>> -out:
+>> -       dev_err(chip->dev, "Failed to read REG_ENABLE Register\n");
+>> +               dev_err(chip->dev, "Failed to update REG_ENABLE
+>> Register\n");
+>>         return ret;
+>>   }
+>>
+>
+>
+
+
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
