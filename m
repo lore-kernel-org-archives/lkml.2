@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab2IXMQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:16:17 -0400
-Received: from science.horizon.com ([71.41.210.146]:59044 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754551Ab2IXMQP (ORCPT
+	id S1755135Ab2IXMRT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 08:17:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37394 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071Ab2IXMRR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:16:15 -0400
-Date: 24 Sep 2012 08:16:14 -0400
-Message-ID: <20120924121614.5422.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, mpn@google.com, vda.linux@googlemail.com
-Subject: Re: [PATCH 2/4] lib: vsprintf: Optimize division by 10000
-Cc: hughd@google.com, linux-kernel@vger.kernel.org
-In-Reply-To: <xa1twqzk640j.fsf@mina86.com>
+	Mon, 24 Sep 2012 08:17:17 -0400
+Message-ID: <1348489027.11847.53.camel@twins>
+Subject: Re: [PATCH 2/2] [RESEND] console: implement lockdep support for
+ console_lock
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Mon, 24 Sep 2012 14:17:07 +0200
+In-Reply-To: <1347923013-4253-2-git-send-email-daniel.vetter@ffwll.ch>
+References: <1347923013-4253-1-git-send-email-daniel.vetter@ffwll.ch>
+	 <1347923013-4253-2-git-send-email-daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You are using a 64-bit multiply in a path that is designed for 32-bit
-> processors, which makes me feel that it will be slower.
+On Tue, 2012-09-18 at 01:03 +0200, Daniel Vetter wrote:
+> - In the printk code there's a special trylock, only used to kick off
+>   the logbuffer printk'ing in console_unlock. But all that happens
+>   while lockdep is disable (since printk does a few other evil
+>   tricks). So no issue there, either. 
 
-Slower than the divide it's replacing?
+Not particularly evil, just plain broken.
 
-The following 32-bit processors have 32x32->64-bit multiply:
+See this series:
 
-x86
-ARM (as of ARMv4 = ARM7TDMI, the lowest version in common use)
-SPARCv7, SPARCv8
-MIPS32
-MC68020
-PA-RISC 1.1 (XMPYU)
-avr32
-PowerPC (MULHWU)
-VAX (EMUL)
+  http://marc.info/?l=linux-kernel&m=132446644123326&w=2
 
-I could keep going through the full list of architectures in arch/,
-but it's starting to get slow and I haven't hit one *without* a widening
-multiply yet.  (And if it doesn't have hardware divide, I expect the
-multiply is still faster.)
+In particular see patches 1-4. The problem with lockdep is that lockdep
+uses printk and printk's recursion stuff is utterly broken.
 
-Ah!  Found one!  ColdFire MCF5272 has 32/32-bit divide, but only 32x32->32
-multiply.  However, DIVU takes 20 or 35 cycles, which is pretty close to the
-time to synthesize the multiply out of 4 16x16->32 pieces (4 cycles each).
-
-I could do some Kconfig hacking and make the code path architecture-dependent.
-Do you think it's worth it?
+Console drivers being on crack simply doesn't help :-) Note that I would
+never recommend drm/ksm to anybody who really cares about their console
+output.
