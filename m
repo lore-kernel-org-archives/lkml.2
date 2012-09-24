@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab2IXC6d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 22:58:33 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:36970 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754700Ab2IXC6c (ORCPT
+	id S1754900Ab2IXDGW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 23:06:22 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:61757 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab2IXDGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 22:58:32 -0400
-Date: Sun, 23 Sep 2012 19:58:31 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for 3.6
-Message-ID: <alpine.DEB.2.00.1209231956000.11925@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sun, 23 Sep 2012 23:06:21 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 24 Sep 2012 12:06:19 +0900
+Message-ID: <CAOAMb1DEKrgjtq-xRB+Qy1+_8D-G+6g2v9QSLMisVNbKa8+jSA@mail.gmail.com>
+Subject: [PATCH] ARM: gic: fix irq affinity mismatch.
+From: Chanho Min <chanho0207@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, Marc Zyngier <marc.zyngier@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Will Deacon <will.deacon@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Even if we set affinity to multiple cpus via procfs, gic_set_affinity
+allows to set one target only. But, '/proc/irq/xxx/smp_affinity' shows
+as we are successful in the setting of multiple affinity. Thus irq_data->
+affinity mismatches with the GICD_ITARGETSRs.
 
-Please pull the following fixes for Ceph from
+fix it as bellows.
+- Set the default affinity to the boot cpu in gic_dist_init. thereafter,
+irq_data->affinity will be set to default 1-bit affinity.
+- Even if we write multiple bits to smp_affinity, both irq_data and gic
+register will be set one cpu. procfs will show 1 bit affinity as well.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+---
+ arch/arm/common/gic.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-The first fixes a leak in the rbd setup error path, and the second fixes a 
-more serious problem with mismatched kmap/kunmap that surfaced after the 
-recent refactoring work.
+diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+index aa52699..fb8ac8e 100644
+--- a/arch/arm/common/gic.c
++++ b/arch/arm/common/gic.c
+@@ -249,6 +249,12 @@ static int gic_set_affinity(struct irq_data *d,
+const struct cpumask *mask_val,
+ 	writel_relaxed(val | bit, reg);
+ 	raw_spin_unlock(&irq_controller_lock);
 
-Thanks!
-sage
++	if (cpumask_next_and(cpu, mask_val, cpu_present_mask) < nr_cpu_ids) {
++		cpumask_clear(d->affinity);
++		cpumask_set_cpu(cpu, d->affinity);
++		return IRQ_SET_MASK_OK_NOCOPY;
++	}
++
+ 	return IRQ_SET_MASK_OK;
+ }
+ #endif
+@@ -355,6 +361,12 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
+ 	cpumask |= cpumask << 8;
+ 	cpumask |= cpumask << 16;
 
++#ifdef CONFIG_SMP
++	/* Set the default affinity to the boot cpu. */
++	cpumask_clear(irq_default_affinity);
++	cpumask_set_cpu(cpu, irq_default_affinity);
++#endif
++
+ 	writel_relaxed(0, base + GIC_DIST_CTRL);
 
-----------------------------------------------------------------
-Alex Elder (2):
-      rbd: drop dev reference on error in rbd_open()
-      libceph: only kunmap kmapped pages
-
- drivers/block/rbd.c  |    7 +++----
- net/ceph/messenger.c |    5 +----
- 2 files changed, 4 insertions(+), 8 deletions(-)
+ 	/*
+-- 
+1.7.9.5
