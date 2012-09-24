@@ -1,213 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab2IXNtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 09:49:41 -0400
-Received: from science.horizon.com ([71.41.210.146]:59536 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754196Ab2IXNtk (ORCPT
+	id S1755529Ab2IXNy7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 09:54:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38879 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755370Ab2IXNy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 09:49:40 -0400
-Date: 24 Sep 2012 09:49:39 -0400
-Message-ID: <20120924134939.23197.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, mpn@google.com, vda.linux@googlemail.com
-Subject: Re: [PATCH 3/4] lib: vsprintf: Optimize put_dec_trunc8
-Cc: hughd@google.com, linux-kernel@vger.kernel.org
-In-Reply-To: <xa1tipb3d2nv.fsf@mina86.com>
+	Mon, 24 Sep 2012 09:54:57 -0400
+Date: Mon, 24 Sep 2012 14:54:38 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, catalin.marinas@arm.com, davidb@codeaurora.org,
+        frank.rowand@am.sony.com, hsweeten@visionengravers.com,
+        linus.walleij@linaro.org, marc.zyngier@arm.com, nico@linaro.org,
+        paul.gortmaker@windriver.com, plagnioj@jcrosoft.com, rabin@rab.in,
+        rmallon@gmail.com, rob.herring@calxeda.com, sboyd@codeaurora.org,
+        sjg@chromium.org, tglx@linutronix.de, tj@kernel.org,
+        vincent.guittot@linaro.org, vitalya@ti.com, will.deacon@arm.com,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH v3 RESEND 06/17] ARM: LPAE: use signed arithmetic for
+	mask definitions
+Message-ID: <20120924135438.GC26454@n2100.arm.linux.org.uk>
+References: <1348242975-19184-1-git-send-email-cyril@ti.com> <1348242975-19184-7-git-send-email-cyril@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348242975-19184-7-git-send-email-cyril@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Nazarewicz <mpn@google.com> wrote:
-> The original has it a bit awkwardly because it just copies code from
-> put_dec_full9() with the first iteration skipped.
-
-Yeah, it also makes the comments pretty confusing.
-
-> I guess the following should work, even though it's not so pretty:
+On Fri, Sep 21, 2012 at 11:56:04AM -0400, Cyril Chemparathy wrote:
+> This patch applies to PAGE_MASK, PMD_MASK, and PGDIR_MASK, where forcing
+> unsigned long math truncates the mask at the 32-bits.  This clearly does bad
+> things on PAE systems.
 > 
-> static noinline_for_stack
-> char *put_dec_trunc8(char *buf, unsigned r) {
-> 	unsigned q;
+> This patch fixes this problem by defining these masks as signed quantities.
+> We then rely on sign extension to do the right thing.
 > 
-> 	if (r > 10000) {
-> 		do {
-> 			q = r + '0';
-> 			r = (r * (uint64_t)0x1999999a) >> 32;
-> 			*buf++ = q - 10 * r;
-> 		} while (r >= 10000);
-> 		if (r == 0)
-> 			return buf;
-> 	}
+> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+> Reviewed-by: Nicolas Pitre <nico@linaro.org>
+> ---
+>  arch/arm/include/asm/page.h           |    2 +-
+>  arch/arm/include/asm/pgtable-3level.h |    6 +++---
+>  2 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> 	q      = (r * 0x199a) >> 16;
-> 	*buf++ = (r - 10 * q)  + '0'; /* 6 */
-> 	if (q == 0)
-> 		return buf;
-> 	r      = (q * 0xcd) >> 11;
-> 	*buf++ = (q - 10 * r)  + '0'; /* 7 */
-> 	if (r == 0)
-> 		return buf;
-> 	q      = (r * 0xcd) >> 11;
-> 	*buf++ = (r - 10 * q) + '0'; /* 8 */
-> 	if (q == 0)
-> 		return buf;
-> 	*buf++ = q + '0'; /* 9 */
-> 	return buf;
-> }
+> diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
+> index ecf9019..1e0fe08 100644
+> --- a/arch/arm/include/asm/page.h
+> +++ b/arch/arm/include/asm/page.h
+> @@ -13,7 +13,7 @@
+>  /* PAGE_SHIFT determines the page size */
+>  #define PAGE_SHIFT		12
+>  #define PAGE_SIZE		(_AC(1,UL) << PAGE_SHIFT)
+> -#define PAGE_MASK		(~(PAGE_SIZE-1))
+> +#define PAGE_MASK		(~((1 << PAGE_SHIFT) - 1))
 
-Two bugs:
+It's strange.  Every other platform in the kernel, including those with
+PAE, manage to get away with defining PAGE_MASK as the original above
+(see asm-generic/pgtable.h)  Why is ARM any different?
 
-1) The initial "(r > 10000)" should be >=.
-   If you let r == 10000 through to the remaining code, you'll get ":000".
+Note that PAGE_MASK gets used at the moment on ARM for both virtual and
+physical addresses.  x86 has PHYSICAL_PAGE_MASK for masking physical
+addresses.  Maybe we should adopt the same approach?
 
-2) The "r == 0" test isn't necessary.
-   Given that the loop divides r by 10 each time, r >= 10000 at the
-   beginning implies r >= 1000 at the end, so 1000 <= r < 10000
-   when the loop exits.
+Whatever, I feel that we should not deviate from the established
+definitions across every other architecture.
 
-   The only place you might need a test is if the "r >= 10000"
-   test is *false*.  I.e.
+>  
+>  #ifndef __ASSEMBLY__
+>  
+> diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
+> index b249035..ae39d11 100644
+> --- a/arch/arm/include/asm/pgtable-3level.h
+> +++ b/arch/arm/include/asm/pgtable-3level.h
+> @@ -48,16 +48,16 @@
+>  #define PMD_SHIFT		21
+>  
+>  #define PMD_SIZE		(1UL << PMD_SHIFT)
+> -#define PMD_MASK		(~(PMD_SIZE-1))
+> +#define PMD_MASK		(~((1 << PMD_SHIFT) - 1))
+>  #define PGDIR_SIZE		(1UL << PGDIR_SHIFT)
+> -#define PGDIR_MASK		(~(PGDIR_SIZE-1))
+> +#define PGDIR_MASK		(~((1 << PGDIR_SHIFT) - 1))
+>  
+>  /*
+>   * section address mask and size definitions.
+>   */
+>  #define SECTION_SHIFT		21
+>  #define SECTION_SIZE		(1UL << SECTION_SHIFT)
+> -#define SECTION_MASK		(~(SECTION_SIZE-1))
+> +#define SECTION_MASK		(~((1 << SECTION_SHIFT) - 1))
 
-	if (r > 10000) {
-		/* Code */
-	} else if (r == 0)
-		return buf;
+These masks are applied to a _virtual_ kernel address, not the physical
+addresses,  Even with LPAE, the virtual address space is still 32-bit.
 
-(But I think that last test is the bug I need to track down.)
-
-
-You could reduce the number of conditional branches by using a binary
-search tree for the number of digits to jump into an unrolled loop,
-in the style of Duff's device, but I wasn't sure the complexity
-was worth it.  And the q/r swapping makes it even messier.
-
-Basically something like this, except I'd also probably change the
-variable names, and modify the calling convention to return the decimal
-in big-endian order:
-
-char *put_dec_trunc8(char *buf, unsigned r)
-{
-	unsigned q;
-
-	if (r < 10000)
-		if (r < 100)
-			if (r < 10)
-				goto d1;
-			else
-				goto d2;
-		else
-			if (r < 1000)
-				goto d3;
-			else
-				goto d4;
-	else
-		if (r < 1000000)
-			if (r < 100000)
-				goto d5;
-			else
-				goto d6;
-		else
-			if (r < 10000000)
-				goto d7;
-			else
-				goto d8;
-d8:
-	q = r + '0';
-	r = (r * (uint64_t)0x1999999a) >> 32;
-	*buf++ = q - 10 * r;
-d7:
-	q = r + '0';
-	r = (r * (uint64_t)0x1999999a) >> 32;
-	*buf++ = q - 10 * r;
-d6:
-	q = r + '0';
-	r = (r * (uint64_t)0x1999999a) >> 32;
-	*buf++ = q - 10 * r;
-d5:
-	q = r + '0';
-	r = (r * (uint64_t)0x1999999a) >> 32;
-	*buf++ = q - 10 * r;
-d4:
-	q = r + '0';
-	r = (r * 0x199a) >> 16;
-	*buf++ = q - 10 * r;
-d3:
-	q = r + '0';
-	r = (r * 0xcd) >> 11;
-	*buf++ = q - 10 * r;
-d2:
-	q = r + '0';
-	r = (r * 0xcd) >> 11;
-	*buf++ = q - 10 * r;
-d1:
-	*buf++ = r + '0';
-	return buf;
-}
-
-Another possibility would be to count the bits in r, convert that to
-an estimate of the number of digits, and do one test to see which side
-of the appropriate threshold it lines on.
-
-Here are the ambiguous cases:
-Bits	Digits
-4	1 (8) or 2 (15)
-7	2 (64) or 3 (127)
-10	3 (512) or 4 (1023)
-14	4 (8192) or 5 (16383)
-17	5 (65536) or 6 (131071)
-20	6 (524288) 7 (1048575)
-24	7 (8388608) or 8 (16777215)
-27	8 (67108864) or 9(134217727)
-
-So, for this range, we have
-(3*bits+8)/10 <= digits <= (3*bits+10)/10.
-Does that get us anywhere?
-
-Actually, those formulae are good for up to 105 bits!
-I bet there's a simpler version with a power-of-2
-divisor that's good enough for this range.
-
-Some initial guesses
-f1(bits) = (19 * bits + 51)/64 (valid for bits < 45)
-f2(bits) = (19 * bits + 70)/64 (valid for bits < 44)
-
-I couldn't make it work with a quotient of 32.
-
-Then it would be either:
-
-{
-	static unsigned const pow10[] = { 1, 10, 100, 1000, 10000, ... };
-	unsigned bits = sigbits(r);
-	unsigned digits = f1(bits);
-	unsigned digits_high = f2(bits);
-
-	digits += digits_high != digits && r >= pow10[digits_high];
-
-	switch (digits) {
-	case 8:
-	case 7:
-		...
-	case 1:
-		*buf++ = r + '0';
-	}
-	return buf;
-}
-
-or the possibly simpler:
-{
-	static unsigned const pow10[] = { 1, 10, 100, 1000, 10000, ... };
-	unsigned bits = sigbits(r);
-	unsigned digits = f2(bits);	/* This is the high estimate! */
-
-	switch (digits - (r < pow1[digits])) {
-	case 8:
-	case 7:
-		...
-	case 1:
-		*buf++ = r + '0';
-	}
-	return buf;
-}
-
-I'll play with that; thanks for the inspiration!
+So this is definitely wrong.
