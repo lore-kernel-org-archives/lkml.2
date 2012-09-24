@@ -1,82 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab2IXJZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 05:25:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45055 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab2IXJZu (ORCPT
+	id S1753533Ab2IXJ0E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 05:26:04 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43500 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab2IXJ0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 05:25:50 -0400
-Date: Mon, 24 Sep 2012 19:25:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Simon Arlott <simon@fire.lp0.eu>, Chris Boot <bootc@bootc.net>,
-        Dom Cobley <popcornmix@gmail.com>, Dom Cobley <dc4@broadcom.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: linux-next: manual merge of the arm-soc tree with the arm64 tree
-Message-Id: <20120924192545.09a1327b66005e0ac967faaf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 24 Sep 2012 05:26:00 -0400
+Message-ID: <1348478750.2475.51.camel@ThinkPad-T420>
+Subject: Re: [PATCH scsi] Add NULL checking of return value from
+ scsi_cmd_to_driver()
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Martin K. Petersen" <mkp@mkp.net>
+Date: Mon, 24 Sep 2012 17:25:50 +0800
+In-Reply-To: <1348472104.2467.8.camel@dabdike>
+References: <1348464626.2475.13.camel@ThinkPad-T420>
+	 <1348465493.2467.3.camel@dabdike> <1348470210.2475.47.camel@ThinkPad-T420>
+	 <1348472104.2467.8.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_19_25_45_+1000_ZyXSPmiD12E2LEaV"
+x-cbid: 12092409-8256-0000-0000-0000044C7452
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_19_25_45_+1000_ZyXSPmiD12E2LEaV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-09-24 at 11:35 +0400, James Bottomley wrote:
+> On Mon, 2012-09-24 at 15:03 +0800, Li Zhong wrote:
+> > On Mon, 2012-09-24 at 09:44 +0400, James Bottomley wrote:
+> > > On Mon, 2012-09-24 at 13:30 +0800, Li Zhong wrote:
+> > > > Just noticed that after commit 919f797, it is possible that 
+> > > > scsi_cmd_to_driver() returns NULL. This patch adds the NULL checking for drv 
+> > > > returned from the above function. 
+> > > > 
+> > > > Maybe it is not possible at run time, but from the code itself, we'd better
+> > > > have this check?  
+> > > 
+> > > There's not much point having a check that never trips, unless it's an
+> > > assert, in which case a NULL deref does that.  All it does is add
+> > > pointless instructions to the critical path.  only REQ_TYPE_BLOCK_PC
+> > > commands can be submitted without a driver, so the check above would
+> > > seem to preclude that.
+> > 
+> > Hi James, 
+> > 
+> > Thank you, it sounds reasonable to me. Let's drop it. 
+> 
+> Well, there is another thing you might do: The path length of
+> scsi_cmd_to_driver() increased a lot thanks to 18a4d0a22ed6 it might be
+> worth getting it back to what it was (this looks to be doable with the
+> same != REQ_TYPE_BLOCK_PC test in the error handler.  Plus, I think it
+> fixes a bug where you get different behaviours from REQ_TYPE_BLOCK_PC
+> commands when a driver is and isn't attached (I've cc'd Martin to see
+> what he thinks).
 
-Hi all,
+Hi James, 
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/clocksource/Makefile between commit 985c0679dfa4 ("arm64: Generic
-timers support") from the arm64 tree and commit ee4af5696720 ("ARM:
-bcm2835: add system timer") from the arm-soc tree.
+Do you mean something like this: 
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+=======
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index de2337f..c1b05a8 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -789,7 +789,6 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
+ 			     int cmnd_size, int timeout, unsigned sense_bytes)
+ {
+ 	struct scsi_device *sdev = scmd->device;
+-	struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
+ 	struct Scsi_Host *shost = sdev->host;
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 	unsigned long timeleft;
+@@ -845,8 +844,11 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
+ 
+ 	scsi_eh_restore_cmnd(scmd, &ses);
+ 
+-	if (sdrv && sdrv->eh_action)
+-		rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
++	if (scmd->request->cmd_type != REQ_TYPE_BLOCK_PC) {
++		struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
++		if (sdrv->eh_action)
++			rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
++	}
+ 
+ 	return rtn;
+ }
+diff --git a/include/scsi/scsi_cmnd.h b/include/scsi/scsi_cmnd.h
+index ac06cc5..377df4a 100644
+--- a/include/scsi/scsi_cmnd.h
++++ b/include/scsi/scsi_cmnd.h
+@@ -134,16 +134,7 @@ struct scsi_cmnd {
+ 
+ static inline struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
+ {
+-	struct scsi_driver **sdp;
+-
+-	if (!cmd->request->rq_disk)
+-		return NULL;
+-
+-	sdp = (struct scsi_driver **)cmd->request->rq_disk->private_data;
+-	if (!sdp)
+-		return NULL;
+-
+-	return *sdp;
++	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
+ }
+ 
+ extern struct scsi_cmnd *scsi_get_command(struct scsi_device *, gfp_t);
 
-diff --cc drivers/clocksource/Makefile
-index 6591990,d496a55..0000000
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@@ -13,4 -13,4 +13,5 @@@ obj-$(CONFIG_DW_APB_TIMER)	+=3D dw_apb_ti
-  obj-$(CONFIG_DW_APB_TIMER_OF)	+=3D dw_apb_timer_of.o
-  obj-$(CONFIG_CLKSRC_DBX500_PRCMU)	+=3D clksrc-dbx500-prcmu.o
-  obj-$(CONFIG_ARMADA_370_XP_TIMER)	+=3D time-armada-370-xp.o
- +obj-$(CONFIG_CLKSRC_ARM_GENERIC)	+=3D arm_generic.o
-+ obj-$(CONFIG_ARCH_BCM2835)	+=3D bcm2835_timer.o
 
---Signature=_Mon__24_Sep_2012_19_25_45_+1000_ZyXSPmiD12E2LEaV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYCcZAAoJEECxmPOUX5FElhsP/28IiJaw+w5eGDCOze2bR/8F
-k9CO1tYRXY4ekJZMJykwtmUxWXsFDjDEFt5sJwOIVaI+IsYLowEAqofJYMsFeLdp
-HBvOZrvaWcpkIxV0DXMsZwi5eEcPyqFHjTNCsvFX4t4TnegUfpoeVCQFXi9aL7lw
-G9A/R+UFqVGGnoryLeWS1G54nNIgrJD03ALZfS+bZRkxj9u6W+UvPGId0ARYeJ/r
-e/TLIe+rU0gFwZJdM5vhl6jdBXniNHzMocrfnyDot5SGsgoCcYmoFL5uKhrCi4m5
-+WzDo47GfqAeFjJd6ZdeMOJeN4iy9BIOa3Fd8SP1TFYmKVldbbkuLnApSNhrxw7j
-PiBbUTzXbt0jUqiuUb7kFWwU1kmpzZ1L/sNsryO0o54jh50RdP20NEu6Sz9xgZ1/
-YrOahcJc4tXI13PZRPTxzeGlGj3yP1VpqZ0mqehv88ZQAZ5bRXpOJIbyWv7JD9lN
-7xcaocWXfhs1v9V1Mk2vv/fgvdnuHvyGp5II+EG1y42SPm5bjZqO7e1NCvI408us
-ge/6YrowqsKb7qFLlzXoTRJZ4C3JX14V6GA/wlAvRTpVYZ2Z8eSvzeZWsHsejhvX
-1sLgy5+bktB5uMyL6Boew13BJm7sK/ieXfT7WjzXAjqCbyWUh/Yodi3KGtIcnerk
-NDwMcTItAjS52cceu+0V
-=vt9R
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Sep_2012_19_25_45_+1000_ZyXSPmiD12E2LEaV--
