@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988Ab2IXQqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:46:19 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63500 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755816Ab2IXQqR (ORCPT
+	id S1757069Ab2IXQqY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:46:24 -0400
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:54216 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756995Ab2IXQqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:46:17 -0400
+	Mon, 24 Sep 2012 12:46:21 -0400
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
-In-Reply-To: <20120925020744.cc5beb9e65473605e5ca2240@canb.auug.org.au>
-References: <20120925005328.f748dfa3d077cebb345a4291@canb.auug.org.au>
-	<50607E99.6040303@xenotime.net>
-	<20120925020744.cc5beb9e65473605e5ca2240@canb.auug.org.au>
-Date: Mon, 24 Sep 2012 09:46:15 -0700
-Message-ID: <CAOesGMjYE0WgPr4ahPUdBVCZP=dkVPia-dmpDKgiOM_2HgsJgg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Sept 24 (irqchip)
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Simon Arlott <simon@fire.lp0.eu>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Chris Boot <bootc@bootc.net>, Dom Cobley <popcornmix@gmail.com>,
-        Dom Cobley <dc4@broadcom.com>, Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Mon, 24 Sep 2012 18:46:19 +0200
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: <linux-kernel@vger.kernel.org>, Lars Poeschel <poeschel@lemonage.de>
+Subject: Re: [PATCH] mfd: viperboard driver added
+In-Reply-To: <20120919152957.GF28670@sortiz-mobl>
+References: <1346072918-3982-1-git-send-email-larsi@wh2.tu-dresden.de>
+ <20120919152957.GF28670@sortiz-mobl>
+Message-ID: <86c9848e77fa42b6c48ba0703ebf637f@atlantis.wh2.tu-dresden.de>
+User-Agent: AG DSN Webmail/0.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 9:07 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Randy,
+Hi Samuel,
+
+Thanks for your review.
+
+Am 19.09.2012 17:29, schrieb Samuel Ortiz:
+> Hi Lars,
 >
-> On Mon, 24 Sep 2012 08:39:05 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Mon, Aug 27, 2012 at 03:08:38PM +0200, larsi@wh2.tu-dresden.de 
+> wrote:
+>> From: Lars Poeschel <poeschel@lemonage.de>
 >>
->> On 09/24/2012 07:53 AM, Stephen Rothwell wrote:
+>> First version of the driver for Nano River Tech's
+>> viperboard added.
+>> It supports i2c, adc, gpio a and gpio b. spi and pwm on
+>> the first gpio a pins is not supported yet.
 >>
->> > Today was a train wreck, with lots of new conflicts across several trees
->> > and a few build failures as well.
->>
->> I agree.  I mostly get this:
->>
->> drivers/Kconfig:157: can't open file "drivers/irqchip/Kconfig"
->>
->> i.e., no such file.
->>
->> How does this happen?  :(
->>
->> who handles irqchip?
->
-> Hmm, commit 89214f009c1d ("ARM: bcm2835: add interrupt controller
-> driver") from the arm-soc tree adds that file as an empty file (I have
-> the empty file in my tree).  Nothing adds anything to it.
+>> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+>> ---
+>>  drivers/mfd/Kconfig      |   17 +
+>>  drivers/mfd/Makefile     |    1 +
+>>  drivers/mfd/viperboard.c | 1084 
+>> ++++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 1102 insertions(+)
+>>  create mode 100644 drivers/mfd/viperboard.c
+> So the MFD driver contains a GPIO one, and an i2c bus driver.
+> You should really split this code into at least 3 pieces: 1 for the 
+> GPIO
+> (drivers/gpio), another one for your i2c bus algorithm 
+> (drivers/i2c/busses)
+> and a last one for the actual MFD driver. Your Kconfig entries will 
+> define the
+> dependencies between them.
+> Then you can define your SoC subdevices as MFD cells and use the MFD 
+> APIs to
+> add them as platform devices.
 
-Yeah, the directory came in through arm-soc for-next (since the
-bcm2835 driver was added), but there is an empty Kconfig in arm-soc. I
-can see it in linux-next as well.
+I am not really sure, but maybe you got mislead by the term 
+"viperboard". It is NOT an embedded evaluation board or starterkit. It 
+is an USB to SPI, I2C, GPIO and ADC interface. You can get a quick 
+overview here: http://nanorivertech.com/viperboard.html
+The I2C, GPIO or ADC parts of this driver will never be part of a 
+"platform device" in terms of the linux kernel definining the 
+configuration of different embedded evaluation boards (a platform).
+Do you still think I should split up the different parts into their 
+respective subsystems in the kernel and have one "core" combining those 
+parts in MFD ?
+If so, I will do this. As there would be multiple different maintainers 
+involved, against which branch has my patch to be ?
+Should I simply CC the patch to all involved maintainers ?
 
-I wonder why it doesn't show up in your tree, Randy. You just did a
-regular git checkout?
-
-
--Olof
+Regards,
+Lars
