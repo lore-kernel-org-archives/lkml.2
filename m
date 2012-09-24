@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2IXFCv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 01:02:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42283 "EHLO mx2.suse.de"
+	id S1754875Ab2IXFYD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 01:24:03 -0400
+Received: from mail.agmk.net ([91.192.224.71]:44921 "EHLO mail.agmk.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753050Ab2IXFCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 01:02:50 -0400
-Date: Mon, 24 Sep 2012 15:02:39 +1000
-From: NeilBrown <neilb@suse.de>
-To: "Fox, Kevin M" <kevin.fox@pnnl.gov>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Conditional Unlink
-Message-ID: <20120924150239.1d87b868@notabene.brown>
-In-Reply-To: <81A22C12505EF7419E792D791BC28B3C0104E178E598@EMAIL05.pnl.gov>
-References: <81A22C12505EF7419E792D791BC28B3C0104E178E598@EMAIL05.pnl.gov>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/noc17H=cdryD=ApYgwTchi5"; protocol="application/pgp-signature"
+	id S1753314Ab2IXFYA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 01:24:00 -0400
+From: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        arekm@pld-linux.org, baggins@pld-linux.org, herbert@13thfloor.at
+Subject: Re: [2.6.38-3.x] [BUG] soft lockup - CPU#X stuck for 23s! (vfs, autofs, vserver)
+Date: Mon, 24 Sep 2012 07:23:55 +0200
+Message-ID: <2819949.zde5vZ04eb@localhost>
+User-Agent: KMail/4.9.1 (Linux/3.5.4; KDE/4.9.1; x86_64; ; )
+In-Reply-To: <CA+55aFymD=QGptAxjSEWffDSA94dtAjPjy-ox76fYWgHn9m+kA@mail.gmail.com>
+References: <5092540.GORQ1kUuNX@localhost> <CA+55aFymD=QGptAxjSEWffDSA94dtAjPjy-ox76fYWgHn9m+kA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/noc17H=cdryD=ApYgwTchi5
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sunday 23 of September 2012 18:10:30 Linus Torvalds wrote:
+> On Sat, Sep 22, 2012 at 11:09 PM, Paweł Sikora <pluto@pld-linux.org> wrote:
+> >
+> >         br_read_lock(vfsmount_lock);
+> 
+> The vfsmount_lock is a "local-global" lock, where a read-lock is
+> rather cheap and takes just a per-cpu lock, but the downside is that a
+> write-lock is *very* expensive, and can cause serious trouble.
+> 
+> And the write lock is taken by the [un]mount() paths. Do *not* do
+> crazy things. If you do some insane "unmount and remount autofs" on a
+> 1s granularity, you're doing insane things.
+> 
+> Why do you have that 1s timeout? Insane.
 
-On Fri, 21 Sep 2012 10:32:36 -0700 "Fox, Kevin M" <kevin.fox@pnnl.gov> wrot=
-e:
+1s unmount timeout is *only* for fast bug reproduction (in few seconds after opteron startup)
+and testing potential patches. normally with 60s timeout it happens in few minutes..hours
+(depends on machine i/o+cpu load) and makes server unusable (permament soft-lockup).
+can we redesign vserver's mnt_is_reachable() for better locking to avoid total soft-lockup?
 
-> Quick question:
-> Is there a syscall or some algorithm that would allow an unlink that woul=
-d only happen if no writes to the file have occurred between a stat and an =
-unlink, race free?
->=20
-> Background:
-> I'm writing a program that sync's files up to a server. I would like to u=
-nlink the files that have successfully been uploaded. There is a race thoug=
-h. If the file changed after uploading but before the unlink (I do not cont=
-rol who can write to the files), the next upload should take care of things=
- and the unlink should fail. Otherwise, data could be lost!
+BR,
+Paweł.
 
-Probably your best bet is to rename the file in there.
- mv file file.tmp
- sleep 5
- cp file.tmp $server/file
- rm file.tmp
+ps).
+i'm adding Herbert to CC.
 
-The "sleep 5" might not work for you, one would need to know more about tot=
-al
-context.
-
-Is any locking done when writing to the file, or will there only ever be one
-writer?
-
-NeilBrown
-
---Sig_/noc17H=cdryD=ApYgwTchi5
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUF/pbznsnt1WYoG5AQL1Rg//TTKEnVaEI8JemFiCEEUMGiC/4V1m7gmw
-QTk74KNVt84wrN+fjyiR/gkdx7/0/In1C5KmTUqh10zMpwmzWKEkO81HgSN95w9A
-LG7V+EkrPTwkJjrqSIRoul7YS4myfa1zD+lptnuyAUdXpr6WYhP/SPi0KQbTAZgL
-moU6btrUuHa/nuJhgYsn9NWB9tmZNavV8ouIDCxysbsmNIQk6yU7cKlMhPgYb2hY
-Vh3/V3yA2RVB2m0ujwI1OUJivPaJfTBXkPJ4Kjj1BB93ITY7bv0iltP5FkDu6eJ+
-RV7l1N+jy6smj7A8XmMyq6vSJDsHB2CtqKb9ovuyav3gfP+OsrNMj9UCvY2z3XOD
-Z19QXB9IfaGVXsDmoYh4Sln0NyP0Iy2wGw5Bz8v9f57fsgb1t/h5oLMNqfbvJDtj
-03oOlDI7gE0JQh0tXYSmrWFf714cWTJLBJ8PqgUhT+yT7VTCLZZG2kKflVGLUS8s
-1vr9qqjhd6NRT+1NH28m4KyPQ54NQGUfvkUdfZnLeKB8Q0TIeJnxLVF262Yk0mex
-dBUcy1yC3e+jPegy9T5UHfggiFiLoO/hWJATYX5lPod1HxSAUiip4nu0QfriV4WF
-OKw4NAr4KBeYjKkhqyOlUHwz3dFkfEReLEtpjpQoQEBKT5jTINPrpjMGhBCPUjON
-HQ261yVRJBM=
-=/a1N
------END PGP SIGNATURE-----
-
---Sig_/noc17H=cdryD=ApYgwTchi5--
