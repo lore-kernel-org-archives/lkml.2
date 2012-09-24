@@ -1,92 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab2IXIax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:30:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51519 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213Ab2IXIav (ORCPT
+	id S1755445Ab2IXIf5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:35:57 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38627 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755369Ab2IXIf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:30:51 -0400
-Date: Mon, 24 Sep 2012 18:30:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: linux-next: manual merge of the arm-soc tree with the sound tree
-Message-Id: <20120924183049.44bc374d9dc8b8504e504d99@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_18_30_49_+1000_JvnT5wJkvFnfMlw2"
+	Mon, 24 Sep 2012 04:35:56 -0400
+Date: Mon, 24 Sep 2012 09:35:30 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Chanho Min <chanho0207@gmail.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Will Deacon <will.deacon@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: gic: fix irq affinity mismatch.
+Message-ID: <20120924083530.GM15609@n2100.arm.linux.org.uk>
+References: <CAOAMb1DEKrgjtq-xRB+Qy1+_8D-G+6g2v9QSLMisVNbKa8+jSA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOAMb1DEKrgjtq-xRB+Qy1+_8D-G+6g2v9QSLMisVNbKa8+jSA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_18_30_49_+1000_JvnT5wJkvFnfMlw2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 24, 2012 at 12:06:19PM +0900, Chanho Min wrote:
+> Even if we set affinity to multiple cpus via procfs, gic_set_affinity
+> allows to set one target only. But, '/proc/irq/xxx/smp_affinity' shows
+> as we are successful in the setting of multiple affinity. Thus irq_data->
+> affinity mismatches with the GICD_ITARGETSRs.
+> 
+> fix it as bellows.
+> - Set the default affinity to the boot cpu in gic_dist_init. thereafter,
+> irq_data->affinity will be set to default 1-bit affinity.
+> - Even if we write multiple bits to smp_affinity, both irq_data and gic
+> register will be set one cpu. procfs will show 1 bit affinity as well.
 
-Hi all,
-
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-davinci/include/mach/da8xx.h between commit 896f66b7de29
-(ASoC/ARM: Davinci: McASP: split asp header into platform and audio
-specific"") from the sound tree and commit ec2a0833e515 ("ARM: davinci:
-move platform_data definitions") from the arm-soc tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-davinci/include/mach/da8xx.h
-index c74a6ab,33e78ae..0000000
---- a/arch/arm/mach-davinci/include/mach/da8xx.h
-+++ b/arch/arm/mach-davinci/include/mach/da8xx.h
-@@@ -20,11 -19,12 +20,11 @@@
- =20
-  #include <mach/serial.h>
-  #include <mach/edma.h>
-- #include <mach/i2c.h>
-- #include <mach/mmc.h>
-- #include <mach/usb.h>
- -#include <mach/asp.h>
-  #include <mach/pm.h>
-- #include <mach/spi.h>
-+ #include <linux/platform_data/i2c-davinci.h>
-+ #include <linux/platform_data/mmc-davinci.h>
-+ #include <linux/platform_data/usb-davinci.h>
-+ #include <linux/platform_data/spi-davinci.h>
- =20
-  extern void __iomem *da8xx_syscfg0_base;
-  extern void __iomem *da8xx_syscfg1_base;
-
---Signature=_Mon__24_Sep_2012_18_30_49_+1000_JvnT5wJkvFnfMlw2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYBo5AAoJEECxmPOUX5FEzIYP/3OVLTwrgQjeJZqDUXo1uoAH
-/4AYQH8b/aex/VavyeFZU+piyVCg/w8hp/7aAw5EuqL3SLGV/up+XHKJR4+w96+I
-J2H6FWart7/kptXP2lmZcxJpYk3DiadA8T32Vpktz5LWNAwjoV7VMWbyALRh3qhR
-oHVRqERu6VGy99Y+RaLJnRsuZQ9I9EhaDXNEfAeHEPT8hweGY1Qk3l7AwAiBf7ES
-/Y2KU8/qNJn9AyuKZeSXL3SjbgSmCeYCP+6/J88bgkM50+AcR2xTnD0JH4Em5L17
-RgQfh8U8eKh7HTNe8cFk19THNenVUdE0bnzWZRQf7xLOdblN835KlxuOhRsZ/L63
-6oCcJd1oJngE74IrK1YOvCsarZAuKSratQoLC8vE1XYf4y7qPUPYAR/IDOTnfAni
-nXLigBlaEHuQocDqenuI+LfMIizaupvnDiq2EFNxti8AKuGNMq5QROO6lEXLxFJt
-5xM1r6GOU4OYRIiNa4giCzkkuZpq10eHPrhZ1lVKEBx/Q00gSyc2JpIALZJVvAGA
-Y+Vlp3oKUOOHpCEoZYyPBUW0JP+3EOljhpQmMZaV8OCZ1bAbn3NixNZ42Wd84eCu
-Y0Jsd4sOo97CNB7Lv7Dx9mx7bgH96b1wkcU0pcoTu59nrc2GN3QBSxdtEgZDBMbk
-QmXG9gcX8Xnd1sGwyCE7
-=1jMQ
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Sep_2012_18_30_49_+1000_JvnT5wJkvFnfMlw2--
+This has come up before.  There is no requirement to make the affinity
+mask reflect back to userspace what the hardware is doing.  So, NAK.
