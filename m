@@ -1,110 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab2IXMSD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:18:03 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42937 "EHLO
+	id S1755121Ab2IXMTE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 08:19:04 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44848 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612Ab2IXMSB (ORCPT
+	with ESMTP id S1753726Ab2IXMTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:18:01 -0400
-Date: Mon, 24 Sep 2012 22:17:52 +1000
+	Mon, 24 Sep 2012 08:19:01 -0400
+Date: Mon, 24 Sep 2012 22:18:59 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: "Eric W. Biederman" <ebiederm@xmission.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Moody <pmoody@google.com>
-Subject: Re: linux-next: manual merge of the userns tree with the security
- tree
-Message-Id: <20120924221752.6537996620e5e8ef5a4965a7@canb.auug.org.au>
-In-Reply-To: <20120924214116.211935861448f95b82f7f722@canb.auug.org.au>
-References: <20120924214116.211935861448f95b82f7f722@canb.auug.org.au>
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: build failure after merge of the userns tree
+Message-Id: <20120924221859.b3f8fbc112ed7ff305b93512@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_22_17_52_+1000_tnzs97c3bd13EZkx"
+ boundary="Signature=_Mon__24_Sep_2012_22_18_59_+1000_mG7M/WibNbRQUYBd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_22_17_52_+1000_tnzs97c3bd13EZkx
+--Signature=_Mon__24_Sep_2012_22_18_59_+1000_mG7M/WibNbRQUYBd
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi Eric,
 
-On Mon, 24 Sep 2012 21:41:16 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> diff --cc kernel/auditsc.c
-> index 37f52f2,ff4798f..0000000
-> --- a/kernel/auditsc.c
-> +++ b/kernel/auditsc.c
-> @@@ -1160,32 -1151,8 +1152,38 @@@ void audit_log_task_info(struct audit_b
->   	char name[sizeof(tsk->comm)];
->   	struct mm_struct *mm =3D tsk->mm;
->   	struct vm_area_struct *vma;
->  +	char *tty;
->  +
->  +	if (!ab)
->  +		return;
->  =20
->   	/* tsk =3D=3D current */
->  +	cred =3D current_cred();
->  +
->  +	spin_lock_irq(&tsk->sighand->siglock);
->  +	if (tsk->signal && tsk->signal->tty && tsk->signal->tty->name)
->  +		tty =3D tsk->signal->tty->name;
->  +	else
->  +		tty =3D "(none)";
->  +	spin_unlock_irq(&tsk->sighand->siglock);
->  +
->  +
->  +	audit_log_format(ab,
->  +			 " ppid=3D%ld pid=3D%d auid=3D%u uid=3D%u gid=3D%u"
->  +			 " euid=3D%u suid=3D%u fsuid=3D%u"
->  +			 " egid=3D%u sgid=3D%u fsgid=3D%u ses=3D%u tty=3D%s",
->  +			 sys_getppid(),
->  +			 tsk->pid,
-> - 			 tsk->loginuid, cred->uid, cred->gid,
-> - 			 cred->euid, cred->suid, cred->fsuid,
-> - 			 cred->egid, cred->sgid, cred->fsgid,
-> ++			 from_kuid(&init_user_ns, tsk->loginuid),
-> ++			 from_kuid(&init_user_ns, context->uid),
-> ++			 from_kgid(&init_user_ns, context->gid),
-> ++			 from_kuid(&init_user_ns, context->euid),
-> ++			 from_kuid(&init_user_ns, context->suid),
-> ++			 from_kuid(&init_user_ns, context->fsuid),
-> ++			 from_kgid(&init_user_ns, context->egid),
-> ++			 from_kgid(&init_user_ns, context->sgid),
-> ++			 from_kgid(&init_user_ns, context->fsgid),
+After merging the userns tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-These should all be "cred" not "context", of course.  I fixed this in my
-tree.
+kernel/audit.c: In function 'audit_receive_msg':
+kernel/audit.c:753:37: error: 'struct netlink_skb_parms' has no member name=
+d 'pid'
+
+I missed the conflict between commit 35ce9888ad2a ("audit: Properly set
+the origin port id of audit messages") from the userns tree and commit
+15e473046cb6 ("netlink: Rename pid to portid to avoid confusion") from
+the net-next tree.  I have added the following merge fix patch and can
+carry it as necessary.
+
+=46rom 55a9ee70146f37c559333b1f35154618c708203f Mon Sep 17 00:00:00 2001
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 24 Sep 2012 22:05:38 +1000
+Subject: [PATCH] audit: fix up for pid to portid change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ kernel/audit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index ea9b67a..4d0ceed 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -750,7 +750,7 @@ static int audit_receive_msg(struct sk_buff *skb, struc=
+t nlmsghdr *nlh)
+ 					size--;
+ 				audit_log_n_untrustedstring(ab, data, size);
+ 			}
+-			audit_set_pid(ab, NETLINK_CB(skb).pid);
++			audit_set_pid(ab, NETLINK_CB(skb).portid);
+ 			audit_log_end(ab);
+ 		}
+ 		break;
+--=20
+1.7.10.280.gaa39
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__24_Sep_2012_22_17_52_+1000_tnzs97c3bd13EZkx
+--Signature=_Mon__24_Sep_2012_22_18_59_+1000_mG7M/WibNbRQUYBd
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQYE9wAAoJEECxmPOUX5FEpmkP/R4Qv0gMtFo4LDPbOvwcrG25
-H6uy+h9aSpyQ8bsBseuj9QgahLmtltU2KZqZHsSdq4n+UXkXsdiIsFmPyX82Ynr/
-92DBQKZ4oTn6T7VBnsS06FyTe/uHGYgUcdTxLyBV3aky1X51UZk2Dwv4CRXF02rN
-zZtrpX5W0HousKYU3XAh2ydfqr7j7ooa4p88lAEUN3u03l6XWqnHaOAeRLMF2C+O
-UXN6TAPG/vkPsJOozPBZMk3HDbEbNY8m11dlMayKSFGlY6R/u3mSdMKIVamGS/+a
-GM3TZ9rEaYLaXVX0kGYPEfyEy3+gLuyTCkUMeoZ35HuuF8uRXix93YKZUOX/pGeh
-buYvR/I6wbEXRy+QVev0GHDYj1zFwHUnhXr/jL1NOJyv3fJEWQneYzC4lpXnACSj
-IZlMQLCY1nnzr4kZo+deG2+HMaaxdXsa5Q0IYpXgQD5S9JSG2DAvFQ+ts1Vdstk/
-d68zUpkgaPxUv9yrLzcPsg7EoKO1/bQYJKxYEgPnx03lwC/zivOsnx1wDhdzCJN+
-ng9ImVNtr4KoFds0+rlpubuWpTB4Rm5887eokauxb+77FjXHUwUcQQcFLW2AlWpn
-3mYjmsWUaQBXl7VSgBt3h7GSzsA1tfU+EoIzYJUNJbm9VGNCoOzxU5Bk5hbL119z
-WrgVtLbZiXp8S+hRd/o+
-=nvWW
+iQIcBAEBCAAGBQJQYE+zAAoJEECxmPOUX5FE5rcQAINEUOeO0+eykO5QGURPqWlV
+1+ClzSUyrxinrXNJw3N95HdDhRDXGJvQF6yKj9P/BqJ2W6D87VNEZj/eLXVvLHUg
+Dtkwo9Qvd/BzAx7wsr4CWgl4gzVWL+yBnubw2yUNU4AO3jRlWIiJUgDTd4/zWot5
+TiT1Lmr3jdWM3H5KflISieEjh5mrlu/meYMpkE6BKRjwq3p6eAotOV+zHa59b3G7
+zdCoWz0ydALDREClJFGJy7ypANdveoWlGYgpXz82h8J4fepIAUlpDjnex9XqaTPN
+mV43j3N3QwW9PmSp6mZ6Cxr5E+s5m2fdL8sN+NB8XnFgEkTx3v4VhJ9W5mm5d+51
+B34Gjt1r814PoOyWDC/plGBKwJkQxiO+G5TSLvrFXruK+xZWw/OXtzpS0iGM+Dr2
+ybqkG5um2nLUsF9PYlen63RUSEHI7YultEu6GS0d3dCnEQq9mfLzXVPlQWHcPKZS
+6iJAqCGZRFDyLhdcNN6h/Y6KVWwx2S8qVjMni0Q4Nl7Kez42hxPtCA0eLsCPORKg
+9zLcp89xx9XUjQZ4L5SedJNlEe/7CPHw3r5u16ffc3IZXNGqIPDp2pqdgiZBDN91
+UBXO9ucGgUdgohoaH6+pqdaFIo3Hz326WJncHYc5SAqbZnC89Durgv1bgGf/ZgeJ
+gsino7V7oWKywIh42kPF
+=xlif
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__24_Sep_2012_22_17_52_+1000_tnzs97c3bd13EZkx--
+--Signature=_Mon__24_Sep_2012_22_18_59_+1000_mG7M/WibNbRQUYBd--
