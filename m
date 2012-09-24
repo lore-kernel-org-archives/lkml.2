@@ -1,149 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab2IXPf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:35:29 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:59920 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756332Ab2IXPf1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:35:27 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1756485Ab2IXPgl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:36:41 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33069 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756358Ab2IXPgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 11:36:40 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Ulf Hansson <ulf.hansson@stericsson.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-From: Mike Turquette <mturquette@ti.com>
-In-Reply-To: <1348497799-32143-3-git-send-email-ulf.hansson@stericsson.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Philippe Begnic <philippe.begnic@st.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-References: <1348497799-32143-1-git-send-email-ulf.hansson@stericsson.com>
- <1348497799-32143-3-git-send-email-ulf.hansson@stericsson.com>
-Message-ID: <20120924153514.12878.47739@nucleus>
-User-Agent: alot/0.3.2+
-Subject: Re: [PATCH 2/3] clk: ux500: Support prcmu ape opp voltage clock
-Date: Mon, 24 Sep 2012 08:35:14 -0700
+In-Reply-To: <20120924221752.6537996620e5e8ef5a4965a7@canb.auug.org.au>
+References: <20120924214116.211935861448f95b82f7f722@canb.auug.org.au> <20120924221752.6537996620e5e8ef5a4965a7@canb.auug.org.au>
+From: Peter Moody <pmoody@google.com>
+Date: Mon, 24 Sep 2012 08:36:08 -0700
+Message-ID: <CALnj_=7AJCsuabWAz9s4OtM=dbqKyrJXFWUYOjR5Pdwh16CkPA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the userns tree with the security tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Ulf Hansson (2012-09-24 07:43:18)
-> From: Ulf Hansson <ulf.hansson@linaro.org>
-> 
-> Some scalable prcmu clocks needs to be handled in conjuction with the
-> ape opp 100 voltage. A new prcmu clock type clk_prcmu_opp_volt_scalable
-> is implemented to handle this.
-> 
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> ---
->  drivers/clk/ux500/clk-prcmu.c |   55 +++++++++++++++++++++++++++++++++++++++++
->  drivers/clk/ux500/clk.h       |    6 +++++
->  2 files changed, 61 insertions(+)
-> 
-> diff --git a/drivers/clk/ux500/clk-prcmu.c b/drivers/clk/ux500/clk-prcmu.c
-> index 930cdfe..04577ca 100644
-> --- a/drivers/clk/ux500/clk-prcmu.c
-> +++ b/drivers/clk/ux500/clk-prcmu.c
-> @@ -133,6 +133,40 @@ out_error:
->                 hw->init->name);
->  }
->  
-> +static int clk_prcmu_opp_volt_prepare(struct clk_hw *hw)
-> +{
-> +       int err;
-> +       struct clk_prcmu *clk = to_clk_prcmu(hw);
-> +
-> +       err = prcmu_request_ape_opp_100_voltage(true);
-> +       if (err) {
-> +               pr_err("clk_prcmu: %s failed to request APE OPP VOLT for %s.\n",
-> +                       __func__, hw->init->name);
-> +               return err;
-> +       }
-> +
-> +       err = prcmu_request_clock(clk->cg_sel, true);
-> +       if (err)
-> +               prcmu_request_ape_opp_100_voltage(false);
-> +
-> +       return err;
-> +}
-> +
-> +static void clk_prcmu_opp_volt_unprepare(struct clk_hw *hw)
-> +{
-> +       struct clk_prcmu *clk = to_clk_prcmu(hw);
-> +
-> +       if (prcmu_request_clock(clk->cg_sel, false))
-> +               goto out_error;
-> +       if (prcmu_request_ape_opp_100_voltage(false))
-> +               goto out_error;
-> +       return;
-> +
-> +out_error:
-> +       pr_err("clk_prcmu: %s failed to disable %s.\n", __func__,
-> +               hw->init->name);
-> +}
+Hey Eric (Paris),
 
-Hello Ulf,
+this is the second time I've been notified of a merge issue with this
+audit patch; Is there something I need to do (or should have done
+earlier) to keep this from continuing to be an issue?
 
-I was hoping to use the rate-change notifiers for voltage scaling, as in
-my clk reentrancy/dvfs RFCs.  Using prepare/unprepare to set voltage for
-non-scalable clocks is probably OK; do you plan to scale voltage when
-your clocks change rate?  If so then you will need more than just
-prepare/unprepare.
+Cheers,
+peter
 
-Regards,
-Mike
+On Mon, Sep 24, 2012 at 5:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi,
+>
+> On Mon, 24 Sep 2012 21:41:16 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> diff --cc kernel/auditsc.c
+>> index 37f52f2,ff4798f..0000000
+>> --- a/kernel/auditsc.c
+>> +++ b/kernel/auditsc.c
+>> @@@ -1160,32 -1151,8 +1152,38 @@@ void audit_log_task_info(struct audit_b
+>>       char name[sizeof(tsk->comm)];
+>>       struct mm_struct *mm = tsk->mm;
+>>       struct vm_area_struct *vma;
+>>  +    char *tty;
+>>  +
+>>  +    if (!ab)
+>>  +            return;
+>>
+>>       /* tsk == current */
+>>  +    cred = current_cred();
+>>  +
+>>  +    spin_lock_irq(&tsk->sighand->siglock);
+>>  +    if (tsk->signal && tsk->signal->tty && tsk->signal->tty->name)
+>>  +            tty = tsk->signal->tty->name;
+>>  +    else
+>>  +            tty = "(none)";
+>>  +    spin_unlock_irq(&tsk->sighand->siglock);
+>>  +
+>>  +
+>>  +    audit_log_format(ab,
+>>  +                     " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
+>>  +                     " euid=%u suid=%u fsuid=%u"
+>>  +                     " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
+>>  +                     sys_getppid(),
+>>  +                     tsk->pid,
+>> -                      tsk->loginuid, cred->uid, cred->gid,
+>> -                      cred->euid, cred->suid, cred->fsuid,
+>> -                      cred->egid, cred->sgid, cred->fsgid,
+>> ++                     from_kuid(&init_user_ns, tsk->loginuid),
+>> ++                     from_kuid(&init_user_ns, context->uid),
+>> ++                     from_kgid(&init_user_ns, context->gid),
+>> ++                     from_kuid(&init_user_ns, context->euid),
+>> ++                     from_kuid(&init_user_ns, context->suid),
+>> ++                     from_kuid(&init_user_ns, context->fsuid),
+>> ++                     from_kgid(&init_user_ns, context->egid),
+>> ++                     from_kgid(&init_user_ns, context->sgid),
+>> ++                     from_kgid(&init_user_ns, context->fsgid),
+>
+> These should all be "cred" not "context", of course.  I fixed this in my
+> tree.
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-> +
->  static struct clk_ops clk_prcmu_scalable_ops = {
->         .prepare = clk_prcmu_prepare,
->         .unprepare = clk_prcmu_unprepare,
-> @@ -167,6 +201,17 @@ static struct clk_ops clk_prcmu_opp_gate_ops = {
->         .recalc_rate = clk_prcmu_recalc_rate,
->  };
->  
-> +static struct clk_ops clk_prcmu_opp_volt_scalable_ops = {
-> +       .prepare = clk_prcmu_opp_volt_prepare,
-> +       .unprepare = clk_prcmu_opp_volt_unprepare,
-> +       .enable = clk_prcmu_enable,
-> +       .disable = clk_prcmu_disable,
-> +       .is_enabled = clk_prcmu_is_enabled,
-> +       .recalc_rate = clk_prcmu_recalc_rate,
-> +       .round_rate = clk_prcmu_round_rate,
-> +       .set_rate = clk_prcmu_set_rate,
-> +};
-> +
->  static struct clk *clk_reg_prcmu(const char *name,
->                                  const char *parent_name,
->                                  u8 cg_sel,
-> @@ -250,3 +295,13 @@ struct clk *clk_reg_prcmu_opp_gate(const char *name,
->         return clk_reg_prcmu(name, parent_name, cg_sel, 0, flags,
->                         &clk_prcmu_opp_gate_ops);
->  }
-> +
-> +struct clk *clk_reg_prcmu_opp_volt_scalable(const char *name,
-> +                                           const char *parent_name,
-> +                                           u8 cg_sel,
-> +                                           unsigned long rate,
-> +                                           unsigned long flags)
-> +{
-> +       return clk_reg_prcmu(name, parent_name, cg_sel, rate, flags,
-> +                       &clk_prcmu_opp_volt_scalable_ops);
-> +}
-> diff --git a/drivers/clk/ux500/clk.h b/drivers/clk/ux500/clk.h
-> index 836d7d1..f36eeed 100644
-> --- a/drivers/clk/ux500/clk.h
-> +++ b/drivers/clk/ux500/clk.h
-> @@ -45,4 +45,10 @@ struct clk *clk_reg_prcmu_opp_gate(const char *name,
->                                    u8 cg_sel,
->                                    unsigned long flags);
->  
-> +struct clk *clk_reg_prcmu_opp_volt_scalable(const char *name,
-> +                                           const char *parent_name,
-> +                                           u8 cg_sel,
-> +                                           unsigned long rate,
-> +                                           unsigned long flags);
-> +
->  #endif /* __UX500_CLK_H */
-> -- 
-> 1.7.10
+
+
+-- 
+Peter Moody      Google    1.650.253.7306
+Security Engineer  pgp:0xC3410038
