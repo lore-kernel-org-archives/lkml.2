@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab2IXQdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:33:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41341 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756738Ab2IXQdl (ORCPT
+	id S1757011Ab2IXQm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:42:59 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45899 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756952Ab2IXQm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:33:41 -0400
+	Mon, 24 Sep 2012 12:42:57 -0400
+Message-ID: <50608D8D.4060506@wwwdotorg.org>
+Date: Mon, 24 Sep 2012 10:42:53 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1348502863.11847.92.camel@twins>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
- <20120914212717.GA29307@liondog.tnic> <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
- <20120924150048.GB11266@suse.de> <1348500647.11847.69.camel@twins>
- <CA+55aFy5C-gFs6ZU5LyyVN=oxpuoaOpydkbJbhri215QkLx3aA@mail.gmail.com> <1348502863.11847.92.camel@twins>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 24 Sep 2012 09:33:20 -0700
-X-Google-Sender-Auth: drEp-97iknNvofX39S6Dv6Fzgbo
-Message-ID: <CA+55aFxtQXmqeo5uNNgy+GLDWbQ5e+cqqc5-qnjds=P-VSCOsQ@mail.gmail.com>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mel Gorman <mgorman@suse.de>, Borislav Petkov <bp@alien8.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Simon Arlott <simon@fire.lp0.eu>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, Chris Boot <bootc@bootc.net>,
+        Dom Cobley <popcornmix@gmail.com>, Dom Cobley <dc4@broadcom.com>
+Subject: Re: linux-next: Tree for Sept 24 (irqchip)
+References: <20120925005328.f748dfa3d077cebb345a4291@canb.auug.org.au> <50607E99.6040303@xenotime.net> <20120925020744.cc5beb9e65473605e5ca2240@canb.auug.org.au>
+In-Reply-To: <20120925020744.cc5beb9e65473605e5ca2240@canb.auug.org.au>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 9:07 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Mon, 2012-09-24 at 08:52 -0700, Linus Torvalds wrote:
->> Your patch looks odd, though. Why do you use some complex initial
->> value for 'candidate' (nr_cpu_ids) instead of a simple and readable
->> one (-1)?
->
-> nr_cpu_ids is the typical no-value value for cpumask operations -- yes
-> this is annoying and I keep doing it wrong far too often.
+On 09/24/2012 10:07 AM, Stephen Rothwell wrote:
+> Hi Randy,
+> 
+> On Mon, 24 Sep 2012 08:39:05 -0700 Randy Dunlap
+> <rdunlap@xenotime.net> wrote:
+>> 
+>> On 09/24/2012 07:53 AM, Stephen Rothwell wrote:
+>> 
+>>> Today was a train wreck, with lots of new conflicts across
+>>> several trees and a few build failures as well.
+>> 
+>> I agree.  I mostly get this:
+>> 
+>> drivers/Kconfig:157: can't open file "drivers/irqchip/Kconfig"
+>> 
+>> i.e., no such file.
+>> 
+>> How does this happen?  :(
+>> 
+>> who handles irqchip?
+> 
+> Hmm, commit 89214f009c1d ("ARM: bcm2835: add interrupt controller 
+> driver") from the arm-soc tree adds that file as an empty file (I
+> have the empty file in my tree).  Nothing adds anything to it.
 
-Can we please just fix it? Making the excuse that it's the "typical
-no-value" is still stupid, because it's a f*cking moronic no-value.
+That's odd. I just checked out next-20120924, and that (empty) file
+does appear on my disk as expected. Do some versions of git not handle
+creating empty files?
 
-Whoever thinks that it's smart to test against "nr_cpu_ids" when
-there's a much more natural value (-1) is crazy. The source code looks
-more complex, but the code it *generates* is clearly more complex and
-worse too.
+Note that IIRC the Kconfig file is required, because otherwise the
+build process won't recurse into drivers/irqchip/ and hence code won't
+be linked into the kernel image.
 
-Sure, the "scan bits" bitops will return ">= nr_cpu_ids" for the "I
-couldn't find a bit" thing, but that doesn't mean that everything else
-should.
-
-            Linus
+The file is empty because the Makefile there keys of
+CONFIG_ARCH_BCM2835 and hence doesn't need drivers/irqchip/Kconfig to
+define any new Kconfig variables.
