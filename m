@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab2IXJuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 05:50:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59631 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab2IXJsc (ORCPT
+	id S1753600Ab2IXJt7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 05:49:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58031 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab2IXJsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Sep 2012 05:48:32 -0400
-Date: Mon, 24 Sep 2012 11:48:28 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH/RFC/cosmetic] driver base: use available pointer
-Message-ID: <Pine.LNX.4.64.1209241145210.11925@axis700.grange>
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <rtc-linux@googlegroups.com>
+CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
+        <a.zummo@towertech.it>, Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCHv2 3/7] rtc: Convert struct i2c_msg initialization to C99 format
+Date: Mon, 24 Sep 2012 15:17:42 +0530
+Message-ID: <1348480066-3132-4-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1348480066-3132-1-git-send-email-shubhrajyoti@ti.com>
+References: <1348480066-3132-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:Bgd8f790JBpLnESt26dhfLSvcnYVNSMqwp3kQbqtS1m
- C64C9EZxKgamZwZcPm/Wi2j98q30YV9fckU5imI1fPG5WznMVM
- k5NNP3jku2mJV9bogmQsoGRAb7uyiTnETsD6++pAh/EPSWpDj+
- 4FuBeeg4oGSRegIPri7BQL4rbFkBSc+35idgsGAMKJE5T55cO4
- XoYvVgO3WlMKVYkuC7H2MUxgGII0FeGEMTlWZ0/ay8PmZNuZPS
- 76SYKyDZNKxRNwI+pPG399MKeYq8x28hmn2e+171djGOjL23d1
- 0mmq9+0JPNFjFEZK38txTqsOuVrgmuK+weUILW9Xt3T/1Jt1Iq
- 48zliqBFUJclkUrpxovM6cPAub2JEzbSOzFcpAKNDEU64f33yX
- njr+tbi5DZuHg==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't recalculate an available pointer.
+Convert the struct i2c_msg initialization to C99 format. This makes
+maintaining and editing the code simpler. Also helps once other fields
+like transferred are added in future.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index a1a7225..efe9aa9 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -166,8 +166,8 @@ static void platform_device_release(struct device *dev)
- 	struct platform_object *pa = container_of(dev, struct platform_object,
- 						  pdev.dev);
+ drivers/rtc/rtc-s35390a.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/rtc/rtc-s35390a.c b/drivers/rtc/rtc-s35390a.c
+index c9562ce..cc5c516 100644
+--- a/drivers/rtc/rtc-s35390a.c
++++ b/drivers/rtc/rtc-s35390a.c
+@@ -50,7 +50,11 @@ static int s35390a_set_reg(struct s35390a *s35390a, int reg, char *buf, int len)
+ {
+ 	struct i2c_client *client = s35390a->client[reg];
+ 	struct i2c_msg msg[] = {
+-		{ client->addr, 0, len, buf },
++		{
++			.addr = client->addr,
++			.len = len,
++			.buf = buf
++		},
+ 	};
  
--	of_device_node_put(&pa->pdev.dev);
--	kfree(pa->pdev.dev.platform_data);
-+	of_device_node_put(dev);
-+	kfree(dev->platform_data);
- 	kfree(pa->pdev.mfd_cell);
- 	kfree(pa->pdev.resource);
- 	kfree(pa);
+ 	if ((i2c_transfer(client->adapter, msg, 1)) != 1)
+@@ -63,7 +67,12 @@ static int s35390a_get_reg(struct s35390a *s35390a, int reg, char *buf, int len)
+ {
+ 	struct i2c_client *client = s35390a->client[reg];
+ 	struct i2c_msg msg[] = {
+-		{ client->addr, I2C_M_RD, len, buf },
++		{
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.len = len,
++			.buf = buf
++		},
+ 	};
+ 
+ 	if ((i2c_transfer(client->adapter, msg, 1)) != 1)
+-- 
+1.7.5.4
+
