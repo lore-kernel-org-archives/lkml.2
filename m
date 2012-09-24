@@ -1,49 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab2IXQWJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:22:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19254 "EHLO mx1.redhat.com"
+	id S1756792Ab2IXQWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:22:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34677 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752419Ab2IXQWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:22:06 -0400
-Message-ID: <50608887.7050204@redhat.com>
-Date: Mon, 24 Sep 2012 18:21:27 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 2/2] kvm: Be courteous to other VMs in overcommitted
- scenario in PLE handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue>     <20120921120019.27611.66093.sendpatchset@codeblue>     <50607BBE.8070507@redhat.com> <1348500861.11847.72.camel@twins>    <50607F9B.7090701@redhat.com> <1348501929.11847.81.camel@twins>   <50608323.9000603@redhat.com> <1348502757.11847.91.camel@twins>  <50608608.4000507@redhat.com> <1348503219.11847.98.camel@twins>
-In-Reply-To: <1348503219.11847.98.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754031Ab2IXQWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 12:22:12 -0400
+Subject: Re: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to
+ ARM)
+From: Mark Salter <msalter@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russell King <rmk@arm.linux.org.uk>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Mon, 24 Sep 2012 12:21:46 -0400
+In-Reply-To: <20120922114723.d7f07fb6.akpm@linux-foundation.org>
+References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
+	 <20120922114549.GA11610@moon>
+	 <20120922132046.GA4260@flint.arm.linux.org.uk>
+	 <20120922114723.d7f07fb6.akpm@linux-foundation.org>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-ID: <1348503709.20929.40.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 06:13 PM, Peter Zijlstra wrote:
-> On Mon, 2012-09-24 at 18:10 +0200, Avi Kivity wrote:
->> > Its also still a LAPIC write -- disguised as an MSR though :/
->> 
->> It's probably a whole lot faster though. 
+On Sat, 2012-09-22 at 11:47 -0700, Andrew Morton wrote:
+> > 2. There allegedly exists a patch to remove x86isms from sys_kcmp -
+> >    allegedly also in akpm's tree.  However, I've looked through the code in
+> >    mainline, and nothing stands out.  Ralf Beachle also said yesterday that
+> >    he has looked through from the MIPS PoV and also can't see any x86isms,
+> >    so we're both thinking that it should merely have the x86 dependency
+> >    removed.
 > 
-> I've been told its not, I haven't tried it.
+> http://ozlabs.org/~akpm/mmotm/broken-out/syscalls-make-kcmp-syscall-available-for-all-architectures.patch
 
-I'll see if I can find a machine with it (don't see it on my Westmere,
-it's probably on one of the Bridges.  Or maybe the other Peter knows.
+The following is needed to get rid of the syscall warning on architectures
+using the generic syscall list:
+
+diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
+index 991ef01..3748ec9 100644
+--- a/include/asm-generic/unistd.h
++++ b/include/asm-generic/unistd.h
+@@ -691,9 +691,11 @@ __SC_COMP(__NR_process_vm_readv, sys_process_vm_readv, \
+ #define __NR_process_vm_writev 271
+ __SC_COMP(__NR_process_vm_writev, sys_process_vm_writev, \
+           compat_sys_process_vm_writev)
++#define __NR_kcmp 272
++__SYSCALL(__NR_kcmp, sys_kcmp)
+ 
+ #undef __NR_syscalls
+-#define __NR_syscalls 272
++#define __NR_syscalls 273
+
+> 
+> I have that queued for 3.7.  There is of course a little risk here.  We
+> do have a test in tools/testing/selftests/kcmp/ - I suggest that arch
+> people run it!  In fact all the tools/testing/selftests should execute
+> successfully on all architectures - if not, please let's fix things
+> up.
+
+I ran into a build error on C6X (no-MMU) when I enabled CHECKPOINT_RESTORE:
+
+  linux-next/kernel/sys.c: In function 'prctl_set_mm':
+  linux-next/kernel/sys.c:1869:34: error: 'mmap_min_addr' undeclared (first use in this function)
+
+I got past that with:
+
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 01ef030..14e394d 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -118,6 +118,7 @@ void reset_security_ops(void);
+ extern unsigned long mmap_min_addr;
+ extern unsigned long dac_mmap_min_addr;
+ #else
++#define mmap_min_addr          0UL
+ #define dac_mmap_min_addr      0UL
+ #endif
+
+Looking at kcmp_test.c, it uses fork, so won't work without MMU. Is
+the kcmp syscall even meaningful for no-MMU? I suppose some of the
+tests in kcmp_test.c could be accomplished using clone directly
+rather than fork.
+
+--Mark
 
 
--- 
-error compiling committee.c: too many arguments to function
