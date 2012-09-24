@@ -1,132 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2IXCgY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 22:36:24 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35661 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410Ab2IXCgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 22:36:23 -0400
-Date: Mon, 24 Sep 2012 10:36:40 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: mmarek@suse.cz
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        lacombar@gmail.com, dave@gnu.org
-Subject: [PATCH]scripts:kconfig:meconf: Add Save button to save config at
- anytime
-Message-ID: <20120924023640.GA16679@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
-	linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-	lacombar@gmail.com, dave@gnu.org
+	id S1754803Ab2IXChZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 22:37:25 -0400
+Received: from tundra.namei.org ([65.99.196.166]:50963 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754410Ab2IXChX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 22:37:23 -0400
+Date: Mon, 24 Sep 2012 12:26:05 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Ashley Lai <adlai@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org, rcj@linux.vnet.ibm.com,
+        key@linux.vnet.ibm.com, adlai@us.ibm.com
+Subject: Re: [PATCH 1/1] drivers/char/tpm: remove tasklet and cleanup
+In-Reply-To: <1347472190.27058.5.camel@footlong>
+Message-ID: <alpine.LRH.2.02.1209241225230.678@tundra.namei.org>
+References: <1345670263.25124.7.camel@footlong> <1347472190.27058.5.camel@footlong>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mconf make me annoying I have to make menuconfig && exit to save
-the config when I am tuning .config time by time, it is even
-worse I have to search down to my desire submenu time by time.
-So I add "Save" button to save our time. With "Save" button,
-I can use CRTL-Z after save config, and then use "%" or fg to
-resume menuconfig and go on tuning.
+On Wed, 12 Sep 2012, Ashley Lai wrote:
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- scripts/kconfig/lxdialog/menubox.c |  7 +++++--
- scripts/kconfig/mconf.c            | 32 +++++++++++++++++++++++++++++++-
- 2 files changed, 36 insertions(+), 3 deletions(-)
+> This patch removed the tasklet and moved the wait queue into the
+> private structure.  It also cleaned up the response CRQ path.
+> 
+> Signed-off-by: Ashley Lai <adlai@us.ibm.com>
 
-diff --git a/scripts/kconfig/lxdialog/menubox.c b/scripts/kconfig/lxdialog/menubox.c
-index 1d60473..a469f09 100644
---- a/scripts/kconfig/lxdialog/menubox.c
-+++ b/scripts/kconfig/lxdialog/menubox.c
-@@ -26,7 +26,7 @@
-  *
-  *    *)  A bugfix for the Page-Down problem
-  *
-- *    *)  Formerly when I used Page Down and Page Up, the cursor would be set 
-+ *    *)  Formerly when I used Page Down and Page Up, the cursor would be set
-  *        to the first position in the menu box.  Now lxdialog is a bit
-  *        smarter and works more like other menu systems (just have a look at
-  *        it).
-@@ -160,6 +160,7 @@ static void print_buttons(WINDOW * win, int height, int width, int selected)
- 	print_button(win, gettext("Select"), y, x, selected == 0);
- 	print_button(win, gettext(" Exit "), y, x + 12, selected == 1);
- 	print_button(win, gettext(" Help "), y, x + 24, selected == 2);
-+	print_button(win, gettext(" Save "), y, x + 36, selected == 3);
- 
- 	wmove(win, y, x + 1 + 12 * selected);
- 	wrefresh(win);
-@@ -372,9 +373,11 @@ do_resize:
- 		case TAB:
- 		case KEY_RIGHT:
- 			button = ((key == KEY_LEFT ? --button : ++button) < 0)
--			    ? 2 : (button > 2 ? 0 : button);
-+			    ? 3 : (button > 3 ? 0 : button);
- 
- 			print_buttons(dialog, height, width, button);
-+			if (button == 3)
-+				button = 9;
- 			wrefresh(menu);
- 			break;
- 		case ' ':
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index f584a28..beb5ebf9 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -521,6 +521,7 @@ static void conf(struct menu *menu)
- 	struct symbol *sym;
- 	struct menu *active_menu = NULL;
- 	int res;
-+	int yesno;
- 	int s_scroll = 0;
- 
- 	while (1) {
-@@ -615,6 +616,36 @@ static void conf(struct menu *menu)
- 		case 8:
- 			show_all_options = !show_all_options;
- 			break;
-+		case 9:
-+			if (!conf_get_changed()) {
-+				show_helptext(_("Notice"),
-+					_("\n\n"
-+						"Your configuration have not been changed."
-+						"\n\n"));
-+				break;
-+			}
-+
-+			yesno = dialog_yesno(NULL,
-+					_("Do you wish to save your "
-+						"new configuration?\n"
-+						"<ESC><ESC> to continue."),
-+					6, 60);
-+			if (yesno == 0) {
-+				if (conf_write(filename)) {
-+					show_helptext(_("Notice"),
-+						_("\n\n"
-+							"Error while writing of the configuration.\n"
-+							"Your configuration changes were NOT saved."
-+							"\n\n"));
-+				} else {
-+					show_helptext(_("Notice"),
-+						_("\n\n"
-+							"Your configuration changes were saved."
-+							"\n\n"));
-+
-+				}
-+			}
-+			break;
- 		}
- 	}
- }
-@@ -879,4 +910,3 @@ int main(int ac, char **av)
- 
- 	return res;
- }
--
+
+Kent: any comment on this?  You should probably push this to me via your 
+tree.
+
+
+> ---
+> James,
+> 
+> This patch is based on your "next" branch.
+> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git
+> 
+> Thanks,
+> Ashley Lai
+> ---
+>  drivers/char/tpm/tpm_ibmvtpm.c | 81 +++++++++++++++---------------------------
+>  drivers/char/tpm/tpm_ibmvtpm.h |  5 ++-
+>  2 files changed, 30 insertions(+), 56 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
+> index efc4ab3..88a95ea 100644
+> --- a/drivers/char/tpm/tpm_ibmvtpm.c
+> +++ b/drivers/char/tpm/tpm_ibmvtpm.c
+> @@ -38,8 +38,6 @@ static struct vio_device_id tpm_ibmvtpm_device_table[] __devinitdata = {
+>  };
+>  MODULE_DEVICE_TABLE(vio, tpm_ibmvtpm_device_table);
+>  
+> -DECLARE_WAIT_QUEUE_HEAD(wq);
+> -
+>  /**
+>   * ibmvtpm_send_crq - Send a CRQ request
+>   * @vdev:	vio device struct
+> @@ -83,6 +81,7 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+>  {
+>  	struct ibmvtpm_dev *ibmvtpm;
+>  	u16 len;
+> +	int sig;
+>  
+>  	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
+>  
+> @@ -91,22 +90,23 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+>  		return 0;
+>  	}
+>  
+> -	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
+> +	sig = wait_event_interruptible(ibmvtpm->wq, ibmvtpm->res_len != 0);
+> +	if (sig)
+> +		return -EINTR;
+> +
+> +	len = ibmvtpm->res_len;
+>  
+> -	if (count < ibmvtpm->crq_res.len) {
+> +	if (count < len) {
+>  		dev_err(ibmvtpm->dev,
+>  			"Invalid size in recv: count=%ld, crq_size=%d\n",
+> -			count, ibmvtpm->crq_res.len);
+> +			count, len);
+>  		return -EIO;
+>  	}
+>  
+>  	spin_lock(&ibmvtpm->rtce_lock);
+> -	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, ibmvtpm->crq_res.len);
+> -	memset(ibmvtpm->rtce_buf, 0, ibmvtpm->crq_res.len);
+> -	ibmvtpm->crq_res.valid = 0;
+> -	ibmvtpm->crq_res.msg = 0;
+> -	len = ibmvtpm->crq_res.len;
+> -	ibmvtpm->crq_res.len = 0;
+> +	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, len);
+> +	memset(ibmvtpm->rtce_buf, 0, len);
+> +	ibmvtpm->res_len = 0;
+>  	spin_unlock(&ibmvtpm->rtce_lock);
+>  	return len;
+>  }
+> @@ -273,7 +273,6 @@ static int __devexit tpm_ibmvtpm_remove(struct vio_dev *vdev)
+>  	int rc = 0;
+>  
+>  	free_irq(vdev->irq, ibmvtpm);
+> -	tasklet_kill(&ibmvtpm->tasklet);
+>  
+>  	do {
+>  		if (rc)
+> @@ -372,7 +371,6 @@ static int ibmvtpm_reset_crq(struct ibmvtpm_dev *ibmvtpm)
+>  static int tpm_ibmvtpm_resume(struct device *dev)
+>  {
+>  	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
+> -	unsigned long flags;
+>  	int rc = 0;
+>  
+>  	do {
+> @@ -387,10 +385,11 @@ static int tpm_ibmvtpm_resume(struct device *dev)
+>  		return rc;
+>  	}
+>  
+> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
+> -	vio_disable_interrupts(ibmvtpm->vdev);
+> -	tasklet_schedule(&ibmvtpm->tasklet);
+> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
+> +	rc = vio_enable_interrupts(ibmvtpm->vdev);
+> +	if (rc) {
+> +		dev_err(dev, "Error vio_enable_interrupts rc=%d\n", rc);
+> +		return rc;
+> +	}
+>  
+>  	rc = ibmvtpm_crq_send_init(ibmvtpm);
+>  	if (rc)
+> @@ -467,7 +466,7 @@ static struct ibmvtpm_crq *ibmvtpm_crq_get_next(struct ibmvtpm_dev *ibmvtpm)
+>  	if (crq->valid & VTPM_MSG_RES) {
+>  		if (++crq_q->index == crq_q->num_entry)
+>  			crq_q->index = 0;
+> -		rmb();
+> +		smp_rmb();
+>  	} else
+>  		crq = NULL;
+>  	return crq;
+> @@ -535,11 +534,9 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
+>  			ibmvtpm->vtpm_version = crq->data;
+>  			return;
+>  		case VTPM_TPM_COMMAND_RES:
+> -			ibmvtpm->crq_res.valid = crq->valid;
+> -			ibmvtpm->crq_res.msg = crq->msg;
+> -			ibmvtpm->crq_res.len = crq->len;
+> -			ibmvtpm->crq_res.data = crq->data;
+> -			wake_up_interruptible(&wq);
+> +			/* len of the data in rtce buffer */
+> +			ibmvtpm->res_len = crq->len;
+> +			wake_up_interruptible(&ibmvtpm->wq);
+>  			return;
+>  		default:
+>  			return;
+> @@ -559,38 +556,19 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
+>  static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
+>  {
+>  	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
+> -	vio_disable_interrupts(ibmvtpm->vdev);
+> -	tasklet_schedule(&ibmvtpm->tasklet);
+> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
+> -
+> -	return IRQ_HANDLED;
+> -}
+> -
+> -/**
+> - * ibmvtpm_tasklet - Interrupt handler tasklet
+> - * @data:	ibm vtpm device struct
+> - *
+> - * Returns:
+> - *	Nothing
+> - **/
+> -static void ibmvtpm_tasklet(void *data)
+> -{
+> -	struct ibmvtpm_dev *ibmvtpm = data;
+>  	struct ibmvtpm_crq *crq;
+> -	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
+> +	/* while loop is needed for initial setup (get version and
+> +	 * get rtce_size). There should be only one tpm request at any
+> +	 * given time.
+> +	 */
+>  	while ((crq = ibmvtpm_crq_get_next(ibmvtpm)) != NULL) {
+>  		ibmvtpm_crq_process(crq, ibmvtpm);
+>  		crq->valid = 0;
+> -		wmb();
+> +		smp_wmb();
+>  	}
+>  
+> -	vio_enable_interrupts(ibmvtpm->vdev);
+> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
+> +	return IRQ_HANDLED;
+>  }
+>  
+>  /**
+> @@ -650,9 +628,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
+>  		goto reg_crq_cleanup;
+>  	}
+>  
+> -	tasklet_init(&ibmvtpm->tasklet, (void *)ibmvtpm_tasklet,
+> -		     (unsigned long)ibmvtpm);
+> -
+>  	rc = request_irq(vio_dev->irq, ibmvtpm_interrupt, 0,
+>  			 tpm_ibmvtpm_driver_name, ibmvtpm);
+>  	if (rc) {
+> @@ -666,13 +641,14 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
+>  		goto init_irq_cleanup;
+>  	}
+>  
+> +	init_waitqueue_head(&ibmvtpm->wq);
+> +
+>  	crq_q->index = 0;
+>  
+>  	ibmvtpm->dev = dev;
+>  	ibmvtpm->vdev = vio_dev;
+>  	chip->vendor.data = (void *)ibmvtpm;
+>  
+> -	spin_lock_init(&ibmvtpm->lock);
+>  	spin_lock_init(&ibmvtpm->rtce_lock);
+>  
+>  	rc = ibmvtpm_crq_send_init(ibmvtpm);
+> @@ -689,7 +665,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
+>  
+>  	return rc;
+>  init_irq_cleanup:
+> -	tasklet_kill(&ibmvtpm->tasklet);
+>  	do {
+>  		rc1 = plpar_hcall_norets(H_FREE_CRQ, vio_dev->unit_address);
+>  	} while (rc1 == H_BUSY || H_IS_LONG_BUSY(rc1));
+> diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
+> index 4296eb4..bd82a79 100644
+> --- a/drivers/char/tpm/tpm_ibmvtpm.h
+> +++ b/drivers/char/tpm/tpm_ibmvtpm.h
+> @@ -38,13 +38,12 @@ struct ibmvtpm_dev {
+>  	struct vio_dev *vdev;
+>  	struct ibmvtpm_crq_queue crq_queue;
+>  	dma_addr_t crq_dma_handle;
+> -	spinlock_t lock;
+> -	struct tasklet_struct tasklet;
+>  	u32 rtce_size;
+>  	void __iomem *rtce_buf;
+>  	dma_addr_t rtce_dma_handle;
+>  	spinlock_t rtce_lock;
+> -	struct ibmvtpm_crq crq_res;
+> +	wait_queue_head_t wq;
+> +	u16 res_len;
+>  	u32 vtpm_version;
+>  };
+>  
+> -- 
+> 1.7.11.2
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 -- 
-1.7.11.1.116.g8228a23
-
+James Morris
+<jmorris@namei.org>
