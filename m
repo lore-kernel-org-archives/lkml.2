@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab2IXQF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:05:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41445 "EHLO
+	id S1757294Ab2IXQFz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:05:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41452 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756680Ab2IXP77 (ORCPT
+	with ESMTP id S1756682Ab2IXQAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:59:59 -0400
+	Mon, 24 Sep 2012 12:00:00 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Dong Hao <haodong@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: [PATCH 07/30] perf kvm: Use perf_evsel__intval
-Date: Mon, 24 Sep 2012 12:59:21 -0300
-Message-Id: <1348502384-14442-8-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 12/30] perf header: Add ->process callbacks to most of features
+Date: Mon, 24 Sep 2012 12:59:26 -0300
+Message-Id: <1348502384-14442-13-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1348502384-14442-1-git-send-email-acme@infradead.org>
 References: <1348502384-14442-1-git-send-email-acme@infradead.org>
@@ -31,282 +28,390 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Using plain raw_field_value(evsel->tp_format) will look at the common
-fields as well, and since this tool doesn't need those, speed it up a
-bit by looking at just the event specific fields.
+>From now on each feature information is processed and saved in perf
+header so that it can be used wherever needed.  The BRANCH_STACK feature
+is an exception since it needs nothing to be done.
 
-Also in general use just evsel and sample, just like was done in 'perf
-sched'.
-
-v2: Fixed up test against evsel->name, that contains the subsys name
-too, by David Ahern.
-
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Dong Hao <haodong@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/n/tip-v9x3q9rv4caxtox7wtjpchq5@git.kernel.org
+Link: http://lkml.kernel.org/r/1348474503-15070-3-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c |  130 ++++++++++++++++++++++++----------------------
- 1 files changed, 67 insertions(+), 63 deletions(-)
+ tools/perf/util/header.c |  319 ++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 308 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 1878947..3eb53e3 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -33,46 +33,49 @@ struct event_key {
- };
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index ad72b28..d74b58d 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -22,6 +22,7 @@
+ #include "cpumap.h"
+ #include "pmu.h"
+ #include "vdso.h"
++#include "strbuf.h"
  
- struct kvm_events_ops {
--	bool (*is_begin_event)(struct event_format *event, void *data,
--				struct event_key *key);
--	bool (*is_end_event)(struct event_format *event, void *data,
--				struct event_key *key);
-+	bool (*is_begin_event)(struct perf_evsel *evsel,
-+			       struct perf_sample *sample,
-+			       struct event_key *key);
-+	bool (*is_end_event)(struct perf_evsel *evsel,
-+			     struct perf_sample *sample, struct event_key *key);
- 	void (*decode_key)(struct event_key *key, char decode[20]);
- 	const char *name;
- };
+ static bool no_buildid_cache = false;
  
--static void exit_event_get_key(struct event_format *event, void *data,
--				struct event_key *key)
-+static void exit_event_get_key(struct perf_evsel *evsel,
-+			       struct perf_sample *sample,
-+			       struct event_key *key)
- {
- 	key->info = 0;
--	key->key = raw_field_value(event, "exit_reason", data);
-+	key->key = perf_evsel__intval(evsel, sample, "exit_reason");
- }
- 
--static bool kvm_exit_event(struct event_format *event)
-+static bool kvm_exit_event(struct perf_evsel *evsel)
- {
--	return !strcmp(event->name, "kvm_exit");
-+	return !strcmp(evsel->name, "kvm:kvm_exit");
- }
- 
--static bool exit_event_begin(struct event_format *event, void *data,
--				struct event_key *key)
-+static bool exit_event_begin(struct perf_evsel *evsel,
-+			     struct perf_sample *sample, struct event_key *key)
- {
--	if (kvm_exit_event(event)) {
--		exit_event_get_key(event, data, key);
-+	if (kvm_exit_event(evsel)) {
-+		exit_event_get_key(evsel, sample, key);
- 		return true;
- 	}
- 
- 	return false;
- }
- 
--static bool kvm_entry_event(struct event_format *event)
-+static bool kvm_entry_event(struct perf_evsel *evsel)
- {
--	return !strcmp(event->name, "kvm_entry");
-+	return !strcmp(evsel->name, "kvm:kvm_entry");
- }
- 
--static bool exit_event_end(struct event_format *event, void *data __maybe_unused,
--				struct event_key *key __maybe_unused)
-+static bool exit_event_end(struct perf_evsel *evsel,
-+			   struct perf_sample *sample __maybe_unused,
-+			   struct event_key *key __maybe_unused)
- {
--	return kvm_entry_event(event);
-+	return kvm_entry_event(evsel);
- }
- 
- struct exit_reasons_table {
-@@ -130,45 +133,45 @@ static struct kvm_events_ops exit_events = {
-      * the time of MMIO write: kvm_mmio(KVM_TRACE_MMIO_WRITE...) -> kvm_entry
-      * the time of MMIO read: kvm_exit -> kvm_mmio(KVM_TRACE_MMIO_READ...).
-      */
--static void mmio_event_get_key(struct event_format *event, void *data,
--				struct event_key *key)
-+static void mmio_event_get_key(struct perf_evsel *evsel, struct perf_sample *sample,
-+			       struct event_key *key)
- {
--	key->key = raw_field_value(event, "gpa", data);
--	key->info = raw_field_value(event, "type", data);
-+	key->key  = perf_evsel__intval(evsel, sample, "gpa");
-+	key->info = perf_evsel__intval(evsel, sample, "type");
- }
- 
- #define KVM_TRACE_MMIO_READ_UNSATISFIED 0
- #define KVM_TRACE_MMIO_READ 1
- #define KVM_TRACE_MMIO_WRITE 2
- 
--static bool mmio_event_begin(struct event_format *event, void *data,
--				struct event_key *key)
-+static bool mmio_event_begin(struct perf_evsel *evsel,
-+			     struct perf_sample *sample, struct event_key *key)
- {
- 	/* MMIO read begin event in kernel. */
--	if (kvm_exit_event(event))
-+	if (kvm_exit_event(evsel))
- 		return true;
- 
- 	/* MMIO write begin event in kernel. */
--	if (!strcmp(event->name, "kvm_mmio") &&
--		raw_field_value(event, "type", data) == KVM_TRACE_MMIO_WRITE) {
--		mmio_event_get_key(event, data, key);
-+	if (!strcmp(evsel->name, "kvm:kvm_mmio") &&
-+	    perf_evsel__intval(evsel, sample, "type") == KVM_TRACE_MMIO_WRITE) {
-+		mmio_event_get_key(evsel, sample, key);
- 		return true;
- 	}
- 
- 	return false;
- }
- 
--static bool mmio_event_end(struct event_format *event,  void *data,
--			struct event_key *key)
-+static bool mmio_event_end(struct perf_evsel *evsel, struct perf_sample *sample,
-+			   struct event_key *key)
- {
- 	/* MMIO write end event in kernel. */
--	if (kvm_entry_event(event))
-+	if (kvm_entry_event(evsel))
- 		return true;
- 
- 	/* MMIO read end event in kernel.*/
--	if (!strcmp(event->name, "kvm_mmio") &&
--		raw_field_value(event, "type", data) == KVM_TRACE_MMIO_READ) {
--		mmio_event_get_key(event, data, key);
-+	if (!strcmp(evsel->name, "kvm:kvm_mmio") &&
-+	    perf_evsel__intval(evsel, sample, "type") == KVM_TRACE_MMIO_READ) {
-+		mmio_event_get_key(evsel, sample, key);
- 		return true;
- 	}
- 
-@@ -189,31 +192,31 @@ static struct kvm_events_ops mmio_events = {
- };
- 
-  /* The time of emulation pio access is from kvm_pio to kvm_entry. */
--static void ioport_event_get_key(struct event_format *event, void *data,
--			struct event_key *key)
-+static void ioport_event_get_key(struct perf_evsel *evsel,
-+				 struct perf_sample *sample,
-+				 struct event_key *key)
- {
--	key->key = raw_field_value(event, "port", data);
--	key->info = raw_field_value(event, "rw", data);
-+	key->key  = perf_evsel__intval(evsel, sample, "port");
-+	key->info = perf_evsel__intval(evsel, sample, "rw");
- }
- 
--static bool ioport_event_begin(struct event_format *event, void *data,
--			struct event_key *key)
-+static bool ioport_event_begin(struct perf_evsel *evsel,
-+			       struct perf_sample *sample,
-+			       struct event_key *key)
- {
--	if (!strcmp(event->name, "kvm_pio")) {
--		ioport_event_get_key(event, data, key);
-+	if (!strcmp(evsel->name, "kvm:kvm_pio")) {
-+		ioport_event_get_key(evsel, sample, key);
- 		return true;
- 	}
- 
- 	return false;
- }
- 
--static bool ioport_event_end(struct event_format *event, void *data __maybe_unused,
-+static bool ioport_event_end(struct perf_evsel *evsel,
-+			     struct perf_sample *sample __maybe_unused,
- 			     struct event_key *key __maybe_unused)
- {
--	if (kvm_entry_event(event))
--		return true;
--
--	return false;
-+	return kvm_entry_event(evsel);
- }
- 
- static void ioport_event_decode_key(struct event_key *key, char decode[20])
-@@ -430,41 +433,43 @@ static bool handle_end_event(struct vcpu_event_record *vcpu_record,
- 	return update_kvm_event(event, vcpu_record->vcpu_id, time_diff);
- }
- 
--static struct vcpu_event_record
--*per_vcpu_record(struct thread *thread, struct event_format *event, void *data)
-+static
-+struct vcpu_event_record *per_vcpu_record(struct thread *thread,
-+					  struct perf_evsel *evsel,
-+					  struct perf_sample *sample)
- {
- 	/* Only kvm_entry records vcpu id. */
--	if (!thread->priv && kvm_entry_event(event)) {
-+	if (!thread->priv && kvm_entry_event(evsel)) {
- 		struct vcpu_event_record *vcpu_record;
- 
--		vcpu_record = zalloc(sizeof(struct vcpu_event_record));
-+		vcpu_record = zalloc(sizeof(*vcpu_record));
- 		if (!vcpu_record) {
--			pr_err("Not enough memory\n");
-+			pr_err("%s: Not enough memory\n", __func__);
- 			return NULL;
- 		}
- 
--		vcpu_record->vcpu_id = raw_field_value(event, "vcpu_id", data);
-+		vcpu_record->vcpu_id = perf_evsel__intval(evsel, sample, "vcpu_id");
- 		thread->priv = vcpu_record;
- 	}
- 
--	return (struct vcpu_event_record *)thread->priv;
-+	return thread->priv;
- }
- 
--static bool handle_kvm_event(struct thread *thread, struct event_format *event,
--			     void *data, u64 timestamp)
-+static bool handle_kvm_event(struct thread *thread, struct perf_evsel *evsel,
-+			     struct perf_sample *sample)
- {
- 	struct vcpu_event_record *vcpu_record;
- 	struct event_key key = {.key = INVALID_KEY};
- 
--	vcpu_record = per_vcpu_record(thread, event, data);
-+	vcpu_record = per_vcpu_record(thread, evsel, sample);
- 	if (!vcpu_record)
- 		return true;
- 
--	if (events_ops->is_begin_event(event, data, &key))
--		return handle_begin_event(vcpu_record, &key, timestamp);
-+	if (events_ops->is_begin_event(evsel, sample, &key))
-+		return handle_begin_event(vcpu_record, &key, sample->time);
- 
--	if (events_ops->is_end_event(event, data, &key))
--		return handle_end_event(vcpu_record, &key, timestamp);
-+	if (events_ops->is_end_event(evsel, sample, &key))
-+		return handle_end_event(vcpu_record, &key, sample->time);
- 
- 	return true;
- }
-@@ -645,8 +650,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 		return -1;
- 	}
- 
--	if (!handle_kvm_event(thread, evsel->tp_format, sample->raw_data,
--			 sample->time))
-+	if (!handle_kvm_event(thread, evsel, sample))
- 		return -1;
- 
+@@ -1673,6 +1674,99 @@ static int process_build_id(struct perf_file_section *section,
  	return 0;
+ }
+ 
++static int process_hostname(struct perf_file_section *section __maybe_unused,
++			    struct perf_header *ph, int feat __maybe_unused,
++			    int fd, void *data __maybe_unused)
++{
++	ph->env.hostname = do_read_string(fd, ph);
++	return ph->env.hostname ? 0 : -ENOMEM;
++}
++
++static int process_osrelease(struct perf_file_section *section __maybe_unused,
++			     struct perf_header *ph, int feat __maybe_unused,
++			     int fd, void *data __maybe_unused)
++{
++	ph->env.os_release = do_read_string(fd, ph);
++	return ph->env.os_release ? 0 : -ENOMEM;
++}
++
++static int process_version(struct perf_file_section *section __maybe_unused,
++			   struct perf_header *ph, int feat __maybe_unused,
++			   int fd, void *data __maybe_unused)
++{
++	ph->env.version = do_read_string(fd, ph);
++	return ph->env.version ? 0 : -ENOMEM;
++}
++
++static int process_arch(struct perf_file_section *section __maybe_unused,
++			struct perf_header *ph, int feat __maybe_unused,
++			int fd, void *data __maybe_unused)
++{
++	ph->env.arch = do_read_string(fd, ph);
++	return ph->env.arch ? 0 : -ENOMEM;
++}
++
++static int process_nrcpus(struct perf_file_section *section __maybe_unused,
++			  struct perf_header *ph, int feat __maybe_unused,
++			  int fd, void *data __maybe_unused)
++{
++	size_t ret;
++	u32 nr;
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->env.nr_cpus_online = nr;
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->env.nr_cpus_avail = nr;
++	return 0;
++}
++
++static int process_cpudesc(struct perf_file_section *section __maybe_unused,
++			   struct perf_header *ph, int feat __maybe_unused,
++			   int fd, void *data __maybe_unused)
++{
++	ph->env.cpu_desc = do_read_string(fd, ph);
++	return ph->env.cpu_desc ? 0 : -ENOMEM;
++}
++
++static int process_cpuid(struct perf_file_section *section __maybe_unused,
++			 struct perf_header *ph, int feat __maybe_unused,
++			 int fd, void *data __maybe_unused)
++{
++	ph->env.cpuid = do_read_string(fd, ph);
++	return ph->env.cpuid ? 0 : -ENOMEM;
++}
++
++static int process_total_mem(struct perf_file_section *section __maybe_unused,
++			     struct perf_header *ph, int feat __maybe_unused,
++			     int fd, void *data __maybe_unused)
++{
++	uint64_t mem;
++	size_t ret;
++
++	ret = read(fd, &mem, sizeof(mem));
++	if (ret != sizeof(mem))
++		return -1;
++
++	if (ph->needs_swap)
++		mem = bswap_64(mem);
++
++	ph->env.total_mem = mem;
++	return 0;
++}
++
+ static char *read_cpuid(struct perf_header *ph, int fd)
+ {
+ 	return do_read_string(fd, ph);
+@@ -1728,6 +1822,208 @@ process_event_desc(struct perf_file_section *section __maybe_unused,
+ 	return 0;
+ }
+ 
++static int process_cmdline(struct perf_file_section *section __maybe_unused,
++			   struct perf_header *ph, int feat __maybe_unused,
++			   int fd, void *data __maybe_unused)
++{
++	size_t ret;
++	char *str;
++	u32 nr, i;
++	struct strbuf sb;
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->env.nr_cmdline = nr;
++	strbuf_init(&sb, 128);
++
++	for (i = 0; i < nr; i++) {
++		str = do_read_string(fd, ph);
++		if (!str)
++			goto error;
++
++		/* include a NULL character at the end */
++		strbuf_add(&sb, str, strlen(str) + 1);
++		free(str);
++	}
++	ph->env.cmdline = strbuf_detach(&sb, NULL);
++	return 0;
++
++error:
++	strbuf_release(&sb);
++	return -1;
++}
++
++static int process_cpu_topology(struct perf_file_section *section __maybe_unused,
++				struct perf_header *ph, int feat __maybe_unused,
++				int fd, void *data __maybe_unused)
++{
++	size_t ret;
++	u32 nr, i;
++	char *str;
++	struct strbuf sb;
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->env.nr_sibling_cores = nr;
++	strbuf_init(&sb, 128);
++
++	for (i = 0; i < nr; i++) {
++		str = do_read_string(fd, ph);
++		if (!str)
++			goto error;
++
++		/* include a NULL character at the end */
++		strbuf_add(&sb, str, strlen(str) + 1);
++		free(str);
++	}
++	ph->env.sibling_cores = strbuf_detach(&sb, NULL);
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->env.nr_sibling_threads = nr;
++
++	for (i = 0; i < nr; i++) {
++		str = do_read_string(fd, ph);
++		if (!str)
++			goto error;
++
++		/* include a NULL character at the end */
++		strbuf_add(&sb, str, strlen(str) + 1);
++		free(str);
++	}
++	ph->env.sibling_threads = strbuf_detach(&sb, NULL);
++	return 0;
++
++error:
++	strbuf_release(&sb);
++	return -1;
++}
++
++static int process_numa_topology(struct perf_file_section *section __maybe_unused,
++				 struct perf_header *ph, int feat __maybe_unused,
++				 int fd, void *data __maybe_unused)
++{
++	size_t ret;
++	u32 nr, node, i;
++	char *str;
++	uint64_t mem_total, mem_free;
++	struct strbuf sb;
++
++	/* nr nodes */
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		goto error;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->env.nr_numa_nodes = nr;
++	strbuf_init(&sb, 256);
++
++	for (i = 0; i < nr; i++) {
++		/* node number */
++		ret = read(fd, &node, sizeof(node));
++		if (ret != sizeof(node))
++			goto error;
++
++		ret = read(fd, &mem_total, sizeof(u64));
++		if (ret != sizeof(u64))
++			goto error;
++
++		ret = read(fd, &mem_free, sizeof(u64));
++		if (ret != sizeof(u64))
++			goto error;
++
++		if (ph->needs_swap) {
++			node = bswap_32(node);
++			mem_total = bswap_64(mem_total);
++			mem_free = bswap_64(mem_free);
++		}
++
++		strbuf_addf(&sb, "%u:%"PRIu64":%"PRIu64":",
++			    node, mem_total, mem_free);
++
++		str = do_read_string(fd, ph);
++		if (!str)
++			goto error;
++
++		/* include a NULL character at the end */
++		strbuf_add(&sb, str, strlen(str) + 1);
++		free(str);
++	}
++	ph->env.numa_nodes = strbuf_detach(&sb, NULL);
++	return 0;
++
++error:
++	strbuf_release(&sb);
++	return -1;
++}
++
++static int process_pmu_mappings(struct perf_file_section *section __maybe_unused,
++				struct perf_header *ph, int feat __maybe_unused,
++				int fd, void *data __maybe_unused)
++{
++	size_t ret;
++	char *name;
++	u32 pmu_num;
++	u32 type;
++	struct strbuf sb;
++
++	ret = read(fd, &pmu_num, sizeof(pmu_num));
++	if (ret != sizeof(pmu_num))
++		return -1;
++
++	if (ph->needs_swap)
++		pmu_num = bswap_32(pmu_num);
++
++	if (!pmu_num) {
++		pr_debug("pmu mappings not available\n");
++		return 0;
++	}
++
++	ph->env.nr_pmu_mappings = pmu_num;
++	strbuf_init(&sb, 128);
++
++	while (pmu_num) {
++		if (read(fd, &type, sizeof(type)) != sizeof(type))
++			goto error;
++		if (ph->needs_swap)
++			type = bswap_32(type);
++
++		name = do_read_string(fd, ph);
++		if (!name)
++			goto error;
++
++		strbuf_addf(&sb, "%u:%s", type, name);
++		/* include a NULL character at the end */
++		strbuf_add(&sb, "", 1);
++
++		free(name);
++		pmu_num--;
++	}
++	ph->env.pmu_mappings = strbuf_detach(&sb, NULL);
++	return 0;
++
++error:
++	strbuf_release(&sb);
++	return -1;
++}
++
+ struct feature_ops {
+ 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
+ 	void (*print)(struct perf_header *h, int fd, FILE *fp);
+@@ -1745,10 +2041,11 @@ struct feature_ops {
+ 		.process = process_##func }
+ #define FEAT_OPF(n, func) \
+ 	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
+-		.full_only = true }
++		.process = process_##func, .full_only = true }
+ #define FEAT_OPA_R(n, func) \
+ 	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
+-		.read  = read_##func }
++		.read  = read_##func, .process = process_##func, \
++		.full_only = true }
+ 
+ /* feature_ops not implemented: */
+ #define print_tracing_data	NULL
+@@ -1757,20 +2054,20 @@ struct feature_ops {
+ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+ 	FEAT_OPP(HEADER_TRACING_DATA,	tracing_data),
+ 	FEAT_OPP(HEADER_BUILD_ID,	build_id),
+-	FEAT_OPA(HEADER_HOSTNAME,	hostname),
+-	FEAT_OPA(HEADER_OSRELEASE,	osrelease),
+-	FEAT_OPA(HEADER_VERSION,	version),
+-	FEAT_OPA(HEADER_ARCH,		arch),
+-	FEAT_OPA(HEADER_NRCPUS,		nrcpus),
+-	FEAT_OPA(HEADER_CPUDESC,	cpudesc),
++	FEAT_OPP(HEADER_HOSTNAME,	hostname),
++	FEAT_OPP(HEADER_OSRELEASE,	osrelease),
++	FEAT_OPP(HEADER_VERSION,	version),
++	FEAT_OPP(HEADER_ARCH,		arch),
++	FEAT_OPP(HEADER_NRCPUS,		nrcpus),
++	FEAT_OPP(HEADER_CPUDESC,	cpudesc),
+ 	FEAT_OPA_R(HEADER_CPUID,	cpuid),
+-	FEAT_OPA(HEADER_TOTAL_MEM,	total_mem),
++	FEAT_OPP(HEADER_TOTAL_MEM,	total_mem),
+ 	FEAT_OPP(HEADER_EVENT_DESC,	event_desc),
+-	FEAT_OPA(HEADER_CMDLINE,	cmdline),
++	FEAT_OPP(HEADER_CMDLINE,	cmdline),
+ 	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
+ 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
+ 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
+-	FEAT_OPA(HEADER_PMU_MAPPINGS,	pmu_mappings),
++	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
+ };
+ 
+ struct header_print_data {
 -- 
 1.7.1
 
