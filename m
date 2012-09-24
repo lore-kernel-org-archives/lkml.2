@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab2IXT1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 15:27:10 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50090 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757850Ab2IXT1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 15:27:07 -0400
+	id S932095Ab2IXTbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 15:31:44 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:35760 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757761Ab2IXTbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 15:31:42 -0400
+Date: Mon, 24 Sep 2012 21:31:35 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Conny Seidel <conny.seidel@amd.com>, Jan Kara <jack@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
+Message-ID: <20120924193135.GB25762@aftab.osrc.amd.com>
+References: <20120924102324.GA22303@aftab.osrc.amd.com>
+ <20120924142305.GD12264@quack.suse.cz>
+ <20120924143609.GH22303@aftab.osrc.amd.com>
+ <20120924201650.6574af64.conny.seidel@amd.com>
+ <20120924181927.GA25762@aftab.osrc.amd.com>
+ <5060AB0E.3070809@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20120826191209.GA4221@redhat.com>
-References: <20120826191132.GA3743@redhat.com>
-	<20120826191209.GA4221@redhat.com>
-Date: Mon, 24 Sep 2012 21:27:05 +0200
-X-Google-Sender-Auth: Jo4JrfbvOBC7NYHVdJf21-3_A2A
-Message-ID: <CAMuHMdU7D+SM=xCN9Yp0KuGwiod=RojWjkpdYT-Hw=v9iry66A@mail.gmail.com>
-Subject: Re: [PATCH 1/4] task_work: make task_work_add() lockless
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Oleg Nesterov <oleg@redhat.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5060AB0E.3070809@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 9:12 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Change task_works to use llist-like code to avoid pi_lock
-> in task_work_add(), this makes it useable under rq->lock.
->
-> task_work_cancel() and task_work_run() still use pi_lock
-> to synchronize with each other.
->
-> Suggested-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On Tue, Sep 25, 2012 at 12:18:46AM +0530, Srivatsa S. Bhat wrote:
+> >> Sure thing.
+> >> Out of ~25 runs I only triggered it once, without the patch the
+> >> trigger-rate is higher.
+> >>
+> >> [   55.098249] Broke affinity for irq 81
+> >> [   55.105108] smpboot: CPU 1 is now offline
+> >> [   55.311216] smpboot: Booting Node 0 Processor 1 APIC 0x11
+> >> [   55.333022] LVT offset 0 assigned for vector 0x400
+> >> [   55.545877] smpboot: CPU 2 is now offline
+> >> [   55.753050] smpboot: Booting Node 0 Processor 2 APIC 0x12
+> >> [   55.775582] LVT offset 0 assigned for vector 0x400
+> >> [   55.986747] smpboot: CPU 3 is now offline
+> >> [   56.193839] smpboot: Booting Node 0 Processor 3 APIC 0x13
+> >> [   56.212643] LVT offset 0 assigned for vector 0x400
+> >> [   56.423201] Got negative events: -25
+> > 
+> > I see it:
+> > 
+> > __percpu_counter_sum does for_each_online_cpu without doing
+> > get/put_online_cpus().
+> > 
+> 
+> Maybe I'm missing something, but that doesn't immediately tell me
+> what's the exact source of the bug.. Note that there is a hotplug
+> callback percpu_counter_hotcpu_callback() that takes the same
+> fbc->lock before updating/resetting the percpu counters of offline
+> CPU. So, though the synchronization is a bit weird, I don't
+> immediately see a problematic race condition there.
 
-> --- a/kernel/task_work.c
-> +++ b/kernel/task_work.c
+Well, those oopses both happen when a cpu comes online.
 
-> @@ -30,52 +23,60 @@ task_work_add(struct task_struct *task, struct callback_head *twork, bool notify
->  struct callback_head *
->  task_work_cancel(struct task_struct *task, task_work_func_t func)
->  {
-> +       struct callback_head **pprev = &task->task_works;
-> +       struct callback_head *work = NULL;
->         unsigned long flags;
-> -       struct callback_head *last, *res = NULL;
-> -
-> +       /*
-> +        * If cmpxchg() fails we continue without updating pprev.
-> +        * Either we raced with task_work_add() which added the
-> +        * new entry before this work, we will find it again. Or
-> +        * we raced with task_work_run(), *pprev == NULL.
-> +        */
->         raw_spin_lock_irqsave(&task->pi_lock, flags);
-> -       last = task->task_works;
-> -       if (last) {
-> -               struct callback_head *q = last, *p = q->next;
-> -               while (1) {
-> -                       if (p->func == func) {
-> -                               q->next = p->next;
-> -                               if (p == last)
-> -                                       task->task_works = q == p ? NULL : q;
-> -                               res = p;
-> -                               break;
-> -                       }
-> -                       if (p == last)
-> -                               break;
-> -                       q = p;
-> -                       p = q->next;
-> -               }
-> +       while ((work = ACCESS_ONCE(*pprev))) {
-> +               read_barrier_depends();
+According to when percpu_counter_hotcpu_callback is run (at CPU_DEAD)
+then those percpu variables should have correctly updated values.
 
-Woops, h8300 doesn't have read_barrier_depends():
-kernel/task_work.c:38:3: error: implicit declaration of function
-'read_barrier_depends' [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[2]: *** [kernel/task_work.o] Error 1
+So there has to be some other case where we read garbage which is a
+negative value - otherwise we wouldn't be seeing the debug output.
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/7238385/
+For example, look at the log output above: we bring down cpu 3 just to
+bring it right back online. So there has to be something fishy along
+that codepath...
 
-Perhaps an empty definition is fine? Most architectures have:
+Hmm.
 
-#define read_barrier_depends() do { } while(0)
+-- 
+Regards/Gruss,
+Boris.
 
-The same issue on c6x just got fixed in -next in commit
-2c8c2366077da5645bf9063b3cf5c94ecb16f691 ("c6x: use
-asm-generic/barrier.h")
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
