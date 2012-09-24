@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab2IXPuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:50:11 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:37835 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755956Ab2IXPuJ (ORCPT
+	id S1756645Ab2IXPvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:51:16 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:48089 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756574Ab2IXPvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:50:09 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18dyVVdlaYahcGv6m2of8o7CC49m1Ljm4U=
-Date: Mon, 24 Sep 2012 11:50:02 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the l2-mtd
- tree
-Message-ID: <20120924155002.GP5469@titan.lakedaemon.net>
-References: <20120924193934.76d4feafb689b265ff49c5c3@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120924193934.76d4feafb689b265ff49c5c3@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 24 Sep 2012 11:51:14 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/9uXhSD+z9jSaAmTkPmDIcdfcfR1Wb87dYRlNs0H
+	rvwuQrjGSdmePv
+Message-ID: <1348501868.6991.230.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Date: Mon, 24 Sep 2012 17:51:08 +0200
+In-Reply-To: <1348500647.11847.69.camel@twins>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	 <20120914212717.GA29307@liondog.tnic>
+	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	 <20120924150048.GB11266@suse.de> <1348500647.11847.69.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 07:39:34PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> drivers/mtd/nand/orion_nand.c between commit 11a3910e730e ("mtd:
-> orion_nand: remove <mach/hardware.h> include") from the l2-mtd tree and
-> commit c02cecb92ed4 ("ARM: orion: move platform_data definitions") from
-> the arm-soc tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+On Mon, 2012-09-24 at 17:30 +0200, Peter Zijlstra wrote:
 
-The change below is correct, thanks.
+> Anyway, does anybody have any clue as to why AMD and Intel machine
+> behave significantly different here? Does an Intel box with HT disabled
+> behave similar to AMD? or is it something about the micro-architecture?
 
-thx,
+If you mean pgbench, it should act about the same on both.  As soon as
+pgbench starts using significant CPU and has to compete, it'll start
+having trouble.
 
-Jason.
-
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc drivers/mtd/nand/orion_nand.c
-> index 9ee436d,131b58a..0000000
-> --- a/drivers/mtd/nand/orion_nand.c
-> +++ b/drivers/mtd/nand/orion_nand.c
-> @@@ -21,7 -21,8 +21,7 @@@
->   #include <linux/err.h>
->   #include <asm/io.h>
->   #include <asm/sizes.h>
-> - #include <plat/orion_nand.h>
->  -#include <mach/hardware.h>
-> + #include <linux/platform_data/mtd-orion_nand.h>
->   
->   static void orion_nand_cmd_ctrl(struct mtd_info *mtd, int cmd, unsigned int ctrl)
->   {
-
-
-
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+-Mike
 
