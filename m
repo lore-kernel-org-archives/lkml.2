@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab2IXK54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 06:57:56 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:42367 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845Ab2IXK5y (ORCPT
+	id S1754187Ab2IXK7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 06:59:31 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:61319 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab2IXK73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 06:57:54 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
-References: <1347798148-2660-1-git-send-email-linkinjeon@gmail.com>
-	<87lig28fak.fsf@devron.myhome.or.jp>
-	<CAKYAXd-6k7=RmrweR=wTOET50hy8Y7LokCSe1c2JtYd7pzPmsQ@mail.gmail.com>
-	<87ipb45914.fsf@devron.myhome.or.jp>
-	<CAKYAXd9EzKH_x1GaXvSZ7pRebfOcwQqNp6-oEnc2z2evuNo23g@mail.gmail.com>
-	<87ehls53ug.fsf@devron.myhome.or.jp>
-	<87a9wg53mc.fsf@devron.myhome.or.jp>
-	<CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
-	<87392768dj.fsf@devron.myhome.or.jp>
-	<CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
-Date: Mon, 24 Sep 2012 19:57:51 +0900
-In-Reply-To: <CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
-	(Namjae Jeon's message of "Mon, 24 Sep 2012 19:29:58 +0900")
-Message-ID: <87y5jz4rio.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Mon, 24 Sep 2012 06:59:29 -0400
+Message-ID: <50603D02.50302@synopsys.com>
+Date: Mon, 24 Sep 2012 16:29:14 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Greg Ungerer <gregungerer@westnet.com.au>,
+        Mark Salter <msalter@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>
+Subject: Re: [RFC] status of execve() work - per-architecture patches solicited
+References: <20120917032651.GU13973@ZenIV.linux.org.uk> <1348244799-16013-1-git-send-email-msalter@redhat.com> <20120921183934.GK13973@ZenIV.linux.org.uk> <505D9DFB.8080002@westnet.com.au> <20120923004636.GL13973@ZenIV.linux.org.uk>
+In-Reply-To: <20120923004636.GL13973@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
-
->> I see. fileid seems to be stat.ino on nfsd4. inode->i_ino is actually
->> just a hash key of inode hash (exception is only in audit, iirc).
+On Sunday 23 September 2012 06:16 AM, Al Viro wrote:
+> On Sat, Sep 22, 2012 at 09:16:11PM +1000, Greg Ungerer wrote:
+>> I sent the patch to the m68k-linux list. Its been acked by Geert.
 >>
->> So, what happens if we set "stat->ino = i_pos" on fat_getattr().
+>>  http://marc.info/?l=linux-m68k&m=134742688015639&w=2
 >>
->> int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat
->> *stat)
->> {
->> 	struct inode *inode = dentry->d_inode;
->> 	generic_fillattr(inode, stat);
->> 	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
->> 	if (opts->nfs == FAT_NFS_LIMITED) {
->> 		/* Use i_pos for ino. This is used as fileid of nfs. */
->> 		stat->ino = MSDOS_SB(inode->i_sb)->i_pos;
+>> I was going to push it through the m68knommu git tree, but I don't mind
+>> if you would rather take it with your changes.
+> 
+> Applied.  Other changes since the last update:
+> 	* ppc breakage debugged and fixed
+> 	* kernel_thread() unified on all converted architectures.
 
-		stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb), inode);
+commit cc615abcde (mn10300: convert to generic kernel_thread) in the
+experimental-kernel_thread has a minor syntactical error:
 
-Ouch, I forgot to use fat_i_pos_read().
+diff --git a/arch/mn10300/kernel/process.c b/arch/mn10300/kernel/process.c
+index 26120a9..8ee09d8 100644
+--- a/arch/mn10300/kernel/process.c
++++ b/arch/mn10300/kernel/process.c
+@@ -225,7 +225,7 @@ int copy_thread(unsigned long clone_flags,
+        p->thread.usp   = c_usp;
 
->> 	}
->> 	return 0;
->> }
-> Okay, Thanks for your help.
-> I will share the result after checking.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+        if (unlikely(!kregs)) {
+-               memset(c_regs, 0, sizeof(struct pt_regs);
++               memset(c_regs, 0, sizeof(struct pt_regs));
+
+
+Thx,
+-Vineet
