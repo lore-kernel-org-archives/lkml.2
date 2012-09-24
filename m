@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab2IXM4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:56:40 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:33068 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab2IXM4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:56:39 -0400
-Date: Mon, 24 Sep 2012 14:56:32 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Conny Seidel <conny.seidel@amd.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
-Message-ID: <20120924125632.GE22303@aftab.osrc.amd.com>
-References: <20120924102324.GA22303@aftab.osrc.amd.com>
- <50603829.9050904@linux.vnet.ibm.com>
- <20120924110554.GC22303@aftab.osrc.amd.com>
- <50604047.7000908@linux.vnet.ibm.com>
- <20120924113447.GA25182@localhost>
- <20120924122053.GD22303@aftab.osrc.amd.com>
- <20120924122900.GA28627@localhost>
+	id S1754161Ab2IXNA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 09:00:26 -0400
+Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:3141 "EHLO
+	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab2IXNAZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 09:00:25 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Prabhakar <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH v5] media: v4l2-ctrl: add a helper function to add standard control with driver specific menu
+Date: Mon, 24 Sep 2012 14:58:14 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc3-durdane; KDE/4.8.4; x86_64; ; )
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LDOC <linux-doc@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        VGER <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Rob Landley <rob@landley.net>
+References: <1348491221-6068-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1348491221-6068-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120924122900.GA28627@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209241458.14376.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 08:29:00PM +0800, Fengguang Wu wrote:
-> On Mon, Sep 24, 2012 at 02:20:53PM +0200, Borislav Petkov wrote:
-> > On Mon, Sep 24, 2012 at 07:34:47PM +0800, Fengguang Wu wrote:
-> > > Will you test such a line? At least the generic do_div() only uses the
-> > > lower 32bits for division.
-> > > 
-> > >         WARN_ON(!(den & 0xffffffff));
-> > 
-> > But, but, the asm output says:
-> > 
-> >   28:   48 89 c8                mov    %rcx,%rax
-> >   2b:*  48 f7 f7                div    %rdi     <-- trapping instruction
-> >   2e:   31 d2                   xor    %edx,%edx
-> > 
-> > and this version of DIV does an unsigned division of RDX:RAX by the
-> > contents of a *64-bit register* ... in our case %rdi.
-> > 
-> > Srivatsa's oops  shows the same:
-> > 
-> >   28:   48 89 f0                mov    %rsi,%rax
-> >   2b:*  48 f7 f7                div    %rdi     <-- trapping instruction
-> >   2e:   41 8b 94 24 74 02 00    mov    0x274(%r12),%edx
-> > 
-> > Right?
+On Mon September 24 2012 14:53:40 Prabhakar wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
 > 
-> Right, that's why I said "at least". As for x86, I'm as clueless as you..
+> Add helper function v4l2_ctrl_new_std_menu_items(), which adds
+> a standard menu control, with driver specific menu.
 
-Right, both oopses are on x86 so I don't think it is the bitness of the
-division.
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
-Another thing those two have in common is that both happen when a CPU
-comes online. Srivatsa's is when CPU9 comes online (oops is detected on
-CPU9) and in our case CPU4 comes online but the oops says CPU0.
+Regards,
 
-So it has to be hotplug-related.
+	Hans
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Hans de Goede <hdegoede@redhat.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Rob Landley <rob@landley.net>
+> ---
+>  Changes for v5:
+>  1: Fixed some grammatical issues pointed by Hans.
+> 
+>  Changes for v4:
+>  1: Rather then adding a function to modify the menu, added a helper
+>    function, that creates a new standard control with user specific
+>    menu.
+> 
+>  Changes for v3:
+>  1: Fixed style/grammer issues as pointed by Hans.
+>    Thanks Hans for providing the description.
+> 
+>  Changes for v2:
+>  1: Fixed review comments from Hans, to have return type as
+>    void, add WARN_ON() for fail conditions, allow this fucntion
+>    to modify the menu of custom controls.
+> 
+>  Documentation/video4linux/v4l2-controls.txt |   24 +++++++++++++++++++++
+>  drivers/media/v4l2-core/v4l2-ctrls.c        |   30 +++++++++++++++++++++++++++
+>  include/media/v4l2-ctrls.h                  |   23 ++++++++++++++++++++
+>  3 files changed, 77 insertions(+), 0 deletions(-)
