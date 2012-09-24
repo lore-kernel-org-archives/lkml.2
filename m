@@ -1,158 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab2IXIYX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:24:23 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42779 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391Ab2IXIXj (ORCPT
+	id S1755378Ab2IXI1H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:27:07 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:40779 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755213Ab2IXI1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:23:39 -0400
-X-AuditID: 9c93016f-b7c19ae000000e6d-f6-50601887c1de
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Dong Hao <haodong@linux.vnet.ibm.com>
-Subject: [PATCH 6/6] perf header: Remove perf_header__read_feature
-Date: Mon, 24 Sep 2012 17:15:03 +0900
-Message-Id: <1348474503-15070-7-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1348474503-15070-1-git-send-email-namhyung@kernel.org>
-References: <1348474503-15070-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 24 Sep 2012 04:27:05 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgwKAKYYYFB5Lafp/2dsb2JhbAA9CL0iA4EGgQmCIAEBBScTHCMQCAMOBwMuFCUDIROIBLhDFIsIFmaFLgOVZJAkgnk
+Date: Mon, 24 Sep 2012 18:26:54 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: viro@zeniv.linux.org.uk, dchinner@redhat.com, hch@infradead.org,
+        jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v4 Patch 0/4] fs/inode.c: optimization for inode lock usage
+Message-ID: <20120924082654.GG20960@dastard>
+References: <1348219866-1799-1-git-send-email-yan@linux.vnet.ibm.com>
+ <20120921224912.GA20960@dastard>
+ <20120924024221.GB7984@yanx>
+ <20120924042343.GC20960@dastard>
+ <20120924061205.GA27244@yanx>
+ <20120924062812.GD20960@dastard>
+ <20120924070852.GA10280@yanx>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120924070852.GA10280@yanx>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, Sep 24, 2012 at 03:08:52PM +0800, Guo Chao wrote:
+> On Mon, Sep 24, 2012 at 04:28:12PM +1000, Dave Chinner wrote:
+> > > Ah, this is intended to be a code clean patchset actually. I thought these
+> > > locks are redundant in an obvious and trivial manner. If, on the contrary, 
+> > > they are such tricky, then never mind :) Thanks for your patient.
+> > 
+> > The RCU conversion is actually trivial - everything is already set
+> > up for it to be done, and is simpler than this patch set. It pretty
+> > much is simply replacing all the read side inode_hash_lock pairs
+> > with rcu_read_lock()/rcu_read_unlock() pairs. Like I said, if you
+> > want to clean up this code, then RCU traversals are the conversion
+> > to make.
+> >
+> 
+> Thanks for your suggestion. Though I doubt it's such trivial, I will try this
+> after a little investigation.
 
-Because its only user builtin-kvm::get_cpu_isa() has gone, It can be
-removed safely.  In general, we have the feature information in
-perf_session_env already, no need to read it again.
+Probably best to start with the patch below - it's run under heavy
+concurrent load on ext4 with a working set of inodes about 20x
+larger than can fit in memory for the past hour....
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Dong Hao <haodong@linux.vnet.ibm.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/header.c | 60 +-----------------------------------------------
- tools/perf/util/header.h |  1 -
- 2 files changed, 1 insertion(+), 60 deletions(-)
+Cheers,
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 4b028df83a40..6aae3290358e 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1690,11 +1690,6 @@ static int process_total_mem(struct perf_file_section *section __maybe_unused,
- 	return 0;
- }
- 
--static char *read_cpuid(struct perf_header *ph, int fd)
--{
--	return do_read_string(fd, ph);
--}
--
- static struct perf_evsel *
- perf_evlist__find_by_index(struct perf_evlist *evlist, int idx)
- {
-@@ -1952,7 +1947,6 @@ error:
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
--	char *(*read)(struct perf_header *h, int fd);
- 	int (*process)(struct perf_file_section *section,
- 		       struct perf_header *h, int fd, void *data);
- 	const char *name;
-@@ -1967,10 +1961,6 @@ struct feature_ops {
- #define FEAT_OPF(n, func) \
- 	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
- 		.process = process_##func, .full_only = true }
--#define FEAT_OPA_R(n, func) \
--	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
--		.read  = read_##func, .process = process_##func, \
--		.full_only = true }
- 
- /* feature_ops not implemented: */
- #define print_tracing_data	NULL
-@@ -1985,7 +1975,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPP(HEADER_ARCH,		arch),
- 	FEAT_OPP(HEADER_NRCPUS,		nrcpus),
- 	FEAT_OPP(HEADER_CPUDESC,	cpudesc),
--	FEAT_OPA_R(HEADER_CPUID,	cpuid),
-+	FEAT_OPP(HEADER_CPUID,		cpuid),
- 	FEAT_OPP(HEADER_TOTAL_MEM,	total_mem),
- 	FEAT_OPP(HEADER_EVENT_DESC,	event_desc),
- 	FEAT_OPP(HEADER_CMDLINE,	cmdline),
-@@ -2040,54 +2030,6 @@ int perf_header__fprintf_info(struct perf_session *session, FILE *fp, bool full)
- 	return 0;
- }
- 
--struct header_read_data {
--	int feat;
--	char *result;
--};
--
--static int perf_file_section__read_feature(struct perf_file_section *section,
--				struct perf_header *ph,
--				int feat, int fd, void *data)
--{
--	struct header_read_data *hd = data;
--
--	if (feat != hd->feat)
--		return 0;
--
--	if (lseek(fd, section->offset, SEEK_SET) == (off_t)-1) {
--		pr_debug("Failed to lseek to %" PRIu64 " offset for feature "
--				"%d, continuing...\n", section->offset, feat);
--	return 0;
--	}
--
--	if (feat >= HEADER_LAST_FEATURE) {
--		pr_warning("unknown feature %d\n", feat);
--		return 0;
--	}
--
--	if (!feat_ops[feat].read) {
--		pr_warning("read is not supported for feature %d\n", feat);
--		return 0;
--	}
--
--	hd->result = feat_ops[feat].read(ph, fd);
--	return 0;
--}
--
--char *perf_header__read_feature(struct perf_session *session, int feat)
--{
--	struct perf_header *header = &session->header;
--	struct header_read_data hd;
--	int fd = session->fd;
--
--	hd.feat = feat;
--	hd.result = NULL;
--
--	perf_header__process_sections(header, fd, &hd,
--				perf_file_section__read_feature);
--	return hd.result;
--}
--
- static int do_write_feat(int fd, struct perf_header *h, int type,
- 			 struct perf_file_section **p,
- 			 struct perf_evlist *evlist)
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 5867c7d74f97..99bdd3abce59 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -118,7 +118,6 @@ int perf_header__process_sections(struct perf_header *header, int fd,
- 				  int feat, int fd, void *data));
- 
- int perf_header__fprintf_info(struct perf_session *s, FILE *fp, bool full);
--char *perf_header__read_feature(struct perf_session *session, int feat);
- 
- int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
- 			  const char *name, bool is_kallsyms, bool is_vdso);
+Dave.
 -- 
-1.7.11.4
+Dave Chinner
+david@fromorbit.com
 
+fs: Use RCU lookups for inode cache
+
+From: Dave Chinner <dchinner@redhat.com>
+
+Convert inode cache lookups to be protected by RCU locking rather
+than the global inode_hash_lock. This will improve scalability of
+inode lookup intensive workloads.
+
+Smoke tested w/ ext4 on concurrent fsmark/lookup/unlink workloads
+over 50 million or so inodes...
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/inode.c |   74 ++++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 42 insertions(+), 32 deletions(-)
+
+diff --git a/fs/inode.c b/fs/inode.c
+index ac8d904..2e92674 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -464,7 +464,7 @@ void __insert_inode_hash(struct inode *inode, unsigned long hashval)
+ 
+ 	spin_lock(&inode_hash_lock);
+ 	spin_lock(&inode->i_lock);
+-	hlist_add_head(&inode->i_hash, b);
++	hlist_add_head_rcu(&inode->i_hash, b);
+ 	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&inode_hash_lock);
+ }
+@@ -480,7 +480,7 @@ void __remove_inode_hash(struct inode *inode)
+ {
+ 	spin_lock(&inode_hash_lock);
+ 	spin_lock(&inode->i_lock);
+-	hlist_del_init(&inode->i_hash);
++	hlist_del_init_rcu(&inode->i_hash);
+ 	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&inode_hash_lock);
+ }
+@@ -783,14 +783,19 @@ static void __wait_on_freeing_inode(struct inode *inode);
+ static struct inode *find_inode(struct super_block *sb,
+ 				struct hlist_head *head,
+ 				int (*test)(struct inode *, void *),
+-				void *data)
++				void *data, bool locked)
+ {
+ 	struct hlist_node *node;
+ 	struct inode *inode = NULL;
+ 
+ repeat:
+-	hlist_for_each_entry(inode, node, head, i_hash) {
++	rcu_read_lock();
++	hlist_for_each_entry_rcu(inode, node, head, i_hash) {
+ 		spin_lock(&inode->i_lock);
++		if (inode_unhashed(inode)) {
++			spin_unlock(&inode->i_lock);
++			continue;
++		}
+ 		if (inode->i_sb != sb) {
+ 			spin_unlock(&inode->i_lock);
+ 			continue;
+@@ -800,13 +805,20 @@ repeat:
+ 			continue;
+ 		}
+ 		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
++			rcu_read_unlock();
++			if (locked)
++				spin_unlock(&inode_hash_lock);
+ 			__wait_on_freeing_inode(inode);
++			if (locked)
++				spin_lock(&inode_hash_lock);
+ 			goto repeat;
+ 		}
+ 		__iget(inode);
+ 		spin_unlock(&inode->i_lock);
++		rcu_read_unlock();
+ 		return inode;
+ 	}
++	rcu_read_unlock();
+ 	return NULL;
+ }
+ 
+@@ -815,14 +827,20 @@ repeat:
+  * iget_locked for details.
+  */
+ static struct inode *find_inode_fast(struct super_block *sb,
+-				struct hlist_head *head, unsigned long ino)
++				     struct hlist_head *head,
++				     unsigned long ino, bool locked)
+ {
+ 	struct hlist_node *node;
+ 	struct inode *inode = NULL;
+ 
+ repeat:
+-	hlist_for_each_entry(inode, node, head, i_hash) {
++	rcu_read_lock();
++	hlist_for_each_entry_rcu(inode, node, head, i_hash) {
+ 		spin_lock(&inode->i_lock);
++		if (inode_unhashed(inode)) {
++			spin_unlock(&inode->i_lock);
++			continue;
++		}
+ 		if (inode->i_ino != ino) {
+ 			spin_unlock(&inode->i_lock);
+ 			continue;
+@@ -832,13 +850,20 @@ repeat:
+ 			continue;
+ 		}
+ 		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
++			rcu_read_unlock();
++			if (locked)
++				spin_unlock(&inode_hash_lock);
+ 			__wait_on_freeing_inode(inode);
++			if (locked)
++				spin_lock(&inode_hash_lock);
+ 			goto repeat;
+ 		}
+ 		__iget(inode);
+ 		spin_unlock(&inode->i_lock);
++		rcu_read_unlock();
+ 		return inode;
+ 	}
++	rcu_read_unlock();
+ 	return NULL;
+ }
+ 
+@@ -995,9 +1020,7 @@ struct inode *iget5_locked(struct super_block *sb, unsigned long hashval,
+ 	struct hlist_head *head = inode_hashtable + hash(sb, hashval);
+ 	struct inode *inode;
+ 
+-	spin_lock(&inode_hash_lock);
+-	inode = find_inode(sb, head, test, data);
+-	spin_unlock(&inode_hash_lock);
++	inode = find_inode(sb, head, test, data, false);
+ 
+ 	if (inode) {
+ 		wait_on_inode(inode);
+@@ -1009,8 +1032,7 @@ struct inode *iget5_locked(struct super_block *sb, unsigned long hashval,
+ 		struct inode *old;
+ 
+ 		spin_lock(&inode_hash_lock);
+-		/* We released the lock, so.. */
+-		old = find_inode(sb, head, test, data);
++		old = find_inode(sb, head, test, data, true);
+ 		if (!old) {
+ 			if (set(inode, data))
+ 				goto set_failed;
+@@ -1065,9 +1087,7 @@ struct inode *iget_locked(struct super_block *sb, unsigned long ino)
+ 	struct hlist_head *head = inode_hashtable + hash(sb, ino);
+ 	struct inode *inode;
+ 
+-	spin_lock(&inode_hash_lock);
+-	inode = find_inode_fast(sb, head, ino);
+-	spin_unlock(&inode_hash_lock);
++	inode = find_inode_fast(sb, head, ino, false);
+ 	if (inode) {
+ 		wait_on_inode(inode);
+ 		return inode;
+@@ -1078,8 +1098,7 @@ struct inode *iget_locked(struct super_block *sb, unsigned long ino)
+ 		struct inode *old;
+ 
+ 		spin_lock(&inode_hash_lock);
+-		/* We released the lock, so.. */
+-		old = find_inode_fast(sb, head, ino);
++		old = find_inode_fast(sb, head, ino, true);
+ 		if (!old) {
+ 			inode->i_ino = ino;
+ 			spin_lock(&inode->i_lock);
+@@ -1122,14 +1141,15 @@ static int test_inode_iunique(struct super_block *sb, unsigned long ino)
+ 	struct hlist_node *node;
+ 	struct inode *inode;
+ 
+-	spin_lock(&inode_hash_lock);
++	rcu_read_lock();
+ 	hlist_for_each_entry(inode, node, b, i_hash) {
+-		if (inode->i_ino == ino && inode->i_sb == sb) {
+-			spin_unlock(&inode_hash_lock);
++		if (inode->i_ino == ino && inode->i_sb == sb &&
++		    !inode_unhashed(inode)) {
++			rcu_read_unlock();
+ 			return 0;
+ 		}
+ 	}
+-	spin_unlock(&inode_hash_lock);
++	rcu_read_unlock();
+ 
+ 	return 1;
+ }
+@@ -1210,13 +1230,8 @@ struct inode *ilookup5_nowait(struct super_block *sb, unsigned long hashval,
+ 		int (*test)(struct inode *, void *), void *data)
+ {
+ 	struct hlist_head *head = inode_hashtable + hash(sb, hashval);
+-	struct inode *inode;
+-
+-	spin_lock(&inode_hash_lock);
+-	inode = find_inode(sb, head, test, data);
+-	spin_unlock(&inode_hash_lock);
+ 
+-	return inode;
++	return find_inode(sb, head, test, data, false);
+ }
+ EXPORT_SYMBOL(ilookup5_nowait);
+ 
+@@ -1261,10 +1276,7 @@ struct inode *ilookup(struct super_block *sb, unsigned long ino)
+ 	struct hlist_head *head = inode_hashtable + hash(sb, ino);
+ 	struct inode *inode;
+ 
+-	spin_lock(&inode_hash_lock);
+-	inode = find_inode_fast(sb, head, ino);
+-	spin_unlock(&inode_hash_lock);
+-
++	inode = find_inode_fast(sb, head, ino, false);
+ 	if (inode)
+ 		wait_on_inode(inode);
+ 	return inode;
+@@ -1711,10 +1723,8 @@ static void __wait_on_freeing_inode(struct inode *inode)
+ 	wq = bit_waitqueue(&inode->i_state, __I_NEW);
+ 	prepare_to_wait(wq, &wait.wait, TASK_UNINTERRUPTIBLE);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_hash_lock);
+ 	schedule();
+ 	finish_wait(wq, &wait.wait);
+-	spin_lock(&inode_hash_lock);
+ }
+ 
+ static __initdata unsigned long ihash_entries;
