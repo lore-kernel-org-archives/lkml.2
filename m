@@ -1,164 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab2IXQ4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:56:13 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42513 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757114Ab2IXQ4L (ORCPT
+	id S1757215Ab2IXQ4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:56:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35520 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757116Ab2IXQ4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:56:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHCeSFqmeOkKySxMUXgtnev+HL-NC6MdmeuDYONymYaNczb7RA@mail.gmail.com>
-References: <CAHCeSFpar4ykz5cr9dLrO5J4r3ZXkwbNkU1O3q=QZs9rFEyB6w@mail.gmail.com>
-	<20120921174952.GF7264@google.com>
-	<CAHCeSFo0QtOc4GYfMqJy4R60G_Yy+1psidUbZ2=ym8XWraGvcw@mail.gmail.com>
-	<20120921183515.GI7264@google.com>
-	<CAHCeSFpa28d-7ruMKSw6z2EYKYN-5udVouUJOi4cnj4dPad-TA@mail.gmail.com>
-	<20120921192720.GJ7264@google.com>
-	<CAHCeSFrN6VketFq3vmA1S0O1GTOGNW41ZirZs5dGkiTXLbizkA@mail.gmail.com>
-	<CAK7N6vpuJnnAp2xCUG_20aSVzT9aXhZRFrkVtfO3qOKE7gZ0Eg@mail.gmail.com>
-	<5A9BC72FD5CEC94EA024CED8E31D701A4C572F72@wdscexmb03.sc.wdc.com>
-	<CAK7N6vpLpNM-tfhxpmym_eW+VpF+jnBe+uB=E0mSBk+CtMWp+w@mail.gmail.com>
-	<5A9BC72FD5CEC94EA024CED8E31D701A4C572FAE@wdscexmb03.sc.wdc.com>
-	<CAHCeSFp2=CzO1-dw_Ym_s4Pn04nsC_kQUerFJ+uFLh8iinX+Ug@mail.gmail.com>
-	<CAK-9PRB7KvPNgcsXiNG08-7OdrkkNc2ushusXh9rVm93J0xcHA@mail.gmail.com>
-	<CAHCeSFqmeOkKySxMUXgtnev+HL-NC6MdmeuDYONymYaNczb7RA@mail.gmail.com>
-Date: Mon, 24 Sep 2012 17:56:10 +0100
-Message-ID: <CAHCeSFq31fQuZd+Phgx-dQ1AEeDTh268WH14bDqEKqneOLpqxQ@mail.gmail.com>
-Subject: Re: Work queue questions
-From: Deepawali Verma <dverma249@gmail.com>
-To: Chinmay V S <cvs268@gmail.com>
-Cc: Daniel Taylor <Daniel.Taylor@wdc.com>,
-        anish singh <anish198519851985@gmail.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Sep 2012 12:56:37 -0400
+From: manoj.iyer@canonical.com
+To: linux-kernel@vger.kernel.org
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <mjg@redhat.com>, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, manoj.iyer@canonical.com
+Subject: [PATCH 0/1] thinkpad-acpi: enable loading module with new B-series Lenovo BIOS
+Date: Mon, 24 Sep 2012 11:56:28 -0500
+Message-Id: <1348505788-4090-1-git-send-email-manoj.iyer@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Manoj Iyer <manoj.iyer@canonical.com>
 
-This is sample code snippet as I cannot post my project code. In
-reality here, this work handler is copying the big chunks of data that
-code is
- here in my driver. This is running on quad core cortex A9 Thats why I
-asked. If there are 4 cpu cores, then there must be parallelism. Now
-Tajun, what do you say?
+The new B series BIOS has version string 43CN46WW. The driver
+requires that 2nd and 3rd characters be 'E' and 'T' respectively,
+where as the newer BIOS has 'C' and 'N' respectively. Failing to
+load the module causes some of the hotkeys to not work.
 
- Regards,
- Deepa
+This was tested by me on Lenovo B470e and on B570e by James Ferguson
 
+Before the patch
+================
+sudo modprobe thinkpad_acpi
+FATAL: Error inserting thinkpad_acpi (/lib/modules/3.5.0-15-generic/kernel/drivers/platform/x86/thinkpad_acpi.ko): No such device
 
-> On Monday, September 24, 2012, Chinmay V S wrote:
->>
->> There is nothing in the sub_task_work_handler() to keep the CPU occupied.
->> Try adding a significant amount of work in it to keep it occupied. Also
->> are
->> you running on a SMP(multicore) system?...
->>
->> On Mon, Sep 24, 2012 at 12:55 PM, Deepawali Verma <dverma249@gmail.com>
->> wrote:
->>>
->>> Hi Tejun,
->>>
->>> Here are some code snippets from my device driver:
->>>
->>> #defind NUMBER_OF_SUBTASKS 3
->>>
->>> struct my_driver_object
->>> {
->>>         struct workqueue_struct *sub_task_wq;
->>>         struct work_struct sub_task_work;
->>>         char my_obj_wq_name[80];
->>>         int task_id;
->>> };
->>>
->>> struct my_driver_object obj[3];
->>>
->>>
->>> void my_driver_init(void)
->>> {
->>>    int i =0;
->>>    memset(my_obj_wq_name,0,80);
->>>   --------------------------------------
->>>   for (i =0; i<3; i++)
->>>   {
->>>       snprintf(obj[i].my_obj_wq_name,80, "Task-wq:%d",i);
->>>       obj.sub_task_wq =
->>> alloc_workqueue(obj[i].my_obj_wq_name,WQ_UNBOUND,1);
->>>       INIT_WORK(&obj[i].sub_task_work, sub_task_work_handler);
->>>   }
->>>
->>>   --------------------------------------
->>> }
->>>
->>> void start_sub_tasks()
->>> {
->>>    int i =0;
->>>    for (i =0; i<3; i++)
->>>    {
->>>         queue_work(obj[i].sub_task_wq, &obj[i].sub_task_work);
->>>
->>>    }
->>>
->>>
->>> }
->>>
->>> static void sub_task_work_handler(struct work_struct work)
->>> {
->>>     Ftrace marker start;
->>>
->>>     Ftrace marker end
->>> }
->>>
->>> Ideally I was expecting when work is queued to three different work
->>> queues, it should run in parallel but it is not doing as per expected.
->>> Let me know about this.
->>>
->>> Regards,
->>> Deepa
->>>
->>>
->>>
->>>
->>>
->>>
->>>
->>> On Sat, Sep 22, 2012 at 7:18 AM, Daniel Taylor <Daniel.Taylor@wdc.com>
->>> wrote:
->>> >
->>> > ...
->>> >
->>> >> >> So on so forth.
->>> >> >> Anyway how can you write chunks of data in parallel when
->>> >> >> already some worker
->>> >> >> thread is writing i.e. the system is busy.
->>> >> >> Analogy: Suppose you are ambidextrous and you are eating.Can
->>> >> >> you eat with
->>> >> >> both of your hands at a time?So worker thread are like your
->>> >> >> hands and keeping
->>> >> >> you fed all the time is the concept of concurrency.
->>> >> >>
->>> >> >> I am not an expert on this but from Tejun's reply I could
->>> >> >> make out this.
->>> >> >> Please correct me If I have wrongly understood the concept
->>> >> >> based on this mail
->>> >> >
->>> >> > I don't know how many cores are in the CPU Deepawali's
->>> >> using, but if I have four,
->>> >> Assuming single core,Is my explanation correct about concurrency?
->>> >
->>> > It is possible for his tasks to complete before scheduling occurs
->>> > again.  Consuming all of the CPU and having no blocking action,
->>> > yes, then the tasks will run consecutively.
->>> >
->>> > ...
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->>> in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
->
+After the patch
+===============
+[44937.265438] thinkpad_acpi: ThinkPad ACPI Extras v0.24
+[44937.265445] thinkpad_acpi: http://ibm-acpi.sf.net/
+[44937.265449] thinkpad_acpi: ThinkPad BIOS 43CN46WW, EC unknown
+[44937.265453] thinkpad_acpi: Lenovo Lenovo B470e, model HuronRiver Platform
+[44937.266479] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+[44937.266557] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
+[44937.267846] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
+[44937.268131] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input17
+
+Manoj Iyer (1):
+  thinkpad-acpi: enable loading module with new B-series Lenovo BIOS
+
+ drivers/platform/x86/thinkpad_acpi.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+-- 
+1.7.9.5
+
