@@ -1,161 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab2IXKrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 06:47:01 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:49662 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab2IXKq6 (ORCPT
+	id S1754031Ab2IXKrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 06:47:12 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53282 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab2IXKrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 06:46:58 -0400
-X-IronPort-AV: E=Sophos;i="4.80,474,1344211200"; 
-   d="scan'208";a="209104560"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: linux-kernel@vger.kernel.org
-CC: Stefano.Stabellini@eu.citrix.com, Ian.Campbell@citrix.com,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        pawel.moll@arm.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 1/1] arm: introduce a DTS for Xen unprivileged virtual machines
-Date: Mon, 24 Sep 2012 11:46:14 +0100
-Message-ID: <1348483574-7901-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 24 Sep 2012 06:47:07 -0400
+Message-ID: <506039F1.2040108@windriver.com>
+Date: Mon, 24 Sep 2012 05:46:09 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <kernel-team@android.com>, <kgdb-bugreport@lists.sourceforge.net>,
+        <linux-serial@vger.kernel.org>
+Subject: Re: [PATCH v8 0/11] KGDB/KDB FIQ (NMI) debugger
+References: <20120919234003.GA24143@lizard> <505B1CC7.9000005@windriver.com>
+In-Reply-To: <505B1CC7.9000005@windriver.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Given that the xenvm machine is based on vexpress but with an extremely
-limited selection of peripherals (the guest is supposed to use virtual
-devices instead), add "xen,xenvm" to the list of compatible machines in
-mach-vexpress.
+On 09/20/2012 08:40 AM, Jason Wessel wrote:
+> On 09/19/2012 06:40 PM, Anton Vorontsov wrote:
+>> Hi all,
+>>
+>> In v8, addressed Jason's comments:
+>>
+>> - Changed kgdb_enable_nmi() weak function to kgdb_arch callbck;
+>> - We no longer register disable_nmi command if arch does not register
+>>   KGDB NMI handling (i.e. not filling kgdb_arch.enable_nmi callback);
+>> - The same is for ttyNMI: if architecure does not provide us with
+>>   enable_nmi call, we don't need the tty device. Of course, there is no
+>>   way to tell wether a specific serial device can be used for NMI
+>>   debugging, as it is not serial-device specific, but specific to
+>>   whether IRQ can be rerouted to an NMI (for most our cases, pretty
+>>   much every IRQ can be rerouted, e.g. a hot-pluggable serial device on
+>>   a PCI bus).
+>> - Rebased on the latest and greatest tty-next, just in case.
+>
+> I have the kgdb regression builder running right now (it will be done in about 1 hour), and so far it picked up one new warning.
+>
+> drivers/tty/serial/kgdb_nmi.c: In function 'kgdb_nmi_poll_one_knock':
+> drivers/tty/serial/kgdb_nmi.c:161: warning: field width should have type 'int', but argument 4 has type 'size_t'
+>
 
+Hi Anton,
 
-Changes in v3:
+You can add my ack to the series, for what you have in: "git://git.infradead.org/users/cbou/linux-nmi-kdb.git master", and then drop a pull request to Greg for the next merge window.  Thank you for your hard work through all the revisions of this code and this slick new feature.
 
-- add comments to mark fields that are likely to be changed by the
-hypervisor.
+Acked-by: Jason Wessel <jason.wessel@windriver.com>
 
-
-Changes in v2:
-
-- remove include skeleton;
-- use #address-cells = <2> and #size-cells = <2>;
-- remove the debug bootargs;
-- use memory@80000000 instead of memory;
-- remove the ranges and interrupt-map from the motherboard node;
-- set the machine compatible to "xen,xenvm-4.2", "xen,xenvm";
-- rename the dts file to xenvm-4.2.dts;
-- add "xen,xenvm" to the list of compatible DT strings to mach-vexpress.
-
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Pawel Moll <pawel.moll@arm.com> (v2m changes)
-CC: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/boot/dts/xenvm-4.2.dts      |   68 ++++++++++++++++++++++++++++++++++
- arch/arm/mach-vexpress/Makefile.boot |    3 +-
- arch/arm/mach-vexpress/v2m.c         |    1 +
- 3 files changed, 71 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/boot/dts/xenvm-4.2.dts
-
-diff --git a/arch/arm/boot/dts/xenvm-4.2.dts b/arch/arm/boot/dts/xenvm-4.2.dts
-new file mode 100644
-index 0000000..ec3f952
---- /dev/null
-+++ b/arch/arm/boot/dts/xenvm-4.2.dts
-@@ -0,0 +1,68 @@
-+/*
-+ * Xen Virtual Machine for unprivileged guests
-+ *
-+ * Based on ARM Ltd. Versatile Express CoreTile Express (single CPU)
-+ * Cortex-A15 MPCore (V2P-CA15)
-+ *
-+ */
-+
-+/dts-v1/;
-+
-+/ {
-+	model = "XENVM-4.2";
-+	compatible = "xen,xenvm-4.2", "xen,xenvm";
-+	interrupt-parent = <&gic>;
-+	#address-cells = <2>;
-+	#size-cells = <2>;
-+
-+	chosen {
-+		/* this field is going to be adjusted by the hypervisor */
-+		bootargs = "console=hvc0 root=/dev/xvda";
-+	};
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <0>;
-+		};
-+	};
-+
-+	memory@80000000 {
-+		device_type = "memory";
-+		/* this field is going to be adjusted by the hypervisor */
-+		reg = <0 0x80000000 0 0x08000000>;
-+	};
-+
-+	gic: interrupt-controller@2c001000 {
-+		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
-+		#interrupt-cells = <3>;
-+		#address-cells = <0>;
-+		interrupt-controller;
-+		reg = <0 0x2c001000 0 0x1000>,
-+		      <0 0x2c002000 0 0x100>;
-+	};
-+
-+	timer {
-+		compatible = "arm,armv7-timer";
-+		interrupts = <1 13 0xf08>,
-+			     <1 14 0xf08>,
-+			     <1 11 0xf08>,
-+			     <1 10 0xf08>;
-+	};
-+
-+	hypervisor {
-+		compatible = "xen,xen-4.2", "xen,xen";
-+		/* this field is going to be adjusted by the hypervisor */
-+		reg = <0 0xb0000000 0 0x20000>;
-+		/* this field is going to be adjusted by the hypervisor */
-+		interrupts = <1 15 0xf08>;
-+	};
-+
-+	motherboard {
-+		arm,v2m-memory-map = "rs1";
-+	};
-+};
-diff --git a/arch/arm/mach-vexpress/Makefile.boot b/arch/arm/mach-vexpress/Makefile.boot
-index 318d308..38dbaac 100644
---- a/arch/arm/mach-vexpress/Makefile.boot
-+++ b/arch/arm/mach-vexpress/Makefile.boot
-@@ -7,4 +7,5 @@ initrd_phys-y	:= 0x60800000
- dtb-$(CONFIG_ARCH_VEXPRESS_DT)	+= vexpress-v2p-ca5s.dtb \
- 				   vexpress-v2p-ca9.dtb \
- 				   vexpress-v2p-ca15-tc1.dtb \
--				   vexpress-v2p-ca15_a7.dtb
-+				   vexpress-v2p-ca15_a7.dtb \
-+				   xenvm-4.2.dtb
-diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-index 4e567f7..9545b70 100644
---- a/arch/arm/mach-vexpress/v2m.c
-+++ b/arch/arm/mach-vexpress/v2m.c
-@@ -659,6 +659,7 @@ static void __init v2m_dt_init(void)
- 
- const static char *v2m_dt_match[] __initconst = {
- 	"arm,vexpress",
-+	"xen,xenvm",
- 	NULL,
- };
- 
--- 
-1.7.2.5
-
+Cheers,
+Jason.
