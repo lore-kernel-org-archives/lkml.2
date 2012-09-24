@@ -1,171 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab2IXOBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 10:01:05 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:31170 "EHLO mailhub1.si.c-s.fr"
+	id S1755705Ab2IXOB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 10:01:27 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40524 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755453Ab2IXOBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 10:01:03 -0400
-Date: Mon, 24 Sep 2012 16:00:58 +0200
-Message-Id: <201209241400.q8OE0w38011790@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: David S Miller <davem@davemloft.net>,
-        Richard Cochran <richardcochran@gmail.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4] lxt PHY: Support for the buggy LXT973 rev A2
+	id S1755678Ab2IXOBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 10:01:25 -0400
+Message-ID: <506066E3.6050705@parallels.com>
+Date: Mon, 24 Sep 2012 17:57:55 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Tejun Heo <tj@kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<cgroups@vger.kernel.org>" <cgroups@vger.kernel.org>,
+        "<kamezawa.hiroyu@jp.fujitsu.com>" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "<devel@openvz.org>" <devel@openvz.org>,
+        "<linux-mm@kvack.org>" <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 05/16] consider a memcg parameter in kmem_create_cache
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-6-git-send-email-glommer@parallels.com> <20120921181458.GG7264@google.com> <506015E7.8030900@parallels.com> <00000139f84bdedc-aae672a6-2908-4cb8-8ed3-8fedf67a21af-000000@email.amazonses.com> <50605500.5050606@parallels.com> <00000139f8836571-6ddc9d5b-1d5f-4542-92f9-ad11070e5b7d-000000@email.amazonses.com> <506063B8.70305@parallels.com> <00000139f890a302-980aee84-40b2-433f-8dbd-e7b1d219f00d-000000@email.amazonses.com>
+In-Reply-To: <00000139f890a302-980aee84-40b2-433f-8dbd-e7b1d219f00d-000000@email.amazonses.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding
-precautions linked to ERRATA Item 4:
+On 09/24/2012 05:56 PM, Christoph Lameter wrote:
+> On Mon, 24 Sep 2012, Glauber Costa wrote:
+> 
+>> The reason I say it is orthogonal, is that people will still want to see
+>> their caches in /proc/slabinfo, regardless of wherever else they'll be.
+>> It was a requirement from Pekka in one of the first times I posted this,
+>> IIRC.
+> 
+> They want to see total counts there true. But as I said we already have a
+> duplication of the statistics otherwise. We have never done the scheme
+> that you propose. That is unexpected. I would not expect the numbers to be
+> there.
+> 
 
-Revision A2 of LXT973 chip randomly returns the contents of the previous even
-register when you read a odd register regularly
+I myself personally believe it can potentially clutter slabinfo, and
+won't put my energy in defending the current implementation. What I
+don't want is to keep switching between implementations.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Pekka, Tejun, what do you guys say here?
 
-diff -u a/drivers/net/phy/lxt.c b/drivers/net/phy/lxt.c
---- a/drivers/net/phy/lxt.c	2012-09-23 03:08:48.000000000 +0200
-+++ b/drivers/net/phy/lxt.c	2012-09-23 03:18:00.000000000 +0200
-@@ -122,6 +122,123 @@
- 	return err;
- }
- 
-+/*
-+ * A2 version of LXT973 chip has an ERRATA: it randomly return the contents
-+ * of the previous even register when you read a odd register regularly
-+ */
-+
-+static int lxt973a2_update_link(struct phy_device *phydev)
-+{
-+	int status;
-+	int control;
-+	int retry = 8; /* we try 8 times */
-+
-+	/* Do a fake read */
-+	status = phy_read(phydev, MII_BMSR);
-+
-+	if (status < 0)
-+		return status;
-+
-+	control = phy_read(phydev, MII_BMCR);
-+	if (control < 0)
-+		return control;
-+
-+	do {
-+		/* Read link and autonegotiation status */
-+		status = phy_read(phydev, MII_BMSR);
-+	} while (status >= 0 && retry-- && status == control);
-+
-+	if (status < 0)
-+		return status;
-+
-+	if ((status & BMSR_LSTATUS) == 0)
-+		phydev->link = 0;
-+	else
-+		phydev->link = 1;
-+
-+	return 0;
-+}
-+
-+int lxt973a2_read_status(struct phy_device *phydev)
-+{
-+	int adv;
-+	int err;
-+	int lpa;
-+	int lpagb = 0;
-+
-+	/* Update the link, but return if there was an error */
-+	err = lxt973a2_update_link(phydev);
-+	if (err)
-+		return err;
-+
-+	if (AUTONEG_ENABLE == phydev->autoneg) {
-+		int retry = 1;
-+
-+		adv = phy_read(phydev, MII_ADVERTISE);
-+
-+		if (adv < 0)
-+			return adv;
-+
-+		do {
-+			lpa = phy_read(phydev, MII_LPA);
-+
-+			if (lpa < 0)
-+				return lpa;
-+
-+			/* If both registers are equal, it is suspect but not
-+			* impossible, hence a new try
-+			*/
-+		} while (lpa == adv && retry--);
-+
-+		lpa &= adv;
-+
-+		phydev->speed = SPEED_10;
-+		phydev->duplex = DUPLEX_HALF;
-+		phydev->pause = phydev->asym_pause = 0;
-+
-+		if (lpagb & (LPA_1000FULL | LPA_1000HALF)) {
-+			phydev->speed = SPEED_1000;
-+
-+			if (lpagb & LPA_1000FULL)
-+				phydev->duplex = DUPLEX_FULL;
-+		} else if (lpa & (LPA_100FULL | LPA_100HALF)) {
-+			phydev->speed = SPEED_100;
-+
-+			if (lpa & LPA_100FULL)
-+				phydev->duplex = DUPLEX_FULL;
-+		} else {
-+			if (lpa & LPA_10FULL)
-+				phydev->duplex = DUPLEX_FULL;
-+		}
-+
-+		if (phydev->duplex == DUPLEX_FULL) {
-+			phydev->pause = lpa & LPA_PAUSE_CAP ? 1 : 0;
-+			phydev->asym_pause = lpa & LPA_PAUSE_ASYM ? 1 : 0;
-+		}
-+	} else {
-+		int bmcr = phy_read(phydev, MII_BMCR);
-+
-+		if (bmcr < 0)
-+			return bmcr;
-+
-+		if (bmcr & BMCR_FULLDPLX)
-+			phydev->duplex = DUPLEX_FULL;
-+		else
-+			phydev->duplex = DUPLEX_HALF;
-+
-+		if (bmcr & BMCR_SPEED1000)
-+			phydev->speed = SPEED_1000;
-+		else if (bmcr & BMCR_SPEED100)
-+			phydev->speed = SPEED_100;
-+		else
-+			phydev->speed = SPEED_10;
-+
-+		phydev->pause = phydev->asym_pause = 0;
-+	}
-+
-+	return 0;
-+}
-+
- static int lxt973_probe(struct phy_device *phydev)
- {
- 	int val = phy_read(phydev, MII_LXT973_PCR);
-@@ -175,6 +292,16 @@
- 	.driver		= { .owner = THIS_MODULE,},
- }, {
- 	.phy_id		= 0x00137a10,
-+	.name		= "LXT973-A2",
-+	.phy_id_mask	= 0xffffffff,
-+	.features	= PHY_BASIC_FEATURES,
-+	.flags		= 0,
-+	.probe		= lxt973_probe,
-+	.config_aneg	= lxt973_config_aneg,
-+	.read_status	= lxt973a2_read_status,
-+	.driver		= { .owner = THIS_MODULE,},
-+}, {
-+	.phy_id		= 0x00137a10,
- 	.name		= "LXT973",
- 	.phy_id_mask	= 0xfffffff0,
- 	.features	= PHY_BASIC_FEATURES,
+
+
