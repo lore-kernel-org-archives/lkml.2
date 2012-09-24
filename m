@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab2IXCmg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 22:42:36 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:50172 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab2IXCme (ORCPT
+	id S1754865Ab2IXCpa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 22:45:30 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37214 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754410Ab2IXCp1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 22:42:34 -0400
-Date: Mon, 24 Sep 2012 10:42:21 +0800
-From: Guo Chao <yan@linux.vnet.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: viro@zeniv.linux.org.uk, dchinner@redhat.com, hch@infradead.org,
-        jack@suse.cz, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v4 Patch 0/4] fs/inode.c: optimization for inode lock usage
-Message-ID: <20120924024221.GB7984@yanx>
-References: <1348219866-1799-1-git-send-email-yan@linux.vnet.ibm.com>
- <20120921224912.GA20960@dastard>
+	Sun, 23 Sep 2012 22:45:27 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Porter, Matt" <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+CC: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: RE: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
+ arm/common
+Thread-Topic: [RFC PATCH 01/13] ARM: davinci: move private EDMA API to
+ arm/common
+Thread-Index: AQHNlz5P7Id64n7/pEWRn/L8Ro/of5eYzgEA
+Date: Mon, 24 Sep 2012 02:44:35 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA8D0DF@DBDE01.ent.ti.com>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com>
+ <1348152226-13588-2-git-send-email-mporter@ti.com>
+In-Reply-To: <1348152226-13588-2-git-send-email-mporter@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120921224912.GA20960@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12092402-9264-0000-0000-00000262BD91
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 22, 2012 at 08:49:12AM +1000, Dave Chinner wrote:
-
-> On Fri, Sep 21, 2012 at 05:31:02PM +0800, Guo Chao wrote:
-> > This patchset optimizes several places which take the per inode spin lock.
-> > They have not been fully tested yet, thus they are marked as RFC. 
+On Thu, Sep 20, 2012 at 20:13:34, Porter, Matt wrote:
+> Move mach-davinci/dma.c to common/edma.c so it can be used
+> by OMAP (specifically AM33xx atm) as well. This just moves
+> the private EDMA API but does not support OMAP.
 > 
-> Inodes are RCU freed. The i_lock spinlock on the i_state field forms
-> part of the memory barrier that allows the RCU read side to
-> correctly detect a freed inode during a RCU protected cache lookup
-> (hash list traversal for the VFS, or a radix tree traversal for XFS).
-> The i_lock usage around the hahs list operations ensures the hash
-> list operations are atomic with state changes so that such changes
-> are correctly detected during RCU-protected traversals...
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  arch/arm/Kconfig                           |    1 +
+>  arch/arm/common/Kconfig                    |    3 +
+>  arch/arm/common/Makefile                   |    1 +
+>  arch/arm/common/edma.c                     | 1588 ++++++++++++++++++++++++++++
+>  arch/arm/include/asm/mach/edma.h           |  267 +++++
+>  arch/arm/mach-davinci/Makefile             |    2 +-
+>  arch/arm/mach-davinci/devices.c            |    3 +-
+>  arch/arm/mach-davinci/dm355.c              |    2 +-
+>  arch/arm/mach-davinci/dm365.c              |    2 +-
+>  arch/arm/mach-davinci/dm644x.c             |    2 +-
+>  arch/arm/mach-davinci/dm646x.c             |    2 +-
+>  arch/arm/mach-davinci/dma.c                | 1588 ----------------------------
+
+
+>  arch/arm/mach-davinci/include/mach/asp.h   |    2 +-
+
+This will clash with patch "ASoC/ARM: Davinci: McASP: split asp header
+into platform and audio specific" queued in ASoC tree by Mark Brown 
+tree (Auio - ASoC Tree)
+
+I forgot to mention this last time.  Sorry
+
+>  arch/arm/mach-davinci/include/mach/da8xx.h |    3 +-
+>  arch/arm/mach-davinci/include/mach/edma.h  |  267 -----
+>  arch/arm/mach-davinci/include/mach/spi.h   |    2 +-
+>  arch/arm/plat-omap/Kconfig                 |    1 +
+>  17 files changed, 1872 insertions(+), 1864 deletions(-)
+>  create mode 100644 arch/arm/common/edma.c
+>  create mode 100644 arch/arm/include/asm/mach/edma.h
+>  delete mode 100644 arch/arm/mach-davinci/dma.c
+>  delete mode 100644 arch/arm/mach-davinci/include/mach/edma.h
 > 
-> IOWs, removing the i_lock from around the i_state transitions and
-> inode hash insert/remove/traversal operations will cause races in
-> the RCU lookups and result in incorrectly using freed inodes instead
-> of failing the lookup and creating a new one.
-> 
-> So I don't think this is a good idea at all...
->
+...snip...
+...snip...
 
-Hello, Dave:
 
-  Thanks for your explanation.
- 
-  Though I can't fully understand it, your concern seems to be that
-RCU inode lookup will be bothered by this change. But we do not have 
-RCU inode lookup in VFS: inode lookup is done by rather a tranditional
-way. 
-
-  XFS gives me the impression that it implements its own inode cache.
-There may be such thing there. I have little knowledge on XFS, but I
-guess it's unlikely impacted by the change of code implementing VFS 
-inode cache.
-
-  As far as I can see, RCU inode free is for RCU dentry lookup, which
-seems have nothing to do with 'detect a freed inode'. Taking i_lock in these
-places looks like to me a result of following old lock scheme blindly when 
-breaking the big global inode lock. Of course, maybe they are there for
-something. Could you speak more about the race this change (patch 1,2?) brings 
-up? Thank you.
-
-Regards,
-Guo Chao
-
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-
+Regards, 
+Gururaja
