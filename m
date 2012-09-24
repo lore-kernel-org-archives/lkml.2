@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab2IXOiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 10:38:52 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:51225 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab2IXOiv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 10:38:51 -0400
-Subject: Re: [PATCH v2] Persistent grant maps for xen blk drivers
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
-In-Reply-To: <20120921204646.GB30614@phenom.dumpdata.com>
-Date: Mon, 24 Sep 2012 10:38:48 -0400
-Cc: Oliver Chick <oliver.chick@citrix.com>, xen-devel@lists.xen.org,
+	id S1756057Ab2IXOkM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 10:40:12 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:31757 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753776Ab2IXOkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 10:40:10 -0400
+Message-ID: <506070C7.9020507@c-s.fr>
+Date: Mon, 24 Sep 2012 16:40:07 +0200
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: David Laight <David.Laight@ACULAB.COM>
+CC: David S Miller <davem@davemloft.net>,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <43E8FEC9-DE7D-4352-87F2-63FB8984D556@gridcentric.ca>
-References: <1348242767-23732-1-git-send-email-oliver.chick@citrix.com> <20120921184123.GA27502@phenom.dumpdata.com> <20120921185622.GA5042@phenom.dumpdata.com> <20120921204646.GB30614@phenom.dumpdata.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-X-Mailer: Apple Mail (2.1278)
+Subject: Re: [PATCH v4] lxt PHY: Support for the buggy LXT973 rev A2
+References: <201209241400.q8OE0w38011790@localhost.localdomain> <AE90C24D6B3A694183C094C60CF0A2F6026B7004@saturn3.aculab.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7004@saturn3.aculab.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 21, 2012, at 4:46 PM, Konrad Rzeszutek Wilk wrote:
 
-> On Fri, Sep 21, 2012 at 02:56:22PM -0400, Konrad Rzeszutek Wilk wrote:
->>> *: With a PVHVM guest I get
->>> 
->>> [  261.927218] privcmd_fault: vma=ffff88002a31dce8 7f4edc095000-7f4edc195000, pgoff=c8, uv=00007f4edc15d000
->>> 
->>> thought if I applied your patch on top of v3.6-rc6 I didn't see the privcmd_fault but
->>> I did see the guest crash.
->> 
->> And that is due to c571898ffc24a1768e1b2dabeac0fc7dd4c14601 which I've reverted in my
->> #linux-next branch
-> 
-> Nevermind. Andres' patch by itself (so without yours) works just fine. There is
-> something your patch and his aren't agreeing on.
+Le 24/09/2012 16:13, David Laight a écrit :
+>> This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding
+>> precautions linked to ERRATA Item 4:
+>>
+>> Revision A2 of LXT973 chip randomly returns the contents of the previous even
+>> register when you read a odd register regularly
+> Does reading the PHY registers involve bit-banging an MII interface?
+> If so this code is likely to stall the system for significant
+> periods (ready phy registers at all can be a problem).
+>
+> I know some ethernet mac have hardware blocks for reading MII
+> and even polling one MII register for changes.
+>
+> Maybe some of this code ought to be using async software
+> bit-bang - especially when just polling for link status change.
+> I'm sure it ought to be possible to do one bit-bang action
+> per clock tick instead of spinning for the required delays.
+>
+> 	David
+>
+Not sure I understand what you mean. We have been using this code 
+without any problem for about 2 years on our Hardware.
+It does almost same as genphy_read_status() except that it also reads 
+the BMCR register (which is the register preceeding the BMSR) in order 
+to detect the unlikely happening of the bug reported by the ERRATA. In 
+case it happens (which is really seldom), it does a re-read.
+We are not spinning on any delays here.
 
-Apart from interacting badly in combination, would either patch in isolation work well?
-
-I can think of only one hunk in my patch disagreeing with blkback stuff:
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index eea81cf..f5681c8 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -836,6 +883,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 	if (ret)
- 		return ret;
- 
-+	/* Retry eagain maps */
-+	for (i = 0; i < count; i++)
-+		if (map_ops[i].status == GNTST_eagain)
-+			gnttab_retry_eagain_gop(GNTTABOP_map_grant_ref, map_ops + i,
-+                                    &map_ops[i].status, __func__);
-+
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return ret;
- 
-How would you like to proceed?
-Andres
-
-> 
-
+Christophe
