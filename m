@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818Ab2IXTEx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 15:04:53 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35873 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757597Ab2IXTEw (ORCPT
+	id S1757847Ab2IXTMk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 15:12:40 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42427 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757768Ab2IXTMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 15:04:52 -0400
+	Mon, 24 Sep 2012 15:12:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120924190034.GF2492@redhat.com>
-References: <1348011407-24108-1-git-send-email-jim.cromie@gmail.com>
-	<1348011407-24108-4-git-send-email-jim.cromie@gmail.com>
-	<20120924190034.GF2492@redhat.com>
-Date: Mon, 24 Sep 2012 21:04:51 +0200
-X-Google-Sender-Auth: sD1t6iPbAOMK847kBRDzlGp0MgI
-Message-ID: <CAMuHMdVFSH5W=xStG5b3O=7vkVY78LLnnURPP7igCdMct27tFg@mail.gmail.com>
-Subject: Re: [PATCH 3/6] dyndbg: add more info to -E2BIG log warning
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Jim Cromie <jim.cromie@gmail.com>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1348511193.6951.44.camel@marge.simpson.net>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+ <20120914212717.GA29307@liondog.tnic> <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+ <20120924150048.GB11266@suse.de> <1348500647.11847.69.camel@twins>
+ <CA+55aFy5C-gFs6ZU5LyyVN=oxpuoaOpydkbJbhri215QkLx3aA@mail.gmail.com>
+ <1348503163.11847.97.camel@twins> <CA+55aFzU2QOgexc2cpEkWqPBw6wPJMBuUzRyxTxu=rxZV_ay3A@mail.gmail.com>
+ <1348505683.11847.111.camel@twins> <1348511193.6951.44.camel@marge.simpson.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 24 Sep 2012 12:12:18 -0700
+X-Google-Sender-Auth: QJGwRtv61cm-9UfyDZgSyqIjeMo
+Message-ID: <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 9:00 PM, Jason Baron <jbaron@redhat.com> wrote:
->> -             pr_warn("expected <%d bytes into control\n", USER_BUF_PAGE);
-
-%u?
-
->> +             pr_warn("expected <%d bytes into control, you wrote %d\n",
->> +                     USER_BUF_PAGE, (int) len);
+On Mon, Sep 24, 2012 at 11:26 AM, Mike Galbraith <efault@gmx.de> wrote:
 >
-> The style here, I think, is generally to leave out the space, ie: (int)len.
+> Aside from the cache pollution I recall having been mentioned, on my
+> E5620, cross core is a tbench win over affine, cross thread is not.
 
-Better, remove the cast and use "%zu" to properly format the size_t.
+Oh, I agree with trying to avoid HT threads, the resource contention
+easily gets too bad.
 
-Gr{oetje,eeting}s,
+It's more a question of "if we have real cores with separate L1's but
+shared L2's, go with those first, before we start distributing it out
+to separate L2's".
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+             Linus
