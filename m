@@ -1,87 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab2IXQts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:49:48 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49429 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756397Ab2IXQtq (ORCPT
+	id S1757045Ab2IXQvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:51:48 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35395 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab2IXQvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:49:46 -0400
-Date: Mon, 24 Sep 2012 20:49:42 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: sys_kcmp (was: Re: [PATCH 1/2] ARM: add finit_module syscall to
- ARM)
-Message-ID: <20120924164942.GH16532@moon>
-References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
- <20120922114549.GA11610@moon>
- <20120922132046.GA4260@flint.arm.linux.org.uk>
- <20120922114723.d7f07fb6.akpm@linux-foundation.org>
- <1348503709.20929.40.camel@deneb.redhat.com>
+	Mon, 24 Sep 2012 12:51:46 -0400
+Date: Mon, 24 Sep 2012 12:51:42 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Dave Martin <dave.martin@linaro.org>
+cc: Cyril Chemparathy <cyril@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>, linus.walleij@linaro.org,
+        Will Deacon <will.deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>, paul.gortmaker@windriver.com,
+        vincent.guittot@linaro.org, davidb@codeaurora.org,
+        plagnioj@jcrosoft.com, Arnd Bergmann <arnd@arndb.de>,
+        marc.zyngier@arm.com, rob.herring@calxeda.com, vitalya@ti.com,
+        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
+        rmallon@gmail.com, frank.rowand@am.sony.com, sjg@chromium.org,
+        sboyd@codeaurora.org, linux-kernel@vger.kernel.org, rabin@rab.in,
+        hsweeten@visionengravers.com, tj@kernel.org
+Subject: Re: [PATCH v3 RESEND 05/17] ARM: LPAE: support 64-bit virt_to_phys
+ patching
+In-Reply-To: <20120924163146.GD2122@linaro.org>
+Message-ID: <alpine.LFD.2.02.1209241236480.6667@xanadu.home>
+References: <1348242975-19184-1-git-send-email-cyril@ti.com> <1348242975-19184-6-git-send-email-cyril@ti.com> <20120924163146.GD2122@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348503709.20929.40.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 12:21:46PM -0400, Mark Salter wrote:
-> diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
-> index 991ef01..3748ec9 100644
-> --- a/include/asm-generic/unistd.h
-> +++ b/include/asm-generic/unistd.h
-> @@ -691,9 +691,11 @@ __SC_COMP(__NR_process_vm_readv, sys_process_vm_readv, \
->  #define __NR_process_vm_writev 271
->  __SC_COMP(__NR_process_vm_writev, sys_process_vm_writev, \
->            compat_sys_process_vm_writev)
-> +#define __NR_kcmp 272
-> +__SYSCALL(__NR_kcmp, sys_kcmp)
->  
->  #undef __NR_syscalls
-> -#define __NR_syscalls 272
-> +#define __NR_syscalls 273
-> 
-> > 
-> > I have that queued for 3.7.  There is of course a little risk here.  We
-> > do have a test in tools/testing/selftests/kcmp/ - I suggest that arch
-> > people run it!  In fact all the tools/testing/selftests should execute
-> > successfully on all architectures - if not, please let's fix things
-> > up.
-> 
-> I ran into a build error on C6X (no-MMU) when I enabled CHECKPOINT_RESTORE:
-> 
->   linux-next/kernel/sys.c: In function 'prctl_set_mm':
->   linux-next/kernel/sys.c:1869:34: error: 'mmap_min_addr' undeclared (first use in this function)
-> 
-> I got past that with:
-> 
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 01ef030..14e394d 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -118,6 +118,7 @@ void reset_security_ops(void);
->  extern unsigned long mmap_min_addr;
->  extern unsigned long dac_mmap_min_addr;
->  #else
-> +#define mmap_min_addr          0UL
->  #define dac_mmap_min_addr      0UL
->  #endif
-> 
-> Looking at kcmp_test.c, it uses fork, so won't work without MMU. Is
-> the kcmp syscall even meaningful for no-MMU? I suppose some of the
-> tests in kcmp_test.c could be accomplished using clone directly
-> rather than fork.
+On Mon, 24 Sep 2012, Dave Martin wrote:
 
-Hi Mark, good catch! I think it should be two patches then. As to kcmp_test.c,
-I've been using fork there simply because it was simplier. The clone could
-be used as well. (kcmp should work even with mmu emulated i think).
+> On Fri, Sep 21, 2012 at 11:56:03AM -0400, Cyril Chemparathy wrote:
+> > This patch adds support for 64-bit physical addresses in virt_to_phys()
+> > patching.  This does not do real 64-bit add/sub, but instead patches in the
+> > upper 32-bits of the phys_offset directly into the output of virt_to_phys.
+> > 
+> > There is no corresponding change on the phys_to_virt() side, because
+> > computations on the upper 32-bits would be discarded anyway.
+> > 
+> > Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> > ---
+> >  arch/arm/include/asm/memory.h |   38 ++++++++++++++++++++++++++++++++++++--
+> >  arch/arm/kernel/head.S        |    4 ++++
+> >  arch/arm/kernel/setup.c       |    2 +-
+> >  3 files changed, 41 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> > index 88ca206..f3e8f88 100644
+> > --- a/arch/arm/include/asm/memory.h
+> > +++ b/arch/arm/include/asm/memory.h
+> > @@ -154,13 +154,47 @@
+> >  #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+> >  
+> >  extern unsigned long	__pv_offset;
+> > -extern unsigned long	__pv_phys_offset;
+> > +extern phys_addr_t	__pv_phys_offset;
+> >  #define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
+> >  
+> >  static inline phys_addr_t __virt_to_phys(unsigned long x)
+> >  {
+> > -	unsigned long t;
+> > +	phys_addr_t t;
+> > +
+> > +#ifndef CONFIG_ARM_LPAE
+> >  	early_patch_imm8("add", t, x, __pv_offset, 0);
+> > +#else
+> > +	unsigned long __tmp;
+> > +
+> > +#ifndef __ARMEB__
+> > +#define PV_PHYS_HIGH	"(__pv_phys_offset + 4)"
+> > +#else
+> > +#define PV_PHYS_HIGH	"__pv_phys_offset"
+> > +#endif
+> > +
+> > +	early_patch_stub(
+> > +	/* type */		PATCH_IMM8,
+> > +	/* code */
+> > +		"ldr		%[tmp], =__pv_offset\n"
+> > +		"ldr		%[tmp], [%[tmp]]\n"
+> > +		"add		%Q[to], %[from], %[tmp]\n"
+> > +		"ldr		%[tmp], =" PV_PHYS_HIGH "\n"
+> > +		"ldr		%[tmp], [%[tmp]]\n"
+> > +		"mov		%R[to], %[tmp]\n",
+> > +	/* pad */		4,
+> > +	/* patch_data */
+> > +		".long		__pv_offset\n"
+> > +		"add		%Q[to], %[from], %[imm]\n"
+> > +		".long	"	PV_PHYS_HIGH "\n"
+> > +		"mov		%R[to], %[imm]\n",
+> > +	/* operands */
+> > +		: [to]	 "=r"	(t),
+> > +		  [tmp]	 "=&r"	(__tmp)
+> > +		: [from] "r"	(x),
+> > +		  [imm]	 "I"	(__IMM8),
+> > +			 "i"	(&__pv_offset),
+> > +			 "i"	(&__pv_phys_offset));
+> 
+> So, the actual offset we can apply is:
+> 
+> __pv_phys_offset + __pv_offset
+> 
+> where:
+> 
+>  * the high 32 bits of the address being fixed up are assumed to be 0
+>    (true, because the kernel is initially always fixed up to an address
+>    range <4GB)
+
+The fixed up address is a virtual address.  So yes, by definition it 
+must be <4GB on ARM32.
+
+>  * the low 32 bits of __pv_phys_offset are assumed to be 0 (?)
+
+It is typically representable with a shifted 8 bit immediate but not 
+necessarily 0, just like on platforms without LPAE.
+
+>  * the full offset is of the form
+> 
+>         ([..0..]XX[..0..] << 32) | [..0..]YY[..0..] 
+> 
+> Is this intentional?  It seems like a rather weird constraint...  but
+> it may be sensible.  PAGE_OFFSET is probably 0xc0000000 or 0x80000000,
+> (so YY can handle that) and the actual RAM above 4GB will likely be
+> huge and aligned on some enormous boundary in such situations (so that
+> XX can handle that).
+> 
+> So long as the low RAM alias is not misaligned relative to the high alias
+> on a finer granularity than 16MB (so that YY = (PAGE_OFFSET +/- the
+> misalignment) is still a legal immediate), I guess there should not be a
+> problem.
+
+There are already similar constraints for the current 
+ARM_PATCH_PHYS_VIRT code.  So nothing really new here.
+
+
+Nicolas
