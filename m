@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab2IXQFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:05:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58770 "EHLO
+	id S1757034Ab2IXQJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:09:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58621 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756688Ab2IXQAA (ORCPT
+	with ESMTP id S1756210Ab2IXP7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:00:00 -0400
+	Mon, 24 Sep 2012 11:59:54 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 21/30] tools lib traceevent: Free field if an error occurs on process_flags/symbols
-Date: Mon, 24 Sep 2012 12:59:35 -0300
-Message-Id: <1348502384-14442-22-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/30] perf tools: Fix a compiling error in trace-event-perl.c for 32 bits machine
+Date: Mon, 24 Sep 2012 12:59:15 -0300
+Message-Id: <1348502384-14442-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1348502384-14442-1-git-send-email-acme@infradead.org>
 References: <1348502384-14442-1-git-send-email-acme@infradead.org>
@@ -28,65 +26,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Feng Tang <feng.tang@intel.com>
 
-The field should be freed on error paths.
+On my x86_32 mahcine, there is a compile error:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+        CC util/scripting-engines/trace-event-perl.o
+        cc1: warnings being treated as errors
+        util/scripting-engines/trace-event-perl.c: In function
+	perl_process_tracepoint:
+        util/scripting-engines/trace-event-perl.c:285: error: format
+	expects type 'int', but argument 2 has type '__u64'
+        make: *** [util/scripting-engines/trace-event-perl.o] Error 1
+
+Fix it by using the "%PRIu64" for __u64.
+
+v2: use PRIu64 as suggested by Arnaldo.
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1348037924-17568-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/20120828101730.6b2fd97e@feng-i7
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+ .../perf/util/scripting-engines/trace-event-perl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index a776ed5..acf4038 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -2247,7 +2247,7 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
- 		type = process_op(event, field, &token);
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index ffde3e4..f80605e 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -282,7 +282,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
  
- 	if (test_type_token(type, token, EVENT_DELIM, ","))
--		goto out_free;
-+		goto out_free_field;
- 	free_token(token);
+ 	event = find_cache_event(evsel);
+ 	if (!event)
+-		die("ug! no event found for type %d", evsel->attr.config);
++		die("ug! no event found for type %" PRIu64, evsel->attr.config);
  
- 	arg->flags.field = field;
-@@ -2269,7 +2269,9 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
- 	type = read_token_item(tok);
- 	return type;
+ 	pid = raw_field_value(event, "common_pid", data);
  
-- out_free:
-+out_free_field:
-+	free_arg(field);
-+out_free:
- 	free_token(token);
- 	*tok = NULL;
- 	return EVENT_ERROR;
-@@ -2289,7 +2291,7 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 	type = process_arg(event, field, &token);
- 	if (test_type_token(type, token, EVENT_DELIM, ","))
--		goto out_free;
-+		goto out_free_field;
- 
- 	arg->symbol.field = field;
- 
-@@ -2301,7 +2303,9 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
- 	type = read_token_item(tok);
- 	return type;
- 
-- out_free:
-+out_free_field:
-+	free_arg(field);
-+out_free:
- 	free_token(token);
- 	*tok = NULL;
- 	return EVENT_ERROR;
 -- 
 1.7.1
 
