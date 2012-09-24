@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630Ab2IXSvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 14:51:25 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42430 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757325Ab2IXSvX (ORCPT
+	id S1757712Ab2IXSzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 14:55:22 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59151 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757388Ab2IXSzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 14:51:23 -0400
-Date: Mon, 24 Sep 2012 22:51:19 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Mark Salter <msalter@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: sys_kcmp
-Message-ID: <20120924185119.GI16532@moon>
-References: <CAMuHMdXVKvaCoJTRb4O+Z4GuifzTEopdcRfRHBahQmpuX+Xi0w@mail.gmail.com>
- <20120922114549.GA11610@moon>
- <20120922132046.GA4260@flint.arm.linux.org.uk>
- <20120922114723.d7f07fb6.akpm@linux-foundation.org>
- <1348503709.20929.40.camel@deneb.redhat.com>
- <20120924164942.GH16532@moon>
- <20120924174256.GD24172@moon>
- <87lifzuvey.fsf@xmission.com>
+	Mon, 24 Sep 2012 14:55:20 -0400
+Message-ID: <5060AC71.2080609@linux.vnet.ibm.com>
+Date: Tue, 25 Sep 2012 00:24:41 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87lifzuvey.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Conny Seidel <conny.seidel@amd.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
+References: <20120924102324.GA22303@aftab.osrc.amd.com> <50603829.9050904@linux.vnet.ibm.com> <20120924110554.GC22303@aftab.osrc.amd.com> <50604047.7000908@linux.vnet.ibm.com> <20120924113447.GA25182@localhost> <20120924122053.GD22303@aftab.osrc.amd.com> <20120924122900.GA28627@localhost> <20120924125632.GE22303@aftab.osrc.amd.com>
+In-Reply-To: <20120924125632.GE22303@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092418-3864-0000-0000-000004C51BC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 11:29:09AM -0700, Eric W. Biederman wrote:
-> >  
-> > +#ifdef CONFIG_MMU
-> >  	if (addr >= TASK_SIZE || addr < mmap_min_addr)
-> > +#else
-> > +	if (addr >= TASK_SIZE)
-> > +#endif
+On 09/24/2012 06:26 PM, Borislav Petkov wrote:
+> On Mon, Sep 24, 2012 at 08:29:00PM +0800, Fengguang Wu wrote:
+>> On Mon, Sep 24, 2012 at 02:20:53PM +0200, Borislav Petkov wrote:
+>>> On Mon, Sep 24, 2012 at 07:34:47PM +0800, Fengguang Wu wrote:
+>>>> Will you test such a line? At least the generic do_div() only uses the
+>>>> lower 32bits for division.
+>>>>
+>>>>         WARN_ON(!(den & 0xffffffff));
+>>>
+>>> But, but, the asm output says:
+>>>
+>>>   28:   48 89 c8                mov    %rcx,%rax
+>>>   2b:*  48 f7 f7                div    %rdi     <-- trapping instruction
+>>>   2e:   31 d2                   xor    %edx,%edx
+>>>
+>>> and this version of DIV does an unsigned division of RDX:RAX by the
+>>> contents of a *64-bit register* ... in our case %rdi.
+>>>
+>>> Srivatsa's oops  shows the same:
+>>>
+>>>   28:   48 89 f0                mov    %rsi,%rax
+>>>   2b:*  48 f7 f7                div    %rdi     <-- trapping instruction
+>>>   2e:   41 8b 94 24 74 02 00    mov    0x274(%r12),%edx
+>>>
+>>> Right?
+>>
+>> Right, that's why I said "at least". As for x86, I'm as clueless as you..
 > 
-> I expect what you want is a call to access_ok, rather than hard coding
-> details about task layout here.  This test certainly looks wrong
-> for a 32bit process on a 64bit kernel. If I read your test right it
-> appears I can set values of say 0x100000000 on a 32bit process...
+> Right, both oopses are on x86 so I don't think it is the bitness of the
+> division.
 > 
-> As for mmap_min_addr I would expect your find_vma check would make that
-> test unnecessary, simply by not finding a vma...
+> Another thing those two have in common is that both happen when a CPU
+> comes online. Srivatsa's is when CPU9 comes online (oops is detected on
+> CPU9) and in our case CPU4 comes online but the oops says CPU0.
+> 
 
-Good point, Eric, thanks! I'm cooking a new patch now.
+I had posted another dump from one of my tests. That one triggers while
+offlining a CPU (CPU 9).
+
+https://lkml.org/lkml/2012/9/14/235
+
+> So it has to be hotplug-related.
+
+Regards,
+Srivatsa S. Bhat
+
+
