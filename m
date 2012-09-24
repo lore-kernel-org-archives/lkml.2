@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069Ab2IXQqY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:46:24 -0400
-Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:54216 "EHLO
-	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756995Ab2IXQqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:46:21 -0400
+	id S1757026Ab2IXQtB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:49:01 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40720 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753548Ab2IXQtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 12:49:00 -0400
+Message-ID: <50608EE1.3050401@linaro.org>
+Date: Mon, 24 Sep 2012 09:48:33 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+To: Thomas Gleixner <tglx@linutronix.de>, "Molnar, Ingo" <mingo@elte.hu>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Time/alarmtimer changes for 3.7
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Mon, 24 Sep 2012 18:46:19 +0200
-From: Lars Poeschel <larsi@wh2.tu-dresden.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: <linux-kernel@vger.kernel.org>, Lars Poeschel <poeschel@lemonage.de>
-Subject: Re: [PATCH] mfd: viperboard driver added
-In-Reply-To: <20120919152957.GF28670@sortiz-mobl>
-References: <1346072918-3982-1-git-send-email-larsi@wh2.tu-dresden.de>
- <20120919152957.GF28670@sortiz-mobl>
-Message-ID: <86c9848e77fa42b6c48ba0703ebf637f@atlantis.wh2.tu-dresden.de>
-User-Agent: AG DSN Webmail/0.8.1
+x-cbid: 12092416-9360-0000-0000-00000AFB3C95
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Hey Thomas, Ingo,
+	Here's my queue for 3.7 for tip/timers/core. Unfortunately
+tip/timers/core is still 3.5 based, and this depends on items that
+landed in 3.6 (and that are waiting in tip/timers/urgent), so its based
+off of tip/timers/urgent, but merges cleanly with tip/timers/core.
 
-Thanks for your review.
+Let me know if you have any thoughts or requests for changes here.
 
-Am 19.09.2012 17:29, schrieb Samuel Ortiz:
-> Hi Lars,
->
-> On Mon, Aug 27, 2012 at 03:08:38PM +0200, larsi@wh2.tu-dresden.de 
-> wrote:
->> From: Lars Poeschel <poeschel@lemonage.de>
->>
->> First version of the driver for Nano River Tech's
->> viperboard added.
->> It supports i2c, adc, gpio a and gpio b. spi and pwm on
->> the first gpio a pins is not supported yet.
->>
->> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
->> ---
->>  drivers/mfd/Kconfig      |   17 +
->>  drivers/mfd/Makefile     |    1 +
->>  drivers/mfd/viperboard.c | 1084 
->> ++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 1102 insertions(+)
->>  create mode 100644 drivers/mfd/viperboard.c
-> So the MFD driver contains a GPIO one, and an i2c bus driver.
-> You should really split this code into at least 3 pieces: 1 for the 
-> GPIO
-> (drivers/gpio), another one for your i2c bus algorithm 
-> (drivers/i2c/busses)
-> and a last one for the actual MFD driver. Your Kconfig entries will 
-> define the
-> dependencies between them.
-> Then you can define your SoC subdevices as MFD cells and use the MFD 
-> APIs to
-> add them as platform devices.
+thanks
+-john
 
-I am not really sure, but maybe you got mislead by the term 
-"viperboard". It is NOT an embedded evaluation board or starterkit. It 
-is an USB to SPI, I2C, GPIO and ADC interface. You can get a quick 
-overview here: http://nanorivertech.com/viperboard.html
-The I2C, GPIO or ADC parts of this driver will never be part of a 
-"platform device" in terms of the linux kernel definining the 
-configuration of different embedded evaluation boards (a platform).
-Do you still think I should split up the different parts into their 
-respective subsystems in the kernel and have one "core" combining those 
-parts in MFD ?
-If so, I will do this. As there would be multiple different maintainers 
-involved, against which branch has my patch to be ?
-Should I simply CC the patch to all involved maintainers ?
+PS: Just a reminder that there is still a pending change in
+tip/timers/urgent that I'd hope to get into 3.6.
 
-Regards,
-Lars
+
+The following changes since commit ec145babe754f9ea1079034a108104b6001e001c:
+
+   time: Fix timeekeping_get_ns overflow on 32bit systems (2012-09-13 17:39:14 +0200)
+
+are available in the git repository at:
+
+   git://git.linaro.org/people/jstultz/linux.git fortglx/3.7/time
+
+for you to fetch changes up to 650ea02475106e8d6bdf561896d2ffe0d1c0ebb4:
+
+   time: Convert x86_64 to using new update_vsyscall (2012-09-24 12:38:09 -0400)
+
+----------------------------------------------------------------
+John Stultz (11):
+       alarmtimer: Use hrtimer per-alarm instead of per-base
+       alarmtimer: Remove unused helpers & defines
+       alarmtimer: Rename alarmtimer_remove to alarmtimer_dequeue
+       jiffies: Kill unused TICK_USEC_TO_NSEC
+       jiffies: Remove compile time assumptions about CLOCK_TICK_RATE
+       time: Move timekeeper structure to timekeeper_internal.h for vsyscall changes
+       time: Move update_vsyscall definitions to timekeeper_internal.h
+       time: Convert CONFIG_GENERIC_TIME_VSYSCALL to CONFIG_GENERIC_TIME_VSYSCALL_OLD
+       time: Introduce new GENERIC_TIME_VSYSCALL
+       time: Only do nanosecond rounding on GENERIC_TIME_VSYSCALL_OLD systems
+       time: Convert x86_64 to using new update_vsyscall
+
+Todd Poynor (1):
+       alarmtimer: Implement minimum alarm interval for allowing suspend
+
+  arch/ia64/Kconfig                   |    2 +-
+  arch/ia64/kernel/time.c             |    4 +-
+  arch/powerpc/Kconfig                |    2 +-
+  arch/powerpc/kernel/time.c          |    4 +-
+  arch/s390/Kconfig                   |    2 +-
+  arch/s390/kernel/time.c             |    4 +-
+  arch/x86/include/asm/vgtod.h        |    4 +-
+  arch/x86/kernel/setup.c             |    3 +
+  arch/x86/kernel/vsyscall_64.c       |   49 +++++++++------
+  arch/x86/vdso/vclock_gettime.c      |   22 ++++---
+  include/linux/alarmtimer.h          |   31 +--------
+  include/linux/clocksource.h         |   16 -----
+  include/linux/jiffies.h             |   21 +------
+  include/linux/timekeeper_internal.h |  108 ++++++++++++++++++++++++++++++++
+  kernel/time.c                       |    2 +-
+  kernel/time/Kconfig                 |    4 ++
+  kernel/time/alarmtimer.c            |  118 +++++++++++++----------------------
+  kernel/time/jiffies.c               |   32 +++++++++-
+  kernel/time/timekeeping.c           |  115 ++++++++++------------------------
+  19 files changed, 281 insertions(+), 262 deletions(-)
+  create mode 100644 include/linux/timekeeper_internal.h
+
