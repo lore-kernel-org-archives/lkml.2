@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab2IXQLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:11:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756640Ab2IXQLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:11:02 -0400
-Message-ID: <50608608.4000507@redhat.com>
-Date: Mon, 24 Sep 2012 18:10:48 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 2/2] kvm: Be courteous to other VMs in overcommitted
- scenario in PLE handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue>    <20120921120019.27611.66093.sendpatchset@codeblue>    <50607BBE.8070507@redhat.com> <1348500861.11847.72.camel@twins>   <50607F9B.7090701@redhat.com> <1348501929.11847.81.camel@twins>  <50608323.9000603@redhat.com> <1348502757.11847.91.camel@twins>
-In-Reply-To: <1348502757.11847.91.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756757Ab2IXQNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:13:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41815 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756691Ab2IXQNH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 12:13:07 -0400
+Message-ID: <1348503163.11847.97.camel@twins>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Borislav Petkov <bp@alien8.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Date: Mon, 24 Sep 2012 18:12:43 +0200
+In-Reply-To: <CA+55aFy5C-gFs6ZU5LyyVN=oxpuoaOpydkbJbhri215QkLx3aA@mail.gmail.com>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	 <20120914212717.GA29307@liondog.tnic>
+	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	 <20120924150048.GB11266@suse.de> <1348500647.11847.69.camel@twins>
+	 <CA+55aFy5C-gFs6ZU5LyyVN=oxpuoaOpydkbJbhri215QkLx3aA@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 06:05 PM, Peter Zijlstra wrote:
-> On Mon, 2012-09-24 at 17:58 +0200, Avi Kivity wrote:
->> There is the TSC deadline timer mode of newer Intels.  Programming the
->> timer is a simple wrmsr, and it will fire immediately if it already
->> expired.  Unfortunately on AMDs it is not available, and on virtual
->> hardware it will be slow (~1-2 usec). 
-> 
-> Its also still a LAPIC write -- disguised as an MSR though :/
+On Mon, 2012-09-24 at 08:52 -0700, Linus Torvalds wrote:
+> And the whole "if we find any non-idle cpu, skip the whole domain"
+> logic really seems a bit odd (that's not new to your patch, though).
+> Can somebody explain what the whole point of that idiotically written
+> function is? 
 
-It's probably a whole lot faster though.
+So we're looking for an idle cpu around @target. We prefer a cpu of an
+idle core, since SMT-siblings share L[12] cache. The way we do this is
+by iterating the topology tree downwards starting at the LLC (L3) cache
+level. Its groups are either the SMT-siblings or singleton groups.
 
-> Also, who gives a hoot about virtual crap ;-)
+In case its the SMT things, we want to skip if there's a non-idle cpu in
+that mask to avoid sharing L[12].
 
-I only mentioned it to see if your virtual crap detector is still
-working.  Looks like it's still in top condition, low latency and 100%
-hit rate.
+If we don't find an empty core, we go down the domain tree, either
+finding a NULL domain and terminating, or finding the SMT domain, and
+we'll see if there's an idle SMT sibling.
 
--- 
-error compiling committee.c: too many arguments to function
+Is it pretty?, not really. Is there a better way of doing it?, possibly,
+I just haven't thought of it yet :/
