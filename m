@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705Ab2IXOB1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 10:01:27 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:40524 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755678Ab2IXOBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 10:01:25 -0400
-Message-ID: <506066E3.6050705@parallels.com>
-Date: Mon, 24 Sep 2012 17:57:55 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Tejun Heo <tj@kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<cgroups@vger.kernel.org>" <cgroups@vger.kernel.org>,
-        "<kamezawa.hiroyu@jp.fujitsu.com>" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "<devel@openvz.org>" <devel@openvz.org>,
-        "<linux-mm@kvack.org>" <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 05/16] consider a memcg parameter in kmem_create_cache
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-6-git-send-email-glommer@parallels.com> <20120921181458.GG7264@google.com> <506015E7.8030900@parallels.com> <00000139f84bdedc-aae672a6-2908-4cb8-8ed3-8fedf67a21af-000000@email.amazonses.com> <50605500.5050606@parallels.com> <00000139f8836571-6ddc9d5b-1d5f-4542-92f9-ad11070e5b7d-000000@email.amazonses.com> <506063B8.70305@parallels.com> <00000139f890a302-980aee84-40b2-433f-8dbd-e7b1d219f00d-000000@email.amazonses.com>
-In-Reply-To: <00000139f890a302-980aee84-40b2-433f-8dbd-e7b1d219f00d-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755632Ab2IXOCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 10:02:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59952 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755453Ab2IXOC3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 10:02:29 -0400
+Date: Tue, 25 Sep 2012 00:02:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Amir Vadai <amirv@mellanox.co.il>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Roland Dreier <roland@purestorage.com>,
+        Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20120925000217.947b8cd8dca6979bfedee2ca@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Sep_2012_00_02_17_+1000_VCVFN4dVBEP/WxHy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 05:56 PM, Christoph Lameter wrote:
-> On Mon, 24 Sep 2012, Glauber Costa wrote:
-> 
->> The reason I say it is orthogonal, is that people will still want to see
->> their caches in /proc/slabinfo, regardless of wherever else they'll be.
->> It was a requirement from Pekka in one of the first times I posted this,
->> IIRC.
-> 
-> They want to see total counts there true. But as I said we already have a
-> duplication of the statistics otherwise. We have never done the scheme
-> that you propose. That is unexpected. I would not expect the numbers to be
-> there.
-> 
+--Signature=_Tue__25_Sep_2012_00_02_17_+1000_VCVFN4dVBEP/WxHy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I myself personally believe it can potentially clutter slabinfo, and
-won't put my energy in defending the current implementation. What I
-don't want is to keep switching between implementations.
+Hi Andrew,
 
-Pekka, Tejun, what do you guys say here?
+After merging the akpm tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
+drivers/infiniband/hw/mlx4/cm.c: In function 'id_map_alloc':
+drivers/infiniband/hw/mlx4/cm.c:228:36: error: 'MAX_ID_MASK' undeclared (fi=
+rst use in this function)
 
+Caused by commit d7a4e9b679e9 ("IB/mlx4: Add CM paravirtualization") from
+the infiniband tree interacting with commit "idr: rename MAX_LEVEL to
+MAX_IDR_LEVEL" from the akpm tree.
 
+I have added the following merge fix patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 24 Sep 2012 23:57:53 +1000
+Subject: [PATCH] IB/mlx4: fix for MAX_ID_MASK to MAX_IDR_MASK name change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/infiniband/hw/mlx4/cm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/infiniband/hw/mlx4/cm.c b/drivers/infiniband/hw/mlx4/c=
+m.c
+index e25e4da..80079e5 100644
+--- a/drivers/infiniband/hw/mlx4/cm.c
++++ b/drivers/infiniband/hw/mlx4/cm.c
+@@ -225,7 +225,7 @@ id_map_alloc(struct ib_device *ibdev, int slave_id, u32=
+ sl_cm_id)
+ 		ret =3D idr_get_new_above(&sriov->pv_id_table, ent,
+ 					next_id, &id);
+ 		if (!ret) {
+-			next_id =3D ((unsigned) id + 1) & MAX_ID_MASK;
++			next_id =3D ((unsigned) id + 1) & MAX_IDR_MASK;
+ 			ent->pv_cm_id =3D (u32)id;
+ 			sl_id_map_add(ibdev, ent);
+ 		}
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__25_Sep_2012_00_02_17_+1000_VCVFN4dVBEP/WxHy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQYGfpAAoJEECxmPOUX5FEkooQAIJ+MYKXHy558X4YkgGGgLCl
+EYkurYQGsCR0cwLJ3BC2LbqiCWs9godb6E/tuA6MbgtV8cu4nueNU61OlsCbJlL9
+eG/dMuP30i3FpCIzf7SDwFoPOhtrVddap+yv+9gFBcpp5sGMmSuaWyMLCTgzAfAf
+wrimQ7KsQ+GMhNYLlkXDdLJxmH46aTQsNas/JkrB/vsIXSo5tvo1iNvTOxcB5wp3
+2Nh31imYGwln+mzgTmnBnLirEKXHLGCHV+i/MpWRlafb1Ff2DFViOPuIo0WAQ7Na
+vuRyisBaHXoIqw/A7ufs2smloP+c3uii6w3mV+y43rg6la5vV0PW/1JXwrplNE2t
+YRnKG5+XhXhVLt3V19+a5Z2m40ZnEfvBG2/UFyoCyOh50HKw2Z5dbuy4IQMqbpDa
+Y1RiDFwtV1BBnLWNagRL+Sa6e/OpP3Rapux6Lk/oGz9kQ8C0Q0o17vFTlRQIkCou
+RAX90L5bVRA5at9iAeffZz6YxO2b0RZYkkksdEJpYqDo1PP2nK+EdpPldtx55XfV
+2fZyL8Wyzj/zqwayE0g/UTNxy86U6jSqnvOai7sIh7HbuaNmbuvIPNzZXVGOz2o0
+7l93kmpSzEXVsf+hrA0Pxc+qLRD4pX9Q9FzEG3ZNSBGiw0exAqN5abXSq4LDAzzZ
+yiqiG9eYXlWDAbIPnZPk
+=Puf3
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Sep_2012_00_02_17_+1000_VCVFN4dVBEP/WxHy--
