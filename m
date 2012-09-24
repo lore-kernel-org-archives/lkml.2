@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751180Ab2IXVbz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 17:31:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50596 "EHLO
+	id S1751184Ab2IXVcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 17:32:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58183 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab2IXVby (ORCPT
+	with ESMTP id S1750789Ab2IXVcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 17:31:54 -0400
+	Mon, 24 Sep 2012 17:32:02 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Russell King <linux@arm.linux.org.uk>
@@ -17,9 +17,9 @@ Cc: Alan Cox <alan@linux.intel.com>, Jason Wessel <jason.wessel@windriver.com>,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com,
         kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: [PATCH 03/11] kdb: Turn KGDB_KDB=n stubs into static inlines
-Date: Mon, 24 Sep 2012 14:27:52 -0700
-Message-Id: <1348522080-32629-3-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 04/11] tty/serial/core: Introduce poll_init callback
+Date: Mon, 24 Sep 2012 14:27:53 -0700
+Message-Id: <1348522080-32629-4-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <20120924212648.GA27605@lizard>
 References: <20120924212648.GA27605@lizard>
@@ -27,70 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the stubs actually usable, since e.g. 'foo = kdb_register();'
-leads to build errors in !KGDB_KDB case. Plus, with static inlines we
-do type checking.
+It was noticed that polling drivers (like KGDB) are not able to use
+serial ports if the ports were not previously initialized via console.
+I.e.  when booting with console=ttyAMA0 kgdboc=ttyAMA0, everything works
+fine, but with console=ttyFOO kgdboc=ttyAMA0, the kgdboc doesn't work.
+
+This is because we don't initialize the hardware. Calling ->startup() is
+not an option, because drivers request interrupts there, and drivers
+fail to handle situations when tty isn't opened with interrupts enabled.
+
+So, we have to implement a new callback (actually, tty_ops already have
+a similar callback), which does everything needed to initialize just the
+hardware.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Acked-by: Jason Wessel <jason.wessel@windriver.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
 ---
- include/linux/kdb.h | 29 ++++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
+ drivers/tty/serial/serial_core.c | 17 +++++++++++++++++
+ include/linux/serial_core.h      |  1 +
+ 2 files changed, 18 insertions(+)
 
-diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-index 42d9e86..7f6fe6e 100644
---- a/include/linux/kdb.h
-+++ b/include/linux/kdb.h
-@@ -13,6 +13,14 @@
-  * Copyright (C) 2009 Jason Wessel <jason.wessel@windriver.com>
-  */
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 78036c5..0fcfd98a 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -2129,6 +2129,7 @@ static int uart_poll_init(struct tty_driver *driver, int line, char *options)
+ 	int bits = 8;
+ 	int parity = 'n';
+ 	int flow = 'n';
++	int ret;
  
-+typedef enum {
-+	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
-+	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
-+	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
-+} kdb_repeat_t;
+ 	if (!state || !state->uart_port)
+ 		return -1;
+@@ -2137,6 +2138,22 @@ static int uart_poll_init(struct tty_driver *driver, int line, char *options)
+ 	if (!(port->ops->poll_get_char && port->ops->poll_put_char))
+ 		return -1;
+ 
++	if (port->ops->poll_init) {
++		struct tty_port *tport = &state->port;
 +
-+typedef int (*kdb_func_t)(int, const char **);
++		ret = 0;
++		mutex_lock(&tport->mutex);
++		/*
++		 * We don't set ASYNCB_INITIALIZED as we only initialized the
++		 * hw, e.g. state->xmit is still uninitialized.
++		 */
++		if (!test_bit(ASYNCB_INITIALIZED, &tport->flags))
++			ret = port->ops->poll_init(port);
++		mutex_unlock(&tport->mutex);
++		if (ret)
++			return ret;
++	}
 +
- #ifdef	CONFIG_KGDB_KDB
- #include <linux/init.h>
- #include <linux/sched.h>
-@@ -32,14 +40,6 @@ extern atomic_t kdb_event;
- 
- #define KDB_MAXARGS    16 /* Maximum number of arguments to a function  */
- 
--typedef enum {
--	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
--	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
--	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
--} kdb_repeat_t;
--
--typedef int (*kdb_func_t)(int, const char **);
--
- /* KDB return codes from a command or internal kdb function */
- #define KDB_NOTFOUND	(-1)
- #define KDB_ARGCOUNT	(-2)
-@@ -149,11 +149,14 @@ extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
- 			       short, kdb_repeat_t);
- extern int kdb_unregister(char *);
- #else /* ! CONFIG_KGDB_KDB */
--#define kdb_printf(...)
--#define kdb_init(x)
--#define kdb_register(...)
--#define kdb_register_repeat(...)
--#define kdb_uregister(x)
-+static inline __printf(1, 2) int kdb_printf(const char *fmt, ...) { return 0; }
-+static inline void kdb_init(int level) {}
-+static inline int kdb_register(char *cmd, kdb_func_t func, char *usage,
-+			       char *help, short minlen) { return 0; }
-+static inline int kdb_register_repeat(char *cmd, kdb_func_t func, char *usage,
-+				      char *help, short minlen,
-+				      kdb_repeat_t repeat) { return 0; }
-+static inline int kdb_unregister(char *cmd) { return 0; }
- #endif	/* CONFIG_KGDB_KDB */
- enum {
- 	KDB_NOT_INITIALIZED,
+ 	if (options) {
+ 		uart_parse_options(options, &baud, &parity, &bits, &flow);
+ 		return uart_set_options(port, NULL, baud, parity, bits, flow);
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 7cf0b68..822c887 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -274,6 +274,7 @@ struct uart_ops {
+ 	int		(*verify_port)(struct uart_port *, struct serial_struct *);
+ 	int		(*ioctl)(struct uart_port *, unsigned int, unsigned long);
+ #ifdef CONFIG_CONSOLE_POLL
++	int		(*poll_init)(struct uart_port *);
+ 	void	(*poll_put_char)(struct uart_port *, unsigned char);
+ 	int		(*poll_get_char)(struct uart_port *);
+ #endif
 -- 
 1.7.12
 
