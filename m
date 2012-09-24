@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab2IXKHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 06:07:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59251 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab2IXKFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 06:05:14 -0400
-X-IronPort-AV: E=Sophos;i="4.80,474,1344182400"; 
-   d="scan'208";a="5907208"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 02/10] workqueue: remove unneeded check
-Date: Mon, 24 Sep 2012 18:07:04 +0800
-Message-Id: <1348481238-6138-3-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1348481238-6138-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1348481238-6138-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/24 18:05:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/24 18:05:28,
-	Serialize complete at 2012/09/24 18:05:28
+	id S1752984Ab2IXKIf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 06:08:35 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:42337 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab2IXKIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 06:08:34 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
+References: <1347798148-2660-1-git-send-email-linkinjeon@gmail.com>
+	<87lig28fak.fsf@devron.myhome.or.jp>
+	<CAKYAXd-6k7=RmrweR=wTOET50hy8Y7LokCSe1c2JtYd7pzPmsQ@mail.gmail.com>
+	<87ipb45914.fsf@devron.myhome.or.jp>
+	<CAKYAXd9EzKH_x1GaXvSZ7pRebfOcwQqNp6-oEnc2z2evuNo23g@mail.gmail.com>
+	<87ehls53ug.fsf@devron.myhome.or.jp>
+	<87a9wg53mc.fsf@devron.myhome.or.jp>
+	<CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
+Date: Mon, 24 Sep 2012 19:08:24 +0900
+In-Reply-To: <CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
+	(Namjae Jeon's message of "Mon, 24 Sep 2012 16:02:39 +0900")
+Message-ID: <87392768dj.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we always pass flush responsibility to next, we will not deprive it,
-now the ->first_flusher can only be changed by the first_flusher, no one
-can change it, no race as 4ce48b37 said.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Remove the check introduced by 4ce48b37, use BUG_ON() instead.
+>> This means - which code returns error?
+> Sorry, My explanation may be insufficient.
+>
+> nfs_update_inode()-> on NFS client
+> if ((fattr->valid & NFS_ATTR_FATTR_FILEID) && nfsi->fileid != fattr->fileid) {
+> 		printk(KERN_ERR "NFS: server %s error: fileid changed\n"
+> 			"fsid %s: expected fileid 0x%Lx, got 0x%Lx\n",
+> 			NFS_SERVER(inode)->nfs_client->cl_hostname,
+> 			inode->i_sb->s_id, (long long)nfsi->fileid,
+> 			(long long)fattr->fileid);
+> 		goto out_err;
+> 	}
+>
+> that the problem in that case will occur with the file handle on NFS
+> Client because the file handle on NFS client is still referring the
+> old inode number even though the i-pos is same
 
-Also move "wq->first_flusher = NULL;" later.
+I see. fileid seems to be stat.ino on nfsd4. inode->i_ino is actually
+just a hash key of inode hash (exception is only in audit, iirc).
 
-This patch doesn't make any functional difference.
+So, what happens if we set "stat->ino = i_pos" on fat_getattr().
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 360b7e2..acd9e2f 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2682,12 +2682,7 @@ void flush_workqueue(struct workqueue_struct *wq)
- 
- 	mutex_lock(&wq->flush_mutex);
- 
--	/* we might have raced, check again with mutex held */
--	if (wq->first_flusher != &this_flusher)
--		goto out_unlock;
--
--	wq->first_flusher = NULL;
--
-+	BUG_ON(wq->first_flusher != &this_flusher);
- 	BUG_ON(!list_empty(&this_flusher.list));
- 	BUG_ON(wq->flush_color != this_flusher.flush_color);
- 
-@@ -2728,6 +2723,7 @@ void flush_workqueue(struct workqueue_struct *wq)
- 
- 		if (list_empty(&wq->flusher_queue)) {
- 			BUG_ON(wq->flush_color != wq->work_color);
-+			wq->first_flusher = NULL;
- 			break;
- 		}
- 
+int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+{
+	struct inode *inode = dentry->d_inode;
+	generic_fillattr(inode, stat);
+	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
+	if (opts->nfs == FAT_NFS_LIMITED) {
+		/* Use i_pos for ino. This is used as fileid of nfs. */
+		stat->ino = MSDOS_SB(inode->i_sb)->i_pos;
+	}
+	return 0;
+}
 -- 
-1.7.4.4
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
