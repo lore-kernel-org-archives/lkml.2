@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab2IXJxI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 05:53:08 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51326 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab2IXJxH (ORCPT
+	id S1753036Ab2IXJzS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 05:55:18 -0400
+Received: from mga06.intel.com ([134.134.136.21]:6866 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752157Ab2IXJzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 05:53:07 -0400
-Date: Mon, 24 Sep 2012 19:53:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: linux-next: manual merge of the arm-soc tree with the omap_dss2
- tree
-Message-Id: <20120924195305.588277e94ce701abc5e5a6c5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_19_53_05_+1000_qdcee7p872KGdeqd"
+	Mon, 24 Sep 2012 05:55:16 -0400
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        dm-devel@redhat.com, linux-crypto@vger.kernel.org
+Subject: [PATCH 0/1] dm-integrity: integrity protection device-mapper target
+Date: Mon, 24 Sep 2012 12:55:06 +0300
+Message-Id: <cover.1348480396.git.dmitry.kasatkin@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_19_53_05_+1000_qdcee7p872KGdeqd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There are two existing offline integrity models: file level integrity
+(linux-integrity subsystem EVM/IMA-appraisal) and block level integrity
+(dm-verity, dm-crypt).
 
-Hi all,
+This patch provides a new block level method called device-mapper "integrity"
+target (dm-integrity), which provides transparent cryptographic integrity
+protection of the underlying read-write block device using hash-based message
+authentication codes (HMACs). The HMACs can be stored on the same or different
+block device.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/video/omap/lcd_ams_delta.c between commit 9586778de558 ("OMAPFB1:
-remove unnecessary includes") from the  tree and commit e27e35ec735f
-("ARM: OMAP1: Move board-ams-delta.h from plat to mach") from the arm-soc
-tree.
+dm-integrity uses an encrypted key type, stored on the kernel keyring, to
+obtain a secret key for use in cryptographic operations. Encrypted keys are
+never exposed in plain text to user space. The encrypted keys are encrypted
+using master key, which can either be a user defined or trusted key type.
+The secret key, which is usually device specific, binds integrity data to the
+device. As a result data blocks and corresponding HMACs cannot simply be
+copied over from other file systems.
 
-The latter removed a superset of the former (as far as include files is
-concerned), so I used that and can carry the fix as necessary (no action
-is required).
+EVM/IMA-appraisal provides file level integrity protection. The advantages
+are that it is policy based, file measurements are available for remote
+attestation, and files can be digitally signed to provide authenticity.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Both dm-verity and dm-crypt provide block level integrity protection.
+dm-verity provides block level integrity protection for read-only file
+systems, while dm-crypt provides block level integrity protection, with
+minimum penalty, for filesystems requiring full disk encryption.
 
---Signature=_Mon__24_Sep_2012_19_53_05_+1000_qdcee7p872KGdeqd
-Content-Type: application/pgp-signature
+dm-integrity provides a lighter weight read-write block level integrity
+protection for file systems not requiring full disk encryption, but
+which do require writability.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+- Dmitry
 
-iQIcBAEBCAAGBQJQYC2BAAoJEECxmPOUX5FEbn0P/3r/XdhCbFTylhN8LHCTt/gn
-uGHYGYT7wY5+I/O6YSm1QA0cawdXz4Q92XE3uYPithGzyCmvkwKmTj/sOrwAB/Ec
-sBRFaZXjDDJi0vJw1MkodPh0DXuXvuzH6RXLkr+Y1NxdAAn8u8YdRkAwYkv2Q9dE
-XqEktgAmep7ZB01qvWSnqt2pm73q1xDeHG+9Kg0Ttw6T57JHBPzkJYr1novxkX87
-WT5JYQYI1Rc/DZ8pp+xcxLl+14RIQ7MsG/mTFEr3sXZVvnWAP9VSdsb42Ur8X0l0
-fyMN3QG0luNq7yK733huIpBD2eX963LKRAtvhIhKP8qKFCG4loWheCpdd6JWP3kg
-3c255xQZBykGdOHnlPe1USe++Zgumrfnqwf2lsT0FXDBLZ3V63UZNA6MqYLA0pi/
-B7FBiQQL9DtA5GRoYMd2AEvXpCUNTNXEBxpJ+FMfJAVCzxODRN+jPPqhgli7n89n
-CIb2coAP9FwUkWwfocgbBuVKN9qolgO3JpaHftsnlLFK3YWI3WEf+TZHPePnG3Wo
-U8XsYySC/YC5Fpqs9Jy/sXgLIkhbfi5ceEDQ5EMKy1Ej2e1GfOzlsiL4bSXjZOYs
-ZEqwkUfY0SS/iVyFDFWMsqgQkxemW9trpclncw8SRN42iq0AI2hLoK0wHf2CwNCK
-3kR8DBjwbtg08hVhJVfj
-=+53r
------END PGP SIGNATURE-----
+Dmitry Kasatkin (1):
+  dm-integrity: integrity protection device-mapper target
 
---Signature=_Mon__24_Sep_2012_19_53_05_+1000_qdcee7p872KGdeqd--
+ Documentation/device-mapper/dm-integrity.txt |  125 ++++
+ drivers/md/Kconfig                           |   12 +
+ drivers/md/Makefile                          |    1 +
+ drivers/md/dm-integrity.c                    | 1019 ++++++++++++++++++++++++++
+ 4 files changed, 1157 insertions(+)
+ create mode 100644 Documentation/device-mapper/dm-integrity.txt
+ create mode 100644 drivers/md/dm-integrity.c
+
+-- 
+1.7.9.5
+
