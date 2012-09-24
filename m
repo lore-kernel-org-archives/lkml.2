@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab2IXLnx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 07:43:53 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:43909 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261Ab2IXLnq (ORCPT
+	id S1754722Ab2IXLo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 07:44:58 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:10457 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187Ab2IXLo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 07:43:46 -0400
-Message-ID: <50604691.90904@linux.vnet.ibm.com>
-Date: Mon, 24 Sep 2012 17:10:01 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Mon, 24 Sep 2012 07:44:57 -0400
+X-IronPort-AV: E=Sophos;i="4.80,474,1344211200"; 
+   d="scan'208";a="14721671"
+Message-ID: <1348487093.3452.62.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH v2] Persistent grant maps for xen blk drivers
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: "Oliver Chick (Intern)" <oliver.chick@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Date: Mon, 24 Sep 2012 12:44:53 +0100
+In-Reply-To: <506061E6020000780009D4AB@nat28.tlf.novell.com>
+References: <1348242767-23732-1-git-send-email-oliver.chick@citrix.com>
+	 <506061E6020000780009D4AB@nat28.tlf.novell.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <1348486423.11847.45.camel@twins>
-In-Reply-To: <1348486423.11847.45.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12092411-6102-0000-0000-000002488FAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 05:03 PM, Peter Zijlstra wrote:
-> On Fri, 2012-09-21 at 17:30 +0530, Raghavendra K T wrote:
->> +unsigned long rq_nr_running(void)
->> +{
->> +       return this_rq()->nr_running;
->> +}
->> +EXPORT_SYMBOL(rq_nr_running);
->
-> Uhm,.. no, that's a horrible thing to export.
->
+On Mon, 2012-09-24 at 12:36 +0100, Jan Beulich wrote:
+> >>> On 21.09.12 at 17:52, Oliver Chick <oliver.chick@citrix.com> wrote:
+> > Changes since v1:
+> > 
+> >  * Maximum number of persistent grants per device now 64, rather than
+> >    256, as this is the actual maxmimum request in a (1 page) ring.
+> 
+> As said previously, I don't see why this needs to have a separate
+> #define at all - it's simply __RING_SIZE(). No adding this would
+> also imply that - apart from perhaps documenting the new xenstore
+> nodes - io/blkif.h would need changing at all (which otherwise would
+> require a hypervisor side patch to be submitted too).
 
-True.. I had the same fear :).  Other options I thought were something
-like  nr_running()/num_online_cpus, this_cpu_load(), etc..
+Whether or not this definition is required in blkif.h we certainly want
+a patch to the hypervisor tree to document this new protocol extension.
 
-Could you please let me know, if we can rely some good metric to say,
-system is not overcommitted/overcommitted?
-
+Ian.
 
