@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121Ab2IXMTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:19:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44848 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab2IXMTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:19:01 -0400
-Date: Mon, 24 Sep 2012 22:18:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: build failure after merge of the userns tree
-Message-Id: <20120924221859.b3f8fbc112ed7ff305b93512@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_22_18_59_+1000_mG7M/WibNbRQUYBd"
+	id S1755165Ab2IXMVB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 08:21:01 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:32780 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754475Ab2IXMVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 08:21:00 -0400
+Date: Mon, 24 Sep 2012 14:20:53 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@amd64.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Conny Seidel <conny.seidel@amd.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
+Message-ID: <20120924122053.GD22303@aftab.osrc.amd.com>
+References: <20120924102324.GA22303@aftab.osrc.amd.com>
+ <50603829.9050904@linux.vnet.ibm.com>
+ <20120924110554.GC22303@aftab.osrc.amd.com>
+ <50604047.7000908@linux.vnet.ibm.com>
+ <20120924113447.GA25182@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120924113447.GA25182@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_22_18_59_+1000_mG7M/WibNbRQUYBd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 24, 2012 at 07:34:47PM +0800, Fengguang Wu wrote:
+> Will you test such a line? At least the generic do_div() only uses the
+> lower 32bits for division.
+> 
+>         WARN_ON(!(den & 0xffffffff));
 
-Hi Eric,
+But, but, the asm output says:
 
-After merging the userns tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+  28:   48 89 c8                mov    %rcx,%rax
+  2b:*  48 f7 f7                div    %rdi     <-- trapping instruction
+  2e:   31 d2                   xor    %edx,%edx
 
-kernel/audit.c: In function 'audit_receive_msg':
-kernel/audit.c:753:37: error: 'struct netlink_skb_parms' has no member name=
-d 'pid'
+and this version of DIV does an unsigned division of RDX:RAX by the
+contents of a *64-bit register* ... in our case %rdi.
 
-I missed the conflict between commit 35ce9888ad2a ("audit: Properly set
-the origin port id of audit messages") from the userns tree and commit
-15e473046cb6 ("netlink: Rename pid to portid to avoid confusion") from
-the net-next tree.  I have added the following merge fix patch and can
-carry it as necessary.
+Srivatsa's oops  shows the same:
 
-=46rom 55a9ee70146f37c559333b1f35154618c708203f Mon Sep 17 00:00:00 2001
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 24 Sep 2012 22:05:38 +1000
-Subject: [PATCH] audit: fix up for pid to portid change
+  28:   48 89 f0                mov    %rsi,%rax
+  2b:*  48 f7 f7                div    %rdi     <-- trapping instruction
+  2e:   41 8b 94 24 74 02 00    mov    0x274(%r12),%edx
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- kernel/audit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Right?
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index ea9b67a..4d0ceed 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -750,7 +750,7 @@ static int audit_receive_msg(struct sk_buff *skb, struc=
-t nlmsghdr *nlh)
- 					size--;
- 				audit_log_n_untrustedstring(ab, data, size);
- 			}
--			audit_set_pid(ab, NETLINK_CB(skb).pid);
-+			audit_set_pid(ab, NETLINK_CB(skb).portid);
- 			audit_log_end(ab);
- 		}
- 		break;
---=20
-1.7.10.280.gaa39
+-- 
+Regards/Gruss,
+Boris.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__24_Sep_2012_22_18_59_+1000_mG7M/WibNbRQUYBd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYE+zAAoJEECxmPOUX5FE5rcQAINEUOeO0+eykO5QGURPqWlV
-1+ClzSUyrxinrXNJw3N95HdDhRDXGJvQF6yKj9P/BqJ2W6D87VNEZj/eLXVvLHUg
-Dtkwo9Qvd/BzAx7wsr4CWgl4gzVWL+yBnubw2yUNU4AO3jRlWIiJUgDTd4/zWot5
-TiT1Lmr3jdWM3H5KflISieEjh5mrlu/meYMpkE6BKRjwq3p6eAotOV+zHa59b3G7
-zdCoWz0ydALDREClJFGJy7ypANdveoWlGYgpXz82h8J4fepIAUlpDjnex9XqaTPN
-mV43j3N3QwW9PmSp6mZ6Cxr5E+s5m2fdL8sN+NB8XnFgEkTx3v4VhJ9W5mm5d+51
-B34Gjt1r814PoOyWDC/plGBKwJkQxiO+G5TSLvrFXruK+xZWw/OXtzpS0iGM+Dr2
-ybqkG5um2nLUsF9PYlen63RUSEHI7YultEu6GS0d3dCnEQq9mfLzXVPlQWHcPKZS
-6iJAqCGZRFDyLhdcNN6h/Y6KVWwx2S8qVjMni0Q4Nl7Kez42hxPtCA0eLsCPORKg
-9zLcp89xx9XUjQZ4L5SedJNlEe/7CPHw3r5u16ffc3IZXNGqIPDp2pqdgiZBDN91
-UBXO9ucGgUdgohoaH6+pqdaFIo3Hz326WJncHYc5SAqbZnC89Durgv1bgGf/ZgeJ
-gsino7V7oWKywIh42kPF
-=xlif
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Sep_2012_22_18_59_+1000_mG7M/WibNbRQUYBd--
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
