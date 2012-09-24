@@ -1,60 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab2IXQap (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:30:45 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41638 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782Ab2IXQao (ORCPT
+	id S1756896Ab2IXQbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:31:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39460 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756829Ab2IXQbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:30:44 -0400
+	Mon, 24 Sep 2012 12:31:51 -0400
+Date: Mon, 24 Sep 2012 17:31:46 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: linux@arm.linux.org.uk, catalin.marinas@arm.com, linus.walleij@linaro.org,
+        will.deacon@arm.com, grant.likely@secretlab.ca,
+        paul.gortmaker@windriver.com, vincent.guittot@linaro.org,
+        nico@linaro.org, davidb@codeaurora.org, plagnioj@jcrosoft.com,
+        arnd@arndb.de, marc.zyngier@arm.com, rob.herring@calxeda.com,
+        vitalya@ti.com, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, rmallon@gmail.com,
+        frank.rowand@am.sony.com, sjg@chromium.org, sboyd@codeaurora.org,
+        linux-kernel@vger.kernel.org, rabin@rab.in,
+        hsweeten@visionengravers.com, tj@kernel.org
+Subject: Re: [PATCH v3 RESEND 05/17] ARM: LPAE: support 64-bit virt_to_phys
+ patching
+Message-ID: <20120924163146.GD2122@linaro.org>
+References: <1348242975-19184-1-git-send-email-cyril@ti.com>
+ <1348242975-19184-6-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1348503163.11847.97.camel@twins>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
- <20120914212717.GA29307@liondog.tnic> <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
- <20120924150048.GB11266@suse.de> <1348500647.11847.69.camel@twins>
- <CA+55aFy5C-gFs6ZU5LyyVN=oxpuoaOpydkbJbhri215QkLx3aA@mail.gmail.com> <1348503163.11847.97.camel@twins>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 24 Sep 2012 09:30:05 -0700
-X-Google-Sender-Auth: 9P163Iv8cPMhfyOds4xVn4yl_9I
-Message-ID: <CA+55aFzU2QOgexc2cpEkWqPBw6wPJMBuUzRyxTxu=rxZV_ay3A@mail.gmail.com>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mel Gorman <mgorman@suse.de>, Borislav Petkov <bp@alien8.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348242975-19184-6-git-send-email-cyril@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 9:12 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> So we're looking for an idle cpu around @target. We prefer a cpu of an
-> idle core, since SMT-siblings share L[12] cache. The way we do this is
-> by iterating the topology tree downwards starting at the LLC (L3) cache
-> level. Its groups are either the SMT-siblings or singleton groups.
+On Fri, Sep 21, 2012 at 11:56:03AM -0400, Cyril Chemparathy wrote:
+> This patch adds support for 64-bit physical addresses in virt_to_phys()
+> patching.  This does not do real 64-bit add/sub, but instead patches in the
+> upper 32-bits of the phys_offset directly into the output of virt_to_phys.
+> 
+> There is no corresponding change on the phys_to_virt() side, because
+> computations on the upper 32-bits would be discarded anyway.
+> 
+> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> ---
+>  arch/arm/include/asm/memory.h |   38 ++++++++++++++++++++++++++++++++++++--
+>  arch/arm/kernel/head.S        |    4 ++++
+>  arch/arm/kernel/setup.c       |    2 +-
+>  3 files changed, 41 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> index 88ca206..f3e8f88 100644
+> --- a/arch/arm/include/asm/memory.h
+> +++ b/arch/arm/include/asm/memory.h
+> @@ -154,13 +154,47 @@
+>  #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+>  
+>  extern unsigned long	__pv_offset;
+> -extern unsigned long	__pv_phys_offset;
+> +extern phys_addr_t	__pv_phys_offset;
+>  #define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
+>  
+>  static inline phys_addr_t __virt_to_phys(unsigned long x)
+>  {
+> -	unsigned long t;
+> +	phys_addr_t t;
+> +
+> +#ifndef CONFIG_ARM_LPAE
+>  	early_patch_imm8("add", t, x, __pv_offset, 0);
+> +#else
+> +	unsigned long __tmp;
+> +
+> +#ifndef __ARMEB__
+> +#define PV_PHYS_HIGH	"(__pv_phys_offset + 4)"
+> +#else
+> +#define PV_PHYS_HIGH	"__pv_phys_offset"
+> +#endif
+> +
+> +	early_patch_stub(
+> +	/* type */		PATCH_IMM8,
+> +	/* code */
+> +		"ldr		%[tmp], =__pv_offset\n"
+> +		"ldr		%[tmp], [%[tmp]]\n"
+> +		"add		%Q[to], %[from], %[tmp]\n"
+> +		"ldr		%[tmp], =" PV_PHYS_HIGH "\n"
+> +		"ldr		%[tmp], [%[tmp]]\n"
+> +		"mov		%R[to], %[tmp]\n",
+> +	/* pad */		4,
+> +	/* patch_data */
+> +		".long		__pv_offset\n"
+> +		"add		%Q[to], %[from], %[imm]\n"
+> +		".long	"	PV_PHYS_HIGH "\n"
+> +		"mov		%R[to], %[imm]\n",
+> +	/* operands */
+> +		: [to]	 "=r"	(t),
+> +		  [tmp]	 "=&r"	(__tmp)
+> +		: [from] "r"	(x),
+> +		  [imm]	 "I"	(__IMM8),
+> +			 "i"	(&__pv_offset),
+> +			 "i"	(&__pv_phys_offset));
 
-So if it'sally guaranteed to be SMT-siblings or singleton groups, then
-the whole "for_each_cpu()" is a total disaster. That's a truly
-expensive way to look up adjacent CPU's. Is there no saner way to look
-up that thing? Like a simple circular list of SMT siblings (I realize
-that on x86 that list is either one or two, but other SMT
-implementations are groups of four or more).
+So, the actual offset we can apply is:
 
-So I suspect your patch largely makes things faster (avoid those
-insane cpumask operations), but the for_each_cpu() one is still an
-absolutely horrible way to find a couple of basically statically known
-(modulo hotplug, which is disabled here anyway) CPU's. So even if the
-algorithm makes sense at some higher level, it doesn't really seem to
-make sense from an implementation standpoint.
+__pv_phys_offset + __pv_offset
 
-Also, do we really want to spread things out that aggressively?
-How/why do we know that we don't want to share L2 caches, for example?
-It sounds like a bad idea from a power standpoint, and possibly
-performance too.
+where:
 
-                    Linus
+ * the high 32 bits of the address being fixed up are assumed to be 0
+   (true, because the kernel is initially always fixed up to an address
+   range <4GB)
+
+ * the low 32 bits of __pv_phys_offset are assumed to be 0 (?)
+
+ * the full offset is of the form
+
+        ([..0..]XX[..0..] << 32) | [..0..]YY[..0..] 
+
+Is this intentional?  It seems like a rather weird constraint...  but
+it may be sensible.  PAGE_OFFSET is probably 0xc0000000 or 0x80000000,
+(so YY can handle that) and the actual RAM above 4GB will likely be
+huge and aligned on some enormous boundary in such situations (so that
+XX can handle that).
+
+So long as the low RAM alias is not misaligned relative to the high alias
+on a finer granularity than 16MB (so that YY = (PAGE_OFFSET +/- the
+misalignment) is still a legal immediate), I guess there should not be a
+problem.
+
+[...]
+
+Cheers
+---Dave
