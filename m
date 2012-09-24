@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902Ab2IXWkB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:40:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47788 "EHLO
+	id S1751785Ab2IXWkY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:40:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45514 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab2IXWfp (ORCPT
+	with ESMTP id S1751636Ab2IXWfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:35:45 -0400
+	Mon, 24 Sep 2012 18:35:44 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         neilb@suse.de, vgoyal@redhat.com
-Subject: [PATCH v3 13/26] raid1: use bio_reset()
-Date: Mon, 24 Sep 2012 15:34:53 -0700
-Message-Id: <1348526106-17074-14-git-send-email-koverstreet@google.com>
+Subject: [PATCH v3 12/26] raid10: Use bio_reset()
+Date: Mon, 24 Sep 2012 15:34:52 -0700
+Message-Id: <1348526106-17074-13-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1348526106-17074-1-git-send-email-koverstreet@google.com>
 References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
@@ -22,67 +22,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+More prep work for immutable bio vecs, mainly getting rid of references
+to bi_idx.
+
+bio_reset was being open coded in a few places. The one in sync_request
+was a bit nontrivial to convert, so could use some extra eyeballs.
+
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
 CC: NeilBrown <neilb@suse.de>
+Acked-by: NeilBrown <neilb@suse.de>
 ---
- drivers/md/raid1.c | 24 ++++++------------------
- 1 file changed, 6 insertions(+), 18 deletions(-)
+ drivers/md/raid10.c | 31 +++++++++----------------------
+ 1 file changed, 9 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 28f506a..4614b9e 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1851,7 +1851,7 @@ static int process_checks(struct r1bio *r1_bio)
- 		struct bio *sbio = r1_bio->bios[i];
- 		int size;
- 
--		if (r1_bio->bios[i]->bi_end_io != end_sync_read)
-+		if (sbio->bi_end_io != end_sync_read)
- 			continue;
- 
- 		if (test_bit(BIO_UPTODATE, &sbio->bi_flags)) {
-@@ -1876,16 +1876,15 @@ static int process_checks(struct r1bio *r1_bio)
- 			continue;
- 		}
- 		/* fixup the bio for reuse */
-+		bio_reset(sbio);
- 		sbio->bi_vcnt = vcnt;
- 		sbio->bi_size = r1_bio->sectors << 9;
--		sbio->bi_idx = 0;
--		sbio->bi_phys_segments = 0;
--		sbio->bi_flags &= ~(BIO_POOL_MASK - 1);
--		sbio->bi_flags |= 1 << BIO_UPTODATE;
--		sbio->bi_next = NULL;
- 		sbio->bi_sector = r1_bio->sector +
- 			conf->mirrors[i].rdev->data_offset;
- 		sbio->bi_bdev = conf->mirrors[i].rdev->bdev;
-+		sbio->bi_end_io = end_sync_read;
-+		sbio->bi_private = r1_bio;
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index f001c1b..6b83207 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1958,13 +1958,10 @@ static void sync_request_write(struct mddev *mddev, struct r10bio *r10_bio)
+ 		 * First we need to fixup bv_offset, bv_len and
+ 		 * bi_vecs, as the read request might have corrupted these
+ 		 */
++		bio_reset(tbio);
 +
- 		size = sbio->bi_size;
- 		for (j = 0; j < vcnt ; j++) {
- 			struct bio_vec *bi;
-@@ -2426,18 +2425,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr, int *skipp
- 	for (i = 0; i < conf->raid_disks * 2; i++) {
- 		struct md_rdev *rdev;
- 		bio = r1_bio->bios[i];
+ 		tbio->bi_vcnt = vcnt;
+ 		tbio->bi_size = r10_bio->sectors << 9;
+-		tbio->bi_idx = 0;
+-		tbio->bi_phys_segments = 0;
+-		tbio->bi_flags &= ~(BIO_POOL_MASK - 1);
+-		tbio->bi_flags |= 1 << BIO_UPTODATE;
+-		tbio->bi_next = NULL;
+ 		tbio->bi_rw = WRITE;
+ 		tbio->bi_private = r10_bio;
+ 		tbio->bi_sector = r10_bio->devs[i].addr;
+@@ -2970,6 +2967,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 					}
+ 				}
+ 				bio = r10_bio->devs[0].bio;
++				bio_reset(bio);
+ 				bio->bi_next = biolist;
+ 				biolist = bio;
+ 				bio->bi_private = r10_bio;
+@@ -2994,6 +2992,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 				rdev = mirror->rdev;
+ 				if (!test_bit(In_sync, &rdev->flags)) {
+ 					bio = r10_bio->devs[1].bio;
++					bio_reset(bio);
+ 					bio->bi_next = biolist;
+ 					biolist = bio;
+ 					bio->bi_private = r10_bio;
+@@ -3022,6 +3021,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 				if (rdev == NULL || bio == NULL ||
+ 				    test_bit(Faulty, &rdev->flags))
+ 					break;
++				bio_reset(bio);
+ 				bio->bi_next = biolist;
+ 				biolist = bio;
+ 				bio->bi_private = r10_bio;
+@@ -3120,7 +3120,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 				r10_bio->devs[i].repl_bio->bi_end_io = NULL;
+ 
+ 			bio = r10_bio->devs[i].bio;
+-			bio->bi_end_io = NULL;
++			bio_reset(bio);
+ 			clear_bit(BIO_UPTODATE, &bio->bi_flags);
+ 			if (conf->mirrors[d].rdev == NULL ||
+ 			    test_bit(Faulty, &conf->mirrors[d].rdev->flags))
+@@ -3157,6 +3157,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 
+ 			/* Need to set up for writing to the replacement */
+ 			bio = r10_bio->devs[i].repl_bio;
++			bio_reset(bio);
+ 			clear_bit(BIO_UPTODATE, &bio->bi_flags);
+ 
+ 			sector = r10_bio->devs[i].addr;
+@@ -3190,17 +3191,6 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 		}
+ 	}
+ 
+-	for (bio = biolist; bio ; bio=bio->bi_next) {
 -
--		/* take from bio_init */
--		bio->bi_next = NULL;
--		bio->bi_flags &= ~(BIO_POOL_MASK-1);
--		bio->bi_flags |= 1 << BIO_UPTODATE;
--		bio->bi_rw = READ;
+-		bio->bi_flags &= ~(BIO_POOL_MASK - 1);
+-		if (bio->bi_end_io)
+-			bio->bi_flags |= 1 << BIO_UPTODATE;
 -		bio->bi_vcnt = 0;
 -		bio->bi_idx = 0;
 -		bio->bi_phys_segments = 0;
 -		bio->bi_size = 0;
--		bio->bi_end_io = NULL;
--		bio->bi_private = NULL;
-+		bio_reset(bio);
+-	}
+-
+ 	nr_sectors = 0;
+ 	if (sector_nr + max_sync < max_sector)
+ 		max_sector = sector_nr + max_sync;
+@@ -4253,17 +4243,14 @@ read_more:
+ 		}
+ 		if (!rdev2 || test_bit(Faulty, &rdev2->flags))
+ 			continue;
++
++		bio_reset(b);
+ 		b->bi_bdev = rdev2->bdev;
+ 		b->bi_sector = r10_bio->devs[s/2].addr + rdev2->new_data_offset;
+ 		b->bi_private = r10_bio;
+ 		b->bi_end_io = end_reshape_write;
+ 		b->bi_rw = WRITE;
+-		b->bi_flags &= ~(BIO_POOL_MASK - 1);
+-		b->bi_flags |= 1 << BIO_UPTODATE;
+ 		b->bi_next = blist;
+-		b->bi_vcnt = 0;
+-		b->bi_idx = 0;
+-		b->bi_size = 0;
+ 		blist = b;
+ 	}
  
- 		rdev = rcu_dereference(conf->mirrors[i].rdev);
- 		if (rdev == NULL ||
 -- 
 1.7.12
 
