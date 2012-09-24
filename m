@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab2IXWmr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:42:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43938 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab2IXWfb (ORCPT
+	id S1751553Ab2IXWnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:43:31 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42398 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336Ab2IXWna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:35:31 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        neilb@suse.de, vgoyal@redhat.com,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH v3 01/26] block: Fix a buffer overrun in bio_integrity_split()
-Date: Mon, 24 Sep 2012 15:34:41 -0700
-Message-Id: <1348526106-17074-2-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1348526106-17074-1-git-send-email-koverstreet@google.com>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
+	Mon, 24 Sep 2012 18:43:30 -0400
+Date: Mon, 24 Sep 2012 15:43:27 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nico Schottelius <nico-kernel20120920@schottelius.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Dave Kleikamp <shaggy@kernel.org>,
+        jfs-discussion@lists.sourceforge.net
+Subject: Re: Out of memory on 3.5 kernels
+In-Reply-To: <20120921194931.GA732@schottelius.org>
+Message-ID: <alpine.DEB.2.00.1209241538310.6356@chino.kir.corp.google.com>
+References: <505B1FA0.6030100@broadcom.com> <20120921194931.GA732@schottelius.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bio_integrity_split() seemed to be confusing pointers and arrays -
-bip_vec in bio_integrity_payload is an array appended to the end of the
-payload, so the bio_vecs in struct bio_pair need to come immediately
-after the bio_integrity_payload they're for, and there was an assignment
-in bio_integrity_split() that didn't make any sense.
+On Fri, 21 Sep 2012, Nico Schottelius wrote:
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Martin K. Petersen <martin.petersen@oracle.com>
----
- fs/bio-integrity.c  | 3 ---
- include/linux/bio.h | 6 ++++--
- 2 files changed, 4 insertions(+), 5 deletions(-)
+>  Active / Total Objects (% used)    : 1165130 / 1198087 (97.2%)
+>  Active / Total Slabs (% used)      : 81027 / 81027 (100.0%)
+>  Active / Total Caches (% used)     : 69 / 101 (68.3%)
+>  Active / Total Size (% used)       : 1237249.81K / 1246521.94K (99.3%)
+>  Minimum / Average / Maximum Object : 0.01K / 1.04K / 15.23K
+> 
+>   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   
+> 993607 993607 100%    1.21K  75358       26   2411456K jfs_ip
 
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index a3f28f3..c7b6b52 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -697,9 +697,6 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
- 	bp->iv1 = bip->bip_vec[0];
- 	bp->iv2 = bip->bip_vec[0];
- 
--	bp->bip1.bip_vec[0] = bp->iv1;
--	bp->bip2.bip_vec[0] = bp->iv2;
--
- 	bp->iv1.bv_len = sectors * bi->tuple_size;
- 	bp->iv2.bv_offset += sectors * bi->tuple_size;
- 	bp->iv2.bv_len -= sectors * bi->tuple_size;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index b31036f..8e2d108 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -200,8 +200,10 @@ struct bio_pair {
- 	struct bio			bio1, bio2;
- 	struct bio_vec			bv1, bv2;
- #if defined(CONFIG_BLK_DEV_INTEGRITY)
--	struct bio_integrity_payload	bip1, bip2;
--	struct bio_vec			iv1, iv2;
-+	struct bio_integrity_payload	bip1;
-+	struct bio_vec			iv1;
-+	struct bio_integrity_payload	bip2;
-+	struct bio_vec			iv2;
- #endif
- 	atomic_t			cnt;
- 	int				error;
--- 
-1.7.12
+Well that doesn't look good.  100% of the inode cache for jfs are being 
+used which either means
 
+ - there's a memory leak, or
+
+ - there's some sort of throttling issue in jfs.
+
+And those objects are consuming ~2.3GB of slab on your 4GB machine and 
+seems to only have occurred between v3.4.2 to v3.5.3.
+
+It would be interesting to see what kmemleak would tell us.
+
+Adding Dave Kleikamp to the cc.
