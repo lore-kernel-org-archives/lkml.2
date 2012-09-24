@@ -1,80 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212Ab2IXQ5q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:57:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35536 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab2IXQ5p (ORCPT
+	id S1757229Ab2IXQ7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:59:12 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:44468 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757108Ab2IXQ7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:57:45 -0400
-From: manoj.iyer@canonical.com
-To: linux-kernel@vger.kernel.org
-Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <mjg@redhat.com>, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, manoj.iyer@canonical.com
-Subject: [PATCH 1/1] thinkpad-acpi: enable loading module with new B-series Lenovo BIOS
-Date: Mon, 24 Sep 2012 11:57:40 -0500
-Message-Id: <1348505860-4121-1-git-send-email-manoj.iyer@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348505788-4090-1-git-send-email-manoj.iyer@canonical.com>
-References: <1348505788-4090-1-git-send-email-manoj.iyer@canonical.com>
+	Mon, 24 Sep 2012 12:59:09 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjlUAEKQYFBV5h1yPGdsb2JhbABFhSKFI7N5GQEBAQEfGQ0ngiABAQQBJxMcIwULCAMOOBQlChoTh38KuEMUkFJgA5VkhXGNHIFYIg
+X-IronPort-AV: E=Sophos;i="4.80,477,1344204000"; 
+   d="scan'208";a="194327726"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 24 Sep 2012 18:59:40 +0200
+To: Yufeng Shen <miletus@chromium.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Benson Leung <bleung@chromium.org>
+Subject: Re: [RFC/PATCH] Input: release MT fingers on device reset/disconnect
+Message-ID: <20120924165940.GA451@polaris.bitmath.org>
+References: <1348255105-24558-1-git-send-email-miletus@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348255105-24558-1-git-send-email-miletus@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+Hi Yufeng,
 
-The new B series BIOS has version string 43CN46WW. The driver
-requires that 2nd and 3rd characters be 'E' and 'T' respectively,
-where as the newer BIOS has 'C' and 'N' respectively. Failing to
-load the module causes some of the hotkeys to not work.
+> We are already releasing all pressed keys on device reset and
+> disconnect. This patch adds the finger release for multi-touch
+> device.
+> 
+> Different than the key release logic that only the pressed keys
+> are released, here all the possible fingers are released even
+> it is not recorded as touched down in the input_dev's internal
+> state. The motivation is that while releasing an alreay released
+> finger won't do harm to downstream, it is helpful in the case
+> when the downstream is out of sync with input_dev's internal
+> state, we are bringing them back to in sync by cleaning up both
+> input_dev and downstream's finger states.
+> 
+> Signed-off-by: Yufeng Shen <miletus@chromium.org>
+> ---
 
-Before the patch
-================
-sudo modprobe thinkpad_acpi
-FATAL: Error inserting thinkpad_acpi (/lib/modules/3.5.0-15-generic/kernel/drivers/platform/x86/thinkpad_acpi.ko): No such device
+To reset the input state centrally upon disconnect makes some sense;
+upon suspend/resume, less so. It is really up to the driver to
+determine what part of the input state survives a suspend/resume
+cycle
 
-After the patch
-===============
-[44937.265438] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-[44937.265445] thinkpad_acpi: http://ibm-acpi.sf.net/
-[44937.265449] thinkpad_acpi: ThinkPad BIOS 43CN46WW, EC unknown
-[44937.265453] thinkpad_acpi: Lenovo Lenovo B470e, model HuronRiver Platform
-[44937.266479] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-[44937.266557] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
-[44937.267846] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
-[44937.268131] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input17
+>  drivers/input/input.c |   34 ++++++++++++++++++++++++++++++++--
+>  1 files changed, 32 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/input/input.c b/drivers/input/input.c
+> index 768e46b..ebdc450 100644
+> --- a/drivers/input/input.c
+> +++ b/drivers/input/input.c
+> @@ -584,6 +584,34 @@ void input_close_device(struct input_handle *handle)
+>  EXPORT_SYMBOL(input_close_device);
+>  
+>  /*
+> + * Simulate finger release events for all possible fingers. It has no harm
+> + * to release an alreay released finger, but has the benefit that if the
+> + * downstream finger states are out of sync with input_dev's finger states,
+> + * we are helping to clean them up.
+> + * The function must be called with dev->event_lock held.
+> + */
+> +static void input_dev_release_mt(struct input_dev *dev)
 
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Tested-by: James Ferguson <james.ferguson@canonical.com>
----
- drivers/platform/x86/thinkpad_acpi.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+This should be moved to input-mt.c instead.
 
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index 52daaa8..d5a9f1c 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -8585,7 +8585,8 @@ static bool __pure __init tpacpi_is_valid_fw_id(const char* const s,
- 	return s && strlen(s) >= 8 &&
- 		tpacpi_is_fw_digit(s[0]) &&
- 		tpacpi_is_fw_digit(s[1]) &&
--		s[2] == t && s[3] == 'T' &&
-+		s[2] == t &&
-+		(s[3] == 'T' || s[3] == 'N') &&
- 		tpacpi_is_fw_digit(s[4]) &&
- 		tpacpi_is_fw_digit(s[5]);
- }
-@@ -8618,7 +8619,8 @@ static int __must_check __init get_thinkpad_model_data(
- 		return -ENOMEM;
- 
- 	/* Really ancient ThinkPad 240X will fail this, which is fine */
--	if (!tpacpi_is_valid_fw_id(tp->bios_version_str, 'E'))
-+	if (!(tpacpi_is_valid_fw_id(tp->bios_version_str, 'E') ||
-+	      tpacpi_is_valid_fw_id(tp->bios_version_str, 'C')))
- 		return 0;
- 
- 	tp->bios_model = tp->bios_version_str[0]
--- 
-1.7.9.5
+> +{
+> +	int i;
+> +
+> +	if (!dev->mt)
+> +		return;
+> +
+> +	if (!is_event_supported(EV_ABS, dev->evbit, EV_MAX) ||
+> +	    !is_event_supported(ABS_MT_SLOT, dev->absbit, ABS_MAX) ||
+> +	    !is_event_supported(ABS_MT_TRACKING_ID, dev->absbit, ABS_MAX))
+> +		return;
 
+No need to check those; implied by mtsize != 0.
+
+> +
+> +	for (i = 0; i < dev->mtsize; i++) {
+> +		input_mt_set_value(&dev->mt[i], ABS_MT_TRACKING_ID, -1);
+> +		input_pass_event(dev, EV_ABS, ABS_MT_SLOT, i);
+> +		input_pass_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
+> +	}
+
+Please use the proper api here (see any mt driver for hints).
+
+> +
+> +	input_pass_event(dev, EV_SYN, SYN_REPORT, 1);
+
+input_sync()
+
+> +}
+> +
+> +/*
+>   * Simulate keyup events for all keys that are marked as pressed.
+>   * The function must be called with dev->event_lock held.
+>   */
+> @@ -627,6 +655,7 @@ static void input_disconnect_device(struct input_dev *dev)
+>  	 * reach any handlers.
+>  	 */
+>  	input_dev_release_keys(dev);
+> +	input_dev_release_mt(dev);
+>  
+>  	list_for_each_entry(handle, &dev->h_list, d_node)
+>  		handle->open = 0;
+> @@ -1569,7 +1598,7 @@ static void input_dev_toggle(struct input_dev *dev, bool activate)
+>   * @dev: input device whose state needs to be reset
+>   *
+>   * This function tries to reset the state of an opened input device and
+> - * bring internal state and state if the hardware in sync with each other.
+> + * bring internal state and state of the hardware in sync with each other.
+>   * We mark all keys as released, restore LED state, repeat rate, etc.
+>   */
+>  void input_reset_device(struct input_dev *dev)
+> @@ -1581,10 +1610,11 @@ void input_reset_device(struct input_dev *dev)
+>  
+>  		/*
+>  		 * Keys that have been pressed at suspend time are unlikely
+> -		 * to be still pressed when we resume.
+> +		 * to be still pressed when we resume. Same logic for MT.
+>  		 */
+>  		spin_lock_irq(&dev->event_lock);
+>  		input_dev_release_keys(dev);
+> +		input_dev_release_mt(dev);
+
+Since this is called from input_dev_resume(), I am not so sure this is
+a good idea. Rather, we should be able to rely on the driver's
+suspend/resume implementation here.
+
+>  		spin_unlock_irq(&dev->event_lock);
+>  	}
+>  
+> -- 
+> 1.7.7.3
+> 
+
+Thanks,
+Henrik
