@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab2IXTpA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 15:45:00 -0400
-Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:43209 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757778Ab2IXTo6 (ORCPT
+	id S1757937Ab2IXTq6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 15:46:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34887 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757570Ab2IXTq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 15:44:58 -0400
-Message-ID: <5060B82B.1050206@cs.tu-berlin.de>
-Date: Mon, 24 Sep 2012 21:44:43 +0200
-From: =?ISO-8859-15?Q?=22Jan_H=2E_Sch=F6nherr=22?= 
-	<schnhrr@cs.tu-berlin.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120324 Thunderbird/10.0.3
-MIME-Version: 1.0
-To: pjt@google.com
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Venki Pallipadi <venki@google.com>, Ben Segall <bsegall@google.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [patch 11/16] sched: replace update_shares weight distribution
- with per-entity computation
-References: <20120823141422.444396696@google.com> <20120823141507.061208672@google.com>
-In-Reply-To: <20120823141507.061208672@google.com>
-Content-Type: text/plain; charset=ISO-8859-15
+	Mon, 24 Sep 2012 15:46:56 -0400
+Date: Mon, 24 Sep 2012 12:46:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Roland Dreier <roland@purestorage.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
+        Amir Vadai <amirv@mellanox.co.il>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        linux-rdma@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-Id: <20120924124654.5012ca3e.akpm@linux-foundation.org>
+In-Reply-To: <CAL1RGDUCThiu+vxy4d5QXvqfDCDUnHOBfZT97XB+Qy_bQrxCRg@mail.gmail.com>
+References: <20120925000217.947b8cd8dca6979bfedee2ca@canb.auug.org.au>
+	<CAL1RGDUCThiu+vxy4d5QXvqfDCDUnHOBfZT97XB+Qy_bQrxCRg@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.08.2012 16:14, schrieb pjt@google.com:
-> From: Paul Turner <pjt@google.com>
+On Mon, 24 Sep 2012 12:36:43 -0700
+Roland Dreier <roland@purestorage.com> wrote:
+
+> On Mon, Sep 24, 2012 at 7:02 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > After merging the akpm tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
+> >
+> > drivers/infiniband/hw/mlx4/cm.c: In function 'id_map_alloc':
+> > drivers/infiniband/hw/mlx4/cm.c:228:36: error: 'MAX_ID_MASK' undeclared (first use in this function)
+> >
+> > Caused by commit d7a4e9b679e9 ("IB/mlx4: Add CM paravirtualization") from
+> > the infiniband tree interacting with commit "idr: rename MAX_LEVEL to
+> > MAX_IDR_LEVEL" from the akpm tree.
+> >
+> > I have added the following merge fix patch for today:
+> >
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Mon, 24 Sep 2012 23:57:53 +1000
+> > Subject: [PATCH] IB/mlx4: fix for MAX_ID_MASK to MAX_IDR_MASK name change
+> >
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > ---
+> >  drivers/infiniband/hw/mlx4/cm.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/infiniband/hw/mlx4/cm.c b/drivers/infiniband/hw/mlx4/cm.c
+> > index e25e4da..80079e5 100644
+> > --- a/drivers/infiniband/hw/mlx4/cm.c
+> > +++ b/drivers/infiniband/hw/mlx4/cm.c
+> > @@ -225,7 +225,7 @@ id_map_alloc(struct ib_device *ibdev, int slave_id, u32 sl_cm_id)
+> >                 ret = idr_get_new_above(&sriov->pv_id_table, ent,
+> >                                         next_id, &id);
+> >                 if (!ret) {
+> > -                       next_id = ((unsigned) id + 1) & MAX_ID_MASK;
+> > +                       next_id = ((unsigned) id + 1) & MAX_IDR_MASK;
+> >                         ent->pv_cm_id = (u32)id;
+> >                         sl_id_map_add(ibdev, ent);
+> >                 }
 > 
-> Now that the machinery in place is in place to compute contributed load in a
-> bottom up fashion; replace the shares distribution code within update_shares()
-> accordingly.
+> Andrew, any preference on how to handle this merge?
 
-[snip]
+I'm fixing up that patch as things change under its feet.  I usually
+merge things like this late in the merge window after everything else
+has landed, to cause minimum breakage/disruption.
 
->  static int update_shares_cpu(struct task_group *tg, int cpu)
->  {
-> +	struct sched_entity *se;
->  	struct cfs_rq *cfs_rq;
->  	unsigned long flags;
->  	struct rq *rq;
->  
-> -	if (!tg->se[cpu])
-> -		return 0;
-> -
->  	rq = cpu_rq(cpu);
-> +	se = tg->se[cpu];
->  	cfs_rq = tg->cfs_rq[cpu];
->  
->  	raw_spin_lock_irqsave(&rq->lock, flags);
->  
->  	update_rq_clock(rq);
-> -	update_cfs_load(cfs_rq, 1);
->  	update_cfs_rq_blocked_load(cfs_rq, 1);
->  
-> -	/*
-> -	 * We need to update shares after updating tg->load_weight in
-> -	 * order to adjust the weight of groups with long running tasks.
-> -	 */
-> -	update_cfs_shares(cfs_rq);
-> +	if (se) {
-> +		update_entity_load_avg(se, 1);
-> +		/*
-> +		 * We can pivot on the runnable average decaying to zero for
-> +		 * list removal since the parent average will always be >=
-> +		 * child.
-> +		 */
-> +		if (se->avg.runnable_avg_sum)
-> +			update_cfs_shares(cfs_rq);
-> +		else
-> +			list_del_leaf_cfs_rq(cfs_rq);
+If there was something in linux-next which didn't get into the merge
+window (bad) then I cheerily break it and the tree maintainer fixes
+things up.
 
-The blocked load, which we decay from this function, is not part of
-se->avg.runnable_avg_sum. Is list removal a good idea while there might be
-blocked load? We only get here, because we are on that list... don't we end up
-with a wrong task group load then?
-
-Regards
-Jan
-
-> +	} else {
-> +		update_rq_runnable_avg(rq, rq->nr_running);
-> +	}
->  
->  	raw_spin_unlock_irqrestore(&rq->lock, flags);
->  
 
