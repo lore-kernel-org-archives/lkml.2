@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461Ab2IXWcc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:32:32 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:5710 "EHLO
+	id S1751432Ab2IXWdr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:33:47 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:6087 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab2IXWca (ORCPT
+	with ESMTP id S1750778Ab2IXWdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:32:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6845"; a="238326405"
-Message-ID: <5060DF7D.9000305@codeaurora.org>
-Date: Mon, 24 Sep 2012 15:32:29 -0700
+	Mon, 24 Sep 2012 18:33:46 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6845"; a="238327109"
+Message-ID: <5060DFC9.1000207@codeaurora.org>
+Date: Mon, 24 Sep 2012 15:33:45 -0700
 From: Saravana Kannan <skannan@codeaurora.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
 To: Stephen Boyd <sboyd@codeaurora.org>
 CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 03/10] msm: iommu: Convert to clk_prepare/unprepare
-References: <1348194419-11486-1-git-send-email-sboyd@codeaurora.org> <1348194419-11486-4-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1348194419-11486-4-git-send-email-sboyd@codeaurora.org>
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 05/10] ARM: msm: Remove custom clk_set_flags() API
+References: <1348194419-11486-1-git-send-email-sboyd@codeaurora.org> <1348194419-11486-6-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1348194419-11486-6-git-send-email-sboyd@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,90 +27,104 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 09/20/2012 07:26 PM, Stephen Boyd wrote:
-> Add calls to clk_prepare and unprepare so that MSM can migrate to
-> the common clock framework. We never unprepare the clocks until
-> driver remove because the clocks are enabled and disabled in irq
-> context. Finer grained power management is possible in the future
-> via runtime power management techniques.
+> Nobody is using this API upstream and it's just contributing
+> cruft. Remove it so the MSM clock API is closer to the generic
+> struct clock API.
 >
+> Cc: Saravana Kannan<skannan@codeaurora.org>
 > Signed-off-by: Stephen Boyd<sboyd@codeaurora.org>
 > ---
->   drivers/iommu/msm_iommu_dev.c | 17 ++++++++++-------
->   1 file changed, 10 insertions(+), 7 deletions(-)
+>   arch/arm/mach-msm/clock-pcom.c       | 10 ----------
+>   arch/arm/mach-msm/clock.c            |  8 --------
+>   arch/arm/mach-msm/clock.h            |  6 ------
+>   arch/arm/mach-msm/include/mach/clk.h |  3 ---
+>   4 files changed, 27 deletions(-)
 >
-> diff --git a/drivers/iommu/msm_iommu_dev.c b/drivers/iommu/msm_iommu_dev.c
-> index 8e8fb07..d344f6a 100644
-> --- a/drivers/iommu/msm_iommu_dev.c
-> +++ b/drivers/iommu/msm_iommu_dev.c
-> @@ -160,7 +160,7 @@ static int msm_iommu_probe(struct platform_device *pdev)
->   		goto fail;
->   	}
+> diff --git a/arch/arm/mach-msm/clock-pcom.c b/arch/arm/mach-msm/clock-pcom.c
+> index a52c970..bb75f8e 100644
+> --- a/arch/arm/mach-msm/clock-pcom.c
+> +++ b/arch/arm/mach-msm/clock-pcom.c
+> @@ -85,15 +85,6 @@ static int pc_clk_set_max_rate(unsigned id, unsigned rate)
+>   		return (int)id<  0 ? -EINVAL : 0;
+>   }
 >
-> -	ret = clk_enable(iommu_pclk);
-> +	ret = clk_prepare_enable(iommu_pclk);
->   	if (ret)
->   		goto fail_enable;
+> -static int pc_clk_set_flags(unsigned id, unsigned flags)
+> -{
+> -	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_SET_FLAGS,&id,&flags);
+> -	if (rc<  0)
+> -		return rc;
+> -	else
+> -		return (int)id<  0 ? -EINVAL : 0;
+> -}
+> -
+>   static unsigned pc_clk_get_rate(unsigned id)
+>   {
+>   	if (msm_proc_comm(PCOM_CLKCTL_RPC_RATE,&id, NULL))
+> @@ -130,7 +121,6 @@ struct clk_ops clk_ops_pcom = {
+>   	.set_rate = pc_clk_set_rate,
+>   	.set_min_rate = pc_clk_set_min_rate,
+>   	.set_max_rate = pc_clk_set_max_rate,
+> -	.set_flags = pc_clk_set_flags,
+>   	.get_rate = pc_clk_get_rate,
+>   	.is_enabled = pc_clk_is_enabled,
+>   	.round_rate = pc_clk_round_rate,
+> diff --git a/arch/arm/mach-msm/clock.c b/arch/arm/mach-msm/clock.c
+> index d9145df..5fac2df 100644
+> --- a/arch/arm/mach-msm/clock.c
+> +++ b/arch/arm/mach-msm/clock.c
+> @@ -121,14 +121,6 @@ struct clk *clk_get_parent(struct clk *clk)
+>   }
+>   EXPORT_SYMBOL(clk_get_parent);
 >
-> @@ -170,7 +170,7 @@ static int msm_iommu_probe(struct platform_device *pdev)
->   		if (clk_get_rate(iommu_clk) == 0)
->   			clk_set_min_rate(iommu_clk, 1);
+> -int clk_set_flags(struct clk *clk, unsigned long flags)
+> -{
+> -	if (clk == NULL || IS_ERR(clk))
+> -		return -EINVAL;
+> -	return clk->ops->set_flags(clk->id, flags);
+> -}
+> -EXPORT_SYMBOL(clk_set_flags);
+> -
+>   /* EBI1 is the only shared clock that several clients want to vote on as of
+>    * this commit. If this changes in the future, then it might be better to
+>    * make clk_min_rate handle the voting or make ebi1_clk_set_min_rate more
+> diff --git a/arch/arm/mach-msm/clock.h b/arch/arm/mach-msm/clock.h
+> index 2c007f6..a25ff58 100644
+> --- a/arch/arm/mach-msm/clock.h
+> +++ b/arch/arm/mach-msm/clock.h
+> @@ -21,11 +21,6 @@
+>   #include<linux/list.h>
+>   #include<mach/clk.h>
 >
-> -		ret = clk_enable(iommu_clk);
-> +		ret = clk_prepare_enable(iommu_clk);
->   		if (ret) {
->   			clk_put(iommu_clk);
->   			goto fail_pclk;
-> @@ -261,7 +261,7 @@ fail_clk:
->   		clk_put(iommu_clk);
->   	}
->   fail_pclk:
-> -	clk_disable(iommu_pclk);
-> +	clk_disable_unprepare(iommu_pclk);
->   fail_enable:
->   	clk_put(iommu_pclk);
->   fail:
-> @@ -275,8 +275,11 @@ static int msm_iommu_remove(struct platform_device *pdev)
+> -#define CLKFLAG_INVERT			0x00000001
+> -#define CLKFLAG_NOINVERT		0x00000002
+> -#define CLKFLAG_NONEST			0x00000004
+> -#define CLKFLAG_NORESET			0x00000008
+> -
+>   #define CLK_FIRST_AVAILABLE_FLAG	0x00000100
+>   #define CLKFLAG_AUTO_OFF		0x00000200
+>   #define CLKFLAG_MIN			0x00000400
+> @@ -39,7 +34,6 @@ struct clk_ops {
+>   	int (*set_rate)(unsigned id, unsigned rate);
+>   	int (*set_min_rate)(unsigned id, unsigned rate);
+>   	int (*set_max_rate)(unsigned id, unsigned rate);
+> -	int (*set_flags)(unsigned id, unsigned flags);
+>   	unsigned (*get_rate)(unsigned id);
+>   	unsigned (*is_enabled)(unsigned id);
+>   	long (*round_rate)(unsigned id, unsigned rate);
+> diff --git a/arch/arm/mach-msm/include/mach/clk.h b/arch/arm/mach-msm/include/mach/clk.h
+> index e8d3842..5f1c37d 100644
+> --- a/arch/arm/mach-msm/include/mach/clk.h
+> +++ b/arch/arm/mach-msm/include/mach/clk.h
+> @@ -34,7 +34,4 @@ int clk_set_max_rate(struct clk *clk, unsigned long rate);
+>   /* Assert/Deassert reset to a hardware block associated with a clock */
+>   int clk_reset(struct clk *clk, enum clk_reset_action action);
 >
->   	drv = platform_get_drvdata(pdev);
->   	if (drv) {
-> -		if (drv->clk)
-> +		if (drv->clk) {
-> +			clk_unprepare(drv->clk);
->   			clk_put(drv->clk);
-> +		}
-> +		clk_unprepare(drv->pclk);
+> -/* Set clock-specific configuration parameters */
+> -int clk_set_flags(struct clk *clk, unsigned long flags);
+> -
+>   #endif
 
-Are these changes right? Every other clk API change in this patch is 
-using the combined prepare_enable/disable_unprepare() calls. So, when 
-would we end up at this location with the clocks prepared but not enabled?
-
-Also, what if the device gets probed and then immediately removed. Will 
-it work correctly?
-
--Saravana
-
->   		clk_put(drv->pclk);
->   		memset(drv, 0, sizeof(*drv));
->   		kfree(drv);
-> @@ -314,14 +317,14 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
->   	INIT_LIST_HEAD(&ctx_drvdata->attached_elm);
->   	platform_set_drvdata(pdev, ctx_drvdata);
->
-> -	ret = clk_enable(drvdata->pclk);
-> +	ret = clk_prepare_enable(drvdata->pclk);
->   	if (ret)
->   		goto fail;
->
->   	if (drvdata->clk) {
-> -		ret = clk_enable(drvdata->clk);
-> +		ret = clk_prepare_enable(drvdata->clk);
->   		if (ret) {
-> -			clk_disable(drvdata->pclk);
-> +			clk_disable_unprepare(drvdata->pclk);
->   			goto fail;
->   		}
->   	}
-
+Acked-by: Saravana Kannan <skannan@codeaurora.org>
 
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
