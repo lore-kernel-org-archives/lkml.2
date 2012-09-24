@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab2IXWit (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:38:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47788 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2IXWfv (ORCPT
+	id S1751962Ab2IXWjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:39:18 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63046 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab2IXWjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:35:51 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        neilb@suse.de, vgoyal@redhat.com, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH v3 18/26] pktcdvd: Use bio_reset() in disabled code to kill bi_idx usage
-Date: Mon, 24 Sep 2012 15:34:58 -0700
-Message-Id: <1348526106-17074-19-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1348526106-17074-1-git-send-email-koverstreet@google.com>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
+	Mon, 24 Sep 2012 18:39:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQWi46m4rP9chVK0W5ahtgk7cuCO60dTYzP6JVM=x=5abA@mail.gmail.com>
+References: <20120922003557.GF5959@localhost> <CAE9FiQVQJQfBZn7AH4M5hibx=iNa9RbfSaBdb35FWxDiRXHvrA@mail.gmail.com>
+ <CAE9FiQVQMVsqG2vHhyktTtUSJ_dDRpTpwB_x--agMWbm6PHsEg@mail.gmail.com>
+ <20120922081009.GA5677@localhost> <CAE9FiQWi46m4rP9chVK0W5ahtgk7cuCO60dTYzP6JVM=x=5abA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 24 Sep 2012 16:38:53 -0600
+Message-ID: <CAErSpo6cwcYbi_pFrGrWgMLXH9dx4Po1s5KLDWtc596s+Kv2hQ@mail.gmail.com>
+Subject: Re: [ACPI/PCI] possible recursive locking detected
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the short term this'll help with code auditing, and if this code ever
-gets used now it's converted :)
+On Sat, Sep 22, 2012 at 8:11 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Sat, Sep 22, 2012 at 1:10 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>>
+>>> > Please check attached patch that should fix the problem.
+>>>
+>>> updated more aggressive version. two patches.
+>>
+>> Yes they work nicely. Thank you very much!
+>
+> Thanks.
+>
+> v2 breaks acpi_bind_one.
+>
+> So we should use attached -v3.
+>
+> Bjorn, please apply -v3 before Taku's patchset.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Jiri Kosina <jkosina@suse.cz>
----
- drivers/block/pktcdvd.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index 783c96c..1119042 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -1156,16 +1156,15 @@ static int pkt_start_recovery(struct packet_data *pkt)
- 	new_sector = new_block * (CD_FRAMESIZE >> 9);
- 	pkt->sector = new_sector;
- 
-+	bio_reset(pkt->bio);
-+	pkt->bio->bi_bdev = pd->bdev;
-+	pkt->bio->bi_rw = REQ_WRITE;
- 	pkt->bio->bi_sector = new_sector;
--	pkt->bio->bi_next = NULL;
--	pkt->bio->bi_flags = 1 << BIO_UPTODATE;
--	pkt->bio->bi_idx = 0;
--
--	BUG_ON(pkt->bio->bi_rw != REQ_WRITE);
--	BUG_ON(pkt->bio->bi_vcnt != pkt->frames);
--	BUG_ON(pkt->bio->bi_size != pkt->frames * CD_FRAMESIZE);
--	BUG_ON(pkt->bio->bi_end_io != pkt_end_io_packet_write);
--	BUG_ON(pkt->bio->bi_private != pkt);
-+	pkt->bio->bi_size = pkt->frames * CD_FRAMESIZE;
-+	pkt->bio->bi_vcnt = pkt->frames;
-+
-+	pkt->bio->bi_end_io = pkt_end_io_packet_write;
-+	pkt->bio->bi_private = pkt;
- 
- 	drop_super(sb);
- 	return 1;
--- 
-1.7.12
-
+I  applied this as the first patch in
+pci/taku-acpi-pci-host-bridge-v3.  I also merged that branch to
+pci/next.
