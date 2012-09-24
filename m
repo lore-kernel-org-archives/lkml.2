@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab2IXNev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 09:34:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35380 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754674Ab2IXNet (ORCPT
+	id S1754981Ab2IXNiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 09:38:54 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38833 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab2IXNix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 09:34:49 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Ian Kent <raven@themaw.net>
-Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
-        serge.hallyn@canonical.com, ebiederm@xmission.com
-Subject: Re: [PATCH 0/2] struct pid-ify autofs4
-References: <1348068576-21363-1-git-send-email-miklos@szeredi.hu>
-	<87haqrwfbj.fsf@tucsk.pomaz.szeredi.hu>
-	<1348447130.2318.1.camel@perseus.themaw.net>
-Date: Mon, 24 Sep 2012 15:34:32 +0200
-In-Reply-To: <1348447130.2318.1.camel@perseus.themaw.net> (Ian Kent's message
-	of "Mon, 24 Sep 2012 08:38:50 +0800")
-Message-ID: <87d31bczo7.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 24 Sep 2012 09:38:53 -0400
+Date: Mon, 24 Sep 2012 14:38:26 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, catalin.marinas@arm.com, davidb@codeaurora.org,
+        frank.rowand@am.sony.com, hsweeten@visionengravers.com,
+        linus.walleij@linaro.org, marc.zyngier@arm.com, nico@linaro.org,
+        paul.gortmaker@windriver.com, plagnioj@jcrosoft.com, rabin@rab.in,
+        rmallon@gmail.com, rob.herring@calxeda.com, sboyd@codeaurora.org,
+        sjg@chromium.org, tglx@linutronix.de, tj@kernel.org,
+        vincent.guittot@linaro.org, vitalya@ti.com, will.deacon@arm.com,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH v3 RESEND 09/17] ARM: LPAE: use phys_addr_t for initrd
+	location and size
+Message-ID: <20120924133826.GA26454@n2100.arm.linux.org.uk>
+References: <1348242975-19184-1-git-send-email-cyril@ti.com> <1348242975-19184-10-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348242975-19184-10-git-send-email-cyril@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian Kent <raven@themaw.net> writes:
+On Fri, Sep 21, 2012 at 11:56:07AM -0400, Cyril Chemparathy wrote:
+> From: Vitaly Andrianov <vitalya@ti.com>
+> 
+> This patch fixes the initrd setup code to use phys_addr_t instead of assuming
+> 32-bit addressing.  Without this we cannot boot on systems where initrd is
+> located above the 4G physical address limit.
 
-> On Fri, 2012-09-21 at 17:44 +0200, Miklos Szeredi wrote:
->> Miklos Szeredi <miklos@szeredi.hu> writes:
->> 
->> > These two patches change autofs4 to store struct pid pointers instead of pid_t
->> > values.
->> >
->> > Fixed various issues with the previous post.  Not tested, handle with
->> > care!
->> 
->> Customer gave positive test results.
->
-> For what exactly, there's no problem description in these patches?
-
->From what I understand (and I'm not an expert by any means) is that
-autofs doesn't work if containers are used.  The first patch fixes this.
-
-Both the patches replace pid_t with a refcounted struct pid object,
-which has better lifetime properties: you don't know whether a pid_t is
-valid, because pid numbers are reused, while pid objects remain valid
-until there are no more references to them.
-
-Thanks,
-Miklos
+The description needs updating.  You're no longer using phys_addr_t for the
+initrd size.
