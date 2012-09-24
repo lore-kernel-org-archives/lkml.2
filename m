@@ -1,125 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab2IXN3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 09:29:36 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58516 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569Ab2IXN3e (ORCPT
+	id S1755305Ab2IXNdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 09:33:39 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:51201 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754569Ab2IXNdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 09:29:34 -0400
-Date: Mon, 24 Sep 2012 23:29:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alex Kelly <alex.page.kelly@gmail.com>
-Subject: linux-next: manual merge of the akpm tree with the  tree
-Message-Id: <20120924232926.fb112c6db45baba74a6224b5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Sep_2012_23_29_26_+1000_fLC/xTfCYvdb.1uN"
+	Mon, 24 Sep 2012 09:33:37 -0400
+Message-ID: <50606050.309@linux.vnet.ibm.com>
+Date: Mon, 24 Sep 2012 18:59:52 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com> <1348490165.11847.58.camel@twins>
+In-Reply-To: <1348490165.11847.58.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092413-5490-0000-0000-0000022FB11E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Sep_2012_23_29_26_+1000_fLC/xTfCYvdb.1uN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/24/2012 06:06 PM, Peter Zijlstra wrote:
+> On Mon, 2012-09-24 at 17:22 +0530, Raghavendra K T wrote:
+>> On 09/24/2012 05:04 PM, Peter Zijlstra wrote:
+>>> On Fri, 2012-09-21 at 17:29 +0530, Raghavendra K T wrote:
+>>>> In some special scenarios like #vcpu<= #pcpu, PLE handler may
+>>>> prove very costly, because there is no need to iterate over vcpus
+>>>> and do unsuccessful yield_to burning CPU.
+>>>
+>>> What's the costly thing? The vm-exit, the yield (which should be a nop
+>>> if its the only task there) or something else entirely?
+>>>
+>> Both vmexit and yield_to() actually,
+>>
+>> because unsuccessful yield_to() overall is costly in PLE handler.
+>>
+>> This is because when we have large guests, say 32/16 vcpus, and one
+>> vcpu is holding lock, rest of the vcpus waiting for the lock, when they
+>> do PL-exit, each of the vcpu try to iterate over rest of vcpu list in
+>> the VM and try to do directed yield (unsuccessful). (O(n^2) tries).
+>>
+>> this results is fairly high amount of cpu burning and double run queue
+>> lock contention.
+>>
+>> (if they were spinning probably lock progress would have been faster).
+>> As Avi/Chegu Vinod had felt it is better to avoid vmexit itself, which
+>> seems little complex to achieve currently.
+>
+> OK, so the vmexit stays and we need to improve yield_to.
+>
+> How about something like the below, that would allow breaking out of the
+> for-each-vcpu loop and simply going back into the vm, right?
+>
+> ---
+>   kernel/sched/core.c | 25 +++++++++++++++++++------
+>   1 file changed, 19 insertions(+), 6 deletions(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index b38f00e..5d5b355 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4272,7 +4272,10 @@ EXPORT_SYMBOL(yield);
+>    * It's the caller's job to ensure that the target task struct
+>    * can't go away on us before we can do any checks.
+>    *
+> - * Returns true if we indeed boosted the target task.
+> + * Returns:
+> + *   true (>0) if we indeed boosted the target task.
+> + *   false (0) if we failed to boost the target.
+> + *   -ESRCH if there's no task to yield to.
+>    */
+>   bool __sched yield_to(struct task_struct *p, bool preempt)
+>   {
+> @@ -4284,6 +4287,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+>   	local_irq_save(flags);
+>   	rq = this_rq();
+>
+> +	/*
+> +	 * If we're the only runnable task on the rq, there's absolutely no
+> +	 * point in yielding.
+> +	 */
+> +	if (rq->nr_running == 1) {
+> +		yielded = -ESRCH;
+> +		goto out_irq;
+> +	}
+> +
+>   again:
+>   	p_rq = task_rq(p);
+>   	double_rq_lock(rq, p_rq);
+> @@ -4293,13 +4305,13 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+>   	}
+>
+>   	if (!curr->sched_class->yield_to_task)
+> -		goto out;
+> +		goto out_unlock;
+>
+>   	if (curr->sched_class != p->sched_class)
+> -		goto out;
+> +		goto out_unlock;
+>
+>   	if (task_running(p_rq, p) || p->state)
+> -		goto out;
+> +		goto out_unlock;
+>
+>   	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+>   	if (yielded) {
+> @@ -4312,11 +4324,12 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+>   			resched_task(p_rq->curr);
+>   	}
+>
+> -out:
+> +out_unlock:
+>   	double_rq_unlock(rq, p_rq);
+> +out_irq:
+>   	local_irq_restore(flags);
+>
+> -	if (yielded)
+> +	if (yielded>  0)
+>   		schedule();
+>
+>   	return yielded;
+>
+>
 
-Hi Andrew,
+Yes, I think this is a nice idea. Any future users of yield_to
+also would benefit from this. we will have to iterate only till first
+attempt to yield_to.
 
-Today's linux-next merge of the akpm tree got a conflict in fs/exec.c
-between commits b40b89c2da16 ("new helper: replace_fd()") and
-be28f112a5e5 ("do_coredump(): make sure that descriptor table isn't
-shared") from the vfs tree and commit "coredump: move core dump
-functionality into its own file" from the akpm tree.
+I 'll run the test with this patch.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+However Rik had a genuine concern in the cases where runqueue is not
+equally distributed and lockholder might actually be on a different run 
+queue but not running.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Do you think instead of using rq->nr_running, we could get a global 
+sense of load using avenrun (something like avenrun/num_onlinecpus)
 
-diff --cc fs/exec.c
-index 6b2e20b,d9bd87b..0000000
---- a/fs/exec.c
-+++ b/fs/exec.c
-diff --git a/fs/coredump.c b/fs/coredump.c
-index 9692329..6ef9888 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -438,23 +438,14 @@ static void wait_for_dump_helpers(struct file *file)
- static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
- {
- 	struct file *files[2];
--	struct fdtable *fdt;
- 	struct coredump_params *cp =3D (struct coredump_params *)info->data;
--	struct files_struct *cf =3D current->files;
- 	int err =3D create_pipe_files(files, 0);
- 	if (err)
- 		return err;
-=20
- 	cp->file =3D files[1];
-=20
--	sys_close(0);
--	fd_install(0, files[0]);
--	spin_lock(&cf->file_lock);
--	fdt =3D files_fdtable(cf);
--	__set_open_fd(0, fdt);
--	__clear_close_on_exec(0, fdt);
--	spin_unlock(&cf->file_lock);
--
-+	replace_fd(0, files[0], 0);
- 	/* and disallow core files too */
- 	current->signal->rlim[RLIMIT_CORE] =3D (struct rlimit){1, 1};
-=20
-@@ -472,6 +463,7 @@ void do_coredump(long signr, int exit_code, struct pt_r=
-egs *regs)
- 	int retval =3D 0;
- 	int flag =3D 0;
- 	int ispipe;
-+	struct files_struct *displaced;
- 	bool need_nonrelative =3D false;
- 	static atomic_t core_dump_count =3D ATOMIC_INIT(0);
- 	struct coredump_params cprm =3D {
-@@ -625,6 +617,12 @@ void do_coredump(long signr, int exit_code, struct pt_=
-regs *regs)
- 			goto close_fail;
- 	}
-=20
-+	/* get us an unshared descriptor table; almost always a no-op */
-+	retval =3D unshare_files(&displaced);
-+	if (retval)
-+		goto close_fail;
-+	if (displaced)
-+		put_files_struct(displaced);
- 	retval =3D binfmt->core_dump(&cprm);
- 	if (retval)
- 		current->signal->group_exit_code |=3D 0x80;
-
---Signature=_Mon__24_Sep_2012_23_29_26_+1000_fLC/xTfCYvdb.1uN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYGA2AAoJEECxmPOUX5FEGhkP/jTK+pXANaXNjdLFbrHBfTiF
-5/KPV2Kc+j8tldNQuQ99XpatHyRo2s0EjR/K6UfnywpqaH1Rjc9WZN0HeLTvlznK
-dOfbTlbmtUhrZECd/5hVkujTwKLBZG5DC/NqHZIODkrXSw/WILqWSRR69PbWe8DU
-k7z//yiOMo2PuV1kn1O495UlfpLtKcfJQYfgXr7SHpSLDXhq2fFiGGP5FPEtkYiK
-TSgocbyxLkZvB/FNUJHwEzb+Uv6UmhKtsfJgbM+2z/323fdlyLgkZkwaPAn8yipH
-4l/rC1vCf/58tjaU1AlhSEqYMaItbwCE6C4oAZLccv8OqsHIammY297IxwrO7ZSp
-/o2t9fGxN+zbrs4TS19T6hM2HvcMDzvq6sY8s2/oUAFyIOiVSLkJOP1Mh26GjFKu
-NXc3oxe10fVyEQzDvj1nNGsmAqYXU2cnBxfwOJVpzX5y6U1H2nu5uHd2Zm6/3LXl
-RoBlRPKf93FLlCvRJkQT0e5dnIJjGwlZCSPfSaXXP6rA4gc2K6aZHdmLehXaw52v
-47VRUYx4Hq95oAAyjNykw4UO1SdMiSMWaFhsaeHfs+Gjxj/lHkCCtQwcg89O7uS2
-LfvBsmVQp6aj450mvMgOwjZVmqmh44qEr1juEqgYxoiQIK02Dtu5zMzGNbnRazHE
-HgQxRFnU1LMc1Ty7DPTN
-=inex
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Sep_2012_23_29_26_+1000_fLC/xTfCYvdb.1uN--
