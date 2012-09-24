@@ -1,140 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab2IXPGY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:06:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12929 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756231Ab2IXPGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:06:15 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: yakui.zhao@intel.com
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cminyard@mvista.com, Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 4/4] ACPI: Add a default handler for IPMI operation regions
-Date: Mon, 24 Sep 2012 11:05:40 -0400
-Message-Id: <1348499140-13550-5-git-send-email-mjg@redhat.com>
-In-Reply-To: <1348499140-13550-1-git-send-email-mjg@redhat.com>
-References: <1348499140-13550-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.206
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1756302Ab2IXPGk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:06:40 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56158 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756200Ab2IXPGO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 11:06:14 -0400
+From: Michal Nazarewicz <mpn@google.com>
+To: George Spelvin <linux@horizon.com>, linux@horizon.com,
+        vda.linux@googlemail.com
+Cc: hughd@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] lib: vsprintf: Optimize put_dec_trunc8
+In-Reply-To: <20120924134939.23197.qmail@science.horizon.com>
+Organization: Google Inc
+References: <20120924134939.23197.qmail@science.horizon.com>
+User-Agent: Notmuch/0.14+22~g8bdc16b (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+Date: Mon, 24 Sep 2012 17:06:04 +0200
+Message-ID: <xa1ty5jzbgv7.fsf@mina86.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI spec makes it clear that IPMI operation regions should be declared
-inside the scope of an IPMI device. Based on the existence of systems for
-which this is untrue, it seems likely that alternative implementations exist
-that perform some kind of fallback for regions outside the scope of an IPMI
-device. Add a callback to the ACPI IPMI driver to glue these operation
-regions onto an IPMI device. Behaviour in the case of multiple controllers
-may be unpredictable, but there's clearly no way to know the correct answer
-in that case.
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- drivers/acpi/acpi_ipmi.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+On Mon, Sep 24 2012, George Spelvin wrote:
+> Michal Nazarewicz <mpn@google.com> wrote:
+>> static noinline_for_stack
+>> char *put_dec_trunc8(char *buf, unsigned r) {
+>> 	unsigned q;
+>>=20
+>> 	if (r > 10000) {
+>> 		do {
+>> 			q =3D r + '0';
+>> 			r =3D (r * (uint64_t)0x1999999a) >> 32;
+>> 			*buf++ =3D q - 10 * r;
+>> 		} while (r >=3D 10000);
+>> 		if (r =3D=3D 0)
+>> 			return buf;
+>> 	}
+>>=20
+>> 	q      =3D (r * 0x199a) >> 16;
+>> 	*buf++ =3D (r - 10 * q)  + '0'; /* 6 */
+[...]
+>> 	return buf;
+>> }
+>
+> Two bugs:
+>
+> 1) The initial "(r > 10000)" should be >=3D.
+>    If you let r =3D=3D 10000 through to the remaining code, you'll get
+>    ":000".
 
-diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
-index f40acef..15dc0e8 100644
---- a/drivers/acpi/acpi_ipmi.c
-+++ b/drivers/acpi/acpi_ipmi.c
-@@ -72,6 +72,7 @@ struct ipmi_driver_data {
- 	struct ipmi_smi_watcher	bmc_events;
- 	struct ipmi_user_hndl	ipmi_hndlrs;
- 	struct mutex		ipmi_lock;
-+	struct acpi_ipmi_device *global_device;
- };
- 
- struct acpi_ipmi_msg {
-@@ -106,9 +107,14 @@ struct acpi_ipmi_buffer {
- 
- static void ipmi_register_bmc(int iface, struct device *dev);
- static void ipmi_bmc_gone(int iface);
-+static void ipmi_probe_complete(void);
- static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data);
- static void acpi_add_ipmi_device(struct acpi_ipmi_device *ipmi_device);
- static void acpi_remove_ipmi_device(struct acpi_ipmi_device *ipmi_device);
-+static acpi_status
-+acpi_ipmi_space_handler(u32 function, acpi_physical_address address,
-+			u32 bits, acpi_integer *value,
-+			void *handler_context, void *region_context);
- 
- static struct ipmi_driver_data driver_data = {
- 	.ipmi_devices = LIST_HEAD_INIT(driver_data.ipmi_devices),
-@@ -116,6 +122,7 @@ static struct ipmi_driver_data driver_data = {
- 		.owner = THIS_MODULE,
- 		.new_smi = ipmi_register_bmc,
- 		.smi_gone = ipmi_bmc_gone,
-+		.smi_probe_complete = ipmi_probe_complete,
- 	},
- 	.ipmi_hndlrs = {
- 		.ipmi_recv_hndl = ipmi_msg_handler,
-@@ -276,6 +283,32 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
- 	ipmi_free_recv_msg(msg);
- };
- 
-+/* Must be called with driver_data.ipmi_lock held */
-+static void ipmi_update_global_handler(void)
-+{
-+	struct acpi_ipmi_device *ipmi_device;
-+	acpi_status status;
-+
-+	if (driver_data.global_device)
-+		return;
-+
-+	list_for_each_entry(ipmi_device, &driver_data.ipmi_devices, head) {
-+		/*
-+		 * Register a handler for IPMI regions that aren't under a
-+		 * specific IPMI namespace. This appears to be a spec violation
-+		 * but we should do what we can.
-+		 */
-+		status = acpi_install_address_space_handler(ACPI_ROOT_OBJECT,
-+						      ACPI_ADR_SPACE_IPMI,
-+						      &acpi_ipmi_space_handler,
-+						      NULL, ipmi_device);
-+		if (ACPI_SUCCESS(status)) {
-+			driver_data.global_device = ipmi_device;
-+			break;
-+		}
-+	}
-+}
-+
- static void ipmi_register_bmc(int iface, struct device *dev)
- {
- 	struct acpi_ipmi_device *ipmi_device, *temp;
-@@ -347,12 +380,29 @@ static void ipmi_bmc_gone(int iface)
- 			continue;
- 
- 		acpi_remove_ipmi_device(ipmi_device);
-+
-+		if (driver_data.global_device == ipmi_device) {
-+			acpi_remove_address_space_handler(ACPI_ROOT_OBJECT,
-+				ACPI_ADR_SPACE_IPMI, &acpi_ipmi_space_handler);
-+			driver_data.global_device = NULL;
-+			ipmi_update_global_handler();
-+		}
-+
- 		put_device(ipmi_device->smi_data.dev);
- 		kfree(ipmi_device);
- 		break;
- 	}
-+
- 	mutex_unlock(&driver_data.ipmi_lock);
- }
-+
-+static void ipmi_probe_complete(void)
-+{
-+	mutex_lock(&driver_data.ipmi_lock);
-+	ipmi_update_global_handler();
-+	mutex_unlock(&driver_data.ipmi_lock);
-+}
-+
- /* --------------------------------------------------------------------------
-  *			Address Space Management
-  * -------------------------------------------------------------------------- */
--- 
-1.7.11.4
+Obviously... ;)
 
+>
+> 2) The "r =3D=3D 0" test isn't necessary.
+>    Given that the loop divides r by 10 each time, r >=3D 10000 at the
+>    beginning implies r >=3D 1000 at the end, so 1000 <=3D r < 10000
+>    when the loop exits.
+
+Yeah, I've just figured that out. :]
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
+
+--==-=-=
+Content-Type: text/plain
+
+
+--==-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQYHbcAAoJECBgQBJQdR/0qmkP/35qV4DjlnI8cQ6eCs1wF6Uq
+aBY6h5ASH2YwEiXgybK/pl2GGTCH+T+eytYxL9LxtX+8diCjacmKwkOd9PULHcxD
+DZrPqffwIrePySVutlZSjC++T9mZCoueae9ekTcZe8sHcc/1bTEA0I725OFEHTF+
+qW1DoQPyKHLYZ6rgnLEFvZiK2akVoD4igTUVUpwiWmM2wI4Zy5/MSZ/pUZjELwio
+RbDvrOq2KhOUuf6RNF1YnFvd7VN50cfi3/cufNCe/R/V6tFcdr5TA/c0+rr5BsK2
+ccrB5/YSjhtCh6YWnS+YY1Qsi7p67BZ0a5+SUysRvWY0nP6kJ+zdC3qoHUsTd/FA
+c7x7Urz7I+Eg+HC/tXEXu6lXpaaDJHzasHjsW7BUVspGxUAOLgeCNRmXJrjia9+J
+yxztrG0bAqYLm8PCtiHoBGTHQePxKZ2noE2aF6efewmPZv1ohLR+6iqcLoYr4wuy
+dNfExze7RwZrrTgilLSWiVkDnqkSecTnj/hnAT/skONidpFdFSLpkVhwNQ6cibuN
+HXASRfaiUY3jjXxHOFHSA3sEGDZKpSse7kaRpGsycA7VRuyejxKONuTNZngvcKeo
+0JmGT84zsaVmllVT5z39QfN/1rn+m2zIPlAn9DyrlOUc2kYgZEGfdUvtfVqXp0hd
+rLJKjlnNVcCpaZchAv3W
+=5htg
+-----END PGP SIGNATURE-----
+--==-=-=--
+
+--=-=-=--
