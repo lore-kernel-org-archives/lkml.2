@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab2IXIOG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 04:14:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39575 "EHLO mga01.intel.com"
+	id S1755316Ab2IXIPw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 04:15:52 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:45215 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754869Ab2IXIOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 04:14:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,474,1344236400"; 
-   d="scan'208";a="225661415"
-Message-ID: <5060164A.5070708@linux.intel.com>
-Date: Mon, 24 Sep 2012 16:14:02 +0800
-From: Haicheng Li <haicheng.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120306 Thunderbird/3.1.20
+	id S1754796Ab2IXIPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 04:15:50 -0400
+Message-ID: <506015E7.8030900@parallels.com>
+Date: Mon, 24 Sep 2012 12:12:23 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Haicheng Li <haicheng.li@linux.intel.com>,
-        Takahiroi Shimizu <tshimizu818@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        haicheng.lee@gmail.com
-Subject: [Updated PATCH 2/2] Fix a typo in PTP_1588_CLOCK_PCH Kconfig help
- info.
-References: <506009A4.8000202@linux.intel.com> <50600A49.7040902@linux.intel.com>
-In-Reply-To: <50600A49.7040902@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 05/16] consider a memcg parameter in kmem_create_cache
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-6-git-send-email-glommer@parallels.com> <20120921181458.GG7264@google.com>
+In-Reply-To: <20120921181458.GG7264@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pls. ignore original one, and use this instead:
+On 09/21/2012 10:14 PM, Tejun Heo wrote:
+> Hello, Glauber.
+> 
+> On Tue, Sep 18, 2012 at 06:11:59PM +0400, Glauber Costa wrote:
+>> +void memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+>> +{
+>> +	int id = -1;
+>> +
+>> +	if (!memcg)
+>> +		id = ida_simple_get(&cache_types, 0, MAX_KMEM_CACHE_TYPES,
+>> +				    GFP_KERNEL);
+>> +	cachep->memcg_params.id = id;
+>> +}
+> 
+> I'm a bit confused.  Why is id allocated only when memcg is NULL?
+> 
 
- From 5911413366d37aafcc19ddfc9c0f2db31855431e Mon Sep 17 00:00:00 2001
-From: Haicheng Li <haicheng.li@linux.intel.com>
-Date: Mon, 24 Sep 2012 15:55:27 +0800
-Subject: [PATCH 2/2] Fix a typo in PTP_1588_CLOCK_PCH Kconfig help info.
+I think you figured that out already from your answer in another patch,
+right? But I'll add a comment here since it seems to be a a natural
+search point for people, explaining the mechanism.
 
-Signed-off-by: Haicheng Li <haicheng.lee@gmail.com>
----
-  drivers/ptp/Kconfig |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
+> Also, how would the per-memcg slab/slubs appear in slabinfo?  If they
+> appear separately it might be better to give them readable cgroup
+> names.
+>
 
-diff --git a/drivers/ptp/Kconfig b/drivers/ptp/Kconfig
-index ffdf712..82c4a26 100644
---- a/drivers/ptp/Kconfig
-+++ b/drivers/ptp/Kconfig
-@@ -87,6 +87,6 @@ config PTP_1588_CLOCK_PCH
-  	  SO_TIMESTAMPING API.
+The new caches will appear under /proc/slabinfo with the rest, with a
+string appended that identifies the group.
 
-  	  To compile this driver as a module, choose M here: the module
--	  will be called ptp_pch.
-+	  will be called by pch_ptp.
+> Thanks.
+> 
 
-  endmenu
--- 
-1.7.1
