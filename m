@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2IXPEX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 11:04:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38281 "EHLO mx1.redhat.com"
+	id S1756247Ab2IXPGQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 11:06:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31256 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753701Ab2IXPEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 11:04:21 -0400
-Message-ID: <1348499060.2320.103.camel@ul30vt.home>
-Subject: [GIT PULL] VFIO fixes for 3.6
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Date: Mon, 24 Sep 2012 09:04:20 -0600
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754143Ab2IXPGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 11:06:12 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: yakui.zhao@intel.com
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cminyard@mvista.com, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 2/4] IPMI: Change link order
+Date: Mon, 24 Sep 2012 11:05:38 -0400
+Message-Id: <1348499140-13550-3-git-send-email-mjg@redhat.com>
+In-Reply-To: <1348499140-13550-1-git-send-email-mjg@redhat.com>
+References: <1348499140-13550-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.206
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+IPMI must be initialised before ACPI in order to ensure that any IPMI
+services are available before ACPI driver initialisation attempts to use
+any IPMI operation regions.
 
-The following changes since commit c46de2263f42fb4bbde411b9126f471e9343cb22:
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/Makefile      | 4 ++++
+ drivers/char/Makefile | 1 -
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-  Merge branch 'for-linus' of git://git.kernel.dk/linux-block (2012-09-19 11:04:34 -0700)
-
-are available in the git repository at:
-
-
-  git://github.com/awilliam/linux-vfio.git tags/vfio-for-linus
-
-for you to fetch changes up to b68e7fa879cd3b1126a7c455d9da1b70299efc0d:
-
-  vfio: Fix virqfd release race (2012-09-21 10:48:28 -0600)
-
-----------------------------------------------------------------
-VFIO doc update and virqfd race fix
-
-----------------------------------------------------------------
-Alex Williamson (2):
-      vfio: Trivial Documentation correction
-      vfio: Fix virqfd release race
-
- Documentation/vfio.txt            |  2 +-
- drivers/vfio/pci/vfio_pci_intrs.c | 76 ++++++++++++++++++++++++++++-----------
- 2 files changed, 57 insertions(+), 21 deletions(-)
-
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 5b42184..9d26b04 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -14,6 +14,10 @@ obj-$(CONFIG_PARISC)		+= parisc/
+ obj-$(CONFIG_RAPIDIO)		+= rapidio/
+ obj-y				+= video/
+ obj-y				+= idle/
++
++# IPMI must come before ACPI in order to provide IPMI opregion support
++obj-$(CONFIG_IPMI_HANDLER)	+= char/ipmi/
++
+ obj-$(CONFIG_ACPI)		+= acpi/
+ obj-$(CONFIG_SFI)		+= sfi/
+ # PnP must come after ACPI since it will eventually need to check if acpi
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index d0b27a3..7ff1d0d 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -52,7 +52,6 @@ obj-$(CONFIG_TELCLOCK)		+= tlclk.o
+ obj-$(CONFIG_MWAVE)		+= mwave/
+ obj-$(CONFIG_AGP)		+= agp/
+ obj-$(CONFIG_PCMCIA)		+= pcmcia/
+-obj-$(CONFIG_IPMI_HANDLER)	+= ipmi/
+ 
+ obj-$(CONFIG_HANGCHECK_TIMER)	+= hangcheck-timer.o
+ obj-$(CONFIG_TCG_TPM)		+= tpm/
+-- 
+1.7.11.4
 
