@@ -1,141 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900Ab2IXT0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 15:26:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47224 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757576Ab2IXTZM (ORCPT
+	id S932109Ab2IXT1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 15:27:10 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50090 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757850Ab2IXT1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 15:25:12 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        AnilKumar Ch <anilkumar@ti.com>, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 1/4] regulator: deprecate regulator-compatible DT property
-Date: Mon, 24 Sep 2012 13:25:00 -0600
-Message-Id: <1348514703-10152-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1348514703-10152-1-git-send-email-swarren@wwwdotorg.org>
-References: <1348514703-10152-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Mon, 24 Sep 2012 15:27:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120826191209.GA4221@redhat.com>
+References: <20120826191132.GA3743@redhat.com>
+	<20120826191209.GA4221@redhat.com>
+Date: Mon, 24 Sep 2012 21:27:05 +0200
+X-Google-Sender-Auth: Jo4JrfbvOBC7NYHVdJf21-3_A2A
+Message-ID: <CAMuHMdU7D+SM=xCN9Yp0KuGwiod=RojWjkpdYT-Hw=v9iry66A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] task_work: make task_work_add() lockless
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Oleg Nesterov <oleg@redhat.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
+        dhowells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Sun, Aug 26, 2012 at 9:12 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Change task_works to use llist-like code to avoid pi_lock
+> in task_work_add(), this makes it useable under rq->lock.
+>
+> task_work_cancel() and task_work_run() still use pi_lock
+> to synchronize with each other.
+>
+> Suggested-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-When the bindings for the TPS6586x regulator were being proposed, I
-asserted that DT node naming rules for bus child nodes should also be
-applied to nodes inside the TPS6586x regulator node itself. In other
-words, that each node providing regulator init data should be named
-after the type of object it represented ("regulator") and hence that
-some other property was required to indicate which regulator the node
-described ("regulator-compatible"). In turn this led to multiple nodes
-having the same name, thus requiring node names to use a unit address
-to make them unique, thus requiring reg properties within the nodes and
+> --- a/kernel/task_work.c
+> +++ b/kernel/task_work.c
 
-However, subsequent discussion indicates that the rules I was asserting
-only applies to standardized bus nodes, and within a device's own node,
-the binding can basically do anything sane that it wants.
+> @@ -30,52 +23,60 @@ task_work_add(struct task_struct *task, struct callback_head *twork, bool notify
+>  struct callback_head *
+>  task_work_cancel(struct task_struct *task, task_work_func_t func)
+>  {
+> +       struct callback_head **pprev = &task->task_works;
+> +       struct callback_head *work = NULL;
+>         unsigned long flags;
+> -       struct callback_head *last, *res = NULL;
+> -
+> +       /*
+> +        * If cmpxchg() fails we continue without updating pprev.
+> +        * Either we raced with task_work_add() which added the
+> +        * new entry before this work, we will find it again. Or
+> +        * we raced with task_work_run(), *pprev == NULL.
+> +        */
+>         raw_spin_lock_irqsave(&task->pi_lock, flags);
+> -       last = task->task_works;
+> -       if (last) {
+> -               struct callback_head *q = last, *p = q->next;
+> -               while (1) {
+> -                       if (p->func == func) {
+> -                               q->next = p->next;
+> -                               if (p == last)
+> -                                       task->task_works = q == p ? NULL : q;
+> -                               res = p;
+> -                               break;
+> -                       }
+> -                       if (p == last)
+> -                               break;
+> -                       q = p;
+> -                       p = q->next;
+> -               }
+> +       while ((work = ACCESS_ONCE(*pprev))) {
+> +               read_barrier_depends();
 
-Hence, this change deprecates the register-compatible property, and
-instead uses node names to replace this functionality. This greatly
-simplifies the device tree content, making them smaller and more legible.
+Woops, h8300 doesn't have read_barrier_depends():
+kernel/task_work.c:38:3: error: implicit declaration of function
+'read_barrier_depends' [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[2]: *** [kernel/task_work.o] Error 1
 
-The code is changed such that old device trees continue to work.
+http://kisskb.ellerman.id.au/kisskb/buildresult/7238385/
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-This patch is based on regulator's topic/core branch.
----
- .../devicetree/bindings/regulator/regulator.txt    |    5 +++-
- drivers/regulator/of_regulator.c                   |   25 +++++++++----------
- 2 files changed, 16 insertions(+), 14 deletions(-)
+Perhaps an empty definition is fine? Most architectures have:
 
-diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
-index 66ece3f..ecfc6cc 100644
---- a/Documentation/devicetree/bindings/regulator/regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-@@ -11,10 +11,13 @@ Optional properties:
- - regulator-boot-on: bootloader/firmware enabled regulator
- - <name>-supply: phandle to the parent supply/regulator node
- - regulator-ramp-delay: ramp delay for regulator(in uV/uS)
-+
-+Deprecated properties:
- - regulator-compatible: If a regulator chip contains multiple
-   regulators, and if the chip's binding contains a child node that
-   describes each regulator, then this property indicates which regulator
--  this child node is intended to configure.
-+  this child node is intended to configure. If this property is missing,
-+  the node's name will be used instead.
- 
- Example:
- 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index 3e4106f..6f68491 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -92,16 +92,18 @@ struct regulator_init_data *of_get_regulator_init_data(struct device *dev,
- EXPORT_SYMBOL_GPL(of_get_regulator_init_data);
- 
- /**
-- * of_regulator_match - extract regulator init data when node
-- * property "regulator-compatible" matches with the regulator name.
-+ * of_regulator_match - extract multiple regulator init data from device tree.
-  * @dev: device requesting the data
-  * @node: parent device node of the regulators
-  * @matches: match table for the regulators
-  * @num_matches: number of entries in match table
-  *
-- * This function uses a match table specified by the regulator driver and
-- * looks up the corresponding init data in the device tree  if
-- * regulator-compatible matches. Note that the match table is modified
-+ * This function uses a match table specified by the regulator driver to
-+ * parse regulator init data from the device tree. @node is expected to
-+ * contain a set of child nodes, each providing the init data for one
-+ * regulator. The data parsed from a child node will be matched to a regulator
-+ * based on either the deprecated property regulator-compatible if present,
-+ * or otherwise the child node's name. Note that the match table is modified
-  * in place.
-  *
-  * Returns the number of matches found or a negative error code on failure.
-@@ -112,26 +114,23 @@ int of_regulator_match(struct device *dev, struct device_node *node,
- {
- 	unsigned int count = 0;
- 	unsigned int i;
--	const char *regulator_comp;
-+	const char *name;
- 	struct device_node *child;
- 
- 	if (!dev || !node)
- 		return -EINVAL;
- 
- 	for_each_child_of_node(node, child) {
--		regulator_comp = of_get_property(child,
-+		name = of_get_property(child,
- 					"regulator-compatible", NULL);
--		if (!regulator_comp) {
--			dev_err(dev, "regulator-compatible is missing for node %s\n",
--				child->name);
--			continue;
--		}
-+		if (!name)
-+			name = child->name;
- 		for (i = 0; i < num_matches; i++) {
- 			struct of_regulator_match *match = &matches[i];
- 			if (match->of_node)
- 				continue;
- 
--			if (strcmp(match->name, regulator_comp))
-+			if (strcmp(match->name, name))
- 				continue;
- 
- 			match->init_data =
--- 
-1.7.0.4
+#define read_barrier_depends() do { } while(0)
 
+The same issue on c6x just got fixed in -next in commit
+2c8c2366077da5645bf9063b3cf5c94ecb16f691 ("c6x: use
+asm-generic/barrier.h")
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
