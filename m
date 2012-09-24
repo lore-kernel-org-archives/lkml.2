@@ -1,177 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab2IXHNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:13:44 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:48317 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab2IXHNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:13:43 -0400
-X-AuditID: b753bd60-97c52ba000002f78-fe-506008242d2b
-X-AuditID: b753bd60-97c52ba000002f78-fe-506008242d2b
-Message-ID: <5060081C.3060903@hitachi.com>
-Date: Mon, 24 Sep 2012 16:13:32 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1754677Ab2IXHUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 03:20:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10517 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752146Ab2IXHUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 03:20:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,474,1344236400"; 
+   d="scan'208,223";a="225855084"
+Message-ID: <506009A4.8000202@linux.intel.com>
+Date: Mon, 24 Sep 2012 15:20:04 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120306 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: irina.tirdea@gmail.com
-Cc: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        rostedt@goodmis.org, paulus@samba.org, dsahern@gmail.com,
-        namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
-        Irina Tirdea <irina.tirdea@intel.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH v2 1/1] perf tools: remove sscanf extension %as
-References: <1347574063-22521-2-git-send-email-irina.tirdea@intel.com> <1348173470-4936-1-git-send-email-irina.tirdea@gmail.com>
-In-Reply-To: <1348173470-4936-1-git-send-email-irina.tirdea@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Takahiroi Shimizu <tshimizu818@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        haicheng.lee@gmail.com
+Subject: [PATCH 1/2] Fix build error caused by broken PCH_PTP module dependency.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/09/21 5:37), irina.tirdea@gmail.com wrote:
-> From: Irina Tirdea <irina.tirdea@intel.com>
-> 
-> perf uses sscanf extension %as to read and allocate a
-> string in the same step. This is a non-standard extension
-> only present in new versions of glibc.
-> 
-> Replacing the use of sscanf and %as with strtok_r calls
-> in order to parse a given string into its components.
-> This is needed in Android since bionic does not support
-> %as extension for sscanf.
+ From 1b4ae11bacfd2eedda1fd0e1ce1d37b678e2f009 Mon Sep 17 00:00:00 2001
+From: Haicheng Li <haicheng.li@linux.intel.com>
+Date: Mon, 24 Sep 2012 15:01:33 +0800
+Subject: [PATCH 1/2] Fix build error caused by broken PCH_PTP module dependency.
 
-OK, I've reviewed and tested, looks good! :)
+The .config is:
+         CONFIG_PCH_GBE=y
+         CONFIG_PCH_PTP=y
+         CONFIG_PTP_1588_CLOCK=m
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+The build error:
 
-Thank you!
+drivers/built-in.o: In function `pch_tx_timestamp':
+.../pch_gbe_main.c:215: undefined reference to `pch_ch_event_read'
+.../pch_gbe_main.c:225: undefined reference to `pch_tx_snap_read'
+.../pch_gbe_main.c:231: undefined reference to `pch_ch_event_write'
 
-> 
-> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-> ---
->  tools/perf/util/probe-event.c       |   36 ++++++++++++++++++++++++++++-------
->  tools/perf/util/trace-event-parse.c |   18 ++++++++----------
->  2 files changed, 37 insertions(+), 17 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 4ce04c2..49a256e 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -1100,6 +1100,7 @@ static int parse_probe_trace_command(const char *cmd,
->  	struct probe_trace_point *tp = &tev->point;
->  	char pr;
->  	char *p;
-> +	char *argv0_str = NULL, *fmt, *fmt1_str, *fmt2_str, *fmt3_str;
->  	int ret, i, argc;
->  	char **argv;
->  
-> @@ -1116,14 +1117,27 @@ static int parse_probe_trace_command(const char *cmd,
->  	}
->  
->  	/* Scan event and group name. */
-> -	ret = sscanf(argv[0], "%c:%a[^/ \t]/%a[^ \t]",
-> -		     &pr, (float *)(void *)&tev->group,
-> -		     (float *)(void *)&tev->event);
-> -	if (ret != 3) {
-> +	argv0_str = strdup(argv[0]);
-> +	if (argv0_str == NULL) {
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
-> +	fmt1_str = strtok_r(argv0_str, ":", &fmt);
-> +	fmt2_str = strtok_r(NULL, "/", &fmt);
-> +	fmt3_str = strtok_r(NULL, " \t", &fmt);
-> +	if (fmt1_str == NULL || strlen(fmt1_str) != 1 || fmt2_str == NULL
-> +	    || fmt3_str == NULL) {
->  		semantic_error("Failed to parse event name: %s\n", argv[0]);
->  		ret = -EINVAL;
->  		goto out;
->  	}
-> +	pr = fmt1_str[0];
-> +	tev->group = strdup(fmt2_str);
-> +	tev->event = strdup(fmt3_str);
-> +	if (tev->group == NULL || tev->event == NULL) {
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
->  	pr_debug("Group:%s Event:%s probe:%c\n", tev->group, tev->event, pr);
->  
->  	tp->retprobe = (pr == 'r');
-> @@ -1135,10 +1149,17 @@ static int parse_probe_trace_command(const char *cmd,
->  		p++;
->  	} else
->  		p = argv[1];
-> -	ret = sscanf(p, "%a[^+]+%lu", (float *)(void *)&tp->symbol,
-> -		     &tp->offset);
-> -	if (ret == 1)
-> +	fmt1_str = strtok_r(p, "+", &fmt);
-> +	tp->symbol = strdup(fmt1_str);
-> +	if (tp->symbol == NULL) {
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
-> +	fmt2_str = strtok_r(NULL, "", &fmt);
-> +	if (fmt2_str == NULL)
->  		tp->offset = 0;
-> +	else
-> +		tp->offset = strtoul(fmt2_str, NULL, 10);
->  
->  	tev->nargs = argc - 2;
->  	tev->args = zalloc(sizeof(struct probe_trace_arg) * tev->nargs);
-> @@ -1162,6 +1183,7 @@ static int parse_probe_trace_command(const char *cmd,
->  	}
->  	ret = 0;
->  out:
-> +	free(argv0_str);
->  	argv_free(argv);
->  	return ret;
->  }
-> diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-> index aa4c860..3aabcd6 100644
-> --- a/tools/perf/util/trace-event-parse.c
-> +++ b/tools/perf/util/trace-event-parse.c
-> @@ -229,24 +229,22 @@ void parse_proc_kallsyms(struct pevent *pevent,
->  	char *next = NULL;
->  	char *addr_str;
->  	char *mod;
-> -	char ch;
-> +	char *fmt;
->  
->  	line = strtok_r(file, "\n", &next);
->  	while (line) {
->  		mod = NULL;
-> -		sscanf(line, "%as %c %as\t[%as",
-> -		       (float *)(void *)&addr_str, /* workaround gcc warning */
-> -		       &ch, (float *)(void *)&func, (float *)(void *)&mod);
-> +		addr_str = strtok_r(line, " ", &fmt);
->  		addr = strtoull(addr_str, NULL, 16);
-> -		free(addr_str);
-> -
-> -		/* truncate the extra ']' */
-> +		/* skip character */
-> +		strtok_r(NULL, " ", &fmt);
-> +		func = strtok_r(NULL, "\t", &fmt);
-> +		mod = strtok_r(NULL, "]", &fmt);
-> +		/* truncate the extra '[' */
->  		if (mod)
-> -			mod[strlen(mod) - 1] = 0;
-> +			mod = mod + 1;
->  
->  		pevent_register_function(pevent, func, addr, mod);
-> -		free(func);
-> -		free(mod);
->  
->  		line = strtok_r(NULL, "\n", &next);
->  	}
-> 
+.../pch_gbe_main.c:170: undefined reference to `pch_ch_event_read'
+.../pch_gbe_main.c:175: undefined reference to `pch_src_uuid_lo_read'
+.../pch_gbe_main.c:176: undefined reference to `pch_src_uuid_hi_read'
+.../pch_gbe_main.c:190: undefined reference to `pch_ch_event_write'
+.../pch_gbe_main.c:184: undefined reference to `pch_rx_snap_read'
 
+.../pch_gbe_main.c:267: undefined reference to `pch_ch_control_write'
+.../pch_gbe_main.c:271: undefined reference to `pch_ch_control_write'
+.../pch_gbe_main.c:275: undefined reference to `pch_ch_control_write'
+.../pch_gbe_main.c:281: undefined reference to `pch_ch_control_write'
+.../pch_gbe_main.c:283: undefined reference to `pch_set_station_address'
+.../pch_gbe_main.c:290: undefined reference to `pch_ch_event_write'
 
+Signed-off-by: Haicheng Li <haicheng.lee@gmail.com>
+---
+  drivers/net/ethernet/oki-semi/pch_gbe/Kconfig |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig 
+b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
+index bce0164..9feaf3f 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
+@@ -26,7 +26,7 @@ if PCH_GBE
+  config PCH_PTP
+  	bool "PCH PTP clock support"
+  	default n
+-	depends on PTP_1588_CLOCK_PCH
++	depends on PTP_1588_CLOCK_PCH = y
+  	---help---
+  	  Say Y here if you want to use Precision Time Protocol (PTP) in the
+  	  driver. PTP is a method to precisely synchronize distributed clocks
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.1
 
