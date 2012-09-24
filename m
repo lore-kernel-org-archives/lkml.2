@@ -1,127 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab2IXJdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 05:33:08 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36150 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751181Ab2IXJdF (ORCPT
+	id S1753235Ab2IXJd1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 05:33:27 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:51609 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752904Ab2IXJdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 05:33:05 -0400
-Message-ID: <1348479181.2467.28.camel@dabdike>
-Subject: Re: [PATCH scsi] Add NULL checking of return value from
- scsi_cmd_to_driver()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Martin K. Petersen" <mkp@mkp.net>
-Date: Mon, 24 Sep 2012 13:33:01 +0400
-In-Reply-To: <1348478750.2475.51.camel@ThinkPad-T420>
-References: <1348464626.2475.13.camel@ThinkPad-T420>
-	 <1348465493.2467.3.camel@dabdike> <1348470210.2475.47.camel@ThinkPad-T420>
-	 <1348472104.2467.8.camel@dabdike> <1348478750.2475.51.camel@ThinkPad-T420>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Sep 2012 05:33:25 -0400
+Date: Mon, 24 Sep 2012 12:33:12 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: hot-added cpu is not asiggned to the correct node
+Message-ID: <20120924093312.GC28937@mwanda>
+References: <50501E97.2020200@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50501E97.2020200@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-24 at 17:25 +0800, Li Zhong wrote:
-> On Mon, 2012-09-24 at 11:35 +0400, James Bottomley wrote:
-> > On Mon, 2012-09-24 at 15:03 +0800, Li Zhong wrote:
-> > > On Mon, 2012-09-24 at 09:44 +0400, James Bottomley wrote:
-> > > > On Mon, 2012-09-24 at 13:30 +0800, Li Zhong wrote:
-> > > > > Just noticed that after commit 919f797, it is possible that 
-> > > > > scsi_cmd_to_driver() returns NULL. This patch adds the NULL checking for drv 
-> > > > > returned from the above function. 
-> > > > > 
-> > > > > Maybe it is not possible at run time, but from the code itself, we'd better
-> > > > > have this check?  
-> > > > 
-> > > > There's not much point having a check that never trips, unless it's an
-> > > > assert, in which case a NULL deref does that.  All it does is add
-> > > > pointless instructions to the critical path.  only REQ_TYPE_BLOCK_PC
-> > > > commands can be submitted without a driver, so the check above would
-> > > > seem to preclude that.
-> > > 
-> > > Hi James, 
-> > > 
-> > > Thank you, it sounds reasonable to me. Let's drop it. 
-> > 
-> > Well, there is another thing you might do: The path length of
-> > scsi_cmd_to_driver() increased a lot thanks to 18a4d0a22ed6 it might be
-> > worth getting it back to what it was (this looks to be doable with the
-> > same != REQ_TYPE_BLOCK_PC test in the error handler.  Plus, I think it
-> > fixes a bug where you get different behaviours from REQ_TYPE_BLOCK_PC
-> > commands when a driver is and isn't attached (I've cc'd Martin to see
-> > what he thinks).
+On Wed, Sep 12, 2012 at 02:33:11PM +0900, Yasuaki Ishimatsu wrote:
+> When I hot-added CPUs and memories simultaneously using container driver,
+> all the hot-added CPUs were mistakenly assigned to node0.
 > 
-> Hi James, 
-> 
-> Do you mean something like this: 
 
-Pretty much, yes.
+Is this something which used to work correctly?  If so which was the
+most recent working kernel?
 
-James
-
-> =======
-> 
-> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-> index de2337f..c1b05a8 100644
-> --- a/drivers/scsi/scsi_error.c
-> +++ b/drivers/scsi/scsi_error.c
-> @@ -789,7 +789,6 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
->  			     int cmnd_size, int timeout, unsigned sense_bytes)
->  {
->  	struct scsi_device *sdev = scmd->device;
-> -	struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
->  	struct Scsi_Host *shost = sdev->host;
->  	DECLARE_COMPLETION_ONSTACK(done);
->  	unsigned long timeleft;
-> @@ -845,8 +844,11 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
->  
->  	scsi_eh_restore_cmnd(scmd, &ses);
->  
-> -	if (sdrv && sdrv->eh_action)
-> -		rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
-> +	if (scmd->request->cmd_type != REQ_TYPE_BLOCK_PC) {
-> +		struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
-> +		if (sdrv->eh_action)
-> +			rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
-> +	}
->  
->  	return rtn;
->  }
-> diff --git a/include/scsi/scsi_cmnd.h b/include/scsi/scsi_cmnd.h
-> index ac06cc5..377df4a 100644
-> --- a/include/scsi/scsi_cmnd.h
-> +++ b/include/scsi/scsi_cmnd.h
-> @@ -134,16 +134,7 @@ struct scsi_cmnd {
->  
->  static inline struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
->  {
-> -	struct scsi_driver **sdp;
-> -
-> -	if (!cmd->request->rq_disk)
-> -		return NULL;
-> -
-> -	sdp = (struct scsi_driver **)cmd->request->rq_disk->private_data;
-> -	if (!sdp)
-> -		return NULL;
-> -
-> -	return *sdp;
-> +	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
->  }
->  
->  extern struct scsi_cmnd *scsi_get_command(struct scsi_device *, gfp_t);
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+regards,
+dan carpenter
