@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab2IXK2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 06:28:45 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:47264 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab2IXK2o (ORCPT
+	id S1753627Ab2IXKaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 06:30:00 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38215 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab2IXK37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 06:28:44 -0400
-X-AuditID: b753bd60-91ec3ba0000047ca-5f-506035d96e0c
-X-AuditID: b753bd60-91ec3ba0000047ca-5f-506035d96e0c
-Message-ID: <506035D0.6040504@hitachi.com>
-Date: Mon, 24 Sep 2012 19:28:32 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 24 Sep 2012 06:29:59 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, X86-ML <x86@kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] x86, kprobes: Hide skip_singlestep forward declaration
- properly
-References: <1348062414-6578-1-git-send-email-bp@amd64.org> <505ADB6B.3070706@hitachi.com> <20120920092540.GB3611@gmail.com> <505AE3B5.6080401@hitachi.com> <20120920094017.GA4918@gmail.com>
-In-Reply-To: <20120920094017.GA4918@gmail.com>
+In-Reply-To: <87392768dj.fsf@devron.myhome.or.jp>
+References: <1347798148-2660-1-git-send-email-linkinjeon@gmail.com>
+	<87lig28fak.fsf@devron.myhome.or.jp>
+	<CAKYAXd-6k7=RmrweR=wTOET50hy8Y7LokCSe1c2JtYd7pzPmsQ@mail.gmail.com>
+	<87ipb45914.fsf@devron.myhome.or.jp>
+	<CAKYAXd9EzKH_x1GaXvSZ7pRebfOcwQqNp6-oEnc2z2evuNo23g@mail.gmail.com>
+	<87ehls53ug.fsf@devron.myhome.or.jp>
+	<87a9wg53mc.fsf@devron.myhome.or.jp>
+	<CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
+	<87392768dj.fsf@devron.myhome.or.jp>
+Date: Mon, 24 Sep 2012 19:29:58 +0900
+Message-ID: <CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/09/20 18:40), Ingo Molnar wrote:
-> 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> (2012/09/20 18:25), Ingo Molnar wrote:
->>>
->>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>
->>>> (2012/09/19 22:46), Borislav Petkov wrote:
->>>>> From: Borislav Petkov <borislav.petkov@amd.com>
->>>>>
->>>>> I get
->>>>>
->>>>> arch/x86/kernel/kprobes.c:544:23: warning: ‘skip_singlestep’ declared ‘static’ but never defined [-Wunused-function]
->>>>>
->>>>> on tip/auto-latest.
->>>>>
->>>>> Hide the forward declaration in the KPROBES_CAN_USE_FTRACE as it
->>>>> is done in its callsites.
->>>>
->>>> Thank you for reporting and fixing :)
->>>
->>> Why is a forward declation needed, why isn't the function in the 
->>> proper spot in the file to begin with?
+2012/9/24, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>>> This means - which code returns error?
+>> Sorry, My explanation may be insufficient.
 >>
->> There is no reason, ftrace-related things can also be moved on top.
->> Borislav, could you move it?
-> 
-> Could be moved into a separate file as well - we could have 
-> arch/x86/kprobes/, with core.c, opt.c, ftrace.c and common.h in 
-> it - possibly more in the future.
+>> nfs_update_inode()-> on NFS client
+>> if ((fattr->valid & NFS_ATTR_FATTR_FILEID) && nfsi->fileid !=
+>> fattr->fileid) {
+>> 		printk(KERN_ERR "NFS: server %s error: fileid changed\n"
+>> 			"fsid %s: expected fileid 0x%Lx, got 0x%Lx\n",
+>> 			NFS_SERVER(inode)->nfs_client->cl_hostname,
+>> 			inode->i_sb->s_id, (long long)nfsi->fileid,
+>> 			(long long)fattr->fileid);
+>> 		goto out_err;
+>> 	}
+>>
+>> that the problem in that case will occur with the file handle on NFS
+>> Client because the file handle on NFS client is still referring the
+>> old inode number even though the i-pos is same
+>
+> I see. fileid seems to be stat.ino on nfsd4. inode->i_ino is actually
+> just a hash key of inode hash (exception is only in audit, iirc).
+>
+> So, what happens if we set "stat->ino = i_pos" on fat_getattr().
+>
+> int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat
+> *stat)
+> {
+> 	struct inode *inode = dentry->d_inode;
+> 	generic_fillattr(inode, stat);
+> 	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
+> 	if (opts->nfs == FAT_NFS_LIMITED) {
+> 		/* Use i_pos for ino. This is used as fileid of nfs. */
+> 		stat->ino = MSDOS_SB(inode->i_sb)->i_pos;
+> 	}
+> 	return 0;
+> }
+Okay, Thanks for your help.
+I will share the result after checking.
 
-OK, I'll break it into those pieces :)
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
