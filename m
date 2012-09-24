@@ -1,131 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab2IXWdr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:33:47 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:6087 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab2IXWdq (ORCPT
+	id S1751490Ab2IXWfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:35:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43938 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab2IXWfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:33:46 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6845"; a="238327109"
-Message-ID: <5060DFC9.1000207@codeaurora.org>
-Date: Mon, 24 Sep 2012 15:33:45 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 05/10] ARM: msm: Remove custom clk_set_flags() API
-References: <1348194419-11486-1-git-send-email-sboyd@codeaurora.org> <1348194419-11486-6-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1348194419-11486-6-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Sep 2012 18:35:30 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
+        neilb@suse.de, vgoyal@redhat.com
+Subject: [PATCH v3 00/26] Prep work for immutable bio vecs
+Date: Mon, 24 Sep 2012 15:34:40 -0700
+Message-Id: <1348526106-17074-1-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 07:26 PM, Stephen Boyd wrote:
-> Nobody is using this API upstream and it's just contributing
-> cruft. Remove it so the MSM clock API is closer to the generic
-> struct clock API.
->
-> Cc: Saravana Kannan<skannan@codeaurora.org>
-> Signed-off-by: Stephen Boyd<sboyd@codeaurora.org>
-> ---
->   arch/arm/mach-msm/clock-pcom.c       | 10 ----------
->   arch/arm/mach-msm/clock.c            |  8 --------
->   arch/arm/mach-msm/clock.h            |  6 ------
->   arch/arm/mach-msm/include/mach/clk.h |  3 ---
->   4 files changed, 27 deletions(-)
->
-> diff --git a/arch/arm/mach-msm/clock-pcom.c b/arch/arm/mach-msm/clock-pcom.c
-> index a52c970..bb75f8e 100644
-> --- a/arch/arm/mach-msm/clock-pcom.c
-> +++ b/arch/arm/mach-msm/clock-pcom.c
-> @@ -85,15 +85,6 @@ static int pc_clk_set_max_rate(unsigned id, unsigned rate)
->   		return (int)id<  0 ? -EINVAL : 0;
->   }
->
-> -static int pc_clk_set_flags(unsigned id, unsigned flags)
-> -{
-> -	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_SET_FLAGS,&id,&flags);
-> -	if (rc<  0)
-> -		return rc;
-> -	else
-> -		return (int)id<  0 ? -EINVAL : 0;
-> -}
-> -
->   static unsigned pc_clk_get_rate(unsigned id)
->   {
->   	if (msm_proc_comm(PCOM_CLKCTL_RPC_RATE,&id, NULL))
-> @@ -130,7 +121,6 @@ struct clk_ops clk_ops_pcom = {
->   	.set_rate = pc_clk_set_rate,
->   	.set_min_rate = pc_clk_set_min_rate,
->   	.set_max_rate = pc_clk_set_max_rate,
-> -	.set_flags = pc_clk_set_flags,
->   	.get_rate = pc_clk_get_rate,
->   	.is_enabled = pc_clk_is_enabled,
->   	.round_rate = pc_clk_round_rate,
-> diff --git a/arch/arm/mach-msm/clock.c b/arch/arm/mach-msm/clock.c
-> index d9145df..5fac2df 100644
-> --- a/arch/arm/mach-msm/clock.c
-> +++ b/arch/arm/mach-msm/clock.c
-> @@ -121,14 +121,6 @@ struct clk *clk_get_parent(struct clk *clk)
->   }
->   EXPORT_SYMBOL(clk_get_parent);
->
-> -int clk_set_flags(struct clk *clk, unsigned long flags)
-> -{
-> -	if (clk == NULL || IS_ERR(clk))
-> -		return -EINVAL;
-> -	return clk->ops->set_flags(clk->id, flags);
-> -}
-> -EXPORT_SYMBOL(clk_set_flags);
-> -
->   /* EBI1 is the only shared clock that several clients want to vote on as of
->    * this commit. If this changes in the future, then it might be better to
->    * make clk_min_rate handle the voting or make ebi1_clk_set_min_rate more
-> diff --git a/arch/arm/mach-msm/clock.h b/arch/arm/mach-msm/clock.h
-> index 2c007f6..a25ff58 100644
-> --- a/arch/arm/mach-msm/clock.h
-> +++ b/arch/arm/mach-msm/clock.h
-> @@ -21,11 +21,6 @@
->   #include<linux/list.h>
->   #include<mach/clk.h>
->
-> -#define CLKFLAG_INVERT			0x00000001
-> -#define CLKFLAG_NOINVERT		0x00000002
-> -#define CLKFLAG_NONEST			0x00000004
-> -#define CLKFLAG_NORESET			0x00000008
-> -
->   #define CLK_FIRST_AVAILABLE_FLAG	0x00000100
->   #define CLKFLAG_AUTO_OFF		0x00000200
->   #define CLKFLAG_MIN			0x00000400
-> @@ -39,7 +34,6 @@ struct clk_ops {
->   	int (*set_rate)(unsigned id, unsigned rate);
->   	int (*set_min_rate)(unsigned id, unsigned rate);
->   	int (*set_max_rate)(unsigned id, unsigned rate);
-> -	int (*set_flags)(unsigned id, unsigned flags);
->   	unsigned (*get_rate)(unsigned id);
->   	unsigned (*is_enabled)(unsigned id);
->   	long (*round_rate)(unsigned id, unsigned rate);
-> diff --git a/arch/arm/mach-msm/include/mach/clk.h b/arch/arm/mach-msm/include/mach/clk.h
-> index e8d3842..5f1c37d 100644
-> --- a/arch/arm/mach-msm/include/mach/clk.h
-> +++ b/arch/arm/mach-msm/include/mach/clk.h
-> @@ -34,7 +34,4 @@ int clk_set_max_rate(struct clk *clk, unsigned long rate);
->   /* Assert/Deassert reset to a hardware block associated with a clock */
->   int clk_reset(struct clk *clk, enum clk_reset_action action);
->
-> -/* Set clock-specific configuration parameters */
-> -int clk_set_flags(struct clk *clk, unsigned long flags);
-> -
->   #endif
+Random assortment of refactoring and trivial cleanups;
 
-Acked-by: Saravana Kannan <skannan@codeaurora.org>
+Previous posting: http://thread.gmane.org/gmane.linux.kernel.bcache.devel/1055
+
+No big changes since v2 - incorporated review feedback - mostly documentation,
+did more testing, and fixed the deadlock Vivek noticed in my "convert integrity
+to bvec_alloc_bs()" patch.
+
+Patch series is on top of my patches for fixing a bio allocation deadlock with
+stacked blocked devices, which is on top of Jens' tree.
+
+Git tree is at:
+http://evilpiepirate.org/git/linux-bcache.git block_stuff
+
+v2: Patch series now has all the prep work to be done before abstracting
+out the bio iterator, I think.
+
+Kent Overstreet (26):
+  block: Fix a buffer overrun in bio_integrity_split()
+  block: Convert integrity to bvec_alloc_bs()
+  block: Add bio_advance()
+  block: Refactor blk_update_request()
+  md: Convert md_trim_bio() to use bio_advance()
+  block: Add bio_end_sector()
+  block: Use bio_sectors() more consistently
+  block: Change bio_split() to respect the current value of bi_idx
+  block: Remove bi_idx references
+  block: Remove some unnecessary bi_vcnt usage
+  block: Add submit_bio_wait(), remove from md
+  raid10: Use bio_reset()
+  raid1: use bio_reset()
+  raid5: use bio_reset()
+  raid1: Refactor narrow_write_error() to not use bi_idx
+  block: Add bio_copy_data()
+  pktcdvd: use bio_copy_data()
+  pktcdvd: Use bio_reset() in disabled code to kill bi_idx usage
+  raid1: use bio_copy_data()
+  bounce: Refactor __blk_queue_bounce to not use bi_io_vec
+  block: Add bio_for_each_segment_all()
+  block: Convert some code to bio_for_each_segment_all()
+  block: Add bio_alloc_pages()
+  block: Add an explicit bio flag for bios that own their bvec
+  bio-integrity: Add explicit field for owner of bip_buf
+  block: Add BIO_SUBMITTED flag, kill BIO_CLONED
+
+ block/blk-core.c                         |  84 ++--------
+ block/cfq-iosched.c                      |   7 +-
+ block/deadline-iosched.c                 |   2 +-
+ drivers/block/aoe/aoeblk.c               |   2 +-
+ drivers/block/aoe/aoecmd.c               |   2 +-
+ drivers/block/brd.c                      |   3 +-
+ drivers/block/drbd/drbd_req.c            |   8 +-
+ drivers/block/floppy.c                   |   1 -
+ drivers/block/pktcdvd.c                  | 102 +++---------
+ drivers/block/ps3vram.c                  |   2 +-
+ drivers/md/dm-crypt.c                    |   3 +-
+ drivers/md/dm-raid1.c                    |   2 +-
+ drivers/md/dm-stripe.c                   |   2 +-
+ drivers/md/dm-verity.c                   |   4 +-
+ drivers/md/dm.c                          |   1 -
+ drivers/md/faulty.c                      |   6 +-
+ drivers/md/linear.c                      |   3 +-
+ drivers/md/md.c                          |  19 +--
+ drivers/md/raid0.c                       |   9 +-
+ drivers/md/raid1.c                       | 133 +++++-----------
+ drivers/md/raid10.c                      |  78 +++-------
+ drivers/md/raid5.c                       |  49 +++---
+ drivers/message/fusion/mptsas.c          |   6 +-
+ drivers/s390/block/dcssblk.c             |   3 +-
+ drivers/scsi/libsas/sas_expander.c       |   6 +-
+ drivers/scsi/mpt2sas/mpt2sas_transport.c |  10 +-
+ fs/bio-integrity.c                       | 143 +++++++----------
+ fs/bio.c                                 | 260 +++++++++++++++++++++++++------
+ fs/btrfs/extent_io.c                     |   3 +-
+ fs/buffer.c                              |   1 -
+ fs/direct-io.c                           |   8 +-
+ fs/exofs/ore.c                           |   2 +-
+ fs/exofs/ore_raid.c                      |   2 +-
+ fs/gfs2/lops.c                           |   2 +-
+ fs/jfs/jfs_logmgr.c                      |   2 -
+ fs/logfs/dev_bdev.c                      |   5 -
+ include/linux/bio.h                      |  48 +++---
+ include/linux/blk_types.h                |   3 +-
+ include/trace/events/block.h             |  10 +-
+ mm/bounce.c                              |  75 +++------
+ mm/page_io.c                             |   1 -
+ 41 files changed, 499 insertions(+), 613 deletions(-)
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.12
+
