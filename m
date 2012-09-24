@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab2IXMaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 08:30:14 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44320 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab2IXMaL (ORCPT
+	id S1754912Ab2IXMcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 08:32:06 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:42408 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199Ab2IXMcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 08:30:11 -0400
-From: Michal Nazarewicz <mpn@google.com>
-To: George Spelvin <linux@horizon.com>, linux@horizon.com,
-        vda.linux@googlemail.com
-Cc: hughd@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] lib: vsprintf: Optimize put_dec_trunc8
-In-Reply-To: <20120924114602.501.qmail@science.horizon.com>
-Organization: Google Inc
-References: <20120924114602.501.qmail@science.horizon.com>
-User-Agent: Notmuch/0.14+22~g8bdc16b (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Mon, 24 Sep 2012 14:29:56 +0200
-Message-ID: <xa1tipb3d2nv.fsf@mina86.com>
+	Mon, 24 Sep 2012 08:32:04 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
+References: <1347798148-2660-1-git-send-email-linkinjeon@gmail.com>
+	<87lig28fak.fsf@devron.myhome.or.jp>
+	<CAKYAXd-6k7=RmrweR=wTOET50hy8Y7LokCSe1c2JtYd7pzPmsQ@mail.gmail.com>
+	<87ipb45914.fsf@devron.myhome.or.jp>
+	<CAKYAXd9EzKH_x1GaXvSZ7pRebfOcwQqNp6-oEnc2z2evuNo23g@mail.gmail.com>
+	<87ehls53ug.fsf@devron.myhome.or.jp>
+	<87a9wg53mc.fsf@devron.myhome.or.jp>
+	<CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
+	<87392768dj.fsf@devron.myhome.or.jp>
+	<CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
+	<87y5jz4rio.fsf@devron.myhome.or.jp>
+	<CAKYAXd_OmVgxtmHOLRdi5yr=yTa9ppmatQUf1GO6Qjg5ym8LuA@mail.gmail.com>
+Date: Mon, 24 Sep 2012 21:32:00 +0900
+In-Reply-To: <CAKYAXd_OmVgxtmHOLRdi5yr=yTa9ppmatQUf1GO6Qjg5ym8LuA@mail.gmail.com>
+	(Namjae Jeon's message of "Mon, 24 Sep 2012 20:20:59 +0900")
+Message-ID: <87txun4n5r.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
->>> @@ -174,20 +174,12 @@ char *put_dec_trunc8(char *buf, unsigned r)
->>>  	unsigned q;
->>>  	/* Copy of previous function's body with added early returns */
->>> -	q      =3D (r * (uint64_t)0x1999999a) >> 32;
->>> -	*buf++ =3D (r - 10 * q) + '0'; /* 2 */
->>> -	if (q =3D=3D 0)
->>> -		return buf;
->>> -	r      =3D (q * (uint64_t)0x1999999a) >> 32;
->>> -	*buf++ =3D (q - 10 * r) + '0'; /* 3 */
->>> -	if (r =3D=3D 0)
->>> -		return buf;
->>> -	q      =3D (r * (uint64_t)0x1999999a) >> 32;
->>> -	*buf++ =3D (r - 10 * q) + '0'; /* 4 */
->>> -	if (q =3D=3D 0)
->>> -		return buf;
->>> -	r      =3D (q * (uint64_t)0x1999999a) >> 32;
->>> -	*buf++ =3D (q - 10 * r) + '0'; /* 5 */
->>> +	while (r >=3D 10000) {
->>> +		q =3D r + '0';
->>> +		r  =3D (r * (uint64_t)0x1999999a) >> 32;
->>> +		*buf++ =3D q - 10*r;
->>> +	}
+> 2012/9/24, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+>> Namjae Jeon <linkinjeon@gmail.com> writes:
+>>
+>>>> I see. fileid seems to be stat.ino on nfsd4. inode->i_ino is actually
+>>>> just a hash key of inode hash (exception is only in audit, iirc).
+>>>>
+>>>> So, what happens if we set "stat->ino = i_pos" on fat_getattr().
+>>>>
+>>>> int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct
+>>>> kstat
+>>>> *stat)
+>>>> {
+>>>> 	struct inode *inode = dentry->d_inode;
+>>>> 	generic_fillattr(inode, stat);
+>>>> 	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
+>>>> 	if (opts->nfs == FAT_NFS_LIMITED) {
+>>>> 		/* Use i_pos for ino. This is used as fileid of nfs. */
+>>>> 		stat->ino = MSDOS_SB(inode->i_sb)->i_pos;
+>>
+>> 		stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb), inode);
+>>
+>> Ouch, I forgot to use fat_i_pos_read().
+>>
+> There is some unclear thing.
+> When I see first mail, I think maybe you don't want to use i_pos for inode->ino.
+> FAT allocate inode->ino from i_unique on server side and If NFS client
+> use i_pos for inode->ino in fat_get_attr, inode numbers on each
+> client/server will still be mismatched.
+>
+> Would you plz give me hint ?
 
-All right, I now see what the loop is doing (I couldn't grasp it
-yesterday) and expect for r=3D0 it looks legit.
+->i_ino is long. It can't hold i_pos fully on 32bit arch, so we can't
+use ->i_no to store i_pos, and changing ->i_ino is unnecessary. If
+getattr() returned i_pos as ino, nobody see ->i_ino anymore except
+internal of kernel.
 
-On Mon, Sep 24 2012, George Spelvin wrote:
-> Truthfully, it would have made *more* sense to swap q and r globally,
-> so the loop had a more sensible q=3Dquotient/r=3Dremainder assignment,
-> but I wanted to show that the unmodified tail was in fact unmodified.
-
-The original has it a bit awkwardly because it just copies code from
-put_dec_full9() with the first iteration skipped.
-
-> The big saving from using a loop is that it avoids unnecessary
-> 32x32->64-bit multiplies, falling through to the 16x16->32-bit
-> code as early as possible.  Given that most numbers are small,
-> this seemed like a significant win.
-
-Ah, makes sense.
-
-I guess the following should work, even though it's not so pretty:
-
-static noinline_for_stack
-char *put_dec_trunc8(char *buf, unsigned r) {
-	unsigned q;
-
-	if (r > 10000) {
-		do {
-			q =3D r + '0';
-			r =3D (r * (uint64_t)0x1999999a) >> 32;
-			*buf++ =3D q - 10 * r;
-		} while (r >=3D 10000);
-		if (r =3D=3D 0)
-			return buf;
-	}
-
-	q      =3D (r * 0x199a) >> 16;
-	*buf++ =3D (r - 10 * q)  + '0'; /* 6 */
-	if (q =3D=3D 0)
-		return buf;
-	r      =3D (q * 0xcd) >> 11;
-	*buf++ =3D (q - 10 * r)  + '0'; /* 7 */
-	if (r =3D=3D 0)
-		return buf;
-	q      =3D (r * 0xcd) >> 11;
-	*buf++ =3D (r - 10 * q) + '0'; /* 8 */
-	if (q =3D=3D 0)
-		return buf;
-	*buf++ =3D q + '0'; /* 9 */
-	return buf;
-}
-
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQYFJEAAoJECBgQBJQdR/08tQP/1whPN+KczKDi7cOgtzEBMqd
-Y4fyl+0RILxLCQDwBWI8AK8fgtFwG1qViN4g6CJEs3Hstmc75j34LCOMIdRSLEiC
-1EUyp3eOQcfk3QLs3gFjiTDVnhqGNxchCUtn1o2pwPyCDjUQyD5Agovk8Xum0zGO
-XF5l5CkNu9gg0pNo6Jas41M0z4LL5Kv2ur/Y7T6ydSZ2BMZTKAj7aTYizuim7sp4
-ITNtso1OnhMtyO8uPsBnNXguuAWprkGEGGpWd5GCk7ltb6kp7mgK6NpQLwB51uLd
-svi0Mb04wBzPKk7xBXxI2475IT53QmsqL7UP9SGzfXW2Icrmhh8b9SS4wcT946kk
-2ARUY4xhMrnFp1E5lJ/52ZuNIMVK1bZf5Qg1gaNi93VMV/NOX2pGDpAxzSQNKuTw
-p1UqrZSflyGeJhRIUkyQqO5pfNyl1Z8kC9/2GUsyQXabVRMBoMDQRm0eDUVrwsOX
-kZldZrPlpNDjcpPhzTRqImIQtjxKz4glrPo3ztZm56dcMST1rR48xG6PKsjQVKRW
-ITjbHwTls3pwCx0v1KkekNT+xKgYaj660ZNAuX63rKUSLpMSEnPfmnQgi4TFkmX7
-bGD9ZuhCM670pMZL+YxyMFmPy7tw00sr7PMN03c9KqScdiUcRWkBu/hTYUaUiLGM
-WLmMHCW4xTqueiLQllXU
-=Bwpg
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+Furthermore I think there is no issue even if server and client didn't
+have same ino. Because client just uses FH (nfs4 seems to be using
+stat.ino though).
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
