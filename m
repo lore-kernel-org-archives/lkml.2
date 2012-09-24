@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab2IXJsd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 05:48:33 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58030 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab2IXJsb (ORCPT
+	id S1753651Ab2IXJuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 05:50:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:59631 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab2IXJsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 05:48:31 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <rtc-linux@googlegroups.com>
-CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
-        <a.zummo@towertech.it>, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv2 6/7] rtc: Convert struct i2c_msg initialization to C99 format
-Date: Mon, 24 Sep 2012 15:17:45 +0530
-Message-ID: <1348480066-3132-7-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1348480066-3132-1-git-send-email-shubhrajyoti@ti.com>
-References: <1348480066-3132-1-git-send-email-shubhrajyoti@ti.com>
+	Mon, 24 Sep 2012 05:48:32 -0400
+Date: Mon, 24 Sep 2012 11:48:28 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-kernel@vger.kernel.org
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH/RFC/cosmetic] driver base: use available pointer
+Message-ID: <Pine.LNX.4.64.1209241145210.11925@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:Bgd8f790JBpLnESt26dhfLSvcnYVNSMqwp3kQbqtS1m
+ C64C9EZxKgamZwZcPm/Wi2j98q30YV9fckU5imI1fPG5WznMVM
+ k5NNP3jku2mJV9bogmQsoGRAb7uyiTnETsD6++pAh/EPSWpDj+
+ 4FuBeeg4oGSRegIPri7BQL4rbFkBSc+35idgsGAMKJE5T55cO4
+ XoYvVgO3WlMKVYkuC7H2MUxgGII0FeGEMTlWZ0/ay8PmZNuZPS
+ 76SYKyDZNKxRNwI+pPG399MKeYq8x28hmn2e+171djGOjL23d1
+ 0mmq9+0JPNFjFEZK38txTqsOuVrgmuK+weUILW9Xt3T/1Jt1Iq
+ 48zliqBFUJclkUrpxovM6cPAub2JEzbSOzFcpAKNDEU64f33yX
+ njr+tbi5DZuHg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the struct i2c_msg initialization to C99 format. This makes
-maintaining and editing the code simpler. Also helps once other fields
-like transferred are added in future.
+Don't recalculate an available pointer.
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 ---
- drivers/rtc/rtc-isl1208.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/rtc/rtc-isl1208.c b/drivers/rtc/rtc-isl1208.c
-index 0ea86ac..26c81f2 100644
---- a/drivers/rtc/rtc-isl1208.c
-+++ b/drivers/rtc/rtc-isl1208.c
-@@ -68,9 +68,17 @@ isl1208_i2c_read_regs(struct i2c_client *client, u8 reg, u8 buf[],
- {
- 	u8 reg_addr[1] = { reg };
- 	struct i2c_msg msgs[2] = {
--		{client->addr, 0, sizeof(reg_addr), reg_addr}
--		,
--		{client->addr, I2C_M_RD, len, buf}
-+		{
-+			.addr = client->addr,
-+			.len = sizeof(reg_addr),
-+			.buf = reg_addr
-+		},
-+		{
-+			.addr = client->addr,
-+			.flags = I2C_M_RD,
-+			.len = len,
-+			.buf = buf
-+		}
- 	};
- 	int ret;
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index a1a7225..efe9aa9 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -166,8 +166,8 @@ static void platform_device_release(struct device *dev)
+ 	struct platform_object *pa = container_of(dev, struct platform_object,
+ 						  pdev.dev);
  
-@@ -90,7 +98,11 @@ isl1208_i2c_set_regs(struct i2c_client *client, u8 reg, u8 const buf[],
- {
- 	u8 i2c_buf[ISL1208_REG_USR2 + 2];
- 	struct i2c_msg msgs[1] = {
--		{client->addr, 0, len + 1, i2c_buf}
-+		{
-+			.addr = client->addr,
-+			.len = len + 1,
-+			.buf = i2c_buf
-+		}
- 	};
- 	int ret;
- 
--- 
-1.7.5.4
-
+-	of_device_node_put(&pa->pdev.dev);
+-	kfree(pa->pdev.dev.platform_data);
++	of_device_node_put(dev);
++	kfree(dev->platform_data);
+ 	kfree(pa->pdev.mfd_cell);
+ 	kfree(pa->pdev.resource);
+ 	kfree(pa);
