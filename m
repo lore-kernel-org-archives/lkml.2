@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2IXNrO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 09:47:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32216 "EHLO mx1.redhat.com"
+	id S1755514Ab2IXNry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 09:47:54 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:48359 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754136Ab2IXNrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 09:47:11 -0400
-Message-ID: <50606456.7020607@redhat.com>
-Date: Mon, 24 Sep 2012 15:47:02 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
+	id S1754136Ab2IXNrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 09:47:52 -0400
+Message-ID: <506063B8.70305@parallels.com>
+Date: Mon, 24 Sep 2012 17:44:24 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        dm-devel@redhat.com, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 0/1] dm-integrity: integrity protection device-mapper
- target
-References: <cover.1348480396.git.dmitry.kasatkin@intel.com>
-In-Reply-To: <cover.1348480396.git.dmitry.kasatkin@intel.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Christoph Lameter <cl@linux.com>
+CC: Tejun Heo <tj@kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<cgroups@vger.kernel.org>" <cgroups@vger.kernel.org>,
+        "<kamezawa.hiroyu@jp.fujitsu.com>" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "<devel@openvz.org>" <devel@openvz.org>,
+        "<linux-mm@kvack.org>" <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 05/16] consider a memcg parameter in kmem_create_cache
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-6-git-send-email-glommer@parallels.com> <20120921181458.GG7264@google.com> <506015E7.8030900@parallels.com> <00000139f84bdedc-aae672a6-2908-4cb8-8ed3-8fedf67a21af-000000@email.amazonses.com> <50605500.5050606@parallels.com> <00000139f8836571-6ddc9d5b-1d5f-4542-92f9-ad11070e5b7d-000000@email.amazonses.com>
+In-Reply-To: <00000139f8836571-6ddc9d5b-1d5f-4542-92f9-ad11070e5b7d-000000@email.amazonses.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 11:55 AM, Dmitry Kasatkin wrote:
-> Both dm-verity and dm-crypt provide block level integrity protection.
+On 09/24/2012 05:42 PM, Christoph Lameter wrote:
+> On Mon, 24 Sep 2012, Glauber Costa wrote:
+> 
+>> But that is orthogonal, isn't it? People will still expect to see it in
+>> the old slabinfo file.
+> 
+> The current scheme for memory statistics is
+> 
+> /proc/meminfo contains global counters
+> 
+> /sys/devices/system/node/nodeX/meminfo
+> 
+> contains node specific counters.
+> 
+> The cgroups directory already contains various files. Adding a slabinfo
+> file would make sense and it could be found easily.
+> 
+> The sysfs hierachy /sys/kernel/slab could also show up there as a "slab"
+> directory under which all the details of the various caches would be
+> available and tunable. Very much in sync with the way the cgroups
+> directories operate.
+> 
 
-This is not correct. dm-crypt is transparent block encryption target,
-where always size of plaintext == size of ciphertext.
+The reason I say it is orthogonal, is that people will still want to see
+their caches in /proc/slabinfo, regardless of wherever else they'll be.
+It was a requirement from Pekka in one of the first times I posted this,
+IIRC.
 
-So it can provide confidentiality but it CANNOT provide integrity protection.
 
-We need extra space to store auth tag which dmcrypt cannot provide currently.
 
-> dm-integrity provides a lighter weight read-write block level integrity
-> protection for file systems not requiring full disk encryption, but
-> which do require writability.
-
-Obvious question: can be dm-verity extended to provide read-write integrity?
-
-I would prefer to use standard mode like GCM to provide both encryption and
-integrity protection than inventing something new.
-
-Milan
