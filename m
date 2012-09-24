@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab2IXLqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 07:46:05 -0400
-Received: from science.horizon.com ([71.41.210.146]:58904 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754187Ab2IXLqD (ORCPT
+	id S1754747Ab2IXLsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 07:48:47 -0400
+Received: from MAIL.13thfloor.at ([213.145.232.33]:35502 "EHLO
+	MAIL.13thfloor.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab2IXLsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 07:46:03 -0400
-Date: 24 Sep 2012 07:46:02 -0400
-Message-ID: <20120924114602.501.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, mpn@google.com, vda.linux@googlemail.com
-Subject: Re: [PATCH 3/4] lib: vsprintf: Optimize put_dec_trunc8
-Cc: hughd@google.com, linux-kernel@vger.kernel.org
-In-Reply-To: <xa1ttxuo61md.fsf@mina86.com>
+	Mon, 24 Sep 2012 07:48:45 -0400
+X-Greylist: delayed 1541 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Sep 2012 07:48:45 EDT
+Date: Mon, 24 Sep 2012 13:23:00 +0200
+From: Herbert Poetzl <herbert@13thfloor.at>
+To: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        arekm@pld-linux.org, baggins@pld-linux.org
+Subject: Re: [2.6.38-3.x] [BUG] soft lockup - CPU#X stuck for 23s! (vfs, autofs, vserver)
+Message-ID: <20120924112300.GE20655@MAIL.13thfloor.at>
+Mail-Followup-To: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	arekm@pld-linux.org, baggins@pld-linux.org
+References: <5092540.GORQ1kUuNX@localhost> <CA+55aFymD=QGptAxjSEWffDSA94dtAjPjy-ox76fYWgHn9m+kA@mail.gmail.com> <2819949.zde5vZ04eb@localhost>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2819949.zde5vZ04eb@localhost>
+User-Agent: Mutt/1.5.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>  lib/vsprintf.c |   20 ++++++--------------
->>  1 file changed, 6 insertions(+), 14 deletions(-)
->>
->> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
->> index a8e7392..3ca77b8 100644
->> --- a/lib/vsprintf.c
->> +++ b/lib/vsprintf.c
->> @@ -174,20 +174,12 @@ char *put_dec_trunc8(char *buf, unsigned r)
->>  	unsigned q;
->>=20=20
->>  	/* Copy of previous function's body with added early returns */
->> -	q      = (r * (uint64_t)0x1999999a) >> 32;
->> -	*buf++ = (r - 10 * q) + '0'; /* 2 */
->> -	if (q == 0)
->> -		return buf;
->> -	r      = (q * (uint64_t)0x1999999a) >> 32;
->> -	*buf++ = (q - 10 * r) + '0'; /* 3 */
->> -	if (r == 0)
->> -		return buf;
->> -	q      = (r * (uint64_t)0x1999999a) >> 32;
->> -	*buf++ = (r - 10 * q) + '0'; /* 4 */
->> -	if (q == 0)
->> -		return buf;
->> -	r      = (q * (uint64_t)0x1999999a) >> 32;
->> -	*buf++ = (q - 10 * r) + '0'; /* 5 */
->> +	while (r >= 10000) {
->> +		q = r + '0';
->> +		r  = (r * (uint64_t)0x1999999a) >> 32;
->> +		*buf++ = q - 10*r;
->> +	}
+On Mon, Sep 24, 2012 at 07:23:55AM +0200, Paweł Sikora wrote:
+> On Sunday 23 of September 2012 18:10:30 Linus Torvalds wrote:
+>> On Sat, Sep 22, 2012 at 11:09 PM, Paweł Sikora <pluto@pld-linux.org> wrote:
 
-> This loop looks nothing like the original code.  Why are you adding '0'
-> at the beginning?
+>>>         br_read_lock(vfsmount_lock);
 
-Because I was trying to avoid useless bare "move" instructions
-when converting to a non-swapping loop, and putting it up
-there made clear that the copy could be combined with a
-useful add on a 3-operand machine.  (Or even a 2-operand with
-lea.)
+>> The vfsmount_lock is a "local-global" lock, where a read-lock
+>> is rather cheap and takes just a per-cpu lock, but the
+>> downside is that a write-lock is *very* expensive, and can
+>> cause serious trouble.
 
-Compilers are probably smart enough to figure that out by themselves,
-but it mirrors my thinking as I was writing the code.
+>> And the write lock is taken by the [un]mount() paths. Do *not*
+>> do crazy things. If you do some insane "unmount and remount
+>> autofs" on a 1s granularity, you're doing insane things.
 
-While it is a bit subtle, it's only three lines of code, and
-I figured the equivalence to
-"q = r; r = <math>; +buf++ = q - 10*r + '0';"
-was pretty easy to see.
+>> Why do you have that 1s timeout? Insane.
 
+> 1s unmount timeout is *only* for fast bug reproduction (in few
+> seconds after opteron startup) and testing potential patches.
+> normally with 60s timeout it happens in few minutes..hours
+> (depends on machine i/o+cpu load) and makes server unusable
+> (permament soft-lockup).
 
-> Also, the original code switches the role of q and r,
-> the loop does not.
+> can we redesign vserver's mnt_is_reachable() for better locking
+> to avoid total soft-lockup?
 
-Well, obviously; I had to do that to make it possible to put
-into a loop.
+currently we do:
 
-Truthfully, it would have made *more* sense to swap q and r globally,
-so the loop had a more sensible q=quotient/r=remainder assignment,
-but I wanted to show that the unmodified tail was in fact unmodified.
+        br_read_lock(&vfsmount_lock);
+        root = current->fs->root;
+        root_mnt = real_mount(root.mnt);
+        point = root.dentry;
 
-The big saving from using a loop is that it avoids unnecessary
-32x32->64-bit multiplies, falling through to the 16x16->32-bit
-code as early as possible.  Given that most numbers are small,
-this seemed like a significant win.
+        while ((mnt != mnt->mnt_parent) && (mnt != root_mnt)) {
+                point = mnt->mnt_mountpoint;
+                mnt = mnt->mnt_parent;
+        }
 
-(As long as it doesn't add additional unpredictable conditional
-branches, which are also expensive.)
+        ret = (mnt == root_mnt) && is_subdir(point, root.dentry);
+        br_read_unlock(&vfsmount_lock);
+
+and we have been considering to move the br_read_unlock()
+right before the is_subdir() call
+
+if there are any suggestions how to achieve the same
+with less locking I'm all ears ...
+
+best,
+Herbert
+
+> BR,
+> Paweł.
+
+> ps).
+> i'm adding Herbert to CC.
