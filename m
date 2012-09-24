@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab2IXBKx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 21:10:53 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42576 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716Ab2IXBKw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 21:10:52 -0400
+	id S1754767Ab2IXBin (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 21:38:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:5545 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754729Ab2IXBim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Sep 2012 21:38:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,471,1344236400"; 
+   d="scan'208";a="225772376"
+Message-ID: <505FB96E.8050608@intel.com>
+Date: Mon, 24 Sep 2012 09:37:50 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <5092540.GORQ1kUuNX@localhost>
-References: <5092540.GORQ1kUuNX@localhost>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 23 Sep 2012 18:10:30 -0700
-X-Google-Sender-Auth: CodfbdRPHR-aagnVO0p1SmQ_Hpg
-Message-ID: <CA+55aFymD=QGptAxjSEWffDSA94dtAjPjy-ox76fYWgHn9m+kA@mail.gmail.com>
-Subject: Re: [2.6.38-3.x] [BUG] soft lockup - CPU#X stuck for 23s! (vfs,
- autofs, vserver)
-To: =?ISO-8859-2?Q?Pawe=B3_Sikora?= <pluto@pld-linux.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        arekm@pld-linux.org, baggins@pld-linux.org
+To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+CC: x86@kernel.org, yrl.pp-manager.tt@hitachi.com,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86: Distinguish TLB shootdown interrupts from other
+ functions call interrupts
+References: <505A6EFD.4070802@intel.com> <20120920085033.14512.98190.stgit@hpxw>
+In-Reply-To: <20120920085033.14512.98190.stgit@hpxw>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 22, 2012 at 11:09 PM, Paweł Sikora <pluto@pld-linux.org> wrote:
->
->         br_read_lock(vfsmount_lock);
+On 09/20/2012 04:50 PM, Tomoki Sekiyama wrote:
 
-The vfsmount_lock is a "local-global" lock, where a read-lock is
-rather cheap and takes just a per-cpu lock, but the downside is that a
-write-lock is *very* expensive, and can cause serious trouble.
+>  	unsigned int irq_resched_count;
+>  	unsigned int irq_call_count;
+> +	/* irq_tlb_count is double-counted in irq_call_count, so it must be
+> +	   subtracted from irq_call_count when displaying irq_call_count */
+>  	unsigned int irq_tlb_count;
 
-And the write lock is taken by the [un]mount() paths. Do *not* do
-crazy things. If you do some insane "unmount and remount autofs" on a
-1s granularity, you're doing insane things.
 
-Why do you have that 1s timeout? Insane.
+Review again this patch, above comments is not kernel compatible format.
+Could you change it like standard comment format:
 
-              Linus
+/*
+ * xxxxxxx
+ * xxxx
+ */
+
+-- 
+Thanks
+    Alex
