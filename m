@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab2IXAFf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Sep 2012 20:05:35 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43354 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab2IXAFe (ORCPT
+	id S1754719Ab2IXAi5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Sep 2012 20:38:57 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37307 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754215Ab2IXAiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Sep 2012 20:05:34 -0400
-Date: Sun, 23 Sep 2012 20:05:27 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Anton Altaparmakov <aia21@cam.ac.uk>
-Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Unix Support <unix-support@ucs.cam.ac.uk>
-Subject: Re: cifs: fix return value in cifsConvertToUTF16
-Message-ID: <20120923200527.2540668f@corrin.poochiereds.net>
-In-Reply-To: <96965BD0-8BA7-41C0-A459-7F4DC871F607@cam.ac.uk>
-References: <20120922202809.250DB3402DF@ra.kernel.org>
-	<96965BD0-8BA7-41C0-A459-7F4DC871F607@cam.ac.uk>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.11; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 23 Sep 2012 20:38:54 -0400
+X-Sasl-enc: PCiryF1JJkbVWcWR/K4/Qgy90Csc9qxAFd5lFvcALSPi 1348447133
+Message-ID: <1348447130.2318.1.camel@perseus.themaw.net>
+Subject: Re: [PATCH 0/2] struct pid-ify autofs4
+From: Ian Kent <raven@themaw.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
+        serge.hallyn@canonical.com, ebiederm@xmission.com
+Date: Mon, 24 Sep 2012 08:38:50 +0800
+In-Reply-To: <87haqrwfbj.fsf@tucsk.pomaz.szeredi.hu>
+References: <1348068576-21363-1-git-send-email-miklos@szeredi.hu>
+	 <87haqrwfbj.fsf@tucsk.pomaz.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Sep 2012 23:18:19 +0100
-Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+On Fri, 2012-09-21 at 17:44 +0200, Miklos Szeredi wrote:
+> Miklos Szeredi <miklos@szeredi.hu> writes:
+> 
+> > These two patches change autofs4 to store struct pid pointers instead of pid_t
+> > values.
+> >
+> > Fixed various issues with the previous post.  Not tested, handle with
+> > care!
+> 
+> Customer gave positive test results.
 
-> Hi Steve,
+For what exactly, there's no problem description in these patches?
+
 > 
-> Hey, I sent you that exact same patch on the 12th June!  Would have saved you and others some valuable time if you hadn't ignored it then!  (-;
+> Thanks,
+> Miklos
 > 
-> Told you it was an obvious logic bug!  (-;
-> 
-> Best regards,
-> 
-> 	Anton
-> 
-> On 22 Sep 2012, at 21:28, Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
-> 
-> > Gitweb:     http://git.kernel.org/linus/;a=commit;h=c73f693989d7a7d99ec66a7065295a0c93d0b127
-> > Commit:     c73f693989d7a7d99ec66a7065295a0c93d0b127
-> > Parent:     4651afbbae968772efd6dc4ba461cba9b49bb9d8
-> > Author:     Jeff Layton <jlayton@redhat.com>
-> > AuthorDate: Tue Sep 18 14:21:01 2012 -0400
-> > Committer:  Steve French <smfrench@gmail.com>
-> > CommitDate: Tue Sep 18 15:35:25 2012 -0500
-> > 
-> >    cifs: fix return value in cifsConvertToUTF16
-> > 
-> >    This function returns the wrong value, which causes the callers to get
-> >    the length of the resulting pathname wrong when it contains non-ASCII
-> >    characters.
-> > 
-> >    This seems to fix https://bugzilla.samba.org/show_bug.cgi?id=6767
-> > 
-> >    Cc: <stable@vger.kernel.org>
-> >    Reported-by: Baldvin Kovacs <baldvin.kovacs@gmail.com>
-> >    Reported-and-Tested-by: Nicolas Lefebvre <nico.lefebvre@gmail.com>
-> >    Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> >    Signed-off-by: Steve French <smfrench@gmail.com>
+> >
+> > Thanks,
+> > Miklos
 > > ---
-> > fs/cifs/cifs_unicode.c |    2 +-
-> > 1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
-> > index 7dab9c0..53cf2aa 100644
-> > --- a/fs/cifs/cifs_unicode.c
-> > +++ b/fs/cifs/cifs_unicode.c
-> > @@ -328,7 +328,7 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
-> > 	}
-> > 
-> > ctoUTF16_out:
-> > -	return i;
-> > +	return j;
-> > }
-> > 
-> > #ifdef CONFIG_CIFS_SMB2
-> 
+> >
+> >
+> > Serge Hallyn (1):
+> >       autofs4: store struct pids in autofs_waitqs
+> >
+> > Sukadev Bhattiprolu (1):
+> >       Replace pid_t in autofs4 with struct pid reference.
+> >
+> > ---
+> >  fs/autofs4/autofs_i.h  |    8 ++++----
+> >  fs/autofs4/dev-ioctl.c |    3 ++-
+> >  fs/autofs4/inode.c     |   22 +++++++++++++++-------
+> >  fs/autofs4/waitq.c     |   19 +++++++++++++------
+> >  4 files changed, 34 insertions(+), 18 deletions(-)
 
-My apologies, Anton. I would have just asked Steve to include that
-patch instead of reposting it, but I didn't recall seeing you post it
-to the list.
 
--- 
-Jeff Layton <jlayton@samba.org>
