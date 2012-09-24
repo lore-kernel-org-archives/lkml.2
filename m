@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757882Ab2IXThI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 15:37:08 -0400
-Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:40474 "HELO
-	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757516Ab2IXThG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 15:37:06 -0400
+	id S1757908Ab2IXTiC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 15:38:02 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3720 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757718Ab2IXTiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 15:38:00 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <5060B675.8090805@broadcom.com>
+Date: Mon, 24 Sep 2012 12:37:25 -0700
+From: "Bhanu Prakash Gollapudi" <bprakash@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615
+ Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120925000217.947b8cd8dca6979bfedee2ca@canb.auug.org.au>
-References: <20120925000217.947b8cd8dca6979bfedee2ca@canb.auug.org.au>
-From: Roland Dreier <roland@purestorage.com>
-Date: Mon, 24 Sep 2012 12:36:43 -0700
-Message-ID: <CAL1RGDUCThiu+vxy4d5QXvqfDCDUnHOBfZT97XB+Qy_bQrxCRg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Amir Vadai <amirv@mellanox.co.il>,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        linux-rdma@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Julia Lawall" <Julia.Lawall@lip6.fr>
+cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] drivers/scsi/bnx2fc/bnx2fc_io.c: Remove
+ potential NULL dereference
+References: <1344959388-19719-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1344959388-19719-3-git-send-email-Julia.Lawall@lip6.fr>
+ <504A3BBF.5030604@broadcom.com>
+In-Reply-To: <504A3BBF.5030604@broadcom.com>
+X-WSS-ID: 7C7E69983PS2527288-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 7:02 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> After merging the akpm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+On 09/07/2012 11:23 AM, Bhanu Prakash Gollapudi wrote:
+> On 8/14/2012 8:49 AM, Julia Lawall wrote:
+>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> If the NULL test is necessary, the initialization involving a 
+>> dereference of
+>> the tested value should be moved after the NULL test.
+>>
+>> The sematic patch that fixes this problem is as follows:
+>> (http://coccinelle.lip6.fr/)
+>>
+>> // <smpl>
+>> @@
+>> type T;
+>> expression E;
+>> identifier i,fld;
+>> statement S;
+>> @@
+>>
+>> - T i = E->fld;
+>> + T i;
+>>    ... when != E
+>>        when != i
+>>    if (E == NULL) S
+>> + i = E->fld;
+>> // </smpl>
+>>
+>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> ---
+>>   drivers/scsi/bnx2fc/bnx2fc_io.c |    3 ++-
+>>   1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/scsi/bnx2fc/bnx2fc_io.c 
+>> b/drivers/scsi/bnx2fc/bnx2fc_io.c
+>> index 73f231c..1dd82db 100644
+>> --- a/drivers/scsi/bnx2fc/bnx2fc_io.c
+>> +++ b/drivers/scsi/bnx2fc/bnx2fc_io.c
+>> @@ -686,7 +686,7 @@ static int bnx2fc_initiate_tmf(struct scsi_cmnd 
+>> *sc_cmd, u8 tm_flags)
+>>   {
+>>       struct fc_lport *lport;
+>>       struct fc_rport *rport = 
+>> starget_to_rport(scsi_target(sc_cmd->device));
+>> -    struct fc_rport_libfc_priv *rp = rport->dd_data;
+>> +    struct fc_rport_libfc_priv *rp;
+>>       struct fcoe_port *port;
+>>       struct bnx2fc_interface *interface;
+>>       struct bnx2fc_rport *tgt;
+>> @@ -712,6 +712,7 @@ static int bnx2fc_initiate_tmf(struct scsi_cmnd 
+>> *sc_cmd, u8 tm_flags)
+>>           rc = FAILED;
+>>           goto tmf_err;
+>>       }
+>> +    rp = rport->dd_data;
+>>
+>>       rc = fc_block_scsi_eh(sc_cmd);
+>>       if (rc)
+>>
+>>
+> Thanks Julia.
 >
-> drivers/infiniband/hw/mlx4/cm.c: In function 'id_map_alloc':
-> drivers/infiniband/hw/mlx4/cm.c:228:36: error: 'MAX_ID_MASK' undeclared (first use in this function)
->
-> Caused by commit d7a4e9b679e9 ("IB/mlx4: Add CM paravirtualization") from
-> the infiniband tree interacting with commit "idr: rename MAX_LEVEL to
-> MAX_IDR_LEVEL" from the akpm tree.
->
-> I have added the following merge fix patch for today:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 24 Sep 2012 23:57:53 +1000
-> Subject: [PATCH] IB/mlx4: fix for MAX_ID_MASK to MAX_IDR_MASK name change
->
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/infiniband/hw/mlx4/cm.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/infiniband/hw/mlx4/cm.c b/drivers/infiniband/hw/mlx4/cm.c
-> index e25e4da..80079e5 100644
-> --- a/drivers/infiniband/hw/mlx4/cm.c
-> +++ b/drivers/infiniband/hw/mlx4/cm.c
-> @@ -225,7 +225,7 @@ id_map_alloc(struct ib_device *ibdev, int slave_id, u32 sl_cm_id)
->                 ret = idr_get_new_above(&sriov->pv_id_table, ent,
->                                         next_id, &id);
->                 if (!ret) {
-> -                       next_id = ((unsigned) id + 1) & MAX_ID_MASK;
-> +                       next_id = ((unsigned) id + 1) & MAX_IDR_MASK;
->                         ent->pv_cm_id = (u32)id;
->                         sl_id_map_add(ibdev, ent);
->                 }
+> Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
 
-Andrew, any preference on how to handle this merge?
+James, can you please pick up this patch also for 'misc'?
 
-Jack/Amir, I wonder if there's some way we can avoid this code
-entirely?  Is an IDR the right structure to use here, or would we
-be better off with a radix tree maybe (where we can assign our
-own ID)?
+Thanks,
+Bhanu
+>
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
- - R.
+
+
