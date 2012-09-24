@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab2IXN4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 09:56:35 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:41372 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754695Ab2IXN4d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 09:56:33 -0400
-Date: Mon, 24 Sep 2012 13:56:32 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: Tejun Heo <tj@kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<cgroups@vger.kernel.org>" <cgroups@vger.kernel.org>,
-        "<kamezawa.hiroyu@jp.fujitsu.com>" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "<devel@openvz.org>" <devel@openvz.org>,
-        "<linux-mm@kvack.org>" <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 05/16] consider a memcg parameter in
- kmem_create_cache
-In-Reply-To: <506063B8.70305@parallels.com>
-Message-ID: <00000139f890a302-980aee84-40b2-433f-8dbd-e7b1d219f00d-000000@email.amazonses.com>
-References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-6-git-send-email-glommer@parallels.com> <20120921181458.GG7264@google.com> <506015E7.8030900@parallels.com> <00000139f84bdedc-aae672a6-2908-4cb8-8ed3-8fedf67a21af-000000@email.amazonses.com>
- <50605500.5050606@parallels.com> <00000139f8836571-6ddc9d5b-1d5f-4542-92f9-ad11070e5b7d-000000@email.amazonses.com> <506063B8.70305@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755635Ab2IXOAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 10:00:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44880 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755391Ab2IXOAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 10:00:46 -0400
+Message-ID: <50606768.3080300@ti.com>
+Date: Mon, 24 Sep 2012 10:00:08 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+Reply-To: <cyril@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, <catalin.marinas@arm.com>, <davidb@codeaurora.org>,
+        <frank.rowand@am.sony.com>, <hsweeten@visionengravers.com>,
+        <linus.walleij@linaro.org>, <marc.zyngier@arm.com>, <nico@linaro.org>,
+        <paul.gortmaker@windriver.com>, <plagnioj@jcrosoft.com>,
+        <rabin@rab.in>, <rmallon@gmail.com>, <rob.herring@calxeda.com>,
+        <sboyd@codeaurora.org>, <sjg@chromium.org>, <tglx@linutronix.de>,
+        <tj@kernel.org>, <vincent.guittot@linaro.org>, <vitalya@ti.com>,
+        <will.deacon@arm.com>, <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3 RESEND 09/17] ARM: LPAE: use phys_addr_t for initrd
+ location and size
+References: <1348242975-19184-1-git-send-email-cyril@ti.com> <1348242975-19184-10-git-send-email-cyril@ti.com> <20120924133826.GA26454@n2100.arm.linux.org.uk>
+In-Reply-To: <20120924133826.GA26454@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Sep 2012, Glauber Costa wrote:
+On 09/24/12 09:38, Russell King - ARM Linux wrote:
+> On Fri, Sep 21, 2012 at 11:56:07AM -0400, Cyril Chemparathy wrote:
+>> From: Vitaly Andrianov <vitalya@ti.com>
+>>
+>> This patch fixes the initrd setup code to use phys_addr_t instead of assuming
+>> 32-bit addressing.  Without this we cannot boot on systems where initrd is
+>> located above the 4G physical address limit.
+>
+> The description needs updating.  You're no longer using phys_addr_t for the
+> initrd size.
+>
 
-> The reason I say it is orthogonal, is that people will still want to see
-> their caches in /proc/slabinfo, regardless of wherever else they'll be.
-> It was a requirement from Pekka in one of the first times I posted this,
-> IIRC.
+Thanks.  Nico had pointed this out earlier.  I've fixed for v4.
 
-They want to see total counts there true. But as I said we already have a
-duplication of the statistics otherwise. We have never done the scheme
-that you propose. That is unexpected. I would not expect the numbers to be
-there.
-
+Thanks
+-- Cyril.
