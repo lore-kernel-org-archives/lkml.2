@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab2IXLNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 07:13:37 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35316 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab2IXLNf (ORCPT
+	id S1753777Ab2IXLNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 07:13:54 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:57885 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753356Ab2IXLNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 07:13:35 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Mark Jackson <mpfj-list@mimc.co.uk>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "tony@atomide.com >> Tony Lindgren" <tony@atomide.com>
-Subject: RE: gpmc_cs_request() causes early boot hang
-Thread-Topic: gpmc_cs_request() causes early boot hang
-Thread-Index: AQHNmC9WQXyKDMW1okeEKCbWWvFUTZeY7CwAgAAMaQCAAF9BgA==
-Date: Mon, 24 Sep 2012 11:13:14 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93E9E7881@DBDE01.ent.ti.com>
-References: <505CBFAA.3080604@mimc.co.uk>
- <C8443D0743D26F4388EA172BF4E2A7A93E9E7628@DBDE01.ent.ti.com>
- <50603B3C.8070402@mimc.co.uk>
-In-Reply-To: <50603B3C.8070402@mimc.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 24 Sep 2012 07:13:52 -0400
+Message-ID: <50604047.7000908@linux.vnet.ibm.com>
+Date: Mon, 24 Sep 2012 16:43:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Conny Seidel <conny.seidel@amd.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
+References: <20120924102324.GA22303@aftab.osrc.amd.com> <50603829.9050904@linux.vnet.ibm.com> <20120924110554.GC22303@aftab.osrc.amd.com>
+In-Reply-To: <20120924110554.GC22303@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092411-4790-0000-0000-000004C32245
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8OBDfvK019860
 
-Hi Mark,
-
-On Mon, Sep 24, 2012 at 16:21:40, Mark Jackson wrote:
-> On 24/09/12 05:51, Mohammed, Afzal wrote:
-
-> > It seems you are using PSP Kernel.
-> > 
-> > Invoking omap_init_gpmc before gpmc request should help.
+On 09/24/2012 04:35 PM, Borislav Petkov wrote:
+> On Mon, Sep 24, 2012 at 04:08:33PM +0530, Srivatsa S. Bhat wrote:
+>> On 09/24/2012 03:53 PM, Borislav Petkov wrote:
+>>> Hi all,
+>>>
+>>> we're able to trigger the oops below when doing CPU hotplug tests.
+>>>
+>>
+>> I hit this problem as well, which I reported here, a few days ago:
+>> https://lkml.org/lkml/2012/9/13/222
 > 
-> Okay ... I'm now using earlyprintk and omap_init_gpmc(), but I still get boot hangs.
-
-> Surely omap-gpmc needs to be setup before any calls such as gpmc_cs_request() ?
+> Ok, your case shows even more info:
 > 
-> Is there a method to delay my test code, or maybe get the omap-gpmc registered earlier ?
+> [  526.024180] divide error: 0000 [#1] SMP 
+> [  526.028144] Modules linked in: ipv6 cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse loop dm_mod iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm cdc_ether pcspkr usbnet shpchp pci_hotplug i2c_i801 i2c_core ioatdma mii crc32c_intel serio_raw microcode lpc_ich mfd_core i7core_edac bnx2 dca edac_core tpm_tis tpm sg tpm_bios rtc_cmos button uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif edd ext3 mbcache jbd fan processor mptsas mptscsih mptbase scsi_transport_sas scsi_mod thermal thermal_sys hwmon
+> [  526.028145] CPU 9 
+> [  526.028145] Pid: 2235, comm: flush-8:0 Not tainted 3.6.0-rc1-tglx-hotplug-0.0.0.28.36b5ec9-default #1 IBM IBM System x -[7870C4Q]-/68Y8033 
+> [  526.028145] RIP: 0010:[<ffffffff811276f6>]  [<ffffffff811276f6>] bdi_dirty_limit+0x66/0xc0
+> [  526.028145] RSP: 0018:ffff8811530bfcc0  EFLAGS: 00010206
+> [  526.028145] RAX: 0000000000b9877e RBX: 00000000001a8112 RCX: 28f5c28f5c28f5c3
+> [  526.028145] RDX: 0000000000000000 RSI: 0000000000b9877e RDI: 0000000000000000
+> 
+> %rax contains something != 0 but %rdi definitely is 0.
+> 
 
-Hope below patch helps you (untested)
+Yep.. So I tried putting a BUG_ON(!den) in fprop_fraction_percpu() to
+catch if we really got the code wrong somehow.. but unfortunately, with
+that added, I haven't been successful in reproducing the bug :(
 
-Regards
-Afzal
+Regards,
+Srivatsa S. Bhat
 
-----8<-------------------
-
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index 1c53c05..a4c6912 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -827,7 +827,19 @@ static struct platform_driver gpmc_driver = {
-        },
- };
- 
--module_platform_driver(gpmc_driver);
-+static __init int gpmc_init(void)
-+{
-+        return platform_driver_register(&gpmc_driver);
-+}
-+
-+static __exit void gpmc_exit(void)
-+{
-+        platform_driver_unregister(&gpmc_driver);
-+
-+}
-+
-+postcore_initcall(gpmc_init);
-+module_exit(gpmc_exit);
- 
- int gpmc_suspend(void)
- {
-----8<----------------
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
