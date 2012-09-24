@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab2IXLNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 07:13:54 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:57885 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356Ab2IXLNw (ORCPT
+	id S1753997Ab2IXLN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 07:13:57 -0400
+Received: from science.horizon.com ([71.41.210.146]:58733 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753356Ab2IXLNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 07:13:52 -0400
-Message-ID: <50604047.7000908@linux.vnet.ibm.com>
-Date: Mon, 24 Sep 2012 16:43:11 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Conny Seidel <conny.seidel@amd.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: divide error: bdi_dirty_limit+0x5a/0x9e
-References: <20120924102324.GA22303@aftab.osrc.amd.com> <50603829.9050904@linux.vnet.ibm.com> <20120924110554.GC22303@aftab.osrc.amd.com>
-In-Reply-To: <20120924110554.GC22303@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12092411-4790-0000-0000-000004C32245
+	Mon, 24 Sep 2012 07:13:54 -0400
+Date: 24 Sep 2012 07:13:53 -0400
+Message-ID: <20120924111353.27142.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: akpm@linux-foundation.org, linux@horizon.com, rabin@rab.in
+Subject: Re: [PATCH 3/4] lib: vsprintf: Optimize put_dec_trunc8
+Cc: hughd@google.com, linux-kernel@vger.kernel.org, mina86@mina86.com,
+        mpn@google.com, vda.linux@googlemail.com
+In-Reply-To: <CAH+eYFBscQnH78CZFLq2GwTJZR1+zkUc6gL1QgnWNoFCQwRy2A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 04:35 PM, Borislav Petkov wrote:
-> On Mon, Sep 24, 2012 at 04:08:33PM +0530, Srivatsa S. Bhat wrote:
->> On 09/24/2012 03:53 PM, Borislav Petkov wrote:
->>> Hi all,
->>>
->>> we're able to trigger the oops below when doing CPU hotplug tests.
->>>
->>
->> I hit this problem as well, which I reported here, a few days ago:
->> https://lkml.org/lkml/2012/9/13/222
-> 
-> Ok, your case shows even more info:
-> 
-> [  526.024180] divide error: 0000 [#1] SMP 
-> [  526.028144] Modules linked in: ipv6 cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse loop dm_mod iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm cdc_ether pcspkr usbnet shpchp pci_hotplug i2c_i801 i2c_core ioatdma mii crc32c_intel serio_raw microcode lpc_ich mfd_core i7core_edac bnx2 dca edac_core tpm_tis tpm sg tpm_bios rtc_cmos button uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif edd ext3 mbcache jbd fan processor mptsas mptscsih mptbase scsi_transport_sas scsi_mod thermal thermal_sys hwmon
-> [  526.028145] CPU 9 
-> [  526.028145] Pid: 2235, comm: flush-8:0 Not tainted 3.6.0-rc1-tglx-hotplug-0.0.0.28.36b5ec9-default #1 IBM IBM System x -[7870C4Q]-/68Y8033 
-> [  526.028145] RIP: 0010:[<ffffffff811276f6>]  [<ffffffff811276f6>] bdi_dirty_limit+0x66/0xc0
-> [  526.028145] RSP: 0018:ffff8811530bfcc0  EFLAGS: 00010206
-> [  526.028145] RAX: 0000000000b9877e RBX: 00000000001a8112 RCX: 28f5c28f5c28f5c3
-> [  526.028145] RDX: 0000000000000000 RSI: 0000000000b9877e RDI: 0000000000000000
-> 
-> %rax contains something != 0 but %rdi definitely is 0.
-> 
+Oh, joy, a new week and a nice dose of public humiliation to start it off.
+(Remind me never to go AFK for a weekend again.)
 
-Yep.. So I tried putting a BUG_ON(!den) in fprop_fraction_percpu() to
-catch if we really got the code wrong somehow.. but unfortunately, with
-that added, I haven't been successful in reproducing the bug :(
+Seriously, Rabin, thank you very much for the bug report and my
+apologies for inflicting the bug on you in the first place.
 
-Regards,
-Srivatsa S. Bhat
+Denys, good to hear from you.  I had hoped this would be signed off
+by you before going upstream, but akpm picked it up first.
 
+
+This code *was* extensively tested, but in a user-space test harness.
+Moving it into the kernel was less so; I looked at a lot of /proc and
+/sys files, but known answers are hard to come by there, and I didn't
+actually write a complete test module.
+
+(It's also running on the production file/mail server I'm sending
+this from; I do eat my own dog food.)
+
+However, thinking back, the sprintf code I used, for comparison with
+the libc sprintf, wanted a binary->decimal primitive that converts 0 to
+the empty string; getting ANSI compatible results from "%.0u" and "%.1u"
+is easier with that convention.
+
+My initial suspicion is that I didn't convert that convention properly
+somehow.
+
+
+Anyway, individual responses to follow.
