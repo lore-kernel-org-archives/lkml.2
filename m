@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab2IXVAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 17:00:51 -0400
-Received: from havoc.gtf.org ([69.61.125.42]:46938 "EHLO havoc.gtf.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751747Ab2IXVAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 17:00:50 -0400
-Date: Mon, 24 Sep 2012 17:00:49 -0400
-From: Jeff Garzik <jeff@garzik.org>
-To: linux-scsi@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [SCSI PATCH] sd: max-retries becomes configurable
-Message-ID: <20120924210049.GA18527@havoc.gtf.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1750796Ab2IXVPw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 17:15:52 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41860 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab2IXVPv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 17:15:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdVFSH5W=xStG5b3O=7vkVY78LLnnURPP7igCdMct27tFg@mail.gmail.com>
+References: <1348011407-24108-1-git-send-email-jim.cromie@gmail.com>
+ <1348011407-24108-4-git-send-email-jim.cromie@gmail.com> <20120924190034.GF2492@redhat.com>
+ <CAMuHMdVFSH5W=xStG5b3O=7vkVY78LLnnURPP7igCdMct27tFg@mail.gmail.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Mon, 24 Sep 2012 15:15:19 -0600
+Message-ID: <CAJfuBxx+2FC-ogzV2HW-yYOYuevZrimjtupVOePdCeBM8yXwKg@mail.gmail.com>
+Subject: Re: [PATCH 3/6] dyndbg: add more info to -E2BIG log warning
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 24, 2012 at 1:04 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Mon, Sep 24, 2012 at 9:00 PM, Jason Baron <jbaron@redhat.com> wrote:
+>>> -             pr_warn("expected <%d bytes into control\n", USER_BUF_PAGE);
+>
+> %u?
+>
+>>> +             pr_warn("expected <%d bytes into control, you wrote %d\n",
+>>> +                     USER_BUF_PAGE, (int) len);
+>>
+>> The style here, I think, is generally to leave out the space, ie: (int)len.
+>
+> Better, remove the cast and use "%zu" to properly format the size_t.
+>
+
+Ack, thanks.  Update coming soon.
+
+Is there a suitable macro defn to replace this?
+
+#define USER_BUF_PAGE 4096
+
+grep -r 4096 include/ fs/  finds plenty, but none look particularly
+appropriate here.
 
 
- drivers/scsi/sd.c |    4 ++++
- drivers/scsi/sd.h |    2 +-
- 2 files changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 4df73e5..d15074b 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -92,6 +92,10 @@ MODULE_ALIAS_SCSI_DEVICE(TYPE_DISK);
- MODULE_ALIAS_SCSI_DEVICE(TYPE_MOD);
- MODULE_ALIAS_SCSI_DEVICE(TYPE_RBC);
- 
-+static int sd_max_retries = 5;
-+module_param_named(max_retries, sd_max_retries, int, 0644);
-+MODULE_PARM_DESC(max_retries, "Maximum number of retries, before failing command (default 5)");
-+
- #if !defined(CONFIG_DEBUG_BLOCK_EXT_DEVT)
- #define SD_MINORS	16
- #else
-diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
-index f703f48..f8488fa 100644
---- a/drivers/scsi/sd.h
-+++ b/drivers/scsi/sd.h
-@@ -18,7 +18,7 @@
- /*
-  * Number of allowed retries
-  */
--#define SD_MAX_RETRIES		5
-+#define SD_MAX_RETRIES		sd_max_retries
- #define SD_PASSTHROUGH_RETRIES	1
- #define SD_MAX_MEDIUM_TIMEOUTS	2
- 
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
