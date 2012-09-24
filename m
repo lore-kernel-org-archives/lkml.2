@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab2IXHvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:51:15 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:36315 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754964Ab2IXHvN (ORCPT
+	id S1755258Ab2IXHzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 03:55:12 -0400
+Received: from exchange1.vunity.com ([69.1.84.165]:9594 "EHLO
+	exchange1.vUnity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755051Ab2IXHxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:51:13 -0400
-Message-ID: <50601131.10602@ti.com>
-Date: Mon, 24 Sep 2012 10:52:17 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
+	Mon, 24 Sep 2012 03:53:47 -0400
+From: Brian Brandon <Brian@vUnity.com>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: TEQL Developer Needed
+Thread-Topic: TEQL Developer Needed
+Thread-Index: Ac2aKBzEf+rx7hnaRy+fqlAjnVhmKQ==
+Date: Mon, 24 Sep 2012 07:53:39 +0000
+Message-ID: <A32F48CDB181CF478D4EFFB1F1F58A9415B47EBA@EXCHANGE1.vunity.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [204.45.15.53]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the sound and sound-asoc
- trees
-References: <20120924133923.130c4db72aa8105cb5647d7a@canb.auug.org.au> <s5hy5jzoo8d.wl%tiwai@suse.de>
-In-Reply-To: <s5hy5jzoo8d.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8O7tKTS018938
 
-On 09/24/2012 10:48 AM, Takashi Iwai wrote:
-> At Mon, 24 Sep 2012 13:39:23 +1000,
-> Stephen Rothwell wrote:
->>
->> Hi all,
->>
->> After merging the sound tree, today's linux-next build (powerpc
->> ppc64_defconfig) failed like this:
->>
->> In file included from include/linux/skbuff.h:31:0,
->>                  from include/linux/if_ether.h:135,
->>                  from include/linux/netdevice.h:29,
->>                  from arch/powerpc/net/bpf_jit_comp.c:14:
->> include/linux/dmaengine.h: In function 'dmaengine_prep_dma_cyclic':
->> include/linux/dmaengine.h:659:24: error: 'flags' undeclared (first use in this function)
->>
->> and lots more similar.
->>
->> Caused by commit ec8b5e48c037 ("dmaengine: Pass flags via
->> device_prep_dma_cyclic() callback").  Was this version of this patch
->> build tested at all?
->>
->> I have used the sound and sound-asoc trees from next-20120921 for today.
-> 
-> Ugh, sorry.  I skipped the ppc and arm build tests at the previous
-> merge due to the remote work.
-> 
-> I can fix up but it'd be better to get a proper fix from Peter.
-> Peter, could you submit the fix ASAP?
+Need some full time help with TEQL and kernel mods. Remote or office in Los Angeles ok. 
 
-I already have the series to fix it.
-The reason for the build breakage is that the following commit from my series
-got lost somewhere:
-dmaengine: Add flags parameter to dmaengine_prep_dma_cyclic()
+Weâ€™re doing some interesting bonding stuff, most will be released back as open source. Salary up to 100k/yr + Equity. â˜º
 
-I also noticed that arch/arm/plat-samsung/dma-ops.c calls
-dmaengine_prep_dma_cyclic(), which was unexpected for me. So I have two patch
-for linux-next/sound to fix the issue.
+Cheers,
 
-Will send them in a minute.
+-Brian
 
--- 
-Péter
+jobs@vUnity.com
+http://www.vUnity.com 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
