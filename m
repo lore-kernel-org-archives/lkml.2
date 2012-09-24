@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab2IXL0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 07:26:50 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40204 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab2IXL0s (ORCPT
+	id S1754237Ab2IXL0z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 07:26:55 -0400
+Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:52278
+	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753726Ab2IXL0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 07:26:48 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5060425A.8030303@jp.fujitsu.com>
-Date: Mon, 24 Sep 2012 20:22:02 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Mon, 24 Sep 2012 07:26:53 -0400
+Message-ID: <50604368.8030202@mimc.co.uk>
+Date: Mon, 24 Sep 2012 12:26:32 +0100
+From: Mark Jackson <mpfj-list@mimc.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: vgoyal@redhat.com
-CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com, hbabu@us.ibm.com,
-        ishii.hironobu@jp.fujitsu.com, martin.wilck@ts.fujitsu.com
-Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
- with iommu
-References: <501BB4EF.7080909@jp.fujitsu.com> <20120803114643.GA28330@redhat.com> <501F4877.5050605@jp.fujitsu.com> <20120806203902.GH25559@redhat.com> <50473306.1070803@jp.fujitsu.com> <20120910143604.GB639@redhat.com> <504F1343.7030607@jp.fujitsu.com> <20120911144323.GF12039@redhat.com> <50504F47.80909@jp.fujitsu.com> <20120914154817.GE6221@redhat.com>
-In-Reply-To: <20120914154817.GE6221@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: "Mohammed, Afzal" <afzal@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "tony@atomide.com >> Tony Lindgren" <tony@atomide.com>
+Subject: Re: gpmc_cs_request() causes early boot hang
+References: <505CBFAA.3080604@mimc.co.uk> <C8443D0743D26F4388EA172BF4E2A7A93E9E7628@DBDE01.ent.ti.com> <50603B3C.8070402@mimc.co.uk> <C8443D0743D26F4388EA172BF4E2A7A93E9E7881@DBDE01.ent.ti.com>
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93E9E7881@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/09/15 0:48), Vivek Goyal wrote:
-> On Wed, Sep 12, 2012 at 06:00:55PM +0900, Takao Indoh wrote:
->> (2012/09/11 23:43), Vivek Goyal wrote:
->>> On Tue, Sep 11, 2012 at 07:32:35PM +0900, Takao Indoh wrote:
+On 24/09/12 12:13, Mohammed, Afzal wrote:
+> Hi Mark,
+> 
+> On Mon, Sep 24, 2012 at 16:21:40, Mark Jackson wrote:
+>> On 24/09/12 05:51, Mohammed, Afzal wrote:
+> 
+>>> It seems you are using PSP Kernel.
 >>>
->>> [..]
->>>> I'll post new patch which clears bus master bit and resets devices in
->>>> second kernel.
->>>>
->>>> As to the boot parameter to enable this function, you suggested using
->>>> reset_devices. I found that on a certain platform resetting devices
->>>> caused PCIe error due to a hardware bug. Therefore I think we need
->>>> new parameter apart from reset_devices to disable this function on
->>>> such a machine.
->>>
->>> Can you explain a bit more how the error happens. I still don't think
->>> that because of a bug in a platform somewhere we should be introducing
->>> a separate command line parameter and not reuse the exisiting one. Also
->>> you have not explained what's the bug and how a new parameter will
->>> avoid the bug.
+>>> Invoking omap_init_gpmc before gpmc request should help.
 >>
->> The bug I mentioned is that ACS Violation occurs at PCIe switch when
->> reading PCI configuration after device reset. I got information that
->> this violation is caused by PCIe switch bug. The machine becomes fatal
->> status by this error.
+>> Okay ... I'm now using earlyprintk and omap_init_gpmc(), but I still get boot hangs.
+> 
+>> Surely omap-gpmc needs to be setup before any calls such as gpmc_cs_request() ?
 >>
->> The reason why I try to introduce new parameter is that I want to avoid
->> regression by this patch. Let's say this patch was included in kernel
->> and its reset function was enabled by reset_devices as you said. AFAIK
->> reset_devices is always needed for kdump, so it means that devices are
->> always reset at kdump boot time. It causes a regression that system
->> always becomes abnormal status when we run kdump on the machine which has
->> a bug I mentioned.
->>
->> To avoid this regression, I want to separate reset_devices from this
->> reset function. Or how about this?
->> - if user specify reset_devices, devices are reset by this patch, as you
->>    said.
->> - To avoid a regression I said, add new parameter like "pci=noreset".
->>    If this parameter is specified, the reset function I add is disabled
->>    and we can avoid regression.
->
-> Can we identify that particular switch in code and not reset it in code.
-> Introducing new paramenters to avoid bugs really feels odd.
+>> Is there a method to delay my test code, or maybe get the omap-gpmc registered earlier ?
+> 
+> Hope below patch helps you (untested)
+> 
+> Regards
+> Afzal
+> 
+> ----8<-------------------
+> 
+> diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+> index 1c53c05..a4c6912 100644
+> --- a/arch/arm/mach-omap2/gpmc.c
+> +++ b/arch/arm/mach-omap2/gpmc.c
+> @@ -827,7 +827,19 @@ static struct platform_driver gpmc_driver = {
+>         },
+>  };
+>  
+> -module_platform_driver(gpmc_driver);
+> +static __init int gpmc_init(void)
+> +{
+> +        return platform_driver_register(&gpmc_driver);
+> +}
+> +
+> +static __exit void gpmc_exit(void)
+> +{
+> +        platform_driver_unregister(&gpmc_driver);
+> +
+> +}
+> +
+> +postcore_initcall(gpmc_init);
+> +module_exit(gpmc_exit);
+>  
+>  int gpmc_suspend(void)
+>  {
+> ----8<----------------
 
-Maybe we can do it using PCI quirk or DMI quirk as Konrad and Don said.
-But I'm still thinking whether I can add boot parameter or something to
-disable reset function so that we can use it as workaround untill we add
-quirk when we find such a buggy hardware.
+Perfect !!
 
-> Also, what was the conclusion to avoid double reset. I am assuming that
-> we don't want to do bus level reset as well as driver level reset based
-> on reset_devices.
+I also got it working by adding "late_init()" hooks into arch/arm/kernel/setup.c, but your code is
+much simpler.
 
-I don't have a good idea to do it yet. Maybe we need to write bus:slot:func
-information to somewhere when we reset device.
-
-Thanks,
-Takao Indoh
-
+Regards
+Mark J.
