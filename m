@@ -1,192 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab2IXWh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:37:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52952 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab2IXWf4 (ORCPT
+	id S1751967Ab2IXWhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:37:32 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:53258 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab2IXWh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:35:56 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        neilb@suse.de, vgoyal@redhat.com, Alasdair Kergon <agk@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v3 22/26] block: Convert some code to bio_for_each_segment_all()
-Date: Mon, 24 Sep 2012 15:35:02 -0700
-Message-Id: <1348526106-17074-23-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1348526106-17074-1-git-send-email-koverstreet@google.com>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
+	Mon, 24 Sep 2012 18:37:28 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6845"; a="240612422"
+Message-ID: <5060E0A7.7090409@codeaurora.org>
+Date: Mon, 24 Sep 2012 15:37:27 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 06/10] ARM: msm: Remove custom clk_set_{max,min}_rate()
+ API
+References: <1348194419-11486-1-git-send-email-sboyd@codeaurora.org> <1348194419-11486-7-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1348194419-11486-7-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More prep work for immutable bvecs:
+On 09/20/2012 07:26 PM, Stephen Boyd wrote:
+> There are no users of this API anymore so let's just remove it.
+> If a need arises in the future we can extend the common clock API
+> to handle it.
+>
+> Cc: Saravana Kannan<skannan@codeaurora.org>
+> Signed-off-by: Stephen Boyd<sboyd@codeaurora.org>
+> ---
+>   arch/arm/mach-msm/clock-debug.c      |  9 +--------
+>   arch/arm/mach-msm/clock.c            | 12 ------------
+>   arch/arm/mach-msm/include/mach/clk.h |  6 ------
+>   3 files changed, 1 insertion(+), 26 deletions(-)
+>
+> diff --git a/arch/arm/mach-msm/clock-debug.c b/arch/arm/mach-msm/clock-debug.c
+> index 4886404..c4b34d7 100644
+> --- a/arch/arm/mach-msm/clock-debug.c
+> +++ b/arch/arm/mach-msm/clock-debug.c
+> @@ -25,14 +25,7 @@ static int clock_debug_rate_set(void *data, u64 val)
+>   	struct clk *clock = data;
+>   	int ret;
+>
+> -	/* Only increases to max rate will succeed, but that's actually good
+> -	 * for debugging purposes so we don't check for error. */
+> -	if (clock->flags&  CLK_MAX)
+> -		clk_set_max_rate(clock, val);
+> -	if (clock->flags&  CLK_MIN)
+> -		ret = clk_set_min_rate(clock, val);
+> -	else
+> -		ret = clk_set_rate(clock, val);
+> +	ret = clk_set_rate(clock, val);
 
-A few places in the code were either open coding or using the wrong
-version - fix.
+This was done to handle the difference in behavior of the remote 
+processor on a per clock basis, but I agree that it's best to remove it 
+now and added it back later if needed. And even if it's needed, I don't 
+anticipate the need for changes to the common clock framework to deal 
+with this.
 
-After we introduce the bvec iter, it'll no longer be possible to modify
-the biovec through bio_for_each_segment_all() - it doesn't increment a
-pointer to the current bvec, you pass in a struct bio_vec (not a
-pointer) which is updated with what the current biovec would be (taking
-into account bi_bvec_done and bi_size).
+Acked-by: Saravana Kannan <skannan@codeaurora.org>
 
-So because of that it's more worthwhile to be consistent about
-bio_for_each_segment()/bio_for_each_segment_all() usage.
+-Saravana
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: NeilBrown <neilb@suse.de>
-CC: Alasdair Kergon <agk@redhat.com>
-CC: dm-devel@redhat.com
-CC: Alexander Viro <viro@zeniv.linux.org.uk>
----
- drivers/md/dm-crypt.c |  3 +--
- drivers/md/raid1.c    | 10 +++-------
- fs/bio.c              | 20 ++++++++++----------
- fs/direct-io.c        |  8 ++++----
- mm/bounce.c           |  2 +-
- 5 files changed, 19 insertions(+), 24 deletions(-)
+>   	if (ret != 0)
+>   		printk(KERN_ERR "clk_set%s_rate failed (%d)\n",
+>   			(clock->flags&  CLK_MIN) ? "_min" : "", ret);
+> diff --git a/arch/arm/mach-msm/clock.c b/arch/arm/mach-msm/clock.c
+> index 5fac2df..8d07b25 100644
+> --- a/arch/arm/mach-msm/clock.c
+> +++ b/arch/arm/mach-msm/clock.c
+> @@ -97,18 +97,6 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
+>   }
+>   EXPORT_SYMBOL(clk_round_rate);
+>
+> -int clk_set_min_rate(struct clk *clk, unsigned long rate)
+> -{
+> -	return clk->ops->set_min_rate(clk->id, rate);
+> -}
+> -EXPORT_SYMBOL(clk_set_min_rate);
+> -
+> -int clk_set_max_rate(struct clk *clk, unsigned long rate)
+> -{
+> -	return clk->ops->set_max_rate(clk->id, rate);
+> -}
+> -EXPORT_SYMBOL(clk_set_max_rate);
+> -
+>   int clk_set_parent(struct clk *clk, struct clk *parent)
+>   {
+>   	return -ENOSYS;
+> diff --git a/arch/arm/mach-msm/include/mach/clk.h b/arch/arm/mach-msm/include/mach/clk.h
+> index 5f1c37d..fd4f4a7 100644
+> --- a/arch/arm/mach-msm/include/mach/clk.h
+> +++ b/arch/arm/mach-msm/include/mach/clk.h
+> @@ -25,12 +25,6 @@ enum clk_reset_action {
+>
+>   struct clk;
+>
+> -/* Rate is minimum clock rate in Hz */
+> -int clk_set_min_rate(struct clk *clk, unsigned long rate);
+> -
+> -/* Rate is maximum clock rate in Hz */
+> -int clk_set_max_rate(struct clk *clk, unsigned long rate);
+> -
+>   /* Assert/Deassert reset to a hardware block associated with a clock */
+>   int clk_reset(struct clk *clk, enum clk_reset_action action);
+>
 
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index bbf459b..f50798e 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -858,8 +858,7 @@ static void crypt_free_buffer_pages(struct crypt_config *cc, struct bio *clone)
- 	unsigned int i;
- 	struct bio_vec *bv;
- 
--	for (i = 0; i < clone->bi_vcnt; i++) {
--		bv = bio_iovec_idx(clone, i);
-+	bio_for_each_segment_all(bv, clone, i) {
- 		BUG_ON(!bv->bv_page);
- 		mempool_free(bv->bv_page, cc->page_pool);
- 		bv->bv_page = NULL;
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 6a96e1f..dff0473 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -921,7 +921,7 @@ static void alloc_behind_pages(struct bio *bio, struct r1bio *r1_bio)
- 	if (unlikely(!bvecs))
- 		return;
- 
--	bio_for_each_segment(bvec, bio, i) {
-+	bio_for_each_segment_all(bvec, bio, i) {
- 		bvecs[i] = *bvec;
- 		bvecs[i].bv_page = alloc_page(GFP_NOIO);
- 		if (unlikely(!bvecs[i].bv_page))
-@@ -1276,12 +1276,8 @@ read_again:
- 			struct bio_vec *bvec;
- 			int j;
- 
--			/* Yes, I really want the '__' version so that
--			 * we clear any unused pointer in the io_vec, rather
--			 * than leave them unchanged.  This is important
--			 * because when we come to free the pages, we won't
--			 * know the original bi_idx, so we just free
--			 * them all
-+			/*
-+			 * We trimmed the bio, so _all is legit
- 			 */
- 			bio_for_each_segment_all(bvec, mbio, j)
- 				bvec->bv_page = r1_bio->behind_bvecs[j].bv_page;
-diff --git a/fs/bio.c b/fs/bio.c
-index a641efd..6ba9f27 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1546,11 +1546,11 @@ EXPORT_SYMBOL(bio_copy_kern);
-  */
- void bio_set_pages_dirty(struct bio *bio)
- {
--	struct bio_vec *bvec = bio->bi_io_vec;
-+	struct bio_vec *bvec;
- 	int i;
- 
--	for (i = 0; i < bio->bi_vcnt; i++) {
--		struct page *page = bvec[i].bv_page;
-+	bio_for_each_segment_all(bvec, bio, i) {
-+		struct page *page = bvec->bv_page;
- 
- 		if (page && !PageCompound(page))
- 			set_page_dirty_lock(page);
-@@ -1559,11 +1559,11 @@ void bio_set_pages_dirty(struct bio *bio)
- 
- static void bio_release_pages(struct bio *bio)
- {
--	struct bio_vec *bvec = bio->bi_io_vec;
-+	struct bio_vec *bvec;
- 	int i;
- 
--	for (i = 0; i < bio->bi_vcnt; i++) {
--		struct page *page = bvec[i].bv_page;
-+	bio_for_each_segment_all(bvec, bio, i) {
-+		struct page *page = bvec->bv_page;
- 
- 		if (page)
- 			put_page(page);
-@@ -1612,16 +1612,16 @@ static void bio_dirty_fn(struct work_struct *work)
- 
- void bio_check_pages_dirty(struct bio *bio)
- {
--	struct bio_vec *bvec = bio->bi_io_vec;
-+	struct bio_vec *bvec;
- 	int nr_clean_pages = 0;
- 	int i;
- 
--	for (i = 0; i < bio->bi_vcnt; i++) {
--		struct page *page = bvec[i].bv_page;
-+	bio_for_each_segment_all(bvec, bio, i) {
-+		struct page *page = bvec->bv_page;
- 
- 		if (PageDirty(page) || PageCompound(page)) {
- 			page_cache_release(page);
--			bvec[i].bv_page = NULL;
-+			bvec->bv_page = NULL;
- 		} else {
- 			nr_clean_pages++;
- 		}
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index f86c720..6089916 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -441,8 +441,8 @@ static struct bio *dio_await_one(struct dio *dio)
- static int dio_bio_complete(struct dio *dio, struct bio *bio)
- {
- 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
--	struct bio_vec *bvec = bio->bi_io_vec;
--	int page_no;
-+	struct bio_vec *bvec;
-+	unsigned i;
- 
- 	if (!uptodate)
- 		dio->io_error = -EIO;
-@@ -450,8 +450,8 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
- 	if (dio->is_async && dio->rw == READ) {
- 		bio_check_pages_dirty(bio);	/* transfers ownership */
- 	} else {
--		for (page_no = 0; page_no < bio->bi_vcnt; page_no++) {
--			struct page *page = bvec[page_no].bv_page;
-+		bio_for_each_segment_all(bvec, bio, i) {
-+			struct page *page = bvec->bv_page;
- 
- 			if (dio->rw == READ && !PageCompound(page))
- 				set_page_dirty_lock(page);
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 89324e2..bd7079a 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -194,7 +194,7 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
- bounce:
- 	bio = bio_clone_bioset(*bio_orig, GFP_NOIO, fs_bio_set);
- 
--	bio_for_each_segment(to, bio, i) {
-+	bio_for_each_segment_all(to, bio, i) {
- 		struct page *page = to->bv_page;
- 
- 		if (page_to_pfn(page) <= queue_bounce_pfn(q))
+
 -- 
-1.7.12
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
