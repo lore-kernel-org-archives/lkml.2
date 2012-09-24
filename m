@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab2IXWft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 18:35:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37645 "EHLO
+	id S1751930Ab2IXWgF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 18:36:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62536 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab2IXWfk (ORCPT
+	with ESMTP id S1751859Ab2IXWgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 18:35:40 -0400
+	Mon, 24 Sep 2012 18:36:00 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        neilb@suse.de, vgoyal@redhat.com,
-        Lars Ellenberg <drbd-dev@lists.linbit.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH v3 08/26] block: Change bio_split() to respect the current value of bi_idx
-Date: Mon, 24 Sep 2012 15:34:48 -0700
-Message-Id: <1348526106-17074-9-git-send-email-koverstreet@google.com>
+        neilb@suse.de, vgoyal@redhat.com
+Subject: [PATCH v3 24/26] block: Add an explicit bio flag for bios that own their bvec
+Date: Mon, 24 Sep 2012 15:35:04 -0700
+Message-Id: <1348526106-17074-25-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1348526106-17074-1-git-send-email-koverstreet@google.com>
 References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
@@ -24,118 +22,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the current code bio_split() won't be seeing partially completed bios
-so this doesn't change any behaviour, but this makes the code a bit
-clearer as to what bio_split() actually requires.
-
-The immediate purpose of the patch is removing unnecessary bi_idx
-references, but the end goal is to allow partial completed bios to be
-submitted, which along with immutable biovecs enables effecient bio
-splitting.
-
-Some of the callers were (double) checking that bios could be split, so
-update their checks too.
+This is for the new bio splitting code. When we split a bio, if the
+split occured on a bvec boundry we reuse the bvec for the new bio. But
+that means bio_free() can't free it, hence the explicit flag.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-CC: Lars Ellenberg <drbd-dev@lists.linbit.com>
-CC: Neil Brown <neilb@suse.de>
-CC: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/block/drbd/drbd_req.c | 6 +++---
- drivers/md/raid0.c            | 3 +--
- drivers/md/raid10.c           | 3 +--
- fs/bio-integrity.c            | 4 ++--
- fs/bio.c                      | 7 +++----
- 5 files changed, 10 insertions(+), 13 deletions(-)
+ fs/bio.c                  | 4 +++-
+ include/linux/bio.h       | 5 -----
+ include/linux/blk_types.h | 1 +
+ 3 files changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index d90a1fd..4d09e74 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -1155,11 +1155,11 @@ void drbd_make_request(struct request_queue *q, struct bio *bio)
- 
- 	/* can this bio be split generically?
- 	 * Maybe add our own split-arbitrary-bios function. */
--	if (bio->bi_vcnt != 1 || bio->bi_idx != 0 || bio->bi_size > DRBD_MAX_BIO_SIZE) {
-+	if (bio_segments(bio) != 1 || bio->bi_size > DRBD_MAX_BIO_SIZE) {
- 		/* rather error out here than BUG in bio_split */
- 		dev_err(DEV, "bio would need to, but cannot, be split: "
--		    "(vcnt=%u,idx=%u,size=%u,sector=%llu)\n",
--		    bio->bi_vcnt, bio->bi_idx, bio->bi_size,
-+		    "(segments=%u,size=%u,sector=%llu)\n",
-+		    bio_segments(bio), bio->bi_size,
- 		    (unsigned long long)bio->bi_sector);
- 		bio_endio(bio, -EINVAL);
- 	} else {
-diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-index 89016cb..769b3cb 100644
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -510,8 +510,7 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
- 		sector_t sector = bio->bi_sector;
- 		struct bio_pair *bp;
- 		/* Sanity check -- queue functions should prevent this happening */
--		if (bio->bi_vcnt != 1 ||
--		    bio->bi_idx != 0)
-+		if (bio_segments(bio) != 1)
- 			goto bad_map;
- 		/* This is a one page bio that upper layers
- 		 * refuse to split for us, so we need to split it.
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 9715aaf..bbd08f5 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1081,8 +1081,7 @@ static void make_request(struct mddev *mddev, struct bio * bio)
- 			 || conf->prev.near_copies < conf->prev.raid_disks))) {
- 		struct bio_pair *bp;
- 		/* Sanity check -- queue functions should prevent this happening */
--		if (bio->bi_vcnt != 1 ||
--		    bio->bi_idx != 0)
-+		if (bio_segments(bio) != 1)
- 			goto bad_map;
- 		/* This is a one page bio that upper layers
- 		 * refuse to split for us, so we need to split it.
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index 65b708d..f175814 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -659,8 +659,8 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
- 	bp->bio1.bi_integrity = &bp->bip1;
- 	bp->bio2.bi_integrity = &bp->bip2;
- 
--	bp->iv1 = bip->bip_vec[0];
--	bp->iv2 = bip->bip_vec[0];
-+	bp->iv1 = bip->bip_vec[bip->bip_idx];
-+	bp->iv2 = bip->bip_vec[bip->bip_idx];
- 
- 	bp->bip1.bip_vec = &bp->iv1;
- 	bp->bip2.bip_vec = &bp->iv2;
 diff --git a/fs/bio.c b/fs/bio.c
-index 9a3935f..062ba8f 100644
+index 8e10d49..00639e6 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
-@@ -1616,8 +1616,7 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- 	trace_block_split(bdev_get_queue(bi->bi_bdev), bi,
- 				bi->bi_sector + first_sectors);
+@@ -250,7 +250,7 @@ static void bio_free(struct bio *bio)
+ 	__bio_free(bio);
  
--	BUG_ON(bi->bi_vcnt != 1);
--	BUG_ON(bi->bi_idx != 0);
-+	BUG_ON(bio_segments(bi) != 1);
- 	atomic_set(&bp->cnt, 3);
- 	bp->error = 0;
- 	bp->bio1 = *bi;
-@@ -1626,8 +1625,8 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- 	bp->bio2.bi_size -= first_sectors << 9;
- 	bp->bio1.bi_size = first_sectors << 9;
+ 	if (bs) {
+-		if (bio_has_allocated_vec(bio))
++		if (bio_flagged(bio, BIO_OWNS_VEC))
+ 			bvec_free_bs(bs->bvec_pool, bio->bi_io_vec, BIO_POOL_IDX(bio));
  
--	bp->bv1 = bi->bi_io_vec[0];
--	bp->bv2 = bi->bi_io_vec[0];
-+	bp->bv1 = *bio_iovec(bi);
-+	bp->bv2 = *bio_iovec(bi);
+ 		/*
+@@ -449,6 +449,8 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
  
- 	if (bio_is_rw(bi)) {
- 		bp->bv2.bv_offset += first_sectors << 9;
+ 		if (unlikely(!bvl))
+ 			goto err_free;
++
++		bio->bi_flags |= 1 << BIO_OWNS_VEC;
+ 	} else if (nr_iovecs) {
+ 		bvl = bio->bi_inline_vecs;
+ 	}
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 5a55ce5..bd130b6 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -85,11 +85,6 @@ static inline void *bio_data(struct bio *bio)
+ 	return NULL;
+ }
+ 
+-static inline int bio_has_allocated_vec(struct bio *bio)
+-{
+-	return bio->bi_io_vec && bio->bi_io_vec != bio->bi_inline_vecs;
+-}
+-
+ /*
+  * will die
+  */
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index cdf1119..6547103 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -117,6 +117,7 @@ struct bio {
+  * BIO_POOL_IDX()
+  */
+ #define BIO_RESET_BITS	12
++#define BIO_OWNS_VEC	12	/* bio_free() should free bvec */
+ 
+ #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ 
 -- 
 1.7.12
 
