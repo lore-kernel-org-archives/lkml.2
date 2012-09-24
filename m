@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab2IXHFV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 03:05:21 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:19698 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab2IXHFU (ORCPT
+	id S1755158Ab2IXHH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 03:07:59 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48673 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab2IXHHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 03:05:20 -0400
-X-AuditID: cbfee61b-b7f2b6d000000f14-3d-5060062e6571
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
-        "'Arnd Bergmann'" <arnd@arndb.de>
-References: <1347858583-13338-1-git-send-email-sachin.kamat@linaro.org>
-In-reply-to: <1347858583-13338-1-git-send-email-sachin.kamat@linaro.org>
-Subject: RE: [PATCH] ARM: dma-mapping: Fix potential memory leak in
- atomic_pool_init()
-Date: Mon, 24 Sep 2012 09:05:08 +0200
-Organization: SPRC
-Message-id: <049301cd9a22$f0b8c960$d22a5c20$%szyprowski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2Uk3geBk3prpoPSnOMTou7Qmgv5AFjrCWg
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jQV09toQAg8NvuCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGtnmfmAo2clTsvdTC3sB4i62LkZNDQsBEYsPqiUwQtpjEhXvr
-	weJCAtMZJbZP1e9i5AKyZzFJ3FnUCVbEJmAo0fW2C6xIRCBE4vjSZWBxZoFwid2LpzJDNLtL
-	HPv4HyzOKeAh0TbhGyuILSwQITG9sxksziKgKnH3wQKgOAcHv4CQxMRZCiBhXgEXiaWP2lkg
-	bEGJH5PvsUCM15JYv/M41Cp5ic1r3jKDtEoIqEs8+qsLYooIGElc3KoOUSEicbfhOesERuFZ
-	SAbNQjJoFpJBs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHNrPpHcwrmqwOMQo
-	wMGoxMO74Ux8gBBrYllxZe4hRgkOZiUR3ohnQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8wp8C
-	A4QE0hNLUrNTUwtSi2CyTBycUg2MGsYX/dfvWWK1Om2jSO/D/iOLzXcVrrr3heHPbEd5H+7z
-	LC9iWO6uLmh/peX5Z53Ypi/nr7qWbJMzNTnel96bIPSi+arWEu21nxbEnbhiN1tjanTUP58J
-	+8JFV2UGRfoeSlc59cBPYYPQl9Lwxu9v91WtW5jdFnNIfcep9Wy85xmnnQ3NjP+iqMRSnJFo
-	qMVcVJwIAPwoxaBpAgAA
+	Mon, 24 Sep 2012 03:07:51 -0400
+Date: Mon, 24 Sep 2012 17:07:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: linux-next: manual merge of the staging tree with the vfs tree
+Message-Id: <20120924170741.34abbc462d1c405b0b447b72@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Sep_2012_17_07_41_+1000_iZL0nXGuwyz1JiOT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Mon__24_Sep_2012_17_07_41_+1000_iZL0nXGuwyz1JiOT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Monday, September 17, 2012 7:10 AM Sachin Kamat wrote:
+Hi Greg,
 
-> When either of __alloc_from_contiguous or __alloc_remap_buffer fails
-> to provide a valid pointer, allocated memory is freed up and an error
-> is returned. 'pages' was however not freed before returning error.
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  arch/arm/mm/dma-mapping.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> index 546a3e8..477a2d2 100644
-> --- a/arch/arm/mm/dma-mapping.c
-> +++ b/arch/arm/mm/dma-mapping.c
-> @@ -367,6 +367,8 @@ static int __init atomic_pool_init(void)
->  		       (unsigned)pool->size / 1024);
->  		return 0;
->  	}
-> +
-> +	kfree(pages);
->  no_pages:
->  	kfree(bitmap);
->  no_bitmap:
-> --
-> 1.7.4.1
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/android/binder.c between commit 004223461eee ("new
+helper: __alloc_fd()") from the vfs tree and commits efde99cd281a
+("Staging: android: binder: Make task_get_unused_fd_flags function
+static") and bf2023614201 ("Staging: android: binder: Remove an
+inconsequential conditional macro") from the staging tree.
 
-Applied to my fixes-for-3.6 branch. Thanks for spotting this issue!
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/staging/android/binder.c
+index f71d624,a807129..0000000
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@@ -362,9 -362,14 +362,9 @@@ struct binder_transaction=20
+  static void
+  binder_defer_work(struct binder_proc *proc, enum binder_deferred_state de=
+fer);
+ =20
+- int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
+ -/*
+ - * copied from get_unused_fd_flags
+ - */
++ static int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
+  {
+  	struct files_struct *files =3D proc->files;
+ -	int fd, error;
+ -	struct fdtable *fdt;
+  	unsigned long rlim_cur;
+  	unsigned long irqs;
+ =20
 
+--Signature=_Mon__24_Sep_2012_17_07_41_+1000_iZL0nXGuwyz1JiOT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQYAa9AAoJEECxmPOUX5FE5vAQAJMBr6cjaNzEK+M3AREnKBNG
+qGhKGVe+B8F+mx02C8/+WrslMub+BH9+1s8D+/spEwLJxtH6FfP5sTnV+UBoPwSF
+pnnVu6jUv+VtNJ2Dkcfa5ym4INztPT2g1z1bq5o0PZgyPl3CUdS0OQiyCd1SQtLR
+bine+cd8X1pSzEb1cLnZzKcncqupC39jbsqH0+hCTHv2wzu4psks1n5FRCKaf8d/
+9u7hpVXS0W+7/xQiefH6611ty5l6lK7GLamwmm9enfGj55HAHsXSfhNO/F0an19H
+0UHxYDENJpF8IACxi+ckGdWucas91fJdNrAqya9VJCRWR0yQ5oGnUe4ZM0mk1DFY
+GN8mHGQ6FYbGy2JL45cgBkqXD99lh4/W3bGUu9FXg7L0NKrDs0gBjKUl1paOx9Eb
+4aQiY1nTNFcv0Urp8mQzw5rwvZMuOdpJ7jV77oXx6zMbAmUUErwJDNyLc4ulCfli
+aW170qIC/r1ztDREvewAZE+Bl2wbi2ypp7tlAZsaqWZmadw/gQhE/e7KhHNlLo4J
+XMlC/vx/qlm0EKcCIqzN6d5Xkf7WsiT7Xxf7DIYdwzBfBXpWgjwf7DpmXOptRHhi
+Btk/lsDg8ssc9Wstv168fA7eX8sjfZKNuMymH21OkMSjGhUdOtaKTFk1IbYiEOjE
+kDSE9PTfEaJcz70DPyID
+=SybL
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__24_Sep_2012_17_07_41_+1000_iZL0nXGuwyz1JiOT--
