@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab2IXQQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:16:53 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:42562 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab2IXQQv (ORCPT
+	id S1756686Ab2IXQRK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:17:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44091 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756655Ab2IXQRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 12:16:51 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 2/5] fat: allocate persistent inode numbers
-References: <87ipb45914.fsf@devron.myhome.or.jp>
-	<CAKYAXd9EzKH_x1GaXvSZ7pRebfOcwQqNp6-oEnc2z2evuNo23g@mail.gmail.com>
-	<87ehls53ug.fsf@devron.myhome.or.jp>
-	<87a9wg53mc.fsf@devron.myhome.or.jp>
-	<CAKYAXd9_DcS+pqGRuwvHNfHQTpUScSfvM1EDSPHeo4ZP70D0hw@mail.gmail.com>
-	<87392768dj.fsf@devron.myhome.or.jp>
-	<CAKYAXd_fJwoPrX4zKW0sBDGsBGDWUj-_TtkFYws7z3xvgsnuRw@mail.gmail.com>
-	<87y5jz4rio.fsf@devron.myhome.or.jp>
-	<CAKYAXd_OmVgxtmHOLRdi5yr=yTa9ppmatQUf1GO6Qjg5ym8LuA@mail.gmail.com>
-	<87txun4n5r.fsf@devron.myhome.or.jp>
-	<20120924145743.GA3301@fieldses.org>
-Date: Tue, 25 Sep 2012 01:16:45 +0900
-In-Reply-To: <20120924145743.GA3301@fieldses.org> (J. Bruce Fields's message
-	of "Mon, 24 Sep 2012 10:57:43 -0400")
-Message-ID: <87d31b4cr6.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 24 Sep 2012 12:17:08 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]staging "wlan-ng" Fix typos.
+Date: Mon, 24 Sep 2012 09:16:57 -0700
+Message-Id: <1348503417-10788-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. Bruce Fields" <bfields@fieldses.org> writes:
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
->> > There is some unclear thing.
->> > When I see first mail, I think maybe you don't want to use i_pos for inode->ino.
->> > FAT allocate inode->ino from i_unique on server side and If NFS client
->> > use i_pos for inode->ino in fat_get_attr, inode numbers on each
->> > client/server will still be mismatched.
->> >
->> > Would you plz give me hint ?
->> 
->> ->i_ino is long. It can't hold i_pos fully on 32bit arch, so we can't
->> use ->i_no to store i_pos, and changing ->i_ino is unnecessary. If
->> getattr() returned i_pos as ino, nobody see ->i_ino anymore except
->> internal of kernel.
->
-> The NFS server must always return the same inode number for the same
-> filehandle.  To do otherwise is a bug.
->
->> Furthermore I think there is no issue even if server and client didn't
->> have same ino. Because client just uses FH (nfs4 seems to be using
->> stat.ino though).
->
-> The client may expose a different inode number to userspace, but it's
-> probably the server-provided inode number that it's checking.
->
-> (And even if the Linux client didn't currently happen to do that check,
-> this would still be a bug.)
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-In this context, inode number != inode->i_ino, right? It should be
-kstat.ino, and in FAT case, it will return i_pos always. Otherwise 64bit
-inode number would not work.
+---
 
-So, I think we are doing right thing for now.
+The below patch fixes typos found while reading through staging "wlan-ng"
 
-Anyway, thanks for your review.
+ drivers/staging/wlan-ng/cfg80211.c     |    4 ++--
+ drivers/staging/wlan-ng/p80211netdev.c |    2 +-
+ drivers/staging/wlan-ng/p80211types.h  |    2 +-
+ drivers/staging/wlan-ng/prism2fw.c     |    2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
+index 0970127..e1833bd 100644
+--- a/drivers/staging/wlan-ng/cfg80211.c
++++ b/drivers/staging/wlan-ng/cfg80211.c
+@@ -1,7 +1,7 @@
+ /* cfg80211 Interface for prism2_usb module */
+ 
+ 
+-/* Prism2 channell/frequency/bitrate declarations */
++/* Prism2 channel/frequency/bitrate declarations */
+ static const struct ieee80211_channel prism2_channels[] = {
+ 	{ .center_freq = 2412 },
+ 	{ .center_freq = 2417 },
+@@ -499,7 +499,7 @@ int prism2_connect(struct wiphy *wiphy, struct net_device *dev,
+ 			goto exit;
+ 	}
+ 
+-	/* Set the authorisation */
++	/* Set the authorization */
+ 	if ((sme->auth_type == NL80211_AUTHTYPE_OPEN_SYSTEM) ||
+ 		((sme->auth_type == NL80211_AUTHTYPE_AUTOMATIC) && !is_wep))
+ 			msg_join.authtype.data = P80211ENUM_authalg_opensystem;
+diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
+index 8afb193..a5e2d41 100644
+--- a/drivers/staging/wlan-ng/p80211netdev.c
++++ b/drivers/staging/wlan-ng/p80211netdev.c
+@@ -461,7 +461,7 @@ failed:
+ /*----------------------------------------------------------------
+ * p80211knetdev_set_multicast_list
+ *
+-* Called from higher lavers whenever there's a need to set/clear
++* Called from higher layers whenever there's a need to set/clear
+ * promiscuous mode or rewrite the multicast list.
+ *
+ * Arguments:
+diff --git a/drivers/staging/wlan-ng/p80211types.h b/drivers/staging/wlan-ng/p80211types.h
+index f043090..8cb4fc6 100644
+--- a/drivers/staging/wlan-ng/p80211types.h
++++ b/drivers/staging/wlan-ng/p80211types.h
+@@ -197,7 +197,7 @@
+ 					P80211DID_LSB_ACCESS)
+ 
+ /*----------------------------------------------------------------*/
+-/* The following structure types are used for the represenation */
++/* The following structure types are used for the representation */
+ /*  of ENUMint type metadata. */
+ 
+ typedef struct p80211enumpair {
+diff --git a/drivers/staging/wlan-ng/prism2fw.c b/drivers/staging/wlan-ng/prism2fw.c
+index e22784e..0dfd2a4 100644
+--- a/drivers/staging/wlan-ng/prism2fw.c
++++ b/drivers/staging/wlan-ng/prism2fw.c
+@@ -806,7 +806,7 @@ static int read_cardpda(struct pda *pda, wlandevice_t *wlandev)
+ *
+ * Note also that the start address record, originally an S7 record in
+ * the srec file, is expected in the fw file to be like a data record but
+-* with a certain address to make it identiable.
++* with a certain address to make it identifiable.
+ *
+ * Here's the SREC format that the fw should have come from:
+ * S[37]nnaaaaaaaaddd...dddcc
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+1.7.9.5
+
