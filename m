@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab2IXQEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 12:04:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58786 "EHLO
+	id S1757291Ab2IXQES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 12:04:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58780 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756693Ab2IXQAA (ORCPT
+	with ESMTP id S1756690Ab2IXQAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Sep 2012 12:00:00 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 25/30] tools lib traceevent: Fix afterlife gotos
-Date: Mon, 24 Sep 2012 12:59:39 -0300
-Message-Id: <1348502384-14442-26-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 20/30] tools lib traceevent: Free field if an error occurs on process_fields
+Date: Mon, 24 Sep 2012 12:59:34 -0300
+Message-Id: <1348502384-14442-21-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1348502384-14442-1-git-send-email-acme@infradead.org>
 References: <1348502384-14442-1-git-send-email-acme@infradead.org>
@@ -30,58 +28,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Instead of dying, just use do_warning and let the goto that is there to
-take place.
+The field should be freed on error paths.
 
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-aoaus46ngnt9oc2pt7ckot5d@git.kernel.org
+Link: http://lkml.kernel.org/r/1348037924-17568-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ tools/lib/traceevent/event-parse.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 2aeae55..2091991 100644
+index 27088c5..a776ed5 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -1270,7 +1270,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 		}
+@@ -2186,10 +2186,10 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
  
- 		if (!field->type) {
--			die("no type found");
-+			do_warning("%s: no type found", __func__);
- 			goto fail;
- 		}
- 		field->name = last_token;
-@@ -1317,7 +1317,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 				free_token(token);
- 				type = read_token(&token);
- 				if (type == EVENT_NONE) {
--					die("failed to find token");
-+					do_warning("failed to find token");
- 					goto fail;
- 				}
- 			}
-@@ -1669,7 +1669,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 	if (arg->type == PRINT_OP && !arg->op.left) {
- 		/* handle single op */
- 		if (token[1]) {
--			die("bad op token %s", token);
-+			do_warning("bad op token %s", token);
- 			goto out_free;
- 		}
- 		switch (token[0]) {
+ 		value = arg_eval(arg);
+ 		if (value == NULL)
+-			goto out_free;
++			goto out_free_field;
+ 		field->value = strdup(value);
+ 		if (field->value == NULL)
+-			goto out_free;
++			goto out_free_field;
+ 
+ 		free_arg(arg);
+ 		arg = alloc_arg();
+@@ -2197,14 +2197,14 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 		free_token(token);
+ 		type = process_arg(event, arg, &token);
+ 		if (test_type_token(type, token, EVENT_OP, "}"))
+-			goto out_free;
++			goto out_free_field;
+ 
+ 		value = arg_eval(arg);
+ 		if (value == NULL)
+-			goto out_free;
++			goto out_free_field;
+ 		field->str = strdup(value);
+ 		if (field->str == NULL)
+-			goto out_free;
++			goto out_free_field;
+ 		free_arg(arg);
+ 		arg = NULL;
+ 
+@@ -2218,6 +2218,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 	*tok = token;
+ 	return type;
+ 
++out_free_field:
++	free_flag_sym(field);
+ out_free:
+ 	free_arg(arg);
+ 	free_token(token);
 -- 
 1.7.1
 
