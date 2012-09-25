@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab2IYVsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 17:48:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51247 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab2IYVsk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 17:48:40 -0400
-Date: Wed, 26 Sep 2012 07:48:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Rientjes <rientjes@google.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: mmotm 2012-09-20-17-25 uploaded (fs/bimfmt_elf on uml)
-Message-Id: <20120926074827.32c7187adef6327c74c75564@canb.auug.org.au>
-In-Reply-To: <alpine.DEB.2.00.1209251243320.31518@chino.kir.corp.google.com>
-References: <20120921002638.7859F100047@wpzn3.hot.corp.google.com>
-	<505C865D.5090802@xenotime.net>
-	<20120922115606.5ca9f599cd88514ddda4831d@canb.auug.org.au>
-	<alpine.DEB.2.00.1209251243320.31518@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1751279Ab2IYVuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 17:50:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26691 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768Ab2IYVuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 17:50:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,485,1344236400"; 
+   d="scan'208";a="197626629"
+Subject: [PATCH 1/3] Rename crc32c-intel.c to crc32c-intel_glue.c
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Cote <david.m.cote@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Chaohong Guo <chaohong.guo@intel.com>,
+        Austin Zhang <austin_zhang@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>
+In-Reply-To: <cover.1348599489.git.tim.c.chen@linux.intel.com>
+References: <cover.1348599489.git.tim.c.chen@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 Sep 2012 14:50:12 -0700
+Message-ID: <1348609812.9977.206.camel@schen9-DESK>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Sep_2012_07_48_27_+1000_k8PpY51A+D9WqnR5"
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Sep_2012_07_48_27_+1000_k8PpY51A+D9WqnR5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch rename the crc32c-intel.c file to crc32c-intel_glue.c file
+in preparation for linking with the new crc32c-pcl-intel-asm.S file,
+which contains optimized crc32c calculation based on PCLMULQDQ
+instruction.
 
-Hi David,
+Tim
 
-On Tue, 25 Sep 2012 12:43:53 -0700 (PDT) David Rientjes <rientjes@google.co=
-m> wrote:
->
-> On Sat, 22 Sep 2012, Stephen Rothwell wrote:
->=20
-> > > on uml for x86_64 defconfig:
-> > >=20
-> > > fs/binfmt_elf.c: In function 'fill_files_note':
-> > > fs/binfmt_elf.c:1419:2: error: implicit declaration of function 'vmal=
-loc'
-> > > fs/binfmt_elf.c:1419:7: warning: assignment makes pointer from intege=
-r without a cast
-> > > fs/binfmt_elf.c:1437:5: error: implicit declaration of function 'vfre=
-e'
-> >=20
-> > reported in linux-next (offending patch reverted for other
-> > problems).
->=20
-> This still happens on x86_64 for linux-next as of today's tree.
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ arch/x86/crypto/Makefile                           |    1 +
+ .../crypto/{crc32c-intel.c => crc32c-intel_glue.c} |    0
+ 2 files changed, 1 insertions(+), 0 deletions(-)
+ rename arch/x86/crypto/{crc32c-intel.c => crc32c-intel_glue.c} (100%)
 
-Are you sure?  next-20120925?
+diff --git a/arch/x86/crypto/Makefile b/arch/x86/crypto/Makefile
+index e908e5d..edd2268 100644
+--- a/arch/x86/crypto/Makefile
++++ b/arch/x86/crypto/Makefile
+@@ -43,3 +43,4 @@ serpent-avx-x86_64-y := serpent-avx-x86_64-asm_64.o serpent_avx_glue.o
+ aesni-intel-y := aesni-intel_asm.o aesni-intel_glue.o fpu.o
+ ghash-clmulni-intel-y := ghash-clmulni-intel_asm.o ghash-clmulni-intel_glue.o
+ sha1-ssse3-y := sha1_ssse3_asm.o sha1_ssse3_glue.o
++crc32c-intel-y := crc32c-intel_glue.o
+diff --git a/arch/x86/crypto/crc32c-intel.c b/arch/x86/crypto/crc32c-intel_glue.c
+similarity index 100%
+rename from arch/x86/crypto/crc32c-intel.c
+rename to arch/x86/crypto/crc32c-intel_glue.c
+-- 
+1.7.7.6
 
-$ grep -n vmalloc fs/binfmt_elf.c
-30:#include <linux/vmalloc.h>
-1421:	data =3D vmalloc(size);
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Wed__26_Sep_2012_07_48_27_+1000_k8PpY51A+D9WqnR5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYiarAAoJEECxmPOUX5FEAGcP/2gldFfvcS8osFzNRf+P3SW5
-3yyN9+KAgpCwNFW1oHxFfhsvmhNrlRwzzCVVbFWcjqMjTNci28LvqmStQHeLnGJY
-3A1iu3onLiJUBxxsXxZWBLf5nvFTajtJyeXX7I6gI5cKHcHls/aclrdvn2mxWliW
-dvB34yZg0CCMCQLJKkUrYIAwtVTlGmZ3AynreAbbVWYywWtslILIDov5VQBKsCcE
-3z9yec49sEzBYq16VGqfbDPqhqx9OFq8vXrw4PIlLt3AFwtNRl69RLRndKVC6jYh
-LNOcQPfCL/yg55cBafn799eeiyFq5pvvYkcbT7q0qNBMaZku87sQNO7TIepWpirS
-R7TtY+SCIm08zIE+FGhq8Wl4aHJGG2hMpMZuE6Qg9whn/LhBlK39qnpMocIsyU/s
-v9RQXFEH5UybeDy2ukm8QUzgG21gMMFaLV7ctbVkLXoomUR6w968rTYW0gFpk+mh
-C5shch4CBW3lnVtKf+gve2ZWl0TdmsiZR1oLqIzzYlZF5dybJDrjRD6kwrdbCAEH
-qfcJCJFEgUMGEZj50jILD9dFHfZgOR3XAw3aAz+hWQxFRQ8ldGIJxl5AEzNy2/SH
-2VmpzTMDPu4vouMnzjgAwGCBQGHXrbjQ2d3HcGz3D3jiPxhOddr2aaavuJ/Uznez
-uRpN/ej1nOB4UGt6drjw
-=gQpN
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_Sep_2012_07_48_27_+1000_k8PpY51A+D9WqnR5--
