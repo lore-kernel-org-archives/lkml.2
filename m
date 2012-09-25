@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab2IYRMF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 13:12:05 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:42347 "EHLO mail.x86-64.org"
+	id S1757464Ab2IYRO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 13:14:28 -0400
+Received: from smtp206.alice.it ([82.57.200.102]:36630 "EHLO smtp206.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756585Ab2IYRMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 13:12:03 -0400
-Date: Tue, 25 Sep 2012 19:11:55 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: specifying raw perf events
-Message-ID: <20120925171155.GE6982@aftab.osrc.amd.com>
-References: <20120925155235.GA6982@aftab.osrc.amd.com>
- <20120925170201.GD14405@ghostprotocols.net>
- <20120925170349.GE14405@ghostprotocols.net>
+	id S1750819Ab2IYRO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 13:14:26 -0400
+Message-ID: <5061E676.8080203@libero.it>
+Date: Tue, 25 Sep 2012 19:14:30 +0200
+From: Goffredo Baroncelli <kreijack@libero.it>
+Reply-To: kreijack@inwind.it
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120418 Icedove/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120925170349.GE14405@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: zwu.kernel@gmail.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jbacik@fusionio.com, dave@jikos.cz,
+        linuxram@linux.vnet.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2/2] btrfs-progs: Fix up memory leakage
+References: <1348538536-29838-1-git-send-email-zwu.kernel@gmail.com> <1348538536-29838-3-git-send-email-zwu.kernel@gmail.com> <20120925101429.GR14582@twin.jikos.cz>
+In-Reply-To: <20120925101429.GR14582@twin.jikos.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 10:03:49AM -0700, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Sep 25, 2012 at 10:02:01AM -0700, Arnaldo Carvalho de Melo escreveu:
-> > Em Tue, Sep 25, 2012 at 05:52:35PM +0200, Borislav Petkov escreveu:
-> > > I'm trying to use raw events and to read how exactly they're specified.
-> > > Here's what do:
-> > > 
-> > > $ perf list -h
-> > > 
-> > > ...
-> > >   rNNN                                               [Raw hardware event descriptor]
-> > >   cpu/t1=v1[,t2=v2,t3 ...]/modifier                  [Raw hardware event descriptor]
-> > >    (see 'perf list --help' on how to encode it)
-> > > ...
-> > > 
-> > > $ perf list --help
-> > > $
-> > > 
-> > > No help. :-(
-> > > 
-> > > $ perf --version
-> > > perf version 3.6.rc7.1723.g226ea0
-> > > 
-> > > That's latest Linus + tip/auto-latest.
-> > 
-> > $ make -C tools/perf/Documentation install
+On 09/25/2012 12:14 PM, David Sterba wrote:
+> On Tue, Sep 25, 2012 at 10:02:16AM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu<wuzhy@linux.vnet.ibm.com>
+>>
+>>    Some code pathes forget to free memory on exit.
+>
+> Same as with the fd's, kernel will free all memory for us at exit().
 
-Ok, this target doesn't get triggered automatically from
+I strongly disagree with this approach. The callee often don't know what 
+happen after and before the call. The same is true for the programmer, 
+because the code is quite often updated by several people. A clean 
+exit() is the right thing to do as general rule. I don't see any valid 
+reason (in the btrfs context) to do otherwise.
 
-$ make tools/perf_install
+Relying on the exit() for a proper clean-up increase the likelihood of 
+bug when the code evolves (see my patch   [RESPOST][BTRFS-PROGS][PATCH] 
+btrfs_read_dev_super(): uninitialized variable for an example of what 
+means an incorrect deallocation of resource).
 
-Should we change that?
+> If there's lots of memory allocated, it may be even faster to leave the
+> unallocation process to kernel as it will do it in one go, while the
+> application would unnecessarily free it chunk by chunk.
 
-Also, after I run it,
+May be I am wrong, but I don't think that the increase of speed of the 
+btrfs "command" is even measurable relying on exit instead of free()-ing 
+each chunk of memory one at time.... The same should be true for the 
+open()/close()
 
-$ perf list --help
-$
+My 2¢
 
-still doesn't show anything. (running it as non-root).
+BR
+G.Baroncelli
 
-> If done as non-root:
-> 
-> man -M ~/share/man/ perf-list
+>
+> david
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> .
+>
 
-This one works. But looks like "perf list --help" needs fixing?
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
