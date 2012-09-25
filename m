@@ -1,326 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab2IYVmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 17:42:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33355 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab2IYVmS (ORCPT
+	id S1751231Ab2IYVsm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 17:48:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51247 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab2IYVsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 17:42:18 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=GecNO-ZYI38A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NrfBHxz3jJsA:10 a=1XWaLZrsAAAA:8 a=3nbZYyFuAAAA:8 a=JMOF0mnPer_wuACp_fIA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1348609336.22822.26.camel@gandalf.local.home>
-Subject: Re: [PATCH v4 3/3] tracing: format non-nanosec times from tsc clock
- without a decimal point.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Tue, 25 Sep 2012 17:42:16 -0400
-In-Reply-To: <1348606147-12899-1-git-send-email-dhsharp@google.com>
-References: <CAJL_eks01XMbcXJ3+EXy16Jy3hpX0Ti-BA57vH3fvYWmKS8=9g@mail.gmail.com>
-	 <1348606147-12899-1-git-send-email-dhsharp@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	Tue, 25 Sep 2012 17:48:40 -0400
+Date: Wed, 26 Sep 2012 07:48:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Rientjes <rientjes@google.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: mmotm 2012-09-20-17-25 uploaded (fs/bimfmt_elf on uml)
+Message-Id: <20120926074827.32c7187adef6327c74c75564@canb.auug.org.au>
+In-Reply-To: <alpine.DEB.2.00.1209251243320.31518@chino.kir.corp.google.com>
+References: <20120921002638.7859F100047@wpzn3.hot.corp.google.com>
+	<505C865D.5090802@xenotime.net>
+	<20120922115606.5ca9f599cd88514ddda4831d@canb.auug.org.au>
+	<alpine.DEB.2.00.1209251243320.31518@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__26_Sep_2012_07_48_27_+1000_k8PpY51A+D9WqnR5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I should have been more picky before. I haven't totally tested
-this yet.
+--Signature=_Wed__26_Sep_2012_07_48_27_+1000_k8PpY51A+D9WqnR5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, 2012-09-25 at 13:49 -0700, David Sharp wrote:
-> With the addition of the "tsc" clock, formatting timestamps to look like
-> fractional seconds is misleading. Mark clocks as either in nanoseconds or
-> not, and format non-nanosecond timestamps as decimal integers.
-> 
-> Tested:
-> $ cd /sys/kernel/debug/tracing/
-> $ cat trace_clock
-> [local] global tsc
-> $ echo sched_switch > set_event
-> $ echo 1 > tracing_enabled ; sleep 0.0005 ; echo 0 > tracing_enabled
-> $ cat trace
->           <idle>-0     [000]  6330.555552: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=29964 next_prio=120
->            sleep-29964 [000]  6330.555628: sched_switch: prev_comm=bash prev_pid=29964 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
->   ...
-> $ echo 1 > options/latency-format
-> $ cat trace
->   <idle>-0       0 4104553247us+: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=29964 next_prio=120
->    sleep-29964   0 4104553322us+: sched_switch: prev_comm=bash prev_pid=29964 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
->   ...
-> $ echo tsc > trace_clock
-> $ cat trace
-> $ echo 1 > tracing_enabled ; sleep 0.0005 ; echo 0 > tracing_enabled
-> $ echo 0 > options/latency-format
-> $ cat trace
->           <idle>-0     [000] 16490053398357: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=31128 next_prio=120
->            sleep-31128 [000] 16490053588518: sched_switch: prev_comm=bash prev_pid=31128 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
->   ...
-> echo 1 > options/latency-format
-> $ cat trace
->   <idle>-0       0 91557653238+: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=31128 next_prio=120
->    sleep-31128   0 91557843399+: sched_switch: prev_comm=bash prev_pid=31128 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
->   ...
-> 
-> v2:
-> Move arch-specific bits out of generic code.
-> v4:
-> Fix x86_32 build due to 64-bit division.
-> 
-> Google-Bug-Id: 6980623
-> Signed-off-by: David Sharp <dhsharp@google.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> ---
->  arch/x86/include/asm/trace_clock.h |    2 +-
->  include/linux/ftrace_event.h       |    6 +++
->  kernel/trace/trace.c               |   15 +++++-
->  kernel/trace/trace.h               |    4 --
->  kernel/trace/trace_output.c        |   84 +++++++++++++++++++++++++-----------
->  5 files changed, 78 insertions(+), 33 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
-> index 7ee0d8c..45e17f5 100644
-> --- a/arch/x86/include/asm/trace_clock.h
-> +++ b/arch/x86/include/asm/trace_clock.h
-> @@ -9,7 +9,7 @@
->  extern u64 notrace trace_clock_x86_tsc(void);
->  
->  # define ARCH_TRACE_CLOCKS \
-> -	{ trace_clock_x86_tsc,	"x86-tsc" },
-> +	{ trace_clock_x86_tsc,	"x86-tsc",	.in_ns = 0 },
->  
->  #endif
->  
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index 642928c..c760670 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -86,6 +86,12 @@ struct trace_iterator {
->  	cpumask_var_t		started;
->  };
->  
-> +enum trace_iter_flags {
-> +	TRACE_FILE_LAT_FMT	= 1,
-> +	TRACE_FILE_ANNOTATE	= 2,
-> +	TRACE_FILE_TIME_IN_NS	= 4,
-> +};
-> +
->  
->  struct trace_event;
->  
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 4e26df3..3fe4c5b 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -476,10 +476,11 @@ static const char *trace_options[] = {
->  static struct {
->  	u64 (*func)(void);
->  	const char *name;
-> +	int in_ns; /* is this clock in nanoseconds? */
+Hi David,
 
-Add a few tabs between the ns; and /*
+On Tue, 25 Sep 2012 12:43:53 -0700 (PDT) David Rientjes <rientjes@google.co=
+m> wrote:
+>
+> On Sat, 22 Sep 2012, Stephen Rothwell wrote:
+>=20
+> > > on uml for x86_64 defconfig:
+> > >=20
+> > > fs/binfmt_elf.c: In function 'fill_files_note':
+> > > fs/binfmt_elf.c:1419:2: error: implicit declaration of function 'vmal=
+loc'
+> > > fs/binfmt_elf.c:1419:7: warning: assignment makes pointer from intege=
+r without a cast
+> > > fs/binfmt_elf.c:1437:5: error: implicit declaration of function 'vfre=
+e'
+> >=20
+> > reported in linux-next (offending patch reverted for other
+> > problems).
+>=20
+> This still happens on x86_64 for linux-next as of today's tree.
 
+Are you sure?  next-20120925?
 
->  } trace_clocks[] = {
-> -	{ trace_clock_local,	"local" },
-> -	{ trace_clock_global,	"global" },
-> -	{ trace_clock_counter,	"counter" },
-> +	{ trace_clock_local,	"local",	1 },
-> +	{ trace_clock_global,	"global",	1 },
-> +	{ trace_clock_counter,	"counter",	0 },
->  	ARCH_TRACE_CLOCKS
->  };
->  
-> @@ -2425,6 +2426,10 @@ __tracing_open(struct inode *inode, struct file *file)
->  	if (ring_buffer_overruns(iter->tr->buffer))
->  		iter->iter_flags |= TRACE_FILE_ANNOTATE;
->  
-> +	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
-> +	if (trace_clocks[trace_clock_id].in_ns)
-> +		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
-> +
->  	/* stop the trace while dumping */
->  	tracing_stop();
->  
-> @@ -3324,6 +3329,10 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
->  	if (trace_flags & TRACE_ITER_LATENCY_FMT)
->  		iter->iter_flags |= TRACE_FILE_LAT_FMT;
->  
-> +	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
-> +	if (trace_clocks[trace_clock_id].in_ns)
-> +		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
-> +
->  	iter->cpu_file = cpu_file;
->  	iter->tr = &global_trace;
->  	mutex_init(&iter->mutex);
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 55e1f7f..84fefed 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -409,10 +409,6 @@ void tracing_start_sched_switch_record(void);
->  int register_tracer(struct tracer *type);
->  void unregister_tracer(struct tracer *type);
->  int is_tracing_stopped(void);
-> -enum trace_file_type {
-> -	TRACE_FILE_LAT_FMT	= 1,
-> -	TRACE_FILE_ANNOTATE	= 2,
-> -};
->  
->  extern cpumask_var_t __read_mostly tracing_buffer_mask;
->  
-> diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-> index 123b189..ca640ff 100644
-> --- a/kernel/trace/trace_output.c
-> +++ b/kernel/trace/trace_output.c
-> @@ -610,24 +610,59 @@ lat_print_generic(struct trace_seq *s, struct trace_entry *entry, int cpu)
->  	return trace_print_lat_fmt(s, entry);
->  }
->  
-> -static unsigned long preempt_mark_thresh = 100;
-> +static unsigned long preempt_mark_thresh_us = 100;
-> +/* roughly the same at 2.0GHz: */
-> +static unsigned long preempt_mark_thresh_cycles = 200000;
->  
->  static int
-> -lat_print_timestamp(struct trace_seq *s, u64 abs_usecs,
-> -		    unsigned long rel_usecs)
-> +lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
->  {
-> -	return trace_seq_printf(s, " %4lldus%c: ", abs_usecs,
-> -				rel_usecs > preempt_mark_thresh ? '!' :
-> -				  rel_usecs > 1 ? '+' : ' ');
-> +	int ret;
-> +	struct trace_seq *s = &iter->seq;
+$ grep -n vmalloc fs/binfmt_elf.c
+30:#include <linux/vmalloc.h>
+1421:	data =3D vmalloc(size);
 
-Move the above down below, to give a nicer aesthetic look.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> +	unsigned long verbose = trace_flags & TRACE_ITER_VERBOSE;
-> +	unsigned long in_ns = iter->iter_flags & TRACE_FILE_TIME_IN_NS;
-> +	unsigned long long abs_ts = iter->ts - iter->tr->time_start;
-> +	unsigned long long rel_ts = next_ts - iter->ts;
-	  struct trace_seq *s = &iter->seq;
-> +	unsigned long mark_thresh;
-	  int ret;
+--Signature=_Wed__26_Sep_2012_07_48_27_+1000_k8PpY51A+D9WqnR5
+Content-Type: application/pgp-signature
 
-> +
-> +	if (in_ns) {
-> +		abs_ts = ns2usecs(abs_ts);
-> +		rel_ts = ns2usecs(rel_ts);
-> +		mark_thresh = preempt_mark_thresh_us;
-> +	} else
-> +		mark_thresh = preempt_mark_thresh_cycles;
-> +
-> +	if (verbose && in_ns) {
-> +		unsigned long abs_msec = abs_ts;
-> +		unsigned long abs_usec = do_div(abs_msec, USEC_PER_MSEC);
-> +		unsigned long rel_msec = rel_ts;
-> +		unsigned long rel_usec = do_div(rel_msec, USEC_PER_MSEC);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Either add a space here, or move the declarations to the top of the
-function and keep the code part here.
+iQIcBAEBCAAGBQJQYiarAAoJEECxmPOUX5FEAGcP/2gldFfvcS8osFzNRf+P3SW5
+3yyN9+KAgpCwNFW1oHxFfhsvmhNrlRwzzCVVbFWcjqMjTNci28LvqmStQHeLnGJY
+3A1iu3onLiJUBxxsXxZWBLf5nvFTajtJyeXX7I6gI5cKHcHls/aclrdvn2mxWliW
+dvB34yZg0CCMCQLJKkUrYIAwtVTlGmZ3AynreAbbVWYywWtslILIDov5VQBKsCcE
+3z9yec49sEzBYq16VGqfbDPqhqx9OFq8vXrw4PIlLt3AFwtNRl69RLRndKVC6jYh
+LNOcQPfCL/yg55cBafn799eeiyFq5pvvYkcbT7q0qNBMaZku87sQNO7TIepWpirS
+R7TtY+SCIm08zIE+FGhq8Wl4aHJGG2hMpMZuE6Qg9whn/LhBlK39qnpMocIsyU/s
+v9RQXFEH5UybeDy2ukm8QUzgG21gMMFaLV7ctbVkLXoomUR6w968rTYW0gFpk+mh
+C5shch4CBW3lnVtKf+gve2ZWl0TdmsiZR1oLqIzzYlZF5dybJDrjRD6kwrdbCAEH
+qfcJCJFEgUMGEZj50jILD9dFHfZgOR3XAw3aAz+hWQxFRQ8ldGIJxl5AEzNy2/SH
+2VmpzTMDPu4vouMnzjgAwGCBQGHXrbjQ2d3HcGz3D3jiPxhOddr2aaavuJ/Uznez
+uRpN/ej1nOB4UGt6drjw
+=gQpN
+-----END PGP SIGNATURE-----
 
-> +		ret = trace_seq_printf(
-> +				s, "[%08llx] %ld.%03ldms (+%ld.%03ldms): ",
-> +				ns2usecs(iter->ts),
-> +				abs_msec, abs_usec,
-> +				rel_msec, rel_usec);
-> +	} else if (verbose && !in_ns) {
-> +		ret = trace_seq_printf(
-> +				s, "[%016llx] %lld (+%lld): ",
-> +				iter->ts, abs_ts, rel_ts);
-> +	} else { /* !verbose */
-> +		ret = trace_seq_printf(
-> +				s, " %4lld%s%c: ",
-> +				abs_ts,
-> +				in_ns ? "us" : "",
-> +				rel_ts > mark_thresh ? '!' :
-> +				  rel_ts > 1 ? '+' : ' ');
-> +	}
-> +	return ret;
->  }
->  
->  int trace_print_context(struct trace_iterator *iter)
->  {
->  	struct trace_seq *s = &iter->seq;
->  	struct trace_entry *entry = iter->ent;
-> -	unsigned long long t = ns2usecs(iter->ts);
-> -	unsigned long usec_rem = do_div(t, USEC_PER_SEC);
-> -	unsigned long secs = (unsigned long)t;
-> +	unsigned long long t;
-> +	unsigned long secs, usec_rem;
->  	char comm[TASK_COMM_LEN];
->  	int ret;
->  
-> @@ -644,8 +679,13 @@ int trace_print_context(struct trace_iterator *iter)
->  			return 0;
->  	}
->  
-> -	return trace_seq_printf(s, " %5lu.%06lu: ",
-> -				secs, usec_rem);
-> +	if (iter->iter_flags & TRACE_FILE_TIME_IN_NS) {
-> +		t = ns2usecs(iter->ts);
-> +		usec_rem = do_div(t, USEC_PER_SEC);
-> +		secs = (unsigned long)t;
-> +		return trace_seq_printf(s, "%5lu.%06lu: ", secs, usec_rem);
-> +	} else
-> +		return trace_seq_printf(s, "%12llu: ", iter->ts);
->  }
->  
->  int trace_print_lat_context(struct trace_iterator *iter)
-> @@ -659,36 +699,30 @@ int trace_print_lat_context(struct trace_iterator *iter)
->  			   *next_entry = trace_find_next_entry(iter, NULL,
->  							       &next_ts);
->  	unsigned long verbose = (trace_flags & TRACE_ITER_VERBOSE);
-> -	unsigned long abs_usecs = ns2usecs(iter->ts - iter->tr->time_start);
-> -	unsigned long rel_usecs;
-> +
-
-Is this adding an extra newline?
-
--- Steve
-
->  
->  	/* Restore the original ent_size */
->  	iter->ent_size = ent_size;
->  
->  	if (!next_entry)
->  		next_ts = iter->ts;
-> -	rel_usecs = ns2usecs(next_ts - iter->ts);
->  
->  	if (verbose) {
->  		char comm[TASK_COMM_LEN];
->  
->  		trace_find_cmdline(entry->pid, comm);
->  
-> -		ret = trace_seq_printf(s, "%16s %5d %3d %d %08x %08lx [%08llx]"
-> -				       " %ld.%03ldms (+%ld.%03ldms): ", comm,
-> -				       entry->pid, iter->cpu, entry->flags,
-> -				       entry->preempt_count, iter->idx,
-> -				       ns2usecs(iter->ts),
-> -				       abs_usecs / USEC_PER_MSEC,
-> -				       abs_usecs % USEC_PER_MSEC,
-> -				       rel_usecs / USEC_PER_MSEC,
-> -				       rel_usecs % USEC_PER_MSEC);
-> +		ret = trace_seq_printf(
-> +				s, "%16s %5d %3d %d %08x %08lx ",
-> +				comm, entry->pid, iter->cpu, entry->flags,
-> +				entry->preempt_count, iter->idx);
->  	} else {
->  		ret = lat_print_generic(s, entry, iter->cpu);
-> -		if (ret)
-> -			ret = lat_print_timestamp(s, abs_usecs, rel_usecs);
->  	}
->  
-> +	if (ret)
-> +		ret = lat_print_timestamp(iter, next_ts);
-> +
->  	return ret;
->  }
->  
-
-
+--Signature=_Wed__26_Sep_2012_07_48_27_+1000_k8PpY51A+D9WqnR5--
