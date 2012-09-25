@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab2IYKGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:06:24 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:48871 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753105Ab2IYKGV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:06:21 -0400
+	id S1754638Ab2IYKMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:12:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51817 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753105Ab2IYKMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 06:12:14 -0400
+Message-ID: <50618361.4070006@redhat.com>
+Date: Tue, 25 Sep 2012 12:11:45 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <50605CFB.5090402@gmail.com>
-References: <1346943430-18236-1-git-send-email-kishon@ti.com>
-	<1346943430-18236-2-git-send-email-kishon@ti.com>
-	<50605CFB.5090402@gmail.com>
-Date: Tue, 25 Sep 2012 15:36:20 +0530
-Message-ID: <CAAe_U6+2Vxd8F_JMafm41+0SnZSrZCa_9VKRbdB200BUHw5vEQ@mail.gmail.com>
-Subject: Re: [PATCH 1/5] drivers: usb: phy: add a new driver for omap usb2 phy
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: grant.likely@secretlab.ca, rob@landley.net, b-cousson@ti.com,
-        tony@atomide.com, linux@arm.linux.org.uk, balbi@ti.com,
-        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH RFC 2/2] kvm: Be courteous to other VMs in overcommitted
+ scenario in PLE handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue>     <20120921120019.27611.66093.sendpatchset@codeblue>     <50607BBE.8070507@redhat.com> <1348500861.11847.72.camel@twins>    <50607F9B.7090701@redhat.com> <1348501929.11847.81.camel@twins>   <50608323.9000603@redhat.com> <1348502757.11847.91.camel@twins>  <50608608.4000507@redhat.com> <1348503219.11847.98.camel@twins> <50608887.7050204@redhat.com>
+In-Reply-To: <50608887.7050204@redhat.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/24/2012 06:21 PM, Avi Kivity wrote:
+> On 09/24/2012 06:13 PM, Peter Zijlstra wrote:
+> > On Mon, 2012-09-24 at 18:10 +0200, Avi Kivity wrote:
+> >> > Its also still a LAPIC write -- disguised as an MSR though :/
+> >> 
+> >> It's probably a whole lot faster though. 
+> > 
+> > I've been told its not, I haven't tried it.
+>
+> I'll see if I can find a machine with it (don't see it on my Westmere,
+> it's probably on one of the Bridges.  Or maybe the other Peter knows.
+>
+>
 
-On Mon, Sep 24, 2012 at 6:45 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On 09/06/2012 09:57 AM, Kishon Vijay Abraham I wrote:
->> All phy related programming like enabling/disabling the clocks, powering
->> on/off the phy is taken care of by this driver. It is also used for OTG
->> related functionality like srp.
->>
->> This also includes device tree support for usb2 phy driver and
->> the documentation with device tree binding information is updated.
->>
->> Currently writing to control module register is taken care in this
->> driver which will be removed once the control module driver is in place.
->>
->> Cc: Felipe Balbi <balbi@ti.com>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>  Documentation/devicetree/bindings/usb/usb-phy.txt |   17 ++
->>  drivers/usb/phy/Kconfig                           |    9 +
->>  drivers/usb/phy/Makefile                          |    1 +
->>  drivers/usb/phy/omap-usb2.c                       |  271 +++++++++++++++++++++
->>  include/linux/usb/omap_usb.h                      |   46 ++++
->>  include/linux/usb/phy_companion.h                 |   34 +++
->>  6 files changed, 378 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/usb/usb-phy.txt
->>  create mode 100644 drivers/usb/phy/omap-usb2.c
->>  create mode 100644 include/linux/usb/omap_usb.h
->>  create mode 100644 include/linux/usb/phy_companion.h
->>
->> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
->> new file mode 100644
->> index 0000000..80d4148
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
->
-> This is a very generic name...
->
->> @@ -0,0 +1,17 @@
->> +USB PHY
->> +
->> +OMAP USB2 PHY
->> +
->> +Required properties:
->> + - compatible: Should be "ti,omap-usb2"
->
-> ...for a specific phy. However, I do think a generic binding to describe
-> host ctrlr to phy connections is needed.
->
->> + - reg : Address and length of the register set for the device. Also
->> +add the address of control module dev conf register until a driver for
->> +control module is added
->
-> The dts should describe the h/w, not what you need for the current
-> driver. The 2nd reg field does not belong here.
+Before measuring TSC_DEADLINE, I measured writing to TMICT, it costs 32
+cycles.  This is on a Sandy Bridge.
 
-Indeed. This was discussed and agreed upon as a interim solution till
-we have a control module driver in place to write to the control
-module register.
->
->> +
->> +This is usually a subnode of ocp2scp to which it is connected.
->
-> How is usb port to phy connection described?
-Currently the usb controller to phy connection is established only by
-type. We have a couple of patches being currently discussed in the
-list to establish the connection by phandle.
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-https://patchwork.kernel.org/patch/1457801/ (Generic PHY Framework:
-devm_of_phy_get())
-http://www.spinics.net/lists/linux-usb/msg69547.html
-
-Thanks
-Kishon
