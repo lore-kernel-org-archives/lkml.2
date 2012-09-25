@@ -1,70 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab2IYKQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:16:49 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:7790
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753105Ab2IYKQr (ORCPT
+	id S1754645Ab2IYKRn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:17:43 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34731 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab2IYKRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:16:47 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VPS-8(zzbb2dI98dI9371I936eI1432I4015I14ffIzz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
-X-WSS-ID: 0MAWHVH-02-1OQ-02
-X-M-MSG: 
-Date: Tue, 25 Sep 2012 12:16:28 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        <iommu@lists.linux-foundation.org>, <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Sept 24 (iommu)
-Message-ID: <20120925101628.GX2505@amd.com>
-References: <20120925005328.f748dfa3d077cebb345a4291@canb.auug.org.au>
- <5060D876.5030209@xenotime.net>
- <1348543405.2320.146.camel@ul30vt.home>
+	Tue, 25 Sep 2012 06:17:41 -0400
+Date: Tue, 25 Sep 2012 15:11:57 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: possible recursive locking in numasched code
+Message-ID: <20120925094157.GD18334@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1348543405.2320.146.camel@ul30vt.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092510-7408-0000-0000-000008C6B105
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 09:23:25PM -0600, Alex Williamson wrote:
-> On Mon, 2012-09-24 at 15:02 -0700, Randy Dunlap wrote:
-> > On 09/24/2012 07:53 AM, Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Today was a train wreck, with lots of new conflicts across several trees
-> > > and a few build failures as well.
-> > > 
-> > > Changes since 201209021:
-> > > 
-> > 
-> > 
-> > 
-> > on i386:
-> > 
-> > drivers/built-in.o: In function `iommu_group_remove_device':
-> > (.text+0x74cb10): multiple definition of `iommu_group_remove_device'
-> > arch/x86/built-in.o:(.text+0x140d0): first defined here
-> ...
-> 
-> 
-> Here's a patch to get it past this.  It still doesn't fully build, but
-> the rest isn't iommu related.  Thanks,
+Hi Peter,
 
-Applied, thanks.
+While running tests with patches for sched-numa rewrite posted at 
+http://permalink.gmane.org/gmane.linux.kernel/1335968, I 
+came across a possible recursive locking scenaio. 
 
--- 
-AMD Operating System Research Center
+Please see approaches and a possible patch to avoid the same.
+ 
+ ======================================================
+ [ INFO: possible circular locking dependency detected ]
+ 3.6.0-rc1-numasched_v2_100912+ #2 Not tainted
+ -------------------------------------------------------
+ gzip/54680 is trying to acquire lock:
+ (&p->pi_lock){-.-.-.}, at: [<ffffffff81078b08>] task_work_add+0x38/0xb0
+ 
+ but task is already holding lock:
+ (&rq->lock){-.-.-.}, at: [<ffffffff8108e203>] scheduler_tick+0x53/0x150
+ 
+ which lock already depends on the new lock.
+ 
+ 
+ the existing dependency chain (in reverse order) is:
+ 
+ -> #1 (&rq->lock){-.-.-.}:
+       [<ffffffff810be782>] lock_acquire+0xa2/0x130
+       [<ffffffff81551866>] _raw_spin_lock+0x36/0x70
+       [<ffffffff810903c7>] wake_up_new_task+0xa7/0x1c0
+       [<ffffffff8105259b>] do_fork+0xcb/0x380
+       [<ffffffff8101cef6>] kernel_thread+0x76/0x80
+       [<ffffffff81535036>] rest_init+0x26/0x160
+       [<ffffffff81ca6d93>] start_kernel+0x3b6/0x3c3
+       [<ffffffff81ca6356>] x86_64_start_reservations+0x131/0x136
+       [<ffffffff81ca645e>] x86_64_start_kernel+0x103/0x112
+ 
+ -> #0 (&p->pi_lock){-.-.-.}:
+       [<ffffffff810be478>] __lock_acquire+0x1428/0x1690
+       [<ffffffff810be782>] lock_acquire+0xa2/0x130
+       [<ffffffff81551a15>] _raw_spin_lock_irqsave+0x55/0xa0
+       [<ffffffff81078b08>] task_work_add+0x38/0xb0
+       [<ffffffff8109920f>] task_tick_numa+0xcf/0xe0
+       [<ffffffff81099fb9>] task_tick_fair+0x129/0x160
+       [<ffffffff8108e28e>] scheduler_tick+0xde/0x150
+       [<ffffffff81064dfe>] update_process_times+0x6e/0x90
+       [<ffffffff810b68d6>] tick_sched_timer+0x76/0xe0
+       [<ffffffff81084ec8>] __run_hrtimer+0x78/0x1b0
+       [<ffffffff810852a6>] hrtimer_interrupt+0x106/0x280
+       [<ffffffff8155cc39>] smp_apic_timer_interrupt+0x69/0x99
+       [<ffffffff8155bb2f>] apic_timer_interrupt+0x6f/0x80
+ 
+ other info that might help us debug this:
+ 
+ Possible unsafe locking scenario:
+ 
+       CPU0                    CPU1
+       ----                    ----
+  lock(&rq->lock);
+                               lock(&p->pi_lock);
+                               lock(&rq->lock);
+  lock(&p->pi_lock);
+ 
+ *** DEADLOCK ***
+ 
+ 1 lock held by gzip/54680:
+ #0:  (&rq->lock){-.-.-.}, at: [<ffffffff8108e203>] scheduler_tick+0x53/0x150
+ 
+ stack backtrace:
+ Pid: 54680, comm: gzip Not tainted 3.6.0-rc1-numasched_v2_100912+ #2
+ Call Trace:
+ <IRQ>  [<ffffffff810bbc6a>] print_circular_bug+0x21a/0x2f0
+ [<ffffffff810be478>] __lock_acquire+0x1428/0x1690
+ [<ffffffff81096ab8>] ? sched_clock_cpu+0xb8/0x110
+ [<ffffffff810be782>] lock_acquire+0xa2/0x130
+ [<ffffffff81078b08>] ? task_work_add+0x38/0xb0
+ [<ffffffff81096b7f>] ? local_clock+0x6f/0x80
+ [<ffffffff81551a15>] _raw_spin_lock_irqsave+0x55/0xa0
+ [<ffffffff81078b08>] ? task_work_add+0x38/0xb0
+ [<ffffffff81078b08>] task_work_add+0x38/0xb0
+ [<ffffffff8109920f>] task_tick_numa+0xcf/0xe0
+ [<ffffffff81099fb9>] task_tick_fair+0x129/0x160
+ [<ffffffff8108e28e>] scheduler_tick+0xde/0x150
+ [<ffffffff81064dfe>] update_process_times+0x6e/0x90
+ [<ffffffff810b68d6>] tick_sched_timer+0x76/0xe0
+ [<ffffffff81084ec8>] __run_hrtimer+0x78/0x1b0
+ [<ffffffff810b6860>] ? tick_setup_sched_timer+0x100/0x100
+ [<ffffffff810852a6>] hrtimer_interrupt+0x106/0x280
+ [<ffffffff8155cc39>] smp_apic_timer_interrupt+0x69/0x99
+ [<ffffffff8155bb2f>] apic_timer_interrupt+0x6f/0x80
+ <EOI>  [<ffffffff81552595>] ? retint_swapgs+0x13/0x1b
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
+
+So its clear that we are calling task_work_add from scheduler_tick.
+scheduler_tick has already taken rq->lock  and task_work_add needs to take
+the same rq->lock.
+
+I figured out that this deadlock can be resolved in more than one way.
+1. Add a new callback in sched_class. 
+	May be the cleanest but not sure if its worth adding a callback just
+for sched class.
+
+2. Have a modified task_work_add that assumes rq->lock is already taken.
+	We have to export such an interface and that seems risky if somebody
+unknowingly uses such an interface instead of main interface.
+
+3. Move the task_tick_numa to sleep/wakeup.
+	Not sure about the overheads.
+
+4. Move the call to task_tick_numa to outside the rq->lock.
+	Not a clean approach as in we end up calling a sched/fair.c defined
+function in sched/core.c explicitly.
+
+The below patch tries to implement 4th approach. 
+
+---
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date: Tue, 25 Sep 2012 02:37:55 -0700
+Subject: [PATCH] Dont call task_tick_numa while holding the rq->lock
+
+task_tick_numa() calls task_work_add() which also needs rq->lock.
+However task_tick_numa() gets called under rq->lock. This leads to 
+recursive locking. Avoid recursive locking by calling task_tick_numa()
+outside the rq->lock.
+
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 87b4601..5d496be 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3236,6 +3236,9 @@ void scheduler_tick(void)
+ 	curr->sched_class->task_tick(rq, curr, 0);
+ 	raw_spin_unlock(&rq->lock);
+ 
++	if (sched_feat_numa(NUMA) && curr->sched_class == &fair_sched_class)
++		task_tick_numa(rq, curr);
++
+ 	perf_event_task_tick();
+ 
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 85c8fb7..5f594a5 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5417,8 +5417,6 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
+ 		entity_tick(cfs_rq, se, queued);
+ 	}
+ 
+-	if (sched_feat_numa(NUMA))
+-		task_tick_numa(rq, curr);
+ }
+ 
+ /*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index deff28e..e4ea589 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -913,6 +913,7 @@ extern struct rt_bandwidth def_rt_bandwidth;
+ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
+ 
+ extern void update_idle_cpu_load(struct rq *this_rq);
++extern void task_tick_numa(struct rq *rq, struct task_struct *curr);
+ 
+ #ifdef CONFIG_CGROUP_CPUACCT
+ #include <linux/cgroup.h>
 
