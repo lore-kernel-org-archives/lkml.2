@@ -1,127 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab2IYGJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 02:09:23 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:53906 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab2IYGJV (ORCPT
+	id S1753131Ab2IYGJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 02:09:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64119 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab2IYGJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 02:09:21 -0400
-From: Prabhakar <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LDOC <linux-doc@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        VGER <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Landley <rob@landley.net>
-Subject: [PATCH v4] media: v4l2-ctrls: add control for test pattern
-Date: Tue, 25 Sep 2012 11:39:05 +0530
-Message-Id: <1348553345-14296-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 25 Sep 2012 02:09:26 -0400
+From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+To: hjk@hansjkoch.de, gregkh@linuxfoundation.org, magnus.damm@gmail.com,
+        horms@verge.net.au
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org, hdk@igel.co.jp,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Subject: [v2 PATCH 0/2] Add UIO device supporting dynamic memory allocation
+Date: Tue, 25 Sep 2012 15:09:10 +0900
+Message-Id: <1348553352-14334-1-git-send-email-dhobsong@igel.co.jp>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+Hello all,
 
-add V4L2_CID_TEST_PATTERN of type menu, which determines
-the internal test pattern selected by the device.
+I've been using this UIO driver for allocation/deallocation
+of memory regions through an IOMMU via the dma-mapping API, but
+it seems that it would be more generally useful for userspace drivers
+to access CMA memory regions. I've kept all dynamic memory handling in
+the specific device driver.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Rob Landley <rob@landley.net>
----
- This patches has one checkpatch warning for line over
- 80 characters altough it can be avoided I have kept it
- for consistency.
+The number and size of the dynamically allocatable regions is defined
+statically in the device platform data, and the actually memory is
+allocated and deallocated when the device is opened/closed.
 
- Changes for v4:
- 1: Fixed some grammar/style issues, pointed by Hans.
+Details of the dynamically allocated regions are available from sysfs in
+exactly the same was as for static regions. The total number of
+dynamic and static regions combined cannot exceed MAX_UIO_MAPS.
 
- Changes for v3:
- 1: Removed the menu for test pattern, pointed by Sakari.
+Changes from v1/RFC
 
- Changes for v2:
- 1: Included display devices in the description for test pattern
-   as pointed by Hans.
- 2: In the menu replaced 'Test Pattern Disabled' by 'Disabled' as
-   pointed by Sylwester.
- 3: Removed the test patterns from menu as the are hardware specific
-   as pointed by Sakari.
+* Add driver documentation to UIO HOWTO 
+* Remove sh7372 specific example code
 
- Documentation/DocBook/media/v4l/controls.xml |   10 ++++++++++
- drivers/media/v4l2-core/v4l2-ctrls.c         |    2 ++
- include/linux/videodev2.h                    |    1 +
- 3 files changed, 13 insertions(+), 0 deletions(-)
+Damian Hobson-Garcia (2):
+  Add new uio device for dynamic memory allocation
+  Add uio_dmem_genirq description to UIO documentation
 
-diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-index f0fb08d..5450d31 100644
---- a/Documentation/DocBook/media/v4l/controls.xml
-+++ b/Documentation/DocBook/media/v4l/controls.xml
-@@ -4313,6 +4313,16 @@ interface and may change in the future.</para>
- 	      </tbody>
- 	    </entrytbl>
- 	  </row>
-+	  <row>
-+	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
-+	    <entry>menu</entry>
-+	  </row>
-+	  <row id="v4l2-test-pattern">
-+	    <entry spanname="descr"> Some capture/display/sensor devices have
-+	    the capability to generate test pattern images. These hardware
-+	    specific test patterns can be used to test if a device is working
-+	    properly.</entry>
-+	  </row>
- 	<row><entry></entry></row>
- 	</tbody>
-       </tgroup>
-diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-index 8f2f40b..41b7732 100644
---- a/drivers/media/v4l2-core/v4l2-ctrls.c
-+++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-@@ -740,6 +740,7 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
- 	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
- 	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
-+	case V4L2_CID_TEST_PATTERN:		return "Test Pattern";
- 
- 	default:
- 		return NULL;
-@@ -841,6 +842,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_EXPOSURE_METERING:
- 	case V4L2_CID_SCENE_MODE:
- 	case V4L2_CID_DPCM_PREDICTOR:
-+	case V4L2_CID_TEST_PATTERN:
- 		*type = V4L2_CTRL_TYPE_MENU;
- 		break;
- 	case V4L2_CID_LINK_FREQ:
-diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index ca9fb78..7014c0b 100644
---- a/include/linux/videodev2.h
-+++ b/include/linux/videodev2.h
-@@ -2005,6 +2005,7 @@ enum v4l2_dpcm_predictor {
- 	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
- 	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
- };
-+#define V4L2_CID_TEST_PATTERN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
- 
- /*
-  *	T U N I N G
+ Documentation/DocBook/uio-howto.tmpl          |   55 ++++
+ drivers/uio/Kconfig                           |   16 ++
+ drivers/uio/Makefile                          |    1 +
+ drivers/uio/uio_dmem_genirq.c                 |  354 +++++++++++++++++++++++++
+ include/linux/platform_data/uio_dmem_genirq.h |   26 ++
+ 6 files changed, 466 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/uio/uio_dmem_genirq.c
+ create mode 100644 include/linux/platform_data/uio_dmem_genirq.h
+
 -- 
-1.7.4.1
+1.7.5.4
 
