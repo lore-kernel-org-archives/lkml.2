@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab2IYPQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 11:16:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40349 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754361Ab2IYPQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 11:16:31 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: hpa@zytor.com
-Subject: Re: [PATCH 2/6] X86 ACPI: Introduce x86 arch specific arch_reserve_mem_area() for e820 handling
-Date: Tue, 25 Sep 2012 17:12:17 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.20-desktop; KDE/4.6.0; x86_64; ; )
-Cc: lenb@kernel.org, initramfs@vger.kernel.org, robert.moore@intel.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        yinghai@kernel.org
-References: <1348584961-1476-1-git-send-email-trenn@suse.de> <1348584961-1476-3-git-send-email-trenn@suse.de>
-In-Reply-To: <1348584961-1476-3-git-send-email-trenn@suse.de>
+	id S1756514Ab2IYPUV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 11:20:21 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44486 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab2IYPUU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 11:20:20 -0400
+Date: Tue, 25 Sep 2012 08:20:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Lan Tianyu <lantianyu1986@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Question about dev_uevent_filter
+Message-ID: <20120925152016.GG18777@kroah.com>
+References: <5061CA27.7060006@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209251712.17678.trenn@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5061CA27.7060006@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 25, 2012 04:55:57 PM Thomas Renninger wrote:
-> This is needed for ACPI table overriding via initrd. Beside reserving
-> memblocks, X86 also requires to flag the memory area to E820_RESERVED or
-> E820_ACPI in the e820 mappings to be able to io(re)map it later.
-...
+On Tue, Sep 25, 2012 at 11:13:43PM +0800, Lan Tianyu wrote:
+> 
+> hi Greg:
 
-> index 4f2a762..bf6a0ad 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -430,4 +430,13 @@ acpi_status acpi_os_prepare_sleep(u8 sleep_state,
->  #define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
->  #endif
->  
-> +#if CONFIG_X86
-> +void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
-> +#else
-> +static inline void void arch_reserve_mem_area(acpi_physical_address addr,
+[linux-usb added as it concerns them as well]
 
-Argh: ...void void... 
-I made sure every single patch compiles, so that no typo slips
-in, I haven't compiled it on an other arch and there ... a typo
-slipped in.
+> 	I find only devices which has bus_type or class can add uevent callback
+> and output the uevent information. This is because the dev_uevent_filter just return
+> true for these devices. But some device may not have class and bus_type.
+> e.g usb endpoint, if we assigned them to usb_bus_type, device core will
+> try to create sysfs directory link under /sys/bus/usb. But endpoint sysfs
+> directory's name are same for each usb devices.e.g ep_00, every usb device will
+> create the endpoint. So in this situation, we can't assign usb endpoint to
+> usb_bus_type. So even if uevent callback was added and with some information,
+> it still couldn't output anything. Can we add dev->type check in the
+> dev_uevent_filter() and return 1 if type exits?
 
-Can this get manually fixed?
-Tell me and I can also resend.
+Wait, why do you want a uevent for a USB endpoint?  What is the problem
+you are trying to solve here?
 
-    Thomas
-
-
+greg k-h
