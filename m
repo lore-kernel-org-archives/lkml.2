@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab2IYCrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 22:47:35 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53681 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab2IYCre (ORCPT
+	id S1752467Ab2IYCtd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 22:49:33 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:52564 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752118Ab2IYCtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 22:47:34 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-d5-50611b44b2ee
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH] perf session: Add perf_session__delete_env
-Date: Tue, 25 Sep 2012 11:39:08 +0900
-Message-Id: <1348540748-4750-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 24 Sep 2012 22:49:32 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/bSXg6YVrbVQZ/9/QeXPtbEp2vgNNzsMtGC15mYa
+	mS6aYe36b4jgRX
+Message-ID: <1348541366.7100.39.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Tue, 25 Sep 2012 04:49:26 +0200
+In-Reply-To: <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+References: <20120914212717.GA29307@liondog.tnic>
+	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	 <20120924150048.GB11266@suse.de> <1348500647.11847.69.camel@twins>
+	 <CA+55aFy5C-gFs6ZU5LyyVN=oxpuoaOpydkbJbhri215QkLx3aA@mail.gmail.com>
+	 <1348503163.11847.97.camel@twins>
+	 <CA+55aFzU2QOgexc2cpEkWqPBw6wPJMBuUzRyxTxu=rxZV_ay3A@mail.gmail.com>
+	 <1348505683.11847.111.camel@twins>
+	 <1348511193.6951.44.camel@marge.simpson.net>
+	 <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
+	 <20120924192056.GB4082@liondog.tnic>
+	 <1348538258.7100.23.camel@marge.simpson.net>
+	 <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, 2012-09-24 at 19:11 -0700, Linus Torvalds wrote:
 
-The perf session environment information was saved (so allocated)
-during perf_session__open, but was not freed.  As free(3) handles NULL
-pointer input properly it won't cause a issue for writing modes -
-e.g. perf record.
+> In the not-so-distant past, we had the intel "Dunnington" Xeon, which
+> was iirc basically three Core 2 duo's bolted together (ie three
+> clusters of two cores sharing L2, and a fully shared L3). So that was
+> a true multi-core with fairly big shared L2, and it really would be
+> sad to not use the second core aggressively.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/session.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+Ah.  That's what I did to select_idle_sibling() in a nutshell, converted
+the problematic large L3 packages into multiple ~core2duo pairs, modulo
+shared L2 'course.  Bounce proof, and on Westmere, the jabbering back
+and forth in L3 somehow doesn't hurt as much as expected, so the things
+act (more or less, L2 traffic _does_ matter;) like the real deal.
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 3049b0ae7003..568037750d12 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -204,11 +204,30 @@ static void perf_session__delete_threads(struct perf_session *session)
- 	machine__delete_threads(&session->host_machine);
- }
- 
-+static void perf_session__delete_env(struct perf_session *self)
-+{
-+	struct perf_session_env *env = &self->header.env;
-+
-+	free(env->hostname);
-+	free(env->os_release);
-+	free(env->version);
-+	free(env->arch);
-+	free(env->cpu_desc);
-+	free(env->cpuid);
-+
-+	free(env->cmdline);
-+	free(env->sibling_cores);
-+	free(env->sibling_threads);
-+	free(env->numa_nodes);
-+	free(env->pmu_mappings);
-+}
-+
- void perf_session__delete(struct perf_session *self)
- {
- 	perf_session__destroy_kernel_maps(self);
- 	perf_session__delete_dead_threads(self);
- 	perf_session__delete_threads(self);
-+	perf_session__delete_env(self);
- 	machine__exit(&self->host_machine);
- 	close(self->fd);
- 	free(self);
--- 
-1.7.11.4
+-Mike
 
