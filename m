@@ -1,50 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab2IYHCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 03:02:37 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50639 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab2IYHCe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 03:02:34 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, sachin.kamat@linaro.org,
-        patches@linaro.org
-Subject: [PATCH] extcon: Fix return value in extcon_register_interest()
-Date: Tue, 25 Sep 2012 12:28:55 +0530
-Message-Id: <1348556335-14686-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753406Ab2IYHCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 03:02:50 -0400
+Received: from ares07.inai.de ([5.9.24.206]:38607 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097Ab2IYHCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 03:02:48 -0400
+Date: Tue, 25 Sep 2012 09:02:47 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Dave Yost <Dave@Yost.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: RFE: tty color features
+In-Reply-To: <D1425869-534B-4AD9-BF2E-956A76E29894@Yost.com>
+Message-ID: <alpine.LNX.2.01.1209250901040.25195@nerf07.vanv.qr>
+References: <D1425869-534B-4AD9-BF2E-956A76E29894@Yost.com>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return the value obtained from extcon_find_cable_index()
-instead of -ENODEV.
+On Tuesday 2012-09-25 08:01, Dave Yost wrote:
 
-Fixes the following smatch info:
-drivers/extcon/extcon-class.c:478 extcon_register_interest() info:
-why not propagate 'obj->cable_index' from extcon_find_cable_index()
-instead of -19?
+>It would be nice to be able to specify fg/bg colors at the tty level, 
+>so that echoed characters can be colorized.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/extcon/extcon-class.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index 946a318..e996800 100644
---- a/drivers/extcon/extcon-class.c
-+++ b/drivers/extcon/extcon-class.c
-@@ -475,7 +475,7 @@ int extcon_register_interest(struct extcon_specific_cable_nb *obj,
- 
- 	obj->cable_index = extcon_find_cable_index(obj->edev, cable_name);
- 	if (obj->cable_index < 0)
--		return -ENODEV;
-+		return obj->cable_index;
- 
- 	obj->user_nb = nb;
- 
--- 
-1.7.4.1
+The tty layer does not know what $TERM is used, so it cannot reliably 
+produce any codes. But you can edit GNU screen because it has that 
+knowledge and the fds.
 
