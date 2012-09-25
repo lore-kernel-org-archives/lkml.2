@@ -1,117 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2IYSI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 14:08:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab2IYSI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 14:08:28 -0400
-Date: Tue, 25 Sep 2012 15:07:49 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v10 3/5] virtio_balloon: introduce migration primitives
- to balloon pages
-Message-ID: <20120925180749.GB1638@optiplex.redhat.com>
-References: <cover.1347897793.git.aquini@redhat.com>
- <39738cbd4b596714210e453440833db7cca73172.1347897793.git.aquini@redhat.com>
- <20120925004024.GA22665@redhat.com>
+	id S1753502Ab2IYSLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 14:11:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35982 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab2IYSLh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 14:11:37 -0400
+Message-ID: <5061F3D2.6050502@kernel.dk>
+Date: Tue, 25 Sep 2012 20:11:30 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120925004024.GA22665@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Mikulas Patocka <mpatocka@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>,
+        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
+        lwoodman@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>
+Subject: Re: [PATCH 0/4] Fix a crash when block device is read and block size
+ is changed at the same time
+References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com> <x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com> <Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com> <x49k3xzq3jc.fsf@segfault.boston.devel.redhat.com> <Pine.LNX.4.64.1207281236230.30415@file.rdu.redhat.com> <Pine.LNX.4.64.1207281240270.30415@file.rdu.redhat.com> <1343508252.2626.13184.camel@edumazet-glaptop> <Pine.LNX.4.64.1207290107460.29910@file.rdu.redhat.com> <1343556630.2626.13257.camel@edumazet-glaptop> <1343586962.2626.13266.camel@edumazet-glaptop> <Pine.LNX.4.64.1208011601280.21832@file.rdu.redhat.com> <Pine.LNX.4.64.1208311433480.2212@file.rdu.redhat.com> <Pine.LNX.4.64.1208311518340.16960@file.rdu.redhat.com> <x49liguyg6r.fsf@segfault.boston.devel.redhat.com> <x49wqzswdn3.fsf@segfault.boston.devel.redhat.com> <Pine.LNX.4.64.1209181257410.11735@file.rdu.redhat.com> <x49ehlzrt01.fsf@segfault.boston.devel.redhat.com> <x49sja6ouv4.fsf@segfault.boston.devel.redhat.com> <5061F0E6.5000403@kernel.dk>
+In-Reply-To: <5061F0E6.5000403@kernel.dk>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 02:40:24AM +0200, Michael S. Tsirkin wrote:
-> > @@ -139,9 +158,15 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
-> >  			break;
-> >  		}
-> >  		set_page_pfns(vb->pfns + vb->num_pfns, page);
-> > -		vb->num_pages += VIRTIO_BALLOON_PAGES_PER_PAGE;
-> >  		totalram_pages--;
-> > +
-> > +		BUG_ON(!trylock_page(page));
+On 2012-09-25 19:59, Jens Axboe wrote:
+> On 2012-09-25 19:49, Jeff Moyer wrote:
+>> Jeff Moyer <jmoyer@redhat.com> writes:
+>>
+>>> Mikulas Patocka <mpatocka@redhat.com> writes:
+>>>
+>>>> Hi Jeff
+>>>>
+>>>> Thanks for testing.
+>>>>
+>>>> It would be interesting ... what happens if you take the patch 3, leave 
+>>>> "struct percpu_rw_semaphore bd_block_size_semaphore" in "struct 
+>>>> block_device", but remove any use of the semaphore from fs/block_dev.c? - 
+>>>> will the performance be like unpatched kernel or like patch 3? It could be 
+>>>> that the change in the alignment affects performance on your CPU too, just 
+>>>> differently than on my CPU.
+>>>
+>>> It turns out to be exactly the same performance as with the 3rd patch
+>>> applied, so I guess it does have something to do with cache alignment.
+>>> Here is the patch (against vanilla) I ended up testing.  Let me know if
+>>> I've botched it somehow.
+>>>
+>>> So, I next up I'll play similar tricks to what you did (padding struct
+>>> block_device in all kernels) to eliminate the differences due to
+>>> structure alignment and provide a clear picture of what the locking
+>>> effects are.
+>>
+>> After trying again with the same padding you used in the struct
+>> bdev_inode, I see no performance differences between any of the
+>> patches.  I tried bumping up the number of threads to saturate the
+>> number of cpus on a single NUMA node on my hardware, but that resulted
+>> in lower IOPS to the device, and hence consumption of less CPU time.
+>> So, I believe my results to be inconclusive.
+>>
+>> After talking with Vivek about the problem, he had mentioned that it
+>> might be worth investigating whether bd_block_size could be protected
+>> using SRCU.  I looked into it, and the one thing I couldn't reconcile is
+>> updating both the bd_block_size and the inode->i_blkbits at the same
+>> time.  It would involve (afaiui) adding fields to both the inode and the
+>> block_device data structures and using rcu_assign_pointer  and
+>> rcu_dereference to modify and access the fields, and both fields would
+>> need to protected by the same struct srcu_struct.  I'm not sure whether
+>> that's a desirable approach.  When I started to implement it, it got
+>> ugly pretty quickly.  What do others think?
+>>
+>> For now, my preference is to get the full patch set in.  I will continue
+>> to investigate the performance impact of the data structure size changes
+>> that I've been seeing.
+>>
+>> So, for the four patches:
+>>
+>> Acked-by: Jeff Moyer <jmoyer@redhat.com>
+>>
+>> Jens, can you have a look at the patch set?  We are seeing problem
+>> reports of this in the wild[1][2].
 > 
-> So here page lock is nested within balloon_lock.
-> 
-This page is coming from Buddy free-lists and as such, fill_balloon does not
-race against page migration (which takes pages from an already isolated page list).
-We need to grab page lock here, to prevent page isolation from happening while
-this page is yet under "balloon insertion" step (mapping assign). Also, failing
-to grab the page lock here (remember this page is coming from Buddy) means a
-BUG.
+> I'll queue it up for 3.7. I can run my regular testing on the 8-way, it
+> has a nack for showing scaling problems very nicely in aio/dio. As long
+> as we're not adding per-inode cache line dirtying per IO (and the
+> per-cpu rw sem looks OK), then I don't think there's too much to worry
+> about.
 
-I'll make sure to comment that on the code. Thanks for the nit.
+I take that back. The series doesn't apply to my current tree. Not too
+unexpected, since it's some weeks old. But more importantly, please send
+this is a "real" patch series. I don't want to see two implementations
+of rw semaphores. I think it's perfectly fine to first do a regular rw
+sem, then a last patch adding the cache friendly variant from Eric and
+converting to that.
 
-> > +int virtballoon_migratepage(struct address_space *mapping,
-> > +		struct page *newpage, struct page *page, enum migrate_mode mode)
-> > +{
-> > +	struct virtio_balloon *vb = __page_balloon_device(page);
-> > +
-> > +	BUG_ON(!vb);
-> > +
-> > +	mutex_lock(&vb->balloon_lock);
-> 
-> 
-> While here balloon_lock is taken and according to documentation
-> this is called under page lock.
-> 
-> So nesting is reversed which is normally a problem.
-> Unfortunately lockep does not seem to work for page lock
-> otherwise it would detect this.
-> If this reversed nesting is not a problem, please add
-> comments in code documenting that this is intentional
-> and how it works.
->
+In other words, get rid of 3/4.
 
-The scheme works because we do not invert the page locking, actually. If we
-stumble accross a locked page while holding mutex(balloon_lock) we just give up
-that page for that round. The comment @ __leak_balloon explains that already:
-----
-+               /*
-+                * Grab the page lock to avoid racing against threads isolating
-+                * pages from, or migrating pages back to vb->pages list.
-+                * (both tasks are done under page lock protection)
-+                *
-+                * Failing to grab the page lock here means this page is being
-+                * isolated already, or its migration has not finished yet.
-+                *
-+                * We simply cannot afford to keep waiting on page lock here,
-+                * otherwise we might cause a lock inversion and remain dead-
-+                * locked with threads isolating/migrating pages.
-+                * So, we give up this round if we fail to grab the page lock.
-+                */
-+               if (!trylock_page(page))
-+                       break;
-----
-
-The otherwise is true as well. If the thread trying to isolate pages stumbles
-across a balloon page already locked at leak_balloon, it gives up the isolation
-step and mutex(&balloon_lock) is never attempted down the code path. Check this
-isolate_balloon_page() snippet out:
-----
-+               /*
-+                * As balloon pages are not isolated from LRU lists, concurrent
-+                * compaction threads can race against page migration functions
-+                * move_to_new_page() & __unmap_and_move().
-+                * In order to avoid having an already isolated balloon page
-+                * being (wrongly) re-isolated while it is under migration,
-+                * lets be sure we have the page lock before proceeding with
-+                * the balloon page isolation steps.
-+                */
-+               if (likely(trylock_page(page))) {
-----
-
-I'll rework the comment to indicate the leak_balloon() case as well.
+-- 
+Jens Axboe
 
