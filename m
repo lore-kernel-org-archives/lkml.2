@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab2IYS1C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 14:27:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39765 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364Ab2IYS1A (ORCPT
+	id S1754407Ab2IYS2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 14:28:11 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63799 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab2IYS2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 14:27:00 -0400
-Date: Tue, 25 Sep 2012 11:26:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jongman Heo <jongman.heo@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at kernel/workqueue.c:1066 try_to_grab_pending
-Message-ID: <20120925182655.GE16296@google.com>
-References: <11797276.450191347588444054.JavaMail.weblogic@epml12>
- <20120925105147.GC5368@mwanda>
+	Tue, 25 Sep 2012 14:28:09 -0400
+Message-ID: <5061F7C7.7060107@gmail.com>
+Date: Tue, 25 Sep 2012 20:28:23 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120925105147.GC5368@mwanda>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: paulmck@linux.vnet.ibm.com, Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+References: <20120922155613.GB2934@linux.vnet.ibm.com> <505DFA65.3080805@gmail.com> <20120922212735.GG2934@linux.vnet.ibm.com> <20120923002105.GA1112@linux.vnet.ibm.com> <505EA09B.6040105@gmail.com> <CAFTL4hwqzS8iO2zOOGaizzMtT85MJExTxEgGbponJ4_gfv0nwA@mail.gmail.com> <5060E31B.3070203@gmail.com> <5060E498.7030003@gmail.com> <CAFTL4hzVSBkcDRnzvpmXyBHqydqy=nJxdMtjUHrvR8MwN_M0jQ@mail.gmail.com> <5060E863.6020006@gmail.com> <20120925120549.GC2310@somewhere.redhat.com>
+In-Reply-To: <20120925120549.GC2310@somewhere.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 01:51:47PM +0300, Dan Carpenter wrote:
-> Added Tejun to the CC list.
+On 09/25/2012 02:06 PM, Frederic Weisbecker wrote:
+> Sasha, sorry to burden you with more testing request.
+> Could you please try out this new branch? It includes some fixes after Wu Fenguang and
+> Dan Carpenter reports (not related to your warnings though) and a patch on the top
+> of the pile to ensure I diagnosed well the problem, which return immediately from
+> rcu_user_*() APIs if we are in an interrupt.
 > 
-> regards,
-> dan carpenter
+> This way we'll have a clearer view. I also would like to know if there are other
+> problems with the rcu user mode.
 > 
-> On Fri, Sep 14, 2012 at 02:07:24AM +0000, Jongman Heo wrote:
-> > 
-> > Hi Guys,
-> > 
-> > I hit this warning with current linus + for-next branch of wq.git, running Fedora 17 on VMWare linux guest.
+> Thanks!
 
-The WARN is spurious.  Already removed in wq/for-3.7.  Forgot to push
-out.
+Alrighty, I don't see any warnings anymore.
 
-Thanks!
+I'll keep everything running just in case.
 
--- 
-tejun
+
+Thanks,
+Sasha
