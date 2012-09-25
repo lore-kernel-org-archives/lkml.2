@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab2IYI6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 04:58:00 -0400
+	id S1754412Ab2IYI6U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 04:58:20 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:53882 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132Ab2IYI5y (ORCPT
+	with ESMTP id S1754222Ab2IYI56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 04:57:54 -0400
+	Tue, 25 Sep 2012 04:57:58 -0400
 From: Inderpal Singh <inderpal.singh@linaro.org>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: jassisinghbrar@gmail.com, boojin.kim@samsung.com, vinod.koul@intel.com,
         patches@linaro.org, kgene.kim@samsung.com
-Subject: [PATCH 2/3] DMA: PL330: Change allocation method to properly free DMA descriptors
-Date: Tue, 25 Sep 2012 14:27:35 +0530
-Message-Id: <1348563456-30569-3-git-send-email-inderpal.singh@linaro.org>
+Subject: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
+Date: Tue, 25 Sep 2012 14:27:36 +0530
+Message-Id: <1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
 References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
@@ -21,99 +21,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In probe, memory for multiple DMA descriptors were being allocated at once
-and then it was being split and added into DMA pool one by one. The address
-of this memory allocation is not being saved anywhere. To free this memory,
-the address is required. Initially the first node of the pool will be
-pointed by this address but as we use this pool the descs will shuffle and
-hence we will lose the track of the address.
-
-This patch does following:
-
-1. Allocates DMA descs one by one and then adds them to pool so that all
-   descs can be fetched and memory freed one by one. This way runtime
-   added descs can also be freed.
-2. Free DMA descs in case of error in probe and in module's remove function
+Since peripheral channel resources are not being allocated at probe,
+no need to flush the channels and free the resources in remove function.
 
 Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
 ---
- drivers/dma/pl330.c |   28 +++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+ drivers/dma/pl330.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
 diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 10c6b6a..04d83e6 100644
+index 04d83e6..6f06080 100644
 --- a/drivers/dma/pl330.c
 +++ b/drivers/dma/pl330.c
-@@ -2541,20 +2541,19 @@ static int add_desc(struct dma_pl330_dmac *pdmac, gfp_t flg, int count)
- 	if (!pdmac)
- 		return 0;
+@@ -3012,16 +3012,10 @@ static int __devexit pl330_remove(struct amba_device *adev)
  
--	desc = kmalloc(count * sizeof(*desc), flg);
--	if (!desc)
--		return 0;
+ 	/* Idle the DMAC */
+ 	list_for_each_entry_safe(pch, _p, &pdmac->ddma.channels,
+-			chan.device_node) {
 -
- 	spin_lock_irqsave(&pdmac->pool_lock, flags);
++			chan.device_node)
+ 		/* Remove the channel */
+ 		list_del(&pch->chan.device_node);
  
- 	for (i = 0; i < count; i++) {
--		_init_desc(&desc[i]);
--		list_add_tail(&desc[i].node, &pdmac->desc_pool);
-+		desc = kmalloc(sizeof(*desc), flg);
-+		if (!desc)
-+			break;
-+		_init_desc(desc);
-+		list_add_tail(&desc->node, &pdmac->desc_pool);
- 	}
- 
- 	spin_unlock_irqrestore(&pdmac->pool_lock, flags);
- 
--	return count;
-+	return i;
- }
- 
- static struct dma_pl330_desc *
-@@ -2857,6 +2856,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	struct dma_pl330_platdata *pdat;
- 	struct dma_pl330_dmac *pdmac;
- 	struct dma_pl330_chan *pch;
-+	struct dma_pl330_desc *desc;
- 	struct pl330_info *pi;
- 	struct dma_device *pd;
- 	struct resource *res;
-@@ -2978,6 +2978,12 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- probe_err5:
- 	kfree(pdmac->peripherals);
- probe_err4:
-+	while (!list_empty(&pdmac->desc_pool)) {
-+		desc = list_entry(pdmac->desc_pool.next,
-+				struct dma_pl330_desc, node);
-+		list_del(&desc->node);
-+		kfree(desc);
-+	}
- 	pl330_del(pi);
- probe_err3:
- 	free_irq(irq, pi);
-@@ -2994,6 +3000,7 @@ static int __devexit pl330_remove(struct amba_device *adev)
- {
- 	struct dma_pl330_dmac *pdmac = amba_get_drvdata(adev);
- 	struct dma_pl330_chan *pch, *_p;
-+	struct dma_pl330_desc *desc;
- 	struct pl330_info *pi;
- 	struct resource *res;
- 	int irq;
-@@ -3015,6 +3022,13 @@ static int __devexit pl330_remove(struct amba_device *adev)
- 		pl330_free_chan_resources(&pch->chan);
- 	}
- 
-+	while (!list_empty(&pdmac->desc_pool)) {
-+		desc = list_entry(pdmac->desc_pool.next,
-+				struct dma_pl330_desc, node);
-+		list_del(&desc->node);
-+		kfree(desc);
-+	}
-+
- 	pi = &pdmac->pif;
- 
- 	pl330_del(pi);
+-		/* Flush the channel */
+-		pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+-		pl330_free_chan_resources(&pch->chan);
+-	}
+-
+ 	while (!list_empty(&pdmac->desc_pool)) {
+ 		desc = list_entry(pdmac->desc_pool.next,
+ 				struct dma_pl330_desc, node);
 -- 
 1.7.9.5
 
