@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2IYLUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:20:32 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:53040 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab2IYLU2 (ORCPT
+	id S1755576Ab2IYLUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:20:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45505 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754777Ab2IYLUh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:20:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <cover.1348568074.git.viresh.kumar@linaro.org>
-References: <viresh.kumar@linaro.org>
-	<cover.1348568074.git.viresh.kumar@linaro.org>
-Date: Tue, 25 Sep 2012 16:50:27 +0530
-Message-ID: <CAKohponU76A55RH39pBhmiAsk=GT2yT_G4L5gw6fbpZjODHNPA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Create sched_select_cpu() and use it in workqueues
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, peterz@infradead.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Arvind.Chauhan@arm.com,
-        amit.kucheria@linaro.org, vincent.guittot@linaro.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Sep 2012 07:20:37 -0400
+Message-ID: <1348572025.3881.17.camel@twins>
+Subject: Re: [BUG] perf/x86: Intel uncore_pmu_to_box() local variable typo
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Date: Tue, 25 Sep 2012 13:20:25 +0200
+In-Reply-To: <CABPqkBQkXtBKJUQX1czwyVAFMvro4akvfpAvLyStPLzntdZhuQ@mail.gmail.com>
+References: <CABPqkBQkXtBKJUQX1czwyVAFMvro4akvfpAvLyStPLzntdZhuQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2012 16:06, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Test case 2:
-> -----------
-> I have created a small module, which does following:
-> - Create one work for each CPU (using queue_work_on(), so must schedule on that
->   cpu)
-> - Above work, will queue "n" works for each cpu with queue_work(). These works
->   are tracked within the module and results are printed at the end.
->
-> This gave similar results, with n ranging from 10 to 1000.
->
+On Tue, 2012-09-25 at 12:44 +0200, Stephane Eranian wrote:
+> Hi,
+> 
+> I don't understand why the local variable box needs to
+> be declared static here:
+> 
+> static struct intel_uncore_box *
+> uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+> {
+>         static struct intel_uncore_box *box;
+> 
+>         box = *per_cpu_ptr(pmu->box, cpu);
+>         if (box)
+>                 return box;
+>         ....
+> }
 
-http://git.linaro.org/gitweb?p=people/vireshk/module.git;a=summary
-
-Source of this module can be found at above repo.
-
---
-viresh
+Uhmm.. me neither.. that looks like a bug indeed.
