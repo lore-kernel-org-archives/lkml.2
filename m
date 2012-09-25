@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534Ab2IYWPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 18:15:14 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:39094 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab2IYWPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 18:15:12 -0400
-Date: Tue, 25 Sep 2012 15:15:08 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tj@kernel.org, axboe@kernel.dk, vgoyal@redhat.com
-Subject: Re: [dm-devel] [PATCH v3 11/26] block: Add submit_bio_wait(), remove
- from md
-Message-ID: <20120925221508.GD22647@google.com>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
- <1348526106-17074-12-git-send-email-koverstreet@google.com>
- <5061464B.4090002@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5061464B.4090002@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751615Ab2IYWRj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 18:17:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59458 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750908Ab2IYWRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 18:17:37 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: andi@firstfloor.org
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ben@decadent.org.uk
+Subject: [PATCH] kbuild: Do not package /boot and /lib in make tar-pkg
+Date: Wed, 26 Sep 2012 00:17:25 +0200
+Message-Id: <1348611445-11501-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20120912031646.GV16230@one.firstfloor.org>
+References: <20120912031646.GV16230@one.firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 07:51:07AM +0200, Hannes Reinecke wrote:
-> On 09/25/2012 12:34 AM, Kent Overstreet wrote:
-> > +/**
-> > + * submit_bio_wait - submit a bio, and wait until it completes
-> > + * @rw: whether to %READ or %WRITE, or maybe to %READA (read ahead)
-> > + * @bio: The &struct bio which describes the I/O
-> > + *
-> > + * Simple wrapper around submit_bio(). Returns 0 on success, or the error from
-> > + * bio_endio() on failure.
-> > + */
-> > +int submit_bio_wait(int rw, struct bio *bio)
-> > +{
-> > +	struct submit_bio_ret ret;
-> > +
-> > +	rw |= REQ_SYNC;
-> > +	init_completion(&ret.event);
-> > +	bio->bi_private = &ret;
-> > +	bio->bi_end_io = submit_bio_wait_endio;
-> 
-> Hmm. As this is meant to be a generic function, blindly overwriting
-> the bi_end_io pointer doesn't look like a good idea; the caller
-> could have set something there.
-> 
-> Please add at least a WARN_ON(bio->bi_end_io) prior to modifying it.
+There were reports of users destroying their Fedora installs by a kernel
+tarball that replaces the /lib -> /usr/lib symlink. Let's remove the
+toplevel directories from the tarball to prevent this from happening.
 
-Nah, the general rule with bios is after it's completed anything
-could've been modified; we don't document or enforce otherwise with
-bi_end_io (and there's a fair amount of code that saves/sets bi_end_io,
-and I don't think it all restores the original before calling it).
-I'm not going to special case this unless we start documenting/enforcing
-it in general.
+Reported-by: Andi Kleen <andi@firstfloor.org>
+Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ arch/x86/Makefile        |    2 +-
+ scripts/Makefile.fwinst  |    4 ++--
+ scripts/package/buildtar |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-Besides that, setting a callback on something that's being used
-synchronously is just dumb. Personally, I make damn sure to read and
-understand code I'm using. I mean, maybe if this restriction was in the
-slightest way subtle, but... how else would submit_bio_wait() be
-implemented? It's kind of obvious if you think for two seconds about it.
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index c098ca4..b0c5276 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -138,7 +138,7 @@ KBUILD_CFLAGS += $(call cc-option,-mno-avx,)
+ KBUILD_CFLAGS += $(mflags-y)
+ KBUILD_AFLAGS += $(mflags-y)
+ 
+-archscripts: scripts_basic
++archscripts:
+ 	$(Q)$(MAKE) $(build)=arch/x86/tools relocs
+ 
+ ###
+diff --git a/scripts/Makefile.fwinst b/scripts/Makefile.fwinst
+index 4d908d1..c3f69ae 100644
+--- a/scripts/Makefile.fwinst
++++ b/scripts/Makefile.fwinst
+@@ -27,7 +27,7 @@ endif
+ installed-mod-fw := $(addprefix $(INSTALL_FW_PATH)/,$(mod-fw))
+ 
+ installed-fw := $(addprefix $(INSTALL_FW_PATH)/,$(fw-shipped-all))
+-installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/./
++installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/.
+ 
+ # Workaround for make < 3.81, where .SECONDEXPANSION doesn't work.
+ PHONY += $(INSTALL_FW_PATH)/$$(%) install-all-dirs
+@@ -42,7 +42,7 @@ quiet_cmd_install = INSTALL $(subst $(srctree)/,,$@)
+ $(installed-fw-dirs):
+ 	$(call cmd,mkdir)
+ 
+-$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $(INSTALL_FW_PATH)/$$(dir %)
++$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $$(dir $(INSTALL_FW_PATH)/%)
+ 	$(call cmd,install)
+ 
+ PHONY +=  __fw_install __fw_modinst FORCE
+diff --git a/scripts/package/buildtar b/scripts/package/buildtar
+index 8a7b155..d0d748e 100644
+--- a/scripts/package/buildtar
++++ b/scripts/package/buildtar
+@@ -109,7 +109,7 @@ esac
+ 	if tar --owner=root --group=root --help >/dev/null 2>&1; then
+ 		opts="--owner=root --group=root"
+ 	fi
+-	tar cf - . $opts | ${compress} > "${tarball}${file_ext}"
++	tar cf - boot/* lib/* $opts | ${compress} > "${tarball}${file_ext}"
+ )
+ 
+ echo "Tarball successfully created in ${tarball}${file_ext}"
+-- 
+1.7.3.1
+
