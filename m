@@ -1,130 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab2IYNJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 09:09:38 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64160 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756099Ab2IYNJg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 09:09:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1348563456-30569-3-git-send-email-inderpal.singh@linaro.org>
-References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
-	<1348563456-30569-3-git-send-email-inderpal.singh@linaro.org>
-Date: Tue, 25 Sep 2012 18:39:36 +0530
-Message-ID: <CABb+yY06kmPgrcv6-GyPmyKLo+ed90qJuakrYijacAD0k8wRYQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] DMA: PL330: Change allocation method to properly free
- DMA descriptors
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Inderpal Singh <inderpal.singh@linaro.org>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        boojin.kim@samsung.com, vinod.koul@intel.com, patches@linaro.org,
-        kgene.kim@samsung.com
-Content-Type: text/plain; charset=UTF-8
+	id S1756252Ab2IYNKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 09:10:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:32061 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753810Ab2IYNKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 09:10:53 -0400
+X-IronPort-AV: E=Sophos;i="4.80,482,1344182400"; 
+   d="scan'208";a="5914410"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com, mingo@kernel.org,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-numa@vger.kernel.org
+Subject: [PATCH v2 0/2] Update sched_domains_numa_masks when new cpus are onlined.
+Date: Tue, 25 Sep 2012 21:12:29 +0800
+Message-Id: <1348578751-16904-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/25 21:11:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/25 21:11:05,
+	Serialize complete at 2012/09/25 21:11:05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 2:27 PM, Inderpal Singh
-<inderpal.singh@linaro.org> wrote:
-> In probe, memory for multiple DMA descriptors were being allocated at once
-> and then it was being split and added into DMA pool one by one. The address
-> of this memory allocation is not being saved anywhere. To free this memory,
-> the address is required. Initially the first node of the pool will be
-> pointed by this address but as we use this pool the descs will shuffle and
-> hence we will lose the track of the address.
->
-> This patch does following:
->
-> 1. Allocates DMA descs one by one and then adds them to pool so that all
->    descs can be fetched and memory freed one by one. This way runtime
->    added descs can also be freed.
-> 2. Free DMA descs in case of error in probe and in module's remove function
->
-> Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
-> ---
->  drivers/dma/pl330.c |   28 +++++++++++++++++++++-------
->  1 file changed, 21 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index 10c6b6a..04d83e6 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -2541,20 +2541,19 @@ static int add_desc(struct dma_pl330_dmac *pdmac, gfp_t flg, int count)
->         if (!pdmac)
->                 return 0;
->
-> -       desc = kmalloc(count * sizeof(*desc), flg);
-> -       if (!desc)
-> -               return 0;
-> -
->         spin_lock_irqsave(&pdmac->pool_lock, flags);
->
->         for (i = 0; i < count; i++) {
-> -               _init_desc(&desc[i]);
-> -               list_add_tail(&desc[i].node, &pdmac->desc_pool);
-> +               desc = kmalloc(sizeof(*desc), flg);
-> +               if (!desc)
-> +                       break;
-> +               _init_desc(desc);
-> +               list_add_tail(&desc->node, &pdmac->desc_pool);
->         }
->
->         spin_unlock_irqrestore(&pdmac->pool_lock, flags);
->
-> -       return count;
-> +       return i;
->  }
->
-OK, but the kmalloc shouldn't be done with irqs disabled. Please
-protect only the list_add_tail()
+Once array sched_domains_numa_masks is defined, it is never updated.
+When a new cpu on a new node is onlined, the coincident member in
+sched_domains_numa_masks is not initialized, and all the masks are 0.
+As a result, the build_overlap_sched_groups() will initialize a NULL
+sched_group for the new cpu on the new node, which will lead to kernel panic.
 
-thanks.
+[ 3189.403280] Call Trace:
+[ 3189.403286]  [<ffffffff8106c36f>] warn_slowpath_common+0x7f/0xc0
+[ 3189.403289]  [<ffffffff8106c3ca>] warn_slowpath_null+0x1a/0x20
+[ 3189.403292]  [<ffffffff810b1d57>] build_sched_domains+0x467/0x470
+[ 3189.403296]  [<ffffffff810b2067>] partition_sched_domains+0x307/0x510
+[ 3189.403299]  [<ffffffff810b1ea2>] ? partition_sched_domains+0x142/0x510
+[ 3189.403305]  [<ffffffff810fcc93>] cpuset_update_active_cpus+0x83/0x90
+[ 3189.403308]  [<ffffffff810b22a8>] cpuset_cpu_active+0x38/0x70
+[ 3189.403316]  [<ffffffff81674b87>] notifier_call_chain+0x67/0x150
+[ 3189.403320]  [<ffffffff81664647>] ? native_cpu_up+0x18a/0x1b5
+[ 3189.403328]  [<ffffffff810a044e>] __raw_notifier_call_chain+0xe/0x10
+[ 3189.403333]  [<ffffffff81070470>] __cpu_notify+0x20/0x40
+[ 3189.403337]  [<ffffffff8166663e>] _cpu_up+0xe9/0x131
+[ 3189.403340]  [<ffffffff81666761>] cpu_up+0xdb/0xee
+[ 3189.403348]  [<ffffffff8165667c>] store_online+0x9c/0xd0
+[ 3189.403355]  [<ffffffff81437640>] dev_attr_store+0x20/0x30
+[ 3189.403361]  [<ffffffff8124aa63>] sysfs_write_file+0xa3/0x100
+[ 3189.403368]  [<ffffffff811ccbe0>] vfs_write+0xd0/0x1a0
+[ 3189.403371]  [<ffffffff811ccdb4>] sys_write+0x54/0xa0
+[ 3189.403375]  [<ffffffff81679c69>] system_call_fastpath+0x16/0x1b
+[ 3189.403377] ---[ end trace 1e6cf85d0859c941 ]---
+[ 3189.403398] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
 
->  static struct dma_pl330_desc *
-> @@ -2857,6 +2856,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->         struct dma_pl330_platdata *pdat;
->         struct dma_pl330_dmac *pdmac;
->         struct dma_pl330_chan *pch;
-> +       struct dma_pl330_desc *desc;
->         struct pl330_info *pi;
->         struct dma_device *pd;
->         struct resource *res;
-> @@ -2978,6 +2978,12 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->  probe_err5:
->         kfree(pdmac->peripherals);
->  probe_err4:
-> +       while (!list_empty(&pdmac->desc_pool)) {
-> +               desc = list_entry(pdmac->desc_pool.next,
-> +                               struct dma_pl330_desc, node);
-> +               list_del(&desc->node);
-> +               kfree(desc);
-> +       }
->         pl330_del(pi);
->  probe_err3:
->         free_irq(irq, pi);
-> @@ -2994,6 +3000,7 @@ static int __devexit pl330_remove(struct amba_device *adev)
->  {
->         struct dma_pl330_dmac *pdmac = amba_get_drvdata(adev);
->         struct dma_pl330_chan *pch, *_p;
-> +       struct dma_pl330_desc *desc;
->         struct pl330_info *pi;
->         struct resource *res;
->         int irq;
-> @@ -3015,6 +3022,13 @@ static int __devexit pl330_remove(struct amba_device *adev)
->                 pl330_free_chan_resources(&pch->chan);
->         }
->
-> +       while (!list_empty(&pdmac->desc_pool)) {
-> +               desc = list_entry(pdmac->desc_pool.next,
-> +                               struct dma_pl330_desc, node);
-> +               list_del(&desc->node);
-> +               kfree(desc);
-> +       }
-> +
->         pi = &pdmac->pif;
->
->         pl330_del(pi);
-> --
-> 1.7.9.5
->
+This patch registers a new notifier for cpu hotplug notify chain, and
+updates sched_domains_numa_masks every time a new cpu is onlined or offlined.
+
+
+Tang Chen (2):
+  Ensure sched_domains_numa_levels safe in other functions.
+  Update sched_domains_numa_masks when new cpus are onlined.
+
+ kernel/sched/core.c |   69 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 69 insertions(+)
+
+-- 
+1.7.10.1
+
