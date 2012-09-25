@@ -1,47 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab2IYLma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:42:30 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45882 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab2IYLm3 (ORCPT
+	id S1755749Ab2IYLoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:44:04 -0400
+Received: from ams-iport-4.cisco.com ([144.254.224.147]:53485 "EHLO
+	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755444Ab2IYLoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:42:29 -0400
-Date: Tue, 25 Sep 2012 15:42:25 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
-        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
-Subject: Re: [PATCH 1/1] perf, Add support for Xeon-Phi PMU
-Message-ID: <20120925114225.GF14490@moon>
-References: <alpine.DEB.2.02.1209201253060.27540@vincent-weaver-1.um.maine.edu>
- <1348572758.3881.24.camel@twins>
+	Tue, 25 Sep 2012 07:44:01 -0400
+X-IronPort-AV: E=Sophos;i="4.80,481,1344211200"; 
+   d="scan'208";a="8301765"
+From: Hans Verkuil <hansverk@cisco.com>
+Organization: Cisco Systems Norway
+To: Prabhakar <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH] media: davinci: vpif: set device capabilities
+Date: Tue, 25 Sep 2012 13:43:36 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        VGER <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+References: <1348571784-4237-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1348571784-4237-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348572758.3881.24.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209251343.36240.hansverk@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 01:32:38PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-09-20 at 13:03 -0400, Vince Weaver wrote:
-> > One additional complication:  some of the cache events map to 
-> > event "0".  This causes problems because the generic events code
-> > assumes "0" means not-available.  I'm not sure the best way to address
-> > that problem. 
+On Tue 25 September 2012 13:16:24 Prabhakar wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
 > 
-> For all except P4 we could remap the 0 value to -2, that has all high
-> bits set (like the -1) which aren't used by hardware.
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> ---
+>  drivers/media/platform/davinci/vpif_capture.c |    4 +++-
+>  drivers/media/platform/davinci/vpif_display.c |    4 +++-
+>  2 files changed, 6 insertions(+), 2 deletions(-)
 > 
-> P4 is stuffing two registers in the 64bit config space and actually has
-> them all in use I think.. Cyrill?
+> diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+> index 4828888..faeca98 100644
+> --- a/drivers/media/platform/davinci/vpif_capture.c
+> +++ b/drivers/media/platform/davinci/vpif_capture.c
+> @@ -1630,7 +1630,9 @@ static int vpif_querycap(struct file *file, void  *priv,
+>  {
+>  	struct vpif_capture_config *config = vpif_dev->platform_data;
+>  
+> -	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
+> +	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING |
+> +			V4L2_CAP_READWRITE;
+> +	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
+>  	strlcpy(cap->driver, "vpif capture", sizeof(cap->driver));
 
-Yeah, we use almost all 64 bits in config. I tried to describe the bitmaps
-in perf_event_p4.h (see Notes on internal configuration of ESCR+CCCR tuples).
+This should be the real driver name which is 'vpif_capture'.
 
-Guys, letme re-read this whole mail thread first since I have no clue
-what this remapping about ;)
+>  	strlcpy(cap->bus_info, "VPIF Platform", sizeof(cap->bus_info));
+
+For bus_info I would use: "platform:vpif_capture".
+
+The 'platform:' prefix is going to be the standard for platform drivers.
+
+>  	strlcpy(cap->card, config->card_name, sizeof(cap->card));
+> diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
+> index d94b8a2..171e449 100644
+> --- a/drivers/media/platform/davinci/vpif_display.c
+> +++ b/drivers/media/platform/davinci/vpif_display.c
+> @@ -827,7 +827,9 @@ static int vpif_querycap(struct file *file, void  *priv,
+>  {
+>  	struct vpif_display_config *config = vpif_dev->platform_data;
+>  
+> -	cap->capabilities = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
+> +	cap->device_caps = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING |
+> +			    V4L2_CAP_READWRITE;
+> +	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
+>  	strlcpy(cap->driver, "vpif display", sizeof(cap->driver));
+
+vpif_driver
+
+>  	strlcpy(cap->bus_info, "Platform", sizeof(cap->bus_info));
+
+Ditto: "platform:vpif_driver".
+
+>  	strlcpy(cap->card, config->card_name, sizeof(cap->card));
+> 
+
+Regards,
+
+	Hans
