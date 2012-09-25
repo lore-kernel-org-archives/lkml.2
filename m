@@ -1,151 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab2IYTMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 15:12:06 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:51347 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab2IYTME (ORCPT
+	id S1754716Ab2IYTUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 15:20:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19740 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab2IYTUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 15:12:04 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Richard Weinberger <richard@nod.at>, Joe Perches <joe@perches.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH/resend/bypass] um: Preinclude include/linux/kern_levels.h
-Date: Tue, 25 Sep 2012 21:11:54 +0200
-Message-Id: <1348600314-32423-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 25 Sep 2012 15:20:31 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=BQFSgszhkQ8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=mipF9tkXnpMA:10 a=VwQbUJbxAAAA:8 a=Z_Av35DhCVvG_r9FBl4A:9 a=QEXdDO2ut3YA:10 a=9w8EhH_V29CVInp97fMA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20120925191941.504217238@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 25 Sep 2012 15:19:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 0/2] [GIT PULL][v3.7] tracing: A couple more updates
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The userspace part of UML uses the asm-offsets.h generator mechanism to
-create definitions for UM_KERN_<LEVEL> that match the in-kernel
-KERN_<LEVEL> constant definitions.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-As of commit 04d2c8c83d0e3ac5f78aeede51babb3236200112 ("printk: convert
-the format for KERN_<LEVEL> to a 2 byte pattern"), KERN_<LEVEL> is no
-longer expanded to the literal '"<LEVEL>"', but to '"\001" "LEVEL"', i.e.
-it contains two parts.
 
-However, the combo of DEFINE_STR() in
-arch/x86/um/shared/sysdep/kernel-offsets.h and sed-y in Kbuild doesn't
-support string literals consisting of multiple parts. Hence for all
-UM_KERN_<LEVEL> definitions, only the SOH character is retained in the actual
-definition, while the remainder ends up in the comment. E.g. in
-include/generated/asm-offsets.h we get
+Ingo,
 
-    #define UM_KERN_INFO "\001" /* "6" KERN_INFO */
+Please pull the latest tip/perf/core tree, which can be found at:
 
-instead of
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/core
 
-    #define UM_KERN_INFO "\001" "6" /* KERN_INFO */
+Head SHA1: 8781915ad2716adcd8cd5cc52cee791fc8b00fdf
 
-This causes spurious '^A' output in some kernel messages:
 
-    Calibrating delay loop... 4640.76 BogoMIPS (lpj=23203840)
-    pid_max: default: 32768 minimum: 301
-    Mount-cache hash table entries: 256
-    ^AChecking that host ptys support output SIGIO...Yes
-    ^AChecking that host ptys support SIGIO on close...No, enabling workaround
-    ^AUsing 2.6 host AIO
-    NET: Registered protocol family 16
-    bio: create slab <bio-0> at 0
-    Switching to clocksource itimer
+Ezequiel Garcia (1):
+      trace: Move trace event enable from fs_initcall to core_initcall
 
-To fix this:
-  - Move the mapping from UM_KERN_<LEVEL> to KERN_<LEVEL> from
-    arch/um/include/shared/common-offsets.h to
-    arch/um/include/shared/user.h, which is preincluded for all userspace
-    parts,
-  - Preinclude include/linux/kern_levels.h for all userspace parts, to
-    obtain the in-kernel KERN_<LEVEL> constant definitions. This doesn't
-    violate the kernel/userspace separation, as include/linux/kern_levels.h
-    is self-contained and doesn't expose any other kernel internals.
-  - Remove the now unused STR() and DEFINE_STR() macros.
+Mandeep Singh Baines (1):
+      tracing: Add an option for disabling markers
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-This fixes a regression from the KERN_<LEVEL> conversion
+----
+ kernel/trace/trace.c          |    6 ++-
+ kernel/trace/trace.h          |    1 +
+ kernel/trace/trace_events.c   |  108 +++++++++++++++++++++++++++----------=
+----
+ kernel/trace/trace_syscalls.c |    2 +-
+ 4 files changed, 79 insertions(+), 38 deletions(-)
 
- arch/um/include/shared/common-offsets.h    |   10 ----------
- arch/um/include/shared/user.h              |   11 +++++++++++
- arch/um/scripts/Makefile.rules             |    2 +-
- arch/x86/um/shared/sysdep/kernel-offsets.h |    3 ---
- 4 files changed, 12 insertions(+), 14 deletions(-)
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-diff --git a/arch/um/include/shared/common-offsets.h b/arch/um/include/shared/common-offsets.h
-index 40db8f7..2df313b 100644
---- a/arch/um/include/shared/common-offsets.h
-+++ b/arch/um/include/shared/common-offsets.h
-@@ -7,16 +7,6 @@ DEFINE(UM_KERN_PAGE_MASK, PAGE_MASK);
- DEFINE(UM_KERN_PAGE_SHIFT, PAGE_SHIFT);
- DEFINE(UM_NSEC_PER_SEC, NSEC_PER_SEC);
- 
--DEFINE_STR(UM_KERN_EMERG, KERN_EMERG);
--DEFINE_STR(UM_KERN_ALERT, KERN_ALERT);
--DEFINE_STR(UM_KERN_CRIT, KERN_CRIT);
--DEFINE_STR(UM_KERN_ERR, KERN_ERR);
--DEFINE_STR(UM_KERN_WARNING, KERN_WARNING);
--DEFINE_STR(UM_KERN_NOTICE, KERN_NOTICE);
--DEFINE_STR(UM_KERN_INFO, KERN_INFO);
--DEFINE_STR(UM_KERN_DEBUG, KERN_DEBUG);
--DEFINE_STR(UM_KERN_CONT, KERN_CONT);
--
- DEFINE(UM_ELF_CLASS, ELF_CLASS);
- DEFINE(UM_ELFCLASS32, ELFCLASS32);
- DEFINE(UM_ELFCLASS64, ELFCLASS64);
-diff --git a/arch/um/include/shared/user.h b/arch/um/include/shared/user.h
-index 4fa82c0..cef0685 100644
---- a/arch/um/include/shared/user.h
-+++ b/arch/um/include/shared/user.h
-@@ -26,6 +26,17 @@
- extern void panic(const char *fmt, ...)
- 	__attribute__ ((format (printf, 1, 2)));
- 
-+/* Requires preincluding include/linux/kern_levels.h */
-+#define UM_KERN_EMERG	KERN_EMERG
-+#define UM_KERN_ALERT	KERN_ALERT
-+#define UM_KERN_CRIT	KERN_CRIT
-+#define UM_KERN_ERR	KERN_ERR
-+#define UM_KERN_WARNING	KERN_WARNING
-+#define UM_KERN_NOTICE	KERN_NOTICE
-+#define UM_KERN_INFO	KERN_INFO
-+#define UM_KERN_DEBUG	KERN_DEBUG
-+#define UM_KERN_CONT	KERN_CONT
-+
- #ifdef UML_CONFIG_PRINTK
- extern int printk(const char *fmt, ...)
- 	__attribute__ ((format (printf, 1, 2)));
-diff --git a/arch/um/scripts/Makefile.rules b/arch/um/scripts/Makefile.rules
-index d50270d..15889df 100644
---- a/arch/um/scripts/Makefile.rules
-+++ b/arch/um/scripts/Makefile.rules
-@@ -8,7 +8,7 @@ USER_OBJS += $(filter %_user.o,$(obj-y) $(obj-m)  $(USER_SINGLE_OBJS))
- USER_OBJS := $(foreach file,$(USER_OBJS),$(obj)/$(file))
- 
- $(USER_OBJS:.o=.%): \
--	c_flags = -Wp,-MD,$(depfile) $(USER_CFLAGS) -include user.h $(CFLAGS_$(basetarget).o)
-+	c_flags = -Wp,-MD,$(depfile) $(USER_CFLAGS) -include $(srctree)/include/linux/kern_levels.h -include user.h $(CFLAGS_$(basetarget).o)
- 
- # These are like USER_OBJS but filter USER_CFLAGS through unprofile instead of
- # using it directly.
-diff --git a/arch/x86/um/shared/sysdep/kernel-offsets.h b/arch/x86/um/shared/sysdep/kernel-offsets.h
-index 5868526..46a9df9 100644
---- a/arch/x86/um/shared/sysdep/kernel-offsets.h
-+++ b/arch/x86/um/shared/sysdep/kernel-offsets.h
-@@ -7,9 +7,6 @@
- #define DEFINE(sym, val) \
- 	asm volatile("\n->" #sym " %0 " #val : : "i" (val))
- 
--#define STR(x) #x
--#define DEFINE_STR(sym, val) asm volatile("\n->" #sym " " STR(val) " " #val: : )
--
- #define BLANK() asm volatile("\n->" : : )
- 
- #define OFFSET(sym, str, mem) \
--- 
-1.7.0.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQEcBAABAgAGBQJQYgP6AAoJEOdOSU1xswtM8XIH/RMOT4atYJVq7r90cFSHhD6B
+/QU1XJ0jiwGB8QF1JYHD/GrJXITy4L5YB1dxLFJDiwHKCczKygLpvrhdH92yJT6C
+J1x9hGHVll1IV/zAlOR4QnV7qoNgrI1iprUkmHa0H3eyYpLp8UGHUeQhQzJLjLmM
+4ivKv+c1GRPXJYd6BvzkiXGuh3Ca0uY3ngcSPUKFerelWM8uzeblf0mwQ/3K3VZr
+g3Yi7zvKTHkdBBUqu9jHF37r0GBitf1xP8U2ZXWJKXZ73/MA25xnSl+GWmRw6fpd
+rr7qjWdWXjIbTBmKaY2O98/eeLampEz1D09djPIPtBjlsCgTqNn3i4DakadCOW4=
+=Op+I
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
