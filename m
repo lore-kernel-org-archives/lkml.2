@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab2IYQo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:44:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57074 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757207Ab2IYQo5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:44:57 -0400
-Date: Tue, 25 Sep 2012 09:44:54 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>
-Cc: linux-kernel@vger.kernel.org, arekm@pld-linux.org, baggins@pld-linux.org
-Subject: Re: [3.5.4] rcu_sched self-detected stall on CPU { 1}  (t=54862991
- jiffies)
-Message-ID: <20120925164454.GA22330@kroah.com>
-References: <1377033.GMb6SBRYYa@pawels>
- <20120924173633.GA2451@kroah.com>
- <2429639.puuGestFgj@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2429639.puuGestFgj@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757207Ab2IYQ5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:57:34 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58613 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753454Ab2IYQ5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 12:57:33 -0400
+Message-ID: <1348592250.2648.7.camel@joe-AO722>
+Subject: Re: [PATCHv1 6/6] MAINTAINERS: add recently created files to
+ dw_dmac section
+From: Joe Perches <joe@perches.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 25 Sep 2012 09:57:30 -0700
+In-Reply-To: <1348580274.13371.127.camel@smile>
+References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1348575190-11761-7-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1348579169.2476.1.camel@joe-AO722> <1348580274.13371.127.camel@smile>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 06:31:36PM +0200, Paweł Sikora wrote:
-> On Monday 24 of September 2012 10:36:33 Greg KH wrote:
-> > On Mon, Sep 24, 2012 at 10:05:23AM +0200, Paweł Sikora wrote:
-> > > Hi,
-> > > 
-> > > with the new stable line i'm observing strange locks on my old amd-phenom-II mini-server.
-> > > here's a dmesg:
-> > 
-> > Did this show up in 3.5.3?  If not, can you run 'git bisect' to find the
-> > problem patch?
-> 
-> heh, the old good kernel put some light on this issue.
-> 
-> Sep 25 08:50:24 nexus kernel: [60330.301639] Clocksource tsc unstable (delta = -474690884 ns)
-> Sep 25 08:50:24 nexus kernel: [60330.325477] ------------[ cut here ]------------
-> Sep 25 08:50:24 nexus kernel: [60330.325484] WARNING: at /home/users/builder/rpm/BUILD/kernel-2.6.37.6/linux-2.6.37/net/sched/sch_generic.c:258 dev_watchdog+0x25d/0x270()
-> Sep 25 08:50:24 nexus kernel: [60330.325486] Hardware name: GA-MA785GMT-UD2H
-> Sep 25 08:50:24 nexus kernel: [60330.325487] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-> (...)
-> Sep 25 08:50:25 nexus kernel: [60330.851093] Switching to clocksource acpi_pm
-> 
-> afaics, this amd-phenom cpu does the cpu frequency scaling and causes plain 'tsc' timer
-> instability which leads to network card watchdog timeout (i can login via local console
-> while any network traffic is dead). on the recent 3.5.x kernel the 'clocksource unstable'
-> message appears *after* 'task blocked' flood and there's no clear info about watchog timeout.
-> currently i'm testing hpet clocksource becasue better tsc modes (constant_tsc, nonstop_tsc)
-> aren't present in /sys/devices/system/clocksource/clocksource0/available_clocksource while
-> cpu supports them.
+On Tue, 2012-09-25 at 16:37 +0300, Andy Shevchenko wrote:
+> On Tue, 2012-09-25 at 06:19 -0700, Joe Perches wrote: 
+> > You also added yourself as a maintainer.
+> > Congrats/sympathies, etc...
+> Actually I prefer to be just a supporter, because I introduce few
+> additional files. But if I understood correctly, there is no way to
+> distinguish person statuses in one section.
 
-I'm sorry, I don't understand, that's a 2.6.37 kernel you are comparing
-this to.  Where did this problem show up?  In 3.5.4 where 3.5.3 was
-fine?
+Hi Andy.
 
-Or somewhere else?
+True, the status refers to the section, not the person.
 
-confused,
+Supported is a nominally "higher" level of stewardship
+than maintainer.  Supported is supposed to mean you get
+paid to look after the code.
 
-greg k-h
+All of these section blocks aren't all that important
+anyway.  It's not like there's a signed contract or
+something in case you don't review a suggested patch.
+
+I think of these section blocks as one of the ways to
+get the appropriate people to look at patches and bug
+reports.
+
+
+cheers, Joe
+
