@@ -1,163 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab2IYHvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 03:51:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39021 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab2IYHvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 03:51:11 -0400
-Date: Tue, 25 Sep 2012 08:51:05 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/9] mm: compaction: Acquire the zone->lru_lock as late
- as possible
-Message-ID: <20120925075105.GC11266@suse.de>
-References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
- <1348224383-1499-6-git-send-email-mgorman@suse.de>
- <20120925070517.GK13234@bbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120925070517.GK13234@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753614Ab2IYHyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 03:54:15 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:55807 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753468Ab2IYHyN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 03:54:13 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND] gpio-lpc32xx: Fix value handling of gpio_direction_output()
+Date: Tue, 25 Sep 2012 09:53:54 +0200
+Message-Id: <1348559634-15337-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 04:05:17PM +0900, Minchan Kim wrote:
-> Hi Mel,
-> 
-> I have a question below.
-> 
-> On Fri, Sep 21, 2012 at 11:46:19AM +0100, Mel Gorman wrote:
-> > Compactions migrate scanner acquires the zone->lru_lock when scanning a range
-> > of pages looking for LRU pages to acquire. It does this even if there are
-> > no LRU pages in the range. If multiple processes are compacting then this
-> > can cause severe locking contention. To make matters worse commit b2eef8c0
-> > (mm: compaction: minimise the time IRQs are disabled while isolating pages
-> > for migration) releases the lru_lock every SWAP_CLUSTER_MAX pages that are
-> > scanned.
-> > 
-> > This patch makes two changes to how the migrate scanner acquires the LRU
-> > lock. First, it only releases the LRU lock every SWAP_CLUSTER_MAX pages if
-> > the lock is contended. This reduces the number of times it unnecessarily
-> > disables and re-enables IRQs. The second is that it defers acquiring the
-> > LRU lock for as long as possible. If there are no LRU pages or the only
-> > LRU pages are transhuge then the LRU lock will not be acquired at all
-> > which reduces contention on zone->lru_lock.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > ---
-> >  mm/compaction.c |   63 +++++++++++++++++++++++++++++++++++++------------------
-> >  1 file changed, 43 insertions(+), 20 deletions(-)
-> > 
-> > diff --git a/mm/compaction.c b/mm/compaction.c
-> > index 6b55491..a6068ff 100644
-> > --- a/mm/compaction.c
-> > +++ b/mm/compaction.c
-> > @@ -50,6 +50,11 @@ static inline bool migrate_async_suitable(int migratetype)
-> >  	return is_migrate_cma(migratetype) || migratetype == MIGRATE_MOVABLE;
-> >  }
-> >  
-> > +static inline bool should_release_lock(spinlock_t *lock)
-> > +{
-> > +	return need_resched() || spin_is_contended(lock);
-> > +}
-> > +
-> >  /*
-> >   * Compaction requires the taking of some coarse locks that are potentially
-> >   * very heavily contended. Check if the process needs to be scheduled or
-> > @@ -62,7 +67,7 @@ static inline bool migrate_async_suitable(int migratetype)
-> >  static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
-> >  				      bool locked, struct compact_control *cc)
-> >  {
-> > -	if (need_resched() || spin_is_contended(lock)) {
-> > +	if (should_release_lock(lock)) {
-> >  		if (locked) {
-> >  			spin_unlock_irqrestore(lock, *flags);
-> >  			locked = false;
-> > @@ -327,7 +332,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> >  	isolate_mode_t mode = 0;
-> >  	struct lruvec *lruvec;
-> >  	unsigned long flags;
-> > -	bool locked;
-> > +	bool locked = false;
-> >  
-> >  	/*
-> >  	 * Ensure that there are not too many pages isolated from the LRU
-> > @@ -347,23 +352,17 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> >  
-> >  	/* Time to isolate some pages for migration */
-> >  	cond_resched();
-> > -	spin_lock_irqsave(&zone->lru_lock, flags);
-> > -	locked = true;
-> >  	for (; low_pfn < end_pfn; low_pfn++) {
-> >  		struct page *page;
-> >  
-> >  		/* give a chance to irqs before checking need_resched() */
-> > -		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-> > -			spin_unlock_irqrestore(&zone->lru_lock, flags);
-> > -			locked = false;
-> > +		if (locked && !((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-> > +			if (should_release_lock(&zone->lru_lock)) {
-> > +				spin_unlock_irqrestore(&zone->lru_lock, flags);
-> > +				locked = false;
-> > +			}
-> >  		}
-> >  
-> > -		/* Check if it is ok to still hold the lock */
-> > -		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
-> > -								locked, cc);
-> > -		if (!locked || fatal_signal_pending(current))
-> > -			break;
-> > -
-> >  		/*
-> >  		 * migrate_pfn does not necessarily start aligned to a
-> >  		 * pageblock. Ensure that pfn_valid is called when moving
-> > @@ -403,21 +402,38 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> >  		pageblock_nr = low_pfn >> pageblock_order;
-> >  		if (!cc->sync && last_pageblock_nr != pageblock_nr &&
-> >  		    !migrate_async_suitable(get_pageblock_migratetype(page))) {
-> > -			low_pfn += pageblock_nr_pages;
-> > -			low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
-> > -			last_pageblock_nr = pageblock_nr;
-> > -			continue;
-> > +			goto next_pageblock;
-> >  		}
-> >  
-> > +		/* Check may be lockless but that's ok as we recheck later */
-> >  		if (!PageLRU(page))
-> >  			continue;
-> >  
-> >  		/*
-> > -		 * PageLRU is set, and lru_lock excludes isolation,
-> > -		 * splitting and collapsing (collapsing has already
-> > -		 * happened if PageLRU is set).
-> > +		 * PageLRU is set. lru_lock normally excludes isolation
-> > +		 * splitting and collapsing (collapsing has already happened
-> > +		 * if PageLRU is set) but the lock is not necessarily taken
-> > +		 * here and it is wasteful to take it just to check transhuge.
-> > +		 * Check transhuge without lock and skip if it's either a
-> > +		 * transhuge or hugetlbfs page.
-> >  		 */
-> >  		if (PageTransHuge(page)) {
-> > +			if (!locked)
-> > +				goto next_pageblock;
-> 
-> Why skip all pages in a pageblock if !locked?
-> Shouldn't we add some comment?
-> 
+For GPIOs of gpio-lpc32xx, gpio_direction_output() ignores the value argument
+(initial value of output). This patch fixes this by setting the level
+accordingly.
 
-The comment is above the block already. The lru_lock normally excludes
-isolation and splitting. If we do not hold the hold, it's not safe to
-call compound_order so instead we skip the entire pageblock.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
--- 
-Mel Gorman
-SUSE Labs
+---
+Applies to v3.6-rc7
+
+ drivers/gpio/gpio-lpc32xx.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
++++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
+@@ -308,6 +308,7 @@ static int lpc32xx_gpio_dir_output_p012(
+ {
+ 	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
+ 
++	__set_gpio_level_p012(group, pin, value);
+ 	__set_gpio_dir_p012(group, pin, 0);
+ 
+ 	return 0;
+@@ -318,6 +319,7 @@ static int lpc32xx_gpio_dir_output_p3(st
+ {
+ 	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
+ 
++	__set_gpio_level_p3(group, pin, value);
+ 	__set_gpio_dir_p3(group, pin, 0);
+ 
+ 	return 0;
+@@ -326,6 +328,9 @@ static int lpc32xx_gpio_dir_output_p3(st
+ static int lpc32xx_gpio_dir_out_always(struct gpio_chip *chip, unsigned pin,
+ 	int value)
+ {
++	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
++
++	__set_gpo_level_p3(group, pin, value);
+ 	return 0;
+ }
+ 
