@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969Ab2IYRx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 13:53:58 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:22876 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753454Ab2IYRx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 13:53:57 -0400
-X-IronPort-AV: E=Sophos;i="4.80,484,1344211200"; 
-   d="scan'208";a="39125379"
-Message-ID: <5061EFB2.1080407@citrix.com>
-Date: Tue, 25 Sep 2012 18:53:54 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S1757873Ab2IYR5E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 13:57:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34120 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756968Ab2IYR5B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 13:57:01 -0400
+Date: Tue, 25 Sep 2012 10:56:57 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-kernel@vger.kernel.org, pjt@google.com, paul.mckenney@linaro.org,
+        tglx@linutronix.de, suresh.b.siddha@intel.com, venki@google.com,
+        mingo@redhat.com, peterz@infradead.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Arvind.Chauhan@arm.com,
+        amit.kucheria@linaro.org, vincent.guittot@linaro.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Subject: Re: [PATCH 3/3] workqueue: Schedule work on non-idle cpu instead
+ of current one
+Message-ID: <20120925175657.GB16296@google.com>
+References: <cover.1348568074.git.viresh.kumar@linaro.org>
+ <3232b3192e2e373cc4aaf43359d454c5ad53cddb.1348568074.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] xen-blkfront: handle backend CLOSED without CLOSING
-References: <1348243464-15903-1-git-send-email-david.vrabel@citrix.com> <1348243464-15903-3-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1348243464-15903-3-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3232b3192e2e373cc4aaf43359d454c5ad53cddb.1348568074.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/09/12 17:04, David Vrabel wrote:
-> From: David Vrabel <david.vrabel@citrix.com>
-> 
-> Backend drivers shouldn't transistion to CLOSED unless the frontend is
-> CLOSED.  If a backend does transition to CLOSED too soon then the
-> frontend may not see the CLOSING state and will not properly shutdown.
-> 
-> So, treat an unexpected backend CLOSED state the same as CLOSING.
+Hello,
 
-Didn't handle the frontend block device being mounted. Updated patch here.
+On Tue, Sep 25, 2012 at 04:06:08PM +0530, Viresh Kumar wrote:
+> +config MIGRATE_WQ
+> +	bool "(EXPERIMENTAL) Migrate Workqueues to non-idle cpu"
+> +	depends on SMP && EXPERIMENTAL
+> +	help
+> +	  Workqueues queues work on current cpu, if the caller haven't passed a
+> +	  preferred cpu. This may wake up an idle CPU, which is actually not
+> +	  required. This work can be processed by any CPU and so we must select
+> +	  a non-idle CPU here.  This patch adds in support in workqueue
+> +	  framework to get preferred CPU details from the scheduler, instead of
+> +	  using current CPU.
 
-8<---------------------------------
-xen-blkfront: handle backend CLOSED without CLOSING
+I don't think it's a good idea to make behavior like this a config
+option.  The behavior difference is subtle and may induce incorrect
+behavior.
 
-Backend drivers shouldn't transistion to CLOSED unless the frontend is
-CLOSED.  If a backend does transition to CLOSED too soon then the
-frontend may not see the CLOSING state and will not properly shutdown.
+> +/* This enables migration of a work to a non-IDLE cpu instead of current cpu */
+> +#ifdef CONFIG_MIGRATE_WQ
+> +static int wq_select_cpu(void)
+> +{
+> +	return sched_select_cpu(SD_NUMA, -1);
+> +}
+> +#else
+> +#define wq_select_cpu()		smp_processor_id()
+> +#endif
+> +
+>  /* Serializes the accesses to the list of workqueues. */
+>  static DEFINE_SPINLOCK(workqueue_lock);
+>  static LIST_HEAD(workqueues);
+> @@ -995,7 +1005,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+>  		struct global_cwq *last_gcwq;
+>  
+>  		if (unlikely(cpu == WORK_CPU_UNBOUND))
+> -			cpu = raw_smp_processor_id();
+> +			cpu = wq_select_cpu();
+>  
+>  		/*
+>  		 * It's multi cpu.  If @wq is non-reentrant and @work
+> @@ -1066,8 +1076,9 @@ int queue_work(struct workqueue_struct *wq, struct work_struct *work)
+>  {
+>  	int ret;
+>  
+> -	ret = queue_work_on(get_cpu(), wq, work);
+> -	put_cpu();
+> +	preempt_disable();
+> +	ret = queue_work_on(wq_select_cpu(), wq, work);
+> +	preempt_enable();
 
-So, treat an unexpected backend CLOSED state the same as CLOSING.
+First of all, I'm not entirely sure this is safe.  queue_work() used
+to *guarantee* that the work item would execute on the local CPU.  I
+don't think there are many which depend on that but I'd be surprised
+if this doesn't lead to some subtle problems somewhere.  It might not
+be realistic to audit all users and we might have to just let it
+happen and watch for the fallouts.  Dunno, still wanna see some level
+of auditing.
 
-If the backend is CLOSED then the frontend can't talk to it so go to
-CLOSED immediately without waiting for the block device to be closed
-or unmounted.
+Also, I'm wondering why this is necessary at all for workqueues.  For
+schedule/queue_work(), you pretty much know the current cpu is not
+idle.  For delayed workqueue, sure but for immediate scheduling, why?
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
----
- drivers/block/xen-blkfront.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+Thanks.
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 2c2d2e5..c1f5f38 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1143,7 +1143,8 @@ static int blkfront_resume(struct xenbus_device *dev)
- }
- 
- static void
--blkfront_closing(struct blkfront_info *info)
-+blkfront_closing(struct blkfront_info *info,
-+		 enum xenbus_state backend_state)
- {
- 	struct xenbus_device *xbdev = info->xbdev;
- 	struct block_device *bdev = NULL;
-@@ -1167,7 +1168,8 @@ blkfront_closing(struct blkfront_info *info)
- 
- 	mutex_lock(&bdev->bd_mutex);
- 
--	if (bdev->bd_openers) {
-+	/* If the backend is already CLOSED, close now. */
-+	if (bdev->bd_openers && backend_state != XenbusStateClosed) {
- 		xenbus_dev_error(xbdev, -EBUSY,
- 				 "Device in use; refusing to close");
- 		xenbus_switch_state(xbdev, XenbusStateClosing);
-@@ -1340,15 +1342,18 @@ static void blkback_changed(struct xenbus_device *dev,
- 	case XenbusStateReconfiguring:
- 	case XenbusStateReconfigured:
- 	case XenbusStateUnknown:
--	case XenbusStateClosed:
- 		break;
- 
- 	case XenbusStateConnected:
- 		blkfront_connect(info);
- 		break;
- 
-+	case XenbusStateClosed:
-+		if (dev->state == XenbusStateClosed)
-+			break;
-+		/* Missed the backend's Closing state -- fallthrough */
- 	case XenbusStateClosing:
--		blkfront_closing(info);
-+		blkfront_closing(info, backend_state);
- 		break;
- 	}
- }
 -- 
-1.7.2.5
+tejun
