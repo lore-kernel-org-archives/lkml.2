@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab2IYLwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:52:09 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63487 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab2IYLwH (ORCPT
+	id S1755791Ab2IYLy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:54:56 -0400
+Received: from ams-iport-1.cisco.com ([144.254.224.140]:19123 "EHLO
+	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054Ab2IYLyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:52:07 -0400
-Date: Tue, 25 Sep 2012 15:51:56 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
-        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
-Subject: Re: [PATCH 1/1] perf, Add support for Xeon-Phi PMU
-Message-ID: <20120925115156.GB18666@moon>
-References: <alpine.DEB.2.02.1209201253060.27540@vincent-weaver-1.um.maine.edu>
- <1348572758.3881.24.camel@twins>
- <20120925114225.GF14490@moon>
+	Tue, 25 Sep 2012 07:54:54 -0400
+X-IronPort-AV: E=Sophos;i="4.80,481,1344211200"; 
+   d="scan'208";a="144331350"
+From: Hans Verkuil <hansverk@cisco.com>
+Organization: Cisco Systems Norway
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH] media: davinci: vpif: set device capabilities
+Date: Tue, 25 Sep 2012 13:54:29 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Prabhakar <prabhakar.csengg@gmail.com>, LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        VGER <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+References: <1348571784-4237-1-git-send-email-prabhakar.lad@ti.com> <201209251343.36240.hansverk@cisco.com> <2015356.T8yoHfqqkq@avalon>
+In-Reply-To: <2015356.T8yoHfqqkq@avalon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120925114225.GF14490@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209251354.29824.hansverk@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 03:42:25PM +0400, Cyrill Gorcunov wrote:
-> On Tue, Sep 25, 2012 at 01:32:38PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2012-09-20 at 13:03 -0400, Vince Weaver wrote:
-> > > One additional complication:  some of the cache events map to 
-> > > event "0".  This causes problems because the generic events code
-> > > assumes "0" means not-available.  I'm not sure the best way to address
-> > > that problem. 
-> > 
-> > For all except P4 we could remap the 0 value to -2, that has all high
-> > bits set (like the -1) which aren't used by hardware.
-> > 
-> > P4 is stuffing two registers in the 64bit config space and actually has
-> > them all in use I think.. Cyrill?
+On Tue 25 September 2012 13:49:16 Laurent Pinchart wrote:
+> Hi Hans,
 > 
-> Yeah, we use almost all 64 bits in config. I tried to describe the bitmaps
-> in perf_event_p4.h (see Notes on internal configuration of ESCR+CCCR tuples).
+> On Tuesday 25 September 2012 13:43:36 Hans Verkuil wrote:
+> > On Tue 25 September 2012 13:16:24 Prabhakar wrote:
+> > > From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> > > 
+> > > Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> > > Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> > > Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> > > ---
+> > > 
+> > >  drivers/media/platform/davinci/vpif_capture.c |    4 +++-
+> > >  drivers/media/platform/davinci/vpif_display.c |    4 +++-
+> > >  2 files changed, 6 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/drivers/media/platform/davinci/vpif_capture.c
+> > > b/drivers/media/platform/davinci/vpif_capture.c index 4828888..faeca98
+> > > 100644
+> > > --- a/drivers/media/platform/davinci/vpif_capture.c
+> > > +++ b/drivers/media/platform/davinci/vpif_capture.c
+> > > @@ -1630,7 +1630,9 @@ static int vpif_querycap(struct file *file, void 
+> > > *priv,> 
+> > >  {
+> > >  
+> > >  	struct vpif_capture_config *config = vpif_dev->platform_data;
+> > > 
+> > > -	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
+> > > +	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING |
+> > > +			V4L2_CAP_READWRITE;
+> > > +	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
+> > > 
+> > >  	strlcpy(cap->driver, "vpif capture", sizeof(cap->driver));
+> > 
+> > This should be the real driver name which is 'vpif_capture'.
+> > 
+> > >  	strlcpy(cap->bus_info, "VPIF Platform", sizeof(cap->bus_info));
+> > 
+> > For bus_info I would use: "platform:vpif_capture".
+> > 
+> > The 'platform:' prefix is going to be the standard for platform drivers.
 > 
-> Guys, letme re-read this whole mail thread first since I have no clue
-> what this remapping about ;)
+> What about
+> 
+> snprintf(cap->driver, sizeof(cap->driver), "platform:%s", dev_name(vpif_dev));
+> 
+> That would handle cases where multiple platform devices of the same type are 
+> present.
 
-If we need some special mark in config I can try to free hight bit in
-@config and move it somehwere in low 32 bits (there are bits 28-29 which
-i can use for that). Ie I can provide the sign bit, would it be enough?
+Sure, that's even better. You do have to check that this gives you what you'd
+expect (i.e., that you don't end up with "platform:platform:vpif_capture").
+
+Regards,
+
+	Hans
