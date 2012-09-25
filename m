@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab2IYAYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 20:24:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6079 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575Ab2IYAYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 20:24:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,478,1344236400"; 
-   d="scan'208,223";a="226211247"
-Message-ID: <5060F9C4.4050303@linux.intel.com>
-Date: Tue, 25 Sep 2012 08:24:36 +0800
-From: Haicheng Li <haicheng.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120306 Thunderbird/3.1.20
+	id S1752107Ab2IYAYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 20:24:49 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53131 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab2IYAYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 20:24:46 -0400
+Message-ID: <5060F9C6.1070100@gmail.com>
+Date: Tue, 25 Sep 2012 08:24:38 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-CC: Takahiroi Shimizu <tshimizu818@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        haicheng.lee@gmail.com
-Subject: [PATCH 2/2] Fix a typo in PTP_1588_CLOCK_PCH Kconfig help info.
-References: <506009A4.8000202@linux.intel.com> <50600A49.7040902@linux.intel.com>
-In-Reply-To: <50600A49.7040902@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: chris.mason@fusionio.com, jbacik@fusionio.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Btrfs: check range early in map_private_extent_buffer
+References: <505FE3AF.2090302@gmail.com> <20120924161742.GL14582@twin.jikos.cz>
+In-Reply-To: <20120924161742.GL14582@twin.jikos.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From 5911413366d37aafcc19ddfc9c0f2db31855431e Mon Sep 17 00:00:00 2001
-From: Haicheng Li <haicheng.li@linux.intel.com>
-Date: Mon, 24 Sep 2012 15:55:27 +0800
-Subject: [PATCH 2/2] Fix a typo in PTP_1588_CLOCK_PCH Kconfig help info.
+On 2012年09月25日 00:17, David Sterba wrote:
+> On Mon, Sep 24, 2012 at 12:38:07PM +0800, Wang Sheng-Hui wrote:
+>> Check range early to avoid further check/compute in case
+>> of range error.
+>>
+>> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+>> ---
+>>  fs/btrfs/extent_io.c |   16 ++++++++--------
+>>  1 files changed, 8 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+>> index 4c87847..9250cf5 100644
+>> --- a/fs/btrfs/extent_io.c
+>> +++ b/fs/btrfs/extent_io.c
+>> @@ -4643,6 +4643,14 @@ int map_private_extent_buffer(struct extent_buffer *eb, unsigned long start,
+>>  	unsigned long end_i = (start_offset + start + min_len - 1) >>
+>>  		PAGE_CACHE_SHIFT;
+>>  
+>> +	if (start + min_len > eb->len) {
+>> +		printk(KERN_ERR "btrfs bad mapping eb start %llu len %lu, "
+>> +		       "wanted %lu %lu\n", (unsigned long long)eb->start,
+>> +		       eb->len, start, min_len);
+>> +		WARN_ON(1);
+>> +		return -EINVAL;
+>> +	}
+>> +
+>>  	if (i != end_i)
+>>  		return -EINVAL;
+> 
+> 4665         unsigned long i = (start_offset + start) >> PAGE_CACHE_SHIFT;
+> 4666         unsigned long end_i = (start_offset + start + min_len - 1) >>
+> 4667                 PAGE_CACHE_SHIFT;
+> 
+> so the check above effectively verifies that
+> 
+>   min_len - 1 < PAGE_CACHE_SIZE
+> AND
+>   is within the same page
+> 
+> The other check
+> 
+> 	if (start + min_len > eb->len) {
+> 
+> looks if the requested data do not lie out of the bounds of the extent
+> buffer, where min_len is filled with sizeof(something).
+> 
+> So, both the checks look for corrupted metadata, I don't see the need to
+> swap them.
 
-Signed-off-by: Haicheng Li <haicheng.lee@gmail.com>
----
-  drivers/ptp/Kconfig |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
+Reread the code and it really does the check.
+Got it. Thanks for your explanation.
 
-diff --git a/drivers/ptp/Kconfig b/drivers/ptp/Kconfig
-index ffdf712..82c4a26 100644
---- a/drivers/ptp/Kconfig
-+++ b/drivers/ptp/Kconfig
-@@ -87,6 +87,6 @@ config PTP_1588_CLOCK_PCH
-  	  SO_TIMESTAMPING API.
-
-  	  To compile this driver as a module, choose M here: the module
--	  will be called ptp_pch.
-+	  will be called by pch_ptp.
-
-  endmenu
--- 
-1.7.1
+> 
+> david
 
