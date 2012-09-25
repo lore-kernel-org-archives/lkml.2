@@ -1,98 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab2IYSmv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 14:42:51 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42820 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753097Ab2IYSmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 14:42:49 -0400
-Date: Tue, 25 Sep 2012 20:42:45 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Mike Galbraith <efault@gmx.de>,
-        Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-Message-ID: <20120925184245.GA13694@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Mike Galbraith <efault@gmx.de>, Mel Gorman <mgorman@suse.de>,
-	Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-	Andreas Herrmann <andreas.herrmann3@amd.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@kernel.org>,
-	Suresh Siddha <suresh.b.siddha@intel.com>
-References: <1348505683.11847.111.camel@twins>
- <1348511193.6951.44.camel@marge.simpson.net>
- <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
- <20120924192056.GB4082@liondog.tnic>
- <1348538258.7100.23.camel@marge.simpson.net>
- <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
- <1348574286.3881.40.camel@twins>
- <20120925131736.GA30652@x1.osrc.amd.com>
- <20120925170058.GC30158@x1.osrc.amd.com>
- <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
+	id S1754066Ab2IYSur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 14:50:47 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48156 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab2IYSuq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 14:50:46 -0400
+Message-ID: <5061FCDD.6050406@linux.vnet.ibm.com>
+Date: Wed, 26 Sep 2012 00:20:05 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@kernel.org>, mhocko@suse.cz, schwidefsky@de.ibm.com,
+        deepthi@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RESEND PATCH v2] nohz: fix idle ticks in cpu summary line of
+ /proc/stat
+References: <20120910111157.3940.68948.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120910111157.3940.68948.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092518-5564-0000-0000-0000049D614B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 10:21:28AM -0700, Linus Torvalds wrote:
-> On Tue, Sep 25, 2012 at 10:00 AM, Borislav Petkov <bp@alien8.de> wrote:
-> >
-> > 3.6-rc6+tip/auto-latest-kill select_idle_sibling()
+On 09/10/2012 04:43 PM, Srivatsa S. Bhat wrote:
+> From: Michal Hocko <mhocko@suse.cz>
 > 
-> Is this literally just removing it entirely?
+> Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
+> conditional" introduced a bug in regard to cpu hotplug. The effect is
+> that the number of idle ticks in the cpu summary line in /proc/stat is
+> still counting ticks for offline cpus.
+> 
+> Reproduction is easy, just start a workload that keeps all cpus busy,
+> switch off one or more cpus and then watch the idle field in top.
+> On a dual-core with one cpu 100% busy and one offline cpu you will get
+> something like this:
+> 
+> %Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,
+> %0.0 st
+> 
+> The problem is that an offline cpu still has ts->idle_active == 1.
+> To fix this we should make sure that the cpu is online when calling
+> get_cpu_idle_time_us and get_cpu_iowait_time_us.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: stable@vger.kernel.org
+> Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> [srivatsa.bhat@linux.vnet.ibm.com: Rebased to current mainline]
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+> 
+> Hi Thomas,
+> 
+> This is a resend of the patch posted by Michal at [1]. Martin had explained
+> the importance of this patch for fixing the bug for x86 case in [2]. (The s390
+> fix is already upstream, commit id cb85a6ed67e9). Could you kindly consider
+> taking this fix?
+>
 
-Basically yes:
+Hi Thomas,
+Any thoughts on this?
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6b800a14b990..016ba387c7f2 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2640,6 +2640,8 @@ static int select_idle_sibling(struct task_struct *p, int target)
-        struct sched_group *sg;
-        int i;
+Regards,
+Srivatsa S. Bhat
  
-+       goto done;
-+
-        /*
-         * If the task is going to be woken-up on this cpu and if it is
-         * already idle, then it is the right target.
+> [1]. http://thread.gmane.org/gmane.linux.kernel/1265374/focus=1266457
+> [2]. http://thread.gmane.org/gmane.linux.kernel/1265374/focus=1276336
+> 
+>  fs/proc/stat.c |   14 ++++++++++----
+>  1 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+> index 64c3b31..e296572 100644
+> --- a/fs/proc/stat.c
+> +++ b/fs/proc/stat.c
+> @@ -45,10 +45,13 @@ static cputime64_t get_iowait_time(int cpu)
+> 
+>  static u64 get_idle_time(int cpu)
+>  {
+> -	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
+> +	u64 idle, idle_time = -1ULL;
+> +
+> +	if (cpu_online(cpu))
+> +		idle_time = get_cpu_idle_time_us(cpu, NULL);
+> 
+>  	if (idle_time == -1ULL)
+> -		/* !NO_HZ so we can rely on cpustat.idle */
+> +		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+>  		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+>  	else
+>  		idle = usecs_to_cputime64(idle_time);
+> @@ -58,10 +61,13 @@ static u64 get_idle_time(int cpu)
+> 
+>  static u64 get_iowait_time(int cpu)
+>  {
+> -	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+> +	u64 iowait, iowait_time = -1ULL;
+> +
+> +	if (cpu_online(cpu))
+> +		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+> 
+>  	if (iowait_time == -1ULL)
+> -		/* !NO_HZ so we can rely on cpustat.iowait */
+> +		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+>  		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+>  	else
+>  		iowait = usecs_to_cputime64(iowait_time);
+> 
 
-> Because apart from the latency spike at 4 procs (and the latency
-> numbers look very noisy, so that's probably just noise), it looks
-> clearly superior to everything else. On that benchmark, at least.
-
-Yep, I need more results for a more reliable say here.
-
-> How does pgbench look? That's the one that apparently really wants to
-> spread out, possibly due to user-level spinlocks. So I assume it will
-> show the reverse pattern, with "kill select_idle_sibling" being the
-> worst case.
-
-Let me run pgbench tomorrow (I had run it only on an older family 0x10
-single-node box) on Bulldozer to check that out. And we haven't started
-the multi-node measurements at all.
-
-> Sad, because it really would be lovely to just remove that thing ;)
-
-Right, so why did we need it all, in the first place? There has to be
-some reason for it.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
