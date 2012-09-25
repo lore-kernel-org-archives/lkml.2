@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638Ab2IYRbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 13:31:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49102 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893Ab2IYRbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 13:31:43 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1348588977.22489.55.camel@vespa.frost.loc>
-References: <1348588977.22489.55.camel@vespa.frost.loc> <20120925163037.20ba3f3c@pyramind.ukuu.org.uk> <5555.1348531649@warthog.procyon.org.uk> <21845.1348585794@warthog.procyon.org.uk> <30071.1348587320@warthog.procyon.org.uk>
-To: Tomas Mraz <tmraz@redhat.com>
-Cc: dhowells@redhat.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        rusty@rustcorp.com.au, herbert@gondor.hengli.com.au, pjones@redhat.com,
-        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        keyrings@linux-nfs.org
-Subject: Re: Wrong system clock vs X.509 date specifiers
-Date: Tue, 25 Sep 2012 18:31:25 +0100
-Message-ID: <12475.1348594285@warthog.procyon.org.uk>
+	id S1757765Ab2IYRib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 13:38:31 -0400
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:34257 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757526Ab2IYRi3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 13:38:29 -0400
+Date: Tue, 25 Sep 2012 19:37:44 +0200
+From: matthieu castet <castet.matthieu@free.fr>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Matthieu CASTET <matthieu.castet@parrot.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2] hvc_dcc : add support to armv4 and armv5 core
+Message-ID: <20120925193744.655059d5@mat-laptop>
+In-Reply-To: <201209251544.57998.arnd@arndb.de>
+References: <1346413645-4593-1-git-send-email-castet.matthieu@free.fr>
+	<201209031257.28213.arnd@arndb.de>
+	<5061CF5A.2030201@parrot.com>
+	<201209251544.57998.arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomas Mraz <tmraz@redhat.com> wrote:
+Le Tue, 25 Sep 2012 15:44:57 +0000,
+Arnd Bergmann <arnd@arndb.de> a écrit :
 
-> You can use openssl ca that allows to set arbitrary start date to
-> generate selfsigned certs as well (-selfsign option).
+> 
+> It's not possible to build a kernel that runs on ARMv5 (or below) and
+> also on ARMv6 (or above), so the effect would be exactly the same.
+> While we are putting a lot of effort into making all sorts of ARMv6
+> and ARMv7 based systems work with the same kernel binary, it's highly
+> unlikely we would ever need the above to be runtime selected, because
+> there are a lot of other differences at assembly level.
+> 
+I know but Alan was not happy with the static version with ifdef [1]
+[2]. That why a dynamic version was done.
 
-That seems to require some stuff I don't have installed:
 
-warthog>openssl ca -in signing_key.priv -extensions v3_ca -out newcert.pem
-Using configuration from /etc/pki/tls/openssl.cnf
-Error opening CA private key /etc/pki/CA/private/cakey.pem
-140244246955872:error:0200100D:system library:fopen:Permission denied:bss_file.c:398:fopen('/etc/pki/CA/private/cakey.pem','r')
-140244246955872:error:20074002:BIO routines:FILE_CTRL:system lib:bss_file.c:400:
-unable to load CA private key
-unable to write 'random state'
+Matthieu
 
-(the /etc/pki/CA/private/ dir is inaccessible if not root and doesn't in any
-case contain cakey.pem).
 
-Do I need to start with all the CA stuff in the right places to use it?
+[1]
+> > There are no plans to ever make it possible; there are too many
+> > significant differences between ARMv4, v5 architectures and
+> > ARMv6,v7 architectures to warrant making this runtime selectable.  
+> 
+> Then bury this crap in platform files please not in the drivers/tty
+> layer code. Make it a platform driver provided callback or something.
+> 
+> Alan
 
-David
+[2]
+> > I posted a new v2 patch that make the selection dynamic.  
+> 
+> Thanks - fine with that one - or with burying it in headers etc in
+> the arm subdirs.
