@@ -1,196 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab2IYMxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 08:53:08 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:34410 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704Ab2IYMxF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 08:53:05 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] v4l: change path of video drivers
-Date: Tue, 25 Sep 2012 14:53:39 +0200
-Message-ID: <17747002.8OGeZe1l6D@avalon>
-User-Agent: KMail/4.9.1 (Linux/3.4.9-gentoo; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <1347614272-24878-1-git-send-email-prabhakar.lad@ti.com>
-References: <1347614272-24878-1-git-send-email-prabhakar.lad@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1755933Ab2IYMyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 08:54:22 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:59870 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753930Ab2IYMyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 08:54:21 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM),
+        linux-kernel@vger.kernel.org (open list), ldv-project@linuxtesting.org
+Subject: [PATCH] staging/gdm72xx: coding style fixes gdm_qos.c
+Date: Tue, 25 Sep 2012 16:53:52 +0400
+Message-Id: <1348577632-25462-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+Fix checkpatch.pl warnings:
+WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
+WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
+WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
 
-Thanks for the patch.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/staging/gdm72xx/gdm_qos.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-On Friday 14 September 2012 14:47:52 Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> due to structure change for video drivers, change the
-> description with correct path.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Rob Landley <rob@landley.net>
-
-For the omap3isp part and the V4L2 core,
-
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-> ---
->  Documentation/video4linux/CQcam.txt           |    2 +-
->  Documentation/video4linux/README.davinci-vpbe |   20 ++++++++++----------
->  Documentation/video4linux/fimc.txt            |   16 ++++++++--------
->  Documentation/video4linux/omap3isp.txt        |    2 +-
->  Documentation/video4linux/v4l2-framework.txt  |    2 +-
->  Documentation/video4linux/videobuf            |    2 +-
->  6 files changed, 22 insertions(+), 22 deletions(-)
-> 
-> diff --git a/Documentation/video4linux/CQcam.txt
-> b/Documentation/video4linux/CQcam.txt index 6e680fe..0b69e4e 100644
-> --- a/Documentation/video4linux/CQcam.txt
-> +++ b/Documentation/video4linux/CQcam.txt
-> @@ -18,7 +18,7 @@ Table of Contents
-> 
->  1.0 Introduction
-> 
-> -  The file ../../drivers/media/video/c-qcam.c is a device driver for
-> +  The file ../../drivers/media/parport/c-qcam.c is a device driver for
->  the Logitech (nee Connectix) parallel port interface color CCD camera.
->  This is a fairly inexpensive device for capturing images.  Logitech
->  does not currently provide information for developers, but many people
-> diff --git a/Documentation/video4linux/README.davinci-vpbe
-> b/Documentation/video4linux/README.davinci-vpbe index 7a460b0..dc9a297
-> 100644
-> --- a/Documentation/video4linux/README.davinci-vpbe
-> +++ b/Documentation/video4linux/README.davinci-vpbe
-> @@ -5,22 +5,22 @@
->   File partitioning
->   -----------------
->   V4L2 display device driver
-> -         drivers/media/video/davinci/vpbe_display.c
-> -         drivers/media/video/davinci/vpbe_display.h
-> +         drivers/media/platform/davinci/vpbe_display.c
-> +         drivers/media/platform/davinci/vpbe_display.h
-> 
->   VPBE display controller
-> -         drivers/media/video/davinci/vpbe.c
-> -         drivers/media/video/davinci/vpbe.h
-> +         drivers/media/platform/davinci/vpbe.c
-> +         drivers/media/platform/davinci/vpbe.h
-> 
->   VPBE venc sub device driver
-> -         drivers/media/video/davinci/vpbe_venc.c
-> -         drivers/media/video/davinci/vpbe_venc.h
-> -         drivers/media/video/davinci/vpbe_venc_regs.h
-> +         drivers/media/platform/davinci/vpbe_venc.c
-> +         drivers/media/platform/davinci/vpbe_venc.h
-> +         drivers/media/platform/davinci/vpbe_venc_regs.h
-> 
->   VPBE osd driver
-> -         drivers/media/video/davinci/vpbe_osd.c
-> -         drivers/media/video/davinci/vpbe_osd.h
-> -         drivers/media/video/davinci/vpbe_osd_regs.h
-> +         drivers/media/platform/davinci/vpbe_osd.c
-> +         drivers/media/platform/davinci/vpbe_osd.h
-> +         drivers/media/platform/davinci/vpbe_osd_regs.h
-> 
->   Functional partitioning
->   -----------------------
-> diff --git a/Documentation/video4linux/fimc.txt
-> b/Documentation/video4linux/fimc.txt index eb04970..fd02d9a 100644
-> --- a/Documentation/video4linux/fimc.txt
-> +++ b/Documentation/video4linux/fimc.txt
-> @@ -10,7 +10,7 @@ data from LCD controller (FIMD) through the SoC internal
-> writeback data path.  There are multiple FIMC instances in the SoCs (up to
-> 4), having slightly different capabilities, like pixel alignment
-> constraints, rotator availability, LCD writeback support, etc. The driver
-> is located at -drivers/media/video/s5p-fimc directory.
-> +drivers/media/platform/s5p-fimc directory.
-> 
->  1. Supported SoCs
->  =================
-> @@ -36,21 +36,21 @@ Not currently supported:
->  =====================
-> 
->  - media device driver
-> -  drivers/media/video/s5p-fimc/fimc-mdevice.[ch]
-> +  drivers/media/platform/s5p-fimc/fimc-mdevice.[ch]
-> 
->   - camera capture video device driver
-> -  drivers/media/video/s5p-fimc/fimc-capture.c
-> +  drivers/media/platform/s5p-fimc/fimc-capture.c
-> 
->   - MIPI-CSI2 receiver subdev
-> -  drivers/media/video/s5p-fimc/mipi-csis.[ch]
-> +  drivers/media/platform/s5p-fimc/mipi-csis.[ch]
-> 
->   - video post-processor (mem-to-mem)
-> -  drivers/media/video/s5p-fimc/fimc-core.c
-> +  drivers/media/platform/s5p-fimc/fimc-core.c
-> 
->   - common files
-> -  drivers/media/video/s5p-fimc/fimc-core.h
-> -  drivers/media/video/s5p-fimc/fimc-reg.h
-> -  drivers/media/video/s5p-fimc/regs-fimc.h
-> +  drivers/media/platform/s5p-fimc/fimc-core.h
-> +  drivers/media/platform/s5p-fimc/fimc-reg.h
-> +  drivers/media/platform/s5p-fimc/regs-fimc.h
-> 
->  4. User space interfaces
->  ========================
-> diff --git a/Documentation/video4linux/omap3isp.txt
-> b/Documentation/video4linux/omap3isp.txt index 5dd1439..b9a9f83 100644
-> --- a/Documentation/video4linux/omap3isp.txt
-> +++ b/Documentation/video4linux/omap3isp.txt
-> @@ -12,7 +12,7 @@ Introduction
->  ============
-> 
->  This file documents the Texas Instruments OMAP 3 Image Signal Processor
-> (ISP) -driver located under drivers/media/video/omap3isp. The original
-> driver was +driver located under drivers/media/platform/omap3isp. The
-> original driver was written by Texas Instruments but since that it has been
-> rewritten (twice) at Nokia.
-> 
-> diff --git a/Documentation/video4linux/v4l2-framework.txt
-> b/Documentation/video4linux/v4l2-framework.txt index 89318be..e7006ca
-> 100644
-> --- a/Documentation/video4linux/v4l2-framework.txt
-> +++ b/Documentation/video4linux/v4l2-framework.txt
-> @@ -1054,4 +1054,4 @@ The first event type in the class is reserved for
-> future use, so the first available event type is 'class base + 1'.
-> 
->  An example on how the V4L2 events may be used can be found in the OMAP
-> -3 ISP driver (drivers/media/video/omap3isp).
-> +3 ISP driver (drivers/media/platform/omap3isp).
-> diff --git a/Documentation/video4linux/videobuf
-> b/Documentation/video4linux/videobuf index 1d00d7f..3ffe9e9 100644
-> --- a/Documentation/video4linux/videobuf
-> +++ b/Documentation/video4linux/videobuf
-> @@ -349,7 +349,7 @@ again.
->  Developers who are interested in more information can go into the relevant
->  header files; there are a few low-level functions declared there which have
-> not been talked about here.  Also worthwhile is the vivi driver
-> -(drivers/media/video/vivi.c), which is maintained as an example of how V4L2
-> +(drivers/media/platform/vivi.c), which is maintained as an example of how
-> V4L2 drivers should be written.  Vivi only uses the vmalloc() API, but it's
-> good enough to get started with.  Note also that all of these calls are
-> exported GPL-only, so they will not be available to non-GPL kernel modules.
+diff --git a/drivers/staging/gdm72xx/gdm_qos.c b/drivers/staging/gdm72xx/gdm_qos.c
+index 80bde05..ed60138 100644
+--- a/drivers/staging/gdm72xx/gdm_qos.c
++++ b/drivers/staging/gdm72xx/gdm_qos.c
+@@ -25,12 +25,12 @@
+ #define B2H(x)		__be16_to_cpu(x)
+ 
+ #undef dprintk
+-#define dprintk(fmt, args ...) printk(KERN_DEBUG "[QoS] " fmt, ## args)
++#define dprintk(fmt, args ...) pr_debug("[QoS] " fmt, ## args)
+ #undef wprintk
+ #define wprintk(fmt, args ...) \
+-	printk(KERN_WARNING "[QoS WARNING] " fmt, ## args)
++	pr_warn("[QoS WARNING] " fmt, ## args)
+ #undef eprintk
+-#define eprintk(fmt, args ...) printk(KERN_ERR "[QoS ERROR] " fmt, ## args)
++#define eprintk(fmt, args ...) pr_err("[QoS ERROR] " fmt, ## args)
+ 
+ 
+ #define MAX_FREE_LIST_CNT		32
 -- 
-Regards,
-
-Laurent Pinchart
+1.7.9.5
 
