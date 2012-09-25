@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab2IYJMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 05:12:45 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39725 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab2IYJMn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 05:12:43 -0400
-Date: Tue, 25 Sep 2012 10:12:28 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Poddar, Sourav" <sourav.poddar@ti.com>, gregkh@linuxfoundation.org,
-        khilman@ti.com, paul@pwsan.com, tony@atomide.com,
-        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com,
-        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com
-Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not
-	suspended.
-Message-ID: <20120925091228.GI31374@n2100.arm.linux.org.uk>
-References: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com> <CAKdam572krJZcayRdJ_AciCUZH3LuzD9yoHenhxrB6j9xDZ6JQ@mail.gmail.com> <20120925083029.GG31374@n2100.arm.linux.org.uk> <20120925083118.GI9137@arwen.pp.htv.fi>
+	id S1754147Ab2IYJN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 05:13:29 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53105 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753502Ab2IYJN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 05:13:28 -0400
+Date: Tue, 25 Sep 2012 11:13:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Franklin Wei <frankhwei536@gmail.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <mhiramat@redhat.com>
+Subject: Re: arch/x86/lib/inat.c Error
+Message-ID: <20120925091324.GC1247@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	Franklin Wei <frankhwei536@gmail.com>, linux-kernel@vger.kernel.org,
+	Masami Hiramatsu <mhiramat@redhat.com>
+References: <CAEMuUziMGAM4UOeOGWwG9jiceU9K7NSzqbryMxHwFDfmOfqQdA@mail.gmail.com>
+ <20120924075957.GA5151@liondog.tnic>
+ <CAEMuUzjbudxmGOZqB2HBLNa7p=aRqdiNKNXZLRV7c9yKPJ7TxQ@mail.gmail.com>
+ <50610602.5050003@xenotime.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120925083118.GI9137@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <50610602.5050003@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 11:31:20AM +0300, Felipe Balbi wrote:
-> On Tue, Sep 25, 2012 at 09:30:29AM +0100, Russell King - ARM Linux wrote:
-> > How is this happening?  I think that needs proper investigation - or if
-> > it's had more investigation, then the results needs to be included in
-> > the commit description so that everyone can understand the issue here.
-> > 
-> > We should not be resuming a device which hasn't been suspended.  Maybe
-> > the runtime PM enable sequence is wrong, and that's what should be fixed
-> > instead?  
-> > 
-> > This sequence in the probe() function:
-> > 
-> >         pm_runtime_irq_safe(&pdev->dev);
-> >         pm_runtime_enable(&pdev->dev);
-> >         pm_runtime_get_sync(&pdev->dev);
-> > 
-> > would enable runtime PM while the s/w state indicates that it's disabled,
-> > and then that pm_runtime_get_sync() will want to resume the device.  See
-> > the section "5. Runtime PM Initialization, Device Probing and Removal"
-> > in Documentation/power/runtime_pm.txt, specifically the second paragraph
-> > of that section.
+On Mon, Sep 24, 2012 at 06:16:50PM -0700, Randy Dunlap wrote:
+> >> That's because all those _tables thingies are included from a
+> >> "inat-tables.c" in the same directory but it somehow doesn't get
+> >> included?!
+> >>
+> >> Can we get your .config pls? Also, you're doing a "normal" kernel build
+> >> on the command line, right?
+> >>
+> >> Thanks.
 > 
-> that was tested. It worked in pandaboard but didn't work on beagleboard
-> XM. Sourav tried to start a discussion about that, but it simply died...
 > 
-> In any case, pm_runtime_get_sync() in probe will always call
-> runtime_resume callback, right ?
+> Your config builds OK for me.
+> Do you see this line in your build output before inat.c is built?
+> 
+> 
+>   GEN     arch/x86/lib/inat-tables.c
 
-Well, if the runtime PM state says it's suspended, and then you enable
-runtime PM, the first call to pm_runtime_get_sync() will trigger a resume
-attempt.  The patch description is complaining about resume events without
-there being a preceding suspend event.
+Yeah, this looks like stale files from the build or similar are not
+being properly cleaned. Franklin, do the following:
 
-This could well be why.
+$ cp .config /tmp/
+$ make mrproper
+$ cp /tmp/.config .
+$ make oldconfig
+$ make -j<num_cpus + 1>
+
+to verify that a clean build actually fixes your issue.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
