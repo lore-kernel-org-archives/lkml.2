@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab2IYO5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 10:57:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38686 "EHLO mx2.suse.de"
+	id S1756716Ab2IYO5F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 10:57:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38685 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755950Ab2IYO43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755952Ab2IYO43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Sep 2012 10:56:29 -0400
 From: Thomas Renninger <trenn@suse.de>
 To: hpa@zytor.com
 Cc: lenb@kernel.org, initramfs@vger.kernel.org, robert.moore@intel.com,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        yinghai@kernel.org, Thomas Renninger <trenn@suse.de>
-Subject: [PATCH 6/6] ACPI: Document ACPI table overriding via initrd
-Date: Tue, 25 Sep 2012 16:56:01 +0200
-Message-Id: <1348584961-1476-7-git-send-email-trenn@suse.de>
+        yinghai@kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Renninger <trenn@suse.de>
+Subject: [PATCH 1/6] lib: Add early cpio decoder
+Date: Tue, 25 Sep 2012 16:55:56 +0200
+Message-Id: <1348584961-1476-2-git-send-email-trenn@suse.de>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1348584961-1476-1-git-send-email-trenn@suse.de>
 References: <1348584961-1476-1-git-send-email-trenn@suse.de>
@@ -21,112 +22,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+
+Add a simple cpio decoder without library dependencies for the purpose
+of extracting components from the initramfs blob for early kernel
+uses.  Intended consumers so far are microcode and ACPI override.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+CC: Thomas Renninger <trenn@suse.de>
+Link: http://lkml.kernel.org/r/201203261651.29640.trenn@suse.de
+Link: https://lkml.org/lkml/2012/9/21/190
 Signed-off-by: Thomas Renninger <trenn@suse.de>
 ---
- Documentation/acpi/initrd_table_override.txt |   94 ++++++++++++++++++++++++++
- 1 files changed, 94 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/acpi/initrd_table_override.txt
+ include/linux/earlycpio.h |   17 +++++
+ lib/Makefile              |    2 +-
+ lib/earlycpio.c           |  145 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 163 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/earlycpio.h
+ create mode 100644 lib/earlycpio.c
 
-diff --git a/Documentation/acpi/initrd_table_override.txt b/Documentation/acpi/initrd_table_override.txt
+diff --git a/include/linux/earlycpio.h b/include/linux/earlycpio.h
 new file mode 100644
-index 0000000..35c3f54
+index 0000000..111f46d
 --- /dev/null
-+++ b/Documentation/acpi/initrd_table_override.txt
-@@ -0,0 +1,94 @@
-+Overriding ACPI tables via initrd
-+=================================
++++ b/include/linux/earlycpio.h
+@@ -0,0 +1,17 @@
++#ifndef _LINUX_EARLYCPIO_H
++#define _LINUX_EARLYCPIO_H
 +
-+1) Introduction (What is this about)
-+2) What is this for
-+3) How does it work
-+4) References (Where to retrieve userspace tools)
++#include <linux/types.h>
 +
-+1) What is this about
-+---------------------
++#define MAX_CPIO_FILE_NAME 18
 +
-+If the ACPI_INITRD_TABLE_OVERRIDE compile option is true, it is possible to
-+override nearly any ACPI table provided by the BIOS with an instrumented,
-+modified one.
++struct cpio_data {
++	void *data;
++	size_t size;
++	char name[MAX_CPIO_FILE_NAME];
++};
 +
-+For a full list of ACPI tables that can be overridden, take a look at
-+the char *table_sigs[MAX_ACPI_SIGNATURE]; definition in drivers/acpi/osl.c
-+All ACPI tables iasl (Intel's ACPI compiler and disassembler) knows should
-+be overridable, except:
-+   - ACPI_SIG_RSDP (has a signature of 6 bytes)
-+   - ACPI_SIG_FACS (does not have an ordinary ACPI table header)
-+Both could get implemented as well.
++struct cpio_data find_cpio_data(const char *path, void *data, size_t len,
++				long *offset);
 +
++#endif /* _LINUX_EARLYCPIO_H */
+diff --git a/lib/Makefile b/lib/Makefile
+index 42d283e..0924041 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o
++	 is_single_threaded.o plist.o decompress.o earlycpio.o
+ 
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/earlycpio.c b/lib/earlycpio.c
+new file mode 100644
+index 0000000..8078ef4
+--- /dev/null
++++ b/lib/earlycpio.c
+@@ -0,0 +1,145 @@
++/* ----------------------------------------------------------------------- *
++ *
++ *   Copyright 2012 Intel Corporation; author H. Peter Anvin
++ *
++ *   This file is part of the Linux kernel, and is made available
++ *   under the terms of the GNU General Public License version 2, as
++ *   published by the Free Software Foundation.
++ *
++ *   This program is distributed in the hope it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *   General Public License for more details.
++ *
++ * ----------------------------------------------------------------------- */
 +
-+2) What is this for
-+-------------------
++/*
++ * earlycpio.c
++ *
++ * Find a specific cpio member; must precede any compressed content.
++ * This is used to locate data items in the initramfs used by the
++ * kernel itself during early boot (before the main initramfs is
++ * decompressed.)  It is the responsibility of the initramfs creator
++ * to ensure that these items are uncompressed at the head of the
++ * blob.  Depending on the boot loader or package tool that may be a
++ * separate file or part of the same file.
++ */
 +
-+Please keep in mind that this is a debug option.
-+ACPI tables should not get overridden for productive use.
-+If BIOS ACPI tables are overridden the kernel will get tainted with the
-+TAINT_OVERRIDDEN_ACPI_TABLE flag.
-+Complain to your platform/BIOS vendor if you find a bug which is so sever
-+that a workaround is not accepted in the Linux kernel.
++#include <linux/earlycpio.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
 +
-+Still, it can and should be enabled in any kernel, because:
-+  - There is no functional change with not instrumented initrds
-+  - It provides a powerful feature to easily debug and test ACPI BIOS table
-+    compatibility with the Linux kernel.
++enum cpio_fields {
++	C_MAGIC,
++	C_INO,
++	C_MODE,
++	C_UID,
++	C_GID,
++	C_NLINK,
++	C_MTIME,
++	C_FILESIZE,
++	C_MAJ,
++	C_MIN,
++	C_RMAJ,
++	C_RMIN,
++	C_NAMESIZE,
++	C_CHKSUM,
++	C_NFIELDS
++};
 +
++/**
++ * cpio_data find_cpio_data - Search for files in an uncompressed cpio
++ * @path:   The directory to search for, including a slash at the end
++ * @data:   Pointer to the the cpio archive or a header inside
++ * @len:    Remaining length of the cpio based on data pointer
++ * @offset: When a matching file is found, this is the offset to the
++ *          beginning of the cpio. It can be used to iterate through
++ *          the cpio to find all files inside of a directory path
++ *
++ * @return: struct cpio_data containing the address, length and
++ *          filename (with the directory path cut off) of the found file.
++ *          If you search for a filename and not for files in a directory,
++ *          pass the absolute path of the filename in the cpio and make sure
++ *          the match returned an empty filename string.
++ */
 +
-+3) How does it work
-+-------------------
++struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
++					  size_t len,  long *offset)
++{
++	const size_t cpio_header_len = 8*C_NFIELDS - 2;
++	struct cpio_data cd = { NULL, 0, "" };
++	const char *p, *dptr, *nptr;
++	unsigned int ch[C_NFIELDS], *chp, v;
++	unsigned char c, x;
++	size_t mypathsize = strlen(path);
++	int i, j;
 +
-+# Extract the machine's ACPI tables:
-+cd /tmp
-+acpidump >acpidump
-+acpixtract -a acpidump
-+# Disassemble, modify and recompile them:
-+iasl -d *.dat
-+# For example add this statement into a _PRT (PCI Routing Table) function
-+# of the DSDT:
-+Store("HELLO WORLD", debug)
-+iasl -sa dsdt.dsl
-+# Add the raw ACPI tables to an uncompressed cpio archive.
-+# They must be put into a /kernel/firmware/acpi directory inside the
-+# cpio archive.
-+# The uncompressed cpio archive must be the first.
-+# Other, typically compressed cpio archives, must be
-+# concatenated on top of the uncompressed one.
-+mkdir -p kernel/firmware/acpi
-+cp dsdt.aml kernel/firmware/acpi
-+# A maximum of: #define ACPI_OVERRIDE_TABLES 10
-+# tables are  currently allowed (see osl.c):
-+iasl -sa facp.dsl
-+iasl -sa ssdt1.dsl
-+cp facp.aml kernel/firmware/acpi
-+cp ssdt1.aml kernel/firmware/acpi
-+# Create the uncompressed cpio archive and concatenate the original initrd
-+# on top:
-+find kernel | cpio -H newc --create > /boot/instrumented_initrd
-+cat /boot/initrd >>/boot/instrumented_initrd
-+# reboot with increased acpi debug level, e.g. boot params:
-+acpi.debug_level=0x2 acpi.debug_layer=0xFFFFFFFF
-+# and check your syslog:
-+[    1.268089] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0._PRT]
-+[    1.272091] [ACPI Debug]  String [0x0B] "HELLO WORLD"
++	p = data;
 +
-+iasl is able to disassemble and recompile quite a lot different,
-+also static ACPI tables.
++	while (len > cpio_header_len) {
++		if (!*p) {
++			/* All cpio headers need to be 4-byte aligned */
++			p += 4;
++			len -= 4;
++			continue;
++		}
 +
++		j = 6;		/* The magic field is only 6 characters */
++		chp = ch;
++		for (i = C_NFIELDS; i; i--) {
++			v = 0;
++			while (j--) {
++				v <<= 4;
++				c = *p++;
 +
-+4) Where to retrieve userspace tools
-+------------------------------------
++				x = c - '0';
++				if (x < 10) {
++					v += x;
++					continue;
++				}
 +
-+iasl and acpixtract are part of Intel's ACPICA project:
-+http://acpica.org/
-+and should be packaged by distributions (for example in the acpica package
-+on SUSE).
++				x = (c | 0x20) - 'a';
++				if (x < 6) {
++					v += x + 10;
++					continue;
++				}
 +
-+acpidump can be found in Len Browns pmtools:
-+ftp://kernel.org/pub/linux/kernel/people/lenb/acpi/utils/pmtools/acpidump
-+This tool is also part of the acpica package on SUSE.
-+Alternatively, used ACPI tables can be retrieved via sysfs in latest kernels:
-+/sys/firmware/acpi/tables
++				goto quit; /* Invalid hexadecimal */
++			}
++			*chp++ = v;
++			j = 8;	/* All other fields are 8 characters */
++		}
++
++		if ((ch[C_MAGIC] - 0x070701) > 1)
++			goto quit; /* Invalid magic */
++
++		len -= cpio_header_len;
++
++		dptr = PTR_ALIGN(p + ch[C_NAMESIZE], 4);
++		nptr = PTR_ALIGN(dptr + ch[C_FILESIZE], 4);
++
++		if (nptr > p + len || dptr < p || nptr < dptr)
++			goto quit; /* Buffer overrun */
++
++		if ((ch[C_MODE] & 0170000) == 0100000 &&
++		    ch[C_NAMESIZE] >= mypathsize &&
++		    !memcmp(p, path, mypathsize)) {
++			*offset = (long)nptr - (long)data;
++			if (ch[C_NAMESIZE] - mypathsize >= MAX_CPIO_FILE_NAME) {
++				pr_warn(
++				"File %s exceeding MAX_CPIO_FILE_NAME [%d]\n",
++				p, MAX_CPIO_FILE_NAME);
++			}
++			strlcpy(cd.name, p + mypathsize, MAX_CPIO_FILE_NAME);
++
++			cd.data = (void *)dptr;
++			cd.size = ch[C_FILESIZE];
++			return cd; /* Found it! */
++		}
++		len -= (nptr - p);
++		p = nptr;
++	}
++
++quit:
++	return cd;
++}
 -- 
 1.7.6.1
 
