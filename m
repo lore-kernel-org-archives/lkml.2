@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab2IYXbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 19:31:32 -0400
-Received: from nm12-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.242]:22989 "HELO
-	nm12-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752632Ab2IYXb0 (ORCPT
+	id S1755688Ab2IYXbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 19:31:35 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:31155 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755560Ab2IYXbc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 19:31:26 -0400
-X-Yahoo-Newman-Id: 379983.256.bm@omp1030.access.mail.sp2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: c5azbLsVM1kT70vh.MBejP.Bdf8azQC.cHGnKUWxXO6svN8
- vb.9u498q.yCBV.JkH3Cw6SVQ0pZW2QrJd4qrYtJxolbvHOFJfdS9E.BTBTt
- fBmnN7umoKZ_aGCtEOL65WFHIpCHK0uP0PBjnpE1r.gvWaXs1TRKhJHLGDRO
- dhmskEwID7uk_1vnElBQnLALYRi74w6CW7.p_.jWF2UOAPt3t296Icdrc8R7
- uLmdM2R5LWkCwXMbMDVi4.KZaZ_sEzxhJCnly.3MbDmFwXm.now2V3P4gjjs
- xal.1cI1EpxsiES.rSXr5CObBWuHiGGPv.JL2mfOP5Ya6mUZ80L4y4xx6URj
- D5jYhJW.PT_99mjwV7VWbwzWi0vhM5GDOgDR69w6m_j_loEk_RaqdotvyoUx
- 84Xp97toYywNuv2E58eeu4FESDLSJeEyD77RiZD7QNE4u2bTli_s5
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-From: Daniel Santos <daniel.santos@pobox.com>
-To: Daniel Santos <daniel.santos@pobox.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Richard Weinberger <richard@nod.at>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH v5 12/25] rbtree.h: include kconfig.h
-Date: Tue, 25 Sep 2012 18:31:19 -0500
-Message-Id: <1348615879-10359-1-git-send-email-daniel.santos@pobox.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1348615467-9850-1-git-send-email-daniel.santos@pobox.com>
-References: <1348615467-9850-1-git-send-email-daniel.santos@pobox.com>
+	Tue, 25 Sep 2012 19:31:32 -0400
+MIME-Version: 1.0
+Message-ID: <30a570e8-8157-47e1-867a-4960a7c1173d@default>
+Date: Tue, 25 Sep 2012 16:31:01 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [RFC/PATCH] zcache2 on PPC64 (Was: [RFC] mm: add support for zsmalloc
+ and zcache)
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6661.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We shouldn't depend upon kernel.h including this for us.  However, this
-also fixes some issues with compiling in userland (coming later).
+Attached patch applies to staging-next and I _think_ should
+fix the reported problem where zbud in zcache2 does not
+work on a PPC64 with PAGE_SIZE!=12.  I do not have a machine
+to test this so testing by others would be appreciated.
 
-Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
----
- include/linux/rbtree.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Ideally there should also be a BUILD_BUG_ON to ensure
+PAGE_SHIFT * 2 + 2 doesn't exceed BITS_PER_LONG, but
+let's see if this fixes the problem first.
 
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index f1b53d5..66a99fd 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -98,6 +98,7 @@ static inline struct page * rb_insert_page_cache(struct inode * inode,
- #include <linux/kernel.h>
- #include <linux/stddef.h>
- #include <linux/bug.h>
-+#include <linux/kconfig.h>
- 
- struct rb_node
- {
--- 
-1.7.3.4
+Apologies if there are line breaks... I can't send this from
+a linux mailer right now.  If it is broken, let me know,
+and I will re-post tomorrow... though it should be easy
+to apply manually for test purposes.
 
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+
+diff --git a/drivers/staging/ramster/zbud.c b/drivers/staging/ramster/zbud.c
+index a7c4361..6921af3 100644
+--- a/drivers/staging/ramster/zbud.c
++++ b/drivers/staging/ramster/zbud.c
+@@ -103,8 +103,8 @@ struct zbudpage {
+ 		struct {
+ 			unsigned long space_for_flags;
+ 			struct {
+-				unsigned zbud0_size:12;
+-				unsigned zbud1_size:12;
++				unsigned zbud0_size:PAGE_SHIFT;
++				unsigned zbud1_size:PAGE_SHIFT;
+ 				unsigned unevictable:2;
+ 			};
+ 			struct list_head budlist;
