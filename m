@@ -1,94 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2IYO0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 10:26:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51362 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab2IYO0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 10:26:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,483,1344236400"; 
-   d="asc'?scan'208";a="212722181"
-Date: Tue, 25 Sep 2012 17:27:03 +0300
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Alex Shi <alex.shu@intel.com>, Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v4 0/8] Avoid cache trashing on clearing huge/gigantic
- page
-Message-ID: <20120925142703.GA1598@otc-wbsnb-06>
-References: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120913160506.d394392a.akpm@linux-foundation.org>
- <20120914055210.GC9043@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
-Content-Disposition: inline
-In-Reply-To: <20120914055210.GC9043@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754831Ab2IYOdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 10:33:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59733 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808Ab2IYOdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 10:33:19 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH v3 1/7] PCI: make PCI device create/destroy logic symmetric
+Date: Tue, 25 Sep 2012 22:29:24 +0800
+Message-Id: <1348583370-11006-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ From: Jiang Liu <jiang.liu@huawei.com>
 
---k+w/mQv8wyuph6w0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+According to device model documentation, the way to create/destroy PCI
+devices should be symmetric.
 
-On Fri, Sep 14, 2012 at 07:52:10AM +0200, Ingo Molnar wrote:
-> Without repeatable hard numbers such code just gets into the=20
-> kernel and bitrots there as new CPU generations come in - a few=20
-> years down the line the original decisions often degrade to pure=20
-> noise. We've been there, we've done that, we don't want to=20
-> repeat it.
+/**
+ * device_del - delete device from system.
+ * @dev: device.
+ *
+ * This is the first part of the device unregistration
+ * sequence. This removes the device from the lists we control
+ * from here, has it removed from the other driver model
+ * subsystems it was added to in device_add(), and removes it
+ * from the kobject hierarchy.
+ *
+ * NOTE: this should be called manually _iff_ device_add() was
+ * also called manually.
+ */
 
-<sorry, for late answer..>
+The rule is to either use
+1) device_register()/device_unregister()
+or
+2) device_initialize()/device_add()/device_del()/put_device().
 
-Hard numbers are hard.
-I've checked some workloads: Mosbench, NPB, specjvm2008. Most of time the
-patchset doesn't show any difference (within run-to-run deviation).
-On NPB it recovers THP regression, but it's probably not enough to make
-decision.
+So change PCI core logic to follow the rule and get rid of the redundant
+pci_dev_get()/pci_dev_put() pair.
 
-It would be nice if somebody test the patchset on other system or
-workload. Especially, if the configuration shows regression with
-THP enabled.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c  |    1 -
+ drivers/pci/remove.c |    4 ++--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
---=20
- Kirill A. Shutemov
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 2396111..5dbad03 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1293,7 +1293,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+ {
+ 	device_initialize(&dev->dev);
+ 	dev->dev.release = pci_release_dev;
+-	pci_dev_get(dev);
+ 
+ 	dev->dev.dma_mask = &dev->dma_mask;
+ 	dev->dev.dma_parms = &dev->dma_parms;
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 513972f..10693f5 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
+ 	if (dev->is_added) {
+ 		pci_proc_detach_device(dev);
+ 		pci_remove_sysfs_dev_files(dev);
+-		device_unregister(&dev->dev);
++		device_del(&dev->dev);
+ 		dev->is_added = 0;
+ 	}
+ 
+@@ -37,7 +37,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
+ 	up_write(&pci_bus_sem);
+ 
+ 	pci_free_resources(dev);
+-	pci_dev_put(dev);
++	put_device(&dev->dev);
+ }
+ 
+ void pci_remove_bus(struct pci_bus *bus)
+-- 
+1.7.9.5
 
---k+w/mQv8wyuph6w0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQYb83AAoJEAd+omnVudOMEiwP/jY2gXW39BINUmG8+U4etfX4
-vth8c0cn2Gd3F/plJzx2R/HI8qeTaIJeJdEPDuYyaGHEYXNsuVI8mWSbFVTBobag
-CjkmAGB39F7dPATNxsC5doX+Br+D9/ITvTsPK2unQzq1GX5XL8Gtr72yIq/OYagC
-0o+gKCtO6D2GPd7TwD6oxCoPYZwnoAWrNP+1QK2bgm0582AMpJxA/FIJ9EyGLIGX
-wrrajcBx/RTdNX400jEkNnVPdHCRd5EPED1qpa6Bnx90wFk7YDdSmC9eqdov/GnR
-0Rqk7tpnNvPzBb9dpFE2p422RDTrgCA223iLO35Mta7/0+zzwPUYr1wskqY7Jn5U
-mahxDSTwzqH6lFoal/eOtv+zj6dojOLHq7xDsCg2FjYDgvwgXrk28uDBUnhld0W+
-BjQXEf7g4LRAbgHaaW8tM5QhKsxJUCbzVmxvjgsWjChWQF6eiUXIHrEguvtH/3h6
-5SU1amCxJoSVtcHS84yOBWnTY7DbzRyXr9qV+PQ4BgXMCWtC51Q7jI8G6mVOiyYV
-vWTPJkHQOyxo+HObIAqYAOqj1OUuasLS1kFwT/sd6S6+sBbOC4NVeY//IlKPAqfe
-JlHej7XaFDphiYgPlKUPP409dufRqXxRwA5ac/pCt24FH2wmuDo3x1UR5MjJefTB
-AOawqDSExew3gFgwKuh1
-=8QRo
------END PGP SIGNATURE-----
-
---k+w/mQv8wyuph6w0--
