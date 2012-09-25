@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab2IYKev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:34:51 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55399 "EHLO arroyo.ext.ti.com"
+	id S1754860Ab2IYKeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:34:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55398 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753788Ab2IYKes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753230Ab2IYKes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Sep 2012 06:34:48 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <rtc-linux@googlegroups.com>
 CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
         <a.zummo@towertech.it>, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv2 3/7] rtc: Convert struct i2c_msg initialization to C99 format
-Date: Tue, 25 Sep 2012 16:03:40 +0530
-Message-ID: <1348569224-4096-4-git-send-email-shubhrajyoti@ti.com>
+Subject: [PATCHv2 0/7] rtc: convert to c99 format
+Date: Tue, 25 Sep 2012 16:03:37 +0530
+Message-ID: <1348569224-4096-1-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1348569224-4096-1-git-send-email-shubhrajyoti@ti.com>
-References: <1348569224-4096-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the struct i2c_msg initialization to C99 format. This makes
-maintaining and editing the code simpler. Also helps once other fields
-like transferred are added in future.
+The series tries to convert the i2c_msg to c99 struct.
+This may avoid issues like below if someone tries to add a
+structure.
+http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg08972.html
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/rtc/rtc-s35390a.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+Special thanks to Julia Lawall for helping it automate.
+By the below script.
+http://www.mail-archive.com/cocci@diku.dk/msg02753.html
+ 
+Resending with Andrew Morton in cc for review as it was suggested to me.
 
-diff --git a/drivers/rtc/rtc-s35390a.c b/drivers/rtc/rtc-s35390a.c
-index c9562ce..cc5c516 100644
---- a/drivers/rtc/rtc-s35390a.c
-+++ b/drivers/rtc/rtc-s35390a.c
-@@ -50,7 +50,11 @@ static int s35390a_set_reg(struct s35390a *s35390a, int reg, char *buf, int len)
- {
- 	struct i2c_client *client = s35390a->client[reg];
- 	struct i2c_msg msg[] = {
--		{ client->addr, 0, len, buf },
-+		{
-+			.addr = client->addr,
-+			.len = len,
-+			.buf = buf
-+		},
- 	};
- 
- 	if ((i2c_transfer(client->adapter, msg, 1)) != 1)
-@@ -63,7 +67,12 @@ static int s35390a_get_reg(struct s35390a *s35390a, int reg, char *buf, int len)
- {
- 	struct i2c_client *client = s35390a->client[reg];
- 	struct i2c_msg msg[] = {
--		{ client->addr, I2C_M_RD, len, buf },
-+		{
-+			.addr = client->addr,
-+			.flags = I2C_M_RD,
-+			.len = len,
-+			.buf = buf
-+		},
- 	};
- 
- 	if ((i2c_transfer(client->adapter, msg, 1)) != 1)
+
+Shubhrajyoti D (7):
+  rtc: Convert struct i2c_msg initialization to C99 format
+  rtc: Convert struct i2c_msg initialization to C99 format
+  rtc: Convert struct i2c_msg initialization to C99 format
+  rtc: Convert struct i2c_msg initialization to C99 format
+  rtc: Convert struct i2c_msg initialization to C99 format
+  rtc: Convert struct i2c_msg initialization to C99 format
+  rtc: Convert struct i2c_msg initialization to C99 format
+
+ drivers/rtc/rtc-ds1672.c  |   26 +++++++++++--
+ drivers/rtc/rtc-em3027.c  |   17 +++++++-
+ drivers/rtc/rtc-isl1208.c |   20 ++++++++--
+ drivers/rtc/rtc-pcf8563.c |   13 +++++-
+ drivers/rtc/rtc-rs5c372.c |    7 +++-
+ drivers/rtc/rtc-s35390a.c |   13 +++++-
+ drivers/rtc/rtc-x1205.c   |   92 ++++++++++++++++++++++++++++++++++++++-------
+ 7 files changed, 158 insertions(+), 30 deletions(-)
+
 -- 
 1.7.5.4
 
