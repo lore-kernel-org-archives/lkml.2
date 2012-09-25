@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab2IYLOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:14:45 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1573 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab2IYLOn convert rfc822-to-8bit (ORCPT
+	id S1755354Ab2IYLPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:15:25 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39867 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754777Ab2IYLPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:14:43 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 25 Sep 2012 04:05:23 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-Date: Tue, 25 Sep 2012 16:44:34 +0530
-Subject: RE: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
-Thread-Topic: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
-Thread-Index: Ac2aHGHrWQkknqWSS16Zl73wm0SibwA8Yrrg
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDF601838@BGMAIL02.nvidia.com>
-References: <1348230054-7402-1-git-send-email-vbyravarasu@nvidia.com>
-	<CAAe_U6K2hANpRqzyoiiP2mR97=M2Mb35+FVor11DaaZi7W9Pnw@mail.gmail.com>
-	<505C9282.3050001@wwwdotorg.org>
-	<D958900912E20642BCBC71664EFECE3E6DDF6014CF@BGMAIL02.nvidia.com>
- <CAAe_U6K3hcyv4Hi_8LM364qFakUagKfVdGh_2M4f7dFd-_kC4Q@mail.gmail.com>
-In-Reply-To: <CAAe_U6K3hcyv4Hi_8LM364qFakUagKfVdGh_2M4f7dFd-_kC4Q@mail.gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Tue, 25 Sep 2012 07:15:23 -0400
+Date: Tue, 25 Sep 2012 12:15:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Poddar, Sourav" <sourav.poddar@ti.com>, gregkh@linuxfoundation.org,
+        khilman@ti.com, paul@pwsan.com, tony@atomide.com,
+        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com,
+        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com
+Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not
+	suspended.
+Message-ID: <20120925111506.GO31374@n2100.arm.linux.org.uk>
+References: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com> <CAKdam572krJZcayRdJ_AciCUZH3LuzD9yoHenhxrB6j9xDZ6JQ@mail.gmail.com> <20120925083029.GG31374@n2100.arm.linux.org.uk> <20120925083118.GI9137@arwen.pp.htv.fi> <20120925091228.GI31374@n2100.arm.linux.org.uk> <20120925091112.GK9137@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120925091112.GK9137@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: ABRAHAM, KISHON VIJAY [mailto:kishon@ti.com]
-> Sent: Monday, September 24, 2012 11:48 AM
-> To: Venu Byravarasu
-> Cc: Stephen Warren; balbi@ti.com; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; linux-usb@vger.kernel.org
-> Subject: Re: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
-> 
-> Hi,
-> 
-> On Sat, Sep 22, 2012 at 2:08 PM, Venu Byravarasu
-> <vbyravarasu@nvidia.com> wrote:
-> >> -----Original Message-----
-> >> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> >> Sent: Friday, September 21, 2012 9:45 PM
-> >> To: ABRAHAM, KISHON VIJAY
-> >> Cc: Venu Byravarasu; balbi@ti.com; gregkh@linuxfoundation.org; linux-
-> >> kernel@vger.kernel.org; linux-usb@vger.kernel.org
-> >> Subject: Re: [PATCH v3] USB: PHY: Re-organize Tegra USB PHY driver
-> >>
-> >> On 09/21/2012 07:09 AM, ABRAHAM, KISHON VIJAY wrote:
-> >> > Hi,
-> >> >
-...
-> >>
-> >> ... where perhaps the use of defaults could be folded into
-> >> parse_pdata_from_dt().
-> >
-> >
-> > Thanks Stephen for the detailed explanation.
-> >
-> > Kishon / Felipe,
-> > Do you have any more questions in this related, before patch can be
-> applied?
-> 
-> I don't have any further comments.
-> 
-> Thanks
-> Kishon
+On Tue, Sep 25, 2012 at 12:11:14PM +0300, Felipe Balbi wrote:
+> that's most likely, of course. But should we cause a regression to
+> beagleboard XM because of that ? Also, if you look into chapter 9 of the
+> runtime_pm documentation, starting on line 822 you'll see documentation
+> suggests the use of mystruct->is_suspended flag.
 
-Felipe,
+BTW, I'll point out a fatal flaw in your justification above.
 
-Can you plz merge this patch, if you don't have any objections?
+If you read the entire example, you'll see that the is_suspended flag
+is _not_ used to prevent resumes without suspends, but is used as a
+flag to control whether the driver processes requests or not.  That's
+entirely functionally different from using a "is_suspended" flag in
+the way you mention above.
 
-Thanks,
-Venu
+Section 5 is quite clear about the requirements at initialization time
+for runtime PM, and nothing in section 9 contradicts that, and the
+is_suspended flag in that example has nothing to do with any of this.
