@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab2IYX20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 19:28:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55904 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab2IYX2X (ORCPT
+	id S1753889Ab2IYX2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 19:28:31 -0400
+Received: from blu0-omc4-s21.blu0.hotmail.com ([65.55.111.160]:46189 "EHLO
+	blu0-omc4-s21.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752259Ab2IYX21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 19:28:23 -0400
-Date: Tue, 25 Sep 2012 16:28:14 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Randy Dunlap <rdunlap@xenotime.net>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: mmotm 2012-09-20-17-25 uploaded (fs/bimfmt_elf on uml)
-In-Reply-To: <20120926074827.32c7187adef6327c74c75564@canb.auug.org.au>
-Message-ID: <alpine.DEB.2.00.1209251627220.6503@chino.kir.corp.google.com>
-References: <20120921002638.7859F100047@wpzn3.hot.corp.google.com> <505C865D.5090802@xenotime.net> <20120922115606.5ca9f599cd88514ddda4831d@canb.auug.org.au> <alpine.DEB.2.00.1209251243320.31518@chino.kir.corp.google.com>
- <20120926074827.32c7187adef6327c74c75564@canb.auug.org.au>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 25 Sep 2012 19:28:27 -0400
+X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Sep 2012 19:28:27 EDT
+X-Originating-IP: [69.158.129.29]
+X-EIP: [YloTBf91ElGrXDOCyc2krYGdYvDd24ao]
+X-Originating-Email: [dave.anglin@bell.net]
+Message-ID: <BLU0-SMTP54F29C73A16BAB0885137A979D0@phx.gbl>
+From: John David Anglin <dave.anglin@bell.net>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+In-Reply-To: <CAK1hOcMongS_p5+oiaqE85tEVF8mv+SCm3yb-N=Zqz4Xuz_+WA@mail.gmail.com>
+Subject: Re: parisc: orphaned asm/compat_signal.h file?
+References: <CAK1hOcMongS_p5+oiaqE85tEVF8mv+SCm3yb-N=Zqz4Xuz_+WA@mail.gmail.com>
+Content-Type: text/plain; charset="US-ASCII"; format=flowed
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0 (Apple Message framework v936)
+Date: Tue, 25 Sep 2012 19:23:03 -0400
+CC: "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.936)
+X-OriginalArrivalTime: 25 Sep 2012 23:23:19.0320 (UTC) FILETIME=[BF652180:01CD9B74]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Sep 2012, Stephen Rothwell wrote:
+On 24-Sep-12, at 8:39 AM, Denys Vlasenko wrote:
 
-> > This still happens on x86_64 for linux-next as of today's tree.
-> 
-> Are you sure?  next-20120925?
-> 
-> $ grep -n vmalloc fs/binfmt_elf.c
-> 30:#include <linux/vmalloc.h>
-> 1421:	data = vmalloc(size);
-> 
+> Maybe it needs to be removed?
 
-Ok, it looks like it's fixed by 1bb6a4c9514e in today's linux-next tree; 
-that wasn't present when I pulled it at 2am PDT, so it must be a time zone 
-difference.  Thanks.
+Worked for me with 3.5.4.
+
+Dave
+--
+John David Anglin	dave.anglin@bell.net
+
+
+
