@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab2IYGup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 02:50:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63173 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884Ab2IYGuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 02:50:44 -0400
-Date: Tue, 25 Sep 2012 12:20:25 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sjur BRENDELAND <sjur.brandeland@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "sjurbren@gmail.com" <sjurbren@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCHv4] virtio_console: Add support for remoteproc serial
-Message-ID: <20120925065025.GF32657@amit.redhat.com>
-References: <1348489987-6768-1-git-send-email-sjur.brandeland@stericsson.com>
- <20120924174523.GA14390@amit.redhat.com>
- <81C3A93C17462B4BBD7E272753C1057923BD79D728@EXDCVYMBSTM005.EQ1STM.local>
- <20120925040158.GC32657@amit.redhat.com>
- <87sja63c9b.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sja63c9b.fsf@rustcorp.com.au>
+	id S1753287Ab2IYGvE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 02:51:04 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41569 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab2IYGvC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 02:51:02 -0400
+Date: Tue, 25 Sep 2012 16:50:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christian Daudt <csd@broadcom.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: linux-next: manual merge of the arm-soc tree with the l2-mtd tree
+Message-Id: <20120925165057.3a48eb9c4e3e4d70818e2791@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Sep_2012_16_50_57_+1000_JPSbyJsUJaaHK48Q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 25 Sep 2012 [14:55:04], Rusty Russell wrote:
-> Amit Shah <amit.shah@redhat.com> writes:
-> 
-> > On (Mon) 24 Sep 2012 [23:50:01], Sjur BRENDELAND wrote:
-> >> Hi Amit,
-> >> 
-> >> > I'm sorry for not being able to look at this earlier.
-> >> 
-> >> No worries. I'll try to respin and retest this patch by tomorrow.
-> >> If you by any chance could find time to review so could make it in time
-> >> for 3.7 it would be great :-)
-> >
-> > I think it might be late for 3.7 already, I'd prefer to let this bake
-> > for a while, ensure it passes my test suites, at the least.  But I'll
-> > let Rusty take the final call.
-> 
-> It can make the next merge window, but it has to be done this week.
-> 
-> I'm only allowing it this late because it's a new driver.
+--Signature=_Tue__25_Sep_2012_16_50_57_+1000_JPSbyJsUJaaHK48Q
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It does change code shared with the 'older' console and serial ports,
-so the risk of regressions does exist.
+Hi all,
 
-		Amit
+Today's linux-next merge of the arm-soc tree got conflicts in
+drivers/mtd/nand/bcm_umi_nand.c and drivers/mtd/nand/nand_bcm_umi.h
+between commit 07f4c69caf01 ("mtd: remove bcmring NAND driver") from the
+l2-mtd tree and commit 878040ef831a ("ARM: bcmring: use proper MMIO
+accessors") from the arm-soc tree.
+
+I just removed the files and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__25_Sep_2012_16_50_57_+1000_JPSbyJsUJaaHK48Q
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQYVRRAAoJEECxmPOUX5FEC0EP/3tKu1LTnGwzwNTg0ggD4esi
+owq9TCfdErNxTQUfjgbYoQjedw3IZFCwLbAhS4IdUz/zU/an3vY6SxBenkSloEVR
+YRY4WFIijTvcOoiXF19I47GqUSrylBIchs4QaeZ5lKCMAdawkinlMAY3tBu/6UKl
+5pFOzwihjSzWL4DGLT+Y8dHHHgaZAnGOdllqKdDOhk/IgGGTbtbI9n9xykscLubZ
+ZA/kJmqunTxbbNKCjjjQ+QrJKt8wwPqgVLbPUpZnPRupYa5KbLmTDJI3m9XA1+fm
+xFgs8mhbKlQNH5/HTpkMty68KHsH+yKy6qy2K/URtpotnq19JoQEbuwcnZEQ6Nng
+xoaSaxkp6ZYGXtSCJpLRveeglZXsCeDny5WzCKYhQPtjhP4ttFHqxc5A/cmlNobY
+bvO0SWwXls0ZG0FcMPTn9MGv7zQ5mGf2akPjnTDgctMSQsrZR9xx8tH5qHOwz3Hp
+nfhdvIIfiES2WJGpotZlvZJhgLzGZj+fuA2sOTrnbNzpSEK1KJrUCvQH4d/0TwE2
+cOtDH+5R5lWSn86p4uTTSt900NY9GYv//GYAXTXw5m1w+vtuTedESZF2JRB1XU6t
+JzhcOktrubIsUYOED7E3qbcJRJGuOSUPCoAR5MRKe67a28SaeUb1vzUlo12pgEVP
+gQZd+qJsPKXi2V1AEzmX
+=oEr1
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Sep_2012_16_50_57_+1000_JPSbyJsUJaaHK48Q--
