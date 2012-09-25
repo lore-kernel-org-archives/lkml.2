@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278Ab2IYQS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:18:29 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57024 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757719Ab2IYQOC (ORCPT
+	id S1758266Ab2IYQS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:18:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60753 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757879Ab2IYQOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:14:02 -0400
+	Tue, 25 Sep 2012 12:14:03 -0400
 From: mathieu.poirier@linaro.org
 To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
 Cc: mathieu.poirier@linaro.org
-Subject: [PATCH 40/57] power: ab8500: ADC for battery thermistor
-Date: Tue, 25 Sep 2012 10:12:37 -0600
-Message-Id: <1348589574-25655-41-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 41/57] power: ab8500_btemp: Filter btemp readings
+Date: Tue, 25 Sep 2012 10:12:38 -0600
+Message-Id: <1348589574-25655-42-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
@@ -20,58 +20,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+From: Hakan Berg <hakan.berg@stericsson.com>
 
-When using ABx500_ADC_THERM_BATCTRL the battery ID resistor
-is combined with a NTC resistor to both identify the battery and
-to measure its temperature.
+Battery tempreature readings sometimes fails and results in
+a value far from recent values. This patch adds a software
+filter that disposes such readings, by allowing direct
+updates on temperature only if two samples result in the
+same temperature. Else only allow 1 degree change from previous
+reported value in the direction of the new measurement.
 
-Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+Signed-off-by: Hakan Berg <hakan.berg@stericsson.com>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-Reviewed-by: Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
-Reviewed-by: Michel JAOUEN <michel.jaouen@stericsson.com>
-Reviewed-by: Hakan BERG <hakan.berg@stericsson.com>
+Reviewed-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
+Reviewed-by: Martin SJOBLOM <martin.w.sjoblom@stericsson.com>
 Reviewed-by: Rabin VINCENT <rabin.vincent@stericsson.com>
 ---
- drivers/power/ab8500_btemp.c |    4 +++-
- include/linux/mfd/abx500.h   |    2 ++
- 2 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/power/ab8500_btemp.c |   27 +++++++++++++++++++++------
+ 1 files changed, 21 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
-index 506f124..56a3bb9 100644
+index 56a3bb9..b24835f 100644
 --- a/drivers/power/ab8500_btemp.c
 +++ b/drivers/power/ab8500_btemp.c
-@@ -557,7 +557,9 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
- 	/* BATTERY_UNKNOWN is defined on position 0, skip it! */
- 	for (i = BATTERY_UNKNOWN + 1; i < di->bat->n_btypes; i++) {
- 		if ((res <= di->bat->bat_type[i].resis_high) &&
--			(res >= di->bat->bat_type[i].resis_low)) {
-+			(res >= di->bat->bat_type[i].resis_low) &&
-+			(di->bat->bat_type[i].adc_therm ==
-+							di->bat->adc_therm)) {
- 			dev_dbg(di->dev, "Battery detected on %s"
- 				" low %d < res %d < high: %d"
- 				" index: %d\n",
-diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
-index 97e918f..cb2b82a 100644
---- a/include/linux/mfd/abx500.h
-+++ b/include/linux/mfd/abx500.h
-@@ -270,6 +270,7 @@ struct abx500_maxim_parameters {
-  * @low_high_cur_lvl:		charger current in temp low/high state in mA
-  * @low_high_vol_lvl:		charger voltage in temp low/high state in mV'
-  * @battery_resistance:		battery inner resistance in mOhm.
-+ * @adc_therm:			battery uses controller or resistor for temp.
-  * @n_r_t_tbl_elements:		number of elements in r_to_t_tbl
-  * @r_to_t_tbl:			table containing resistance to temp points
-  * @n_v_cap_tbl_elements:	number of elements in v_to_cap_tbl
-@@ -297,6 +298,7 @@ struct abx500_battery_type {
- 	int low_high_cur_lvl;
- 	int low_high_vol_lvl;
- 	int battery_resistance;
-+	enum abx500_adc_therm adc_therm;
- 	int n_temp_tbl_elements;
- 	struct abx500_res_to_temp *r_to_t_tbl;
- 	int n_v_cap_tbl_elements;
+@@ -74,8 +74,8 @@ struct ab8500_btemp_ranges {
+  * @dev:		Pointer to the structure device
+  * @node:		List of AB8500 BTEMPs, hence prepared for reentrance
+  * @curr_source:	What current source we use, in uA
+- * @bat_temp:		Battery temperature in degree Celcius
+- * @prev_bat_temp	Last dispatched battery temperature
++ * @bat_temp:		Dispatched battery temperature in degree Celcius
++ * @prev_bat_temp	Last measured battery temperature in degree Celcius
+  * @parent:		Pointer to the struct ab8500
+  * @gpadc:		Pointer to the struct gpadc
+  * @fg:			Pointer to the struct fg
+@@ -608,6 +608,7 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
+ static void ab8500_btemp_periodic_work(struct work_struct *work)
+ {
+ 	int interval;
++	int bat_temp;
+ 	struct ab8500_btemp *di = container_of(work,
+ 		struct ab8500_btemp, btemp_periodic_work.work);
+ 
+@@ -618,12 +619,26 @@ static void ab8500_btemp_periodic_work(struct work_struct *work)
+ 			dev_warn(di->dev, "failed to identify the battery\n");
+ 	}
+ 
+-	di->bat_temp = ab8500_btemp_measure_temp(di);
+-
+-	if (di->bat_temp != di->prev_bat_temp) {
+-		di->prev_bat_temp = di->bat_temp;
++	bat_temp = ab8500_btemp_measure_temp(di);
++	/*
++	 * Filter battery temperature.
++	 * Allow direct updates on temperature only if two samples result in
++	 * same temperature. Else only allow 1 degree change from previous
++	 * reported value in the direction of the new measurement.
++	 */
++	if (bat_temp == di->prev_bat_temp || !di->initialized) {
++		if (di->bat_temp != di->prev_bat_temp || !di->initialized) {
++			di->bat_temp = bat_temp;
++			power_supply_changed(&di->btemp_psy);
++		}
++	} else if (bat_temp < di->prev_bat_temp) {
++		di->bat_temp--;
++		power_supply_changed(&di->btemp_psy);
++	} else if (bat_temp > di->prev_bat_temp) {
++		di->bat_temp++;
+ 		power_supply_changed(&di->btemp_psy);
+ 	}
++	di->prev_bat_temp = bat_temp;
+ 
+ 	if (di->events.ac_conn || di->events.usb_conn)
+ 		interval = di->bat->temp_interval_chg;
 -- 
 1.7.5.4
 
