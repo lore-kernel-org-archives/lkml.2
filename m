@@ -1,152 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab2IYQWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:22:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60753 "EHLO
+	id S1758505Ab2IYQW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:22:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41451 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757758Ab2IYQNk (ORCPT
+	with ESMTP id S1757745Ab2IYQNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:13:40 -0400
+	Tue, 25 Sep 2012 12:13:38 -0400
 From: mathieu.poirier@linaro.org
 To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
 Cc: mathieu.poirier@linaro.org
-Subject: [PATCH 23/57] power: Add plaform data charger configurables
-Date: Tue, 25 Sep 2012 10:12:20 -0600
-Message-Id: <1348589574-25655-24-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 22/57] power: AB workaround for invalid charger
+Date: Tue, 25 Sep 2012 10:12:19 -0600
+Message-Id: <1348589574-25655-23-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Loic Pallardy <loic.pallardy@stericsson.com>
+From: Henrik Sölver <henrik.solver@stericsson.com>
 
-Allow to indicate wheter AC and USB charge capabilities are
-supported from platform data.
+AB8500 refuses to start charging when some types of non standard
+chargers are connected. This change force the AB to start charging.
 
-Signed-off-by: Loic Pallardy <loic.pallardy@stericsson.com>
+Signed-off-by: Henrik Sölver <henrik.solver@stericsson.com>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-Reviewed-on: http://gerrit.lud.stericsson.com/gerrit/58093
-Reviewed-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
-Reviewed-by: Olivier CLERGEAUD <olivier.clergeaud@stericsson.com>
+Reviewed-by: Yvan FILLION <yvan.fillion@stericsson.com>
+Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
 ---
- drivers/power/ab8500_charger.c            |   36 ++++++++++++++++++----------
- include/linux/mfd/abx500.h                |    2 +
- include/linux/mfd/abx500/ux500_chargalg.h |    2 +
- 3 files changed, 27 insertions(+), 13 deletions(-)
+ drivers/power/ab8500_charger.c |   70 +++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 66 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-index cbc9fd7..3100f11 100644
+index 7cd4165..cbc9fd7 100644
 --- a/drivers/power/ab8500_charger.c
 +++ b/drivers/power/ab8500_charger.c
-@@ -2878,8 +2878,11 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
- 	destroy_workqueue(di->charger_wq);
+@@ -203,6 +203,7 @@ struct ab8500_charger_usb_state {
+  * @old_vbat		Previously measured battery voltage
+  * @usb_device_is_unrecognised	USB device is unrecognised by the hardware
+  * @autopower		Indicate if we should have automatic pwron after pwrloss
++ * @invalid_charger_detect_state	State when forcing AB to use invalid charger
+  * @parent:		Pointer to the struct ab8500
+  * @gpadc:		Pointer to the struct gpadc
+  * @pdata:		Pointer to the abx500_charger platform data
+@@ -246,6 +247,7 @@ struct ab8500_charger {
+ 	int old_vbat;
+ 	bool usb_device_is_unrecognised;
+ 	bool autopower;
++	int invalid_charger_detect_state;
+ 	struct ab8500 *parent;
+ 	struct ab8500_gpadc *gpadc;
+ 	struct abx500_charger_platform_data *pdata;
+@@ -650,7 +652,6 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+ 			break;
+ 		}
+ 	case USB_STAT_HM_IDGND:
+-	case USB_STAT_NOT_VALID_LINK:
+ 		dev_err(di->dev, "USB Type - Charging not allowed\n");
+ 		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P05;
+ 		ret = -ENXIO;
+@@ -679,6 +680,9 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+ 		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+ 		dev_dbg(di->dev, "USB Type - 0x%02x MaxCurr: %d", link_status,
+ 				di->max_usb_in_curr);
++	case USB_STAT_NOT_VALID_LINK:
++		dev_err(di->dev, "USB Type invalid - try charging anyway\n");
++		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+ 		break;
  
- 	flush_scheduled_work();
--	power_supply_unregister(&di->usb_chg.psy);
--	power_supply_unregister(&di->ac_chg.psy);
-+	if (di->usb_chg.enabled)
-+		power_supply_unregister(&di->usb_chg.psy);
-+	if (di->ac_chg.enabled)
-+		power_supply_unregister(&di->ac_chg.psy);
-+
- 	platform_set_drvdata(pdev, NULL);
- 	kfree(di);
- 
-@@ -2942,6 +2945,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- 		ARRAY_SIZE(ab8500_charger_voltage_map) - 1];
- 	di->ac_chg.max_out_curr = ab8500_charger_current_map[
- 		ARRAY_SIZE(ab8500_charger_current_map) - 1];
-+	di->ac_chg.enabled = di->pdata->ac_enabled;
- 
- 	/* USB supply */
- 	/* power_supply base class */
-@@ -2960,7 +2964,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- 		ARRAY_SIZE(ab8500_charger_voltage_map) - 1];
- 	di->usb_chg.max_out_curr = ab8500_charger_current_map[
- 		ARRAY_SIZE(ab8500_charger_current_map) - 1];
--
-+	di->usb_chg.enabled = di->pdata->usb_enabled;
- 
- 	/* Create a work queue for the charger */
- 	di->charger_wq =
-@@ -3036,17 +3040,21 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Register AC charger class */
--	ret = power_supply_register(di->dev, &di->ac_chg.psy);
--	if (ret) {
--		dev_err(di->dev, "failed to register AC charger\n");
--		goto free_regulator;
-+	if (di->ac_chg.enabled) {
-+		ret = power_supply_register(di->dev, &di->ac_chg.psy);
-+		if (ret) {
-+			dev_err(di->dev, "failed to register AC charger\n");
-+			goto free_regulator;
-+		}
- 	}
- 
- 	/* Register USB charger class */
--	ret = power_supply_register(di->dev, &di->usb_chg.psy);
--	if (ret) {
--		dev_err(di->dev, "failed to register USB charger\n");
--		goto free_ac;
-+	if (di->usb_chg.enabled) {
-+		ret = power_supply_register(di->dev, &di->usb_chg.psy);
-+		if (ret) {
-+			dev_err(di->dev, "failed to register USB charger\n");
-+			goto free_ac;
-+		}
- 	}
- 
- 	di->usb_phy = usb_get_phy(USB_PHY_TYPE_USB2);
-@@ -3122,9 +3130,11 @@ free_irq:
- put_usb_phy:
- 	usb_put_phy(di->usb_phy);
- free_usb:
--	power_supply_unregister(&di->usb_chg.psy);
-+	if (di->usb_chg.enabled)
-+		power_supply_unregister(&di->usb_chg.psy);
- free_ac:
--	power_supply_unregister(&di->ac_chg.psy);
-+	if (di->ac_chg.enabled)
-+		power_supply_unregister(&di->ac_chg.psy);
- free_regulator:
- 	regulator_put(di->regu);
- free_charger_wq:
-diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
-index 4d44a10..eef1ddc 100644
---- a/include/linux/mfd/abx500.h
-+++ b/include/linux/mfd/abx500.h
-@@ -398,6 +398,8 @@ struct abx500_charger_platform_data {
- 	char **supplied_to;
- 	size_t num_supplicants;
- 	bool autopower_cfg;
-+	bool ac_enabled;
-+	bool usb_enabled;
- };
- 
- struct abx500_btemp_platform_data {
-diff --git a/include/linux/mfd/abx500/ux500_chargalg.h b/include/linux/mfd/abx500/ux500_chargalg.h
-index 9b07725..5b77a61 100644
---- a/include/linux/mfd/abx500/ux500_chargalg.h
-+++ b/include/linux/mfd/abx500/ux500_chargalg.h
-@@ -27,12 +27,14 @@ struct ux500_charger_ops {
-  * @ops			ux500 charger operations
-  * @max_out_volt	maximum output charger voltage in mV
-  * @max_out_curr	maximum output charger current in mA
-+ * @enabled		indicates if this charger is used or not
+ 	default:
+@@ -1945,7 +1949,9 @@ static void ab8500_charger_usb_link_attach_work(struct work_struct *work)
   */
- struct ux500_charger {
- 	struct power_supply psy;
- 	struct ux500_charger_ops ops;
- 	int max_out_volt;
- 	int max_out_curr;
-+	bool enabled;
- };
+ static void ab8500_charger_usb_link_status_work(struct work_struct *work)
+ {
++	int detected_chargers;
+ 	int ret;
++	u8 val;
  
- #endif
+ 	struct ab8500_charger *di = container_of(work,
+ 		struct ab8500_charger, usb_link_status_work);
+@@ -1955,11 +1961,66 @@ static void ab8500_charger_usb_link_status_work(struct work_struct *work)
+ 	 * synchronously, we have the check if  is
+ 	 * connected by reading the status register
+ 	 */
+-	ret = ab8500_charger_detect_chargers(di);
+-	if (ret < 0)
++	detected_chargers = ab8500_charger_detect_chargers(di);
++	if (detected_chargers < 0)
+ 		return;
+ 
+-	if (!(ret & USB_PW_CONN)) {
++	/*
++	 * Some chargers that breaks the USB spec is
++	 * identified as invalid by AB8500 and it refuse
++	 * to start the charging process. but by jumping
++	 * thru a few hoops it can be forced to start.
++	 */
++	ret = abx500_get_register_interruptible(di->dev, AB8500_USB,
++			AB8500_USB_LINE_STAT_REG, &val);
++	if (ret >= 0)
++		dev_dbg(di->dev, "UsbLineStatus register = 0x%02x\n", val);
++	else
++		dev_dbg(di->dev, "Error reading USB link status\n");
++
++	if (detected_chargers & USB_PW_CONN) {
++		if (((val & AB8500_USB_LINK_STATUS) >> 3) ==
++						USB_STAT_NOT_VALID_LINK &&
++				di->invalid_charger_detect_state == 0) {
++			dev_dbg(di->dev,
++				 "Invalid charger detected, state= 0\n");
++			/*Enable charger*/
++			abx500_mask_and_set_register_interruptible(di->dev,
++						AB8500_CHARGER,
++						AB8500_USBCH_CTRL1_REG,
++						0x01, 0x01)
++			/*Enable charger detection*/
++			abx500_mask_and_set_register_interruptible(di->dev,
++						AB8500_USB,
++						AB8500_MCH_IPT_CURLVL_REG,
++						0x01, 0x01);
++			di->invalid_charger_detect_state = 1;
++			/*exit and wait for new link status interrupt.*/
++			return;
++
++		}
++		if (di->invalid_charger_detect_state == 1) {
++			dev_dbg(di->dev,
++				"Invalid charger detected, state= 1\n");
++			/*Stop charger detection*/
++			abx500_mask_and_set_register_interruptible(di->dev,
++						AB8500_USB,
++						AB8500_MCH_IPT_CURLVL_REG,
++						0x01, 0x00);
++			/*Check link status*/
++			ret = abx500_get_register_interruptible(di->dev,
++						AB8500_USB,
++						AB8500_USB_LINE_STAT_REG,
++						&val);
++			dev_dbg(di->dev, "USB link status= 0x%02x\n",
++					(val & AB8500_USB_LINK_STATUS) >> 3);
++			di->invalid_charger_detect_state = 2;
++		}
++	} else {
++		di->invalid_charger_detect_state = 0;
++	}
++
++	if (!(detected_chargers & USB_PW_CONN)) {
+ 		di->vbus_detected = 0;
+ 		ab8500_charger_set_usb_connected(di, false);
+ 		ab8500_power_supply_changed(di, &di->usb_chg.psy);
+@@ -2862,6 +2923,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	di->autopower = false;
++	di->invalid_charger_detect_state = 0;
+ 
+ 	/* AC supply */
+ 	/* power_supply base class */
 -- 
 1.7.5.4
 
