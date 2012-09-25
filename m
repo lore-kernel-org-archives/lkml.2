@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab2IYRVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 13:21:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52419 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757247Ab2IYRVu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 13:21:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120925170058.GC30158@x1.osrc.amd.com>
-References: <1348503163.11847.97.camel@twins> <CA+55aFzU2QOgexc2cpEkWqPBw6wPJMBuUzRyxTxu=rxZV_ay3A@mail.gmail.com>
- <1348505683.11847.111.camel@twins> <1348511193.6951.44.camel@marge.simpson.net>
- <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
- <20120924192056.GB4082@liondog.tnic> <1348538258.7100.23.camel@marge.simpson.net>
- <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
- <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com> <20120925170058.GC30158@x1.osrc.amd.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 25 Sep 2012 10:21:28 -0700
-X-Google-Sender-Auth: 5OoLQjYT9tz8OOkakyzbNWhgrhs
-Message-ID: <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Mel Gorman <mgorman@suse.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757638Ab2IYRbs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 13:31:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753893Ab2IYRbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 13:31:43 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1348588977.22489.55.camel@vespa.frost.loc>
+References: <1348588977.22489.55.camel@vespa.frost.loc> <20120925163037.20ba3f3c@pyramind.ukuu.org.uk> <5555.1348531649@warthog.procyon.org.uk> <21845.1348585794@warthog.procyon.org.uk> <30071.1348587320@warthog.procyon.org.uk>
+To: Tomas Mraz <tmraz@redhat.com>
+Cc: dhowells@redhat.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        rusty@rustcorp.com.au, herbert@gondor.hengli.com.au, pjones@redhat.com,
+        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        keyrings@linux-nfs.org
+Subject: Re: Wrong system clock vs X.509 date specifiers
+Date: Tue, 25 Sep 2012 18:31:25 +0100
+Message-ID: <12475.1348594285@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 10:00 AM, Borislav Petkov <bp@alien8.de> wrote:
->
-> 3.6-rc6+tip/auto-latest-kill select_idle_sibling()
+Tomas Mraz <tmraz@redhat.com> wrote:
 
-Is this literally just removing it entirely? Because apart from the
-latency spike at 4 procs (and the latency numbers look very noisy, so
-that's probably just noise), it looks clearly superior to everything
-else. On that benchmark, at least.
+> You can use openssl ca that allows to set arbitrary start date to
+> generate selfsigned certs as well (-selfsign option).
 
-How does pgbench look? That's the one that apparently really wants to
-spread out, possibly due to user-level spinlocks. So I assume it will
-show the reverse pattern, with "kill select_idle_sibling" being the
-worst case. Sad, because it really would be lovely to just remove that
-thing ;)
+That seems to require some stuff I don't have installed:
 
-          Linus
+warthog>openssl ca -in signing_key.priv -extensions v3_ca -out newcert.pem
+Using configuration from /etc/pki/tls/openssl.cnf
+Error opening CA private key /etc/pki/CA/private/cakey.pem
+140244246955872:error:0200100D:system library:fopen:Permission denied:bss_file.c:398:fopen('/etc/pki/CA/private/cakey.pem','r')
+140244246955872:error:20074002:BIO routines:FILE_CTRL:system lib:bss_file.c:400:
+unable to load CA private key
+unable to write 'random state'
+
+(the /etc/pki/CA/private/ dir is inaccessible if not root and doesn't in any
+case contain cakey.pem).
+
+Do I need to start with all the CA stuff in the right places to use it?
+
+David
