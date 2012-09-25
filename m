@@ -1,139 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab2IYMOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 08:14:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21901 "EHLO mga01.intel.com"
+	id S1755275Ab2IYMP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 08:15:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12429 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754814Ab2IYMNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 08:13:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,481,1344236400"; 
-   d="scan'208";a="226185259"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv1 1/6] dmaengine: dw_dmac: Remove clk API dependency
-Date: Tue, 25 Sep 2012 15:13:05 +0300
-Message-Id: <1348575190-11761-2-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753745Ab2IYMPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 08:15:54 -0400
+Message-ID: <5061A071.2090104@redhat.com>
+Date: Tue, 25 Sep 2012 14:15:45 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
+MIME-Version: 1.0
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        dm-devel@redhat.com, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 0/1] dm-integrity: integrity protection device-mapper
+ target
+References: <cover.1348480396.git.dmitry.kasatkin@intel.com> <50606456.7020607@redhat.com> <CALLzPKbRk0NSS44Wq46SMPq7--NLG0+rjK8QxVfnaz25q=LX8Q@mail.gmail.com>
+In-Reply-To: <CALLzPKbRk0NSS44Wq46SMPq7--NLG0+rjK8QxVfnaz25q=LX8Q@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
-Not all platforms support clk API.
+On 09/24/2012 06:20 PM, Kasatkin, Dmitry wrote:
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/Kconfig        |    1 -
- drivers/dma/dw_dmac.c      |   18 +++---------------
- drivers/dma/dw_dmac_regs.h |    1 -
- 3 files changed, 3 insertions(+), 17 deletions(-)
+>> So it can provide confidentiality but it CANNOT provide integrity protection.
+>>
+> Yes, it provides confidentiality and via encryption it provides
+> certain level of integrity protection.
+> Data cannot be modified without being detected.
+> Decryption will result in garbage...
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 677cd6e..df32537 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -83,7 +83,6 @@ config INTEL_IOP_ADMA
- 
- config DW_DMAC
- 	tristate "Synopsys DesignWare AHB DMA support"
--	depends on HAVE_CLK
- 	select DMA_ENGINE
- 	default y if CPU_AT32AP7000
- 	help
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 9316d03..d9344a7 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1,9 +1,9 @@
- /*
-- * Driver for the Synopsys DesignWare DMA Controller (aka DMACA on
-- * AVR32 systems.)
-+ * Core driver for the Synopsys DesignWare DMA Controller
-  *
-  * Copyright (C) 2007-2008 Atmel Corporation
-  * Copyright (C) 2010-2011 ST Microelectronics
-+ * Copyright (C) 2012 Intel Corporation
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -12,7 +12,6 @@
- #define VERBOSE_DEBUG
- #define DEBUG
- #include <linux/bitops.h>
--#include <linux/clk.h>
- #include <linux/delay.h>
- #include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
-@@ -224,7 +223,6 @@ static inline void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
- 		channel_readl(dwc, CTL_LO));
- }
- 
--
- static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
- {
- 	channel_clear_bit(dw, CH_EN, dwc->mask);
-@@ -1508,11 +1506,6 @@ static int __devinit dw_probe(struct platform_device *pdev)
- 	if (!dw)
- 		return -ENOMEM;
- 
--	dw->clk = devm_clk_get(&pdev->dev, "hclk");
--	if (IS_ERR(dw->clk))
--		return PTR_ERR(dw->clk);
--	clk_prepare_enable(dw->clk);
--
- 	dw->regs = regs;
- 
- 	/* get hardware configuration parameters */
-@@ -1657,19 +1650,14 @@ static int __devexit dw_remove(struct platform_device *pdev)
- 
- static void dw_shutdown(struct platform_device *pdev)
- {
--	struct dw_dma	*dw = platform_get_drvdata(pdev);
--
- 	dw_dma_off(platform_get_drvdata(pdev));
--	clk_disable_unprepare(dw->clk);
- }
- 
- static int dw_suspend_noirq(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
--	struct dw_dma	*dw = platform_get_drvdata(pdev);
- 
- 	dw_dma_off(platform_get_drvdata(pdev));
--	clk_disable_unprepare(dw->clk);
- 
- 	return 0;
- }
-@@ -1679,8 +1667,8 @@ static int dw_resume_noirq(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct dw_dma	*dw = platform_get_drvdata(pdev);
- 
--	clk_prepare_enable(dw->clk);
- 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
-+
- 	return 0;
- }
- 
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index ff39fa6..50e0b63 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -229,7 +229,6 @@ struct dw_dma {
- 	struct dma_device	dma;
- 	void __iomem		*regs;
- 	struct tasklet_struct	tasklet;
--	struct clk		*clk;
- 
- 	u8			all_chan_mask;
- 
--- 
-1.7.10.4
+It should, but it is not cryptographic integrity protection.
+Moreover, you can revert ciphertext sector content.
 
+Btw I think dm-integrity doesn't solve the reply problem as well.
+
+(IOW can you replace/revert both data and hash, still using the same key
+in keyring, without dm-integrity able to detect it?)
+
+In dm-verity, root hash will change after such data tampering.
+
+>> Obvious question: can be dm-verity extended to provide read-write integrity?
+>>
+> 
+> I think re-calculating hash trees all the time and syncing block
+> hashes and tree itself is heavier operation...
+
+Then why not extend dm-verity to use you hash format? There are options
+for that and we can redefine table line if necessary.
+
+(You are duplicating a lot of code here otherwise, not counting userspace yet.)
+
+Whatever, I shortly read the code and have some notes.
+
+First, device-mapper is variable system, you can stack devices in arbitrary order.
+
+Unfortunately, this is something what can be dangerous in crypto, here you can e.g.
+ - do mac (integrity) then encrypt
+ - do encrypt, then check integrity
+
+In many implementations mac-then-encrypt system was not secure.
+Are we sure that it cannot provide side channels here?
+
+Note read-only integrity target (like dm-verity) is specific case, you should
+not be able to run any chosen ciphertext attacks here, it is read-only device.
+
+In fact, I am not sure if we should provide separate read-write block integrity
+(wihtout encryption) target at all.
+
+Either it should use standard mode of authenticated encryption (like GCM)
+or data integrity should be upper layer business (which knows better which data
+really need integrity checking and which areas are just unused garbage.
+If you consider hashing and encryption as "heavy operation" you should minimize
+it to only really used area - and only upper layer know about real used data content.)
+
+(Again, this is different for read-only target, where it usually uses compressed
+RO fs image which uses all available space.)
+
+
+1) discards
+It seems the dm-integrity target doesn't solve problem with discards.
+
+If you send discard request to underlying device, data content of discarded area
+is undefined (or zeroed if discards zeroes data) but is is definitely "invalid"
+form the dm-integrity point of view. And you are allowing discard IOs there.
+
+I am not sure what should happen, but the behaviour should be documented (at least)
+or disabled.
+
+2)
+All used hash algorithms must be configurable.
+
+>From your doc:
+
++While NIST does recommend to use SHA256 hash algorithm instead of SHA1,
++this does not apply to HMAC(SHA1), because of keying.
++This target uses HMAC(SHA1), because it takes much less space and it is
++faster to calculate. There is no parameter to change hmac hash algorithm.
+
+While this is technically true, http://csrc.nist.gov/groups/ST/hash/policy.html
+disallowing use of another hash algorithm is wrong, and in fact it is regression
+in comparison with dm-verity (which already implements all needed calculations
+and uses hash name as table line option).
+
++HMAC(SHA1) size is 20 bytes. So every 4k block on the integrity device can
++store 204 hmacs. In order to get the required size of the integrity device,
++it is necessary to divide data device size by 204.
+
+Why are you hardcoding block and hash sizes?
+Again, dm-verity have this configurable with some good default.
+
+ditto for kernel keyring:
++       const char *hmac_algo = "hmac(sha1)"; /* uncompromized yet */
+
+3)
+I like that this target can use kernel keyring, in fact, we should implement
+similar option to dm crypt/verity. But the target should not be limited
+to use TPM keys only.
+(And key is stored directly in kernel memory later for hash calculation anyway
+allowing hw attacks reading it from RAM.)
+
+4)
+reboot notifier cannot be used this way in generic storage stacking IMHO,
+but I think there was discussion with Mikulas already
+http://www.redhat.com/archives/dm-devel/2012-March/msg00164.html
+
+5)
+output target table should not translate device to device symbolic names
+
+Anyway, code can be changed. But the high level questions remains...
+
+Milan
