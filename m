@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758452Ab2IYQVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:21:51 -0400
+	id S1758480Ab2IYQWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:22:07 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:60753 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757777Ab2IYQNm (ORCPT
+	with ESMTP id S1757758Ab2IYQNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:13:42 -0400
+	Tue, 25 Sep 2012 12:13:40 -0400
 From: mathieu.poirier@linaro.org
 To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
 Cc: mathieu.poirier@linaro.org
-Subject: [PATCH 25/57] power: ab8500: adaptation to ab version
-Date: Tue, 25 Sep 2012 10:12:22 -0600
-Message-Id: <1348589574-25655-26-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 23/57] power: Add plaform data charger configurables
+Date: Tue, 25 Sep 2012 10:12:20 -0600
+Message-Id: <1348589574-25655-24-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
@@ -20,155 +20,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michel JAOUEN <michel.jaouen@stericsson.com>
+From: Loic Pallardy <loic.pallardy@stericsson.com>
 
-Add AB9540 and AB8505 support to ab8500_temp
-driver.
+Allow to indicate wheter AC and USB charge capabilities are
+supported from platform data.
 
-Signed-off-by: Rajkumar Kasirajan <rajkumar.kasirajan@stericsson.com>
+Signed-off-by: Loic Pallardy <loic.pallardy@stericsson.com>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-Reviewed-by: Michel JAOUEN <michel.jaouen@stericsson.com>
+Reviewed-on: http://gerrit.lud.stericsson.com/gerrit/58093
 Reviewed-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
-Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+Reviewed-by: Olivier CLERGEAUD <olivier.clergeaud@stericsson.com>
 ---
- drivers/power/ab8500_btemp.c         |   71 ++++++++++++++++++++++++++-------
- include/linux/mfd/abx500/ab8500-bm.h |    2 +
- 2 files changed, 58 insertions(+), 15 deletions(-)
+ drivers/power/ab8500_charger.c            |   36 ++++++++++++++++++----------
+ include/linux/mfd/abx500.h                |    2 +
+ include/linux/mfd/abx500/ux500_chargalg.h |    2 +
+ 3 files changed, 27 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
-index 74cddba..506f124 100644
---- a/drivers/power/ab8500_btemp.c
-+++ b/drivers/power/ab8500_btemp.c
-@@ -37,6 +37,9 @@
- #define BTEMP_BATCTRL_CURR_SRC_7UA	7
- #define BTEMP_BATCTRL_CURR_SRC_20UA	20
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index cbc9fd7..3100f11 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -2878,8 +2878,11 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
+ 	destroy_workqueue(di->charger_wq);
  
-+#define BTEMP_BATCTRL_CURR_SRC_16UA	16
-+#define BTEMP_BATCTRL_CURR_SRC_18UA	18
+ 	flush_scheduled_work();
+-	power_supply_unregister(&di->usb_chg.psy);
+-	power_supply_unregister(&di->ac_chg.psy);
++	if (di->usb_chg.enabled)
++		power_supply_unregister(&di->usb_chg.psy);
++	if (di->ac_chg.enabled)
++		power_supply_unregister(&di->ac_chg.psy);
 +
- #define to_ab8500_btemp_device_info(x) container_of((x), \
- 	struct ab8500_btemp, btemp_psy);
+ 	platform_set_drvdata(pdev, NULL);
+ 	kfree(di);
  
-@@ -212,10 +215,18 @@ static int ab8500_btemp_curr_source_enable(struct ab8500_btemp *di,
+@@ -2942,6 +2945,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+ 		ARRAY_SIZE(ab8500_charger_voltage_map) - 1];
+ 	di->ac_chg.max_out_curr = ab8500_charger_current_map[
+ 		ARRAY_SIZE(ab8500_charger_current_map) - 1];
++	di->ac_chg.enabled = di->pdata->ac_enabled;
  
- 	/* Only do this for batteries with internal NTC */
- 	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL && enable) {
--		if (di->curr_source == BTEMP_BATCTRL_CURR_SRC_7UA)
--			curr = BAT_CTRL_7U_ENA;
--		else
--			curr = BAT_CTRL_20U_ENA;
-+
-+		if (is_ab9540(di->parent) || is_ab8505(di->parent)) {
-+			if (di->curr_source == BTEMP_BATCTRL_CURR_SRC_16UA)
-+				curr = BAT_CTRL_16U_ENA;
-+			else
-+				curr = BAT_CTRL_18U_ENA;
-+		} else {
-+			if (di->curr_source == BTEMP_BATCTRL_CURR_SRC_7UA)
-+				curr = BAT_CTRL_7U_ENA;
-+			else
-+				curr = BAT_CTRL_20U_ENA;
-+		}
+ 	/* USB supply */
+ 	/* power_supply base class */
+@@ -2960,7 +2964,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+ 		ARRAY_SIZE(ab8500_charger_voltage_map) - 1];
+ 	di->usb_chg.max_out_curr = ab8500_charger_current_map[
+ 		ARRAY_SIZE(ab8500_charger_current_map) - 1];
+-
++	di->usb_chg.enabled = di->pdata->usb_enabled;
  
- 		dev_dbg(di->dev, "Set BATCTRL %duA\n", di->curr_source);
+ 	/* Create a work queue for the charger */
+ 	di->charger_wq =
+@@ -3036,17 +3040,21 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+ 	}
  
-@@ -246,11 +257,22 @@ static int ab8500_btemp_curr_source_enable(struct ab8500_btemp *di,
- 	} else if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL && !enable) {
- 		dev_dbg(di->dev, "Disable BATCTRL curr source\n");
- 
--		/* Write 0 to the curr bits */
--		ret = abx500_mask_and_set_register_interruptible(di->dev,
--			AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
--			BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA,
--			~(BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA));
-+		if (is_ab9540(di->parent) || is_ab8505(di->parent)) {
-+			/* Write 0 to the curr bits */
-+			ret = abx500_mask_and_set_register_interruptible(
-+				di->dev,
-+				AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
-+				BAT_CTRL_16U_ENA | BAT_CTRL_18U_ENA,
-+				~(BAT_CTRL_16U_ENA | BAT_CTRL_18U_ENA));
-+		} else {
-+			/* Write 0 to the curr bits */
-+			ret = abx500_mask_and_set_register_interruptible(
-+				di->dev,
-+				AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
-+				BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA,
-+				~(BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA));
-+		}
-+
- 		if (ret) {
- 			dev_err(di->dev, "%s failed disabling current source\n",
- 				__func__);
-@@ -292,11 +314,20 @@ static int ab8500_btemp_curr_source_enable(struct ab8500_btemp *di,
- 	 * if we got an error above
- 	 */
- disable_curr_source:
--	/* Write 0 to the curr bits */
--	ret = abx500_mask_and_set_register_interruptible(di->dev,
-+	if (is_ab9540(di->parent) || is_ab8505(di->parent)) {
-+		/* Write 0 to the curr bits */
-+		ret = abx500_mask_and_set_register_interruptible(di->dev,
-+			AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
-+			BAT_CTRL_16U_ENA | BAT_CTRL_18U_ENA,
-+			~(BAT_CTRL_16U_ENA | BAT_CTRL_18U_ENA));
-+	} else {
-+		/* Write 0 to the curr bits */
-+		ret = abx500_mask_and_set_register_interruptible(di->dev,
- 			AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
- 			BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA,
- 			~(BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA));
-+	}
-+
- 	if (ret) {
- 		dev_err(di->dev, "%s failed disabling current source\n",
- 			__func__);
-@@ -510,8 +541,11 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
- {
- 	int res;
- 	u8 i;
-+	if (is_ab9540(di->parent) || is_ab8505(di->parent))
-+		di->curr_source = BTEMP_BATCTRL_CURR_SRC_16UA;
-+	else
-+		di->curr_source = BTEMP_BATCTRL_CURR_SRC_7UA;
- 
--	di->curr_source = BTEMP_BATCTRL_CURR_SRC_7UA;
- 	di->bat->batt_id = BATTERY_UNKNOWN;
- 
- 	res =  ab8500_btemp_get_batctrl_res(di);
-@@ -548,9 +582,16 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
- 	 * detected type is Type 1, else we use the 7uA source
- 	 */
- 	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL &&
--			di->bat->batt_id == 1) {
--		dev_dbg(di->dev, "Set BATCTRL current source to 20uA\n");
--		di->curr_source = BTEMP_BATCTRL_CURR_SRC_20UA;
-+						 di->bat->batt_id == 1) {
-+		if (is_ab9540(di->parent) || is_ab8505(di->parent)) {
-+			dev_dbg(di->dev,
-+					"Set BATCTRL current source to 16uA\n");
-+			di->curr_source = BTEMP_BATCTRL_CURR_SRC_16UA;
-+		} else {
-+			dev_dbg(di->dev,
-+					"Set BATCTRL current source to 20uA\n");
-+			di->curr_source = BTEMP_BATCTRL_CURR_SRC_20UA;
+ 	/* Register AC charger class */
+-	ret = power_supply_register(di->dev, &di->ac_chg.psy);
+-	if (ret) {
+-		dev_err(di->dev, "failed to register AC charger\n");
+-		goto free_regulator;
++	if (di->ac_chg.enabled) {
++		ret = power_supply_register(di->dev, &di->ac_chg.psy);
++		if (ret) {
++			dev_err(di->dev, "failed to register AC charger\n");
++			goto free_regulator;
 +		}
  	}
  
- 	return di->bat->batt_id;
-diff --git a/include/linux/mfd/abx500/ab8500-bm.h b/include/linux/mfd/abx500/ab8500-bm.h
-index 25af2c1..175197c 100644
---- a/include/linux/mfd/abx500/ab8500-bm.h
-+++ b/include/linux/mfd/abx500/ab8500-bm.h
-@@ -226,6 +226,8 @@
- /* BatCtrl Current Source Constants */
- #define BAT_CTRL_7U_ENA			0x01
- #define BAT_CTRL_20U_ENA		0x02
-+#define BAT_CTRL_18U_ENA		0x01
-+#define BAT_CTRL_16U_ENA		0x02
- #define BAT_CTRL_CMP_ENA		0x04
- #define FORCE_BAT_CTRL_CMP_HIGH		0x08
- #define BAT_CTRL_PULL_UP_ENA		0x10
+ 	/* Register USB charger class */
+-	ret = power_supply_register(di->dev, &di->usb_chg.psy);
+-	if (ret) {
+-		dev_err(di->dev, "failed to register USB charger\n");
+-		goto free_ac;
++	if (di->usb_chg.enabled) {
++		ret = power_supply_register(di->dev, &di->usb_chg.psy);
++		if (ret) {
++			dev_err(di->dev, "failed to register USB charger\n");
++			goto free_ac;
++		}
+ 	}
+ 
+ 	di->usb_phy = usb_get_phy(USB_PHY_TYPE_USB2);
+@@ -3122,9 +3130,11 @@ free_irq:
+ put_usb_phy:
+ 	usb_put_phy(di->usb_phy);
+ free_usb:
+-	power_supply_unregister(&di->usb_chg.psy);
++	if (di->usb_chg.enabled)
++		power_supply_unregister(&di->usb_chg.psy);
+ free_ac:
+-	power_supply_unregister(&di->ac_chg.psy);
++	if (di->ac_chg.enabled)
++		power_supply_unregister(&di->ac_chg.psy);
+ free_regulator:
+ 	regulator_put(di->regu);
+ free_charger_wq:
+diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
+index 4d44a10..eef1ddc 100644
+--- a/include/linux/mfd/abx500.h
++++ b/include/linux/mfd/abx500.h
+@@ -398,6 +398,8 @@ struct abx500_charger_platform_data {
+ 	char **supplied_to;
+ 	size_t num_supplicants;
+ 	bool autopower_cfg;
++	bool ac_enabled;
++	bool usb_enabled;
+ };
+ 
+ struct abx500_btemp_platform_data {
+diff --git a/include/linux/mfd/abx500/ux500_chargalg.h b/include/linux/mfd/abx500/ux500_chargalg.h
+index 9b07725..5b77a61 100644
+--- a/include/linux/mfd/abx500/ux500_chargalg.h
++++ b/include/linux/mfd/abx500/ux500_chargalg.h
+@@ -27,12 +27,14 @@ struct ux500_charger_ops {
+  * @ops			ux500 charger operations
+  * @max_out_volt	maximum output charger voltage in mV
+  * @max_out_curr	maximum output charger current in mA
++ * @enabled		indicates if this charger is used or not
+  */
+ struct ux500_charger {
+ 	struct power_supply psy;
+ 	struct ux500_charger_ops ops;
+ 	int max_out_volt;
+ 	int max_out_curr;
++	bool enabled;
+ };
+ 
+ #endif
 -- 
 1.7.5.4
 
