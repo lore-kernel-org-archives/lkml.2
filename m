@@ -1,106 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab2IYK7a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:59:30 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39834 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab2IYK73 (ORCPT
+	id S1755154Ab2IYLAD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:00:03 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:49131 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752503Ab2IYLAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:59:29 -0400
-Date: Tue, 25 Sep 2012 11:59:13 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Poddar, Sourav" <sourav.poddar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org, khilman@ti.com,
-        paul@pwsan.com, tony@atomide.com, linux-kernel@vger.kernel.org,
-        santosh.shilimkar@ti.com, linux-serial@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alan@linux.intel.com
-Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not
-	suspended.
-Message-ID: <20120925105913.GM31374@n2100.arm.linux.org.uk>
-References: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com> <CAKdam572krJZcayRdJ_AciCUZH3LuzD9yoHenhxrB6j9xDZ6JQ@mail.gmail.com> <20120925083029.GG31374@n2100.arm.linux.org.uk> <20120925083118.GI9137@arwen.pp.htv.fi> <20120925091228.GI31374@n2100.arm.linux.org.uk> <20120925091112.GK9137@arwen.pp.htv.fi> <20120925092118.GJ31374@n2100.arm.linux.org.uk> <CAKdam57bpTJ94Gn=mKVw1Fm-76fVPp3DGjFuNu_HfesybM1hPg@mail.gmail.com>
+	Tue, 25 Sep 2012 07:00:01 -0400
+Date: Tue, 25 Sep 2012 13:55:05 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, a.zummo@towertech.it
+Subject: Re: [PATCHv2 1/7] rtc: Convert struct i2c_msg initialization to C99
+ format
+Message-ID: <20120925105504.GQ9137@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1348569224-4096-1-git-send-email-shubhrajyoti@ti.com>
+ <1348569224-4096-2-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Hnpg0BSo5EvPlUVi"
 Content-Disposition: inline
-In-Reply-To: <CAKdam57bpTJ94Gn=mKVw1Fm-76fVPp3DGjFuNu_HfesybM1hPg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1348569224-4096-2-git-send-email-shubhrajyoti@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right, let's get this thread back onto a constructive footing and try
-to understand the problems here.
 
-On Tue, Sep 25, 2012 at 03:26:06PM +0530, Poddar, Sourav wrote:
-> The issue was observed at serial init itself in the N800 board and the
-> log does not show up much.
-> http://www.pwsan.com/omap/testlogs/test_tty_next_e36851d0/20120910020323/boot/2420n800/2420n800_log.txt
+--Hnpg0BSo5EvPlUVi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, so output stops when ttyO2 is initialized.
+On Tue, Sep 25, 2012 at 04:03:38PM +0530, Shubhrajyoti D wrote:
+> Convert the struct i2c_msg initialization to C99 format. This makes
+> maintaining and editing the code simpler. Also helps once other fields
+> like transferred are added in future.
+>=20
+> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> ---
+>  drivers/rtc/rtc-ds1672.c |   26 ++++++++++++++++++++++----
+>  1 files changed, 22 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/drivers/rtc/rtc-ds1672.c b/drivers/rtc/rtc-ds1672.c
+> index 7fa67d0..577dbae 100644
+> --- a/drivers/rtc/rtc-ds1672.c
+> +++ b/drivers/rtc/rtc-ds1672.c
+> @@ -37,8 +37,17 @@ static int ds1672_get_datetime(struct i2c_client *clie=
+nt, struct rtc_time *tm)
+>  	unsigned char buf[4];
+> =20
+>  	struct i2c_msg msgs[] =3D {
+> -		{client->addr, 0, 1, &addr},	/* setup read ptr */
+> -		{client->addr, I2C_M_RD, 4, buf},	/* read date */
+> +		{/* setup read ptr */
+> +			.addr =3D client->addr,
+> +			.len =3D 1,
+> +			.buf =3D &addr
+> +		},
+> +		{/* setup read ptr */
 
-> What we thought the problem might be with n800 is that it tries to
-> resume when it didn't suspend before.
-> 
-> There are two ways through which we thought of handling this issue:
-> 
-> a) set device as active before enabling pm (which will prevent
-> 
-> pm_runtime_set_active(dev);
-> pm_runtime_enable(dev);
-> 
-> OR
-> 
-> b) adding a "suspended" flag to struct omap_uart_port which gets set on
-> suspend and cleared on resume. Then on resume you can check:
-> 
-> if (!up->suspended)
->         return 0;
-> 
-> But using "pm_runtime_set_active" approach breaks things even on
-> beagle board xm, though it works fine on Panda.
+should this comment be /* read date */ ??
 
-Right, so now the question becomes - what is different on the Beagle Board
-that prevents solution (a) from working - or put it another way, have we
-uncovered _another_ bug.
+--=20
+balbi
 
-For N800, for ttyO0 and ttyO1 which aren't in use, it may be correct.
-We don't know for certain.  For ttyO2, the port is clearly already in
-use as it's being used for console output.  So that means it's _not_
-in suspended state, and therefore the initial runtime PM state is
-wrong.
+--Hnpg0BSo5EvPlUVi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-For Beagleboard - who knows, we have no information on that.  All we
-know is that your (a) sequence causes a regression.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Anyway, let's analyse the code paths.  What is pm_runtime_get_sync()
-doing?  Well, it calls __pm_runtime_resume(, RPM_GET_PUT).  That alters
-the parent device's state (which doesn't matter for this, as the platform
-device is a child of the main platform device, which has no runtime PM.)
+iQIcBAEBAgAGBQJQYY2IAAoJEIaOsuA1yqRE67YP/0UkM6jHaUC7dL1VNlRJ2wVG
+8SMro1xGPPyBsVyNPcvi0AU+KyZsQ0h7tGxnKtuklalANjixklNs/tBc4w4Eoyu+
+FX2552GYLUNHL+rNNABVyZ/FLVccK3T90OSBzjuuuDwmSwdezk0ogN//6YLBF/Va
+fbfT21JA0izNoS2TnjPp8LfIs+MXeHhnp9fgfUxeT0BwBFRO6YraJlKxMEranS7l
+J3AqC19Q5LZXvUdjuzYezjylYEyqpBsoYGpOQKQ09INfFntyCqwRWQ/0k9A/Conv
+FwW/a37YcuWnwJ0+LJ5gsRnIcgRbqMPu25L7y2a35So2RX51/d9uzQWlqffwoZ+u
+Y4Z3TMEh0gzzGI612WbODdwgP0oDs0BDzSy+nHnxZHgZjBzs8U90KHzpTSwn7iiY
+r3iji2+94CQOjU6lzXpQGzWcD3mlf9rRTcxEEJOeJJDkLC/sXSHiMoo0xo8751WU
+qCbS4jY9ufqUw1mQBezzjCEpysZBeT1fhRFPBBa4y+NKNkhDWj+PrlYMW63D8b7i
+WezZZtdl51ycYnb+lWAlZGUl+N8fNVRUIe+kEpa8reiZj8j/zdJPMNOtgHGs/epc
+ns5V4UNYEUbHLsOZCm+giVuxsNxH22QvpuR7rzYo6gD1yh/NJPSH7/8/JKmhDENJ
+E3NysZDih7xSSkdPWvWP
+=E52J
+-----END PGP SIGNATURE-----
 
-It then calls the resume callback (from the pm domain/type/class/bus/
-driver) and then does an idle check.
-
-OMAP devices have a pm domain, so this is the candidate for the callback
-at this level, which gets us into _od_runtime_resume().  This calls
-omap_device_enable() before then moving on to the driver's runtime resume
-method, and at that point the runtime PM resume is complete.
-
-So, with your (a) solution, what's different is that we omit calling
-omap_device_enable().  Therefore, my hunch is the reason that Beagleboard
-doesn't work is because it doesn't like missing that call.
-
-I bet if you do this:
-
-	omap_device_enable(dev);
-	pm_runtime_set_active(dev);
-	pm_runtime_enable(dev);
-
-that this will solve your problem, and Beagleboard will continue working.
-
-What we have is a mismatch in both your case, and the Beagleboard case,
-between the real state of the hardware, the runtime PM state, and the
-OMAP hwmod state, and the above should bring all those states entirely
-into line with each other for _every_ case.  It doesn't need any hacks
-to prevent resume callbacks without prior suspends (which, incidentally,
-the runtime PM core already guarantees provided you get the initial
-state correct.)
+--Hnpg0BSo5EvPlUVi--
