@@ -1,72 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab2IYB5p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 21:57:45 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:45528 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751171Ab2IYB5o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 21:57:44 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19U338B7VRUXza2yQ3KiAlm5iBdagq7QzY1XGyRC8
-	YOS5e3WM5bkeou
-Message-ID: <1348538258.7100.23.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
+	id S1752243Ab2IYB6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 21:58:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7141 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752076Ab2IYB6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 21:58:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,478,1344236400"; 
+   d="scan'208";a="226011230"
+Message-ID: <1348538339.10877.193.camel@rui.sh.intel.com>
+Subject: Re: [PATCH] Thermal: Fix bug on generic thermal framework.
+From: Zhang Rui <rui.zhang@intel.com>
+To: jonghwa3.lee@samsung.com
+Cc: "R, Durgadoss" <durgadoss.r@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Tue, 25 Sep 2012 03:57:38 +0200
-In-Reply-To: <20120924192056.GB4082@liondog.tnic>
-References: <20120914212717.GA29307@liondog.tnic>
-	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
-	 <20120924150048.GB11266@suse.de> <1348500647.11847.69.camel@twins>
-	 <CA+55aFy5C-gFs6ZU5LyyVN=oxpuoaOpydkbJbhri215QkLx3aA@mail.gmail.com>
-	 <1348503163.11847.97.camel@twins>
-	 <CA+55aFzU2QOgexc2cpEkWqPBw6wPJMBuUzRyxTxu=rxZV_ay3A@mail.gmail.com>
-	 <1348505683.11847.111.camel@twins>
-	 <1348511193.6951.44.camel@marge.simpson.net>
-	 <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
-	 <20120924192056.GB4082@liondog.tnic>
+        Amit Kachhap <amit.kachhap@linaro.org>
+Date: Tue, 25 Sep 2012 09:58:59 +0800
+In-Reply-To: <50610504.7050706@samsung.com>
+References: <1348452350-1021-1-git-send-email-jonghwa3.lee@samsung.com>
+	 <4D68720C2E767A4AA6A8796D42C8EB591C98E6@BGSMSX102.gar.corp.intel.com>
+	 <1348477068.10877.180.camel@rui.sh.intel.com>
+	 <50610504.7050706@samsung.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-24 at 21:20 +0200, Borislav Petkov wrote: 
-> On Mon, Sep 24, 2012 at 12:12:18PM -0700, Linus Torvalds wrote:
-> > On Mon, Sep 24, 2012 at 11:26 AM, Mike Galbraith <efault@gmx.de> wrote:
-> > >
-> > > Aside from the cache pollution I recall having been mentioned, on my
-> > > E5620, cross core is a tbench win over affine, cross thread is not.
-> > 
-> > Oh, I agree with trying to avoid HT threads, the resource contention
-> > easily gets too bad.
-> > 
-> > It's more a question of "if we have real cores with separate L1's but
-> > shared L2's, go with those first, before we start distributing it out
-> > to separate L2's".
-> 
-> Yes, this is exactly what I meant before. We basically want to avoid
-> unnecessary, high-volume probe traffic over the L3 or memory controller,
-> if possible.
-> 
-> So, trying harder to select an L2 sibling would be more beneficial,
-> IMHO, instead of scanning the whole node.
+On 二, 2012-09-25 at 10:12 +0900, jonghwa3.lee@samsung.com wrote:
+> On 2012년 09월 24일 17:57, Zhang Rui wrote:
+> > On 一, 2012-09-24 at 02:08 -0600, R, Durgadoss wrote:
+> >> Hi,
+> >>
+> >> Patch is fine, but I think you have to re-base on top of
+> >> Rui's -next branch here:
+> >> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git
+> >>
+> >> Also, adding Rui to this mail, not sure whether he is in LKML/pm.
+> >>
+> >> Thanks,
+> >> Durga
+> >>
+> >>> -----Original Message-----
+> >>> From: Jonghwa Lee [mailto:jonghwa3.lee@samsung.com]
+> >>> Sent: Monday, September 24, 2012 7:36 AM
+> >>> To: linux-pml@vger.kernel.org
+> >>> Cc: linux-kernel@vger.kernel.org; Brown, Len; Rafael J. Wysocki; Andrew
+> >>> Morton; Amit Kachhap; R, Durgadoss; Jonghwa Lee
+> >>> Subject: [PATCH] Thermal: Fix bug on generic thermal framework.
+> >>>
+> >>> When system fails to bind cooling devices to thermal zone device during
+> >>> registering thermal zone device, it leaves registering without canceling
+> >>> delayed work. It probably makes panic if polling rate is not enough to release
+> >>> that work from workqueue. So it is better to ignore initialization of polling
+> >>> work to prevent that unexpected state.
+> >>>
+> > Hi, Jonghwa,
+> >
+> > I still do not understand what the problem is.
+> > Say if a cooling device fails to bind, the thermal zone device would
+> > still work properly, just like the failure cooling device is not
+> > referenced in this thermal zone.
+> >
+> > thanks,
+> > rui
+> Hi rui,
+> No, it doesn't work properly. If it fails to bind some cool dev to
+> thermal zone device, it frees thermal zone
+> device without canceling delayed work. After freeing thermal zone
+> device, system may call work function
+> pointed NULL as the timer expired. Thus it requires skipping the
+> initialization of polling work or canceling before
+> the unregister.
 
-If those L2 siblings are cores, oh yeah.  Do any modern packages have
-multi-core shared L2?
 
--Mike
+hah, I see what the problem is.
+ideally, if we fail to bind one cooling device, we should just ignore it
+and continue to bind other, what do you think?
+
+does the patch below fix your problem?
+If yes, I'll try to rebase it on top of my next tree.
+
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/thermal/thermal_sys.c |   13 +++++--------
+ 1 files changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index 2ab31e4..c5e2c28 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -1343,20 +1343,17 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 
+ 	mutex_lock(&thermal_list_lock);
+ 	list_add_tail(&tz->node, &thermal_tz_list);
+-	if (ops->bind)
+-		list_for_each_entry(pos, &thermal_cdev_list, node) {
+-		result = ops->bind(tz, pos);
+-		if (result)
+-			break;
+-		}
++	if (ops->bind) {
++		list_for_each_entry(pos, &thermal_cdev_list, node)
++			ops->bind(tz, pos);
++	}
+ 	mutex_unlock(&thermal_list_lock);
+ 
+ 	INIT_DELAYED_WORK(&(tz->poll_queue), thermal_zone_device_check);
+ 
+ 	thermal_zone_device_update(tz);
+ 
+-	if (!result)
+-		return tz;
++	return tz;
+ 
+ unregister:
+ 	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
+-- 
+1.7.7.6
+
 
 
