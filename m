@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab2IYPHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 11:07:10 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56768 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab2IYPHE (ORCPT
+	id S1756947Ab2IYPHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 11:07:18 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:43130 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756889Ab2IYPHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 11:07:04 -0400
+	Tue, 25 Sep 2012 11:07:09 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -16,10 +16,11 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 5/6] cputime: Gather time/stats accounting config options into a single menu
-Date: Tue, 25 Sep 2012 17:06:06 +0200
-Message-Id: <1348585567-2925-6-git-send-email-fweisbec@gmail.com>
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH 6/6] cputime: Make finegrained irqtime accounting generally available
+Date: Tue, 25 Sep 2012 17:06:07 +0200
+Message-Id: <1348585567-2925-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348585567-2925-1-git-send-email-fweisbec@gmail.com>
 References: <1348585567-2925-1-git-send-email-fweisbec@gmail.com>
@@ -27,8 +28,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This debloats a bit the general config menu and make these
-config options easier to find.
+There is no known reason for this option to be unavailable on other
+archs than x86. They just need to call enable_sched_clock_irqtime()
+if they have a sufficiently finegrained clock to make it working.
+
+Move it to the general option and let the user choose between
+it and pure tick based or virtual cputime accounting.
+
+Note that virtual cputime accounting already performs a finegrained
+irqtime accounting. CONFIG_IRQ_TIME_ACCOUNTING is a kind of middle ground
+between tick and virtual based accounting. So CONFIG_IRQ_TIME_ACCOUNTING
+and CONFIG_VIRT_CPU_ACCOUNTING are mutually exclusive choices.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Tony Luck <tony.luck@intel.com>
@@ -40,151 +50,109 @@ Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Russell King <linux@arm.linux.org.uk>
 ---
- init/Kconfig |  116 ++++++++++++++++++++++++++++++----------------------------
- 1 files changed, 60 insertions(+), 56 deletions(-)
+ arch/Kconfig     |    6 ++++++
+ arch/x86/Kconfig |   12 +-----------
+ init/Kconfig     |   30 +++++++++++++++++++++++++++++-
+ 3 files changed, 36 insertions(+), 12 deletions(-)
 
+diff --git a/arch/Kconfig b/arch/Kconfig
+index f78de57..101c31a 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -284,4 +284,10 @@ config SECCOMP_FILTER
+ config HAVE_VIRT_CPU_ACCOUNTING
+ 	bool
+ 
++config HAVE_IRQ_TIME_ACCOUNTING
++	bool
++	help
++	  Archs need to ensure they use a high enough resolution clock to
++	  support irq time accounting and then call enable_sched_clock_irqtime().
++
+ source "kernel/gcov/Kconfig"
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 8ec3a1a..b86833a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -97,6 +97,7 @@ config X86
+ 	select KTIME_SCALAR if X86_32
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
++	select HAVE_IRQ_TIME_ACCOUNTING
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
+@@ -796,17 +797,6 @@ config SCHED_MC
+ 	  making when dealing with multi-core CPU chips at a cost of slightly
+ 	  increased overhead in some places. If unsure say N here.
+ 
+-config IRQ_TIME_ACCOUNTING
+-	bool "Fine granularity task level IRQ time accounting"
+-	default n
+-	---help---
+-	  Select this option to enable fine granularity task irq time
+-	  accounting. This is done by reading a timestamp on each
+-	  transitions between softirq and hardirq state, so there can be a
+-	  small performance impact.
+-
+-	  If in doubt, say N here.
+-
+ source "kernel/Kconfig.preempt"
+ 
+ config X86_UP_APIC
 diff --git a/init/Kconfig b/init/Kconfig
-index c40d0fb..2c5aa34 100644
+index 2c5aa34..1862c68 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -267,6 +267,65 @@ config POSIX_MQUEUE_SYSCTL
- 	depends on SYSCTL
- 	default y
+@@ -326,10 +326,25 @@ source "kernel/time/Kconfig"
  
-+config FHANDLE
-+	bool "open by fhandle syscalls"
-+	select EXPORTFS
+ menu "CPU/Task time and stats accounting"
+ 
++choice
++	prompt "Cputime accounting"
++	default TICK_CPU_ACCOUNTING if !PPC64
++	default VIRT_CPU_ACCOUNTING if PPC64
++
++# Kind of a stub config for the pure tick based cputime accounting
++config TICK_CPU_ACCOUNTING
++	bool "Simple tick based cputime accounting"
++	depends on !S390
 +	help
-+	  If you say Y here, a user level program will be able to map
-+	  file names to handle and then later use the handle for
-+	  different file system operations. This is useful in implementing
-+	  userspace file servers, which now track files using handles instead
-+	  of names. The handle would remain the same even if file names
-+	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
-+	  syscalls.
++	  This is the basic tick based cputime accounting that maintains
++	  statistics about user, system and idle time spent on per jiffies
++	  granularity.
 +
-+config AUDIT
-+	bool "Auditing support"
-+	depends on NET
-+	help
-+	  Enable auditing infrastructure that can be used with another
-+	  kernel subsystem, such as SELinux (which requires this for
-+	  logging of avc messages output).  Does not do system-call
-+	  auditing without CONFIG_AUDITSYSCALL.
-+
-+config AUDITSYSCALL
-+	bool "Enable system-call auditing support"
-+	depends on AUDIT && (X86 || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
-+	default y if SECURITY_SELINUX
-+	help
-+	  Enable low-overhead system-call auditing infrastructure that
-+	  can be used independently or with another kernel subsystem,
-+	  such as SELinux.
-+
-+config AUDIT_WATCH
-+	def_bool y
-+	depends on AUDITSYSCALL
-+	select FSNOTIFY
-+
-+config AUDIT_TREE
-+	def_bool y
-+	depends on AUDITSYSCALL
-+	select FSNOTIFY
-+
-+config AUDIT_LOGINUID_IMMUTABLE
-+	bool "Make audit loginuid immutable"
-+	depends on AUDIT
-+	help
-+	  The config option toggles if a task setting its loginuid requires
-+	  CAP_SYS_AUDITCONTROL or if that task should require no special permissions
-+	  but should instead only allow setting its loginuid if it was never
-+	  previously set.  On systems which use systemd or a similar central
-+	  process to restart login services this should be set to true.  On older
-+	  systems in which an admin would typically have to directly stop and
-+	  start processes this should be set to false.  Setting this to true allows
-+	  one to drop potentially dangerous capabilites from the login tasks,
-+	  but may not be backwards compatible with older init systems.
-+
-+source "kernel/irq/Kconfig"
-+source "kernel/time/Kconfig"
-+
-+menu "CPU/Task time and stats accounting"
++	  If unsure, say Y.
 +
  config VIRT_CPU_ACCOUNTING
  	bool "Deterministic task and CPU time accounting"
  	depends on HAVE_VIRT_CPU_ACCOUNTING
-@@ -305,18 +364,6 @@ config BSD_PROCESS_ACCT_V3
- 	  for processing it. A preliminary version of these tools is available
- 	  at <http://www.gnu.org/software/acct/>.
+-	default y if PPC64
+ 	help
+ 	  Select this option to enable more accurate task and CPU time
+ 	  accounting.  This is done by reading a CPU counter on each
+@@ -339,6 +354,19 @@ config VIRT_CPU_ACCOUNTING
+ 	  this also enables accounting of stolen time on logically-partitioned
+ 	  systems.
  
--config FHANDLE
--	bool "open by fhandle syscalls"
--	select EXPORTFS
--	help
--	  If you say Y here, a user level program will be able to map
--	  file names to handle and then later use the handle for
--	  different file system operations. This is useful in implementing
--	  userspace file servers, which now track files using handles instead
--	  of names. The handle would remain the same even if file names
--	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
--	  syscalls.
--
- config TASKSTATS
- 	bool "Export task/process statistics through netlink (EXPERIMENTAL)"
- 	depends on NET
-@@ -359,50 +406,7 @@ config TASK_IO_ACCOUNTING
- 
- 	  Say N if unsure.
- 
--config AUDIT
--	bool "Auditing support"
--	depends on NET
--	help
--	  Enable auditing infrastructure that can be used with another
--	  kernel subsystem, such as SELinux (which requires this for
--	  logging of avc messages output).  Does not do system-call
--	  auditing without CONFIG_AUDITSYSCALL.
--
--config AUDITSYSCALL
--	bool "Enable system-call auditing support"
--	depends on AUDIT && (X86 || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
--	default y if SECURITY_SELINUX
--	help
--	  Enable low-overhead system-call auditing infrastructure that
--	  can be used independently or with another kernel subsystem,
--	  such as SELinux.
--
--config AUDIT_WATCH
--	def_bool y
--	depends on AUDITSYSCALL
--	select FSNOTIFY
--
--config AUDIT_TREE
--	def_bool y
--	depends on AUDITSYSCALL
--	select FSNOTIFY
--
--config AUDIT_LOGINUID_IMMUTABLE
--	bool "Make audit loginuid immutable"
--	depends on AUDIT
--	help
--	  The config option toggles if a task setting its loginuid requires
--	  CAP_SYS_AUDITCONTROL or if that task should require no special permissions
--	  but should instead only allow setting its loginuid if it was never
--	  previously set.  On systems which use systemd or a similar central
--	  process to restart login services this should be set to true.  On older
--	  systems in which an admin would typically have to directly stop and
--	  start processes this should be set to false.  Setting this to true allows
--	  one to drop potentially dangerous capabilites from the login tasks,
--	  but may not be backwards compatible with older init systems.
--
--source "kernel/irq/Kconfig"
--source "kernel/time/Kconfig"
-+endmenu # "CPU/Task time and stats accounting"
- 
- menu "RCU Subsystem"
- 
++config IRQ_TIME_ACCOUNTING
++	bool "Fine granularity task level IRQ time accounting"
++	depends on HAVE_IRQ_TIME_ACCOUNTING
++	help
++	  Select this option to enable fine granularity task irq time
++	  accounting. This is done by reading a timestamp on each
++	  transitions between softirq and hardirq state, so there can be a
++	  small performance impact.
++
++	  If in doubt, say N here.
++
++endchoice
++
+ config BSD_PROCESS_ACCT
+ 	bool "BSD Process Accounting"
+ 	help
 -- 
 1.7.5.4
 
