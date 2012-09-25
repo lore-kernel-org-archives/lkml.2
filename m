@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab2IYEQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 00:16:21 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:51313 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750774Ab2IYEQU (ORCPT
+	id S1752188Ab2IYEVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 00:21:49 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:41906 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab2IYEVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 00:16:20 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/SHzhfmVzSUyzA+69xJXwHc7rsxGN6EfZJ+eQ0dG
-	rsw2WSBt/xFfsW
-Message-ID: <1348546575.7100.68.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Tue, 25 Sep 2012 00:21:47 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee61a-b7f726d000000ec7-da-5061315aaf38
+Message-id: <50613159.507@samsung.com>
+Date: Tue, 25 Sep 2012 13:21:45 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+Cc: "Zhang, Rui" <rui.zhang@intel.com>,
+        "jonghwa3.lee@samsung.com" <jonghwa3.lee@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Date: Tue, 25 Sep 2012 06:16:15 +0200
-In-Reply-To: <20120924150048.GB11266@suse.de>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
-	 <20120914212717.GA29307@liondog.tnic>
-	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
-	 <20120924150048.GB11266@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+        Amit Kachhap <amit.kachhap@linaro.org>
+Subject: Re: [PATCH] Thermal: Fix bug on generic thermal framework.
+References: <1348452350-1021-1-git-send-email-jonghwa3.lee@samsung.com>
+ <4D68720C2E767A4AA6A8796D42C8EB591C98E6@BGSMSX102.gar.corp.intel.com>
+ <1348477068.10877.180.camel@rui.sh.intel.com> <50610504.7050706@samsung.com>
+ <1348538339.10877.193.camel@rui.sh.intel.com>
+ <4D68720C2E767A4AA6A8796D42C8EB591D1396@BGSMSX101.gar.corp.intel.com>
+In-reply-to: <4D68720C2E767A4AA6A8796D42C8EB591D1396@BGSMSX101.gar.corp.intel.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t9jAd0ow8QAg8aLvBaXd81hs/jce4TR
+	gcnj8ya5AMYoLpuU1JzMstQifbsEroyJU/uZC47xVLTe38XUwLiAq4uRk0NCwESi6/k2Rghb
+	TOLCvfVsXYxcHEICixglDj7exwyS4BUQlPgx+R5LFyMHB7OAvMSRS9kgYWYBdYlJ8xYxQ9S/
+	ZJTYsG0jO0S9msTV2dtZQGwWAVWJaXv+gdlsAnISb5u+MYLMERWIkPjVzwESFhHQkmjfsZMR
+	YuZPJomtD01BSoQFnCXmvI6CGH+NSWLu1L1sIDWcAiESB+asZZrAKDALyXWzEK6bheS6BYzM
+	qxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCw/CZ1A7GlQ0WhxgFOBiVeHg5NiQECLEmlhVX
+	5h5ilOBgVhLh3S2TGCDEm5JYWZValB9fVJqTWnyIUZqDRUmcV/hTYICQQHpiSWp2ampBahFM
+	lomDU6qBUXfjQpNn519vL15wqF4+tHzul+1zmPL2ce+VsGNhT9+WWbRvZ1cOp6nMfZF9TXUm
+	h2Kv+R/+Lf6bL48l5wtLU5nG48yum21L6ooaFKoS7F5wMz11WsRo2vCYQfrsYw/7t8ZRYRUZ
+	d6I81mhsCEpzfPlM8eHDjz+lt1/jvxqW+ifzQ2Qgq+5hJZbijERDLeai4kQA9xc1rz8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-24 at 16:00 +0100, Mel Gorman wrote: 
-> On Fri, Sep 14, 2012 at 02:42:44PM -0700, Linus Torvalds wrote:
-> > On Fri, Sep 14, 2012 at 2:27 PM, Borislav Petkov <bp@alien8.de> wrote:
-> > >
-> > > as Nikolay says below, we have a regression in 3.6 with pgbench's
-> > > benchmark in postgresql.
-> > >
-> > > I was able to reproduce it on another box here and did a bisection run.
-> > > It pointed to the commit below.
-> > 
-> > Ok. I guess we should just revert it. However, before we do that,
-> > maybe Mike can make it just use the exact old semantics of
-> > select_idle_sibling() in the update_top_cache_domain() logic.
-> > 
-> 
-> The patch that you being reverted was meant to fix problems with
-> commit 4dcfe102 (sched: Avoid SMT siblings in select_idle_sibling() if
-> possible). That patch made select_idle_sibling() quite fat and I know it
-> is responsible for a 2% regression in a kernel compile benchmark between
-> kernel 3.1 and 3.2 on an old AMD Phenom II X4 940. Reverting Mike's patch
-> might fix this Postgres regression but it reintroduces the overhead caused
-> by commit 4dcfe102 for other cases.  I do not have a suggestion on how to
-> make this better, I'm just pointing out that the revert has some downsides.
+On 2012년 09월 25일 12:04, R, Durgadoss wrote:
+> Hi Rui,
+>
+>>>> Hi, Jonghwa,
+>>>>
+>>>> I still do not understand what the problem is.
+>>>> Say if a cooling device fails to bind, the thermal zone device would
+>>>> still work properly, just like the failure cooling device is not
+>>>> referenced in this thermal zone.
+>>>>
+>>>> thanks,
+>>>> rui
+>>> Hi rui,
+>>> No, it doesn't work properly. If it fails to bind some cool dev to
+>>> thermal zone device, it frees thermal zone
+>>> device without canceling delayed work. After freeing thermal zone
+>>> device, system may call work function
+>>> pointed NULL as the timer expired. Thus it requires skipping the
+>>> initialization of polling work or canceling before
+>>> the unregister.
+>>
+>> hah, I see what the problem is.
+>> ideally, if we fail to bind one cooling device, we should just ignore it
+>> and continue to bind other, what do you think?
+> Yes, this is what we should do.
+>
+>> does the patch below fix your problem?
+>> If yes, I'll try to rebase it on top of my next tree.
+> This is already fixed in your -next tree, since you applied the
+> fair share patches 10/15. The function bind_tz(tz) does the
+> exact same thing, and continues.
+>
+> Thanks,
+> Durga
+I checked that it had been applied on -next branch, I don't commit this
+patch any more.
 
-Yeah.  The very good thing about this is that Linus becoming interested
-in a problem like two faced little (naughty word) select_idle_sibling()
-brings more minds to bear, so we'll end up in better shape.  Right now,
-we're in not so wonderful shape with or without my patch, depending very
-much on which processor you're running which load on.  That needs to get
-better.  AMD is being hurt _bad_ on fast movers, but just kill the damn
-thing on AMD processors, and pgbench will fall through the floor.
+Thanks,
+Jonghwa
 
-Aiming darts would be lots easier if the bullseye would stop moving ;-) 
-
--Mike
+> N�����r��y���b�X��ǧv�^�)޺{.n�+����{��h����ܨ}���Ơz�&j:+v�������zZ+��+zf���h���~����i���z��w���?����&�)ߢfl===
 
