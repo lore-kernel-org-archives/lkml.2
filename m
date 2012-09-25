@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab2IYNNs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 09:13:48 -0400
-Received: from mail-tx2.bigfish.com ([65.55.88.10]:56239 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756187Ab2IYNNq (ORCPT
+	id S1756353Ab2IYNRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 09:17:11 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47356 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756036Ab2IYNRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 09:13:46 -0400
-X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Sep 2012 09:13:46 EDT
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zz98dI146fI1432Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
-X-WSS-ID: 0MAWPBM-01-F88-02
-X-M-MSG: 
-Date: Tue, 25 Sep 2012 14:57:21 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 10/19] x86, io_apic: Introduce function pointer for
- setup_timer_IRQ0_pin
-Message-ID: <20120925125721.GY2505@amd.com>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <1345470965-24410-11-git-send-email-joerg.roedel@amd.com>
- <20120826181603.GC3690@breakpoint.cc>
+	Tue, 25 Sep 2012 09:17:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120826181603.GC3690@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
+References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
+	<1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
+Date: Tue, 25 Sep 2012 18:47:09 +0530
+Message-ID: <CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Inderpal Singh <inderpal.singh@linaro.org>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        boojin.kim@samsung.com, vinod.koul@intel.com, patches@linaro.org,
+        kgene.kim@samsung.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 08:16:03PM +0200, Sebastian Andrzej Siewior wrote:
-> On Mon, Aug 20, 2012 at 03:55:56PM +0200, Joerg Roedel wrote:
-> > diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-> > index 827f8a1..71824fc 100644
-> > --- a/drivers/iommu/irq_remapping.c
-> > +++ b/drivers/iommu/irq_remapping.c
-> > @@ -87,11 +87,18 @@ error:
-> >  	return ret;
-> >  }
-> >  
-> > +static void __init irq_remapping_setup_timer_pin(unsigned int ioapic_idx,
-> > +						 unsigned int pin, int vector)
-> > +{
-> > +	/* Not needed with interrupt remapping */
-> 
-> I see that this is not needed because it is empty. But *why* isn't it needed?
-> That comment would make sense here. So please drop this or explain :)
+On Tue, Sep 25, 2012 at 2:27 PM, Inderpal Singh
+<inderpal.singh@linaro.org> wrote:
+> Since peripheral channel resources are not being allocated at probe,
+> no need to flush the channels and free the resources in remove function.
+>
+> Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
+> ---
+>  drivers/dma/pl330.c |    8 +-------
+>  1 file changed, 1 insertion(+), 7 deletions(-)
+>
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index 04d83e6..6f06080 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -3012,16 +3012,10 @@ static int __devexit pl330_remove(struct amba_device *adev)
+>
+>         /* Idle the DMAC */
+>         list_for_each_entry_safe(pch, _p, &pdmac->ddma.channels,
+> -                       chan.device_node) {
+> -
+> +                       chan.device_node)
+>                 /* Remove the channel */
+>                 list_del(&pch->chan.device_node);
+>
+> -               /* Flush the channel */
+> -               pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+> -               pl330_free_chan_resources(&pch->chan);
+> -       }
+> -
+>         while (!list_empty(&pdmac->desc_pool)) {
+>                 desc = list_entry(pdmac->desc_pool.next,
+>                                 struct dma_pl330_desc, node);
 
-Well, the function is never called with interrupt-remapping enabled
-anyway, so it is not needed. On the other side this makes the complete
-patch pointless :) I'll remove it from the patch-set.
+I am not sure about this patch. The DMA_TERMINATE_ALL is only called
+by the client and if the pl330 module is forced unloaded while some
+client is queued, we have to manually do DMA_TERMINATE_ALL.
+A better option could be to simply fail pl330_remove if some client is
+queued on the DMAC.
 
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+-jassi
