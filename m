@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab2IYIWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 04:22:09 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:37738 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753679Ab2IYIWF (ORCPT
+	id S1753912Ab2IYIWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 04:22:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63803 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab2IYIWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 04:22:05 -0400
+	Tue, 25 Sep 2012 04:22:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com>
-References: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com>
-Date: Tue, 25 Sep 2012 13:52:03 +0530
-Message-ID: <CAKdam572krJZcayRdJ_AciCUZH3LuzD9yoHenhxrB6j9xDZ6JQ@mail.gmail.com>
-Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not suspended.
-From: "Poddar, Sourav" <sourav.poddar@ti.com>
-To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, tony@atomide.com, khilman@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        santosh.shilimkar@ti.com, balbi@ti.com, paul@pwsan.com,
-        Sourav Poddar <sourav.poddar@ti.com>
+In-Reply-To: <CACFOYQkXB0Ms-Bah5V6uQpeExbg7V5DOmuxE=XqOVrO76Lm9YA@mail.gmail.com>
+References: <CACFOYQkXB0Ms-Bah5V6uQpeExbg7V5DOmuxE=XqOVrO76Lm9YA@mail.gmail.com>
+Date: Tue, 25 Sep 2012 16:22:42 +0800
+Message-ID: <CACFOYQm08W3fODbUYF51+Aw0x4izqs4-hT8jRDyX-tVnnnUS+A@mail.gmail.com>
+Subject: git pull question
+From: Zhi-zhou Zhang <etou.zh@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi all,
 
-Ping on this?
+Today I update my kernel with git pull. Then a ploblem confused me. I
+got the below message with git status.
+I excuted git checkout master -f and git reset --hard master. The
+ploblem is still there. So anyone please help me
+to find what's the matter?
 
-On Tue, Sep 18, 2012 at 6:10 PM, Sourav Poddar <sourav.poddar@ti.com> wrote:
-> Greg's tty-next is not booting on 2420 based N800. The failure is
-> observed at serial init itself. The reason might be that n800 tries to
-> resume even though it is not suspended before.
->
-> Reported-by: Paul Walmsley <paul@pwsan.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
-> This patch is developed on top of greg's tty-next branch
-> CommitId: e740d8f tty: serial: Samsung: Fix return value +
-> the following patch which I have already posted to the mailing list.
-> http://comments.gmane.org/gmane.linux.ports.arm.omap/84729
->
->  drivers/tty/serial/omap-serial.c |   11 ++++++++++-
->  1 files changed, 10 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-> index 3c05c5e..bc355f2 100644
-> --- a/drivers/tty/serial/omap-serial.c
-> +++ b/drivers/tty/serial/omap-serial.c
-> @@ -110,6 +110,7 @@ struct uart_omap_port {
->         u32                     calc_latency;
->         struct work_struct      qos_work;
->         struct pinctrl          *pins;
-> +       unsigned int            suspended:1;
->  };
->
->  #define to_uart_omap_port(p)   ((container_of((p), struct uart_omap_port, port)))
-> @@ -1545,14 +1546,20 @@ static int serial_omap_runtime_suspend(struct device *dev)
->         up->latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
->         schedule_work(&up->qos_work);
->
-> +       up->suspended = true;
-> +
->         return 0;
->  }
->
->  static int serial_omap_runtime_resume(struct device *dev)
->  {
->         struct uart_omap_port *up = dev_get_drvdata(dev);
-> +       u32 loss_cnt;
-> +
-> +       if (!up->suspended)
-> +               return 0;
->
-> -       u32 loss_cnt = serial_omap_get_context_loss_count(up);
-> +       loss_cnt = serial_omap_get_context_loss_count(up);
->
->         if (up->context_loss_cnt != loss_cnt)
->                 serial_omap_restore_context(up);
-> @@ -1560,6 +1567,8 @@ static int serial_omap_runtime_resume(struct device *dev)
->         up->latency = up->calc_latency;
->         schedule_work(&up->qos_work);
->
-> +       up->suspended = false;
-> +
->         return 0;
->  }
->  #endif
-> --
-> 1.7.1
->
+ # On branch master
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#   (use "git checkout -- <file>..." to discard changes in working directory)
+#
+# modified:   include/linux/netfilter/xt_connmark.h
+# modified:   include/linux/netfilter/xt_dscp.h
+# modified:   include/linux/netfilter/xt_mark.h
+# modified:   include/linux/netfilter/xt_rateest.h
+# modified:   include/linux/netfilter/xt_tcpmss.h
+# modified:   include/linux/netfilter_ipv4/ipt_ecn.h
+# modified:   include/linux/netfilter_ipv4/ipt_ttl.h
+# modified:   include/linux/netfilter_ipv6/ip6t_hl.h
+# modified:   net/netfilter/xt_dscp.c
+# modified:   net/netfilter/xt_hl.c
+# modified:   net/netfilter/xt_rateest.c
+# modified:   net/netfilter/xt_tcpmss.c
+#
+no changes added to commit (use "git add" and/or "git commit -a")
 
-~Sourav
+
+--
+Regards,
+Zhizhou Zhang
