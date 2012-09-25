@@ -1,115 +1,744 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab2IYIz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 04:55:27 -0400
-Received: from cust-218-222.on4.ontelecoms.gr ([92.118.218.222]:53056 "EHLO
-	vergina.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab2IYIzX (ORCPT
+	id S1754211Ab2IYIzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 04:55:42 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39016 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127Ab2IYIzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 04:55:23 -0400
-Message-ID: <50617178.8090700@asyr.hopto.org>
-Date: Tue, 25 Sep 2012 11:55:20 +0300
-From: Thanasis <thanasis@asyr.hopto.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
+	Tue, 25 Sep 2012 04:55:36 -0400
 MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com> <505B5C11.1050503@asyr.hopto.org> <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org> <20120921152828.GA24364@electric-eye.fr.zoreil.com> <505C98C7.20302@asyr.hopto.org> <20120921175455.GA28255@electric-eye.fr.zoreil.com> <505CC65D.9010605@asyr.hopto.org> <20120924231216.GA20015@electric-eye.fr.zoreil.com>
-In-Reply-To: <20120924231216.GA20015@electric-eye.fr.zoreil.com>
-Content-Type: multipart/mixed;
- boundary="------------050605080309080407010206"
+In-Reply-To: <20120921080745.GA2053@core.coreip.homeip.net>
+References: <1348163523-2062-1-git-send-email-dh.herrmann@googlemail.com>
+	<20120921080745.GA2053@core.coreip.homeip.net>
+Date: Tue, 25 Sep 2012 10:55:34 +0200
+Message-ID: <CANq1E4TLXoB--fH3zF425gTukqUh+kAgOmhB0+wGEM0krFB=-A@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] input: Dynamic Minor Numbers
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bernie Thompson <bernie@plugable.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050605080309080407010206
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Hi Dmitry
 
-on 09/25/2012 02:12 AM Francois Romieu wrote the following:
-> Thanasis <thanasis@asyr.hopto.org> :
->> Attached the whole log so far.
->> (the process looks stuck anyway for more than 30 min at the same point)
-> 
-> You don't need to wait that long.
-> 
-> I have updated git://violet.fr.zoreil.com/romieu/r8169 with a
-> '3.2.r8169.backport' branch.
-> 
-> You can remove your existing r8169 git tree, clone this one and start
-> the same tests against a 3.2 kernel.
-> 
+On Fri, Sep 21, 2012 at 10:07 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
 
-I don't know what's wrong, but I am getting those errors.
-Are you sure about the git tree?
+[snip] See my previous review
 
+> diff --git a/drivers/input/joydev.c b/drivers/input/joydev.c
+> index f0909ed..c82f76f 100644
+> --- a/drivers/input/joydev.c
+> +++ b/drivers/input/joydev.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/poll.h>
+>  #include <linux/init.h>
+>  #include <linux/device.h>
+> +#include <linux/cdev.h>
+>
+>  MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
+>  MODULE_DESCRIPTION("Joystick device interfaces");
+> @@ -39,13 +40,13 @@ MODULE_LICENSE("GPL");
+>
+>  struct joydev {
+>         int open;
+> -       int minor;
+>         struct input_handle handle;
+>         wait_queue_head_t wait;
+>         struct list_head client_list;
+>         spinlock_t client_lock; /* protects client_list */
+>         struct mutex mutex;
+>         struct device dev;
+> +       struct cdev cdev;
+>         bool exist;
+>
+>         struct js_corr corr[ABS_CNT];
+> @@ -70,9 +71,6 @@ struct joydev_client {
+>         struct list_head node;
+>  };
+>
+> -static struct joydev *joydev_table[JOYDEV_MINORS];
+> -static DEFINE_MUTEX(joydev_table_mutex);
+> -
+>  static int joydev_correct(int value, struct js_corr *corr)
+>  {
+>         switch (corr->type) {
+> @@ -252,30 +250,14 @@ static int joydev_release(struct inode *inode, struct file *file)
+>
+>  static int joydev_open(struct inode *inode, struct file *file)
+>  {
+> +       struct joydev *joydev =
+> +                       container_of(inode->i_cdev, struct joydev, cdev);
+>         struct joydev_client *client;
+> -       struct joydev *joydev;
+> -       int i = iminor(inode) - JOYDEV_MINOR_BASE;
+>         int error;
+>
+> -       if (i >= JOYDEV_MINORS)
+> -               return -ENODEV;
+> -
+> -       error = mutex_lock_interruptible(&joydev_table_mutex);
+> -       if (error)
+> -               return error;
+> -       joydev = joydev_table[i];
+> -       if (joydev)
+> -               get_device(&joydev->dev);
+> -       mutex_unlock(&joydev_table_mutex);
+> -
+> -       if (!joydev)
+> -               return -ENODEV;
+> -
+>         client = kzalloc(sizeof(struct joydev_client), GFP_KERNEL);
+> -       if (!client) {
+> -               error = -ENOMEM;
+> -               goto err_put_joydev;
+> -       }
+> +       if (!client)
+> +               return -ENOMEM;
+>
+>         spin_lock_init(&client->buffer_lock);
+>         client->joydev = joydev;
+> @@ -288,13 +270,12 @@ static int joydev_open(struct inode *inode, struct file *file)
+>         file->private_data = client;
+>         nonseekable_open(inode, file);
+>
+> +       get_device(&joydev->dev);
+>         return 0;
+>
+>   err_free_client:
+>         joydev_detach_client(joydev, client);
+>         kfree(client);
+> - err_put_joydev:
+> -       put_device(&joydev->dev);
+>         return error;
+>  }
+>
+> @@ -747,19 +728,6 @@ static const struct file_operations joydev_fops = {
+>         .llseek         = no_llseek,
+>  };
+>
+> -static int joydev_install_chrdev(struct joydev *joydev)
+> -{
+> -       joydev_table[joydev->minor] = joydev;
+> -       return 0;
+> -}
+> -
+> -static void joydev_remove_chrdev(struct joydev *joydev)
+> -{
+> -       mutex_lock(&joydev_table_mutex);
+> -       joydev_table[joydev->minor] = NULL;
+> -       mutex_unlock(&joydev_table_mutex);
+> -}
+> -
+>  /*
+>   * Mark device non-existent. This disables writes, ioctls and
+>   * prevents new users from opening the device. Already posted
+> @@ -778,7 +746,8 @@ static void joydev_cleanup(struct joydev *joydev)
+>
+>         joydev_mark_dead(joydev);
+>         joydev_hangup(joydev);
+> -       joydev_remove_chrdev(joydev);
+> +
+> +       cdev_del(&joydev->cdev);
+>
+>         /* joydev is marked dead so no one else accesses joydev->open */
+>         if (joydev->open)
+> @@ -803,30 +772,33 @@ static int joydev_connect(struct input_handler *handler, struct input_dev *dev,
+>                           const struct input_device_id *id)
+>  {
+>         struct joydev *joydev;
+> -       int i, j, t, minor;
+> +       int i, j, t, minor, dev_no;
+>         int error;
+>
+> -       for (minor = 0; minor < JOYDEV_MINORS; minor++)
+> -               if (!joydev_table[minor])
+> -                       break;
+> -
+> -       if (minor == JOYDEV_MINORS) {
+> -               pr_err("no more free joydev devices\n");
+> -               return -ENFILE;
+> +       minor = input_get_new_minor(JOYDEV_MINOR_BASE, JOYDEV_MINORS, true);
+> +       if (minor < 0) {
+> +               error = minor;
+> +               pr_err("failed to reserve new minor: %d\n", error);
+> +               return error;
 
+How about:
+  return minor;
+and avoid the "error = minor;" line?
 
---------------050605080309080407010206
-Content-Type: application/x-gzip;
- name="lets-go-3.2.log.gz"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="lets-go-3.2.log.gz"
+>         }
+>
+>         joydev = kzalloc(sizeof(struct joydev), GFP_KERNEL);
+> -       if (!joydev)
+> -               return -ENOMEM;
+> +       if (!joydev) {
+> +               error = -ENOMEM;
+> +               goto err_free_minor;
+> +       }
+>
+>         INIT_LIST_HEAD(&joydev->client_list);
+>         spin_lock_init(&joydev->client_lock);
+>         mutex_init(&joydev->mutex);
+>         init_waitqueue_head(&joydev->wait);
+> -
+> -       dev_set_name(&joydev->dev, "js%d", minor);
+>         joydev->exist = true;
+> -       joydev->minor = minor;
+> +
+> +       dev_no = minor;
+> +       /* Normalize device number if it falls into legacy range */
+> +       if (dev_no < JOYDEV_MINOR_BASE + JOYDEV_MINORS)
+> +               dev_no -= JOYDEV_MINOR_BASE;
+> +       dev_set_name(&joydev->dev, "js%d", dev_no);
+>
+>         joydev->handle.dev = input_get_device(dev);
+>         joydev->handle.name = dev_name(&joydev->dev);
+> @@ -880,7 +852,7 @@ static int joydev_connect(struct input_handler *handler, struct input_dev *dev,
+>                 }
+>         }
+>
+> -       joydev->dev.devt = MKDEV(INPUT_MAJOR, JOYDEV_MINOR_BASE + minor);
+> +       joydev->dev.devt = MKDEV(INPUT_MAJOR, minor);
+>         joydev->dev.class = &input_class;
+>         joydev->dev.parent = &dev->dev;
+>         joydev->dev.release = joydev_free;
+> @@ -890,7 +862,8 @@ static int joydev_connect(struct input_handler *handler, struct input_dev *dev,
+>         if (error)
+>                 goto err_free_joydev;
+>
+> -       error = joydev_install_chrdev(joydev);
+> +       cdev_init(&joydev->cdev, &joydev_fops);
+> +       error = cdev_add(&joydev->cdev, joydev->dev.devt, 1);
+>         if (error)
+>                 goto err_unregister_handle;
+>
+> @@ -906,6 +879,8 @@ static int joydev_connect(struct input_handler *handler, struct input_dev *dev,
+>         input_unregister_handle(&joydev->handle);
+>   err_free_joydev:
+>         put_device(&joydev->dev);
+> + err_free_minor:
+> +       input_free_minor(minor);
+>         return error;
+>  }
+>
+> @@ -915,6 +890,7 @@ static void joydev_disconnect(struct input_handle *handle)
+>
+>         device_del(&joydev->dev);
+>         joydev_cleanup(joydev);
+> +       input_free_minor(MINOR(joydev->dev.devt));
+>         input_unregister_handle(handle);
+>         put_device(&joydev->dev);
+>  }
+> @@ -966,8 +942,6 @@ static struct input_handler joydev_handler = {
+>         .match          = joydev_match,
+>         .connect        = joydev_connect,
+>         .disconnect     = joydev_disconnect,
+> -       .fops           = &joydev_fops,
+> -       .minor          = JOYDEV_MINOR_BASE,
+>         .name           = "joydev",
+>         .id_table       = joydev_ids,
+>  };
+> diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+> index 964e43d..7fd9d91 100644
+> --- a/drivers/input/mousedev.c
+> +++ b/drivers/input/mousedev.c
+> @@ -24,10 +24,8 @@
+>  #include <linux/random.h>
+>  #include <linux/major.h>
+>  #include <linux/device.h>
+> +#include <linux/cdev.h>
+>  #include <linux/kernel.h>
+> -#ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
+> -#include <linux/miscdevice.h>
+> -#endif
+>
+>  MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
+>  MODULE_DESCRIPTION("Mouse (ExplorerPS/2) device interfaces");
+> @@ -61,17 +59,18 @@ struct mousedev_hw_data {
+>
+>  struct mousedev {
+>         int open;
+> -       int minor;
+>         struct input_handle handle;
+>         wait_queue_head_t wait;
+>         struct list_head client_list;
+>         spinlock_t client_lock; /* protects client_list */
+>         struct mutex mutex;
+>         struct device dev;
+> +       struct cdev cdev;
+>         bool exist;
+> +       bool is_mixdev;
+>
+>         struct list_head mixdev_node;
+> -       int mixdev_open;
+> +       bool mixdev_open;
 
-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
-SPA/YvnnKqMqAQA=
---------------050605080309080407010206--
+Could you keep cleanup/codingstyle-patches separate? It makes review
+so much easier. This patch is already quite long. Anyway, looks good.
+
+>
+>         struct mousedev_hw_data packet;
+>         unsigned int pkt_count;
+> @@ -114,10 +113,6 @@ struct mousedev_client {
+>  static unsigned char mousedev_imps_seq[] = { 0xf3, 200, 0xf3, 100, 0xf3, 80 };
+>  static unsigned char mousedev_imex_seq[] = { 0xf3, 200, 0xf3, 200, 0xf3, 80 };
+>
+> -static struct input_handler mousedev_handler;
+> -
+> -static struct mousedev *mousedev_table[MOUSEDEV_MINORS];
+> -static DEFINE_MUTEX(mousedev_table_mutex);
+>  static struct mousedev *mousedev_mix;
+>  static LIST_HEAD(mousedev_mix_list);
+>
+> @@ -433,7 +428,7 @@ static int mousedev_open_device(struct mousedev *mousedev)
+>         if (retval)
+>                 return retval;
+>
+> -       if (mousedev->minor == MOUSEDEV_MIX)
+> +       if (mousedev->is_mixdev)
+>                 mixdev_open_devices();
+>         else if (!mousedev->exist)
+>                 retval = -ENODEV;
+> @@ -451,7 +446,7 @@ static void mousedev_close_device(struct mousedev *mousedev)
+>  {
+>         mutex_lock(&mousedev->mutex);
+>
+> -       if (mousedev->minor == MOUSEDEV_MIX)
+> +       if (mousedev->is_mixdev)
+>                 mixdev_close_devices();
+>         else if (mousedev->exist && !--mousedev->open)
+>                 input_close_device(&mousedev->handle);
+> @@ -476,7 +471,7 @@ static void mixdev_open_devices(void)
+>                         if (mousedev_open_device(mousedev))
+>                                 continue;
+>
+> -                       mousedev->mixdev_open = 1;
+> +                       mousedev->mixdev_open = true;
+>                 }
+>         }
+>  }
+> @@ -495,7 +490,7 @@ static void mixdev_close_devices(void)
+>
+>         list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
+>                 if (mousedev->mixdev_open) {
+> -                       mousedev->mixdev_open = 0;
+> +                       mousedev->mixdev_open = false;
+>                         mousedev_close_device(mousedev);
+>                 }
+>         }
+> @@ -538,35 +533,17 @@ static int mousedev_open(struct inode *inode, struct file *file)
+>         struct mousedev_client *client;
+>         struct mousedev *mousedev;
+>         int error;
+> -       int i;
+>
+>  #ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
+>         if (imajor(inode) == MISC_MAJOR)
+> -               i = MOUSEDEV_MIX;
+> +               mousedev = mousedev_mix;
+>         else
+>  #endif
+> -               i = iminor(inode) - MOUSEDEV_MINOR_BASE;
+> -
+> -       if (i >= MOUSEDEV_MINORS)
+> -               return -ENODEV;
+> -
+> -       error = mutex_lock_interruptible(&mousedev_table_mutex);
+> -       if (error)
+> -               return error;
+> -
+> -       mousedev = mousedev_table[i];
+> -       if (mousedev)
+> -               get_device(&mousedev->dev);
+> -       mutex_unlock(&mousedev_table_mutex);
+> -
+> -       if (!mousedev)
+> -               return -ENODEV;
+> +               mousedev = container_of(inode->i_cdev, struct mousedev, cdev);
+>
+>         client = kzalloc(sizeof(struct mousedev_client), GFP_KERNEL);
+> -       if (!client) {
+> -               error = -ENOMEM;
+> -               goto err_put_mousedev;
+> -       }
+> +       if (!client)
+> +               return -ENOMEM;
+>
+>         spin_lock_init(&client->packet_lock);
+>         client->pos_x = xres / 2;
+> @@ -579,13 +556,14 @@ static int mousedev_open(struct inode *inode, struct file *file)
+>                 goto err_free_client;
+>
+>         file->private_data = client;
+> +       nonseekable_open(inode, file);
+> +
+> +       get_device(&mousedev->dev);
+>         return 0;
+>
+>   err_free_client:
+>         mousedev_detach_client(mousedev, client);
+>         kfree(client);
+> - err_put_mousedev:
+> -       put_device(&mousedev->dev);
+>         return error;
+>  }
+>
+> @@ -785,29 +763,16 @@ static unsigned int mousedev_poll(struct file *file, poll_table *wait)
+>  }
+>
+>  static const struct file_operations mousedev_fops = {
+> -       .owner =        THIS_MODULE,
+> -       .read =         mousedev_read,
+> -       .write =        mousedev_write,
+> -       .poll =         mousedev_poll,
+> -       .open =         mousedev_open,
+> -       .release =      mousedev_release,
+> -       .fasync =       mousedev_fasync,
+> -       .llseek = noop_llseek,
+> +       .owner          = THIS_MODULE,
+> +       .read           = mousedev_read,
+> +       .write          = mousedev_write,
+> +       .poll           = mousedev_poll,
+> +       .open           = mousedev_open,
+> +       .release        = mousedev_release,
+> +       .fasync         = mousedev_fasync,
+> +       .llseek         = noop_llseek,
+>  };
+
+Again some cleanups.
+
+> -static int mousedev_install_chrdev(struct mousedev *mousedev)
+> -{
+> -       mousedev_table[mousedev->minor] = mousedev;
+> -       return 0;
+> -}
+> -
+> -static void mousedev_remove_chrdev(struct mousedev *mousedev)
+> -{
+> -       mutex_lock(&mousedev_table_mutex);
+> -       mousedev_table[mousedev->minor] = NULL;
+> -       mutex_unlock(&mousedev_table_mutex);
+> -}
+> -
+>  /*
+>   * Mark device non-existent. This disables writes, ioctls and
+>   * prevents new users from opening the device. Already posted
+> @@ -842,24 +807,50 @@ static void mousedev_cleanup(struct mousedev *mousedev)
+>
+>         mousedev_mark_dead(mousedev);
+>         mousedev_hangup(mousedev);
+> -       mousedev_remove_chrdev(mousedev);
+> +
+> +       cdev_del(&mousedev->cdev);
+>
+>         /* mousedev is marked dead so no one else accesses mousedev->open */
+>         if (mousedev->open)
+>                 input_close_device(handle);
+>  }
+>
+> +static int mousedev_reserve_minor(bool mixdev)
+> +{
+> +       int minor;
+> +
+> +       if (mixdev) {
+> +               minor = input_get_new_minor(MOUSEDEV_MIX, 1, false);
+> +               if (minor < 0)
+> +                       pr_err("failed to reserve mixdev minor: %d\n", minor);
+> +       } else {
+> +               minor = input_get_new_minor(MOUSEDEV_MINOR_BASE,
+> +                                           MOUSEDEV_MINORS, true);
+> +               if (minor < 0)
+> +                       pr_err("failed to reserve new minor: %d\n", minor);
+> +       }
+> +
+> +       return minor;
+> +}
+> +
+>  static struct mousedev *mousedev_create(struct input_dev *dev,
+>                                         struct input_handler *handler,
+> -                                       int minor)
+> +                                       bool mixdev)
+>  {
+>         struct mousedev *mousedev;
+> +       int minor;
+>         int error;
+>
+> +       minor = mousedev_reserve_minor(mixdev);
+> +       if (minor < 0) {
+> +               error = minor;
+> +               goto err_out;
+> +       }
+> +
+>         mousedev = kzalloc(sizeof(struct mousedev), GFP_KERNEL);
+>         if (!mousedev) {
+>                 error = -ENOMEM;
+> -               goto err_out;
+> +               goto err_free_minor;
+>         }
+>
+>         INIT_LIST_HEAD(&mousedev->client_list);
+> @@ -867,16 +858,21 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
+>         spin_lock_init(&mousedev->client_lock);
+>         mutex_init(&mousedev->mutex);
+>         lockdep_set_subclass(&mousedev->mutex,
+> -                            minor == MOUSEDEV_MIX ? SINGLE_DEPTH_NESTING : 0);
+> +                            mixdev ? SINGLE_DEPTH_NESTING : 0);
+>         init_waitqueue_head(&mousedev->wait);
+>
+> -       if (minor == MOUSEDEV_MIX)
+> +       if (mixdev) {
+>                 dev_set_name(&mousedev->dev, "mice");
+> -       else
+> -               dev_set_name(&mousedev->dev, "mouse%d", minor);
+> +       } else {
+> +               int dev_no = minor;
+> +               /* Normalize device number if it falls into legacy range */
+> +               if (dev_no < MOUSEDEV_MINOR_BASE + MOUSEDEV_MINORS)
+> +                       dev_no -= MOUSEDEV_MINOR_BASE;
+> +               dev_set_name(&mousedev->dev, "mouse%d", dev_no);
+> +       }
+>
+> -       mousedev->minor = minor;
+>         mousedev->exist = true;
+> +       mousedev->is_mixdev = mixdev;
+>         mousedev->handle.dev = input_get_device(dev);
+>         mousedev->handle.name = dev_name(&mousedev->dev);
+>         mousedev->handle.handler = handler;
+> @@ -885,17 +881,18 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
+>         mousedev->dev.class = &input_class;
+>         if (dev)
+>                 mousedev->dev.parent = &dev->dev;
+> -       mousedev->dev.devt = MKDEV(INPUT_MAJOR, MOUSEDEV_MINOR_BASE + minor);
+> +       mousedev->dev.devt = MKDEV(INPUT_MAJOR, minor);
+>         mousedev->dev.release = mousedev_free;
+>         device_initialize(&mousedev->dev);
+>
+> -       if (minor != MOUSEDEV_MIX) {
+> +       if (!mixdev) {
+>                 error = input_register_handle(&mousedev->handle);
+>                 if (error)
+>                         goto err_free_mousedev;
+>         }
+>
+> -       error = mousedev_install_chrdev(mousedev);
+> +       cdev_init(&mousedev->cdev, &mousedev_fops);
+> +       error = cdev_add(&mousedev->cdev, mousedev->dev.devt, 1);
+>         if (error)
+>                 goto err_unregister_handle;
+>
+> @@ -908,10 +905,12 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
+>   err_cleanup_mousedev:
+>         mousedev_cleanup(mousedev);
+>   err_unregister_handle:
+> -       if (minor != MOUSEDEV_MIX)
+> +       if (!mixdev)
+>                 input_unregister_handle(&mousedev->handle);
+>   err_free_mousedev:
+>         put_device(&mousedev->dev);
+> + err_free_minor:
+> +       input_free_minor(minor);
+>   err_out:
+>         return ERR_PTR(error);
+>  }
+> @@ -920,7 +919,8 @@ static void mousedev_destroy(struct mousedev *mousedev)
+>  {
+>         device_del(&mousedev->dev);
+>         mousedev_cleanup(mousedev);
+> -       if (mousedev->minor != MOUSEDEV_MIX)
+> +       input_free_minor(MINOR(mousedev->dev.devt));
+> +       if (!mousedev->is_mixdev)
+>                 input_unregister_handle(&mousedev->handle);
+>         put_device(&mousedev->dev);
+>  }
+> @@ -938,7 +938,7 @@ static int mixdev_add_device(struct mousedev *mousedev)
+>                 if (retval)
+>                         goto out;
+>
+> -               mousedev->mixdev_open = 1;
+> +               mousedev->mixdev_open = true;
+>         }
+>
+>         get_device(&mousedev->dev);
+> @@ -954,7 +954,7 @@ static void mixdev_remove_device(struct mousedev *mousedev)
+>         mutex_lock(&mousedev_mix->mutex);
+>
+>         if (mousedev->mixdev_open) {
+> -               mousedev->mixdev_open = 0;
+> +               mousedev->mixdev_open = false;
+>                 mousedev_close_device(mousedev);
+>         }
+>
+> @@ -969,19 +969,9 @@ static int mousedev_connect(struct input_handler *handler,
+>                             const struct input_device_id *id)
+>  {
+>         struct mousedev *mousedev;
+> -       int minor;
+>         int error;
+>
+> -       for (minor = 0; minor < MOUSEDEV_MINORS; minor++)
+> -               if (!mousedev_table[minor])
+> -                       break;
+> -
+> -       if (minor == MOUSEDEV_MINORS) {
+> -               pr_err("no more free mousedev devices\n");
+> -               return -ENFILE;
+> -       }
+> -
+> -       mousedev = mousedev_create(dev, handler, minor);
+> +       mousedev = mousedev_create(dev, handler, false);
+>         if (IS_ERR(mousedev))
+>                 return PTR_ERR(mousedev);
+>
+> @@ -1054,27 +1044,59 @@ static const struct input_device_id mousedev_ids[] = {
+>  MODULE_DEVICE_TABLE(input, mousedev_ids);
+>
+>  static struct input_handler mousedev_handler = {
+> -       .event =        mousedev_event,
+> -       .connect =      mousedev_connect,
+> -       .disconnect =   mousedev_disconnect,
+> -       .fops =         &mousedev_fops,
+> -       .minor =        MOUSEDEV_MINOR_BASE,
+> -       .name =         "mousedev",
+> -       .id_table =     mousedev_ids,
+> +       .event          = mousedev_event,
+> +       .connect        = mousedev_connect,
+> +       .disconnect     = mousedev_disconnect,
+> +       .name           = "mousedev",
+> +       .id_table       = mousedev_ids,
+>  };
+>
+>  #ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
+> +#include <linux/miscdevice.h>
+> +
+>  static struct miscdevice psaux_mouse = {
+> -       PSMOUSE_MINOR, "psaux", &mousedev_fops
+> +       .minor  = PSMOUSE_MINOR,
+> +       .name   = "psaux",
+> +       .fops   = &mousedev_fops,
+>  };
+> -static int psaux_registered;
+> +static bool psaux_registered;
+> +
+> +static void __init mousedev_psaux_register(void)
+> +{
+> +       int error;
+> +
+> +       error = misc_register(&psaux_mouse);
+> +       if (error)
+> +               pr_warn("could not register psaux device, error: %d\n",
+> +                          error);
+> +       else
+> +               psaux_registered = true;
+> +
+
+Why that newline here?
+
+> +}
+> +
+> +static void __exit mousedev_psaux_unregister(void)
+> +{
+> +       if (psaux_registered)
+> +               misc_deregister(&psaux_mouse);
+> +}
+> +
+> +#else
+> +
+> +static inline void mousedev_psaux_register(void)
+> +{
+> +}
+> +
+> +static inline void mousedev_psaux_unregister(void)
+> +{
+> +}
+> +
+>  #endif
+>
+>  static int __init mousedev_init(void)
+>  {
+>         int error;
+>
+> -       mousedev_mix = mousedev_create(NULL, &mousedev_handler, MOUSEDEV_MIX);
+> +       mousedev_mix = mousedev_create(NULL, &mousedev_handler, true);
+>         if (IS_ERR(mousedev_mix))
+>                 return PTR_ERR(mousedev_mix);
+>
+> @@ -1084,14 +1106,7 @@ static int __init mousedev_init(void)
+>                 return error;
+>         }
+>
+> -#ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
+> -       error = misc_register(&psaux_mouse);
+> -       if (error)
+> -               pr_warn("could not register psaux device, error: %d\n",
+> -                          error);
+> -       else
+> -               psaux_registered = 1;
+> -#endif
+> +       mousedev_psaux_register();
+>
+>         pr_info("PS/2 mouse device common for all mice\n");
+>
+> @@ -1100,10 +1115,7 @@ static int __init mousedev_init(void)
+>
+>  static void __exit mousedev_exit(void)
+>  {
+> -#ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
+> -       if (psaux_registered)
+> -               misc_deregister(&psaux_mouse);
+> -#endif
+> +       mousedev_psaux_unregister();
+>         input_unregister_handler(&mousedev_handler);
+>         mousedev_destroy(mousedev_mix);
+>  }
+> diff --git a/include/linux/input.h b/include/linux/input.h
+> index 725dcd0..c698e7e 100644
+> --- a/include/linux/input.h
+> +++ b/include/linux/input.h
+> @@ -1387,9 +1387,6 @@ struct input_handle;
+>   * @start: starts handler for given handle. This function is called by
+>   *     input core right after connect() method and also when a process
+>   *     that "grabbed" a device releases it
+> - * @fops: file operations this driver implements
+> - * @minor: beginning of range of 32 minors for devices this driver
+> - *     can provide
+>   * @name: name of the handler, to be shown in /proc/bus/input/handlers
+>   * @id_table: pointer to a table of input_device_ids this driver can
+>   *     handle
+> @@ -1420,8 +1417,6 @@ struct input_handler {
+>         void (*disconnect)(struct input_handle *handle);
+>         void (*start)(struct input_handle *handle);
+>
+> -       const struct file_operations *fops;
+> -       int minor;
+>         const char *name;
+>
+>         const struct input_device_id *id_table;
+> @@ -1488,6 +1483,10 @@ void input_reset_device(struct input_dev *);
+>  int __must_check input_register_handler(struct input_handler *);
+>  void input_unregister_handler(struct input_handler *);
+>
+> +int __must_check input_get_new_minor(int legacy_base, unsigned int legacy_num,
+> +                                    bool allow_dynamic);
+> +void input_free_minor(unsigned int minor);
+> +
+>  int input_handler_for_each_handle(struct input_handler *, void *data,
+>                                   int (*fn)(struct input_handle *, void *));
+>
+
+Looks all good and works perfectly well for me.
+Reviewed-by: David Herrmann <dh.herrmann@googlemail.com>
+
+Dmitry, if you push it into linux-next soon, we might even get it into
+3.7. And while looking over it, I noticed that it really isn't that
+much of a functional change. We basically just move the cdev
+allocation from the core into each handler so we didn't introduce any
+new races/deadlocks. At least I didn't find one.
+
+Thanks again!
+David
