@@ -1,80 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab2IYLiv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:38:51 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38532 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab2IYLiu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:38:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpokju4=fVKtq=rG0y-_c54n0yErzredW1BEJ5eTSaDyHpg@mail.gmail.com>
-References: <viresh.kumar@linaro.org>
-	<cover.1348568074.git.viresh.kumar@linaro.org>
-	<3232b3192e2e373cc4aaf43359d454c5ad53cddb.1348568074.git.viresh.kumar@linaro.org>
-	<1348572145.3881.18.camel@twins>
-	<CAKohpokju4=fVKtq=rG0y-_c54n0yErzredW1BEJ5eTSaDyHpg@mail.gmail.com>
-Date: Tue, 25 Sep 2012 13:38:49 +0200
-Message-ID: <CAKfTPtC5kFT1uDvw3vR5_48Y4-Zu3LzjgA-+xeVrFJzGEDPHfg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] workqueue: Schedule work on non-idle cpu instead of
- current one
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Arvind.Chauhan@arm.com, amit.kucheria@linaro.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755622Ab2IYLjY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:39:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12468 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754814Ab2IYLjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 07:39:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,481,1344236400"; 
+   d="scan'208";a="226422144"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: viresh.kumar@linaro.org, Vinod Koul <vinod.koul@intel.com>,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
+        Hein Tibosch <hein_tibosch@yahoo.es>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3] dw_dmac: autoconfigure data_width or get it via platform data
+Date: Tue, 25 Sep 2012 14:39:16 +0300
+Message-Id: <1348573156-5032-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <CAOh2x=n4ZCsQ1ccqobZF6fz-Kuj_VE-ua5PftAHQkTobA=p+pw@mail.gmail.com>
+References: <CAOh2x=n4ZCsQ1ccqobZF6fz-Kuj_VE-ua5PftAHQkTobA=p+pw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2012 13:30, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 25 September 2012 16:52, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Tue, 2012-09-25 at 16:06 +0530, Viresh Kumar wrote:
->>> @@ -1066,8 +1076,9 @@ int queue_work(struct workqueue_struct *wq,
->>> struct work_struct *work)
->>>  {
->>>         int ret;
->>>
->>> -       ret = queue_work_on(get_cpu(), wq, work);
->>> -       put_cpu();
->>> +       preempt_disable();
->>> +       ret = queue_work_on(wq_select_cpu(), wq, work);
->>> +       preempt_enable();
->>>
->>>         return ret;
->>>  }
->>
->> Right, so the problem I see here is that wq_select_cpu() is horridly
->> expensive..
->
-> But this is what the initial idea during LPC we had. Any improvements here
-> you can suggest?
+Not all of the controllers support the 64 bit data width. Make it configurable
+via platform data. The driver will try to get a value from the component
+parameters, otherwise it will use the platform data.
 
-The main outcome of the LPC was that we should be able to select
-another CPU than the local one.
-Using the same policy than timer, is a 1st step to consolidate
-interface. A next step should be to update the policy of the function
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+Since v2:
+- sometimes memory-to-memory test is failed, that's why we need to choose
+  minimum data portion between source and destination limits
 
-Vincent
->
->>> @@ -1102,7 +1113,7 @@ static void delayed_work_timer_fn(unsigned long
->>> __data)
->>>         struct delayed_work *dwork = (struct delayed_work *)__data;
->>>         struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
->>>
->>> -       __queue_work(smp_processor_id(), cwq->wq, &dwork->work);
->>> +       __queue_work(wq_select_cpu(), cwq->wq, &dwork->work);
->>>  }
->>
->> Shouldn't timer migration have sorted this one?
->
-> Maybe yes. Will investigate more on it.
->
-> Thanks for your early feedback.
->
-> --
-> viresh
+ arch/arm/mach-spear13xx/spear13xx.c |    2 ++
+ arch/avr32/mach-at32ap/at32ap700x.c |    2 ++
+ drivers/dma/dw_dmac.c               |   47 ++++++++++++++++++++++++++++++-----
+ drivers/dma/dw_dmac_regs.h          |    7 ++++++
+ include/linux/dw_dmac.h             |    5 ++++
+ 5 files changed, 57 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/mach-spear13xx/spear13xx.c b/arch/arm/mach-spear13xx/spear13xx.c
+index 9491137..5633d69 100644
+--- a/arch/arm/mach-spear13xx/spear13xx.c
++++ b/arch/arm/mach-spear13xx/spear13xx.c
+@@ -79,6 +79,8 @@ struct dw_dma_platform_data dmac_plat_data = {
+ 	.chan_allocation_order = CHAN_ALLOCATION_DESCENDING,
+ 	.chan_priority = CHAN_PRIORITY_DESCENDING,
+ 	.block_size = 4095U,
++	.nr_masters = 2,
++	.data_width = { 3, 3, 0, 0 },
+ };
+ 
+ void __init spear13xx_l2x0_init(void)
+diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
+index 2c4aefe..b323d8d 100644
+--- a/arch/avr32/mach-at32ap/at32ap700x.c
++++ b/arch/avr32/mach-at32ap/at32ap700x.c
+@@ -606,6 +606,8 @@ static void __init genclk_init_parent(struct clk *clk)
+ static struct dw_dma_platform_data dw_dmac0_data = {
+ 	.nr_channels	= 3,
+ 	.block_size	= 4095U,
++	.nr_masters	= 2,
++	.data_width	= { 2, 2, 0, 0 },
+ };
+ 
+ static struct resource dw_dmac0_resource[] = {
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 4af9fad..33c46f0 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -38,12 +38,22 @@
+  * which does not support descriptor writeback.
+  */
+ 
++static inline unsigned int dwc_get_dms(struct dw_dma_slave *slave)
++{
++	return slave ? slave->dst_master : 0;
++}
++
++static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
++{
++	return slave ? slave->src_master : 1;
++}
++
+ #define DWC_DEFAULT_CTLLO(_chan) ({				\
+ 		struct dw_dma_slave *__slave = (_chan->private);	\
+ 		struct dw_dma_chan *_dwc = to_dw_dma_chan(_chan);	\
+ 		struct dma_slave_config	*_sconfig = &_dwc->dma_sconfig;	\
+-		int _dms = __slave ? __slave->dst_master : 0;	\
+-		int _sms = __slave ? __slave->src_master : 1;	\
++		int _dms = dwc_get_dms(__slave);		\
++		int _sms = dwc_get_sms(__slave);		\
+ 		u8 _smsize = __slave ? _sconfig->src_maxburst :	\
+ 			DW_DMA_MSIZE_16;			\
+ 		u8 _dmsize = __slave ? _sconfig->dst_maxburst :	\
+@@ -633,6 +643,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 		size_t len, unsigned long flags)
+ {
+ 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
++	struct dw_dma_slave	*dws = chan->private;
+ 	struct dw_desc		*desc;
+ 	struct dw_desc		*first;
+ 	struct dw_desc		*prev;
+@@ -640,6 +651,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 	size_t			offset;
+ 	unsigned int		src_width;
+ 	unsigned int		dst_width;
++	unsigned int		data_width;
+ 	u32			ctllo;
+ 
+ 	dev_vdbg(chan2dev(chan),
+@@ -652,7 +664,11 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 		return NULL;
+ 	}
+ 
+-	src_width = dst_width = dwc_fast_fls(src | dest | len);
++	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
++					 dwc->dw->data_width[dwc_get_dms(dws)]);
++
++	src_width = dst_width = min_t(unsigned int, data_width,
++				      dwc_fast_fls(src | dest | len));
+ 
+ 	ctllo = DWC_DEFAULT_CTLLO(chan)
+ 			| DWC_CTLL_DST_WIDTH(dst_width)
+@@ -722,6 +738,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 	dma_addr_t		reg;
+ 	unsigned int		reg_width;
+ 	unsigned int		mem_width;
++	unsigned int		data_width;
+ 	unsigned int		i;
+ 	struct scatterlist	*sg;
+ 	size_t			total_len = 0;
+@@ -745,6 +762,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
+ 			DWC_CTLL_FC(DW_DMA_FC_D_M2P);
+ 
++		data_width = dwc->dw->data_width[dwc_get_sms(dws)];
++
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+ 			u32		len, dlen, mem;
+@@ -752,7 +771,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 			mem = sg_dma_address(sg);
+ 			len = sg_dma_len(sg);
+ 
+-			mem_width = dwc_fast_fls(mem | len);
++			mem_width = min_t(unsigned int,
++					  data_width, dwc_fast_fls(mem | len));
+ 
+ slave_sg_todev_fill_desc:
+ 			desc = dwc_desc_get(dwc);
+@@ -805,6 +825,8 @@ slave_sg_todev_fill_desc:
+ 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
+ 			DWC_CTLL_FC(DW_DMA_FC_D_P2M);
+ 
++		data_width = dwc->dw->data_width[dwc_get_dms(dws)];
++
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+ 			u32		len, dlen, mem;
+@@ -812,7 +834,8 @@ slave_sg_todev_fill_desc:
+ 			mem = sg_dma_address(sg);
+ 			len = sg_dma_len(sg);
+ 
+-			mem_width = dwc_fast_fls(mem | len);
++			mem_width = min_t(unsigned int,
++					  data_width, dwc_fast_fls(mem | len));
+ 
+ slave_sg_fromdev_fill_desc:
+ 			desc = dwc_desc_get(dwc);
+@@ -1417,9 +1440,19 @@ static int __devinit dw_probe(struct platform_device *pdev)
+ 	dw->regs = regs;
+ 
+ 	/* get hardware configuration parameters */
+-	if (autocfg)
++	if (autocfg) {
+ 		max_blk_size = dma_readl(dw, MAX_BLK_SIZE);
+ 
++		dw->nr_masters = (dw_params >> DW_PARAMS_NR_MASTER & 3) + 1;
++		for (i = 0; i < dw->nr_masters; i++) {
++			dw->data_width[i] =
++				(dw_params >> DW_PARAMS_DATA_WIDTH(i) & 3) + 2;
++		}
++	} else {
++		dw->nr_masters = pdata->nr_masters;
++		memcpy(dw->data_width, pdata->data_width, 4);
++	}
++
+ 	/* Calculate all channel mask before DMA setup */
+ 	dw->all_chan_mask = (1 << nr_channels) - 1;
+ 
+@@ -1466,6 +1499,8 @@ static int __devinit dw_probe(struct platform_device *pdev)
+ 
+ 		channel_clear_bit(dw, CH_EN, dwc->mask);
+ 
++		dwc->dw = dw;
++
+ 		/* hardware configuration */
+ 		if (autocfg)
+ 			/* Decode maximum block size for given channel. The
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index 2a1cc53..06f0391 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -198,6 +198,9 @@ struct dw_dma_chan {
+ 
+ 	/* configuration passed via DMA_SLAVE_CONFIG */
+ 	struct dma_slave_config dma_sconfig;
++
++	/* backlink to dw_dma */
++	struct dw_dma		*dw;
+ };
+ 
+ static inline struct dw_dma_chan_regs __iomem *
+@@ -224,6 +227,10 @@ struct dw_dma {
+ 
+ 	u8			all_chan_mask;
+ 
++	/* hardware configuration */
++	unsigned char		nr_masters;
++	unsigned char		data_width[4];
++
+ 	struct dw_dma_chan	chan[0];
+ };
+ 
+diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
+index 3315ef9..e1c8c9e 100644
+--- a/include/linux/dw_dmac.h
++++ b/include/linux/dw_dmac.h
+@@ -20,6 +20,9 @@
+  * @is_private: The device channels should be marked as private and not for
+  *	by the general purpose DMA channel allocator.
+  * @block_size: Maximum block size supported by the controller
++ * @nr_masters: Number of AHB masters supported by the controller
++ * @data_width: Maximum data width supported by hardware per AHB master
++ *		(0 - 8bits, 1 - 16bits, ..., 5 - 256bits)
+  */
+ struct dw_dma_platform_data {
+ 	unsigned int	nr_channels;
+@@ -31,6 +34,8 @@ struct dw_dma_platform_data {
+ #define CHAN_PRIORITY_DESCENDING	1	/* chan7 highest */
+ 	unsigned char	chan_priority;
+ 	unsigned short	block_size;
++	unsigned char	nr_masters;
++	unsigned char	data_width[4];
+ };
+ 
+ /* bursts size */
+-- 
+1.7.10.4
+
