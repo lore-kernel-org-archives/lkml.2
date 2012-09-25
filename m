@@ -1,191 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab2IYKRn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:17:43 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34731 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab2IYKRl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:17:41 -0400
-Date: Tue, 25 Sep 2012 15:11:57 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: possible recursive locking in numasched code
-Message-ID: <20120925094157.GD18334@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+	id S1754628Ab2IYKUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:20:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48239 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751723Ab2IYKUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 06:20:13 -0400
+Date: Tue, 25 Sep 2012 11:20:05 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+Message-ID: <20120925102005.GE11266@suse.de>
+References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20120921161252.GV11266@suse.de>
+ <20120921180222.GA7220@phenom.dumpdata.com>
+ <505CB9BC.8040905@linux.vnet.ibm.com>
+ <42d62a30-bd6c-4bd7-97d1-bec2f237756b@default>
+ <20120922010733.GX11266@suse.de>
+ <589fd823-40f1-418c-81ad-ca8daa3f064d@default>
+ <20120924103150.GA11266@suse.de>
+ <f0890e7c-9f9f-4110-8da9-05d0fdf7f91c@default>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092510-7408-0000-0000-000008C6B105
+In-Reply-To: <f0890e7c-9f9f-4110-8da9-05d0fdf7f91c@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Mon, Sep 24, 2012 at 01:36:48PM -0700, Dan Magenheimer wrote:
+> > From: Mel Gorman [mailto:mgorman@suse.de]
+> > Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+> > 
+> > On Sat, Sep 22, 2012 at 02:18:44PM -0700, Dan Magenheimer wrote:
+> > > > From: Mel Gorman [mailto:mgorman@suse.de]
+> > > > Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+> > > >
+> > > > On Fri, Sep 21, 2012 at 01:35:15PM -0700, Dan Magenheimer wrote:
+> > > > > > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> > > > > > Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+> > > > > The two proposals:
+> > > > > A) Recreate all the work done for zcache2 as a proper sequence of
+> > > > >    independent patches and apply them to zcache1. (Seth/Konrad)
+> > > > > B) Add zsmalloc back in to zcache2 as an alternative allocator
+> > > > >    for frontswap pages. (Dan)
+> > > >
+> > > > Throwing it out there but ....
+> > > >
+> > > > C) Merge both, but freeze zcache1 except for critical fixes. Only allow
+> > > >    future work on zcache2. Document limitations of zcache1 and
+> > > >    workarounds until zcache2 is fully production ready.
+> > >
+> > What would the impact be if zcache2 and zcache1 were mutually exclusive
+> > in Kconfig and the naming was as follows?
+> > 
+> > CONFIG_ZCACHE_DEPRECATED	(zcache1)
+> > CONFIG_ZCACHE			(zcache2)
+> > 
+> > That would make it absolutely clear to distributions which one they should
+> > be enabling and also make it clear that all future development happen
+> > on zcache2.
+> > 
+> > I know it looks insane to promote something that is instantly deprecated
+> > but none of the other alternatives seem to be gaining traction either.
+> > This would at least allow the people who are currently heavily behind
+> > zcache1 to continue supporting it and applying critical fixes until they
+> > move to zcache2.
+> 
+> Just wondering... how, in your opinion, is this different from
+> leaving zcache1 (or even both) in staging? 
 
-While running tests with patches for sched-numa rewrite posted at 
-http://permalink.gmane.org/gmane.linux.kernel/1335968, I 
-came across a possible recursive locking scenaio. 
+Because leaving it in staging implies it is not supported. What I'm
+suggesting is that zcache1 be promoted but marked deprecated. Seth and the
+embedded people that use it should continue to support it as it currently
+stands and fix any critical bugs that are reported but avoid writing new
+features for it. The limitations of it should be documented.
 
-Please see approaches and a possible patch to avoid the same.
- 
- ======================================================
- [ INFO: possible circular locking dependency detected ]
- 3.6.0-rc1-numasched_v2_100912+ #2 Not tainted
- -------------------------------------------------------
- gzip/54680 is trying to acquire lock:
- (&p->pi_lock){-.-.-.}, at: [<ffffffff81078b08>] task_work_add+0x38/0xb0
- 
- but task is already holding lock:
- (&rq->lock){-.-.-.}, at: [<ffffffff8108e203>] scheduler_tick+0x53/0x150
- 
- which lock already depends on the new lock.
- 
- 
- the existing dependency chain (in reverse order) is:
- 
- -> #1 (&rq->lock){-.-.-.}:
-       [<ffffffff810be782>] lock_acquire+0xa2/0x130
-       [<ffffffff81551866>] _raw_spin_lock+0x36/0x70
-       [<ffffffff810903c7>] wake_up_new_task+0xa7/0x1c0
-       [<ffffffff8105259b>] do_fork+0xcb/0x380
-       [<ffffffff8101cef6>] kernel_thread+0x76/0x80
-       [<ffffffff81535036>] rest_init+0x26/0x160
-       [<ffffffff81ca6d93>] start_kernel+0x3b6/0x3c3
-       [<ffffffff81ca6356>] x86_64_start_reservations+0x131/0x136
-       [<ffffffff81ca645e>] x86_64_start_kernel+0x103/0x112
- 
- -> #0 (&p->pi_lock){-.-.-.}:
-       [<ffffffff810be478>] __lock_acquire+0x1428/0x1690
-       [<ffffffff810be782>] lock_acquire+0xa2/0x130
-       [<ffffffff81551a15>] _raw_spin_lock_irqsave+0x55/0xa0
-       [<ffffffff81078b08>] task_work_add+0x38/0xb0
-       [<ffffffff8109920f>] task_tick_numa+0xcf/0xe0
-       [<ffffffff81099fb9>] task_tick_fair+0x129/0x160
-       [<ffffffff8108e28e>] scheduler_tick+0xde/0x150
-       [<ffffffff81064dfe>] update_process_times+0x6e/0x90
-       [<ffffffff810b68d6>] tick_sched_timer+0x76/0xe0
-       [<ffffffff81084ec8>] __run_hrtimer+0x78/0x1b0
-       [<ffffffff810852a6>] hrtimer_interrupt+0x106/0x280
-       [<ffffffff8155cc39>] smp_apic_timer_interrupt+0x69/0x99
-       [<ffffffff8155bb2f>] apic_timer_interrupt+0x6f/0x80
- 
- other info that might help us debug this:
- 
- Possible unsafe locking scenario:
- 
-       CPU0                    CPU1
-       ----                    ----
-  lock(&rq->lock);
-                               lock(&p->pi_lock);
-                               lock(&rq->lock);
-  lock(&p->pi_lock);
- 
- *** DEADLOCK ***
- 
- 1 lock held by gzip/54680:
- #0:  (&rq->lock){-.-.-.}, at: [<ffffffff8108e203>] scheduler_tick+0x53/0x150
- 
- stack backtrace:
- Pid: 54680, comm: gzip Not tainted 3.6.0-rc1-numasched_v2_100912+ #2
- Call Trace:
- <IRQ>  [<ffffffff810bbc6a>] print_circular_bug+0x21a/0x2f0
- [<ffffffff810be478>] __lock_acquire+0x1428/0x1690
- [<ffffffff81096ab8>] ? sched_clock_cpu+0xb8/0x110
- [<ffffffff810be782>] lock_acquire+0xa2/0x130
- [<ffffffff81078b08>] ? task_work_add+0x38/0xb0
- [<ffffffff81096b7f>] ? local_clock+0x6f/0x80
- [<ffffffff81551a15>] _raw_spin_lock_irqsave+0x55/0xa0
- [<ffffffff81078b08>] ? task_work_add+0x38/0xb0
- [<ffffffff81078b08>] task_work_add+0x38/0xb0
- [<ffffffff8109920f>] task_tick_numa+0xcf/0xe0
- [<ffffffff81099fb9>] task_tick_fair+0x129/0x160
- [<ffffffff8108e28e>] scheduler_tick+0xde/0x150
- [<ffffffff81064dfe>] update_process_times+0x6e/0x90
- [<ffffffff810b68d6>] tick_sched_timer+0x76/0xe0
- [<ffffffff81084ec8>] __run_hrtimer+0x78/0x1b0
- [<ffffffff810b6860>] ? tick_setup_sched_timer+0x100/0x100
- [<ffffffff810852a6>] hrtimer_interrupt+0x106/0x280
- [<ffffffff8155cc39>] smp_apic_timer_interrupt+0x69/0x99
- [<ffffffff8155bb2f>] apic_timer_interrupt+0x6f/0x80
- <EOI>  [<ffffffff81552595>] ? retint_swapgs+0x13/0x1b
+> "Tainting" occurs
+> either way, it's just a matter of whether or not there is a message
+> logged by the kernel that it is officially tainted, right?
+> 
 
+Using a deprecated interface does not necessarily taint the kernel.
 
+> However, it _is_ another attempt at compromise and, if this
+> is the only solution that allows the debate to end, and it
+> is agreed on by whatever maintainer is committed to pull
+> both (be it you, or Andrew, or Konrad, or Linux), I would
+> agree to your "C-prime" proposal.
+>  
 
-So its clear that we are calling task_work_add from scheduler_tick.
-scheduler_tick has already taken rq->lock  and task_work_add needs to take
-the same rq->lock.
+And bear in mind that I do not any sort of say in what happens
+ultimately. I'm just suggesting alternatives here that may potentially
+keep everyone happy (or at least stop it going in circles).
 
-I figured out that this deadlock can be resolved in more than one way.
-1. Add a new callback in sched_class. 
-	May be the cleanest but not sure if its worth adding a callback just
-for sched class.
+> > > I use the terms "zcache1" and "zcache2" only to clarify which
+> > > codebase, not because they are dramatically different. I estimate
+> > > that 85%-90% of the code in zcache1 and zcache2 is identical, not
+> > > counting the allocator or comments/whitespace/janitorial!
+> > 
+> > If 85-90% of the code is identicial then they really should be sharing
+> > the code rather than making copies. That will result in some monolithic
+> > patches but it's unavoidable. I expect it would end up looking like
+> > 
+> > Patch 1		promote zcache1
+> > Patch 2		promote zcache2
+> > Patch 3		move shared code for zcache1,zcache2 to common files
+> > 
+> > If the shared code is really shared and not copied it may reduce some of
+> > the friction between the camps.
+> 
+> This part I would object to... at least I would object to signing
+> up to do Patch 3 myself.  Seems like a lot of busywork if zcache1
+> is truly deprecated.
+> 
 
-2. Have a modified task_work_add that assumes rq->lock is already taken.
-	We have to export such an interface and that seems risky if somebody
-unknowingly uses such an interface instead of main interface.
+It'd help the path to truly deprecating it.
 
-3. Move the task_tick_numa to sleep/wakeup.
-	Not sure about the overheads.
+1. Fixes in common code only have to be applied once. This avoids a
+   situation where zcache1 gets a fix and zcache2 misses it and vice-versa.
+   In a related note it makes it a bit more obvious is a new feature is
+   attempted to be merged to zcache1
 
-4. Move the call to task_tick_numa to outside the rq->lock.
-	Not a clean approach as in we end up calling a sched/fair.c defined
-function in sched/core.c explicitly.
+2. It forces the zcache2 and zcache1 people to keep more or less in sync
+   with each other and limit API breakage between components.
 
-The below patch tries to implement 4th approach. 
+3. It makes it absolutely clear what the differences between zcache1 and
+   zcache2 are at any given time.
 
----
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Date: Tue, 25 Sep 2012 02:37:55 -0700
-Subject: [PATCH] Dont call task_tick_numa while holding the rq->lock
+My expectation is that the zcache1-specific components would shrink over
+time with zcache2 taking over responsibility. Ideally the end result
+would be that zcache1 is just an alias for the zcache2 code.
 
-task_tick_numa() calls task_work_add() which also needs rq->lock.
-However task_tick_numa() gets called under rq->lock. This leads to 
-recursive locking. Avoid recursive locking by calling task_tick_numa()
-outside the rq->lock.
+I recognise that this is a lot of busy work and time-consuming but it's
+at least *a* path that allows zcache1 to migrate to zcache2. Of course
+if the zcache1 people do not support the idea in principal then it goes
+back to square one.
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 87b4601..5d496be 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3236,6 +3236,9 @@ void scheduler_tick(void)
- 	curr->sched_class->task_tick(rq, curr, 0);
- 	raw_spin_unlock(&rq->lock);
- 
-+	if (sched_feat_numa(NUMA) && curr->sched_class == &fair_sched_class)
-+		task_tick_numa(rq, curr);
-+
- 	perf_event_task_tick();
- 
- #ifdef CONFIG_SMP
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 85c8fb7..5f594a5 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5417,8 +5417,6 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
- 		entity_tick(cfs_rq, se, queued);
- 	}
- 
--	if (sched_feat_numa(NUMA))
--		task_tick_numa(rq, curr);
- }
- 
- /*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index deff28e..e4ea589 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -913,6 +913,7 @@ extern struct rt_bandwidth def_rt_bandwidth;
- extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
- 
- extern void update_idle_cpu_load(struct rq *this_rq);
-+extern void task_tick_numa(struct rq *rq, struct task_struct *curr);
- 
- #ifdef CONFIG_CGROUP_CPUACCT
- #include <linux/cgroup.h>
+> > zcache1 does appear to have a few snarls that would make me wary of having
+> > to support it. I don't know if zcache2 suffers the same problems or not
+> > as I have not read it.
+> > 
+> > Unfortunately, I'm not going to get the chance to review [zcache2] in the
+> > short-term. However, if zcache1 and zcache2 shared code in common files
+> > it would at least reduce the amount of new code I have to read :)
+> 
+> Understood, which re-emphasizes my point about how the presence
+> of both reduces the (to date, very limited) MM developer time available
+> for either.
+> 
 
+While that may be true, it's not looking like that one side will accept the
+complete deletion of zcache1 on day 1. On the flip-side, they have a point
+that zcache1 has been tested by more people even if there are some serious
+limitations in the code.
+
+> > > Seth (and IBM) seems to have a bee in his bonnet that the existing
+> > > zcache1 code _must_ be promoted _soon_ with as little change as possible.
+> > > Other than the fact that he didn't like my patching approach [1],
+> > > the only technical objection Seth has raised to zcache2 is that he
+> > > thinks zsmalloc is the best choice of allocator [2] for his limited
+> > > benchmarking [3].
+> > 
+> > FWIW, I would fear that kernbench is not that interesting a benchmark for
+> > something like zcache. From an MM perspective, I would be wary that the
+> > data compresses too well and fits too neatly in the different buckets and
+> > make zsmalloc appear to behave much better than it would for a more general
+> > workload.  Of greater concern is that the allocations for zcache would be
+> > too short lived to measure if external fragmentation was a real problem
+> > or not. This is pure guesswork as I didn't read zsmalloc but this is the
+> > sort of problem I'd be looking out for if I did review it. In practice,
+> > I would probably prefer to depend on zbud because it avoids the external
+> > fragmentation problem even if it wasted memory but that's just me being
+> > cautious.
+> 
+> Your well-honed intuition is IMHO exactly right.
+> 
+> But my compromise proposal would allow the allocator decision to be delayed
+> until a broader set of workloads are brought to bear.
+> 
+
+If the API to the underlying allocator is fixed it should be at least
+possible to load either. It does not feel like an issue that should
+completely hold up everything.
+
+It may be the case that on day 1 that zcache2 cannot use zsmalloc but then
+I'd expect that at least the zsmalloc allocator would be the first block
+of code shared by both zcache1 and zcache2.
+
+> > > I've offered to put zsmalloc back in to zcache2 as an optional
+> > > (even default) allocator, but that doesn't seem to be good enough
+> > > for Seth.  Any other technical objections to zcache2, or explanation
+> > > for his urgent desire to promote zcache1, Seth (and IBM) is keeping
+> > > close to his vest, which I find to be a bit disingenuous.
+> > 
+> > I can only guess what the reasons might be for this and none of the
+> > guesses will help resolve this problem.
+> 
+> Me too.  Given the amount of time already spent on this discussion
+> (and your time reviewing, IMHO, old code), I sure hope the reasons
+> are compelling.
+> 
+> It's awfully hard to determine a compromise when one side
+> refuses to budge for unspecified reasons.   And the difference
+> between deprecated and in-staging seems minor enough that
+> it's hard to believe your modified proposal will make that
+> side happy... but we are both shooting in the dark.
+> 
+
+This is why I think the compromise is going to be promoting both,
+marking deprecated and then share as much code as possible. Without the
+sharing the split may remain permanent and just cause more problems in
+the future.
+
+> > > So, I'd like to challenge Seth with a simple question:
+> > >
+> > > If zcache2 offers zsmalloc as an alternative (even default) allocator,
+> > > what remaining _technical_ objections do you (Seth) have to merging
+> > > zcache2 _instead_ of zcache1?
+> > >
+> > > If Mel agrees that your objections are worth the costs of bifurcating
+> > > zcache and will still endorse merging both into core mm, I agree to move
+> > > forward with Mel's alternative (C) (and will then repost
+> > > https://lkml.org/lkml/2012/7/31/573).
+> > 
+> > If you go with C), please also add another patch on top *if possible*
+> > that actually shares any common code between zcache1 and zcache2.
+> 
+> Let's hear Seth's technical objections first, and discuss post-merge
+> followon steps later?
+> 
+
+Sure, but bear in mind I do not have the final say in this, I'm just making
+suggestions on how this logjam could potentially be cleared.
+
+-- 
+Mel Gorman
+SUSE Labs
