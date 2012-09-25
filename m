@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab2IYWau (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 18:30:50 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60104 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab2IYWas (ORCPT
+	id S1751950Ab2IYWis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 18:38:48 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56737 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751342Ab2IYWiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 18:30:48 -0400
+	Tue, 25 Sep 2012 18:38:46 -0400
+X-Sasl-enc: QLAsq7pdWCK67bUmd1tc8WgY2pYlPdWxpz9Bftkx1Koj 1348612725
+Date: Tue, 25 Sep 2012 15:38:44 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: manual merge of the staging tree with the vfs tree
+Message-ID: <20120925223844.GA6282@kroah.com>
+References: <20120924170741.34abbc462d1c405b0b447b72@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20120925091324.GC1247@liondog.tnic>
-References: <CAEMuUziMGAM4UOeOGWwG9jiceU9K7NSzqbryMxHwFDfmOfqQdA@mail.gmail.com>
-	<20120924075957.GA5151@liondog.tnic>
-	<CAEMuUzjbudxmGOZqB2HBLNa7p=aRqdiNKNXZLRV7c9yKPJ7TxQ@mail.gmail.com>
-	<50610602.5050003@xenotime.net>
-	<20120925091324.GC1247@liondog.tnic>
-Date: Tue, 25 Sep 2012 18:30:47 -0400
-Message-ID: <CAEMuUzgMELEqYQTt98ERoUHV1MrCcg4FnMDSLHzYOT+uY_uTPg@mail.gmail.com>
-Subject: Re: arch/x86/lib/inat.c Error
-From: Franklin Wei <frankhwei536@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Franklin Wei <frankhwei536@gmail.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <mhiramat@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120924170741.34abbc462d1c405b0b447b72@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found something:
-My inat-tables.c is blank!
-Going to get the source from Git and try again.
-Thanks for the help!
+On Mon, Sep 24, 2012 at 05:07:41PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/android/binder.c between commit 004223461eee ("new
+> helper: __alloc_fd()") from the vfs tree and commits efde99cd281a
+> ("Staging: android: binder: Make task_get_unused_fd_flags function
+> static") and bf2023614201 ("Staging: android: binder: Remove an
+> inconsequential conditional macro") from the staging tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-On 9/25/12, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Sep 24, 2012 at 06:16:50PM -0700, Randy Dunlap wrote:
->> >> That's because all those _tables thingies are included from a
->> >> "inat-tables.c" in the same directory but it somehow doesn't get
->> >> included?!
->> >>
->> >> Can we get your .config pls? Also, you're doing a "normal" kernel
->> >> build
->> >> on the command line, right?
->> >>
->> >> Thanks.
->>
->>
->> Your config builds OK for me.
->> Do you see this line in your build output before inat.c is built?
->>
->>
->>   GEN     arch/x86/lib/inat-tables.c
->
-> Yeah, this looks like stale files from the build or similar are not
-> being properly cleaned. Franklin, do the following:
->
-> $ cp .config /tmp/
-> $ make mrproper
-> $ cp /tmp/.config .
-> $ make oldconfig
-> $ make -j<num_cpus + 1>
->
-> to verify that a clean build actually fixes your issue.
->
-> Thanks.
->
-> --
-> Regards/Gruss,
->     Boris.
->
+Looks good to me, thanks.
+
+greg k-h
