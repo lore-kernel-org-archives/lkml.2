@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab2IYAqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 20:46:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34445 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab2IYAqP (ORCPT
+	id S1752051Ab2IYAyL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 20:54:11 -0400
+Received: from server505k.appriver.com ([98.129.35.43]:59043 "EHLO
+	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750919Ab2IYAyJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 20:46:15 -0400
-Date: Tue, 25 Sep 2012 10:46:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: Re: linux-next: manual merge of the userns tree with the security
- tree
-Message-Id: <20120925104605.46288817480e6a6ced31f5fc@canb.auug.org.au>
-In-Reply-To: <87txunwi84.fsf@xmission.com>
-References: <20120924215222.8933c5557b17239552f0b1d1@canb.auug.org.au>
-	<87txunwi84.fsf@xmission.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Sep_2012_10_46_05_+1000_pc3q2fm=h3xCNgwN"
+	Mon, 24 Sep 2012 20:54:09 -0400
+X-Note-AR-ScanTimeLocal: 9/24/2012 7:54:06 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: Too many policies to list
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-ALLOW: @coraid.com ALLOWED
+X-Virus-Scan: V-
+X-Note: Spam Tests Failed: 
+X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
+X-Note-Sending-IP: 98.129.35.1
+X-Note-Reverse-DNS: 
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G317 G318 G319 G320 G324 G325 G336 G429 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: ALLOWEDSENDER
+X-Note: Headers Injected
+From: Ed Cashin <ecashin@coraid.com>
+To: Kent Overstreet <koverstreet@google.com>
+CC: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "tj@kernel.org" <tj@kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>,
+        "neilb@suse.de" <neilb@suse.de>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        Nick Piggin <npiggin@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
+        Jim Paris <jim@jtan.com>, Geoff Levand <geoff@infradead.org>,
+        Alasdair Kergon <agk@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, 24 Sep 2012 19:54:04 -0500
+Subject: Re: [PATCH v3 07/26] block: Use bio_sectors() more consistently
+Thread-Topic: [PATCH v3 07/26] block: Use bio_sectors() more consistently
+Thread-Index: Ac2auELVtsNun8uOTpKcxXwmkaA6tA==
+Message-ID: <084DC7FE-0C5B-45B4-8D8C-E4AFB7C555D1@coraid.com>
+References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
+ <1348526106-17074-8-git-send-email-koverstreet@google.com>
+In-Reply-To: <1348526106-17074-8-git-send-email-koverstreet@google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Sep_2012_10_46_05_+1000_pc3q2fm=h3xCNgwN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sep 24, 2012, at 6:34 PM, Kent Overstreet wrote:
 
-Hi Eric,
+> Bunch of places in the code weren't using it where they could be -
+> this'll reduce the size of the patch that puts bi_sector/bi_size/bi_idx
+> into a struct bvec_iter.
 
-On Mon, 24 Sep 2012 08:31:07 -0700 ebiederm@xmission.com (Eric W. Biederman=
-) wrote:
->
-> Right.  To work when user namespace support is enabled fowner needs be
-> converted to a kuid_t as well.
->=20
-> When I did a trial earlier this is what I wound up with.  As long as
-> user namespaces are not enabled what you wound up with should be fine.
+The aoe changes look fine to me, thanks.
 
-I will use your resolution today.
+-- 
+  Ed Cashin
+  ecashin@coraid.com	ecashin@noserose.net
+  http://www.coraid.com	http://noserose.net/e/
 
-Thanks.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__25_Sep_2012_10_46_05_+1000_pc3q2fm=h3xCNgwN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYP7NAAoJEECxmPOUX5FE0lwP/Rs5F+49G7rWrgqhy7ud5gSz
-ABzrI7Ax4V9mXs91pvUbr7PHt9qksIFx1r6LrUys163kYkLb5i2O1vT2cAXsIfRk
-mmSJWUFgUMKzAdX3vYmMDOt3tr5BivirLj7wmNhmrKw+kEsVHdrz3okbjIoysZHx
-tPJi2oCwYuI16l08KBlSKgyk1QS4gHMTKinrc6xiHxX+hCOSRoy0JBFE4JtpBnRt
-RcUHJvhAhmIEJ7Iz2rjA/xaO8L6gm32hXxaPjRABFJcMI1XEySJBCROWCfrj6ebP
-mf2SyXv9AV+Y5BB0L4hm0nsnVJi1zpNFlPe2YspYiR67MAJ2xoiNhwOfduKqvQn6
-RsvfPHMZb5xX99kzV3D6ZSCUF8OFSTVN8pgD7aahltfbVxTzqBi16WTBojB1XYsz
-t6uE4COK21fkds/1E9CnO2vICGvlfbcgwqGhVtDGejx9KORUUuJrV1EXzV6EDNBy
-ke3wgclQucrcxqxzLWIKqVESdkhDWBBnVdqJD1Fs6cddU5ffBddqN60ivDGJ1DQy
-qLJrBwT8eEQkxO5NiSwMgIWuiebfIybrOU1Focyqj5oYr6WcU6jRhOmcwYJP7Onh
-ZuwdXacIPFMwzxLa4L8/AvdZ0QRxfhgQA8o/fcl69KatZIrtM/A5Az65gazLAmwV
-dqcnB1U/skNJTHKkb4U5
-=C/lu
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Sep_2012_10_46_05_+1000_pc3q2fm=h3xCNgwN--
