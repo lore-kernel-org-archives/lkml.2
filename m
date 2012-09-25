@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab2IYGhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 02:37:55 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:16590 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab2IYGhy (ORCPT
+	id S1752985Ab2IYGkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 02:40:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59086 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab2IYGkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 02:37:54 -0400
-Date: Tue, 25 Sep 2012 09:37:44 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Gorskin Ilya <revent82@gmail.com>
-Cc: gregkh@linuxfoundation.org, klmckinney1@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] Staging:bcm: fix coding style error in InterfaceIsr.c
-Message-ID: <20120925063744.GP4587@mwanda>
-References: <1348549469-7222-1-git-send-email-revent82@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348549469-7222-1-git-send-email-revent82@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 25 Sep 2012 02:40:23 -0400
+Date: Tue, 25 Sep 2012 16:40:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: linux-next: manual merge of the arm-soc tree with the fbdev tree
+Message-Id: <20120925164020.8c83339ae70d5eed5fc4b05c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Sep_2012_16_40_20_+1000_TAAx0Ds7zh/TpTr/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 11:04:28AM +0600, Gorskin Ilya wrote:
-> -	if(((Adapter->bPreparingForLowPowerMode == TRUE) && (Adapter->bDoSuspend == TRUE)) ||
-> -		psIntfAdapter->bSuspended ||
-> -		psIntfAdapter->bPreparingForBusSuspend)
-> -	{
-> -			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt call back is called while suspending the device");
-> +	if (((Adapter->bPreparingForLowPowerMode == TRUE) &&
-> +				(Adapter->bDoSuspend == TRUE)) ||
-> +				psIntfAdapter->bSuspended ||
-> +				psIntfAdapter->bPreparingForBusSuspend) {
-> +			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT,
-> +					DBG_LVL_ALL,
-> +					"Interrupt call back is called
-> +					while suspending the device");
->  			return ;
+--Signature=_Tue__25_Sep_2012_16_40_20_+1000_TAAx0Ds7zh/TpTr/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi all,
 
-Thanks for doing this, these changes are welcome.  However, they
-should be done slightly differently.
+Today's linux-next merge of the arm-soc tree got a conflict in
+drivers/video/msm/mdp_hw.h between commit 8abf0b31e161 ("video: msm:
+Remove useless mach/* includes") from the fbdev tree and commit
+1ef21f6343ff ("ARM: msm: move platform_data definitions") from the
+arm-soc tree.
 
-Take one type of checkpatch warning at a time and fix that one over
-the file, then do a separate patch for the next type of warning.
-[patch 1/2] Staging: bcm: move curly braces in InterfaceIsr.c
-[patch 2/2] Staging: bcm: clean up conditions in InterfaceIsr.c
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Something like that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Also the way you've indented the condition is not right.  The
-conditions which are && together should line up like this:
+diff --cc drivers/video/msm/mdp_hw.h
+index 2a84137,a0bacf5..0000000
+--- a/drivers/video/msm/mdp_hw.h
++++ b/drivers/video/msm/mdp_hw.h
+@@@ -15,7 -15,8 +15,7 @@@
+  #ifndef _MDP_HW_H_
+  #define _MDP_HW_H_
+ =20
+- #include <mach/msm_fb.h>
+ -#include <mach/msm_iomap.h>
++ #include <linux/platform_data/video-msm_fb.h>
+ =20
+  struct mdp_info {
+  	struct mdp_device mdp_dev;
 
-	if (((Adapter->bPreparingForLowPowerMode == TRUE) &&
-	     (Adapter->bDoSuspend == TRUE)) ||
-	    psIntfAdapter->bSuspended ||
-	    psIntfAdapter->bPreparingForBusSuspend) {
+--Signature=_Tue__25_Sep_2012_16_40_20_+1000_TAAx0Ds7zh/TpTr/
+Content-Type: application/pgp-signature
 
-Also the condition has too many parenthesis.  Everyone knows how the
-precedence works in:
-	if (foo == 3 || bar == 4) {
-We don't need to specify:
-	if ((foo == 3) || (bar == 4)) {
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Putting extra parenthesis make the code harder to read and has lead
-to == vs = bugs which would have been caught by gcc:
-warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+iQIcBAEBCAAGBQJQYVHUAAoJEECxmPOUX5FEGfEQAI6yEp4Hsc8ABR+YG92XH5aQ
+I7/MrR+NJ0nevrNwTcW1nq9l1Y5TJvlDmcrIpPhkTVMz8LlUt2nr2SOzUxpWIO06
+dKf/0bHOkkoYxSPKielu8AcexSJDoOzx7/ChgUOp5MNS2D45osy9jC0luCDBYhQo
+8xkCTREecPbNKJtAfpfGNwKrPVWf/6vXeEQC+BnrNfzO4q7GWe1+UVScz0Nqawmg
+sHvqwA/jjZ6d03BxA7WXq67kVilrjMSjoMsP4hdnAENSxkgNtIDQIfl15xtNRMnf
+G3bI2e0sgRH5bjyBq4yxqs8lFaAAmw9vvfdtom6TodZRK43MnvsNCtJyupIHWY4r
+83xsobLHUkFZA7qJ2Cu7+iVOYMit6eclFmerAbPq9UfSeOeDYDrE572a8EoEfTxE
++rUWh8EVasU6UgtmCgqYPFyGizK22gxr2d9aCMbX1gqQbkGLRNxaxAMLQv1sPx7j
+p/zzjeAWxSgu1j1EEed7pVGQFqKkYZH2K0rvawIlv0FAfhklPtdiVI1Hb++2zF4b
+XAyRSOTNeZz4iYEKL+OkaSlYkFQxbQO5HbpBOo5Yqc+bzQMsasJfu0kimChzGuAD
+Mgrhawa5B+lJtlT2xuD0+xPVjO0EnfGEBO1w9k570jervA7QCtyy5p3IJXMMRbAZ
+VhmDXY1SDX3Oj7+GHjVr
+=vJ68
+-----END PGP SIGNATURE-----
 
-Also can we just leave off the "== TRUE", or is this a case where it
-can "== TRUE", "== FALSE", and "== FILENOTFOUND"?
-
-Finally, this is not quoted correctly.
-> +                                     "Interrupt call back is called
-> +                                     while suspending the device");
-Don't break those string literals up across multiple lines, but if
-you do then you need to add quotes.
-					"Interrupt call back is called"
-					                              ^
-					"while suspending the device");
-					^
-
-regards,
-dan carpenter
-
-
+--Signature=_Tue__25_Sep_2012_16_40_20_+1000_TAAx0Ds7zh/TpTr/--
