@@ -1,107 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab2IYPBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 11:01:03 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37376 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab2IYPBA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 11:01:00 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        Federico Vaga <federico.vaga@gmail.com>
-Subject: [PATCH v3 1/4] v4l: vb2: add prepare/finish callbacks to allocators
-Date: Tue, 25 Sep 2012 17:04:00 +0200
-Message-Id: <1348585440-5385-1-git-send-email-federico.vaga@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com>
-References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com>
+	id S1756726Ab2IYPBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 11:01:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51214 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756631Ab2IYPBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 11:01:15 -0400
+Message-ID: <5061C70E.2090308@redhat.com>
+Date: Tue, 25 Sep 2012 17:00:30 +0200
+From: Dor Laor <dlaor@redhat.com>
+Reply-To: dlaor@redhat.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Chegu Vinod <chegu_vinod@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <505C691D.4080801@hp.com> <505CA5BA.4020801@linux.vnet.ibm.com> <50601CE7.60801@redhat.com> <50604BF0.1070607@linux.vnet.ibm.com>
+In-Reply-To: <50604BF0.1070607@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+On 09/24/2012 02:02 PM, Raghavendra K T wrote:
+> On 09/24/2012 02:12 PM, Dor Laor wrote:
+>> In order to help PLE and pvticketlock converge I thought that a small
+>> test code should be developed to test this in a predictable,
+>> deterministic way.
+>>
+>> The idea is to have a guest kernel module that spawn a new thread each
+>> time you write to a /sys/.... entry.
+>>
+>> Each such a thread spins over a spin lock. The specific spin lock is
+>> also chosen by the /sys/ interface. Let's say we have an array of spin
+>> locks *10 times the amount of vcpus.
+>>
+>> All the threads are running a
+>> while (1) {
+>>
+>> spin_lock(my_lock);
+>> sum += execute_dummy_cpu_computation(time);
+>> spin_unlock(my_lock);
+>>
+>> if (sys_tells_thread_to_die()) break;
+>> }
+>>
+>> print_result(sum);
+>>
+>> Instead of calling the kernel's spin_lock functions, clone them and make
+>> the ticket lock order deterministic and known (like a linear walk of all
+>> the threads trying to catch that lock).
+>
+> By Cloning you mean hierarchy of the locks?
 
-This patch adds support for prepare/finish callbacks in VB2 allocators.
-These callback are used for buffer flushing.
+No, I meant to clone the implementation of the current spin lock code in 
+order to set any order you may like for the ticket selection.
+(even for a non pvticket lock version)
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Acked-by: Federico Vaga <federico.vaga@gmail.com>
----
- drivers/media/v4l2-core/videobuf2-core.c | 11 +++++++++++
- include/media/videobuf2-core.h           |  7 +++++++
- 2 file modificati, 18 inserzioni(+)
+For instance, let's say you have N threads trying to grab the lock, you 
+can always make the ticket go linearly from 1->2...->N.
+Not sure it's a good idea, just a recommendation.
 
-diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-index 4da3df6..079fa79 100644
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -790,6 +790,7 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
- {
- 	struct vb2_queue *q = vb->vb2_queue;
- 	unsigned long flags;
-+	unsigned int plane;
- 
- 	if (vb->state != VB2_BUF_STATE_ACTIVE)
- 		return;
-@@ -800,6 +801,10 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
- 	dprintk(4, "Done processing on buffer %d, state: %d\n",
- 			vb->v4l2_buf.index, vb->state);
- 
-+	/* sync buffers */
-+	for (plane = 0; plane < vb->num_planes; ++plane)
-+		call_memop(q, finish, vb->planes[plane].mem_priv);
-+
- 	/* Add the buffer to the done buffers list */
- 	spin_lock_irqsave(&q->done_lock, flags);
- 	vb->state = state;
-@@ -975,9 +980,15 @@ static int __qbuf_mmap(struct vb2_buffer *vb, const struct v4l2_buffer *b)
- static void __enqueue_in_driver(struct vb2_buffer *vb)
- {
- 	struct vb2_queue *q = vb->vb2_queue;
-+	unsigned int plane;
- 
- 	vb->state = VB2_BUF_STATE_ACTIVE;
- 	atomic_inc(&q->queued_count);
-+
-+	/* sync buffers */
-+	for (plane = 0; plane < vb->num_planes; ++plane)
-+		call_memop(q, prepare, vb->planes[plane].mem_priv);
-+
- 	q->ops->buf_queue(vb);
- }
- 
-diff --git a/include/media/videobuf2-core.h b/include/media/videobuf2-core.h
-index 8dd9b6c..2508609 100644
---- a/include/media/videobuf2-core.h
-+++ b/include/media/videobuf2-core.h
-@@ -41,6 +41,10 @@ struct vb2_fileio_data;
-  *		 argument to other ops in this structure
-  * @put_userptr: inform the allocator that a USERPTR buffer will no longer
-  *		 be used
-+ * @prepare:	called every time the buffer is passed from userspace to the
-+ *		driver, usefull for cache synchronisation, optional
-+ * @finish:	called every time the buffer is passed back from the driver
-+ *		to the userspace, also optional
-  * @vaddr:	return a kernel virtual address to a given memory buffer
-  *		associated with the passed private structure or NULL if no
-  *		such mapping exists
-@@ -65,6 +69,9 @@ struct vb2_mem_ops {
- 					unsigned long size, int write);
- 	void		(*put_userptr)(void *buf_priv);
- 
-+	void		(*prepare)(void *buf_priv);
-+	void		(*finish)(void *buf_priv);
-+
- 	void		*(*vaddr)(void *buf_priv);
- 	void		*(*cookie)(void *buf_priv);
- 
--- 
-1.7.11.4
+> Also I believe time should be passed via sysfs / hardcoded for each
+> type of lock we are mimicking
 
+Yap
+
+>
+>>
+>> This way you can easy calculate:
+>> 1. the score of a single vcpu running a single thread
+>> 2. the score of sum of all thread scores when #thread==#vcpu all
+>> taking the same spin lock. The overall sum should be close as
+>> possible to #1.
+>> 3. Like #2 but #threads > #vcpus and other versions of #total vcpus
+>> (belonging to all VMs) > #pcpus.
+>> 4. Create #thread == #vcpus but let each thread have it's own spin
+>> lock
+>> 5. Like 4 + 2
+>>
+>> Hopefully this way will allows you to judge and evaluate the exact
+>> overhead of scheduling VMs and threads since you have the ideal result
+>> in hand and you know what the threads are doing.
+>>
+>> My 2 cents, Dor
+>>
+>
+> Thank you,
+> I think this is an excellent idea. ( Though I am trying to put all the
+> pieces together you mentioned). So overall we should be able to measure
+> the performance of pvspinlock/PLE improvements with a deterministic
+> load in guest.
+>
+> Only thing I am missing is,
+> How to generate different combinations of the lock.
+>
+> Okay, let me see if I can come with a solid model for this.
+>
+
+Do you mean the various options for PLE/pvticket/other? I haven't 
+thought of it and assumed its static but it can also be controlled 
+through the temporary /sys interface.
+
+Thanks for following up!
+Dor
