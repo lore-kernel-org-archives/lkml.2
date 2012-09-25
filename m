@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758081Ab2IYQOv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:14:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41451 "EHLO
+	id S1758160Ab2IYQPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:15:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60753 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758097Ab2IYQOY (ORCPT
+	with ESMTP id S1758095Ab2IYQOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:14:24 -0400
+	Tue, 25 Sep 2012 12:14:23 -0400
 From: mathieu.poirier@linaro.org
 To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
 Cc: mathieu.poirier@linaro.org
-Subject: [PATCH 57/57] power: ab8500_charger: Limit USB charger current
-Date: Tue, 25 Sep 2012 10:12:54 -0600
-Message-Id: <1348589574-25655-58-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 56/57] power: abx500_chargalg: Fix quick re-attach charger issue.
+Date: Tue, 25 Sep 2012 10:12:53 -0600
+Message-Id: <1348589574-25655-57-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
@@ -20,40 +20,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Bergstrom <martin.bergstrom@stericsson.com>
+From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
 
-The USB charger current is limited according to information comming
-from the USB driver
+The patch for 426250 added a change to check for the quick
+re-attachment of the charger connection as an error in the
+AB8500 HW meant that a quick detach/attach wouldn't be
+detected.
+This patch isolates the original change so that newer AB's
+are not affected.
 
-Signed-off-by: Martin Bergstrom <martin.bergstrom@stericsson.com>
+Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Reviewed-by: Martin SJOBLOM <martin.w.sjoblom@stericsson.com>
+Reviewed-by: Hakan BERG <hakan.berg@stericsson.com>
 Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
 ---
- drivers/power/ab8500_charger.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/power/abx500_chargalg.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-index afb4fda..3c6f11c 100644
---- a/drivers/power/ab8500_charger.c
-+++ b/drivers/power/ab8500_charger.c
-@@ -1248,6 +1248,9 @@ static int ab8500_charger_set_vbus_in_curr(struct ab8500_charger *di,
- 	if (di->max_usb_in_curr.set_max > 0)
- 		min_value = min(di->max_usb_in_curr.set_max, min_value);
+diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
+index c8849af..7a81e4e 100644
+--- a/drivers/power/abx500_chargalg.c
++++ b/drivers/power/abx500_chargalg.c
+@@ -1299,11 +1299,12 @@ static void abx500_chargalg_algorithm(struct abx500_chargalg *di)
+ 	abx500_chargalg_check_charger_voltage(di);
+ 	charger_status = abx500_chargalg_check_charger_connection(di);
  
-+	if (di->usb_state.usb_current >= 0)
-+		min_value = min(di->usb_state.usb_current, min_value);
-+
- 	switch (min_value) {
- 	case 100:
- 		if (di->vbat < VBAT_TRESH_IP_CUR_RED)
-@@ -3413,6 +3416,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- 	di->usb_chg.wdt_refresh = CHG_WD_INTERVAL;
- 	di->usb_chg.enabled = di->pdata->usb_enabled;
- 	di->usb_chg.external = false;
-+	di->usb_state.usb_current = -1;
- 
- 	/* Create a work queue for the charger */
- 	di->charger_wq =
+-	ret = abx500_chargalg_check_charger_enable(di);
+-	if (ret < 0)
+-		dev_err(di->dev, "Checking charger if enabled error: %d line: %d\n",
+-				ret, __LINE__);
+-
++	if (is_ab8500(di->parent)) {
++		ret = abx500_chargalg_check_charger_enable(di);
++		if (ret < 0)
++			dev_err(di->dev, "Checking charger is enabled error");
++			dev_err(di->dev, ": Returned Value %d\n", ret);
++	}
+ 	/*
+ 	 * First check if we have a charger connected.
+ 	 * Also we don't allow charging of unknown batteries if configured
 -- 
 1.7.5.4
 
