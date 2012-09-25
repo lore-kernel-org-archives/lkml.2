@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab2IYMHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 08:07:45 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:1156 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756077Ab2IYMHm (ORCPT
+	id S1756090Ab2IYMI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 08:08:57 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63451 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755957Ab2IYMI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 08:07:42 -0400
-Message-ID: <1348574859.1436.38.camel@x61.thuisdomein>
-Subject: [PATCH] aic94xx: fix handling of default CTRL-A settings
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 25 Sep 2012 14:07:39 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Sep 2012 12:07:40.0349 (UTC) FILETIME=[5C490ED0:01CD9B16]
+	Tue, 25 Sep 2012 08:08:56 -0400
+Date: Tue, 25 Sep 2012 16:08:52 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Mark Salter <msalter@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: [PATCH] prctl: Use access_ok instead of TASK_SIZE in prctl_set_mm
+Message-ID: <20120925120852.GH14490@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compiling aic94xx_sds.o (part of the aic94xx driver) triggers this GCC
-warning:
-    drivers/scsi/aic94xx/aic94xx_sds.c: In function 'asd_read_flash':
-    drivers/scsi/aic94xx/aic94xx_sds.c:597:21: warning: 'offs' may be used uninitialized in this function [-Wmaybe-uninitialized]
-    drivers/scsi/aic94xx/aic94xx_sds.c:985:6: note: 'offs' was declared here
+Eric pointed that better to use access_ok instead
+of TASK_SIZE for testing if address is allowed for
+use.
 
-This warning can be traced back to asd_find_flash_de(). If it fails to
-find a FLASH_DE_CTRL_A_USER entry it will return without setting 'offs'.
-And that will leave 'offs' uninitialized when asd_read_flash_seg() is
-called a little later.
-
-But that call of asd_read_flash_seg() isn't needed in that case.
-Everything this code cares about can already be found in the "default
-CTRL-A user settings section" that was created in the error path. So
-let's just jump over that call (and all other unneeded code) after
-creating that section.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Reported-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Mark Salter <msalter@redhat.com>
+CC: Kees Cook <keescook@chromium.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
 ---
-0) I noticed this warning while building v3.6-rc7 on current Fedora
-17, using Fedora's default config.
+ kernel/sys.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-1) Compile tested only. It might be best to run test this too, if only
-to test whether the non-error path is unaffected.
-
-2) This piece of code has not been touched ever since it was added in
-v2.6.19, with commit 2908d778ab3e244900c310974e1fc1c69066e450 ("[SCSI]
-aic94xx: new driver"). So, given the current code, chances are that a
-"CTRL-A user settings section" is always present and the code to create
-a default section might as well be dropped. So perhaps a more drastic
-patch is preferable.
-
- drivers/scsi/aic94xx/aic94xx_sds.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/aic94xx/aic94xx_sds.c b/drivers/scsi/aic94xx/aic94xx_sds.c
-index edb43fd..ecb4a1c 100644
---- a/drivers/scsi/aic94xx/aic94xx_sds.c
-+++ b/drivers/scsi/aic94xx/aic94xx_sds.c
-@@ -983,7 +983,7 @@ static int asd_process_ctrl_a_user(struct asd_ha_struct *asd_ha,
- {
- 	int err, i;
- 	u32 offs, size;
--	struct asd_ll_el *el;
-+	struct asd_ll_el *el = NULL;
- 	struct asd_ctrla_phy_settings *ps;
- 	struct asd_ctrla_phy_settings dflt_ps;
+Index: linux-2.6.git/kernel/sys.c
+===================================================================
+--- linux-2.6.git.orig/kernel/sys.c
++++ linux-2.6.git/kernel/sys.c
+@@ -1865,7 +1865,7 @@ static int prctl_set_mm(int opt, unsigne
+ 	if (opt == PR_SET_MM_EXE_FILE)
+ 		return prctl_set_mm_exe_file(mm, (unsigned int)addr);
  
-@@ -1004,6 +1004,7 @@ static int asd_process_ctrl_a_user(struct asd_ha_struct *asd_ha,
+-	if (addr >= TASK_SIZE || addr < mmap_min_addr)
++	if (!access_ok(VERIFY_READ, addr, sizeof(addr)) || addr < mmap_min_addr)
+ 		return -EINVAL;
  
- 		size = sizeof(struct asd_ctrla_phy_settings);
- 		ps = &dflt_ps;
-+		goto ctrla_phy_settings;
- 	}
- 
- 	if (size == 0)
-@@ -1029,6 +1030,7 @@ static int asd_process_ctrl_a_user(struct asd_ha_struct *asd_ha,
- 		goto out2;
- 	}
- 
-+ctrla_phy_settings:
- 	err = asd_process_ctrla_phy_settings(asd_ha, ps);
- 	if (err) {
- 		ASD_DPRINTK("couldn't process ctrla phy settings\n");
--- 
-1.7.11.4
-
+ 	error = -EINVAL;
