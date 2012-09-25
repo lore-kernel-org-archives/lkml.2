@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab2IYO5F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 10:57:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38685 "EHLO mx2.suse.de"
+	id S1756739Ab2IYO5o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 10:57:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38676 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755952Ab2IYO43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 10:56:29 -0400
+	id S1755400Ab2IYO42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 10:56:28 -0400
 From: Thomas Renninger <trenn@suse.de>
 To: hpa@zytor.com
 Cc: lenb@kernel.org, initramfs@vger.kernel.org, robert.moore@intel.com,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        yinghai@kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Renninger <trenn@suse.de>
-Subject: [PATCH 1/6] lib: Add early cpio decoder
-Date: Tue, 25 Sep 2012 16:55:56 +0200
-Message-Id: <1348584961-1476-2-git-send-email-trenn@suse.de>
+        yinghai@kernel.org, Thomas Renninger <trenn@suse.de>
+Subject: [PATCH 3/6] ACPI: Store valid ACPI tables passed via early initrd in reserved memblock areas
+Date: Tue, 25 Sep 2012 16:55:58 +0200
+Message-Id: <1348584961-1476-4-git-send-email-trenn@suse.de>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1348584961-1476-1-git-send-email-trenn@suse.de>
 References: <1348584961-1476-1-git-send-email-trenn@suse.de>
@@ -22,212 +21,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+A later patch will compare them with ACPI tables that get loaded at boot or
+runtime and if criteria match, a stored one is loaded.
 
-Add a simple cpio decoder without library dependencies for the purpose
-of extracting components from the initramfs blob for early kernel
-uses.  Intended consumers so far are microcode and ACPI override.
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-CC: Thomas Renninger <trenn@suse.de>
-Link: http://lkml.kernel.org/r/201203261651.29640.trenn@suse.de
-Link: https://lkml.org/lkml/2012/9/21/190
 Signed-off-by: Thomas Renninger <trenn@suse.de>
 ---
- include/linux/earlycpio.h |   17 +++++
- lib/Makefile              |    2 +-
- lib/earlycpio.c           |  145 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 163 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/earlycpio.h
- create mode 100644 lib/earlycpio.c
+ arch/x86/kernel/setup.c |    2 +
+ drivers/acpi/Kconfig    |    9 ++++
+ drivers/acpi/osl.c      |  122 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h    |    8 +++
+ 4 files changed, 141 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/earlycpio.h b/include/linux/earlycpio.h
-new file mode 100644
-index 0000000..111f46d
---- /dev/null
-+++ b/include/linux/earlycpio.h
-@@ -0,0 +1,17 @@
-+#ifndef _LINUX_EARLYCPIO_H
-+#define _LINUX_EARLYCPIO_H
-+
-+#include <linux/types.h>
-+
-+#define MAX_CPIO_FILE_NAME 18
-+
-+struct cpio_data {
-+	void *data;
-+	size_t size;
-+	char name[MAX_CPIO_FILE_NAME];
-+};
-+
-+struct cpio_data find_cpio_data(const char *path, void *data, size_t len,
-+				long *offset);
-+
-+#endif /* _LINUX_EARLYCPIO_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index 42d283e..0924041 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
--	 is_single_threaded.o plist.o decompress.o
-+	 is_single_threaded.o plist.o decompress.o earlycpio.o
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f4b9b80..764e543 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -941,6 +941,8 @@ void __init setup_arch(char **cmdline_p)
  
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
-diff --git a/lib/earlycpio.c b/lib/earlycpio.c
-new file mode 100644
-index 0000000..8078ef4
---- /dev/null
-+++ b/lib/earlycpio.c
-@@ -0,0 +1,145 @@
-+/* ----------------------------------------------------------------------- *
-+ *
-+ *   Copyright 2012 Intel Corporation; author H. Peter Anvin
-+ *
-+ *   This file is part of the Linux kernel, and is made available
-+ *   under the terms of the GNU General Public License version 2, as
-+ *   published by the Free Software Foundation.
-+ *
-+ *   This program is distributed in the hope it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *   General Public License for more details.
-+ *
-+ * ----------------------------------------------------------------------- */
+ 	reserve_initrd();
+ 
++	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
 +
-+/*
-+ * earlycpio.c
-+ *
-+ * Find a specific cpio member; must precede any compressed content.
-+ * This is used to locate data items in the initramfs used by the
-+ * kernel itself during early boot (before the main initramfs is
-+ * decompressed.)  It is the responsibility of the initramfs creator
-+ * to ensure that these items are uncompressed at the head of the
-+ * blob.  Depending on the boot loader or package tool that may be a
-+ * separate file or part of the same file.
-+ */
+ 	reserve_crashkernel();
+ 
+ 	vsmp_init();
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 8099895..a508f77 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -261,6 +261,15 @@ config ACPI_CUSTOM_DSDT
+ 	bool
+ 	default ACPI_CUSTOM_DSDT_FILE != ""
+ 
++config ACPI_INITRD_TABLE_OVERRIDE
++	bool
++	default y
++	help
++	  This option provides functionality to override arbitrary ACPI tables
++	  via initrd. No functional change if no ACPI tables are passed via
++	  initrd, therefore it's safe to say Y.
++	  See Documentation/acpi/initrd_table_override.txt for details
 +
+ config ACPI_BLACKLIST_YEAR
+ 	int "Disable ACPI for systems before Jan 1st this year" if X86_32
+ 	default 0
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 9eaf708..b20b079 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -534,6 +534,128 @@ acpi_os_predefined_override(const struct acpi_predefined_names *init_val,
+ 	return AE_OK;
+ }
+ 
++#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
 +#include <linux/earlycpio.h>
-+#include <linux/kernel.h>
-+#include <linux/string.h>
++#include <linux/memblock.h>
 +
-+enum cpio_fields {
-+	C_MAGIC,
-+	C_INO,
-+	C_MODE,
-+	C_UID,
-+	C_GID,
-+	C_NLINK,
-+	C_MTIME,
-+	C_FILESIZE,
-+	C_MAJ,
-+	C_MIN,
-+	C_RMAJ,
-+	C_RMIN,
-+	C_NAMESIZE,
-+	C_CHKSUM,
-+	C_NFIELDS
-+};
++static u64 acpi_tables_addr;
++static int all_tables_size;
 +
-+/**
-+ * cpio_data find_cpio_data - Search for files in an uncompressed cpio
-+ * @path:   The directory to search for, including a slash at the end
-+ * @data:   Pointer to the the cpio archive or a header inside
-+ * @len:    Remaining length of the cpio based on data pointer
-+ * @offset: When a matching file is found, this is the offset to the
-+ *          beginning of the cpio. It can be used to iterate through
-+ *          the cpio to find all files inside of a directory path
-+ *
-+ * @return: struct cpio_data containing the address, length and
-+ *          filename (with the directory path cut off) of the found file.
-+ *          If you search for a filename and not for files in a directory,
-+ *          pass the absolute path of the filename in the cpio and make sure
-+ *          the match returned an empty filename string.
-+ */
-+
-+struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
-+					  size_t len,  long *offset)
++/* Copied from acpica/tbutils.c:acpi_tb_checksum() */
++u8 __init acpi_table_checksum(u8 *buffer, u32 length)
 +{
-+	const size_t cpio_header_len = 8*C_NFIELDS - 2;
-+	struct cpio_data cd = { NULL, 0, "" };
-+	const char *p, *dptr, *nptr;
-+	unsigned int ch[C_NFIELDS], *chp, v;
-+	unsigned char c, x;
-+	size_t mypathsize = strlen(path);
-+	int i, j;
++	u8 sum = 0;
++	u8 *end = buffer + length;
 +
-+	p = data;
-+
-+	while (len > cpio_header_len) {
-+		if (!*p) {
-+			/* All cpio headers need to be 4-byte aligned */
-+			p += 4;
-+			len -= 4;
-+			continue;
-+		}
-+
-+		j = 6;		/* The magic field is only 6 characters */
-+		chp = ch;
-+		for (i = C_NFIELDS; i; i--) {
-+			v = 0;
-+			while (j--) {
-+				v <<= 4;
-+				c = *p++;
-+
-+				x = c - '0';
-+				if (x < 10) {
-+					v += x;
-+					continue;
-+				}
-+
-+				x = (c | 0x20) - 'a';
-+				if (x < 6) {
-+					v += x + 10;
-+					continue;
-+				}
-+
-+				goto quit; /* Invalid hexadecimal */
-+			}
-+			*chp++ = v;
-+			j = 8;	/* All other fields are 8 characters */
-+		}
-+
-+		if ((ch[C_MAGIC] - 0x070701) > 1)
-+			goto quit; /* Invalid magic */
-+
-+		len -= cpio_header_len;
-+
-+		dptr = PTR_ALIGN(p + ch[C_NAMESIZE], 4);
-+		nptr = PTR_ALIGN(dptr + ch[C_FILESIZE], 4);
-+
-+		if (nptr > p + len || dptr < p || nptr < dptr)
-+			goto quit; /* Buffer overrun */
-+
-+		if ((ch[C_MODE] & 0170000) == 0100000 &&
-+		    ch[C_NAMESIZE] >= mypathsize &&
-+		    !memcmp(p, path, mypathsize)) {
-+			*offset = (long)nptr - (long)data;
-+			if (ch[C_NAMESIZE] - mypathsize >= MAX_CPIO_FILE_NAME) {
-+				pr_warn(
-+				"File %s exceeding MAX_CPIO_FILE_NAME [%d]\n",
-+				p, MAX_CPIO_FILE_NAME);
-+			}
-+			strlcpy(cd.name, p + mypathsize, MAX_CPIO_FILE_NAME);
-+
-+			cd.data = (void *)dptr;
-+			cd.size = ch[C_FILESIZE];
-+			return cd; /* Found it! */
-+		}
-+		len -= (nptr - p);
-+		p = nptr;
-+	}
-+
-+quit:
-+	return cd;
++	while (buffer < end)
++		sum = (u8) (sum + *(buffer++));
++	return sum;
 +}
++
++/* All but ACPI_SIG_RSDP and ACPI_SIG_FACS: */
++static const char * const table_sigs[] = {
++	ACPI_SIG_BERT, ACPI_SIG_CPEP, ACPI_SIG_ECDT, ACPI_SIG_EINJ,
++	ACPI_SIG_ERST, ACPI_SIG_HEST, ACPI_SIG_MADT, ACPI_SIG_MSCT,
++	ACPI_SIG_SBST, ACPI_SIG_SLIT, ACPI_SIG_SRAT, ACPI_SIG_ASF,
++	ACPI_SIG_BOOT, ACPI_SIG_DBGP, ACPI_SIG_DMAR, ACPI_SIG_HPET,
++	ACPI_SIG_IBFT, ACPI_SIG_IVRS, ACPI_SIG_MCFG, ACPI_SIG_MCHI,
++	ACPI_SIG_SLIC, ACPI_SIG_SPCR, ACPI_SIG_SPMI, ACPI_SIG_TCPA,
++	ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
++	ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
++	ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT, NULL };
++
++/* Non-fatal errors: Affected tables/files are ignored */
++#define INVALID_TABLE(x, path, name)					\
++	{ pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
++
++#define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
++
++/* Must not increase 10 or needs code modification below */
++#define ACPI_OVERRIDE_TABLES 10
++
++void __init acpi_initrd_override(void *data, size_t size)
++{
++	int sig, no, table_nr = 0, total_offset = 0;
++	long offset = 0;
++	struct acpi_table_header *table;
++	char cpio_path[32] = "kernel/firmware/acpi/";
++	struct cpio_data file;
++	struct cpio_data early_initrd_files[ACPI_OVERRIDE_TABLES];
++	char *p;
++
++	if (data == NULL || size == 0)
++		return;
++
++	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
++		file = find_cpio_data(cpio_path, data, size, &offset);
++		if (!file.data)
++			break;
++
++		data += offset;
++		size -= offset;
++
++		if (file.size < sizeof(struct acpi_table_header))
++			INVALID_TABLE("Table smaller than ACPI header",
++				      cpio_path, file.name);
++
++		table = file.data;
++
++		for (sig = 0; table_sigs[sig]; sig++)
++			if (!memcmp(table->signature, table_sigs[sig], 4))
++				break;
++
++		if (!table_sigs[sig])
++			INVALID_TABLE("Unknown signature",
++				      cpio_path, file.name);
++		if (file.size != table->length)
++			INVALID_TABLE("File length does not match table length",
++				      cpio_path, file.name);
++		if (acpi_table_checksum(file.data, table->length))
++			INVALID_TABLE("Bad table checksum",
++				      cpio_path, file.name);
++
++		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
++			table->signature, cpio_path, file.name, table->length);
++
++		all_tables_size += table->length;
++		early_initrd_files[table_nr].data = file.data;
++		early_initrd_files[table_nr].size = file.size;
++		table_nr++;
++	}
++	if (table_nr == 0)
++		return;
++
++	acpi_tables_addr =
++		memblock_find_in_range(0, max_low_pfn_mapped << PAGE_SHIFT,
++				       all_tables_size, PAGE_SIZE);
++	if (!acpi_tables_addr) {
++		WARN_ON(1);
++		return;
++	}
++	/*
++	 * Only calling e820_add_reserve does not work and the
++	 * tables are invalid (memory got used) later.
++	 * memblock_reserve works as expected and the tables won't get modified.
++	 * But it's not enough on X86 because ioremap will
++	 * complain later (used by acpi_os_map_memory) that the pages
++	 * that should get mapped are not marked "reserved".
++	 * Both memblock_reserve and e820_add_region (via arch_reserve_mem_area)
++	 * works fine.
++	 */
++	memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
++	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
++
++	p = early_ioremap(acpi_tables_addr, all_tables_size);
++
++	for (no = 0; no < table_nr; no++) {
++		memcpy(p + total_offset, early_initrd_files[no].data,
++		       early_initrd_files[no].size);
++		total_offset += early_initrd_files[no].size;
++	}
++	early_iounmap(p, all_tables_size);
++}
++#endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
++
+ acpi_status
+ acpi_os_table_override(struct acpi_table_header * existing_table,
+ 		       struct acpi_table_header ** new_table)
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index bf6a0ad..ee81cdc 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -76,6 +76,14 @@ typedef int (*acpi_table_handler) (struct acpi_table_header *table);
+ 
+ typedef int (*acpi_table_entry_handler) (struct acpi_subtable_header *header, const unsigned long end);
+ 
++#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
++void acpi_initrd_override(void *data, size_t size);
++#else
++static inline void acpi_initrd_override(void *data, size_t size)
++{
++}
++#endif
++
+ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
+ void __acpi_unmap_table(char *map, unsigned long size);
+ int early_acpi_boot_init(void);
 -- 
 1.7.6.1
 
