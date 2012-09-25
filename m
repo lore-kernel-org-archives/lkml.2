@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2IYKeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:34:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35874 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754691Ab2IYKeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:34:09 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <rtc-linux@googlegroups.com>
-CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <a.zummo@towertech.it>, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv2 6/7] rtc: Convert struct i2c_msg initialization to C99 format
-Date: Tue, 25 Sep 2012 16:03:43 +0530
-Message-ID: <1348569224-4096-7-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1348569224-4096-1-git-send-email-shubhrajyoti@ti.com>
-References: <1348569224-4096-1-git-send-email-shubhrajyoti@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754801Ab2IYKeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:34:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53213 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499Ab2IYKeI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 06:34:08 -0400
+Message-ID: <1348569232.3881.1.camel@twins>
+Subject: Re: [PATCH] Update sched_domains_numa_masks when new cpus are
+ onlined.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-numa@vger.kernel.org, wency@cn.fujitsu.com, mingo@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 25 Sep 2012 12:33:52 +0200
+In-Reply-To: <50611946.9080601@cn.fujitsu.com>
+References: <1347963128-25942-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1348479536.11847.25.camel@twins> <50611946.9080601@cn.fujitsu.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the struct i2c_msg initialization to C99 format. This makes
-maintaining and editing the code simpler. Also helps once other fields
-like transferred are added in future.
+On Tue, 2012-09-25 at 10:39 +0800, Tang Chen wrote:
+> >> @@ -6765,11 +6773,64 @@ static void sched_init_numa(void)
+> >>      }
+> >>
+> >>      sched_domain_topology = tl;
+> >> +
+> >> +    sched_domains_numa_levels = level;
+> 
+> And I set it to level here again.
+> 
+But its already set there.. its set every time we find a new level.
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/rtc/rtc-isl1208.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/rtc/rtc-isl1208.c b/drivers/rtc/rtc-isl1208.c
-index 0ea86ac..26c81f2 100644
---- a/drivers/rtc/rtc-isl1208.c
-+++ b/drivers/rtc/rtc-isl1208.c
-@@ -68,9 +68,17 @@ isl1208_i2c_read_regs(struct i2c_client *client, u8 reg, u8 buf[],
- {
- 	u8 reg_addr[1] = { reg };
- 	struct i2c_msg msgs[2] = {
--		{client->addr, 0, sizeof(reg_addr), reg_addr}
--		,
--		{client->addr, I2C_M_RD, len, buf}
-+		{
-+			.addr = client->addr,
-+			.len = sizeof(reg_addr),
-+			.buf = reg_addr
-+		},
-+		{
-+			.addr = client->addr,
-+			.flags = I2C_M_RD,
-+			.len = len,
-+			.buf = buf
-+		}
- 	};
- 	int ret;
- 
-@@ -90,7 +98,11 @@ isl1208_i2c_set_regs(struct i2c_client *client, u8 reg, u8 const buf[],
- {
- 	u8 i2c_buf[ISL1208_REG_USR2 + 2];
- 	struct i2c_msg msgs[1] = {
--		{client->addr, 0, len + 1, i2c_buf}
-+		{
-+			.addr = client->addr,
-+			.len = len + 1,
-+			.buf = i2c_buf
-+		}
- 	};
- 	int ret;
- 
--- 
-1.7.5.4
 
