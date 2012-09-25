@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab2IYPXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 11:23:50 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:48853 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594Ab2IYPXs (ORCPT
+	id S1756701Ab2IYP0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 11:26:08 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43579 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab2IYP0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 11:23:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABb+yY1DiWT6-faPe24wVYLwO9vP0W7KswcAyqAWd5VH-JfizA@mail.gmail.com>
-References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
-	<1348563456-30569-2-git-send-email-inderpal.singh@linaro.org>
-	<CABb+yY1DiWT6-faPe24wVYLwO9vP0W7KswcAyqAWd5VH-JfizA@mail.gmail.com>
-Date: Tue, 25 Sep 2012 20:53:47 +0530
-Message-ID: <CAG17yqQ3EZ98uWd0apM-205BTLZ7x4wn26__+YdycR5pNCDddQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] DMA: PL330: Free memory allocated for peripheral channels
-From: Inderpal Singh <inderpal.singh@linaro.org>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        boojin.kim@samsung.com, vinod.koul@intel.com, patches@linaro.org,
-        kgene.kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Sep 2012 11:26:04 -0400
+Date: Tue, 25 Sep 2012 16:30:37 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: rusty@rustcorp.com.au, herbert@gondor.hengli.com.au, pjones@redhat.com,
+        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        keyrings@linux-nfs.org
+Subject: Re: Wrong system clock vs X.509 date specifiers
+Message-ID: <20120925163037.20ba3f3c@pyramind.ukuu.org.uk>
+In-Reply-To: <21845.1348585794@warthog.procyon.org.uk>
+References: <5555.1348531649@warthog.procyon.org.uk>
+	<21845.1348585794@warthog.procyon.org.uk>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2012 18:17, Jassi Brar <jassisinghbrar@gmail.com> wrote:
-> On Tue, Sep 25, 2012 at 2:27 PM, Inderpal Singh
-> <inderpal.singh@linaro.org> wrote:
->> The allocated memory for peripheral channels is not being freed upon
->> failure in probe and in module's remove funtion. It will lead to memory
->> leakage. Hence free the allocated memory.
->>
->> Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
->> ---
->>  drivers/dma/pl330.c |    5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
->> index 2ebd4cd..10c6b6a 100644
->> --- a/drivers/dma/pl330.c
->> +++ b/drivers/dma/pl330.c
->> @@ -2962,7 +2962,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->>         ret = dma_async_device_register(pd);
->>         if (ret) {
->>                 dev_err(&adev->dev, "unable to register DMAC\n");
->> -               goto probe_err4;
->> +               goto probe_err5;
->>         }
->>
-> Sorry this patch seems malformed. Against which tree did you prepare it ?
->
-This patch depends on "61c6e7531d3b66b3 ........DMA: PL330: Check the
-pointer returned by kzalloc" which is on vinod's slave-dma's "fixes"
-branch. So I merged slave-dma's "next" and "fixes" branches. Now after
-merging, build error occurs due to some conflict so I had to apply the
-patch sent by Sachin at [1]
+On Tue, 25 Sep 2012 16:09:54 +0100
+David Howells <dhowells@redhat.com> wrote:
 
-Same had been mentioned in the cover letter.
+> 
+> The X.509 certificate has a pair of times in it that delineate the valid
+> period of the cert, and I'm checking that the system clock is within the
+> bounds they define before permitting you to use the cert.  I've been setting
+> the expiry date to be 100 years in the future - by which time hopefully I
+> won't have to worry about it - but occasionally clock skew means a freshly
+> built kernel won't boot because the machine trying to boot doesn't think that
+> the start time has been reached yet.
+> 
+> Do we actually want to do this, however?  Or should we just ignore the times?
+> Or just the start time?
 
-[1] http://permalink.gmane.org/gmane.linux.kernel.next/24274
+Generate a certificate that is valid from a few minutes before the
+wallclock time. It's a certificate policy question not a kernel hackery
+one.
 
-Thanks,
-Inder
+Be careful moving your system clock on 100 years and testing - ext4 gets
+some timestamps wrong after 2038.
 
-> -jassi
->
->
->
->>         dev_info(&adev->dev,
->> @@ -2975,6 +2975,8 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->>
->>         return 0;
->>
->> +probe_err5:
->> +       kfree(pdmac->peripherals);
->>  probe_err4:
->>         pl330_del(pi);
->>  probe_err3:
->> @@ -3025,6 +3027,7 @@ static int __devexit pl330_remove(struct amba_device *adev)
->>         res = &adev->res;
->>         release_mem_region(res->start, resource_size(res));
->>
->> +       kfree(pdmac->peripherals);
->>         kfree(pdmac);
->>
->>         return 0;
->> --
->> 1.7.9.5
->>
+Alan
+
+
