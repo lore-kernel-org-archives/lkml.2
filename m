@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab2IYADP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 20:03:15 -0400
+	id S1752375Ab2IYADj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 20:03:39 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:48393 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab2IYADD (ORCPT
+	with ESMTP id S1752168Ab2IYAC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 20:03:03 -0400
+	Mon, 24 Sep 2012 20:02:58 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
         Andrew Lunn <andrew@lunn.ch>, Olof Johansson <olof@lixom.net>,
         Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] ARM: dove: Add crypto engine to DT
-Date: Tue, 25 Sep 2012 02:02:18 +0200
-Message-Id: <1348531338-16624-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 4/6] ARM: dove: Restructure SoC device tree descriptor
+Date: Tue, 25 Sep 2012 02:02:16 +0200
+Message-Id: <1348531338-16624-5-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1348531338-16624-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1348531338-16624-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -23,8 +23,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of DT support for the crypto engine on dove and remove
-the obsolete init call.
+This patch adds proper ranges for all mapped addresses within
+dove SoC and moves the interrupt controller node inside the simple-bus
+node.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -37,41 +38,59 @@ Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/dove.dtsi |    9 +++++++++
- arch/arm/mach-dove/common.c |    1 -
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/dove.dtsi |   30 ++++++++++++++++++------------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
 
 diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-index c59c529..5a00022 100644
+index 3f41f50..792bab0 100644
 --- a/arch/arm/boot/dts/dove.dtsi
 +++ b/arch/arm/boot/dts/dove.dtsi
-@@ -145,5 +145,14 @@
- 			nr-ports = <1>;
- 			status = "disabled";
- 		};
-+
-+		crypto: crypto@30000 {
-+			compatible = "marvell,orion-crypto";
-+			reg = <0x30000 0x10000>,
-+			      <0xc8000000 0x800>;
-+			reg-names = "regs", "sram";
-+			interrupts = <31>;
-+			status = "okay";
-+		};
- 	};
- };
-diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
-index ffec26f..f723fe1 100644
---- a/arch/arm/mach-dove/common.c
-+++ b/arch/arm/mach-dove/common.c
-@@ -416,7 +416,6 @@ static void __init dove_dt_init(void)
- 	dove_ehci0_init();
- 	dove_ehci1_init();
- 	dove_pcie_init(1, 1);
--	dove_crypto_init();
+@@ -4,27 +4,33 @@
+ 	compatible = "marvell,dove";
+ 	model = "Marvell Armada 88AP510 SoC";
  
- 	of_platform_populate(NULL, of_default_bus_match_table,
- 			     dove_auxdata_lookup, NULL);
+-	interrupt-parent = <&intc>;
+-
+-	intc: interrupt-controller {
+-		compatible = "marvell,orion-intc";
+-		interrupt-controller;
+-		#interrupt-cells = <1>;
+-		reg = <0xf1020204 0x04>,
+-		      <0xf1020214 0x04>;
+-	};
+-
+-	mbus@f1000000 {
++	soc@f1000000 {
+ 		compatible = "simple-bus";
+-		ranges = <0 0xf1000000 0x4000000>;
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
++		interrupt-parent = <&intc>;
++
++		ranges = <0xc8000000 0xc8000000 0x0100000   /* CESA SRAM   1M */
++		          0xe0000000 0xe0000000 0x8000000   /* PCIe0 Mem 128M */
++		          0xe8000000 0xe8000000 0x8000000   /* PCIe1 Mem 128M */
++		          0xf0000000 0xf0000000 0x0100000   /* ScratchPad  1M */
++		          0x00000000 0xf1000000 0x1000000   /* SB/NB regs 16M */
++		          0xf2000000 0xf2000000 0x0100000   /* PCIe0 I/O   1M */
++		          0xf2100000 0xf2100000 0x0100000   /* PCIe0 I/O   1M */
++		          0xf8000000 0xf8000000 0x8000000>; /* BootROM   128M */
+ 
+ 		l2: l2-cache {
+ 			compatible = "marvell,tauros2-cache";
+ 			marvell,tauros2-cache-features = <0>;
+ 		};
+ 
++		intc: interrupt-controller {
++			compatible = "marvell,orion-intc";
++			interrupt-controller;
++			#interrupt-cells = <1>;
++			reg = <0x20204 0x04>, <0x20214 0x04>;
++		};
++
+ 		uart0: serial@12000 {
+ 			compatible = "ns16550a";
+ 			reg = <0x12000 0x100>;
 -- 
 1.7.10.4
 
