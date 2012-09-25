@@ -1,202 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab2IYIKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 04:10:30 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42168 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab2IYIKZ (ORCPT
+	id S1753806Ab2IYINP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 04:13:15 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:35300 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab2IYINL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 04:10:25 -0400
-X-AuditID: 9c93016f-b7c19ae000000e6d-91-506166eec680
-Date: Tue, 25 Sep 2012 17:13:27 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/9] mm: compaction: Acquire the zone->lru_lock as late
- as possible
-Message-ID: <20120925081327.GA7759@bbox>
-References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
- <1348224383-1499-6-git-send-email-mgorman@suse.de>
- <20120925070517.GK13234@bbox>
- <20120925075105.GC11266@suse.de>
+	Tue, 25 Sep 2012 04:13:11 -0400
+Message-ID: <506166B4.4010207@linux.vnet.ibm.com>
+Date: Tue, 25 Sep 2012 13:39:24 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120925075105.GC11266@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Avi Kivity <avi@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <5060851E.1030404@redhat.com>
+In-Reply-To: <5060851E.1030404@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092508-7014-0000-0000-000001F12ECF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 08:51:05AM +0100, Mel Gorman wrote:
-> On Tue, Sep 25, 2012 at 04:05:17PM +0900, Minchan Kim wrote:
-> > Hi Mel,
-> > 
-> > I have a question below.
-> > 
-> > On Fri, Sep 21, 2012 at 11:46:19AM +0100, Mel Gorman wrote:
-> > > Compactions migrate scanner acquires the zone->lru_lock when scanning a range
-> > > of pages looking for LRU pages to acquire. It does this even if there are
-> > > no LRU pages in the range. If multiple processes are compacting then this
-> > > can cause severe locking contention. To make matters worse commit b2eef8c0
-> > > (mm: compaction: minimise the time IRQs are disabled while isolating pages
-> > > for migration) releases the lru_lock every SWAP_CLUSTER_MAX pages that are
-> > > scanned.
-> > > 
-> > > This patch makes two changes to how the migrate scanner acquires the LRU
-> > > lock. First, it only releases the LRU lock every SWAP_CLUSTER_MAX pages if
-> > > the lock is contended. This reduces the number of times it unnecessarily
-> > > disables and re-enables IRQs. The second is that it defers acquiring the
-> > > LRU lock for as long as possible. If there are no LRU pages or the only
-> > > LRU pages are transhuge then the LRU lock will not be acquired at all
-> > > which reduces contention on zone->lru_lock.
-> > > 
-> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > Acked-by: Rik van Riel <riel@redhat.com>
-> > > ---
-> > >  mm/compaction.c |   63 +++++++++++++++++++++++++++++++++++++------------------
-> > >  1 file changed, 43 insertions(+), 20 deletions(-)
-> > > 
-> > > diff --git a/mm/compaction.c b/mm/compaction.c
-> > > index 6b55491..a6068ff 100644
-> > > --- a/mm/compaction.c
-> > > +++ b/mm/compaction.c
-> > > @@ -50,6 +50,11 @@ static inline bool migrate_async_suitable(int migratetype)
-> > >  	return is_migrate_cma(migratetype) || migratetype == MIGRATE_MOVABLE;
-> > >  }
-> > >  
-> > > +static inline bool should_release_lock(spinlock_t *lock)
-> > > +{
-> > > +	return need_resched() || spin_is_contended(lock);
-> > > +}
-> > > +
-> > >  /*
-> > >   * Compaction requires the taking of some coarse locks that are potentially
-> > >   * very heavily contended. Check if the process needs to be scheduled or
-> > > @@ -62,7 +67,7 @@ static inline bool migrate_async_suitable(int migratetype)
-> > >  static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
-> > >  				      bool locked, struct compact_control *cc)
-> > >  {
-> > > -	if (need_resched() || spin_is_contended(lock)) {
-> > > +	if (should_release_lock(lock)) {
-> > >  		if (locked) {
-> > >  			spin_unlock_irqrestore(lock, *flags);
-> > >  			locked = false;
-> > > @@ -327,7 +332,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> > >  	isolate_mode_t mode = 0;
-> > >  	struct lruvec *lruvec;
-> > >  	unsigned long flags;
-> > > -	bool locked;
-> > > +	bool locked = false;
-> > >  
-> > >  	/*
-> > >  	 * Ensure that there are not too many pages isolated from the LRU
-> > > @@ -347,23 +352,17 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> > >  
-> > >  	/* Time to isolate some pages for migration */
-> > >  	cond_resched();
-> > > -	spin_lock_irqsave(&zone->lru_lock, flags);
-> > > -	locked = true;
-> > >  	for (; low_pfn < end_pfn; low_pfn++) {
-> > >  		struct page *page;
-> > >  
-> > >  		/* give a chance to irqs before checking need_resched() */
-> > > -		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-> > > -			spin_unlock_irqrestore(&zone->lru_lock, flags);
-> > > -			locked = false;
-> > > +		if (locked && !((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-> > > +			if (should_release_lock(&zone->lru_lock)) {
-> > > +				spin_unlock_irqrestore(&zone->lru_lock, flags);
-> > > +				locked = false;
-> > > +			}
-> > >  		}
-> > >  
-> > > -		/* Check if it is ok to still hold the lock */
-> > > -		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
-> > > -								locked, cc);
-> > > -		if (!locked || fatal_signal_pending(current))
-> > > -			break;
-> > > -
-> > >  		/*
-> > >  		 * migrate_pfn does not necessarily start aligned to a
-> > >  		 * pageblock. Ensure that pfn_valid is called when moving
-> > > @@ -403,21 +402,38 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> > >  		pageblock_nr = low_pfn >> pageblock_order;
-> > >  		if (!cc->sync && last_pageblock_nr != pageblock_nr &&
-> > >  		    !migrate_async_suitable(get_pageblock_migratetype(page))) {
-> > > -			low_pfn += pageblock_nr_pages;
-> > > -			low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
-> > > -			last_pageblock_nr = pageblock_nr;
-> > > -			continue;
-> > > +			goto next_pageblock;
-> > >  		}
-> > >  
-> > > +		/* Check may be lockless but that's ok as we recheck later */
-> > >  		if (!PageLRU(page))
-> > >  			continue;
-> > >  
-> > >  		/*
-> > > -		 * PageLRU is set, and lru_lock excludes isolation,
-> > > -		 * splitting and collapsing (collapsing has already
-> > > -		 * happened if PageLRU is set).
-> > > +		 * PageLRU is set. lru_lock normally excludes isolation
-> > > +		 * splitting and collapsing (collapsing has already happened
-> > > +		 * if PageLRU is set) but the lock is not necessarily taken
-> > > +		 * here and it is wasteful to take it just to check transhuge.
-> > > +		 * Check transhuge without lock and skip if it's either a
-> > > +		 * transhuge or hugetlbfs page.
-> > >  		 */
-> > >  		if (PageTransHuge(page)) {
-> > > +			if (!locked)
-> > > +				goto next_pageblock;
-> > 
-> > Why skip all pages in a pageblock if !locked?
-> > Shouldn't we add some comment?
-> > 
-> 
-> The comment is above the block already. The lru_lock normally excludes
-> isolation and splitting. If we do not hold the hold, it's not safe to
-> call compound_order so instead we skip the entire pageblock.
+On 09/24/2012 09:36 PM, Avi Kivity wrote:
+> On 09/24/2012 05:41 PM, Avi Kivity wrote:
+>>
+>>>
+>>> case 2)
+>>> rq1 : vcpu1->wait(lockA) (spinning)
+>>> rq2 : vcpu3 (running) ,  vcpu2->holding(lockA) [scheduled out]
+>>>
+>>> I agree that checking rq1 length is not proper in this case, and as you
+>>> rightly pointed out, we are in trouble here.
+>>> nr_running()/num_online_cpus() would give more accurate picture here,
+>>> but it seemed costly. May be load balancer save us a bit here in not
+>>> running to such sort of cases. ( I agree load balancer is far too
+>>> complex).
+>>
+>> In theory preempt notifier can tell us whether a vcpu is preempted or
+>> not (except for exits to userspace), so we can keep track of whether
+>> it's we're overcommitted in kvm itself.  It also avoids false positives
+>> from other guests and/or processes being overcommitted while our vm is fine.
+>
+> It also allows us to cheaply skip running vcpus.
 
-I see. To me, your saying is better than current comment.
-I hope comment could be more explicit.
+Hi Avi,
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index df01b4e..f1d2cc7 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -542,8 +542,9 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-                 * splitting and collapsing (collapsing has already happened
-                 * if PageLRU is set) but the lock is not necessarily taken
-                 * here and it is wasteful to take it just to check transhuge.
--                * Check transhuge without lock and skip if it's either a
--                * transhuge or hugetlbfs page.
-+                * Check transhuge without lock and *skip* if it's either a
-+                * transhuge or hugetlbfs page because it's not safe to call
-+                * compound_order.
-                 */
-                if (PageTransHuge(page)) {
-                        if (!locked)
+Could you please elaborate on how preempt notifiers can be used
+here to keep track of overcommit or skip running vcpus?
 
+Are we planning set some flag in sched_out() handler etc?
 
-Anyway, it's trivial and if anyone think it's valuable, feel free to apply it, please.
-
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
