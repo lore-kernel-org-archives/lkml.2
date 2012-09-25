@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab2IYO0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 10:26:08 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:43504 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753792Ab2IYO0G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 10:26:06 -0400
-Message-ID: <5061BEDF.9010700@ti.com>
-Date: Tue, 25 Sep 2012 19:55:35 +0530
-From: Shubhrajyoti <shubhrajyoti@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754753Ab2IYO0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 10:26:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51362 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753482Ab2IYO0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 10:26:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,483,1344236400"; 
+   d="asc'?scan'208";a="212722181"
+Date: Tue, 25 Sep 2012 17:27:03 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Alex Shi <alex.shu@intel.com>, Jan Beulich <jbeulich@novell.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCH v4 0/8] Avoid cache trashing on clearing huge/gigantic
+ page
+Message-ID: <20120925142703.GA1598@otc-wbsnb-06>
+References: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120913160506.d394392a.akpm@linux-foundation.org>
+ <20120914055210.GC9043@gmail.com>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr, akpm@linux-foundation.org, a.zummo@towertech.it
-Subject: Re: [PATCHv3 0/7] rtc: convert to c99 format
-References: <1348572726-6940-1-git-send-email-shubhrajyoti@ti.com> <20120925120918.GZ9137@arwen.pp.htv.fi>
-In-Reply-To: <20120925120918.GZ9137@arwen.pp.htv.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
+Content-Disposition: inline
+In-Reply-To: <20120914055210.GC9043@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 September 2012 05:39 PM, Felipe Balbi wrote:
-> Hi,
->
-> On Tue, Sep 25, 2012 at 05:01:59PM +0530, Shubhrajyoti D wrote:
->> The series tries to convert the i2c_msg to c99 struct.
->> This may avoid issues like below if someone tries to add a
->> structure.
->> http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg08972.html
->>
->> Special thanks to Julia Lawall for helping it automate.
->> By the below script.
->> http://www.mail-archive.com/cocci@diku.dk/msg02753.html
->>  
->> Resending with Andrew Morton in cc for review as it was suggested to me.
->>
->> Fix a typo in the comments that crept in.
->>
->> Shubhrajyoti D (7):
->>   rtc: Convert struct i2c_msg initialization to C99 format
->>   rtc: Convert struct i2c_msg initialization to C99 format
->>   rtc: Convert struct i2c_msg initialization to C99 format
->>   rtc: Convert struct i2c_msg initialization to C99 format
->>   rtc: Convert struct i2c_msg initialization to C99 format
->>   rtc: Convert struct i2c_msg initialization to C99 format
->>   rtc: Convert struct i2c_msg initialization to C99 format
-> FWIW:
->
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
->
-> complete series look fine.
-thanks.
->
 
+--k+w/mQv8wyuph6w0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Sep 14, 2012 at 07:52:10AM +0200, Ingo Molnar wrote:
+> Without repeatable hard numbers such code just gets into the=20
+> kernel and bitrots there as new CPU generations come in - a few=20
+> years down the line the original decisions often degrade to pure=20
+> noise. We've been there, we've done that, we don't want to=20
+> repeat it.
+
+<sorry, for late answer..>
+
+Hard numbers are hard.
+I've checked some workloads: Mosbench, NPB, specjvm2008. Most of time the
+patchset doesn't show any difference (within run-to-run deviation).
+On NPB it recovers THP regression, but it's probably not enough to make
+decision.
+
+It would be nice if somebody test the patchset on other system or
+workload. Especially, if the configuration shows regression with
+THP enabled.
+
+--=20
+ Kirill A. Shutemov
+
+--k+w/mQv8wyuph6w0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQYb83AAoJEAd+omnVudOMEiwP/jY2gXW39BINUmG8+U4etfX4
+vth8c0cn2Gd3F/plJzx2R/HI8qeTaIJeJdEPDuYyaGHEYXNsuVI8mWSbFVTBobag
+CjkmAGB39F7dPATNxsC5doX+Br+D9/ITvTsPK2unQzq1GX5XL8Gtr72yIq/OYagC
+0o+gKCtO6D2GPd7TwD6oxCoPYZwnoAWrNP+1QK2bgm0582AMpJxA/FIJ9EyGLIGX
+wrrajcBx/RTdNX400jEkNnVPdHCRd5EPED1qpa6Bnx90wFk7YDdSmC9eqdov/GnR
+0Rqk7tpnNvPzBb9dpFE2p422RDTrgCA223iLO35Mta7/0+zzwPUYr1wskqY7Jn5U
+mahxDSTwzqH6lFoal/eOtv+zj6dojOLHq7xDsCg2FjYDgvwgXrk28uDBUnhld0W+
+BjQXEf7g4LRAbgHaaW8tM5QhKsxJUCbzVmxvjgsWjChWQF6eiUXIHrEguvtH/3h6
+5SU1amCxJoSVtcHS84yOBWnTY7DbzRyXr9qV+PQ4BgXMCWtC51Q7jI8G6mVOiyYV
+vWTPJkHQOyxo+HObIAqYAOqj1OUuasLS1kFwT/sd6S6+sBbOC4NVeY//IlKPAqfe
+JlHej7XaFDphiYgPlKUPP409dufRqXxRwA5ac/pCt24FH2wmuDo3x1UR5MjJefTB
+AOawqDSExew3gFgwKuh1
+=8QRo
+-----END PGP SIGNATURE-----
+
+--k+w/mQv8wyuph6w0--
