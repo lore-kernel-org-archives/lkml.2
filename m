@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab2IYKNw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:13:52 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:36793 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009Ab2IYKNu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:13:50 -0400
+	id S1754685Ab2IYKOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:14:44 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:50592 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753304Ab2IYKOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 06:14:43 -0400
+Date: Tue, 25 Sep 2012 12:14:29 +0200
+From: David Sterba <dave@jikos.cz>
+To: zwu.kernel@gmail.com
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbacik@fusionio.com, dave@jikos.cz, linuxram@linux.vnet.ibm.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2/2] btrfs-progs: Fix up memory leakage
+Message-ID: <20120925101429.GR14582@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: zwu.kernel@gmail.com, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, jbacik@fusionio.com, dave@jikos.cz,
+	linuxram@linux.vnet.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+References: <1348538536-29838-1-git-send-email-zwu.kernel@gmail.com>
+ <1348538536-29838-3-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOJsxLHBqXEeUK4TxjF50BH3yzbmMrXW0FaXZgbn2rbyBLdoFw@mail.gmail.com>
-References: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
-	<1347137279-17568-2-git-send-email-elezegarcia@gmail.com>
-	<alpine.DEB.2.00.1209091427160.13346@chino.kir.corp.google.com>
-	<CALF0-+V9wpWoLe2jmCqpS-y0S89i3sS52cMXn9UvE+mNT-t10Q@mail.gmail.com>
-	<CAOJsxLHBqXEeUK4TxjF50BH3yzbmMrXW0FaXZgbn2rbyBLdoFw@mail.gmail.com>
-Date: Tue, 25 Sep 2012 07:13:50 -0300
-Message-ID: <CALF0-+Ux=iHfc8tVrCRnMApo+FOXQ4hPbWLQ+ZUBWPgTSsRyEA@mail.gmail.com>
-Subject: Re: [PATCH 02/10] mm, slob: Use NUMA_NO_NODE instead of -1
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>, Matt Mackall <mpm@selenic.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348538536-29838-3-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 4:37 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> On Mon, Sep 24, 2012 at 8:13 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
->> Will you pick this (and the rest of cleanup patches)
->> for v3.7 pull request?
->> Or is there anything for me to redo?
->
-> I merged all the patches except for the last one which conflicts with
-> the kmem/memcg changes.
+On Tue, Sep 25, 2012 at 10:02:16AM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+>   Some code pathes forget to free memory on exit.
 
-Ok, great. We can work on those later, after kmem/memcg is settled.
+Same as with the fd's, kernel will free all memory for us at exit().
 
-Thanks,
-Ezequiel.
+If there's lots of memory allocated, it may be even faster to leave the
+unallocation process to kernel as it will do it in one go, while the
+application would unnecessarily free it chunk by chunk.
+
+david
