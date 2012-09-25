@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab2IYQDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:03:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12413 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756837Ab2IYQDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:03:20 -0400
-Message-ID: <1348588977.22489.55.camel@vespa.frost.loc>
-Subject: Re: Wrong system clock vs X.509 date specifiers
-From: Tomas Mraz <tmraz@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, rusty@rustcorp.com.au,
-        herbert@gondor.hengli.com.au, pjones@redhat.com, jwboyer@redhat.com,
-        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, keyrings@linux-nfs.org
-Date: Tue, 25 Sep 2012 18:02:57 +0200
-In-Reply-To: <30071.1348587320@warthog.procyon.org.uk>
-References: <20120925163037.20ba3f3c@pyramind.ukuu.org.uk>
-	 <5555.1348531649@warthog.procyon.org.uk>
-	 <21845.1348585794@warthog.procyon.org.uk>
-	 <30071.1348587320@warthog.procyon.org.uk>
-Organization: 
-Content-Type: text/plain; charset="ISO-8859-2"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757431Ab2IYQHG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:07:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49210 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757381Ab2IYQHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 12:07:04 -0400
+Date: Tue, 25 Sep 2012 09:07:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Gerd Hoffmann <kraxel@redhat.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: USB tree closed for 3.7
+Message-ID: <20120925160701.GA21075@kroah.com>
+References: <20120925134514.GA15607@kroah.com>
+ <5061C6F1.8020100@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5061C6F1.8020100@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-25 at 16:35 +0100, David Howells wrote: 
-> Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+On Tue, Sep 25, 2012 at 05:00:01PM +0200, Gerd Hoffmann wrote:
+> On 09/25/12 15:45, Greg KH wrote:
+> > Hi all,
+> > 
+> > If you haven't sent me any pending patches for 3.7, it's a bit too late
+> > as I've now closed the usb-next tree for any new stuff for 3.7, unless
+> > it's bug fixes.
+> > 
+> > If you have sent me stuff and I've missed it, please let me know as I
+> > think my queue is now empty.
 > 
-> > Generate a certificate that is valid from a few minutes before the
-> > wallclock time. It's a certificate policy question not a kernel hackery
-> > one.
+> [ sent to the list only, guess I better Cc you in the future ]
 > 
-> That doesn't seem to be possible with openssl req.  What would you recommend?
+> http://marc.info/?l=linux-usb&m=134856283907957&w=2
 
-You can use openssl ca that allows to set arbitrary start date to
-generate selfsigned certs as well (-selfsign option).
--- 
-Tomas Mraz
-No matter how far down the wrong road you've gone, turn back.
-                                              Turkish proverb
+Ah, sorry, you are right, I did get those in time, they are in my queue,
+just no "USB" prefix on the front of them for my filter to catch :)
 
+I'll queue them up later today, thanks for reminding me.
+
+greg k-h
