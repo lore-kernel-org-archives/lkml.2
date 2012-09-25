@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab2IYJ2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 05:28:25 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:33767 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753674Ab2IYJ2W (ORCPT
+	id S1754558Ab2IYJd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 05:33:26 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46029 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab2IYJdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 05:28:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au0NAJJ4YVB5LGEv/2dsb2JhbABFhSK4OAIBgQqBCYIgAQEFJxMcIxAIAxUDLhQNGAM0h3MDDqgrhyINiVMUiiVigQOBQ1yCQGADlBCBVIsbhQqCeQ
-Date: Tue, 25 Sep 2012 19:28:19 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
-        diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v2 03/10] vfs: add one new mount option '-o hottrack'
-Message-ID: <20120925092819.GC29154@dastard>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
- <1348404995-14372-4-git-send-email-zwu.kernel@gmail.com>
+	Tue, 25 Sep 2012 05:33:24 -0400
+Date: Tue, 25 Sep 2012 14:35:09 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] uprobes: Restrict valid_vma(false) to skip
+ VM_SHARED
+Message-ID: <20120925090509.GC18334@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120916175210.GA32337@redhat.com>
+ <20120916175248.GA32373@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1348404995-14372-4-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120916175248.GA32373@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092509-5406-0000-0000-0000008F2FC3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 23, 2012 at 08:56:28PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+* Oleg Nesterov <oleg@redhat.com> [2012-09-16 19:52:48]:
+
+> valid_vma(false) ignores ->vm_flags, this is not actually right.
+> We should never try to write into MAP_SHARED mapping, this can
+> confuse an apllication which actually writes to ->vm_file.
+
+Agree,
+
 > 
->   Introduce one new mount option '-o hottrack',
-> and add its parsing support.
->   Its usage looks like:
->    mount -o hottrack
->    mount -o nouser,hottrack
->    mount -o nouser,hottrack,loop
->    mount -o hottrack,nouser
+> With this patch valid_vma(false) ignores VM_WRITE only but checks
+> other (immutable) bits checked by valid_vma(true).
 
-I think that this option parsing should be done by the filesystem,
-even though the tracking functionality is in the VFS. That way ony
-the filesystems that can use the tracking information will turn it
-on, rather than being able to turn it on for everything regardless
-of whether it is useful or not.
+Yes, checking for other immutable flags other than VM_WRITE is good.
 
-Along those lines, just using a normal superblock flag to indicate
-it is active (e.g. MS_HOT_INODE_TRACKING in sb->s_flags) means you
-don't need to allocate the sb->s_hot_info structure just to be able
-to check whether we are tracking hot inodes or not.
+> This can also
+> speedup uprobe_munmap() and uprobe_unregister().
+> 
 
-This then means the hot inode tracking for the superblock can be
-initialised by the filesystem as part of it's fill_super method,
-along with the filesystem specific code that will use the hot
-tracking information the VFS gathers....
+I didnt get how it speeds up uprobe_munmap() and uprobe_unregister()?
 
-Cheers,
+> Note: even after this patch _unregister can confuse the probed
+> application if it does mprotect(PROT_WRITE) after _register and
+> installs "int3", but this is hardly possible to avoid and this
+> doesn't differ from gdb case.
+> 
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Again I didnt quite understand how unregister can confuse the probed
+application.
+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+
+The changes look good.
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  kernel/events/uprobes.c |   13 ++++---------
+>  1 files changed, 4 insertions(+), 9 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index b9b50dd..78364a2 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -100,17 +100,12 @@ struct uprobe {
+>   */
+>  static bool valid_vma(struct vm_area_struct *vma, bool is_register)
+>  {
+> -	if (!vma->vm_file)
+> -		return false;
+> -
+> -	if (!is_register)
+> -		return true;
+> +	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC | VM_SHARED;
+> 
+> -	if ((vma->vm_flags & (VM_HUGETLB | VM_WRITE | VM_MAYEXEC | VM_SHARED))
+> -				== VM_MAYEXEC)
+> -		return true;
+> +	if (is_register)
+> +		flags |= VM_WRITE;
+> 
+> -	return false;
+> +	return vma->vm_file && (vma->vm_flags & flags) == VM_MAYEXEC;
+>  }
+> 
+>  static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
+> -- 
+> 1.5.5.1
+> 
+
