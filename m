@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab2IYO4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 10:56:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38672 "EHLO mx2.suse.de"
+	id S1756760Ab2IYO5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 10:57:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38686 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754277Ab2IYO42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 10:56:28 -0400
+	id S1755950Ab2IYO43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 10:56:29 -0400
 From: Thomas Renninger <trenn@suse.de>
 To: hpa@zytor.com
 Cc: lenb@kernel.org, initramfs@vger.kernel.org, robert.moore@intel.com,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
         yinghai@kernel.org, Thomas Renninger <trenn@suse.de>
-Subject: [PATCH 2/6] X86 ACPI: Introduce x86 arch specific arch_reserve_mem_area() for e820 handling
-Date: Tue, 25 Sep 2012 16:55:57 +0200
-Message-Id: <1348584961-1476-3-git-send-email-trenn@suse.de>
+Subject: [PATCH 6/6] ACPI: Document ACPI table overriding via initrd
+Date: Tue, 25 Sep 2012 16:56:01 +0200
+Message-Id: <1348584961-1476-7-git-send-email-trenn@suse.de>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1348584961-1476-1-git-send-email-trenn@suse.de>
 References: <1348584961-1476-1-git-send-email-trenn@suse.de>
@@ -21,48 +21,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed for ACPI table overriding via initrd. Beside reserving
-memblocks, X86 also requires to flag the memory area to E820_RESERVED or
-E820_ACPI in the e820 mappings to be able to io(re)map it later.
-
 Signed-off-by: Thomas Renninger <trenn@suse.de>
 ---
- arch/x86/kernel/acpi/boot.c |    6 ++++++
- include/linux/acpi.h        |    9 +++++++++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+ Documentation/acpi/initrd_table_override.txt |   94 ++++++++++++++++++++++++++
+ 1 files changed, 94 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/acpi/initrd_table_override.txt
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index b2297e5..6b75777 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1700,3 +1700,9 @@ int __acpi_release_global_lock(unsigned int *lock)
- 	} while (unlikely (val != old));
- 	return old & 0x1;
- }
+diff --git a/Documentation/acpi/initrd_table_override.txt b/Documentation/acpi/initrd_table_override.txt
+new file mode 100644
+index 0000000..35c3f54
+--- /dev/null
++++ b/Documentation/acpi/initrd_table_override.txt
+@@ -0,0 +1,94 @@
++Overriding ACPI tables via initrd
++=================================
 +
-+void __init arch_reserve_mem_area(acpi_physical_address addr, size_t size)
-+{
-+	e820_add_region(addr, size, E820_ACPI);
-+	update_e820();
-+}
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 4f2a762..bf6a0ad 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -430,4 +430,13 @@ acpi_status acpi_os_prepare_sleep(u8 sleep_state,
- #define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
- #endif
- 
-+#if CONFIG_X86
-+void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
-+#else
-+static inline void void arch_reserve_mem_area(acpi_physical_address addr,
-+					      size_t size)
-+{
-+}
-+#endif /* CONFIG_X86 */
++1) Introduction (What is this about)
++2) What is this for
++3) How does it work
++4) References (Where to retrieve userspace tools)
 +
- #endif	/*_LINUX_ACPI_H*/
++1) What is this about
++---------------------
++
++If the ACPI_INITRD_TABLE_OVERRIDE compile option is true, it is possible to
++override nearly any ACPI table provided by the BIOS with an instrumented,
++modified one.
++
++For a full list of ACPI tables that can be overridden, take a look at
++the char *table_sigs[MAX_ACPI_SIGNATURE]; definition in drivers/acpi/osl.c
++All ACPI tables iasl (Intel's ACPI compiler and disassembler) knows should
++be overridable, except:
++   - ACPI_SIG_RSDP (has a signature of 6 bytes)
++   - ACPI_SIG_FACS (does not have an ordinary ACPI table header)
++Both could get implemented as well.
++
++
++2) What is this for
++-------------------
++
++Please keep in mind that this is a debug option.
++ACPI tables should not get overridden for productive use.
++If BIOS ACPI tables are overridden the kernel will get tainted with the
++TAINT_OVERRIDDEN_ACPI_TABLE flag.
++Complain to your platform/BIOS vendor if you find a bug which is so sever
++that a workaround is not accepted in the Linux kernel.
++
++Still, it can and should be enabled in any kernel, because:
++  - There is no functional change with not instrumented initrds
++  - It provides a powerful feature to easily debug and test ACPI BIOS table
++    compatibility with the Linux kernel.
++
++
++3) How does it work
++-------------------
++
++# Extract the machine's ACPI tables:
++cd /tmp
++acpidump >acpidump
++acpixtract -a acpidump
++# Disassemble, modify and recompile them:
++iasl -d *.dat
++# For example add this statement into a _PRT (PCI Routing Table) function
++# of the DSDT:
++Store("HELLO WORLD", debug)
++iasl -sa dsdt.dsl
++# Add the raw ACPI tables to an uncompressed cpio archive.
++# They must be put into a /kernel/firmware/acpi directory inside the
++# cpio archive.
++# The uncompressed cpio archive must be the first.
++# Other, typically compressed cpio archives, must be
++# concatenated on top of the uncompressed one.
++mkdir -p kernel/firmware/acpi
++cp dsdt.aml kernel/firmware/acpi
++# A maximum of: #define ACPI_OVERRIDE_TABLES 10
++# tables are  currently allowed (see osl.c):
++iasl -sa facp.dsl
++iasl -sa ssdt1.dsl
++cp facp.aml kernel/firmware/acpi
++cp ssdt1.aml kernel/firmware/acpi
++# Create the uncompressed cpio archive and concatenate the original initrd
++# on top:
++find kernel | cpio -H newc --create > /boot/instrumented_initrd
++cat /boot/initrd >>/boot/instrumented_initrd
++# reboot with increased acpi debug level, e.g. boot params:
++acpi.debug_level=0x2 acpi.debug_layer=0xFFFFFFFF
++# and check your syslog:
++[    1.268089] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0._PRT]
++[    1.272091] [ACPI Debug]  String [0x0B] "HELLO WORLD"
++
++iasl is able to disassemble and recompile quite a lot different,
++also static ACPI tables.
++
++
++4) Where to retrieve userspace tools
++------------------------------------
++
++iasl and acpixtract are part of Intel's ACPICA project:
++http://acpica.org/
++and should be packaged by distributions (for example in the acpica package
++on SUSE).
++
++acpidump can be found in Len Browns pmtools:
++ftp://kernel.org/pub/linux/kernel/people/lenb/acpi/utils/pmtools/acpidump
++This tool is also part of the acpica package on SUSE.
++Alternatively, used ACPI tables can be retrieved via sysfs in latest kernels:
++/sys/firmware/acpi/tables
 -- 
 1.7.6.1
 
