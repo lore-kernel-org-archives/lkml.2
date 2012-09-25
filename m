@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab2IYC24 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 22:28:56 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57277 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928Ab2IYC2z (ORCPT
+	id S1752360Ab2IYCes (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 22:34:48 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50404 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094Ab2IYCer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 22:28:55 -0400
-X-AuditID: 9c930179-b7bfcae0000020b4-ce-506116e58ef5
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH] perf test: Fix build failure
-Date: Tue, 25 Sep 2012 11:20:28 +0900
-Message-Id: <1348539628-3821-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 24 Sep 2012 22:34:47 -0400
+Date: Tue, 25 Sep 2012 12:34:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120925123438.bbf3126889513ee5cc195e5c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Sep_2012_12_34_38_+1000_hl2iGq5KLdJwKIz0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+--Signature=_Tue__25_Sep_2012_12_34_38_+1000_hl2iGq5KLdJwKIz0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The commit 6a6cd11d4e57 ("perf test: Add test for the sched tracepoint
-format fields") added following build error:
+Hi all,
 
-  CC builtin-test.o
-builtin-test.c: In function ‘perf_evsel__test_field’:
-builtin-test.c:1216:6: error: variable ‘ret’ set but not used [-Werror=unused-but-set-variable]
-builtin-test.c: In function ‘perf_evsel__tp_sched_test’:
-builtin-test.c:1242:6: error: variable ‘ret’ set but not used [-Werror=unused-but-set-variable]
-cc1: all warnings being treated as errors
-make: *** [builtin-test.o] Error 1
+Today's linux-next merge of the net-next tree got a conflict in
+net/ipv4/raw.c between commit ab43ed8b7490 ("ipv4: raw: fix icmp_filter
+()") from the net tree and commit 5640f7685831 ("net: use a per task frag
+allocator") from the net-next tree.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-test.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+They are basically the same patch (for this file) except the net-next
+version adds two pr_err() calls. I used the net-next version and can carry
+the fix as necessary (no action is required).
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 32caf13cfe01..78b47a75a7c9 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -1233,7 +1233,7 @@ static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
- 		ret = -1;
- 	}
- 
--	return 0;
-+	return ret;
- }
- 
- static int perf_evsel__tp_sched_test(void)
-@@ -1286,7 +1286,7 @@ static int perf_evsel__tp_sched_test(void)
- 	if (perf_evsel__test_field(evsel, "target_cpu", 4, true))
- 		ret = -1;
- 
--	return 0;
-+	return ret;
- }
- 
- static struct test {
--- 
-1.7.11.4
+I do wonder if this change belongs in the net-next patch?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__25_Sep_2012_12_34_38_+1000_hl2iGq5KLdJwKIz0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQYRg+AAoJEECxmPOUX5FEvBQQAJYJ29JrZtYr7fD13ud+KoK8
+cvvC8gAsU4JcZgEuH2JzrHoMUuzFrAQH0o/7/+bUZcSKxqVPJnTsdWOEh4K4Vkuc
+rfWSYvm8qB6TfOKQhMTtGb8C3GNa0LNjixivjuaVOdGRjXOUK5xsToMXQF0o9Phu
+vV8l7RaXWc8R0D41JV+kzS9wSg3HcY77nK5rv/BHGXLfBchRlS++EWAUuWFwGyKD
+gJl6RFAfwKJ+SJf+QpZ9x1JpeEdgIkiTVuZ47SjgHYlvjWl7l8qUeR5gZfMqyLmC
+n3wipR+z1wwy23LCYkPWo/YJtvMHK8SS5pZIusMCrHzJLW88aDrW0/6yXfHg4O/h
+q9vcDKBv1a+O6c8WAfvHWLnFhzNdDJdLGp3dQYse/tenF4y796KlB8beyK1i16pH
+sqp8zgndOwlVtJ5Vxg/sC6Po2fhpcGBQlTa7z0Sw3kRef4BhCSnPTQlsEg7Qs5lJ
+aPWxY/Ek1ilEK7lcMyT1vhBjOmsYyn02JV4h8t97hld/vOF5jHglXDWP+0hcUWzW
+NqsKGIUYTNH2tXksh+irOfc7Uww4qqWkc2UilaoS7fUfxAFB8K3L4dm9S7H3Txtf
+6qFJJca+n2PLEO1XzwJ82YqkAH43tH6mAtI01SWDmjjaBw/dPgGsnwz6ji0KhNBv
+1IOTrbMlUTqbIEGzVrxY
+=NSXf
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Sep_2012_12_34_38_+1000_hl2iGq5KLdJwKIz0--
