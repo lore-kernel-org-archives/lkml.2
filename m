@@ -1,118 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab2IYPBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 11:01:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756631Ab2IYPBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 11:01:15 -0400
-Message-ID: <5061C70E.2090308@redhat.com>
-Date: Tue, 25 Sep 2012 17:00:30 +0200
-From: Dor Laor <dlaor@redhat.com>
-Reply-To: dlaor@redhat.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Chegu Vinod <chegu_vinod@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
- in PLE handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue> <505C691D.4080801@hp.com> <505CA5BA.4020801@linux.vnet.ibm.com> <50601CE7.60801@redhat.com> <50604BF0.1070607@linux.vnet.ibm.com>
-In-Reply-To: <50604BF0.1070607@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756678Ab2IYPG2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 11:06:28 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56768 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343Ab2IYPG0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 11:06:26 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [GIT PULL] cputime: More cleanups v2
+Date: Tue, 25 Sep 2012 17:06:01 +0200
+Message-Id: <1348585567-2925-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2012 02:02 PM, Raghavendra K T wrote:
-> On 09/24/2012 02:12 PM, Dor Laor wrote:
->> In order to help PLE and pvticketlock converge I thought that a small
->> test code should be developed to test this in a predictable,
->> deterministic way.
->>
->> The idea is to have a guest kernel module that spawn a new thread each
->> time you write to a /sys/.... entry.
->>
->> Each such a thread spins over a spin lock. The specific spin lock is
->> also chosen by the /sys/ interface. Let's say we have an array of spin
->> locks *10 times the amount of vcpus.
->>
->> All the threads are running a
->> while (1) {
->>
->> spin_lock(my_lock);
->> sum += execute_dummy_cpu_computation(time);
->> spin_unlock(my_lock);
->>
->> if (sys_tells_thread_to_die()) break;
->> }
->>
->> print_result(sum);
->>
->> Instead of calling the kernel's spin_lock functions, clone them and make
->> the ticket lock order deterministic and known (like a linear walk of all
->> the threads trying to catch that lock).
->
-> By Cloning you mean hierarchy of the locks?
+Hi Ingo, Thomas,
 
-No, I meant to clone the implementation of the current spin lock code in 
-order to set any order you may like for the ticket selection.
-(even for a non pvticket lock version)
+Seconds take for these cleanups (and more are to come). I haven't got
+reviews in two weeks so I'm resending with a pull request.
 
-For instance, let's say you have N threads trying to grab the lock, you 
-can always make the ticket go linearly from 1->2...->N.
-Not sure it's a good idea, just a recommendation.
+Changes in v2:
 
-> Also I believe time should be passed via sysfs / hardcoded for each
-> type of lock we are mimicking
+* Fix wrong condition when using is_idle_task() (patch 2/6)
+* Remove unnecessary !S390 dependency for finegrained irqtime accounting
+option (reported by Russell King)
 
-Yap
+Please pull from:
 
->
->>
->> This way you can easy calculate:
->> 1. the score of a single vcpu running a single thread
->> 2. the score of sum of all thread scores when #thread==#vcpu all
->> taking the same spin lock. The overall sum should be close as
->> possible to #1.
->> 3. Like #2 but #threads > #vcpus and other versions of #total vcpus
->> (belonging to all VMs) > #pcpus.
->> 4. Create #thread == #vcpus but let each thread have it's own spin
->> lock
->> 5. Like 4 + 2
->>
->> Hopefully this way will allows you to judge and evaluate the exact
->> overhead of scheduling VMs and threads since you have the ideal result
->> in hand and you know what the threads are doing.
->>
->> My 2 cents, Dor
->>
->
-> Thank you,
-> I think this is an excellent idea. ( Though I am trying to put all the
-> pieces together you mentioned). So overall we should be able to measure
-> the performance of pvspinlock/PLE improvements with a deterministic
-> load in guest.
->
-> Only thing I am missing is,
-> How to generate different combinations of the lock.
->
-> Okay, let me see if I can come with a solid model for this.
->
+git://github.com/fweisbec/linux-dynticks.git
+	cputime/cleanups-v2
 
-Do you mean the various options for PLE/pvticket/other? I haven't 
-thought of it and assumed its static but it can also be controlled 
-through the temporary /sys interface.
+It is based on tip:sched/core
 
-Thanks for following up!
-Dor
+Thanks.
+
+Frederic Weisbecker (6):
+  cputime: Use a proper subsystem naming for vtime related APIs
+  vtime: Consolidate system/idle context detection
+  ia64: Consolidate user vtime accounting
+  ia64: Reuse system and user vtime accounting functions on task switch
+  cputime: Gather time/stats accounting config options into a single
+    menu
+  cputime: Make finegrained irqtime accounting generally available
+
+ arch/Kconfig                    |    6 ++
+ arch/ia64/kernel/time.c         |   64 +++++++++---------
+ arch/powerpc/kernel/time.c      |   53 ++++++++------
+ arch/s390/include/asm/cputime.h |    3 +
+ arch/s390/kernel/vtime.c        |    6 +-
+ arch/x86/Kconfig                |   12 +---
+ include/linux/hardirq.h         |    8 +-
+ include/linux/kernel_stat.h     |    6 +-
+ include/linux/kvm_host.h        |    4 +-
+ init/Kconfig                    |  146 ++++++++++++++++++++++++---------------
+ kernel/sched/core.c             |    2 +-
+ kernel/sched/cputime.c          |   34 ++++++++-
+ kernel/softirq.c                |    6 +-
+ 13 files changed, 209 insertions(+), 141 deletions(-)
+
+-- 
+1.7.5.4
+
