@@ -1,80 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab2IYAYt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 20:24:49 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:53131 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab2IYAYq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 20:24:46 -0400
-Message-ID: <5060F9C6.1070100@gmail.com>
-Date: Tue, 25 Sep 2012 08:24:38 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1752005Ab2IYAjU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 20:39:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9416 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750919Ab2IYAjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 20:39:19 -0400
+Date: Tue, 25 Sep 2012 02:40:24 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v10 3/5] virtio_balloon: introduce migration primitives
+ to balloon pages
+Message-ID: <20120925004024.GA22665@redhat.com>
+References: <cover.1347897793.git.aquini@redhat.com>
+ <39738cbd4b596714210e453440833db7cca73172.1347897793.git.aquini@redhat.com>
 MIME-Version: 1.0
-To: chris.mason@fusionio.com, jbacik@fusionio.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Btrfs: check range early in map_private_extent_buffer
-References: <505FE3AF.2090302@gmail.com> <20120924161742.GL14582@twin.jikos.cz>
-In-Reply-To: <20120924161742.GL14582@twin.jikos.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <39738cbd4b596714210e453440833db7cca73172.1347897793.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012年09月25日 00:17, David Sterba wrote:
-> On Mon, Sep 24, 2012 at 12:38:07PM +0800, Wang Sheng-Hui wrote:
->> Check range early to avoid further check/compute in case
->> of range error.
->>
->> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
->> ---
->>  fs/btrfs/extent_io.c |   16 ++++++++--------
->>  1 files changed, 8 insertions(+), 8 deletions(-)
->>
->> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
->> index 4c87847..9250cf5 100644
->> --- a/fs/btrfs/extent_io.c
->> +++ b/fs/btrfs/extent_io.c
->> @@ -4643,6 +4643,14 @@ int map_private_extent_buffer(struct extent_buffer *eb, unsigned long start,
->>  	unsigned long end_i = (start_offset + start + min_len - 1) >>
->>  		PAGE_CACHE_SHIFT;
->>  
->> +	if (start + min_len > eb->len) {
->> +		printk(KERN_ERR "btrfs bad mapping eb start %llu len %lu, "
->> +		       "wanted %lu %lu\n", (unsigned long long)eb->start,
->> +		       eb->len, start, min_len);
->> +		WARN_ON(1);
->> +		return -EINVAL;
->> +	}
->> +
->>  	if (i != end_i)
->>  		return -EINVAL;
+On Mon, Sep 17, 2012 at 01:38:18PM -0300, Rafael Aquini wrote:
+> Memory fragmentation introduced by ballooning might reduce significantly
+> the number of 2MB contiguous memory blocks that can be used within a guest,
+> thus imposing performance penalties associated with the reduced number of
+> transparent huge pages that could be used by the guest workload.
 > 
-> 4665         unsigned long i = (start_offset + start) >> PAGE_CACHE_SHIFT;
-> 4666         unsigned long end_i = (start_offset + start + min_len - 1) >>
-> 4667                 PAGE_CACHE_SHIFT;
+> Besides making balloon pages movable at allocation time and introducing
+> the necessary primitives to perform balloon page migration/compaction,
+> this patch also introduces the following locking scheme, in order to
+> enhance the syncronization methods for accessing elements of struct
+> virtio_balloon, thus providing protection against concurrent access
+> introduced by parallel memory compaction threads.
 > 
-> so the check above effectively verifies that
+>  - balloon_lock (mutex) : synchronizes the access demand to elements of
+>                           struct virtio_balloon and its queue operations;
+>  - pages_lock (spinlock): special protection to balloon's pages bookmarking
+>                           elements (list and atomic counters) against the
+>                           potential memory compaction concurrency;
 > 
->   min_len - 1 < PAGE_CACHE_SIZE
-> AND
->   is within the same page
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
+>  drivers/virtio/virtio_balloon.c | 305 +++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 286 insertions(+), 19 deletions(-)
 > 
-> The other check
-> 
-> 	if (start + min_len > eb->len) {
-> 
-> looks if the requested data do not lie out of the bounds of the extent
-> buffer, where min_len is filled with sizeof(something).
-> 
-> So, both the checks look for corrupted metadata, I don't see the need to
-> swap them.
+> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> index 0908e60..a52c768 100644
+> --- a/drivers/virtio/virtio_balloon.c
+> +++ b/drivers/virtio/virtio_balloon.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/slab.h>
+>  #include <linux/module.h>
+> +#include <linux/balloon_compaction.h>
+>  
+>  /*
+>   * Balloon device works in 4K page units.  So each page is pointed to by
+> @@ -34,6 +35,7 @@
+>   * page units.
+>   */
+>  #define VIRTIO_BALLOON_PAGES_PER_PAGE (PAGE_SIZE >> VIRTIO_BALLOON_PFN_SHIFT)
+> +#define VIRTIO_BALLOON_ARRAY_PFNS_MAX 256
+>  
+>  struct virtio_balloon
+>  {
+> @@ -46,11 +48,24 @@ struct virtio_balloon
+>  	/* The thread servicing the balloon. */
+>  	struct task_struct *thread;
+>  
+> +	/* balloon special page->mapping */
+> +	struct address_space *mapping;
+> +
+> +	/* Synchronize access/update to this struct virtio_balloon elements */
+> +	struct mutex balloon_lock;
 
-Reread the code and it really does the check.
-Got it. Thanks for your explanation.
+Please document here nesting rules wrt page lock for this and pages_lock.
 
-> 
-> david
+> +
+>  	/* Waiting for host to ack the pages we released. */
+>  	wait_queue_head_t acked;
+>  
+> +	/* Protect pages list, and pages bookeeping counters */
+> +	spinlock_t pages_lock;
+> +
+> +	/* Number of balloon pages isolated from 'pages' list for compaction */
+> +	unsigned int num_isolated_pages;
+> +
+>  	/* Number of balloon pages we've told the Host we're not using. */
+>  	unsigned int num_pages;
+> +
+>  	/*
+>  	 * The pages we've told the Host we're not using.
+>  	 * Each page on this list adds VIRTIO_BALLOON_PAGES_PER_PAGE
 
+...
+
+
+> @@ -122,13 +137,17 @@ static void set_page_pfns(u32 pfns[], struct page *page)
+>  
+>  static void fill_balloon(struct virtio_balloon *vb, size_t num)
+>  {
+> +	/* Get the proper GFP alloc mask from vb->mapping flags */
+> +	gfp_t vb_gfp_mask = mapping_gfp_mask(vb->mapping);
+> +
+>  	/* We can only do one array worth at a time. */
+>  	num = min(num, ARRAY_SIZE(vb->pfns));
+>  
+> +	mutex_lock(&vb->balloon_lock);
+>  	for (vb->num_pfns = 0; vb->num_pfns < num;
+>  	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+> -		struct page *page = alloc_page(GFP_HIGHUSER | __GFP_NORETRY |
+> -					__GFP_NOMEMALLOC | __GFP_NOWARN);
+> +		struct page *page = alloc_page(vb_gfp_mask | __GFP_NORETRY |
+> +					       __GFP_NOWARN | __GFP_NOMEMALLOC);
+>  		if (!page) {
+>  			if (printk_ratelimit())
+>  				dev_printk(KERN_INFO, &vb->vdev->dev,
+> @@ -139,9 +158,15 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+>  			break;
+>  		}
+>  		set_page_pfns(vb->pfns + vb->num_pfns, page);
+> -		vb->num_pages += VIRTIO_BALLOON_PAGES_PER_PAGE;
+>  		totalram_pages--;
+> +
+> +		BUG_ON(!trylock_page(page));
+
+So here page lock is nested within balloon_lock.
+
+> +		spin_lock(&vb->pages_lock);
+>  		list_add(&page->lru, &vb->pages);
+> +		assign_balloon_mapping(page, vb->mapping);
+> +		vb->num_pages += VIRTIO_BALLOON_PAGES_PER_PAGE;
+> +		spin_unlock(&vb->pages_lock);
+> +		unlock_page(page);
+>  	}
+>  
+>  	/* Didn't get any?  Oh well. */
+> @@ -149,6 +174,7 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+>  		return;
+>  
+>  	tell_host(vb, vb->inflate_vq);
+> +	mutex_unlock(&vb->balloon_lock);
+>  }
+
+...
+
+
+> +/*
+> + * virtballoon_migratepage - perform the balloon page migration on behalf of
+> + *			     a compation thread.     (called under page lock)
+> + * @mapping: the page->mapping which will be assigned to the new migrated page.
+> + * @newpage: page that will replace the isolated page after migration finishes.
+> + * @page   : the isolated (old) page that is about to be migrated to newpage.
+> + * @mode   : compaction mode -- not used for balloon page migration.
+> + *
+> + * After a ballooned page gets isolated by compaction procedures, this is the
+> + * function that performs the page migration on behalf of a compaction thread
+> + * The page migration for virtio balloon is done in a simple swap fashion which
+> + * follows these two macro steps:
+> + *  1) insert newpage into vb->pages list and update the host about it;
+> + *  2) update the host about the old page removed from vb->pages list;
+> + *
+> + * This function preforms the balloon page migration task.
+> + * Called through balloon_mapping->a_ops.
+> + */
+> +int virtballoon_migratepage(struct address_space *mapping,
+> +		struct page *newpage, struct page *page, enum migrate_mode mode)
+> +{
+> +	struct virtio_balloon *vb = __page_balloon_device(page);
+> +
+> +	BUG_ON(!vb);
+> +
+> +	mutex_lock(&vb->balloon_lock);
+
+
+While here balloon_lock is taken and according to documentation
+this is called under page lock.
+
+> +
+> +	/* balloon's page migration 1st step */
+> +	vb->num_pfns = VIRTIO_BALLOON_PAGES_PER_PAGE;
+> +	spin_lock(&vb->pages_lock);
+> +	list_add(&newpage->lru, &vb->pages);
+> +	assign_balloon_mapping(newpage, mapping);
+> +	vb->num_isolated_pages -= VIRTIO_BALLOON_PAGES_PER_PAGE;
+> +	spin_unlock(&vb->pages_lock);
+> +	set_page_pfns(vb->pfns, newpage);
+> +	tell_host(vb, vb->inflate_vq);
+> +
+> +	/* balloon's page migration 2nd step */
+> +	vb->num_pfns = VIRTIO_BALLOON_PAGES_PER_PAGE;
+> +	clear_balloon_mapping(page);
+> +	set_page_pfns(vb->pfns, page);
+> +	tell_host(vb, vb->deflate_vq);
+> +
+> +	mutex_unlock(&vb->balloon_lock);
+> +	wake_up(&vb->config_change);
+> +
+> +	return BALLOON_MIGRATION_RETURN;
+> +}
+
+So nesting is reversed which is normally a problem.
+Unfortunately lockep does not seem to work for page lock
+otherwise it would detect this.
+If this reversed nesting is not a problem, please add
+comments in code documenting that this is intentional
+and how it works.
+
+-- 
+MST
