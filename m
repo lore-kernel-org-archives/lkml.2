@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab2IYShH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 14:37:07 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:35504 "EHLO e9.ny.us.ibm.com"
+	id S1753913Ab2IYSjb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 14:39:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10429 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751521Ab2IYShF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 14:37:05 -0400
-Date: Tue, 25 Sep 2012 11:36:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: RCU idle CPU detection is broken in linux-next
-Message-ID: <20120925183654.GI2502@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120922212735.GG2934@linux.vnet.ibm.com>
- <20120923002105.GA1112@linux.vnet.ibm.com>
- <505EA09B.6040105@gmail.com>
- <CAFTL4hwqzS8iO2zOOGaizzMtT85MJExTxEgGbponJ4_gfv0nwA@mail.gmail.com>
- <5060E31B.3070203@gmail.com>
- <5060E498.7030003@gmail.com>
- <CAFTL4hzVSBkcDRnzvpmXyBHqydqy=nJxdMtjUHrvR8MwN_M0jQ@mail.gmail.com>
- <5060E863.6020006@gmail.com>
- <20120925120549.GC2310@somewhere.redhat.com>
- <5061F7C7.7060107@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5061F7C7.7060107@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12092518-7182-0000-0000-000002B0B620
+	id S1751991Ab2IYSj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 14:39:29 -0400
+Message-ID: <1348598347.22489.57.camel@vespa.frost.loc>
+Subject: Re: Wrong system clock vs X.509 date specifiers
+From: Tomas Mraz <tmraz@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, rusty@rustcorp.com.au,
+        herbert@gondor.hengli.com.au, pjones@redhat.com, jwboyer@redhat.com,
+        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, keyrings@linux-nfs.org
+Date: Tue, 25 Sep 2012 20:39:07 +0200
+In-Reply-To: <12475.1348594285@warthog.procyon.org.uk>
+References: <1348588977.22489.55.camel@vespa.frost.loc>
+	 <20120925163037.20ba3f3c@pyramind.ukuu.org.uk>
+	 <5555.1348531649@warthog.procyon.org.uk>
+	 <21845.1348585794@warthog.procyon.org.uk>
+	 <30071.1348587320@warthog.procyon.org.uk>
+	 <12475.1348594285@warthog.procyon.org.uk>
+Organization: 
+Content-Type: text/plain; charset="ISO-8859-2"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 08:28:23PM +0200, Sasha Levin wrote:
-> On 09/25/2012 02:06 PM, Frederic Weisbecker wrote:
-> > Sasha, sorry to burden you with more testing request.
-> > Could you please try out this new branch? It includes some fixes after Wu Fenguang and
-> > Dan Carpenter reports (not related to your warnings though) and a patch on the top
-> > of the pile to ensure I diagnosed well the problem, which return immediately from
-> > rcu_user_*() APIs if we are in an interrupt.
-> > 
-> > This way we'll have a clearer view. I also would like to know if there are other
-> > problems with the rcu user mode.
-> > 
-> > Thanks!
+On Tue, 2012-09-25 at 18:31 +0100, David Howells wrote: 
+> Tomas Mraz <tmraz@redhat.com> wrote:
 > 
-> Alrighty, I don't see any warnings anymore.
+> > You can use openssl ca that allows to set arbitrary start date to
+> > generate selfsigned certs as well (-selfsign option).
 > 
-> I'll keep everything running just in case.
+> That seems to require some stuff I don't have installed:
+> 
+> warthog>openssl ca -in signing_key.priv -extensions v3_ca -out newcert.pem
+> Using configuration from /etc/pki/tls/openssl.cnf
+> Error opening CA private key /etc/pki/CA/private/cakey.pem
+> 140244246955872:error:0200100D:system library:fopen:Permission denied:bss_file.c:398:fopen('/etc/pki/CA/private/cakey.pem','r')
+> 140244246955872:error:20074002:BIO routines:FILE_CTRL:system lib:bss_file.c:400:
+> unable to load CA private key
+> unable to write 'random state'
+> 
+> (the /etc/pki/CA/private/ dir is inaccessible if not root and doesn't in any
+> case contain cakey.pem).
+> 
+> Do I need to start with all the CA stuff in the right places to use it?
 
-Very good news!!!  Thank you both!!!
-
-							Thanx, Paul
+You can configure it to point to a different directories. But yes, you
+have to create a CA cert and so on. 
+-- 
+Tomas Mraz
+No matter how far down the wrong road you've gone, turn back.
+                                              Turkish proverb
 
