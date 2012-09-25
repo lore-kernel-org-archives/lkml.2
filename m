@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab2IYEnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 00:43:50 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12179 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab2IYEnt convert rfc822-to-8bit (ORCPT
+	id S1752526Ab2IYEuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 00:50:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54484 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab2IYEuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 00:43:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 24 Sep 2012 21:34:33 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Date: Tue, 25 Sep 2012 10:13:43 +0530
-Subject: RE: [PATCH] rtc: tps65910: Use platform_get_irq to get RTC irq
- details
-Thread-Topic: [PATCH] rtc: tps65910: Use platform_get_irq to get RTC irq
- details
-Thread-Index: Ac2aeXd15CtmTQOKSFGaTaZBfgRCMgAXpJJg
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDF601733@BGMAIL02.nvidia.com>
-References: <1348225223-32156-1-git-send-email-vbyravarasu@nvidia.com>
- <505C8CE9.6040201@wwwdotorg.org>
- <D958900912E20642BCBC71664EFECE3E6DDF60158F@BGMAIL02.nvidia.com>
- <50609746.6020702@wwwdotorg.org>
-In-Reply-To: <50609746.6020702@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 Sep 2012 00:50:19 -0400
+Date: Tue, 25 Sep 2012 14:50:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the md tree
+Message-Id: <20120925145010.621ed466daec9e5e4f1d9ddd@canb.auug.org.au>
+In-Reply-To: <20120925141005.2a83593e@notabene.brown>
+References: <20120925133146.36615871cf4ccbcbd422ed87@canb.auug.org.au>
+	<20120925141005.2a83593e@notabene.brown>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Sep_2012_14_50_10_+1000_Tq0dminTPGoXw+_o"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Monday, September 24, 2012 10:54 PM
-> To: Venu Byravarasu
-> Cc: akpm@linux-foundation.org; a.zummo@towertech.it; linux-
-> kernel@vger.kernel.org; rtc-linux@googlegroups.com
-> Subject: Re: [PATCH] rtc: tps65910: Use platform_get_irq to get RTC irq
-> details
-> 
-> On 09/24/2012 12:18 AM, Venu Byravarasu wrote:
-> >> -----Original Message-----
-> >> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> >> Sent: Friday, September 21, 2012 9:21 PM
-> >> To: Venu Byravarasu
-> >> Cc: akpm@linux-foundation.org; a.zummo@towertech.it; linux-
-> >> kernel@vger.kernel.org; rtc-linux@googlegroups.com
-> >> Subject: Re: [PATCH] rtc: tps65910: Use platform_get_irq to get RTC irq
-> >> details
-> >>
-> >> On 09/21/2012 05:00 AM, Venu Byravarasu wrote:
-> >>> As RTC driver needs only irq number from platform data,
-> >>> using platform_get_irq(), instead of generic dev_get_platdata().
-> >>
-> >> I assume this patch depends on "mfd: tps65910: Add alarm interrupt of
-> >> TPS65910 RTC to mfd device list" which you posted just before? If so,
-> >> the two patches should go through the same tree to avoid "git bisect"
-> >> issues.
-> >>
-> >> Also, I thought you needed to fix the MFD driver to call
-> >> mfd_add_devices() only after all the IRQ stuff had been set up -
-> >> otherwise, when the RTC driver calls devm_request_threaded_irq(), the
-> >> parent IRQ domain that the IRQ points at won't exist, and the call will
-> >> fail.
-> >
-> > No, I do not agree completely here.
-> > Current patch just changes the way to get irq info in the RTC driver.
-> > If proper irq number is passed from MFD, then it proceeds further and
-> deals with it.
-> > In case of missing valid irq info, this returns error as in earlier case.
-> >
-> > I agree with you that this patch alone cannot make RTC completely
-> functional,
-> > till we get mfd patch as well.
-> >
-> > However should lack of mfd changes really block this patch, as these two
-> are
-> > independent  drivers.
-> 
-> OK, if this feature (either the RTC as a whole, or the RTC driver
-> retrieving and using the interrupt) doesn't already work, then as you
-> say there are no dependencies, so this is fine.
+--Signature=_Tue__25_Sep_2012_14_50_10_+1000_Tq0dminTPGoXw+_o
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks Stephen.
-Will remove the unrelated changes as pointed by you on 1st patch and
-send updated patch.
- 
+Hi Neil,
 
+On Tue, 25 Sep 2012 14:10:05 +1000 NeilBrown <neilb@suse.de> wrote:
+>
+> I requires the following which I have already sent to Jens Axboe.
+> I might pull my patch until this fix-up is resolve.
+
+Or just ask Jens if you can submit that patch through your tree (with his
+Ack) since you are the one who needs it?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__25_Sep_2012_14_50_10_+1000_Tq0dminTPGoXw+_o
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQYTgCAAoJEECxmPOUX5FEv1gP/RmTURhDWQ+aNntQNbgzfwg9
+4zCbLF1GaVcxeuRDJ5di+H4mqTsz0rOMmiXld9d97fS1oxoZNzReXrLBC/AYECi0
+I6+l5jlkMOm301PX7MEdbuL+cIT767jEqYGAeBuEXsUkEwKoGOccCgbH9G/ppT5v
+VzZzo2OLQDomaM6co0QxpY0vmcIfMagkNtyk1/FAuGAJQFZhf2pRdBYFEZC1QyEu
+HchwBedZjH0aNYnvGWg9jku0KVzGu3YY6v6P8TVtZo8Eq6igCeCUfJD1Ir7NUg/f
+pwXS+NTYo59yZmB/uDPMtke1YdeDD6/hLE5RR6TtdPV63aJW6xb/AapdPd9Hmm/o
+C8+Z3kalQzjQ8EBmJzsQ/Mpjs1rr1LfMDMpSqT7mEkNOKMZOguloKa27rl8WVkxZ
+OX7flCXkOY4KZCfjhnPEfFHrRkzi/CmHV1sTMY+J7RWs6WFA1dIbPz+R49ohGzvb
+TyAShdj4XIzpFWzQnU4f21aKrfBssaDQ6JUHiamP636kFmunaeLXeqZ8xiF0gIX9
+jCAuwDqMTgOXzDMHlfit2HaT0FBzBK+6pa8tvjbSgnrTKo9lRtnMsnvfPnhocEEu
+Fww+luxHCagQtQBF6Otk2QDM0F3IEv3LHWOR0wWVcr6lPuAtaPihzU8EFhxUY1xI
+0kcs/LkF5+17HpPNCbfX
+=+oCX
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Sep_2012_14_50_10_+1000_Tq0dminTPGoXw+_o--
