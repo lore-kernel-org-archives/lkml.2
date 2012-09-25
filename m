@@ -1,68 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab2IYEuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 00:50:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54484 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab2IYEuT (ORCPT
+	id S1752718Ab2IYFEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 01:04:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:43070 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2IYFEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 00:50:19 -0400
-Date: Tue, 25 Sep 2012 14:50:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the md tree
-Message-Id: <20120925145010.621ed466daec9e5e4f1d9ddd@canb.auug.org.au>
-In-Reply-To: <20120925141005.2a83593e@notabene.brown>
-References: <20120925133146.36615871cf4ccbcbd422ed87@canb.auug.org.au>
-	<20120925141005.2a83593e@notabene.brown>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Sep_2012_14_50_10_+1000_Tq0dminTPGoXw+_o"
+	Tue, 25 Sep 2012 01:04:35 -0400
+From: Gorskin Ilya <revent82@gmail.com>
+To: gregkh@linuxfoundation.org, klmckinney1@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Gorskin Ilya <revent82@gmail.com>
+Subject: [PATCH 2/3] Staging:bcm: fix coding style error in InterfaceIsr.c
+Date: Tue, 25 Sep 2012 11:04:28 +0600
+Message-Id: <1348549469-7222-1-git-send-email-revent82@gmail.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Sep_2012_14_50_10_+1000_Tq0dminTPGoXw+_o
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a patch to the InterfaceIsr.c file that
+fixes up a coding style issues found by the checkpatch.pl tool
 
-Hi Neil,
+Signed-off-by: Ilya Gorskin <revent82@gmail.com>
+---
+ drivers/staging/bcm/InterfaceIsr.c | 178 +++++++++++++++++++++----------------
+ 1 file changed, 102 insertions(+), 76 deletions(-)
 
-On Tue, 25 Sep 2012 14:10:05 +1000 NeilBrown <neilb@suse.de> wrote:
->
-> I requires the following which I have already sent to Jens Axboe.
-> I might pull my patch until this fix-up is resolve.
+diff --git a/drivers/staging/bcm/InterfaceIsr.c b/drivers/staging/bcm/InterfaceIsr.c
+index 6ee3428..4f78451 100644
+--- a/drivers/staging/bcm/InterfaceIsr.c
++++ b/drivers/staging/bcm/InterfaceIsr.c
+@@ -11,101 +11,123 @@ static void read_int_callback(struct urb *urb/*, struct pt_regs *regs*/)
+ 		pr_info(PFX "%s: interrupt status %d\n",
+ 			Adapter->dev->name, status);
+ 
+-	if(Adapter->device_removed == TRUE)
+-	{
+-		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Device has Got Removed.");
++	if (Adapter->device_removed == TRUE) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT,
++				iDBG_LVL_ALL, "Device has Got Removed.");
+ 		return ;
+ 	}
+ 
+-	if(((Adapter->bPreparingForLowPowerMode == TRUE) && (Adapter->bDoSuspend == TRUE)) ||
+-		psIntfAdapter->bSuspended ||
+-		psIntfAdapter->bPreparingForBusSuspend)
+-	{
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt call back is called while suspending the device");
++	if (((Adapter->bPreparingForLowPowerMode == TRUE) &&
++				(Adapter->bDoSuspend == TRUE)) ||
++				psIntfAdapter->bSuspended ||
++				psIntfAdapter->bPreparingForBusSuspend) {
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT,
++					DBG_LVL_ALL,
++					"Interrupt call back is called
++					while suspending the device");
+ 			return ;
+ 	}
+ 
+-	//BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "interrupt urb status %d", status);
++	/*BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL,
++	* "interrupt urb status %d", status);*/
+ 	switch (status) {
+-	    /* success */
+-	    case STATUS_SUCCESS:
+-		if ( urb->actual_length )
+-		{
+-
+-			if(psIntfAdapter->ulInterruptData[1] & 0xFF)
+-			{
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Got USIM interrupt");
++	/* success */
++	case STATUS_SUCCESS:
++		if (urb->actual_length) {
++
++			if (psIntfAdapter->ulInterruptData[1] & 0xFF) {
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS,
++						INTF_INIT, DBG_LVL_ALL,
++						"Got USIM interrupt");
+ 			}
+ 
+-			if(psIntfAdapter->ulInterruptData[1] & 0xFF00)
+-			{
++			if (psIntfAdapter->ulInterruptData[1] & 0xFF00) {
+ 				atomic_set(&Adapter->CurrNumFreeTxDesc,
+-					(psIntfAdapter->ulInterruptData[1] & 0xFF00) >> 8);
+-				atomic_set (&Adapter->uiMBupdate, TRUE);
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "TX mailbox contains %d",
+-					atomic_read(&Adapter->CurrNumFreeTxDesc));
++					(psIntfAdapter->ulInterruptData[1] &
++								0xFF00) >> 8);
++				atomic_set(&Adapter->uiMBupdate, TRUE);
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS,
++						INTF_INIT, DBG_LVL_ALL,
++						"TX mailbox contains %d",
++				atomic_read(&Adapter->CurrNumFreeTxDesc));
+ 			}
+-			if(psIntfAdapter->ulInterruptData[1] >> 16)
+-			{
+-				Adapter->CurrNumRecvDescs=
+-					(psIntfAdapter->ulInterruptData[1]  >> 16);
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"RX mailbox contains %d",
++			if (psIntfAdapter->ulInterruptData[1] >> 16) {
++				Adapter->CurrNumRecvDescs =
++				(psIntfAdapter->ulInterruptData[1] >> 16);
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS,
++						INTF_INIT, DBG_LVL_ALL,
++						"RX mailbox contains %d",
+ 					Adapter->CurrNumRecvDescs);
+ 				InterfaceRx(psIntfAdapter);
+ 			}
+-			if(Adapter->fw_download_done &&
++			if (Adapter->fw_download_done &&
+ 				!Adapter->downloadDDR &&
+-				atomic_read(&Adapter->CurrNumFreeTxDesc))
+-			{
+-				psIntfAdapter->psAdapter->downloadDDR +=1;
++				atomic_read(&Adapter->CurrNumFreeTxDesc)) {
++				psIntfAdapter->psAdapter->downloadDDR += 1;
+ 				wake_up(&Adapter->tx_packet_wait_queue);
+ 			}
+-			if(FALSE == Adapter->waiting_to_fw_download_done)
+-			{
++			if (FALSE == Adapter->waiting_to_fw_download_done) {
+ 				Adapter->waiting_to_fw_download_done = TRUE;
+ 				wake_up(&Adapter->ioctl_fw_dnld_wait_queue);
+ 			}
+-			if(!atomic_read(&Adapter->TxPktAvail))
+-			{
++			if (!atomic_read(&Adapter->TxPktAvail)) {
+ 				atomic_set(&Adapter->TxPktAvail, 1);
+ 				wake_up(&Adapter->tx_packet_wait_queue);
+ 			}
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Firing interrupt in URB");
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT,
++					DBG_LVL_ALL, "Firing interrupt in URB");
+ 		}
+ 		break;
+-		case -ENOENT :
++	case -ENOENT:
+ 		{
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"URB has got disconnected ....");
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT,
++					DBG_LVL_ALL,
++					"URB has got disconnected ....");
+ 			return ;
+ 		}
+-		case -EINPROGRESS:
++	case -EINPROGRESS:
+ 		{
+-			//This situation may happened when URBunlink is used. for detail check usb_unlink_urb documentation.
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Impossibe condition has occurred... something very bad is going on");
++			/*This situation may happened when URBunlink is used.
++			* for detail check usb_unlink_urb documentation.*/
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT,
++					DBG_LVL_ALL,
++					"Impossibe condition has occurred...
++					something very bad is going on");
+ 			break ;
+-			//return;
++			/*return;*/
+ 		}
+-		case -EPIPE:
++	case -EPIPE:
+ 		{
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt IN endPoint  has got halted/stalled...need to clear this");
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS,
++						INTF_INIT, DBG_LVL_ALL,
++						"Interrupt IN endPoint
++						has got halted/stalled...
++						need to clear this");
+ 				Adapter->bEndPointHalted = TRUE ;
+ 				wake_up(&Adapter->tx_packet_wait_queue);
+ 				urb->status = STATUS_SUCCESS ;
+ 				return;
+ 		}
+-	    /* software-driven interface shutdown */
+-	    case -ECONNRESET: //URB got unlinked.
+-	    case -ESHUTDOWN:		// hardware gone. this is the serious problem.
+-	    						//Occurs only when something happens with the host controller device
+-	    case -ENODEV : //Device got removed
+-		case -EINVAL : //Some thing very bad happened with the URB. No description is available.
+-	    	BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"interrupt urb error %d", status);
++		/* software-driven interface shutdown */
++	case -ECONNRESET: /*URB got unlinked.*/
++	case -ESHUTDOWN:	/* hardware gone. this is the serious problem.*/
++	/*Occurs only when something happens with the host controller device*/
++	case -ENODEV: /*Device got removed*/
++	case -EINVAL: /*Some thing very bad happened with the URB.
++			No description is available.*/
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT,
++				DBG_LVL_ALL, "interrupt urb error %d", status);
+ 			urb->status = STATUS_SUCCESS ;
+ 			break ;
+-			//return;
+-	    default:
+-			//This is required to check what is the defaults conditions when it occurs..
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL,"GOT DEFAULT INTERRUPT URB STATUS :%d..Please Analyze it...", status);
++			/*return;*/
++		default:
++			/*This is required to check what is the defaults
++			* conditions when it occurs..*/
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND,
++					DBG_LVL_ALL,
++					"GOT DEFAULT INTERRUPT URB
++					STATUS :%d..Please Analyze it...",
++								status);
+ 		break;
+ 	}
+ 
+@@ -117,27 +139,29 @@ static void read_int_callback(struct urb *urb/*, struct pt_regs *regs*/)
+ int CreateInterruptUrb(PS_INTERFACE_ADAPTER psIntfAdapter)
+ {
+ 	psIntfAdapter->psInterruptUrb = usb_alloc_urb(0, GFP_KERNEL);
+-	if (!psIntfAdapter->psInterruptUrb)
+-	{
+-		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Cannot allocate interrupt urb");
++	if (!psIntfAdapter->psInterruptUrb) {
++		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_OTHERS,
++				INTF_INIT, DBG_LVL_ALL,
++				"Cannot allocate interrupt urb");
+ 		return -ENOMEM;
+ 	}
+ 	psIntfAdapter->psInterruptUrb->transfer_buffer =
+-								psIntfAdapter->ulInterruptData;
++						psIntfAdapter->ulInterruptData;
+ 	psIntfAdapter->psInterruptUrb->transfer_buffer_length =
+-							sizeof(psIntfAdapter->ulInterruptData);
++					sizeof(psIntfAdapter->ulInterruptData);
+ 
+ 	psIntfAdapter->sIntrIn.int_in_pipe = usb_rcvintpipe(psIntfAdapter->udev,
+-						psIntfAdapter->sIntrIn.int_in_endpointAddr);
++	psIntfAdapter->sIntrIn.int_in_endpointAddr);
+ 
+ 	usb_fill_int_urb(psIntfAdapter->psInterruptUrb, psIntfAdapter->udev,
+ 					psIntfAdapter->sIntrIn.int_in_pipe,
+-					psIntfAdapter->psInterruptUrb->transfer_buffer,
+-					psIntfAdapter->psInterruptUrb->transfer_buffer_length,
++				psIntfAdapter->psInterruptUrb->transfer_buffer,
++			psIntfAdapter->psInterruptUrb->transfer_buffer_length,
+ 					read_int_callback, psIntfAdapter,
+ 					psIntfAdapter->sIntrIn.int_in_interval);
+ 
+-	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt Interval: %d\n",
++	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_OTHERS, INTF_INIT,
++			DBG_LVL_ALL, "Interrupt Interval: %d\n",
+ 				psIntfAdapter->sIntrIn.int_in_interval);
+ 	return 0;
+ }
+@@ -147,20 +171,22 @@ INT StartInterruptUrb(PS_INTERFACE_ADAPTER psIntfAdapter)
+ {
+ 	INT status = 0;
+ 
+-	if( FALSE == psIntfAdapter->psAdapter->device_removed &&
++	if (FALSE == psIntfAdapter->psAdapter->device_removed &&
+ 		FALSE == psIntfAdapter->psAdapter->bEndPointHalted &&
+ 		FALSE == psIntfAdapter->bSuspended &&
+ 		FALSE == psIntfAdapter->bPreparingForBusSuspend &&
+-		FALSE == psIntfAdapter->psAdapter->StopAllXaction)
+-	{
+-		status = usb_submit_urb(psIntfAdapter->psInterruptUrb, GFP_ATOMIC);
+-		if (status)
+-		{
+-			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Cannot send int urb %d\n", status);
+-			if(status == -EPIPE)
+-			{
+-				psIntfAdapter->psAdapter->bEndPointHalted = TRUE ;
+-				wake_up(&psIntfAdapter->psAdapter->tx_packet_wait_queue);
++		FALSE == psIntfAdapter->psAdapter->StopAllXaction) {
++		status = usb_submit_urb(psIntfAdapter->psInterruptUrb,
++								GFP_ATOMIC);
++		if (status) {
++			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,
++					DBG_TYPE_OTHERS, INTF_INIT,
++					DBG_LVL_ALL,
++					"Cannot send int urb %d\n", status);
++			if (status == -EPIPE) {
++				psIntfAdapter->psAdapter->bEndPointHalted =
++									TRUE ;
++		wake_up(&psIntfAdapter->psAdapter->tx_packet_wait_queue);
+ 			}
+ 		}
+ 	}
+-- 
+1.7.12
 
-Or just ask Jens if you can submit that patch through your tree (with his
-Ack) since you are the one who needs it?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__25_Sep_2012_14_50_10_+1000_Tq0dminTPGoXw+_o
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYTgCAAoJEECxmPOUX5FEv1gP/RmTURhDWQ+aNntQNbgzfwg9
-4zCbLF1GaVcxeuRDJ5di+H4mqTsz0rOMmiXld9d97fS1oxoZNzReXrLBC/AYECi0
-I6+l5jlkMOm301PX7MEdbuL+cIT767jEqYGAeBuEXsUkEwKoGOccCgbH9G/ppT5v
-VzZzo2OLQDomaM6co0QxpY0vmcIfMagkNtyk1/FAuGAJQFZhf2pRdBYFEZC1QyEu
-HchwBedZjH0aNYnvGWg9jku0KVzGu3YY6v6P8TVtZo8Eq6igCeCUfJD1Ir7NUg/f
-pwXS+NTYo59yZmB/uDPMtke1YdeDD6/hLE5RR6TtdPV63aJW6xb/AapdPd9Hmm/o
-C8+Z3kalQzjQ8EBmJzsQ/Mpjs1rr1LfMDMpSqT7mEkNOKMZOguloKa27rl8WVkxZ
-OX7flCXkOY4KZCfjhnPEfFHrRkzi/CmHV1sTMY+J7RWs6WFA1dIbPz+R49ohGzvb
-TyAShdj4XIzpFWzQnU4f21aKrfBssaDQ6JUHiamP636kFmunaeLXeqZ8xiF0gIX9
-jCAuwDqMTgOXzDMHlfit2HaT0FBzBK+6pa8tvjbSgnrTKo9lRtnMsnvfPnhocEEu
-Fww+luxHCagQtQBF6Otk2QDM0F3IEv3LHWOR0wWVcr6lPuAtaPihzU8EFhxUY1xI
-0kcs/LkF5+17HpPNCbfX
-=+oCX
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Sep_2012_14_50_10_+1000_Tq0dminTPGoXw+_o--
