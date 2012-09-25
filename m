@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2IYHXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 03:23:07 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:54634 "EHLO mta02.xtra.co.nz"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751097Ab2IYHXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 03:23:06 -0400
-Message-ID: <1348557776.18425.2.camel@gitbox>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Date: Tue, 25 Sep 2012 19:22:56 +1200
-In-Reply-To: <20120925165603.7676aa78ed5cfbf8a21fb734@canb.auug.org.au>
-References: <20120925165603.7676aa78ed5cfbf8a21fb734@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753424Ab2IYHZn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 03:25:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63767 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab2IYHZl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 03:25:41 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 6.1 \(1498\))
+Subject: Re: RFE: tty color features
+From: Dave Yost <Dave@Yost.com>
+In-Reply-To: <alpine.LNX.2.01.1209250901040.25195@nerf07.vanv.qr>
+Date: Tue, 25 Sep 2012 00:25:36 -0700
+Cc: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DF2CBE42-E936-4072-BA09-0764A8293941@Yost.com>
+References: <D1425869-534B-4AD9-BF2E-956A76E29894@Yost.com> <alpine.LNX.2.01.1209250901040.25195@nerf07.vanv.qr>
+To: Jan Engelhardt <jengelh@inai.de>
+X-Mailer: Apple Mail (2.1498)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-25 at 16:56 +1000, Stephen Rothwell wrote:
-> Hi all,
+On Tue 2012-09-25, at 12:02 AM, Jan Engelhardt <jengelh@inai.de> wrote:
+
+> On Tuesday 2012-09-25 08:01, Dave Yost wrote:
 > 
-> Today's linux-next merge of the arm-soc tree got conflicts in
-> arch/arm/mach-vt8500/bv07.c, arch/arm/mach-vt8500/devices-vt8500.c,
-> arch/arm/mach-vt8500/devices-wm8505.c, arch/arm/mach-vt8500/devices.c,
-> arch/arm/mach-vt8500/devices.h and arch/arm/mach-vt8500/wm8505_7in.c
-> between commit 100d45970327 ("ARM: vt8500: Add support for UHCI companion
-> controller") from the usb tree and commit e9a91de7602a ("arm: vt8500: Update
-> arch-vt8500 to devicetree support") from the arm-soc tree.
+>> It would be nice to be able to specify fg/bg colors at the tty level, 
+>> so that echoed characters can be colorized.
 > 
-> I just removed the files and can carry the fix as necessary (there may be
-> more work required).
-> 
+> The tty layer does not know what $TERM is used, so it cannot reliably 
+> produce any codes.
 
-Removing the files is the correct solution. Shouldn't be any other work
-required if the rest of commit e9a91de7602a changes went in.
+The driver will reliably produce the codes it has been told to produce by the shell or by the user tells, using ioctl or stty commands.
 
-I'll pull down -next and check it.
+This reminds me of a “D’Oh!” moment aeons ago, when I suggested to Mark Horton that TERM should not be an environment variable. It should be a settable property of the tty. Mark agreed, but neither he nor I felt like going to bat for it back then. This architectural mistake should still be fixed, IMHO. Perhaps the modern world of 2012 would be able to absorb this change, if implemented properly.
 
-Regards
+BTW, I did significant work on the Fortune Systems tty driver in (cough) 1982-1983.
 
-Tony P
+* Horton, Mark. "The New Curses and Terminfo Package". USENIX Conference Proceedings. Summer 1982. Boston, MA: USENIX. pp. 79–91
+
+> But you can edit GNU screen because it has that 
+> knowledge and the fds.
 
