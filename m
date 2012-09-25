@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471Ab2IYNn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 09:43:29 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:49810
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753973Ab2IYNn2 (ORCPT
+	id S1756534Ab2IYNn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 09:43:57 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:50872 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab2IYNnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 09:43:28 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
-X-WSS-ID: 0MAWRG9-01-J0U-02
-X-M-MSG: 
-Date: Tue, 25 Sep 2012 15:43:20 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 16/19] x86, irq: Introduce setup_remapped_irq()
-Message-ID: <20120925134320.GB2505@amd.com>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <1345470965-24410-17-git-send-email-joerg.roedel@amd.com>
- <20120826183030.GH3690@breakpoint.cc>
+	Tue, 25 Sep 2012 09:43:55 -0400
+Message-ID: <5061B437.8070300@linux.vnet.ibm.com>
+Date: Tue, 25 Sep 2012 19:10:07 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120826183030.GH3690@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com> <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com> <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com>
+In-Reply-To: <50606B33.1040102@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092513-3568-0000-0000-00000282D197
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 08:30:30PM +0200, Sebastian Andrzej Siewior wrote:
-> On Mon, Aug 20, 2012 at 03:56:02PM +0200, Joerg Roedel wrote:
-> > --- a/arch/x86/include/asm/irq_remapping.h
-> > +++ b/arch/x86/include/asm/irq_remapping.h
-> > @@ -44,6 +44,9 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
-> >  				     struct msi_msg *msg, u8 hpet_id);
-> >  extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
-> >  extern void panic_if_irq_remap(const char *msg);
-> > +extern bool setup_remapped_irq(int irq,
-> > +			       struct irq_cfg *cfg,
-> > +			       struct irq_chip *chip);
-> here and in the next definition, is it possible to fit it in one line or
-> alteast in two?
+On 09/24/2012 07:46 PM, Raghavendra K T wrote:
+> On 09/24/2012 07:24 PM, Peter Zijlstra wrote:
+>> On Mon, 2012-09-24 at 18:59 +0530, Raghavendra K T wrote:
+>>> However Rik had a genuine concern in the cases where runqueue is not
+>>> equally distributed and lockholder might actually be on a different run
+>>> queue but not running.
+>>
+>> Load should eventually get distributed equally -- that's what the
+>> load-balancer is for -- so this is a temporary situation.
+>>
+>> We already try and favour the non running vcpu in this case, that's what
+>> yield_to_task_fair() is about. If its still not eligible to run, tough
+>> luck.
+>
+> Yes, I agree.
+>
+>>
+>>> Do you think instead of using rq->nr_running, we could get a global
+>>> sense of load using avenrun (something like avenrun/num_onlinecpus)
+>>
+>> To what purpose? Also, global stuff is expensive, so you should try and
+>> stay away from it as hard as you possibly can.
+>
+> Yes, that concern only had made me to fall back to rq->nr_running.
+>
+> Will come back with the result soon.
 
-It doesn't fit in one line (without violating the 80 column
-recommendation). So I think this is the best readable alternative
-format.
+Got the result with the patches:
+So here is the result,
 
-> What about
-> 
-> bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
-> {
-> 	if (!irq_remapped(cfg))
-> 		return false;
-> 	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
-> 	irq_remap_modify_chip_defaults(chip);
-> 	return true;
-> }
+Tried this on a 32 core ple box with HT disabled. 32 guest vcpus with
+1x and 2x overcommits
 
-You are right, that is better. I changed it.
+Base = 3.6.0-rc5 + ple handler optimization patches
+A = Base + checking rq_running in vcpu_on_spin() patch
+B = Base + checking rq->nr_running in sched/core
+C = Base - PLE
 
--- 
-AMD Operating System Research Center
+---+-----------+-----------+-----------+-----------+
+    |    Ebizzy result (rec/sec higher is better)   |
+---+-----------+-----------+-----------+-----------+
+    |    Base   |     A     |      B    |     C     |
+---+-----------+-----------+-----------+-----------+
+1x | 2374.1250 | 7273.7500 | 5690.8750 |  7364.3750|
+2x | 2536.2500 | 2458.5000 | 2426.3750 |    48.5000|
+---+-----------+-----------+-----------+-----------+
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+    % improvements w.r.t BASE
+---+------------+------------+------------+
+    |      A     |    B       |     C      |
+---+------------+------------+------------+
+1x | 206.37603  |  139.70410 |  210.19323 |
+2x | -3.06555   |  -4.33218  |  -98.08773 |
+---+------------+------------+------------+
+
+we are getting the benefit of almost PLE disabled case with this
+approach. With patch B, we have dropped a bit in gain.
+(because we still would iterate vcpus until we decide to do a directed
+yield).
+
+
+
+
 
