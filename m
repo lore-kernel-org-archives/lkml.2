@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab2IYL7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:59:33 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:42535 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755957Ab2IYL7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:59:31 -0400
-Date: Tue, 25 Sep 2012 13:59:26 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: RCU idle CPU detection is broken in linux-next
-Message-ID: <20120925115917.GB2310@somewhere.redhat.com>
-References: <20120923002105.GA1112@linux.vnet.ibm.com>
- <505EA09B.6040105@gmail.com>
- <CAFTL4hwqzS8iO2zOOGaizzMtT85MJExTxEgGbponJ4_gfv0nwA@mail.gmail.com>
- <5060E31B.3070203@gmail.com>
- <5060E498.7030003@gmail.com>
- <CAFTL4hzVSBkcDRnzvpmXyBHqydqy=nJxdMtjUHrvR8MwN_M0jQ@mail.gmail.com>
- <5060E863.6020006@gmail.com>
- <CAFTL4hyOMSb2LW+HX1LG+KJCLzazKFmp+nHtEW8CnxG4MX_bsQ@mail.gmail.com>
- <CAFTL4hw7+t8fzcphCyMAQoCBNb6RndQ7hiUnR6qhk6nYa+93fw@mail.gmail.com>
- <20120925040420.GB2436@linux.vnet.ibm.com>
+	id S1756027Ab2IYMA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 08:00:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:37639 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755274Ab2IYMA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 08:00:56 -0400
+X-IronPort-AV: E=Sophos;i="4.80,482,1344182400"; 
+   d="scan'208";a="5914177"
+Message-ID: <50619D5B.1040101@cn.fujitsu.com>
+Date: Tue, 25 Sep 2012 20:02:35 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120925040420.GB2436@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-numa@vger.kernel.org, wency@cn.fujitsu.com, mingo@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Update sched_domains_numa_masks when new cpus are onlined.
+References: <1347963128-25942-1-git-send-email-tangchen@cn.fujitsu.com>   <1348479536.11847.25.camel@twins> <50611946.9080601@cn.fujitsu.com>  <1348569232.3881.1.camel@twins> <5061996E.8070301@cn.fujitsu.com> <1348573806.3881.35.camel@twins>
+In-Reply-To: <1348573806.3881.35.camel@twins>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/25 20:01:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/25 20:01:09,
+	Serialize complete at 2012/09/25 20:01:09
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 09:04:20PM -0700, Paul E. McKenney wrote:
-> On Tue, Sep 25, 2012 at 01:41:18AM +0200, Frederic Weisbecker wrote:
-> > >
-> > > [  168.703017] ------------[ cut here ]------------
-> > > [  168.708117] WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common+0x4a/0x3a0()
-> > > [  168.710034] Pid: 7871, comm: trinity-child65 Tainted: G        W
-> > > 3.6.0-rc6-next-20120924-sasha-00030-g71f256c #5
-> > > [  168.710034] Call Trace:
-> > > [  168.710034]  <IRQ>  [<ffffffff811c737a>] ? rcu_eqs_exit_common+0x4a/0x3a0
-> > > [  168.710034]  [<ffffffff811078b6>] warn_slowpath_common+0x86/0xb0
-> > > [  168.710034]  [<ffffffff811079a5>] warn_slowpath_null+0x15/0x20
-> > > [  168.710034]  [<ffffffff811c737a>] rcu_eqs_exit_common+0x4a/0x3a0
-> > > [  168.710034]  [<ffffffff811c79cc>] rcu_eqs_exit+0x9c/0xb0
-> > > [  168.710034]  [<ffffffff811c7a4c>] rcu_user_exit+0x6c/0xd0
-> > > [  168.710034]  [<ffffffff8106eb1f>] do_general_protection+0x1f/0x170
-> > > [  168.710034]  [<ffffffff83a0e624>] ? restore_args+0x30/0x30
-> > > [  168.710034]  [<ffffffff83a0e875>] general_protection+0x25/0x30
-> > > [  168.710034]  [<ffffffff810a3f06>] ? native_read_msr_safe+0x6/0x20
-> > > [  168.710034]  [<ffffffff81a0b34b>] __rdmsr_safe_on_cpu+0x2b/0x50
-> > > [  168.710034]  [<ffffffff819ec971>] ? list_del+0x11/0x40
-> > > [  168.710034]  [<ffffffff811886dc>]
-> > > generic_smp_call_function_single_interrupt+0xec/0x120
-> > > [  168.710034]  [<ffffffff81151147>] ? account_system_vtime+0xd7/0x140
-> > > [  168.710034]  [<ffffffff81096f72>]
-> > > smp_call_function_single_interrupt+0x22/0x40
-> > > [  168.710034]  [<ffffffff83a0fe2f>] call_function_single_interrupt+0x6f/0x80
-> > > [  168.710034]  <EOI>  [<ffffffff83a0e5f4>] ? retint_restore_args+0x13/0x13
-> > > [  168.710034]  [<ffffffff811c7285>] ? rcu_user_enter+0x105/0x110
-> > > [  168.710034]  [<ffffffff8107e06d>] syscall_trace_leave+0xfd/0x150
-> > > [  168.710034]  [<ffffffff83a0f1ef>] int_check_syscall_exit_work+0x34/0x3d
-> > > [  168.710034] ---[ end trace fd408dd21b70b87c ]---
-> > >
-> > > This is an exception inside an interrupt, and the interrupt
-> > > interrupted RCU user mode.
-> > > And we have that nesting:
-> > >
-> > > rcu_irq_enter(); <--- irq entry
-> > > rcu_user_exit(); <--- exception entry
-> > >
-> > > And rcu_eqs_exit() doesn't handle that very well...
-> > 
-> > So either I should return immediately from rcu_user_exit() if
-> > we are in an interrupt, or we make rcu_user_exit() able to nest
-> > on rcu_irq_enter()   :)
-> 
-> Both of the two are eminently doable, with varying degrees of hackery.
-> 
-> What makes the most sense from an adaptive-idle viewpoint?
+Hi Peter~
 
-Given that we have:
+I will make a v2 patch-set following your comments
+and resent it soon. :)
 
-rcu_irq_enter()
-	rcu_user_exit()
-	rcu_user_enter()
-rcu_irq_exit()
+Thanks. :)
 
-And we already have rcu_user_exit_after_irq(), this starts to be confusing
-if we allow that nesting. Although if we find a solution that, in the end,
-merge rcu_user_exit() with rcu_user_exit_after_irq() and same for the enter version,
-this would probably be a good thing. Provided this doesn't involve some more
-complicated rdtp->dyntick_nesting trickies nor more overhead.
+On 09/25/2012 07:50 PM, Peter Zijlstra wrote:
+> On Tue, 2012-09-25 at 19:45 +0800, Tang Chen wrote:
+>
+>
+>> Let's have an example here.
+>>
+>> sched_init_numa()
+>> {
+>> 	...
+>> 	// A loop set sched_domains_numa_levels to level.-------------1
+>>
+>> 	// I set sched_domains_numa_levels to 0.
+>> 	sched_domains_numa_levels = 0;--------------------------------2
+>
+> Ah, ok, so this 'idiot in a hurry' (aka. me) placed the hunk wrong and
+> thought it was at the start of the function.
+>
+>> 	// A loop allocating memory for sched_domains_numa_masks[][]
+>> 	for (i = 0; i<  level; i++) {
+>> 		......
+>> 		// Allocate memory for sched_domains_numa_masks[i]----3
+>> 		......
+>> 	}
+>> 	......
+>>
+>> 	// I reset sched_domains_numa_levels to level.
+>> 	sched_domains_numa_levels = level;----------------------------4
+>> }
+>
+> Yes this makes sense, it might be best to have this as a separate patch.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Otherwise we could avoid to call rcu_user_* when we are in an irq. When we'll have
-the user_hooks layer, we can perhaps manage that from that place. For
-now may be we can return after in_interrupt() in the rcu user apis.
-
-Let's first ensure I diagnosed it well and we don't have other problems detected
-by Sasha. I'm cooking a testing patch.
