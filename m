@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757890Ab2IYQbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:31:46 -0400
-Received: from mail.agmk.net ([91.192.224.71]:38193 "EHLO mail.agmk.net"
+	id S1757467Ab2IYQkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:40:33 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:43302 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751148Ab2IYQbp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:31:45 -0400
-From: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, arekm@pld-linux.org, baggins@pld-linux.org
-Subject: Re: [3.5.4] rcu_sched self-detected stall on CPU { 1}  (t=54862991 jiffies)
-Date: Tue, 25 Sep 2012 18:31:36 +0200
-Message-ID: <2429639.puuGestFgj@localhost>
-User-Agent: KMail/4.9.1 (Linux/3.5.4; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <20120924173633.GA2451@kroah.com>
-References: <1377033.GMb6SBRYYa@pawels> <20120924173633.GA2451@kroah.com>
+	id S1753893Ab2IYQkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 12:40:32 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: Re: [PATCH 22/30] perf tools: bfd.h/libbfd detection fails with recent binutils
+Date: Tue, 25 Sep 2012 12:40:30 -0400
+User-Agent: KMail/1.13.7 (Linux/3.5.2; KDE/4.6.5; x86_64; ; )
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+References: <1348502384-14442-1-git-send-email-acme@infradead.org> <201209241958.33449.vapier@gentoo.org> <20120925064728.GA241@x4>
+In-Reply-To: <20120925064728.GA241@x4>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed;
+  boundary="nextPart2376834.odsvrsAiOf";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209251240.31854.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 of September 2012 10:36:33 Greg KH wrote:
-> On Mon, Sep 24, 2012 at 10:05:23AM +0200, Paweł Sikora wrote:
-> > Hi,
-> > 
-> > with the new stable line i'm observing strange locks on my old amd-phenom-II mini-server.
-> > here's a dmesg:
-> 
-> Did this show up in 3.5.3?  If not, can you run 'git bisect' to find the
-> problem patch?
+--nextPart2376834.odsvrsAiOf
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-heh, the old good kernel put some light on this issue.
+On Tuesday 25 September 2012 02:47:28 Markus Trippelsdorf wrote:
+> On 2012.09.24 at 19:58 -0400, Mike Frysinger wrote:
+> > On Monday 24 September 2012 11:59:36 Arnaldo Carvalho de Melo wrote:
+> > > --- a/tools/perf/Makefile
+> > > +++ b/tools/perf/Makefile
+> > >=20
+> > > -		FLAGS_BFD=3D$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
+> > > +		FLAGS_BFD=3D$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -
+DPACKAGE=3D'perf' -
+> >=20
+> > in this case, if you were to expand PACKAGE, you'd get back the symbol
+> > perf (which most likely will be an error, but maybe it won't).  i think
+> > this should
+> >=20
+> > be instead:
+> > 	-DPACKAGE=3D'"perf"'
+> > =09
+> > > --- a/tools/perf/util/symbol.h
+> > > +++ b/tools/perf/util/symbol.h
+> > >=20
+> > > +#define PACKAGE 'perf'
+> >=20
+> > this isn't valid C anywhere.  pretty sure this should be:
+> > 	#define PACKAGE "perf"
+>=20
+> The only thing that's really important is that PACKAGE isn't NULL,
 
-Sep 25 08:50:24 nexus kernel: [60330.301639] Clocksource tsc unstable (delta = -474690884 ns)
-Sep 25 08:50:24 nexus kernel: [60330.325477] ------------[ cut here ]------------
-Sep 25 08:50:24 nexus kernel: [60330.325484] WARNING: at /home/users/builder/rpm/BUILD/kernel-2.6.37.6/linux-2.6.37/net/sched/sch_generic.c:258 dev_watchdog+0x25d/0x270()
-Sep 25 08:50:24 nexus kernel: [60330.325486] Hardware name: GA-MA785GMT-UD2H
-Sep 25 08:50:24 nexus kernel: [60330.325487] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-(...)
-Sep 25 08:50:25 nexus kernel: [60330.851093] Switching to clocksource acpi_pm
+you mean "isn't defined".  i'm aware of that, but i'm trying to make you fu=
+ture=20
+proof in case PACKAGE gets expanded somewhere.
 
-afaics, this amd-phenom cpu does the cpu frequency scaling and causes plain 'tsc' timer
-instability which leads to network card watchdog timeout (i can login via local console
-while any network traffic is dead). on the recent 3.5.x kernel the 'clocksource unstable'
-message appears *after* 'task blocked' flood and there's no clear info about watchog timeout.
-currently i'm testing hpet clocksource becasue better tsc modes (constant_tsc, nonstop_tsc)
-aren't present in /sys/devices/system/clocksource/clocksource0/available_clocksource while
-cpu supports them.
+> So if you feel strongly about it, feel free to post a patch that just
+> sets PACKAGE to 1. This would avoid all possible ambiguity.
 
+no it wouldn't.  this define, in the context of binutils (and really any=20
+autotools project), should be a string.  anything else is invalid.
+=2Dmike
+
+--nextPart2376834.odsvrsAiOf
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJQYd5/AAoJEEFjO5/oN/WBqOMP/39PUkYldYB0WdJnui4wM+xV
+YXaWjBEx/taF7nZdjE4dRY110SM7ANItCcgvSqItNhI/GR82PmYHiCEdWf0NwKxZ
+th9D5swtawvbowVrOVafZ8zfFSXLyXTqpMwRdbt/m/TcFnXFKzSv9a7GUw0gD8g1
+oUTKedtjKuQgqC7g4QHBffbcXflyiE72tx7K009YynFei8I7fJv6WebuznR0OUnk
+SPJ0PjwVZIIa5BJeuVy7XAsOYHdfVZ8V3oVOJ/wD6JKikda/gn8DtfYNfar7F41I
+ax5Nr4USD+NCJLxOq3VoYXtuuFF9FcDK1lZZTTFy6TF4cjFKnsUcLcvhSHWnCEU0
+wTptbywNWMRcAkR0KLXxq72MyhD70IwzZy83GQmrVr/MoMrOX3+pcJ+IsTxlTV3D
+TCZXIeRSgwprM1BxLUWM4p4TpaDpsFfeUbuJCSX3TdSC9K2puxNwrupZ2n3yeBC5
+pf90TWBV2l/d9XUH38SEvk9Uivm7r3JNNtwpGDMnMj15xp11nXfmFH81ZPETHLXe
+tT0230f7U6ILTM3+NWA7ojo7ZQJsz6R45uhwLGmtQdmXs60JfZAebkZkv90FGN4W
+Vj8wGpfjLMC92voH9JaEOkf5H8V0NH/4WptbEjLNRc2hC8QwJSCGcW922werp/x2
+rZCEJZhiMAC2DIrGk5FL
+=qgcJ
+-----END PGP SIGNATURE-----
+
+--nextPart2376834.odsvrsAiOf--
