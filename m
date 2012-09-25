@@ -1,45 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab2IYLHh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:07:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34451 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805Ab2IYLHf convert rfc822-to-8bit (ORCPT
+	id S1755035Ab2IYLJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:09:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20729 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753105Ab2IYLJk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:07:35 -0400
-Message-ID: <1348571242.3881.11.camel@twins>
-Subject: Re: [PATCH] Update sched_domains_numa_masks when new cpus are
- onlined.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-numa@vger.kernel.org, wency@cn.fujitsu.com, mingo@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 25 Sep 2012 13:07:22 +0200
-In-Reply-To: <50611946.9080601@cn.fujitsu.com>
-References: <1347963128-25942-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1348479536.11847.25.camel@twins> <50611946.9080601@cn.fujitsu.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Tue, 25 Sep 2012 07:09:40 -0400
+Message-ID: <1348571366.10028.4.camel@localhost.localdomain>
+Subject: Re: [PATCHv3 0/6] media: convert to c99 format
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: Shubhrajyoti D <shubhrajyoti@ti.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Date: Tue, 25 Sep 2012 08:09:26 -0300
+In-Reply-To: <CALF0-+UZGCpBcGFSyGirdAoKY5MGV-k6c9YefBHfvv5Qk=rTUg@mail.gmail.com>
+References: <1347968672-10803-1-git-send-email-shubhrajyoti@ti.com>
+	 <CALF0-+UZGCpBcGFSyGirdAoKY5MGV-k6c9YefBHfvv5Qk=rTUg@mail.gmail.com>
+Organization: Red Hat
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 8BIT
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-25 at 10:39 +0800, Tang Chen wrote:
-> > We do this because nr_node_ids changed, right? This means the entire
-> > distance table grew/shrunk, which means we should do the level scan
-> > again.
+Em Ter, 2012-09-25 às 08:03 -0300, Ezequiel Garcia escreveu:
+> Shubhrajyoti,
 > 
-> It seems that nr_node_ids will not change once the system is up.
-> I'm not quite sure. If I am wrong, please tell me. :) 
+> Thanks for your patches.
+> 
+> I'm adding media maintainer (Mauro) in Cc. When you send
+> patches for a file you should check who maintains them
+> and put those people in Cc.
 
-Ah, right you are..
+I actually prefer to not be c/c on the patches ;) Copying the
+linux-media mailing list and checking if the patch was caught by
+patchwork.linuxtv.kernel.org is enough, as I rely on patchwork to
+queue patches for me. So, I just discard any media patch sent to me
+directly.
 
-So the problem is that cpumask_of_node() doesn't contain offline cpus,
-and we might not boot the machine with all cpus present.
+> 
+> This is really easy with get_maintainer.pl. You can also
+> check with git log / git blame to see who has been working
+> on that file.
+> 
+> You should read Documentation/SubmittingPatches
+> if you haven't already (and read it again if you already have ;-)
+> 
+> On Tue, Sep 18, 2012 at 8:44 AM, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
+> > The series tries to convert the i2c_msg to c99 struct.
+> > This may avoid issues like below if someone tries to add an
+> > element to the structure.
+> > http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg08972.html
+> >
+> > Special thanks to Julia Lawall for helping it automate.
+> > By the below script.
+> > http://www.mail-archive.com/cocci@diku.dk/msg02753.html
+> >
+> > Changelogs
+> > - Remove the zero inititialisation of the flags.
+> >
+> > Shubhrajyoti D (6):
+> >   media: Convert struct i2c_msg initialization to C99 format
+> >   media: Convert struct i2c_msg initialization to C99 format
+> >   media: Convert struct i2c_msg initialization to C99 format
+> >   media: Convert struct i2c_msg initialization to C99 format
+> >   media: Convert struct i2c_msg initialization to C99 format
+> >   media: Convert struct i2c_msg initialization to C99 format
+> >
+> 
+> IMO, sending several different patches with the same commit
+> subject is not the best thing to do.
+> 
+> Perhaps this is too much to ask, but I'd prefer something
+> like:
+> 
+> media: saa7706h: Convert struct i2c_msg initialization to C99 format
+> 
+> >  drivers/media/i2c/ks0127.c                    |   13 +++++++-
+> >  drivers/media/i2c/msp3400-driver.c            |   40 +++++++++++++++++++++----
+> >  drivers/media/i2c/tvaudio.c                   |   13 +++++++-
+> >  drivers/media/radio/radio-tea5764.c           |   13 ++++++--
+> >  drivers/media/radio/saa7706h.c                |   15 ++++++++-
+> >  drivers/media/radio/si470x/radio-si470x-i2c.c |   23 ++++++++++----
+> >  6 files changed, 96 insertions(+), 21 deletions(-)
+> >
+> 
+> Thanks!
+> Ezequiel.
 
-In that case I guess the suggested hotplug hooks are fine. Its just that
-your changelog was confusing.
