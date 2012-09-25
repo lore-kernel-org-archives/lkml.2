@@ -1,142 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab2IYTEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 15:04:48 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42618 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab2IYTEr (ORCPT
+	id S1754555Ab2IYTIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 15:08:36 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40456 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab2IYTIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 15:04:47 -0400
+	Tue, 25 Sep 2012 15:08:35 -0400
+Message-ID: <506200FD.2060305@linux.vnet.ibm.com>
+Date: Wed, 26 Sep 2012 00:37:41 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1348579544-1573-2-git-send-email-mjg@redhat.com>
-References: <1348579544-1573-1-git-send-email-mjg@redhat.com> <1348579544-1573-2-git-send-email-mjg@redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 25 Sep 2012 13:04:25 -0600
-Message-ID: <CAErSpo7giiZEnXkRY+QnhAV_2EGwdnju7S1-futjnKBjr7sY-A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PNP: Unbind drivers if the new driver matches _HID
- rather than _CID
-To: Matthew Garrett <mjg@redhat.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Carlos Moffat <carlos@eldiabloenlosdetalles.net>
+CC: linux-kernel@vger.kernel.org, computersforpeace@gmail.com,
+        ming.m.lin@intel.com, Norbert Preining <preining@logic.at>,
+        jgarzik@pobox.com, Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: Slow Resume with SSD
+References: <5061F84B.3030603@eldiabloenlosdetalles.net>
+In-Reply-To: <5061F84B.3030603@eldiabloenlosdetalles.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092519-2674-0000-0000-0000061BFB8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 7:25 AM, Matthew Garrett <mjg@redhat.com> wrote:
-> ACPIPNP devices may have two levels of ID - the HID (a single string
-> defining the hardware) and the CIDs (zero or more strings defining
-> interfaces compatible with the hardware). If a driver matching a CID is
-> bound first, it will be impossible to bind a driver that matches the HID
-> despite it being more specific. This has been seen in the wild with
-> platforms that define an IPMI device as:
->
->                 Device (NIPM)
->                 {
->                     Name (_HID, EisaId ("IPI0001"))
->                     Name (_CID, EisaId ("PNP0C01"))
->
-> resulting in the device being claimed by the generic motherboard resource
-> driver binding to the PNP0C01 CID. The IPMI driver attempts to bind later
-> and fails, preventing the IPMI device from being made available to the ACPI
-> layer.
->
-> This can be avoided at driver probe time by detaching the existing driver
-> if the new driver matches the device HID. Since each device can only have
-> a single HID this will only permit more specific drivers to dislodge more
-> generic drivers.
->
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+On 09/26/2012 12:00 AM, Carlos Moffat wrote:
+> Hi,
+> 
+> (please let me know if this is the wrong list to ask this)
+> 
+> I have a Crucial M4 512 GB SSD installed on my Thinkpad X220 (Ubuntu
+> Precise). Overall this runs very nicely, but it takes 10+ seconds to
+> resume from suspend, apparently because some issue with the hardrive.
+> The only message I see while resuming is "COMRESET failed (errno=-16)".
+> 
+> [52483.228615] ata1: link is slow to respond, please be patient (ready=0)
+> [52487.870616] ata1: COMRESET failed (errno=-16)
+> [52488.190222] ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+> [52488.190752] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+> succeeded
+> [52488.190754] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+> LOCK) filtered out
+> [52488.190755] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+> filtered out
+> [52488.191849] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+> succeeded
+> [52488.191855] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+> LOCK) filtered out
+> [52488.191860] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+> filtered out
+> [52488.192406] ata1.00: configured for UDMA/100
+> [52488.206298] sd 0:0:0:0: [sda] Starting disk
+> [52488.207334] Extended CMOS year: 2000
+> [52488.208335] PM: resume of devices complete after 10376.896 msecs
+> [52488.208552] PM: resume devices took 10.376 seconds
+> 
+> The only relevant post I've found was in the crucial support site:
+> 
+> http://forums.crucial.com/t5/Solid-State-Drives-SSD/SOLVED-M4-CT512M4SSD1-7mm-512Gb-SSD-too-slow-when-laptop-wakes/td-p/102666
+> 
+> 
+> which suggested adding libata.force=nohrst as a boot option to get rid
+> of the problem.
+> 
+> I tried that, but the laptop wouldn't suspend.
+> 
+> Any ideas?
+> 
 
-Seems reasonable to me.  The HID/CID idea is not new to ACPI; both
-isapnp and pnpbios seem to support it as well.
+(Adding relevant people to CC)
 
-Do you know of any scenarios besides this IPMI one where there's the
-possibility of two drivers matching the same device?  If so, does the
-detach/attach process work reasonably?  My worry is that drivers don't
-normally give up devices, so the detach path is not well exercised.
-And I don't know what happens to any users of the device during the
-switch.  For example, if something was using a TPM and we replaced the
-driver, what does that look like to the user?
+I recall seeing a similar problem getting fixed in mainline quite a long
+time ago (around v3.3 I think). Did you try the latest mainline kernel?
+ 
+Regards,
+Srivatsa S. Bhat
 
-> ---
->  drivers/pnp/driver.c | 42 +++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 39 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
-> index 00e9403..8d22836 100644
-> --- a/drivers/pnp/driver.c
-> +++ b/drivers/pnp/driver.c
-> @@ -25,6 +25,14 @@ static int compare_func(const char *ida, const char *idb)
->         return 1;
->  }
->
-> +static int compare_single_pnp_id(const char *ida, const char *idb)
-> +{
-> +       if (memcmp(ida, idb, 3) == 0)
-> +               if (compare_func(ida, idb) == 1)
-> +                       return 1;
-> +       return 0;
-> +}
-> +
->  int compare_pnp_id(struct pnp_id *pos, const char *id)
->  {
->         if (!pos || !id || (strlen(id) != 7))
-> @@ -32,9 +40,8 @@ int compare_pnp_id(struct pnp_id *pos, const char *id)
->         if (memcmp(id, "ANYDEVS", 7) == 0)
->                 return 1;
->         while (pos) {
-> -               if (memcmp(pos->id, id, 3) == 0)
-> -                       if (compare_func(pos->id, id) == 1)
-> -                               return 1;
-> +               if (compare_single_pnp_id(pos->id, id) == 1)
-> +                       return 1;
->                 pos = pos->next;
->         }
->         return 0;
-> @@ -56,6 +63,22 @@ static const struct pnp_device_id *match_device(struct pnp_driver *drv,
->         return NULL;
->  }
->
-> +static int match_hid(struct pnp_driver *drv, struct pnp_dev *dev)
-> +{
-> +       const struct pnp_device_id *drv_id = drv->id_table;
-> +
-> +       if (!drv_id)
-> +               return 0;
-> +
-> +       while (&drv_id->id) {
-> +               /* The first ID is _HID */
-> +               if (compare_single_pnp_id(dev->id->id, drv_id->id))
-> +                       return 1;
-> +               drv_id++;
-> +       }
-> +       return 0;
-> +}
-> +
->  int pnp_device_attach(struct pnp_dev *pnp_dev)
->  {
->         spin_lock(&pnp_lock);
-> @@ -151,6 +174,19 @@ static int pnp_bus_match(struct device *dev, struct device_driver *drv)
->
->         if (match_device(pnp_drv, pnp_dev) == NULL)
->                 return 0;
-> +
-> +       /*
-> +        * ACPIPNP offers two levels of device ID - HID and CID. HID defines
-> +        * the specific device ID while CID represents the device
-> +        * compatibility IDs. If a device is matched by a compatibility ID
-> +        * first, it will be impossible for a hardware-specific driver to
-> +        * bind since there will already be a driver. We can handle this case
-> +        * by unbinding the original driver if the device has one bound and
-> +        * if the new driver matches the HID rather than a compatibility ID.
-> +        */
-> +       if (dev->driver && match_hid(pnp_drv, pnp_dev))
-> +               device_release_driver(dev);
-> +
->         return 1;
->  }
->
-> --
-> 1.7.11.4
->
