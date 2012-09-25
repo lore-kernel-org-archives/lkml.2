@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab2IYJSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 05:18:46 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:50302 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab2IYJSp (ORCPT
+	id S1754347Ab2IYJTY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 05:19:24 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:59369 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab2IYJTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 05:18:45 -0400
-Date: Tue, 25 Sep 2012 11:18:26 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 5/6] ARM: dove: Remove watchdog from DT
-Message-ID: <20120925111826.6f4086ee@skate>
-In-Reply-To: <5061754E.9050204@gmail.com>
-References: <1348531338-16624-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1348531338-16624-6-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20120925053542.GK14266@lunn.ch>
-	<5061754E.9050204@gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Sep 2012 05:19:22 -0400
+Date: Tue, 25 Sep 2012 14:21:29 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] uprobes: Change valid_vma() to demand VM_MAYEXEC
+ rather than VM_EXEC
+Message-ID: <20120925085129.GB18334@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120916175210.GA32337@redhat.com>
+ <20120916175246.GA32370@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120916175246.GA32370@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092509-7408-0000-0000-000008C6759A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sebastian Hesselbarth,
+* Oleg Nesterov <oleg@redhat.com> [2012-09-16 19:52:46]:
 
-On Tue, 25 Sep 2012 11:11:42 +0200, Sebastian Hesselbarth wrote:
+> uprobe_register() or uprobe_mmap() requires VM_READ | VM_EXEC, this
+> is not right. An apllication can do mprotect(PROT_EXEC) later and
+> execute this code.
+> 
+> Change valid_vma(is_register => true) to check VM_MAYEXEC instead.
+> No need to check VM_MAYREAD, it is always set.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-> I didn't try to post all the dove on mach-mvebu patches in the current
-> release cycle, because mach-mvebu is still evolving to fast for me to keep
-> up with my limited spare time. But I have dove running on mach-mvebu...
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Yes, this work is really great. However, I think that instead of making
-a big change at once, we should rather follow something like:
+> ---
+>  kernel/events/uprobes.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index fa1579a..b9b50dd 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -106,8 +106,8 @@ static bool valid_vma(struct vm_area_struct *vma, bool is_register)
+>  	if (!is_register)
+>  		return true;
+> 
+> -	if ((vma->vm_flags & (VM_HUGETLB|VM_READ|VM_WRITE|VM_EXEC|VM_SHARED))
+> -				== (VM_READ|VM_EXEC))
+> +	if ((vma->vm_flags & (VM_HUGETLB | VM_WRITE | VM_MAYEXEC | VM_SHARED))
+> +				== VM_MAYEXEC)
+>  		return true;
+> 
+>  	return false;
+> -- 
+> 1.5.5.1
+> 
 
- * Make mach-dove, mach-kirkwood, mach-orion5x, mach-mv78xx0 use the
-   new gpio/pinctrl code
-
- * Remove the plat-orion gpio/pinctrl code
-
- * Make mach-dove, mach-kirkwood, mach-orion5x, mach-mv78xx0 use DT for
-   everything.
-
- * Remove the plat-orion common.c file (once all devices are probed
-   through DT, common.c is no longer needed).
-
- * Add clock framework support for everybody, with the code in
-   drivers/clk/.
-
- * Refactor the PCI code so that it can cover all cases. We should soon
-   be working on PCI support on Armada 370/XP, so it will show what are
-   the differences/issues in having something that covers all cases.
-
- * And then, only, merge everybody in mach-mvebu.
-
-The idea here is to make the existing
-mach-{dove,kirkwood,orion5x,mv78xx0} gradually converge to DT,
-pinctrl/gpio, clock and other things, and only after that merge into
-mach-mvebu. It will be much easier to do the merge as most of the code
-in those mach- directory will have disappeared, as well as the code in
-plat-orion.
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
