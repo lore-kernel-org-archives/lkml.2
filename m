@@ -1,254 +1,476 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab2IYLjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:39:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12468 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754814Ab2IYLjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:39:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,481,1344236400"; 
-   d="scan'208";a="226422144"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: viresh.kumar@linaro.org, Vinod Koul <vinod.koul@intel.com>,
-        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
-        Hein Tibosch <hein_tibosch@yahoo.es>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv3] dw_dmac: autoconfigure data_width or get it via platform data
-Date: Tue, 25 Sep 2012 14:39:16 +0300
-Message-Id: <1348573156-5032-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <CAOh2x=n4ZCsQ1ccqobZF6fz-Kuj_VE-ua5PftAHQkTobA=p+pw@mail.gmail.com>
-References: <CAOh2x=n4ZCsQ1ccqobZF6fz-Kuj_VE-ua5PftAHQkTobA=p+pw@mail.gmail.com>
+	id S1755803Ab2IYLjg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:39:36 -0400
+Received: from ams-iport-2.cisco.com ([144.254.224.141]:55486 "EHLO
+	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755650Ab2IYLjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 07:39:32 -0400
+X-IronPort-AV: E=Sophos;i="4.80,481,1344211200"; 
+   d="scan'208";a="76955343"
+From: Hans Verkuil <hansverk@cisco.com>
+Organization: Cisco Systems Norway
+To: Prabhakar <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH v3] media: davinci: vpif: display: separate out subdev from output
+Date: Tue, 25 Sep 2012 13:39:06 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        VGER <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Sekhar Nori <nsekhar@ti.com>
+References: <1348571509-4131-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1348571509-4131-1-git-send-email-prabhakar.lad@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209251339.06272.hansverk@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all of the controllers support the 64 bit data width. Make it configurable
-via platform data. The driver will try to get a value from the component
-parameters, otherwise it will use the platform data.
+On Tue 25 September 2012 13:11:49 Prabhakar wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> 
+> vpif_display relied on a 1-1 mapping of output and subdev. This is not
+> necessarily the case. Separate the two. So there is a list of subdevs
+> and a list of outputs. Each output refers to a subdev and has routing
+> information. An output does not have to have a subdev.
+> 
+> The initial output for each channel is set to the fist output.
+> 
+> Currently missing is support for associating multiple subdevs with
+> an output.
+> 
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
-Since v2:
-- sometimes memory-to-memory test is failed, that's why we need to choose
-  minimum data portion between source and destination limits
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
- arch/arm/mach-spear13xx/spear13xx.c |    2 ++
- arch/avr32/mach-at32ap/at32ap700x.c |    2 ++
- drivers/dma/dw_dmac.c               |   47 ++++++++++++++++++++++++++++++-----
- drivers/dma/dw_dmac_regs.h          |    7 ++++++
- include/linux/dw_dmac.h             |    5 ++++
- 5 files changed, 57 insertions(+), 6 deletions(-)
+Looks good!
 
-diff --git a/arch/arm/mach-spear13xx/spear13xx.c b/arch/arm/mach-spear13xx/spear13xx.c
-index 9491137..5633d69 100644
---- a/arch/arm/mach-spear13xx/spear13xx.c
-+++ b/arch/arm/mach-spear13xx/spear13xx.c
-@@ -79,6 +79,8 @@ struct dw_dma_platform_data dmac_plat_data = {
- 	.chan_allocation_order = CHAN_ALLOCATION_DESCENDING,
- 	.chan_priority = CHAN_PRIORITY_DESCENDING,
- 	.block_size = 4095U,
-+	.nr_masters = 2,
-+	.data_width = { 3, 3, 0, 0 },
- };
- 
- void __init spear13xx_l2x0_init(void)
-diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-index 2c4aefe..b323d8d 100644
---- a/arch/avr32/mach-at32ap/at32ap700x.c
-+++ b/arch/avr32/mach-at32ap/at32ap700x.c
-@@ -606,6 +606,8 @@ static void __init genclk_init_parent(struct clk *clk)
- static struct dw_dma_platform_data dw_dmac0_data = {
- 	.nr_channels	= 3,
- 	.block_size	= 4095U,
-+	.nr_masters	= 2,
-+	.data_width	= { 2, 2, 0, 0 },
- };
- 
- static struct resource dw_dmac0_resource[] = {
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 4af9fad..33c46f0 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -38,12 +38,22 @@
-  * which does not support descriptor writeback.
-  */
- 
-+static inline unsigned int dwc_get_dms(struct dw_dma_slave *slave)
-+{
-+	return slave ? slave->dst_master : 0;
-+}
-+
-+static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
-+{
-+	return slave ? slave->src_master : 1;
-+}
-+
- #define DWC_DEFAULT_CTLLO(_chan) ({				\
- 		struct dw_dma_slave *__slave = (_chan->private);	\
- 		struct dw_dma_chan *_dwc = to_dw_dma_chan(_chan);	\
- 		struct dma_slave_config	*_sconfig = &_dwc->dma_sconfig;	\
--		int _dms = __slave ? __slave->dst_master : 0;	\
--		int _sms = __slave ? __slave->src_master : 1;	\
-+		int _dms = dwc_get_dms(__slave);		\
-+		int _sms = dwc_get_sms(__slave);		\
- 		u8 _smsize = __slave ? _sconfig->src_maxburst :	\
- 			DW_DMA_MSIZE_16;			\
- 		u8 _dmsize = __slave ? _sconfig->dst_maxburst :	\
-@@ -633,6 +643,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		size_t len, unsigned long flags)
- {
- 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
-+	struct dw_dma_slave	*dws = chan->private;
- 	struct dw_desc		*desc;
- 	struct dw_desc		*first;
- 	struct dw_desc		*prev;
-@@ -640,6 +651,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 	size_t			offset;
- 	unsigned int		src_width;
- 	unsigned int		dst_width;
-+	unsigned int		data_width;
- 	u32			ctllo;
- 
- 	dev_vdbg(chan2dev(chan),
-@@ -652,7 +664,11 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		return NULL;
- 	}
- 
--	src_width = dst_width = dwc_fast_fls(src | dest | len);
-+	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
-+					 dwc->dw->data_width[dwc_get_dms(dws)]);
-+
-+	src_width = dst_width = min_t(unsigned int, data_width,
-+				      dwc_fast_fls(src | dest | len));
- 
- 	ctllo = DWC_DEFAULT_CTLLO(chan)
- 			| DWC_CTLL_DST_WIDTH(dst_width)
-@@ -722,6 +738,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 	dma_addr_t		reg;
- 	unsigned int		reg_width;
- 	unsigned int		mem_width;
-+	unsigned int		data_width;
- 	unsigned int		i;
- 	struct scatterlist	*sg;
- 	size_t			total_len = 0;
-@@ -745,6 +762,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
- 			DWC_CTLL_FC(DW_DMA_FC_D_M2P);
- 
-+		data_width = dwc->dw->data_width[dwc_get_sms(dws)];
-+
- 		for_each_sg(sgl, sg, sg_len, i) {
- 			struct dw_desc	*desc;
- 			u32		len, dlen, mem;
-@@ -752,7 +771,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
- 
--			mem_width = dwc_fast_fls(mem | len);
-+			mem_width = min_t(unsigned int,
-+					  data_width, dwc_fast_fls(mem | len));
- 
- slave_sg_todev_fill_desc:
- 			desc = dwc_desc_get(dwc);
-@@ -805,6 +825,8 @@ slave_sg_todev_fill_desc:
- 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
- 			DWC_CTLL_FC(DW_DMA_FC_D_P2M);
- 
-+		data_width = dwc->dw->data_width[dwc_get_dms(dws)];
-+
- 		for_each_sg(sgl, sg, sg_len, i) {
- 			struct dw_desc	*desc;
- 			u32		len, dlen, mem;
-@@ -812,7 +834,8 @@ slave_sg_todev_fill_desc:
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
- 
--			mem_width = dwc_fast_fls(mem | len);
-+			mem_width = min_t(unsigned int,
-+					  data_width, dwc_fast_fls(mem | len));
- 
- slave_sg_fromdev_fill_desc:
- 			desc = dwc_desc_get(dwc);
-@@ -1417,9 +1440,19 @@ static int __devinit dw_probe(struct platform_device *pdev)
- 	dw->regs = regs;
- 
- 	/* get hardware configuration parameters */
--	if (autocfg)
-+	if (autocfg) {
- 		max_blk_size = dma_readl(dw, MAX_BLK_SIZE);
- 
-+		dw->nr_masters = (dw_params >> DW_PARAMS_NR_MASTER & 3) + 1;
-+		for (i = 0; i < dw->nr_masters; i++) {
-+			dw->data_width[i] =
-+				(dw_params >> DW_PARAMS_DATA_WIDTH(i) & 3) + 2;
-+		}
-+	} else {
-+		dw->nr_masters = pdata->nr_masters;
-+		memcpy(dw->data_width, pdata->data_width, 4);
-+	}
-+
- 	/* Calculate all channel mask before DMA setup */
- 	dw->all_chan_mask = (1 << nr_channels) - 1;
- 
-@@ -1466,6 +1499,8 @@ static int __devinit dw_probe(struct platform_device *pdev)
- 
- 		channel_clear_bit(dw, CH_EN, dwc->mask);
- 
-+		dwc->dw = dw;
-+
- 		/* hardware configuration */
- 		if (autocfg)
- 			/* Decode maximum block size for given channel. The
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index 2a1cc53..06f0391 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -198,6 +198,9 @@ struct dw_dma_chan {
- 
- 	/* configuration passed via DMA_SLAVE_CONFIG */
- 	struct dma_slave_config dma_sconfig;
-+
-+	/* backlink to dw_dma */
-+	struct dw_dma		*dw;
- };
- 
- static inline struct dw_dma_chan_regs __iomem *
-@@ -224,6 +227,10 @@ struct dw_dma {
- 
- 	u8			all_chan_mask;
- 
-+	/* hardware configuration */
-+	unsigned char		nr_masters;
-+	unsigned char		data_width[4];
-+
- 	struct dw_dma_chan	chan[0];
- };
- 
-diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
-index 3315ef9..e1c8c9e 100644
---- a/include/linux/dw_dmac.h
-+++ b/include/linux/dw_dmac.h
-@@ -20,6 +20,9 @@
-  * @is_private: The device channels should be marked as private and not for
-  *	by the general purpose DMA channel allocator.
-  * @block_size: Maximum block size supported by the controller
-+ * @nr_masters: Number of AHB masters supported by the controller
-+ * @data_width: Maximum data width supported by hardware per AHB master
-+ *		(0 - 8bits, 1 - 16bits, ..., 5 - 256bits)
-  */
- struct dw_dma_platform_data {
- 	unsigned int	nr_channels;
-@@ -31,6 +34,8 @@ struct dw_dma_platform_data {
- #define CHAN_PRIORITY_DESCENDING	1	/* chan7 highest */
- 	unsigned char	chan_priority;
- 	unsigned short	block_size;
-+	unsigned char	nr_masters;
-+	unsigned char	data_width[4];
- };
- 
- /* bursts size */
--- 
-1.7.10.4
+Regards,
 
+	Hans
+
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> ---
+>  This patch is dependent on the patch series from Hans
+>  (http://www.mail-archive.com/linux-media@vger.kernel.org/msg52270.html)
+> 
+>  Changes for V3:
+>  1: Filled capabilities, std for output as pointed by Hans.
+>  2: Removed current_norm as this is being phased out.
+>  
+>  Changes for V2:
+>  1: Changed v4l2_device_call_until_err() call to v4l2_subdev_call() for
+>     s_routing, since this call is for specific subdev, pointed out by Hans.
+> 
+> 
+>  arch/arm/mach-davinci/board-da850-evm.c       |   33 +++++-
+>  arch/arm/mach-davinci/board-dm646x-evm.c      |   44 +++++++-
+>  drivers/media/platform/davinci/vpif_display.c |  141 +++++++++++++++++++-----
+>  include/media/davinci/vpif_types.h            |   19 +++-
+>  4 files changed, 192 insertions(+), 45 deletions(-)
+> 
+> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+> index 3081ea4..3e07fca 100644
+> --- a/arch/arm/mach-davinci/board-da850-evm.c
+> +++ b/arch/arm/mach-davinci/board-da850-evm.c
+> @@ -46,6 +46,7 @@
+>  #include <mach/spi.h>
+>  
+>  #include <media/tvp514x.h>
+> +#include <media/adv7343.h>
+>  
+>  #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
+>  #define DA850_LCD_PWR_PIN		GPIO_TO_PIN(2, 8)
+> @@ -1257,16 +1258,38 @@ static struct vpif_subdev_info da850_vpif_subdev[] = {
+>  	},
+>  };
+>  
+> -static const char const *vpif_output[] = {
+> -		"Composite",
+> -		"S-Video",
+> +static const struct vpif_output da850_ch0_outputs[] = {
+> +	{
+> +		.output = {
+> +			.index = 0,
+> +			.name = "Composite",
+> +			.type = V4L2_OUTPUT_TYPE_ANALOG,
+> +			.capabilities = V4L2_OUT_CAP_STD,
+> +			.std = V4L2_STD_ALL,
+> +		},
+> +		.subdev_name = "adv7343",
+> +		.output_route = ADV7343_COMPOSITE_ID,
+> +	},
+> +	{
+> +		.output = {
+> +			.index = 1,
+> +			.name = "S-Video",
+> +			.type = V4L2_OUTPUT_TYPE_ANALOG,
+> +			.capabilities = V4L2_OUT_CAP_STD,
+> +			.std = V4L2_STD_ALL,
+> +		},
+> +		.subdev_name = "adv7343",
+> +		.output_route = ADV7343_SVIDEO_ID,
+> +	},
+>  };
+>  
+>  static struct vpif_display_config da850_vpif_display_config = {
+>  	.subdevinfo   = da850_vpif_subdev,
+>  	.subdev_count = ARRAY_SIZE(da850_vpif_subdev),
+> -	.output       = vpif_output,
+> -	.output_count = ARRAY_SIZE(vpif_output),
+> +	.chan_config[0] = {
+> +		.outputs = da850_ch0_outputs,
+> +		.output_count = ARRAY_SIZE(da850_ch0_outputs),
+> +	},
+>  	.card_name    = "DA850/OMAP-L138 Video Display",
+>  };
+>  
+> diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+> index ad249c7..6d0ca82 100644
+> --- a/arch/arm/mach-davinci/board-dm646x-evm.c
+> +++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/i2c/pcf857x.h>
+>  
+>  #include <media/tvp514x.h>
+> +#include <media/adv7343.h>
+>  
+>  #include <linux/mtd/mtd.h>
+>  #include <linux/mtd/nand.h>
+> @@ -496,18 +497,49 @@ static struct vpif_subdev_info dm646x_vpif_subdev[] = {
+>  	},
+>  };
+>  
+> -static const char *output[] = {
+> -	"Composite",
+> -	"Component",
+> -	"S-Video",
+> +static const struct vpif_output dm6467_ch0_outputs[] = {
+> +	{
+> +		.output = {
+> +			.index = 0,
+> +			.name = "Composite",
+> +			.type = V4L2_OUTPUT_TYPE_ANALOG,
+> +			.capabilities = V4L2_OUT_CAP_STD,
+> +			.std = V4L2_STD_ALL,
+> +		},
+> +		.subdev_name = "adv7343",
+> +		.output_route = ADV7343_COMPOSITE_ID,
+> +	},
+> +	{
+> +		.output = {
+> +			.index = 1,
+> +			.name = "Component",
+> +			.type = V4L2_OUTPUT_TYPE_ANALOG,
+> +			.capabilities = V4L2_OUT_CAP_CUSTOM_TIMINGS,
+> +		},
+> +		.subdev_name = "adv7343",
+> +		.output_route = ADV7343_COMPONENT_ID,
+> +	},
+> +	{
+> +		.output = {
+> +			.index = 2,
+> +			.name = "S-Video",
+> +			.type = V4L2_OUTPUT_TYPE_ANALOG,
+> +			.capabilities = V4L2_OUT_CAP_STD,
+> +			.std = V4L2_STD_ALL,
+> +		},
+> +		.subdev_name = "adv7343",
+> +		.output_route = ADV7343_SVIDEO_ID,
+> +	},
+>  };
+>  
+>  static struct vpif_display_config dm646x_vpif_display_config = {
+>  	.set_clock	= set_vpif_clock,
+>  	.subdevinfo	= dm646x_vpif_subdev,
+>  	.subdev_count	= ARRAY_SIZE(dm646x_vpif_subdev),
+> -	.output		= output,
+> -	.output_count	= ARRAY_SIZE(output),
+> +	.chan_config[0] = {
+> +		.outputs = dm6467_ch0_outputs,
+> +		.output_count = ARRAY_SIZE(dm6467_ch0_outputs),
+> +	},
+>  	.card_name	= "DM646x EVM",
+>  };
+>  
+> diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
+> index 8d1ce09..d94b8a2 100644
+> --- a/drivers/media/platform/davinci/vpif_display.c
+> +++ b/drivers/media/platform/davinci/vpif_display.c
+> @@ -308,7 +308,7 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+>  		channel2_intr_assert();
+>  		channel2_intr_enable(1);
+>  		enable_channel2(1);
+> -		if (vpif_config_data->ch2_clip_en)
+> +		if (vpif_config_data->chan_config[VPIF_CHANNEL2_VIDEO].clip_en)
+>  			channel2_clipping_enable(1);
+>  	}
+>  
+> @@ -317,7 +317,7 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+>  		channel3_intr_assert();
+>  		channel3_intr_enable(1);
+>  		enable_channel3(1);
+> -		if (vpif_config_data->ch3_clip_en)
+> +		if (vpif_config_data->chan_config[VPIF_CHANNEL3_VIDEO].clip_en)
+>  			channel3_clipping_enable(1);
+>  	}
+>  
+> @@ -1174,14 +1174,16 @@ static int vpif_streamoff(struct file *file, void *priv,
+>  	if (buftype == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
+>  		/* disable channel */
+>  		if (VPIF_CHANNEL2_VIDEO == ch->channel_id) {
+> -			if (vpif_config_data->ch2_clip_en)
+> +			if (vpif_config_data->
+> +				chan_config[VPIF_CHANNEL2_VIDEO].clip_en)
+>  				channel2_clipping_enable(0);
+>  			enable_channel2(0);
+>  			channel2_intr_enable(0);
+>  		}
+>  		if ((VPIF_CHANNEL3_VIDEO == ch->channel_id) ||
+>  					(2 == common->started)) {
+> -			if (vpif_config_data->ch3_clip_en)
+> +			if (vpif_config_data->
+> +				chan_config[VPIF_CHANNEL3_VIDEO].clip_en)
+>  				channel3_clipping_enable(0);
+>  			enable_channel3(0);
+>  			channel3_intr_enable(0);
+> @@ -1214,41 +1216,118 @@ static int vpif_enum_output(struct file *file, void *fh,
+>  {
+>  
+>  	struct vpif_display_config *config = vpif_dev->platform_data;
+> +	struct vpif_display_chan_config *chan_cfg;
+> +	struct vpif_fh *vpif_handler = fh;
+> +	struct channel_obj *ch = vpif_handler->channel;
+>  
+> -	if (output->index >= config->output_count) {
+> +	chan_cfg = &config->chan_config[ch->channel_id];
+> +	if (output->index >= chan_cfg->output_count) {
+>  		vpif_dbg(1, debug, "Invalid output index\n");
+>  		return -EINVAL;
+>  	}
+>  
+> -	strcpy(output->name, config->output[output->index]);
+> -	output->type = V4L2_OUTPUT_TYPE_ANALOG;
+> -	output->std = VPIF_V4L2_STD;
+> +	*output = chan_cfg->outputs[output->index].output;
+> +	return 0;
+> +}
+> +
+> +/**
+> + * vpif_output_to_subdev() - Maps output to sub device
+> + * @vpif_cfg - global config ptr
+> + * @chan_cfg - channel config ptr
+> + * @index - Given output index from application
+> + *
+> + * lookup the sub device information for a given output index.
+> + * we report all the output to application. output table also
+> + * has sub device name for the each output
+> + */
+> +static int
+> +vpif_output_to_subdev(struct vpif_display_config *vpif_cfg,
+> +		      struct vpif_display_chan_config *chan_cfg, int index)
+> +{
+> +	struct vpif_subdev_info *subdev_info;
+> +	const char *subdev_name;
+> +	int i;
+> +
+> +	vpif_dbg(2, debug, "vpif_output_to_subdev\n");
+> +
+> +	if (chan_cfg->outputs == NULL)
+> +		return -1;
+> +
+> +	subdev_name = chan_cfg->outputs[index].subdev_name;
+> +	if (subdev_name == NULL)
+> +		return -1;
+> +
+> +	/* loop through the sub device list to get the sub device info */
+> +	for (i = 0; i < vpif_cfg->subdev_count; i++) {
+> +		subdev_info = &vpif_cfg->subdevinfo[i];
+> +		if (!strcmp(subdev_info->name, subdev_name))
+> +			return i;
+> +	}
+> +	return -1;
+> +}
+> +
+> +/**
+> + * vpif_set_output() - Select an output
+> + * @vpif_cfg - global config ptr
+> + * @ch - channel
+> + * @index - Given output index from application
+> + *
+> + * Select the given output.
+> + */
+> +static int vpif_set_output(struct vpif_display_config *vpif_cfg,
+> +		      struct channel_obj *ch, int index)
+> +{
+> +	struct vpif_display_chan_config *chan_cfg =
+> +		&vpif_cfg->chan_config[ch->channel_id];
+> +	struct vpif_subdev_info *subdev_info = NULL;
+> +	struct v4l2_subdev *sd = NULL;
+> +	u32 input = 0, output = 0;
+> +	int sd_index;
+> +	int ret;
+> +
+> +	sd_index = vpif_output_to_subdev(vpif_cfg, chan_cfg, index);
+> +	if (sd_index >= 0) {
+> +		sd = vpif_obj.sd[sd_index];
+> +		subdev_info = &vpif_cfg->subdevinfo[sd_index];
+> +	}
+>  
+> +	if (sd) {
+> +		input = chan_cfg->outputs[index].input_route;
+> +		output = chan_cfg->outputs[index].output_route;
+> +		ret = v4l2_subdev_call(sd, video, s_routing, input, output, 0);
+> +		if (ret < 0 && ret != -ENOIOCTLCMD) {
+> +			vpif_err("Failed to set output\n");
+> +			return ret;
+> +		}
+> +
+> +	}
+> +	ch->output_idx = index;
+> +	ch->sd = sd;
+> +	if (chan_cfg->outputs != NULL)
+> +		/* update tvnorms from the sub device output info */
+> +		ch->video_dev->tvnorms = chan_cfg->outputs[index].output.std;
+>  	return 0;
+>  }
+>  
+>  static int vpif_s_output(struct file *file, void *priv, unsigned int i)
+>  {
+> +	struct vpif_display_config *config = vpif_dev->platform_data;
+> +	struct vpif_display_chan_config *chan_cfg;
+>  	struct vpif_fh *fh = priv;
+>  	struct channel_obj *ch = fh->channel;
+>  	struct common_obj *common = &ch->common[VPIF_VIDEO_INDEX];
+> -	int ret = 0;
+> +
+> +	chan_cfg = &config->chan_config[ch->channel_id];
+> +
+> +	if (i >= chan_cfg->output_count)
+> +		return -EINVAL;
+>  
+>  	if (common->started) {
+>  		vpif_err("Streaming in progress\n");
+>  		return -EBUSY;
+>  	}
+>  
+> -	ret = v4l2_device_call_until_err(&vpif_obj.v4l2_dev, 1, video,
+> -							s_routing, 0, i, 0);
+> -
+> -	if (ret < 0)
+> -		vpif_err("Failed to set output standard\n");
+> -
+> -	ch->output_idx = i;
+> -	if (vpif_obj.sd[i])
+> -		ch->sd = vpif_obj.sd[i];
+> -	return ret;
+> +	return vpif_set_output(config, ch, i);
+>  }
+>  
+>  static int vpif_g_output(struct file *file, void *priv, unsigned int *i)
+> @@ -1291,9 +1370,12 @@ vpif_enum_dv_timings(struct file *file, void *priv,
+>  {
+>  	struct vpif_fh *fh = priv;
+>  	struct channel_obj *ch = fh->channel;
+> +	int ret;
+>  
+> -	return v4l2_subdev_call(vpif_obj.sd[ch->output_idx],
+> -			video, enum_dv_timings, timings);
+> +	ret = v4l2_subdev_call(ch->sd, video, enum_dv_timings, timings);
+> +	if (ret == -ENOIOCTLCMD && ret == -ENODEV)
+> +		return -EINVAL;
+> +	return ret;
+>  }
+>  
+>  /**
+> @@ -1320,12 +1402,9 @@ static int vpif_s_dv_timings(struct file *file, void *priv,
+>  
+>  	/* Configure subdevice timings, if any */
+>  	ret = v4l2_subdev_call(ch->sd, video, s_dv_timings, timings);
+> -	if (ret == -ENOIOCTLCMD) {
+> -		vpif_dbg(2, debug, "Custom DV timings not supported by "
+> -				"subdevice\n");
+> -		return -ENODATA;
+> -	}
+> -	if (ret < 0 && ret != -ENODEV) {
+> +	if (ret == -ENOIOCTLCMD || ret == -ENODEV)
+> +		ret = 0;
+> +	if (ret < 0) {
+>  		vpif_dbg(2, debug, "Error setting custom DV timings\n");
+>  		return ret;
+>  	}
+> @@ -1531,9 +1610,6 @@ static struct video_device vpif_video_template = {
+>  	.name		= "vpif",
+>  	.fops		= &vpif_fops,
+>  	.ioctl_ops	= &vpif_ioctl_ops,
+> -	.tvnorms	= VPIF_V4L2_STD,
+> -	.current_norm	= V4L2_STD_625_50,
+> -
+>  };
+>  
+>  /*Configure the channels, buffer sizei, request irq */
+> @@ -1754,6 +1830,11 @@ static __init int vpif_probe(struct platform_device *pdev)
+>  		ch->video_dev->lock = &common->lock;
+>  		video_set_drvdata(ch->video_dev, ch);
+>  
+> +		/* select output 0 */
+> +		err = vpif_set_output(config, ch, 0);
+> +		if (err)
+> +			goto probe_out;
+> +
+>  		/* register video device */
+>  		vpif_dbg(1, debug, "channel=%x,channel->video_dev=%x\n",
+>  				(int)ch, (int)&ch->video_dev);
+> diff --git a/include/media/davinci/vpif_types.h b/include/media/davinci/vpif_types.h
+> index 65e8fe1..3882e06 100644
+> --- a/include/media/davinci/vpif_types.h
+> +++ b/include/media/davinci/vpif_types.h
+> @@ -20,6 +20,7 @@
+>  #include <linux/i2c.h>
+>  
+>  #define VPIF_CAPTURE_MAX_CHANNELS	2
+> +#define VPIF_DISPLAY_MAX_CHANNELS	2
+>  
+>  enum vpif_if_type {
+>  	VPIF_IF_BT656,
+> @@ -39,15 +40,25 @@ struct vpif_subdev_info {
+>  	struct i2c_board_info board_info;
+>  };
+>  
+> +struct vpif_output {
+> +	struct v4l2_output output;
+> +	const char *subdev_name;
+> +	u32 input_route;
+> +	u32 output_route;
+> +};
+> +
+> +struct vpif_display_chan_config {
+> +	const struct vpif_output *outputs;
+> +	int output_count;
+> +	bool clip_en;
+> +};
+> +
+>  struct vpif_display_config {
+>  	int (*set_clock)(int, int);
+>  	struct vpif_subdev_info *subdevinfo;
+>  	int subdev_count;
+> -	const char **output;
+> -	int output_count;
+> +	struct vpif_display_chan_config chan_config[VPIF_DISPLAY_MAX_CHANNELS];
+>  	const char *card_name;
+> -	bool ch2_clip_en;
+> -	bool ch3_clip_en;
+>  };
+>  
+>  struct vpif_input {
+> 
