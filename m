@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab2IYQYD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:24:03 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57024 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757599Ab2IYQN3 (ORCPT
+	id S1758602Ab2IYQYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:24:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60753 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757532Ab2IYQN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:13:29 -0400
+	Tue, 25 Sep 2012 12:13:26 -0400
 From: mathieu.poirier@linaro.org
 To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
 Cc: mathieu.poirier@linaro.org
-Subject: [PATCH 15/57] power: ab8500_fg: Round capacity output
-Date: Tue, 25 Sep 2012 10:12:12 -0600
-Message-Id: <1348589574-25655-16-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 13/57] power: ab8500_bm: Ignore false btemp low interrupt
+Date: Tue, 25 Sep 2012 10:12:10 -0600
+Message-Id: <1348589574-25655-14-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
@@ -20,123 +20,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: pender01 <peter.enderborg@stericsson.com>
+From: Hakan Berg <hakan.berg@stericsson.com>
 
-Round the capacity values for better enduser experience.
+Ignore the low btemp interrupts for ab8500 3.0 and 3.3
 
-Signed-off-by: pender01 <peter.enderborg@stericsson.com>
+Signed-off-by: Hakan Berg <hakan.berg@stericsson.com>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
 ---
- drivers/power/ab8500_fg.c |   28 +++++++++++++++-------------
- 1 files changed, 15 insertions(+), 13 deletions(-)
+ drivers/power/ab8500_btemp.c      |   22 +++++++++++-----------
+ include/linux/mfd/abx500/ab8500.h |    5 +++++
+ 2 files changed, 16 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-index 492f6bf..c4d9307 100644
---- a/drivers/power/ab8500_fg.c
-+++ b/drivers/power/ab8500_fg.c
-@@ -31,6 +31,7 @@
- #include <linux/mfd/abx500.h>
- #include <linux/time.h>
- #include <linux/completion.h>
-+#include <linux/kernel.h>
- 
- #define MILLI_TO_MICRO			1000
- #define FG_LSB_IN_MA			1627
-@@ -1160,7 +1161,7 @@ static int ab8500_fg_capacity_level(struct ab8500_fg *di)
+diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+index 45b10ad..04f9dec 100644
+--- a/drivers/power/ab8500_btemp.c
++++ b/drivers/power/ab8500_btemp.c
+@@ -622,9 +622,9 @@ static irqreturn_t ab8500_btemp_templow_handler(int irq, void *_di)
  {
- 	int ret, percent;
+ 	struct ab8500_btemp *di = _di;
  
--	percent = di->bat_cap.permille / 10;
-+	percent = DIV_ROUND_CLOSEST(di->bat_cap.permille, 10);
+-	if (is_ab8500_2p0_or_earlier(di->parent)) {
+-		dev_dbg(di->dev, "Ignore false btemp low irq"
+-			" for ABB cut 1.0, 1.1 and 2.0\n");
++	if (is_ab8500_3p3_or_earlier(di->parent)) {
++		dev_dbg(di->dev, "Ignore false btemp low irq");
++		dev_dbg(di->dev, " for ABB cut 1.0, 1.1, 2.0 and 3.3\n");
+ 	} else {
+ 		dev_crit(di->dev, "Battery temperature lower than -10deg c\n");
  
- 	if (percent <= di->bat->cap_levels->critical ||
- 		di->flags.low_bat)
-@@ -1281,6 +1282,7 @@ static void ab8500_fg_update_cap_scalers(struct ab8500_fg *di)
- static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
+@@ -738,30 +738,30 @@ static int ab8500_btemp_get_temp(struct ab8500_btemp *di)
+ 	int temp = 0;
+ 
+ 	/*
+-	 * The BTEMP events are not reliabe on AB8500 cut2.0
++	 * The BTEMP events are not reliabe on AB8500 cut3.3
+ 	 * and prior versions
+ 	 */
+-	if (is_ab8500_2p0_or_earlier(di->parent)) {
++	if (is_ab8500_3p3_or_earlier(di->parent)) {
+ 		temp = di->bat_temp * 10;
+ 	} else {
+ 		if (di->events.btemp_low) {
+ 			if (temp > di->btemp_ranges.btemp_low_limit)
+-				temp = di->btemp_ranges.btemp_low_limit;
++				temp = di->btemp_ranges.btemp_low_limit * 10;
+ 			else
+ 				temp = di->bat_temp * 10;
+ 		} else if (di->events.btemp_high) {
+ 			if (temp < di->btemp_ranges.btemp_high_limit)
+-				temp = di->btemp_ranges.btemp_high_limit;
++				temp = di->btemp_ranges.btemp_high_limit * 10;
+ 			else
+ 				temp = di->bat_temp * 10;
+ 		} else if (di->events.btemp_lowmed) {
+ 			if (temp > di->btemp_ranges.btemp_med_limit)
+-				temp = di->btemp_ranges.btemp_med_limit;
++				temp = di->btemp_ranges.btemp_med_limit * 10;
+ 			else
+ 				temp = di->bat_temp * 10;
+ 		} else if (di->events.btemp_medhigh) {
+ 			if (temp < di->btemp_ranges.btemp_med_limit)
+-				temp = di->btemp_ranges.btemp_med_limit;
++				temp = di->btemp_ranges.btemp_med_limit * 10;
+ 			else
+ 				temp = di->bat_temp * 10;
+ 		} else
+@@ -1026,8 +1026,8 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+ 		ab8500_btemp_periodic_work);
+ 
+ 	/* Set BTEMP thermal limits. Low and Med are fixed */
+-	di->btemp_ranges.btemp_low_limit = BTEMP_THERMAL_LOW_LIMIT;
+-	di->btemp_ranges.btemp_med_limit = BTEMP_THERMAL_MED_LIMIT;
++	di->btemp_ranges.btemp_low_limit = BTEMP_THERMAL_LOW_LIMIT * 10;
++	di->btemp_ranges.btemp_med_limit = BTEMP_THERMAL_MED_LIMIT * 10;
+ 
+ 	ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
+ 		AB8500_BTEMP_HIGH_TH, &val);
+diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
+index db8a1e3..087b445 100644
+--- a/include/linux/mfd/abx500/ab8500.h
++++ b/include/linux/mfd/abx500/ab8500.h
+@@ -340,6 +340,11 @@ static inline int is_ab8500_2p0_or_earlier(struct ab8500 *ab)
+ 	return (is_ab8500(ab) && (ab->chip_id <= AB8500_CUT2P0));
+ }
+ 
++static inline int is_ab8500_3p3_or_earlier(struct ab8500 *ab)
++{
++	return (is_ab8500(ab) && (ab->chip_id <= AB8500_CUT3P3));
++}
++
+ /* exclude also ab8505, ab9540... */
+ static inline int is_ab8500_2p0(struct ab8500 *ab)
  {
- 	bool changed = false;
-+	int percent = DIV_ROUND_CLOSEST(di->bat_cap.permille, 10);
- 
- 	di->bat_cap.level = ab8500_fg_capacity_level(di);
- 
-@@ -1312,6 +1314,7 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 		dev_dbg(di->dev, "Battery low, set capacity to 0\n");
- 		di->bat_cap.prev_percent = 0;
- 		di->bat_cap.permille = 0;
-+		percent = 0;
- 		di->bat_cap.prev_mah = 0;
- 		di->bat_cap.mah = 0;
- 		changed = true;
-@@ -1321,7 +1324,7 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 		 * and show 100% during maintenance charging (scaling).
- 		 */
- 		if (di->flags.force_full) {
--			di->bat_cap.prev_percent = di->bat_cap.permille / 10;
-+			di->bat_cap.prev_percent = percent;
- 			di->bat_cap.prev_mah = di->bat_cap.mah;
- 
- 			changed = true;
-@@ -1334,19 +1337,18 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 						di->bat_cap.prev_percent;
- 				di->bat_cap.cap_scale.disable_cap_level = 100;
- 			}
--		} else if (di->bat_cap.prev_percent !=
--			(di->bat_cap.permille) / 10) {
-+		} else if (di->bat_cap.prev_percent != percent) {
- 			dev_dbg(di->dev,
- 				"battery reported full "
- 				"but capacity dropping: %d\n",
--				di->bat_cap.permille / 10);
--			di->bat_cap.prev_percent = di->bat_cap.permille / 10;
-+				percent);
-+			di->bat_cap.prev_percent = percent;
- 			di->bat_cap.prev_mah = di->bat_cap.mah;
- 
- 			changed = true;
- 		}
--	} else if (di->bat_cap.prev_percent != di->bat_cap.permille / 10) {
--		if (di->bat_cap.permille / 10 == 0) {
-+	} else if (di->bat_cap.prev_percent != percent) {
-+		if (percent == 0) {
- 			/*
- 			 * We will not report 0% unless we've got
- 			 * the LOW_BAT IRQ, no matter what the FG
-@@ -1356,11 +1358,11 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 			di->bat_cap.permille = 1;
- 			di->bat_cap.prev_mah = 1;
- 			di->bat_cap.mah = 1;
-+			percent = 1;
- 
- 			changed = true;
- 		} else if (!(!di->flags.charging &&
--			(di->bat_cap.permille / 10) >
--			di->bat_cap.prev_percent) || init) {
-+			percent > di->bat_cap.prev_percent) || init) {
- 			/*
- 			 * We do not allow reported capacity to go up
- 			 * unless we're charging or if we're in init
-@@ -1368,9 +1370,9 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 			dev_dbg(di->dev,
- 				"capacity changed from %d to %d (%d)\n",
- 				di->bat_cap.prev_percent,
--				di->bat_cap.permille / 10,
-+				percent,
- 				di->bat_cap.permille);
--			di->bat_cap.prev_percent = di->bat_cap.permille / 10;
-+			di->bat_cap.prev_percent = percent;
- 			di->bat_cap.prev_mah = di->bat_cap.mah;
- 
- 			changed = true;
-@@ -1378,7 +1380,7 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 			dev_dbg(di->dev, "capacity not allowed to go up since "
- 				"no charger is connected: %d to %d (%d)\n",
- 				di->bat_cap.prev_percent,
--				di->bat_cap.permille / 10,
-+				percent,
- 				di->bat_cap.permille);
- 		}
- 	}
 -- 
 1.7.5.4
 
