@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab2IYGu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 02:50:29 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35200 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab2IYGu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 02:50:28 -0400
+	id S1753338Ab2IYGup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 02:50:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750884Ab2IYGuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 02:50:44 -0400
+Date: Tue, 25 Sep 2012 12:20:25 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Sjur BRENDELAND <sjur.brandeland@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "sjurbren@gmail.com" <sjurbren@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCHv4] virtio_console: Add support for remoteproc serial
+Message-ID: <20120925065025.GF32657@amit.redhat.com>
+References: <1348489987-6768-1-git-send-email-sjur.brandeland@stericsson.com>
+ <20120924174523.GA14390@amit.redhat.com>
+ <81C3A93C17462B4BBD7E272753C1057923BD79D728@EXDCVYMBSTM005.EQ1STM.local>
+ <20120925040158.GC32657@amit.redhat.com>
+ <87sja63c9b.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <20120924222306.GC30997@quack.suse.cz>
-References: <1347798342-2830-1-git-send-email-linkinjeon@gmail.com>
-	<20120920084422.GA5697@localhost>
-	<20120924222306.GC30997@quack.suse.cz>
-Date: Tue, 25 Sep 2012 15:50:26 +0900
-Message-ID: <CAKYAXd8FB-BZNomePAr0MyzNCqz7ND+J+DurKD6KdvkCFf+3jA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] writeback: add dirty_background_centisecs per bdi variable
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87sja63c9b.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/25, Jan Kara <jack@suse.cz>:
-> On Thu 20-09-12 16:44:22, Wu Fengguang wrote:
->> On Sun, Sep 16, 2012 at 08:25:42AM -0400, Namjae Jeon wrote:
->> > From: Namjae Jeon <namjae.jeon@samsung.com>
->> >
->> > This patch is based on suggestion by Wu Fengguang:
->> > https://lkml.org/lkml/2011/8/19/19
->> >
->> > kernel has mechanism to do writeback as per dirty_ratio and
->> > dirty_background
->> > ratio. It also maintains per task dirty rate limit to keep balance of
->> > dirty pages at any given instance by doing bdi bandwidth estimation.
->> >
->> > Kernel also has max_ratio/min_ratio tunables to specify percentage of
->> > writecache to control per bdi dirty limits and task throttling.
->> >
->> > However, there might be a usecase where user wants a per bdi writeback
->> > tuning
->> > parameter to flush dirty data once per bdi dirty data reach a threshold
->> > especially at NFS server.
->> >
->> > dirty_background_centisecs provides an interface where user can tune
->> > background writeback start threshold using
->> > /sys/block/sda/bdi/dirty_background_centisecs
->> >
->> > dirty_background_centisecs is used alongwith average bdi write
->> > bandwidth
->> > estimation to start background writeback.
->   The functionality you describe, i.e. start flushing bdi when there's
-> reasonable amount of dirty data on it, looks sensible and useful. However
-> I'm not so sure whether the interface you propose is the right one.
-> Traditionally, we allow user to set amount of dirty data (either in bytes
-> or percentage of memory) when background writeback should start. You
-> propose setting the amount of data in centisecs-to-write. Why that
-> difference? Also this interface ties our throughput estimation code (which
-> is an implementation detail of current dirty throttling) with the userspace
-> API. So we'd have to maintain the estimation code forever, possibly also
-> face problems when we change the estimation code (and thus estimates in
-> some cases) and users will complain that the values they set originally no
-> longer work as they used to.
->
-> Also, as with each knob, there's a problem how to properly set its value?
-> Most admins won't know about the knob and so won't touch it. Others might
-> know about the knob but will have hard time figuring out what value should
-> they set. So if there's a new knob, it should have a sensible initial
-> value. And since this feature looks like a useful one, it shouldn't be
-> zero.
->
-> So my personal preference would be to have bdi->dirty_background_ratio and
-> bdi->dirty_background_bytes and start background writeback whenever
-> one of global background limit and per-bdi background limit is exceeded. I
-> think this interface will do the job as well and it's easier to maintain in
-> future.
-Hi Jan.
-Thanks for review and your opinion.
+On (Tue) 25 Sep 2012 [14:55:04], Rusty Russell wrote:
+> Amit Shah <amit.shah@redhat.com> writes:
+> 
+> > On (Mon) 24 Sep 2012 [23:50:01], Sjur BRENDELAND wrote:
+> >> Hi Amit,
+> >> 
+> >> > I'm sorry for not being able to look at this earlier.
+> >> 
+> >> No worries. I'll try to respin and retest this patch by tomorrow.
+> >> If you by any chance could find time to review so could make it in time
+> >> for 3.7 it would be great :-)
+> >
+> > I think it might be late for 3.7 already, I'd prefer to let this bake
+> > for a while, ensure it passes my test suites, at the least.  But I'll
+> > let Rusty take the final call.
+> 
+> It can make the next merge window, but it has to be done this week.
+> 
+> I'm only allowing it this late because it's a new driver.
 
-Hi. Wu.
-How about adding per-bdi - bdi->dirty_background_ratio and
-bdi->dirty_background_bytes interface as suggested by Jan?
+It does change code shared with the 'older' console and serial ports,
+so the risk of regressions does exist.
 
-Thanks.
->
-> 								Honza
+		Amit
