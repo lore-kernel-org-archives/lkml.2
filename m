@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab2IYNrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 09:47:49 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:33403 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756585Ab2IYNrq (ORCPT
+	id S1756711Ab2IYNs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 09:48:27 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:53403 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab2IYNsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 09:47:46 -0400
-From: sjur.brandeland@stericsson.com
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        sjurbren@stericsson.com,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH 3/3] virtio_console: Don't initialize buffers to zero
-Date: Tue, 25 Sep 2012 15:47:17 +0200
-Message-Id: <1348580837-10919-4-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348580837-10919-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1348580837-10919-1-git-send-email-sjur.brandeland@stericsson.com>
+	Tue, 25 Sep 2012 09:48:23 -0400
+X-IronPort-AV: E=Sophos;i="4.80,483,1344211200"; 
+   d="scan'208";a="14752024"
+Message-ID: <1348580900.11229.19.camel@zakaz.uk.xensource.com>
+Subject: Re: [RFC PATCH] x86-32: Start out eflags and cr4 clean
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Rusty Russell" <rusty@rustcorp.com.au>,
+        David Woodhouse <dwmw2@infradead.org>, Vivek Goyal <vgoyal@in.ibm.com>,
+        Andres Salomon <dilinger@queued.net>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 25 Sep 2012 14:48:20 +0100
+In-Reply-To: <1348529239-17943-1-git-send-email-hpa@linux.intel.com>
+References: <87sjaaj3cx.fsf@xmission.com>
+	 <1348529239-17943-1-git-send-email-hpa@linux.intel.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+On Tue, 2012-09-25 at 00:27 +0100, H. Peter Anvin wrote:
+> From: "H. Peter Anvin" <hpa@linux.intel.com>
+> 
+> %cr4 is supposed to reflect a set of features into which the operating
+> system is opting in.  If the BIOS or bootloader leaks bits here, this
+> is not desirable.  Consider a bootloader passing in %cr4.pae set to a
+> legacy paging kernel, for example -- it will not have any immediate
+> effect, but the kernel would crash when turning paging on.
+> 
+> A similar argument applies to %eflags, and since we have to look for
+> %eflags.id being settable we can use a sequence which clears %eflags
+> as a side effect.
+> 
+> Note that we already do this for x86-64.
+> 
+> I would like opinions on this especially from the PV crowd
 
-Skip initializing the receive buffers.
+Xen PV guests don't pass through this code path so there is no danger
+there AFAICT, so from that PoV:
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
----
- drivers/char/virtio_console.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index faedd2c..e7d8787 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1344,7 +1344,6 @@ static unsigned int fill_queue(struct virtqueue *vq, spinlock_t *lock)
- 		if (!buf)
- 			break;
- 
--		memset(buf->buf, 0, PAGE_SIZE);
- 		spin_lock_irq(lock);
- 		ret = add_inbuf(vq, buf);
- 		if (ret < 0) {
--- 
-1.7.5.4
+FWIW it looks correct to me from the native PoV too, but you probably
+already knew that ;-)
+
+Ian.
+
 
