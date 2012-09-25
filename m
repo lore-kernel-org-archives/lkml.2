@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab2IYPnx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 11:43:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53035 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757087Ab2IYPnu (ORCPT
+	id S1757253Ab2IYPof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 11:44:35 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49759 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757102Ab2IYPoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 11:43:50 -0400
-Message-ID: <5061D12F.1000308@redhat.com>
-Date: Tue, 25 Sep 2012 17:43:43 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 25 Sep 2012 11:44:34 -0400
+Message-ID: <5061D15F.6070408@wwwdotorg.org>
+Date: Tue, 25 Sep 2012 09:44:31 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, rusty@rustcorp.com.au,
-        herbert@gondor.hengli.com.au, pjones@redhat.com, jwboyer@redhat.com,
-        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, keyrings@linux-nfs.org
-Subject: Re: Wrong system clock vs X.509 date specifiers
-References: <20120925163037.20ba3f3c@pyramind.ukuu.org.uk> <5555.1348531649@warthog.procyon.org.uk> <21845.1348585794@warthog.procyon.org.uk> <30071.1348587320@warthog.procyon.org.uk>
-In-Reply-To: <30071.1348587320@warthog.procyon.org.uk>
+To: Markus Mayer <mmayer@broadcom.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix segfault in dtc when empty input file is given.
+References: <20120914222304.GA2698@mmayer.net>
+In-Reply-To: <20120914222304.GA2698@mmayer.net>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/09/2012 17:35, David Howells ha scritto:
-> Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+On 09/14/2012 04:23 PM, Markus Mayer wrote:
+> Prior to this change, an empty input file would cause a segfault, because
+> yylloc had never been initialized. There was never any characters for the
+> lexer to match, so YY_USER_ACTION was never executed before the parse error
+> was detected.
 > 
->> > Generate a certificate that is valid from a few minutes before the
->> > wallclock time. It's a certificate policy question not a kernel hackery
->> > one.
-> That doesn't seem to be possible with openssl req.  What would you recommend?
+> When the parser printed the error message, it tried to include the name of
+> the file, but the structure holding the file name (yylloc.file, referenced
+> as pos->file) had never been initialized.
 
-Disgusting, but: add an LD_PRELOAD library that returns a time well in
-the past.
+> diff --git a/scripts/dtc/treesource.c b/scripts/dtc/treesource.c
 
-Paolo
+>  struct boot_info *dt_from_source(const char *fname)
+>  {
+> +	extern YYLTYPE yylloc;
+> +
+>  	the_boot_info = NULL;
+>  	treesource_error = 0;
+>  
+>  	srcfile_push(fname);
+>  	yyin = current_srcfile->f;
+> +	/* Initialize yylloc->file to avoid segfault on empty input */
+> +	srcpos_update(&yylloc, NULL, 0);
+
+Wouldn't srcpos_update(&yyloc, fname, 0); be even more informative?
+
