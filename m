@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab2IYRO2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 13:14:28 -0400
-Received: from smtp206.alice.it ([82.57.200.102]:36630 "EHLO smtp206.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab2IYRO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 13:14:26 -0400
-Message-ID: <5061E676.8080203@libero.it>
-Date: Tue, 25 Sep 2012 19:14:30 +0200
-From: Goffredo Baroncelli <kreijack@libero.it>
-Reply-To: kreijack@inwind.it
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120418 Icedove/11.0
+	id S1757593Ab2IYRVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 13:21:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:52419 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757247Ab2IYRVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 13:21:50 -0400
 MIME-Version: 1.0
-To: zwu.kernel@gmail.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jbacik@fusionio.com, dave@jikos.cz,
-        linuxram@linux.vnet.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2/2] btrfs-progs: Fix up memory leakage
-References: <1348538536-29838-1-git-send-email-zwu.kernel@gmail.com> <1348538536-29838-3-git-send-email-zwu.kernel@gmail.com> <20120925101429.GR14582@twin.jikos.cz>
-In-Reply-To: <20120925101429.GR14582@twin.jikos.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120925170058.GC30158@x1.osrc.amd.com>
+References: <1348503163.11847.97.camel@twins> <CA+55aFzU2QOgexc2cpEkWqPBw6wPJMBuUzRyxTxu=rxZV_ay3A@mail.gmail.com>
+ <1348505683.11847.111.camel@twins> <1348511193.6951.44.camel@marge.simpson.net>
+ <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
+ <20120924192056.GB4082@liondog.tnic> <1348538258.7100.23.camel@marge.simpson.net>
+ <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+ <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com> <20120925170058.GC30158@x1.osrc.amd.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 25 Sep 2012 10:21:28 -0700
+X-Google-Sender-Auth: 5OoLQjYT9tz8OOkakyzbNWhgrhs
+Message-ID: <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2012 12:14 PM, David Sterba wrote:
-> On Tue, Sep 25, 2012 at 10:02:16AM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu<wuzhy@linux.vnet.ibm.com>
->>
->>    Some code pathes forget to free memory on exit.
+On Tue, Sep 25, 2012 at 10:00 AM, Borislav Petkov <bp@alien8.de> wrote:
 >
-> Same as with the fd's, kernel will free all memory for us at exit().
+> 3.6-rc6+tip/auto-latest-kill select_idle_sibling()
 
-I strongly disagree with this approach. The callee often don't know what 
-happen after and before the call. The same is true for the programmer, 
-because the code is quite often updated by several people. A clean 
-exit() is the right thing to do as general rule. I don't see any valid 
-reason (in the btrfs context) to do otherwise.
+Is this literally just removing it entirely? Because apart from the
+latency spike at 4 procs (and the latency numbers look very noisy, so
+that's probably just noise), it looks clearly superior to everything
+else. On that benchmark, at least.
 
-Relying on the exit() for a proper clean-up increase the likelihood of 
-bug when the code evolves (see my patch   [RESPOST][BTRFS-PROGS][PATCH] 
-btrfs_read_dev_super(): uninitialized variable for an example of what 
-means an incorrect deallocation of resource).
+How does pgbench look? That's the one that apparently really wants to
+spread out, possibly due to user-level spinlocks. So I assume it will
+show the reverse pattern, with "kill select_idle_sibling" being the
+worst case. Sad, because it really would be lovely to just remove that
+thing ;)
 
-> If there's lots of memory allocated, it may be even faster to leave the
-> unallocation process to kernel as it will do it in one go, while the
-> application would unnecessarily free it chunk by chunk.
-
-May be I am wrong, but I don't think that the increase of speed of the 
-btrfs "command" is even measurable relying on exit instead of free()-ing 
-each chunk of memory one at time.... The same should be true for the 
-open()/close()
-
-My 2¢
-
-BR
-G.Baroncelli
-
->
-> david
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> .
->
-
+          Linus
