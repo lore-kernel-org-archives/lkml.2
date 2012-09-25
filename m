@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab2IYQHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:07:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49210 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757381Ab2IYQHE (ORCPT
+	id S1757340Ab2IYQKA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:10:00 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:57612 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab2IYQJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:07:04 -0400
-Date: Tue, 25 Sep 2012 09:07:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Gerd Hoffmann <kraxel@redhat.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: USB tree closed for 3.7
-Message-ID: <20120925160701.GA21075@kroah.com>
-References: <20120925134514.GA15607@kroah.com>
- <5061C6F1.8020100@redhat.com>
+	Tue, 25 Sep 2012 12:09:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5061C6F1.8020100@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1348584252-22778-2-git-send-email-Dmitrii.Cherkasov@amd.com>
+References: <1348584252-22778-1-git-send-email-Dmitrii.Cherkasov@amd.com>
+	<1348584252-22778-2-git-send-email-Dmitrii.Cherkasov@amd.com>
+Date: Tue, 25 Sep 2012 20:09:59 +0400
+Message-ID: <CAN0j1dThyR1YF-JvT+xZ-QO2QxwB-z_L0tvx5ftZKjZ6oZ-JGg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] drm/radeon: implement dynamic PTs allocation via SA
+From: Dmitry Cherkassov <dcherkassov@gmail.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
+        Dmitry Cherkasov <Dmitrii.Cherkasov@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 05:00:01PM +0200, Gerd Hoffmann wrote:
-> On 09/25/12 15:45, Greg KH wrote:
-> > Hi all,
-> > 
-> > If you haven't sent me any pending patches for 3.7, it's a bit too late
-> > as I've now closed the usb-next tree for any new stuff for 3.7, unless
-> > it's bug fixes.
-> > 
-> > If you have sent me stuff and I've missed it, please let me know as I
-> > think my queue is now empty.
-> 
-> [ sent to the list only, guess I better Cc you in the future ]
-> 
-> http://marc.info/?l=linux-usb&m=134856283907957&w=2
+I've found introduced  error in radeon_vm_free_pt, so will fix in next
+version of this patch.
 
-Ah, sorry, you are right, I did get those in time, they are in my queue,
-just no "USB" prefix on the front of them for my filter to catch :)
+This one:
 
-I'll queue them up later today, thanks for reminding me.
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -505,15 +505,6 @@ static void radeon_vm_free_pt(struct radeon_device *rdev,
+        int driver_table_entries = (rdev->vm_manager.max_pfn >>
+                                    RADEON_VM_BLOCK_SIZE);
 
-greg k-h
+-                       if (vm->vm_pts->bo)
++                      if (vm->vm_pts[i].bo)
+
+
+-- 
+With best regards,
+Dmitry
