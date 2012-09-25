@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab2IYLaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:30:07 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:33714 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754545Ab2IYLaF (ORCPT
+	id S1755562Ab2IYLaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:30:46 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:63859 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755318Ab2IYLao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:30:05 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: al viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <50609C43.1070702@canonical.com> <87txumrct6.fsf@xmission.com>
-	<50615268.1040805@canonical.com>
-	<8db34325-e8e4-4e24-85dd-c8951769e2b6@email.android.com>
-	<506173A6.2050705@canonical.com> <87ipb2pemt.fsf@xmission.com>
-	<50618F96.1020204@canonical.com>
-Date: Tue, 25 Sep 2012 04:29:58 -0700
-In-Reply-To: <50618F96.1020204@canonical.com> (Maarten Lankhorst's message of
-	"Tue, 25 Sep 2012 13:03:50 +0200")
-Message-ID: <87sja6nxvt.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 25 Sep 2012 07:30:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19DbS6Q0klZZfgGP8SEM0v7cRkN2ZhlncY=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0156]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Maarten Lankhorst <maarten.lankhorst@canonical.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] Revert "__d_unalias() should refuse to move mountpoints"
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <1348572145.3881.18.camel@twins>
+References: <viresh.kumar@linaro.org>
+	<cover.1348568074.git.viresh.kumar@linaro.org>
+	<3232b3192e2e373cc4aaf43359d454c5ad53cddb.1348568074.git.viresh.kumar@linaro.org>
+	<1348572145.3881.18.camel@twins>
+Date: Tue, 25 Sep 2012 17:00:44 +0530
+Message-ID: <CAKohpokju4=fVKtq=rG0y-_c54n0yErzredW1BEJ5eTSaDyHpg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] workqueue: Schedule work on non-idle cpu instead of
+ current one
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, pjt@google.com, paul.mckenney@linaro.org,
+        tglx@linutronix.de, tj@kernel.org, suresh.b.siddha@intel.com,
+        venki@google.com, mingo@redhat.com, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Arvind.Chauhan@arm.com,
+        amit.kucheria@linaro.org, vincent.guittot@linaro.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maarten Lankhorst <maarten.lankhorst@canonical.com> writes:
-
->> Could you try the following patch?  This should report what directories
->> cannot be renamed because one of them is a mount point and it gives some
->> real insight into what is going on.
+On 25 September 2012 16:52, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2012-09-25 at 16:06 +0530, Viresh Kumar wrote:
+>> @@ -1066,8 +1076,9 @@ int queue_work(struct workqueue_struct *wq,
+>> struct work_struct *work)
+>>  {
+>>         int ret;
+>>
+>> -       ret = queue_work_on(get_cpu(), wq, work);
+>> -       put_cpu();
+>> +       preempt_disable();
+>> +       ret = queue_work_on(wq_select_cpu(), wq, work);
+>> +       preempt_enable();
+>>
+>>         return ret;
+>>  }
 >
-> ls /
-> __d_unalias: /dev -> /dev
-> __d_unalias: /proc -> /proc
-> __d_unalias: /sys -> /sys
+> Right, so the problem I see here is that wq_select_cpu() is horridly
+> expensive..
 
-Ok.  That is what I thought was going on.  For some reason nfs is
-attempting to recreate an existing dentry.
+But this is what the initial idea during LPC we had. Any improvements here
+you can suggest?
 
-Does this fix the nfs problem for you?
+>> @@ -1102,7 +1113,7 @@ static void delayed_work_timer_fn(unsigned long
+>> __data)
+>>         struct delayed_work *dwork = (struct delayed_work *)__data;
+>>         struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
+>>
+>> -       __queue_work(smp_processor_id(), cwq->wq, &dwork->work);
+>> +       __queue_work(wq_select_cpu(), cwq->wq, &dwork->work);
+>>  }
+>
+> Shouldn't timer migration have sorted this one?
 
-Eric
+Maybe yes. Will investigate more on it.
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 8086636..6390f0f 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2404,6 +2404,9 @@ out_unalias:
- 	if (likely(!d_mountpoint(alias))) {
- 		__d_move(alias, dentry);
- 		ret = alias;
-+	} else if ((alias->d_parent == dentry->d_parent) &&
-+		   !dentry_cmp(alias, dentry->d_name.name, dentry->d_name.len))
-+		ret = alias;
- 	}
- out_err:
- 	spin_unlock(&inode->i_lock);
+Thanks for your early feedback.
 
-
+--
+viresh
