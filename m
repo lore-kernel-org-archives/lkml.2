@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab2IYSAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 14:00:33 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37619 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757288Ab2IYSAc (ORCPT
+	id S1752903Ab2IYSBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 14:01:52 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:52257 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750831Ab2IYSBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 14:00:32 -0400
-Date: Tue, 25 Sep 2012 11:00:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: ktest.pl always returns 0?
-Message-ID: <20120925180028.GA22896@kroah.com>
+	Tue, 25 Sep 2012 14:01:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120925175255.GA13823@sirena.org.uk>
+References: <1346844964-24839-1-git-send-email-sourav.poddar@ti.com>
+	<20120925175255.GA13823@sirena.org.uk>
+Date: Tue, 25 Sep 2012 23:31:07 +0530
+Message-ID: <CAKdam576mtUpe0UdFPCiB_9OVv4pVOc=fw5Qs-1TeGmkEmw8Pw@mail.gmail.com>
+Subject: Re: [PATCHv2 1/4] mfd: smsc: Add support for smsc gpio io/keypad driver
+From: "Poddar, Sourav" <sourav.poddar@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, b-cousson@ti.com, balbi@ti.com,
+        santosh.shilimkar@ti.com, sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+Hi,
 
-I'm trying to use ktest to do build tests of the stable patch series to
-verify I didn't mess anything up, but I'm finding that ktest always
-returns 0 when finished, no matter if the build test was successful or
-failed.
+On Tue, Sep 25, 2012 at 11:22 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Wed, Sep 05, 2012 at 05:06:04PM +0530, Sourav Poddar wrote:
+>
+>> +static struct regmap_config smsc_regmap_config = {
+>> +             .reg_bits = 8,
+>> +             .val_bits = 8,
+>> +             .max_register = SMSC_MAX_REGISTER - 1;
+>> +             .cache_type = REGCACHE_COMPRESSED,
+>> +};
+>
+> That definition of max_register looks wrong - why are we subtracting 1
+> from a macro called MAX_REGISTER to get it?
+>
+Yes, my bad.
+Actually, I have define in .h file something like this..
+#define SMSC_MAX_REG                                    (SMSC_VEN_ID_H
++ 1) where
+SMSC_VEN_ID_H is the last register address which this chip supports.
 
-Is this right?  Is there some other way to determine if ktest fails
-other than greping the output log?
-
-Oh, and any hints on kicking off a ktest process on a remote machine in
-a "simple" way?  I'm just using ssh to copy over a script that runs
-there, wrapping ktest.pl up with other stuff, I didn't miss the fact
-that ktest itself can run remotely already, did I?
-
-thanks,
-
-greg k-h
+I think I should directly assign max_address to SMSC_VEN_ID_H.   ?
++
++
+> Indentation here is a bit odd too.
+>
+Will rectify.
+>> +static int smsc_i2c_remove(struct i2c_client *i2c)
+>> +{
+>> +     return 0;
+>> +}
+>
+> Remove empty functions.
+Ok.
