@@ -1,89 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab2IYQLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:11:54 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37383 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757043Ab2IYQLx (ORCPT
+	id S1757456Ab2IYQNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:13:11 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57024 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756968Ab2IYQNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:11:53 -0400
-MIME-Version: 1.0
-Date: Tue, 25 Sep 2012 09:11:52 -0700
-Message-ID: <CANR7ExJwRhgDyK0UrFtTX0SpVvOAb-fE9Vf52CXZCZCLYnLfHg@mail.gmail.com>
-Subject: Kernel crashes while using aesni_intel
-From: Guru Shetty <gurushettylists@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Sep 2012 12:13:08 -0400
+From: mathieu.poirier@linaro.org
+To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
+Cc: mathieu.poirier@linaro.org
+Subject: [PATCH 01/57] power: ab8500_bm: Charger current step-up/down
+Date: Tue, 25 Sep 2012 10:11:58 -0600
+Message-Id: <1348589574-25655-2-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All,
- I have been seeing a bunch of kernel crashes while using aesni_intel
-module and IPSEC.
+From: Johan Bjornstedt <johan.bjornstedt@stericsson.com>
 
-I have so far reproduced the kernel crashes while using the AES-GCM
-encryption algorithms(I am using strongswan). It is very easily
-reproducible in the 3.2 kernel (stable branch). It is also
-reproducible in 3.3, 3.4 and 3.5 kernel stable branches (The
-reproduction is a little harder with newer kernels. I have seen 2-3
-kernel crashes in Linux 3.5 after running netperf traffic for over
-week.)
+There is no state machine in the AB to step up/down
+the charger current to avoid dips and spikes on VBUS
+and VBAT when charging is started.
+Instead this is implemented in SW
 
-In the 3.2 kernel, the crash happens once every 15 minutes(average) of
-netperf TCP traffic.
+Signed-off-by: Johan Bjornstedt <johan.bjornstedt@stericsson.com>
+Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Reviewed-by: Karl KOMIEROWSKI <karl.komierowski@stericsson.com>
+---
+ drivers/power/ab8500_charger.c |  172 +++++++++++++++++++++++++++++++---------
+ 1 files changed, 133 insertions(+), 39 deletions(-)
 
-I have seen this with both Intel (82599EB 10-Gigabit) and Broadcom
-(BCM57711 10-Gigabit PCIe) NICs.
-I can provide more information if anyone needs it.
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index d4f0c98..3ceb788 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -77,6 +77,9 @@
+ /* Lowest charger voltage is 3.39V -> 0x4E */
+ #define LOW_VOLT_REG			0x4E
+ 
++/* Step up/down delay in us */
++#define STEP_UDELAY			1000
++
+ /* UsbLineStatus register - usb types */
+ enum ab8500_charger_link_status {
+ 	USB_STAT_NOT_CONFIGURED,
+@@ -934,6 +937,88 @@ static int ab8500_charger_get_usb_cur(struct ab8500_charger *di)
+ }
+ 
+ /**
++ * ab8500_charger_set_current() - set charger current
++ * @di:		pointer to the ab8500_charger structure
++ * @ich:	charger current, in mA
++ * @reg:	select what charger register to set
++ *
++ * Set charger current.
++ * There is no state machine in the AB to step up/down the charger
++ * current to avoid dips and spikes on MAIN, VBUS and VBAT when
++ * charging is started. Instead we need to implement
++ * this charger current step-up/down here.
++ * Returns error code in case of failure else 0(on success)
++ */
++static int ab8500_charger_set_current(struct ab8500_charger *di,
++	int ich, int reg)
++{
++	int ret, i;
++	int curr_index, prev_curr_index, shift_value;
++	u8 reg_value;
++
++	switch (reg) {
++	case AB8500_MCH_IPT_CURLVL_REG:
++		shift_value = MAIN_CH_INPUT_CURR_SHIFT;
++		curr_index = ab8500_current_to_regval(ich);
++		break;
++	case AB8500_USBCH_IPT_CRNTLVL_REG:
++		shift_value = VBUS_IN_CURR_LIM_SHIFT;
++		curr_index = ab8500_vbus_in_curr_to_regval(ich);
++		break;
++	case AB8500_CH_OPT_CRNTLVL_REG:
++		shift_value = 0;
++		curr_index = ab8500_current_to_regval(ich);
++		break;
++	default:
++		dev_err(di->dev, "%s current register not valid\n", __func__);
++		return -ENXIO;
++	}
++
++	if (curr_index < 0) {
++		dev_err(di->dev, "requested current limit out-of-range\n");
++		return -ENXIO;
++	}
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
++		reg, &reg_value);
++	if (ret < 0) {
++		dev_err(di->dev, "%s read failed\n", __func__);
++		return ret;
++	}
++	prev_curr_index = (reg_value >> shift_value);
++
++	/* only update current if it's been changed */
++	if (prev_curr_index == curr_index)
++		return 0;
++
++	dev_dbg(di->dev, "%s set charger current: %d mA for reg: 0x%02x\n",
++		__func__, ich, reg);
++
++	if (prev_curr_index > curr_index) {
++		for (i = prev_curr_index - 1; i >= curr_index; i--) {
++			ret = abx500_set_register_interruptible(di->dev,
++				AB8500_CHARGER, reg, (u8) i << shift_value);
++			if (ret) {
++				dev_err(di->dev, "%s write failed\n", __func__);
++				return ret;
++			}
++			usleep_range(STEP_UDELAY, STEP_UDELAY * 2);
++		}
++	} else {
++		for (i = prev_curr_index + 1; i <= curr_index; i++) {
++			ret = abx500_set_register_interruptible(di->dev,
++				AB8500_CHARGER, reg, (u8) i << shift_value);
++			if (ret) {
++				dev_err(di->dev, "%s write failed\n", __func__);
++				return ret;
++			}
++			usleep_range(STEP_UDELAY, STEP_UDELAY * 2);
++		}
++	}
++	return ret;
++}
++
++/**
+  * ab8500_charger_set_vbus_in_curr() - set VBUS input current limit
+  * @di:		pointer to the ab8500_charger structure
+  * @ich_in:	charger input current limit
+@@ -944,8 +1029,6 @@ static int ab8500_charger_get_usb_cur(struct ab8500_charger *di)
+ static int ab8500_charger_set_vbus_in_curr(struct ab8500_charger *di,
+ 		int ich_in)
+ {
+-	int ret;
+-	int input_curr_index;
+ 	int min_value;
+ 
+ 	/* We should always use to lowest current limit */
+@@ -964,19 +1047,38 @@ static int ab8500_charger_set_vbus_in_curr(struct ab8500_charger *di,
+ 		break;
+ 	}
+ 
+-	input_curr_index = ab8500_vbus_in_curr_to_regval(min_value);
+-	if (input_curr_index < 0) {
+-		dev_err(di->dev, "VBUS input current limit too high\n");
+-		return -ENXIO;
+-	}
++	return ab8500_charger_set_current(di, min_value,
++		AB8500_USBCH_IPT_CRNTLVL_REG);
++}
+ 
+-	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
+-		AB8500_USBCH_IPT_CRNTLVL_REG,
+-		input_curr_index << VBUS_IN_CURR_LIM_SHIFT);
+-	if (ret)
+-		dev_err(di->dev, "%s write failed\n", __func__);
++/**
++ * ab8500_charger_set_main_in_curr() - set main charger input current
++ * @di:		pointer to the ab8500_charger structure
++ * @ich_in:	input charger current, in mA
++ *
++ * Set main charger input current.
++ * Returns error code in case of failure else 0(on success)
++ */
++static int ab8500_charger_set_main_in_curr(struct ab8500_charger *di,
++	int ich_in)
++{
++	return ab8500_charger_set_current(di, ich_in,
++		AB8500_MCH_IPT_CURLVL_REG);
++}
+ 
+-	return ret;
++/**
++ * ab8500_charger_set_output_curr() - set charger output current
++ * @di:		pointer to the ab8500_charger structure
++ * @ich_out:	output charger current, in mA
++ *
++ * Set charger output current.
++ * Returns error code in case of failure else 0(on success)
++ */
++static int ab8500_charger_set_output_curr(struct ab8500_charger *di,
++	int ich_out)
++{
++	return ab8500_charger_set_current(di, ich_out,
++		AB8500_CH_OPT_CRNTLVL_REG);
+ }
+ 
+ /**
+@@ -1088,18 +1190,18 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
+ 			return ret;
+ 		}
+ 		/* MainChInputCurr: current that can be drawn from the charger*/
+-		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
+-			AB8500_MCH_IPT_CURLVL_REG,
+-			input_curr_index << MAIN_CH_INPUT_CURR_SHIFT);
++		ret = ab8500_charger_set_main_in_curr(di,
++			di->bat->chg_params->ac_curr_max);
+ 		if (ret) {
+-			dev_err(di->dev, "%s write failed\n", __func__);
++			dev_err(di->dev, "%s Failed to set MainChInputCurr\n",
++				__func__);
+ 			return ret;
+ 		}
+ 		/* ChOutputCurentLevel: protected output current */
+-		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
+-			AB8500_CH_OPT_CRNTLVL_REG, (u8) curr_index);
++		ret = ab8500_charger_set_output_curr(di, iset);
+ 		if (ret) {
+-			dev_err(di->dev, "%s write failed\n", __func__);
++			dev_err(di->dev,
++			 "%s Failed to set ChOutputCurentLevel\n", __func__);
+ 			return ret;
+ 		}
+ 
+@@ -1156,12 +1258,11 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
+ 				return ret;
+ 			}
+ 
+-			ret = abx500_set_register_interruptible(di->dev,
+-				AB8500_CHARGER,
+-				AB8500_CH_OPT_CRNTLVL_REG, CH_OP_CUR_LVL_0P1);
++			ret = ab8500_charger_set_output_curr(di, 0);
+ 			if (ret) {
+ 				dev_err(di->dev,
+-					"%s write failed\n", __func__);
++				 "%s Failed to set ChOutputCurentLevel\n",
++				 __func__);
+ 				return ret;
+ 			}
+ 		} else {
+@@ -1264,10 +1365,11 @@ static int ab8500_charger_usb_en(struct ux500_charger *charger,
+ 			return ret;
+ 		}
+ 		/* ChOutputCurentLevel: protected output current */
+-		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
+-			AB8500_CH_OPT_CRNTLVL_REG, (u8) curr_index);
++		ret = ab8500_charger_set_output_curr(di, ich_out);
+ 		if (ret) {
+-			dev_err(di->dev, "%s write failed\n", __func__);
++			dev_err(di->dev,
++			 "%s Failed to set ChOutputCurentLevel\n",
++			 __func__);
+ 			return ret;
+ 		}
+ 		/* Check if VBAT overshoot control should be enabled */
+@@ -1364,7 +1466,6 @@ static int ab8500_charger_update_charger_current(struct ux500_charger *charger,
+ 		int ich_out)
+ {
+ 	int ret;
+-	int curr_index;
+ 	struct ab8500_charger *di;
+ 
+ 	if (charger->psy.type == POWER_SUPPLY_TYPE_MAINS)
+@@ -1374,18 +1475,11 @@ static int ab8500_charger_update_charger_current(struct ux500_charger *charger,
+ 	else
+ 		return -ENXIO;
+ 
+-	curr_index = ab8500_current_to_regval(ich_out);
+-	if (curr_index < 0) {
+-		dev_err(di->dev,
+-			"Charger current too high, "
+-			"charging not started\n");
+-		return -ENXIO;
+-	}
+-
+-	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
+-		AB8500_CH_OPT_CRNTLVL_REG, (u8) curr_index);
++	ret = ab8500_charger_set_output_curr(di, ich_out);
+ 	if (ret) {
+-		dev_err(di->dev, "%s write failed\n", __func__);
++		dev_err(di->dev,
++		 "%s Failed to set ChOutputCurentLevel\n",
++		 __func__);
+ 		return ret;
+ 	}
+ 
+-- 
+1.7.5.4
 
-Here is the backtrace as seen in the crash utility.
----------------------
-PID: 125    TASK: ffff880bee255bc0  CPU: 3   COMMAND: "kworker/3:1"
- #0 [ffff880c0fc63710] machine_kexec at ffffffff8103842a
- #1 [ffff880c0fc63780] crash_kexec at ffffffff810b4448
- #2 [ffff880c0fc63850] oops_end at ffffffff8165ab68
- #3 [ffff880c0fc63880] die at ffffffff810168d8
- #4 [ffff880c0fc638b0] do_general_protection at ffffffff8165a6e2
- #5 [ffff880c0fc638e0] general_protection at ffffffff8165a105
-    [exception RIP: crypto_enqueue_request+43]
-    RIP: ffffffff812dd77b  RSP: ffff880c0fc63990  RFLAGS: 00010206
-    RAX: 00000000ffffff8d  RBX: ffff8817d74e3a08  RCX: 0000000000000000
-    RDX: dead000000200200  RSI: ffff8817d74e3a60  RDI: ffffe8f3cfc61ef0
-    RBP: ffff880c0fc63990   R8: 0000000000000000   R9: ffff8817d74e3b18
-    R10: 000000007b3dc352  R11: 0000000000000001  R12: 0000000000000003
-    R13: ffffe8f3cfc61ef0  R14: ffff880bc6ff3800  R15: 0000000000000001
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #6 [ffff880c0fc63998] cryptd_enqueue_request at ffffffffa02d9106 [cryptd]
- #7 [ffff880c0fc639c8] cryptd_aead_decrypt_enqueue at ffffffffa02d92c0 [cryptd]
- #8 [ffff880c0fc639d8] rfc4106_decrypt at ffffffffa02ec2bf [aesni_intel]
- #9 [ffff880c0fc63a08] esp_input at ffffffffa029da65 [esp4]
-#10 [ffff880c0fc63a98] xfrm_input at ffffffff815cb9c4
-#11 [ffff880c0fc63b08] xfrm4_rcv_encap at ffffffff815c148c
-#12 [ffff880c0fc63b18] xfrm4_rcv at ffffffff815c14b4
-#13 [ffff880c0fc63b28] ip_local_deliver_finish at ffffffff815749ed
-#14 [ffff880c0fc63b58] ip_local_deliver at ffffffff81574d58
-#15 [ffff880c0fc63b88] ip_rcv_finish at ffffffff815746c1
-#16 [ffff880c0fc63bb8] ip_rcv at ffffffff81574f95
-#17 [ffff880c0fc63bf8] __netif_receive_skb at ffffffff81540523
-#18 [ffff880c0fc63c58] netif_receive_skb at ffffffff81541300
-#19 [ffff880c0fc63c88] napi_skb_finish at ffffffff81541450
-#20 [ffff880c0fc63ca8] napi_gro_receive at ffffffff81541a55
-#21 [ffff880c0fc63ce8] bnx2x_rx_int at ffffffffa01850c8 [bnx2x]
-#22 [ffff880c0fc63e18] bnx2x_poll at ffffffffa0187409 [bnx2x]
-#23 [ffff880c0fc63e68] net_rx_action at ffffffff81541ca4
-#24 [ffff880c0fc63ed8] __do_softirq at ffffffff8106ea58
-#25 [ffff880c0fc63f48] call_softirq at ffffffff8166422c
-#26 [ffff880c0fc63f60] do_softirq at ffffffff81015305
-#27 [ffff880c0fc63f80] irq_exit at ffffffff8106ee3e
-#28 [ffff880c0fc63f90] smp_apic_timer_interrupt at ffffffff81664bce
-#29 [ffff880c0fc63fb0] apic_timer_interrupt at ffffffff81662a9e
---- <IRQ stack> ---
-#30 [ffff880bedd939f0] apic_timer_interrupt at ffffffff81662a9e
-    RIP: ffffffffffffff10  RSP: 0000000000000202  RFLAGS: 00000010
-    RAX: 00007ffffffff000  RBX: ffff880bedd93ac8  RCX: ffff880bee255bc0
-    RDX: 0000000000000000  RSI: 0000000000000000  RDI: 0000000000000001
-    RBP: ffffffff8103dcf9   R8: 000000000000007d   R9: 0000000000000000
-   R10: 0000000000000011  R11: ffffffff81659c5e  R12: ffff880bedd93a18
-    R13: 0044b82fa09b5a53  R14: ffff880bedd93a3e  R15: 000000000000003a
-    ORIG_RAX: ffff880bedd41888  CS: ffffffff810b2a4f  SS: ffff880bedd93aa8
