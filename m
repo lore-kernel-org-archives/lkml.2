@@ -1,99 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab2IYUCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 16:02:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54300 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743Ab2IYUCt (ORCPT
+	id S1757327Ab2IYUD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 16:03:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46415 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab2IYUDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 16:02:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: sebastien requiem <sebastien.requiem@gmail.com>
-Subject: Re: [PATCH 5/6] ARM: dove: Remove watchdog from DT
-Date: Tue, 25 Sep 2012 20:02:10 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Olof Johansson <olof@lixom.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-References: <1348531338-16624-1-git-send-email-sebastian.hesselbarth@gmail.com> <201209251233.09060.arnd@arndb.de> <CABLWKA9NjX0+cQZGBOGus99fFkcpwjPxnhmsBuZBz50VbxXyvw@mail.gmail.com>
-In-Reply-To: <CABLWKA9NjX0+cQZGBOGus99fFkcpwjPxnhmsBuZBz50VbxXyvw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Tue, 25 Sep 2012 16:03:54 -0400
+Date: Tue, 25 Sep 2012 13:03:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] mm: compaction: Cache if a pageblock was scanned
+ and no pages were isolated
+Message-Id: <20120925130352.0d60957a.akpm@linux-foundation.org>
+In-Reply-To: <20120925091207.GD11266@suse.de>
+References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
+	<1348224383-1499-9-git-send-email-mgorman@suse.de>
+	<20120921143656.60a9a6cd.akpm@linux-foundation.org>
+	<20120924093938.GZ11266@suse.de>
+	<20120924142644.06c38b80.akpm@linux-foundation.org>
+	<20120925091207.GD11266@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209252002.11301.arnd@arndb.de>
-X-Provags-ID: V02:K0:/KdIKvsHCLiDzVLBBvA5kJWCQ6N0n85S8KTiNKTOInm
- 57RJLg3EthkKEs4SjwzdwMGLubePsjDaoOxnOXEYw8tPOtEQEt
- pJpZFlEsd6lPz1LWGMIAoIUbfQ0YZI4Nr6yeliqKXc1oz2Aadl
- QVPureuEcNFGYYAOsQ7BL/E9ru0MdA8YlLvwXcLJvvgBlRamka
- egSVoArPClJmSztOnMev+C9oD/D7tEUHF3FWfegQ7ekRQUhLKN
- J7jqdlTn03r+TK/UlVWlmIkmXCtaXuTLSgRuVJQIinimt6x6OX
- bAG3nf1gv0o3nNv3f7mKGTZv2QWsMCOVf7lO91BVlxtRqSNT65
- gdJIe0UUJK9O7TlRuiwc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 September 2012, sebastien requiem wrote:
-> On Tue, Sep 25, 2012 at 2:33 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Tuesday 25 September 2012, Arnd Bergmann wrote:
-> >> On Tuesday 25 September 2012, Andrew Lunn wrote:
-> >> > > Regarding mv78xx0, I agree that I'm not sure what to do. The number of
-> >> > > supported platforms is small. Should we simply mark mv78xx0 deprecated
-> >> > > now, wait a few release cycles to see if anyone shows up, and see what
-> >> > > to do at this point?
-> >>
-> >> We should let Sebastien Requiem comment. He is the only person outside of
-> >> Marvell who has contributed a board file for mv78xx0. If he's interested in
-> >> keeping it alive, he's hopefully also able to find the time to test the
-> >> devicetree version of that platform in mach-mvebu. Similarly, if anyone
-> >> has the MASA reference design, that one could be moved over to mach-mvebu
-> >> first.
-> >>
-> >> There is a much smaller user base for mv78xx0 than for orion5x, so as long
-> >> as we can keep the support working with DT, we can throw out the legacy
-> >> code much faster than for orion. If it doesn't get put into mach-mvebu
-> >> and you can't find anyone who has hardware to test on, you could also
-> >> stop maintaining it and leave it to bitrot, but I wouldn't just remove it
-> >> on a fast track then.
-> >
-> > The address I used for Sebastien appears to be dead. Maybe this one still
-> > works.
+On Tue, 25 Sep 2012 10:12:07 +0100
+Mel Gorman <mgorman@suse.de> wrote:
+
+> First, we'd introduce a variant of get_pageblock_migratetype() that returns
+> all the bits for the pageblock flags and then helpers to extract either the
+> migratetype or the PG_migrate_skip. We already are incurring the cost of
+> get_pageblock_migratetype() so it will not be much more expensive than what
+> is already there. If there is an allocation or free within a pageblock that
+> as the PG_migrate_skip bit set then we increment a counter. When the counter
+> reaches some to-be-decided "threshold" then compaction may clear all the
+> bits. This would match the criteria of the clearing being based on activity.
 > 
-> Yes, this one works. Sorry for not having updated my email address.
+> There are four potential problems with this
 > 
-> I would be happy to convert the mv78xx0 platform to DT (and also do
-> the monkey work). My knowledge is quite limited regarding the recent changes
-> but I am sure that some of you could help me in the process.
+> 1. The logic to retrieve all the bits and split them up will be a little
+>    convulated but maybe it would not be that bad.
 > 
-> Moreover, I still have a board to test at home.
+> 2. The counter is a shared-writable cache line but obviously it could
+>    be moved to vmstat and incremented with inc_zone_page_state to offset
+>    the cost a little.
+> 
+> 3. The biggested weakness is that there is not way to know if the
+>    counter is incremented based on activity in a small subset of blocks.
+> 
+> 4. What should the threshold be?
+> 
+> The first problem is minor but the other three are potentially a mess.
+> Adding another vmstat counter is bad enough in itself but if the counter
+> is incremented based on a small subsets of pageblocks, the hint becomes
+> is potentially useless.
+> 
+> However, does this match what you have in mind or am I over-complicating
+> things?
 
-Ok, excellent!
+Sounds complicated.
 
-If you want to start looking into things, I suggest you follow the
-examples from the mach-dove directory, which is similar to mv78xx0 in
-that it also has only a small number of boards that are supported,
-and we can convert them all at the same time, rather than supporting
-both methods in parallel as we do for orion5x and kirkwood.
+Using wall time really does suck.  Are you sure you can't think of
+something more logical?
 
-The basic idea is to start with a DT_START_MACHINE section that will
-end up being used for all machines and just initializes all the
-devices that you have on your machine, but also calls of_platform_populate.
-Then you can gradually move over one device at a time from being
-statically initialized to being added to a board description in
-arch/arm/boot/dts/*.dts.
+How would we demonstrate the suckage?  What would be the observeable downside of
+switching that 5 seconds to 5 hours?
 
-One thing that seems to be special about mv78xx0 (though not the wxl
-in particular) is that we can have Linux running in two instances on
-either core of the machine and just give it a few of the devices.
-I think this can be handled nicely with DT by having a .dtsi include
-file that actually describes all of the machine but marks most of the
-devices as disabled, and then have different .dts files including
-the main file and selectively enabling the parts that are used there.
+> > > > > +	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
+> > > > > +		struct page *page;
+> > > > > +		if (!pfn_valid(pfn))
+> > > > > +			continue;
+> > > > > +
+> > > > > +		page = pfn_to_page(pfn);
+> > > > > +		if (zone != page_zone(page))
+> > > > > +			continue;
+> > > > > +
+> > > > > +		clear_pageblock_skip(page);
+> > > > > +	}
+> > > > 
+> > > > What's the worst-case loop count here?
+> > > > 
+> > > 
+> > > zone->spanned_pages >> pageblock_order
+> > 
+> > What's the worst-case value of (zone->spanned_pages >> pageblock_order) :)
+> 
+> Lets take an unlikely case - 128G single-node machine. That loop count
+> on x86-64 would be 65536. It'll be fast enough, particularly in this
+> path.
 
-	Arnd
+That could easily exceed a millisecond.  Can/should we stick a
+cond_resched() in there?
