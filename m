@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2IYNBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 09:01:12 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:44802 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451Ab2IYNBL (ORCPT
+	id S1756135Ab2IYNFM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 09:05:12 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:29972
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750863Ab2IYNFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 09:01:11 -0400
+	Tue, 25 Sep 2012 09:05:10 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Id6f1izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MAWPO9-01-FX4-02
+X-M-MSG: 
+Date: Tue, 25 Sep 2012 15:04:56 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 12/19] x86, irq: Add data structure to keep AMD specific
+ irq remapping information
+Message-ID: <20120925130456.GZ2505@amd.com>
+References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
+ <1345470965-24410-13-git-send-email-joerg.roedel@amd.com>
+ <20120826182126.GD3690@breakpoint.cc>
 MIME-Version: 1.0
-In-Reply-To: <20120925114425.15269.qmail@science.horizon.com>
-References: <20120924134939.23197.qmail@science.horizon.com> <20120925114425.15269.qmail@science.horizon.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Tue, 25 Sep 2012 15:00:49 +0200
-Message-ID: <CAK1hOcP5uuQafdQRmiAtLMMOos2ZZuOYU8qZgdg6LANfWdAjiw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] lib: vsprintf: Optimize put_dec_trunc8
-To: George Spelvin <linux@horizon.com>
-Cc: mpn@google.com, hughd@google.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120826182126.GD3690@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 1:44 PM, George Spelvin <linux@horizon.com> wrote:
-> Thanks to Denys Vlasenko for sending me his benchmarking code.
->
-> I went and hacked on it to ransomize the numbers being converted more,
-> since repeatedly converting the same number underestimates the number
-> of branch mispredictions.
->
-> Then I tried computing the number of digits beforehand, as mentioned
-> in my earlier message, and it came out slightly slower.  The code is:
->
-> static noinline_for_stack
-> char *put_dec_trunc8(char *buf, unsigned n)
-> {
->         static unsigned const pow10[9] = { 0, 10, 100, 1000, 10000, 100000,
->                                          1000000, 10000000, 100000000 };
->         unsigned digits = (19 * fls(n) + 6) >> 6;  /* Valid for < 44 bits */
+On Sun, Aug 26, 2012 at 08:21:26PM +0200, Sebastian Andrzej Siewior wrote:
+> On Mon, Aug 20, 2012 at 03:55:58PM +0200, Joerg Roedel wrote:
+> > --- a/arch/x86/include/asm/hw_irq.h
+> > +++ b/arch/x86/include/asm/hw_irq.h
+> > @@ -101,6 +101,7 @@ static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
+> >  	irq_attr->polarity	= polarity;
+> >  }
+> >  
+> > +/* Intel specific interrupt remapping information */
+> >  struct irq_2_iommu {
+> >  	struct intel_iommu *iommu;
+> >  	u16 irte_index;
+> > @@ -108,6 +109,12 @@ struct irq_2_iommu {
+> >  	u8  irte_mask;
+> >  };
+> >  
+> > +/* AMD specific interrupt remapping information */
+> > +struct irq_2_irte {
+> > +	u16 devid; /* Device ID for IRTE table */
+> > +	u16 index; /* Index into IRTE table*/
+> > +};
+> so irte_index like in iommu case would make the comment superfluous. However
+> the struct is already named _irte...
+> However, the "{Intel|AMD} specific..." is helpfull since irte and such are
+> present in both.
 
-fls() itself may be more expensive than a few jumps.
+Yes, the structs also represent the differences in the remapping
+hardware between Intel and AMD very well. On Intel there is one
+remapping table per hardware IOMMU so it is important to get from a
+given irq to the IOMMU and its remapping table to find the IRTE.
 
-> But!  With more extensive refactoring of the number() code, computing
-> the number of digits at the beginning can eliminate the entire business
-> of formatting into tmp[] and copying backward.  We'll first compute the
-> number of digits, check for buffer overflow, insert the printf padding,
-> and then call the number-formatting code, passing the number of digits in.
->
-> It seems plausible that the resultant simplification will produce a
-> speedup.
->
-> I'm going to experiment with that.  Denys, since I'm playing in your sandbox,
-> do you have any violent objections to that?
+On AMD hardware there is a remapping table per device. So the
+coresponding device id is stored in the struct to find the right
+remapping table.
 
-I don't object.
+
+	Joerg
 
 -- 
-vda
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
