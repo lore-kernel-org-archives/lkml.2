@@ -1,79 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab2IYQPV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:15:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64206 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758162Ab2IYQPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:15:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CALLzPKaMV=te6XWS5zi43RYa4uJ9sADDizcsM_3=sOa9wayGCQ@mail.gmail.com>
-References: <CALLzPKaMV=te6XWS5zi43RYa4uJ9sADDizcsM_3=sOa9wayGCQ@mail.gmail.com> <5555.1348531649@warthog.procyon.org.uk>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, rusty@rustcorp.com.au,
-        pjones@redhat.com, jwboyer@redhat.com, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        keyrings@linux-nfs.org
-Subject: Re: [GIT PULL] Asymmetric keys and module signing
-Date: Tue, 25 Sep 2012 17:15:06 +0100
-Message-ID: <8373.1348589706@warthog.procyon.org.uk>
+	id S1758093Ab2IYQOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:14:23 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57024 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757675Ab2IYQOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 12:14:18 -0400
+From: mathieu.poirier@linaro.org
+To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
+Cc: mathieu.poirier@linaro.org
+Subject: [PATCH 52/57] power: abx500_chargalg: Use hrtimer
+Date: Tue, 25 Sep 2012 10:12:49 -0600
+Message-Id: <1348589574-25655-53-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kasatkin, Dmitry <dmitry.kasatkin@intel.com> wrote:
+From: Hakan Berg <hakan.berg@stericsson.com>
 
-> Just one question about key description...
-> request_asymmetric_key uses format for key  description: "<signer>: <key-id>".
-> Preparsing code creates description from those values.
-> I see that key id is not 8 bytes anymore but full hash size of 20 bytes.
+Timers used for charging safety and maintenance must work even when
+CPU is power collapsed. By using hrtimers with realtime clock, system
+is able to trigger an alarm that wakes the CPU up and make it possible
+to handle the event.
 
-Remember:  This is for viewing via /proc/keys and KEYCTL_DESCRIBE as much as
-for matching.
+Allow a little slack of 5 minutes to the hrtimers to allow CPU to be
+waked up in a more optimal power saving way. A 5 minute delay to
+time out timers on hours does not impact on safety.
 
-> For practical reasons for IMA it might be nice to save some space in
-> xattrs and use shorter key id/description.
+Signed-off-by: Hakan Berg <hakan.berg@stericsson.com>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Reviewed-by: Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
+---
+ drivers/power/abx500_chargalg.c |   94 ++++++++++++++++++++++-----------------
+ 1 files changed, 53 insertions(+), 41 deletions(-)
 
-That's reasonable.
+diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
+index 636d970..c8849af 100644
+--- a/drivers/power/abx500_chargalg.c
++++ b/drivers/power/abx500_chargalg.c
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright (C) ST-Ericsson SA 2012
++ * Copyright (c) 2012 Sony Mobile Communications AB
+  *
+  * Charging algorithm driver for abx500 variants
+  *
+@@ -8,11 +9,13 @@
+  *	Johan Palsson <johan.palsson@stericsson.com>
+  *	Karl Komierowski <karl.komierowski@stericsson.com>
+  *	Arun R Murthy <arun.murthy@stericsson.com>
++ *	Imre Sunyi <imre.sunyi@sonymobile.com>
+  */
+ 
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
++#include <linux/hrtimer.h>
+ #include <linux/interrupt.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+@@ -32,6 +35,12 @@
+ /* End-of-charge criteria counter */
+ #define EOC_COND_CNT			10
+ 
++/* One hour expressed in seconds */
++#define ONE_HOUR_IN_SECONDS		3600
++
++/* Five minutes expressed in seconds */
++#define FIVE_MINUTES_IN_SECONDS		300
++
+ #define to_abx500_chargalg_device_info(x) container_of((x), \
+ 	struct abx500_chargalg, chargalg_psy);
+ 
+@@ -245,8 +254,8 @@ struct abx500_chargalg {
+ 	struct delayed_work chargalg_periodic_work;
+ 	struct delayed_work chargalg_wd_work;
+ 	struct work_struct chargalg_work;
+-	struct timer_list safety_timer;
+-	struct timer_list maintenance_timer;
++	struct hrtimer safety_timer;
++	struct hrtimer maintenance_timer;
+ 	struct kobject chargalg_kobject;
+ };
+ 
+@@ -261,38 +270,47 @@ BLOCKING_NOTIFIER_HEAD(charger_notifier_list);
+ 
+ /**
+  * abx500_chargalg_safety_timer_expired() - Expiration of the safety timer
+- * @data:	pointer to the abx500_chargalg structure
++ * @timer:	pointer to the hrtimer structure
+  *
+  * This function gets called when the safety timer for the charger
+  * expires
+  */
+-static void abx500_chargalg_safety_timer_expired(unsigned long data)
++static enum hrtimer_restart
++abx500_chargalg_safety_timer_expired(struct hrtimer *timer)
+ {
+-	struct abx500_chargalg *di = (struct abx500_chargalg *) data;
++	struct abx500_chargalg *di = container_of(timer, struct abx500_chargalg,
++							safety_timer);
+ 	dev_err(di->dev, "Safety timer expired\n");
+ 	di->events.safety_timer_expired = true;
+ 
+ 	/* Trigger execution of the algorithm instantly */
+ 	queue_work(di->chargalg_wq, &di->chargalg_work);
++
++	return HRTIMER_NORESTART;
+ }
+ 
+ /**
+  * abx500_chargalg_maintenance_timer_expired() - Expiration of
+  * the maintenance timer
+- * @i:		pointer to the abx500_chargalg structure
++ * @timer:	pointer to the timer structure
+  *
+  * This function gets called when the maintenence timer
+  * expires
+  */
+-static void abx500_chargalg_maintenance_timer_expired(unsigned long data)
++static enum hrtimer_restart
++abx500_chargalg_maintenance_timer_expired(struct hrtimer *timer)
++
+ {
+ 
+-	struct abx500_chargalg *di = (struct abx500_chargalg *) data;
++	struct abx500_chargalg *di = container_of(timer, struct abx500_chargalg,
++							maintenance_timer);
+ 	dev_dbg(di->dev, "Maintenance timer expired\n");
+ 	di->events.maintenance_timer_expired = true;
+ 
+ 	/* Trigger execution of the algorithm instantly */
+ 	queue_work(di->chargalg_wq, &di->chargalg_work);
++
++	return HRTIMER_NORESTART;
+ }
+ 
+ /**
+@@ -392,19 +410,16 @@ static int abx500_chargalg_check_charger_connection(struct abx500_chargalg *di)
+  */
+ static void abx500_chargalg_start_safety_timer(struct abx500_chargalg *di)
+ {
+-	unsigned long timer_expiration = 0;
++	/* Charger-dependent expiration time in hours*/
++	int timer_expiration = 0;
+ 
+ 	switch (di->chg_info.charger_type) {
+ 	case AC_CHG:
+-		timer_expiration =
+-		round_jiffies(jiffies +
+-			(di->bat->main_safety_tmr_h * 3600 * HZ));
++		timer_expiration = di->bat->main_safety_tmr_h;
+ 		break;
+ 
+ 	case USB_CHG:
+-		timer_expiration =
+-		round_jiffies(jiffies +
+-			(di->bat->usb_safety_tmr_h * 3600 * HZ));
++		timer_expiration = di->bat->usb_safety_tmr_h;
+ 		break;
+ 
+ 	default:
+@@ -413,11 +428,10 @@ static void abx500_chargalg_start_safety_timer(struct abx500_chargalg *di)
+ 	}
+ 
+ 	di->events.safety_timer_expired = false;
+-	di->safety_timer.expires = timer_expiration;
+-	if (!timer_pending(&di->safety_timer))
+-		add_timer(&di->safety_timer);
+-	else
+-		mod_timer(&di->safety_timer, timer_expiration);
++	hrtimer_set_expires_range(&di->safety_timer,
++		ktime_set(timer_expiration * ONE_HOUR_IN_SECONDS, 0),
++		ktime_set(FIVE_MINUTES_IN_SECONDS, 0));
++	hrtimer_start_expires(&di->safety_timer, HRTIMER_MODE_REL);
+ }
+ 
+ /**
+@@ -428,8 +442,8 @@ static void abx500_chargalg_start_safety_timer(struct abx500_chargalg *di)
+  */
+ static void abx500_chargalg_stop_safety_timer(struct abx500_chargalg *di)
+ {
+-	di->events.safety_timer_expired = false;
+-	del_timer(&di->safety_timer);
++	if (hrtimer_try_to_cancel(&di->safety_timer) >= 0)
++		di->events.safety_timer_expired = false;
+ }
+ 
+ /**
+@@ -444,17 +458,11 @@ static void abx500_chargalg_stop_safety_timer(struct abx500_chargalg *di)
+ static void abx500_chargalg_start_maintenance_timer(struct abx500_chargalg *di,
+ 	int duration)
+ {
+-	unsigned long timer_expiration;
+-
+-	/* Convert from hours to jiffies */
+-	timer_expiration = round_jiffies(jiffies + (duration * 3600 * HZ));
+-
++	hrtimer_set_expires_range(&di->maintenance_timer,
++		ktime_set(duration * ONE_HOUR_IN_SECONDS, 0),
++		ktime_set(FIVE_MINUTES_IN_SECONDS, 0));
+ 	di->events.maintenance_timer_expired = false;
+-	di->maintenance_timer.expires = timer_expiration;
+-	if (!timer_pending(&di->maintenance_timer))
+-		add_timer(&di->maintenance_timer);
+-	else
+-		mod_timer(&di->maintenance_timer, timer_expiration);
++	hrtimer_start_expires(&di->maintenance_timer, HRTIMER_MODE_REL);
+ }
+ 
+ /**
+@@ -466,8 +474,8 @@ static void abx500_chargalg_start_maintenance_timer(struct abx500_chargalg *di,
+  */
+ static void abx500_chargalg_stop_maintenance_timer(struct abx500_chargalg *di)
+ {
+-	di->events.maintenance_timer_expired = false;
+-	del_timer(&di->maintenance_timer);
++	if (hrtimer_try_to_cancel(&di->maintenance_timer) >= 0)
++		di->events.maintenance_timer_expired = false;
+ }
+ 
+ /**
+@@ -910,11 +918,11 @@ static void abx500_chargalg_check_safety_timer(struct abx500_chargalg *di)
+ 	 * and charging will be stopped to protect the battery.
+ 	 */
+ 	if (di->batt_data.percent == 100 &&
+-		!timer_pending(&di->safety_timer)) {
++		!hrtimer_active(&di->safety_timer)) {
+ 		abx500_chargalg_start_safety_timer(di);
+ 		dev_dbg(di->dev, "start safety timer\n");
+ 	} else if (di->batt_data.percent != 100 &&
+-		timer_pending(&di->safety_timer)) {
++		hrtimer_active(&di->safety_timer)) {
+ 		abx500_chargalg_stop_safety_timer(di);
+ 		dev_dbg(di->dev, "stop safety timer\n");
+ 	}
+@@ -1932,10 +1940,16 @@ static int __devexit abx500_chargalg_remove(struct platform_device *pdev)
+ 	/* sysfs interface to enable/disbale charging from user space */
+ 	abx500_chargalg_sysfs_exit(di);
+ 
++	hrtimer_cancel(&di->safety_timer);
++	hrtimer_cancel(&di->maintenance_timer);
++
++	cancel_delayed_work_sync(&di->chargalg_periodic_work);
++	cancel_delayed_work_sync(&di->chargalg_wd_work);
++	cancel_work_sync(&di->chargalg_work);
++
+ 	/* Delete the work queue */
+ 	destroy_workqueue(di->chargalg_wq);
+ 
+-	flush_scheduled_work();
+ 	power_supply_unregister(&di->chargalg_psy);
+ 	platform_set_drvdata(pdev, NULL);
+ 	kfree(di);
+@@ -1987,15 +2001,13 @@ static int __devinit abx500_chargalg_probe(struct platform_device *pdev)
+ 		abx500_chargalg_external_power_changed;
+ 
+ 	/* Initilialize safety timer */
+-	init_timer(&di->safety_timer);
++	hrtimer_init(&di->safety_timer, CLOCK_REALTIME, HRTIMER_MODE_ABS);
+ 	di->safety_timer.function = abx500_chargalg_safety_timer_expired;
+-	di->safety_timer.data = (unsigned long) di;
+ 
+ 	/* Initilialize maintenance timer */
+-	init_timer(&di->maintenance_timer);
++	hrtimer_init(&di->maintenance_timer, CLOCK_REALTIME, HRTIMER_MODE_ABS);
+ 	di->maintenance_timer.function =
+ 		abx500_chargalg_maintenance_timer_expired;
+-	di->maintenance_timer.data = (unsigned long) di;
+ 
+ 	/* Create a work queue for the chargalg */
+ 	di->chargalg_wq =
+-- 
+1.7.5.4
 
-> As I understand from implementation, if key name is provided with "keyctl
-> add", it will not be replaced with preparsed value.
-
-Correct.
-
-> And we can actually use any keyid we want?
-
-Yes.
-
-Note: The key type ->match() function is not required to limit itself to a
-direct strcmp().  It is at liberty to partially match the description or any
-other data attached to the key.
-
-Look at asymmetric_key_match() in crypto/asymmetric/asymmetric_type.c.  If you
-do a search for:
-
-	"id:<hex-string>"
-
-this will do a partial tail match on the key fingerprint:
-
-[root@andromeda ~]# keyctl padd asymmetric "" @s </tmp/uefi-x509 
-289786205
-[root@andromeda ~]# cat /proc/keys
-1145c95d I--Q---     1 perm 39390000     0     0 asymmetri Red Hat Test Certificate: 3580cf35d76b3b667a40df66691cbcf87353b23c: X509.RSA 7353b23c []
-...
-[root@andromeda ~]# keyctl search @s asymmetric "id:53b23c"
-289786205
-
-
-As an optimisation, it might be worth internally calling keyring_search_aux()
-with our own match function that takes a binary key ID and storing the
-fingerprint as binary rather than hex (attached to key->type_data.p[1]).
-
-The type match function can only take text strings as it has to be invoked
-from userspace.
-
-David
