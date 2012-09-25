@@ -1,85 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab2IYEar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 00:30:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43537 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab2IYEaq (ORCPT
+	id S1752715Ab2IYEbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 00:31:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36135 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750854Ab2IYEbB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 00:30:46 -0400
-Date: Tue, 25 Sep 2012 14:30:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        Andre Przywara <andre.przywara@amd.com>
-Subject: linux-next: build failure after merge of the pm tree
-Message-Id: <20120925143034.f7bda6d8a5a11e87f2e60ef3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Sep_2012_14_30_34_+1000_tD1HtubfqF/.Ls24"
+	Tue, 25 Sep 2012 00:31:01 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: RE: [PATCH v2] pwm_backlight: Add device tree support for Low
+ Threshold Brightness
+Thread-Topic: [PATCH v2] pwm_backlight: Add device tree support for Low
+ Threshold Brightness
+Thread-Index: AQHNl7dcczUdlqqMiEavEaWXq+POTpeT5POAgABctfCAAHP6gIAEaxEQ
+Date: Tue, 25 Sep 2012 04:29:27 +0000
+Deferred-Delivery: Tue, 25 Sep 2012 04:29:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9A8449@DBDE01.ent.ti.com>
+References: <1348203080-16348-1-git-send-email-avinashphilip@ti.com>
+ <505BF83D.8040201@wwwdotorg.org>
+ <518397C60809E147AF5323E0420B992E3E9A685B@DBDE01.ent.ti.com>
+ <505CA74B.2090405@wwwdotorg.org>
+In-Reply-To: <505CA74B.2090405@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Sep_2012_14_30_34_+1000_tD1HtubfqF/.Ls24
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 21, 2012 at 23:13:39, Stephen Warren wrote:
+> On 09/21/2012 12:03 AM, Philip, Avinash wrote:
+> > Hi Stephen,
+> > 
+> > On Fri, Sep 21, 2012 at 10:46:45, Stephen Warren wrote:
+> >> On 09/20/2012 10:51 PM, Philip, Avinash wrote:
+> >>> Some backlights perform poorly when driven by a PWM with a short
+> >>> duty-cycle. For such devices, the low threshold can be used to specify a
+> >>> lower bound for the duty-cycle and should be chosen to exclude the
+> >>> problematic range.
+> >>>
+> >>> This patch adds support for an optional low-threshold-brightness
+> >>> property.
+> >>
+> >>> diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> >>
+> >>>  Optional properties:
+> >>>    - pwm-names: a list of names for the PWM devices specified in the
+> >>>                 "pwms" property (see PWM binding[0])
+> >>> +  - low-threshold-brightness: brightness threshold low level. Low threshold
+> >>> +    brightness set to value so that backlight present on low end of
+> >>> +    brightness.
+> >>
+> >> For my education, why not just specify values above this value in the
+> >> brightness-levels array; how do those two interact?
+> > 
+> > Please find details from 
+> > https://lkml.org/lkml/2012/7/18/284
+> 
+> Hmm. That still doesn't really explain what this property does.
+> 
+> I'm going to guess that if this property is present, and values in the
+> brightness-levels property get scaled between the
+> low-threshold-brightness and 255 instead of being used directly.
 
-Hi Rafael,
+This is correct.
 
-After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+> But then, in the email you linked to, what does "But brightness-levels won't
+> be uniformly divided" mean?
 
-drivers/cpufreq/powernow-k8.c: In function 'transition_frequency_pstate':
-drivers/cpufreq/powernow-k8.c:991:19: error: 'HW_PSTATE_MASK' undeclared (f=
-irst use in this function)
-drivers/cpufreq/powernow-k8.c:991:19: note: each undeclared identifier is r=
-eported only once for each function it appears in
-drivers/cpufreq/powernow-k8.c:992:19: error: 'struct powernow_k8_data' has =
-no member named 'max_hw_pstate'
-drivers/cpufreq/powernow-k8.c:995:2: error: implicit declaration of functio=
-n 'find_khz_freq_from_pstate' [-Werror=3Dimplicit-function-declaration]
-drivers/cpufreq/powernow-k8.c:996:8: error: 'struct powernow_k8_data' has n=
-o member named 'currpstate'
-drivers/cpufreq/powernow-k8.c:1004:2: error: implicit declaration of functi=
-on 'transition_pstate' [-Werror=3Dimplicit-function-declaration]
-drivers/cpufreq/powernow-k8.c: At top level:
-drivers/cpufreq/powernow-k8.c:981:12: warning: 'transition_frequency_pstate=
-' defined but not used [-Wunused-function]
+For some panels, backlight would absent on low end of brightness due to low
+percentage in duty_cycle. Consider following example where backlight absent
+for brightness levels from 0 - 51.
 
-The code causing this was removed by commit e1f0b8e9b04a ("cpufreq:
-Remove support for hardware P-state chips from powernow-k8") but
-reintroduced (presumably incorrectly) by commit d20801be3c11 ("Merge
-branch 'master' into linux-next").
+pwms = <&pwm 0 50000>;
+brightness-levels = <0 51 53 56 62 75 101 152 255>; 
+default-brightness-level = <6>;
 
-I have used the pm tree from next-20120924 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So in the example, brightness-levels are set to have values for backlight present.
+Here levels are not uniformly divided.
 
---Signature=_Tue__25_Sep_2012_14_30_34_+1000_tD1HtubfqF/.Ls24
-Content-Type: application/pgp-signature
+But by providing,
+brightness_threshold_level = <50>;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+we can have a uniform division in brightness-levels as below
 
-iQIcBAEBCAAGBQJQYTNqAAoJEECxmPOUX5FE4CIP/iPrkqSn8ssFF5dcT/+Vn33s
-q0J9hXf4/5E/MmyYTxDB4EA8m+onL1tjOEWEAPFfFh/GqDQ3ji7KlVd8kxIIGtJz
-eNe2aR0Vrx9QRkQHp/HRJW4r9VQBqEQjgGxNVgl8DohktFUunTRdS9JEShKedGRq
-v+YenBDFjZIqMJuZ0WlTedbM3uAHOT3AJdqK4kVAvf4bPMMFILOrcbpJYvcbXwDF
-Ka6kiQJ00Bn8+0qZ+kZlc03wCrsg3UdxDBX6qK/up5a98Bqqnn3p1f10AgzDs06O
-9tOJz90mSto8p5uUmCFydhnbPR+IbUh4VD04MvQzbS3in0fg3T3bakxugEbMnh93
-yKVqKLjhzzRm7WWrO4Wb2jca4EFQn42p/TePJDWBoTWFglORZqbRP71PZKt3p0oN
-6Lh9BFMus/fakeMXvKgneRyjSwbI94VUHascu+yf34hRcpwlHQb7BUVYucwtL+v3
-g2K3MQG79Zqi7QybiaNrt56P/DDzxHtktgUA+5RykexUAyd1sbQaCO4d5m6FF3ZO
-EDBQ1qC7cW6gxm0Pr33MO5aH6I/LT6amxg6vhL4WPApbxjYSpv1Q/ik7advf5MvA
-CdAyyQNJ5ZhodKoIWQEKtm+pcHlAFGK9CgVMJT84fqZ4rN4+UY59kKFZ1Gz9OIzR
-ZFA856ZDGBI6de9nky+C
-=+Ia3
------END PGP SIGNATURE-----
+brightness-levels = <0 2 4 8 16 32 64 128 255>;
 
---Signature=_Tue__25_Sep_2012_14_30_34_+1000_tD1HtubfqF/.Ls24--
+
+> Why would doing the calculation at run-time
+> be any better than simply putting the correct values into
+> brightness-levels in the first place?
+
+I think you mean to provide the backlight-levels as in example
+brightness-levels = <0 51 53 56 62 75 101 152 255>;
+
+In that case, I still feel adding brightness_threshold_level would be a
+better option.
+
+> 
+> Either way, the DT binding should explain exactly what this value is
+> used for, and how it affects the interpretation of values in
+> brightness-levels.
+
+Is DT binding documentation a good place to explain this feature?
+Initially Thierry suggested document option. So I left out.
+
+Thanks
+Avinash
+
+> 
+
