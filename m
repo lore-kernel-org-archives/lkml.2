@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab2IYCTu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 22:19:50 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55721 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab2IYCTt (ORCPT
+	id S1752282Ab2IYC24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 22:28:56 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57277 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab2IYC2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 22:19:49 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-17-506114c0ce57
+	Mon, 24 Sep 2012 22:28:55 -0400
+X-AuditID: 9c930179-b7bfcae0000020b4-ce-506116e58ef5
 From: Namhyung Kim <namhyung@kernel.org>
-To: Feng Tang <feng.tang@intel.com>
-Cc: acme@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        andi@firstfloor.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 8/9] perf hists browser: Add option for runtime switching perf data file
-References: <1348500251-9937-1-git-send-email-feng.tang@intel.com>
-	<1348500251-9937-9-git-send-email-feng.tang@intel.com>
-Date: Tue, 25 Sep 2012 11:11:21 +0900
-In-Reply-To: <1348500251-9937-9-git-send-email-feng.tang@intel.com> (Feng
-	Tang's message of "Mon, 24 Sep 2012 23:24:10 +0800")
-Message-ID: <87d31ayhpy.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH] perf test: Fix build failure
+Date: Tue, 25 Sep 2012 11:20:28 +0900
+Message-Id: <1348539628-3821-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Sep 2012 23:24:10 +0800, Feng Tang wrote:
-[snip]
-> +		if (!check_perf_magic(magic)) {
-> +			options[nr_options] = strdup(name);
-> +			abs_path[nr_options++] = strdup(path);
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Need to check return values.
+The commit 6a6cd11d4e57 ("perf test: Add test for the sched tracepoint
+format fields") added following build error:
 
+  CC builtin-test.o
+builtin-test.c: In function ‘perf_evsel__test_field’:
+builtin-test.c:1216:6: error: variable ‘ret’ set but not used [-Werror=unused-but-set-variable]
+builtin-test.c: In function ‘perf_evsel__tp_sched_test’:
+builtin-test.c:1242:6: error: variable ‘ret’ set but not used [-Werror=unused-but-set-variable]
+cc1: all warnings being treated as errors
+make: *** [builtin-test.o] Error 1
 
-> +		}
-> +		fclose(file);
-> +	}
-> +	closedir(pwd_dir);
-> +
-> +	if (nr_options) {
-> +		choice = ui__popup_menu(nr_options, options);
-> +		if (choice < nr_options && choice >= 0) {
-> +			input_name = strdup(abs_path[choice]);
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-test.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Ditto.  Plus it might leak previous input_name.
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 32caf13cfe01..78b47a75a7c9 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1233,7 +1233,7 @@ static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
+ 		ret = -1;
+ 	}
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int perf_evsel__tp_sched_test(void)
+@@ -1286,7 +1286,7 @@ static int perf_evsel__tp_sched_test(void)
+ 	if (perf_evsel__test_field(evsel, "target_cpu", 4, true))
+ 		ret = -1;
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static struct test {
+-- 
+1.7.11.4
 
-Thanks,
-Namhyung
-
-
-> +			ret = 0;
-> +		}
-> +	}
-> +
-> +	free_popup_options(options, nr_options);
-> +	free_popup_options(abs_path, nr_options);
-> +	return ret;
-> +}
-> +
-> +
