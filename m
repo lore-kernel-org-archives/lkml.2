@@ -1,108 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab2IYNtg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 09:49:36 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59156 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756502Ab2IYNtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 09:49:35 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hans Verkuil <hansverk@cisco.com>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        VGER <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: Re: [PATCH] media: davinci: vpif: set device capabilities
-Date: Tue, 25 Sep 2012 15:50:10 +0200
-Message-ID: <25447484.hfLC5SnrpW@avalon>
-User-Agent: KMail/4.9.1 (Linux/3.4.9-gentoo; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <201209251548.10830.hansverk@cisco.com>
-References: <1348571784-4237-1-git-send-email-prabhakar.lad@ti.com> <CA+V-a8uLTmCSzY7xtp_TpAcmt=w5hMEWEpk24py1OD9qxOtYbw@mail.gmail.com> <201209251548.10830.hansverk@cisco.com>
+	id S1756223Ab2IYNvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 09:51:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10884 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863Ab2IYNvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 09:51:41 -0400
+Date: Tue, 25 Sep 2012 15:52:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: possible recursive locking in numasched code
+Message-ID: <20120925135255.GA9669@redhat.com>
+References: <20120925094157.GD18334@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120925094157.GD18334@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 September 2012 15:48:10 Hans Verkuil wrote:
-> On Tue 25 September 2012 15:26:11 Prabhakar Lad wrote:
-> > On Tue, Sep 25, 2012 at 5:24 PM, Hans Verkuil <hansverk@cisco.com> wrote:
-> > > On Tue 25 September 2012 13:49:16 Laurent Pinchart wrote:
-> > >> Hi Hans,
-> > >> 
-> > >> On Tuesday 25 September 2012 13:43:36 Hans Verkuil wrote:
-> > >> > On Tue 25 September 2012 13:16:24 Prabhakar wrote:
-> > >> > > From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> > >> > > 
-> > >> > > Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> > >> > > Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> > >> > > Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> > >> > > ---
-> > >> > > 
-> > >> > >  drivers/media/platform/davinci/vpif_capture.c |    4 +++-
-> > >> > >  drivers/media/platform/davinci/vpif_display.c |    4 +++-
-> > >> > >  2 files changed, 6 insertions(+), 2 deletions(-)
-> > >> > > 
-> > >> > > diff --git a/drivers/media/platform/davinci/vpif_capture.c
-> > >> > > b/drivers/media/platform/davinci/vpif_capture.c index
-> > >> > > 4828888..faeca98
-> > >> > > 100644
-> > >> > > --- a/drivers/media/platform/davinci/vpif_capture.c
-> > >> > > +++ b/drivers/media/platform/davinci/vpif_capture.c
-> > >> > > @@ -1630,7 +1630,9 @@ static int vpif_querycap(struct file *file,
-> > >> > > void
-> > >> > > *priv,>
-> > >> > > 
-> > >> > >  {
-> > >> > >  
-> > >> > >   struct vpif_capture_config *config = vpif_dev->platform_data;
-> > >> > > 
-> > >> > > - cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
-> > >> > > + cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING |
-> > >> > > +                 V4L2_CAP_READWRITE;
-> > >> > > + cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
-> > >> > > 
-> > >> > >   strlcpy(cap->driver, "vpif capture", sizeof(cap->driver));
-> > >> > 
-> > >> > This should be the real driver name which is 'vpif_capture'.
-> > >> > 
-> > >> > >   strlcpy(cap->bus_info, "VPIF Platform", sizeof(cap->bus_info));
-> > >> > 
-> > >> > For bus_info I would use: "platform:vpif_capture".
-> > >> > 
-> > >> > The 'platform:' prefix is going to be the standard for platform
-> > >> > drivers.
-> > >> 
-> > >> What about
-> > >> 
-> > >> snprintf(cap->driver, sizeof(cap->driver), "platform:%s",
-> > >> dev_name(vpif_dev));
-> > >> 
-> > >> That would handle cases where multiple platform devices of the same
-> > >> type are present.
-> > > 
-> > > Sure, that's even better. You do have to check that this gives you what
-> > > you'd expect (i.e., that you don't end up with
-> > > "platform:platform:vpif_capture").> 
-> > But the driver field is max 16, should i extend it to 32 ?
-> 
-> I'm certain Laurent meant to say:
-> 
-> snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
-> dev_name(vpif_dev));
+On 09/25, Srikar Dronamraju wrote:
+>
+>  ======================================================
+>  [ INFO: possible circular locking dependency detected ]
+>  3.6.0-rc1-numasched_v2_100912+ #2 Not tainted
+>  -------------------------------------------------------
+>
+>  -> #0 (&p->pi_lock){-.-.-.}:
+>        [<ffffffff810be478>] __lock_acquire+0x1428/0x1690
+>        [<ffffffff810be782>] lock_acquire+0xa2/0x130
+>        [<ffffffff81551a15>] _raw_spin_lock_irqsave+0x55/0xa0
+>        [<ffffffff81078b08>] task_work_add+0x38/0xb0
 
-Yes that's what I meant, sorry.
+Yes. This should be fixed by ac3d0da8 from tip:core/urgent,
+attached below.
 
-> It makes no sense to use cap->driver.
+Oleg.
 
--- 
-Regards,
+task_work: Make task_work_add() lockless
 
-Laurent Pinchart
+Change task_work's to use llist-like code to avoid pi_lock
+in task_work_add(), this makes it useable under rq->lock.
+
+task_work_cancel() and task_work_run() still use pi_lock
+to synchronize with each other.
+
+(This is in preparation for a deadlock fix.)
+
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/20120826191209.GA4221@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/task_work.c |   95 ++++++++++++++++++++++++++-------------------------
+ 1 files changed, 48 insertions(+), 47 deletions(-)
+
+diff --git a/kernel/task_work.c b/kernel/task_work.c
+index d320d44..f13ec0b 100644
+--- a/kernel/task_work.c
++++ b/kernel/task_work.c
+@@ -3,25 +3,18 @@
+ #include <linux/tracehook.h>
+ 
+ int
+-task_work_add(struct task_struct *task, struct callback_head *twork, bool notify)
++task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
+ {
+-	struct callback_head *last, *first;
+-	unsigned long flags;
+-
++	struct callback_head *head;
+ 	/*
+ 	 * Not inserting the new work if the task has already passed
+ 	 * exit_task_work() is the responisbility of callers.
+ 	 */
+-	raw_spin_lock_irqsave(&task->pi_lock, flags);
+-	last = task->task_works;
+-	first = last ? last->next : twork;
+-	twork->next = first;
+-	if (last)
+-		last->next = twork;
+-	task->task_works = twork;
+-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++	do {
++		head = ACCESS_ONCE(task->task_works);
++		work->next = head;
++	} while (cmpxchg(&task->task_works, head, work) != head);
+ 
+-	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
+ 	if (notify)
+ 		set_notify_resume(task);
+ 	return 0;
+@@ -30,52 +23,60 @@ task_work_add(struct task_struct *task, struct callback_head *twork, bool notify
+ struct callback_head *
+ task_work_cancel(struct task_struct *task, task_work_func_t func)
+ {
++	struct callback_head **pprev = &task->task_works;
++	struct callback_head *work = NULL;
+ 	unsigned long flags;
+-	struct callback_head *last, *res = NULL;
+-
++	/*
++	 * If cmpxchg() fails we continue without updating pprev.
++	 * Either we raced with task_work_add() which added the
++	 * new entry before this work, we will find it again. Or
++	 * we raced with task_work_run(), *pprev == NULL.
++	 */
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+-	last = task->task_works;
+-	if (last) {
+-		struct callback_head *q = last, *p = q->next;
+-		while (1) {
+-			if (p->func == func) {
+-				q->next = p->next;
+-				if (p == last)
+-					task->task_works = q == p ? NULL : q;
+-				res = p;
+-				break;
+-			}
+-			if (p == last)
+-				break;
+-			q = p;
+-			p = q->next;
+-		}
++	while ((work = ACCESS_ONCE(*pprev))) {
++		read_barrier_depends();
++		if (work->func != func)
++			pprev = &work->next;
++		else if (cmpxchg(pprev, work, work->next) == work)
++			break;
+ 	}
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+-	return res;
++
++	return work;
+ }
+ 
+ void task_work_run(void)
+ {
+ 	struct task_struct *task = current;
+-	struct callback_head *p, *q;
++	struct callback_head *work, *head, *next;
+ 
+-	while (1) {
+-		raw_spin_lock_irq(&task->pi_lock);
+-		p = task->task_works;
+-		task->task_works = NULL;
+-		raw_spin_unlock_irq(&task->pi_lock);
++	for (;;) {
++		work = xchg(&task->task_works, NULL);
++		if (!work)
++			break;
++		/*
++		 * Synchronize with task_work_cancel(). It can't remove
++		 * the first entry == work, cmpxchg(task_works) should
++		 * fail, but it can play with *work and other entries.
++		 */
++		raw_spin_unlock_wait(&task->pi_lock);
++		smp_mb();
+ 
+-		if (unlikely(!p))
+-			return;
++		/* Reverse the list to run the works in fifo order */
++		head = NULL;
++		do {
++			next = work->next;
++			work->next = head;
++			head = work;
++			work = next;
++		} while (work);
+ 
+-		q = p->next; /* head */
+-		p->next = NULL; /* cut it */
+-		while (q) {
+-			p = q->next;
+-			q->func(q);
+-			q = p;
++		work = head;
++		do {
++			next = work->next;
++			work->func(work);
++			work = next;
+ 			cond_resched();
+-		}
++		} while (work);
+ 	}
+ }
+
 
