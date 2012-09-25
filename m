@@ -1,113 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab2IYDj0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 23:39:26 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:34960 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208Ab2IYDjY (ORCPT
+	id S1752574Ab2IYDoD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 23:44:03 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:60847 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750755Ab2IYDoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 23:39:24 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: al viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <50609C43.1070702@canonical.com>
-Date: Mon, 24 Sep 2012 20:39:17 -0700
-In-Reply-To: <50609C43.1070702@canonical.com> (Maarten Lankhorst's message of
-	"Mon, 24 Sep 2012 19:45:39 +0200")
-Message-ID: <87txumrct6.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18+y7Z4JuMz4dr054UXPJ2n69Ac+fz1XAI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0024]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Maarten Lankhorst <maarten.lankhorst@canonical.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] Revert "__d_unalias() should refuse to move mountpoints"
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 24 Sep 2012 23:44:01 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX192w/FOqg12Gz0YNcrChvcyeqyAVL8OH62V7UGQwH
+	hNbyA3GtLXveky
+Message-ID: <1348544636.7100.53.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Tue, 25 Sep 2012 05:43:56 +0200
+In-Reply-To: <CA+55aFwb1ddBr6gEsJ7jBjGeBC5Son5p3s9nsx_Hyst9E-Hhpg@mail.gmail.com>
+References: <20120914212717.GA29307@liondog.tnic>
+	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	 <20120924150048.GB11266@suse.de> <1348500647.11847.69.camel@twins>
+	 <CA+55aFy5C-gFs6ZU5LyyVN=oxpuoaOpydkbJbhri215QkLx3aA@mail.gmail.com>
+	 <1348503163.11847.97.camel@twins>
+	 <CA+55aFzU2QOgexc2cpEkWqPBw6wPJMBuUzRyxTxu=rxZV_ay3A@mail.gmail.com>
+	 <1348505683.11847.111.camel@twins>
+	 <1348511193.6951.44.camel@marge.simpson.net>
+	 <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
+	 <20120924192056.GB4082@liondog.tnic>
+	 <1348538258.7100.23.camel@marge.simpson.net>
+	 <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+	 <1348541366.7100.39.camel@marge.simpson.net>
+	 <CA+55aFwe_LBm9bJ2FhjOq1Ae0hu7Sd4F4yZMMXd7BnSFu+RvAg@mail.gmail.com>
+	 <1348543235.7100.44.camel@marge.simpson.net>
+	 <CA+55aFwb1ddBr6gEsJ7jBjGeBC5Son5p3s9nsx_Hyst9E-Hhpg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maarten Lankhorst <maarten.lankhorst@canonical.com> writes:
+On Mon, 2012-09-24 at 20:32 -0700, Linus Torvalds wrote: 
+> On Mon, Sep 24, 2012 at 8:20 PM, Mike Galbraith <efault@gmx.de> wrote:
+> >
+> > Yes.  Cross wiring traverse _start_ points should eliminate (well, damp)
+> > bounce as well without killing the 1:N latency/preempt benefits of large
+> > L3 packages.
+> 
+> Yes, a "test buddy first, then check the other cores in the package"
+> hybrid approach might be reasonable.
+> 
+> Of course, that's effectively what the whole "prev_cpu" thing is kind
+> of supposed to also do, isn't it? Because it's even lovelier if you
+> can avoid bouncing around by trying to hit a previous CPU that might
+> just have some of the old data in the caches still.
 
-> This reverts commit ee3efa91e240f513898050ef305a49a653c8ed90.
->
-> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->
-> My thread about the regression seemed to have been ignored, so I can only
-> conclude nobody objects against a full revert of this patch.
->
-> My testcase is simply booting through netboot with / and ~/nfs as separate
-> nfs filesystems, then doing 'ls ~/nfs' followed by 'ls ~' in a gnome-terminal
-> window, then I get:
+prev_cpu can be anywhere, so buddies sometimes need help getting back
+together when they've been disrupted, but yeah, in the general case it's
+local, so you want prev_cpu if it can be had.
 
-Do I read your description correctly:  Without using a bind mount you
-have the same nfs filesystem mounted on / and on ~/nfs?
+-Mike
 
-Something is definitely off with your configuration but if to work you
-need to move mount points around then that something seems much deeper
-than the __d_unalias change.
-
-What filesystems do you have mounted where?
-
-> ls: cannot access nfs: Device or resource busy
->
-> Similar things seem to happen with ls /, /dev /proc and /sys will no longer work.
->
-> Reverting this patch seems to make things work again.
->
-> ---
->
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 16521a9..711f421 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -2387,13 +2387,14 @@ static struct dentry *__d_unalias(struct inode *inode,
->  		struct dentry *dentry, struct dentry *alias)
->  {
->  	struct mutex *m1 = NULL, *m2 = NULL;
-> -	struct dentry *ret = ERR_PTR(-EBUSY);
-> +	struct dentry *ret;
->  
->  	/* If alias and dentry share a parent, then no extra locks required */
->  	if (alias->d_parent == dentry->d_parent)
->  		goto out_unalias;
->  
->  	/* See lock_rename() */
-> +	ret = ERR_PTR(-EBUSY);
->  	if (!mutex_trylock(&dentry->d_sb->s_vfs_rename_mutex))
->  		goto out_err;
->  	m1 = &dentry->d_sb->s_vfs_rename_mutex;
-> @@ -2401,10 +2402,8 @@ static struct dentry *__d_unalias(struct inode *inode,
->  		goto out_err;
->  	m2 = &alias->d_parent->d_inode->i_mutex;
->  out_unalias:
-> -	if (likely(!d_mountpoint(alias))) {
-> -		__d_move(alias, dentry);
-> -		ret = alias;
-> -	}
-> +	__d_move(alias, dentry);
-> +	ret = alias;
->  out_err:
->  	spin_unlock(&inode->i_lock);
->  	if (m2)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
