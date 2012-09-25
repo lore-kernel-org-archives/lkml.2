@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab2IYKfA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:35:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36115 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754845Ab2IYKe6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:34:58 -0400
+	id S1754877Ab2IYKev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:34:51 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55399 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753788Ab2IYKes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 06:34:48 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <rtc-linux@googlegroups.com>
 CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
         <a.zummo@towertech.it>, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv2 1/7] rtc: Convert struct i2c_msg initialization to C99 format
-Date: Tue, 25 Sep 2012 16:03:38 +0530
-Message-ID: <1348569224-4096-2-git-send-email-shubhrajyoti@ti.com>
+Subject: [PATCHv2 3/7] rtc: Convert struct i2c_msg initialization to C99 format
+Date: Tue, 25 Sep 2012 16:03:40 +0530
+Message-ID: <1348569224-4096-4-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348569224-4096-1-git-send-email-shubhrajyoti@ti.com>
 References: <1348569224-4096-1-git-send-email-shubhrajyoti@ti.com>
@@ -29,53 +28,40 @@ like transferred are added in future.
 
 Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- drivers/rtc/rtc-ds1672.c |   26 ++++++++++++++++++++++----
- 1 files changed, 22 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-s35390a.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ds1672.c b/drivers/rtc/rtc-ds1672.c
-index 7fa67d0..577dbae 100644
---- a/drivers/rtc/rtc-ds1672.c
-+++ b/drivers/rtc/rtc-ds1672.c
-@@ -37,8 +37,17 @@ static int ds1672_get_datetime(struct i2c_client *client, struct rtc_time *tm)
- 	unsigned char buf[4];
- 
- 	struct i2c_msg msgs[] = {
--		{client->addr, 0, 1, &addr},	/* setup read ptr */
--		{client->addr, I2C_M_RD, 4, buf},	/* read date */
-+		{/* setup read ptr */
+diff --git a/drivers/rtc/rtc-s35390a.c b/drivers/rtc/rtc-s35390a.c
+index c9562ce..cc5c516 100644
+--- a/drivers/rtc/rtc-s35390a.c
++++ b/drivers/rtc/rtc-s35390a.c
+@@ -50,7 +50,11 @@ static int s35390a_set_reg(struct s35390a *s35390a, int reg, char *buf, int len)
+ {
+ 	struct i2c_client *client = s35390a->client[reg];
+ 	struct i2c_msg msg[] = {
+-		{ client->addr, 0, len, buf },
++		{
 +			.addr = client->addr,
-+			.len = 1,
-+			.buf = &addr
-+		},
-+		{/* setup read ptr */
-+			.addr = client->addr,
-+			.flags = I2C_M_RD,
-+			.len = 4,
++			.len = len,
 +			.buf = buf
 +		},
  	};
  
- 	/* read date registers */
-@@ -99,8 +108,17 @@ static int ds1672_get_control(struct i2c_client *client, u8 *status)
- 	unsigned char addr = DS1672_REG_CONTROL;
- 
- 	struct i2c_msg msgs[] = {
--		{client->addr, 0, 1, &addr},	/* setup read ptr */
--		{client->addr, I2C_M_RD, 1, status},	/* read control */
-+		{/* setup read ptr */
-+			.addr = client->addr,
-+			.len = 1,
-+			.buf = &addr
-+		},
-+		{/* read control */
+ 	if ((i2c_transfer(client->adapter, msg, 1)) != 1)
+@@ -63,7 +67,12 @@ static int s35390a_get_reg(struct s35390a *s35390a, int reg, char *buf, int len)
+ {
+ 	struct i2c_client *client = s35390a->client[reg];
+ 	struct i2c_msg msg[] = {
+-		{ client->addr, I2C_M_RD, len, buf },
++		{
 +			.addr = client->addr,
 +			.flags = I2C_M_RD,
-+			.len = 1,
-+			.buf = status
++			.len = len,
++			.buf = buf
 +		},
  	};
  
- 	/* read control register */
+ 	if ((i2c_transfer(client->adapter, msg, 1)) != 1)
 -- 
 1.7.5.4
 
