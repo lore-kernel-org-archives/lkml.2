@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab2IYOeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 10:34:07 -0400
+	id S1754818Ab2IYOeM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 10:34:12 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63709 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818Ab2IYOeB (ORCPT
+	with ESMTP id S1751302Ab2IYOeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 10:34:01 -0400
+	Tue, 25 Sep 2012 10:34:09 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v3 5/7] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
-Date: Tue, 25 Sep 2012 22:29:28 +0800
-Message-Id: <1348583370-11006-5-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v3 6/7] PCI/acpiphp: update ACPI hotplug slot information when PCI hotplug happens
+Date: Tue, 25 Sep 2012 22:29:29 +0800
+Message-Id: <1348583370-11006-6-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348583370-11006-1-git-send-email-jiang.liu@huawei.com>
 References: <1348583370-11006-1-git-send-email-jiang.liu@huawei.com>
@@ -25,135 +25,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
  From: Jiang Liu <jiang.liu@huawei.com>
 
-Currently the pci_slot driver doesn't update PCI slot information
-when PCI device hotplug event happens, which may cause memory leak
-and returning stale information to user.
+Currently the acpiphp driver fails to update hotplug slot information under
+several conditions, such as:
+1) The bridge device is removed through /sys/bus/pci/devices/.../remove
+2) The bridge device is added/removed by PCI hotplug driver other than the
+   acpiphp driver itself. For example, if an IO expansion box with ACPI
+   hotplug slots available is hot-added by the pciehp driver, all ACPI
+   hotplug slots won't be discovered by the acpiphp driver.
 
 So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
-update PCI slot information when PCI hotplug event happens.
+update ACPI hotplug slot information when PCI hotplug event happens.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/acpi/pci_slot.c |   86 ++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 78 insertions(+), 8 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   64 ++++++++++++++++++++++++++++++++++--
+ 1 file changed, 61 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
-index e50e31a..96dcc19 100644
---- a/drivers/acpi/pci_slot.c
-+++ b/drivers/acpi/pci_slot.c
-@@ -32,6 +32,7 @@
- #include <linux/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
-+#include <linux/pci-acpi.h>
- #include <linux/dmi.h>
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 7be4ca5..1fb0eb7 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -61,6 +61,7 @@ static void handle_hotplug_event_bridge (acpi_handle, u32, void *);
+ static void acpiphp_sanitize_bus(struct pci_bus *bus);
+ static void acpiphp_set_hpp_values(struct pci_bus *bus);
+ static void handle_hotplug_event_func(acpi_handle handle, u32 type, void *context);
++static struct acpiphp_bridge *acpiphp_handle_to_bridge(acpi_handle handle);
  
- static bool debug;
-@@ -123,12 +124,7 @@ struct callback_args {
- /*
-  * register_slot
-  *
-- * Called once for each SxFy object in the namespace. Don't worry about
-- * calling pci_create_slot multiple times for the same pci_bus:device,
-- * since each subsequent call simply bumps the refcount on the pci_slot.
-- *
-- * The number of calls to pci_destroy_slot from unregister_slot is
-- * symmetrical.
-+ * Called once for each SxFy object in the namespace.
-  */
+ /* callback routine to check for the existence of a pci dock device */
  static acpi_status
- register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-@@ -145,6 +141,15 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	if (device < 0)
- 		return AE_OK;
+@@ -382,7 +383,7 @@ static inline void config_p2p_bridge_flags(struct acpiphp_bridge *bridge)
  
-+	/* Avoid duplicated records for the same slot */
-+	list_for_each_entry(slot, &slot_list, list) {
-+		pci_slot = slot->pci_slot;
-+		if (pci_slot && pci_slot->bus == pci_bus &&
-+		    pci_slot->number == device) {
-+			return AE_OK;
-+		}
-+	}
-+
- 	slot = kmalloc(sizeof(*slot), GFP_KERNEL);
- 	if (!slot) {
- 		err("%s: cannot allocate memory\n", __func__);
-@@ -162,9 +167,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	slot->root_handle = parent_context->root_handle;
- 	slot->pci_slot = pci_slot;
- 	INIT_LIST_HEAD(&slot->list);
--	mutex_lock(&slot_list_lock);
- 	list_add(&slot->list, &slot_list);
--	mutex_unlock(&slot_list_lock);
  
- 	get_device(&pci_bus->dev);
- 
-@@ -299,7 +302,9 @@ acpi_pci_slot_add(acpi_handle handle)
+ /* allocate and initialize host bridge data structure */
+-static void add_host_bridge(acpi_handle *handle)
++static void add_host_bridge(acpi_handle handle)
  {
- 	acpi_status status;
+ 	struct acpiphp_bridge *bridge;
+ 	struct acpi_pci_root *root = acpi_pci_find_root(handle);
+@@ -399,12 +400,14 @@ static void add_host_bridge(acpi_handle *handle)
+ 	init_bridge_misc(bridge);
+ }
  
-+	mutex_lock(&slot_list_lock);
- 	status = walk_root_bridge(handle, register_slot);
-+	mutex_unlock(&slot_list_lock);
- 	if (ACPI_FAILURE(status))
- 		err("%s: register_slot failure - %d\n", __func__, status);
+-
+ /* allocate and initialize PCI-to-PCI bridge data structure */
+-static void add_p2p_bridge(acpi_handle *handle)
++static void add_p2p_bridge(acpi_handle handle)
+ {
+ 	struct acpiphp_bridge *bridge;
  
-@@ -354,17 +359,82 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
- 	{}
- };
- 
-+static void acpi_pci_slot_notify_add(struct pci_dev *dev)
-+{
-+	acpi_handle handle;
-+	struct callback_args context;
-+
-+	if (!dev->subordinate)
++	if (acpiphp_handle_to_bridge(handle))
 +		return;
 +
-+	mutex_lock(&slot_list_lock);
-+	handle = DEVICE_ACPI_HANDLE(&dev->dev);
-+	context.root_handle = acpi_find_root_bridge_handle(dev);
-+	if (handle && context.root_handle) {
-+		context.pci_bus = dev->subordinate;
-+		context.user_function = register_slot;
-+		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
-+				    register_slot, NULL, &context, NULL);
+ 	bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
+ 	if (bridge == NULL) {
+ 		err("out of memory\n");
+@@ -1405,6 +1408,58 @@ find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	return AE_OK ;
+ }
+ 
++static void acpiphp_hp_notify_add(struct pci_dev *dev)
++{
++	acpi_handle handle = DEVICE_ACPI_HANDLE(&dev->dev);
++
++	if (!dev->subordinate || !handle)
++		return;
++
++	/* check if this bridge has ejectable slots */
++	if (detect_ejectable_slots(handle) > 0) {
++		dbg("found PCI-to-PCI bridge at PCI %s\n", pci_name(dev));
++		add_p2p_bridge(handle);
 +	}
-+	mutex_unlock(&slot_list_lock);
 +}
 +
-+static void acpi_pci_slot_notify_del(struct pci_dev *dev)
++static void acpiphp_hp_notify_del(struct pci_dev *dev)
 +{
-+	struct acpi_pci_slot *slot, *tmp;
++	struct acpiphp_bridge *bridge, *tmp;
 +	struct pci_bus *bus = dev->subordinate;
 +
 +	if (!bus)
 +		return;
 +
-+	mutex_lock(&slot_list_lock);
-+	list_for_each_entry_safe(slot, tmp, &slot_list, list)
-+		if (slot->pci_slot && slot->pci_slot->bus == bus) {
-+			list_del(&slot->list);
-+			pci_destroy_slot(slot->pci_slot);
-+			put_device(&bus->dev);
-+			kfree(slot);
++	list_for_each_entry_safe(bridge, tmp, &bridge_list, list)
++		if (bridge->pci_bus == bus) {
++			cleanup_bridge(bridge);
++			break;
 +		}
-+	mutex_unlock(&slot_list_lock);
 +}
 +
-+static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
-+				   unsigned long event, void *data)
++static int acpi_pci_hp_notify_fn(struct notifier_block *nb,
++				 unsigned long event, void *data)
 +{
 +	struct device *dev = data;
 +
 +	switch (event) {
 +	case BUS_NOTIFY_ADD_DEVICE:
-+		acpi_pci_slot_notify_add(to_pci_dev(dev));
++		acpiphp_hp_notify_add(to_pci_dev(dev));
 +		break;
 +	case BUS_NOTIFY_DEL_DEVICE:
-+		acpi_pci_slot_notify_del(to_pci_dev(dev));
++		acpiphp_hp_notify_del(to_pci_dev(dev));
 +		break;
 +	default:
 +		return NOTIFY_DONE;
@@ -162,25 +132,28 @@ index e50e31a..96dcc19 100644
 +	return NOTIFY_OK;
 +}
 +
-+static struct notifier_block acpi_pci_slot_notifier = {
-+	.notifier_call = &acpi_pci_slot_notify_fn,
++static struct notifier_block acpi_pci_hp_notifier = {
++	.notifier_call = &acpi_pci_hp_notify_fn,
 +};
 +
- static int __init
- acpi_pci_slot_init(void)
- {
- 	dmi_check_system(acpi_pci_slot_dmi_table);
- 	acpi_pci_register_driver(&acpi_pci_slot_driver);
-+	bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
+ static struct acpi_pci_driver acpi_pci_hp_driver = {
+ 	.add =		add_bridge,
+ 	.remove =	remove_bridge,
+@@ -1425,6 +1480,8 @@ int __init acpiphp_glue_init(void)
+ 	else
+ 		acpi_pci_register_driver(&acpi_pci_hp_driver);
+ 
++	bus_register_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
 +
  	return 0;
  }
  
- static void __exit
- acpi_pci_slot_exit(void)
+@@ -1436,6 +1493,7 @@ int __init acpiphp_glue_init(void)
+  */
+ void  acpiphp_glue_exit(void)
  {
-+	bus_unregister_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
- 	acpi_pci_unregister_driver(&acpi_pci_slot_driver);
++	bus_unregister_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
+ 	acpi_pci_unregister_driver(&acpi_pci_hp_driver);
  }
  
 -- 
