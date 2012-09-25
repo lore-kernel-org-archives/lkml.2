@@ -1,114 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab2IYFnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 01:43:13 -0400
-Received: from mailgw.tw.promise.com ([61.222.81.250]:54484 "HELO
-	mailgw.promise.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752263Ab2IYFnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 01:43:11 -0400
-X-MailGates: (flag:1,DYNAMIC,RELAY,NOHOST,LAN:PASS)(compute_score:DELIVE
-	R,40,3)
-From: =?big5?B?VG9ueSBIdW5nIC0gUFRUIKx4t+fArw==?= 
-	<tony.hung@tw.promise.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 25 Sep 2012 13:44:12 +0800
-Subject: RE: RE: [PATCH] ahci: add a boot option to enable promise ahci
-Thread-Topic: RE: [PATCH] ahci: add a boot option to enable promise ahci
-Thread-Index: Ac2a4MMS/wMFkOOWR6+Vr/3AKRQ25A==
-Message-ID: <1AF0FA078A5A3541A8A8019D26081C2E88DCE6D982@ptt-ex02.promise.com.tw>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-TW, en-US
-x-tm-as-product-ver: SMEX-10.2.0.1135-7.000.1014-19208.000
-x-tm-as-result: No--51.913200-8.000000-31
-x-tm-as-user-approved-sender: No
-x-tm-as-user-blocked-sender: No
-Content-Type: multipart/mixed;
-	boundary="_002_1AF0FA078A5A3541A8A8019D26081C2E88DCE6D982pttex02promis_"
+	id S1753011Ab2IYFvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 01:51:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34580 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752086Ab2IYFvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 01:51:12 -0400
+Message-ID: <5061464B.4090002@suse.de>
+Date: Tue, 25 Sep 2012 07:51:07 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
+To: device-mapper development <dm-devel@redhat.com>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tj@kernel.org, axboe@kernel.dk,
+        vgoyal@redhat.com
+Subject: Re: [dm-devel] [PATCH v3 11/26] block: Add submit_bio_wait(), remove
+ from md
+References: <1348526106-17074-1-git-send-email-koverstreet@google.com> <1348526106-17074-12-git-send-email-koverstreet@google.com>
+In-Reply-To: <1348526106-17074-12-git-send-email-koverstreet@google.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_1AF0FA078A5A3541A8A8019D26081C2E88DCE6D982pttex02promis_
-Content-Type: text/plain; charset="big5"
-Content-Transfer-Encoding: base64
+On 09/25/2012 12:34 AM, Kent Overstreet wrote:
+> Random cleanup - this code was duplicated and it's not really specific
+> to md.
+> 
+> Also added the ability to return the actual error code.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> CC: Jens Axboe <axboe@kernel.dk>
+> CC: NeilBrown <neilb@suse.de>
+> Acked-by: Tejun Heo <tj@kernel.org>
+> ---
+>  drivers/md/raid1.c  | 19 -------------------
+>  drivers/md/raid10.c | 19 -------------------
+>  fs/bio.c            | 36 ++++++++++++++++++++++++++++++++++++
+>  include/linux/bio.h |  1 +
+>  4 files changed, 37 insertions(+), 38 deletions(-)
+> 
+> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+> index deff0cd..28f506a 100644
+> --- a/drivers/md/raid1.c
+> +++ b/drivers/md/raid1.c
+> @@ -2048,25 +2048,6 @@ static void fix_read_error(struct r1conf *conf, int read_disk,
+>  	}
+>  }
+>  
+> -static void bi_complete(struct bio *bio, int error)
+> -{
+> -	complete((struct completion *)bio->bi_private);
+> -}
+> -
+> -static int submit_bio_wait(int rw, struct bio *bio)
+> -{
+> -	struct completion event;
+> -	rw |= REQ_SYNC;
+> -
+> -	init_completion(&event);
+> -	bio->bi_private = &event;
+> -	bio->bi_end_io = bi_complete;
+> -	submit_bio(rw, bio);
+> -	wait_for_completion(&event);
+> -
+> -	return test_bit(BIO_UPTODATE, &bio->bi_flags);
+> -}
+> -
+>  static int narrow_write_error(struct r1bio *r1_bio, int i)
+>  {
+>  	struct mddev *mddev = r1_bio->mddev;
+> diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+> index 6d06d83..f001c1b 100644
+> --- a/drivers/md/raid10.c
+> +++ b/drivers/md/raid10.c
+> @@ -2410,25 +2410,6 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
+>  	}
+>  }
+>  
+> -static void bi_complete(struct bio *bio, int error)
+> -{
+> -	complete((struct completion *)bio->bi_private);
+> -}
+> -
+> -static int submit_bio_wait(int rw, struct bio *bio)
+> -{
+> -	struct completion event;
+> -	rw |= REQ_SYNC;
+> -
+> -	init_completion(&event);
+> -	bio->bi_private = &event;
+> -	bio->bi_end_io = bi_complete;
+> -	submit_bio(rw, bio);
+> -	wait_for_completion(&event);
+> -
+> -	return test_bit(BIO_UPTODATE, &bio->bi_flags);
+> -}
+> -
+>  static int narrow_write_error(struct r10bio *r10_bio, int i)
+>  {
+>  	struct bio *bio = r10_bio->master_bio;
+> diff --git a/fs/bio.c b/fs/bio.c
+> index 062ba8f..9a30dcf 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
+> @@ -750,6 +750,42 @@ int bio_add_page(struct bio *bio, struct page *page, unsigned int len,
+>  }
+>  EXPORT_SYMBOL(bio_add_page);
+>  
+> +struct submit_bio_ret {
+> +	struct completion event;
+> +	int error;
+> +};
+> +
+> +static void submit_bio_wait_endio(struct bio *bio, int error)
+> +{
+> +	struct submit_bio_ret *ret = bio->bi_private;
+> +
+> +	ret->error = error;
+> +	complete(&ret->event);
+> +}
+> +
+> +/**
+> + * submit_bio_wait - submit a bio, and wait until it completes
+> + * @rw: whether to %READ or %WRITE, or maybe to %READA (read ahead)
+> + * @bio: The &struct bio which describes the I/O
+> + *
+> + * Simple wrapper around submit_bio(). Returns 0 on success, or the error from
+> + * bio_endio() on failure.
+> + */
+> +int submit_bio_wait(int rw, struct bio *bio)
+> +{
+> +	struct submit_bio_ret ret;
+> +
+> +	rw |= REQ_SYNC;
+> +	init_completion(&ret.event);
+> +	bio->bi_private = &ret;
+> +	bio->bi_end_io = submit_bio_wait_endio;
 
-DQoNCk9uIDIwMTIvOS8yNSAxMTowNSBBTSwgSmVmZiBHYXJ6aWsgd3JvdGU6DQo+DQo+IE9uIDA5
-LzIzLzIwMTIgMTA6MzQgUE0sIFRvbnkgSHVuZyAtIFBUVCCseLfnwK8gd3JvdGU6DQo+DQo+ID4g
-bGludXgtMy4yLjAvZHJpdmVycy9hdGEvYWhjaS5jOiBJbiBmdW5jdGlvbiAnYWhjaV9pbml0X29u
-ZSc6DQo+DQo+ID4gDQo+DQo+ID4gVXNlIHByb21pc2VfZW5hYmxlIHRvIGRpc2FibGUgQUhDSSBj
-b250cm9sIFBDSSBSQUlELg0KPg0KPiA+IA0KPg0KPiA+IFNpZ25lZC1vZmYtYnk6IFRvbnkgSHVu
-ZyA8dG9ueS5odW5nQHR3LnByb21pc2UuY29tPg0KPg0KPiA+IC0tLQ0KPg0KPiA+IA0KPg0KPiA+
-IGRpZmYgLS1naXQgYS9saW51eC0zLjIuMC9kcml2ZXJzL2F0YS9haGNpLmMgYi9saW51eC0zLjIu
-MC9kcml2ZXJzL2F0YS9haGNpLmMNCj4NCj4gPiAtLS0gYS9saW51eC0zLjIuMC9kcml2ZXJzL2F0
-YS9haGNpLmMgICAgMjAxMi0wOC0yOSAxMzo0MDoyNi4wNDY4NTE2OTMgKzA4MDANCj4NCj4gPiAr
-KysgYi9saW51eC0zLjIuMC9kcml2ZXJzL2F0YS9haGNpLmMgIDIwMTItMDgtMzAgMTc6MjM6MTAu
-MjA3ODM4OTYwICswODAwDQo+DQo+ID4gQEAgLTQzMCw2ICs0MzAsOSBAQCBzdGF0aWMgaW50IG1h
-cnZlbGxfZW5hYmxlID0gMTsNCj4NCj4gPiAgIG1vZHVsZV9wYXJhbShtYXJ2ZWxsX2VuYWJsZSwg
-aW50LCAwNjQ0KTsNCj4NCj4gPiAgIE1PRFVMRV9QQVJNX0RFU0MobWFydmVsbF9lbmFibGUsICJN
-YXJ2ZWxsIFNBVEEgdmlhIEFIQ0kgKDEgPQ0KPg0KPiA+IGVuYWJsZWQpIik7DQo+DQo+ID4gDQo+
-DQo+ID4gK3N0YXRpYyBpbnQgcHJvbWlzZV9lbmFibGU7DQo+DQo+ID4gK21vZHVsZV9wYXJhbShw
-cm9taXNlX2VuYWJsZSwgaW50LCAwNjQ0KTsgDQo+DQo+ID4gK01PRFVMRV9QQVJNX0RFU0MocHJv
-bWlzZV9lbmFibGUsICJQcm9taXNlIFNBVEEgdmlhIEFIQ0kgKDEgPQ0KPg0KPiA+ICtlbmFibGVk
-KSIpOw0KPg0KPiA+IA0KPg0KPiA+ICAgc3RhdGljIHZvaWQgYWhjaV9wY2lfc2F2ZV9pbml0aWFs
-X2NvbmZpZyhzdHJ1Y3QgcGNpX2RldiAqcGRldiwNCj4NCj4gPiAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0cnVjdCBhaGNpX2hvc3RfcHJpdiAqaHByaXYp
-DQo+DQo+ID4gQEAgLTEwNDksNiArMTA1MiwxNiBAQCBzdGF0aWMgaW50IGFoY2lfaW5pdF9vbmUo
-c3RydWN0IHBjaV9kZXYNCj4NCj4gPiAgICAgICAgICAgIGlmIChwZGV2LT52ZW5kb3IgPT0gUENJ
-X1ZFTkRPUl9JRF9NQVJWRUxMICYmICFtYXJ2ZWxsX2VuYWJsZSkNCj4NCj4gPiAgICAgICAgICAg
-ICAgICAgICAgcmV0dXJuIC1FTk9ERVY7DQo+DQo+ID4gDQo+DQo+ID4gKyAgICAgICAgLyoNCj4N
-Cj4gPiArICAgICAgICAgKiBJbiBSQUlEIG1vZGUsIFByb21pc2Ugc29mdHdhcmUgUkFJRCBuZWVk
-IHRvIHJlcGxhY2UNCj4NCj4gPiArICAgICAgICAgKiBvcmlnaW5hbCBBSENJIG1vZHVsZSwgYnV0
-IGlmIEFIQ0kgZHJpdmVyIGJ1aWxkLWluIGtlcm5lbCwNCj4NCj4gPiArICAgICAgICAgKiBQcm9t
-aXNlIEFIQ0kgbW9kdWxlIG5lZWQgYSBib290IG9wdGlvbiB0byBkaXNhYmxlIGl0DQo+DQo+ID4g
-KyAgICAgICAgICovDQo+DQo+ID4gKyAgICAgICAgaWYgKHByb21pc2VfZW5hYmxlICYmDQo+DQo+
-ID4gKyAgICAgICAgICAgICgocGRldi0+Y2xhc3MgPj4gOCkgPT0gUENJX0NMQVNTX1NUT1JBR0Vf
-UkFJRCkgJiYNCj4NCj4gPiArICAgICAgICAgICAgIChwZGV2LT52ZW5kb3IgPT0gUENJX1ZFTkRP
-Ul9JRF9BVEkgfHwNCj4NCj4gPiArICAgICAgICAgICAgICBwZGV2LT52ZW5kb3IgPT0gUENJX1ZF
-TkRPUl9JRF9BTUQpKQ0KPg0KPiA+ICsgICAgICAgICAgICAgICAgcmV0dXJuIC1FTk9ERVY7DQo+
-DQo+ICANCj4NCj4gV2UgbmVlZCB0aGUgcGF0Y2ggZm9yIHRoZSBQcm9taXNlIFNvZnR3YXJlIFJB
-SUQgZHJpdmVyLCB0byBhY2NlcHQgdGhpcy4uLg0KPg0KPiAgDQo+DQo+ICAgICAgICAgIEplZmYN
-Cg0KIA0KDQpQYXRjaCBmaWxlIGlzIGluIGF0dGFjaG1lbnQsIGFuZCBzb3JyeSBmb3IgZXJyb3Ig
-ZGVzY3JpcHQuDQoNCiANCg0KQmVzdCB3aXNoZXMsDQoNClRvbnkgSHVuZw0K
+Hmm. As this is meant to be a generic function, blindly overwriting
+the bi_end_io pointer doesn't look like a good idea; the caller
+could have set something there.
 
---_002_1AF0FA078A5A3541A8A8019D26081C2E88DCE6D982pttex02promis_
-Content-Type: application/octet-stream;
-	name="[PATCH]ahci-add-a-boot-option-to-enable-promise-ahci.patch"
-Content-Description: [PATCH]ahci-add-a-boot-option-to-enable-promise-ahci.patch
-Content-Disposition: attachment;
-	filename="[PATCH]ahci-add-a-boot-option-to-enable-promise-ahci.patch";
-	size=1266; creation-date="Fri, 31 Aug 2012 09:26:38 GMT";
-	modification-date="Tue, 25 Sep 2012 03:49:22 GMT"
-Content-Transfer-Encoding: base64
+Please add at least a WARN_ON(bio->bi_end_io) prior to modifying it.
 
-LS0tIGxpbnV4LTMuMi4wL2RyaXZlcnMvYXRhL2FoY2kuYy5vcmlnCTIwMTItMDgtMjkgMTM6NDA6
-MjYuMDQ2ODUxNjkzICswODAwCisrKyBsaW51eC0zLjIuMC9kcml2ZXJzL2F0YS9haGNpLmMJMjAx
-Mi0wOC0zMCAxNzoyMzoxMC4yMDc4Mzg5NjAgKzA4MDAKQEAgLTQzMCw2ICs0MzAsOSBAQCBzdGF0
-aWMgaW50IG1hcnZlbGxfZW5hYmxlID0gMTsKIG1vZHVsZV9wYXJhbShtYXJ2ZWxsX2VuYWJsZSwg
-aW50LCAwNjQ0KTsKIE1PRFVMRV9QQVJNX0RFU0MobWFydmVsbF9lbmFibGUsICJNYXJ2ZWxsIFNB
-VEEgdmlhIEFIQ0kgKDEgPSBlbmFibGVkKSIpOwoKK3N0YXRpYyBpbnQgcHJvbWlzZV9lbmFibGU7
-Cittb2R1bGVfcGFyYW0ocHJvbWlzZV9lbmFibGUsIGludCwgMDY0NCk7CitNT0RVTEVfUEFSTV9E
-RVNDKHByb21pc2VfZW5hYmxlLCAiUHJvbWlzZSBTQVRBIHZpYSBBSENJICgxID0gZW5hYmxlZCki
-KTsKCiBzdGF0aWMgdm9pZCBhaGNpX3BjaV9zYXZlX2luaXRpYWxfY29uZmlnKHN0cnVjdCBwY2lf
-ZGV2ICpwZGV2LAogCQkJCQkgc3RydWN0IGFoY2lfaG9zdF9wcml2ICpocHJpdikKQEAgLTEwNDks
-NiArMTA1MiwxNiBAQCBzdGF0aWMgaW50IGFoY2lfaW5pdF9vbmUoc3RydWN0IHBjaV9kZXYKIAlp
-ZiAocGRldi0+dmVuZG9yID09IFBDSV9WRU5ET1JfSURfTUFSVkVMTCAmJiAhbWFydmVsbF9lbmFi
-bGUpCiAJCXJldHVybiAtRU5PREVWOwoKKyAgICAgICAgLyoKKyAgICAgICAgICogSW4gUkFJRCBt
-b2RlLCBQcm9taXNlIHNvZnR3YXJlIFJBSUQgbmVlZCB0byByZXBsYWNlCisgICAgICAgICAqIG9y
-aWdpbmFsIEFIQ0kgbW9kdWxlLCBidXQgaWYgQUhDSSBkcml2ZXIgYnVpbGQtaW4ga2VybmVsLAor
-ICAgICAgICAgKiBQcm9taXNlIEFIQ0kgbW9kdWxlIG5lZWQgYSBib290IG9wdGlvbiB0byBkaXNh
-YmxlIGl0CisgICAgICAgICAqLworICAgICAgICBpZiAocHJvbWlzZV9lbmFibGUgJiYKKyAgICAg
-ICAgICAgICgocGRldi0+Y2xhc3MgPj4gOCkgPT0gUENJX0NMQVNTX1NUT1JBR0VfUkFJRCkgJiYK
-KyAgICAgICAgICAgICAocGRldi0+dmVuZG9yID09IFBDSV9WRU5ET1JfSURfQVRJIHx8CisgICAg
-ICAgICAgICAgIHBkZXYtPnZlbmRvciA9PSBQQ0lfVkVORE9SX0lEX0FNRCkpCisgICAgICAgICAg
-ICAgICAgcmV0dXJuIC1FTk9ERVY7CisKIAkvKgogCSAqIEZvciBzb21lIHJlYXNvbiwgTUNQODkg
-b24gTWFjQm9vayA3LDEgZG9lc24ndCB3b3JrIHdpdGgKIAkgKiBhaGNpLCB1c2UgYXRhX2dlbmVy
-aWMgaW5zdGVhZC4K
+> +	submit_bio(rw, bio);
+> +	wait_for_completion(&ret.event);
+> +
+> +	return ret.error;
+> +}
+> +EXPORT_SYMBOL(submit_bio_wait);
+> +
+>  /**
+>   * bio_advance - increment/complete a bio by some number of bytes
+>   * @bio:	bio to advance
+> diff --git a/include/linux/bio.h b/include/linux/bio.h
+> index d985e90..3bf696b 100644
+> --- a/include/linux/bio.h
+> +++ b/include/linux/bio.h
+> @@ -252,6 +252,7 @@ extern void bio_endio(struct bio *, int);
+>  struct request_queue;
+>  extern int bio_phys_segments(struct request_queue *, struct bio *);
+>  
+> +extern int submit_bio_wait(int rw, struct bio *bio);
+>  extern void bio_advance(struct bio *, unsigned);
+>  
+>  extern void bio_init(struct bio *);
+> 
 
---_002_1AF0FA078A5A3541A8A8019D26081C2E88DCE6D982pttex02promis_--
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+
+
