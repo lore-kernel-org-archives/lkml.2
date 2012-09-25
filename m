@@ -1,159 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab2IYD0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 23:26:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40040 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab2IYD0e (ORCPT
+	id S1752529Ab2IYD1S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 23:27:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16325 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094Ab2IYD1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 23:26:34 -0400
-Message-ID: <50612467.5030700@gmail.com>
-Date: Tue, 25 Sep 2012 11:26:31 +0800
-From: Charles Wang <0oo0.hust@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Russell King <rmk@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Load averages?
-References: <20120924213954.GB30735@flint.arm.linux.org.uk>
-In-Reply-To: <20120924213954.GB30735@flint.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 24 Sep 2012 23:27:17 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zST4ESuiwMQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NrfBHxz3jJsA:10 a=T_Gu0DvZVSQv8XUyC9EA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348543635.22822.9.camel@gandalf.local.home>
+Subject: Re: [PATCH v3 3/3] tracing: format non-nanosec times from tsc clock
+ without a decimal point.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Mon, 24 Sep 2012 23:27:15 -0400
+In-Reply-To: <1348181550-21931-3-git-send-email-dhsharp@google.com>
+References: <1348148044.13080.59.camel@gandalf.local.home>
+	 <1348181550-21931-1-git-send-email-dhsharp@google.com>
+	 <1348181550-21931-3-git-send-email-dhsharp@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The HZ you configured is 100, and cs is 350+ per second, so
-there will be 3.5cs per tick. This may cause loadavg caculation
-not correctly.
+On Thu, 2012-09-20 at 15:52 -0700, David Sharp wrote:
+> With the addition of the "tsc" clock, formatting timestamps to look like
+> fractional seconds is misleading. Mark clocks as either in nanoseconds or
+> not, and format non-nanosecond timestamps as decimal integers.
 
-This problem was discussed in the following link:
-https://lkml.org/lkml/2012/6/12/130
+I got this:
 
-If your kernel alread has Peter's latest fix patch
+/work/autotest/nobackup/linux-test.git/kernel/trace/trace_output.c:636: undefined reference to `__umoddi3'
+/work/autotest/nobackup/linux-test.git/kernel/trace/trace_output.c:636: undefined reference to `__udivdi3'
+/work/autotest/nobackup/linux-test.git/kernel/trace/trace_output.c:636: undefined reference to `__umoddi3'
+/work/autotest/nobackup/linux-test.git/kernel/trace/trace_output.c:636: undefined reference to `__umoddi3'
+/work/autotest/nobackup/linux-test.git/kernel/trace/trace_output.c:636: undefined reference to `__udivdi3'
+/work/autotest/nobackup/linux-test.git/kernel/trace/trace_output.c:636: undefined reference to `__umoddi3'
+/work/autotest/nobackup/linux-test.git/kernel/trace/trace_output.c:636: undefined reference to `__udivdi3'
 
-sched/nohz: Rewrite and fix load-avg computation -- again
+when building for x86_32.
 
-Then maybe this problem is caused by not fully applied for Peter's 
-patch. Try the following patch please
+> +	int ret;
+> +	struct trace_seq *s = &iter->seq;
+> +	unsigned long verbose = trace_flags & TRACE_ITER_VERBOSE;
+> +	unsigned long in_ns = iter->iter_flags & TRACE_FILE_TIME_IN_NS;
+> +	unsigned long long abs_ts = iter->ts - iter->tr->time_start;
+> +	unsigned long long rel_ts = next_ts - iter->ts;
+> +	unsigned long mark_thresh;
+> +
+> +	if (in_ns) {
+> +		abs_ts = ns2usecs(abs_ts);
+> +		rel_ts = ns2usecs(rel_ts);
+> +		mark_thresh = preempt_mark_thresh_us;
+> +	} else
+> +		mark_thresh = preempt_mark_thresh_cycles;
+> +
+> +	if (verbose && in_ns) {
+> +		ret = trace_seq_printf(
+> +				s, "[%08llx] %lld.%03lldms (+%lld.%03lldms): ",
+> +				ns2usecs(iter->ts),
+> +				abs_ts / USEC_PER_MSEC,
+> +				abs_ts % USEC_PER_MSEC,
+> +				rel_ts / USEC_PER_MSEC,
 
-[PATCH] sched: add missing call for calc_load_exit_idle
+You can't divide 64 bit numbers in the kernel. It breaks on 32bit archs.
 
-https://lkml.org/lkml/2012/8/20/142
+-- Steve
 
+> +				rel_ts % USEC_PER_MSEC);
+> +	} else if (verbose && !in_ns) {
+> +		ret = trace_seq_printf(
+> +				s, "[%016llx] %lld (+%lld): ",
+> +				iter->ts, abs_ts, rel_ts);
+> +	} else { /* !verbose */
+> +		ret = trace_seq_printf(
+> +				s, " %4lld%s%c: ",
+> +				abs_ts,
+> +				in_ns ? "us" : "",
+> +				rel_ts > mark_thresh ? '!' :
+> +				  rel_ts > 1 ? '+' : ' ');
+> +	}
+> +	return ret;
+>  }
+>  
+>  int trace_print_context(struct trace_iterator *iter)
+>  {
+>  	struct trace_seq *s = &iter->seq;
+>  	struct trace_entry *entry = iter->ent;
+> -	unsigned long long t = ns2usecs(iter->ts);
+> -	unsigned long usec_rem = do_div(t, USEC_PER_SEC);
+> -	unsigned long secs = (unsigned long)t;
+> +	unsigned long long t;
+> +	unsigned long secs, usec_rem;
+>  	char comm[TASK_COMM_LEN];
+>  	int ret;
+>  
+> @@ -644,8 +677,13 @@ int trace_print_context(struct trace_iterator *iter)
+>  			return 0;
+>  	}
+>  
+> -	return trace_seq_printf(s, " %5lu.%06lu: ",
+> -				secs, usec_rem);
+> +	if (iter->iter_flags & TRACE_FILE_TIME_IN_NS) {
+> +		t = ns2usecs(iter->ts);
+> +		usec_rem = do_div(t, USEC_PER_SEC);
+> +		secs = (unsigned long)t;
+> +		return trace_seq_printf(s, "%5lu.%06lu: ", secs, usec_rem);
+> +	} else
+> +		return trace_seq_printf(s, "%12llu: ", iter->ts);
+>  }
+>  
+>  int trace_print_lat_context(struct trace_iterator *iter)
+> @@ -659,36 +697,30 @@ int trace_print_lat_context(struct trace_iterator *iter)
+>  			   *next_entry = trace_find_next_entry(iter, NULL,
+>  							       &next_ts);
+>  	unsigned long verbose = (trace_flags & TRACE_ITER_VERBOSE);
+> -	unsigned long abs_usecs = ns2usecs(iter->ts - iter->tr->time_start);
+> -	unsigned long rel_usecs;
+> +
+>  
+>  	/* Restore the original ent_size */
+>  	iter->ent_size = ent_size;
+>  
+>  	if (!next_entry)
+>  		next_ts = iter->ts;
+> -	rel_usecs = ns2usecs(next_ts - iter->ts);
+>  
+>  	if (verbose) {
+>  		char comm[TASK_COMM_LEN];
+>  
+>  		trace_find_cmdline(entry->pid, comm);
+>  
+> -		ret = trace_seq_printf(s, "%16s %5d %3d %d %08x %08lx [%08llx]"
+> -				       " %ld.%03ldms (+%ld.%03ldms): ", comm,
+> -				       entry->pid, iter->cpu, entry->flags,
+> -				       entry->preempt_count, iter->idx,
+> -				       ns2usecs(iter->ts),
+> -				       abs_usecs / USEC_PER_MSEC,
+> -				       abs_usecs % USEC_PER_MSEC,
+> -				       rel_usecs / USEC_PER_MSEC,
+> -				       rel_usecs % USEC_PER_MSEC);
+> +		ret = trace_seq_printf(
+> +				s, "%16s %5d %3d %d %08x %08lx ",
+> +				comm, entry->pid, iter->cpu, entry->flags,
+> +				entry->preempt_count, iter->idx);
+>  	} else {
+>  		ret = lat_print_generic(s, entry, iter->cpu);
+> -		if (ret)
+> -			ret = lat_print_timestamp(s, abs_usecs, rel_usecs);
+>  	}
+>  
+> +	if (ret)
+> +		ret = lat_print_timestamp(iter, next_ts);
+> +
+>  	return ret;
+>  }
+>  
 
-On 09/25/2012 05:39 AM, Russell King wrote:
-> I have here a cubox running v3.5, and I've been watching top while it's
-> playing back an mpeg stream from NFS using vlc.  rootfs on SD card, and
-> it's uniprocessor.
->
-> Top reports the following:
->
-> top - 20:38:35 up 44 min,  3 users,  load average: 1.26, 1.10, 1.10
-> Tasks: 125 total,   1 running, 124 sleeping,   0 stopped,   0 zombie
-> Cpu(s): 55.0%us,  3.5%sy,  0.0%ni, 40.8%id,  0.0%wa,  0.7%hi,  0.0%si,  0.0%st
-> Mem:    768892k total,   757900k used,    10992k free,    37080k buffers
-> Swap:        0k total,        0k used,        0k free,   505940k cached
->
->    PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->   4270 cubox     20   0  244m  68m  38m S 51.3  9.2  18:33.32 vlc
->   3659 root      20   0 57652  40m  35m S  6.5  5.4   3:06.79 Xorg
->
-> and it stays fairly constant like that - around 55-60% user ticks
-> around 2-4% system, 40% idle, 0% wait, and around a total of 1%
-> interrupt (combined hardware/software).  Here's another snapshot:
->
-> top - 20:41:58 up 47 min,  3 users,  load average: 0.93, 1.04, 1.07
-> Tasks: 125 total,   1 running, 124 sleeping,   0 stopped,   0 zombie
-> Cpu(s): 59.8%us,  1.0%sy,  0.0%ni, 38.5%id,  0.0%wa,  0.3%hi,  0.3%si,  0.0%st
-> Mem:    768892k total,   755296k used,    13596k free,    37080k buffers
-> Swap:        0k total,        0k used,        0k free,   503856k cached
->
->    PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->   4270 cubox     20   0  243m  68m  38m S 53.6  9.1  20:19.74 vlc
->   3659 root      20   0 57652  40m  35m S  6.5  5.4   3:20.50 Xorg
->
-> Now, for this capture, I've set top's interval to be 60 seconds:
->
-> top - 20:49:52 up 55 min,  3 users,  load average: 0.99, 0.96, 1.01
-> Tasks: 125 total,   1 running, 124 sleeping,   0 stopped,   0 zombie
-> Cpu(s): 60.4%us,  1.6%sy,  0.0%ni, 36.6%id,  0.1%wa,  0.5%hi,  0.8%si,  0.0%st
-> Mem:    768892k total,   759816k used,     9076k free,    37076k buffers
-> Swap:        0k total,        0k used,        0k free,   508340k cached
->
->    PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->   4270 cubox     20   0  244m  68m  38m S 54.7  9.2  24:23.46 vlc
->   3659 root      20   0 57652  40m  35m S  4.6  5.4   4:02.80 Xorg
->
-> And finally, here's what vmstat 5 looks like:
->
-> procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
->   r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
->   0  0      0  13788  37164 503380    0    0    62    13  472  444 52  5 33  9
->   0  0      0  13416  37164 504340    0    0     0     0  354  344 62  2 37  0
->   1  0      0  12424  37164 505300    0    0     0     0  356  374 61  3 36  0
->   4  0      0  11556  37164 506260    0    0     0     0  357  360 63  2 35  0
->   1  0      0  10564  37164 507220    0    0     0     1  359  358 56  4 41  0
->   0  0      0   9572  37164 508180    0    0     0     0  349  369 57  3 41  0
->   0  0      0  11628  37164 505368    0    0     0     0  356  350 56  4 41  0
->   2  0      0  11432  37164 506328    0    0     0     0  350  372 57  3 40  0
->   0  0      0  10440  37164 507288    0    0     0     0  351  379 57  3 40  0
->   0  0      0   9448  37164 508248    0    0     0     0  342  348 57  2 41  0
->   0  0      0  12248  37156 504804    0    0     0     0  356  381 60  3 37  0
->   0  0      0  12052  37156 505764    0    0     0     0  354  365 61  3 36  0
->   1  0      0  12052  37156 505764    0    0     0     0  226  326 56  2 42  0
->   0  0      0  11060  37156 506724    0    0     0     0  352  355 54  5 42  0
->   0  0      0  10068  37156 507684    0    0     0     0  357  356 58  3 38  0
->   0  0      0   9076  37156 508644    0    0     0     0  351  356 64  3 33  0
->
-> Yet, for some reason, the load average sits around 0.9-1.3.  I don't
-> understand this - if processes are only running for around 65% of the
-> time and there's very little waiting for IO, why should the load
-> average be saying that the system load is equivalent to 1 process
-> running for 1minute/5minutes/15minutes?
->
-> I've also seen a situation where vlc has been using close to 90%
-> CPU, plays flawlessly, yet the load average reports as 1.5 - if the
-
-> load average is more than 1, then that should mean there is
-> insufficient system bandwidth to sustain the running jobs in real
-> time (because its saying that there's 1.5 processes running
-> continuously over 1 minute, and as there's only one CPU...)
->
-> The behaviour I'm seeing from the kernel's load average calculation
-> just seems wrong.
->
-> Config which may be related:
->
-> CONFIG_HZ=100
-> CONFIG_NO_HZ=y
-> CONFIG_HIGH_RES_TIMERS=y,
-> CONFIG_CGROUP_SCHED=y
-> CONFIG_FAIR_GROUP_SCHED=y
-> CONFIG_CFS_BANDWIDTH=y
-> CONFIG_RT_GROUP_SCHED=y
-> # CONFIG_SCHED_AUTOGROUP is not set
->
-> Reading the comments before get_avenrun(), I've tried disabling NO_HZ,
-> and I wouldn't say it's had too much effect.  The following top is with
-> NO_HZ disabled:
->
-> top - 22:11:00 up 16 min,  2 users,  load average: 0.84, 1.04, 0.91
-> Tasks: 120 total,   1 running, 119 sleeping,   0 stopped,   0 zombie
-> Cpu(s): 52.8%us,  0.3%sy,  0.0%ni, 42.7%id,  3.3%wa,  0.7%hi,  0.3%si,  0.0%st
-> Mem:    768900k total,   622984k used,   145916k free,    29196k buffers
-> Swap:        0k total,        0k used,        0k free,   399248k cached
->
->    PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->   4332 cubox     20   0  235m  52m  34m S 48.9  7.0   4:38.32 vlc
->   3667 root      20   0 56000  35m  31m S  6.8  4.8   0:43.32 Xorg
->   4347 root      20   0  2276 1144  764 R  1.0  0.1   0:05.36 top
->
-> What I do notice with NO_HZ=n is that the 1min load average seems to be
-> a little more responsive to load changes.
->
-> Any ideas or explanations about the apparantly higher than real load
-> average figures?
->
 
