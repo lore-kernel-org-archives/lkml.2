@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab2IYP33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 11:29:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41012 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753230Ab2IYP31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 11:29:27 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Len Brown <lenb@kernel.org>
-Subject: [PATCH] ACPI: Only allow users with CAP_SYS_RAWIO rights to overwrite ACPI funcs at runtime
-Date: Tue, 25 Sep 2012 17:25:11 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.20-desktop; KDE/4.6.0; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, hpa@zytor.com,
-        initramfs@vger.kernel.org, robert.moore@intel.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        yinghai@kernel.org, eric.piel@tremplin-utc.net, vojcek@tlen.pl
-References: <1348234085-39220-1-git-send-email-trenn@suse.de> <201209240840.29342.trenn@suse.de> <20120924102159.346d0735@pyramind.ukuu.org.uk>
-In-Reply-To: <20120924102159.346d0735@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209251725.13085.trenn@suse.de>
+	id S1756929Ab2IYPaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 11:30:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39458 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab2IYPaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 11:30:21 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Ric Wheeler <rwheeler@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-scsi@vger.kernel.org
+Subject: [PATCH v2 0/3] block: add queue-private command filter, editable via sysfs
+Date: Tue, 25 Sep 2012 17:30:06 +0200
+Message-Id: <1348587009-22400-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI: Only allow users with CAP_SYS_RAWIO rights to overwrite ACPI funcs at runtime
+The set of use cases for SG_IO is quite variable that no single filter can
+accomodate all of them.  The current filter is tailored very much to
+CD burning, and includes many MMC-specific commands that may have
+other meanings in different standards.  Someone may want to remove
+those commands; at the same time, people that trust their users may
+want to add persistent reservations, trim/discard, or even access to
+vendor-specific commands.
 
-and tab align file_operations callbacks.
+Filters used to be mutable via sysfs, but the implementation was
+never enabled.  Add it back, and let the admin set this up per device.
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
----
- drivers/acpi/custom_method.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+A simple bitmap does not let you do things like enabling command A with
+option B on a specific device for a certain block range.  However, the
+question is really whether this is needed---in fact, neither of the known
+uses for the filtering need it.
 
-diff --git a/drivers/acpi/custom_method.c b/drivers/acpi/custom_method.c
-index 5d42c24..9a0294d 100644
---- a/drivers/acpi/custom_method.c
-+++ b/drivers/acpi/custom_method.c
-@@ -72,9 +72,15 @@ static ssize_t cm_write(struct file *file, const char __user * user_buf,
- 	return count;
- }
- 
-+static int open_check_acc(struct inode *inode, struct file *filp)
-+{
-+	return capable(CAP_SYS_RAWIO) ? 0 : -EPERM;
-+}
-+
- static const struct file_operations cm_fops = {
--	.write = cm_write,
--	.llseek = default_llseek,
-+	.write	= cm_write,
-+	.llseek	= default_llseek,
-+	.open	= open_check_acc,
- };
- 
- static int __init acpi_custom_method_init(void)
+In one use case, the administrator then needs the ability to configure
+devices easily, for example to be much more restrictive on non-MMC
+devices.  It must be done with the same tools it uses for other aspects
+of the policy---which will be a combination of DAC (Unix permissions and
+ACLs) and sysfs.  Different SCSI standards may give different meanings
+for the same byte value, but a simple bitmap is enough for this.
+
+In the virtualization case, the problem is really that you want to
+pass through everything or almost everything, while still running as
+confined as possible (i.e. CAP_SYS_RAWIO is not a choice).  But in this
+case a more complex filtering can be done just as easily in userspace,
+in the virtual machine monitor.  While the userspace filter can be
+subverted if the guest can escape the QEMU jail, the bitmap still lets
+you block some commands at the kernel level if really necessary.
+
+One alternative is a ioctl to disable the filter altogether, to be
+used together with SCM_RIGHTS file descriptor passing.  This works in
+the virtualization case but not for policy decisions.  So this patch
+series provides the sysfs knob.  It is a tweaked revert of commit 018e044
+(block: get rid of queue-private command filter, 2009-06-26).
+
+Please review!
+
+Paolo
+
+v1->v2: add OOM and capability checks
+
+Paolo Bonzini (3):
+  block: add back queue-private command filter
+  scsi: create an all-zero filter for scanners
+  block: add back command filter modification via sysfs
+
+ Documentation/block/queue-sysfs.txt |   16 +++++
+ block/Kconfig                       |   10 +++
+ block/blk-sysfs.c                   |   43 +++++++++++++
+ block/bsg.c                         |    2 +-
+ block/scsi_ioctl.c                  |  117 +++++++++++++++++++++++++++++++----
+ drivers/scsi/scsi_scan.c            |    6 ++-
+ drivers/scsi/sg.c                   |    7 +-
+ include/linux/blkdev.h              |   31 +++++++++-
+ 8 files changed, 213 insertions(+), 19 deletions(-)
+
