@@ -1,110 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab2IYMNj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 08:13:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45702 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708Ab2IYMNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 08:13:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,481,1344236400"; 
-   d="scan'208";a="197405217"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv1 5/6] MAINTAINERS: fix indentation for Viresh Kumar
-Date: Tue, 25 Sep 2012 15:13:09 +0300
-Message-Id: <1348575190-11761-6-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1756115Ab2IYMOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 08:14:18 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:53187 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751507Ab2IYMOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 08:14:15 -0400
+Date: Tue, 25 Sep 2012 15:09:19 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr, akpm@linux-foundation.org, a.zummo@towertech.it
+Subject: Re: [PATCHv3 0/7] rtc: convert to c99 format
+Message-ID: <20120925120918.GZ9137@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1348572726-6940-1-git-send-email-shubhrajyoti@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9Q79yvCDNTHf0qBd"
+Content-Disposition: inline
+In-Reply-To: <1348572726-6940-1-git-send-email-shubhrajyoti@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>
----
- MAINTAINERS |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8fa0255..479a655 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -572,7 +572,7 @@ F:	drivers/net/appletalk/
- F:	net/appletalk/
- 
- ARASAN COMPACT FLASH PATA CONTROLLER
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- L:	linux-ide@vger.kernel.org
- S:	Maintained
- F:	include/linux/pata_arasan_cf_data.h
-@@ -6006,7 +6006,7 @@ S:	Maintained
- F:	drivers/tty/serial
- 
- SYNOPSYS DESIGNWARE DMAC DRIVER
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- S:	Maintained
- F:	include/linux/dw_dmac.h
- F:	drivers/dma/dw_dmac_regs.h
-@@ -6154,7 +6154,7 @@ S:	Maintained
- F:	drivers/mmc/host/sdhci-s3c.c
- 
- SECURE DIGITAL HOST CONTROLLER INTERFACE (SDHCI) ST SPEAR DRIVER
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- L:	spear-devel@list.st.com
- L:	linux-mmc@vger.kernel.org
- S:	Maintained
-@@ -6524,7 +6524,7 @@ S:	Maintained
- F:	include/linux/compiler.h
- 
- SPEAR PLATFORM SUPPORT
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- M:	Shiraz Hashim <shiraz.hashim@st.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-@@ -6533,7 +6533,7 @@ S:	Maintained
- F:	arch/arm/plat-spear/
- 
- SPEAR13XX MACHINE SUPPORT
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- M:	Shiraz Hashim <shiraz.hashim@st.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-@@ -6542,7 +6542,7 @@ S:	Maintained
- F:	arch/arm/mach-spear13xx/
- 
- SPEAR3XX MACHINE SUPPORT
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- M:	Shiraz Hashim <shiraz.hashim@st.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-@@ -6553,7 +6553,7 @@ F:	arch/arm/mach-spear3xx/
- SPEAR6XX MACHINE SUPPORT
- M:	Rajeev Kumar <rajeev-dlh.kumar@st.com>
- M:	Shiraz Hashim <shiraz.hashim@st.com>
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- W:	http://www.st.com/spear
-@@ -6561,7 +6561,7 @@ S:	Maintained
- F:	arch/arm/mach-spear6xx/
- 
- SPEAR CLOCK FRAMEWORK SUPPORT
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- W:	http://www.st.com/spear
--- 
-1.7.10.4
+--9Q79yvCDNTHf0qBd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
+
+On Tue, Sep 25, 2012 at 05:01:59PM +0530, Shubhrajyoti D wrote:
+> The series tries to convert the i2c_msg to c99 struct.
+> This may avoid issues like below if someone tries to add a
+> structure.
+> http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg08972.html
+>=20
+> Special thanks to Julia Lawall for helping it automate.
+> By the below script.
+> http://www.mail-archive.com/cocci@diku.dk/msg02753.html
+> =20
+> Resending with Andrew Morton in cc for review as it was suggested to me.
+>=20
+> Fix a typo in the comments that crept in.
+>=20
+> Shubhrajyoti D (7):
+>   rtc: Convert struct i2c_msg initialization to C99 format
+>   rtc: Convert struct i2c_msg initialization to C99 format
+>   rtc: Convert struct i2c_msg initialization to C99 format
+>   rtc: Convert struct i2c_msg initialization to C99 format
+>   rtc: Convert struct i2c_msg initialization to C99 format
+>   rtc: Convert struct i2c_msg initialization to C99 format
+>   rtc: Convert struct i2c_msg initialization to C99 format
+
+FWIW:
+
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+complete series look fine.
+
+--=20
+balbi
+
+--9Q79yvCDNTHf0qBd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQYZ7uAAoJEIaOsuA1yqRESfYP/1FKS3bB40/7NUobHjVDewyo
+zNDQs3AB+qL+72jOUixGjOKZbHwDsrQyFrHtkc8yCRNkt6HNZSkGhKCfTX0k+WKU
+0CfnhtYG7txPEzBht2D5r8rhbl+WYGH/EdZINhM/e6zV7yydLFT72Kgpjpfi3l6A
+ZPtc+VJ007mH0IHyHxquxoWtuhq04RzrUANo6q/TJzAziG5GO+Rhbyng10vNxUsp
+mTdjUYZRIwYpB6LImVAr1Eci8a4qyYLzRo6tqyaLsYJNqF86VtWbfjZpnlyZanNo
+V1lGGT4t0NDqaXlFxhjw+YzFiYqkFURirkGSxYH1OgLx1sW0KkoRcXsLmIEhwROA
+27JF0XFLTPYr9gQTcih/uaUwq5hCT+/ztNpuP7DDnLKNA17k/jaIJjyKgA4zr2DU
+xx1ZganqzkXiCtiHf/6+PYBjWIiQCUZmT+XD90IJXmYSvYp5qst3XK949N0KQlS6
+85CSSBgCeKnTJZ3zr7+SKoa8HuZVKwWPKJEmdh0COYSAkdFj/OmyalaIz3yZdz8V
+C2PEq8iYjAiyeM65oGX17ZX5Q+3TRR4lhFq1uxMWMB0SvBon80JbZ3kYSpoTW3jC
+T+4EkT6zDEv9q0VL30IbIk8I98zIqRqiqtJh8Bz3YoTnuExhQnmAQnQXK0KGf8lk
+ost4VaURfJ5ZagCXNOka
+=ufQX
+-----END PGP SIGNATURE-----
+
+--9Q79yvCDNTHf0qBd--
