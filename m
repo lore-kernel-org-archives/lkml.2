@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab2IYL5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:57:50 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37063 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab2IYL5r (ORCPT
+	id S1755991Ab2IYL60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:58:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43076 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262Ab2IYL6Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:57:47 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH] gpu/drm/ttm: use copy_highpage
-Date: Tue, 25 Sep 2012 20:57:02 +0900
-Message-Id: <1348574222-3512-2-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1348574222-3512-1-git-send-email-akinobu.mita@gmail.com>
-References: <n>
- <1348574222-3512-1-git-send-email-akinobu.mita@gmail.com>
+	Tue, 25 Sep 2012 07:58:25 -0400
+Message-ID: <1348574286.3881.40.camel@twins>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>, Borislav Petkov <bp@alien8.de>,
+        Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Tue, 25 Sep 2012 13:58:06 +0200
+In-Reply-To: <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+References: <20120914212717.GA29307@liondog.tnic>
+	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	 <20120924150048.GB11266@suse.de> <1348500647.11847.69.camel@twins>
+	 <CA+55aFy5C-gFs6ZU5LyyVN=oxpuoaOpydkbJbhri215QkLx3aA@mail.gmail.com>
+	 <1348503163.11847.97.camel@twins>
+	 <CA+55aFzU2QOgexc2cpEkWqPBw6wPJMBuUzRyxTxu=rxZV_ay3A@mail.gmail.com>
+	 <1348505683.11847.111.camel@twins>
+	 <1348511193.6951.44.camel@marge.simpson.net>
+	 <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
+	 <20120924192056.GB4082@liondog.tnic>
+	 <1348538258.7100.23.camel@marge.simpson.net>
+	 <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use copy_highpage() to copy from one page to another.
+On Mon, 2012-09-24 at 19:11 -0700, Linus Torvalds wrote:
+> In the not-so-distant past, we had the intel "Dunnington" Xeon, which
+> was iirc basically three Core 2 duo's bolted together (ie three
+> clusters of two cores sharing L2, and a fully shared L3). So that was
+> a true multi-core with fairly big shared L2, and it really would be
+> sad to not use the second core aggressively. 
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
----
- drivers/gpu/drm/ttm/ttm_tt.c | 16 ++--------------
- 1 file changed, 2 insertions(+), 14 deletions(-)
+Ah indeed. My Core2Quad didn't have an L3 afaik (its sitting around
+without a PSU atm so checking gets a little hard) so the LLC level was
+the L2 and all worked out right (it also not having SMT helped of
+course).
 
-diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-index fa09daf..11c9369 100644
---- a/drivers/gpu/drm/ttm/ttm_tt.c
-+++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -290,8 +290,6 @@ int ttm_tt_swapin(struct ttm_tt *ttm)
- 	struct file *swap_storage;
- 	struct page *from_page;
- 	struct page *to_page;
--	void *from_virtual;
--	void *to_virtual;
- 	int i;
- 	int ret = -ENOMEM;
- 
-@@ -311,11 +309,7 @@ int ttm_tt_swapin(struct ttm_tt *ttm)
- 			goto out_err;
- 
- 		preempt_disable();
--		from_virtual = kmap_atomic(from_page);
--		to_virtual = kmap_atomic(to_page);
--		memcpy(to_virtual, from_virtual, PAGE_SIZE);
--		kunmap_atomic(to_virtual);
--		kunmap_atomic(from_virtual);
-+		copy_highpage(to_page, from_page);
- 		preempt_enable();
- 		page_cache_release(from_page);
- 	}
-@@ -336,8 +330,6 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
- 	struct file *swap_storage;
- 	struct page *from_page;
- 	struct page *to_page;
--	void *from_virtual;
--	void *to_virtual;
- 	int i;
- 	int ret = -ENOMEM;
- 
-@@ -367,11 +359,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
- 			goto out_err;
- 		}
- 		preempt_disable();
--		from_virtual = kmap_atomic(from_page);
--		to_virtual = kmap_atomic(to_page);
--		memcpy(to_virtual, from_virtual, PAGE_SIZE);
--		kunmap_atomic(to_virtual);
--		kunmap_atomic(from_virtual);
-+		copy_highpage(to_page, from_page);
- 		preempt_enable();
- 		set_page_dirty(to_page);
- 		mark_page_accessed(to_page);
--- 
-1.7.11.4
+But if there was a Xeon chip that did add a package L3 then yes, all
+this would become more interesting still. We'd need to extend the
+scheduler topology a bit as well, I don't think it can currently handle
+this well.
 
+So I guess we get to do some work for steamroller.
