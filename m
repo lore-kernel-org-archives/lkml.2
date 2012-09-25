@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab2IYLq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:46:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39152 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755444Ab2IYLq2 convert rfc822-to-8bit (ORCPT
+	id S1755911Ab2IYLsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:48:05 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:45453 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755444Ab2IYLsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:46:28 -0400
-Message-ID: <1348573571.3881.32.camel@twins>
-Subject: Re: [PATCH 3/3] workqueue: Schedule work on non-idle cpu instead of
- current one
-From: Peter Zijlstra <peterz@infradead.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-kernel@vger.kernel.org, pjt@google.com, paul.mckenney@linaro.org,
-        tglx@linutronix.de, tj@kernel.org, suresh.b.siddha@intel.com,
-        venki@google.com, mingo@redhat.com, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Arvind.Chauhan@arm.com,
-        amit.kucheria@linaro.org, vincent.guittot@linaro.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Date: Tue, 25 Sep 2012 13:46:11 +0200
-In-Reply-To: <1348573208.3881.27.camel@twins>
-References: <viresh.kumar@linaro.org>
-	 <cover.1348568074.git.viresh.kumar@linaro.org>
-	 <3232b3192e2e373cc4aaf43359d454c5ad53cddb.1348568074.git.viresh.kumar@linaro.org>
-	 <1348572145.3881.18.camel@twins>
-	 <CAKohpokju4=fVKtq=rG0y-_c54n0yErzredW1BEJ5eTSaDyHpg@mail.gmail.com>
-	 <1348573208.3881.27.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 25 Sep 2012 07:48:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <201209251343.36240.hansverk@cisco.com>
+References: <1348571784-4237-1-git-send-email-prabhakar.lad@ti.com> <201209251343.36240.hansverk@cisco.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 25 Sep 2012 17:17:41 +0530
+Message-ID: <CA+V-a8txW-bhAnG77iVNZbLBkUKD3RSdD4+VEkVQ-hKoqi+Bbw@mail.gmail.com>
+Subject: Re: [PATCH] media: davinci: vpif: set device capabilities
+To: Hans Verkuil <hansverk@cisco.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        VGER <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-25 at 13:40 +0200, Peter Zijlstra wrote:
-> On Tue, 2012-09-25 at 17:00 +0530, Viresh Kumar wrote:
-> > But this is what the initial idea during LPC we had.
-> 
-> Yeah.. that's true.
-> 
-> >  Any improvements here you can suggest? 
-> 
-> We could uhm... /me tries thinking ... reuse some of the NOHZ magic?
-> Would that be sufficient, not waking a NOHZ cpu, or do you really want
-> not waking any idle cpu?
+Hi Hans,
 
-Depending on the trade-off we could have the NOHZ stuff track a
-non-NOHZ-idle cpu and avoid having to compute one every time we need it.
+Thanks for the review.
 
+On Tue, Sep 25, 2012 at 5:13 PM, Hans Verkuil <hansverk@cisco.com> wrote:
+> On Tue 25 September 2012 13:16:24 Prabhakar wrote:
+>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+>> ---
+>>  drivers/media/platform/davinci/vpif_capture.c |    4 +++-
+>>  drivers/media/platform/davinci/vpif_display.c |    4 +++-
+>>  2 files changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+>> index 4828888..faeca98 100644
+>> --- a/drivers/media/platform/davinci/vpif_capture.c
+>> +++ b/drivers/media/platform/davinci/vpif_capture.c
+>> @@ -1630,7 +1630,9 @@ static int vpif_querycap(struct file *file, void  *priv,
+>>  {
+>>       struct vpif_capture_config *config = vpif_dev->platform_data;
+>>
+>> -     cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
+>> +     cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING |
+>> +                     V4L2_CAP_READWRITE;
+>> +     cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
+>>       strlcpy(cap->driver, "vpif capture", sizeof(cap->driver));
+>
+> This should be the real driver name which is 'vpif_capture'.
+>
+Ok.
 
+>>       strlcpy(cap->bus_info, "VPIF Platform", sizeof(cap->bus_info));
+>
+> For bus_info I would use: "platform:vpif_capture".
+>
+> The 'platform:' prefix is going to be the standard for platform drivers.
+>
+Ok.
 
+>>       strlcpy(cap->card, config->card_name, sizeof(cap->card));
+>> diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
+>> index d94b8a2..171e449 100644
+>> --- a/drivers/media/platform/davinci/vpif_display.c
+>> +++ b/drivers/media/platform/davinci/vpif_display.c
+>> @@ -827,7 +827,9 @@ static int vpif_querycap(struct file *file, void  *priv,
+>>  {
+>>       struct vpif_display_config *config = vpif_dev->platform_data;
+>>
+>> -     cap->capabilities = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
+>> +     cap->device_caps = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING |
+>> +                         V4L2_CAP_READWRITE;
+>> +     cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
+>>       strlcpy(cap->driver, "vpif display", sizeof(cap->driver));
+>
+> vpif_driver
+>
+>>       strlcpy(cap->bus_info, "Platform", sizeof(cap->bus_info));
+>
+> Ditto: "platform:vpif_driver".
+>
+>>       strlcpy(cap->card, config->card_name, sizeof(cap->card));
+>>
+>
+Ok, I'll respin v2 with all the changes.
 
+Regards,
+--Prabhakar Lad
+
+> Regards,
+>
+>         Hans
