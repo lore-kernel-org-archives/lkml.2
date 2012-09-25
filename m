@@ -1,123 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab2IYIJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 04:09:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51661 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753380Ab2IYIJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 04:09:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,479,1344236400"; 
-   d="scan'208";a="197332824"
-Date: Tue, 25 Sep 2012 16:03:13 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>, <andi@firstfloor.org>,
-        <namhyung@kernel.org>, <dsahern@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/9] perf hists: Move hists_init() from util/evsel.c
- to util/hist.c
-Message-ID: <20120925160313.43f550fe@feng-i7>
-In-Reply-To: <20120924160239.GD9977@infradead.org>
-References: <1348500251-9937-1-git-send-email-feng.tang@intel.com>
-	<1348500251-9937-2-git-send-email-feng.tang@intel.com>
-	<20120924160239.GD9977@infradead.org>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753665Ab2IYIKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 04:10:30 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42168 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab2IYIKZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 04:10:25 -0400
+X-AuditID: 9c93016f-b7c19ae000000e6d-91-506166eec680
+Date: Tue, 25 Sep 2012 17:13:27 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] mm: compaction: Acquire the zone->lru_lock as late
+ as possible
+Message-ID: <20120925081327.GA7759@bbox>
+References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
+ <1348224383-1499-6-git-send-email-mgorman@suse.de>
+ <20120925070517.GK13234@bbox>
+ <20120925075105.GC11266@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120925075105.GC11266@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Sep 2012 13:02:39 -0300
-Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-
-> Em Mon, Sep 24, 2012 at 11:24:03PM +0800, Feng Tang escreveu:
-> > Which looks more natural
-> 
-> It is there to avoid dragging the hist code into the python binding :-\
-
-Didn't notice this, please ignore this one.
-
-Thanks,
-Feng
-
-> 
-> - Arnaldo
->  
-> > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > ---
-> >  tools/perf/util/evsel.c |   10 ----------
-> >  tools/perf/util/evsel.h |    2 --
-> >  tools/perf/util/hist.c  |   10 ++++++++++
-> >  tools/perf/util/hist.h  |    1 +
-> >  4 files changed, 11 insertions(+), 12 deletions(-)
+On Tue, Sep 25, 2012 at 08:51:05AM +0100, Mel Gorman wrote:
+> On Tue, Sep 25, 2012 at 04:05:17PM +0900, Minchan Kim wrote:
+> > Hi Mel,
 > > 
-> > diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> > index 1506ba0..4c7328d 100644
-> > --- a/tools/perf/util/evsel.c
-> > +++ b/tools/perf/util/evsel.c
-> > @@ -39,16 +39,6 @@ static int __perf_evsel__sample_size(u64 sample_type)
-> >  	return size;
-> >  }
-> >  
-> > -void hists__init(struct hists *hists)
-> > -{
-> > -	memset(hists, 0, sizeof(*hists));
-> > -	hists->entries_in_array[0] = hists->entries_in_array[1] = RB_ROOT;
-> > -	hists->entries_in = &hists->entries_in_array[0];
-> > -	hists->entries_collapsed = RB_ROOT;
-> > -	hists->entries = RB_ROOT;
-> > -	pthread_mutex_init(&hists->lock, NULL);
-> > -}
-> > -
-> >  void perf_evsel__init(struct perf_evsel *evsel,
-> >  		      struct perf_event_attr *attr, int idx)
-> >  {
-> > diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-> > index 93876ba..af0bc97 100644
-> > --- a/tools/perf/util/evsel.h
-> > +++ b/tools/perf/util/evsel.h
-> > @@ -197,8 +197,6 @@ static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
-> >  	return __perf_evsel__read(evsel, ncpus, nthreads, true);
-> >  }
-> >  
-> > -void hists__init(struct hists *hists);
-> > -
-> >  int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
-> >  			     struct perf_sample *sample, bool swapped);
-> >  
-> > diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> > index 6ec5398..d3689e5 100644
-> > --- a/tools/perf/util/hist.c
-> > +++ b/tools/perf/util/hist.c
-> > @@ -690,3 +690,13 @@ void hists__inc_nr_events(struct hists *hists, u32 type)
-> >  	++hists->stats.nr_events[0];
-> >  	++hists->stats.nr_events[type];
-> >  }
-> > +
-> > +void hists__init(struct hists *hists)
-> > +{
-> > +	memset(hists, 0, sizeof(*hists));
-> > +	hists->entries_in_array[0] = hists->entries_in_array[1] = RB_ROOT;
-> > +	hists->entries_in = &hists->entries_in_array[0];
-> > +	hists->entries_collapsed = RB_ROOT;
-> > +	hists->entries = RB_ROOT;
-> > +	pthread_mutex_init(&hists->lock, NULL);
-> > +}
-> > diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-> > index f011ad4..4edfb74 100644
-> > --- a/tools/perf/util/hist.h
-> > +++ b/tools/perf/util/hist.h
-> > @@ -70,6 +70,7 @@ struct hists {
-> >  	u16			col_len[HISTC_NR_COLS];
-> >  };
-> >  
-> > +void hists__init(struct hists *hists);
-> >  struct hist_entry *__hists__add_entry(struct hists *self,
-> >  				      struct addr_location *al,
-> >  				      struct symbol *parent, u64 period);
-> > -- 
-> > 1.7.1
+> > I have a question below.
+> > 
+> > On Fri, Sep 21, 2012 at 11:46:19AM +0100, Mel Gorman wrote:
+> > > Compactions migrate scanner acquires the zone->lru_lock when scanning a range
+> > > of pages looking for LRU pages to acquire. It does this even if there are
+> > > no LRU pages in the range. If multiple processes are compacting then this
+> > > can cause severe locking contention. To make matters worse commit b2eef8c0
+> > > (mm: compaction: minimise the time IRQs are disabled while isolating pages
+> > > for migration) releases the lru_lock every SWAP_CLUSTER_MAX pages that are
+> > > scanned.
+> > > 
+> > > This patch makes two changes to how the migrate scanner acquires the LRU
+> > > lock. First, it only releases the LRU lock every SWAP_CLUSTER_MAX pages if
+> > > the lock is contended. This reduces the number of times it unnecessarily
+> > > disables and re-enables IRQs. The second is that it defers acquiring the
+> > > LRU lock for as long as possible. If there are no LRU pages or the only
+> > > LRU pages are transhuge then the LRU lock will not be acquired at all
+> > > which reduces contention on zone->lru_lock.
+> > > 
+> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > Acked-by: Rik van Riel <riel@redhat.com>
+> > > ---
+> > >  mm/compaction.c |   63 +++++++++++++++++++++++++++++++++++++------------------
+> > >  1 file changed, 43 insertions(+), 20 deletions(-)
+> > > 
+> > > diff --git a/mm/compaction.c b/mm/compaction.c
+> > > index 6b55491..a6068ff 100644
+> > > --- a/mm/compaction.c
+> > > +++ b/mm/compaction.c
+> > > @@ -50,6 +50,11 @@ static inline bool migrate_async_suitable(int migratetype)
+> > >  	return is_migrate_cma(migratetype) || migratetype == MIGRATE_MOVABLE;
+> > >  }
+> > >  
+> > > +static inline bool should_release_lock(spinlock_t *lock)
+> > > +{
+> > > +	return need_resched() || spin_is_contended(lock);
+> > > +}
+> > > +
+> > >  /*
+> > >   * Compaction requires the taking of some coarse locks that are potentially
+> > >   * very heavily contended. Check if the process needs to be scheduled or
+> > > @@ -62,7 +67,7 @@ static inline bool migrate_async_suitable(int migratetype)
+> > >  static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+> > >  				      bool locked, struct compact_control *cc)
+> > >  {
+> > > -	if (need_resched() || spin_is_contended(lock)) {
+> > > +	if (should_release_lock(lock)) {
+> > >  		if (locked) {
+> > >  			spin_unlock_irqrestore(lock, *flags);
+> > >  			locked = false;
+> > > @@ -327,7 +332,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> > >  	isolate_mode_t mode = 0;
+> > >  	struct lruvec *lruvec;
+> > >  	unsigned long flags;
+> > > -	bool locked;
+> > > +	bool locked = false;
+> > >  
+> > >  	/*
+> > >  	 * Ensure that there are not too many pages isolated from the LRU
+> > > @@ -347,23 +352,17 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> > >  
+> > >  	/* Time to isolate some pages for migration */
+> > >  	cond_resched();
+> > > -	spin_lock_irqsave(&zone->lru_lock, flags);
+> > > -	locked = true;
+> > >  	for (; low_pfn < end_pfn; low_pfn++) {
+> > >  		struct page *page;
+> > >  
+> > >  		/* give a chance to irqs before checking need_resched() */
+> > > -		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
+> > > -			spin_unlock_irqrestore(&zone->lru_lock, flags);
+> > > -			locked = false;
+> > > +		if (locked && !((low_pfn+1) % SWAP_CLUSTER_MAX)) {
+> > > +			if (should_release_lock(&zone->lru_lock)) {
+> > > +				spin_unlock_irqrestore(&zone->lru_lock, flags);
+> > > +				locked = false;
+> > > +			}
+> > >  		}
+> > >  
+> > > -		/* Check if it is ok to still hold the lock */
+> > > -		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
+> > > -								locked, cc);
+> > > -		if (!locked || fatal_signal_pending(current))
+> > > -			break;
+> > > -
+> > >  		/*
+> > >  		 * migrate_pfn does not necessarily start aligned to a
+> > >  		 * pageblock. Ensure that pfn_valid is called when moving
+> > > @@ -403,21 +402,38 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> > >  		pageblock_nr = low_pfn >> pageblock_order;
+> > >  		if (!cc->sync && last_pageblock_nr != pageblock_nr &&
+> > >  		    !migrate_async_suitable(get_pageblock_migratetype(page))) {
+> > > -			low_pfn += pageblock_nr_pages;
+> > > -			low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
+> > > -			last_pageblock_nr = pageblock_nr;
+> > > -			continue;
+> > > +			goto next_pageblock;
+> > >  		}
+> > >  
+> > > +		/* Check may be lockless but that's ok as we recheck later */
+> > >  		if (!PageLRU(page))
+> > >  			continue;
+> > >  
+> > >  		/*
+> > > -		 * PageLRU is set, and lru_lock excludes isolation,
+> > > -		 * splitting and collapsing (collapsing has already
+> > > -		 * happened if PageLRU is set).
+> > > +		 * PageLRU is set. lru_lock normally excludes isolation
+> > > +		 * splitting and collapsing (collapsing has already happened
+> > > +		 * if PageLRU is set) but the lock is not necessarily taken
+> > > +		 * here and it is wasteful to take it just to check transhuge.
+> > > +		 * Check transhuge without lock and skip if it's either a
+> > > +		 * transhuge or hugetlbfs page.
+> > >  		 */
+> > >  		if (PageTransHuge(page)) {
+> > > +			if (!locked)
+> > > +				goto next_pageblock;
+> > 
+> > Why skip all pages in a pageblock if !locked?
+> > Shouldn't we add some comment?
+> > 
+> 
+> The comment is above the block already. The lru_lock normally excludes
+> isolation and splitting. If we do not hold the hold, it's not safe to
+> call compound_order so instead we skip the entire pageblock.
+
+I see. To me, your saying is better than current comment.
+I hope comment could be more explicit.
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index df01b4e..f1d2cc7 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -542,8 +542,9 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+                 * splitting and collapsing (collapsing has already happened
+                 * if PageLRU is set) but the lock is not necessarily taken
+                 * here and it is wasteful to take it just to check transhuge.
+-                * Check transhuge without lock and skip if it's either a
+-                * transhuge or hugetlbfs page.
++                * Check transhuge without lock and *skip* if it's either a
++                * transhuge or hugetlbfs page because it's not safe to call
++                * compound_order.
+                 */
+                if (PageTransHuge(page)) {
+                        if (!locked)
+
+
+Anyway, it's trivial and if anyone think it's valuable, feel free to apply it, please.
+
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
