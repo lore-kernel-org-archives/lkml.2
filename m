@@ -1,99 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086Ab2IYTot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 15:44:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47657 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755218Ab2IYToq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 15:44:46 -0400
-Date: Tue, 25 Sep 2012 21:33:57 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v4 0/8] Avoid cache trashing on clearing huge/gigantic
- page
-Message-ID: <20120925193356.GX7620@redhat.com>
-References: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120913160506.d394392a.akpm@linux-foundation.org>
- <20120914055210.GC9043@gmail.com>
- <20120925142703.GA1598@otc-wbsnb-06>
+	id S1753674Ab2IYTxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 15:53:55 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48579 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab2IYTxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 15:53:53 -0400
+Date: Tue, 25 Sep 2012 12:53:51 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ezequiel Garcia <elezegarcia@gmail.com>, Pekka Enberg <penberg@kernel.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch slab/next] mm, slob: fix build breakage in
+ __kmalloc_node_track_caller
+In-Reply-To: <1347137279-17568-4-git-send-email-elezegarcia@gmail.com>
+Message-ID: <alpine.DEB.2.00.1209251250520.31518@chino.kir.corp.google.com>
+References: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com> <1347137279-17568-4-git-send-email-elezegarcia@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120925142703.GA1598@otc-wbsnb-06>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
+On Sat, 8 Sep 2012, Ezequiel Garcia wrote:
 
-On Tue, Sep 25, 2012 at 05:27:03PM +0300, Kirill A. Shutemov wrote:
-> On Fri, Sep 14, 2012 at 07:52:10AM +0200, Ingo Molnar wrote:
-> > Without repeatable hard numbers such code just gets into the 
-> > kernel and bitrots there as new CPU generations come in - a few 
-> > years down the line the original decisions often degrade to pure 
-> > noise. We've been there, we've done that, we don't want to 
-> > repeat it.
-> 
-> <sorry, for late answer..>
-> 
-> Hard numbers are hard.
-> I've checked some workloads: Mosbench, NPB, specjvm2008. Most of time the
-> patchset doesn't show any difference (within run-to-run deviation).
-> On NPB it recovers THP regression, but it's probably not enough to make
-> decision.
-> 
-> It would be nice if somebody test the patchset on other system or
-> workload. Especially, if the configuration shows regression with
-> THP enabled.
+> @@ -454,15 +455,35 @@ void *__kmalloc_node(size_t size, gfp_t gfp, int node)
+>  			gfp |= __GFP_COMP;
+>  		ret = slob_new_pages(gfp, order, node);
+>  
+> -		trace_kmalloc_node(_RET_IP_, ret,
+> +		trace_kmalloc_node(caller, ret,
+>  				   size, PAGE_SIZE << order, gfp, node);
+>  	}
+>  
+>  	kmemleak_alloc(ret, size, 1, gfp);
+>  	return ret;
+>  }
+> +
+> +void *__kmalloc_node(size_t size, gfp_t gfp, int node)
+> +{
+> +	return __do_kmalloc_node(size, gfp, node, _RET_IP_);
+> +}
+>  EXPORT_SYMBOL(__kmalloc_node);
+>  
+> +#ifdef CONFIG_TRACING
+> +void *__kmalloc_track_caller(size_t size, gfp_t gfp, unsigned long caller)
+> +{
+> +	return __do_kmalloc_node(size, gfp, NUMA_NO_NODE, caller);
+> +}
+> +
+> +#ifdef CONFIG_NUMA
+> +void *__kmalloc_node_track_caller(size_t size, gfp_t gfpflags,
+> +					int node, unsigned long caller)
+> +{
+> +	return __do_kmalloc_node(size, gfp, node, caller);
+> +}
+> +#endif
 
-If the only workload that gets a benefit is NPB then we've the proof
-this is too hardware dependend to be a conclusive result.
+This breaks Pekka's slab/next tree with this:
 
-It may have been slower by an accident, things like cache
-associativity off by one bit, combined with the implicit coloring
-provided to the lowest 512 colors could hurts more if the cache
-associativity is low.
+mm/slob.c: In function '__kmalloc_node_track_caller':
+mm/slob.c:488: error: 'gfp' undeclared (first use in this function)
+mm/slob.c:488: error: (Each undeclared identifier is reported only once
+mm/slob.c:488: error: for each function it appears in.)
 
-I'm saying this because NPB on a thinkpad (Intel CPU I assume) is the
-benchmark that shows the most benefit among all benchmarks run on that
-hardware.
 
-http://www.phoronix.com/scan.php?page=article&item=linux_transparent_hugepages&num=2
+mm, slob: fix build breakage in __kmalloc_node_track_caller
 
-I've once seen certain computations that run much slower with perfect
-cache coloring but most others runs much faster with the page
-coloring. Doesn't mean page coloring is bad per se. So the NPB on that
-specific hardware may have been the exception and not the interesting
-case. Especially considering the effect of cache-copying is opposite
-on slightly different hw.
+"mm, slob: Add support for kmalloc_track_caller()" breaks the build 
+because gfp is undeclared.  Fix it.
 
-I think the the static_key should be off by default whenever the CPU
-L2 cache size is >= the size of the copy (2*HPAGE_PMD_SIZE). Now the
-cache does random replacement so maybe we could also allow cache
-copies for twice the size of the copy (L2size >=
-4*HPAGE_PMD_SIZE). Current CPUs have caches much larger than 2*2MB...
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/slob.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It would make a whole lot more sense for hugetlbfs giga pages than for
-THP (unlike for THP, cache trashing with giga pages is guaranteed),
-but even with giga pages, it's not like they're allocated frequently
-(maybe once per OS reboot) so that's also sure totally lost in the
-noise as it only saves a few accesses after the cache copy is
-finished.
-
-It's good to have tested it though.
-
-Thanks,
-Andrea
+diff --git a/mm/slob.c b/mm/slob.c
+--- a/mm/slob.c
++++ b/mm/slob.c
+@@ -482,7 +482,7 @@ void *__kmalloc_track_caller(size_t size, gfp_t gfp, unsigned long caller)
+ }
+ 
+ #ifdef CONFIG_NUMA
+-void *__kmalloc_node_track_caller(size_t size, gfp_t gfpflags,
++void *__kmalloc_node_track_caller(size_t size, gfp_t gfp,
+ 					int node, unsigned long caller)
+ {
+ 	return __do_kmalloc_node(size, gfp, node, caller);
