@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab2IYJlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 05:41:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33209 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab2IYJlN convert rfc822-to-8bit (ORCPT
+	id S1754386Ab2IYJmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 05:42:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:64331 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499Ab2IYJmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 05:41:13 -0400
+	Tue, 25 Sep 2012 05:42:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120925090151.GB1247@liondog.tnic>
-References: <1348433304-28320-1-git-send-email-tero.keski-valkama@neter.fi>
-	<CABGkUujMCRazGy1+69SWBsS15B97rNEXWNsR4gG8D+5WyeF2jg@mail.gmail.com>
-	<20120925090151.GB1247@liondog.tnic>
-Date: Tue, 25 Sep 2012 12:41:11 +0300
-X-Google-Sender-Auth: 4dgTL0SAUIzSLhSRaLbuL-NAfYY
-Message-ID: <CABGkUugOvWCSfXvLW33jmntGYAAiPP9fStXbdRAozx3bEoKBOA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] x86: Added support for Acer Aspire 5755G fan control.
-From: Tero Keski-Valkama <tero.keski-valkama@neter.fi>
-To: Borislav Petkov <bp@alien8.de>,
-        Tero Keski-Valkama <tero.keski-valkama@neter.fi>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20120918143635.GF15432@kroah.com>
+References: <5057C55D.2060402@dd-wrt.com>
+	<5057C5AD.80609@dd-wrt.com>
+	<20120918143635.GF15432@kroah.com>
+Date: Tue, 25 Sep 2012 15:12:33 +0530
+Message-ID: <CAFp+6iEVbZ0F28n60yJevcno9DizETY3_undxYkVbmJ9bPz0_w@mail.gmail.com>
+Subject: Re: XHCI Bug discovered in 3.6-RC6 (solution included)
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: "Sebastian Gottschall (DD-WRT)" <s.gottschall@dd-wrt.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/25 Borislav Petkov <bp@alien8.de>:
-> On Tue, Sep 25, 2012 at 10:34:13AM +0300, Tero Keski-Valkama wrote:
+Hi
+
+I have posted the required patch for this:
+usb: host: xhci: Fix Null pointer dereferencing with 71c731a for non-x86 systems
+
+Can we please get that in ?
+
+On Tue, Sep 18, 2012 at 8:06 PM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Sep 18, 2012 at 02:51:57AM +0200, Sebastian Gottschall (DD-WRT) wrote:
+>> this following function is missing a important NULL check. if DMI is
+>> not available or not enabled in the kernel config (which is common
+>> in my case, since its a ARM Platform with XHCI support)
+>> the xhci-hcd driver will crash due nullpointer access since
+>> dmi_get_system_info returns always NULL if DMI support is not
+>> enabled.
+>>
+>> static bool compliance_mode_recovery_timer_quirk_check(void)
+>> {
+>>     const char *dmi_product_name, *dmi_sys_vendor;
+>>
+>>     dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
+>>     dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
+>>
+>>     if (!(strstr(dmi_sys_vendor, "Hewlett-Packard")))
+>>         return false;
+>>
+>>     if (strstr(dmi_product_name, "Z420") ||
+>>             strstr(dmi_product_name, "Z620") ||
+>>             strstr(dmi_product_name, "Z820"))
+>>         return true;
+>>
+>>     return false;
+>> }
+>>
+>> proposed patch: simply add
+>>
+>>  if (!dmi_sys_vendor || !dmi_product_name)
+>>         return false;
+>>
+>> even better. disable the whole quirk handling for this case if
+>> CONFIG_DMI is not set
 >
-> But before we go with this any further: you mentioned some issues still
-> with acerhdf - you don't want to turn off your fan but to turn it to
-> full?
+> Care to send a patch to fix this up?
 >
-> I think in this case, you want to simply not load the driver and use the
-> BIOS settings, no?
+> thanks,
 >
+> greg k-h
 > --
-> Regards/Gruss,
->     Boris.
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Technically I think my original issue is about thermal zones, and BIOS
-control doesn't solve it as is. However, the patch should be valid,
-even if it doesn't solve my original issue.
-
-The thing is that passive cooling thermal zones throttle all the cores
-to stone age, to 800 MHz, before the fan even really starts powering
-up from the low default level. So, my original problem would be solved
-by:
-a) Direct control of the fan, to be able to put it on full for example
-through userspace control,
-b) Changing the active cooling thermal zones, so that the fan speeds
-up earlier, or
-c) Changing the passive cooling (CPU throttling) thermal zones, so
-that it doesn't prevent fan from speeding up in the first place.
-
-At the moment, I don't see any way to change the thermal zones through
-existing interfaces for this laptop, and I don't see any potential
-thermal zone controls, or manual fan control option in the Embedded
-Controller registry.
-
--- 
-Kind Regards / Ystävällisin terveisin,
-
-Tero Keski-Valkama, MSc(Tech)
-
-+358 (0)46 876 0485
-
-tero.keski-valkama@neter.fi
-http://www.neter.fi
+Thanks
+vivek
