@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757456Ab2IYQNL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:13:11 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57024 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756968Ab2IYQNI (ORCPT
+	id S1757479Ab2IYQNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:13:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60753 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756968Ab2IYQNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:13:08 -0400
+	Tue, 25 Sep 2012 12:13:12 -0400
 From: mathieu.poirier@linaro.org
 To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
 Cc: mathieu.poirier@linaro.org
-Subject: [PATCH 01/57] power: ab8500_bm: Charger current step-up/down
-Date: Tue, 25 Sep 2012 10:11:58 -0600
-Message-Id: <1348589574-25655-2-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 04/57] power: ab8500: bm: movimg back to ab8500 platform data managment
+Date: Tue, 25 Sep 2012 10:12:01 -0600
+Message-Id: <1348589574-25655-5-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
@@ -20,271 +20,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Bjornstedt <johan.bjornstedt@stericsson.com>
+From: Philippe Langlais <philippe.langlais@linaro.org>
 
-There is no state machine in the AB to step up/down
-the charger current to avoid dips and spikes on VBUS
-and VBAT when charging is started.
-Instead this is implemented in SW
-
-Signed-off-by: Johan Bjornstedt <johan.bjornstedt@stericsson.com>
-Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-Reviewed-by: Karl KOMIEROWSKI <karl.komierowski@stericsson.com>
 ---
- drivers/power/ab8500_charger.c |  172 +++++++++++++++++++++++++++++++---------
- 1 files changed, 133 insertions(+), 39 deletions(-)
+ drivers/power/ab8500_btemp.c      |    8 ++------
+ drivers/power/ab8500_charger.c    |    9 +++------
+ drivers/power/ab8500_fg.c         |    8 ++------
+ drivers/power/abx500_chargalg.c   |    7 ++++---
+ include/linux/mfd/abx500/ab8500.h |    7 ++++++-
+ 5 files changed, 17 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-index d4f0c98..3ceb788 100644
---- a/drivers/power/ab8500_charger.c
-+++ b/drivers/power/ab8500_charger.c
-@@ -77,6 +77,9 @@
- /* Lowest charger voltage is 3.39V -> 0x4E */
- #define LOW_VOLT_REG			0x4E
- 
-+/* Step up/down delay in us */
-+#define STEP_UDELAY			1000
-+
- /* UsbLineStatus register - usb types */
- enum ab8500_charger_link_status {
- 	USB_STAT_NOT_CONFIGURED,
-@@ -934,6 +937,88 @@ static int ab8500_charger_get_usb_cur(struct ab8500_charger *di)
- }
- 
- /**
-+ * ab8500_charger_set_current() - set charger current
-+ * @di:		pointer to the ab8500_charger structure
-+ * @ich:	charger current, in mA
-+ * @reg:	select what charger register to set
-+ *
-+ * Set charger current.
-+ * There is no state machine in the AB to step up/down the charger
-+ * current to avoid dips and spikes on MAIN, VBUS and VBAT when
-+ * charging is started. Instead we need to implement
-+ * this charger current step-up/down here.
-+ * Returns error code in case of failure else 0(on success)
-+ */
-+static int ab8500_charger_set_current(struct ab8500_charger *di,
-+	int ich, int reg)
-+{
-+	int ret, i;
-+	int curr_index, prev_curr_index, shift_value;
-+	u8 reg_value;
-+
-+	switch (reg) {
-+	case AB8500_MCH_IPT_CURLVL_REG:
-+		shift_value = MAIN_CH_INPUT_CURR_SHIFT;
-+		curr_index = ab8500_current_to_regval(ich);
-+		break;
-+	case AB8500_USBCH_IPT_CRNTLVL_REG:
-+		shift_value = VBUS_IN_CURR_LIM_SHIFT;
-+		curr_index = ab8500_vbus_in_curr_to_regval(ich);
-+		break;
-+	case AB8500_CH_OPT_CRNTLVL_REG:
-+		shift_value = 0;
-+		curr_index = ab8500_current_to_regval(ich);
-+		break;
-+	default:
-+		dev_err(di->dev, "%s current register not valid\n", __func__);
-+		return -ENXIO;
-+	}
-+
-+	if (curr_index < 0) {
-+		dev_err(di->dev, "requested current limit out-of-range\n");
-+		return -ENXIO;
-+	}
-+
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
-+		reg, &reg_value);
-+	if (ret < 0) {
-+		dev_err(di->dev, "%s read failed\n", __func__);
-+		return ret;
-+	}
-+	prev_curr_index = (reg_value >> shift_value);
-+
-+	/* only update current if it's been changed */
-+	if (prev_curr_index == curr_index)
-+		return 0;
-+
-+	dev_dbg(di->dev, "%s set charger current: %d mA for reg: 0x%02x\n",
-+		__func__, ich, reg);
-+
-+	if (prev_curr_index > curr_index) {
-+		for (i = prev_curr_index - 1; i >= curr_index; i--) {
-+			ret = abx500_set_register_interruptible(di->dev,
-+				AB8500_CHARGER, reg, (u8) i << shift_value);
-+			if (ret) {
-+				dev_err(di->dev, "%s write failed\n", __func__);
-+				return ret;
-+			}
-+			usleep_range(STEP_UDELAY, STEP_UDELAY * 2);
-+		}
-+	} else {
-+		for (i = prev_curr_index + 1; i <= curr_index; i++) {
-+			ret = abx500_set_register_interruptible(di->dev,
-+				AB8500_CHARGER, reg, (u8) i << shift_value);
-+			if (ret) {
-+				dev_err(di->dev, "%s write failed\n", __func__);
-+				return ret;
-+			}
-+			usleep_range(STEP_UDELAY, STEP_UDELAY * 2);
-+		}
-+	}
-+	return ret;
-+}
-+
-+/**
-  * ab8500_charger_set_vbus_in_curr() - set VBUS input current limit
-  * @di:		pointer to the ab8500_charger structure
-  * @ich_in:	charger input current limit
-@@ -944,8 +1029,6 @@ static int ab8500_charger_get_usb_cur(struct ab8500_charger *di)
- static int ab8500_charger_set_vbus_in_curr(struct ab8500_charger *di,
- 		int ich_in)
+diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+index 94a3ee8..41a8ce4 100644
+--- a/drivers/power/ab8500_btemp.c
++++ b/drivers/power/ab8500_btemp.c
+@@ -973,14 +973,9 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
  {
--	int ret;
--	int input_curr_index;
- 	int min_value;
+ 	int irq, i, ret = 0;
+ 	u8 val;
+-	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
++	struct ab8500_platform_data *plat_data;
+ 	struct ab8500_btemp *di;
  
- 	/* We should always use to lowest current limit */
-@@ -964,19 +1047,38 @@ static int ab8500_charger_set_vbus_in_curr(struct ab8500_charger *di,
- 		break;
- 	}
- 
--	input_curr_index = ab8500_vbus_in_curr_to_regval(min_value);
--	if (input_curr_index < 0) {
--		dev_err(di->dev, "VBUS input current limit too high\n");
--		return -ENXIO;
--	}
-+	return ab8500_charger_set_current(di, min_value,
-+		AB8500_USBCH_IPT_CRNTLVL_REG);
-+}
- 
--	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
--		AB8500_USBCH_IPT_CRNTLVL_REG,
--		input_curr_index << VBUS_IN_CURR_LIM_SHIFT);
--	if (ret)
--		dev_err(di->dev, "%s write failed\n", __func__);
-+/**
-+ * ab8500_charger_set_main_in_curr() - set main charger input current
-+ * @di:		pointer to the ab8500_charger structure
-+ * @ich_in:	input charger current, in mA
-+ *
-+ * Set main charger input current.
-+ * Returns error code in case of failure else 0(on success)
-+ */
-+static int ab8500_charger_set_main_in_curr(struct ab8500_charger *di,
-+	int ich_in)
-+{
-+	return ab8500_charger_set_current(di, ich_in,
-+		AB8500_MCH_IPT_CURLVL_REG);
-+}
- 
--	return ret;
-+/**
-+ * ab8500_charger_set_output_curr() - set charger output current
-+ * @di:		pointer to the ab8500_charger structure
-+ * @ich_out:	output charger current, in mA
-+ *
-+ * Set charger output current.
-+ * Returns error code in case of failure else 0(on success)
-+ */
-+static int ab8500_charger_set_output_curr(struct ab8500_charger *di,
-+	int ich_out)
-+{
-+	return ab8500_charger_set_current(di, ich_out,
-+		AB8500_CH_OPT_CRNTLVL_REG);
- }
- 
- /**
-@@ -1088,18 +1190,18 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
- 			return ret;
- 		}
- 		/* MainChInputCurr: current that can be drawn from the charger*/
--		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
--			AB8500_MCH_IPT_CURLVL_REG,
--			input_curr_index << MAIN_CH_INPUT_CURR_SHIFT);
-+		ret = ab8500_charger_set_main_in_curr(di,
-+			di->bat->chg_params->ac_curr_max);
- 		if (ret) {
--			dev_err(di->dev, "%s write failed\n", __func__);
-+			dev_err(di->dev, "%s Failed to set MainChInputCurr\n",
-+				__func__);
- 			return ret;
- 		}
- 		/* ChOutputCurentLevel: protected output current */
--		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
--			AB8500_CH_OPT_CRNTLVL_REG, (u8) curr_index);
-+		ret = ab8500_charger_set_output_curr(di, iset);
- 		if (ret) {
--			dev_err(di->dev, "%s write failed\n", __func__);
-+			dev_err(di->dev,
-+			 "%s Failed to set ChOutputCurentLevel\n", __func__);
- 			return ret;
- 		}
- 
-@@ -1156,12 +1258,11 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
- 				return ret;
- 			}
- 
--			ret = abx500_set_register_interruptible(di->dev,
--				AB8500_CHARGER,
--				AB8500_CH_OPT_CRNTLVL_REG, CH_OP_CUR_LVL_0P1);
-+			ret = ab8500_charger_set_output_curr(di, 0);
- 			if (ret) {
- 				dev_err(di->dev,
--					"%s write failed\n", __func__);
-+				 "%s Failed to set ChOutputCurentLevel\n",
-+				 __func__);
- 				return ret;
- 			}
- 		} else {
-@@ -1264,10 +1365,11 @@ static int ab8500_charger_usb_en(struct ux500_charger *charger,
- 			return ret;
- 		}
- 		/* ChOutputCurentLevel: protected output current */
--		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
--			AB8500_CH_OPT_CRNTLVL_REG, (u8) curr_index);
-+		ret = ab8500_charger_set_output_curr(di, ich_out);
- 		if (ret) {
--			dev_err(di->dev, "%s write failed\n", __func__);
-+			dev_err(di->dev,
-+			 "%s Failed to set ChOutputCurentLevel\n",
-+			 __func__);
- 			return ret;
- 		}
- 		/* Check if VBAT overshoot control should be enabled */
-@@ -1364,7 +1466,6 @@ static int ab8500_charger_update_charger_current(struct ux500_charger *charger,
- 		int ich_out)
- {
- 	int ret;
--	int curr_index;
- 	struct ab8500_charger *di;
- 
- 	if (charger->psy.type == POWER_SUPPLY_TYPE_MAINS)
-@@ -1374,18 +1475,11 @@ static int ab8500_charger_update_charger_current(struct ux500_charger *charger,
- 	else
- 		return -ENXIO;
- 
--	curr_index = ab8500_current_to_regval(ich_out);
--	if (curr_index < 0) {
--		dev_err(di->dev,
--			"Charger current too high, "
--			"charging not started\n");
--		return -ENXIO;
+-	if (!plat_data) {
+-		dev_err(&pdev->dev, "No platform data\n");
+-		return -EINVAL;
 -	}
 -
--	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
--		AB8500_CH_OPT_CRNTLVL_REG, (u8) curr_index);
-+	ret = ab8500_charger_set_output_curr(di, ich_out);
- 	if (ret) {
--		dev_err(di->dev, "%s write failed\n", __func__);
-+		dev_err(di->dev,
-+		 "%s Failed to set ChOutputCurentLevel\n",
-+		 __func__);
- 		return ret;
- 	}
+ 	di = kzalloc(sizeof(*di), GFP_KERNEL);
+ 	if (!di)
+ 		return -ENOMEM;
+@@ -993,6 +988,7 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+ 	di->initialized = false;
  
+ 	/* get btemp specific platform data */
++	plat_data = dev_get_platdata(di->parent->dev);
+ 	di->pdata = plat_data->btemp;
+ 	if (!di->pdata) {
+ 		dev_err(di->dev, "no btemp platform data supplied\n");
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index 3ceb788..22076f5 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -2628,14 +2628,9 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
+ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+ {
+ 	int irq, i, charger_status, ret = 0;
+-	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
++	struct ab8500_platform_data *plat_data;
+ 	struct ab8500_charger *di;
+ 
+-	if (!plat_data) {
+-		dev_err(&pdev->dev, "No platform data\n");
+-		return -EINVAL;
+-	}
+-
+ 	di = kzalloc(sizeof(*di), GFP_KERNEL);
+ 	if (!di)
+ 		return -ENOMEM;
+@@ -2649,6 +2644,8 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+ 	spin_lock_init(&di->usb_state.usb_lock);
+ 
+ 	/* get charger specific platform data */
++	plat_data = dev_get_platdata(di->parent->dev);
++
+ 	di->pdata = plat_data->charger;
+ 	if (!di->pdata) {
+ 		dev_err(di->dev, "no charger platform data supplied\n");
+diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+index af792a8..c098ddd 100644
+--- a/drivers/power/ab8500_fg.c
++++ b/drivers/power/ab8500_fg.c
+@@ -2446,14 +2446,9 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
+ {
+ 	int i, irq;
+ 	int ret = 0;
+-	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
++	struct ab8500_platform_data *plat_data;
+ 	struct ab8500_fg *di;
+ 
+-	if (!plat_data) {
+-		dev_err(&pdev->dev, "No platform data\n");
+-		return -EINVAL;
+-	}
+-
+ 	di = kzalloc(sizeof(*di), GFP_KERNEL);
+ 	if (!di)
+ 		return -ENOMEM;
+@@ -2466,6 +2461,7 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
+ 	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+ 
+ 	/* get fg specific platform data */
++	plat_data = dev_get_platdata(di->parent->dev);
+ 	di->pdata = plat_data->fg;
+ 	if (!di->pdata) {
+ 		dev_err(di->dev, "no fg platform data supplied\n");
+diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
+index 804b88c..032b27d 100644
+--- a/drivers/power/abx500_chargalg.c
++++ b/drivers/power/abx500_chargalg.c
+@@ -220,6 +220,7 @@ enum maxim_ret {
+  */
+ struct abx500_chargalg {
+ 	struct device *dev;
++	struct ab8500 *parent;
+ 	int charge_status;
+ 	int eoc_cnt;
+ 	int rch_cnt;
+@@ -1802,7 +1803,7 @@ static int __devexit abx500_chargalg_remove(struct platform_device *pdev)
+ 
+ static int __devinit abx500_chargalg_probe(struct platform_device *pdev)
+ {
+-	struct abx500_bm_plat_data *plat_data;
++	struct ab8500_platform_data *plat_data;
+ 	int ret = 0;
+ 
+ 	struct abx500_chargalg *di =
+@@ -1812,8 +1813,8 @@ static int __devinit abx500_chargalg_probe(struct platform_device *pdev)
+ 
+ 	/* get device struct */
+ 	di->dev = &pdev->dev;
+-
+-	plat_data = pdev->dev.platform_data;
++	di->parent = dev_get_drvdata(pdev->dev.parent);
++	plat_data = dev_get_platdata(di->parent->dev);
+ 	di->pdata = plat_data->chargalg;
+ 	di->bat = plat_data->battery;
+ 
+diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
+index 3764cb6..db8a1e3 100644
+--- a/include/linux/mfd/abx500/ab8500.h
++++ b/include/linux/mfd/abx500/ab8500.h
+@@ -170,7 +170,7 @@ enum ab8500_version {
+ #define AB8500_INT_ID_DET_R2F		99
+ #define AB8500_INT_ID_DET_R3F		100
+ #define AB8500_INT_ID_DET_R4F		101
+-#define AB8500_INT_CHAUTORESTARTAFTSEC  102
++#define AB8500_INT_CHAUTORESTARTAFTSEC	102
+ #define AB8500_INT_CHSTOPBYSEC		103
+ /* ab8500_irq_regoffset[13] -> IT[Source|Latch|Mask]22 */
+ #define AB8500_INT_USB_CH_TH_PROT_F	104
+@@ -289,6 +289,11 @@ struct ab8500_platform_data {
+ 	struct regulator_init_data *regulator;
+ 	struct ab8500_gpio_platform_data *gpio;
+ 	struct ab8500_codec_platform_data *codec;
++	struct abx500_bm_data *battery;
++	struct abx500_charger_platform_data *charger;
++	struct abx500_btemp_platform_data *btemp;
++	struct abx500_fg_platform_data *fg;
++	struct abx500_chargalg_platform_data *chargalg;
+ };
+ 
+ extern int __devinit ab8500_init(struct ab8500 *ab8500,
 -- 
 1.7.5.4
 
