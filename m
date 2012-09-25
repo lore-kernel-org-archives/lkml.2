@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab2IYBQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 21:16:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16850 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab2IYBQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 21:16:12 -0400
-Date: Tue, 25 Sep 2012 03:17:25 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v10 0/5] make balloon pages movable by compaction
-Message-ID: <20120925011725.GB22893@redhat.com>
-References: <cover.1347897793.git.aquini@redhat.com>
- <20120917151531.e9ac59f2.akpm@linux-foundation.org>
+	id S1752111Ab2IYBQy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 21:16:54 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:35575 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750861Ab2IYBQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Sep 2012 21:16:53 -0400
+Message-ID: <50610602.5050003@xenotime.net>
+Date: Mon, 24 Sep 2012 18:16:50 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120917151531.e9ac59f2.akpm@linux-foundation.org>
+To: Franklin Wei <frankhwei536@gmail.com>
+CC: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <mhiramat@redhat.com>
+Subject: Re: arch/x86/lib/inat.c Error
+References: <CAEMuUziMGAM4UOeOGWwG9jiceU9K7NSzqbryMxHwFDfmOfqQdA@mail.gmail.com>	<20120924075957.GA5151@liondog.tnic> <CAEMuUzjbudxmGOZqB2HBLNa7p=aRqdiNKNXZLRV7c9yKPJ7TxQ@mail.gmail.com>
+In-Reply-To: <CAEMuUzjbudxmGOZqB2HBLNa7p=aRqdiNKNXZLRV7c9yKPJ7TxQ@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 03:15:31PM -0700, Andrew Morton wrote:
-> How can a patchset reach v10 and have zero Reviewed-by's?
+On 09/24/2012 04:04 PM, Franklin Wei wrote:
 
-I think the problem is, this adds an API between mm and balloon
-device that is pretty complex: consider that previously we literally
-only used alloc_page, __free_page and page->lru field.
+> Here it is
+> 
+> On 9/24/12, Borislav Petkov <bp@alien8.de> wrote:
+>> On Sun, Sep 23, 2012 at 04:34:24PM -0400, Franklin Wei wrote:
+>>> Something wrong with lines 29-86
+>>> Error message when compiling:
+>>>   CC      arch/x86/lib/inat.o
+>>> arch/x86/lib/inat.c: In function ‘inat_get_opcode_attribute’:
+>>> arch/x86/lib/inat.c:29: error: ‘inat_primary_table’ undeclared (first
+>>> use in this function)
+>>> arch/x86/lib/inat.c:29: error: (Each undeclared identifier is reported
+>>> only once
+>>> arch/x86/lib/inat.c:29: error: for each function it appears in.)
+>>> arch/x86/lib/inat.c: In function ‘inat_get_escape_attribute’:
+>>> arch/x86/lib/inat.c:48: error: ‘inat_escape_tables’ undeclared (first
+>>> use in this function)
+>>> arch/x86/lib/inat.c: In function ‘inat_get_group_attribute’:
+>>> arch/x86/lib/inat.c:67: error: ‘inat_group_tables’ undeclared (first
+>>> use in this function)
+>>> arch/x86/lib/inat.c: In function ‘inat_get_avx_attribute’:
+>>> arch/x86/lib/inat.c:86: error: ‘inat_avx_tables’ undeclared (first use
+>>> in this function)
+>>> make[1]: *** [arch/x86/lib/inat.o] Error 1
+>>> make: *** [arch/x86/lib] Error 2
+>>
+>> That's because all those _tables thingies are included from a
+>> "inat-tables.c" in the same directory but it somehow doesn't get
+>> included?!
+>>
+>> Can we get your .config pls? Also, you're doing a "normal" kernel build
+>> on the command line, right?
+>>
+>> Thanks.
 
-So you end up with a problem: mm bits don't do anything
-by themselves so mm people aren't very interested and
-don't know about virtio anyway, while
-we virtio device driver people lack a clue about compaction.
 
-Having said that I think I'm getting my head about some of the issues so
-I commented and the patchset is hopefully getting there.
+Your config builds OK for me.
+Do you see this line in your build output before inat.c is built?
+
+
+  GEN     arch/x86/lib/inat-tables.c
+
 
 -- 
-MST
+~Randy
