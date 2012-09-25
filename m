@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab2IYTVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 15:21:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55599 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757311Ab2IYTVT (ORCPT
+	id S1757687Ab2IYTWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 15:22:19 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:55132 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab2IYTWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 15:21:19 -0400
+	Tue, 25 Sep 2012 15:22:18 -0400
+Date: Tue, 25 Sep 2012 20:22:11 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] PNP: Unbind drivers if the new driver matches _HID
+ rather than _CID
+Message-ID: <20120925192211.GA24750@srcf.ucam.org>
+References: <1348579544-1573-1-git-send-email-mjg@redhat.com>
+ <1348579544-1573-2-git-send-email-mjg@redhat.com>
+ <CAErSpo7giiZEnXkRY+QnhAV_2EGwdnju7S1-futjnKBjr7sY-A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1348600314-32423-1-git-send-email-geert@linux-m68k.org>
-References: <1348600314-32423-1-git-send-email-geert@linux-m68k.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 25 Sep 2012 12:20:55 -0700
-X-Google-Sender-Auth: LbXj4ztBQzNpdMpLTlElheFmqak
-Message-ID: <CA+55aFzi+eTH3ZP=J=EJdaPME_q+bV1LD1DKB-6hg1OpM_zELQ@mail.gmail.com>
-Subject: Re: [PATCH/resend/bypass] um: Preinclude include/linux/kern_levels.h
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Richard Weinberger <richard@nod.at>, Joe Perches <joe@perches.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo7giiZEnXkRY+QnhAV_2EGwdnju7S1-futjnKBjr7sY-A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 12:11 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
->
-> To fix this:
->   - Move the mapping from UM_KERN_<LEVEL> to KERN_<LEVEL> from
->     arch/um/include/shared/common-offsets.h to
->     arch/um/include/shared/user.h, which is preincluded for all userspace
->     parts,
->   - Preinclude include/linux/kern_levels.h for all userspace parts, to
->     obtain the in-kernel KERN_<LEVEL> constant definitions. This doesn't
->     violate the kernel/userspace separation, as include/linux/kern_levels.h
->     is self-contained and doesn't expose any other kernel internals.
->   - Remove the now unused STR() and DEFINE_STR() macros.
+On Tue, Sep 25, 2012 at 01:04:25PM -0600, Bjorn Helgaas wrote:
+> On Tue, Sep 25, 2012 at 7:25 AM, Matthew Garrett <mjg@redhat.com> wrote:
 
-Ugh.
+> Do you know of any scenarios besides this IPMI one where there's the
+> possibility of two drivers matching the same device?  If so, does the
+> detach/attach process work reasonably?  My worry is that drivers don't
+> normally give up devices, so the detach path is not well exercised.
+> And I don't know what happens to any users of the device during the
+> switch.  For example, if something was using a TPM and we replaced the
+> driver, what does that look like to the user?
 
-Why do you preinclude kern_levels.h instead of just having a
-"#include" in user.h?
+Yeah, this could definitely happen with TPM - tpm_infinion could 
+displace tpm_tis. This actually flags up something kind of obviously 
+broken in the TPM code, since tpm_infineon comes *after* tpm_tis in the 
+link order despite being more specific. Winning. It looks like there's a 
+valid tpm_release function, but I'll find an infineon machine and figure 
+out whether it actually works or not.
 
-IOW, this part of the patch:
-
--       c_flags = -Wp,-MD,$(depfile) $(USER_CFLAGS) -include user.h
-$(CFLAGS_$(basetarget).o)
-+       c_flags = -Wp,-MD,$(depfile) $(USER_CFLAGS) -include
-$(srctree)/include/linux/kern_levels.h -include user.h
-$(CFLAGS_$(basetarget).o)
-
-just makes me go want to puke. The user.h file already has other
-#include's in it, so I really don't see why you create this insane
-special case.
-
-And why does UM have those "UM_KERN_XYZ" defines in the first place?
-Why isn't it just using KERN_XYZ directly? Is it because kern_levels.h
-didn't use to exist, so it was some kind of "let's create our own that
-we can hide in our special headers".
-
-IOW, I really thinks this patch makes things uglier. At the very least
-it could be done more prettily, but preferably we'd get rid of the odd
-and useless UM_ prefix from these things entirely.
-
-             Linus
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
