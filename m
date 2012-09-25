@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865Ab2IYQNu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:13:50 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48198 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757851Ab2IYQNr (ORCPT
+	id S1758364Ab2IYQUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:20:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41451 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757851Ab2IYQNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:13:47 -0400
+	Tue, 25 Sep 2012 12:13:51 -0400
 From: mathieu.poirier@linaro.org
 To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
 Cc: mathieu.poirier@linaro.org
-Subject: [PATCH 29/57] power: ab8500_fg: Goto INIT_RECOVERY when charger removed
-Date: Tue, 25 Sep 2012 10:12:26 -0600
-Message-Id: <1348589574-25655-30-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 32/57] power: ab8500_charger: Do not touch VBUSOVV bits
+Date: Tue, 25 Sep 2012 10:12:29 -0600
+Message-Id: <1348589574-25655-33-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Bergström <martin.bergstrom@stericsson.com>
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-When the charger is removed we need to go to INIT_RECOVERY
-state instead of directly to RECOVERY state.
+Do not touch the VBUSOVV in USBCHTRL2 when running on AB8505.
 
-Signed-off-by: Martin Bergstrom <martin.bergstrom@stericsson.com>
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 Reviewed-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
-Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
 ---
- drivers/power/ab8500_fg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/power/ab8500_charger.c    |   22 ++++++++++++++++------
+ include/linux/mfd/abx500/ab8500.h |   10 ++++++++++
+ 2 files changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-index 861927d..e7a0e1f 100644
---- a/drivers/power/ab8500_fg.c
-+++ b/drivers/power/ab8500_fg.c
-@@ -1644,7 +1644,7 @@ static void ab8500_fg_algorithm_discharging(struct ab8500_fg *di)
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index 071c7c2..2a323cf 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -2667,13 +2667,23 @@ static int ab8500_charger_init_hw_registers(struct ab8500_charger *di)
+ 		}
+ 	}
  
- 			if (di->recovery_needed) {
- 				ab8500_fg_discharge_state_to(di,
--					AB8500_FG_DISCHARGE_RECOVERY);
-+					AB8500_FG_DISCHARGE_INIT_RECOVERY);
+-	/* VBUS OVV set to 6.3V and enable automatic current limitiation */
+-	ret = abx500_set_register_interruptible(di->dev,
+-		AB8500_CHARGER,
+-		AB8500_USBCH_CTRL2_REG,
+-		VBUS_OVV_SELECT_6P3V | VBUS_AUTO_IN_CURR_LIM_ENA);
++	if (is_ab9540_2p0(di->parent) || is_ab8505_2p0(di->parent))
++		ret = abx500_mask_and_set_register_interruptible(di->dev,
++			AB8500_CHARGER,
++			AB8500_USBCH_CTRL2_REG,
++			VBUS_AUTO_IN_CURR_LIM_ENA,
++			VBUS_AUTO_IN_CURR_LIM_ENA);
++	else
++		/*
++		 * VBUS OVV set to 6.3V and enable automatic current limitation
++		 */
++		ret = abx500_set_register_interruptible(di->dev,
++			AB8500_CHARGER,
++			AB8500_USBCH_CTRL2_REG,
++			VBUS_OVV_SELECT_6P3V | VBUS_AUTO_IN_CURR_LIM_ENA);
+ 	if (ret) {
+-		dev_err(di->dev, "failed to set VBUS OVV\n");
++		dev_err(di->dev,
++			"failed to set automatic current limitation\n");
+ 		goto out;
+ 	}
  
- 				queue_delayed_work(di->fg_wq,
- 					&di->fg_periodic_work, 0);
+diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
+index 087b445..5a4b186 100644
+--- a/include/linux/mfd/abx500/ab8500.h
++++ b/include/linux/mfd/abx500/ab8500.h
+@@ -351,6 +351,16 @@ static inline int is_ab8500_2p0(struct ab8500 *ab)
+ 	return (is_ab8500(ab) && (ab->chip_id == AB8500_CUT2P0));
+ }
+ 
++static inline int is_ab8505_2p0(struct ab8500 *ab)
++{
++	return (is_ab8505(ab) && (ab->chip_id == AB8500_CUT2P0));
++}
++
++static inline int is_ab9540_2p0(struct ab8500 *ab)
++{
++	return (is_ab9540(ab) && (ab->chip_id == AB8500_CUT2P0));
++}
++
+ int ab8500_irq_get_virq(struct ab8500 *ab8500, int irq);
+ 
+ #endif /* MFD_AB8500_H */
 -- 
 1.7.5.4
 
