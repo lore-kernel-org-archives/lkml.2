@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab2IYGmy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 02:42:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37958 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab2IYGmx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 02:42:53 -0400
-Message-ID: <50615268.1040805@canonical.com>
-Date: Tue, 25 Sep 2012 08:42:48 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1753212Ab2IYGn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 02:43:56 -0400
+Received: from ozlabs.org ([203.10.76.45]:47519 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768Ab2IYGnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 02:43:55 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Amit Shah <amit.shah@redhat.com>,
+        Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization\@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "sjurbren\@gmail.com" <sjurbren@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCHv4] virtio_console: Add support for remoteproc serial
+In-Reply-To: <20120925040158.GC32657@amit.redhat.com>
+References: <1348489987-6768-1-git-send-email-sjur.brandeland@stericsson.com> <20120924174523.GA14390@amit.redhat.com> <81C3A93C17462B4BBD7E272753C1057923BD79D728@EXDCVYMBSTM005.EQ1STM.local> <20120925040158.GC32657@amit.redhat.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 25 Sep 2012 14:55:04 +0930
+Message-ID: <87sja63c9b.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: al viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert "__d_unalias() should refuse to move mountpoints"
-References: <50609C43.1070702@canonical.com> <87txumrct6.fsf@xmission.com>
-In-Reply-To: <87txumrct6.fsf@xmission.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Amit Shah <amit.shah@redhat.com> writes:
 
-Op 25-09-12 05:39, Eric W. Biederman schreef:
-> Maarten Lankhorst <maarten.lankhorst@canonical.com> writes:
+> On (Mon) 24 Sep 2012 [23:50:01], Sjur BRENDELAND wrote:
+>> Hi Amit,
+>> 
+>> > I'm sorry for not being able to look at this earlier.
+>> 
+>> No worries. I'll try to respin and retest this patch by tomorrow.
+>> If you by any chance could find time to review so could make it in time
+>> for 3.7 it would be great :-)
 >
->> This reverts commit ee3efa91e240f513898050ef305a49a653c8ed90.
->>
->> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->>
->> My thread about the regression seemed to have been ignored, so I can only
->> conclude nobody objects against a full revert of this patch.
->>
->> My testcase is simply booting through netboot with / and ~/nfs as separate
->> nfs filesystems, then doing 'ls ~/nfs' followed by 'ls ~' in a gnome-terminal
->> window, then I get:
-> Do I read your description correctly:  Without using a bind mount you
-> have the same nfs filesystem mounted on / and on ~/nfs?
->
-> Something is definitely off with your configuration but if to work you
-> need to move mount points around then that something seems much deeper
-> than the __d_unalias change.
->
-> What filesystems do you have mounted where?
->
-/ is a nfs filesystem, ~/nfs is a different nfs filesystem. Just doing ls / is enough
-to make all filesystems mounted on / return -EBUSY and disappear.
+> I think it might be late for 3.7 already, I'd prefer to let this bake
+> for a while, ensure it passes my test suites, at the least.  But I'll
+> let Rusty take the final call.
 
-I also have a subdir of ~/nfs/ bind mounted to /lib/modules/$(uname -r)/kernel
-for easy debugging so just doing 'make' in the kernel tree is enough to get the
-new modules + bzImage, but I don't know if it is a factor in reproducing this bug
-or not.
+It can make the next merge window, but it has to be done this week.
 
-~Maarten
+I'm only allowing it this late because it's a new driver.
+
+Cheers,
+Rusty.
