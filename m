@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab2IYLuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:50:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40097 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755369Ab2IYLuT convert rfc822-to-8bit (ORCPT
+	id S1755818Ab2IYLwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:52:09 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63487 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab2IYLwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:50:19 -0400
-Message-ID: <1348573806.3881.35.camel@twins>
-Subject: Re: [PATCH] Update sched_domains_numa_masks when new cpus are
- onlined.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-numa@vger.kernel.org, wency@cn.fujitsu.com, mingo@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 25 Sep 2012 13:50:06 +0200
-In-Reply-To: <5061996E.8070301@cn.fujitsu.com>
-References: <1347963128-25942-1-git-send-email-tangchen@cn.fujitsu.com>
-	  <1348479536.11847.25.camel@twins> <50611946.9080601@cn.fujitsu.com>
-	 <1348569232.3881.1.camel@twins> <5061996E.8070301@cn.fujitsu.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 25 Sep 2012 07:52:07 -0400
+Date: Tue, 25 Sep 2012 15:51:56 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
+        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
+Subject: Re: [PATCH 1/1] perf, Add support for Xeon-Phi PMU
+Message-ID: <20120925115156.GB18666@moon>
+References: <alpine.DEB.2.02.1209201253060.27540@vincent-weaver-1.um.maine.edu>
+ <1348572758.3881.24.camel@twins>
+ <20120925114225.GF14490@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120925114225.GF14490@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-25 at 19:45 +0800, Tang Chen wrote:
-
-
-> Let's have an example here.
+On Tue, Sep 25, 2012 at 03:42:25PM +0400, Cyrill Gorcunov wrote:
+> On Tue, Sep 25, 2012 at 01:32:38PM +0200, Peter Zijlstra wrote:
+> > On Thu, 2012-09-20 at 13:03 -0400, Vince Weaver wrote:
+> > > One additional complication:  some of the cache events map to 
+> > > event "0".  This causes problems because the generic events code
+> > > assumes "0" means not-available.  I'm not sure the best way to address
+> > > that problem. 
+> > 
+> > For all except P4 we could remap the 0 value to -2, that has all high
+> > bits set (like the -1) which aren't used by hardware.
+> > 
+> > P4 is stuffing two registers in the 64bit config space and actually has
+> > them all in use I think.. Cyrill?
 > 
-> sched_init_numa()
-> {
-> 	...
-> 	// A loop set sched_domains_numa_levels to level.-------------1
+> Yeah, we use almost all 64 bits in config. I tried to describe the bitmaps
+> in perf_event_p4.h (see Notes on internal configuration of ESCR+CCCR tuples).
 > 
-> 	// I set sched_domains_numa_levels to 0.
-> 	sched_domains_numa_levels = 0;--------------------------------2
+> Guys, letme re-read this whole mail thread first since I have no clue
+> what this remapping about ;)
 
-Ah, ok, so this 'idiot in a hurry' (aka. me) placed the hunk wrong and
-thought it was at the start of the function.
-
-> 	// A loop allocating memory for sched_domains_numa_masks[][]
-> 	for (i = 0; i < level; i++) {
-> 		......
-> 		// Allocate memory for sched_domains_numa_masks[i]----3
-> 		......
-> 	}
-> 	......
-> 
-> 	// I reset sched_domains_numa_levels to level.
-> 	sched_domains_numa_levels = level;----------------------------4
-> }
-
-Yes this makes sense, it might be best to have this as a separate patch.
+If we need some special mark in config I can try to free hight bit in
+@config and move it somehwere in low 32 bits (there are bits 28-29 which
+i can use for that). Ie I can provide the sign bit, would it be enough?
