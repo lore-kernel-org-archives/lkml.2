@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab2IYMdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 08:33:15 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54877 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab2IYMdO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 08:33:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Lunn <andrew@lunn.ch>, sebastien requiem <sebastien@requiem.fr>
-Subject: Re: [PATCH 5/6] ARM: dove: Remove watchdog from DT
-Date: Tue, 25 Sep 2012 12:33:08 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>
-References: <1348531338-16624-1-git-send-email-sebastian.hesselbarth@gmail.com> <20120925103141.GG27099@lunn.ch> <201209251120.54255.arnd@arndb.de>
-In-Reply-To: <201209251120.54255.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209251233.09060.arnd@arndb.de>
-X-Provags-ID: V02:K0:s+hUioOXUb3VFHA1uB3aExM98+sbKkd6LZZ0EkCFg9v
- XkMGDNl2PjhMhBpV+k5JeJWn04k/lXiORNYQzWEwWKiLckxakM
- VfIxXp5jMSJ1Psw589Nw1KaG+z5OtReFVn2yhEdB7jeUnB+lf8
- JAxAJbJpzJLJgZKLcdqosgkvRf+Yr8ZBQOtiM4CpRYGe9ShZly
- pc9stZUwKvy2QlGfJACruBMddSx51wtu+khPouiayN16sjGWR+
- IrCiD89YcMgTgy96l8XVXJcR+qQmMcsK7hZ9d/kZu0zb/qP5tS
- ee+3bhSGdoMkc10MSdqK/LuHvJNHQadwtubjWVEPcNFkbrbmeq
- KM1fWVH/BDF+GmMB0SMY=
+	id S1755444Ab2IYMd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 08:33:26 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:42656 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754891Ab2IYMdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 08:33:23 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] UV: fix incorrect tlb flush all issue
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com
+Message-Id: <E1TGULk-000162-7Y@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Tue, 25 Sep 2012 07:34:52 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 September 2012, Arnd Bergmann wrote:
-> On Tuesday 25 September 2012, Andrew Lunn wrote:
-> > > Regarding mv78xx0, I agree that I'm not sure what to do. The number of
-> > > supported platforms is small. Should we simply mark mv78xx0 deprecated
-> > > now, wait a few release cycles to see if anyone shows up, and see what
-> > > to do at this point?
-> 
-> We should let Sebastien Requiem comment. He is the only person outside of
-> Marvell who has contributed a board file for mv78xx0. If he's interested in
-> keeping it alive, he's hopefully also able to find the time to test the
-> devicetree version of that platform in mach-mvebu. Similarly, if anyone
-> has the MASA reference design, that one could be moved over to mach-mvebu
-> first.
-> 
-> There is a much smaller user base for mv78xx0 than for orion5x, so as long
-> as we can keep the support working with DT, we can throw out the legacy
-> code much faster than for orion. If it doesn't get put into mach-mvebu
-> and you can't find anyone who has hardware to test on, you could also
-> stop maintaining it and leave it to bitrot, but I wouldn't just remove it
-> on a fast track then.
+From: Cliff Wickman <cpw@sgi.com>
 
-The address I used for Sebastien appears to be dead. Maybe this one still
-works.
+(this was sent as an ack on 9/13, but with incorrect title and sign-off)
 
-	Arnd
+Ack.
+But with the adjustment below.  The 'end' argument was not declared long.
+
+I tested the patch on a UV.
+It has the effect of either clearing 1 or all TLBs in a cpu.
+I added some debugging to test for the cases when clearing all TLBs is
+overkill, and in practice it happens very seldom.
+
+Reported-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/include/asm/uv/uv.h  |    2 +-
+ arch/x86/platform/uv/tlb_uv.c |   10 +++++++---
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+Index: linux/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/tlb_uv.c
++++ linux/arch/x86/platform/uv/tlb_uv.c
+@@ -1034,7 +1034,8 @@ static int set_distrib_bits(struct cpuma
+  * globally purge translation cache of a virtual address or all TLB's
+  * @cpumask: mask of all cpu's in which the address is to be removed
+  * @mm: mm_struct containing virtual address range
+- * @va: virtual address to be removed (or TLB_FLUSH_ALL for all TLB's on cpu)
++ * @start: start virtual address to be removed from TLB
++ * @end: end virtual address to be remove from TLB
+  * @cpu: the current cpu
+  *
+  * This is the entry point for initiating any UV global TLB shootdown.
+@@ -1056,7 +1057,7 @@ static int set_distrib_bits(struct cpuma
+  */
+ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 				struct mm_struct *mm, unsigned long start,
+-				unsigned end, unsigned int cpu)
++				unsigned long end, unsigned int cpu)
+ {
+ 	int locals = 0;
+ 	int remotes = 0;
+@@ -1113,7 +1114,10 @@ const struct cpumask *uv_flush_tlb_other
+ 
+ 	record_send_statistics(stat, locals, hubs, remotes, bau_desc);
+ 
+-	bau_desc->payload.address = start;
++	if (!end || (end - start) <= PAGE_SIZE)
++		bau_desc->payload.address = start;
++	else
++		bau_desc->payload.address = TLB_FLUSH_ALL;
+ 	bau_desc->payload.sending_cpu = cpu;
+ 	/*
+ 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
+Index: linux/arch/x86/include/asm/uv/uv.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv.h
++++ linux/arch/x86/include/asm/uv/uv.h
+@@ -16,7 +16,7 @@ extern void uv_system_init(void);
+ extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 						 struct mm_struct *mm,
+ 						 unsigned long start,
+-						 unsigned end,
++						 unsigned long end,
+ 						 unsigned int cpu);
+ 
+ #else	/* X86_UV */
