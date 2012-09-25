@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364Ab2IYEKS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 00:10:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32847 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774Ab2IYEKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 00:10:17 -0400
-Date: Tue, 25 Sep 2012 14:10:05 +1000
-From: NeilBrown <neilb@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the md tree
-Message-ID: <20120925141005.2a83593e@notabene.brown>
-In-Reply-To: <20120925133146.36615871cf4ccbcbd422ed87@canb.auug.org.au>
-References: <20120925133146.36615871cf4ccbcbd422ed87@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1751537Ab2IYEQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 00:16:21 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:51313 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750774Ab2IYEQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 00:16:20 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/SHzhfmVzSUyzA+69xJXwHc7rsxGN6EfZJ+eQ0dG
+	rsw2WSBt/xFfsW
+Message-ID: <1348546575.7100.68.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Date: Tue, 25 Sep 2012 06:16:15 +0200
+In-Reply-To: <20120924150048.GB11266@suse.de>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	 <20120914212717.GA29307@liondog.tnic>
+	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	 <20120924150048.GB11266@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/AVb3x23g=xwDjDgAYF6cLAA"; protocol="application/pgp-signature"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/AVb3x23g=xwDjDgAYF6cLAA
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-09-24 at 16:00 +0100, Mel Gorman wrote: 
+> On Fri, Sep 14, 2012 at 02:42:44PM -0700, Linus Torvalds wrote:
+> > On Fri, Sep 14, 2012 at 2:27 PM, Borislav Petkov <bp@alien8.de> wrote:
+> > >
+> > > as Nikolay says below, we have a regression in 3.6 with pgbench's
+> > > benchmark in postgresql.
+> > >
+> > > I was able to reproduce it on another box here and did a bisection run.
+> > > It pointed to the commit below.
+> > 
+> > Ok. I guess we should just revert it. However, before we do that,
+> > maybe Mike can make it just use the exact old semantics of
+> > select_idle_sibling() in the update_top_cache_domain() logic.
+> > 
+> 
+> The patch that you being reverted was meant to fix problems with
+> commit 4dcfe102 (sched: Avoid SMT siblings in select_idle_sibling() if
+> possible). That patch made select_idle_sibling() quite fat and I know it
+> is responsible for a 2% regression in a kernel compile benchmark between
+> kernel 3.1 and 3.2 on an old AMD Phenom II X4 940. Reverting Mike's patch
+> might fix this Postgres regression but it reintroduces the overhead caused
+> by commit 4dcfe102 for other cases.  I do not have a suggestion on how to
+> make this better, I'm just pointing out that the revert has some downsides.
 
-On Tue, 25 Sep 2012 13:31:46 +1000 Stephen Rothwell <sfr@canb.auug.org.au>
-wrote:
+Yeah.  The very good thing about this is that Linus becoming interested
+in a problem like two faced little (naughty word) select_idle_sibling()
+brings more minds to bear, so we'll end up in better shape.  Right now,
+we're in not so wonderful shape with or without my patch, depending very
+much on which processor you're running which load on.  That needs to get
+better.  AMD is being hurt _bad_ on fast movers, but just kill the damn
+thing on AMD processors, and pgbench will fall through the floor.
 
-> Hi Neil,
->=20
-> After merging the md tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->=20
-> ERROR: "__tracepoint_block_unplug" [drivers/md/raid456.ko] undefined!
->=20
-> Presumably caused by commit 14817e9a6dab ("md/raid5: add blktrace calls").
->=20
-> CONFIG_MD_RAID456=3Dm
->=20
-> I have used the md tree from next-20120924 for today.
+Aiming darts would be lots easier if the bullseye would stop moving ;-) 
 
-Thanks.
-I requires the following which I have already sent to Jens Axboe.
-I might pull my patch until this fix-up is resolve.
+-Mike
 
-Thanks,
-NeilBrown
-
-
-=46rom 0ef9cbd6e5c6f6c9f303c8a7c905afb3fb55c28d Mon Sep 17 00:00:00 2001
-From: NeilBrown <neilb@suse.de>
-Date: Tue, 25 Sep 2012 09:56:31 +1000
-Subject: [PATCH] block: export trace_block_unplug
-
-This allows stacked devices (like md/raid5) to provide blktrace
-tracing, including unplug events.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 4b4dbdf..ef55ae0 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -40,6 +40,7 @@
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_complete);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_unplug);
-=20
- DEFINE_IDA(blk_queue_ida);
-=20
-
---Sig_/AVb3x23g=xwDjDgAYF6cLAA
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUGEunjnsnt1WYoG5AQK8yhAAi1qYovddDfRCggqvw2nGS8jFAMCuylHy
-Wm2Hh0jR5BL9Fu76o0SVOsUw7ADDUll5ZQG3FuPgViV026+R48vddoJN/Nu3jMZT
-KNDr4evIQRVQk7XhSHQLKuLJ1fxV896vnNhckeGUmiC8E33Dr6/+wp4n93pQb3Z8
-w8pMQtXsUE10iXI9TN6dpyMIvOpyhPJBANQfw1Qc3xpOe2wxPyhIbDTxm5Two5+i
-6bVNTaumH84IOQYgk20JpkmeaScRu8EBPCInby/2a/E1EIueqsUPPaEAVxj5uw2g
-3cbczhvDF7eaTNHYByhJSKDLytp0wP8V5r410bWkpi1WLbDG8Daf5xMyBkjvngUY
-Z1WouxeU11T2+qVVhQovASk9B6D1pZrrjq//jX5eoEY6Iq/cKfZsulvSwnHkOJDt
-gusODXYY8V5q0AyGuSXb4/Mfh7XqpkApti/3LA3KyehhhCiPjjgjFLiyuIX86Ux1
-wu0tInRYWx3HAWx2JDJGgWmepiAPP6N98oRHiXhOt26HUFHtqP89Qc0VojbDC2Zc
-FUFlLU1PR+edIhIB/9jLkrzcEh+3j0RWLNSBzo87OWmxw8g0SAMOX+XHCcPPyn/x
-qq/LxRpDAe/MEOUzEOAK2c2svMVbpH5GJr4b5LoJjPHEXjb8dWVPRKseV98ZZavu
-DPrPR0qvSRA=
-=mxjf
------END PGP SIGNATURE-----
-
---Sig_/AVb3x23g=xwDjDgAYF6cLAA--
