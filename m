@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979Ab2IYKgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:36:52 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:35537 "EHLO
+	id S1755017Ab2IYKhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:37:14 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58422 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab2IYKgh (ORCPT
+	with ESMTP id S1754758Ab2IYKgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:36:37 -0400
+	Tue, 25 Sep 2012 06:36:32 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
@@ -16,130 +16,222 @@ Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
         amit.kucheria@linaro.org, vincent.guittot@linaro.org,
         linaro-dev@lists.linaro.org, patches@linaro.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 3/3] workqueue: Schedule work on non-idle cpu instead of current one
-Date: Tue, 25 Sep 2012 16:06:08 +0530
-Message-Id: <3232b3192e2e373cc4aaf43359d454c5ad53cddb.1348568074.git.viresh.kumar@linaro.org>
+Subject: [PATCH 1/3] sched: Create sched_select_cpu() to give preferred CPU for power saving
+Date: Tue, 25 Sep 2012 16:06:06 +0530
+Message-Id: <cdec85a36f2da0d604aba8a330912ed3de2177b5.1348568074.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1348568074.git.viresh.kumar@linaro.org>
 References: <viresh.kumar@linaro.org>
  <cover.1348568074.git.viresh.kumar@linaro.org>
 In-Reply-To: <cover.1348568074.git.viresh.kumar@linaro.org>
 References: <cover.1348568074.git.viresh.kumar@linaro.org>
-X-OriginalArrivalTime: 25 Sep 2012 10:36:33.0913 (UTC) FILETIME=[A2091E90:01CD9B09]
-X-MC-Unique: 112092511363601701
+X-OriginalArrivalTime: 25 Sep 2012 10:36:29.0288 (UTC) FILETIME=[9F476680:01CD9B09]
+X-MC-Unique: 112092511363009501
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8PAavpc025574
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8PAbMVE025582
 
-Workqueues queues work on current cpu, if the caller haven't passed a preferred
-cpu. This may wake up an idle CPU, which is actually not required.
+In order to save power, it would be useful to schedule work onto non-IDLE cpus
+instead of waking up an IDLE one.
 
-This work can be processed by any CPU and so we must select a non-idle CPU here.
-This patch adds in support in workqueue framework to get preferred CPU details
-from the scheduler, instead of using current CPU.
+To achieve this, we need scheduler to guide kernel frameworks (like: timers &
+workqueues) on which is the most preferred CPU that must be used for these
+tasks.
+
+This routine returns the preferred cpu which is non-idle. It accepts max level
+of sched domain, upto which we can choose a CPU from. It can accept following
+options: SD_SIBLING, SD_MC, SD_BOOK, SD_CPU or SD_NUMA.
+
+If user passed SD_MC, then we can return a CPU from SD_SIBLING or SD_MC.  If the
+level requested by user is not available for the current kernel configuration,
+then current CPU will be returned.
+
+If user has passed NUMA level, then we may need to go through numa_levels too.
+Second parameter to this routine will now come into play. Its minimum value is
+zero, in which case there is only one NUMA level to go through. If you want to
+go through all NUMA levels, pass -1 here. This should cover all NUMA levels.
+
+This patch reuses the code from get_nohz_timer_target() routine, which had
+similar implementation. get_nohz_timer_target() is also modified to use
+sched_select_cpu() now.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- arch/arm/Kconfig   | 11 +++++++++++
- kernel/workqueue.c | 25 ++++++++++++++++++-------
- 2 files changed, 29 insertions(+), 7 deletions(-)
+ include/linux/sched.h | 11 +++++++
+ kernel/sched/core.c   | 88 +++++++++++++++++++++++++++++++++++++++------------
+ 2 files changed, 79 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5944511..da17bd0 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1594,6 +1594,17 @@ config HMP_SLOW_CPU_MASK
- 	  Specify the cpuids of the slow CPUs in the system as a list string,
- 	  e.g. cpuid 0+1 should be specified as 0-1.
- 
-+config MIGRATE_WQ
-+	bool "(EXPERIMENTAL) Migrate Workqueues to non-idle cpu"
-+	depends on SMP && EXPERIMENTAL
-+	help
-+	  Workqueues queues work on current cpu, if the caller haven't passed a
-+	  preferred cpu. This may wake up an idle CPU, which is actually not
-+	  required. This work can be processed by any CPU and so we must select
-+	  a non-idle CPU here.  This patch adds in support in workqueue
-+	  framework to get preferred CPU details from the scheduler, instead of
-+	  using current CPU.
-+
- config HAVE_ARM_SCU
- 	bool
- 	help
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 692a55b..fd8df4a 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -456,6 +456,16 @@ static inline void debug_work_activate(struct work_struct *work) { }
- static inline void debug_work_deactivate(struct work_struct *work) { }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0059212..4b660ee 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -281,6 +281,10 @@ static inline void select_nohz_load_balancer(int stop_tick) { }
+ static inline void set_cpu_sd_state_idle(void) { }
  #endif
  
-+/* This enables migration of a work to a non-IDLE cpu instead of current cpu */
-+#ifdef CONFIG_MIGRATE_WQ
-+static int wq_select_cpu(void)
-+{
-+	return sched_select_cpu(SD_NUMA, -1);
-+}
-+#else
-+#define wq_select_cpu()		smp_processor_id()
++#ifdef CONFIG_SMP
++extern int sched_select_cpu(int sd_max_level, u32 numa_level);
 +#endif
 +
- /* Serializes the accesses to the list of workqueues. */
- static DEFINE_SPINLOCK(workqueue_lock);
- static LIST_HEAD(workqueues);
-@@ -995,7 +1005,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
- 		struct global_cwq *last_gcwq;
+ /*
+  * Only dump TASK_* tasks. (0 for all tasks)
+  */
+@@ -868,6 +872,13 @@ enum cpu_idle_type {
+ #define SD_PREFER_SIBLING	0x1000	/* Prefer to place tasks in a sibling domain */
+ #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
  
- 		if (unlikely(cpu == WORK_CPU_UNBOUND))
--			cpu = raw_smp_processor_id();
-+			cpu = wq_select_cpu();
++/* sched-domain levels */
++#define SD_SIBLING		0x01	/* Only for CONFIG_SCHED_SMT */
++#define SD_MC			0x02	/* Only for CONFIG_SCHED_MC */
++#define SD_BOOK			0x04	/* Only for CONFIG_SCHED_BOOK */
++#define SD_CPU			0x08	/* Always enabled */
++#define SD_NUMA			0x10	/* Only for CONFIG_NUMA */
++
+ extern int __weak arch_sd_sibiling_asym_packing(void);
  
- 		/*
- 		 * It's multi cpu.  If @wq is non-reentrant and @work
-@@ -1066,8 +1076,9 @@ int queue_work(struct workqueue_struct *wq, struct work_struct *work)
+ struct sched_group_power {
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index de97083..a14014c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -551,22 +551,7 @@ void resched_cpu(int cpu)
+  */
+ int get_nohz_timer_target(void)
  {
- 	int ret;
- 
--	ret = queue_work_on(get_cpu(), wq, work);
--	put_cpu();
-+	preempt_disable();
-+	ret = queue_work_on(wq_select_cpu(), wq, work);
-+	preempt_enable();
- 
- 	return ret;
+-	int cpu = smp_processor_id();
+-	int i;
+-	struct sched_domain *sd;
+-
+-	rcu_read_lock();
+-	for_each_domain(cpu, sd) {
+-		for_each_cpu(i, sched_domain_span(sd)) {
+-			if (!idle_cpu(i)) {
+-				cpu = i;
+-				goto unlock;
+-			}
+-		}
+-	}
+-unlock:
+-	rcu_read_unlock();
+-	return cpu;
++	return sched_select_cpu(SD_NUMA, -1);
  }
-@@ -1102,7 +1113,7 @@ static void delayed_work_timer_fn(unsigned long __data)
- 	struct delayed_work *dwork = (struct delayed_work *)__data;
- 	struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
- 
--	__queue_work(smp_processor_id(), cwq->wq, &dwork->work);
-+	__queue_work(wq_select_cpu(), cwq->wq, &dwork->work);
+ /*
+  * When add_timer_on() enqueues a timer into the timer wheel of an
+@@ -639,6 +624,66 @@ void sched_avg_update(struct rq *rq)
+ 	}
  }
  
- /**
-@@ -1158,7 +1169,7 @@ int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
- 			if (gcwq && gcwq->cpu != WORK_CPU_UNBOUND)
- 				lcpu = gcwq->cpu;
- 			else
--				lcpu = raw_smp_processor_id();
-+				lcpu = wq_select_cpu();
- 		} else
- 			lcpu = WORK_CPU_UNBOUND;
- 
-@@ -2823,8 +2834,8 @@ EXPORT_SYMBOL_GPL(cancel_work_sync);
- static inline void __flush_delayed_work(struct delayed_work *dwork)
++/* Mask of all the SD levels present in current configuration */
++static int sd_present_levels;
++
++/*
++ * This routine returns the preferred cpu which is non-idle. It accepts max
++ * level of sched domain, upto which we can choose a CPU from. It can accept
++ * following options: SD_SIBLING, SD_MC, SD_BOOK, SD_CPU or SD_NUMA.
++ *
++ * If user passed SD_MC, then we can return a CPU from SD_SIBLING or SD_MC.
++ * If the level requested by user is not available for the current kernel
++ * configuration, then current CPU will be returned.
++ *
++ * If user has passed NUMA level, then we may need to go through numa_levels
++ * too. Second parameter to this routine will now come into play. Its minimum
++ * value is zero, in which case there is only one NUMA level to go through. If
++ * you want to go through all NUMA levels, pass -1 here. This should cover all
++ * NUMA levels.
++ */
++int sched_select_cpu(int sd_max_level, u32 numa_level)
++{
++	struct sched_domain *sd;
++	int cpu = smp_processor_id();
++	int i, sd_target_levels;
++
++	sd_target_levels = (sd_max_level | (sd_max_level - 1))
++			& sd_present_levels;
++
++	/* return current cpu if no sd_present_levels <= sd_max_level */
++	if (!sd_target_levels)
++		return cpu;
++
++	rcu_read_lock();
++	for_each_domain(cpu, sd) {
++		for_each_cpu(i, sched_domain_span(sd)) {
++			if (!idle_cpu(i)) {
++				cpu = i;
++				goto unlock;
++			}
++		}
++
++		/* Do we need to go through NUMA levels now */
++		if (sd_target_levels == SD_NUMA) {
++			/* Go through NUMA levels until numa_level is zero */
++			if (numa_level--)
++				continue;
++		}
++
++		/*
++		 * clear first bit set in sd_target_levels, and return if no
++		 * more sd levels must be checked
++		 */
++		sd_target_levels &= sd_target_levels - 1;
++		if (!sd_target_levels)
++			goto unlock;
++	}
++unlock:
++	rcu_read_unlock();
++	return cpu;
++}
++
+ #else /* !CONFIG_SMP */
+ void resched_task(struct task_struct *p)
  {
- 	if (del_timer_sync(&dwork->timer))
--		__queue_work(raw_smp_processor_id(),
--			     get_work_cwq(&dwork->work)->wq, &dwork->work);
-+		__queue_work(wq_select_cpu(), get_work_cwq(&dwork->work)->wq,
-+			     &dwork->work);
+@@ -6188,6 +6233,7 @@ typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
+ struct sched_domain_topology_level {
+ 	sched_domain_init_f init;
+ 	sched_domain_mask_f mask;
++	int		    level_mask;
+ 	int		    flags;
+ 	int		    numa_level;
+ 	struct sd_data      data;
+@@ -6434,6 +6480,7 @@ sd_init_##type(struct sched_domain_topology_level *tl, int cpu) 	\
+ 	*sd = SD_##type##_INIT;						\
+ 	SD_INIT_NAME(sd, type);						\
+ 	sd->private = &tl->data;					\
++	sd_present_levels |= tl->level_mask;				\
+ 	return sd;							\
  }
  
- /**
+@@ -6547,15 +6594,15 @@ static const struct cpumask *cpu_smt_mask(int cpu)
+  */
+ static struct sched_domain_topology_level default_topology[] = {
+ #ifdef CONFIG_SCHED_SMT
+-	{ sd_init_SIBLING, cpu_smt_mask, },
++	{ sd_init_SIBLING, cpu_smt_mask, SD_SIBLING, },
+ #endif
+ #ifdef CONFIG_SCHED_MC
+-	{ sd_init_MC, cpu_coregroup_mask, },
++	{ sd_init_MC, cpu_coregroup_mask, SD_MC, },
+ #endif
+ #ifdef CONFIG_SCHED_BOOK
+-	{ sd_init_BOOK, cpu_book_mask, },
++	{ sd_init_BOOK, cpu_book_mask, SD_BOOK, },
+ #endif
+-	{ sd_init_CPU, cpu_cpu_mask, },
++	{ sd_init_CPU, cpu_cpu_mask, SD_CPU, },
+ 	{ NULL, },
+ };
+ 
+@@ -6778,6 +6825,7 @@ static void sched_init_numa(void)
+ 		};
+ 	}
+ 
++	sd_present_levels |= SD_NUMA;
+ 	sched_domain_topology = tl;
+ }
+ #else
 -- 
 1.7.12.rc2.18.g61b472e
 
