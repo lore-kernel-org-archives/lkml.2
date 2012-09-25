@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab2IYMHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 08:07:34 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:60514 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755956Ab2IYMHd (ORCPT
+	id S1756110Ab2IYMHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 08:07:45 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:1156 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756077Ab2IYMHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 08:07:33 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        haojian.zhuang@gmail.com
-Cc: linux-kernel@vger.kernel.org, Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH] GPIO: gpio-pxa: fix bug when get gpio value
-Date: Tue, 25 Sep 2012 20:03:42 +0800
-Message-Id: <1348574622-11632-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-X-OriginalArrivalTime: 25 Sep 2012 12:03:46.0309 (UTC) FILETIME=[D0C96350:01CD9B15]
+	Tue, 25 Sep 2012 08:07:42 -0400
+Message-ID: <1348574859.1436.38.camel@x61.thuisdomein>
+Subject: [PATCH] aic94xx: fix handling of default CTRL-A settings
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 25 Sep 2012 14:07:39 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Sep 2012 12:07:40.0349 (UTC) FILETIME=[5C490ED0:01CD9B16]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to return 0 or 1 when get gpio value.
+Compiling aic94xx_sds.o (part of the aic94xx driver) triggers this GCC
+warning:
+    drivers/scsi/aic94xx/aic94xx_sds.c: In function 'asd_read_flash':
+    drivers/scsi/aic94xx/aic94xx_sds.c:597:21: warning: 'offs' may be used uninitialized in this function [-Wmaybe-uninitialized]
+    drivers/scsi/aic94xx/aic94xx_sds.c:985:6: note: 'offs' was declared here
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+This warning can be traced back to asd_find_flash_de(). If it fails to
+find a FLASH_DE_CTRL_A_USER entry it will return without setting 'offs'.
+And that will leave 'offs' uninitialized when asd_read_flash_seg() is
+called a little later.
+
+But that call of asd_read_flash_seg() isn't needed in that case.
+Everything this code cares about can already be found in the "default
+CTRL-A user settings section" that was created in the error path. So
+let's just jump over that call (and all other unneeded code) after
+creating that section.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/gpio/gpio-pxa.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+0) I noticed this warning while building v3.6-rc7 on current Fedora
+17, using Fedora's default config.
 
-diff --git a/drivers/gpio/gpio-pxa.c b/drivers/gpio/gpio-pxa.c
-index 9cac88a..1f9a058 100644
---- a/drivers/gpio/gpio-pxa.c
-+++ b/drivers/gpio/gpio-pxa.c
-@@ -269,7 +269,10 @@ static int pxa_gpio_direction_output(struct gpio_chip *chip,
- 
- static int pxa_gpio_get(struct gpio_chip *chip, unsigned offset)
+1) Compile tested only. It might be best to run test this too, if only
+to test whether the non-error path is unaffected.
+
+2) This piece of code has not been touched ever since it was added in
+v2.6.19, with commit 2908d778ab3e244900c310974e1fc1c69066e450 ("[SCSI]
+aic94xx: new driver"). So, given the current code, chances are that a
+"CTRL-A user settings section" is always present and the code to create
+a default section might as well be dropped. So perhaps a more drastic
+patch is preferable.
+
+ drivers/scsi/aic94xx/aic94xx_sds.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/aic94xx/aic94xx_sds.c b/drivers/scsi/aic94xx/aic94xx_sds.c
+index edb43fd..ecb4a1c 100644
+--- a/drivers/scsi/aic94xx/aic94xx_sds.c
++++ b/drivers/scsi/aic94xx/aic94xx_sds.c
+@@ -983,7 +983,7 @@ static int asd_process_ctrl_a_user(struct asd_ha_struct *asd_ha,
  {
--	return readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET) & (1 << offset);
-+	u32 gplr = __raw_readl(gpio_chip_base(chip) + GPLR_OFFSET);
-+	u32 mask = 1 << offset;
-+
-+	return (gplr & mask) != 0;
- }
+ 	int err, i;
+ 	u32 offs, size;
+-	struct asd_ll_el *el;
++	struct asd_ll_el *el = NULL;
+ 	struct asd_ctrla_phy_settings *ps;
+ 	struct asd_ctrla_phy_settings dflt_ps;
  
- static void pxa_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+@@ -1004,6 +1004,7 @@ static int asd_process_ctrl_a_user(struct asd_ha_struct *asd_ha,
+ 
+ 		size = sizeof(struct asd_ctrla_phy_settings);
+ 		ps = &dflt_ps;
++		goto ctrla_phy_settings;
+ 	}
+ 
+ 	if (size == 0)
+@@ -1029,6 +1030,7 @@ static int asd_process_ctrl_a_user(struct asd_ha_struct *asd_ha,
+ 		goto out2;
+ 	}
+ 
++ctrla_phy_settings:
+ 	err = asd_process_ctrla_phy_settings(asd_ha, ps);
+ 	if (err) {
+ 		ASD_DPRINTK("couldn't process ctrla phy settings\n");
 -- 
-1.7.4.1
+1.7.11.4
 
