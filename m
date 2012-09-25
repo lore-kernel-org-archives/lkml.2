@@ -1,338 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232Ab2IYWuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 18:50:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4450 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490Ab2IYWuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 18:50:20 -0400
-Date: Tue, 25 Sep 2012 18:50:00 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Jens Axboe <axboe@kernel.dk>
-cc: Jeff Moyer <jmoyer@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>,
-        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
-        lwoodman@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>
-Subject: [PATCH 2/2] Fix a crash when block device is read and block size is
- changed at the same time
-In-Reply-To: <5061F3D2.6050502@kernel.dk>
-Message-ID: <Pine.LNX.4.64.1209251849310.21075@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
- <Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com>
- <x49k3xzq3jc.fsf@segfault.boston.devel.redhat.com>
- <Pine.LNX.4.64.1207281236230.30415@file.rdu.redhat.com>
- <Pine.LNX.4.64.1207281240270.30415@file.rdu.redhat.com>
- <1343508252.2626.13184.camel@edumazet-glaptop>
- <Pine.LNX.4.64.1207290107460.29910@file.rdu.redhat.com>
- <1343556630.2626.13257.camel@edumazet-glaptop> <1343586962.2626.13266.camel@edumazet-glaptop>
- <Pine.LNX.4.64.1208011601280.21832@file.rdu.redhat.com>
- <Pine.LNX.4.64.1208311433480.2212@file.rdu.redhat.com>
- <Pine.LNX.4.64.1208311518340.16960@file.rdu.redhat.com>
- <x49liguyg6r.fsf@segfault.boston.devel.redhat.com>
- <x49wqzswdn3.fsf@segfault.boston.devel.redhat.com>
- <Pine.LNX.4.64.1209181257410.11735@file.rdu.redhat.com>
- <x49ehlzrt01.fsf@segfault.boston.devel.redhat.com>
- <x49sja6ouv4.fsf@segfault.boston.devel.redhat.com> <5061F0E6.5000403@kernel.dk>
- <5061F3D2.6050502@kernel.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751838Ab2IYW53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 18:57:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47280 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab2IYW51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 18:57:27 -0400
+Date: Tue, 25 Sep 2012 15:57:26 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: next-20120925: BUG at drivers/scsi/scsi_lib.c:640!
+Message-Id: <20120925155726.f1c0a79f.akpm@linux-foundation.org>
+In-Reply-To: <87wqzi3rki.fsf@openvz.org>
+References: <87wqzi3rki.fsf@openvz.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blockdev: turn a rw semaphore into a percpu rw semaphore
+(cc's added)
 
-This avoids cache line bouncing when many processes lock the semaphore
-for read.
+On Tue, 25 Sep 2012 22:06:37 +0400
+Dmitry Monakhov <dmonakhov@openvz.org> wrote:
 
-New percpu lock implementation
-
-The lock consists of an array of percpu unsigned integers, a boolean
-variable and a mutex.
-
-When we take the lock for read, we enter rcu read section, check for a
-"locked" variable. If it is false, we increase a percpu counter on the
-current cpu and exit the rcu section. If "locked" is true, we exit the
-rcu section, take the mutex and drop it (this waits until a writer
-finished) and retry.
-
-Unlocking for read just decreases percpu variable. Note that we can
-unlock on a difference cpu than where we locked, in this case the
-counter underflows. The sum of all percpu counters represents the number
-of processes that hold the lock for read.
-
-When we need to lock for write, we take the mutex, set "locked" variable
-to true and synchronize rcu. Since RCU has been synchronized, no
-processes can create new read locks. We wait until the sum of percpu
-counters is zero - when it is, there are no readers in the critical
-section.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
----
- Documentation/percpu-rw-semaphore.txt |   27 ++++++++++
- fs/block_dev.c                        |   27 ++++++----
- include/linux/fs.h                    |    3 -
- include/linux/percpu-rwsem.h          |   89 ++++++++++++++++++++++++++++++++++
- 4 files changed, 135 insertions(+), 11 deletions(-)
-
----
-
-Index: linux-2.6-copy/fs/block_dev.c
-===================================================================
---- linux-2.6-copy.orig/fs/block_dev.c	2012-09-26 00:42:49.000000000 +0200
-+++ linux-2.6-copy/fs/block_dev.c	2012-09-26 00:45:29.000000000 +0200
-@@ -127,7 +127,7 @@ int set_blocksize(struct block_device *b
- 		return -EINVAL;
- 
- 	/* Prevent starting I/O or mapping the device */
--	down_write(&bdev->bd_block_size_semaphore);
-+	percpu_down_write(&bdev->bd_block_size_semaphore);
- 
- 	/* Check that the block device is not memory mapped */
- 	mapping = bdev->bd_inode->i_mapping;
-@@ -135,7 +135,7 @@ int set_blocksize(struct block_device *b
- 	if (!prio_tree_empty(&mapping->i_mmap) ||
- 	    !list_empty(&mapping->i_mmap_nonlinear)) {
- 		mutex_unlock(&mapping->i_mmap_mutex);
--		up_write(&bdev->bd_block_size_semaphore);
-+		percpu_up_write(&bdev->bd_block_size_semaphore);
- 		return -EBUSY;
- 	}
- 	mutex_unlock(&mapping->i_mmap_mutex);
-@@ -148,7 +148,7 @@ int set_blocksize(struct block_device *b
- 		kill_bdev(bdev);
- 	}
- 
--	up_write(&bdev->bd_block_size_semaphore);
-+	percpu_up_write(&bdev->bd_block_size_semaphore);
- 
- 	return 0;
- }
-@@ -460,6 +460,12 @@ static struct inode *bdev_alloc_inode(st
- 	struct bdev_inode *ei = kmem_cache_alloc(bdev_cachep, GFP_KERNEL);
- 	if (!ei)
- 		return NULL;
-+
-+	if (unlikely(percpu_init_rwsem(&ei->bdev.bd_block_size_semaphore))) {
-+		kmem_cache_free(bdev_cachep, ei);
-+		return NULL;
-+	}
-+
- 	return &ei->vfs_inode;
- }
- 
-@@ -468,6 +474,8 @@ static void bdev_i_callback(struct rcu_h
- 	struct inode *inode = container_of(head, struct inode, i_rcu);
- 	struct bdev_inode *bdi = BDEV_I(inode);
- 
-+	percpu_free_rwsem(&bdi->bdev.bd_block_size_semaphore);
-+
- 	kmem_cache_free(bdev_cachep, bdi);
- }
- 
-@@ -491,7 +499,6 @@ static void init_once(void *foo)
- 	inode_init_once(&ei->vfs_inode);
- 	/* Initialize mutex for freeze. */
- 	mutex_init(&bdev->bd_fsfreeze_mutex);
--	init_rwsem(&bdev->bd_block_size_semaphore);
- }
- 
- static inline void __bd_forget(struct inode *inode)
-@@ -1593,11 +1600,11 @@ ssize_t blkdev_aio_read(struct kiocb *io
- 	ssize_t ret;
- 	struct block_device *bdev = I_BDEV(iocb->ki_filp->f_mapping->host);
- 
--	down_read(&bdev->bd_block_size_semaphore);
-+	percpu_down_read(&bdev->bd_block_size_semaphore);
- 
- 	ret = generic_file_aio_read(iocb, iov, nr_segs, pos);
- 
--	up_read(&bdev->bd_block_size_semaphore);
-+	percpu_up_read(&bdev->bd_block_size_semaphore);
- 
- 	return ret;
- }
-@@ -1622,7 +1629,7 @@ ssize_t blkdev_aio_write(struct kiocb *i
- 
- 	blk_start_plug(&plug);
- 
--	down_read(&bdev->bd_block_size_semaphore);
-+	percpu_down_read(&bdev->bd_block_size_semaphore);
- 
- 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
- 	if (ret > 0 || ret == -EIOCBQUEUED) {
-@@ -1633,7 +1640,7 @@ ssize_t blkdev_aio_write(struct kiocb *i
- 			ret = err;
- 	}
- 
--	up_read(&bdev->bd_block_size_semaphore);
-+	percpu_up_read(&bdev->bd_block_size_semaphore);
- 
- 	blk_finish_plug(&plug);
- 
-@@ -1646,11 +1653,11 @@ int blkdev_mmap(struct file *file, struc
- 	int ret;
- 	struct block_device *bdev = I_BDEV(file->f_mapping->host);
- 
--	down_read(&bdev->bd_block_size_semaphore);
-+	percpu_down_read(&bdev->bd_block_size_semaphore);
- 
- 	ret = generic_file_mmap(file, vma);
- 
--	up_read(&bdev->bd_block_size_semaphore);
-+	percpu_up_read(&bdev->bd_block_size_semaphore);
- 
- 	return ret;
- }
-Index: linux-2.6-copy/include/linux/fs.h
-===================================================================
---- linux-2.6-copy.orig/include/linux/fs.h	2012-09-26 00:41:07.000000000 +0200
-+++ linux-2.6-copy/include/linux/fs.h	2012-09-26 00:45:29.000000000 +0200
-@@ -10,6 +10,7 @@
- #include <linux/ioctl.h>
- #include <linux/blk_types.h>
- #include <linux/types.h>
-+#include <linux/percpu-rwsem.h>
- 
- /*
-  * It's silly to have NR_OPEN bigger than NR_FILE, but you can change
-@@ -725,7 +726,7 @@ struct block_device {
- 	/* Mutex for freeze */
- 	struct mutex		bd_fsfreeze_mutex;
- 	/* A semaphore that prevents I/O while block size is being changed */
--	struct rw_semaphore	bd_block_size_semaphore;
-+	struct percpu_rw_semaphore	bd_block_size_semaphore;
- };
- 
- /*
-Index: linux-2.6-copy/include/linux/percpu-rwsem.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6-copy/include/linux/percpu-rwsem.h	2012-09-26 00:45:29.000000000 +0200
-@@ -0,0 +1,89 @@
-+#ifndef _LINUX_PERCPU_RWSEM_H
-+#define _LINUX_PERCPU_RWSEM_H
-+
-+#include <linux/mutex.h>
-+#include <linux/percpu.h>
-+#include <linux/rcupdate.h>
-+#include <linux/delay.h>
-+
-+struct percpu_rw_semaphore {
-+	unsigned __percpu *counters;
-+	bool locked;
-+	struct mutex mtx;
-+};
-+
-+static inline void percpu_down_read(struct percpu_rw_semaphore *p)
-+{
-+	rcu_read_lock();
-+	if (unlikely(p->locked)) {
-+		rcu_read_unlock();
-+		mutex_lock(&p->mtx);
-+		this_cpu_inc(*p->counters);
-+		mutex_unlock(&p->mtx);
-+		return;
-+	}
-+	this_cpu_inc(*p->counters);
-+	rcu_read_unlock();
-+}
-+
-+static inline void percpu_up_read(struct percpu_rw_semaphore *p)
-+{
-+	/*
-+	 * On X86, write operation in this_cpu_dec serves as a memory unlock
-+	 * barrier (i.e. memory accesses may be moved before the write, but
-+	 * no memory accesses are moved past the write).
-+	 * On other architectures this may not be the case, so we need smp_mb()
-+	 * there.
-+	 */
-+#if defined(CONFIG_X86) && (!defined(CONFIG_X86_PPRO_FENCE) && !defined(CONFIG_X86_OOSTORE))
-+	barrier();
-+#else
-+	smp_mb();
-+#endif
-+	this_cpu_dec(*p->counters);
-+}
-+
-+static inline unsigned __percpu_count(unsigned __percpu *counters)
-+{
-+	unsigned total = 0;
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		total += ACCESS_ONCE(*per_cpu_ptr(counters, cpu));
-+
-+	return total;
-+}
-+
-+static inline void percpu_down_write(struct percpu_rw_semaphore *p)
-+{
-+	mutex_lock(&p->mtx);
-+	p->locked = true;
-+	synchronize_rcu();
-+	while (__percpu_count(p->counters))
-+		msleep(1);
-+	smp_rmb(); /* paired with smp_mb() in percpu_sem_up_read() */
-+}
-+
-+static inline void percpu_up_write(struct percpu_rw_semaphore *p)
-+{
-+	p->locked = false;
-+	mutex_unlock(&p->mtx);
-+}
-+
-+static inline int percpu_init_rwsem(struct percpu_rw_semaphore *p)
-+{
-+	p->counters = alloc_percpu(unsigned);
-+	if (unlikely(!p->counters))
-+		return -ENOMEM;
-+	p->locked = false;
-+	mutex_init(&p->mtx);
-+	return 0;
-+}
-+
-+static inline void percpu_free_rwsem(struct percpu_rw_semaphore *p)
-+{
-+	free_percpu(p->counters);
-+	p->counters = NULL; /* catch use after free bugs */
-+}
-+
-+#endif
-Index: linux-2.6-copy/Documentation/percpu-rw-semaphore.txt
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6-copy/Documentation/percpu-rw-semaphore.txt	2012-09-26 00:45:29.000000000 +0200
-@@ -0,0 +1,27 @@
-+Percpu rw semaphores
-+--------------------
-+
-+Percpu rw semaphores is a new read-write semaphore design that is
-+optimized for locking for reading.
-+
-+The problem with traditional read-write semaphores is that when multiple
-+cores take the lock for reading, the cache line containing the semaphore
-+is bouncing between L1 caches of the cores, causing performance
-+degradation.
-+
-+Locking for reading it very fast, it uses RCU and it avoids any atomic
-+instruction in the lock and unlock path. On the other hand, locking for
-+writing is very expensive, it calls synchronize_rcu() that can take
-+hundreds of microseconds.
-+
-+The lock is declared with "struct percpu_rw_semaphore" type.
-+The lock is initialized percpu_init_rwsem, it returns 0 on success and
-+-ENOMEM on allocation failure.
-+The lock must be freed with percpu_free_rwsem to avoid memory leak.
-+
-+The lock is locked for read with percpu_down_read, percpu_up_read and
-+for write with percpu_down_write, percpu_up_write.
-+
-+The idea of using RCU for optimized rw-lock was introduced by
-+Eric Dumazet <eric.dumazet@gmail.com>.
-+The code was written by Mikulas Patocka <mpatocka@redhat.com>
-
+> 
+> Seems like barriers are broken again
+> 
+>  kernel BUG at drivers/scsi/scsi_lib.c:1180!
+>  invalid opcode: 0000 [#1] SMP 
+>  Modules linked in: coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button ext3 jbd mbcache sd_mod crc_t10dif\
+> elper cryptd lrw aes_x86_64 xts gf128mul ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
+>  CPU 0 
+>  Pid: 753, comm: fsck.ext3 Not tainted 3.6.0-rc7-next-20120925+ #4                  /DQ67SW
+>  RIP: 0010:[<ffffffff81470dbc>]  [<ffffffff81470dbc>] scsi_setup_fs_cmnd+0xec/0x180
+>  RSP: 0018:ffff880233aff9f8  EFLAGS: 00010002
+>  RAX: 0000000000000003 RBX: ffff88022a741000 RCX: 0000000000000002
+>  RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffffffff81f32b48
+>  RBP: ffff880233affa18 R08: 0000000000000001 R09: 0000000000000000
+>  R10: ffff88022a26c800 R11: 0000000000000000 R12: ffff880229369968
+>  R13: 0000000000000001 R14: ffff88022a741000 R15: 0000000000000000
+>  FS:  00007f1348632760(0000) GS:ffff88023e200000(0000) knlGS:0000000000000000
+>  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>  CR2: 0000003a3dc0e550 CR3: 00000002338cf000 CR4: 00000000000407f0
+>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  Process fsck.ext3 (pid: 753, threadinfo ffff880233afe000, task ffff880233f48240)
+>  Stack:
+>   ffff880233affa48 ffff880229369968 0000000000000001 ffff880229bdb550
+>   ffff880233affaa8 ffffffffa00a8860 ffff880233affab8 0000000000000082
+>   0000000000000000 ffffffff8107d696 ffff880200000000 ffffffff817410d8
+>  Call Trace:
+>   [<ffffffffa00a8860>] sd_prep_fn+0x140/0xfe0 [sd_mod]
+>   [<ffffffff8107d696>] ? lock_timer_base+0x76/0xf0
+>   [<ffffffff817410d8>] ? _raw_spin_unlock_irq+0x48/0x80
+>   [<ffffffff8130023c>] blk_peek_request+0x23c/0x450
+>   [<ffffffff8146fad0>] scsi_request_fn+0x70/0x820
+>   [<ffffffff812f54e5>] __blk_run_queue+0x55/0x70
+>   [<ffffffff8132a065>] cfq_rq_enqueued+0x155/0x1c0
+>   [<ffffffff8132a386>] cfq_insert_request+0x2b6/0x2f0
+>   [<ffffffff8132a11d>] ? cfq_insert_request+0x4d/0x2f0
+>   [<ffffffff812f002f>] ? md5_final+0x9f/0x130
+>   [<ffffffff810e5463>] ? __lock_release+0xc3/0xe0
+>   [<ffffffff812fe074>] ? drive_stat_acct+0x334/0x3b0
+>   [<ffffffff812f4be6>] __elv_add_request+0x2a6/0x350
+>   [<ffffffff813010fb>] blk_queue_bio+0x52b/0x570
+>   [<ffffffff812fd8f5>] generic_make_request+0x125/0x1c0
+>   [<ffffffff812fdb68>] submit_bio+0x1d8/0x240
+>   [<ffffffff81250c63>] ? bio_alloc_bioset+0x103/0x1e0
+>   [<ffffffff813039e7>] blkdev_issue_flush+0x177/0x200
+>   [<ffffffff81253afa>] blkdev_fsync+0x4a/0x70
+>   [<ffffffff81245af6>] vfs_fsync_range+0x36/0x60
+>   [<ffffffff81245b3c>] vfs_fsync+0x1c/0x20
+>   [<ffffffff81245ea8>] do_fsync+0x58/0x90
+>   [<ffffffff81246100>] sys_fsync+0x10/0x20
+>   [<ffffffff8174e539>] system_call_fastpath+0x16/0x1b
+>  Code: 00 48 c7 c7 48 2b f3 81 41 0f 94 c5 31 d2 44 89 ee e8 d9 e4 cd ff 49 63 c5 48 83 c0 02 48 83 04 c5 b0 a5 13 82 01 45 85 ed 74 04 <0f\
+>  48 89 df 31 db e8 a3 f6 ff ff 48 85 c0 48 
+>  RIP  [<ffffffff81470dbc>] scsi_setup_fs_cmnd+0xec/0x180
+>   RSP <ffff880233aff9f8>
+> 
+> 
+>  ------------[ cut here ]------------
+>  kernel BUG at drivers/scsi/scsi_lib.c:640!
+>  invalid opcode: 0000 [#1] SMP 
+>  Modules linked in: coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button ext3 jbd mbcache sd_mod crc_t10dif\
+> elper cryptd lrw aes_x86_64 xts gf128mul ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
+>  CPU 0 
+>  Pid: 727, comm: fsck.ext3 Not tainted 3.6.0-rc7-next-20120925+ #5                  /DQ67SW
+>  RIP: 0010:[<ffffffff81470585>]  [<ffffffff81470585>] scsi_alloc_sgtable+0x55/0xe0
+>  RSP: 0018:ffff880228215aa8  EFLAGS: 00010002
+>  RAX: 0000000000000003 RBX: ffff880228111a18 RCX: 0000000000000001
+>  RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffffffff81f32a08
+>  RBP: ffff880228215ac8 R08: 0000000000000001 R09: 0000000000000000
+>  R10: 0000000000000002 R11: 0000000000000000 R12: 0000000000000000
+>  R13: 0000000000000020 R14: 0000000000000001 R15: 0000000000000000
+>  FS:  00007fb605f35760(0000) GS:ffff88023e200000(0000) knlGS:0000000000000000
+>  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>  CR2: 0000003a3dc0e550 CR3: 0000000233e83000 CR4: 00000000000407f0
+>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  Process fsck.ext3 (pid: 727, threadinfo ffff880228214000, task ffff880233af8c80)
+>  Stack:
+>   ffff880228111a18 ffff88022a0a0638 0000000000000000 ffff88022a679000
+>   ffff880228215b08 ffffffff81470641 ffff8802281119c0 ffff88022a679000
+>   ffff880228215b28 ffff8802281119c0 ffff88022a0a0638 0000000000000020
+>  Call Trace:
+>   [<ffffffff81470641>] scsi_init_sgtable+0x31/0xe0
+>   [<ffffffff81470a2d>] scsi_init_io+0x3d/0x2e0
+>   [<ffffffff81470e23>] scsi_setup_fs_cmnd+0x153/0x180
+>   [<ffffffffa00a8860>] sd_prep_fn+0x140/0xfe0 [sd_mod]
+>   [<ffffffff8135afec>] ? __list_add+0x15c/0x180
+>   [<ffffffff812f445b>] ? elv_dispatch_sort+0x17b/0x180
+>   [<ffffffff8130023c>] blk_peek_request+0x23c/0x450
+>   [<ffffffff8146fad0>] scsi_request_fn+0x70/0x820
+>   [<ffffffff812f54e5>] __blk_run_queue+0x55/0x70
+>   [<ffffffff81301103>] blk_queue_bio+0x533/0x570
+>   [<ffffffff812fd8f5>] generic_make_request+0x125/0x1c0
+>   [<ffffffff812fdb68>] submit_bio+0x1d8/0x240
+>   [<ffffffff81250c63>] ? bio_alloc_bioset+0x103/0x1e0
+>   [<ffffffff813039e7>] blkdev_issue_flush+0x177/0x200
+>   [<ffffffff81253afa>] blkdev_fsync+0x4a/0x70
+>   [<ffffffff81245af6>] vfs_fsync_range+0x36/0x60
+>   [<ffffffff81245b3c>] vfs_fsync+0x1c/0x20
+>   [<ffffffff81245ea8>] do_fsync+0x58/0x90
+>   [<ffffffff81246100>] sys_fsync+0x10/0x20
+>   [<ffffffff8174e539>] system_call_fastpath+0x16/0x1b
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
