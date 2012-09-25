@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab2IYDyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 23:54:49 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:33047 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab2IYDyr (ORCPT
+	id S1752692Ab2IYDzu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 23:55:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34367 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab2IYDyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 23:54:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347897325-20684-1-git-send-email-shubhrajyoti@ti.com>
-References: <1347897325-20684-1-git-send-email-shubhrajyoti@ti.com>
-Date: Tue, 25 Sep 2012 09:24:46 +0530
-Message-ID: <CAM=Q2cv8ewLvKafU_iaxM4cq+G54K2rDu4Hd6Cj5cEtpZVf1qw@mail.gmail.com>
-Subject: Re: [PATCH] matroxfb: Convert struct i2c_msg initialization to C99 format
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Sep 2012 23:54:52 -0400
+Message-ID: <1348545276.18124.0.camel@phoenix>
+Subject: [PATCH] memory: emif: Add ifdef CONFIG_DEBUG_FS guard for
+ emif_debugfs_[init|exit]
+From: Axel Lin <axel.lin@ingics.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, Aneesh V <aneesh@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, linux-kernel@vger.kernel.org
+Date: Tue, 25 Sep 2012 11:54:36 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 9:25 PM, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
-> Convert the struct i2c_msg initialization to C99 format. This makes
-> maintaining and editing the code simpler. Also helps once other fields
-> like transferred are added in future.
->
-> Thanks to Julia Lawall <julia.lawall@lip6.fr>  for automating the conversion
+Add ifdef CONFIG_DEBUG_FS guard for emif_debugfs_[init|exit], and adds stub
+functions for the case CONFIG_DEBUG_FS is not set.
 
-ping.
+When CONFIG_DEBUG_FS is enabled, debugfs_create_dir and debugfs_create_file
+return NULL on failure, fix it.
 
->
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> ---
-> the cocci file was posted
-> http://www.mail-archive.com/cocci@diku.dk/msg02753.html
->
->  drivers/video/matrox/matroxfb_maven.c |   15 +++++++++++++--
->  1 files changed, 13 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/video/matrox/matroxfb_maven.c b/drivers/video/matrox/matroxfb_maven.c
-> index 217678e..fb5c123 100644
-> --- a/drivers/video/matrox/matroxfb_maven.c
-> +++ b/drivers/video/matrox/matroxfb_maven.c
-> @@ -137,8 +137,19 @@ static int* get_ctrl_ptr(struct maven_data* md, int idx) {
->
->  static int maven_get_reg(struct i2c_client* c, char reg) {
->         char dst;
-> -       struct i2c_msg msgs[] = {{ c->addr, I2C_M_REV_DIR_ADDR, sizeof(reg), &reg },
-> -                                { c->addr, I2C_M_RD | I2C_M_NOSTART, sizeof(dst), &dst }};
-> +       struct i2c_msg msgs[] = {{
-> +                                       .addr = c->addr,
-> +                                       .flags = I2C_M_REV_DIR_ADDR,
-> +                                       .len = sizeof(reg),
-> +                                       .buf = &reg
-> +                               },
-> +                               {
-> +                                       .addr = c->addr,
-> +                                       .flags = I2C_M_RD | I2C_M_NOSTART,
-> +                                       .len = sizeof(dst),
-> +                                       .buf = &dst
-> +                               }
-> +       };
->         s32 err;
->
->         err = i2c_transfer(c->adapter, msgs, 2);
-> --
-> 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/memory/emif.c |   23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
+index 1424ae3..06d31c9 100644
+--- a/drivers/memory/emif.c
++++ b/drivers/memory/emif.c
+@@ -75,6 +75,7 @@ static unsigned long	irq_state;
+ static u32		t_ck; /* DDR clock period in ps */
+ static LIST_HEAD(device_list);
+ 
++#ifdef CONFIG_DEBUG_FS
+ static void do_emif_regdump_show(struct seq_file *s, struct emif_data *emif,
+ 	struct emif_regs *regs)
+ {
+@@ -166,23 +167,23 @@ static int __init_or_module emif_debugfs_init(struct emif_data *emif)
+ 	int		ret;
+ 
+ 	dentry = debugfs_create_dir(dev_name(emif->dev), NULL);
+-	if (IS_ERR(dentry)) {
+-		ret = PTR_ERR(dentry);
++	if (!dentry) {
++		ret = -ENOMEM;
+ 		goto err0;
+ 	}
+ 	emif->debugfs_root = dentry;
+ 
+ 	dentry = debugfs_create_file("regcache_dump", S_IRUGO,
+ 			emif->debugfs_root, emif, &emif_regdump_fops);
+-	if (IS_ERR(dentry)) {
+-		ret = PTR_ERR(dentry);
++	if (!dentry) {
++		ret = -ENOMEM;
+ 		goto err1;
+ 	}
+ 
+ 	dentry = debugfs_create_file("mr4", S_IRUGO,
+ 			emif->debugfs_root, emif, &emif_mr4_fops);
+-	if (IS_ERR(dentry)) {
+-		ret = PTR_ERR(dentry);
++	if (!dentry) {
++		ret = -ENOMEM;
+ 		goto err1;
+ 	}
+ 
+@@ -198,6 +199,16 @@ static void __exit emif_debugfs_exit(struct emif_data *emif)
+ 	debugfs_remove_recursive(emif->debugfs_root);
+ 	emif->debugfs_root = NULL;
+ }
++#else
++static inline int __init_or_module emif_debugfs_init(struct emif_data *emif)
++{
++	return 0;
++}
++
++static inline void __exit emif_debugfs_exit(struct emif_data *emif)
++{
++}
++#endif
+ 
+ /*
+  * Calculate the period of DDR clock from frequency value
+-- 
+1.7.9.5
+
+
+
