@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab2IYGro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 02:47:44 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:48062 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab2IYGrm (ORCPT
+	id S1753279Ab2IYGu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 02:50:29 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35200 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab2IYGu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 02:47:42 -0400
-X-Originating-IP: 217.70.178.147
-X-Originating-IP: 83.160.107.163
-Date: Tue, 25 Sep 2012 08:47:02 +0200
-From: Matthias Kaehlcke <matthias@kaehlcke.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-ID: <20120925064702.GH26600@darwin>
-Mail-Followup-To: Matthias Kaehlcke <matthias@kaehlcke.net>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20120925134735.067e4f119bd71099df30724f@canb.auug.org.au>
+	Tue, 25 Sep 2012 02:50:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120925134735.067e4f119bd71099df30724f@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120924222306.GC30997@quack.suse.cz>
+References: <1347798342-2830-1-git-send-email-linkinjeon@gmail.com>
+	<20120920084422.GA5697@localhost>
+	<20120924222306.GC30997@quack.suse.cz>
+Date: Tue, 25 Sep 2012 15:50:26 +0900
+Message-ID: <CAKYAXd8FB-BZNomePAr0MyzNCqz7ND+J+DurKD6KdvkCFf+3jA@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] writeback: add dirty_background_centisecs per bdi variable
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+2012/9/25, Jan Kara <jack@suse.cz>:
+> On Thu 20-09-12 16:44:22, Wu Fengguang wrote:
+>> On Sun, Sep 16, 2012 at 08:25:42AM -0400, Namjae Jeon wrote:
+>> > From: Namjae Jeon <namjae.jeon@samsung.com>
+>> >
+>> > This patch is based on suggestion by Wu Fengguang:
+>> > https://lkml.org/lkml/2011/8/19/19
+>> >
+>> > kernel has mechanism to do writeback as per dirty_ratio and
+>> > dirty_background
+>> > ratio. It also maintains per task dirty rate limit to keep balance of
+>> > dirty pages at any given instance by doing bdi bandwidth estimation.
+>> >
+>> > Kernel also has max_ratio/min_ratio tunables to specify percentage of
+>> > writecache to control per bdi dirty limits and task throttling.
+>> >
+>> > However, there might be a usecase where user wants a per bdi writeback
+>> > tuning
+>> > parameter to flush dirty data once per bdi dirty data reach a threshold
+>> > especially at NFS server.
+>> >
+>> > dirty_background_centisecs provides an interface where user can tune
+>> > background writeback start threshold using
+>> > /sys/block/sda/bdi/dirty_background_centisecs
+>> >
+>> > dirty_background_centisecs is used alongwith average bdi write
+>> > bandwidth
+>> > estimation to start background writeback.
+>   The functionality you describe, i.e. start flushing bdi when there's
+> reasonable amount of dirty data on it, looks sensible and useful. However
+> I'm not so sure whether the interface you propose is the right one.
+> Traditionally, we allow user to set amount of dirty data (either in bytes
+> or percentage of memory) when background writeback should start. You
+> propose setting the amount of data in centisecs-to-write. Why that
+> difference? Also this interface ties our throughput estimation code (which
+> is an implementation detail of current dirty throttling) with the userspace
+> API. So we'd have to maintain the estimation code forever, possibly also
+> face problems when we change the estimation code (and thus estimates in
+> some cases) and users will complain that the values they set originally no
+> longer work as they used to.
+>
+> Also, as with each knob, there's a problem how to properly set its value?
+> Most admins won't know about the knob and so won't touch it. Others might
+> know about the knob but will have hard time figuring out what value should
+> they set. So if there's a new knob, it should have a sensible initial
+> value. And since this feature looks like a useful one, it shouldn't be
+> zero.
+>
+> So my personal preference would be to have bdi->dirty_background_ratio and
+> bdi->dirty_background_bytes and start background writeback whenever
+> one of global background limit and per-bdi background limit is exceeded. I
+> think this interface will do the job as well and it's easier to maintain in
+> future.
+Hi Jan.
+Thanks for review and your opinion.
 
-El Tue, Sep 25, 2012 at 01:47:35PM +1000 Stephen Rothwell ha dit:
+Hi. Wu.
+How about adding per-bdi - bdi->dirty_background_ratio and
+bdi->dirty_background_bytes interface as suggested by Jan?
 
-> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> FATAL: modpost: GPL-incompatible module tps65217_bl.ko uses GPL-only symbol 'platform_driver_unregister'
-> 
-> Caused by commit dbc14ec43af2 ("backlight: Add TPS65217 WLED driver").
-> 
-> I have used the mfd tree from next-20120924 for today.
-
-the module license of that driver is "GPLv2", apparently this should
-be "GPL v2". for testing i used a built-in driver, so i didn't see the
-problem.
-
-i will submit a patch with the corrected license string later this day
-
-best regards
-
--- 
-Matthias Kaehlcke
-Embedded Linux Developer
-Amsterdam
-
-               The only power to which man should aspire
-                is that which he exercises over himself
-                            (Elie Wiesel)
-                                                                 .''`.
-    using free software / Debian GNU/Linux | http://debian.org  : :'  :
-                                                                `. `'`
-gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
+Thanks.
+>
+> 								Honza
