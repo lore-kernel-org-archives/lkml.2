@@ -1,169 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2IYFFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 01:05:52 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51792 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab2IYFFv (ORCPT
+	id S1752845Ab2IYFGE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 01:06:04 -0400
+Received: from MAIL.13thfloor.at ([213.145.232.33]:46610 "EHLO
+	MAIL.13thfloor.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab2IYFGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 01:05:51 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-ca-50613bacbc18
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arun Sharma <asharma@fb.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC/PATCHSET 00/15] perf report: Add support to accumulate hist periods
-References: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
-Date: Tue, 25 Sep 2012 13:57:26 +0900
-In-Reply-To: <1347520811-28150-1-git-send-email-namhyung@kernel.org> (Namhyung
-	Kim's message of "Thu, 13 Sep 2012 16:19:56 +0900")
-Message-ID: <87pq5awvgp.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 25 Sep 2012 01:06:00 -0400
+Date: Tue, 25 Sep 2012 07:05:59 +0200
+From: Herbert Poetzl <herbert@13thfloor.at>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        arekm@pld-linux.org, baggins@pld-linux.org,
+        Daniel Hokka Zakrisson <daniel@hozac.com>
+Subject: Re: [2.6.38-3.x] [BUG] soft lockup - CPU#X stuck for 23s! (vfs, autofs, vserver)
+Message-ID: <20120925050558.GA14685@MAIL.13thfloor.at>
+Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
+	=?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	arekm@pld-linux.org, baggins@pld-linux.org,
+	Daniel Hokka Zakrisson <daniel@hozac.com>
+References: <5092540.GORQ1kUuNX@localhost> <CA+55aFymD=QGptAxjSEWffDSA94dtAjPjy-ox76fYWgHn9m+kA@mail.gmail.com> <2819949.zde5vZ04eb@localhost> <20120924112300.GE20655@MAIL.13thfloor.at> <87sja7uvy1.fsf@xmission.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87sja7uvy1.fsf@xmission.com>
+User-Agent: Mutt/1.5.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.  Any comments for this?
+On Mon, Sep 24, 2012 at 11:17:42AM -0700, Eric W. Biederman wrote:
+> Herbert Poetzl <herbert@13thfloor.at> writes:
 
-Arun, thanks for testing!
-Namhyung
+>> On Mon, Sep 24, 2012 at 07:23:55AM +0200, Paweł Sikora wrote:
+>>> On Sunday 23 of September 2012 18:10:30 Linus Torvalds wrote:
+>>>> On Sat, Sep 22, 2012 at 11:09 PM, Paweł Sikora <pluto@pld-linux.org> wrote:
 
+>>>>>         br_read_lock(vfsmount_lock);
 
-On Thu, 13 Sep 2012 16:19:56 +0900, Namhyung Kim wrote:
-> Hi,
->
-> This is my first attempt to implement cumulative hist period report.
-> This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
-> rewrote it from scratch.
->
-> It basically adds period in a sample to every node in the callchain.
-> A hist_entry now has an additional fields to keep the cumulative
-> period if --cumulate option is given on perf report.
->
-> Let me show you an example:
->
->   $ cat abc.c
->   #define barrier() asm volatile("" ::: "memory")
->   
->   void a(void)
->   {
->   	int i;
->   
->   	for (i = 0; i < 1000000; i++)
->   		barrier();
->   }
->   
->   void b(void)
->   {
->   	a();
->   }
->   
->   void c(void)
->   {
->   	b();
->   }
->   
->   int main(void)
->   {
->   	c();
->   
->   	return 0;
->   }
->   
-> With this simple program I ran perf record and report:
->
->   $ perf record -g -e cycles:u ./abc
->   $ perf report -g none --stdio
->   [snip]
->   # Overhead  Command       Shared Object                      Symbol
->   # ........  .......  ..................  ..........................
->   #
->       93.35%      abc  abc                 [.] a                     
->        5.17%      abc  ld-2.15.so          [.] _dl_map_object_from_fd
->        1.13%      abc  ld-2.15.so          [.] _dl_start             
->        0.29%      abc  libpthread-2.15.so  [.] __libc_close          
->        0.07%      abc  [kernel.kallsyms]   [k] page_fault            
->        0.00%      abc  ld-2.15.so          [.] _start                
->   
-> When --cumulate option is given, it'll be shown like this:
->
->    $ perf report --cumulate
->    (...)
->    +  93.63%  abc  libc-2.15.so        [.] __libc_start_main
->    +  93.35%  abc  abc                 [.] main
->    +  93.35%  abc  abc                 [.] c
->    +  93.35%  abc  abc                 [.] b
->    +  93.35%  abc  abc                 [.] a
->    +   5.17%  abc  ld-2.15.so          [.] _dl_map_object
->    +   5.17%  abc  ld-2.15.so          [.] _dl_map_object_from_fd
->    +   1.13%  abc  ld-2.15.so          [.] _dl_start_user
->    +   1.13%  abc  ld-2.15.so          [.] _dl_start
->    +   0.29%  abc  perf                [.] main
->    +   0.29%  abc  perf                [.] run_builtin
->    +   0.29%  abc  perf                [.] cmd_record
->    +   0.29%  abc  libpthread-2.15.so  [.] __libc_close
->    +   0.07%  abc  ld-2.15.so          [.] _start
->    +   0.07%  abc  [kernel.kallsyms]   [k] page_fault
->    
-> (This output came from TUI since stdio bothered by callchains)
->
-> As you can see __libc_start_main -> main -> c -> b -> a callchain show
-> up in the output.
->
-> It might have some rough edges or even bugs, but I really want to
-> release it and get reviews.  In fact I saw some very large percentage
-> or 'inf' on some callchain nodes when expanding.
->
-> It currently ignores samples don't have symbol info when accumulating
-> periods along the callchain.  Otherwise it resulted in very strangely
-> large output since every node in the callchain would be added into a
-> single entry which has NULL dso/sym.  Simply ignoring them solved the
-> problem and I couldn't come up with a better solution.
->
-> This patchset is based on current acme/perf/core + my small fixes [2],[3].
-> You can also get this series on my tree at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git  perf/cumulate-v1
->
-> Any comments are welcome, thanks.
-> Namhyung
->
-> [1] https://lkml.org/lkml/2012/3/31/6
-> [2] https://lkml.org/lkml/2012/9/11/546
-> [3] https://lkml.org/lkml/2012/9/12/51
->
->
-> Namhyung Kim (15):
->   perf hists: Add missing period_* fields when collapsing a hist entry
->   perf hists: Introduce struct he_stat
->   perf hists: Move he->stat.nr_events initialization to a template
->   perf hists: Convert hist entry functions to use struct he_stat
->   perf hists: Add more helpers for hist entry stat
->   perf hists: Add support for accumulated stat of hist entry
->   perf hists: Check if accumulated when adding a hist entry
->   perf callchain: Add a couple of callchain helpers
->   perf hists: Let add_hist_entry to make a hist entry template
->   perf hists: Accumulate hist entry stat based on the callchain
->   perf hists: Sort hist entries by accumulated period
->   perf ui/hist: Add support to accumulated hist stat
->   perf ui/browser: Add support to accumulated hist stat
->   perf ui/gtk: Add support to accumulated hist stat
->   perf report: Add --cumulate option
->
->  tools/perf/builtin-report.c    |   8 ++
->  tools/perf/ui/browsers/hists.c |  12 +-
->  tools/perf/ui/gtk/browser.c    |   5 +-
->  tools/perf/ui/hist.c           |  74 ++++++++++---
->  tools/perf/ui/stdio/hist.c     |   2 +-
->  tools/perf/util/callchain.c    |  15 +++
->  tools/perf/util/callchain.h    |  17 +++
->  tools/perf/util/hist.c         | 242 +++++++++++++++++++++++++++++++++--------
->  tools/perf/util/sort.h         |  17 ++-
->  tools/perf/util/symbol.h       |   1 +
->  10 files changed, 318 insertions(+), 75 deletions(-)
+>>>> The vfsmount_lock is a "local-global" lock, where a read-lock
+>>>> is rather cheap and takes just a per-cpu lock, but the
+>>>> downside is that a write-lock is *very* expensive, and can
+>>>> cause serious trouble.
+
+>>>> And the write lock is taken by the [un]mount() paths. Do *not*
+>>>> do crazy things. If you do some insane "unmount and remount
+>>>> autofs" on a 1s granularity, you're doing insane things.
+
+>>>> Why do you have that 1s timeout? Insane.
+
+>>> 1s unmount timeout is *only* for fast bug reproduction (in few
+>>> seconds after opteron startup) and testing potential patches.
+>>> normally with 60s timeout it happens in few minutes..hours
+>>> (depends on machine i/o+cpu load) and makes server unusable
+>>> (permament soft-lockup).
+
+>>> can we redesign vserver's mnt_is_reachable() for better locking
+>>> to avoid total soft-lockup?
+
+>> currently we do:
+
+>>         br_read_lock(&vfsmount_lock);
+>>         root = current->fs->root;
+>>         root_mnt = real_mount(root.mnt);
+>>         point = root.dentry;
+
+>>         while ((mnt != mnt->mnt_parent) && (mnt != root_mnt)) {
+>>                 point = mnt->mnt_mountpoint;
+>>                 mnt = mnt->mnt_parent;
+>>         }
+
+>>         ret = (mnt == root_mnt) && is_subdir(point, root.dentry);
+>>         br_read_unlock(&vfsmount_lock);
+
+>> and we have been considering to move the br_read_unlock()
+>> right before the is_subdir() call
+
+>> if there are any suggestions how to achieve the same
+>> with less locking I'm all ears ...
+
+> Herbert, why do you need to filter the mounts that show up in a
+> mount namespace at all?
+
+that is actually a really good question!
+
+> I would think a far more performant and simpler solution would
+> be to just use mount namespaces without unwanted mounts.
+
+we had this mechanism for many years, long before the
+mount namespaces existed, and I vaguely remember that
+early versions didn't get the proc entries right either
+
+I took a quick look at the code and I think we can drop
+the mnt_is_reachable() check and/or make it conditional
+on setups without a mount namespace in place in the near
+future (thanks for the input, really appreciated!)
+
+> I'd like to blame this on the silly rcu_barrier in
+> deactivate_locked_super that should really be in the module
+> remove path, but that happens after we drop the br_write_lock.
+
+> The kernel take br_read_lock(&vfs_mount_lokck) during every rcu
+> path lookup so mnt_is_reachable isn't particular crazy just for
+> taking the lock.
+
+> I am with Linus on this one. Paweł even 60s for your mount
+> timeout looks too short for your workload. All of the readers
+> that take br_read_lock(&vfsmount_lock) seem to be showing up in
+> your oops. The only thing that seems to make sense is you have
+> a lot of unmount activity running back to back, keeping the
+> lock write held.
+
+> The only other possible culprit I can see is that it looks like
+> mnt_is_reachable changes reading /proc/mounts to be something
+> worse than linear in the number of mounts and reading /proc/mounts
+> starts taking the vfsmount_lock.  All minor things but when you
+> are pushing things hard they look like things that would add up.
+
+> Eric
