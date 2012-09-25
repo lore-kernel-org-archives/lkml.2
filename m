@@ -1,294 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751239Ab2IYECS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 00:02:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29077 "EHLO mx1.redhat.com"
+	id S1751125Ab2IYEEx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 00:04:53 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:46801 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777Ab2IYECR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 00:02:17 -0400
-Date: Tue, 25 Sep 2012 09:31:58 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "sjurbren@gmail.com" <sjurbren@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCHv4] virtio_console: Add support for remoteproc serial
-Message-ID: <20120925040158.GC32657@amit.redhat.com>
-References: <1348489987-6768-1-git-send-email-sjur.brandeland@stericsson.com>
- <20120924174523.GA14390@amit.redhat.com>
- <81C3A93C17462B4BBD7E272753C1057923BD79D728@EXDCVYMBSTM005.EQ1STM.local>
+	id S1750755Ab2IYEEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 00:04:51 -0400
+Date: Mon, 24 Sep 2012 21:04:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+Message-ID: <20120925040420.GB2436@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120922212735.GG2934@linux.vnet.ibm.com>
+ <20120923002105.GA1112@linux.vnet.ibm.com>
+ <505EA09B.6040105@gmail.com>
+ <CAFTL4hwqzS8iO2zOOGaizzMtT85MJExTxEgGbponJ4_gfv0nwA@mail.gmail.com>
+ <5060E31B.3070203@gmail.com>
+ <5060E498.7030003@gmail.com>
+ <CAFTL4hzVSBkcDRnzvpmXyBHqydqy=nJxdMtjUHrvR8MwN_M0jQ@mail.gmail.com>
+ <5060E863.6020006@gmail.com>
+ <CAFTL4hyOMSb2LW+HX1LG+KJCLzazKFmp+nHtEW8CnxG4MX_bsQ@mail.gmail.com>
+ <CAFTL4hw7+t8fzcphCyMAQoCBNb6RndQ7hiUnR6qhk6nYa+93fw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <81C3A93C17462B4BBD7E272753C1057923BD79D728@EXDCVYMBSTM005.EQ1STM.local>
+In-Reply-To: <CAFTL4hw7+t8fzcphCyMAQoCBNb6RndQ7hiUnR6qhk6nYa+93fw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12092504-5112-0000-0000-00000CBC7A26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Mon) 24 Sep 2012 [23:50:01], Sjur BRENDELAND wrote:
-> Hi Amit,
+On Tue, Sep 25, 2012 at 01:41:18AM +0200, Frederic Weisbecker wrote:
+> 2012/9/25 Frederic Weisbecker <fweisbec@gmail.com>:
+> > 2012/9/25 Sasha Levin <levinsasha928@gmail.com>:
+> >> On 09/25/2012 01:06 AM, Frederic Weisbecker wrote:
+> >>> 2012/9/25 Sasha Levin <levinsasha928@gmail.com>:
+> >>>> On 09/25/2012 12:47 AM, Sasha Levin wrote:
+> >>>>>  - While I no longer see the warnings I've originally noticed, if I run with Paul's last debug patch I see the following warning:
+> >>>>
+> >>>> Correction: Original warnings are still there, they just got buried in the huge spew that was caused by additional debug warnings
+> >>>> so I've missed them initially.
+> >>>
+> >>> Are they the same? Could you send me your dmesg?
+> >>>
+> >>> Thanks.
+> >>>
+> >>
+> >> Log is attached, you can go directly to 168.703017 when the warnings begin.
+> >
+> > Thanks!
+> >
+> > So here is the first relevant warning:
+> >
+> > [  168.703017] ------------[ cut here ]------------
+> > [  168.708117] WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common+0x4a/0x3a0()
+> > [  168.710034] Pid: 7871, comm: trinity-child65 Tainted: G        W
+> > 3.6.0-rc6-next-20120924-sasha-00030-g71f256c #5
+> > [  168.710034] Call Trace:
+> > [  168.710034]  <IRQ>  [<ffffffff811c737a>] ? rcu_eqs_exit_common+0x4a/0x3a0
+> > [  168.710034]  [<ffffffff811078b6>] warn_slowpath_common+0x86/0xb0
+> > [  168.710034]  [<ffffffff811079a5>] warn_slowpath_null+0x15/0x20
+> > [  168.710034]  [<ffffffff811c737a>] rcu_eqs_exit_common+0x4a/0x3a0
+> > [  168.710034]  [<ffffffff811c79cc>] rcu_eqs_exit+0x9c/0xb0
+> > [  168.710034]  [<ffffffff811c7a4c>] rcu_user_exit+0x6c/0xd0
+> > [  168.710034]  [<ffffffff8106eb1f>] do_general_protection+0x1f/0x170
+> > [  168.710034]  [<ffffffff83a0e624>] ? restore_args+0x30/0x30
+> > [  168.710034]  [<ffffffff83a0e875>] general_protection+0x25/0x30
+> > [  168.710034]  [<ffffffff810a3f06>] ? native_read_msr_safe+0x6/0x20
+> > [  168.710034]  [<ffffffff81a0b34b>] __rdmsr_safe_on_cpu+0x2b/0x50
+> > [  168.710034]  [<ffffffff819ec971>] ? list_del+0x11/0x40
+> > [  168.710034]  [<ffffffff811886dc>]
+> > generic_smp_call_function_single_interrupt+0xec/0x120
+> > [  168.710034]  [<ffffffff81151147>] ? account_system_vtime+0xd7/0x140
+> > [  168.710034]  [<ffffffff81096f72>]
+> > smp_call_function_single_interrupt+0x22/0x40
+> > [  168.710034]  [<ffffffff83a0fe2f>] call_function_single_interrupt+0x6f/0x80
+> > [  168.710034]  <EOI>  [<ffffffff83a0e5f4>] ? retint_restore_args+0x13/0x13
+> > [  168.710034]  [<ffffffff811c7285>] ? rcu_user_enter+0x105/0x110
+> > [  168.710034]  [<ffffffff8107e06d>] syscall_trace_leave+0xfd/0x150
+> > [  168.710034]  [<ffffffff83a0f1ef>] int_check_syscall_exit_work+0x34/0x3d
+> > [  168.710034] ---[ end trace fd408dd21b70b87c ]---
+> >
+> > This is an exception inside an interrupt, and the interrupt
+> > interrupted RCU user mode.
+> > And we have that nesting:
+> >
+> > rcu_irq_enter(); <--- irq entry
+> > rcu_user_exit(); <--- exception entry
+> >
+> > And rcu_eqs_exit() doesn't handle that very well...
 > 
-> > I'm sorry for not being able to look at this earlier.
-> 
-> No worries. I'll try to respin and retest this patch by tomorrow.
-> If you by any chance could find time to review so could make it in time
-> for 3.7 it would be great :-)
+> So either I should return immediately from rcu_user_exit() if
+> we are in an interrupt, or we make rcu_user_exit() able to nest
+> on rcu_irq_enter()   :)
 
-I think it might be late for 3.7 already, I'd prefer to let this bake
-for a while, ensure it passes my test suites, at the least.  But I'll
-let Rusty take the final call.
+Both of the two are eminently doable, with varying degrees of hackery.
 
-> > A general comment is to base this patchset on linux-next; we've been
-> > seeing more than usual activity for virtio_console this time around.
-> > I don't expect the conflicts to be big, though.
-> 
-> Sure, I'll based the next patch on linux-next.
-> 
-> ...
-> > > This implementation reuses the existing virtio_console
-> > > implementation, and adds support for DMA allocation
-> > > of data buffers and disables use of tty console and
-> > > the virtio control queue.
-> > 
-> > Any specific reason to not use the control queue?  It's just another
-> > virtio-serial port; the only special thing about it being it's an
-> > internal channel between the device and driver.
-> 
-> Yes, as mention to Michael earlier. I use rproc_serial for talking
-> to a modem running in early boot phases, before the OS has started,
-> or when the modem is executing it's crash handler. In both these 
-> cases the modem run in a very limited execution environment, so
-> I want to keep the protocol and handling of the vqs as simple as
-> possible. Due to this I really don't want more than single pair
-> of vqs.
+What makes the most sense from an adaptive-idle viewpoint?
 
-OK.
+							Thanx, Paul
 
-> We also have very simple use-cases. The port is opened once
-> in the life-time of the modem, and only reopened after a
-> cold-start of the modem. So I should not get into any issues
-> with race conditions.
->
-> > If you're not going to implement any control commands, I guess you
-> > could conveniently not use the actual port, but keep it around, in
-> > case you find use for it later.  The advantage will be that older
-> > kernels will work without any updates on newer devices.
-> 
-> With the current usage pattern I have in mind, I'd rather add this
-> feature later when/if needed. We can always add a new feature bit
-> for this if we introduce the control channel later on.
-
-OK.
-
-> > >  static void free_buf(struct port_buffer *buf)
-> > >  {
-> > > -	kfree(buf->buf);
-> > > +	unsigned long flags;
-> > > +
-> > > +	if (!buf->dev) {
-> > > +		kfree(buf->buf);
-> > > +		goto freebuf;
-> > > +	}
-> > > +
-> > > +	BUG_ON(!rproc_enabled);
-> > > +
-> > > +	/* dma_free_coherent requires interrupts to be enabled */
-> > > +	if (rproc_enabled && !irqs_disabled()) {
-> > 
-> > You don't need to check for rproc_enabled here.
-> 
-> Actually I do need this check. The reason is that I am
-> exploiting gcc's ability to discard dead code. When I compile
-> for arch's that does not have DMA, this block is dead and will be
-> discarded. This way I avoid the link error for the missing
-> symbol dma_free_coherent(). But I can add a comment on this.
-
-OK, I see.  The BUG_ON would guarantee at run-time, but the
-compile-time advantage wasn't obvious.
-
-> > Then, you can just invert the if condition (if (irqs_disabled()) and
-> > include the relevant block here.  This way, you can make do without
-> > the goto and return mess below.
-> 
-> Yeah, I did an earlier version without goto, but I wanted to separate
-> the rproc / non-rproc clearly to make it easier to see what happened
-> if rproc was disabled. But I'll have a stab at refactoring this code
-> again.
-
-> > > @@ -485,7 +582,10 @@ static void reclaim_consumed_buffers(struct port
-> > *port)
-> > >  		return;
-> > >  	}
-> > >  	while ((buf = virtqueue_get_buf(port->out_vq, &len))) {
-> > > -		kfree(buf);
-> > > +		if (is_console_port(port))
-> > > +			kfree(buf);
-> > > +		else
-> > > +			free_buf(buf);
-> > 
-> > Hm?
-> 
-> See below.
-> 
-> > 
-> > >  		port->outvq_full = false;
-> > >  	}
-> > >  }
-> > > @@ -498,6 +598,7 @@ static ssize_t send_buf(struct port *port, void
-> > *in_buf, size_t in_count,
-> > >  	ssize_t ret;
-> > >  	unsigned long flags;
-> > >  	unsigned int len;
-> > > +	struct port_buffer *buf = in_buf;
-> > 
-> > This looks wrong: the buffer we receive here is the actual data
-> > (buf->buf).  It can never be a port_buffer (buf).
-> 
-> See below.
-> 
-> > 
-> > >
-> > >  	out_vq = port->out_vq;
-> > >
-> > > @@ -505,8 +606,11 @@ static ssize_t send_buf(struct port *port, void
-> > *in_buf, size_t in_count,
-> > >
-> > >  	reclaim_consumed_buffers(port);
-> > >
-> > > -	sg_init_one(sg, in_buf, in_count);
-> > > -	ret = virtqueue_add_buf(out_vq, sg, 1, 0, in_buf, GFP_ATOMIC);
-> > > +	if (is_console_port(port))
-> > 
-> > I think you're misinterpreting what is_console_port() is.  It means if
-> > a port is associated with an hvc/tty device.
-> 
-> See below.
-> 
-> > 
-> > > +		sg_init_one(sg, in_buf, in_count);
-> > > +	else
-> > > +		sg_init_one(sg, buf->buf, in_count);
-> > > +	ret = virtqueue_add_buf(out_vq, sg, 1, 0, buf, GFP_ATOMIC);
-> > >
-> > >  	/* Tell Host to go! */
-> > >  	virtqueue_kick(out_vq);
-> > > @@ -669,7 +773,7 @@ static ssize_t port_fops_write(struct file *filp,
-> > const char __user *ubuf,
-> > >  			       size_t count, loff_t *offp)
-> > >  {
-> > >  	struct port *port;
-> > > -	char *buf;
-> > > +	struct port_buffer *buf;
-> > >  	ssize_t ret;
-> > >  	bool nonblock;
-> > >
-> > > @@ -696,11 +800,11 @@ static ssize_t port_fops_write(struct file
-> > *filp, const char __user *ubuf,
-> > >
-> > >  	count = min((size_t)(32 * 1024), count);
-> > >
-> > > -	buf = kmalloc(count, GFP_KERNEL);
-> > > +	buf = alloc_buf(port->out_vq, count);
-> > >  	if (!buf)
-> > >  		return -ENOMEM;
-> > >
-> > > -	ret = copy_from_user(buf, ubuf, count);
-> > > +	ret = copy_from_user(buf->buf, ubuf, count);
-> > >  	if (ret) {
-> > >  		ret = -EFAULT;
-> > >  		goto free_buf;
-> > > @@ -720,7 +824,7 @@ static ssize_t port_fops_write(struct file *filp,
-> > const char __user *ubuf,
-> > >  		goto out;
-> > >
-> > >  free_buf:
-> > > -	kfree(buf);
-> > > +	free_buf(buf);
-> > >  out:
-> > >  	return ret;
-> > >  }
-> > 
-> > OK, I now get what you did with send_buf() above.  However, send_buf()
-> > now should be completely broken for non-rproc devices: you're
-> > allocating a buf instead of a buf->buf and passing that on to
-> > send_buf() as a void*.  You should instead modify send_buf() to accept
-> > a struct port_buffer instead.
-> > 
-> > Second, send_buf() receives a struct port_buffer(), but in the
-> > 'is_console_port()' case, you ignore that fact, and just pass on the
-> > void* pointer to sg_init_one().  You should instead pass buf->buf.
-> 
-> OK, so the issue here it that currently put_chars() passes a
-> char-buffer to send_buf() instead of a port_buffer. The tests above
-> tries to handle this case, distingusing between a tty and char device.
-> I agree that this is not the best solution.
-> 
-> But if I change put_chars to create a port_buffer and copy
-> data into it I can avoid the crap you pointed at above.
-
-Yes, it's much easier if we don't have special cases in these generic
-routines.
-
-> ...
-> > > -	if (virtio_has_feature(vdev, VIRTIO_CONSOLE_F_SIZE))
-> > > +	if (!is_rproc_serial(vdev) &&
-> > > +	    virtio_has_feature(vdev, VIRTIO_CONSOLE_F_SIZE))
-> > >  		hvc_resize(port->cons.hvc, port->cons.ws);
-> > 
-> > Why do you want to ensure !is_rproc_serial() here?  As long as the
-> > device doesn't expose the VIRTIO_CONSOLE_F_SIZE feature, you should be
-> > fine, so this hunk can be dropped.
-> 
-> I need this test because virtio_check_driver_offered_feature() called
-> from virtio_has_feature will throw a BUG() if you test on a feature
-> not declared in the driver's feature-set.
-
-Ah, OK.
-
-> > > @@ -1102,10 +1209,10 @@ static unsigned int fill_queue(struct
-> > virtqueue *vq, spinlock_t *lock)
-> > >
-> > >  	nr_added_bufs = 0;
-> > >  	do {
-> > > -		buf = alloc_buf(PAGE_SIZE);
-> > > +		buf = alloc_buf(vq, PAGE_SIZE);
-> > >  		if (!buf)
-> > >  			break;
-> > > -
-> > > +		memset(buf->buf, 0, PAGE_SIZE);
-> > 
-> > Why this memset here?
-> > 
-> > 1. alloc_buf() already does kzalloc()
-> 
-> It used to do that, but not anymore. This patch
-> changes kzalloc() to kmalloc() in alloc_buf()
-
-Obviously I missed it :)
-
-> > 2. Is there any specific reason you want the buffer to be zeroed?
-> > 
-> > I've recently realised zeroing out the buffer before giving it to the
-> > device serves no real purpose, and we're just slowing down the
-> > allocation here, so I'm tempted to convert the kzalloc() to
-> > kmalloc(), unless you have a specific need for zeroed pages.
-> 
-> Agree, the only reason is that I did memset was not to change legacy
-> behavior. I'd prefer to skip the memset too, so let's do that.
-
-Can you please split that into a separate patch?
-
-> > This hunk is already present in linux-next; rebasing over that should
-> > get rid of it.
-> 
-> Sure, I'll rebase next patch to linux-next and send a new patch tomorrow.
-
-Thanks!
-
-		Amit
