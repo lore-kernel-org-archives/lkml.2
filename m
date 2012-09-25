@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab2IYKaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:30:15 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39812 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab2IYKaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:30:14 -0400
-Date: Tue, 25 Sep 2012 11:29:58 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Poddar, Sourav" <sourav.poddar@ti.com>, gregkh@linuxfoundation.org,
-        khilman@ti.com, paul@pwsan.com, tony@atomide.com,
-        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com,
-        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com
-Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not
-	suspended.
-Message-ID: <20120925102958.GL31374@n2100.arm.linux.org.uk>
-References: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com> <CAKdam572krJZcayRdJ_AciCUZH3LuzD9yoHenhxrB6j9xDZ6JQ@mail.gmail.com> <20120925083029.GG31374@n2100.arm.linux.org.uk> <20120925083118.GI9137@arwen.pp.htv.fi> <20120925091228.GI31374@n2100.arm.linux.org.uk> <20120925091112.GK9137@arwen.pp.htv.fi> <20120925092118.GJ31374@n2100.arm.linux.org.uk> <20120925094815.GL9137@arwen.pp.htv.fi>
+	id S1754760Ab2IYKb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:31:56 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:44725 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753499Ab2IYKbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 06:31:55 -0400
+Date: Tue, 25 Sep 2012 12:31:41 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 5/6] ARM: dove: Remove watchdog from DT
+Message-ID: <20120925103141.GG27099@lunn.ch>
+References: <1348531338-16624-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1348531338-16624-6-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20120925053542.GK14266@lunn.ch>
+ <5061754E.9050204@gmail.com>
+ <20120925111826.6f4086ee@skate>
+ <20120925094610.GF27099@lunn.ch>
+ <20120925121439.49c5d0dd@skate>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120925094815.GL9137@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120925121439.49c5d0dd@skate>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 12:48:16PM +0300, Felipe Balbi wrote:
-> Hi,
+On Tue, Sep 25, 2012 at 12:14:39PM +0200, Thomas Petazzoni wrote:
+> Dear Andrew Lunn,
 > 
-> On Tue, Sep 25, 2012 at 10:21:18AM +0100, Russell King - ARM Linux wrote:
-> > On Tue, Sep 25, 2012 at 12:11:14PM +0300, Felipe Balbi wrote:
-> > > On Tue, Sep 25, 2012 at 10:12:28AM +0100, Russell King - ARM Linux wrote:
-> > > > On Tue, Sep 25, 2012 at 11:31:20AM +0300, Felipe Balbi wrote:
-> > > > > On Tue, Sep 25, 2012 at 09:30:29AM +0100, Russell King - ARM Linux wrote:
-> > > > > > How is this happening?  I think that needs proper investigation - or if
-> > > > > > it's had more investigation, then the results needs to be included in
-> > > > > > the commit description so that everyone can understand the issue here.
-> > > > > > 
-> > > > > > We should not be resuming a device which hasn't been suspended.  Maybe
-> > > > > > the runtime PM enable sequence is wrong, and that's what should be fixed
-> > > > > > instead?  
-> > > > > > 
-> > > > > > This sequence in the probe() function:
-> > > > > > 
-> > > > > >         pm_runtime_irq_safe(&pdev->dev);
-> > > > > >         pm_runtime_enable(&pdev->dev);
-> > > > > >         pm_runtime_get_sync(&pdev->dev);
-> > > > > > 
-> > > > > > would enable runtime PM while the s/w state indicates that it's disabled,
-> > > > > > and then that pm_runtime_get_sync() will want to resume the device.  See
-> > > > > > the section "5. Runtime PM Initialization, Device Probing and Removal"
-> > > > > > in Documentation/power/runtime_pm.txt, specifically the second paragraph
-> > > > > > of that section.
-> > > > > 
-> > > > > that was tested. It worked in pandaboard but didn't work on beagleboard
-> > > > > XM. Sourav tried to start a discussion about that, but it simply died...
-> > > > > 
-> > > > > In any case, pm_runtime_get_sync() in probe will always call
-> > > > > runtime_resume callback, right ?
-> > > > 
-> > > > Well, if the runtime PM state says it's suspended, and then you enable
-> > > > runtime PM, the first call to pm_runtime_get_sync() will trigger a resume
-> > > > attempt.  The patch description is complaining about resume events without
-> > > > there being a preceding suspend event.
-> > > > 
-> > > > This could well be why.
-> > > 
-> > > that's most likely, of course. But should we cause a regression to
-> > > beagleboard XM because of that ?
-> > 
-> > What would cause a regression on beagleboard XM?  I have not suggested
-> > any change other than more investigation of the issue and a fuller patch
-> > description - yet you're screaming (idiotically IMHO) that mere
-> > investigation would break beagleboard.
-> > 
-> > Well, if it's _that_ fragile, that mere investigation of this issue by
-> > someone elsewhere on the planet would break your beagleboard, maybe it
-> > deserves to be broken!
+> On Tue, 25 Sep 2012 11:46:10 +0200, Andrew Lunn wrote:
 > 
-> why are you always so over the top like that ? This is just
-> counter-productive to say the least.
+> > I principle, i agree. However, i'm not too sure about mach-orion5x &
+> > mach-mv78xx0. orion5x has probably been broken since -rc1 was released
+> > and nobody noticed. In the same time, we got around 5 people
+> > independently reporting kirkwood was broken. We have not received any
+> > new boards for orion5x in the time i've been looking at Orion
+> > platforms. mv78xx0 only has one board which is not a Marvell reference
+> > design. So im tempted to not spend any effort moving orion5x or
+> > mv78xx0 to DT unless these actually hinder the effort of moving the
+> > others to DT.  What may make sense is to flatten mv78xx0 and orion5x
+> > into plat-orion and then just watch the bit-rot happen.
+> 
+> I'll try to see if I can get people from LaCie to test mach-orion5x as
+> I have a few contacts there, and I'll contact Marvell to see if they can
+> still provide Orion-based platforms.
 
-Because you are accusing me of potentially breaking your beagleboard
-for merely suggesting further investigation and a better commit message.
+Marvell supplied my one one reference platform. So i can do some
+testing that the basic infrastructure works.
 
-You are the one going over the top, not me.
+But the problem with converting to DT is that there is a lot of
+brainless monkey work needed per supported board, and its very easy to
+make a typo. So each board converted to DT needs testing. I don't know
+if we can find testers for all the boards. But should we throw out
+working boards just because we cannot find somebody to test the DT
+version?
+
+	Andrew
