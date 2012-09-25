@@ -1,209 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab2IYGyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 02:54:11 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58581 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab2IYGyF convert rfc822-to-8bit (ORCPT
+	id S1753318Ab2IYGzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 02:55:01 -0400
+Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:1418 "EHLO
+	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab2IYGy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 02:54:05 -0400
+	Tue, 25 Sep 2012 02:54:59 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: davinci-linux-open-source@linux.davincidsp.com
+Subject: Re: [PATCH v4] media: v4l2-ctrls: add control for test pattern
+Date: Tue, 25 Sep 2012 08:53:03 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc5-tschai; KDE/4.8.4; x86_64; ; )
+Cc: Prabhakar <prabhakar.csengg@gmail.com>, LMML <linux-media@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, LDOC <linux-doc@vger.kernel.org>,
+        VGER <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+References: <1348553345-14296-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1348553345-14296-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKYAXd975U_n2SSFXz0VfEs6GrVCoc2S=3kQbfw_2uOtGXbGxA@mail.gmail.com>
-References: <1347798342-2830-1-git-send-email-linkinjeon@gmail.com>
-	<20120920084422.GA5697@localhost>
-	<20120925013658.GC23520@dastard>
-	<CAKYAXd975U_n2SSFXz0VfEs6GrVCoc2S=3kQbfw_2uOtGXbGxA@mail.gmail.com>
-Date: Tue, 25 Sep 2012 15:54:03 +0900
-Message-ID: <CAKYAXd8k8WuX-7mQT2eZk85ebvF01zDR0tBV-TG1Yaqyo6KLLA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] writeback: add dirty_background_centisecs per bdi variable
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209250853.03216.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/25, Namjae Jeon <linkinjeon@gmail.com>:
-> 2012/9/25, Dave Chinner <david@fromorbit.com>:
->> On Thu, Sep 20, 2012 at 04:44:22PM +0800, Fengguang Wu wrote:
->>> [ CC FS and MM lists ]
->>>
->>> Patch looks good to me, however we need to be careful because it's
->>> introducing a new interface. So it's desirable to get some acks from
->>> the FS/MM developers.
->>>
->>> Thanks,
->>> Fengguang
->>>
->>> On Sun, Sep 16, 2012 at 08:25:42AM -0400, Namjae Jeon wrote:
->>> > From: Namjae Jeon <namjae.jeon@samsung.com>
->>> >
->>> > This patch is based on suggestion by Wu Fengguang:
->>> > https://lkml.org/lkml/2011/8/19/19
->>> >
->>> > kernel has mechanism to do writeback as per dirty_ratio and
->>> > dirty_background
->>> > ratio. It also maintains per task dirty rate limit to keep balance of
->>> > dirty pages at any given instance by doing bdi bandwidth estimation.
->>> >
->>> > Kernel also has max_ratio/min_ratio tunables to specify percentage of
->>> > writecache to control per bdi dirty limits and task throttling.
->>> >
->>> > However, there might be a usecase where user wants a per bdi writeback
->>> > tuning
->>> > parameter to flush dirty data once per bdi dirty data reach a
->>> > threshold
->>> > especially at NFS server.
->>> >
->>> > dirty_background_centisecs provides an interface where user can tune
->>> > background writeback start threshold using
->>> > /sys/block/sda/bdi/dirty_background_centisecs
->>> >
->>> > dirty_background_centisecs is used alongwith average bdi write
->>> > bandwidth
->>> > estimation to start background writeback.
->>> >
->>> > One of the use case to demonstrate the patch functionality can be
->>> > on NFS setup:-
->>> > We have a NFS setup with ethernet line of 100Mbps, while the USB
->>> > disk is attached to server, which has a local speed of 25MBps. Server
->>> > and client both are arm target boards.
->>> >
->>> > Now if we perform a write operation over NFS (client to server), as
->>> > per the network speed, data can travel at max speed of 100Mbps. But
->>> > if we check the default write speed of USB hdd over NFS it comes
->>> > around to 8MB/sec, far below the speed of network.
->>> >
->>> > Reason being is as per the NFS logic, during write operation,
->>> > initially
->>> > pages are dirtied on NFS client side, then after reaching the dirty
->>> > threshold/writeback limit (or in case of sync) data is actually sent
->>> > to NFS server (so now again pages are dirtied on server side). This
->>> > will be done in COMMIT call from client to server i.e if 100MB of data
->>> > is dirtied and sent then it will take minimum 100MB/10Mbps ~ 8-9
->>> > seconds.
->>> >
->>> > After the data is received, now it will take approx 100/25 ~4 Seconds
->>> > to
->>> > write the data to USB Hdd on server side. Hence making the overall
->>> > time
->>> > to write this much of data ~12 seconds, which in practically comes out
->>> > to
->>> > be near 7 to 8MB/second. After this a COMMIT response will be sent to
->>> > NFS
->>> > client.
->>> >
->>> > However we may improve this write performace by making the use of NFS
->>> > server idle time i.e while data is being received from the client,
->>> > simultaneously initiate the writeback thread on server side. So
->>> > instead
->>> > of waiting for the complete data to come and then start the writeback,
->>> > we can work in parallel while the network is still busy in receiving
->>> > the
->>> > data. Hence in this way overall performace will be improved.
->>> >
->>> > If we tune dirty_background_centisecs, we can see there
->>> > is increase in the performace and it comes out to be ~ 11MB/seconds.
->>> > Results are:-
->>> >
->>> > Write test(create a 1 GB file) result at 'NFS client' after changing
->>> > /sys/block/sda/bdi/dirty_background_centisecs
->>> > on  *** NFS Server only - not on NFS Client ****
->>
->
-> Hi. Dave.
->
->> What is the configuration of the client and server? How much RAM,
->> what their dirty_* parameters are set to, network speed, server disk
->> speed for local sequential IO, etc?
-> these results are on ARM, 512MB RAM and XFS over NFS with default
-> writeback settings(only our writeback setting - dirty_back​ground_cen
-> tisecs changed at nfs server only). Network speed is ~100MB/sec and
-Sorry, there is typo:)
-                    ^^100Mb/sec
-> local disk speed is ~25MB/sec.
->
->>
->>> > ---------------------------------------------------------------------
->>> > |WRITE Test with various 'dirty_background_centisecs' at NFS Server |
->>> > ---------------------------------------------------------------------
->>> > |          | default = 0 | 300 centisec| 200 centisec| 100 centisec |
->>> > ---------------------------------------------------------------------
->>> > |RecSize   |  WriteSpeed |  WriteSpeed |  WriteSpeed |  WriteSpeed  |
->>> > ---------------------------------------------------------------------
->>> > |10485760  |  8.44MB/sec |  8.60MB/sec |  9.30MB/sec |  10.27MB/sec |
->>> > | 1048576  |  8.48MB/sec |  8.87MB/sec |  9.31MB/sec |  10.34MB/sec |
->>> > |  524288  |  8.37MB/sec |  8.42MB/sec |  9.84MB/sec |  10.47MB/sec |
->>> > |  262144  |  8.16MB/sec |  8.51MB/sec |  9.52MB/sec |  10.62MB/sec |
->>> > |  131072  |  8.48MB/sec |  8.81MB/sec |  9.42MB/sec |  10.55MB/sec |
->>> > |   65536  |  8.38MB/sec |  9.09MB/sec |  9.76MB/sec |  10.53MB/sec |
->>> > |   32768  |  8.65MB/sec |  9.00MB/sec |  9.57MB/sec |  10.54MB/sec |
->>> > |   16384  |  8.27MB/sec |  8.80MB/sec |  9.39MB/sec |  10.43MB/sec |
->>> > |    8192  |  8.52MB/sec |  8.70MB/sec |  9.40MB/sec |  10.50MB/sec |
->>> > |    4096  |  8.20MB/sec |  8.63MB/sec |  9.80MB/sec |  10.35MB/sec |
->>> > ---------------------------------------------------------------------
->>
->> While this set of numbers looks good, it's a very limited in scope.
->> I can't evaluate whether the change is worthwhile or not from this
->> test. If I was writing this patch, the questions I'd be seeking to
->> answer before proposing it for inclusion are as follows....
->>
->> 1. what's the comparison in performance to typical NFS
->> server writeback parameter tuning? i.e. dirty_background_ratio=5,
->> dirty_ratio=10, dirty_expire_centiseconds=1000,
->> dirty_writeback_centisecs=1? i.e. does this give change give any
->> benefit over the current common practice for configuring NFS
->> servers?
->>
->> 2. what happens when you have 10 clients all writing to the server
->> at once? Or a 100? NFS servers rarely have a single writer to a
->> single file at a time, so what impact does this change have on
->> multiple concurrent file write performance from multiple clients?
->>
->> 3. Following on from the multiple client test, what difference does it
->> make to file fragmentation rates? Writing more frequently means
->> smaller allocations and writes, and that tends to lead to higher
->> fragmentation rates, especially when multiple files are being
->> written concurrently. Higher fragmentation also means lower
->> performance over time as fragmentation accelerates filesystem aging
->> effects on performance.  IOWs, it may be faster when new, but it
->> will be slower 3 months down the track and that's a bad tradeoff to
->> make.
->>
->> 4. What happens for higher bandwidth network links? e.g. gigE or
->> 10gigE? Are the improvements still there? Or does it cause
->> regressions at higher speeds? I'm especially interested in what
->> happens to multiple writers at higher network speeds, because that's
->> a key performance metric used to measure enterprise level NFS
->> servers.
->>
->> 5. Are the improvements consistent across different filesystem
->> types?  We've had writeback changes in the past cause improvements
->> on one filesystem but significant regressions on others.  I'd
->> suggest that you need to present results for ext4, XFS and btrfs so
->> that we have a decent idea of what we can expect from the change to
->> the generic code.
->>
->> Yeah, I'm asking a lot of questions. That's because the generic
->> writeback code is extremely important to performance and the impact
->> of a change cannot be evaluated from a single test.
-> Yes, I agree.
-> I will share patch behavior in gigabit Ethernet, different
-> filesystems(e.g. ext4, xfs and btrfs) and multiple NFS clients setup.
->
-> Thanks.
->>
->> Cheers,
->>
->> Dave.
->> --
->> Dave Chinner
->> david@fromorbit.com
->>
->
+On Tue September 25 2012 08:09:05 Prabhakar wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> 
+> add V4L2_CID_TEST_PATTERN of type menu, which determines
+> the internal test pattern selected by the device.
+
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+
+Regards,
+
+	Hans
+
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Hans de Goede <hdegoede@redhat.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Rob Landley <rob@landley.net>
+> ---
+>  This patches has one checkpatch warning for line over
+>  80 characters altough it can be avoided I have kept it
+>  for consistency.
+> 
+>  Changes for v4:
+>  1: Fixed some grammar/style issues, pointed by Hans.
+> 
+>  Changes for v3:
+>  1: Removed the menu for test pattern, pointed by Sakari.
+> 
+>  Changes for v2:
+>  1: Included display devices in the description for test pattern
+>    as pointed by Hans.
+>  2: In the menu replaced 'Test Pattern Disabled' by 'Disabled' as
+>    pointed by Sylwester.
+>  3: Removed the test patterns from menu as the are hardware specific
+>    as pointed by Sakari.
+> 
+>  Documentation/DocBook/media/v4l/controls.xml |   10 ++++++++++
+>  drivers/media/v4l2-core/v4l2-ctrls.c         |    2 ++
+>  include/linux/videodev2.h                    |    1 +
+>  3 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> index f0fb08d..5450d31 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -4313,6 +4313,16 @@ interface and may change in the future.</para>
+>  	      </tbody>
+>  	    </entrytbl>
+>  	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
+> +	    <entry>menu</entry>
+> +	  </row>
+> +	  <row id="v4l2-test-pattern">
+> +	    <entry spanname="descr"> Some capture/display/sensor devices have
+> +	    the capability to generate test pattern images. These hardware
+> +	    specific test patterns can be used to test if a device is working
+> +	    properly.</entry>
+> +	  </row>
+>  	<row><entry></entry></row>
+>  	</tbody>
+>        </tgroup>
+> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+> index 8f2f40b..41b7732 100644
+> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> @@ -740,6 +740,7 @@ const char *v4l2_ctrl_get_name(u32 id)
+>  	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
+>  	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
+>  	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
+> +	case V4L2_CID_TEST_PATTERN:		return "Test Pattern";
+>  
+>  	default:
+>  		return NULL;
+> @@ -841,6 +842,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+>  	case V4L2_CID_EXPOSURE_METERING:
+>  	case V4L2_CID_SCENE_MODE:
+>  	case V4L2_CID_DPCM_PREDICTOR:
+> +	case V4L2_CID_TEST_PATTERN:
+>  		*type = V4L2_CTRL_TYPE_MENU;
+>  		break;
+>  	case V4L2_CID_LINK_FREQ:
+> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+> index ca9fb78..7014c0b 100644
+> --- a/include/linux/videodev2.h
+> +++ b/include/linux/videodev2.h
+> @@ -2005,6 +2005,7 @@ enum v4l2_dpcm_predictor {
+>  	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
+>  	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
+>  };
+> +#define V4L2_CID_TEST_PATTERN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
+>  
+>  /*
+>   *	T U N I N G
+> 
