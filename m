@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2IYSdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 14:33:31 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:52109 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753884Ab2IYSd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 14:33:28 -0400
-Date: Sun, 23 Sep 2012 22:59:35 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: remove static from struct match_token used in
- token2str
-Message-ID: <20120924025935.GA27627@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1348276860-21705-1-git-send-email-herton.krzesinski@canonical.com>
+	id S1753482Ab2IYShH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 14:37:07 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:35504 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521Ab2IYShF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 14:37:05 -0400
+Date: Tue, 25 Sep 2012 11:36:54 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+Message-ID: <20120925183654.GI2502@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120922212735.GG2934@linux.vnet.ibm.com>
+ <20120923002105.GA1112@linux.vnet.ibm.com>
+ <505EA09B.6040105@gmail.com>
+ <CAFTL4hwqzS8iO2zOOGaizzMtT85MJExTxEgGbponJ4_gfv0nwA@mail.gmail.com>
+ <5060E31B.3070203@gmail.com>
+ <5060E498.7030003@gmail.com>
+ <CAFTL4hzVSBkcDRnzvpmXyBHqydqy=nJxdMtjUHrvR8MwN_M0jQ@mail.gmail.com>
+ <5060E863.6020006@gmail.com>
+ <20120925120549.GC2310@somewhere.redhat.com>
+ <5061F7C7.7060107@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1348276860-21705-1-git-send-email-herton.krzesinski@canonical.com>
+In-Reply-To: <5061F7C7.7060107@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+x-cbid: 12092518-7182-0000-0000-000002B0B620
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 10:21:00PM -0300, Herton Ronaldo Krzesinski wrote:
-> There is no reason to use static there, and it will cause issues when
-> reading /proc/fs/ext4/<partition>/options concurrently.
+On Tue, Sep 25, 2012 at 08:28:23PM +0200, Sasha Levin wrote:
+> On 09/25/2012 02:06 PM, Frederic Weisbecker wrote:
+> > Sasha, sorry to burden you with more testing request.
+> > Could you please try out this new branch? It includes some fixes after Wu Fenguang and
+> > Dan Carpenter reports (not related to your warnings though) and a patch on the top
+> > of the pile to ensure I diagnosed well the problem, which return immediately from
+> > rcu_user_*() APIs if we are in an interrupt.
+> > 
+> > This way we'll have a clearer view. I also would like to know if there are other
+> > problems with the rcu user mode.
+> > 
+> > Thanks!
 > 
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> Cc: stable@vger.kernel.org # 3.4+
+> Alrighty, I don't see any warnings anymore.
+> 
+> I'll keep everything running just in case.
 
-Herton,
+Very good news!!!  Thank you both!!!
 
-Thanks for finding the bug fix!  I changed the commit descipription
-slightly and have applied your patch to the ext4 tree.
+							Thanx, Paul
 
-	     	  	       	     	    - Ted
-
-ext4: fix crash when accessing /proc/mounts concurrently
-
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-
-The crash was caused by a variable being erronously declared static in
-token2str().
-
-In addition to /proc/mounts, the problem can also be easily replicated
-by accessing /proc/fs/ext4/<partition>/options in parallel:
-
-$ cat /proc/fs/ext4/<partition>/options > options.txt
-
-... and then running the following command in two different terminals:
-
-$ while diff /proc/fs/ext4/<partition>/options options.txt; do true; done
-
-This is also the cause of the following a crash while running xfstests
-#234, as reported in the following bug reports:
-
-	https://bugs.launchpad.net/bugs/1053019
-	https://bugzilla.kernel.org/show_bug.cgi?id=47731
-
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Brad Figg <brad.figg@canonical.com>
-Cc: stable@vger.kernel.org
