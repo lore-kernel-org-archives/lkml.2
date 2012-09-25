@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993Ab2IYQOC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:14:02 -0400
+	id S1757956Ab2IYQN5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:13:57 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:41451 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757879Ab2IYQN6 (ORCPT
+	with ESMTP id S1757879Ab2IYQNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:13:58 -0400
+	Tue, 25 Sep 2012 12:13:54 -0400
 From: mathieu.poirier@linaro.org
 To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
 Cc: mathieu.poirier@linaro.org
-Subject: [PATCH 37/57] power: ab8500_bm: Quick re-attach charging behaviour
-Date: Tue, 25 Sep 2012 10:12:34 -0600
-Message-Id: <1348589574-25655-38-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 34/57] power: ab8500_fg: add power cut feature for ab8505
+Date: Tue, 25 Sep 2012 10:12:31 -0600
+Message-Id: <1348589574-25655-35-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
@@ -20,237 +20,597 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kalle Komierowski <karl.komierowski@stericsson.com>
+From: Rikard Olsson <rikard.p.olsson@stericsson.com>
 
-Due to a bug in some AB8500 ASICs charger removal cannot always
-be detected if the removal and reinsertion is done to close in time.
-This patch detects above described case and handles the situation
-so that charging will be kept turned on.
+Add support for a power cut feature which allows user to
+configure when ab8505 should shut down system due to low
+battery.
 
-Signed-off-by: Kalle Komierowski <karl.komierowski@stericsson.com>
+Signed-off-by: Rikard Olsson <rikard.p.olsson@stericsson.com>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-Reviewed-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
+Reviewed-by: Martin SJOBLOM <martin.w.sjoblom@stericsson.com>
 Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
-Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
 ---
- drivers/power/ab8500_charger.c            |  105 ++++++++++++++++++++++++++++-
- drivers/power/abx500_chargalg.c           |   31 ++++++++-
- include/linux/mfd/abx500/ux500_chargalg.h |    1 +
- 3 files changed, 134 insertions(+), 3 deletions(-)
+ drivers/power/ab8500_fg.c            |  488 +++++++++++++++++++++++++++++++++-
+ include/linux/mfd/abx500.h           |   10 +
+ include/linux/mfd/abx500/ab8500-bm.h |    8 +
+ 3 files changed, 502 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-index 8137ea5..70e7c5e 100644
---- a/drivers/power/ab8500_charger.c
-+++ b/drivers/power/ab8500_charger.c
-@@ -49,6 +49,7 @@
- #define VBUS_DET_DBNC100		0x02
- #define VBUS_DET_DBNC1			0x01
- #define OTP_ENABLE_WD			0x01
-+#define DROP_COUNT_RESET		0x01
- 
- #define MAIN_CH_INPUT_CURR_SHIFT	4
- #define VBUS_IN_CURR_LIM_SHIFT		4
-@@ -1672,6 +1673,105 @@ static int ab8500_charger_usb_en(struct ux500_charger *charger,
+diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+index 5e4a46b..fde189a 100644
+--- a/drivers/power/ab8500_fg.c
++++ b/drivers/power/ab8500_fg.c
+@@ -2351,6 +2351,64 @@ static int ab8500_fg_init_hw_registers(struct ab8500_fg *di)
+ 		dev_err(di->dev, "BattOk init write failed.\n");
+ 		goto out;
+ 	}
++
++	if ((is_ab8505(di->parent) || is_ab9540(di->parent)) &&
++			abx500_get_chip_id(di->dev) >= AB8500_CUT2P0) {
++		ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++			AB8505_RTC_PCUT_MAX_TIME_REG,
++					 di->bat->fg_params->pcut_max_time);
++
++		if (ret) {
++			dev_err(di->dev,
++				"%s write failed AB8505_RTC_PCUT_MAX_TIME_REG\n",
++				 __func__);
++			goto out;
++		};
++
++		ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++			AB8505_RTC_PCUT_FLAG_TIME_REG,
++					 di->bat->fg_params->pcut_flag_time);
++
++		if (ret) {
++			dev_err(di->dev,
++			"%s write failed AB8505_RTC_PCUT_FLAG_TIME_REG\n",
++			 __func__);
++			goto out;
++		};
++
++		ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++			AB8505_RTC_PCUT_RESTART_REG,
++			di->bat->fg_params->pcut_max_restart);
++
++		if (ret) {
++			dev_err(di->dev,
++			"%s write failed AB8505_RTC_PCUT_RESTART_REG\n",
++			 __func__);
++			goto out;
++		};
++
++		ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++			AB8505_RTC_PCUT_DEBOUNCE_REG,
++					 di->bat->fg_params->pcut_debunce_time);
++
++		if (ret) {
++			dev_err(di->dev,
++			"%s write failed AB8505_RTC_PCUT_DEBOUNCE_REG\n",
++			 __func__);
++			goto out;
++		};
++
++		ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++			AB8505_RTC_PCUT_CTL_STATUS_REG,
++					 di->bat->fg_params->pcut_enable);
++
++		if (ret) {
++			dev_err(di->dev,
++			"%s write failed AB8505_RTC_PCUT_CTL_STATUS_REG\n",
++			 __func__);
++			goto out;
++		};
++	}
+ out:
+ 	return ret;
+ }
+@@ -2572,22 +2630,433 @@ static ssize_t ab8500_show_capacity(struct device *dev,
+ 	return scnprintf(buf, PAGE_SIZE, "%d\n", capacity);
  }
  
- /**
-+ * ab8500_charger_usb_check_enable() - enable usb charging
-+ * @charger:	pointer to the ux500_charger structure
-+ * @vset:	charging voltage
-+ * @iset:	charger output current
-+ *
-+ * Check if the VBUS charger has been disconnected and reconnected without
-+ * AB8500 rising an interrupt. Returns 0 on success.
-+ */
-+static int ab8500_charger_usb_check_enable(struct ux500_charger *charger,
-+	int vset, int iset)
++static ssize_t ab8505_powercut_flagtime_read(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
 +{
-+	u8 usbch_ctrl1 = 0;
-+	int ret = 0;
-+
-+	struct ab8500_charger *di = to_ab8500_charger_usb_device_info(charger);
-+
-+	if (!di->usb.charger_connected)
-+		return ret;
-+
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
-+				AB8500_USBCH_CTRL1_REG, &usbch_ctrl1);
-+	if (ret < 0) {
-+		dev_err(di->dev, "ab8500 read failed %d\n", __LINE__);
-+		return ret;
-+	}
-+	dev_dbg(di->dev, "USB charger ctrl: 0x%02x\n", usbch_ctrl1);
-+
-+	if (!(usbch_ctrl1 & USB_CH_ENA)) {
-+		dev_info(di->dev, "Charging has been disabled abnormally and will be re-enabled\n");
-+
-+		ret = abx500_mask_and_set_register_interruptible(di->dev,
-+					AB8500_CHARGER, AB8500_CHARGER_CTRL,
-+					DROP_COUNT_RESET, DROP_COUNT_RESET);
-+		if (ret < 0) {
-+			dev_err(di->dev, "ab8500 write failed %d\n", __LINE__);
-+			return ret;
-+		}
-+
-+		ret = ab8500_charger_usb_en(&di->usb_chg, true, vset, iset);
-+		if (ret < 0) {
-+			dev_err(di->dev, "Failed to enable VBUS charger %d\n",
-+					__LINE__);
-+			return ret;
-+		}
-+	}
-+	return ret;
-+}
-+
-+/**
-+ * ab8500_charger_ac_check_enable() - enable usb charging
-+ * @charger:	pointer to the ux500_charger structure
-+ * @vset:	charging voltage
-+ * @iset:	charger output current
-+ *
-+ * Check if the AC charger has been disconnected and reconnected without
-+ * AB8500 rising an interrupt. Returns 0 on success.
-+ */
-+static int ab8500_charger_ac_check_enable(struct ux500_charger *charger,
-+	int vset, int iset)
-+{
-+	u8 mainch_ctrl1 = 0;
-+	int ret = 0;
-+
-+	struct ab8500_charger *di = to_ab8500_charger_ac_device_info(charger);
-+
-+	if (!di->ac.charger_connected)
-+		return ret;
-+
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
-+				AB8500_MCH_CTRL1, &mainch_ctrl1);
-+	if (ret < 0) {
-+		dev_err(di->dev, "ab8500 read failed %d\n", __LINE__);
-+		return ret;
-+	}
-+	dev_dbg(di->dev, "AC charger ctrl: 0x%02x\n", mainch_ctrl1);
-+
-+	if (!(mainch_ctrl1 & MAIN_CH_ENA)) {
-+		dev_info(di->dev, "Charging has been disabled abnormally and will be re-enabled\n");
-+
-+		ret = abx500_mask_and_set_register_interruptible(di->dev,
-+					AB8500_CHARGER, AB8500_CHARGER_CTRL,
-+					DROP_COUNT_RESET, DROP_COUNT_RESET);
-+
-+		if (ret < 0) {
-+			dev_err(di->dev, "ab8500 write failed %d\n", __LINE__);
-+			return ret;
-+		}
-+
-+		ret = ab8500_charger_ac_en(&di->usb_chg, true, vset, iset);
-+		if (ret < 0) {
-+			dev_err(di->dev, "failed to enable AC charger %d\n",
-+				__LINE__);
-+			return ret;
-+		}
-+	}
-+	return ret;
-+}
-+
-+/**
-  * ab8500_charger_watchdog_kick() - kick charger watchdog
-  * @di:		pointer to the ab8500_charger structure
-  *
-@@ -1728,8 +1828,7 @@ static int ab8500_charger_update_charger_current(struct ux500_charger *charger,
- 
- 	/* Reset the main and usb drop input current measurement counter */
- 	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
--				AB8500_CHARGER_CTRL,
--				0x1);
-+					AB8500_CHARGER_CTRL, DROP_COUNT_RESET);
- 	if (ret) {
- 		dev_err(di->dev, "%s write failed\n", __func__);
- 		return ret;
-@@ -3197,6 +3296,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- 	di->ac_chg.psy.num_supplicants = di->pdata->num_supplicants;
- 	/* ux500_charger sub-class */
- 	di->ac_chg.ops.enable = &ab8500_charger_ac_en;
-+	di->ac_chg.ops.check_enable = &ab8500_charger_ac_check_enable;
- 	di->ac_chg.ops.kick_wd = &ab8500_charger_watchdog_kick;
- 	di->ac_chg.ops.update_curr = &ab8500_charger_update_charger_current;
- 	di->ac_chg.max_out_volt = ab8500_charger_voltage_map[
-@@ -3218,6 +3318,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- 	di->usb_chg.psy.num_supplicants = di->pdata->num_supplicants;
- 	/* ux500_charger sub-class */
- 	di->usb_chg.ops.enable = &ab8500_charger_usb_en;
-+	di->usb_chg.ops.check_enable = &ab8500_charger_usb_check_enable;
- 	di->usb_chg.ops.kick_wd = &ab8500_charger_watchdog_kick;
- 	di->usb_chg.ops.update_curr = &ab8500_charger_update_charger_current;
- 	di->usb_chg.max_out_volt = ab8500_charger_voltage_map[
-diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
-index 4e3d20f..9568f63 100644
---- a/drivers/power/abx500_chargalg.c
-+++ b/drivers/power/abx500_chargalg.c
-@@ -311,6 +311,29 @@ static void abx500_chargalg_state_to(struct abx500_chargalg *di,
- 	di->charge_state = state;
- }
- 
-+static int abx500_chargalg_check_charger_enable(struct abx500_chargalg *di)
-+{
-+	switch (di->charge_state) {
-+	case STATE_NORMAL:
-+	case STATE_MAINTENANCE_A:
-+	case STATE_MAINTENANCE_B:
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	if (di->chg_info.charger_type & USB_CHG) {
-+		return di->usb_chg->ops.check_enable(di->usb_chg,
-+			di->bat->bat_type[di->bat->batt_id].normal_vol_lvl,
-+			di->bat->bat_type[di->bat->batt_id].normal_cur_lvl);
-+	} else if (di->chg_info.charger_type & AC_CHG) {
-+		return di->ac_chg->ops.check_enable(di->ac_chg,
-+			di->bat->bat_type[di->bat->batt_id].normal_vol_lvl,
-+			di->bat->bat_type[di->bat->batt_id].normal_cur_lvl);
-+	}
-+	return -ENXIO;
-+}
-+
- /**
-  * abx500_chargalg_check_charger_connection() - Check charger connection change
-  * @di:		pointer to the abx500_chargalg structure
-@@ -1220,6 +1243,7 @@ static void abx500_chargalg_external_power_changed(struct power_supply *psy)
- static void abx500_chargalg_algorithm(struct abx500_chargalg *di)
- {
- 	int charger_status;
 +	int ret;
- 
- 	/* Collect data from all power_supply class devices */
- 	class_for_each_device(power_supply_class, NULL,
-@@ -1228,8 +1252,13 @@ static void abx500_chargalg_algorithm(struct abx500_chargalg *di)
- 	abx500_chargalg_end_of_charge(di);
- 	abx500_chargalg_check_temp(di);
- 	abx500_chargalg_check_charger_voltage(di);
--
- 	charger_status = abx500_chargalg_check_charger_connection(di);
++	u8 reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
 +
-+	ret = abx500_chargalg_check_charger_enable(di);
++	di = to_ab8500_fg_device_info(psy);
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_FLAG_TIME_REG, &reg_value);
++
++	if (ret < 0) {
++		dev_err(dev, "Failed to read AB8505_RTC_PCUT_FLAG_TIME_REG\n");
++		goto fail;
++	}
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", (reg_value & 0x7F));
++
++fail:
++	return ret;
++}
++
++static ssize_t ab8505_powercut_flagtime_write(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t count)
++{
++	int ret;
++	long unsigned reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	if (kstrtoul(buf, 10, &reg_value) != 0)
++		goto fail;
++
++	if (reg_value > 0x7F) {
++		dev_err(dev, "Incorrect parameter, echo 0 (1.98s) - 127 (15.625ms) for flagtime\n");
++		goto fail;
++	}
++
++	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_FLAG_TIME_REG, (u8)reg_value);
++
 +	if (ret < 0)
-+		dev_err(di->dev, "Checking charger if enabled error: %d line: %d\n",
-+				ret, __LINE__);
++		dev_err(dev, "Failed to set AB8505_RTC_PCUT_FLAG_TIME_REG\n");
 +
- 	/*
- 	 * First check if we have a charger connected.
- 	 * Also we don't allow charging of unknown batteries if configured
-diff --git a/include/linux/mfd/abx500/ux500_chargalg.h b/include/linux/mfd/abx500/ux500_chargalg.h
-index d43ac0f..110d12f 100644
---- a/include/linux/mfd/abx500/ux500_chargalg.h
-+++ b/include/linux/mfd/abx500/ux500_chargalg.h
-@@ -17,6 +17,7 @@ struct ux500_charger;
- 
- struct ux500_charger_ops {
- 	int (*enable) (struct ux500_charger *, int, int, int);
-+	int (*check_enable) (struct ux500_charger *, int, int);
- 	int (*kick_wd) (struct ux500_charger *);
- 	int (*update_curr) (struct ux500_charger *, int);
++fail:
++	return count;
++}
++
++static ssize_t ab8505_powercut_maxtime_read(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++	int ret;
++	u8 reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_MAX_TIME_REG, &reg_value);
++
++	if (ret < 0) {
++		dev_err(dev, "Failed to read AB8505_RTC_PCUT_MAX_TIME_REG\n");
++		goto fail;
++	}
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", (reg_value & 0x7F));
++
++fail:
++	return ret;
++
++}
++
++static ssize_t ab8505_powercut_maxtime_write(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t count)
++{
++	int ret;
++	long unsigned int reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	if (kstrtoul(buf, 10, &reg_value) != 0)
++		goto fail;
++
++	if (reg_value > 0x7F) {
++		dev_err(dev, "Incorrect parameter, echo 0 (0.0s) - 127 (1.98s) for maxtime\n");
++		goto fail;
++	}
++
++	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_MAX_TIME_REG, (u8)reg_value);
++
++	if (ret < 0)
++		dev_err(dev, "Failed to set AB8505_RTC_PCUT_MAX_TIME_REG\n");
++
++fail:
++	return count;
++}
++
++static ssize_t ab8505_powercut_restart_read(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++	int ret;
++	u8 reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_RESTART_REG, &reg_value);
++
++	if (ret < 0) {
++		dev_err(dev, "Failed to read AB8505_RTC_PCUT_RESTART_REG\n");
++		goto fail;
++	}
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", (reg_value & 0xF));
++
++fail:
++	return ret;
++}
++
++static ssize_t ab8505_powercut_restart_write(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t count)
++{
++	int ret;
++	unsigned long int reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	if (kstrtoul(buf, 10, &reg_value) != 0)
++		goto fail;
++
++	if (reg_value > 0xF) {
++		dev_err(dev, "Incorrect parameter, echo 0 - 15 for number of restart\n");
++		goto fail;
++	}
++
++	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_RESTART_REG, (u8)reg_value);
++
++	if (ret < 0)
++		dev_err(dev, "Failed to set AB8505_RTC_PCUT_RESTART_REG\n");
++
++fail:
++	return count;
++
++}
++
++static ssize_t ab8505_powercut_timer_read(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++	int ret;
++	u8 reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_TIME_REG, &reg_value);
++
++	if (ret < 0) {
++		dev_err(dev, "Failed to read AB8505_RTC_PCUT_TIME_REG\n");
++		goto fail;
++	}
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", (reg_value & 0x7F));
++
++fail:
++	return ret;
++}
++
++static ssize_t ab8505_powercut_restart_counter_read(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++	int ret;
++	u8 reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_RESTART_REG, &reg_value);
++
++	if (ret < 0) {
++		dev_err(dev, "Failed to read AB8505_RTC_PCUT_RESTART_REG\n");
++		goto fail;
++	}
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", (reg_value & 0xF0) >> 4);
++
++fail:
++	return ret;
++}
++
++static ssize_t ab8505_powercut_read(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++	int ret;
++	u8 reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_CTL_STATUS_REG, &reg_value);
++
++	if (ret < 0)
++		goto fail;
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", (reg_value & 0x1));
++
++fail:
++	return ret;
++}
++
++static ssize_t ab8505_powercut_write(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t count)
++{
++	int ret;
++	unsigned long int reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	if (kstrtoul(buf, 10, &reg_value) != 0)
++		goto fail;
++
++	if (reg_value > 0x1) {
++		dev_err(dev, "Incorrect parameter, echo 0/1 to disable/enable Pcut feature\n");
++		goto fail;
++	}
++
++	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_CTL_STATUS_REG, (u8)reg_value);
++
++	if (ret < 0)
++		dev_err(dev, "Failed to set AB8505_RTC_PCUT_CTL_STATUS_REG\n");
++
++fail:
++	return count;
++}
++
++static ssize_t ab8505_powercut_flag_read(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++
++	int ret;
++	u8 reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_CTL_STATUS_REG,  &reg_value);
++
++	if (ret < 0) {
++		dev_err(dev, "Failed to read AB8505_RTC_PCUT_CTL_STATUS_REG\n");
++		goto fail;
++	}
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", ((reg_value & 0x10) >> 4));
++
++fail:
++	return ret;
++}
++
++static ssize_t ab8505_powercut_debounce_read(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++	int ret;
++	u8 reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_DEBOUNCE_REG,  &reg_value);
++
++	if (ret < 0) {
++		dev_err(dev, "Failed to read AB8505_RTC_PCUT_DEBOUNCE_REG\n");
++		goto fail;
++	}
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", (reg_value & 0x7));
++
++fail:
++	return ret;
++}
++
++static ssize_t ab8505_powercut_debounce_write(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t count)
++{
++	int ret;
++	unsigned long int reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	if (kstrtoul(buf, 10, &reg_value) != 0)
++		goto fail;
++
++	if (reg_value > 0x7) {
++		dev_err(dev, "Incorrect parameter, echo 0 to 7 for debounce setting\n");
++		goto fail;
++	}
++
++	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_DEBOUNCE_REG, (u8)reg_value);
++
++	if (ret < 0)
++		dev_err(dev, "Failed to set AB8505_RTC_PCUT_DEBOUNCE_REG\n");
++
++fail:
++	return count;
++}
++
++static ssize_t ab8505_powercut_enable_status_read(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++	int ret;
++	u8 reg_value;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
++
++	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
++		AB8505_RTC_PCUT_CTL_STATUS_REG, &reg_value);
++
++	if (ret < 0) {
++		dev_err(dev, "Failed to read AB8505_RTC_PCUT_CTL_STATUS_REG\n");
++		goto fail;
++	}
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", ((reg_value & 0x20) >> 5));
++
++fail:
++	return ret;
++}
++
+ static struct device_attribute ab8500_fg_sysfs_psy_attrs[] = {
+ 	__ATTR(capacity, S_IRUGO, ab8500_show_capacity, NULL),
  };
+ 
++static struct device_attribute ab8505_fg_sysfs_psy_attrs[] = {
++	__ATTR(powercut_flagtime, (S_IRUGO | S_IWUGO),
++				ab8505_powercut_flagtime_read,
++				ab8505_powercut_flagtime_write),
++	__ATTR(powercut_maxtime, (S_IRUGO | S_IWUGO),
++				ab8505_powercut_maxtime_read,
++				ab8505_powercut_maxtime_write),
++	__ATTR(powercut_restart_max, (S_IRUGO | S_IWUGO),
++				ab8505_powercut_restart_read,
++				ab8505_powercut_restart_write),
++	__ATTR(powercut_timer, S_IRUGO, ab8505_powercut_timer_read, NULL),
++	__ATTR(powercut_restart_counter, S_IRUGO,
++				ab8505_powercut_restart_counter_read, NULL),
++	__ATTR(powercut_enable, (S_IRUGO | S_IWUGO), ab8505_powercut_read,
++							 ab8505_powercut_write),
++	__ATTR(powercut_flag, S_IRUGO, ab8505_powercut_flag_read, NULL),
++	__ATTR(powercut_debounce_time, (S_IRUGO | S_IWUGO),
++				ab8505_powercut_debounce_read,
++				ab8505_powercut_debounce_write),
++	__ATTR(powercut_enable_status, S_IRUGO,
++				ab8505_powercut_enable_status_read, NULL),
++};
++
+ static int ab8500_fg_sysfs_psy_create_attrs(struct device *dev)
+ {
+-	unsigned int i;
++	unsigned int i, j;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ab8500_fg_sysfs_psy_attrs); i++)
+ 		if (device_create_file(dev, &ab8500_fg_sysfs_psy_attrs[i]))
+-			goto sysfs_psy_create_attrs_failed;
++			goto sysfs_psy_create_attrs_failed_ab8500;
++
++	if ((is_ab8505(di->parent) || is_ab9540(di->parent)) &&
++			abx500_get_chip_id(dev->parent) >= AB8500_CUT2P0) {
++		for (j = 0; j < ARRAY_SIZE(ab8505_fg_sysfs_psy_attrs); j++)
++			if (device_create_file(dev,
++					&ab8505_fg_sysfs_psy_attrs[j]))
++				goto sysfs_psy_create_attrs_failed_ab8505;
++	}
+ 
+ 	return 0;
+ 
+-sysfs_psy_create_attrs_failed:
+-	dev_err(dev, "Failed creating sysfs psy attrs.\n");
++sysfs_psy_create_attrs_failed_ab8505:
++	dev_err(dev, "Failed creating sysfs psy attrs for ab8505.\n");
++	while (j--)
++		device_remove_file(dev, &ab8505_fg_sysfs_psy_attrs[i]);
++
++sysfs_psy_create_attrs_failed_ab8500:
++	dev_err(dev, "Failed creating sysfs psy attrs for ab8500.\n");
+ 	while (i--)
+ 		device_remove_file(dev, &ab8500_fg_sysfs_psy_attrs[i]);
+ 
+@@ -2597,9 +3066,20 @@ sysfs_psy_create_attrs_failed:
+ static void ab8500_fg_sysfs_psy_remove_attrs(struct device *dev)
+ {
+ 	unsigned int i;
++	struct power_supply *psy = dev_get_drvdata(dev);
++	struct ab8500_fg *di;
++
++	di = to_ab8500_fg_device_info(psy);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ab8500_fg_sysfs_psy_attrs); i++)
+ 		(void)device_remove_file(dev, &ab8500_fg_sysfs_psy_attrs[i]);
++
++	if ((is_ab8505(di->parent) || is_ab9540(di->parent)) &&
++			abx500_get_chip_id(dev->parent) >= AB8500_CUT2P0) {
++		for (i = 0; i < ARRAY_SIZE(ab8505_fg_sysfs_psy_attrs); i++)
++			(void)device_remove_file(dev,
++					&ab8505_fg_sysfs_psy_attrs[i]);
++	}
+ }
+ /* Exposure to the sysfs interface <<END>> */
+ 
+diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
+index eef1ddc..97e918f 100644
+--- a/include/linux/mfd/abx500.h
++++ b/include/linux/mfd/abx500.h
+@@ -204,6 +204,11 @@ struct abx500_fg;
+  *				points.
+  * @maint_thres			This is the threshold where we stop reporting
+  *				battery full while in maintenance, in per cent
++ * @pcut_enable:		Enable power cut feature in ab8505
++ * @pcut_max_time:		Max time threshold
++ * @pcut_flag_time:		Flagtime threshold
++ * @pcut_max_restart:		Max number of restarts
++ * @pcut_debunce_time:		Sets battery debounce time
+  */
+ struct abx500_fg_parameters {
+ 	int recovery_sleep_timer;
+@@ -221,6 +226,11 @@ struct abx500_fg_parameters {
+ 	int battok_raising_th_sel1;
+ 	int user_cap_limit;
+ 	int maint_thres;
++	bool pcut_enable;
++	u8 pcut_max_time;
++	u8 pcut_flag_time;
++	u8 pcut_max_restart;
++	u8 pcut_debunce_time;
+ };
+ 
+ /**
+diff --git a/include/linux/mfd/abx500/ab8500-bm.h b/include/linux/mfd/abx500/ab8500-bm.h
+index 175197c..cd15ea3 100644
+--- a/include/linux/mfd/abx500/ab8500-bm.h
++++ b/include/linux/mfd/abx500/ab8500-bm.h
+@@ -235,6 +235,14 @@
+ /* Battery type */
+ #define BATTERY_UNKNOWN			00
+ 
++/* Registers for pcut feature in ab8505 and ab9540 */
++#define AB8505_RTC_PCUT_CTL_STATUS_REG 0x12
++#define AB8505_RTC_PCUT_TIME_REG       0x13
++#define AB8505_RTC_PCUT_MAX_TIME_REG   0x14
++#define AB8505_RTC_PCUT_FLAG_TIME_REG  0x15
++#define AB8505_RTC_PCUT_RESTART_REG    0x16
++#define AB8505_RTC_PCUT_DEBOUNCE_REG   0x17
++
+ /**
+  * struct res_to_temp - defines one point in a temp to res curve. To
+  * be used in battery packs that combines the identification resistor with a
 -- 
 1.7.5.4
 
