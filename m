@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab2IYN5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 09:57:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53445 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755208Ab2IYN5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 09:57:32 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi.kleen@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] pagemap: fix wrong KPF_THP on slab pages
-Date: Tue, 25 Sep 2012 09:56:54 -0400
-Message-Id: <1348581414-19103-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1756640Ab2IYN6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 09:58:13 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:57733 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab2IYN6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 09:58:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120925101203.GQ14582@twin.jikos.cz>
+References: <1348538536-29838-1-git-send-email-zwu.kernel@gmail.com>
+	<1348538536-29838-2-git-send-email-zwu.kernel@gmail.com>
+	<20120925101203.GQ14582@twin.jikos.cz>
+Date: Tue, 25 Sep 2012 21:58:09 +0800
+Message-ID: <CAEH94LjjD-HAHD8EZwOGJ6J7hi+7mkni0p2S8rz5HEQv59MrDQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] btrfs-progs: Close file descriptor on exit
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: dave@jikos.cz, zwu.kernel@gmail.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jbacik@fusionio.com,
+        linuxram@linux.vnet.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KPF_THP can be set on non-huge compound pages like slab pages, because
-PageTransCompound only sees PG_head and PG_tail. Obviously this is a bug
-and breaks user space applications which look for thp via /proc/kpageflags.
-Currently thp is constructed only on anonymous pages, so this patch makes
-KPF_THP be set when both of PageAnon and PageTransCompound are true.
+On Tue, Sep 25, 2012 at 6:12 PM, David Sterba <dave@jikos.cz> wrote:
+> On Tue, Sep 25, 2012 at 10:02:15AM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>>   Need to close fd on exit.
+>
+> Strictly you don't need to, kernel will do that at exit() time.
+I know, but it is not so nice.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- fs/proc/page.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> david
 
-diff --git v3.6-rc6.orig/fs/proc/page.c v3.6-rc6/fs/proc/page.c
-index 7fcd0d6..613102d 100644
---- v3.6-rc6.orig/fs/proc/page.c
-+++ v3.6-rc6/fs/proc/page.c
-@@ -115,7 +115,7 @@ u64 stable_page_flags(struct page *page)
- 		u |= 1 << KPF_COMPOUND_TAIL;
- 	if (PageHuge(page))
- 		u |= 1 << KPF_HUGE;
--	else if (PageTransCompound(page))
-+	else if (PageTransCompound(page) && PageAnon(page))
- 		u |= 1 << KPF_THP;
- 
- 	/*
+
+
 -- 
-1.7.11.4
+Regards,
 
+Zhi Yong Wu
