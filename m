@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab2IYQ00 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 12:26:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60753 "EHLO
+	id S932134Ab2IYQ0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 12:26:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41451 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757434Ab2IYQNL (ORCPT
+	with ESMTP id S1757207Ab2IYQNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 12:13:11 -0400
+	Tue, 25 Sep 2012 12:13:14 -0400
 From: mathieu.poirier@linaro.org
 To: linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org
 Cc: mathieu.poirier@linaro.org
-Subject: [PATCH 03/57] power: ab8500_btemp: Detect battery type in workqueue
-Date: Tue, 25 Sep 2012 10:12:00 -0600
-Message-Id: <1348589574-25655-4-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 05/57] power: ab8500_bm: Rename the power_loss function
+Date: Tue, 25 Sep 2012 10:12:02 -0600
+Message-Id: <1348589574-25655-6-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
@@ -20,72 +20,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Aaberg <jonas.aberg@stericsson.com>
+From: Paer-Olof Haakansson <par-olof.hakansson@stericsson.com>
 
-Detect battery type in work queue instead of probe.
-This reduces the system boot time with 1.5s
+Rename the ab8500_power_loss_handling function
+to a more describing name ab8500_enable_disable_sw_fallback
 
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Signed-off-by: Robert Marklund <robert.marklund@stericsson.com>
+Signed-off-by: Paer-Olof Haakansson <par-olof.hakansson@stericsson.com>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Reviewed-by: Par-Olof HAKANSSON <par-olof.hakansson@stericsson.com>
 Reviewed-by: Karl KOMIEROWSKI <karl.komierowski@stericsson.com>
 ---
- drivers/power/ab8500_btemp.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+ drivers/power/ab8500_charger.c |   23 +++++++++++------------
+ 1 files changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
-index bba3cca..94a3ee8 100644
---- a/drivers/power/ab8500_btemp.c
-+++ b/drivers/power/ab8500_btemp.c
-@@ -83,6 +83,7 @@ struct ab8500_btemp_ranges {
-  * @btemp_ranges:	Battery temperature range structure
-  * @btemp_wq:		Work queue for measuring the temperature periodically
-  * @btemp_periodic_work:	Work for measuring the temperature periodically
-+ * @initialized:	True if battery id read.
-  */
- struct ab8500_btemp {
- 	struct device *dev;
-@@ -100,6 +101,7 @@ struct ab8500_btemp {
- 	struct ab8500_btemp_ranges btemp_ranges;
- 	struct workqueue_struct *btemp_wq;
- 	struct delayed_work btemp_periodic_work;
-+	bool initialized;
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index 22076f5..a7d0c3a 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -268,20 +268,19 @@ static enum power_supply_property ab8500_charger_usb_props[] = {
+ 	POWER_SUPPLY_PROP_CURRENT_NOW,
  };
  
- /* BTEMP power supply properties */
-@@ -569,6 +571,13 @@ static void ab8500_btemp_periodic_work(struct work_struct *work)
- 	struct ab8500_btemp *di = container_of(work,
- 		struct ab8500_btemp, btemp_periodic_work.work);
+-/**
+- * ab8500_power_loss_handling - set how we handle powerloss.
+- * @di:		pointer to the ab8500_charger structure
+- *
+- * Magic nummbers are from STE HW department.
++/*
++ * Function for enabling and disabling sw fallback mode
++ * should always be disabled when no charger is connected.
+  */
+-static void ab8500_power_loss_handling(struct ab8500_charger *di)
++static void ab8500_enable_disable_sw_fallback(struct ab8500_charger *di,
++		bool fallback)
+ {
+ 	u8 reg;
+ 	int ret;
  
-+	if (!di->initialized) {
-+		di->initialized = true;
-+		/* Identify the battery */
-+		if (ab8500_btemp_id(di) < 0)
-+			dev_warn(di->dev, "failed to identify the battery\n");
-+	}
-+
- 	di->bat_temp = ab8500_btemp_measure_temp(di);
+-	dev_dbg(di->dev, "Autopower : %d\n", di->autopower);
++	dev_dbg(di->dev, "SW Fallback: %d\n", fallback);
  
- 	if (di->bat_temp != di->prev_bat_temp) {
-@@ -981,6 +990,8 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
- 	di->parent = dev_get_drvdata(pdev->dev.parent);
- 	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+-	/* read the autopower register */
++	/* read the register containing fallback bit */
+ 	ret = abx500_get_register_interruptible(di->dev, 0x15, 0x00, &reg);
+ 	if (ret) {
+ 		dev_err(di->dev, "%d write failed\n", __LINE__);
+@@ -295,12 +294,12 @@ static void ab8500_power_loss_handling(struct ab8500_charger *di)
+ 		return;
+ 	}
  
-+	di->initialized = false;
-+
- 	/* get btemp specific platform data */
- 	di->pdata = plat_data->btemp;
- 	if (!di->pdata) {
-@@ -1021,10 +1032,6 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
- 	INIT_DELAYED_WORK_DEFERRABLE(&di->btemp_periodic_work,
- 		ab8500_btemp_periodic_work);
+-	if (di->autopower)
++	if (fallback)
+ 		reg |= 0x8;
+ 	else
+ 		reg &= ~0x8;
  
--	/* Identify the battery */
--	if (ab8500_btemp_id(di) < 0)
--		dev_warn(di->dev, "failed to identify the battery\n");
--
- 	/* Set BTEMP thermal limits. Low and Med are fixed */
- 	di->btemp_ranges.btemp_low_limit = BTEMP_THERMAL_LOW_LIMIT;
- 	di->btemp_ranges.btemp_med_limit = BTEMP_THERMAL_MED_LIMIT;
+-	/* write back the changed value to autopower reg */
++	/* write back the changed fallback bit value to register */
+ 	ret = abx500_set_register_interruptible(di->dev, 0x15, 0x00, reg);
+ 	if (ret) {
+ 		dev_err(di->dev, "%d write failed\n", __LINE__);
+@@ -330,12 +329,12 @@ static void ab8500_power_supply_changed(struct ab8500_charger *di,
+ 		    !di->ac.charger_connected &&
+ 		    di->autopower) {
+ 			di->autopower = false;
+-			ab8500_power_loss_handling(di);
++			ab8500_enable_disable_sw_fallback(di, false);
+ 		} else if (!di->autopower &&
+ 			   (di->ac.charger_connected ||
+ 			    di->usb.charger_connected)) {
+ 			di->autopower = true;
+-			ab8500_power_loss_handling(di);
++			ab8500_enable_disable_sw_fallback(di, true);
+ 		}
+ 	}
+ 	power_supply_changed(psy);
 -- 
 1.7.5.4
 
