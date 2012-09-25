@@ -1,135 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab2IYGzB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 02:55:01 -0400
-Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:1418 "EHLO
-	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab2IYGy7 (ORCPT
+	id S1753238Ab2IYG4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 02:56:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56047 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab2IYG4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 02:54:59 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: davinci-linux-open-source@linux.davincidsp.com
-Subject: Re: [PATCH v4] media: v4l2-ctrls: add control for test pattern
-Date: Tue, 25 Sep 2012 08:53:03 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc5-tschai; KDE/4.8.4; x86_64; ; )
-Cc: Prabhakar <prabhakar.csengg@gmail.com>, LMML <linux-media@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, LDOC <linux-doc@vger.kernel.org>,
-        VGER <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-References: <1348553345-14296-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1348553345-14296-1-git-send-email-prabhakar.lad@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209250853.03216.hverkuil@xs4all.nl>
+	Tue, 25 Sep 2012 02:56:05 -0400
+Date: Tue, 25 Sep 2012 16:56:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Prisk <linux@prisktech.co.nz>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the arm-soc tree with the usb tree
+Message-Id: <20120925165603.7676aa78ed5cfbf8a21fb734@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Sep_2012_16_56_03_+1000_L3nJ4gmufoNL9jLI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue September 25 2012 08:09:05 Prabhakar wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> add V4L2_CID_TEST_PATTERN of type menu, which determines
-> the internal test pattern selected by the device.
+--Signature=_Tue__25_Sep_2012_16_56_03_+1000_L3nJ4gmufoNL9jLI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+Hi all,
 
-Regards,
+Today's linux-next merge of the arm-soc tree got conflicts in
+arch/arm/mach-vt8500/bv07.c, arch/arm/mach-vt8500/devices-vt8500.c,
+arch/arm/mach-vt8500/devices-wm8505.c, arch/arm/mach-vt8500/devices.c,
+arch/arm/mach-vt8500/devices.h and arch/arm/mach-vt8500/wm8505_7in.c
+between commit 100d45970327 ("ARM: vt8500: Add support for UHCI companion
+controller") from the usb tree and commit e9a91de7602a ("arm: vt8500: Update
+arch-vt8500 to devicetree support") from the arm-soc tree.
 
-	Hans
+I just removed the files and can carry the fix as necessary (there may be
+more work required).
 
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Hans de Goede <hdegoede@redhat.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Rob Landley <rob@landley.net>
-> ---
->  This patches has one checkpatch warning for line over
->  80 characters altough it can be avoided I have kept it
->  for consistency.
-> 
->  Changes for v4:
->  1: Fixed some grammar/style issues, pointed by Hans.
-> 
->  Changes for v3:
->  1: Removed the menu for test pattern, pointed by Sakari.
-> 
->  Changes for v2:
->  1: Included display devices in the description for test pattern
->    as pointed by Hans.
->  2: In the menu replaced 'Test Pattern Disabled' by 'Disabled' as
->    pointed by Sylwester.
->  3: Removed the test patterns from menu as the are hardware specific
->    as pointed by Sakari.
-> 
->  Documentation/DocBook/media/v4l/controls.xml |   10 ++++++++++
->  drivers/media/v4l2-core/v4l2-ctrls.c         |    2 ++
->  include/linux/videodev2.h                    |    1 +
->  3 files changed, 13 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index f0fb08d..5450d31 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -4313,6 +4313,16 @@ interface and may change in the future.</para>
->  	      </tbody>
->  	    </entrytbl>
->  	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
-> +	    <entry>menu</entry>
-> +	  </row>
-> +	  <row id="v4l2-test-pattern">
-> +	    <entry spanname="descr"> Some capture/display/sensor devices have
-> +	    the capability to generate test pattern images. These hardware
-> +	    specific test patterns can be used to test if a device is working
-> +	    properly.</entry>
-> +	  </row>
->  	<row><entry></entry></row>
->  	</tbody>
->        </tgroup>
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index 8f2f40b..41b7732 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -740,6 +740,7 @@ const char *v4l2_ctrl_get_name(u32 id)
->  	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
->  	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
->  	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
-> +	case V4L2_CID_TEST_PATTERN:		return "Test Pattern";
->  
->  	default:
->  		return NULL;
-> @@ -841,6 +842,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
->  	case V4L2_CID_EXPOSURE_METERING:
->  	case V4L2_CID_SCENE_MODE:
->  	case V4L2_CID_DPCM_PREDICTOR:
-> +	case V4L2_CID_TEST_PATTERN:
->  		*type = V4L2_CTRL_TYPE_MENU;
->  		break;
->  	case V4L2_CID_LINK_FREQ:
-> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-> index ca9fb78..7014c0b 100644
-> --- a/include/linux/videodev2.h
-> +++ b/include/linux/videodev2.h
-> @@ -2005,6 +2005,7 @@ enum v4l2_dpcm_predictor {
->  	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
->  	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
->  };
-> +#define V4L2_CID_TEST_PATTERN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
->  
->  /*
->   *	T U N I N G
-> 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__25_Sep_2012_16_56_03_+1000_L3nJ4gmufoNL9jLI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQYVWDAAoJEECxmPOUX5FEcA8P/iLMiga6JWuYDHzKzvCSQhPA
+CUEsc7qTY2iOXajSJ482+ZTYMN9zgXQmMhC2CQUKiQZwIyCltmmZcKTM5I+FFhbS
+6fkOFHwdUpEkfnArRmP/k7cbtGSPbKLlxVtVuo4CVyvN+XwLYQEA2JY+QuYOqsjf
+xbd6+0vxvJzhbWDOZ++QJIyVoF3hGliLitO9Q7OwEs00dVx8HS6QzSOkLZ37cZ6g
+6qvEWALD2nNobCL1P5v7Dx4tv+FydZVN5VHzNq+lZ6e8AM7sbCgz+/3jhjRd4Rse
+8vZCQZcY1r7Fvfmr0DMKMdOU9RHo67NKhyPqIUB5pl/v1WmFWiKLvIl0nHBi4XWF
+e0sA2O5rF//Jdt+PA+hkYjQi70HaWAtJ1iQodQCP4Ecslh3rD+u8ni7CmakoOnXp
+8gNe0uIOWgpaqEGH9uySRONbEv/7HzQIribXDDGmOKEqFrzsiBUpc9YLWw0Eh27t
+aOQTGiMmUhxFs36xnWSUfVltZVsDmjBIRWA0DQaT98vuaOpDROPRZWolpzykntVO
+iX/8MPP11yy0NXuP1X1BUps2IxH0yvUpYAeNszzT5hIPLy5zJnFUrpoF9GyzIFH8
+rJ/I2eSmbzcvQr9Cl8GD4PkYRLYvj0qhneMt/GojAmuN56ot35oyUxU1/2quQPJ1
+d4xBniDbFw49GEPKjY+x
+=XYEY
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Sep_2012_16_56_03_+1000_L3nJ4gmufoNL9jLI--
