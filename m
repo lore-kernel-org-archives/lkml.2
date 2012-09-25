@@ -1,280 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab2IYHhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 03:37:37 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:18329 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752707Ab2IYHhe (ORCPT
+	id S1753538Ab2IYHj4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 03:39:56 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:51819 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab2IYHjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 03:37:34 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au0NAFNeYVB5LGEv/2dsb2JhbABFhSK4NwIBgQmBCYIgAQEFOhwjEAgDFQMuFA0YAzSHcwMOqFyHEA2JUxSKJWKBA4FDgxxgA5QQgVSLG4UKgnk
-Date: Tue, 25 Sep 2012 17:37:29 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
-        diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v2 01/10] vfs: introduce private rb structures
-Message-ID: <20120925073729.GA29154@dastard>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
- <1348404995-14372-2-git-send-email-zwu.kernel@gmail.com>
+	Tue, 25 Sep 2012 03:39:54 -0400
+Message-ID: <50615EE4.1040809@linux.vnet.ibm.com>
+Date: Tue, 25 Sep 2012 13:06:04 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348404995-14372-2-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com>
+In-Reply-To: <50607F1F.2040704@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092507-7014-0000-0000-000001F123FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 23, 2012 at 08:56:26PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
->   One root structure hot_info is defined, is hooked
-> up in super_block, and will be used to hold rb trees
-> root, hash list root and some other information, etc.
->   Adds hot_inode_tree struct to keep track of
-> frequently accessed files, and be keyed by {inode, offset}.
-> Trees contain hot_inode_items representing those files
-> and ranges.
->   Having these trees means that vfs can quickly determine the
-> temperature of some data by doing some calculations on the
-> hot_freq_data struct that hangs off of the tree item.
->   Define two items hot_inode_item and hot_range_item,
-> one of them represents one tracked file
-> to keep track of its access frequency and the tree of
-> ranges in this file, while the latter represents
-> a file range of one inode.
->   Each of the two structures contains a hot_freq_data
-> struct with its frequency of access metrics (number of
-> {reads, writes}, last {read,write} time, frequency of
-> {reads,writes}).
->   Also, each hot_inode_item contains one hot_range_tree
-> struct which is keyed by {inode, offset, length}
-> and used to keep track of all the ranges in this file.
-> 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 09/24/2012 09:11 PM, Avi Kivity wrote:
+> On 09/21/2012 08:24 PM, Raghavendra K T wrote:
+>> On 09/21/2012 06:32 PM, Rik van Riel wrote:
+>>> On 09/21/2012 08:00 AM, Raghavendra K T wrote:
+>>>> From: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
+>>>>
+>>>> When total number of VCPUs of system is less than or equal to physical
+>>>> CPUs,
+>>>> PLE exits become costly since each VCPU can have dedicated PCPU, and
+>>>> trying to find a target VCPU to yield_to just burns time in PLE handler.
+>>>>
+>>>> This patch reduces overhead, by simply doing a return in such
+>>>> scenarios by
+>>>> checking the length of current cpu runqueue.
+>>>
+>>> I am not convinced this is the way to go.
+>>>
+>>> The VCPU that is holding the lock, and is not releasing it,
+>>> probably got scheduled out. That implies that VCPU is on a
+>>> runqueue with at least one other task.
+>>
+>> I see your point here, we have two cases:
+>>
+>> case 1)
+>>
+>> rq1 : vcpu1->wait(lockA) (spinning)
+>> rq2 : vcpu2->holding(lockA) (running)
+>>
+>> Here Ideally vcpu1 should not enter PLE handler, since it would surely
+>> get the lock within ple_window cycle. (assuming ple_window is tuned for
+>> that workload perfectly).
+>>
+>> May be this explains why we are not seeing benefit with kernbench.
+>>
+>> On the other side, Since we cannot have a perfect ple_window tuned for
+>> all type of workloads, for those workloads, which may need more than
+>> 4096 cycles, we gain. thinking is it that we are seeing in benefited
+>> cases?
+>
+> Maybe we need to increase the ple window regardless.  4096 cycles is 2
+> microseconds or less (call it t_spin).  The overhead from
+> kvm_vcpu_on_spin() and the associated task switches is at least a few
+> microseconds, increasing as contention is added (call it t_tield).  The
+> time for a natural context switch is several milliseconds (call it
+> t_slice).  There is also the time the lock holder owns the lock,
+> assuming no contention (t_hold).
+>
+> If t_yield>  t_spin, then in the undercommitted case it dominates
+> t_spin.  If t_hold>  t_spin we lose badly.
+>
+> If t_spin>  t_yield, then the undercommitted case doesn't suffer as much
+> as most of the spinning happens in the guest instead of the host, so it
+> can pick up the unlock timely.  We don't lose too much in the
+> overcommitted case provided the values aren't too far apart (say a
+> factor of 3).
+>
+> Obviously t_spin must be significantly smaller than t_slice, otherwise
+> it accomplishes nothing.
+>
+> Regarding t_hold: if it is small, then a larger t_spin helps avoid false
+> exits.  If it is large, then we're not very sensitive to t_spin.  It
+> doesn't matter if it takes us 2 usec or 20 usec to yield, if we end up
+> yielding for several milliseconds.
+>
+> So I think it's worth trying again with ple_window of 20000-40000.
+>
 
-Just a coupl eof minor formatting things first up - I'll have more
-comments as I get deeper into the series.
+Agree that spinning is not costly and  I have tried increasing
+ple_window earlier. I 'll give one more shot.
 
-....
-> +/*
-> + * Initialize the inode tree. Should be called for each new inode
-> + * access or other user of the hot_inode interface.
-> + */
-> +static void hot_rb_inode_tree_init(struct hot_inode_tree *tree)
+I was thinking, unnessary spinning of vcpus (spinning when lockholder
+is preempted), add up to degradation significantly, especially in
+ticketlock scenario is more problemtic. no?
 
-The names of these are a bit clunky. You probably don't need the
-"_rb_" in the function name. i.e. hot_inode_tree_init() is
-sufficient, and if we every want to change in the tree type we don't
-have to rename every single function...
-
-.....
-> +/*
-> + * Initialize a new hot_inode_item structure. The new structure is
-> + * returned with a reference count of one and needs to be
-> + * freed using free_inode_item()
-> + */
-> +void hot_rb_inode_item_init(void *_item)
-> +{
-
-The usual naming convention for slab initialiser functions is to use
-a suffix of "_once" to indicate it is only ever called once per
-slab object instantiation, not every time the object is allocated
-fom the slab. See, for example, inode_init_once() and
-inode_init_always().
-
-so, that would make this function hot_inode_item_init_once().
-
-....
-> +/* init hot_inode_item and hot_range_item kmem cache */
-> +static int __init hot_rb_item_cache_init(void)
-> +{
-> +	hot_inode_item_cache = kmem_cache_create("hot_inode_item",
-> +			sizeof(struct hot_inode_item), 0,
-> +			SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD,
-> +			hot_rb_inode_item_init);
-> +	if (!hot_inode_item_cache)
-> +		goto inode_err;
-> +
-> +	hot_range_item_cache = kmem_cache_create("hot_range_item",
-> +					sizeof(struct hot_range_item), 0,
-> +					SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD,
-> +					hot_rb_range_item_init);
-> +	if (!hot_range_item_cache)
-> +		goto range_err;
-> +
-> +	return 0;
-> +
-> +range_err:
-> +	kmem_cache_destroy(hot_inode_item_cache);
-> +inode_err:
-> +	return -ENOMEM;
-> +}
-> +
-> +/*
-> + * Initialize kmem cache for hot_inode_item
-> + * and hot_range_item
-> + */
-> +void __init hot_track_cache_init(void)
-> +{
-> +	if (hot_rb_item_cache_init())
-> +		return;
-
-No real need to have a hot_rb_item_cache_init() function here - just
-open code it all in the hot_track_cache_init() function.
-
-> +}
-> diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
-> new file mode 100644
-> index 0000000..269b67a
-> --- /dev/null
-> +++ b/fs/hot_tracking.h
-> @@ -0,0 +1,27 @@
-> +/*
-> + * fs/hot_tracking.h
-> + *
-> + * Copyright (C) 2012 IBM Corp. All rights reserved.
-> + * Written by Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> + *            Ben Chociej <bchociej@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public
-> + * License v2 as published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef __HOT_TRACKING__
-> +#define __HOT_TRACKING__
-> +
-> +#include <linux/rbtree.h>
-> +#include <linux/hot_tracking.h>
-> +
-> +/* values for hot_freq_data flags */
-> +/* freq data struct is for an inode */
-> +#define FREQ_DATA_TYPE_INODE (1 << 0)
-> +/* freq data struct is for a range */
-> +#define FREQ_DATA_TYPE_RANGE (1 << 1)
-
-The comments are redundant - the name of the object documents it's
-use sufficiently.  ie.
-
-/* values for hot_freq_data flags */
-#define FREQ_DATA_TYPE_INODE (1 << 0)
-#define FREQ_DATA_TYPE_RANGE (1 << 1)
-
-is just fine by itself.
-
-....
-> +/* A frequency data struct holds values that are used to
-> + * determine temperature of files and file ranges. These structs
-> + * are members of hot_inode_item and hot_range_item
-> + */
-
-/*
- * This is a
- * multiline comment. ;)
- */
-
-> +struct hot_freq_data {
-> +	struct timespec last_read_time;
-> +	struct timespec last_write_time;
-> +	u32 nr_reads;
-> +	u32 nr_writes;
-> +	u64 avg_delta_reads;
-> +	u64 avg_delta_writes;
-> +	u8 flags;
-> +	u32 last_temperature;
-
-may as well make the flags a u32 - the compiler will ues that much
-space anyway as it aligned the u32 last_temperature variable after
-it.
-
-> +};
-> +
-> +/* An item representing an inode and its access frequency */
-> +struct hot_inode_item {
-> +	/* node for hot_inode_tree rb_tree */
-> +	struct rb_node rb_node;
-> +	/* tree of ranges in this inode */
-> +	struct hot_range_tree hot_range_tree;
-> +	/* frequency data for this inode */
-> +	struct hot_freq_data hot_freq_data;
-> +	/* inode number, copied from inode */
-> +	unsigned long i_ino;
-> +	/* used to check for errors in ref counting */
-> +	u8 in_tree;
-> +	/* protects hot_freq_data, i_no, in_tree */
-> +	spinlock_t lock;
-> +	/* prevents kfree */
-> +	struct kref refs;
-
-It's hard to see the code in the commentsi, and some of comments are
-redundant.. It's easier to read if you do this:
-
-struct hot_inode_item {
-	struct rb_node node;			/* hot_inode_tree index */
-	struct hot_range_tree hot_range_tree;	/* tree of ranges */
-	struct hot_freq_data hot_freq_data;	/* frequency data */
-	unsigned long i_ino;			/* inode number from inode */
-	u8 in_tree;				/* ref counting check */
-	spinlock_t lock;			/* protects object data */
-	struct kref refs;			/* prevents kfree */
-}
-
-Also: 
-	- i_ino really needs to be a 64 bit quantity as some
-	  filesystems can use 64 bit inode numbers even on 32
-	  bit systems (e.g. XFS).
-	- in_tree can be u32 or a flags field if it is boolean. if
-	  it is just debug, then maybe it can be removed whenteh
-	  code is ready for commit.
-
-> +};
-> +
-> +/*
-> + * An item representing a range inside of an inode whose frequency
-> + * is being tracked
-> + */
-> +struct hot_range_item {
-> +	/* node for hot_range_tree rb_tree */
-> +	struct rb_node rb_node;
-> +	/* frequency data for this range */
-> +	struct hot_freq_data hot_freq_data;
-> +	/* the hot_inode_item associated with this hot_range_item */
-> +	struct hot_inode_item *hot_inode;
-> +	/* starting offset of this range */
-> +	u64 start;
-> +	/* length of this range */
-> +	u64 len;
-
-What units?
-	u64 start;	/* start offset in bytes */
-	u64 len		/* length in bytes */
-
-> +	/* used to check for errors in ref counting */
-> +	u8 in_tree;
-> +	/* protects hot_freq_data, start, len, and in_tree */
-> +	spinlock_t lock;
-> +	/* prevents kfree */
-> +	struct kref refs;
-> +};
-> +
-> +struct hot_info {
-> +	/* red-black tree that keeps track of fs-wide hot data */
-> +	struct hot_inode_tree hot_inode_tree;
-> +};
-
-The comment is redundant...
-
-Cheers,
-
-Dave.
-
--- 
-Dave Chinner
-david@fromorbit.com
