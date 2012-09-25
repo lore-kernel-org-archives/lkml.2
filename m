@@ -1,150 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab2IYJxP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 05:53:15 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:52692 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754009Ab2IYJxM (ORCPT
+	id S1754617Ab2IYJyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 05:54:15 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:38423 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753536Ab2IYJyN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 05:53:12 -0400
-Date: Tue, 25 Sep 2012 12:48:16 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Felipe Balbi <balbi@ti.com>, "Poddar, Sourav" <sourav.poddar@ti.com>,
-        gregkh@linuxfoundation.org, khilman@ti.com, paul@pwsan.com,
-        tony@atomide.com, linux-kernel@vger.kernel.org,
-        santosh.shilimkar@ti.com, linux-serial@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alan@linux.intel.com
-Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not
- suspended.
-Message-ID: <20120925094815.GL9137@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com>
- <CAKdam572krJZcayRdJ_AciCUZH3LuzD9yoHenhxrB6j9xDZ6JQ@mail.gmail.com>
- <20120925083029.GG31374@n2100.arm.linux.org.uk>
- <20120925083118.GI9137@arwen.pp.htv.fi>
- <20120925091228.GI31374@n2100.arm.linux.org.uk>
- <20120925091112.GK9137@arwen.pp.htv.fi>
- <20120925092118.GJ31374@n2100.arm.linux.org.uk>
+	Tue, 25 Sep 2012 05:54:13 -0400
+Date: Tue, 25 Sep 2012 17:54:01 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, david@fromorbit.com,
+        stroetmann@ontolinux.com, diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v2 05/10] vfs: introduce one hash table
+Message-ID: <20120925095401.GA2456@ram-ThinkPad-T61>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+ <1348404995-14372-6-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AGBBLMjITsWHeOTZ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120925092118.GJ31374@n2100.arm.linux.org.uk>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1348404995-14372-6-git-send-email-zwu.kernel@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12092509-9360-0000-0000-00000B01F624
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 23, 2012 at 08:56:30PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+>   Adds a hash table structure which contains
+> a lot of hash list and is used to efficiently
+> look up the data temperature of a file or its
+> ranges.
+>   In each hash list of hash table, the hash node
+> will keep track of temperature info.
+> 
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> ---
+>  fs/hot_tracking.c            |   77 ++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/hot_tracking.h |   35 +++++++++++++++++++
+>  2 files changed, 110 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+> index fa89f70..5f96442 100644
+> --- a/fs/hot_tracking.c
+> +++ b/fs/hot_tracking.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/module.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/hardirq.h>
+> +#include <linux/hash.h>
+>  #include <linux/fs.h>
+>  #include <linux/blkdev.h>
+>  #include <linux/types.h>
+> @@ -24,6 +25,9 @@
 
---AGBBLMjITsWHeOTZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+...snip...
 
-Hi,
+> +/* Hash list heads for hot hash table */
+> +struct hot_hash_head {
+> +	struct hlist_head hashhead;
+> +	rwlock_t rwlock;
+> +	u32 temperature;
+> +};
+> +
+> +/* Nodes stored in each hash list of hash table */
+> +struct hot_hash_node {
+> +	struct hlist_node hashnode;
+> +	struct list_head node;
+> +	struct hot_freq_data *hot_freq_data;
+> +	struct hot_hash_head *hlist;
+> +	spinlock_t lock; /* protects hlist */
+> +
+> +	/*
+> +	 * number of references to this node
+> +	 * equals 1 (hashlist entry)
+> +	 */
+> +	struct kref refs;
+> +};
 
-On Tue, Sep 25, 2012 at 10:21:18AM +0100, Russell King - ARM Linux wrote:
-> On Tue, Sep 25, 2012 at 12:11:14PM +0300, Felipe Balbi wrote:
-> > On Tue, Sep 25, 2012 at 10:12:28AM +0100, Russell King - ARM Linux wrot=
-e:
-> > > On Tue, Sep 25, 2012 at 11:31:20AM +0300, Felipe Balbi wrote:
-> > > > On Tue, Sep 25, 2012 at 09:30:29AM +0100, Russell King - ARM Linux =
-wrote:
-> > > > > How is this happening?  I think that needs proper investigation -=
- or if
-> > > > > it's had more investigation, then the results needs to be include=
-d in
-> > > > > the commit description so that everyone can understand the issue =
-here.
-> > > > >=20
-> > > > > We should not be resuming a device which hasn't been suspended.  =
-Maybe
-> > > > > the runtime PM enable sequence is wrong, and that's what should b=
-e fixed
-> > > > > instead? =20
-> > > > >=20
-> > > > > This sequence in the probe() function:
-> > > > >=20
-> > > > >         pm_runtime_irq_safe(&pdev->dev);
-> > > > >         pm_runtime_enable(&pdev->dev);
-> > > > >         pm_runtime_get_sync(&pdev->dev);
-> > > > >=20
-> > > > > would enable runtime PM while the s/w state indicates that it's d=
-isabled,
-> > > > > and then that pm_runtime_get_sync() will want to resume the devic=
-e.  See
-> > > > > the section "5. Runtime PM Initialization, Device Probing and Rem=
-oval"
-> > > > > in Documentation/power/runtime_pm.txt, specifically the second pa=
-ragraph
-> > > > > of that section.
-> > > >=20
-> > > > that was tested. It worked in pandaboard but didn't work on beagleb=
-oard
-> > > > XM. Sourav tried to start a discussion about that, but it simply di=
-ed...
-> > > >=20
-> > > > In any case, pm_runtime_get_sync() in probe will always call
-> > > > runtime_resume callback, right ?
-> > >=20
-> > > Well, if the runtime PM state says it's suspended, and then you enable
-> > > runtime PM, the first call to pm_runtime_get_sync() will trigger a re=
-sume
-> > > attempt.  The patch description is complaining about resume events wi=
-thout
-> > > there being a preceding suspend event.
-> > >=20
-> > > This could well be why.
-> >=20
-> > that's most likely, of course. But should we cause a regression to
-> > beagleboard XM because of that ?
->=20
-> What would cause a regression on beagleboard XM?  I have not suggested
-> any change other than more investigation of the issue and a fuller patch
-> description - yet you're screaming (idiotically IMHO) that mere
-> investigation would break beagleboard.
->=20
-> Well, if it's _that_ fragile, that mere investigation of this issue by
-> someone elsewhere on the planet would break your beagleboard, maybe it
-> deserves to be broken!
+Dont see why you need yet another datastructure to hash the inode_item
+and the range_item into a hash list.  You can just add another
+hlist_node in the inode_item and range_item. This field can be then used
+to link into the corresponding hash list.
 
-why are you always so over the top like that ? This is just
-counter-productive to say the least.
+You can use the container_of() get to the inode_item or the range_item
+using the hlist_node field. 
 
-What I'm trying to say here, is that there might be a bug either on pm
-core or on OMAP3's implementation and I'd like to get input from Tony,
-Santosh, Paul, etc before going forward. Maybe it's something they've
-already been through, or maybe it rings a bell and points to somewhere
-we should look for.
+You can thus eliminate a lot of code.
 
-anyway, instead of feeding your ego, we can stop this discussion and let
-Sourav see what he can come up with.
+> +
+>  /* An item representing an inode and its access frequency */
+>  struct hot_inode_item {
+>  	/* node for hot_inode_tree rb_tree */
+> @@ -68,6 +93,8 @@ struct hot_inode_item {
+>  	spinlock_t lock;
+>  	/* prevents kfree */
+>  	struct kref refs;
+> +	/* hashlist node for this inode */
+> +	struct hot_hash_node *heat_node;
 
---=20
-balbi
+this can be just
+	struct hlist_node head_node; /* lookup hot_inode hash list */
 
---AGBBLMjITsWHeOTZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Use this field to link it into the corresponding hashlist.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+>  };
+> 
+this can be just 
+>  /*
+> @@ -91,6 +118,8 @@ struct hot_range_item {
+>  	spinlock_t lock;
+>  	/* prevents kfree */
+>  	struct kref refs;
+> +	/* hashlist node for this range */
+> +	struct hot_hash_node *heat_node;
 
-iQIcBAEBAgAGBQJQYX3fAAoJEIaOsuA1yqREVgwQAK71TpUFAgDu4L/tvpLdFoLD
-nSVtlCdLFYE91nr8op84NG2zbcpk/F67tCmAgdjL1bO4aZKYBnb0GC6oaoz0Gh94
-yswOSye4sH8zFDVEfvvJhgAbi+MxnBnjyqIbtCWQYvxSpA9KnQIE/NVlPn4sTELt
-4LZ5mmM7UruG1ciILCIeNuD3ADAzGwGadL61ym73Bvp9D43gAMdGsNX7AH3a89ee
-nJLYLdks8IHGwj4UlmuTirTWeKwa0Hc3NcyYrVufVH4jW1rzCgepZrIh6TZOi7G7
-brH4egrx9ATnI1E7HcHDOlgdMBu4+Cyo8tZJF8V5KQPUrcETQ092rUoggYuXeLvR
-9EuKlrPXjGB0/APCWiXM16NMq4poUN7AEg5v/iYpl67unrKWdB/EmuGHMUEze4vt
-ixNipbrhDSxW7NiP+C54llHG7260bQuPLO7JqbgnMe92VMFnR+mlHj4pE5LDlnJi
-pVl0RhgD0aA50h/SOAB5X8t+P2p3z0d9YU19WkSY5ukeK4ZEkJSZ9nZvpLQ2IWpm
-IhMRuqGqxDtJ5qeC6lELz4HVFdH6bti9UENP1lNek99KDB8P9w4rFA2UVlCbW8YO
-hpRbelP898V1XDoma4ymwFzHEvEIPHOUZUh9/TZmE+2ZL2LgmmR0Z4vfWkO899Oa
-AdgQJqBi0eXpV56cjvvC
-=H4tu
------END PGP SIGNATURE-----
+this can be just 
+	struct hlist_node head_node; /* lookup hot_range hash list */
 
---AGBBLMjITsWHeOTZ--
+
+>  };
+> 
+>  struct hot_info {
+> @@ -98,6 +127,12 @@ struct hot_info {
+> 
+>  	/* red-black tree that keeps track of fs-wide hot data */
+>  	struct hot_inode_tree hot_inode_tree;
+> +
+> +	/* hash map of inode temperature */
+> +	struct hot_hash_head heat_inode_hl[HEAT_HASH_SIZE];
+> +
+> +	/* hash map of range temperature */
+> +	struct hot_hash_head heat_range_hl[HEAT_HASH_SIZE];
+>  };
+> 
+>  #endif  /* _LINUX_HOTTRACK_H */
+
