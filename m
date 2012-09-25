@@ -1,101 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab2IYUD4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 16:03:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46415 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab2IYUDy (ORCPT
+	id S1757049Ab2IYUNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 16:13:17 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:60597 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab2IYUNP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 16:03:54 -0400
-Date: Tue, 25 Sep 2012 13:03:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/9] mm: compaction: Cache if a pageblock was scanned
- and no pages were isolated
-Message-Id: <20120925130352.0d60957a.akpm@linux-foundation.org>
-In-Reply-To: <20120925091207.GD11266@suse.de>
-References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
-	<1348224383-1499-9-git-send-email-mgorman@suse.de>
-	<20120921143656.60a9a6cd.akpm@linux-foundation.org>
-	<20120924093938.GZ11266@suse.de>
-	<20120924142644.06c38b80.akpm@linux-foundation.org>
-	<20120925091207.GD11266@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Sep 2012 16:13:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <506201AB.9060408@eldiabloenlosdetalles.net>
+References: <5061F84B.3030603@eldiabloenlosdetalles.net>
+	<506200FD.2060305@linux.vnet.ibm.com>
+	<506201AB.9060408@eldiabloenlosdetalles.net>
+Date: Tue, 25 Sep 2012 17:13:14 -0300
+Message-ID: <CAH0vN5KLUAJ_nknPcZmzx9T0ugi+HUk49wWvmK49gB49FkQGFw@mail.gmail.com>
+Subject: Re: Slow Resume with SSD
+From: Marcos Souza <marcos.souza.org@gmail.com>
+To: Carlos Moffat <carlos@eldiabloenlosdetalles.net>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, computersforpeace@gmail.com,
+        ming.m.lin@intel.com, Norbert Preining <preining@logic.at>,
+        jgarzik@pobox.com, Linux PM mailing list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Sep 2012 10:12:07 +0100
-Mel Gorman <mgorman@suse.de> wrote:
+Hi Carlos
 
-> First, we'd introduce a variant of get_pageblock_migratetype() that returns
-> all the bits for the pageblock flags and then helpers to extract either the
-> migratetype or the PG_migrate_skip. We already are incurring the cost of
-> get_pageblock_migratetype() so it will not be much more expensive than what
-> is already there. If there is an allocation or free within a pageblock that
-> as the PG_migrate_skip bit set then we increment a counter. When the counter
-> reaches some to-be-decided "threshold" then compaction may clear all the
-> bits. This would match the criteria of the clearing being based on activity.
-> 
-> There are four potential problems with this
-> 
-> 1. The logic to retrieve all the bits and split them up will be a little
->    convulated but maybe it would not be that bad.
-> 
-> 2. The counter is a shared-writable cache line but obviously it could
->    be moved to vmstat and incremented with inc_zone_page_state to offset
->    the cost a little.
-> 
-> 3. The biggested weakness is that there is not way to know if the
->    counter is incremented based on activity in a small subset of blocks.
-> 
-> 4. What should the threshold be?
-> 
-> The first problem is minor but the other three are potentially a mess.
-> Adding another vmstat counter is bad enough in itself but if the counter
-> is incremented based on a small subsets of pageblocks, the hint becomes
-> is potentially useless.
-> 
-> However, does this match what you have in mind or am I over-complicating
-> things?
+2012/9/25 Carlos Moffat <carlos@eldiabloenlosdetalles.net>:
+> Hi
+>
+> On 09/25/2012 12:07 PM, Srivatsa S. Bhat wrote:
+>>
+>> On 09/26/2012 12:00 AM, Carlos Moffat wrote:
+>>>
+>>> Hi,
+>>>
+>>> (please let me know if this is the wrong list to ask this)
+>>>
+>>> I have a Crucial M4 512 GB SSD installed on my Thinkpad X220 (Ubuntu
+>>> Precise). Overall this runs very nicely, but it takes 10+ seconds to
+>>> resume from suspend, apparently because some issue with the hardrive.
+>>> The only message I see while resuming is "COMRESET failed (errno=-16)".
+>>>
+>>> [52483.228615] ata1: link is slow to respond, please be patient (ready=0)
+>>> [52487.870616] ata1: COMRESET failed (errno=-16)
+>>> [52488.190222] ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+>>> [52488.190752] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+>>> succeeded
+>>> [52488.190754] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+>>> LOCK) filtered out
+>>> [52488.190755] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+>>> filtered out
+>>> [52488.191849] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+>>> succeeded
+>>> [52488.191855] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+>>> LOCK) filtered out
+>>> [52488.191860] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+>>> filtered out
+>>> [52488.192406] ata1.00: configured for UDMA/100
+>>> [52488.206298] sd 0:0:0:0: [sda] Starting disk
+>>> [52488.207334] Extended CMOS year: 2000
+>>> [52488.208335] PM: resume of devices complete after 10376.896 msecs
+>>> [52488.208552] PM: resume devices took 10.376 seconds
+>>>
+>>> The only relevant post I've found was in the crucial support site:
+>>>
+>>>
+>>> http://forums.crucial.com/t5/Solid-State-Drives-SSD/SOLVED-M4-CT512M4SSD1-7mm-512Gb-SSD-too-slow-when-laptop-wakes/td-p/102666
+>>>
+>>>
+>>> which suggested adding libata.force=nohrst as a boot option to get rid
+>>> of the problem.
+>>>
+>>> I tried that, but the laptop wouldn't suspend.
+>>>
+>>> Any ideas?
+>>>
+>>
+>> (Adding relevant people to CC)
+>>
+>> I recall seeing a similar problem getting fixed in mainline quite a long
+>> time ago (around v3.3 I think). Did you try the latest mainline kernel?
+>>
+>> Regards,
+>> Srivatsa S. Bhat
+>>
+>
+>
+> Yes, I'm using 3.5.4 (Ubuntu Mainline packages).
 
-Sounds complicated.
+I believe that the kernel that Ubuntu uses have some patches from
+them, am I right?
 
-Using wall time really does suck.  Are you sure you can't think of
-something more logical?
+Can you try the last stable kernel(vanilla) from mainline? Maybe
+downloading from the kernel.org and compiling.
 
-How would we demonstrate the suckage?  What would be the observeable downside of
-switching that 5 seconds to 5 hours?
+This can help us to track the error.
 
-> > > > > +	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
-> > > > > +		struct page *page;
-> > > > > +		if (!pfn_valid(pfn))
-> > > > > +			continue;
-> > > > > +
-> > > > > +		page = pfn_to_page(pfn);
-> > > > > +		if (zone != page_zone(page))
-> > > > > +			continue;
-> > > > > +
-> > > > > +		clear_pageblock_skip(page);
-> > > > > +	}
-> > > > 
-> > > > What's the worst-case loop count here?
-> > > > 
-> > > 
-> > > zone->spanned_pages >> pageblock_order
-> > 
-> > What's the worst-case value of (zone->spanned_pages >> pageblock_order) :)
-> 
-> Lets take an unlikely case - 128G single-node machine. That loop count
-> on x86-64 would be 65536. It'll be fast enough, particularly in this
-> path.
+Thanks!
 
-That could easily exceed a millisecond.  Can/should we stick a
-cond_resched() in there?
+> Carlos
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Att,
+
+Marcos Paulo de Souza
+Acadêmico de Ciencia da Computação - FURB - SC
+Github: https://github.com/marcosps/
+"Uma vida sem desafios é uma vida sem razão"
+"A life without challenges, is a non reason life"
