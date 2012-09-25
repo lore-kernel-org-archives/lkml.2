@@ -1,158 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab2IYPHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 11:07:18 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:43130 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756889Ab2IYPHJ (ORCPT
+	id S1757016Ab2IYPHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 11:07:49 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:31269 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab2IYPHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 11:07:09 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 6/6] cputime: Make finegrained irqtime accounting generally available
-Date: Tue, 25 Sep 2012 17:06:07 +0200
-Message-Id: <1348585567-2925-7-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1348585567-2925-1-git-send-email-fweisbec@gmail.com>
-References: <1348585567-2925-1-git-send-email-fweisbec@gmail.com>
+	Tue, 25 Sep 2012 11:07:46 -0400
+Message-ID: <5061C8A2.1020605@oracle.com>
+Date: Tue, 25 Sep 2012 10:07:14 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120910 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Nico Schottelius <nico-kernel20120920@schottelius.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Dave Kleikamp <shaggy@kernel.org>,
+        jfs-discussion@lists.sourceforge.net
+Subject: Re: Out of memory on 3.5 kernels
+References: <505B1FA0.6030100@broadcom.com> <20120921194931.GA732@schottelius.org> <alpine.DEB.2.00.1209241538310.6356@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1209241538310.6356@chino.kir.corp.google.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no known reason for this option to be unavailable on other
-archs than x86. They just need to call enable_sched_clock_irqtime()
-if they have a sufficiently finegrained clock to make it working.
+On 09/24/2012 05:43 PM, David Rientjes wrote:
+> On Fri, 21 Sep 2012, Nico Schottelius wrote:
+> 
+>>  Active / Total Objects (% used)    : 1165130 / 1198087 (97.2%)
+>>  Active / Total Slabs (% used)      : 81027 / 81027 (100.0%)
+>>  Active / Total Caches (% used)     : 69 / 101 (68.3%)
+>>  Active / Total Size (% used)       : 1237249.81K / 1246521.94K (99.3%)
+>>  Minimum / Average / Maximum Object : 0.01K / 1.04K / 15.23K
+>>
+>>   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   
+>> 993607 993607 100%    1.21K  75358       26   2411456K jfs_ip
+> 
+> Well that doesn't look good.  100% of the inode cache for jfs are being 
+> used which either means
+> 
+>  - there's a memory leak, or
 
-Move it to the general option and let the user choose between
-it and pure tick based or virtual cputime accounting.
+maybe a missing iput() somewhere?
 
-Note that virtual cputime accounting already performs a finegrained
-irqtime accounting. CONFIG_IRQ_TIME_ACCOUNTING is a kind of middle ground
-between tick and virtual based accounting. So CONFIG_IRQ_TIME_ACCOUNTING
-and CONFIG_VIRT_CPU_ACCOUNTING are mutually exclusive choices.
+Nico, does unmounting the usb drive after killing the backup clean up
+the jfs inode cache?
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Russell King <linux@arm.linux.org.uk>
----
- arch/Kconfig     |    6 ++++++
- arch/x86/Kconfig |   12 +-----------
- init/Kconfig     |   30 +++++++++++++++++++++++++++++-
- 3 files changed, 36 insertions(+), 12 deletions(-)
+>  - there's some sort of throttling issue in jfs.
+> 
+> And those objects are consuming ~2.3GB of slab on your 4GB machine and 
+> seems to only have occurred between v3.4.2 to v3.5.3.
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index f78de57..101c31a 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -284,4 +284,10 @@ config SECCOMP_FILTER
- config HAVE_VIRT_CPU_ACCOUNTING
- 	bool
- 
-+config HAVE_IRQ_TIME_ACCOUNTING
-+	bool
-+	help
-+	  Archs need to ensure they use a high enough resolution clock to
-+	  support irq time accounting and then call enable_sched_clock_irqtime().
-+
- source "kernel/gcov/Kconfig"
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 8ec3a1a..b86833a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -97,6 +97,7 @@ config X86
- 	select KTIME_SCALAR if X86_32
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select HAVE_IRQ_TIME_ACCOUNTING
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-@@ -796,17 +797,6 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
--config IRQ_TIME_ACCOUNTING
--	bool "Fine granularity task level IRQ time accounting"
--	default n
--	---help---
--	  Select this option to enable fine granularity task irq time
--	  accounting. This is done by reading a timestamp on each
--	  transitions between softirq and hardirq state, so there can be a
--	  small performance impact.
--
--	  If in doubt, say N here.
--
- source "kernel/Kconfig.preempt"
- 
- config X86_UP_APIC
-diff --git a/init/Kconfig b/init/Kconfig
-index 2c5aa34..1862c68 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -326,10 +326,25 @@ source "kernel/time/Kconfig"
- 
- menu "CPU/Task time and stats accounting"
- 
-+choice
-+	prompt "Cputime accounting"
-+	default TICK_CPU_ACCOUNTING if !PPC64
-+	default VIRT_CPU_ACCOUNTING if PPC64
-+
-+# Kind of a stub config for the pure tick based cputime accounting
-+config TICK_CPU_ACCOUNTING
-+	bool "Simple tick based cputime accounting"
-+	depends on !S390
-+	help
-+	  This is the basic tick based cputime accounting that maintains
-+	  statistics about user, system and idle time spent on per jiffies
-+	  granularity.
-+
-+	  If unsure, say Y.
-+
- config VIRT_CPU_ACCOUNTING
- 	bool "Deterministic task and CPU time accounting"
- 	depends on HAVE_VIRT_CPU_ACCOUNTING
--	default y if PPC64
- 	help
- 	  Select this option to enable more accurate task and CPU time
- 	  accounting.  This is done by reading a CPU counter on each
-@@ -339,6 +354,19 @@ config VIRT_CPU_ACCOUNTING
- 	  this also enables accounting of stolen time on logically-partitioned
- 	  systems.
- 
-+config IRQ_TIME_ACCOUNTING
-+	bool "Fine granularity task level IRQ time accounting"
-+	depends on HAVE_IRQ_TIME_ACCOUNTING
-+	help
-+	  Select this option to enable fine granularity task irq time
-+	  accounting. This is done by reading a timestamp on each
-+	  transitions between softirq and hardirq state, so there can be a
-+	  small performance impact.
-+
-+	  If in doubt, say N here.
-+
-+endchoice
-+
- config BSD_PROCESS_ACCT
- 	bool "BSD Process Accounting"
- 	help
--- 
-1.7.5.4
+Almost nothing in jfs has changed between these releases. Only this:
 
+vfs: Rename end_writeback() to clear_inode()
+
+> It would be interesting to see what kmemleak would tell us.
+> 
+> Adding Dave Kleikamp to the cc.
+> 
