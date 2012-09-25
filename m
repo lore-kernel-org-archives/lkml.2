@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab2IYHZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 03:25:43 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63767 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab2IYHZl convert rfc822-to-8bit (ORCPT
+	id S1753459Ab2IYHby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 03:31:54 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55260 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab2IYHbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 03:25:41 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 6.1 \(1498\))
-Subject: Re: RFE: tty color features
-From: Dave Yost <Dave@Yost.com>
-In-Reply-To: <alpine.LNX.2.01.1209250901040.25195@nerf07.vanv.qr>
-Date: Tue, 25 Sep 2012 00:25:36 -0700
-Cc: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DF2CBE42-E936-4072-BA09-0764A8293941@Yost.com>
-References: <D1425869-534B-4AD9-BF2E-956A76E29894@Yost.com> <alpine.LNX.2.01.1209250901040.25195@nerf07.vanv.qr>
-To: Jan Engelhardt <jengelh@inai.de>
-X-Mailer: Apple Mail (2.1498)
+	Tue, 25 Sep 2012 03:31:53 -0400
+X-AuditID: 9c930179-b7bfcae0000020b4-a9-50615de7aec6
+Date: Tue, 25 Sep 2012 16:34:57 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/9] mm: compaction: Abort compaction loop if lock is
+ contended or run too long
+Message-ID: <20120925073456.GL13234@bbox>
+References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
+ <1348224383-1499-5-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348224383-1499-5-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2012-09-25, at 12:02 AM, Jan Engelhardt <jengelh@inai.de> wrote:
-
-> On Tuesday 2012-09-25 08:01, Dave Yost wrote:
+On Fri, Sep 21, 2012 at 11:46:18AM +0100, Mel Gorman wrote:
+> From: Shaohua Li <shli@fusionio.com>
 > 
->> It would be nice to be able to specify fg/bg colors at the tty level, 
->> so that echoed characters can be colorized.
+> Changelog since V2
+> o Fix BUG_ON triggered due to pages left on cc.migratepages
+> o Make compact_zone_order() require non-NULL arg `contended'
 > 
-> The tty layer does not know what $TERM is used, so it cannot reliably 
-> produce any codes.
+> Changelog since V1
+> o only abort the compaction if lock is contended or run too long
+> o Rearranged the code by Andrea Arcangeli.
+> 
+> isolate_migratepages_range() might isolate no pages if for example when
+> zone->lru_lock is contended and running asynchronous compaction. In this
+> case, we should abort compaction, otherwise, compact_zone will run a
+> useless loop and make zone->lru_lock is even contended.
+> 
+> [minchan@kernel.org: Putback pages isolated for migration if aborting]
+> [akpm@linux-foundation.org: compact_zone_order requires non-NULL arg contended]
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Shaohua Li <shli@fusionio.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-The driver will reliably produce the codes it has been told to produce by the shell or by the user tells, using ioctl or stty commands.
-
-This reminds me of a “D’Oh!” moment aeons ago, when I suggested to Mark Horton that TERM should not be an environment variable. It should be a settable property of the tty. Mark agreed, but neither he nor I felt like going to bat for it back then. This architectural mistake should still be fixed, IMHO. Perhaps the modern world of 2012 would be able to absorb this change, if implemented properly.
-
-BTW, I did significant work on the Fortune Systems tty driver in (cough) 1982-1983.
-
-* Horton, Mark. "The New Curses and Terminfo Package". USENIX Conference Proceedings. Summer 1982. Boston, MA: USENIX. pp. 79–91
-
-> But you can edit GNU screen because it has that 
-> knowledge and the fds.
-
+-- 
+Kind regards,
+Minchan Kim
