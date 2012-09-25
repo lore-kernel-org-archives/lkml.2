@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab2IYKoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:44:11 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:54840 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab2IYKoI (ORCPT
+	id S1755095Ab2IYKp0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:45:26 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34388 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865Ab2IYKpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:44:08 -0400
+	Tue, 25 Sep 2012 06:45:25 -0400
+Date: Tue, 25 Sep 2012 03:45:19 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf test: Fix build failure
+Message-ID: <20120925104519.GA14405@ghostprotocols.net>
+References: <1348539628-3821-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <5061882D.2080804@samsung.com>
-References: <1348556335-14686-1-git-send-email-sachin.kamat@linaro.org>
-	<5061882D.2080804@samsung.com>
-Date: Tue, 25 Sep 2012 16:14:07 +0530
-Message-ID: <CAK9yfHwJ5LASrheAuW4CLm8feceS6891tzsnAsBENNkzMzNJ+A@mail.gmail.com>
-Subject: Re: [PATCH] extcon: Fix return value in extcon_register_interest()
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1348539628-3821-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2012 16:02, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> On 09/25/2012 03:58 PM, Sachin Kamat wrote:
->
->> Return the value obtained from extcon_find_cable_index()
->> instead of -ENODEV.
->>
->> Fixes the following smatch info:
->> drivers/extcon/extcon-class.c:478 extcon_register_interest() info:
->> why not propagate 'obj->cable_index' from extcon_find_cable_index()
->> instead of -19?
->>
->> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
->> ---
->>  drivers/extcon/extcon-class.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
->> index 946a318..e996800 100644
->> --- a/drivers/extcon/extcon-class.c
->> +++ b/drivers/extcon/extcon-class.c
->> @@ -475,7 +475,7 @@ int extcon_register_interest(struct extcon_specific_cable_nb *obj,
->>
->>       obj->cable_index = extcon_find_cable_index(obj->edev, cable_name);
->>       if (obj->cable_index < 0)
->> -             return -ENODEV;
->> +             return obj->cable_index;
->>
->>       obj->user_nb = nb;
->>
->
->
-> I agree.
-> But, if extcon_register_interest() return directly 'obj-cable_index' value
-> when extcon_find_cable_index() return -EINVAL, it would spoil readability
-> of extcon_register_interest() function. So, I think we can make it as
-> following
-> patch  a little better.
+Em Tue, Sep 25, 2012 at 11:20:28AM +0900, Namhyung Kim escreveu:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> The commit 6a6cd11d4e57 ("perf test: Add test for the sched tracepoint
+> format fields") added following build error:
+> 
+>   CC builtin-test.o
+> builtin-test.c: In function ‘perf_evsel__test_field’:
+> builtin-test.c:1216:6: error: variable ‘ret’ set but not used [-Werror=unused-but-set-variable]
+> builtin-test.c: In function ‘perf_evsel__tp_sched_test’:
+> builtin-test.c:1242:6: error: variable ‘ret’ set but not used [-Werror=unused-but-set-variable]
+> cc1: all warnings being treated as errors
+> make: *** [builtin-test.o] Error 1
 
-Ok. I will re-send this with this change.
 
->
+Interesting :-\
+
+[acme@sandy linux]$ gcc --version
+gcc (GCC) 4.4.6 20120305 (Red Hat 4.4.6-4)
+
+Didn't catch this one...
+
+Thanks,
+
+- Arnaldo
+
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
-> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-> index 936580b..078e6a5 100644
-> --- a/drivers/extcon/extcon-class.c
-> +++ b/drivers/extcon/extcon-class.c
-> @@ -468,7 +468,7 @@ int extcon_register_interest(struct
-> extcon_specific_cable_nb *obj,
->
->         obj->cable_index = extcon_find_cable_index(obj->edev, cable_name);
->         if (obj->cable_index < 0)
-> -               return -ENODEV;
-> +               return -EINVAL;
->
->         obj->user_nb = nb;
->
->
->
-> Thanks,
-> Chanwoo Choi
-
-
-
--- 
-With warm regards,
-Sachin
+>  tools/perf/builtin-test.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+> index 32caf13cfe01..78b47a75a7c9 100644
+> --- a/tools/perf/builtin-test.c
+> +++ b/tools/perf/builtin-test.c
+> @@ -1233,7 +1233,7 @@ static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
+>  		ret = -1;
+>  	}
+>  
+> -	return 0;
+> +	return ret;
+>  }
+>  
+>  static int perf_evsel__tp_sched_test(void)
+> @@ -1286,7 +1286,7 @@ static int perf_evsel__tp_sched_test(void)
+>  	if (perf_evsel__test_field(evsel, "target_cpu", 4, true))
+>  		ret = -1;
+>  
+> -	return 0;
+> +	return ret;
+>  }
+>  
+>  static struct test {
+> -- 
+> 1.7.11.4
