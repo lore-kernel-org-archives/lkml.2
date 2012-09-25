@@ -1,163 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab2IYKVN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 06:21:13 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:44012 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab2IYKVL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 06:21:11 -0400
-Date: Tue, 25 Sep 2012 18:20:59 +0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, david@fromorbit.com,
-        stroetmann@ontolinux.com, diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v2 01/10] vfs: introduce private rb structures
-Message-ID: <20120925102059.GB2456@ram-ThinkPad-T61>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
- <1348404995-14372-2-git-send-email-zwu.kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348404995-14372-2-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092510-2398-0000-0000-00000B643D0E
-X-IBM-ISS-SpamDetectors: ISC=
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00177134; UDB=6.00040110; UTC=2012-09-25
- 10:21:09
+	id S1754745Ab2IYKWE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 06:22:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18217 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751771Ab2IYKWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 06:22:02 -0400
+Date: Tue, 25 Sep 2012 06:21:55 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
+Message-ID: <20120925062155.57360ee2@tlielax.poochiereds.net>
+In-Reply-To: <20120925152731.52528dca@notabene.brown>
+References: <20120829162527.GA3635@NickAndBarb.net>
+	<20120829151641.20cde4bc@corrin.poochiereds.net>
+	<20120925152731.52528dca@notabene.brown>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/aeYNxA1nSwnQnXAtu+TfonA"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 23, 2012 at 08:56:26PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
->   One root structure hot_info is defined, is hooked
-> up in super_block, and will be used to hold rb trees
-> root, hash list root and some other information, etc.
->   Adds hot_inode_tree struct to keep track of
-> frequently accessed files, and be keyed by {inode, offset}.
-> Trees contain hot_inode_items representing those files
-> and ranges.
->   Having these trees means that vfs can quickly determine the
-> temperature of some data by doing some calculations on the
-> hot_freq_data struct that hangs off of the tree item.
->   Define two items hot_inode_item and hot_range_item,
-> one of them represents one tracked file
-> to keep track of its access frequency and the tree of
-> ranges in this file, while the latter represents
-> a file range of one inode.
->   Each of the two structures contains a hot_freq_data
-> struct with its frequency of access metrics (number of
-> {reads, writes}, last {read,write} time, frequency of
-> {reads,writes}).
->   Also, each hot_inode_item contains one hot_range_tree
-> struct which is keyed by {inode, offset, length}
-> and used to keep track of all the ranges in this file.
-> 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> ---
-> +
-..snip..
+--Sig_/aeYNxA1nSwnQnXAtu+TfonA
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> +/* A tree that sits on the hot_info */
-> +struct hot_inode_tree {
-> +	struct rb_root map;
-> +	rwlock_t lock;
-> +};
-> +
-> +/* A tree of ranges for each inode in the hot_inode_tree */
-> +struct hot_range_tree {
-> +	struct rb_root map;
-> +	rwlock_t lock;
-> +};
+On Tue, 25 Sep 2012 15:27:31 +1000
+NeilBrown <neilb@suse.de> wrote:
 
-Can as well have a generic datastructure called hot_tree instead
-of having two different datastructure which basically are the same.
+> On Wed, 29 Aug 2012 15:16:41 -0700 Jeff Layton <jlayton@redhat.com> wrote:
+>=20
+>=20
+> > This stack trace comes from cifs, not nfs.
+>=20
+> It's quite easy to trigger on NFS too.
+>=20
+>  mount server:/path /mnt; exec 3>& /mnt/foo ; rm /mnt/foo; rm /mnt/.nfs* ;
+>  exec 3>&-
+>=20
+> [634155.004438] WARNING:
+> at /home/abuild/rpmbuild/BUILD/kernel-desktop-3.5.0/lin [634155.004442]
+> Hardware name: Latitude E6510 [634155.004577]  crc_itu_t crc32c_intel
+> snd_hwdep snd_pcm snd_timer snd soundcor [634155.004609] Pid: 13402, comm:
+> bash Tainted: G        W    3.5.0-36-desktop # [634155.004611] Call Trace:
+> [634155.004630]  [<ffffffff8100444a>] dump_trace+0xaa/0x2b0
+> [634155.004641]  [<ffffffff815a23dc>] dump_stack+0x69/0x6f
+> [634155.004653]  [<ffffffff81041a0b>] warn_slowpath_common+0x7b/0xc0
+> [634155.004662]  [<ffffffff811832e4>] drop_nlink+0x34/0x40
+> [634155.004687]  [<ffffffffa05bb6c3>] nfs_dentry_iput+0x33/0x70 [nfs]
+> [634155.004714]  [<ffffffff8118049e>] dput+0x12e/0x230
+> [634155.004726]  [<ffffffff8116b230>] __fput+0x170/0x230
+> [634155.004735]  [<ffffffff81167c0f>] filp_close+0x5f/0x90
+> [634155.004743]  [<ffffffff81167cd7>] sys_close+0x97/0x100
+> [634155.004754]  [<ffffffff815c3b39>] system_call_fastpath+0x16/0x1b
+> [634155.004767]  [<00007f2a73a0d110>] 0x7f2a73a0d10f
+>=20
+> Is this suitable for -stable?  It seems like it is just a harmless warnin=
+g.
+>=20
+> NeilBrown
+>=20
+>=20
+> Subject: NFS: avoid warning from nfs_drop_nlink
+>=20
+> If you remove a file which is open, NFS will 'silly-rename' it to a
+> hidden file.
+> If you then remove that hidden file, and then close the open file,
+> then nfs_dentry_iput will perform an extra drop_nlink().
+> Since 3.3-rc1, this has produced a warning.
+> The simplest way to suppress it is to use "nfs_drop_nlink" which
+> checks for i_nlink being zero.
+>=20
+> Signed-off-by: NeilBrown <neilb@suse.de>
+>=20
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> index 627f108..268af03 100644
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -1174,7 +1174,7 @@ static void nfs_dentry_iput(struct dentry *dentry,
+> struct inode *inode) NFS_I(inode)->cache_validity |=3D NFS_INO_INVALID_DA=
+TA;
+> =20
+>  	if (dentry->d_flags & DCACHE_NFSFS_RENAMED) {
+> -		drop_nlink(inode);
+> +		nfs_drop_nlink(inode);
+>  		nfs_complete_unlink(dentry, inode);
+>  	}
+>  	iput(inode);
 
-> +
-> +/* A frequency data struct holds values that are used to
-> + * determine temperature of files and file ranges. These structs
-> + * are members of hot_inode_item and hot_range_item
-> + */
-> +struct hot_freq_data {
-> +	struct timespec last_read_time;
-> +	struct timespec last_write_time;
-> +	u32 nr_reads;
-> +	u32 nr_writes;
-> +	u64 avg_delta_reads;
-> +	u64 avg_delta_writes;
-> +	u8 flags;
-> +	u32 last_temperature;
-> +};
-> +
-> +/* An item representing an inode and its access frequency */
-> +struct hot_inode_item {
-> +	/* node for hot_inode_tree rb_tree */
-> +	struct rb_node rb_node;
-> +	/* tree of ranges in this inode */
-> +	struct hot_range_tree hot_range_tree;
-> +	/* frequency data for this inode */
-> +	struct hot_freq_data hot_freq_data;
-> +	/* inode number, copied from inode */
-> +	unsigned long i_ino;
-> +	/* used to check for errors in ref counting */
-> +	u8 in_tree;
-> +	/* protects hot_freq_data, i_no, in_tree */
-> +	spinlock_t lock;
-> +	/* prevents kfree */
-> +	struct kref refs;
-> +};
-> +
-> +/*
-> + * An item representing a range inside of an inode whose frequency
-> + * is being tracked
-> + */
-> +struct hot_range_item {
-> +	/* node for hot_range_tree rb_tree */
-> +	struct rb_node rb_node;
-> +	/* frequency data for this range */
-> +	struct hot_freq_data hot_freq_data;
-> +	/* the hot_inode_item associated with this hot_range_item */
-> +	struct hot_inode_item *hot_inode;
-> +	/* starting offset of this range */
-> +	u64 start;
-> +	/* length of this range */
-> +	u64 len;
-> +	/* used to check for errors in ref counting */
-> +	u8 in_tree;
-> +	/* protects hot_freq_data, start, len, and in_tree */
-> +	spinlock_t lock;
-> +	/* prevents kfree */
-> +	struct kref refs;
-> +};
+That looks reasonable to me. I agree that it's a harmless warning but
+it looks scary to users...
 
-might as well have just one generic datastructure called hot_item with 
-all the common fields and then have 
+Just for the sake of argument though, I wonder whether NFS or CIFS has
+any business manipulating the nlink count like this. It seems like it's
+possible to end up with these manipulations racing with attribute
+updates.
 
-	struct hot_inode_item  {
-		struct hot_item hot_inode;
-		struct hot_tree hot_range_tree;
-		unsigned long i_ino;
-	}
+Would it make more sense to replace these drop_nlink calls with a call
+to mark the attributes as invalid? We would need to come up with a new
+way to deal with drop_inode however...
 
-	and 
+In any case, you can add this to the patch above if you like:
 
-	struct hot_range_item {
-		struct hot_item hot_range;
-		u64 start;
-		u64 len;	/* length of this range */
-	}
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
 
-This should help you eliminate some duplicate code as well.
+--Sig_/aeYNxA1nSwnQnXAtu+TfonA
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-RP
+iQIcBAEBAgAGBQJQYYXDAAoJEAAOaEEZVoIVrxIQAMVPVKc3vXIu21QZYzQ4/6Ha
+5yf4tEIVvwrJTzHoptmsBlvtR5n0L4pkS+hOU+O837NIfvoop9E0D4dRqKCZ8Jeh
+3ONSRkrK9BF5sBqCvVhbDoCvuyFkCM16SUyIjyGUomOLeZRqzfnsHqO3/nwf6XwB
+RBeZ4BHfRZb9pdGw9eC5hJJez5iDi7APQEhu+2y1WKASYcBr/od6Bb4qqbNWXac+
+ik5pA6ujK/5xkSwWdDTnjQkOE0RPDDMTB2pouDDTx41EbB36yxz4/M12rFfVIWS7
+0uaCVHLopcO753aUjpWZzwrlTG64BDmgQhQpTyc4g2jHGRxeXiCuCANrSp5spiAf
+n/66S5juITSxTszdY9nLx/+n1yBzVgQcN4o97iZprLU/m5uva2XeMW/VCJpcRhc8
+7wAwconHKPh1W63rE8qOUMDSDGnJ1z5eP8UnKnMkdWZMxBtaxXMVCO35CQScis2I
+svWG2ubYMrAy6POYuBBLq2NLzOZpF7g8d/91qaIoTFDZZdbN4aQrDhQaPgQ2pO0d
+e1+YTYAFnMMaXP/lqxU179ll5vmRE4Hbtgc7YE53EKzNB9BPUMqfRV6Il8JP7mVe
+GVXf2e4aCG4c6odA23TuXMuFefgjiqa+qX+xJJ9o+r/Mh8+fuVjoAbkHbXyJovr+
+B9BERV1W+mdM+J35HlkA
+=1uo2
+-----END PGP SIGNATURE-----
 
+--Sig_/aeYNxA1nSwnQnXAtu+TfonA--
