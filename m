@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab2IYL5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 07:57:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37831 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab2IYL5p (ORCPT
+	id S1755992Ab2IYL5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 07:57:50 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:37063 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab2IYL5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 07:57:45 -0400
+	Tue, 25 Sep 2012 07:57:47 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, drbd-dev@lists.linbit.com
-Subject: [PATCH] drbd: use copy_highpage
-Date: Tue, 25 Sep 2012 20:57:01 +0900
-Message-Id: <1348574222-3512-1-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH] gpu/drm/ttm: use copy_highpage
+Date: Tue, 25 Sep 2012 20:57:02 +0900
+Message-Id: <1348574222-3512-2-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <n>
+In-Reply-To: <1348574222-3512-1-git-send-email-akinobu.mita@gmail.com>
 References: <n>
+ <1348574222-3512-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,30 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use copy_highpage() to copy from one page to another.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: drbd-dev@lists.linbit.com
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
 ---
- drivers/block/drbd/drbd_bitmap.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/gpu/drm/ttm/ttm_tt.c | 16 ++--------------
+ 1 file changed, 2 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_bitmap.c b/drivers/block/drbd/drbd_bitmap.c
-index d4d3c81..ec7f76c 100644
---- a/drivers/block/drbd/drbd_bitmap.c
-+++ b/drivers/block/drbd/drbd_bitmap.c
-@@ -975,13 +975,8 @@ static void bm_page_io_async(struct bm_aio_ctx *ctx, int page_nr, int rw) __must
- 	bm_set_page_unchanged(b->bm_pages[page_nr]);
+diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+index fa09daf..11c9369 100644
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
+@@ -290,8 +290,6 @@ int ttm_tt_swapin(struct ttm_tt *ttm)
+ 	struct file *swap_storage;
+ 	struct page *from_page;
+ 	struct page *to_page;
+-	void *from_virtual;
+-	void *to_virtual;
+ 	int i;
+ 	int ret = -ENOMEM;
  
- 	if (ctx->flags & BM_AIO_COPY_PAGES) {
--		void *src, *dest;
- 		page = mempool_alloc(drbd_md_io_page_pool, __GFP_HIGHMEM|__GFP_WAIT);
--		dest = kmap_atomic(page);
--		src = kmap_atomic(b->bm_pages[page_nr]);
--		memcpy(dest, src, PAGE_SIZE);
--		kunmap_atomic(src);
--		kunmap_atomic(dest);
-+		copy_highpage(page, b->bm_pages[page_nr]);
- 		bm_store_page_idx(page, page_nr);
- 	} else
- 		page = b->bm_pages[page_nr];
+@@ -311,11 +309,7 @@ int ttm_tt_swapin(struct ttm_tt *ttm)
+ 			goto out_err;
+ 
+ 		preempt_disable();
+-		from_virtual = kmap_atomic(from_page);
+-		to_virtual = kmap_atomic(to_page);
+-		memcpy(to_virtual, from_virtual, PAGE_SIZE);
+-		kunmap_atomic(to_virtual);
+-		kunmap_atomic(from_virtual);
++		copy_highpage(to_page, from_page);
+ 		preempt_enable();
+ 		page_cache_release(from_page);
+ 	}
+@@ -336,8 +330,6 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
+ 	struct file *swap_storage;
+ 	struct page *from_page;
+ 	struct page *to_page;
+-	void *from_virtual;
+-	void *to_virtual;
+ 	int i;
+ 	int ret = -ENOMEM;
+ 
+@@ -367,11 +359,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
+ 			goto out_err;
+ 		}
+ 		preempt_disable();
+-		from_virtual = kmap_atomic(from_page);
+-		to_virtual = kmap_atomic(to_page);
+-		memcpy(to_virtual, from_virtual, PAGE_SIZE);
+-		kunmap_atomic(to_virtual);
+-		kunmap_atomic(from_virtual);
++		copy_highpage(to_page, from_page);
+ 		preempt_enable();
+ 		set_page_dirty(to_page);
+ 		mark_page_accessed(to_page);
 -- 
 1.7.11.4
 
