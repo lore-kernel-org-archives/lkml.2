@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab2IYOAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 10:00:05 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:32894
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751791Ab2IYOAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 10:00:03 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
-X-WSS-ID: 0MAWS6I-01-K1R-02
-X-M-MSG: 
-Date: Tue, 25 Sep 2012 15:59:05 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg
- call-back
-Message-ID: <20120925135905.GC2505@amd.com>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
- <20120826184140.GI3690@breakpoint.cc>
+	id S1753365Ab2IYOBU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 10:01:20 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:51005 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752132Ab2IYOBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 10:01:18 -0400
+Message-ID: <5061B852.7070902@parallels.com>
+Date: Tue, 25 Sep 2012 17:57:38 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120826184140.GI3690@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 06/16] memcg: infrastructure to match an allocation
+ to the right cache
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-7-git-send-email-glommer@parallels.com> <20120921183217.GH7264@google.com> <50601DEB.10705@parallels.com> <20120924175619.GD7694@google.com>
+In-Reply-To: <20120924175619.GD7694@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 08:41:40PM +0200, Sebastian Andrzej Siewior wrote:
-> On Mon, Aug 20, 2012 at 03:56:03PM +0200, Joerg Roedel wrote:
-> > This call-back points to the right function for initializing
-> > the msi_msg structure.
+On 09/24/2012 09:56 PM, Tejun Heo wrote:
+> Hello, Glauber.
 > 
-> So you pull out the compose_remapped_msi_msg() out of msi_compose_msg() and
-> put this in a callback. Such information is good since you don't see this in
-> diff and even --patience does not help here.
-
-Added that to the commit message.
-
+> On Mon, Sep 24, 2012 at 12:46:35PM +0400, Glauber Costa wrote:
+>>>> +#ifdef CONFIG_MEMCG_KMEM
+>>>> +	/* Slab accounting */
+>>>> +	struct kmem_cache *slabs[MAX_KMEM_CACHE_TYPES];
+>>>> +#endif
+>>>
+>>> Bah, 400 entry array in struct mem_cgroup.  Can't we do something a
+>>> bit more flexible?
+>>>
+>>
+>> I guess. I still would like it to be an array, so we can easily access
+>> its fields. There are two ways around this:
+>>
+>> 1) Do like the events mechanism and allocate this in a separate
+>> structure. Add a pointer chase in the access, and I don't think it helps
+>> much because it gets allocated anyway. But we could at least
+>> defer it to the time when we limit the cache.
 > 
-> > --- a/drivers/iommu/irq_remapping.c
-> > +++ b/drivers/iommu/irq_remapping.c
-> > @@ -242,10 +243,12 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
-> >  			      unsigned int irq, unsigned int dest,
-> >  			      struct msi_msg *msg, u8 hpet_id)
-> >  {
-> > -	if (!remap_ops || !remap_ops->compose_msi_msg)
-> > -		return;
-> > +	struct irq_cfg *cfg = irq_get_chip_data(irq);
-> >  
-> > -	remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
-> > +	if (cfg && !irq_remapped(cfg))
-> > +		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
-> > +	else if (remap_ops && remap_ops->compose_msi_msg)
-> > +		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+> Start at some reasonable size and then double it as usage grows?  How
+> many kmem_caches do we typically end up using?
 > 
-> cfg _has_ to be valid here and if it is not than you shouldn't assume that
-> this irq is remapped.
-> Also remap_ops has to be set here. And ->compose_msi_msg() should be set
-> here as well. Would it make sense if it is not set?
 
-I removed the check for cfg, but I am still conservative on calling
-function pointers without checking them first.
-
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+So my Fedora box here, recently booted on a Fedora kernel, will have 111
+caches. How would 150 sound to you?
