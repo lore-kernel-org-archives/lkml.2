@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab2IYRFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 13:05:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57751 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756654Ab2IYRFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 13:05:31 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi.kleen@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pagemap: fix wrong KPF_THP on slab pages
-Date: Tue, 25 Sep 2012 13:05:15 -0400
-Message-Id: <1348592715-31006-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <CAHGf_=rbyk1UFGwyQ0BSN3qM_K+5J3Q-Aj=xjNDZFrTrZ6a3dw@mail.gmail.com>
+	id S1757512Ab2IYRK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 13:10:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57770 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757357Ab2IYRK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 13:10:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] ARM: ux500: Fix initialisation order for UIBs
+Date: Tue, 25 Sep 2012 17:10:16 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com
+References: <1348585812-32073-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1348585812-32073-1-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209251710.17014.arnd@arndb.de>
+X-Provags-ID: V02:K0:55XppzXL/qGCNIygdWVY+Qa7ZDFDv83ecw3ObysZjcS
+ CgPVy2HYSa0qVaM7+LsymDSbFHV0m6f9I8ElWP7S6hnhHDnWKy
+ ydu6Has3mC7Y9Q1NgxFt2/WSHcQdYIMyjtcD8TDqi7023yQzF/
+ NBxmbb2xqxe+YIe6wQkQmXSvj499TPFbprLBXzPzT8VQ5VqtKr
+ xZvRii4D9Fh64V999D1dN6MeiFUKPrG/z0hOigBXJqOIxYtEYW
+ NiiM0nzeGrDR7w453Tff78kVxIS4xPKxZVfiDLvuNdfXd1ox7c
+ ug7RGzF7BR9XsMv19LcuYf6qBJSOB8fglrwpFdDcKB6T8D7dY1
+ ifVVqkGk+AVgy16lmQZw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 11:59:51AM -0400, KOSAKI Motohiro wrote:
-> On Tue, Sep 25, 2012 at 9:56 AM, Naoya Horiguchi
-> <n-horiguchi@ah.jp.nec.com> wrote:
-> > KPF_THP can be set on non-huge compound pages like slab pages, because
-> > PageTransCompound only sees PG_head and PG_tail. Obviously this is a bug
-> > and breaks user space applications which look for thp via /proc/kpageflags.
-> > Currently thp is constructed only on anonymous pages, so this patch makes
-> > KPF_THP be set when both of PageAnon and PageTransCompound are true.
+On Tuesday 25 September 2012, Lee Jones wrote:
 > 
-> Indeed. Please add some comment too.
+> An earlier change prevented User Interface Boards (UIBs) from being
+> initialised on boards which did not support them. This change had
+> the undesired effect of reordering the UIB initialisation calls with
+> I2C registration. Here we ensure UIBs are only setup after all
+> required infrastructure is already in place.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Sure. I send revised one.
-
-Thanks,
-Naoya
----
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Date: Mon, 24 Sep 2012 16:28:30 -0400
-Subject: [PATCH v2] pagemap: fix wrong KPF_THP on slab pages
-
-KPF_THP can be set on non-huge compound pages like slab pages, because
-PageTransCompound only sees PG_head and PG_tail. Obviously this is a bug
-and breaks user space applications which look for thp via /proc/kpageflags.
-Currently thp is constructed only on anonymous pages, so this patch makes
-KPF_THP be set when both of PageAnon and PageTransCompound are true.
-
-Changelog in v2:
-  - add a comment in code
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- fs/proc/page.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/fs/proc/page.c b/fs/proc/page.c
-index 7fcd0d6..f7cd2f6c 100644
---- a/fs/proc/page.c
-+++ b/fs/proc/page.c
-@@ -115,7 +115,12 @@ u64 stable_page_flags(struct page *page)
- 		u |= 1 << KPF_COMPOUND_TAIL;
- 	if (PageHuge(page))
- 		u |= 1 << KPF_HUGE;
--	else if (PageTransCompound(page))
-+	/*
-+	 * Since THP is relevant only for anonymous pages so far, we check it
-+	 * explicitly with PageAnon. Otherwise thp is confounded with non-huge
-+	 * compound pages like slab pages.
-+	 */
-+	else if (PageTransCompound(page) && PageAnon(page))
- 		u |= 1 << KPF_THP;
- 
- 	/*
--- 
-1.7.11.4
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
