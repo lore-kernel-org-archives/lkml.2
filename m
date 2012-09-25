@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab2IYXNZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 19:13:25 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42142 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab2IYXNX (ORCPT
+	id S1752438Ab2IYXTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 19:19:16 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:46064 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab2IYXTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 19:13:23 -0400
-Date: Wed, 26 Sep 2012 00:12:46 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Khalid Aziz <khalid.aziz@hp.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, hpa@zytor.com,
-        keescook@chromium.org, tony.luck@intel.com,
-        Greg KH <gregkh@linuxfoundation.org>, cbouatmailru@gmail.com,
-        ccross@android.com, paul.gortmaker@windriver.com, maxin.john@gmail.com,
-        matt.fleming@intel.com, olof@lixom.net, dhowells@redhat.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        khalid@gonehiking.org
-Subject: Re: [PATCH -next v2] Shorten constant names for EFI variable
- attributes
-Message-ID: <20120925231246.GA30343@srcf.ucam.org>
-References: <20120720220841.GA32642@hp.com>
- <5009D770.1050905@zytor.com>
- <20120723132656.GC21495@srcf.ucam.org>
- <50117E40.8090904@hp.com>
- <20120726173332.GA19851@srcf.ucam.org>
- <20120925154100.GA13412@ldl.usa.hp.com>
- <20120926075528.e497436227403ecaf1b845d3@canb.auug.org.au>
- <1348614392.17507.5.camel@concerto.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348614392.17507.5.camel@concerto.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 25 Sep 2012 19:19:15 -0400
+X-AuditID: cbfee61a-b7f726d000000ec7-f7-50623bf14140
+Message-id: <50623BF1.9080907@samsung.com>
+Date: Wed, 26 Sep 2012 08:19:13 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com, patches@linaro.org,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH Resend] extcon: Fix return value in
+ extcon_register_interest()
+References: <1348570879-24067-1-git-send-email-sachin.kamat@linaro.org>
+In-reply-to: <1348570879-24067-1-git-send-email-sachin.kamat@linaro.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t9jQd2P1kkBBhc7jS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGlPvTmAseMFe8niTdwDiBuYuRk0NCwERi37ZnrBC2mMSFe+vZ
+	uhi5OIQEpjNKzLu8nAXC6WKSmHusB6yDV0BL4vDvsywgNouAqsSVCyfA4mxA8f0vbgB1c3CI
+	CkRI/OrngCgXlPgx+R5YuQhQycvu5UwgNrNAmcTGJbsZQWxhgRCJS19PgMWFBNwldv07BWZz
+	CnhI7J+1mR2iXkdif+s0NghbXmLzmrfMExgFZiFZMQtJ2SwkZQsYmVcxiqYWJBcUJ6XnGuoV
+	J+YWl+al6yXn525iBIffM6kdjCsbLA4xCnAwKvHwNvxKDBBiTSwrrsw9xCjBwawkwmv8HCjE
+	m5JYWZValB9fVJqTWnyIUZqDRUmcV/hTYICQQHpiSWp2ampBahFMlomDU6qBkblKxZpXZobb
+	9zmsyhlR0pWzHlmluRSbbIqSSnk2udxlj0T7ezXjayv5rPoXnN/W7Pqh64nB8i0nGuZv0lz1
+	f7pas/qk13JaoQqXMlLN+8oLZ83//Fb4/YEV15le5fFZ/65lnC57//v/p+d17m/PWZjvE3O/
+	WHXW1epHj9Xylk9VOtzvwryBX4mlOCPRUIu5qDgRAKExmXE7AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 05:06:32PM -0600, Khalid Aziz wrote:
+On 09/25/2012 08:01 PM, Sachin Kamat wrote:
 
-> This is for code cleanup and does not impact functionality. This is
-> based upon an earlier discussion -
-> <https://lkml.org/lkml/2012/7/13/320>. The goal is to make the code more
-> readable. V1 of this patch was discussed at
-> <https://lkml.org/lkml/2012/7/20/414>.
+> Propagate the value returned from extcon_find_cable_index()
+> instead of -ENODEV. For readability, -EINVAL is returned in place of
+> the variable.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
 
-Right. Keeping the spec names makes it difficult to write code in a 
-readable way.
+Applied, thank you.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+You can check it after some hours at below git repository for Extcon.
+-
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
+
+Thanks,
+Chanwoo Choi
