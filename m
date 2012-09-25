@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab2IYACv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Sep 2012 20:02:51 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53204 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab2IYACs (ORCPT
+	id S1752232Ab2IYAC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Sep 2012 20:02:59 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59704 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab2IYAC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Sep 2012 20:02:48 -0400
+	Mon, 24 Sep 2012 20:02:56 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
         Andrew Lunn <andrew@lunn.ch>, Olof Johansson <olof@lixom.net>,
         Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] ARM: dove: Add pcie clock support
-Date: Tue, 25 Sep 2012 02:02:13 +0200
-Message-Id: <1348531338-16624-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 3/6] ARM: dove: Fix clock names of sata and gbe
+Date: Tue, 25 Sep 2012 02:02:15 +0200
+Message-Id: <1348531338-16624-4-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1348531338-16624-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1348531338-16624-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -23,8 +23,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As dove now has clock gating control ensure pcie ports grab their
-clocks.
+This patch fixes wrong clock names of lately added clock gates
+for sata and gbe (mv64xx_eth).
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -37,32 +37,24 @@ Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-dove/pcie.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/mach-dove/common.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-dove/pcie.c b/arch/arm/mach-dove/pcie.c
-index bb15b26..0ef4435 100644
---- a/arch/arm/mach-dove/pcie.c
-+++ b/arch/arm/mach-dove/pcie.c
-@@ -10,6 +10,7 @@
+diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
+index 343a4bc..ffec26f 100644
+--- a/arch/arm/mach-dove/common.c
++++ b/arch/arm/mach-dove/common.c
+@@ -110,8 +110,8 @@ static void __init dove_clk_init(void)
  
- #include <linux/kernel.h>
- #include <linux/pci.h>
-+#include <linux/clk.h>
- #include <video/vga.h>
- #include <asm/mach/pci.h>
- #include <asm/mach/arch.h>
-@@ -188,6 +189,10 @@ static void __init add_pcie_port(int index, void __iomem *base)
- 
- 	if (orion_pcie_link_up(base)) {
- 		struct pcie_port *pp = &pcie_port[num_pcie_ports++];
-+		struct clk *clk = clk_get_sys("pcie", (index ? "1" : "0"));
-+
-+		if (!IS_ERR(clk))
-+			clk_prepare_enable(clk);
- 
- 		printk(KERN_INFO "link up\n");
- 
+ 	orion_clkdev_add(NULL, "orion-ehci.0", usb0);
+ 	orion_clkdev_add(NULL, "orion-ehci.1", usb1);
+-	orion_clkdev_add(NULL, "mv643xx_eth.0", ge);
+-	orion_clkdev_add("0", "sata_mv.0", sata);
++	orion_clkdev_add(NULL, "mv643xx_eth_port.0", ge);
++	orion_clkdev_add(NULL, "sata_mv.0", sata);
+ 	orion_clkdev_add("0", "pcie", pex0);
+ 	orion_clkdev_add("1", "pcie", pex1);
+ 	orion_clkdev_add(NULL, "sdhci-dove.0", sdio0);
 -- 
 1.7.10.4
 
