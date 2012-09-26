@@ -1,138 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2IZKkj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 06:40:39 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39170 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab2IZKkh (ORCPT
+	id S1754823Ab2IZKqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 06:46:34 -0400
+Received: from [213.199.154.208] ([213.199.154.208]:31178 "EHLO
+	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753112Ab2IZKq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 06:40:37 -0400
-Date: Wed, 26 Sep 2012 12:40:31 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [pull] last drm-intel-next pull for 3.7
-Message-ID: <20120926104031.GI3824@bremse>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	Wed, 26 Sep 2012 06:46:27 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzd6f1izz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1155h)
+X-WSS-ID: 0MAYDV3-02-54E-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <x86@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 09/19] x86, io_apic: Move irq_remapping_enabled checks out of check_timer()
+Date: Wed, 26 Sep 2012 12:44:41 +0200
+Message-ID: <1348656291-10375-10-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
+References: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux bremse 3.6.0-rc6+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Move these checks to IRQ remapping code by introducing the
+panic_on_irq_remap() function.
 
-Last pile of stuff for 3.7, essentially just a bunch of bigger fixes and a
-few less intrusive features:
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/include/asm/irq_remapping.h |    5 +++++
+ arch/x86/kernel/apic/io_apic.c       |    6 ++----
+ drivers/iommu/irq_remapping.c        |    6 ++++++
+ 3 files changed, 13 insertions(+), 4 deletions(-)
 
-- cpu freq interface in sysfs from Ben
-- cpu edp fixes and some related cleanups
-- write-combining ptes for pre-gen6 (Chris)
-- basic CADL support (Peter Wu), this fixes quite a few issues with
-  backlights ...
-- rework of the gem backing pages handling (preps for stolen mem handling)
-  from Chris
-- some more cleanup-fallout from the modeset-rework
-
-On top of that I've done a backmerge of -rc7(since the conflicts got too
-messy and I've pushed out broken merged trees too often). I've also
-included 3 fixes on top of what QA beat on:
-
-- Fix for a infoframe handling regression in 3.5 - infoframe blows up too
-  often and 3.6 is pretty much done, so I'd like to merge that through
-  -next and the stable process and give it more exposure before it lands
-  in a stable tree.
-- ioctl cosmetics^Wspelling fix in the structs (userspace won't be
-  affected, since all existing userspace uses private copies of the ioctl
-  struct definitions, and the struct layout itself is abi compatible).
-- Bugfix for a regression introduced in this pull's testing cycle.
-
-Besides the regression in the ilk debugfs code QA reported new DP issues,
-but afact all old stuff, just new variations of existing bugs. I hope we
-can pour quite some manpower into our DP code from Intel's sides for the
-next cycle. Maybe even extract some shared logic, since it sounds like
-we'll eventually need quircks like for edid in dp-land :(
-
-Cheers, Daniel
-
-PS: Note that due to the backmerge I've manually frobbed the shortlog
-again to exclude anything merged through Linus' tree.
-
-The following changes since commit 3b7a89fce3e3dc96b549d6d829387b4439044d0d:
-
-  drm/i915: fix OOPS in lid_notify (2012-09-18 00:59:37 +0200)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~danvet/drm-intel for-airlied
-
-for you to fetch changes up to f531dcb23f9a5c6ad77e451459df965dc9a0c0c8:
-
-  drm/i915: Wrap external callers to IPS state with appropriate locks (2012-09-26 09:24:54 +0200)
-
-----------------------------------------------------------------
-
-Ben Widawsky (10):
-      drm/i915: placeholder getparam
-      drm/i915: variable renames
-      drm/i915: #define gpu freq multipler
-      drm/i915: Add current/max/min GPU freq to sysfs
-      drm/i915: POSTING_READ the new rps value
-      drm/i915: Error checks in gen6_set_rps
-      drm/i915: Add setters for min/max frequency
-      drm/i915: Show render P state thresholds in sysfs
-      drm/i915: Fix !CONFIG_PM sysfs for real this time
-      drm/i915: s/cacheing/caching/
-
-Chris Wilson (11):
-      drm/i915: Introduce drm_i915_gem_object_ops
-      drm/i915: Pin backing pages whilst exporting through a dmabuf vmap
-      drm/i915: Pin backing pages for pwrite
-      drm/i915: Pin backing pages for pread
-      drm/i915: Replace the array of pages with a scatterlist
-      drm/i915: Drop the misleading cast to the wrong user pointer type
-      drm/i915: Limit the ioremap of the PCI bar to the registers
-      agp/intel: Use a write-combining map for updating PTEs
-      drm/i915: Convert the dmabuf object to use the new i915_gem_object_ops
-      drm/i915: Assert that the exec object lookup table is a power-of-two
-      drm/i915: Wrap external callers to IPS state with appropriate locks
-
-Daniel Vetter (12):
-      drm/i915: rip out early dp port write for gm45/ilk
-      drm/i915: add encoder->pre_enable/post_disable
-      drm/i915: clean up the cpu edp pll special case
-      drm/i915: robustify edp_pll_on/off
-      drm/i915: rip out dp port enabling cludges^Wchecks
-      drm/i915: disable the cpu edp port after the cpu pipe
-      drm/i915: rip out edp special case from dp_link_down
-      drm/i915: rip out intel_disable_pch_ports
-      drm/i915: don't disable fdi links harder in ilk_crtc_enable
-      drm/i915: don't call dpms funcs after set_mode
-      drm/i915: update dpms property in set_mode
-      Merge tag 'v3.6-rc7' into drm-intel-next-queued
-
-Lekensteyn (1):
-      i915: initialize CADL in opregion
-
-Paulo Zanoni (5):
-      drm/i915: extract ironlake_set_pipeconf form ironlake_crtc_mode_set
-      drm/i915: simplify setting DSPCNTR inside ironlake_crtc_mode_set
-      drm/i915: extract compute_clocks from ironlake_crtc_mode_set
-      drm/i915: BUG() on unexpected HDMI register
-      drm/i915: make sure we write all the DIP data bytes
-
-Wang Xingchao (1):
-      drm/i915: HDMI - Clear Audio Enable bit for Hot Plug unconditionally
-
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index f1afa04..fb99a73 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -45,6 +45,7 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
+ 				     unsigned int irq, unsigned int dest,
+ 				     struct msi_msg *msg, u8 hpet_id);
+ extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
++extern void panic_if_irq_remap(const char *msg);
+ 
+ #else  /* CONFIG_IRQ_REMAP */
+ 
+@@ -75,6 +76,10 @@ static inline int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+ {
+ 	return -ENODEV;
+ }
++
++static inline void panic_if_irq_remap(const char *msg)
++{
++}
+ #endif /* CONFIG_IRQ_REMAP */
+ 
+ #endif /* __X86_IRQ_REMAPPING_H */
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 9500a07..360f62b 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2786,8 +2786,7 @@ static inline void __init check_timer(void)
+ 	 * 8259A.
+ 	 */
+ 	if (pin1 == -1) {
+-		if (irq_remapping_enabled)
+-			panic("BIOS bug: timer not connected to IO-APIC");
++		panic_if_irq_remap("BIOS bug: timer not connected to IO-APIC");
+ 		pin1 = pin2;
+ 		apic1 = apic2;
+ 		no_pin1 = 1;
+@@ -2819,8 +2818,7 @@ static inline void __init check_timer(void)
+ 				clear_IO_APIC_pin(0, pin1);
+ 			goto out;
+ 		}
+-		if (irq_remapping_enabled)
+-			panic("timer doesn't work through Interrupt-remapped IO-APIC");
++		panic_if_irq_remap("timer doesn't work through Interrupt-remapped IO-APIC");
+ 		local_irq_disable();
+ 		clear_IO_APIC_pin(apic1, pin1);
+ 		if (!no_pin1)
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 5b28e28..827f8a1 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -261,3 +261,9 @@ int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+ 
+ 	return remap_ops->setup_hpet_msi(irq, id);
+ }
++
++void panic_if_irq_remap(const char *msg)
++{
++	if (irq_remapping_enabled)
++		panic(msg);
++}
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.9.5
+
+
