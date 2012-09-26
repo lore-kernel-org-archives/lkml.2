@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab2IZTEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 15:04:41 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43663 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757438Ab2IZTEk (ORCPT
+	id S1758294Ab2IZTHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 15:07:42 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40591 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757900Ab2IZTHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 15:04:40 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19kBXZyDfA42ErG0cHwxGIV
-Date: Wed, 26 Sep 2012 12:04:36 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Koen Kooi <koen@dominion.thruhere.net>
-Cc: Matt Porter <mporter@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        List List <linux-omap@vger.kernel.org>,
+	Wed, 26 Sep 2012 15:07:41 -0400
+From: Matt Porter <mporter@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: replacement for /sys/kernel/debug/omap_mux in DT/pinctrl land ?
-Message-ID: <20120926190435.GI4840@atomide.com>
-References: <D7202A6C-5250-4B55-B3B8-FF15BCCA97AC@dominion.thruhere.net>
- <20120926125658.GA5641@beef>
- <CACRpkdYqVC4Vou+0Mn1OmQg8vPxDULDcFDD0yV5nassqkE1Zag@mail.gmail.com>
- <20120926161546.GC5641@beef>
- <50515DB7-8D0C-4F74-B390-78BC9CD86FC9@dominion.thruhere.net>
- <20120926185202.GF4840@atomide.com>
- <39625BB0-1F8A-4ED1-B50C-5FB846B97934@dominion.thruhere.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <39625BB0-1F8A-4ED1-B50C-5FB846B97934@dominion.thruhere.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: [PATCH] pinctrl: pinctrl-single: add debugfs pin h/w state info
+Date: Wed, 26 Sep 2012 15:07:43 -0400
+Message-Id: <1348686463-25793-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Koen Kooi <koen@dominion.thruhere.net> [120926 11:54]:
-> 
-> It's for am335x :)
+Adds support for displaying the individual pin h/w config state.
 
-Ah OK we don't have that data in the kernel then. But
-if you have some format in mind suitable I can still
-generate the other omap+package+mode data for you.
+Signed-off-by: Matt Porter <mporter@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+---
+ drivers/pinctrl/pinctrl-single.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-Regards,
+diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+index aabecfa..726a729 100644
+--- a/drivers/pinctrl/pinctrl-single.c
++++ b/drivers/pinctrl/pinctrl-single.c
+@@ -246,7 +246,15 @@ static void pcs_pin_dbg_show(struct pinctrl_dev *pctldev,
+ 					struct seq_file *s,
+ 					unsigned offset)
+ {
+-	seq_printf(s, " " DRIVER_NAME);
++	struct pcs_device *pcs;
++	unsigned val;
++
++	pcs = pinctrl_dev_get_drvdata(pctldev);
++
++	val = pcs->read(pcs->base + offset);
++	val &= pcs->fmask;
++
++	seq_printf(s, "%08x %s " , val, DRIVER_NAME);
+ }
+ 
+ static void pcs_dt_free_map(struct pinctrl_dev *pctldev,
+-- 
+1.7.9.5
 
-Tony
