@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab2IZFjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 01:39:08 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59417 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab2IZFjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 01:39:06 -0400
+	id S1752330Ab2IZFj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 01:39:29 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45768 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab2IZFj1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 01:39:27 -0400
 From: "Patil, Rachna" <rachna@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
         <linux-iio@vger.kernel.org>
@@ -13,9 +14,9 @@ CC: Samuel Ortiz <sameo@linux.intel.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>,
         "Patil, Rachna" <rachna@ti.com>
-Subject: [PATCH v4 1/5] input: TSC: ti_tscadc: Rename the existing touchscreen driver
-Date: Wed, 26 Sep 2012 10:50:10 +0530
-Message-ID: <1348636814-14129-2-git-send-email-rachna@ti.com>
+Subject: [PATCH v4 2/5] MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
+Date: Wed, 26 Sep 2012 10:50:11 +0530
+Message-ID: <1348636814-14129-3-git-send-email-rachna@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1348636814-14129-1-git-send-email-rachna@ti.com>
 References: <1348636814-14129-1-git-send-email-rachna@ti.com>
@@ -25,98 +26,401 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make way for addition of MFD driver.
-The existing touchsreen driver is a MFD client.
-For better readability we rename the file to
-indicate its functionality as only touchscreen.
+Add the mfd core driver which supports touchscreen
+and ADC.
+With this patch we are only adding infrastructure to
+support the MFD clients.
 
 Signed-off-by: Patil, Rachna <rachna@ti.com>
 ---
 Changes in v2:
-	Missed changing the name of touchscreen header file
-	in the previous version.
-	Adding the same.
+	Merged "[PATCH 5/5] MFD: ti_tscadc: Add check on number of i/p channels",
+	patch submitted in previous version into this file.
 
 Changes in v3:
-	no changes.
+	No changes
 
 Changes in v4:
-	no changes.
+	No changes
 
- drivers/input/touchscreen/Kconfig                  |    4 ++--
- drivers/input/touchscreen/Makefile                 |    2 +-
- .../touchscreen/{ti_tscadc.c => ti_am335x_tsc.c}   |    2 +-
- .../linux/input/{ti_tscadc.h => ti_am335x_tsc.h}   |    4 ++--
- 4 files changed, 6 insertions(+), 6 deletions(-)
- rename drivers/input/touchscreen/{ti_tscadc.c => ti_am335x_tsc.c} (99%)
- rename include/linux/input/{ti_tscadc.h => ti_am335x_tsc.h} (88%)
+ drivers/mfd/Kconfig                  |    9 ++
+ drivers/mfd/Makefile                 |    1 +
+ drivers/mfd/ti_am335x_tscadc.c       |  193 ++++++++++++++++++++++++++++++++++
+ include/linux/mfd/ti_am335x_tscadc.h |  133 +++++++++++++++++++++++
+ 4 files changed, 336 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/ti_am335x_tscadc.c
+ create mode 100644 include/linux/mfd/ti_am335x_tscadc.h
 
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 1ba232c..7bdb629 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -529,7 +529,7 @@ config TOUCHSCREEN_TOUCHWIN
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index b1a1462..e472184 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -94,6 +94,15 @@ config MFD_TI_SSP
  	  To compile this driver as a module, choose M here: the
- 	  module will be called touchwin.
+ 	  module will be called ti-ssp.
  
--config TOUCHSCREEN_TI_TSCADC
-+config TOUCHSCREEN_TI_AM335X_TSC
- 	tristate "TI Touchscreen Interface"
- 	depends on ARCH_OMAP2PLUS
- 	help
-@@ -539,7 +539,7 @@ config TOUCHSCREEN_TI_TSCADC
- 	  If unsure, say N.
++config MFD_TI_AM335X_TSCADC
++	tristate "TI ADC / Touch Screen chip support"
++	depends on ARCH_OMAP2PLUS
++	help
++	  If you say yes here you get support for Texas Instruments series
++	  of Touch Screen /ADC chips.
++	  To compile this driver as a module, choose M here: the
++	  module will be called ti_am335x_tscadc.
++
+ config HTC_EGPIO
+ 	bool "HTC EGPIO support"
+ 	depends on GENERIC_HARDIRQS && GPIOLIB && ARM
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 79dd22d..bc6b2f0 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_HTC_I2CPLD)	+= htc-i2cpld.o
+ obj-$(CONFIG_MFD_DAVINCI_VOICECODEC)	+= davinci_voicecodec.o
+ obj-$(CONFIG_MFD_DM355EVM_MSP)	+= dm355evm_msp.o
+ obj-$(CONFIG_MFD_TI_SSP)	+= ti-ssp.o
++obj-$(CONFIG_MFD_TI_AM335X_TSCADC)	+= ti_am335x_tscadc.o
  
- 	  To compile this driver as a module, choose M here: the
--	  module will be called ti_tscadc.
-+	  module will be called ti_am335x_tsc.
- 
- config TOUCHSCREEN_ATMEL_TSADCC
- 	tristate "Atmel Touchscreen Interface"
-diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-index 178eb12..7c4c78e 100644
---- a/drivers/input/touchscreen/Makefile
-+++ b/drivers/input/touchscreen/Makefile
-@@ -52,7 +52,7 @@ obj-$(CONFIG_TOUCHSCREEN_PIXCIR)	+= pixcir_i2c_ts.o
- obj-$(CONFIG_TOUCHSCREEN_S3C2410)	+= s3c2410_ts.o
- obj-$(CONFIG_TOUCHSCREEN_ST1232)	+= st1232.o
- obj-$(CONFIG_TOUCHSCREEN_STMPE)		+= stmpe-ts.o
--obj-$(CONFIG_TOUCHSCREEN_TI_TSCADC)	+= ti_tscadc.o
-+obj-$(CONFIG_TOUCHSCREEN_TI_AM335X_TSC)	+= ti_am335x_tsc.o
- obj-$(CONFIG_TOUCHSCREEN_TNETV107X)	+= tnetv107x-ts.o
- obj-$(CONFIG_TOUCHSCREEN_TOUCHIT213)	+= touchit213.o
- obj-$(CONFIG_TOUCHSCREEN_TOUCHRIGHT)	+= touchright.o
-diff --git a/drivers/input/touchscreen/ti_tscadc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-similarity index 99%
-rename from drivers/input/touchscreen/ti_tscadc.c
-rename to drivers/input/touchscreen/ti_am335x_tsc.c
-index ec0a442..e71dee6 100644
---- a/drivers/input/touchscreen/ti_tscadc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -24,7 +24,7 @@
- #include <linux/clk.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
--#include <linux/input/ti_tscadc.h>
-+#include <linux/input/ti_am335x_tsc.h>
- #include <linux/delay.h>
- 
- #define REG_RAWIRQSTATUS	0x024
-diff --git a/include/linux/input/ti_tscadc.h b/include/linux/input/ti_am335x_tsc.h
-similarity index 88%
-rename from include/linux/input/ti_tscadc.h
-rename to include/linux/input/ti_am335x_tsc.h
-index ad442a3..49269a2 100644
---- a/include/linux/input/ti_tscadc.h
-+++ b/include/linux/input/ti_am335x_tsc.h
-@@ -1,5 +1,5 @@
--#ifndef __LINUX_TI_TSCADC_H
--#define __LINUX_TI_TSCADC_H
-+#ifndef __LINUX_TI_AM335X_TSC_H
-+#define __LINUX_TI_AM335X_TSC_H
- 
- /**
-  * struct tsc_data	Touchscreen wire configuration
+ obj-$(CONFIG_MFD_STA2X11)	+= sta2x11-mfd.o
+ obj-$(CONFIG_MFD_STMPE)		+= stmpe.o
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+new file mode 100644
+index 0000000..ae93b48
+--- /dev/null
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -0,0 +1,193 @@
++/*
++ * TI Touch Screen / ADC MFD driver
++ *
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/clk.h>
++#include <linux/mfd/core.h>
++#include <linux/pm_runtime.h>
++#include <linux/mfd/ti_am335x_tscadc.h>
++
++static unsigned int tscadc_readl(struct ti_tscadc_dev *tsadc, unsigned int reg)
++{
++	return readl(tsadc->tscadc_base + reg);
++}
++
++static void tscadc_writel(struct ti_tscadc_dev *tsadc, unsigned int reg,
++					unsigned int val)
++{
++	writel(val, tsadc->tscadc_base + reg);
++}
++
++static void tscadc_idle_config(struct ti_tscadc_dev *config)
++{
++	unsigned int idleconfig;
++
++	idleconfig = STEPCONFIG_YNN | STEPCONFIG_INM_ADCREFM |
++			STEPCONFIG_INP_ADCREFM | STEPCONFIG_YPN;
++
++	tscadc_writel(config, REG_IDLECONFIG, idleconfig);
++}
++
++static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
++{
++	struct ti_tscadc_dev	*tscadc;
++	struct resource		*res;
++	struct clk		*clk;
++	struct mfd_tscadc_board	*pdata = pdev->dev.platform_data;
++	int			irq;
++	int			err, ctrl;
++	int			clk_value, clock_rate;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "Could not find platform data\n");
++		return -EINVAL;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "no memory resource defined.\n");
++		return -EINVAL;
++	}
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		dev_err(&pdev->dev, "no irq ID is specified.\n");
++		return -EINVAL;
++	}
++
++	/* Allocate memory for device */
++	tscadc = kzalloc(sizeof(struct ti_tscadc_dev), GFP_KERNEL);
++	if (!tscadc) {
++		dev_err(&pdev->dev, "failed to allocate memory.\n");
++		return -ENOMEM;
++	}
++	tscadc->dev = &pdev->dev;
++	tscadc->irq = irq;
++
++	res = request_mem_region(res->start, resource_size(res), pdev->name);
++	if (!res) {
++		dev_err(&pdev->dev, "failed to reserve registers.\n");
++		err = -EBUSY;
++		goto err_free_mem;
++	}
++
++	tscadc->tscadc_base = ioremap(res->start, resource_size(res));
++	if (!tscadc->tscadc_base) {
++		dev_err(&pdev->dev, "failed to map registers.\n");
++		err = -ENOMEM;
++		goto err_release_mem_region;
++	}
++
++	pm_runtime_enable(&pdev->dev);
++	pm_runtime_get_sync(&pdev->dev);
++
++	/*
++	 * The TSC_ADC_Subsystem has 2 clock domains
++	 * OCP_CLK and ADC_CLK.
++	 * The ADC clock is expected to run at target of 3MHz,
++	 * and expected to capture 12-bit data at a rate of 200 KSPS.
++	 * The TSC_ADC_SS controller design assumes the OCP clock is
++	 * at least 6x faster than the ADC clock.
++	 */
++	clk = clk_get(&pdev->dev, "adc_tsc_fck");
++	if (IS_ERR(clk)) {
++		dev_err(&pdev->dev, "failed to get TSC fck\n");
++		err = PTR_ERR(clk);
++		goto err_disable_clk;
++	}
++	clock_rate = clk_get_rate(clk);
++	clk_put(clk);
++	clk_value = clock_rate / ADC_CLK;
++	if (clk_value < MAX_CLK_DIV) {
++		dev_err(&pdev->dev, "clock input less than min clock requirement\n");
++		err = -EINVAL;
++		goto err_disable_clk;
++	}
++	/* TSCADC_CLKDIV needs to be configured to the value minus 1 */
++	clk_value = clk_value - 1;
++	tscadc_writel(tscadc, REG_CLKDIV, clk_value);
++
++	/* Set the control register bits */
++	ctrl = CNTRLREG_STEPCONFIGWRT |
++			CNTRLREG_TSCENB |
++			CNTRLREG_STEPID |
++			CNTRLREG_4WIRE;
++	tscadc_writel(tscadc, REG_CTRL, ctrl);
++
++	/* Set register bits for Idle Config Mode */
++	tscadc_idle_config(tscadc);
++
++	/* Enable the TSC module enable bit */
++	ctrl = tscadc_readl(tscadc, REG_CTRL);
++	ctrl |= CNTRLREG_TSCSSENB;
++	tscadc_writel(tscadc, REG_CTRL, ctrl);
++
++	err = mfd_add_devices(&pdev->dev, pdev->id, tscadc->cells,
++			TSCADC_CELLS, NULL, 0, NULL);
++	if (err < 0)
++		goto err_disable_clk;
++
++	platform_set_drvdata(pdev, tscadc);
++	return 0;
++
++err_disable_clk:
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++	iounmap(tscadc->tscadc_base);
++err_release_mem_region:
++	release_mem_region(res->start, resource_size(res));
++	mfd_remove_devices(tscadc->dev);
++err_free_mem:
++	kfree(tscadc);
++	return err;
++}
++
++static int __devexit ti_tscadc_remove(struct platform_device *pdev)
++{
++	struct ti_tscadc_dev	*tscadc = platform_get_drvdata(pdev);
++	struct resource		*res;
++
++	tscadc_writel(tscadc, REG_SE, 0x00);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	iounmap(tscadc->tscadc_base);
++	release_mem_region(res->start, resource_size(res));
++
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++
++	mfd_remove_devices(tscadc->dev);
++	kfree(tscadc);
++	return 0;
++}
++
++static struct platform_driver ti_tscadc_driver = {
++	.driver = {
++		.name   = "ti_tscadc",
++		.owner	= THIS_MODULE,
++	},
++	.probe	= ti_tscadc_probe,
++	.remove	= __devexit_p(ti_tscadc_remove),
++
++};
++
++module_platform_driver(ti_tscadc_driver);
++
++MODULE_DESCRIPTION("TI touchscreen / ADC MFD controller driver");
++MODULE_AUTHOR("Rachna Patil <rachna@ti.com>");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+new file mode 100644
+index 0000000..b1eec17
+--- /dev/null
++++ b/include/linux/mfd/ti_am335x_tscadc.h
+@@ -0,0 +1,133 @@
++#ifndef __LINUX_TI_AM335X_TSCADC_MFD_H
++#define __LINUX_TI_AM335X_TSCADC_MFD_H
++
++/*
++ * TI Touch Screen / ADC MFD driver
++ *
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/mfd/core.h>
++
++#define REG_RAWIRQSTATUS	0x024
++#define REG_IRQSTATUS		0x028
++#define REG_IRQENABLE		0x02C
++#define REG_IRQCLR		0x030
++#define REG_IRQWAKEUP		0x034
++#define REG_CTRL		0x040
++#define REG_ADCFSM		0x044
++#define REG_CLKDIV		0x04C
++#define REG_SE			0x054
++#define REG_IDLECONFIG		0x058
++#define REG_CHARGECONFIG	0x05C
++#define REG_CHARGEDELAY		0x060
++#define REG_STEPCONFIG(n)	(0x64 + ((n - 1) * 8))
++#define REG_STEPDELAY(n)	(0x68 + ((n - 1) * 8))
++#define REG_FIFO0CNT		0xE4
++#define REG_FIFO0THR		0xE8
++#define REG_FIFO1CNT		0xF0
++#define REG_FIFO1THR		0xF4
++#define REG_FIFO0		0x100
++#define REG_FIFO1		0x200
++
++/*	Register Bitfields	*/
++/* Step Enable */
++#define STEPENB_MASK		(0x1FFFF << 0)
++#define STEPENB(val)		((val) << 0)
++#define STPENB_STEPENB		STEPENB(0x1FFFF)
++
++/* IRQ enable */
++#define IRQENB_HW_PEN		BIT(0)
++#define IRQENB_FIFO0THRES	BIT(2)
++#define IRQENB_FIFO1THRES	BIT(5)
++#define IRQENB_PENUP		BIT(9)
++
++/* Step Configuration */
++#define STEPCONFIG_MODE_MASK	(3 << 0)
++#define STEPCONFIG_MODE(val)	((val) << 0)
++#define STEPCONFIG_MODE_HWSYNC	STEPCONFIG_MODE(2)
++#define STEPCONFIG_AVG_MASK	(7 << 2)
++#define STEPCONFIG_AVG(val)	((val) << 2)
++#define STEPCONFIG_AVG_16	STEPCONFIG_AVG(4)
++#define STEPCONFIG_XPP		BIT(5)
++#define STEPCONFIG_XNN		BIT(6)
++#define STEPCONFIG_YPP		BIT(7)
++#define STEPCONFIG_YNN		BIT(8)
++#define STEPCONFIG_XNP		BIT(9)
++#define STEPCONFIG_YPN		BIT(10)
++#define STEPCONFIG_INM_MASK	(0xF << 15)
++#define STEPCONFIG_INM(val)	((val) << 15)
++#define STEPCONFIG_INM_ADCREFM	STEPCONFIG_INM(8)
++#define STEPCONFIG_INP_MASK	(0xF << 19)
++#define STEPCONFIG_INP(val)	((val) << 19)
++#define STEPCONFIG_INP_AN2	STEPCONFIG_INP(2)
++#define STEPCONFIG_INP_AN3	STEPCONFIG_INP(3)
++#define STEPCONFIG_INP_AN4	STEPCONFIG_INP(4)
++#define STEPCONFIG_INP_ADCREFM	STEPCONFIG_INP(8)
++#define STEPCONFIG_FIFO1	BIT(26)
++
++/* Delay register */
++#define STEPDELAY_OPEN_MASK	(0x3FFFF << 0)
++#define STEPDELAY_OPEN(val)	((val) << 0)
++#define STEPCONFIG_OPENDLY	STEPDELAY_OPEN(0x098)
++#define STEPDELAY_SAMPLE_MASK	(0xFF << 24)
++#define STEPDELAY_SAMPLE(val)	((val) << 24)
++#define STEPCONFIG_SAMPLEDLY	STEPDELAY_SAMPLE(0)
++
++/* Charge Config */
++#define STEPCHARGE_RFP_MASK	(7 << 12)
++#define STEPCHARGE_RFP(val)	((val) << 12)
++#define STEPCHARGE_RFP_XPUL	STEPCHARGE_RFP(1)
++#define STEPCHARGE_INM_MASK	(0xF << 15)
++#define STEPCHARGE_INM(val)	((val) << 15)
++#define STEPCHARGE_INM_AN1	STEPCHARGE_INM(1)
++#define STEPCHARGE_INP_MASK	(0xF << 19)
++#define STEPCHARGE_INP(val)	((val) << 19)
++#define STEPCHARGE_INP_AN1	STEPCHARGE_INP(1)
++#define STEPCHARGE_RFM_MASK	(3 << 23)
++#define STEPCHARGE_RFM(val)	((val) << 23)
++#define STEPCHARGE_RFM_XNUR	STEPCHARGE_RFM(1)
++
++/* Charge delay */
++#define CHARGEDLY_OPEN_MASK	(0x3FFFF << 0)
++#define CHARGEDLY_OPEN(val)	((val) << 0)
++#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(1)
++
++/* Control register */
++#define CNTRLREG_TSCSSENB	BIT(0)
++#define CNTRLREG_STEPID		BIT(1)
++#define CNTRLREG_STEPCONFIGWRT	BIT(2)
++#define CNTRLREG_POWERDOWN	BIT(4)
++#define CNTRLREG_AFE_CTRL_MASK	(3 << 5)
++#define CNTRLREG_AFE_CTRL(val)	((val) << 5)
++#define CNTRLREG_4WIRE		CNTRLREG_AFE_CTRL(1)
++#define CNTRLREG_5WIRE		CNTRLREG_AFE_CTRL(2)
++#define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
++#define CNTRLREG_TSCENB		BIT(7)
++
++#define ADC_CLK			3000000
++#define	MAX_CLK_DIV		7
++
++#define TSCADC_CELLS		0
++
++struct mfd_tscadc_board {
++	struct tsc_data *tsc_init;
++};
++
++struct ti_tscadc_dev {
++	struct device *dev;
++	void __iomem *tscadc_base;
++	int irq;
++	struct mfd_cell cells[TSCADC_CELLS];
++};
++
++#endif
 -- 
 1.7.0.4
 
