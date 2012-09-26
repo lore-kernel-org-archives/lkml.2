@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757688Ab2IZRuf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:50:35 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58616 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757171Ab2IZRue (ORCPT
+	id S1757711Ab2IZRvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 13:51:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46809 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757192Ab2IZRvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:50:34 -0400
+	Wed, 26 Sep 2012 13:51:42 -0400
+Date: Wed, 26 Sep 2012 12:51:36 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-security-module@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>
+Subject: Re: [PATCH 04/14] userns: Convert selinux to use kuid and kgid where
+ appropriate
+Message-ID: <20120926175136.GB30620@sergelap>
+References: <87k3vote43.fsf@xmission.com>
+ <1348187330-6616-1-git-send-email-ebiederm@xmission.com>
+ <1348187330-6616-4-git-send-email-ebiederm@xmission.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOh2x=kPAKXXo7C6meHvy4g0Vpwsx98dMbA6568pmt978eVq6w@mail.gmail.com>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348663237-3237-4-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x=kPAKXXo7C6meHvy4g0Vpwsx98dMbA6568pmt978eVq6w@mail.gmail.com>
-Date: Wed, 26 Sep 2012 20:50:32 +0300
-Message-ID: <CAHp75VfT0R21X6x3_MMpsBBy+_C2OwiBgRaV8-O4rNPH1ZhXoA@mail.gmail.com>
-Subject: Re: [PATCHv2 3/4] dma: move dw_dmac driver to an own directory
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348187330-6616-4-git-send-email-ebiederm@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 5:53 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
-> On Wed, Sep 26, 2012 at 6:10 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
->> The dw_dmac driver contains multiple files. To make a managment of them more
->> convenient move it to an own directory.
->
-> git format-patch has a option -C or -M or both... that makes such
-> changes easier to review.
-> If you create patches with these options, we will not get such long
-> patches for renames....
-> instead a single line will tell "foo.c file is renamed as dw/foo.c"
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> 
+> Cc: Stephen Smalley <sds@tycho.nsa.gov>
+> Cc: James Morris <james.l.morris@oracle.com>
+> Cc: Eric Paris <eparis@parisplace.org>
 
-> So this patch will have only few lines after that.
-It's never late to learn something new. Thanks!
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
-> Please resend with that... as its impossible to review it currently.
-Will be in v3.
-
-
--- 
-With Best Regards,
-Andy Shevchenko
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  security/selinux/selinuxfs.c   |    6 +++---
+>  security/selinux/ss/services.c |    2 +-
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
+> index 298e695..55af8c5 100644
+> --- a/security/selinux/selinuxfs.c
+> +++ b/security/selinux/selinuxfs.c
+> @@ -174,7 +174,7 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
+>  		audit_log(current->audit_context, GFP_KERNEL, AUDIT_MAC_STATUS,
+>  			"enforcing=%d old_enforcing=%d auid=%u ses=%u",
+>  			new_value, selinux_enforcing,
+> -			audit_get_loginuid(current),
+> +			from_kuid(&init_user_ns, audit_get_loginuid(current)),
+>  			audit_get_sessionid(current));
+>  		selinux_enforcing = new_value;
+>  		if (selinux_enforcing)
+> @@ -305,7 +305,7 @@ static ssize_t sel_write_disable(struct file *file, const char __user *buf,
+>  			goto out;
+>  		audit_log(current->audit_context, GFP_KERNEL, AUDIT_MAC_STATUS,
+>  			"selinux=0 auid=%u ses=%u",
+> -			audit_get_loginuid(current),
+> +			from_kuid(&init_user_ns, audit_get_loginuid(current)),
+>  			audit_get_sessionid(current));
+>  	}
+>  
+> @@ -551,7 +551,7 @@ static ssize_t sel_write_load(struct file *file, const char __user *buf,
+>  out1:
+>  	audit_log(current->audit_context, GFP_KERNEL, AUDIT_MAC_POLICY_LOAD,
+>  		"policy loaded auid=%u ses=%u",
+> -		audit_get_loginuid(current),
+> +		from_kuid(&init_user_ns, audit_get_loginuid(current)),
+>  		audit_get_sessionid(current));
+>  out:
+>  	mutex_unlock(&sel_mutex);
+> diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+> index 4321b8f..b4feecc 100644
+> --- a/security/selinux/ss/services.c
+> +++ b/security/selinux/ss/services.c
+> @@ -2440,7 +2440,7 @@ int security_set_bools(int len, int *values)
+>  				sym_name(&policydb, SYM_BOOLS, i),
+>  				!!values[i],
+>  				policydb.bool_val_to_struct[i]->state,
+> -				audit_get_loginuid(current),
+> +				from_kuid(&init_user_ns, audit_get_loginuid(current)),
+>  				audit_get_sessionid(current));
+>  		}
+>  		if (values[i])
+> -- 
+> 1.7.5.4
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
