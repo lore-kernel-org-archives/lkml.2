@@ -1,275 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab2IZI4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 04:56:55 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:47679 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756384Ab2IZI4w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 04:56:52 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        VGER <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v2] media: mt9p031/mt9t001/mt9v032: use V4L2_CID_TEST_PATTERN for test pattern control
-Date: Wed, 26 Sep 2012 10:57:29 +0200
-Message-ID: <1521245.F4NdXTiYAa@avalon>
-User-Agent: KMail/4.9.1 (Linux/3.4.9-gentoo; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <1348641310-11470-1-git-send-email-prabhakar.lad@ti.com>
-References: <1348641310-11470-1-git-send-email-prabhakar.lad@ti.com>
+	id S1756481Ab2IZI5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 04:57:00 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:47145 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756384Ab2IZI44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 04:56:56 -0400
+Message-ID: <5062C281.4080805@parallels.com>
+Date: Wed, 26 Sep 2012 12:53:21 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <devel@openvz.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Michal Hocko <mhocko@suse.cz>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        "Daniel P. Berrange" <berrange@redhat.com>
+Subject: Re: [RFC 2/4] memcg: make it suck faster
+References: <1348563173-8952-1-git-send-email-glommer@parallels.com> <1348563173-8952-3-git-send-email-glommer@parallels.com> <20120925140236.b0b089e7.akpm@linux-foundation.org>
+In-Reply-To: <20120925140236.b0b089e7.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On 09/26/2012 01:02 AM, Andrew Morton wrote:
+>> nomemcg  : memcg compile disabled.
+>> > base     : memcg enabled, patch not applied.
+>> > bypassed : memcg enabled, with patch applied.
+>> > 
+>> >                 base    bypassed
+>> > User          109.12      105.64
+>> > System       1646.84     1597.98
+>> > Elapsed       229.56      215.76
+>> > 
+>> >              nomemcg    bypassed
+>> > User          104.35      105.64
+>> > System       1578.19     1597.98
+>> > Elapsed       212.33      215.76
+>> > 
+>> > So as one can see, the difference between base and nomemcg in terms
+>> > of both system time and elapsed time is quite drastic, and consistent
+>> > with the figures shown by Mel Gorman in the Kernel summit. This is a
+>> > ~ 7 % drop in performance, just by having memcg enabled. memcg functions
+>> > appear heavily in the profiles, even if all tasks lives in the root
+>> > memcg.
+>> > 
+>> > With bypassed kernel, we drop this down to 1.5 %, which starts to fall
+>> > in the acceptable range. More investigation is needed to see if we can
+>> > claim that last percent back, but I believe at last part of it should
+>> > be.
+> Well that's encouraging.  I wonder how many users will actually benefit
+> from this - did I hear that major distros are now using memcg in some
+> system-infrastructure-style code?
+> 
 
-Thanks for the patch.
+If they do, they actually be come "users of memcg". This here is aimed
+at non-users of memcg, which given all the whining about it, it seems to
+be plenty.
 
-On Wednesday 26 September 2012 12:05:10 Prabhakar wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> ---
->  Changes for v2:
->  1: Fixed review comments pointed by Laurent.
-> 
->  drivers/media/i2c/mt9p031.c |   19 +++++--------------
->  drivers/media/i2c/mt9t001.c |   23 +++++++++++++++--------
->  drivers/media/i2c/mt9v032.c |   34 ++++++++++++++++++++++++----------
->  3 files changed, 44 insertions(+), 32 deletions(-)
-> 
-> diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
-> index 2c0f407..e328332 100644
-> --- a/drivers/media/i2c/mt9p031.c
-> +++ b/drivers/media/i2c/mt9p031.c
-> @@ -574,7 +574,6 @@ static int mt9p031_set_crop(struct v4l2_subdev *subdev,
->   * V4L2 subdev control operations
->   */
-> 
-> -#define V4L2_CID_TEST_PATTERN		(V4L2_CID_USER_BASE | 0x1001)
->  #define V4L2_CID_BLC_AUTO		(V4L2_CID_USER_BASE | 0x1002)
->  #define V4L2_CID_BLC_TARGET_LEVEL	(V4L2_CID_USER_BASE | 0x1003)
->  #define V4L2_CID_BLC_ANALOG_OFFSET	(V4L2_CID_USER_BASE | 0x1004)
-> @@ -740,18 +739,6 @@ static const char * const mt9p031_test_pattern_menu[] =
-> { static const struct v4l2_ctrl_config mt9p031_ctrls[] = {
->  	{
->  		.ops		= &mt9p031_ctrl_ops,
-> -		.id		= V4L2_CID_TEST_PATTERN,
-> -		.type		= V4L2_CTRL_TYPE_MENU,
-> -		.name		= "Test Pattern",
-> -		.min		= 0,
-> -		.max		= ARRAY_SIZE(mt9p031_test_pattern_menu) - 1,
-> -		.step		= 0,
-> -		.def		= 0,
-> -		.flags		= 0,
-> -		.menu_skip_mask	= 0,
-> -		.qmenu		= mt9p031_test_pattern_menu,
-> -	}, {
-> -		.ops		= &mt9p031_ctrl_ops,
->  		.id		= V4L2_CID_BLC_AUTO,
->  		.type		= V4L2_CTRL_TYPE_BOOLEAN,
->  		.name		= "BLC, Auto",
-> @@ -950,7 +937,7 @@ static int mt9p031_probe(struct i2c_client *client,
->  	mt9p031->model = did->driver_data;
->  	mt9p031->reset = -1;
-> 
-> -	v4l2_ctrl_handler_init(&mt9p031->ctrls, ARRAY_SIZE(mt9p031_ctrls) + 5);
-> +	v4l2_ctrl_handler_init(&mt9p031->ctrls, ARRAY_SIZE(mt9p031_ctrls) + 6);
-> 
->  	v4l2_ctrl_new_std(&mt9p031->ctrls, &mt9p031_ctrl_ops,
->  			  V4L2_CID_EXPOSURE, MT9P031_SHUTTER_WIDTH_MIN,
-> @@ -966,6 +953,10 @@ static int mt9p031_probe(struct i2c_client *client,
->  	v4l2_ctrl_new_std(&mt9p031->ctrls, &mt9p031_ctrl_ops,
->  			  V4L2_CID_PIXEL_RATE, pdata->target_freq,
->  			  pdata->target_freq, 1, pdata->target_freq);
-> +	v4l2_ctrl_new_std_menu_items(&mt9p031->ctrls, &mt9p031_ctrl_ops,
-> +			  V4L2_CID_TEST_PATTERN,
-> +			  ARRAY_SIZE(mt9p031_test_pattern_menu) - 1, 0,
-> +			  0, mt9p031_test_pattern_menu);
-> 
->  	for (i = 0; i < ARRAY_SIZE(mt9p031_ctrls); ++i)
->  		v4l2_ctrl_new_custom(&mt9p031->ctrls, &mt9p031_ctrls[i], NULL);
-> diff --git a/drivers/media/i2c/mt9t001.c b/drivers/media/i2c/mt9t001.c
-> index 6d343ad..23f4e0a 100644
-> --- a/drivers/media/i2c/mt9t001.c
-> +++ b/drivers/media/i2c/mt9t001.c
-> @@ -371,7 +371,7 @@ static int mt9t001_set_crop(struct v4l2_subdev *subdev,
->   * V4L2 subdev control operations
->   */
-> 
-> -#define V4L2_CID_TEST_PATTERN		(V4L2_CID_USER_BASE | 0x1001)
-> +#define V4L2_CID_TEST_PATTERN_COLOR	(V4L2_CID_USER_BASE | 0x1001)
->  #define V4L2_CID_BLACK_LEVEL_AUTO	(V4L2_CID_USER_BASE | 0x1002)
->  #define V4L2_CID_BLACK_LEVEL_OFFSET	(V4L2_CID_USER_BASE | 0x1003)
->  #define V4L2_CID_BLACK_LEVEL_CALIBRATE	(V4L2_CID_USER_BASE | 0x1004)
-> @@ -485,14 +485,12 @@ static int mt9t001_s_ctrl(struct v4l2_ctrl *ctrl)
-> 
->  		return mt9t001_write(client, MT9T001_SHUTTER_WIDTH_HIGH,
->  				     ctrl->val >> 16);
-> -
+Also, I noticed, for instance, that libvirt is now creating memcg
+hierarchies for lxc and qemu as placeholders, before you actually create
+any vm or container.
 
-No need to remove the blank line here.
+There are two ways around that:
+1) Have userspace in general to defer the creation of those directories
+until they are actually going to use it, given the costs associated with
+this.
 
->  	case V4L2_CID_TEST_PATTERN:
-> -		ret = mt9t001_set_output_control(mt9t001,
-> +		return mt9t001_set_output_control(mt9t001,
->  			ctrl->val ? 0 : MT9T001_OUTPUT_CONTROL_TEST_DATA,
->  			ctrl->val ? MT9T001_OUTPUT_CONTROL_TEST_DATA : 0);
-> -		if (ret < 0)
-> -			return ret;
-> 
-> +	case V4L2_CID_TEST_PATTERN_COLOR:
->  		return mt9t001_write(client, MT9T001_TEST_DATA, ctrl->val << 2);
-> 
->  	case V4L2_CID_BLACK_LEVEL_AUTO:
-> @@ -533,12 +531,17 @@ static struct v4l2_ctrl_ops mt9t001_ctrl_ops = {
->  	.s_ctrl = mt9t001_s_ctrl,
->  };
-> 
-> +static const char * const mt9t001_test_pattern_menu[] = {
-> +	"Disabled",
-> +	"Enabled",
-> +};
-> +
->  static const struct v4l2_ctrl_config mt9t001_ctrls[] = {
->  	{
->  		.ops		= &mt9t001_ctrl_ops,
-> -		.id		= V4L2_CID_TEST_PATTERN,
-> +		.id		= V4L2_CID_TEST_PATTERN_COLOR,
->  		.type		= V4L2_CTRL_TYPE_INTEGER,
-> -		.name		= "Test pattern",
-> +		.name		= "Test Pattern Color",
->  		.min		= 0,
->  		.max		= 1023,
->  		.step		= 1,
-> @@ -741,7 +744,7 @@ static int mt9t001_probe(struct i2c_client *client,
->  		return -ENOMEM;
-> 
->  	v4l2_ctrl_handler_init(&mt9t001->ctrls, ARRAY_SIZE(mt9t001_ctrls) +
-> -						ARRAY_SIZE(mt9t001_gains) + 3);
-> +						ARRAY_SIZE(mt9t001_gains) + 4);
-> 
->  	v4l2_ctrl_new_std(&mt9t001->ctrls, &mt9t001_ctrl_ops,
->  			  V4L2_CID_EXPOSURE, MT9T001_SHUTTER_WIDTH_MIN,
-> @@ -752,6 +755,10 @@ static int mt9t001_probe(struct i2c_client *client,
->  	v4l2_ctrl_new_std(&mt9t001->ctrls, &mt9t001_ctrl_ops,
->  			  V4L2_CID_PIXEL_RATE, pdata->ext_clk, pdata->ext_clk,
->  			  1, pdata->ext_clk);
-> +	v4l2_ctrl_new_std_menu_items(&mt9t001->ctrls, &mt9t001_ctrl_ops,
-> +			V4L2_CID_TEST_PATTERN,
-> +			ARRAY_SIZE(mt9t001_test_pattern_menu) - 1, 0,
-> +			0, mt9t001_test_pattern_menu);
-> 
->  	for (i = 0; i < ARRAY_SIZE(mt9t001_ctrls); ++i)
->  		v4l2_ctrl_new_custom(&mt9t001->ctrls, &mt9t001_ctrls[i], NULL);
-> diff --git a/drivers/media/i2c/mt9v032.c b/drivers/media/i2c/mt9v032.c
-> index e217740..988ecce 100644
-> --- a/drivers/media/i2c/mt9v032.c
-> +++ b/drivers/media/i2c/mt9v032.c
-> @@ -500,7 +500,7 @@ static int mt9v032_set_crop(struct v4l2_subdev *subdev,
->   * V4L2 subdev control operations
->   */
-> 
-> -#define V4L2_CID_TEST_PATTERN		(V4L2_CID_USER_BASE | 0x1001)
-> +#define V4L2_CID_TEST_PATTERN_COLOR	(V4L2_CID_USER_BASE | 0x1001)
-> 
->  static int mt9v032_s_ctrl(struct v4l2_ctrl *ctrl)
->  {
-> @@ -562,13 +562,15 @@ static int mt9v032_s_ctrl(struct v4l2_ctrl *ctrl)
-> 
->  			     | MT9V032_TEST_PATTERN_ENABLE;
-> 
->  			break;
->  		default:
-> -			data = (ctrl->val << MT9V032_TEST_PATTERN_DATA_SHIFT)
-> -			     | MT9V032_TEST_PATTERN_USE_DATA
-> -			     | MT9V032_TEST_PATTERN_ENABLE
-> -			     | MT9V032_TEST_PATTERN_FLIP;
-> +			data =  MT9V032_TEST_PATTERN_USE_DATA |
-> +				MT9V032_TEST_PATTERN_ENABLE |
-> +				MT9V032_TEST_PATTERN_FLIP;
->  			break;
->  		}
-> +		return mt9v032_write(client, MT9V032_TEST_PATTERN, data);
-> 
-> +	case V4L2_CID_TEST_PATTERN_COLOR:
-> +		data = ctrl->val << MT9V032_TEST_PATTERN_DATA_SHIFT;
->  		return mt9v032_write(client, MT9V032_TEST_PATTERN, data);
+2) defer our creation of memcg structures until the first task joins the
+group, which then is the most clear signal possible that this is being
+used.
 
-This won't work. Setting the V4L2_CID_TEST_PATTERN_COLOR control will disable 
-the test pattern, and setting the V4L2_CID_TEST_PATTERN control will set the 
-color to 0. You should put the two controls in a cluster. You can have a look 
-at how the mt9m032 driver handles the horizontal and vertical flip controls 
-for sample code.
 
->  	}
-> 
-> @@ -579,16 +581,24 @@ static struct v4l2_ctrl_ops mt9v032_ctrl_ops = {
->  	.s_ctrl = mt9v032_s_ctrl,
->  };
-> 
-> +static const char * const mt9v032_test_pattern_menu[] = {
-> +	"Disabled",
-> +	"Gray Vertical Shade",
-> +	"Gray Horizontal Shade",
-> +	"Gray Diagonal Shade",
-> +	"Plain",
-> +};
-> +
->  static const struct v4l2_ctrl_config mt9v032_ctrls[] = {
->  	{
->  		.ops		= &mt9v032_ctrl_ops,
-> -		.id		= V4L2_CID_TEST_PATTERN,
-> +		.id		= V4L2_CID_TEST_PATTERN_COLOR,
->  		.type		= V4L2_CTRL_TYPE_INTEGER,
-> -		.name		= "Test pattern",
-> -		.min		= 0,
-> +		.name		= "Test Pattern Color",
-> +		.min		= 4,
->  		.max		= 1023,
->  		.step		= 1,
-> -		.def		= 0,
-> +		.def		= 4,
->  		.flags		= 0,
->  	}
->  };
-> @@ -741,7 +751,7 @@ static int mt9v032_probe(struct i2c_client *client,
->  	mutex_init(&mt9v032->power_lock);
->  	mt9v032->pdata = pdata;
-> 
-> -	v4l2_ctrl_handler_init(&mt9v032->ctrls, ARRAY_SIZE(mt9v032_ctrls) + 8);
-> +	v4l2_ctrl_handler_init(&mt9v032->ctrls, ARRAY_SIZE(mt9v032_ctrls) + 9);
-> 
->  	v4l2_ctrl_new_std(&mt9v032->ctrls, &mt9v032_ctrl_ops,
->  			  V4L2_CID_AUTOGAIN, 0, 1, 1, 1);
-> @@ -763,6 +773,10 @@ static int mt9v032_probe(struct i2c_client *client,
->  			  V4L2_CID_VBLANK, MT9V032_VERTICAL_BLANKING_MIN,
->  			  MT9V032_VERTICAL_BLANKING_MAX, 1,
->  			  MT9V032_VERTICAL_BLANKING_DEF);
-> +	v4l2_ctrl_new_std_menu_items(&mt9v032->ctrls, &mt9v032_ctrl_ops,
-> +			V4L2_CID_TEST_PATTERN,
-> +			ARRAY_SIZE(mt9v032_test_pattern_menu) - 1, 0,
-> +			0, mt9v032_test_pattern_menu);
-> 
->  	mt9v032->pixel_rate =
->  		v4l2_ctrl_new_std(&mt9v032->ctrls, &mt9v032_ctrl_ops,
--- 
-Regards,
 
-Laurent Pinchart
+> iirc, the idea of disabling memcg operations until someone enables a
+> container had a couple of problems:
+> 
+I'll need other people to jump in here and make it specific, but in general:
+
+> a) certain boot-time initialisation issn't performed and
+> 
+
+I am calling page_cgroup_init() at 1st memcg creation time.
+The problem still exist that we will have tasks that are in LRUs but
+with page_cgroup not filled. I handled this is this series by just not
+testing this case, and assuming that empty page_cgroup == root_cgroup.
+
+This can make bugs harder to find should they arise, but I'll argue that
+it is worth it, given the gains.
+
+> b) when memcg starts running for real, it expects that certain stats
+>    gathering has been running since boot.  If this is not the case,
+>    those stats are wrong and stuff breaks.
+> 
+
+I need specifics as well, but in general, my strategy lays in the
+observation that all those statistics are already gathered in a global
+level. We just report the global statistics when someone asks for it for
+the root cgroup.
+
+> It would be helpful if you could summarise these and similar issues
+> and describe how they were addressed.
+>
+
+See above.
+I would appreciate if anyone with a more specific and directed concern
+would raise it.
+
+>> >
+>> > ...
+>> >
+>> >  struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+>> >  {
+>> > +	if (mem_cgroup_disabled())
+>> > +		return root_mem_cgroup;
+> There would be some benefit in inlining the above instructions into the
+> caller.
+> 
+>> >  	return mem_cgroup_from_css(
+>> >  		cgroup_subsys_state(cont, mem_cgroup_subsys_id));
+>> >  }
+> In fact the entire mem_cgroup_from_cont() could be inlined.
+> 
+
+Indeed.
+
+>> >  struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
+>> >  {
+>> > +
+>> > +	if (mem_cgroup_disabled())
+>> > +		return root_mem_cgroup;
+> Ditto.
+> 
+
+Indeetto.
+
+>> >  	/*
+>> >  	 * mm_update_next_owner() may clear mm->owner to NULL
+>> >  	 * if it races with swapoff, page migration, etc.
+>> >
+>> > ...
+>> >
 
