@@ -1,144 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab2IZUPR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:15:17 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:46597 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab2IZUPO (ORCPT
+	id S1754239Ab2IZUQA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:16:00 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61467 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab2IZUP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:15:14 -0400
+	Wed, 26 Sep 2012 16:15:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <1348243658-5127-1-git-send-email-jiang.liu@huawei.com>
-References: <CAErSpo5QwebVypZK21R9_mXaWic0NJqMPzx8vd-FVfTDq9Ui4Q@mail.gmail.com>
- <1348243658-5127-1-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Sep 2012 14:14:51 -0600
-Message-ID: <CAErSpo4Wa1s3O3pnt67_KVBEKkV0D-CQhtRX9yCjrnTmoHbN0w@mail.gmail.com>
-Subject: Re: [PATCH v4] PCI: introduce two interfaces to walk PCI buses
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
+In-Reply-To: <20120926160127.c34cb6d3e5dcc9ab32e8b573@canb.auug.org.au>
+References: <20120926160127.c34cb6d3e5dcc9ab32e8b573@canb.auug.org.au>
+Date: Wed, 26 Sep 2012 13:15:58 -0700
+X-Google-Sender-Auth: 2nrGv-VTe0VexX_j55oG7KQhVhI
+Message-ID: <CAGXu5jJJPLXP1cjtWAwHNmYQ6ZxtVu=Oo6vh=NkowzT+26RWPg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+From: Kees Cook <keescook@chromium.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 10:07 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> The pci_find_next_bus() is not hotplug safe, so introduce PCI hotplug
-> safe interfaces to walk PCI buses. To avoid some deadlock scenarios,
-> two interfaces are introduced.
->
-> The first one is pci_for_each_bus(), which walks all PCI buses holding
-> read lock on the pci_bus_sem.
->
-> The second one is pci_for_each_started_bus(), which walks all started
-> PCI buses without holding any global locks. Started PCI buses are those
-> which have been added to the device tree by calling device_add().
-> ---
-> Hi Bjorn,
->         How about this PCI bus iterator design? It's a little ugly that
-> we need to two interfaces to work around some deadlock scenarios.
-> And I plan to split the task into two parts:
->         1) a hotplug safe PCI bus iteraror to replace pci_find_next_bus
->         2) handle hotplug notifications to update bus related states.
->
-> My patchset at http://www.spinics.net/lists/linux-pci/msg17515.html has
-> patially solved issue 2 above for x86/ACPI, and will add more supports
-> for other platforms.
->         Thanks!
->         Gerry
+Hi,
 
-I like this interface:
+This is weird -- my original patch doesn't touch audit_get_sessionid() at all:
+http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=commitdiff;h=7bbfec58ed33d5e74043530b87992f16da718ba2
 
-    int pci_for_each_bus(int (* cb)(struct pci_bus *, void *), void *data)
+The patch in linux-next (currently
+e269b4131288512ebfe2adfe69042983cb2e69e5) got mangled to include
+removing it, possibly triggered by the audit_get_loginuid() changes
+("userns: Convert the audit loginuid  to be a kuid"). These shouldn't
+be removed:
 
-quite a bit because it has the potential for removing all the list
-knowledge from the callers, but there are two things I don't like:
+#define audit_get_loginuid(t) (INVALID_UID)
+#define audit_get_sessionid(t) (-1)
 
-  1) The interface would allow the PCI core to call the callback for
-future hot-added buses, but your implementation doesn't have that yet.
+I'll send an updated patch that'll apply on top of what's in linux-next.
 
-  2) I'd rather have something like "pci_for_each_dev()"  so this is
-device-based instead of bus-based.  The struct pci_bus is of limited
-usefulness outside the core, except as a container for a set of
-devices.  So the users of pci_for_each_bus() would often iterate
-through that set of devices, and given the complications of SR-IOV
-virtual buses, I don't think it's really clear how to do that
-iteration correctly.
+Thanks!
 
-> ---
->  drivers/pci/bus.c   |   42 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/pci.h |    1 +
->  2 files changed, 43 insertions(+)
+-Kees
+
+On Tue, Sep 25, 2012 at 11:01 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Andrew,
 >
-> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> index e16a8f0f..21b0ade 100644
-> --- a/drivers/pci/bus.c
-> +++ b/drivers/pci/bus.c
-> @@ -327,6 +327,48 @@ void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
->  }
->  EXPORT_SYMBOL_GPL(pci_walk_bus);
+> After merging the akpm tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 >
-> +static int pci_bus_iter(struct pci_bus *bus,
-> +                       int (* cb)(struct pci_bus *, void *), void *data)
-> +{
-> +       int rc;
-> +
-> +       rc = cb(bus, data);
-> +       if (rc == 0)
-> +               list_for_each_entry(bus, &bus->children, node) {
-> +                       rc = pci_bus_iter(bus, cb, data);
-> +                       if (rc)
-> +                               break;
-> +               }
-> +
-> +       return rc;
-> +}
-> +
-> +/** pci_for_each_bus - walk all PCI buses and call the provided callback.
-> + *  @cb   callback to be called for each bus found
-> + *  @data arbitrary pointer to be passed to callback.
-> + *
-> + *  Walk all PCI buses and call the provided callback with pci_bus_sem held.
-> + *
-> + *  We check the return of @cb each time. If it returns anything
-> + *  other than 0, we break out.
-> + */
-> +int pci_for_each_bus(int (* cb)(struct pci_bus *, void *), void *data)
-> +{
-> +       int rc = 0;
-> +       struct pci_bus *bus;
-> +
-> +       down_read(&pci_bus_sem);
-> +       list_for_each_entry(bus, &pci_root_buses, node) {
-> +               rc = pci_bus_iter(bus, cb, data);
-> +               if (rc)
-> +                       break;
-> +       }
-> +       up_read(&pci_bus_sem);
-> +
-> +       return rc;
-> +}
-> +EXPORT_SYMBOL(pci_for_each_bus);
-> +
->  struct pci_bus *pci_bus_get(struct pci_bus *bus)
->  {
->         if (bus)
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 3c5017d..1423a24 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1060,6 +1060,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+> net/key/af_key.c: In function 'pfkey_add':
+> net/key/af_key.c:1476:9: error: implicit declaration of function 'audit_get_sessionid' [-Werror=implicit-function-declaration]
+> net/core/dev.c: In function '__dev_set_promiscuity':
+> net/core/dev.c:4573:5: error: implicit declaration of function 'audit_get_sessionid' [-Werror=implicit-function-declaration]
 >
->  void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
->                   void *userdata);
-> +int pci_for_each_bus(int (* cb)(struct pci_bus *, void *), void *data);
->  int pci_cfg_space_size_ext(struct pci_dev *dev);
->  int pci_cfg_space_size(struct pci_dev *dev);
->  unsigned char pci_bus_max_busnr(struct pci_bus *bus);
+> Caused by commit "audit.h: replace defines with C stubs".
+>
+> I have reverted that commit for today.
 > --
-> 1.7.9.5
->
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
