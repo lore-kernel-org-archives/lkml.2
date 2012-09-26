@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab2IZGuJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 02:50:09 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:50995 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab2IZGuH (ORCPT
+	id S1752829Ab2IZGvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 02:51:14 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58620 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab2IZGvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 02:50:07 -0400
-Date: Wed, 26 Sep 2012 09:49:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Ilya gorskin <revent82@gmail.com>
-Cc: gregkh@linuxfoundation.org, forest@alittletooquiet.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:vt6656: Fix tabs error in 80211mgr.c
-Message-ID: <20120926064950.GB4587@mwanda>
-References: <1348639511-19305-1-git-send-email-revent82@gmail.com>
+	Wed, 26 Sep 2012 02:51:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348639511-19305-1-git-send-email-revent82@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1348642068.13371.135.camel@smile>
+References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348575190-11761-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x=kEDfY_DaBdbeY+CREiRJDH5yeNLUUuSpGTZcdWtZEd7g@mail.gmail.com>
+	<1348642068.13371.135.camel@smile>
+Date: Wed, 26 Sep 2012 12:21:12 +0530
+X-Google-Sender-Auth: PVs5vpv_RSbOqsdopwDP1ZBaw7o
+Message-ID: <CAOh2x=k=WPh4uPor=K+J752dR-pqZbieytkx-G7JGt+6LE_qSw@mail.gmail.com>
+Subject: Re: [PATCHv1 2/6] dmaengine: dw_dmac: add driver for Atmel AT32
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 12:05:11PM +0600, Ilya gorskin wrote:
-> This is a patch to the 80211mgr.c file that fixes up a tabs
-> error found by the checkpatch.pl tool
-> 
-> Signed-off-by: Goirskin Ilya <revent82@gmail.com>
-> ---
->  drivers/staging/vt6656/80211mgr.c | 628 +++++++++++++++++++-------------------
->  1 file changed, 310 insertions(+), 318 deletions(-)
-> 
-> diff --git a/drivers/staging/vt6656/80211mgr.c b/drivers/staging/vt6656/80211mgr.c
-> index 39f9842..4241d29 100644
-> --- a/drivers/staging/vt6656/80211mgr.c
-> +++ b/drivers/staging/vt6656/80211mgr.c
-> @@ -98,11 +98,11 @@ vMgrEncodeBeacon(
->  
->      /* Fixed Fields */
->      pFrame->pqwTimestamp = (PQWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
-> -                                    + WLAN_BEACON_OFF_TS);
-> +							+ WLAN_BEACON_OFF_TS);
+On Wed, Sep 26, 2012 at 12:17 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
 
-This was aligned correctly in the original.  (Although the line is
-messy so it explains why you were confused).
+> This separate driver makes no sense in case it is built properly without
+> CLK framework. Let me check this and leave comments at patch 1/6.
 
->      pFrame->pwBeaconInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
-> -                                       + WLAN_BEACON_OFF_BCN_INT);
-> +						+ WLAN_BEACON_OFF_BCN_INT);
->      pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
-> -                                + WLAN_BEACON_OFF_CAPINFO);
-> +						+ WLAN_BEACON_OFF_CAPINFO);
->  
->      pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_BEACON_OFF_SSID;
->  
-> @@ -132,98 +132,90 @@ vMgrDecodeBeacon(
->  
->      /* Fixed Fields */
->      pFrame->pqwTimestamp = (PQWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
-> -                                    + WLAN_BEACON_OFF_TS);
-> +							+ WLAN_BEACON_OFF_TS);
->      pFrame->pwBeaconInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
-> -                                       + WLAN_BEACON_OFF_BCN_INT);
-> +						+ WLAN_BEACON_OFF_BCN_INT);
->      pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
-> -                                + WLAN_BEACON_OFF_CAPINFO);
-> +						+ WLAN_BEACON_OFF_CAPINFO);
->  
->      /* Information elements */
->      pItem = (PWLAN_IE)((PBYTE)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3)))
-> -                       + WLAN_BEACON_OFF_SSID);
-> +						+ WLAN_BEACON_OFF_SSID);
+Following is the commit that introduced this change :)
 
-Actually all of these were more correct in the original.
+commit 93abe8e4b13ae9a0428ce940a8a03ac72a7626f1
+Author: Viresh Kumar <viresh.kumar@st.com>
+Date:   Mon Jul 30 14:39:27 2012 -0700
 
-Ah.  I see the problem.  The original used spaces.  Still the
-alignment was better.  It should be:
-[tab] [tab] [tab] [space] [space]
+    clk: add non CONFIG_HAVE_CLK routines
 
-You're allowed to use spaces to get the alignment to work.
+    Many drivers are shared between architectures that may or may not have
+    HAVE_CLK selected for them.  To remove compilation errors for them we
+    enclose clk_*() calls in these drivers within #ifdef CONFIG_HAVE_CLK,
+    #endif.
 
-Really the '+' should probably be on the line before.  But it's not
-worth sending a patch over.
+    This patch removes the need of these CONFIG_HAVE_CLK statements, by
+    introducing dummy routines when HAVE_CLK is not selected by platforms.
+    So, definition of these routines will always be available.  These calls
+    will return error for platforms that don't select HAVE_CLK.
 
->      pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
-> -                                + WLAN_REASSOCREQ_OFF_CAP_INFO);
-> +											+ WLAN_REASSOCREQ_OFF_CAP_INFO);
->      pFrame->pwListenInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
-> -                                      + WLAN_REASSOCREQ_OFF_LISTEN_INT);
-> +											+ WLAN_REASSOCREQ_OFF_LISTEN_INT);
-
-Really???  I'm not a huge fan of the 80 character line limit, but at
-least the left side of the line should be within the 80 characters.
-
-Yeah.  This patch is going nowhere.
-
-regards,
-dan carpenter
+    Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+    Cc: Wolfram Sang <w.sang@pengutronix.de>
+    Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Cc: Jeff Garzik <jgarzik@redhat.com>
+    Cc: Andrew Lunn <andrew@lunn.ch>
+    Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
+    Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+    Cc: Russell King <rmk@arm.linux.org.uk>
+    Cc: Mike Turquette <mturquette@linaro.org>
+    Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+    Cc: viresh kumar <viresh.linux@gmail.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
