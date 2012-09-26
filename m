@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758055Ab2IZRVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:21:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:10407 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756607Ab2IZRSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:18:42 -0400
-X-IronPort-AV: E=Sophos;i="4.80,492,1344182400"; 
-   d="scan'208";a="5922247"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, tangchen <tangchen@cn.fujitsu.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 02/12] workqueue: disallow set_cpus_allowed_ptr() from work item
-Date: Thu, 27 Sep 2012 01:20:33 +0800
-Message-Id: <1348680043-5077-3-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1348680043-5077-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1348680043-5077-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/27 01:18:45,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/27 01:18:45,
-	Serialize complete at 2012/09/27 01:18:45
+	id S932117Ab2IZRWA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 13:22:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34670 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757777Ab2IZRV4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 13:21:56 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.1 \(1498\))
+Subject: Re: replacement for /sys/kernel/debug/omap_mux in DT/pinctrl land ?
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <20120926161546.GC5641@beef>
+Date: Wed, 26 Sep 2012 19:21:53 +0200
+Cc: Linus Walleij <linus.walleij@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        List List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <50515DB7-8D0C-4F74-B390-78BC9CD86FC9@dominion.thruhere.net>
+References: <D7202A6C-5250-4B55-B3B8-FF15BCCA97AC@dominion.thruhere.net> <20120926125658.GA5641@beef> <CACRpkdYqVC4Vou+0Mn1OmQg8vPxDULDcFDD0yV5nassqkE1Zag@mail.gmail.com> <20120926161546.GC5641@beef>
+To: Matt Porter <mporter@ti.com>
+X-Mailer: Apple Mail (2.1498)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-workers depend on local-wake-up, if a work function change its CPU, it will
-corrupt workqueue, disallow this behavior.
 
-When set_cpus_allowed_ptr() is called from workqueue.c in worker_thread(),
-we clear the PF_WQ_WORKER before set_cpus_allowed_ptr() and set it back
-after. (rescuer thread has no PF_WQ_WORKER, skip this behavior)
+Op 26 sep. 2012, om 18:15 heeft Matt Porter <mporter@ti.com> het volgende geschreven:
 
-It prevents other/future BUGs like https://bugzilla.kernel.org/show_bug.cgi?id=47301.
+> On Wed, Sep 26, 2012 at 03:03:27PM +0200, Linus Walleij wrote:
+>> On Wed, Sep 26, 2012 at 2:56 PM, Matt Porter <mporter@ti.com> wrote:
+>>> Adding Linus W. and lkml.
+>>> On Wed, Sep 26, 2012 at 01:46:45PM +0200, Koen Kooi wrote:
+>>>> Hi,
+>>>> 
+>>>> With a patched 3.6rc7 on my beaglebone I can set the pinmux for pins using pinctrl and that seems to work. On the 3.2 vendor tree there was the omap_mux driver with an awesome debugfs interface:
+>>>> 
+>>>> # cat /sys/kernel/debug/omap_mux/lcd_data0
+>>>> name: lcd_data0.ehrpwm2A (0x44e108a0/0x8a0 = 0x0003), b NA, t NA
+>>>> mode: OMAP_PIN_OUTPUT | OMAP_MUX_MODE3
+>>>> signals: lcd_data0 | gpmc_a0 | pr1_mii_mt0_clk | ehrpwm2A | NA | pr1_pru1_pru_r30_0 | pr1_pru1_pru_r31_0 | gpio2_6
+>>>> 
+>>>> Notice how it tells me that it's muxed the PWM in 2 ways: signal name (ehrpwm2A) and register content (0x0003). Compare to pinctrl:
+>>>> 
+>>>> root@bone-mainline:/sys/kernel/debug/pinctrl/44e10800.pinmux# grep 8a0 *
+>>>> pinconf-pins:pin 40 (44e108a0):
+>>>> pingroups:pin 40 (44e108a0)
+>>>> pinmux-pins:pin 40 (44e108a0): 4a300000.pruss (GPIO UNCLAIMED) function pinmux_pruss_led_pins group pinmux_pruss_led_pins
+>>>> pins:pin 40 (44e108a0)  pinctrl-single
+>>>> 
+>>>> What is that pin muxed to? It is part of the 'pinmux_pruss_led_pins' in the DT, but debugfs remains mute on how pin 40 is muxed.
+>>> 
+>>> It does seem like a pretty big gap in the pinctrl/pinmux debugfs
+>>> interface when viewed from an OMAP perspective. Ideally there would
+>>> be a pinctrl/pinmux hook to the pinmux driver to provide the detailed
+>>> h/w specific pin state info.
+>> 
+>> So add the hooks you need?
+> 
+> Ok. :)
+> 
+>> I assume you are using Tony's pinctrl-single driver, so Tony is the one to ask.
+> 
+> Yes, so roughly for pinctrl-single I have the following...likely broken
+> for arbitrary register sizes but a starting point. Tony, any thoughts
+> about this?
+> 
+> Koen: you just need a userspace tool that groks the raw data for human
+> consumption. The nice thing is that the old omap_mux implementation had
+> plenty of OMAP-isms in the parser that didn't apply to AM33xx. A
+> userspace tool can do a better job of parsing on a per-part basis.
+> 
+> --- a/drivers/pinctrl/pinctrl-single.c
+> +++ b/drivers/pinctrl/pinctrl-single.c
+> @@ -246,7 +246,15 @@ static void pcs_pin_dbg_show(struct pinctrl_dev *pctldev,
+> 					struct seq_file *s,
+> 					unsigned offset)
+> {
+> -	seq_printf(s, " " DRIVER_NAME);
+> +	struct pcs_device *pcs;
+> +	unsigned val;
+> +
+> +	pcs = pinctrl_dev_get_drvdata(pctldev);
+> +
+> +	val = pcs->read(pcs->base + offset);
+> +	val &= pcs->fmask;
+> +
+> +	seq_printf(s, "%08x %s " , val, DRIVER_NAME);
+> }
+> 
+> static void pcs_dt_free_map(struct pinctrl_dev *pctldev,
 
-CC: tangchen <tangchen@cn.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/sched/core.c |    8 +++++---
- kernel/workqueue.c  |   10 +++++++++-
- 2 files changed, 14 insertions(+), 4 deletions(-)
+Much better already:
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d325c4b..355d3cc 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5187,9 +5187,11 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
- 		goto out;
- 	}
- 
--	if (unlikely((p->flags & PF_THREAD_BOUND) && p != current)) {
--		ret = -EINVAL;
--		goto out;
-+	if (unlikely(p->flags & PF_THREAD_BOUND)) {
-+		if (WARN_ON_ONCE(p->flags & PF_WQ_WORKER) || p != current) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
- 	}
- 
- 	do_set_cpus_allowed(p, new_mask);
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index ec882a6..c55884d 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1600,6 +1600,7 @@ __acquires(&gcwq->lock)
- 	struct global_cwq *gcwq = worker->pool->gcwq;
- 	struct task_struct *task = worker->task;
- 
-+	BUG_ON(task != current);
- 	while (true) {
- 		/*
- 		 * The following call may fail, succeed or succeed
-@@ -1607,9 +1608,16 @@ __acquires(&gcwq->lock)
- 		 * it races with cpu hotunplug operation.  Verify
- 		 * against GCWQ_DISASSOCIATED.
- 		 */
--		if (!(gcwq->flags & GCWQ_DISASSOCIATED))
-+		if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
-+			if (!(worker->flags & WORKER_RESCUER))
-+				task->flags &= ~PF_WQ_WORKER;
-+
- 			set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
- 
-+			if (!(worker->flags & WORKER_RESCUER))
-+				task->flags |= PF_WQ_WORKER;
-+		}
-+
- 		spin_lock_irq(&gcwq->lock);
- 		if (gcwq->flags & GCWQ_DISASSOCIATED)
- 			return false;
--- 
-1.7.7.6
+root@bone-mainline:/sys/kernel/debug/pinctrl/44e10800.pinmux# grep 8a0 pins
+pin 40 (44e108a0) 00000027 pinctrl-single 
+
+Now I can write a userspace tool do list the current muxes without resorting to devmem2!
 
