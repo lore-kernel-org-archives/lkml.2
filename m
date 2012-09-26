@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab2IZKzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 06:55:25 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64236 "EHLO
+	id S1754313Ab2IZLKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 07:10:51 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:65151 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab2IZKzX (ORCPT
+	with ESMTP id S1752809Ab2IZLKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 06:55:23 -0400
+	Wed, 26 Sep 2012 07:10:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <CABb+yY36pQ7oXC1OKEQ-1V55c2SZurcTAPaZ=_PWugqxdL2rgg@mail.gmail.com>
-References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
-	<1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
-	<CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
-	<CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
-	<CABb+yY36pQ7oXC1OKEQ-1V55c2SZurcTAPaZ=_PWugqxdL2rgg@mail.gmail.com>
-Date: Wed, 26 Sep 2012 16:25:22 +0530
-Message-ID: <CAG17yqQ5NDr4sLvWbA85q5y079j2M2OV-uRjXSSL=OFPfCw3Zg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
-From: Inderpal Singh <inderpal.singh@linaro.org>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        boojin.kim@samsung.com, vinod.koul@intel.com, patches@linaro.org,
-        kgene.kim@samsung.com
+In-Reply-To: <1348525213-18987-2-git-send-email-m-karicheri2@ti.com>
+References: <1348525213-18987-1-git-send-email-m-karicheri2@ti.com>
+	<1348525213-18987-2-git-send-email-m-karicheri2@ti.com>
+Date: Wed, 26 Sep 2012 13:10:49 +0200
+Message-ID: <CACRpkdbpZ+dxoCq7Ky=EMDR2uDX10vyn3-P+V6iN8mwWCof+HQ@mail.gmail.com>
+Subject: Re: [PATCH v1 01/12] clk: davinci - add Main PLL clock driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: mturquette@linaro.org, arnd@arndb.de, akpm@linux-foundation.org,
+        shawn.guo@linaro.org, rob.herring@calxeda.com, viresh.linux@gmail.com,
+        linux-kernel@vger.kernel.org, nsekhar@ti.com, khilman@ti.com,
+        linux@arm.linux.org.uk, davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, linux-keystone@list.ti.com,
+        linux-c6x-dev@linux-c6x.org, cyril@ti.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2012 15:02, Jassi Brar <jassisinghbrar@gmail.com> wrote:
-> On Wed, Sep 26, 2012 at 12:11 PM, Inderpal Singh
-> <inderpal.singh@linaro.org> wrote:
->
->> How about conditionally DMA_TERMINATE_ALL and free resources like below ?
->>
->> @@ -3017,9 +3017,11 @@ static int __devexit pl330_remove(struct
->> amba_device *adev)
->>                 /* Remove the channel */
->>                 list_del(&pch->chan.device_node);
->>
->> -               /* Flush the channel */
->> -               pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
->> -               pl330_free_chan_resources(&pch->chan);
->> +               if (pch->chan.client_count != 0) {
->> +                       /* Flush the channel */
->> +                       pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
->> +                       pl330_free_chan_resources(&pch->chan);
->> +               }
->>         }
->>
-> It is perfectly safe to flush the channels that have client_count == 0
-> as well. Which is already the case.
+On Tue, Sep 25, 2012 at 12:20 AM, Murali Karicheri <m-karicheri2@ti.com> wrote:
 
-As per my understanding, if client_count ==0, It may mean following:
+> +struct clk_davinci_pll_data {
+> +       /* physical addresses set by platform code */
+> +       u32 phy_pllm;
+> +       /* if PLL has a prediv register this should be non zero */
+> +       u32 phy_prediv;
+> +       /* if PLL has a postdiv register this should be non zero */
+> +       u32 phy_postdiv;
+> +       /* mapped addresses. should be initialized by  */
+> +       void __iomem *pllm;
+> +       void __iomem *prediv;
+> +       void __iomem *postdiv;
+> +       u32 pllm_mask;
+> +       u32 prediv_mask;
+> +       u32 postdiv_mask;
+> +       u32 num;
+> +       /* framework flags */
+> +       u32 flags;
+> +       /* pll flags */
+> +       u32 pll_flags;
+> +       u32 fixed_prediv;       /* use this value for prediv */
+> +       u32 pllm_multiplier;    /* multiply PLLM by this factor. By default
+> +                                * most SOC set this to zero that translates
+> +                                * to a multiplier of 1 and incrementer of 1.
+> +                                * To override default, set this factor */
+> +};
 
-1. This channel was never allocated to any client. Hence
-alloc_chan_resources was not done for it.
-So, no need to flush and free resources if it was never allocated at
-the first place. If we free_chan_resources, it will not be balanced
-against alloc_chan_resources. Scenario: insmod and then rmmod.
+OMG this commenting style hurt my eyes ;-)
 
-Or,
+Please use good old kerneldoc above the struct instead.
 
-2. The channel was allocated to some client, alloc_chan_resource was
-done, the work for the client is completed and free_chan_resources was
-performed. Now  since resources have already been freed, no need to
-flush and free_chan_resources again in remove.
-
-The whole idea of this patch is to balance alloc_chan_resources and
-free_chan_resources.
-
-Thanks,
-Inder
+Yours,
+Linus Walleij
