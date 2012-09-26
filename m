@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757108Ab2IZQ3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 12:29:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55826 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab2IZQ3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 12:29:46 -0400
-Date: Wed, 26 Sep 2012 09:29:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Calvin Walton <calvin.walton@kepstin.ca>
-Cc: Minchan Kim <minchan@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
+	id S1757182Ab2IZQcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 12:32:04 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:47382 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756951Ab2IZQcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 12:32:02 -0400
+Date: Wed, 26 Sep 2012 18:31:45 +0200
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] zram: select ZSMALLOC when ZRAM is configured
-Message-ID: <20120926162941.GA29694@kroah.com>
-References: <1348649419-16494-1-git-send-email-minchan@kernel.org>
- <1348649419-16494-4-git-send-email-minchan@kernel.org>
- <20120926161539.GA30132@kroah.com>
- <1348676615.2552.5.camel@ayu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Subject: Re: [PATCH 1/8] sta2x11-mfd : add apb-soc regs driver and factor out common code
+Message-ID: <20120926163145.GK10147@mail.gnudd.com>
+References: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com> <1347445374-32140-2-git-send-email-ciminaghi@gnudd.com> <20120925192048.GA17038@sirena.org.uk> <20120926145615.GJ10147@mail.gnudd.com> <20120926150429.GQ4428@opensource.wolfsonmicro.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1348676615.2552.5.camel@ayu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120926150429.GQ4428@opensource.wolfsonmicro.com>
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 12:23:35PM -0400, Calvin Walton wrote:
-> On Wed, 2012-09-26 at 09:15 -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Sep 26, 2012 at 05:50:19PM +0900, Minchan Kim wrote:
-> > > At the monent, we can configure zram in driver/block once zsmalloc
-> > > in /lib menu is configured firstly. It's not convenient.
-> > > 
-> > > User can configure zram in driver/block regardless of zsmalloc enabling
-> > > by this patch.
-> > > 
-> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > ---
-> > >  drivers/block/zram/Kconfig |    3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
-> > > index be5abe8..ee23a86 100644
-> > > --- a/drivers/block/zram/Kconfig
-> > > +++ b/drivers/block/zram/Kconfig
-> > > @@ -1,6 +1,7 @@
-> > >  config ZRAM
-> > >  	tristate "Compressed RAM block device support"
-> > > -	depends on BLOCK && SYSFS && ZSMALLOC
-> > > +	depends on BLOCK && SYSFS
-> > > +	select ZSMALLOC
-> > 
-> > As ZSMALLOC is dependant on CONFIG_STAGING, this isn't going to work at
-> > all, sorry.
+On Wed, Sep 26, 2012 at 04:04:29PM +0100, Mark Brown wrote:
+> On Wed, Sep 26, 2012 at 04:56:15PM +0200, Davide Ciminaghi wrote:
+> > On Tue, Sep 25, 2012 at 08:20:48PM +0100, Mark Brown wrote:
 > 
-> Perhaps you missed [PATCH 1/3] zsmalloc: promote to lib/ ? The first
-> patch in this series moves zsmalloc out of the staging directory, and
-> removes the dependency on CONFIG_STAGING.
+> > > Glancing at the diff here this looks a lot like regmap-mmio...  not sure
+> > > if it is or not, though.
+> 
+> > that would be ideal, but I also need to deal with the common clock framework,
+> > which doesn't support regmap: clk_register_divider(), clk_register_mux(),
+> > clk_register_gate(), all take a void __iomem * to access clock control
+> > registers, so as far as I can understand we can't use regmap, unless of
+> > course we convert the common clock framework to regmap.
+> 
+> The two should be able to coexist happily, regmap-mmio requires the
+> caller to do the actual mapping and so long as you don't cache the
+> relevant registers the two shouldn't interfere with each other.
+>
+Well, it just sounded not so clean to me having two ways for accessing the
+same registers. The caller would be sta2x11-mfd in our case, while clock
+registers are used by the common clock framework, so sta2x11-mfd should still
+need to export some void __iomem *  to make the clock framework happy, while
+other potential users could go via regmap.
+Oh, and there's another problem (I'm looking at the code right now, I had
+forgotten about this): the clock framework also asks for a spinlock_t *.
+Regmap has its own spinlock (or mutex), and I don't think it would be a
+good idea trying to export it.
+So, as far as I can understand at present, the best thing to do would be
+adding regmap support to the clock framework, which wouldn't be trivial
+because I guess we should keep compatibility with the present
+clk_register_... api
 
-Ah, I did, thanks.
-
-For 3.7, it's too late to be moving stuff out of staging to the "real"
-part of the kernel as 3.6 is about to be released.
-
-Possibly, if everyone agrees with this, after 3.7 is out we can do this
-for 3.8, ok?
-
-thanks,
-
-greg k-h
+Davide
