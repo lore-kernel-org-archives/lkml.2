@@ -1,112 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab2IZUIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:08:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34699 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab2IZUIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:08:37 -0400
-Date: Wed, 26 Sep 2012 13:08:33 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [BUG] Deferred probing in driver model is racy, resulting in
- lost probes
-Message-ID: <20120926200833.GA14340@kroah.com>
-References: <20120818145856.GP18957@n2100.arm.linux.org.uk>
- <CACVXFVPahbFVEP4p2Z9-TvjQ52tUCMuDeLx0X6GP5t0h5gEV8g@mail.gmail.com>
- <20120916082510.GN12245@n2100.arm.linux.org.uk>
- <CACVXFVOZ=4HFAy38q_8ZUjOPffcv_mMTi7KCdh3HcX=MCLw5SQ@mail.gmail.com>
+	id S1754271Ab2IZUI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:08:58 -0400
+Received: from www.0x90.at ([78.46.59.21]:39733 "EHLO mail.0x90.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752219Ab2IZUI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 16:08:56 -0400
+Date: Wed, 26 Sep 2012 22:08:38 +0200
+From: Daniel Walter <sahne@0x90.at>
+To: mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com
+Subject: [PATCH] trace: replace strict_strto* with kstrto*
+Message-ID: <20120926200838.GC1244@0x90.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVOZ=4HFAy38q_8ZUjOPffcv_mMTi7KCdh3HcX=MCLw5SQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 16, 2012 at 09:24:43PM +0800, Ming Lei wrote:
-> On Sun, Sep 16, 2012 at 4:25 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> >
-> > It isn't.  As I said, it's a race condition due to lack of locking - the
-> > driver hasn't been added to the list of drivers at this point:
-> >
-> > int bus_add_driver(struct device_driver *drv)
-> > {
-> > ...
-> >         if (drv->bus->p->drivers_autoprobe) {
-> >                 error = driver_attach(drv);
-> >                 if (error)
-> >                         goto out_unregister;
-> >         }
-> >         klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
-> > ...
-> > }
-> >
-> > Notice that the attaching is done _before_ the driver is added to the
-> > bus driver list.
-> 
-> Yes, it is a problem since a new device may be added to bus
-> and bus_probe_device() may not see the new added driver.
-> 
-> So looks klist_add_tail() should complete before driver_attach()
-> inside bus_add_driver().
-> 
-> The attached one line change should fix the problem because the
-> below way can guarantee that no probe(dev) may be lost.
-> 
-> 
-> CPU0				CPU1
-> driver_register
-> 	...
-> 	write(bus->driver_list)
-> 	smp_mb()
-> 	read(bus->device_list)
-> 	...
-> 				device_add
-> 					/* bus_add_device */	
-> 					write(bus->device_list)
-> 					smp_mb()
-> 					/* bus_probe_device*/
-> 					read(bus->driver_list)
-> 
-> And the smp_mb() has been implicit by UNLOCK+LOCK
-> of 'klist' according to 'VARIETIES OF MEMORY BARRIER' part
-> of Documentation/memory-barriers.txt.
-> 
-> Could you test the below patch to see if it can fix your problem?
-> 
-> diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-> index 181ed26..17d7437 100644
-> --- a/drivers/base/bus.c
-> +++ b/drivers/base/bus.c
-> @@ -714,12 +714,12 @@ int bus_add_driver(struct device_driver *drv)
->  	if (error)
->  		goto out_unregister;
-> 
-> +	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
->  	if (drv->bus->p->drivers_autoprobe) {
->  		error = driver_attach(drv);
->  		if (error)
->  			goto out_unregister;
->  	}
-> -	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
->  	module_add_driver(drv->owner, drv);
-> 
->  	error = driver_create_file(drv, &driver_attr_uevent);
-> 
-> 
-> 
+[trace] replace strict_strto* with kstrto*
 
-Did the above patch ever prove to solve the issue or not?
+ * remove old string conversions with kstrto*
 
-thanks,
-
-greg k-h
+Signed-off-by: Daniel Walter <sahne@0x90.at>
+---
+ kernel/trace/ftrace.c              |    2 +-
+ kernel/trace/trace.c               |    2 +-
+ kernel/trace/trace_events_filter.c |    4 ++--
+ kernel/trace/trace_functions.c     |    2 +-
+ kernel/trace/trace_kprobe.c        |    2 +-
+ kernel/trace/trace_probe.c         |   14 +++++++-------
+ kernel/trace/trace_uprobe.c        |    2 +-
+ 7 files changed, 14 insertions(+), 14 deletions(-)
+---
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index b4f20fb..5c1f213 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -4215,7 +4215,7 @@ ftrace_pid_write(struct file *filp, const char __user *ubuf,
+ 	if (strlen(tmp) == 0)
+ 		return 1;
+ 
+-	ret = strict_strtol(tmp, 10, &val);
++	ret = kstrtol(tmp, 10, &val);
+ 	if (ret < 0)
+ 		return ret;
+ 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5c38c81..807cb78 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -431,7 +431,7 @@ static int __init set_tracing_thresh(char *str)
+ 
+ 	if (!str)
+ 		return 0;
+-	ret = strict_strtoul(str, 0, &threshhold);
++	ret = kstrtoul(str, 0, &threshhold);
+ 	if (ret < 0)
+ 		return 0;
+ 	tracing_thresh = threshhold * 1000;
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 431dba8..2a6440f 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -1000,9 +1000,9 @@ static int init_pred(struct filter_parse_state *ps,
+ 		}
+ 	} else {
+ 		if (field->is_signed)
+-			ret = strict_strtoll(pred->regex.pattern, 0, &val);
++			ret = kstrtoll(pred->regex.pattern, 0, &val);
+ 		else
+-			ret = strict_strtoull(pred->regex.pattern, 0, &val);
++			ret = kstrtoull(pred->regex.pattern, 0, &val);
+ 		if (ret) {
+ 			parse_error(ps, FILT_ERR_ILLEGAL_INTVAL, 0);
+ 			return -EINVAL;
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index a426f41..6e2be2d 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -375,7 +375,7 @@ ftrace_trace_onoff_callback(struct ftrace_hash *hash,
+ 	 * We use the callback data field (which is a pointer)
+ 	 * as our counter.
+ 	 */
+-	ret = strict_strtoul(number, 0, (unsigned long *)&count);
++	ret = kstrtoul(number, 0, (unsigned long *)&count);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 1a21170..5a3c533 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -444,7 +444,7 @@ static int create_trace_probe(int argc, char **argv)
+ 			return -EINVAL;
+ 		}
+ 		/* an address specified */
+-		ret = strict_strtoul(&argv[1][0], 0, (unsigned long *)&addr);
++		ret = kstrtoul(&argv[1][0], 0, (unsigned long *)&addr);
+ 		if (ret) {
+ 			pr_info("Failed to parse address.\n");
+ 			return ret;
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index daa9980..412e959 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -441,7 +441,7 @@ static const struct fetch_type *find_fetch_type(const char *type)
+ 			goto fail;
+ 
+ 		type++;
+-		if (strict_strtoul(type, 0, &bs))
++		if (kstrtoul(type, 0, &bs))
+ 			goto fail;
+ 
+ 		switch (bs) {
+@@ -501,8 +501,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
+ 
+ 	tmp = strchr(symbol, '+');
+ 	if (tmp) {
+-		/* skip sign because strict_strtol doesn't accept '+' */
+-		ret = strict_strtoul(tmp + 1, 0, offset);
++		/* skip sign because kstrtoul doesn't accept '+' */
++		ret = kstrtoul(tmp + 1, 0, offset);
+ 		if (ret)
+ 			return ret;
+ 
+@@ -533,7 +533,7 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+ 			else
+ 				ret = -EINVAL;
+ 		} else if (isdigit(arg[5])) {
+-			ret = strict_strtoul(arg + 5, 10, &param);
++			ret = kstrtoul(arg + 5, 10, &param);
+ 			if (ret || param > PARAM_MAX_STACK)
+ 				ret = -EINVAL;
+ 			else {
+@@ -579,7 +579,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 
+ 	case '@':	/* memory or symbol */
+ 		if (isdigit(arg[1])) {
+-			ret = strict_strtoul(arg + 1, 0, &param);
++			ret = kstrtoul(arg + 1, 0, &param);
+ 			if (ret)
+ 				break;
+ 
+@@ -597,14 +597,14 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 		break;
+ 
+ 	case '+':	/* deref memory */
+-		arg++;	/* Skip '+', because strict_strtol() rejects it. */
++		arg++;	/* Skip '+', because kstrtol() rejects it. */
+ 	case '-':
+ 		tmp = strchr(arg, '(');
+ 		if (!tmp)
+ 			break;
+ 
+ 		*tmp = '\0';
+-		ret = strict_strtol(arg, 0, &offset);
++		ret = kstrtol(arg, 0, &offset);
+ 
+ 		if (ret)
+ 			break;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 03003cd..4ff9ca4 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -252,7 +252,7 @@ static int create_trace_uprobe(int argc, char **argv)
+ 	if (ret)
+ 		goto fail_address_parse;
+ 
+-	ret = strict_strtoul(arg, 0, &offset);
++	ret = kstrtoul(arg, 0, &offset);
+ 	if (ret)
+ 		goto fail_address_parse;
+ 
