@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab2IZWLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 18:11:53 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58314 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab2IZWLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 18:11:51 -0400
-Date: Wed, 26 Sep 2012 18:11:36 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120926221136.GB2667@cmpxchg.org>
-References: <20120926163648.GO16296@google.com>
- <50633D24.6020002@parallels.com>
- <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com>
- <50634105.8060302@parallels.com>
- <20120926180124.GA12544@google.com>
- <50634FC9.4090609@parallels.com>
- <20120926193417.GJ12544@google.com>
- <50635B9D.8020205@parallels.com>
- <20120926195648.GA20342@google.com>
- <50635F46.7000700@parallels.com>
+	id S1753044Ab2IZWV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 18:21:26 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:49142 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab2IZWVY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 18:21:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50635F46.7000700@parallels.com>
+In-Reply-To: <1347494898-16671-4-git-send-email-omar.luna@linaro.org>
+References: <1347494898-16671-1-git-send-email-omar.luna@linaro.org>
+	<1347494898-16671-4-git-send-email-omar.luna@linaro.org>
+Date: Wed, 26 Sep 2012 17:21:24 -0500
+Message-ID: <CALLhW=4d8zxekkeGr1S52aGbufyk-vGeE9REYhDSt8pnap_Dxw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] OMAP: mailbox initial device tree support
+From: Omar Ramirez Luna <omar.luna@linaro.org>
+To: Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 12:02:14AM +0400, Glauber Costa wrote:
-> On 09/26/2012 11:56 PM, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Wed, Sep 26, 2012 at 11:46:37PM +0400, Glauber Costa wrote:
-> >> Besides not being part of cgroup core, and respecting very much both
-> >> cgroups' and basic sanity properties, kmem is an actual feature that
-> >> some people want, and some people don't. There is no reason to believe
-> >> that applications that want will live in the same environment with ones
-> >> that don't want.
-> > 
-> > I don't know.  It definitely is less crazy than .use_hierarchy but I
-> > wouldn't say it's an inherently different thing.  I mean, what does it
-> > even mean to have u+k limit on one subtree and not on another branch?
-> > And we worry about things like what if parent doesn't enable it but
-> > its chlidren do.
-> > 
-> 
-> It is inherently different. To begin with, it actually contemplates two
-> use cases. It is not a work around.
-> 
-> The meaning is also very well defined. The meaning of having this
-> enabled in one subtree and not in other is: Subtree A wants to track
-> kernel memory. Subtree B does not. It's that, and never more than that.
-> There is no maybes and no buts, no magic knobs that makes it behave in a
-> crazy way.
-> 
-> If a children enables it but the parent does not, this does what every
-> tree does: enable it from that point downwards.
-> 
-> > This is a feature which adds complexity.  If the feature is necessary
-> > and justified, sure.  If not, let's please not and let's err on the
-> > side of conservativeness.  We can always add it later but the other
-> > direction is much harder.
-> 
-> I disagree. Having kmem tracking adds complexity. Having to cope with
-> the use case where we turn it on dynamically to cope with the "user page
-> only" use case adds complexity. But I see no significant complexity
-> being added by having it per subtree. Really.
+Hi Benoit,
 
-Maybe not in code, but you are adding an extra variable into the
-system.  "One switch per subtree" is more complex than "one switch."
-Yes, the toggle is hidden behind setting the limit, but it's still a
-toggle.  The use_hierarchy complexity comes not from the file that
-enables it, but from the resulting semantics.
+On 12 September 2012 19:08, Omar Ramirez Luna <omar.luna@linaro.org> wrote:
+> To allow mailbox driver to function with device tree.
+>
+> Tested in OMAP4 and OMAP3. OMAP2 untested.
+>
+> Patch: arm/dts: OMAP2+: Add mailbox nodes, was Acked by Benoit
+> however it seems it wasn't picked up, so resend.
+>
+> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg69121.html
+>
+> Patch: OMAP: mailbox: add device tree support, there wasn't an
+> opposition other than to cleanup the driver too, however I got
+> quite some patches to send before continuing the cleanup.
+>
+> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg69338.html
+>
+> Omar Ramirez Luna (2):
+>   OMAP: mailbox: add device tree support
+>   arm/dts: OMAP2+: Add mailbox nodes
+>
+>  .../devicetree/bindings/arm/omap/mailbox.txt       |    9 +++++++++
+>  arch/arm/boot/dts/omap2.dtsi                       |    5 +++++
+>  arch/arm/boot/dts/omap3.dtsi                       |    5 +++++
+>  arch/arm/boot/dts/omap4.dtsi                       |    5 +++++
+>  arch/arm/mach-omap2/devices.c                      |    3 +++
+>  arch/arm/mach-omap2/mailbox.c                      |   12 ++++++++++++
+>  6 files changed, 39 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/omap/mailbox.txt
 
-kmem accounting is expensive and we definitely want to allow enabling
-it separately from traditional user memory accounting.  But I think
-there is no good reason to not demand an all-or-nothing answer from
-the admin; either he wants kmem tracking on a machine or not.  At
-least you haven't presented a convincing case, IMO.
+Ping. I'm in the understanding that these go through your tree, am I right?
 
-I don't think there is strong/any demand for per-node toggles, but
-once we add this behavior, people will rely on it and expect kmem
-tracking to stay local and we are stuck with it.  Adding it for the
-reason that people will use it is a self-fulfilling prophecy.
+Regards,
 
-> You have the use_hierarchy fiasco in mind, and I do understand that you
-> are raising the flag and all that.
-> 
-> But think in terms of functionality: This thing here is a lot more
-> similar to swap than use_hierarchy. Would you argue that memsw should be
-> per-root ?
-
-We actually do have a per-root flag that controls accounting for swap.
-
-> The reason why it shouldn't: Some people want to limit memory
-> consumption all the way to the swap, some people don't. Same with kmem.
-
-That lies in the nature of the interface: we chose k & u+k rather than
-u & u+k, so our memory.limit_in_bytes will necessarily include kmem,
-while swap is not included there.  But I really doubt that there is a
-strong case for turning on swap accounting intentionally and then
-limiting memory+swap only on certain subtrees.  Where would be the
-sense in that?
+Omar
