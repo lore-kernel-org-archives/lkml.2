@@ -1,107 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab2IZXiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 19:38:52 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56675 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab2IZXiv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 19:38:51 -0400
-Date: Wed, 26 Sep 2012 16:35:56 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] pstore: avoid recursive spinlocks in the
- oops_in_progress case
-Message-ID: <20120926233553.GA7203@lizard>
-References: <1347903824.29767.15.camel@cliu38-desktop-build>
- <20120920225727.GD29721@lizard>
- <3908561D78D1C84285E8C5FCA982C28F19D43812@ORSMSX108.amr.corp.intel.com>
- <20120920232536.GB8209@lizard>
- <3908561D78D1C84285E8C5FCA982C28F19D43892@ORSMSX108.amr.corp.intel.com>
- <20120921003706.GB14399@lizard>
- <3908561D78D1C84285E8C5FCA982C28F19D4404F@ORSMSX108.amr.corp.intel.com>
+	id S1751977Ab2IZXlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 19:41:40 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:50786 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750950Ab2IZXli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 19:41:38 -0400
+Date: Thu, 27 Sep 2012 01:41:31 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Cc: hjk@hansjkoch.de, gregkh@linuxfoundation.org, magnus.damm@gmail.com,
+        horms@verge.net.au, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org, hdk@igel.co.jp
+Subject: Re: [v2 PATCH 2/2] Add uio_dmem_genirq description to UIO
+ documentation
+Message-ID: <20120926234131.GC4776@local>
+References: <1348553352-14334-1-git-send-email-dhobsong@igel.co.jp>
+ <1348553352-14334-3-git-send-email-dhobsong@igel.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D4404F@ORSMSX108.amr.corp.intel.com>
+In-Reply-To: <1348553352-14334-3-git-send-email-dhobsong@igel.co.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 03:02:35PM +0000, Luck, Tony wrote:
-> > And my plan was to get rid of the fact that backends touch pstore->buf
-> > directly. Backends would always receive anonymous 'buf' pointer (we
-> > already have write_buf callback that does exactly this), and thus it
+On Tue, Sep 25, 2012 at 03:09:12PM +0900, Damian Hobson-Garcia wrote:
+> Signed-off-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+
+Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
+
+> ---
+>  Documentation/DocBook/uio-howto.tmpl |   56 ++++++++++++++++++++++++++++++++++
+>  1 files changed, 56 insertions(+), 0 deletions(-)
 > 
-> It feels like we are just shuffling the lock problem from one place
-> to another.  In the panic case we have to use a pre-allocated buffer
-> (hoping that we can allocate one seems to be a foolish plan).
-
-Yes, we definitely need some buffer pre-allocated for panics, so I have no
-plans to get rid of the 'buf' -- both 'buf' and 'buf_lock' are going to
-stay. But it will not be multi-purpose anymore (which I see as an
-improvement).
-
-The thing is, what I dislike is the whole console_write routine:
-
-static void pstore_console_write(struct console *con, const char *s, unsigned c)
-{
-	const char *e = s + c;
-
-	while (s < e) {
-		unsigned long flags;
-
-		if (c > psinfo->bufsize)
-			c = psinfo->bufsize;
-		spin_lock_irqsave(&psinfo->buf_lock, flags);
-		memcpy(psinfo->buf, s, c);
-		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
-		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
-		s += c;
-		c = e - s;
-	}
-}
-
-It's bad not because of the locks, but because we unnecessary copy things
-around -- and that's the only reason why we need the lock in the first
-place.
-
-With write_buf, the above would turn into just:
-
-static void pstore_console_write(struct console *con, const char *s, unsigned c)
-{
-	psinfo->write_buf(PSTORE_TYPE_CONSOLE, 0, NULL, 0, s, c, psinfo);
-}
-
-Of course, this assumes that write_buf does its own hw/driver-specific
-protection, but only if necessary: for ram backend no locks would be
-necessary at all.
-
-And as it appears, both erst and efivars drivers do their own locks in the
-->write callback anyways. (Btw, efi pstore backend just grabs its lock w/o
-trying it first, is it in trouble?)
-
-
-But for panic case, we will use buf and buf_lock:
-
-pstore_dump()
-{
-	lock(buf_lock);
-	...
-	psinfo->write_buf(PSTORE_TYPE_DMESG, ..., psinfo->buf, ...);
-	...
-	unlock(buf_lock);
-}
-
-So, we will use them, but only when necessary (for dumping). We can think
-of them as dump_buf and dump_buf_lock, because that's the only when this
-stuff will be needed, actually.
-
-Thanks,
-Anton.
+> diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
+> index ac3d001..db08c1a 100644
+> --- a/Documentation/DocBook/uio-howto.tmpl
+> +++ b/Documentation/DocBook/uio-howto.tmpl
+> @@ -719,6 +719,62 @@ framework to set up sysfs files for this region. Simply leave it alone.
+>  	</para>
+>  </sect1>
+>  
+> +<sect1 id="using uio_dmem_genirq">
+> +<title>Using uio_dmem_genirq for platform devices</title>
+> +	<para>
+> +	In addition to statically allocated memory ranges, they may also be
+> +	a desire to use dynamically allocated regions in a user space driver.
+> +	In particular, being able to access memory made available through the
+> +	dma-mapping API, may be particularly useful.  The
+> +	<varname>uio_dmem_genirq</varname> driver provides a way to accomplish
+> +	this.
+> +	</para>
+> +	<para>
+> +	This driver is used in a similar manner to the
+> +	<varname>"uio_pdrv_genirq"</varname> driver with respect to interrupt
+> +	configuration and handling.
+> +	</para>
+> +	<para>
+> +	Set the <varname>.name</varname> element of
+> +	<varname>struct platform_device</varname> to
+> +	<varname>"uio_dmem_genirq"</varname> to use this driver.
+> +	</para>
+> +	<para>
+> +	When using this driver, fill in the <varname>.platform_data</varname>
+> +	element of <varname>struct platform_device</varname>, which is of type
+> +	<varname>struct uio_dmem_genirq_pdata</varname> and which contains the
+> +	following elements:
+> +	</para>
+> +	<itemizedlist>
+> +	<listitem><varname>struct uio_info uioinfo</varname>: The same
+> +	structure used as the  <varname>uio_pdrv_genirq</varname> platform
+> +	data</listitem>
+> +	<listitem><varname>unsigned int *dynamic_region_sizes</varname>:
+> +	Pointer to list of sizes of dynamic memory regions to be mapped into
+> +	user space.
+> +	</listitem>
+> +	<listitem><varname>unsigned int num_dynamic_regions</varname>:
+> +	Number of elements in <varname>dynamic_region_sizes</varname> array.
+> +	</listitem>
+> +	</itemizedlist>
+> +	<para>
+> +	The dynamic regions defined in the platform data will be appended to
+> +	the <varname> mem[] </varname> array after the platform device
+> +	resources, which implies that the total number of static and dynamic
+> +	memory regions cannot exceed <varname>MAX_UIO_MAPS</varname>.
+> +	</para>
+> +	<para>
+> +	The dynamic memory regions will be allocated when the UIO device file,
+> +	<varname>/dev/uioX</varname> is opened.
+> +	Simiar to static memory resources, the memory region information for
+> +	dynamic regions is then visible via sysfs at
+> +	<varname>/sys/class/uio/uioX/maps/mapY/*</varname>.
+> +	The dynmaic memory regions will be freed when the UIO device file is
+> +	closed. When no processes are holding the device file open, the address
+> +	returned to userspace is DMA_ERROR_CODE.
+> +	</para>
+> +</sect1>
+> +
+>  </chapter>
+>  
+>  <chapter id="userspace_driver" xreflabel="Writing a driver in user space">
+> -- 
+> 1.7.5.4
+> 
+> 
