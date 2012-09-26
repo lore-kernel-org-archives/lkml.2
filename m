@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab2IZJDX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 05:03:23 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:42451 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351Ab2IZJDW (ORCPT
+	id S1755457Ab2IZJDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 05:03:34 -0400
+Received: from mail7-214.sinamail.sina.com.cn ([202.108.7.214]:53844 "EHLO
+	smtp.sina.com.cn" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755064Ab2IZJDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Sep 2012 05:03:22 -0400
-Message-ID: <5062C4AE.6090203@linux.vnet.ibm.com>
-Date: Wed, 26 Sep 2012 14:32:38 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Sep 2012 05:03:22 EDT
+X-Originating-IP: [14.147.91.22]
+X-Auth-ID: shibakawamaster
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmIKAKU/KE8Ok1sW/3poAIFfnD4+eJM4jH8IhkoOgRmDZ4ELBIZOiUOETIo2
+Date: Wed, 26 Sep 2012 16:55:22 +0800
+From: "Shibakawa ink" <shibakawamaster@sina.com>
+Reply-To: lucky_shibakawa@foxmail.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Liya shared photos with you on facebook
+Message-ID: <201209261655226717913@sina.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>
-Subject: Re: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the
- irq affinity mask
-References: <1348681092.19514.10.camel@cliu38-desktop-build> <5062C183.20301@linux.vnet.ibm.com> <27240C0AC20F114CBF8149A2696CBE4A18A494@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A18A494@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12092609-1396-0000-0000-000001EC94CE
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8Q93d7U030696
 
-On 09/26/2012 02:26 PM, Liu, Chuansheng wrote:
->> A return value of 0 and 1 are acceptable. So this check isn't correct.
->>
->> Regards,
->> Srivatsa S. Bhat
->>
-> Which case value 1 is acceptable, could you share? Thanks.
+How to print with small cost but large quantity of pages?
 
-I can see the following in include/linux/irq.h:
+Duplicator ink and master, copier toner and printer cartridge, spare parts and used machine.
 
-/*
- * Return value for chip->irq_set_affinity()
- *
- * IRQ_SET_MASK_OK      - OK, core updates irq_data.affinity
- * IRQ_SET_MASK_NOCPY   - OK, chip did update irq_data.affinity
- */
-enum {
-        IRQ_SET_MASK_OK = 0,
-        IRQ_SET_MASK_OK_NOCOPY,
-};
+If you need, call me pls then we talk details.
 
-And see some of those ->irq_set_affinity() implementations at various
-places.
+(*^__^*).................
 
-Regards,
-Srivatsa S. Bhat
 
-> 
->> OMG, why did you drop the other hunk which cleared the cpu *before*
->> invoking ->irq_set_affinity()? IMO, altering irq affinity involves more work
->> than just altering the mask; that's why you have that ->irq_set_affinity()
->> function. So, if you alter the mask *after* calling ->irq_set_affinity(),
->> its not right..
-> Sorry the mistake, will update.
-> 
 
+Skype:  luckyme991
+Yahoo! Messenger: luckyhuang18
+Tel:   0086 15989081521
+
+
+
+
+*********************************************************
+If you hate this email, pls reject it. Sorry.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
