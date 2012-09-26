@@ -1,103 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab2IZDlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 23:41:45 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:41828 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab2IZDlo (ORCPT
+	id S1751964Ab2IZDmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 23:42:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38288 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab2IZDmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 23:41:44 -0400
-Message-ID: <5062796F.8050802@linux.vnet.ibm.com>
-Date: Wed, 26 Sep 2012 11:41:35 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 25 Sep 2012 23:42:13 -0400
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@redhat.com,
-        svaidy@linux.vnet.ibm.com, wfg@linux.intel.com
-Subject: Re: [PATCH] sched: fix should_resched() to avoid do schedule in atomic
-References: <1347937984-5817-1-git-send-email-wangyun@linux.vnet.ibm.com>
-In-Reply-To: <1347937984-5817-1-git-send-email-wangyun@linux.vnet.ibm.com>
+In-Reply-To: <1348575190-11761-2-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348575190-11761-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Wed, 26 Sep 2012 09:12:13 +0530
+X-Google-Sender-Auth: LCgFQ8b6iMYWOUW3RuCyCeAnLz0
+Message-ID: <CAOh2x=mhHzGennpHCnwHOG3rmNXv4NuK4ExSe0Se45zCowicnQ@mail.gmail.com>
+Subject: Re: [PATCHv1 1/6] dmaengine: dw_dmac: Remove clk API dependency
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12092603-8256-0000-0000-000004532782
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2012 11:13 AM, Michael Wang wrote:
-> This patch try to fix the BUG:
-> 
-> [    0.043953] BUG: scheduling while atomic: swapper/0/1/0x10000002
-> [    0.044017] no locks held by swapper/0/1.
-> [    0.044692] Pid: 1, comm: swapper/0 Not tainted 3.6.0-rc1-00420-gb7aebb9 #34
-> [    0.045861] Call Trace:
-> [    0.048071]  [<c106361e>] __schedule_bug+0x5e/0x70
-> [    0.048890]  [<c1b28701>] __schedule+0x91/0xb10
-> [    0.049660]  [<c14472ea>] ? vsnprintf+0x33a/0x450
-> [    0.050444]  [<c1060006>] ? lg_local_lock+0x6/0x70
-> [    0.051256]  [<c14fb5b1>] ? wait_for_xmitr+0x31/0x90
-> [    0.052019]  [<c144fd55>] ? do_raw_spin_unlock+0xa5/0xf0
-> [    0.052903]  [<c1b2a532>] ? _raw_spin_unlock+0x22/0x30
-> [    0.053759]  [<c105cdbb>] ? up+0x1b/0x70
-> [    0.054421]  [<c1065d6b>] __cond_resched+0x1b/0x30
-> [    0.055228]  [<c1b292d5>] _cond_resched+0x45/0x50
-> [    0.056020]  [<c1b26c58>] mutex_lock_nested+0x28/0x370
-> [    0.056884]  [<c1034222>] ? console_unlock+0x3a2/0x4e0
-> [    0.057741]  [<c1ac8559>] __irq_alloc_descs+0x39/0x1c0
-> [    0.058589]  [<c10223bc>] io_apic_setup_irq_pin+0x2c/0x310
-> [    0.060042]  [<c20638df>] setup_IO_APIC+0x101/0x744
-> [    0.060878]  [<c1021d51>] ? clear_IO_APIC+0x31/0x50
-> [    0.061695]  [<c20600f4>] native_smp_prepare_cpus+0x538/0x680
-> [    0.062644]  [<c2056a91>] ? do_one_initcall+0x12c/0x12c
-> [    0.063517]  [<c2056a91>] ? do_one_initcall+0x12c/0x12c
-> [    0.064016]  [<c2056adc>] kernel_init+0x4b/0x17f
-> [    0.064790]  [<c2056a91>] ? do_one_initcall+0x12c/0x12c
-> [    0.065660]  [<c1b2bbd6>] kernel_thread_helper+0x6/0x10
-> 
-> The process to trigger the BUG is:
-> 
-> 	native_smp_prepare_cpus()
-> 	preempt_disable()		//preempt_count++
-> 	__irq_alloc_descs()
-> 	mutex_lock()
-> 	might_sleep()			//should_resched() return true
-> 	__schedule()
-> 	preempt_disable()		//preempt_count++
-> 	schedule_bug()			//preempt_count > 1, report bug
-> 
-> So the issue is that should_resched() should not return true while the preempt
-> already disabled.
-
-Hi, Peter
-
-Could we use this solution to fix the bug?
-
-Regards,
-Michael Wang
-
-> 
-> This patch will fix the issue, then might_sleep() won't do schedule in atomic
-> any more.
-> 
-> Reported-by: Fengguang Wu <wfg@linux.intel.com>
-> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+On Tue, Sep 25, 2012 at 5:43 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>
+> Not all platforms support clk API.
+>
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 > ---
->  kernel/sched/core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b38f00e..2b7cd15 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4171,7 +4171,7 @@ SYSCALL_DEFINE0(sched_yield)
-> 
->  static inline int should_resched(void)
->  {
-> -	return need_resched() && !(preempt_count() & PREEMPT_ACTIVE);
-> +	return need_resched() && !preempt_count();
->  }
-> 
->  static void __cond_resched(void)
-> 
+>  drivers/dma/Kconfig        |    1 -
+>  drivers/dma/dw_dmac.c      |   18 +++---------------
+>  drivers/dma/dw_dmac_regs.h |    1 -
+>  3 files changed, 3 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index 677cd6e..df32537 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -83,7 +83,6 @@ config INTEL_IOP_ADMA
+>
+>  config DW_DMAC
+>         tristate "Synopsys DesignWare AHB DMA support"
+> -       depends on HAVE_CLK
+>         select DMA_ENGINE
+>         default y if CPU_AT32AP7000
+>         help
 
+This change is good.
+
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index 9316d03..d9344a7 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -1,9 +1,9 @@
+>  /*
+> - * Driver for the Synopsys DesignWare DMA Controller (aka DMACA on
+> - * AVR32 systems.)
+> + * Core driver for the Synopsys DesignWare DMA Controller
+>   *
+>   * Copyright (C) 2007-2008 Atmel Corporation
+>   * Copyright (C) 2010-2011 ST Microelectronics
+> + * Copyright (C) 2012 Intel Corporation
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+
+these too.
+
+> @@ -12,7 +12,6 @@
+>  #define VERBOSE_DEBUG
+>  #define DEBUG
+>  #include <linux/bitops.h>
+> -#include <linux/clk.h>
+>  #include <linux/delay.h>
+>  #include <linux/dmaengine.h>
+>  #include <linux/dma-mapping.h>
+> @@ -224,7 +223,6 @@ static inline void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
+>                 channel_readl(dwc, CTL_LO));
+>  }
+>
+> -
+>  static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
+>  {
+>         channel_clear_bit(dw, CH_EN, dwc->mask);
+> @@ -1508,11 +1506,6 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>         if (!dw)
+>                 return -ENOMEM;
+>
+> -       dw->clk = devm_clk_get(&pdev->dev, "hclk");
+> -       if (IS_ERR(dw->clk))
+> -               return PTR_ERR(dw->clk);
+> -       clk_prepare_enable(dw->clk);
+> -
+>         dw->regs = regs;
+>
+>         /* get hardware configuration parameters */
+> @@ -1657,19 +1650,14 @@ static int __devexit dw_remove(struct platform_device *pdev)
+>
+>  static void dw_shutdown(struct platform_device *pdev)
+>  {
+> -       struct dw_dma   *dw = platform_get_drvdata(pdev);
+> -
+>         dw_dma_off(platform_get_drvdata(pdev));
+> -       clk_disable_unprepare(dw->clk);
+>  }
+>
+>  static int dw_suspend_noirq(struct device *dev)
+>  {
+>         struct platform_device *pdev = to_platform_device(dev);
+> -       struct dw_dma   *dw = platform_get_drvdata(pdev);
+>
+>         dw_dma_off(platform_get_drvdata(pdev));
+> -       clk_disable_unprepare(dw->clk);
+>
+>         return 0;
+>  }
+> @@ -1679,8 +1667,8 @@ static int dw_resume_noirq(struct device *dev)
+>         struct platform_device *pdev = to_platform_device(dev);
+>         struct dw_dma   *dw = platform_get_drvdata(pdev);
+>
+> -       clk_prepare_enable(dw->clk);
+>         dma_writel(dw, CFG, DW_CFG_DMA_EN);
+> +
+>         return 0;
+>  }
+>
+> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+> index ff39fa6..50e0b63 100644
+> --- a/drivers/dma/dw_dmac_regs.h
+> +++ b/drivers/dma/dw_dmac_regs.h
+> @@ -229,7 +229,6 @@ struct dw_dma {
+>         struct dma_device       dma;
+>         void __iomem            *regs;
+>         struct tasklet_struct   tasklet;
+> -       struct clk              *clk;
+>
+>         u8                      all_chan_mask;
+
+But not these. There are dummy clk routines available now for platforms which
+don't support clk framework. So, even if your platform doesn't support clk
+framework, you should be able to compile your code.
+
+--
+viresh
