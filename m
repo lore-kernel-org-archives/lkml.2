@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab2IZRSa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:18:30 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:38673 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756607Ab2IZRS3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:18:29 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH] pinctrl/nomadik: allocate IRQ descriptors dynamically
-Date: Wed, 26 Sep 2012 19:18:07 +0200
-Message-ID: <1348679887-2135-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757603Ab2IZRSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 13:18:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59288 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756607Ab2IZRSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 13:18:38 -0400
+X-IronPort-AV: E=Sophos;i="4.80,492,1344182400"; 
+   d="scan'208";a="5922244"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 00/12] workqueue: simple cleanups
+Date: Thu, 27 Sep 2012 01:20:31 +0800
+Message-Id: <1348680043-5077-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/27 01:18:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/27 01:18:45,
+	Serialize complete at 2012/09/27 01:18:45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+these all are different cleanups for workqueue.
 
-This allocates the IRQ descriptors for the Nomadik pin controller
-dynamically so that we don't have to rely on some other mechanism
-doing it, and moving a step closer to a linear IRQ domain.
+depends:
+Patch2 depends on Patch1
+Patch3 depends on Patch1
+Patch7 depends on Patch6
 
-Cc: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-nomadik.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+Patch7 need to be merged after Patch3 is merged.(not really depends)
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 3dde653..29921d1 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -1185,6 +1185,8 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 	struct clk *clk;
- 	int secondary_irq;
- 	void __iomem *base;
-+	int irq_start;
-+	int irq_base;
- 	int irq;
- 	int ret;
- 
-@@ -1288,9 +1290,22 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 
- 	platform_set_drvdata(dev, nmk_chip);
- 
-+	/*
-+	 * Allocate descriptors and IRQ domain using the legacy model, this
-+	 * should eventually be replaced with a linear IRQ domain as we get
-+	 * independent from the irq numbers with the switch to device tree.
-+	 */
-+	irq_start = NOMADIK_GPIO_TO_IRQ(pdata->first_gpio);
-+	irq_base = irq_alloc_descs(irq_start, 0, NMK_GPIO_PER_CHIP,
-+				   numa_node_id());
-+	if (IS_ERR_VALUE(irq_base)) {
-+		WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
-+		     irq_start);
-+		irq_base = irq_start;
-+	}
- 	nmk_chip->domain = irq_domain_add_legacy(np, NMK_GPIO_PER_CHIP,
--						NOMADIK_GPIO_TO_IRQ(pdata->first_gpio),
--						0, &nmk_gpio_irq_simple_ops, nmk_chip);
-+				irq_base, 0,
-+				&nmk_gpio_irq_simple_ops, nmk_chip);
- 	if (!nmk_chip->domain) {
- 		dev_err(&dev->dev, "failed to create irqdomain\n");
- 		ret = -ENOSYS;
+Lai Jiangshan (12):
+  workqueue: add WORKER_RESCUER
+  workqueue: disallow set_cpus_allowed_ptr() from work item
+  workqueue: remove WORKER_PREP from rescuer
+  workqueue: simplify is_chained_work()
+  workqueue: don't wake up other workers in rescuer
+  workqueue: destroy_worker() can only destory idle worker not just
+    created worker
+  workqueue: remove WORKER_STARTED
+  workqueue: fix comments of insert_work()
+  workqueue: declare system_highpri_wq
+  cpu-hotplug.txt: fix comments of work_on_cpu()
+  workqueue: add WQ_CPU_INTENSIVE to system_long_wq
+  workqueue: avoid work_on_cpu() to interfere system_wq
+
+ Documentation/cpu-hotplug.txt |    2 +-
+ include/linux/workqueue.h     |    4 ++
+ kernel/sched/core.c           |    8 ++-
+ kernel/workqueue.c            |   82 +++++++++++++++++------------------------
+ 4 files changed, 44 insertions(+), 52 deletions(-)
+
 -- 
-1.7.11.3
+1.7.7.6
 
