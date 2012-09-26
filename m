@@ -1,139 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab2IZR73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:59:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46858 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2IZR70 (ORCPT
+	id S1757981Ab2IZSAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 14:00:11 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46408 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757724Ab2IZSAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:59:26 -0400
-Date: Wed, 26 Sep 2012 12:59:21 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-security-module@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH 11/14] userns: Convert s390 getting uid and gid system
- calls to use kuid and kgid
-Message-ID: <20120926175921.GF30620@sergelap>
-References: <87k3vote43.fsf@xmission.com>
- <1348187330-6616-1-git-send-email-ebiederm@xmission.com>
- <1348187330-6616-11-git-send-email-ebiederm@xmission.com>
+	Wed, 26 Sep 2012 14:00:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348187330-6616-11-git-send-email-ebiederm@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOh2x=m0bnhRBSSJNJQAiu54Dyu=0=2gG=-0AstUT815_wh9Bw@mail.gmail.com>
+References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348663237-3237-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x=m0bnhRBSSJNJQAiu54Dyu=0=2gG=-0AstUT815_wh9Bw@mail.gmail.com>
+Date: Wed, 26 Sep 2012 21:00:08 +0300
+Message-ID: <CAHp75Vc_vQuRewt=o-C_fay5BF6GPG3bn9X44sOEsUrypY-krg@mail.gmail.com>
+Subject: Re: [PATCHv2 1/4] dmaengine: dw_dmac: convert to platform driver
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> Convert getresuid, getresgid, getuid, geteuid, getgid, getegid
-> 
-> Convert struct cred kuids and kgids into userspace uids and gids when
-> returning them.
-> 
-> These s390 system calls slipped through the cracks in my first
-> round of converstions :(
-> 
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+On Wed, Sep 26, 2012 at 5:13 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
+> On Wed, Sep 26, 2012 at 6:10 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+>> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>>
+>> This driver could be used on different platforms. Thus, we converted it to be
+>> a platform driver. The HAVE_CLK dependency is dropped away as well.
+>
+> Commit log and patch content don't match. :(
+> We aren't converting it to a platform driver, it is already one.
+Okay, any suggestion for this part?
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+>> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>> ---
+>>  drivers/dma/Kconfig   |    2 --
+>>  drivers/dma/dw_dmac.c |   21 +++++++--------------
+>>  2 files changed, 7 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+>> index 677cd6e..75cdcb5 100644
+>> --- a/drivers/dma/Kconfig
+>> +++ b/drivers/dma/Kconfig
+>> @@ -83,9 +83,7 @@ config INTEL_IOP_ADMA
+>>
+>>  config DW_DMAC
+>>         tristate "Synopsys DesignWare AHB DMA support"
+>> -       depends on HAVE_CLK
+>
+> This matches subject.
+>
+>>         select DMA_ENGINE
+>> -       default y if CPU_AT32AP7000
+>
+> This doesn't. If you want this change, do this in a separate patch.
+Will do separate patch. However this change doesn't interfere with
+configuration on my side. So, might be better to keep that line to
+have compatibility with older kernels?
 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  arch/s390/kernel/compat_linux.c |   36 ++++++++++++++++++++++++------------
->  1 files changed, 24 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
-> index d122508..73995a7 100644
-> --- a/arch/s390/kernel/compat_linux.c
-> +++ b/arch/s390/kernel/compat_linux.c
-> @@ -131,13 +131,19 @@ asmlinkage long sys32_setresuid16(u16 ruid, u16 euid, u16 suid)
->  		low2highuid(suid));
->  }
->  
-> -asmlinkage long sys32_getresuid16(u16 __user *ruid, u16 __user *euid, u16 __user *suid)
-> +asmlinkage long sys32_getresuid16(u16 __user *ruidp, u16 __user *euidp, u16 __user *suidp)
->  {
-> +	const struct cred *cred = current_cred();
->  	int retval;
-> +	u16 ruid, euid, suid;
->  
-> -	if (!(retval = put_user(high2lowuid(current->cred->uid), ruid)) &&
-> -	    !(retval = put_user(high2lowuid(current->cred->euid), euid)))
-> -		retval = put_user(high2lowuid(current->cred->suid), suid);
-> +	ruid = high2lowuid(from_kuid_munged(cred->user_ns, cred->uid));
-> +	euid = high2lowuid(from_kuid_munged(cred->user_ns, cred->euid));
-> +	suid = high2lowuid(from_kuid_munged(cred->user_ns, cred->suid));
-> +
-> +	if (!(retval   = put_user(ruid, ruidp)) &&
-> +	    !(retval   = put_user(euid, euidp)))
-> +		retval = put_user(suid, suidp);
->  
->  	return retval;
->  }
-> @@ -148,13 +154,19 @@ asmlinkage long sys32_setresgid16(u16 rgid, u16 egid, u16 sgid)
->  		low2highgid(sgid));
->  }
->  
-> -asmlinkage long sys32_getresgid16(u16 __user *rgid, u16 __user *egid, u16 __user *sgid)
-> +asmlinkage long sys32_getresgid16(u16 __user *rgidp, u16 __user *egidp, u16 __user *sgidp)
->  {
-> +	const struct cred *cred = current_cred();
->  	int retval;
-> +	u16 rgid, egid, sgid;
-> +
-> +	rgid = high2lowgid(from_kgid_munged(cred->user_ns, cred->gid));
-> +	egid = high2lowgid(from_kgid_munged(cred->user_ns, cred->egid));
-> +	sgid = high2lowgid(from_kgid_munged(cred->user_ns, cred->sgid));
->  
-> -	if (!(retval = put_user(high2lowgid(current->cred->gid), rgid)) &&
-> -	    !(retval = put_user(high2lowgid(current->cred->egid), egid)))
-> -		retval = put_user(high2lowgid(current->cred->sgid), sgid);
-> +	if (!(retval   = put_user(rgid, rgidp)) &&
-> +	    !(retval   = put_user(egid, egidp)))
-> +		retval = put_user(sgid, sgidp);
->  
->  	return retval;
->  }
-> @@ -258,22 +270,22 @@ asmlinkage long sys32_setgroups16(int gidsetsize, u16 __user *grouplist)
->  
->  asmlinkage long sys32_getuid16(void)
->  {
-> -	return high2lowuid(current->cred->uid);
-> +	return high2lowuid(from_kuid_munged(current_user_ns(), current_uid()));
->  }
->  
->  asmlinkage long sys32_geteuid16(void)
->  {
-> -	return high2lowuid(current->cred->euid);
-> +	return high2lowuid(from_kuid_munged(current_user_ns(), current_euid()));
->  }
->  
->  asmlinkage long sys32_getgid16(void)
->  {
-> -	return high2lowgid(current->cred->gid);
-> +	return high2lowgid(from_kgid_munged(current_user_ns(), current_gid()));
->  }
->  
->  asmlinkage long sys32_getegid16(void)
->  {
-> -	return high2lowgid(current->cred->egid);
-> +	return high2lowgid(from_kgid_munged(current_user_ns(), current_egid()));
->  }
->  
->  /*
-> -- 
-> 1.7.5.4
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+>
+>>         help
+>>           Support the Synopsys DesignWare AHB DMA controller.  This
+>>           can be integrated in chips such as the Atmel AT32ap7000.
+>> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+>> index c4b0eb3..9f0129d 100644
+>> --- a/drivers/dma/dw_dmac.c
+>> +++ b/drivers/dma/dw_dmac.c
+>> @@ -1,14 +1,15 @@
+>>  /*
+>> - * Driver for the Synopsys DesignWare DMA Controller (aka DMACA on
+>> - * AVR32 systems.)
+>> + * Core driver for the Synopsys DesignWare DMA Controller
+>>   *
+>>   * Copyright (C) 2007-2008 Atmel Corporation
+>>   * Copyright (C) 2010-2011 ST Microelectronics
+>> + * Copyright (C) 2012 Intel Corporation
+>>   *
+>>   * This program is free software; you can redistribute it and/or modify
+>>   * it under the terms of the GNU General Public License version 2 as
+>>   * published by the Free Software Foundation.
+>>   */
+>> +
+>>  #include <linux/bitops.h>
+>>  #include <linux/clk.h>
+>>  #include <linux/delay.h>
+>> @@ -222,7 +223,6 @@ static inline void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
+>>                 channel_readl(dwc, CTL_LO));
+>>  }
+>>
+>> -
+>
+> Above + and - also don't belong to this patch
+Separate patch? Will do.
+
+>
+>>  static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
+>>  {
+>>         channel_clear_bit(dw, CH_EN, dwc->mask);
+>> @@ -1679,6 +1679,7 @@ static int dw_resume_noirq(struct device *dev)
+>>
+>>         clk_prepare_enable(dw->clk);
+>>         dma_writel(dw, CFG, DW_CFG_DMA_EN);
+>> +
+>>         return 0;
+>>  }
+>>
+>> @@ -1700,6 +1701,7 @@ MODULE_DEVICE_TABLE(of, dw_dma_id_table);
+>>  #endif
+>>
+>>  static struct platform_driver dw_driver = {
+>> +       .probe          = dw_probe,
+>>         .remove         = __devexit_p(dw_remove),
+>>         .shutdown       = dw_shutdown,
+>>         .driver = {
+>> @@ -1709,18 +1711,9 @@ static struct platform_driver dw_driver = {
+>>         },
+>>  };
+>>
+>> -static int __init dw_init(void)
+>> -{
+>> -       return platform_driver_probe(&dw_driver, dw_probe);
+>> -}
+>> -subsys_initcall(dw_init);
+>> -
+>> -static void __exit dw_exit(void)
+>> -{
+>> -       platform_driver_unregister(&dw_driver);
+>> -}
+>> -module_exit(dw_exit);
+>> +module_platform_driver(dw_driver);
+>
+> This should be a separate patch as well
+Good. Will do.
+
+>> +MODULE_ALIAS("platform:dw_dmac");
+>>  MODULE_LICENSE("GPL v2");
+>>  MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller driver");
+>>  MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+
+-- 
+With Best Regards,
+Andy Shevchenko
