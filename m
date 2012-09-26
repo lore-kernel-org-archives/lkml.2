@@ -1,102 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab2IZWqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 18:46:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58037 "EHLO mga03.intel.com"
+	id S1753189Ab2IZWt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 18:49:27 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40853 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863Ab2IZWqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 18:46:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,492,1344236400"; 
-   d="scan'208";a="149570800"
-Subject: Re: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the
- irq affinity mask
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Chuansheng Liu <chuansheng.liu@intel.com>, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        yanmin_zhang@linux.intel.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Date: Wed, 26 Sep 2012 15:46:27 -0700
-In-Reply-To: <50633BA0.5030700@linux.vnet.ibm.com>
-References: <1348681092.19514.10.camel@cliu38-desktop-build>
-	 <1348703122.19514.17.camel@cliu38-desktop-build>
-	 <50632767.5050607@linux.vnet.ibm.com>
-	 <1348679199.26695.455.camel@sbsiddha-desk.sc.intel.com>
-	 <50633BA0.5030700@linux.vnet.ibm.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1752863Ab2IZWtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 18:49:25 -0400
+Message-ID: <506385A0.3000902@parallels.com>
+Date: Thu, 27 Sep 2012 02:45:52 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+References: <20120926163648.GO16296@google.com> <50633D24.6020002@parallels.com> <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com> <50634105.8060302@parallels.com> <20120926180124.GA12544@google.com> <50634FC9.4090609@parallels.com> <20120926193417.GJ12544@google.com> <50635B9D.8020205@parallels.com> <20120926195648.GA20342@google.com> <50635F46.7000700@parallels.com> <20120926221136.GB2667@cmpxchg.org>
+In-Reply-To: <20120926221136.GB2667@cmpxchg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-ID: <1348699588.6644.21.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+X-Originating-IP: [109.173.3.27]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-26 at 23:00 +0530, Srivatsa S. Bhat wrote:
-> On 09/26/2012 10:36 PM, Suresh Siddha wrote:
-> > On Wed, 2012-09-26 at 21:33 +0530, Srivatsa S. Bhat wrote:
-> >> I have some fundamental questions here:
-> >> 1. Why was the CPU never removed from the affinity masks in the original
-> >> code? I find it hard to believe that it was just an oversight, because the
-> >> whole point of fixup_irqs() is to affine the interrupts to other CPUs, IIUC.
-> >> So, is that really a bug or is the existing code correct for some reason
-> >> which I don't know of?
-> > 
-> > I am not aware of the history but my guess is that the affinity mask
-> > which is coming from the user-space wants to be preserved. And
-> > fixup_irqs() is fixing the underlying interrupt routing when the cpu
-> > goes down
+On 09/27/2012 02:11 AM, Johannes Weiner wrote:
+> On Thu, Sep 27, 2012 at 12:02:14AM +0400, Glauber Costa wrote:
+>> On 09/26/2012 11:56 PM, Tejun Heo wrote:
+>>> Hello,
+>>>
+>>> On Wed, Sep 26, 2012 at 11:46:37PM +0400, Glauber Costa wrote:
+>>>> Besides not being part of cgroup core, and respecting very much both
+>>>> cgroups' and basic sanity properties, kmem is an actual feature that
+>>>> some people want, and some people don't. There is no reason to believe
+>>>> that applications that want will live in the same environment with ones
+>>>> that don't want.
+>>>
+>>> I don't know.  It definitely is less crazy than .use_hierarchy but I
+>>> wouldn't say it's an inherently different thing.  I mean, what does it
+>>> even mean to have u+k limit on one subtree and not on another branch?
+>>> And we worry about things like what if parent doesn't enable it but
+>>> its chlidren do.
+>>>
+>>
+>> It is inherently different. To begin with, it actually contemplates two
+>> use cases. It is not a work around.
+>>
+>> The meaning is also very well defined. The meaning of having this
+>> enabled in one subtree and not in other is: Subtree A wants to track
+>> kernel memory. Subtree B does not. It's that, and never more than that.
+>> There is no maybes and no buts, no magic knobs that makes it behave in a
+>> crazy way.
+>>
+>> If a children enables it but the parent does not, this does what every
+>> tree does: enable it from that point downwards.
+>>
+>>> This is a feature which adds complexity.  If the feature is necessary
+>>> and justified, sure.  If not, let's please not and let's err on the
+>>> side of conservativeness.  We can always add it later but the other
+>>> direction is much harder.
+>>
+>> I disagree. Having kmem tracking adds complexity. Having to cope with
+>> the use case where we turn it on dynamically to cope with the "user page
+>> only" use case adds complexity. But I see no significant complexity
+>> being added by having it per subtree. Really.
 > 
-> and the code that corresponds to that is:
-> irq_force_complete_move(irq); is it?
-
-No. irq_set_affinity()
-
-> > with a hope that things will be corrected when the cpu comes
-> > back online. But  as Liu noted, we are not correcting the underlying
-> > routing when the cpu comes back online. I think we should fix that
-> > rather than modifying the user-specified affinity.
-> > 
+> Maybe not in code, but you are adding an extra variable into the
+> system.  "One switch per subtree" is more complex than "one switch."
+> Yes, the toggle is hidden behind setting the limit, but it's still a
+> toggle.  The use_hierarchy complexity comes not from the file that
+> enables it, but from the resulting semantics.
 > 
-> Hmm, I didn't entirely get your suggestion. Are you saying that we should change
-> data->affinity (by calling ->irq_set_affinity()) during offline but maintain a
-> copy of the original affinity mask somewhere, so that we can try to match it
-> when possible (ie., when CPU comes back online)?
 
-Don't change the data->affinity in the fixup_irqs() and shortly after a
-cpu is online, call irq_chip's irq_set_affinity() for those irq's who
-affinity included this cpu (now that the cpu is back online,
-irq_set_affinity() will setup the HW routing tables correctly).
+I didn't claim the complexity was in the code. I actually think the
+other way around that you do, and claim that a global switch is more
+complex than a per-subtree. All properties we have so far applies to
+subtrees, due to cgroup's hierarchical nature. We have no global
+switches like this so far, and adding one would just add a new concept
+that wasn't here.
 
-This presumes that across the suspend/resume, cpu offline/online
-operations, we don't want to break the irq affinity setup by the
-user-level entity like irqbalance etc...
 
-> > That happens only if the irq chip doesn't have the irq_set_affinity() setup.
+> kmem accounting is expensive and we definitely want to allow enabling
+> it separately from traditional user memory accounting.  But I think
+> there is no good reason to not demand an all-or-nothing answer from
+> the admin; either he wants kmem tracking on a machine or not.  At
+> least you haven't presented a convincing case, IMO.
 > 
-> That is my other point of concern : setting irq affinity can fail even if
-> we have ->irq_set_affinity(). (If __ioapic_set_affinity() fails, for example).
-> Why don't we complain in that case? I think we should... and if its serious
-> enough, abort the hotplug operation or atleast indicate that offline failed..
+> I don't think there is strong/any demand for per-node toggles, but
+> once we add this behavior, people will rely on it and expect kmem
+> tracking to stay local and we are stuck with it.  Adding it for the
+> reason that people will use it is a self-fulfilling prophecy.
 
-yes if there is a failure then we are in trouble, as the cpu is already
-disappeared from the online-masks etc. For platforms with
-interrupt-remapping, interrupts can be migrated from the process context
-and as such this all can be done much before.
 
-And for legacy platforms we have done quite a few changes in the recent
-past like using eoi_ioapic_irq() for level triggered interrupts etc,
-that makes it as safe as it can be. Perhaps we can move most of the
-fixup_irqs() code much ahead and the lost section of the current
-fixup_irqs() (which check IRR bits and use the retrigger function to
-trigger the interrupt on another cpu) can still be done late just like
-now.
+I don't think this is a compatibility only switch. Much has been said in
+the past about the problem of sharing. A lot of the kernel objects are
+shared by nature, this is pretty much unavoidable. The answer we have
+been giving to this inquiry, is that the workloads (us) interested
+in kmem accounted tend to be quite local in their file accesses (and
+other kernel objects as well).
 
-thanks,
-suresh
+It should be obvious that not all workloads are like this, and some of
+them would actually prefer to have their umem limited only.
 
+I really don't think, and correct me if I am wrong, that the problem
+lays in "is there a use case for umem?", but rather, if they should be
+allowed to coexist in a box.
+
+And honestly, it seems to me totally reasonable to avoid restricting
+people to run as many workloads they think they can in the same box.
+
+
+>> You have the use_hierarchy fiasco in mind, and I do understand that you
+>> are raising the flag and all that.
+>>
+>> But think in terms of functionality: This thing here is a lot more
+>> similar to swap than use_hierarchy. Would you argue that memsw should be
+>> per-root ?
+> 
+> We actually do have a per-root flag that controls accounting for swap.
+> 
+>> The reason why it shouldn't: Some people want to limit memory
+>> consumption all the way to the swap, some people don't. Same with kmem.
+> 
+> That lies in the nature of the interface: we chose k & u+k rather than
+> u & u+k, so our memory.limit_in_bytes will necessarily include kmem,
+> while swap is not included there.  But I really doubt that there is a
+> strong case for turning on swap accounting intentionally and then
+> limiting memory+swap only on certain subtrees.  Where would be the
+> sense in that?
+
+It makes absolute sense. Because until I go set
+memory.memsw.limit_in_bytes, my subtree is not limited, which is
+precisely what kmem does.
+
+And the use cases for that are:
+
+1) I, application A, want to use 2G of mem, and I can never swap
+2) I, application B, want to use 2G of mem, but I am fine using extra 1G
+in swap.
+
+There are plenty of workloads in both the "can swap" and "can't swap"
+category around.
