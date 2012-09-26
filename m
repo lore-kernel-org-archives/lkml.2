@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab2IZOpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 10:45:21 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:38631 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab2IZOpU (ORCPT
+	id S1756837Ab2IZOpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 10:45:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36109 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab2IZOp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 10:45:20 -0400
+	Wed, 26 Sep 2012 10:45:28 -0400
+Message-ID: <50631501.7020706@kernel.dk>
+Date: Wed, 26 Sep 2012 16:45:21 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <1348663237-3237-5-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348663237-3237-5-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Wed, 26 Sep 2012 20:15:19 +0530
-X-Google-Sender-Auth: JhXbPvuZfh9fjWR5reI79Oq3Ubs
-Message-ID: <CAOh2x==ZCozF-Q1rjKapSYKK+x6HdyHs8N2ZJ96iSxoYZKPRXQ@mail.gmail.com>
-Subject: Re: [PATCHv2 4/4] MAINTAINERS: add recently created files to dw_dmac section
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.7
+References: <20120926135855.GA6685@phenom.dumpdata.com>
+In-Reply-To: <20120926135855.GA6685@phenom.dumpdata.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 6:10 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> Append myself to mail subsection as well.
+On 2012-09-26 15:58, Konrad Rzeszutek Wilk wrote:
+> Hey Jens,
+> 
+> I've one more patch (a small change) that I was hoping you could
+> pull in your v3.7 branch.
+> 
+> The branch is:
+>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.7
+> 
+> and has this tiny patch:
+> 
+> Oliver Chick (1):
+>       xen/blkback: Change xen_vbd's flush_support and discard_secure to have type unsigned int, rather than bool
 
-Mail subsection? You are adding yourself as Maintainer of dw_dmac...
-Do you really want that.
-I am asking this, because that's not the normal practice followed in kernel.
+Pulled.
 
-This isn't done until unless, somebody has done a MAJOR modification
-to the driver.
+-- 
+Jens Axboe
 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  MAINTAINERS |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 7dfd0eb..b87cbb1d 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5999,10 +5999,10 @@ F:      drivers/tty/serial
->
->  SYNOPSYS DESIGNWARE DMAC DRIVER
->  M:     Viresh Kumar <viresh.linux@gmail.com>
-> +M:     Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->  S:     Maintained
->  F:     include/linux/dw_dmac.h
-> -F:     drivers/dma/dw_dmac_regs.h
-> -F:     drivers/dma/dw_dmac.c
-> +F:     drivers/dma/dw/
-
-I can't see this change...
