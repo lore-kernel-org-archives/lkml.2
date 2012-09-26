@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab2IZUBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:01:41 -0400
-Received: from www.0x90.at ([78.46.59.21]:17054 "EHLO mail.0x90.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376Ab2IZUBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:01:40 -0400
-X-Greylist: delayed 576 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Sep 2012 16:01:39 EDT
-Date: Wed, 26 Sep 2012 21:51:46 +0200
-From: Daniel Walter <sahne@0x90.at>
-To: Trond.Myklebust@netapp.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] nfs: replace strict_strto* with kstrto*
-Message-ID: <20120926195146.GA15610@0x90.at>
+	id S1752260Ab2IZUFc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:05:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64583 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab2IZUFb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 16:05:31 -0400
+Date: Wed, 26 Sep 2012 13:05:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: staging tree closed for 3.7
+Message-ID: <20120926200527.GC9994@kroah.com>
+References: <20120926175606.GA10762@kroah.com>
+ <20120926175634.GB10762@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F00206B20BED5D@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206B20BED5D@AUSP01VMBX24.collaborationhost.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[nfs] replace strict_str* with kstr* variants
- 
- * replace string conversions with newer kstr* functions
+On Wed, Sep 26, 2012 at 01:47:11PM -0500, H Hartley Sweeten wrote:
+> On Wednesday, September 26, 2012 10:57 AM, Greg Kroah-Hartman wrote:
+> > On Wed, Sep 26, 2012 at 10:56:06AM -0700, Greg Kroah-Hartman wrote:
+> >> 
+> >> With 3.6 about to be released, I've now closed the 3.7 staging-next tree
+> >> for new features / cleanups.  It's bug-fixes only now until 3.7-rc1 is
+> >> out.
+> >
+> > Oh, and if I've missed any patches that people have sent me already,
+> > please let me know, because I don't have them anymore.
+> 
+> Greg,
+> 
+> What about my "staging: comedi: drivers: use comedi_fc.h cmdtest helpers"?
+> 
+> It's quite large but does have decent diffstat:
+> 46 files changed, 766 insertions(+), 1997 deletions(-)
 
-Signed-off-by: Daniel Walter <sahne@0x90.at>
----
-apply against current linux-2.6 tree
----
- fs/nfs/idmap.c |    4 ++--
- fs/nfs/super.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
----
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index a850079..814f467 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -158,7 +158,7 @@ static int nfs_map_string_to_numeric(const char *name, size_t namelen, __u32 *re
- 		return 0;
- 	memcpy(buf, name, namelen);
- 	buf[namelen] = '\0';
--	if (strict_strtoul(buf, 0, &val) != 0)
-+	if (kstrtoul(buf, 0, &val) != 0)
- 		return 0;
- 	*res = val;
- 	return 1;
-@@ -364,7 +364,7 @@ static int nfs_idmap_lookup_id(const char *name, size_t namelen, const char *typ
- 	if (data_size <= 0) {
- 		ret = -EINVAL;
- 	} else {
--		ret = strict_strtol(id_str, 10, &id_long);
-+		ret = kstrtol(id_str, 10, &id_long);
- 		*id = (__u32)id_long;
- 	}
- 	return ret;
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index b8eda70..4f62ff1 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -1106,7 +1106,7 @@ static int nfs_get_option_ul(substring_t args[], unsigned long *option)
- 	string = match_strdup(args);
- 	if (string == NULL)
- 		return -ENOMEM;
--	rc = strict_strtoul(string, 10, option);
-+	rc = kstrtoul(string, 10, option);
- 	kfree(string);
- 
- 	return rc;
-@@ -2659,7 +2659,7 @@ static int param_set_portnr(const char *val, const struct kernel_param *kp)
- 
- 	if (!val)
- 		return -EINVAL;
--	ret = strict_strtoul(val, 0, &num);
-+	ret = kstrtoul(val, 0, &num);
- 	if (ret == -EINVAL || num > NFS_CALLBACK_MAXPORTNR)
- 		return -EINVAL;
- 	*((unsigned int *)kp->arg) = num;
+Care to resend it?  I thought that was part of the __user rework, my
+apologies.
+
+> If it doesn't apply due to conflicts, or you would rather just wait
+> until 3.7-rc1, it's not a problem.
+> 
+> I have updated the patch to fix the typo Ian pointed out and to remove
+> the Reported-by signoff from Dan if you would like me to repost it.
+
+Please redo it and resend it, that must have been why I didn't apply it,
+I was waiting for a newer version :)
+
+thanks,
+
+greg k-h
