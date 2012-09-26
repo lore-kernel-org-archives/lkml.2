@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab2IZBPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 21:15:40 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:58695 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab2IZBPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 21:15:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120925142948.6b062cb6.akpm@linux-foundation.org>
-References: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
-	<1347137279-17568-5-git-send-email-elezegarcia@gmail.com>
-	<20120925142948.6b062cb6.akpm@linux-foundation.org>
-Date: Tue, 25 Sep 2012 22:15:38 -0300
-Message-ID: <CALF0-+WcXLR_akn8mL8u-QigHU9Bk5RotA3tbodZ8rhZsxpFLg@mail.gmail.com>
-Subject: Re: [PATCH 05/10] mm, util: Use dup_user to duplicate user memory
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755589Ab2IZBUD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 21:20:03 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54936 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753007Ab2IZBUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 21:20:01 -0400
+Message-ID: <1348622397.2648.13.camel@joe-AO722>
+Subject: [PATCH -next] device.h: Add missing inline to #ifndef CONFIG_PRINTK
+ dev_vprintk_emit
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
+        Kay Sievers <kay@vrfy.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 25 Sep 2012 18:19:57 -0700
+In-Reply-To: <CAMuHMdVH-ni1NhbTDXgh82WUSAV85fahUjp1BoizVy6D2Xyvaw@mail.gmail.com>
+References: <cover.1345978012.git.joe@perches.com>
+	 <7cfb202968f0928bba66965146a828a1cff87950.1345978012.git.joe@perches.com>
+	 <CAMuHMdVH-ni1NhbTDXgh82WUSAV85fahUjp1BoizVy6D2Xyvaw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Also add __printf() verification for format string.
 
-On Tue, Sep 25, 2012 at 6:29 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat,  8 Sep 2012 17:47:54 -0300
-> Ezequiel Garcia <elezegarcia@gmail.com> wrote:
->
->> Previously the strndup_user allocation was being done through memdup_user,
->> and the caller was wrongly traced as being strndup_user
->> (the correct trace must report the caller of strndup_user).
->>
->> This is a common problem: in order to get accurate callsite tracing,
->> a utils function can't allocate through another utils function,
->> but instead do the allocation himself (or inlined).
->>
->> Here we fix this by creating an always inlined dup_user() function to
->> performed the real allocation and to be used by memdup_user and strndup_user.
->
-> This patch increases util.o's text size by 238 bytes.  A larger kernel
-> with a worsened cache footprint.
->
-> And we did this to get marginally improved tracing output?  This sounds
-> like a bad tradeoff to me.
->
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Joe Perches <joe@perches.com>
 
-Mmm, that's bad tradeoff indeed.
-It's certainly odd since the patch shouldn't increase the text size
-*that* much.
-Is it too much to ask that you send your kernel config and gcc version.
+---
 
-My compilation (x86 kernel in gcc 4.7.1) shows a kernel less bloated:
+ include/linux/device.h |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-$ readelf -s util-dup-user.o | grep dup_user
-   161: 00001c10   108 FUNC    GLOBAL DEFAULT    1 memdup_user
-   169: 00001df0   159 FUNC    GLOBAL DEFAULT    1 strndup_user
-$ readelf -s util.o | grep dup_user
-   161: 00001c10   108 FUNC    GLOBAL DEFAULT    1 memdup_user
-   169: 00001df0    98 FUNC    GLOBAL DEFAULT    1 strndup_user
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 8873603..86ef6ab 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -902,8 +902,9 @@ extern const char *dev_driver_string(const struct device *dev);
+ 
+ #ifdef CONFIG_PRINTK
+ 
+-extern int dev_vprintk_emit(int level, const struct device *dev,
+-			    const char *fmt, va_list args);
++extern __printf(3, 0)
++int dev_vprintk_emit(int level, const struct device *dev,
++		     const char *fmt, va_list args);
+ extern __printf(3, 4)
+ int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...);
+ 
+@@ -927,8 +928,9 @@ int _dev_info(const struct device *dev, const char *fmt, ...);
+ 
+ #else
+ 
+-static int dev_vprintk_emit(int level, const struct device *dev,
+-			    const char *fmt, va_list args)
++static inline __printf(3, 0)
++int dev_vprintk_emit(int level, const struct device *dev,
++		     const char *fmt, va_list args)
+ { return 0; }
+ static inline __printf(3, 4)
+ int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...)
 
-$ size util.o
-   text	   data	    bss	    dec	    hex	filename
-  18319	   2077	      0	  20396	   4fac	util.o
-$ size util-dup-user.o
-   text	   data	    bss	    dec	    hex	filename
-  18367	   2077	      0	  20444	   4fdc	util-dup-user.o
 
-Am I doing anything wrong?
-If you still feel this is unnecessary bloatness, perhaps I could think of
-something depending on CONFIG_TRACING (though I know
-we all hate those nasty ifdefs).
-
-Anyway, thanks for the review,
-Ezequiel.
