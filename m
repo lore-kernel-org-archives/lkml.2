@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab2IZR4k (ORCPT <rfc822;w@1wt.eu>);
+	id S1758076Ab2IZR4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 13:56:42 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:43594 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758016Ab2IZR4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Sep 2012 13:56:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46837 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757876Ab2IZR4h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:56:37 -0400
-Date: Wed, 26 Sep 2012 12:56:29 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-security-module@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 12/14] userns: On ppc convert current_uid from a kuid
- before printing.
-Message-ID: <20120926175629.GE30620@sergelap>
-References: <87k3vote43.fsf@xmission.com>
- <1348187330-6616-1-git-send-email-ebiederm@xmission.com>
- <1348187330-6616-12-git-send-email-ebiederm@xmission.com>
+Message-ID: <50634105.8060302@parallels.com>
+Date: Wed, 26 Sep 2012 21:53:09 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348187330-6616-12-git-send-email-ebiederm@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <devel@openvz.org>, <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-5-git-send-email-glommer@parallels.com> <20120926140347.GD15801@dhcp22.suse.cz> <20120926163648.GO16296@google.com> <50633D24.6020002@parallels.com> <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com>
+In-Reply-To: <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.3.27]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
+On 09/26/2012 09:44 PM, Tejun Heo wrote:
+> Hello, Glauber.
 > 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
+> On Wed, Sep 26, 2012 at 10:36 AM, Glauber Costa <glommer@parallels.com> wrote:
+>> This was discussed multiple times. Our interest is to preserve existing
+>> deployed setup, that were tuned in a world where kmem didn't exist.
+>> Because we also feed kmem to the user counter, this may very well
+>> disrupt their setup.
+> 
+> So, that can be served by .kmem_accounted at root, no?
+> 
+>> User memory, unlike kernel memory, may very well be totally in control
+>> of the userspace application, so it is not unreasonable to believe that
+>> extra pages appearing in a new kernel version may break them.
+>>
+>> It is actually a much worse compatibility problem than flipping
+>> hierarchy, in comparison
+> 
+> Again, what's wrong with one switch at the root?
+> 
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+I understand your trauma about over flexibility, and you know I share of
+it. But I don't think there is any need to cap it here. Given kmem
+accounted is perfectly hierarchical, and there seem to be plenty of
+people who only care about user memory, I see no reason to disallow a
+mixed use case here.
 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  arch/powerpc/mm/fault.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-> index 08ffcf5..e5f028b 100644
-> --- a/arch/powerpc/mm/fault.c
-> +++ b/arch/powerpc/mm/fault.c
-> @@ -470,7 +470,7 @@ bad_area_nosemaphore:
->  	if (is_exec && (error_code & DSISR_PROTFAULT))
->  		printk_ratelimited(KERN_CRIT "kernel tried to execute NX-protected"
->  				   " page (%lx) - exploit attempt? (uid: %d)\n",
-> -				   address, current_uid());
-> +				   address, from_kuid(&init_user_ns, current_uid()));
->  
->  	return SIGSEGV;
->  
-> -- 
-> 1.7.5.4
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+I must say that for my particular use case, enabling it unconditionally
+would just work, so it is not that what I have in mind.
+
