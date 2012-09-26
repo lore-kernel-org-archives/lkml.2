@@ -1,147 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab2IZIsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 04:48:18 -0400
-Received: from hop-nat-141.emc.com ([168.159.213.141]:39616 "EHLO
-	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754824Ab2IZIsO (ORCPT
+	id S1754544Ab2IZIt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 04:49:56 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:45582 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412Ab2IZItz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 04:48:14 -0400
-From: Tao Guo <glorioustao@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tao Guo <glorioustao@gmail.com>, Jan Beulich <jbeulich@novell.com>,
-        Ingo Molnar <mingo@elte.hu>, stable@vger.kernel.org, hpa@zytor.com
-Subject: [PATCH] x86_64: Work around old gas bug
-Date: Wed, 26 Sep 2012 04:28:22 -0400
-Message-Id: <1348648102-12653-1-git-send-email-glorioustao@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-X-EMM-MHVC: 1
+	Wed, 26 Sep 2012 04:49:55 -0400
+Message-ID: <5062C183.20301@linux.vnet.ibm.com>
+Date: Wed, 26 Sep 2012 14:19:07 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com
+Subject: Re: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the
+ irq affinity mask
+References: <1348681092.19514.10.camel@cliu38-desktop-build>
+In-Reply-To: <1348681092.19514.10.camel@cliu38-desktop-build>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092608-7014-0000-0000-000001F28884
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gas in binutils(2.16.91) could not parse parentheses within macro
-parameters unless fully parenthesized, and this is a workaround to
-make old gas work without generating below errors:
-arch/x86/kernel/entry_64.S: Assembler messages:
-arch/x86/kernel/entry_64.S:387: Error: too many positional arguments
-arch/x86/kernel/entry_64.S:389: Error: too many positional arguments
-arch/x86/kernel/entry_64.S:390: Error: too many positional arguments
-arch/x86/kernel/entry_64.S:391: Error: too many positional arguments
-arch/x86/kernel/entry_64.S:392: Error: too many positional arguments
-arch/x86/kernel/entry_64.S:393: Error: too many positional arguments
-arch/x86/kernel/entry_64.S:394: Error: too many positional arguments
+On 09/26/2012 11:08 PM, Chuansheng Liu wrote:
+> 
+> When one CPU is going offline, and fixup_irqs() will re-set the
+> irq affinity in some cases, we should clean the offlining CPU from
+> the irq affinity.
+> 
+> The reason is setting offlining CPU as of the affinity is useless.
+> Moreover, the smp_affinity value will be confusing when the
+> offlining CPU come back again.
+> 
+> Example:
+> For irq 93 with 4 CPUS, the default affinity f(1111),
+> normal cases: 4 CPUS will receive the irq93 interrupts.
+> 
+> When echo 0 > /sys/devices/system/cpu/cpu3/online, just CPU0,1,2 will
+> receive the interrupts.
+> 
+> But after the CPU3 is online again, we will not set affinity,the result
+> will be:
+> the smp_affinity is f, but still just CPU0,1,2 can receive the interrupts.
+> 
+> So we should clean the offlining CPU from irq affinity mask
+> in fixup_irqs().
+> 
+> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Signed-off-by: Tao Guo <glorioustao@gmail.com>
----
- arch/x86/include/asm/calling.h |   48 +++++++++++++++++++--------------------
- arch/x86/kernel/entry_64.S     |   20 ++++++++--------
- 2 files changed, 33 insertions(+), 35 deletions(-)
+Please hold on.. I'm not yet done reviewing, I might have more comments :-)
 
-diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-index a9e3a74..7f8422a 100644
---- a/arch/x86/include/asm/calling.h
-+++ b/arch/x86/include/asm/calling.h
-@@ -49,38 +49,36 @@ For 32-bit we have the following conventions - kernel is built with
- #include "dwarf2.h"
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> ---
+>  arch/x86/kernel/irq.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+> index d44f782..08bb905 100644
+> --- a/arch/x86/kernel/irq.c
+> +++ b/arch/x86/kernel/irq.c
+> @@ -239,6 +239,7 @@ void fixup_irqs(void)
+>  	struct irq_desc *desc;
+>  	struct irq_data *data;
+>  	struct irq_chip *chip;
+> +	int cpu = smp_processor_id();
+> 
+>  	for_each_irq_desc(irq, desc) {
+>  		int break_affinity = 0;
+> @@ -277,8 +278,11 @@ void fixup_irqs(void)
+>  		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
+>  			chip->irq_mask(data);
+> 
+> -		if (chip->irq_set_affinity)
+> -			chip->irq_set_affinity(data, affinity, true);
+> +		if ((chip->irq_set_affinity) &&
+> +			!chip->irq_set_affinity(data, affinity, true)) {
+
+A return value of 0 and 1 are acceptable. So this check isn't correct.
+
+Regards,
+Srivatsa S. Bhat
+
+> +			if (cpumask_test_cpu(cpu, data->affinity))
+> +				cpumask_clear_cpu(cpu, data->affinity);
+
+OMG, why did you drop the other hunk which cleared the cpu *before*
+invoking ->irq_set_affinity()? IMO, altering irq affinity involves more work
+than just altering the mask; that's why you have that ->irq_set_affinity()
+function. So, if you alter the mask *after* calling ->irq_set_affinity(),
+its not right.. 
+
+Regards,
+Srivatsa S. Bhat
  
- /*
-- * 64-bit system call stack frame layout defines and helpers, for
-- * assembly code (note that the seemingly unnecessary parentheses
-- * are to prevent cpp from inserting spaces in expressions that get
-- * passed to macros):
-+ * 64-bit system call stack frame layout defines and helpers,
-+ * for assembly code:
-  */
- 
--#define R15		  (0)
--#define R14		  (8)
--#define R13		 (16)
--#define R12		 (24)
--#define RBP		 (32)
--#define RBX		 (40)
-+#define R15		  0
-+#define R14		  8
-+#define R13		 16
-+#define R12		 24
-+#define RBP		 32
-+#define RBX		 40
- 
- /* arguments: interrupts/non tracing syscalls only save up to here: */
--#define R11		 (48)
--#define R10		 (56)
--#define R9		 (64)
--#define R8		 (72)
--#define RAX		 (80)
--#define RCX		 (88)
--#define RDX		 (96)
--#define RSI		(104)
--#define RDI		(112)
--#define ORIG_RAX	(120)       /* + error_code */
-+#define R11		 48
-+#define R10		 56
-+#define R9		 64
-+#define R8		 72
-+#define RAX		 80
-+#define RCX		 88
-+#define RDX		 96
-+#define RSI		104
-+#define RDI		112
-+#define ORIG_RAX	120       /* + error_code */
- /* end of arguments */
- 
- /* cpu exception frame or undefined in case of fast syscall: */
--#define RIP		(128)
--#define CS		(136)
--#define EFLAGS		(144)
--#define RSP		(152)
--#define SS		(160)
-+#define RIP		128
-+#define CS		136
-+#define EFLAGS		144
-+#define RSP		152
-+#define SS		160
- 
- #define ARGOFFSET	R11
- #define SWFRAME		ORIG_RAX
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 69babd8..bf77e70 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -342,15 +342,15 @@ ENDPROC(native_usergs_sysret64)
- 	.macro SAVE_ARGS_IRQ
- 	cld
- 	/* start from rbp in pt_regs and jump over */
--	movq_cfi rdi, RDI-RBP
--	movq_cfi rsi, RSI-RBP
--	movq_cfi rdx, RDX-RBP
--	movq_cfi rcx, RCX-RBP
--	movq_cfi rax, RAX-RBP
--	movq_cfi  r8,  R8-RBP
--	movq_cfi  r9,  R9-RBP
--	movq_cfi r10, R10-RBP
--	movq_cfi r11, R11-RBP
-+	movq_cfi rdi, (RDI-RBP)
-+	movq_cfi rsi, (RSI-RBP)
-+	movq_cfi rdx, (RDX-RBP)
-+	movq_cfi rcx, (RCX-RBP)
-+	movq_cfi rax, (RAX-RBP)
-+	movq_cfi  r8,  (R8-RBP)
-+	movq_cfi  r9,  (R9-RBP)
-+	movq_cfi r10, (R10-RBP)
-+	movq_cfi r11, (R11-RBP)
- 
- 	/* Save rbp so that we can unwind from get_irq_regs() */
- 	movq_cfi rbp, 0
-@@ -384,7 +384,7 @@ ENDPROC(native_usergs_sysret64)
- 	.endm
- 
- ENTRY(save_rest)
--	PARTIAL_FRAME 1 REST_SKIP+8
-+	PARTIAL_FRAME 1 (REST_SKIP+8)
- 	movq 5*8+16(%rsp), %r11	/* save return address */
- 	movq_cfi rbx, RBX+16
- 	movq_cfi rbp, RBP+16
--- 
-1.7.7.6
+> +		}
+>  		else if (!(warned++))
+>  			set_affinity = 0;
+> 
 
