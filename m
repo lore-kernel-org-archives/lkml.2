@@ -1,199 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab2IZEpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 00:45:09 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:46111 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab2IZEpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 00:45:06 -0400
-Date: Tue, 25 Sep 2012 21:45:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, josh@joshtriplett.org, sivanich@sgi.com,
-        wangyun@linux.vnet.ibm.com, zhong@linux.vnet.ibm.com,
-        peterz@infradead.org, sbw@mit.edu, fweisbec@gmail.com
-Subject: [RFC GIT PULL rcu/next] v2 RCU commits for 3.7
-Message-ID: <20120926044500.GA5844@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1751680Ab2IZEq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 00:46:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62109 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750843Ab2IZEqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 00:46:54 -0400
+X-IronPort-AV: E=Sophos;i="4.80,487,1344182400"; 
+   d="scan'208";a="5917528"
+Message-ID: <5062893B.70908@cn.fujitsu.com>
+Date: Wed, 26 Sep 2012 12:48:59 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092604-7606-0000-0000-000003F5F534
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/10] workqueue: restructure flush_workqueue() and start
+ all flusher at the same time
+References: <1348481238-6138-1-git-send-email-laijs@cn.fujitsu.com> <20120924203954.GD29689@google.com> <50617333.9020903@cn.fujitsu.com> <20120925202427.GM16296@google.com>
+In-Reply-To: <20120925202427.GM16296@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/26 12:47:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/26 12:47:00,
+	Serialize complete at 2012/09/26 12:47:00
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+On 09/26/2012 04:24 AM, Tejun Heo wrote:
+> Hello, Lai.
+> 
+> On Tue, Sep 25, 2012 at 05:02:43PM +0800, Lai Jiangshan wrote:
+>> It is not possible to remove cascading. If cascading code is
+>> not in flush_workqueue(), it must be in some where else.
+> 
+> Yeah, sure, I liked that it didn't have to be done explicitly as a
+> separate step.
+> 
+>> If you force overflow to wait for freed color before do flush(which also
+>> force only one flusher for one color), and force the sole flush_workqueue()
+>> to grab ->flush_mutex twice, we can simplify the flush_workqueue().
+>> (see the attached patch, it remove 100 LOC, and the cascading code becomes
+>> only 3 LOC). But these two forcing slow down the caller a little.
+> 
+> Hmmm... so, that's a lot simpler.  flush_workqueue() isn't a super-hot
+> code path and I don't think grabbing mutex twice is too big a deal.  I
+> haven't actually reviewed the code but if it can be much simpler and
+> thus easier to understand and verify, I might go for that.
 
-This is now an RFC pull for only one of the previous two reasons.
-The commits have how been through -next without the adaptive-idle patches,
-but although good progress has been made on the adaptive-idle patches,
-they are still not quite there yet.  Again, the current adaptive-idle
-series has been rebased as rcu/idle on top of rcu/next, the latter branch
-being the subject of this pull request.  Also, I have merged the
-conflicting -tip branches into rcu/next, resolving the conflicts.
-(One set was adjacent insertions/deletions, the other was resolved
-as Peter Zijlstra described at https://lkml.org/lkml/2012/9/5/585.
+I updated it. it is attached, it forces flush_workqueue() to grab mutex twice(no other forcing).
+overflow queue is implemented in a different way. This new algorithm may become our choice
+likely, please review this one.
 
-Again, the major features of this series are:
+> 
+>> (And if you allow to use SRCU(which is only TWO colors), you can remove another
+>> 150 LOC. flush_workqueue() will become single line. But it will add some more overhead
+>> in flush_workqueue() because SRCU's readsite is lockless)
+> 
+> I'm not really following how SRCU would factor into this but
+> supporting multiple colors was something explicitly requested by
+> Linus.  The initial implementation was a lot simpler which supported
+> only two colors.  Linus was worried that the high possibility of
+> flusher clustering could lead to chaining of latencies.
+> 
 
-0.	A fix for a latent bug that has been in RCU ever since the
-	addition of CPU stall warnings.  This bug results in
-	false-positive stall warnings, but thus far only on embedded
-	systems with severely cut-down userspace configurations.
-	This fix is located on an rcu/urgent branch, with the rest
-	of the commits based on top of it.  This commit CCs stable.
-	Given that the merge window is coming quite soon and given
-	the small number of affected users, I do -not- recommend
-	pushing it to 3.6, but the separate branch makes it easy to
-	find if someone needs it.
+I did not know this history, thank you.
 
-1.	Further reductions in latency spikes for huge systems, along
-	with additional boot-time adaptation to the actual hardware.
-	This is a large change, as it moves RCU grace-period
-	initialization and cleanup, along with quiescent-state forcing,
-	from softirq to a kthread.  However, it appears to be in
-	quite good shape (famous last words).  Posted to LKML at
-	https://lkml.org/lkml/2012/9/20/427.
+But the number of colors is not essential.
+"Does the algorithm chain flushers" is essential.
 
-2.	Updates to documentation and rcutorture, the latter category
-	including keeping statistics on CPU-hotplug latencies and
-	fixing some initialization-time races.  Posted to LKML at
-	https://lkml.org/lkml/2012/8/30/193.
+If we can have multiple flushers for each color. It is not chained.
+If we have only one flusher for one color. It is chained. Even we have multiple
+color, it is still partially chained(image we have very high frequent flush_workqueue()).
 
-3.	Miscellaneous fixes and improvements, posted to LKML at
-	https://lkml.org/lkml/2012/8/30/199.
+The initial implementation of flush_workqueue() is "chained" algorithm.
+The initial implementation of SRCU is also "chained" algorithm.
+but the current SRCU which was implemented by me is not "chained"
+(I don't propose to use SRCU for flush_workqueue(), I just discuss it)
 
-4.	CPU-hotplug fixes and improvements, posted to LKML at
-	https://lkml.org/lkml/2012/8/30/292 for first three and at
-	https://lkml.org/lkml/2012/8/3/416.
+The simple version of flush_workqueue() which I sent yesterday is "chained",
+because it forces overflow flushers wait for free color and forces only one
+flusher for one color.
 
-5.	Idle-loop fixes that were omitted on an earlier submission,
-	posted to LKML at https://lkml.org/lkml/2012/8/30/251.
+Since "not chaining" is important/essential. I sent a new draft implement today.
+it uses multiple queues, one for each color(like SRCU).
+this version is also simple, it remove 90 LOC.
 
-As noted earlier, all of these commits have been exposed to -next testing,
-albeit in combination with adaptive-idle commits that will hopefully be
-following soon.
+Thanks,
+Lai
 
-These changes are available in the git repository at:
+This patch is still applied on top of patch7. it replaces patch8~10
 
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+ workqueue.c |  152 ++++++++++++--------------------diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index be407e1..00f02ba 100644
 
-							Thanx, Paul
-
--------------------->
-Dimitri Sivanich (1):
-      rcu: Segregate rcu_state fields to improve cache locality
-
-Frederic Weisbecker (11):
-      alpha: Fix preemption handling in idle loop
-      alpha: Add missing RCU idle APIs on idle loop
-      cris: Add missing RCU idle APIs on idle loop
-      frv: Add missing RCU idle APIs on idle loop
-      h8300: Add missing RCU idle APIs on idle loop
-      m32r: Add missing RCU idle APIs on idle loop
-      m68k: Add missing RCU idle APIs on idle loop
-      mn10300: Add missing RCU idle APIs on idle loop
-      parisc: Add missing RCU idle APIs on idle loop
-      score: Add missing RCU idle APIs on idle loop
-      xtensa: Add missing RCU idle APIs on idle loop
-
-Li Zhong (1):
-      rcu: Move TINY_RCU quiescent state out of extended quiescent state
-
-Michael Wang (1):
-      kmemleak: Replace list_for_each_continue_rcu with new interface
-
-Paul E. McKenney (46):
-      rcu: Move RCU grace-period initialization into a kthread
-      rcu: Prevent initialization-time quiescent-state race
-      rcu: Allow RCU grace-period initialization to be preempted
-      rcu: Move RCU grace-period cleanup into kthread
-      rcu: Allow RCU grace-period cleanup to be preempted
-      rcu: Break up rcu_gp_kthread() into subfunctions
-      rcu: Prevent offline CPUs from executing RCU core code
-      rcu: Provide OOM handler to motivate lazy RCU callbacks
-      rcu: Move quiescent-state forcing into kthread
-      rcu: Allow RCU quiescent-state forcing to be preempted
-      rcu: Adjust debugfs tracing for kthread-based quiescent-state forcing
-      rcu: Prevent force_quiescent_state() memory contention
-      rcu: Control grace-period duration from sysfs
-      rcu: Make rcutree module parameters visible in sysfs
-      rcu: Fix day-zero grace-period initialization/cleanup race
-      rcu: Add random PROVE_RCU_DELAY to grace-period initialization
-      rcu: Adjust for unconditional ->completed assignment
-      rcu: Eliminate signed overflow in synchronize_rcu_expedited()
-      rcu: Reduce synchronize_rcu_expedited() latency
-      rcu: Simplify quiescent-state detection
-      rcu: Handle unbalanced rcu_node configurations with few CPUs
-      rcu: Shrink RCU based on number of CPUs
-      rcu: Update rcutorture defaults
-      rcu: Track CPU-hotplug duration statistics
-      rcu: Document SRCU dead-CPU capabilities, emphasize read-side limits
-      rcu: Switch rcutorture to pr_alert() and friends
-      rcu: Prevent initialization race in rcutorture kthreads
-      rcu: Add PROVE_RCU_DELAY to provoke difficult races
-      rcu: Pull TINY_RCU dyntick-idle tracing into non-idle region
-      rcu: Properly initialize ->boost_tasks on CPU offline
-      rcu: Permit RCU_NONIDLE() to be used from interrupt context
-      rcu: Improve boost selection when moving tasks to root rcu_node
-      rcu: Make offline-CPU checking allow for indefinite delays
-      rcu: Fix obsolete rcu_initiate_boost() header comment
-      rcu: Apply for_each_rcu_flavor() to increment_cpu_stall_ticks()
-      rcu: Avoid rcu_print_detail_task_stall_rnp() segfault
-      rcu: Protect rcu_node accesses during CPU stall warnings
-      rcu: Avoid spurious RCU CPU stall warnings
-      rcu: Remove redundant memory barrier from __call_rcu()
-      rcu: Move TINY_PREEMPT_RCU away from raw_local_irq_save()
-      time: RCU permitted to stop idle entry via softirq
-      rcu: Fix CONFIG_RCU_FAST_NO_HZ stall warning message
-      rcu: Remove _rcu_barrier() dependency on __stop_machine()
-      rcu: Disallow callback registry on offline CPUs
-      ia64: Add missing RCU idle APIs on idle loop
-      Merge branches 'bigrt.2012.09.23a', 'doctorture.2012.09.23a', 'fixes.2012.09.23a', 'hotplug.2012.09.23a' and 'idlechop.2012.09.23a' into HEAD
-
-Peter Zijlstra (1):
-      sched: Fix load avg vs cpu-hotplug
-
-Silas Boyd-Wickizer (2):
-      Use get_online_cpus to avoid races involving CPU hotplug
-      Use get_online_cpus to avoid races involving CPU hotplug
-
- Documentation/RCU/checklist.txt     |    6 +
- Documentation/RCU/stallwarn.txt     |   16 +-
- Documentation/RCU/trace.txt         |   43 +--
- Documentation/RCU/whatisRCU.txt     |    9 +-
- Documentation/kernel-parameters.txt |   11 +
- arch/alpha/kernel/process.c         |    6 +-
- arch/alpha/kernel/smp.c             |    1 +
- arch/cris/kernel/process.c          |    3 +
- arch/frv/kernel/process.c           |    3 +
- arch/h8300/kernel/process.c         |    3 +
- arch/ia64/kernel/process.c          |    3 +
- arch/m32r/kernel/process.c          |    3 +
- arch/m68k/kernel/process.c          |    3 +
- arch/mn10300/kernel/process.c       |    3 +
- arch/parisc/kernel/process.c        |    3 +
- arch/score/kernel/process.c         |    4 +-
- arch/x86/kernel/cpuid.c             |    5 +
- arch/x86/kernel/msr.c               |    5 +
- arch/xtensa/kernel/process.c        |    3 +
- include/linux/interrupt.h           |    2 +
- include/linux/rcupdate.h            |    6 +-
- kernel/rcupdate.c                   |    4 +
- kernel/rcutiny.c                    |   33 +-
- kernel/rcutiny_plugin.h             |   10 +-
- kernel/rcutorture.c                 |  159 +++++----
- kernel/rcutree.c                    |  690 ++++++++++++++++++-----------------
- kernel/rcutree.h                    |   31 +-
- kernel/rcutree_plugin.h             |  174 +++++++--
- kernel/rcutree_trace.c              |   19 +-
- kernel/sched/core.c                 |   41 +-
- kernel/time/tick-sched.c            |    3 +-
- lib/Kconfig.debug                   |   14 +
- mm/kmemleak.c                       |    6 +-
- 33 files changed, 771 insertions(+), 554 deletions(-)
-
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -208,7 +208,6 @@ struct cpu_workqueue_struct {
+  */
+ struct wq_flusher {
+ 	struct list_head	list;		/* F: list of flushers */
+-	int			flush_color;	/* F: flush color waiting for */
+ 	struct completion	done;		/* flush completion */
+ };
+ 
+@@ -250,9 +249,7 @@ struct workqueue_struct {
+ 	int			work_color;	/* F: current work color */
+ 	int			flush_color;	/* F: current flush color */
+ 	atomic_t		nr_cwqs_to_flush[WORK_NR_COLORS];
+-	struct wq_flusher	*first_flusher;	/* F: first flusher */
+-	struct list_head	flusher_queue;	/* F: flush waiters */
+-	struct list_head	flusher_overflow; /* F: flush overflow list */
++	struct list_head	flusher[WORK_NR_COLORS]; /* F: flushers */
+ 
+ 	mayday_mask_t		mayday_mask;	/* cpus requesting rescue */
+ 	struct worker		*rescuer;	/* I: rescue worker */
+@@ -1000,8 +997,11 @@ static void wq_dec_flusher_ref(struct workqueue_struct *wq, int color)
+ 	 * If this was the last reference, wake up the first flusher.
+ 	 * It will handle the rest.
+ 	 */
+-	if (atomic_dec_and_test(&wq->nr_cwqs_to_flush[color]))
+-		complete(&wq->first_flusher->done);
++	if (atomic_dec_and_test(&wq->nr_cwqs_to_flush[color])) {
++		BUG_ON(color != wq->flush_color);
++		complete(&list_first_entry(&wq->flusher[color],
++					   struct wq_flusher, list)->done);
++	}
+ }
+ 
+ /**
+@@ -2540,27 +2540,20 @@ static void insert_wq_barrier(struct cpu_workqueue_struct *cwq,
+  * becomes new flush_color and work_color is advanced by one.
+  * All cwq's work_color are set to new work_color(advanced by one).
+  *
+- * The caller should have initialized @wq->first_flusher prior to
+- * calling this function.
+- *
+  * CONTEXT:
+  * mutex_lock(wq->flush_mutex).
+- *
+- * RETURNS:
+- * %true if there's some cwqs to flush.  %false otherwise.
+  */
+-static bool workqueue_start_flush(struct workqueue_struct *wq)
++static void workqueue_start_flush(struct workqueue_struct *wq)
+ {
+ 	int flush_color = wq->work_color;
+ 	int next_color = work_next_color(wq->work_color);
+-	bool wait = false;
+ 	unsigned int cpu;
+ 
+ 	BUG_ON(next_color == wq->flush_color);
+ 	wq->work_color = next_color;
+ 
+ 	BUG_ON(atomic_read(&wq->nr_cwqs_to_flush[flush_color]));
+-	/* this ref is held by first flusher */
++	/* this ref is held by the first flusher of previous color */
+ 	atomic_set(&wq->nr_cwqs_to_flush[flush_color], 1);
+ 
+ 	for_each_cwq_cpu(cpu, wq) {
+@@ -2569,18 +2562,14 @@ static bool workqueue_start_flush(struct workqueue_struct *wq)
+ 
+ 		spin_lock_irq(&gcwq->lock);
+ 
+-		if (cwq->nr_in_flight[flush_color]) {
++		if (cwq->nr_in_flight[flush_color])
+ 			atomic_inc(&wq->nr_cwqs_to_flush[flush_color]);
+-			wait = true;
+-		}
+ 
+ 		BUG_ON(next_color != work_next_color(cwq->work_color));
+ 		cwq->work_color = next_color;
+ 
+ 		spin_unlock_irq(&gcwq->lock);
+ 	}
+-
+-	return wait;
+ }
+ 
+ /**
+@@ -2597,7 +2586,6 @@ void flush_workqueue(struct workqueue_struct *wq)
+ {
+ 	struct wq_flusher this_flusher = {
+ 		.list = LIST_HEAD_INIT(this_flusher.list),
+-		.flush_color = -1,
+ 		.done = COMPLETION_INITIALIZER_ONSTACK(this_flusher.done),
+ 	};
+ 	struct wq_flusher *next, *tmp;
+@@ -2607,115 +2595,39 @@ void flush_workqueue(struct workqueue_struct *wq)
+ 	lock_map_release(&wq->lockdep_map);
+ 
+ 	mutex_lock(&wq->flush_mutex);
+-
+-	/*
+-	 * Start-to-wait phase
+-	 */
++	/* prepare to wait */
+ 	flush_color = wq->work_color;
+-	next_color = work_next_color(wq->work_color);
+-
+-	if (next_color != wq->flush_color) {
+-		/* Color space is not full */
+-		BUG_ON(!list_empty(&wq->flusher_overflow));
+-		this_flusher.flush_color = flush_color;
+-
+-		if (!wq->first_flusher) {
+-			/* no flush in progress, become the first flusher */
+-			BUG_ON(wq->flush_color != flush_color);
+-
+-			wq->first_flusher = &this_flusher;
+-
+-			if (!workqueue_start_flush(wq)) {
+-				/* nothing to flush, done */
+-				wq_dec_flusher_ref(wq, flush_color);
+-				wq->flush_color = next_color;
+-				wq->first_flusher = NULL;
+-				goto out_unlock;
+-			}
+-
+-			wq_dec_flusher_ref(wq, flush_color);
+-		} else {
+-			/* wait in queue */
+-			BUG_ON(wq->flush_color == this_flusher.flush_color);
+-			list_add_tail(&this_flusher.list, &wq->flusher_queue);
+-			workqueue_start_flush(wq);
+-		}
+-	} else {
+-		/*
+-		 * Oops, color space is full, wait on overflow queue.
+-		 * The next flush completion will assign us
+-		 * flush_color and transfer to flusher_queue.
+-		 */
+-		list_add_tail(&this_flusher.list, &wq->flusher_overflow);
+-	}
+-
++	next_color = work_next_color(flush_color);
++	list_add_tail(&this_flusher.list, &wq->flusher[flush_color]);
++	/* is color enough ? */
++	if (next_color != wq->flush_color)
++		workqueue_start_flush(wq);
++	/* itself is the tip flusher */
++	if (flush_color == wq->flush_color)
++		wq_dec_flusher_ref(wq, flush_color);
+ 	mutex_unlock(&wq->flush_mutex);
+ 
+ 	wait_for_completion(&this_flusher.done);
+-
+-	/*
+-	 * Wake-up-and-cascade phase
+-	 *
+-	 * First flushers are responsible for cascading flushes and
+-	 * handling overflow.  Non-first flushers can simply return.
+-	 */
+-	if (wq->first_flusher != &this_flusher)
++	/* is it the first flusher of the color? */
++	if (unlikely(list_empty(&this_flusher.list)))
+ 		return;
+ 
+ 	mutex_lock(&wq->flush_mutex);
+-
+-	BUG_ON(wq->first_flusher != &this_flusher);
+-	BUG_ON(!list_empty(&this_flusher.list));
+-	BUG_ON(wq->flush_color != this_flusher.flush_color);
+-
++	BUG_ON(flush_color != wq->flush_color);
++	list_del_init(&this_flusher.list);
+ 	/* complete all the flushers sharing the current flush color */
+-	list_for_each_entry_safe(next, tmp, &wq->flusher_queue, list) {
+-		if (next->flush_color != wq->flush_color)
+-			break;
++	list_for_each_entry_safe(next, tmp, &wq->flusher[flush_color], list) {
+ 		list_del_init(&next->list);
+ 		complete(&next->done);
+ 	}
+-
+-	BUG_ON(!list_empty(&wq->flusher_overflow) &&
+-	       wq->flush_color != work_next_color(wq->work_color));
+-
+ 	/* this flush_color is finished, advance by one */
+-	wq->flush_color = work_next_color(wq->flush_color);
+-
+-	/* one color has been freed, handle overflow queue */
+-	if (!list_empty(&wq->flusher_overflow)) {
+-		/*
+-		 * Assign the same color to all overflowed
+-		 * flushers, advance work_color and append to
+-		 * flusher_queue.  This is the start-to-wait
+-		 * phase for these overflowed flushers.
+-		 */
+-		list_for_each_entry(tmp, &wq->flusher_overflow, list)
+-			tmp->flush_color = wq->work_color;
+-
+-		list_splice_tail_init(&wq->flusher_overflow,
+-				      &wq->flusher_queue);
++	wq->flush_color = next_color;
++	/* start flush for overflowed flushers */
++	if (!list_empty(&wq->flusher[wq->work_color]))
+ 		workqueue_start_flush(wq);
+-	}
+-
+-	if (list_empty(&wq->flusher_queue)) {
+-		BUG_ON(wq->flush_color != wq->work_color);
+-		wq->first_flusher = NULL;
+-		goto out_unlock;
+-	}
+-
+-	/*
+-	 * Need to flush more colors.  Make the next flusher
+-	 * the new first flusher and arm it.
+-	 */
+-	BUG_ON(wq->flush_color == wq->work_color);
+-	BUG_ON(wq->flush_color != next->flush_color);
+-
+-	list_del_init(&next->list);
+-	wq->first_flusher = next;
+-	wq_dec_flusher_ref(wq, wq->flush_color);
+-
+-out_unlock:
++	/* arm next flusher */
++	if (wq->work_color != wq->flush_color)
++		wq_dec_flusher_ref(wq, next_color);
+ 	mutex_unlock(&wq->flush_mutex);
+ }
+ EXPORT_SYMBOL_GPL(flush_workqueue);
+@@ -3219,10 +3131,10 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+ 	wq->flags = flags;
+ 	wq->saved_max_active = max_active;
+ 	mutex_init(&wq->flush_mutex);
+-	for (color = 0; color < WORK_NR_COLORS; color++)
++	for (color = 0; color < WORK_NR_COLORS; color++) {
+ 		atomic_set(&wq->nr_cwqs_to_flush[color], 0);
+-	INIT_LIST_HEAD(&wq->flusher_queue);
+-	INIT_LIST_HEAD(&wq->flusher_overflow);
++		INIT_LIST_HEAD(&wq->flusher[color]);
++	}
+ 
+ 	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
+ 	INIT_LIST_HEAD(&wq->list);----------------------------
+ 1 file changed, 32 insertions(+), 120 deletions(-)
