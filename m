@@ -1,203 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab2IZWDN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 18:03:13 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62519 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016Ab2IZWDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 18:03:10 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <alpine.LSU.2.00.1209261241190.2175@eggly.anvils>
-References: <CA+icZUWF92LaJ6pOMUPh6M-MVhF1GikJfyb9_1xXdNTxGLahXw@mail.gmail.com>
-	<alpine.LSU.2.00.1209261241190.2175@eggly.anvils>
-Date: Thu, 27 Sep 2012 00:03:08 +0200
-Message-ID: <CA+icZUX0mrKzWVnrp6m=dPYKcUta8XAPDY3JyOk7ubCOtsSo5w@mail.gmail.com>
-Subject: Re: inux-next: Tree for Sept 26 (not bootable on AMD64:
- thermal|acpi|drm/i915|pci related?)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, durgadoss.r@intel.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linux ACPI <linux-acpi@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, DRI <dri-devel@lists.freedesktop.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752554Ab2IZWEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 18:04:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34117 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751532Ab2IZWEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 18:04:13 -0400
+Message-ID: <1348697043.28860.235.camel@bling.home>
+Subject: Re: 3.6-rc7 boot crash + bisection
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Florian Dazinger <florian@dazinger.net>,
+        iommu <iommu@lists.linux-foundation.org>, linux-kernel@vger.kernel.org
+Date: Wed, 26 Sep 2012 16:04:03 -0600
+In-Reply-To: <1348689013.28860.220.camel@bling.home>
+References: <20120924210348.5f50677b@brain.lan>
+	 <1348597970.28860.114.camel@bling.home> <20120925205420.0a07dea2@brain.lan>
+	 <1348602226.28860.132.camel@bling.home> <20120926132050.GB10549@amd.com>
+	 <1348670159.28860.183.camel@bling.home> <20120926151044.GE10549@amd.com>
+	 <1348676470.28860.197.camel@bling.home>
+	 <1348689013.28860.220.camel@bling.home>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 9:51 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Wed, 26 Sep 2012, Sedat Dilek wrote:
->>
->> on my Ubuntu/precise AMD64 today's Linux-Next runs into the following
->> call-trace (machine freezes):
->>
->>  Sep 26 19:22:58 fambox kernel: [   11.124739] BUG: unable to handle
->> kernel NULL pointer dereference at 0000000000000018
->> Sep 26 19:22:58 fambox kernel: [   11.124806] IP: [<ffffffff814bb058>]
->> thermal_cooling_device_register+0x2c8/0x3d0
->> Sep 26 19:22:58 fambox kernel: [   11.124869] PGD 0
->> Sep 26 19:22:58 fambox kernel: [   11.124895] Oops: 0000 [#1] SMP
->> Sep 26 19:22:58 fambox kernel: [   11.124919] Modules linked in:
->> coretemp kvm_intel kvm snd_hda_intel(+) arc4 snd_hda_codec iwldvm
->> snd_hwdep ghash_clmulni_intel snd_pcm aesni_intel uvcvideo mac80211
->> aes_x86_64 snd_page_alloc ablk_helper i915(+) snd_seq_midi cryptd
->> videobuf2_vmalloc snd_seq_midi_event xts videobuf2_memops lrw
->> snd_rawmidi videobuf2_core joydev gf128mul videodev snd_seq
->> snd_seq_device hid_generic snd_timer drm_kms_helper iwlwifi drm snd
->> psmouse i2c_algo_bit soundcore btusb microcode serio_raw
->> samsung_laptop wmi cfg80211 bluetooth mei mac_hid video lpc_ich lp
->> parport ext4 jbd2 usbhid hid r8169
->> Sep 26 19:22:58 fambox kernel: [   11.125319] CPU 2
->> Sep 26 19:22:58 fambox kernel: [   11.125332] Pid: 579, comm: modprobe
->> Not tainted 3.6.0-rc7-next20120926-2-iniza-generic #1 SAMSUNG
->> ELECTRONICS CO., LTD. 530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH
->> Sep 26 19:22:58 fambox kernel: [   11.125401] RIP:
->> 0010:[<ffffffff814bb058>]  [<ffffffff814bb058>]
->> thermal_cooling_device_register+0x2c8/0x3d0
->> Sep 26 19:22:58 fambox kernel: [   11.125450] RSP:
->> 0018:ffff88010f23d838  EFLAGS: 00010246
->> Sep 26 19:22:58 fambox kernel: [   11.125475] RAX: 0000000000000000
->> RBX: ffff88010bfd4c00 RCX: 0000000000000001
->> Sep 26 19:22:58 fambox kernel: [   11.125507] RDX: 0000000000000000
->> RSI: 0000000000000282 RDI: 0000000000000282
->> Sep 26 19:22:58 fambox kernel: [   11.125539] RBP: ffff88010f23d878
->> R08: 0000000000000000 R09: 0000000000000001
->> Sep 26 19:22:58 fambox kernel: [   11.125570] R10: ffff8801054fc460
->> R11: 0000000000000000 R12: ffff88010bfd4c04
->> Sep 26 19:22:58 fambox kernel: [   11.125602] R13: ffff88011a73e000
->> R14: 0000000000000000 R15: 0000000000000000
->> Sep 26 19:22:58 fambox kernel: [   11.125634] FS:
->> 00007f6b8da29700(0000) GS:ffff88011fa80000(0000)
->> knlGS:0000000000000000
->> Sep 26 19:22:58 fambox kernel: [   11.125670] CS:  0010 DS: 0000 ES:
->> 0000 CR0: 0000000080050033
->> Sep 26 19:22:58 fambox kernel: [   11.125697] CR2: 0000000000000018
->> CR3: 0000000110185000 CR4: 00000000000407e0
->> Sep 26 19:22:58 fambox kernel: [   11.125729] DR0: 0000000000000000
->> DR1: 0000000000000000 DR2: 0000000000000000
->> Sep 26 19:22:58 fambox kernel: [   11.125761] DR3: 0000000000000000
->> DR6: 00000000ffff0ff0 DR7: 0000000000000400
->> Sep 26 19:22:58 fambox kernel: [   11.125793] Process modprobe (pid:
->> 579, threadinfo ffff88010f23c000, task ffff880116648000)
->> Sep 26 19:22:58 fambox kernel: [   11.127133] Stack:
->> Sep 26 19:22:58 fambox kernel: [   11.128461]  ffff88011a5d9098
->> ffff88010d74c300 ffff88010f23d878 ffff880110b06480
->> Sep 26 19:22:58 fambox kernel: [   11.129755]  ffff88010bfd1000
->> ffff88011a5d9098 ffff88010d74c300 ffff88011a625000
->> Sep 26 19:22:58 fambox kernel: [   11.130943]  ffff88010f23d958
->> ffffffffa00e5868 0000000000000000 ffffffff811fa033
->> Sep 26 19:22:58 fambox kernel: [   11.132749] Call Trace:
->> Sep 26 19:22:58 fambox kernel: [   11.133939]  [<ffffffffa00e5868>]
->> acpi_video_bus_add+0x9ba/0xce6 [video]
->> Sep 26 19:22:58 fambox kernel: [   11.135130]  [<ffffffff811fa033>] ?
->> sysfs_addrm_finish+0x33/0xc0
->> Sep 26 19:22:58 fambox kernel: [   11.136313]  [<ffffffff813454cc>]
->> acpi_device_probe+0x4e/0x11c
->> Sep 26 19:22:58 fambox kernel: [   11.137482]  [<ffffffff813d472b>]
->> driver_probe_device+0x7b/0x240
->> Sep 26 19:22:58 fambox kernel: [   11.138642]  [<ffffffff813d499b>]
->> __driver_attach+0xab/0xb0
->> Sep 26 19:22:58 fambox kernel: [   11.139798]  [<ffffffff813d48f0>] ?
->> driver_probe_device+0x240/0x240
->> Sep 26 19:22:58 fambox kernel: [   11.140981]  [<ffffffff813d2b46>]
->> bus_for_each_dev+0x56/0x90
->> Sep 26 19:22:58 fambox kernel: [   11.142129]  [<ffffffff813d425e>]
->> driver_attach+0x1e/0x20
->> Sep 26 19:22:58 fambox kernel: [   11.143264]  [<ffffffff813d3dd0>]
->> bus_add_driver+0x190/0x290
->> Sep 26 19:22:58 fambox kernel: [   11.144443]  [<ffffffff813d4efa>]
->> driver_register+0x7a/0x160
->> Sep 26 19:22:58 fambox kernel: [   11.145583]  [<ffffffff81345ccf>]
->> acpi_bus_register_driver+0x43/0x45
->> Sep 26 19:22:58 fambox kernel: [   11.146871]  [<ffffffffa00e4dac>]
->> acpi_video_register+0x20/0x39 [video]
->> Sep 26 19:22:58 fambox kernel: [   11.148167]  [<ffffffffa02f4bad>]
->> i915_driver_load+0x83d/0xea0 [i915]
->> Sep 26 19:22:58 fambox kernel: [   11.149451]  [<ffffffffa020ebc1>]
->> drm_get_pci_dev+0x191/0x2b0 [drm]
->> Sep 26 19:22:58 fambox kernel: [   11.150739]  [<ffffffffa0345e2b>]
->> i915_pci_probe+0x4f/0x57 [i915]
->> Sep 26 19:22:58 fambox kernel: [   11.152015]  [<ffffffff81309af9>]
->> local_pci_probe+0x79/0x100
->> Sep 26 19:22:58 fambox kernel: [   11.153287]  [<ffffffff8130b1f9>]
->> pci_device_probe+0x109/0x130
->> Sep 26 19:22:58 fambox kernel: [   11.154546]  [<ffffffff813d472b>]
->> driver_probe_device+0x7b/0x240
->> Sep 26 19:22:58 fambox kernel: [   11.155796]  [<ffffffff813d499b>]
->> __driver_attach+0xab/0xb0
->> Sep 26 19:22:58 fambox kernel: [   11.157048]  [<ffffffff813d48f0>] ?
->> driver_probe_device+0x240/0x240
->> Sep 26 19:22:58 fambox kernel: [   11.158280]  [<ffffffff813d2b46>]
->> bus_for_each_dev+0x56/0x90
->> Sep 26 19:22:58 fambox kernel: [   11.159496]  [<ffffffff813d425e>]
->> driver_attach+0x1e/0x20
->> Sep 26 19:22:58 fambox kernel: [   11.160708]  [<ffffffff813d3dd0>]
->> bus_add_driver+0x190/0x290
->> Sep 26 19:22:58 fambox kernel: [   11.161909]  [<ffffffff813d4efa>]
->> driver_register+0x7a/0x160
->> Sep 26 19:22:58 fambox kernel: [   11.163121]  [<ffffffff8130a159>]
->> __pci_register_driver+0x49/0x50
->> Sep 26 19:22:58 fambox kernel: [   11.164227]  [<ffffffffa020edfa>]
->> drm_pci_init+0x11a/0x130 [drm]
->> Sep 26 19:22:58 fambox kernel: [   11.165295]  [<ffffffffa037c000>] ?
->> 0xffffffffa037bfff
->> Sep 26 19:22:58 fambox kernel: [   11.166351]  [<ffffffffa037c066>]
->> i915_init+0x66/0x68 [i915]
->> Sep 26 19:22:58 fambox kernel: [   11.167360]  [<ffffffff8100203f>]
->> do_one_initcall+0x3f/0x170
->> Sep 26 19:22:58 fambox kernel: [   11.168332]  [<ffffffff810bc9be>]
->> sys_init_module+0xbe/0x220
->> Sep 26 19:22:58 fambox kernel: [   11.169276]  [<ffffffff8164a0bd>]
->> system_call_fastpath+0x1a/0x1f
->> Sep 26 19:22:58 fambox kernel: [   11.170200] Code: 1b 7e 00 48 3d c0
->> cb c9 81 4c 8d a8 b0 fc ff ff 0f 84 bf 00 00 00 0f 1f 44 00 00 4d 8b
->> bd f0 02 00 00 4d 85 ff 0f 84 c0 00 00 00 <49> 8b 77 18 48 85 f6 0f 84
->> d3 fe ff ff 41 8b 47 14 85 c0 7e 7b
->> Sep 26 19:22:58 fambox kernel: [   11.172467] RIP
->> [<ffffffff814bb058>] thermal_cooling_device_register+0x2c8/0x3d0
->> Sep 26 19:22:58 fambox kernel: [   11.173542]  RSP <ffff88010f23d838>
->> Sep 26 19:22:58 fambox kernel: [   11.174603] CR2: 0000000000000018
->> Sep 26 19:22:58 fambox kernel: [   11.175675] ---[ end trace
->> 0f2bc437662fc097 ]---
->>
->> I have CCed some maintainers, hope they might have a look at it
->> (sorry, didnt check any MLs).
->>
->> My kern.log and kernel-config are attached.
->
-> I get oops in bind_cdev() called from thermal_cooling_device_register()
-> on mmotm, I expect yours is the same (but bind_cdev inlined so it doesn't
-> appear in the backtrace).  This patch gets me booting (note it also fixes
-> return to break to unlock the mutex), does it help you?  Whether the root
-> problem is elsewhere or not, I've no idea; but I see Dan already spotted
-> other errors hereabouts - probably needs more thorough review.
->
+On Wed, 2012-09-26 at 13:50 -0600, Alex Williamson wrote:
+> On Wed, 2012-09-26 at 10:21 -0600, Alex Williamson wrote:
+> > On Wed, 2012-09-26 at 17:10 +0200, Roedel, Joerg wrote:
+> > > On Wed, Sep 26, 2012 at 08:35:59AM -0600, Alex Williamson wrote:
+> > > > Hmm, that throws a kink in iommu groups.  So perhaps we need to make an
+> > > > alias interface to iommu groups.  Seems like this could just be an extra
+> > > > parameter to iommu_group_get and iommu_group_add_device (empty in the
+> > > > typical case).  Then we have the problem of what's the type for an
+> > > > alias?  For AMI-Vi, it's a u16, but we need to be more generic than
+> > > > that.  Maybe iommu groups should just treat it as a void* so iommus can
+> > > > use a pointer to some structure or a fixed value like a u16 bus:slot.
+> > > > Thoughts?
+> > > 
+> > > Good question. The iommu-groups are part of the IOMMU-API, with an
+> > > interface to the IOMMU drivers and one to the users of IOMMU-API. So the
+> > > alias handling itself should be a function of the interface to the IOMMU
+> > > driver. In general the interface should not be bus specific.
+> > > 
+> > > So a void pointer seems the only logical choice then. But I would not
+> > > limit its scope to alias handling. How about making it a bus-private
+> > > pointer where IOMMU driver store bus-specific information. That way we
+> > > make sure that there is one struct per bus-type for this pointer, and
+> > > not one structure per IOMMU driver.
+> > 
+> > I thought of another approach that may actually be more 3.6 worthy.
+> > What if we just make the iommu driver handle it?  For instance,
+> > amd_iommu can walk the alias table looking for entries that use the same
+> > alias and get the device via pci_get_bus_and_slot.  If it finds a device
+> > with an iommu group, it attaches the new device to the same group,
+> > hiding anything about aliases from the group layer.  It just groups all
+> > devices within the range.  I think the only complication is making sure
+> > we're safe around device hotplug while we're doing this.  Thanks,
+> 
+> I think this could work.  Instead of searching for other devices, check
+> for or allocate an iommu group on the alias dev_data, any "virtual"
+> aliases use that iommu group.  Florian, could you test this as well?
 
-Thanks, this patch fixes the bootup problem.
-Anyway, this new kernel is not running properly, I see hangings while
-doing my daily work.
+Here's a lockdep clean version of it:
 
-- Sedat -
+amd_iommu: Handle aliases not backed by devices
 
-> Hugh
->
-> --- mmotm/drivers/thermal/thermal_sys.c 2012-09-26 10:15:28.652071362 -0700
-> +++ linux/drivers/thermal/thermal_sys.c 2012-09-26 11:41:01.549684983 -0700
-> @@ -252,8 +252,8 @@ static void bind_cdev(struct thermal_coo
->                 }
->
->                 tzp = pos->tzp;
-> -               if (!tzp->tbp)
-> -                       return;
-> +               if (!tzp || !tzp->tbp)
-> +                       break;
->
->                 for (i = 0; i < tzp->num_tbps; i++) {
->                         if (tzp->tbp[i].cdev || !tzp->tbp[i].match)
+Aliases sometimes don't have a struct pci_dev backing them.  This breaks
+our attempt to figure out the topology and device quirks that may effect
+IOMMU grouping.  When this happens, allocate an IOMMU group on the
+dev_data for the alias and make use of it for all devices referencing
+this alias.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index b64502d..4eacb17 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -71,6 +71,7 @@ static DEFINE_SPINLOCK(iommu_pd_list_lock);
+ /* List of all available dev_data structures */
+ static LIST_HEAD(dev_data_list);
+ static DEFINE_SPINLOCK(dev_data_list_lock);
++static DEFINE_MUTEX(dev_data_iommu_group_lock);
+ 
+ /*
+  * Domain for untranslated devices - only allocated
+@@ -128,6 +129,9 @@ static void free_dev_data(struct iommu_dev_data *dev_data)
+ 	list_del(&dev_data->dev_data_list);
+ 	spin_unlock_irqrestore(&dev_data_list_lock, flags);
+ 
++	if (dev_data->group)
++		iommu_group_put(dev_data->group);
++
+ 	kfree(dev_data);
+ }
+ 
+@@ -256,6 +260,34 @@ static bool check_device(struct device *dev)
+ 	return true;
+ }
+ 
++/*
++ * Sometimes there's no actual device for an alias.  When that happens
++ * we allocate an iommu group on the dev_data and use it for anything
++ * aliasing back to this device.  This makes sure that multiple devices
++ * aliased to a non-existent device id all get grouped together.  Hold
++ * on to the reference for the group, it can be static rather than get
++ * automatically reclaimed if this device later gets removed.
++ */
++static int dev_data_add_iommu_group(struct iommu_dev_data *dev_data,
++				    struct device *dev)
++{
++	mutex_lock(&dev_data_iommu_group_lock);
++
++	if (!dev_data->group) {
++		struct iommu_group *group = iommu_group_alloc();
++		if (IS_ERR(group)) {
++			mutex_unlock(&dev_data_iommu_group_lock);
++			return PTR_ERR(group);
++		}
++
++		dev_data->group = group;
++	}
++
++	mutex_unlock(&dev_data_iommu_group_lock);
++
++	return iommu_group_add_device(dev_data->group, dev);
++}
++
+ static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
+ {
+ 	pci_dev_put(*from);
+@@ -264,38 +296,17 @@ static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
+ 
+ #define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
+ 
+-static int iommu_init_device(struct device *dev)
++/*
++ * Given a pci device, look at device quirks and topology between it
++ * and the IOMMU to determine the IOMMU group.  Once we've found or
++ * created an IOMMU group, add the provided device to it.
++ */
++static int pdev_add_iommu_group(struct pci_dev *pdev, struct device *dev)
+ {
+-	struct pci_dev *dma_pdev, *pdev = to_pci_dev(dev);
+-	struct iommu_dev_data *dev_data;
++	struct pci_dev *dma_pdev = pdev;
+ 	struct iommu_group *group;
+-	u16 alias;
+ 	int ret;
+ 
+-	if (dev->archdata.iommu)
+-		return 0;
+-
+-	dev_data = find_dev_data(get_device_id(dev));
+-	if (!dev_data)
+-		return -ENOMEM;
+-
+-	alias = amd_iommu_alias_table[dev_data->devid];
+-	if (alias != dev_data->devid) {
+-		struct iommu_dev_data *alias_data;
+-
+-		alias_data = find_dev_data(alias);
+-		if (alias_data == NULL) {
+-			pr_err("AMD-Vi: Warning: Unhandled device %s\n",
+-					dev_name(dev));
+-			free_dev_data(dev_data);
+-			return -ENOTSUPP;
+-		}
+-		dev_data->alias_data = alias_data;
+-
+-		dma_pdev = pci_get_bus_and_slot(alias >> 8, alias & 0xff);
+-	} else
+-		dma_pdev = pci_dev_get(pdev);
+-
+ 	/* Account for quirked devices */
+ 	swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
+ 
+@@ -344,8 +355,61 @@ root_bus:
+ 
+ 	iommu_group_put(group);
+ 
+-	if (ret)
+-		return ret;
++	return ret;
++}
++
++static int iommu_init_device(struct device *dev)
++{
++	struct pci_dev *dma_pdev, *pdev = to_pci_dev(dev);
++	struct iommu_dev_data *dev_data;
++	u16 alias;
++	int ret;
++
++	if (dev->archdata.iommu)
++		return 0;
++
++	dev_data = find_dev_data(get_device_id(dev));
++	if (!dev_data)
++		return -ENOMEM;
++
++	alias = amd_iommu_alias_table[dev_data->devid];
++	if (alias != dev_data->devid) {
++		struct iommu_dev_data *alias_data;
++
++		alias_data = find_dev_data(alias);
++		if (alias_data == NULL) {
++			pr_err("AMD-Vi: Warning: Unhandled device %s\n",
++					dev_name(dev));
++			free_dev_data(dev_data);
++			return -ENOTSUPP;
++		}
++		dev_data->alias_data = alias_data;
++
++		/*
++		 * If the alias device exists, use it as the base dma
++		 * device.  This results in all devices aliasing to this
++		 * one to be in the same iommu group.  If it doesn't
++		 * actually exist, store the iommu group on the alias
++		 * dev_data and use that for all aliases.
++		 */
++		dma_pdev = pci_get_bus_and_slot(alias >> 8, alias & 0xff);
++		if (!dma_pdev) {
++			ret = dev_data_add_iommu_group(alias_data, dev);
++			if (ret) {
++				free_dev_data(dev_data);
++				return ret;
++			}
++		}
++	} else
++		dma_pdev = pci_dev_get(pdev);
++
++	if (dma_pdev) {
++		ret = pdev_add_iommu_group(dma_pdev, dev);
++		if (ret) {
++			free_dev_data(dev_data);
++			return ret;
++		}
++	}
+ 
+ 	if (pci_iommuv2_capable(pdev)) {
+ 		struct amd_iommu *iommu;
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index d0dab86..6597d6a 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -404,6 +404,7 @@ struct iommu_dev_data {
+ 	struct list_head dev_data_list;	  /* For global dev_data_list */
+ 	struct iommu_dev_data *alias_data;/* The alias dev_data */
+ 	struct protection_domain *domain; /* Domain the device is bound to */
++	struct iommu_group *group;	  /* IOMMU group for virtual aliases */
+ 	atomic_t bind;			  /* Domain attach reverent count */
+ 	u16 devid;			  /* PCI Device ID */
+ 	bool iommu_v2;			  /* Device can make use of IOMMUv2 */
+
+
