@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab2IZMi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 08:38:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56445 "EHLO mx1.redhat.com"
+	id S1756066Ab2IZMkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 08:40:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3832 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754025Ab2IZMix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 08:38:53 -0400
-Date: Wed, 26 Sep 2012 14:38:25 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
-        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
+	id S1753039Ab2IZMkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 08:40:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,490,1344236400"; 
+   d="scan'208";a="226764229"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 -tip 0/5] x86, MSI, AHCI: Support multiple MSIs
-Message-ID: <20120926123824.GB7123@dhcp-26-207.brq.redhat.com>
-References: <cover.1346653435.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1346653435.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2 0/4] dw_dmac: split the driver and introduce PCI part
+Date: Wed, 26 Sep 2012 15:40:33 +0300
+Message-Id: <1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 03, 2012 at 11:16:55AM +0200, Alexander Gordeev wrote:
->   5/5:	based on Jeff's comments:
-> 
-> 	- AHCI specific code moved from libata-core.c to libahci.c;
-> 
-> 	- the host-wide lock concern addressed - ahci_interrupt() handler
-> 	  split in two parts: ahci_hw_interrupt() hardware context handler
-> 	  and ahci_thread_fn() threaded handler;
-> 
-> 	- host->lock statistics attached;
+This patchset is dedicated to support different platform devices via the same
+core driver. In our case the dw_dmac could be used as a PCI device, regular
+embedded device or something else. This split allows to support the controller
+connected to any bus by adding a little piece of code without duplicating a
+core driver functionality.
 
-Hi Jeff,
+Since v1:
+ - indentation fix in MAINTAINERS is droped away to separate patch (not related
+   to this series)
+ - CLK framework uses stubs for platforms w/o it, in the result it eliminates 3
+   patches and produces 1
+ - driver files are moved to an own folder
 
-Would you please comment on the changes and numbers?
+Andy Shevchenko (2):
+  dma: move dw_dmac driver to an own directory
+  MAINTAINERS: add recently created files to dw_dmac section
 
-Thanks!
+Heikki Krogerus (2):
+  dmaengine: dw_dmac: convert to platform driver
+  dmaengine: dw_dmac: Add PCI part of the driver
+
+ MAINTAINERS                   |    4 +-
+ drivers/dma/Kconfig           |   11 +-
+ drivers/dma/Makefile          |    2 +-
+ drivers/dma/dw/Makefile       |    2 +
+ drivers/dma/dw/dw_dmac.c      | 1720 ++++++++++++++++++++++++++++++++++++++++
+ drivers/dma/dw/dw_dmac_pci.c  |  127 +++
+ drivers/dma/dw/dw_dmac_regs.h |  294 +++++++
+ drivers/dma/dw_dmac.c         | 1727 -----------------------------------------
+ drivers/dma/dw_dmac_regs.h    |  294 -------
+ 9 files changed, 2155 insertions(+), 2026 deletions(-)
+ create mode 100644 drivers/dma/dw/Makefile
+ create mode 100644 drivers/dma/dw/dw_dmac.c
+ create mode 100644 drivers/dma/dw/dw_dmac_pci.c
+ create mode 100644 drivers/dma/dw/dw_dmac_regs.h
+ delete mode 100644 drivers/dma/dw_dmac.c
+ delete mode 100644 drivers/dma/dw_dmac_regs.h
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.7.10.4
+
