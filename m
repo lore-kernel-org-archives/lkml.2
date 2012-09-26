@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab2IZBUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 21:20:03 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:54936 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753007Ab2IZBUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 21:20:01 -0400
-Message-ID: <1348622397.2648.13.camel@joe-AO722>
-Subject: [PATCH -next] device.h: Add missing inline to #ifndef CONFIG_PRINTK
- dev_vprintk_emit
-From: Joe Perches <joe@perches.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
-        Kay Sievers <kay@vrfy.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 25 Sep 2012 18:19:57 -0700
-In-Reply-To: <CAMuHMdVH-ni1NhbTDXgh82WUSAV85fahUjp1BoizVy6D2Xyvaw@mail.gmail.com>
-References: <cover.1345978012.git.joe@perches.com>
-	 <7cfb202968f0928bba66965146a828a1cff87950.1345978012.git.joe@perches.com>
-	 <CAMuHMdVH-ni1NhbTDXgh82WUSAV85fahUjp1BoizVy6D2Xyvaw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu1 
-Mime-Version: 1.0
+	id S1755632Ab2IZBYJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 21:24:09 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43485 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967Ab2IZBYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 21:24:07 -0400
+Message-ID: <50625934.2070707@gmail.com>
+Date: Tue, 25 Sep 2012 19:24:04 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>, acme@ghostprotocols.net,
+        peterz@infradead.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3 v3] perf: precise mode and exclude_guest
+References: <1347569955-54626-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1347569955-54626-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also add __printf() verification for format string.
+On 9/13/12 2:59 PM, David Ahern wrote:
+> Hopefully this wraps up the precise mode-exclude_guest dependency.
+> I'm sure someone will let me know if I screwed up the attribution
+> in the second patch.
+>
+> David Ahern (2):
+>    perf tool: precise mode requires exclude_guest
+>    perf tool: give user better message if precise is not supported
+>
+> Peter Zijlstra (1):
+>    perf: require exclude_guest to use PEBS - kernel side enforcement
+>
+> v3: removed extra tab in patch 2
+> v2: updated commit messages for patches 1 and 2
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Joe Perches <joe@perches.com>
+Ping? Is this version Peter approved?
 
----
-
- include/linux/device.h |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 8873603..86ef6ab 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -902,8 +902,9 @@ extern const char *dev_driver_string(const struct device *dev);
- 
- #ifdef CONFIG_PRINTK
- 
--extern int dev_vprintk_emit(int level, const struct device *dev,
--			    const char *fmt, va_list args);
-+extern __printf(3, 0)
-+int dev_vprintk_emit(int level, const struct device *dev,
-+		     const char *fmt, va_list args);
- extern __printf(3, 4)
- int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...);
- 
-@@ -927,8 +928,9 @@ int _dev_info(const struct device *dev, const char *fmt, ...);
- 
- #else
- 
--static int dev_vprintk_emit(int level, const struct device *dev,
--			    const char *fmt, va_list args)
-+static inline __printf(3, 0)
-+int dev_vprintk_emit(int level, const struct device *dev,
-+		     const char *fmt, va_list args)
- { return 0; }
- static inline __printf(3, 4)
- int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...)
-
+David
 
