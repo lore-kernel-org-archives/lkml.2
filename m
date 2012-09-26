@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab2IZJvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 05:51:51 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:39986 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab2IZJvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 05:51:50 -0400
+	id S1755086Ab2IZJwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 05:52:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24841 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754012Ab2IZJwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 05:52:40 -0400
+Message-ID: <5062D0B9.1030000@redhat.com>
+Date: Wed, 26 Sep 2012 11:54:01 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1348649419-16494-2-git-send-email-minchan@kernel.org>
-References: <1348649419-16494-1-git-send-email-minchan@kernel.org>
-	<1348649419-16494-2-git-send-email-minchan@kernel.org>
-Date: Wed, 26 Sep 2012 12:51:49 +0300
-X-Google-Sender-Auth: qwSiwYxaHDWAOy93THVhjKyzqx8
-Message-ID: <CAOJsxLGjp5PAgPe3KSvMfqJEyVC4YHeP+FW3AmnCorpHqnfang@mail.gmail.com>
-Subject: Re: [PATCH 1/3] zsmalloc: promote to lib/
-From: Pekka Enberg <penberg@kernel.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Subject: ACPI regression in 3.6, no more battery status, with Dell Latitude
+ E6430
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 11:50 AM, Minchan Kim <minchan@kernel.org> wrote:
->  lib/Kconfig                              |    2 +
->  lib/Makefile                             |    1 +
->  lib/zsmalloc/Kconfig                     |   18 +
->  lib/zsmalloc/Makefile                    |    1 +
->  lib/zsmalloc/zsmalloc.c                  | 1064 ++++++++++++++++++++++++++++++
+Hi,
 
-What's wrong with mm/zsmalloc.c?
+First of all, sorry for not reporting this earlier in the cycle, but
+I only got this (new) laptop yesterday ...
+
+With both the 3.5 kernels as well as with the 3.6 kernels, there is
+quite some unhappiness being reported in dmesg about the ACPI
+tables, esp. surrounding BAT0. But with 3.5 I do get battery
+status reported, where as with 3.6 I do not.
+
+Here is the dmesg output of booting with 3.5.4, resp. 3.6.0-rc7:
+http://people.fedoraproject.org/~jwrdegoede/dmesg-3.5
+http://people.fedoraproject.org/~jwrdegoede/dmesg-3.6
+
+Both boots were done with a standard Fedora kernel build.
+
+Please let me know what else I can do to help. I'm a kernel developer
+myself, so you can just throw a patch in my direction and I can build
+a test kernels without needing any hand-holding, etc.
+
+Regards,
+
+Hans
