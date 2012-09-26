@@ -1,66 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab2IZHmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 03:42:14 -0400
-Received: from tee.schottelius.org ([77.109.138.222]:44564 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752505Ab2IZHmM (ORCPT
+	id S1753276Ab2IZHnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 03:43:15 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40120 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab2IZHnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 03:42:12 -0400
-Date: Wed, 26 Sep 2012 08:06:53 +0200
-From: Nico Schottelius <nico-kernel20120920@schottelius.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Nico Schottelius <nico-kernel20120920@schottelius.org>,
-        Arend van Spriel <arend@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Dave Kleikamp <shaggy@kernel.org>,
-        jfs-discussion@lists.sourceforge.net
-Subject: Re: Out of memory on 3.5 kernels
-Message-ID: <20120926060653.GD16575@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-kernel20120920@schottelius.org>,
-	David Rientjes <rientjes@google.com>,
-	Arend van Spriel <arend@broadcom.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-	Dave Kleikamp <shaggy@kernel.org>,
-	jfs-discussion@lists.sourceforge.net
-References: <505B1FA0.6030100@broadcom.com>
- <20120921194931.GA732@schottelius.org>
- <alpine.DEB.2.00.1209241538310.6356@chino.kir.corp.google.com>
+	Wed, 26 Sep 2012 03:43:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1209241538310.6356@chino.kir.corp.google.com>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.5.4-1-ARCH x86_64)
+In-Reply-To: <506297A0.9070609@gmail.com>
+References: <20120924162236.GA10606@quad>
+	<506297A0.9070609@gmail.com>
+Date: Wed, 26 Sep 2012 09:43:12 +0200
+Message-ID: <CABPqkBTO94bVZs1u3PCjpmt9kMh0TwgMN1s1gQ4DWXkFXj0ENA@mail.gmail.com>
+Subject: Re: [PATCH] perf record: add meta-data support for pipe-mode
+From: Stephane Eranian <eranian@google.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 26, 2012 at 7:50 AM, David Ahern <dsahern@gmail.com> wrote:
+> I like the idea, but can't checkout the patch - does not apply to Arnaldo's
+> latest perf/core branch. mind rebasing?
+>
+It's against tip-master.
 
-
-David Rientjes [Mon, Sep 24, 2012 at 03:43:27PM -0700]:
->  [...]
-> 
-> And those objects are consuming ~2.3GB of slab on your 4GB machine and 
-> seems to only have occurred between v3.4.2 to v3.5.3.
-> 
-> It would be interesting to see what kmemleak would tell us.
-
-As the Archlinux kernel does not support kmemleak:
-
-[8:04] brief:android-apk% zgrep -i meml /proc/config.gz                
-CONFIG_INPUT_FF_MEMLESS=m
-# CONFIG_DEBUG_KMEMLEAK is not set
-
-I'll give the latest kernel tree from Linus a try this evening and if it
-is in there. If not, I'll go back to 3.5.4 in Linus tree and try again.
-
-Cheers,
-
-Nico
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+> David
