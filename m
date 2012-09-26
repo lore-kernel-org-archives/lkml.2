@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab2IZVJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 17:09:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54750 "EHLO
+	id S1752106Ab2IZVK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 17:10:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39864 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab2IZVJT (ORCPT
+	with ESMTP id S1751648Ab2IZVKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 17:09:19 -0400
-Date: Wed, 26 Sep 2012 14:09:15 -0700
+	Wed, 26 Sep 2012 17:10:25 -0400
+Date: Wed, 26 Sep 2012 14:10:19 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC/cosmetic] driver base: use available pointer
-Message-ID: <20120926210915.GA16674@kroah.com>
-References: <Pine.LNX.4.64.1209241145210.11925@axis700.grange>
+To: Matt Porter <mporter@ti.com>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Benoit Cousson <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/3] uio: uio_pruss: port to AM33xx
+Message-ID: <20120926211019.GB16674@kroah.com>
+References: <1348667071-12631-1-git-send-email-mporter@ti.com>
+ <1348667071-12631-2-git-send-email-mporter@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1209241145210.11925@axis700.grange>
+In-Reply-To: <1348667071-12631-2-git-send-email-mporter@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 11:48:28AM +0200, Guennadi Liakhovetski wrote:
-> Don't recalculate an available pointer.
+On Wed, Sep 26, 2012 at 09:44:29AM -0400, Matt Porter wrote:
+> Add ifdefery hacks to only use SRAM on Davinci. This
+> needs to be cleaned up with a sane generic SRAM allocator
+> (like the DT based driver available that can't be used on
+> Davinci which is just starting DT conversion) before it
+> can go upstream.
 > 
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> ---
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index a1a7225..efe9aa9 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -166,8 +166,8 @@ static void platform_device_release(struct device *dev)
->  	struct platform_object *pa = container_of(dev, struct platform_object,
->  						  pdev.dev);
->  
-> -	of_device_node_put(&pa->pdev.dev);
-> -	kfree(pa->pdev.dev.platform_data);
-> +	of_device_node_put(dev);
-> +	kfree(dev->platform_data);
+> Adds DT, pinctrl, and runtime PM support for use on
+> AM33xx.
 
-If you don't mind, I'll leave it as-is, as it makes it a bit more
-obvious as to exactly what we are cleaning up here.
-
-thanks,
+Ick, that's really messy, no other way to do this in a "cleaner"
+fashion?
 
 greg k-h
