@@ -1,113 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751054Ab2IZEDE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 00:03:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717Ab2IZEDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 00:03:02 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi.kleen@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pagemap: fix wrong KPF_THP on slab pages
-Date: Wed, 26 Sep 2012 00:02:34 -0400
-Message-Id: <1348632154-31508-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20120926024754.GA12716@localhost>
+	id S1751303Ab2IZEI5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 00:08:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34350 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab2IZEIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 00:08:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120925095401.GA2456@ram-ThinkPad-T61>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+	<1348404995-14372-6-git-send-email-zwu.kernel@gmail.com>
+	<20120925095401.GA2456@ram-ThinkPad-T61>
+Date: Wed, 26 Sep 2012 12:08:51 +0800
+Message-ID: <CAEH94LiWJQDmm=Sqn3yQ81KPrA_7qfGLZh+JHqOo_5T8unUywQ@mail.gmail.com>
+Subject: Re: [RFC v2 05/10] vfs: introduce one hash table
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, david@fromorbit.com,
+        stroetmann@ontolinux.com, diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 10:47:54AM +0800, Fengguang Wu wrote:
-> On Tue, Sep 25, 2012 at 10:06:08PM -0400, Naoya Horiguchi wrote:
-> > On Tue, Sep 25, 2012 at 05:20:48PM -0700, David Rientjes wrote:
-> > > On Tue, 25 Sep 2012, Naoya Horiguchi wrote:
-> > > 
-> > > > KPF_THP can be set on non-huge compound pages like slab pages, because
-> > > > PageTransCompound only sees PG_head and PG_tail. Obviously this is a bug
-> > > > and breaks user space applications which look for thp via /proc/kpageflags.
-> > > > Currently thp is constructed only on anonymous pages, so this patch makes
-> > > > KPF_THP be set when both of PageAnon and PageTransCompound are true.
-> > > > 
-> > > > Changelog in v2:
-> > > >   - add a comment in code
-> > > > 
-> > > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > 
-> > > Wouldn't PageTransCompound(page) && !PageHuge(page) && !PageSlab(page) be 
-> > > better for a future extension of thp support?
-> > 
-> > Yes, this saves us an additional change when thp starts handling pagecaches.
-> > Andrew, can you replace the previous version in -mm tree with new one below?
-> > 
-> > Thanks,
-> > Naoya
-> > ---
-> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Date: Tue, 25 Sep 2012 21:30:25 -0400
-> > Subject: [PATCH v3] kpageflags: fix wrong KPF_THP on slab pages
-> > 
-> > KPF_THP can be set on non-huge compound pages like slab pages, because
-> > PageTransCompound only sees PG_head and PG_tail. Obviously this is a bug
-> 
-> s/sees/checks/
-> 
-> > and breaks user space applications which look for thp via /proc/kpageflags.
-> > This patch rules out setting KPF_THP wrongly by additional PageSlab check.
-> > 
-> > Changelog in v3:
-> >   - check PageSlab instead of PageAnon
-> >   - fix patch subject
-> > 
-> > Changelog in v2:
-> >   - add a comment in code
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  fs/proc/page.c | 7 ++++++-
-> >  1 file changed, 6 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/fs/proc/page.c b/fs/proc/page.c
-> > index 7fcd0d6..e36d1f3 100644
-> > --- a/fs/proc/page.c
-> > +++ b/fs/proc/page.c
-> > @@ -115,7 +115,12 @@ u64 stable_page_flags(struct page *page)
-> >  		u |= 1 << KPF_COMPOUND_TAIL;
-> >  	if (PageHuge(page))
-> >  		u |= 1 << KPF_HUGE;
-> > -	else if (PageTransCompound(page))
-> > +	/*
-> > +	 * PageTransCompound can be true for slab pages because it just sees
-> 
-> s/sees/checks/
-> 
-> > +	 * PG_head/PG_head, so we need to check PageSlab to make sure the given
-> 
-> PG_head/PG_head should be PG_head/PG_tail.
+On Tue, Sep 25, 2012 at 5:54 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+> On Sun, Sep 23, 2012 at 08:56:30PM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>>   Adds a hash table structure which contains
+>> a lot of hash list and is used to efficiently
+>> look up the data temperature of a file or its
+>> ranges.
+>>   In each hash list of hash table, the hash node
+>> will keep track of temperature info.
+>>
+>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> ---
+>>  fs/hot_tracking.c            |   77 ++++++++++++++++++++++++++++++++++++++++-
+>>  include/linux/hot_tracking.h |   35 +++++++++++++++++++
+>>  2 files changed, 110 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+>> index fa89f70..5f96442 100644
+>> --- a/fs/hot_tracking.c
+>> +++ b/fs/hot_tracking.c
+>> @@ -16,6 +16,7 @@
+>>  #include <linux/module.h>
+>>  #include <linux/spinlock.h>
+>>  #include <linux/hardirq.h>
+>> +#include <linux/hash.h>
+>>  #include <linux/fs.h>
+>>  #include <linux/blkdev.h>
+>>  #include <linux/types.h>
+>> @@ -24,6 +25,9 @@
+>
+> ...snip...
+>
+>> +/* Hash list heads for hot hash table */
+>> +struct hot_hash_head {
+>> +     struct hlist_head hashhead;
+>> +     rwlock_t rwlock;
+>> +     u32 temperature;
+>> +};
+>> +
+>> +/* Nodes stored in each hash list of hash table */
+>> +struct hot_hash_node {
+>> +     struct hlist_node hashnode;
+>> +     struct list_head node;
+>> +     struct hot_freq_data *hot_freq_data;
+>> +     struct hot_hash_head *hlist;
+>> +     spinlock_t lock; /* protects hlist */
+>> +
+>> +     /*
+>> +      * number of references to this node
+>> +      * equals 1 (hashlist entry)
+>> +      */
+>> +     struct kref refs;
+>> +};
+>
+> Dont see why you need yet another datastructure to hash the inode_item
+> and the range_item into a hash list.  You can just add another
+If there's such one structure, we can rapidly know which hash bucket
+one inode_item is currently linking to via its hlist field.
+This is useful if one inode_item corresponding to one file need to
+move from one bucket to another bucket when this file get cold or
+hotter.
+Does it make sense to you?
 
-Ah, sorry for my carelessness.
+> hlist_node in the inode_item and range_item. This field can be then used
+> to link into the corresponding hash list.
+>
+> You can use the container_of() get to the inode_item or the range_item
+> using the hlist_node field.
+>
+> You can thus eliminate a lot of code.
+As what i said above, i don't think it can eliminate a lo of code.
+>
+>> +
+>>  /* An item representing an inode and its access frequency */
+>>  struct hot_inode_item {
+>>       /* node for hot_inode_tree rb_tree */
+>> @@ -68,6 +93,8 @@ struct hot_inode_item {
+>>       spinlock_t lock;
+>>       /* prevents kfree */
+>>       struct kref refs;
+>> +     /* hashlist node for this inode */
+>> +     struct hot_hash_node *heat_node;
+>
+> this can be just
+>         struct hlist_node head_node; /* lookup hot_inode hash list */
+>
+> Use this field to link it into the corresponding hashlist.
+>
+>>  };
+>>
+> this can be just
+>>  /*
+>> @@ -91,6 +118,8 @@ struct hot_range_item {
+>>       spinlock_t lock;
+>>       /* prevents kfree */
+>>       struct kref refs;
+>> +     /* hashlist node for this range */
+>> +     struct hot_hash_node *heat_node;
+>
+> this can be just
+>         struct hlist_node head_node; /* lookup hot_range hash list */
+>
+>
+>>  };
+>>
+>>  struct hot_info {
+>> @@ -98,6 +127,12 @@ struct hot_info {
+>>
+>>       /* red-black tree that keeps track of fs-wide hot data */
+>>       struct hot_inode_tree hot_inode_tree;
+>> +
+>> +     /* hash map of inode temperature */
+>> +     struct hot_hash_head heat_inode_hl[HEAT_HASH_SIZE];
+>> +
+>> +     /* hash map of range temperature */
+>> +     struct hot_hash_head heat_range_hl[HEAT_HASH_SIZE];
+>>  };
+>>
+>>  #endif  /* _LINUX_HOTTRACK_H */
+>
 
-> > +	 * page is a thp, not a non-huge compound page.
-> > +	 */
-> > +	else if (PageTransCompound(page) && !PageSlab(page))
-> >  		u |= 1 << KPF_THP;
-> 
-> Good catch!
-> 
-> Will this report THP for the various drivers that do __GFP_COMP
-> page allocations?
 
-I'm afraid it will. I think of checking PageLRU as an alternative,
-but it needs compound_head() to report tail pages correctly.
-In this context, pages are not pinned or locked, so it's unsafe to
-use compound_head() because it can return a dangling pointer.
-Maybe it's a thp's/hugetlbfs's (not kpageflags specific) problem,
-so going forward with compound_head() expecting that it will be
-fixed in the future work can be an option.
 
-Thanks,
-Naoya
+-- 
+Regards,
+
+Zhi Yong Wu
