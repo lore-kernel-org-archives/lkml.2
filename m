@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab2IZRhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:37:41 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:39149 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756904Ab2IZRhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757313Ab2IZRhg (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 26 Sep 2012 13:37:36 -0400
-Message-ID: <50633C88.1030300@parallels.com>
-Date: Wed, 26 Sep 2012 21:34:00 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+Received: from youngberry.canonical.com ([91.189.89.112]:46729 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab2IZRhe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 13:37:34 -0400
+Date: Wed, 26 Sep 2012 12:37:18 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: akpm@linux-foundation.org, manfred@colorfullife.com,
+        a.p.zijlstra@chello.nl, netdev@vger.kernel.org, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, cmetcalf@tilera.com, jmorris@namei.org,
+        linux-driver@qlogic.com, linux-security-module@vger.kernel.org,
+        hughd@google.com, ron.mercer@qlogic.com, viro@zeniv.linux.org.uk,
+        james.l.morris@oracle.com, catalin.marinas@arm.com,
+        casey@schaufler-ca.com, eparis@parisplace.org, sds@tycho.nsa.gov,
+        jitendra.kalsaria@qlogic.com, devel@openvz.org
+Subject: Re: [PATCH v5 01/10] ipc: remove forced assignment of selected
+ message
+Message-ID: <20120926173718.GA30620@sergelap>
+References: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
+ <20120919160531.11254.48182.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-5-git-send-email-glommer@parallels.com> <20120926140347.GD15801@dhcp22.suse.cz> <50631226.9050304@parallels.com> <20120926160126.GF15801@dhcp22.suse.cz>
-In-Reply-To: <20120926160126.GF15801@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.3.27]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120919160531.11254.48182.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2012 08:01 PM, Michal Hocko wrote:
-> On Wed 26-09-12 18:33:10, Glauber Costa wrote:
->> On 09/26/2012 06:03 PM, Michal Hocko wrote:
->>> On Tue 18-09-12 18:04:01, Glauber Costa wrote:
-> [...]
->>>> @@ -4961,6 +5015,12 @@ mem_cgroup_create(struct cgroup *cont)
->>>>  		int cpu;
->>>>  		enable_swap_cgroup();
->>>>  		parent = NULL;
->>>> +
->>>> +#ifdef CONFIG_MEMCG_KMEM
->>>> +		WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
->>>> +					   kmem_cgroup_files));
->>>> +#endif
->>>> +
->>>>  		if (mem_cgroup_soft_limit_tree_init())
->>>>  			goto free_out;
->>>>  		root_mem_cgroup = memcg;
->>>> @@ -4979,6 +5039,7 @@ mem_cgroup_create(struct cgroup *cont)
->>>>  	if (parent && parent->use_hierarchy) {
->>>>  		res_counter_init(&memcg->res, &parent->res);
->>>>  		res_counter_init(&memcg->memsw, &parent->memsw);
->>>> +		res_counter_init(&memcg->kmem, &parent->kmem);
->>>
->>> Haven't we already discussed that a new memcg should inherit kmem_accounted
->>> from its parent for use_hierarchy?
->>> Say we have
->>> root
->>> |
->>> A (kmem_accounted = 1, use_hierachy = 1)
->>>  \
->>>   B (kmem_accounted = 0)
->>>    \
->>>     C (kmem_accounted = 1)
->>>
->>> B find's itself in an awkward situation becuase it doesn't want to
->>> account u+k but it ends up doing so becuase C.
->>>
->>
->> Ok, I haven't updated it here. But that should be taken care of in the
->> lifecycle patch.
+Quoting Stanislav Kinsbursky (skinsbursky@parallels.com):
+> This is a cleanup patch. The assignment is redundant.
 > 
-> I am not sure which patch you are thinking about but I would prefer to
-> have it here because it is safe wrt. races and it is more obvious as
-> well.
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  ipc/msg.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
+> diff --git a/ipc/msg.c b/ipc/msg.c
+> index 7385de2..f3bfbb8 100644
+> --- a/ipc/msg.c
+> +++ b/ipc/msg.c
+> @@ -787,7 +787,6 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
+>  			    !security_msg_queue_msgrcv(msq, walk_msg, current,
+>  						       msgtyp, mode)) {
+>  
+> -				msg = walk_msg;
+>  				if (mode == SEARCH_LESSEQUAL &&
+>  						walk_msg->m_type != 1) {
+>  					msg = walk_msg;
 
-The patch where I make kmem_accounted into a bitfield. So any code here
-will eventually disappear.
-
-But BTW, I am not saying I won't update the patch - I like that all
-patches work and make sense in their own, I am just saying that I forgot
-to update this patch, because I added the code in its final version to
-the end and then squashed it.
-
-
+Perhaps your tree is different from mine, but it looks to me like it would
+be simpler to remove the 'msg = walk_msg' from both the 'if' and 'else',
+and keep them above the if/else?
