@@ -1,53 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294Ab2IZTHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 15:07:42 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40591 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757900Ab2IZTHl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 15:07:41 -0400
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] pinctrl: pinctrl-single: add debugfs pin h/w state info
-Date: Wed, 26 Sep 2012 15:07:43 -0400
-Message-Id: <1348686463-25793-1-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758291Ab2IZTPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 15:15:43 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:53502 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757598Ab2IZTPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 15:15:42 -0400
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH] rapidio/rionet: fix multicast packet transmit logic
+Date: Wed, 26 Sep 2012 15:14:27 -0400
+Message-Id: <1348686867-28842-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for displaying the individual pin h/w config state.
+Fix multicast packet transmit logic to account for repetitive transmission
+of single skb:
+- correct check for available buffers (this bug may produce NULL pointer
+  crash dump in case of heavy traffic);
+- update skb user count (incorrect user counter causes a warning dump from
+  net_tx_action routine during multicast transfers in systems with three or
+  more rionet participants).
 
-Signed-off-by: Matt Porter <mporter@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
 ---
- drivers/pinctrl/pinctrl-single.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/rionet.c |   20 +++++++++++++++++---
+ 1 files changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-index aabecfa..726a729 100644
---- a/drivers/pinctrl/pinctrl-single.c
-+++ b/drivers/pinctrl/pinctrl-single.c
-@@ -246,7 +246,15 @@ static void pcs_pin_dbg_show(struct pinctrl_dev *pctldev,
- 					struct seq_file *s,
- 					unsigned offset)
- {
--	seq_printf(s, " " DRIVER_NAME);
-+	struct pcs_device *pcs;
-+	unsigned val;
-+
-+	pcs = pinctrl_dev_get_drvdata(pctldev);
-+
-+	val = pcs->read(pcs->base + offset);
-+	val &= pcs->fmask;
-+
-+	seq_printf(s, "%08x %s " , val, DRIVER_NAME);
- }
+diff --git a/drivers/net/rionet.c b/drivers/net/rionet.c
+index 91d2588..1470d3e 100644
+--- a/drivers/net/rionet.c
++++ b/drivers/net/rionet.c
+@@ -79,6 +79,7 @@ static int rionet_capable = 1;
+  * on system trade-offs.
+  */
+ static struct rio_dev **rionet_active;
++static int nact;	/* total number of active rionet peers */
  
- static void pcs_dt_free_map(struct pinctrl_dev *pctldev,
+ #define is_rionet_capable(src_ops, dst_ops)			\
+ 			((src_ops & RIO_SRC_OPS_DATA_MSG) &&	\
+@@ -175,6 +176,7 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	struct ethhdr *eth = (struct ethhdr *)skb->data;
+ 	u16 destid;
+ 	unsigned long flags;
++	int add_num = 1;
+ 
+ 	local_irq_save(flags);
+ 	if (!spin_trylock(&rnet->tx_lock)) {
+@@ -182,7 +184,10 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 		return NETDEV_TX_LOCKED;
+ 	}
+ 
+-	if ((rnet->tx_cnt + 1) > RIONET_TX_RING_SIZE) {
++	if (is_multicast_ether_addr(eth->h_dest))
++		add_num = nact;
++
++	if ((rnet->tx_cnt + add_num) > RIONET_TX_RING_SIZE) {
+ 		netif_stop_queue(ndev);
+ 		spin_unlock_irqrestore(&rnet->tx_lock, flags);
+ 		printk(KERN_ERR "%s: BUG! Tx Ring full when queue awake!\n",
+@@ -191,11 +196,16 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	}
+ 
+ 	if (is_multicast_ether_addr(eth->h_dest)) {
++		int count = 0;
+ 		for (i = 0; i < RIO_MAX_ROUTE_ENTRIES(rnet->mport->sys_size);
+ 				i++)
+-			if (rionet_active[i])
++			if (rionet_active[i]) {
+ 				rionet_queue_tx_msg(skb, ndev,
+ 						    rionet_active[i]);
++				if (count)
++					atomic_inc(&skb->users);
++				count++;
++			}
+ 	} else if (RIONET_MAC_MATCH(eth->h_dest)) {
+ 		destid = RIONET_GET_DESTID(eth->h_dest);
+ 		if (rionet_active[destid])
+@@ -220,14 +230,17 @@ static void rionet_dbell_event(struct rio_mport *mport, void *dev_id, u16 sid, u
+ 	if (info == RIONET_DOORBELL_JOIN) {
+ 		if (!rionet_active[sid]) {
+ 			list_for_each_entry(peer, &rionet_peers, node) {
+-				if (peer->rdev->destid == sid)
++				if (peer->rdev->destid == sid) {
+ 					rionet_active[sid] = peer->rdev;
++					nact++;
++				}
+ 			}
+ 			rio_mport_send_doorbell(mport, sid,
+ 						RIONET_DOORBELL_JOIN);
+ 		}
+ 	} else if (info == RIONET_DOORBELL_LEAVE) {
+ 		rionet_active[sid] = NULL;
++		nact--;
+ 	} else {
+ 		if (netif_msg_intr(rnet))
+ 			printk(KERN_WARNING "%s: unhandled doorbell\n",
+@@ -523,6 +536,7 @@ static int rionet_probe(struct rio_dev *rdev, const struct rio_device_id *id)
+ 
+ 		rc = rionet_setup_netdev(rdev->net->hport, ndev);
+ 		rionet_check = 1;
++		nact = 0;
+ 	}
+ 
+ 	/*
 -- 
-1.7.9.5
+1.7.8.4
 
