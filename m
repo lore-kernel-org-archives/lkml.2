@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab2IZKqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 06:46:34 -0400
-Received: from [213.199.154.208] ([213.199.154.208]:31178 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753112Ab2IZKq1 (ORCPT
+	id S1754837Ab2IZKqi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 06:46:38 -0400
+Received: from [216.32.181.183] ([216.32.181.183]:6096 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753112Ab2IZKqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 06:46:27 -0400
+	Wed, 26 Sep 2012 06:46:35 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzd6f1izz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1155h)
-X-WSS-ID: 0MAYDV3-02-54E-02
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1155h)
+X-WSS-ID: 0MAYDVD-02-54T-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
@@ -19,9 +19,9 @@ CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
         Yinghai Lu <yinghai@kernel.org>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 09/19] x86, io_apic: Move irq_remapping_enabled checks out of check_timer()
-Date: Wed, 26 Sep 2012 12:44:41 +0200
-Message-ID: <1348656291-10375-10-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 16/19] x86, irq: Introduce setup_remapped_irq()
+Date: Wed, 26 Sep 2012 12:44:48 +0200
+Message-ID: <1348656291-10375-17-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
 References: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
@@ -32,76 +32,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move these checks to IRQ remapping code by introducing the
-panic_on_irq_remap() function.
+This function does irq-remapping specific interrupt setup
+like modifying the chip defaults.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/irq_remapping.h |    5 +++++
- arch/x86/kernel/apic/io_apic.c       |    6 ++----
- drivers/iommu/irq_remapping.c        |    6 ++++++
- 3 files changed, 13 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/irq_remapping.h |    9 +++++++++
+ arch/x86/kernel/apic/io_apic.c       |   13 +++----------
+ drivers/iommu/irq_remapping.c        |    9 +++++++++
+ 3 files changed, 21 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index f1afa04..fb99a73 100644
+index 562db68..b30fca1 100644
 --- a/arch/x86/include/asm/irq_remapping.h
 +++ b/arch/x86/include/asm/irq_remapping.h
-@@ -45,6 +45,7 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
- 				     unsigned int irq, unsigned int dest,
+@@ -44,6 +44,9 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
  				     struct msi_msg *msg, u8 hpet_id);
  extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
-+extern void panic_if_irq_remap(const char *msg);
+ extern void panic_if_irq_remap(const char *msg);
++extern bool setup_remapped_irq(int irq,
++			       struct irq_cfg *cfg,
++			       struct irq_chip *chip);
  
- #else  /* CONFIG_IRQ_REMAP */
- 
-@@ -75,6 +76,10 @@ static inline int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+ static inline bool irq_remapped(struct irq_cfg *cfg)
  {
- 	return -ENODEV;
+@@ -93,6 +96,12 @@ static inline void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+ {
  }
-+
-+static inline void panic_if_irq_remap(const char *msg)
+ 
++static inline bool setup_remapped_irq(int irq,
++				      struct irq_cfg *cfg,
++				      struct irq_chip *chip)
 +{
++	return false;
 +}
  #endif /* CONFIG_IRQ_REMAP */
  
  #endif /* __X86_IRQ_REMAPPING_H */
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 9500a07..360f62b 100644
+index 87a0fd1..88c4fff 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2786,8 +2786,7 @@ static inline void __init check_timer(void)
- 	 * 8259A.
- 	 */
- 	if (pin1 == -1) {
--		if (irq_remapping_enabled)
--			panic("BIOS bug: timer not connected to IO-APIC");
-+		panic_if_irq_remap("BIOS bug: timer not connected to IO-APIC");
- 		pin1 = pin2;
- 		apic1 = apic2;
- 		no_pin1 = 1;
-@@ -2819,8 +2818,7 @@ static inline void __init check_timer(void)
- 				clear_IO_APIC_pin(0, pin1);
- 			goto out;
- 		}
--		if (irq_remapping_enabled)
--			panic("timer doesn't work through Interrupt-remapped IO-APIC");
-+		panic_if_irq_remap("timer doesn't work through Interrupt-remapped IO-APIC");
- 		local_irq_disable();
- 		clear_IO_APIC_pin(apic1, pin1);
- 		if (!no_pin1)
+@@ -1292,11 +1292,8 @@ static void ioapic_register_intr(unsigned int irq, struct irq_cfg *cfg,
+ 		fasteoi = false;
+ 	}
+ 
+-	if (irq_remapped(cfg)) {
+-		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-		irq_remap_modify_chip_defaults(chip);
++	if (setup_remapped_irq(irq, cfg, chip))
+ 		fasteoi = trigger != 0;
+-	}
+ 
+ 	hdl = fasteoi ? handle_fasteoi_irq : handle_edge_irq;
+ 	irq_set_chip_and_handler_name(irq, chip, hdl,
+@@ -3103,10 +3100,7 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
+ 	irq_set_msi_desc(irq, msidesc);
+ 	write_msi_msg(irq, &msg);
+ 
+-	if (irq_remapped(irq_get_chip_data(irq))) {
+-		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-		irq_remap_modify_chip_defaults(chip);
+-	}
++	setup_remapped_irq(irq, irq_get_chip_data(irq), chip);
+ 
+ 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+ 
+@@ -3244,8 +3238,7 @@ int default_setup_hpet_msi(unsigned int irq, unsigned int id)
+ 
+ 	hpet_msi_write(irq_get_handler_data(irq), &msg);
+ 	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-	if (irq_remapped(irq_get_chip_data(irq)))
+-		irq_remap_modify_chip_defaults(chip);
++	setup_remapped_irq(irq, irq_get_chip_data(irq), chip);
+ 
+ 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+ 	return 0;
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 5b28e28..827f8a1 100644
+index 165ac14..1e6bc13 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -261,3 +261,9 @@ int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
- 
- 	return remap_ops->setup_hpet_msi(irq, id);
+@@ -295,3 +295,12 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+ 	chip->irq_eoi = ir_ack_apic_level;
+ 	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
  }
 +
-+void panic_if_irq_remap(const char *msg)
++bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
 +{
-+	if (irq_remapping_enabled)
-+		panic(msg);
++	if (!irq_remapped(cfg))
++		return false;
++	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
++	irq_remap_modify_chip_defaults(chip);
++	return true;
 +}
 -- 
 1.7.9.5
