@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab2IZNoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 09:44:38 -0400
+	id S1756557Ab2IZNof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 09:44:35 -0400
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:49412 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756548Ab2IZNof (ORCPT
+	with ESMTP id S1756522Ab2IZNoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 09:44:35 -0400
+	Wed, 26 Sep 2012 09:44:32 -0400
 From: Matt Porter <mporter@ti.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "Hans J. Koch" <hjk@hansjkoch.de>, Benoit Cousson <b-cousson@ti.com>,
@@ -14,90 +14,65 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
 Cc: Tony Lindgren <tony@atomide.com>,
         Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH 2/3] ARM: omap: add DT support for deasserting hardware reset lines
-Date: Wed, 26 Sep 2012 09:44:30 -0400
-Message-Id: <1348667071-12631-3-git-send-email-mporter@ti.com>
+Subject: [RFC PATCH 0/3] uio_pruss support for AM33xx
+Date: Wed, 26 Sep 2012 09:44:28 -0400
+Message-Id: <1348667071-12631-1-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348667071-12631-1-git-send-email-mporter@ti.com>
-References: <1348667071-12631-1-git-send-email-mporter@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This optional binding extension allows specification of a hwmod
-and associate hardware reset line which should be deasserted for
-the device to be functional.
+This series enables uio_pruss on AM33xx and it mostly intended to look
+for the proper solution to handling this particular OMAP hwmod which
+contains hardware reset lines.
 
-The implementation works for reference as to the problem that
-exists for utilizing uio_pruss on AM33xx but is suboptimal. The
-problem is that this deassertion occurs before clocks are enabled
-and we are warned that the hard reset failed. Ideally the list of
-rst lines requested to be deasserted would be cached and used within
-the hwmod enable sequencing (instead of it just returning if any
-hardware reset line is asserted).
+The comment in arch/arm/mach-omap2/omap_hwmod.c:
+	/*
+	 * If an IP block contains HW reset lines and any of them are
+	 * asserted, we let integration code associated with that
+	 * block handle the enable.  We've received very little
+	 * information on what those driver authors need, and until
+	 * detailed information is provided and the driver code is
+	 * posted to the public lists, this is probably the best we
+	 * can do.
+	 */
+is waiting for some information which is at least partially available
+with this uio_pruss driver example.
 
-Signed-off-by: Matt Porter <mporter@ti.com>
----
- .../devicetree/bindings/arm/omap/omap.txt          |    2 ++
- arch/arm/plat-omap/omap_device.c                   |   25 ++++++++++++++++++--
- 2 files changed, 25 insertions(+), 2 deletions(-)
+The series has some ifdefery to get uio_pruss to build without the
+DaVinci specific sram API, and then some needed DT, pinctrl, and
+runtime PM support so I could actually use the driver on AM33xx.
 
-diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
-index d0051a7..3133a4b 100644
---- a/Documentation/devicetree/bindings/arm/omap/omap.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
-@@ -21,6 +21,8 @@ Required properties:
- Optional properties:
- - ti,no_idle_on_suspend: When present, it prevents the PM to idle the module
-   during suspend.
-+- ti,deassert-hard-reset: list of hwmod and hardware reset line name pairs
-+  (ascii strings) to be deasserted upon device instantiation.
- 
- 
- Example:
-diff --git a/arch/arm/plat-omap/omap_device.c b/arch/arm/plat-omap/omap_device.c
-index d5f617c..d1ae68c 100644
---- a/arch/arm/plat-omap/omap_device.c
-+++ b/arch/arm/plat-omap/omap_device.c
-@@ -330,8 +330,8 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
- 	struct omap_device *od;
- 	struct omap_hwmod *oh;
- 	struct device_node *node = pdev->dev.of_node;
--	const char *oh_name;
--	int oh_cnt, i, ret = 0;
-+	const char *oh_name, *rst_name;
-+	int oh_cnt, dstr_cnt, i, ret = 0;
- 
- 	oh_cnt = of_property_count_strings(node, "ti,hwmods");
- 	if (!oh_cnt || IS_ERR_VALUE(oh_cnt)) {
-@@ -376,6 +376,27 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
- 	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
- 		omap_device_disable_idle_on_suspend(pdev);
- 
-+	dstr_cnt =
-+		of_property_count_strings(node, "ti,deassert-hard-reset");
-+	if (dstr_cnt > 0) {
-+		for (i = 0; i < dstr_cnt; i += 2) {
-+			of_property_read_string_index(
-+				node, "ti,deassert-hard-reset", i,
-+				&oh_name);
-+			of_property_read_string_index(
-+				node, "ti,deassert-hard-reset", i+1,
-+				&rst_name);
-+			oh = omap_hwmod_lookup(oh_name);
-+			if (!oh) {
-+				dev_warn(&pdev->dev,
-+				"Cannot parse deassert property for '%s'\n",
-+				oh_name);
-+				break;
-+			}
-+			omap_hwmod_deassert_hardreset(oh, rst_name);
-+		}
-+	}
-+
- 	pdev->dev.pm_domain = &omap_device_pm_domain;
- 
- odbfd_exit1:
+The approach to deal with the hardware reset (for at least the pruss
+hwmod) was to add a generic omap property to properly define this
+hardware. The implementation simply deasserts any rst lines that
+are called out in the property when the omap_device is
+instantiated. This is not the right implementation as the sequence is
+a bit wrong for pruss since the busy check during the hard reset
+will fail, even though it fails in a benign manner. Ideally, we would
+want the implementation to observe the ti,deassert-hard-reset property
+and use that in omap_hwmod.c:_enable() *after* the module is unidled
+and the clocks active. However, this is actually functional for purposes
+of getting the uio_pruss driver up and running.
+
+
+Matt Porter (3):
+  uio: uio_pruss: port to AM33xx
+  ARM: omap: add DT support for deasserting hardware reset lines
+  ARM: dts: AM33xx PRUSS support
+
+ .../devicetree/bindings/arm/omap/omap.txt          |    2 +
+ Documentation/devicetree/bindings/uio/pruss.txt    |   17 ++++++
+ .../devicetree/bindings/uio/uio_pruss.txt          |   17 ++++++
+ arch/arm/boot/dts/am335x-bone.dts                  |    4 ++
+ arch/arm/boot/dts/am33xx.dtsi                      |   11 ++++
+ arch/arm/plat-omap/omap_device.c                   |   25 +++++++-
+ drivers/uio/Kconfig                                |    4 +-
+ drivers/uio/uio_pruss.c                            |   63 +++++++++++++++++++-
+ 8 files changed, 138 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/uio/pruss.txt
+ create mode 100644 Documentation/devicetree/bindings/uio/uio_pruss.txt
+
 -- 
 1.7.9.5
 
