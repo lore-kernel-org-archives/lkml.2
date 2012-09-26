@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab2IZC4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 22:56:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60435 "EHLO
+	id S1751736Ab2IZC63 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 22:58:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38221 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab2IZC4K (ORCPT
+	with ESMTP id S1751359Ab2IZC62 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 22:56:10 -0400
+	Tue, 25 Sep 2012 22:58:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120925092819.GC29154@dastard>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
-	<1348404995-14372-4-git-send-email-zwu.kernel@gmail.com>
-	<20120925092819.GC29154@dastard>
-Date: Wed, 26 Sep 2012 10:56:08 +0800
-Message-ID: <CAEH94Li+-nz58P=SwNDq5itDR+PqLhhmqEzMGgO219CyC4RRKA@mail.gmail.com>
-Subject: Re: [RFC v2 03/10] vfs: add one new mount option '-o hottrack'
+In-Reply-To: <5061E676.8080203@libero.it>
+References: <1348538536-29838-1-git-send-email-zwu.kernel@gmail.com>
+	<1348538536-29838-3-git-send-email-zwu.kernel@gmail.com>
+	<20120925101429.GR14582@twin.jikos.cz>
+	<5061E676.8080203@libero.it>
+Date: Wed, 26 Sep 2012 10:58:26 +0800
+Message-ID: <CAEH94LirayD_NB2KW5q5KSZ3nVTJLYpi23D_ioGwcKmn0WyDVw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] btrfs-progs: Fix up memory leakage
 From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
-        diegocg@gmail.com, chris@csamuel.org,
+To: kreijack@inwind.it
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbacik@fusionio.com, dave@jikos.cz, linuxram@linux.vnet.ibm.com,
         Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 5:28 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Sun, Sep 23, 2012 at 08:56:28PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Wed, Sep 26, 2012 at 1:14 AM, Goffredo Baroncelli <kreijack@libero.it> wrote:
+> On 09/25/2012 12:14 PM, David Sterba wrote:
 >>
->>   Introduce one new mount option '-o hottrack',
->> and add its parsing support.
->>   Its usage looks like:
->>    mount -o hottrack
->>    mount -o nouser,hottrack
->>    mount -o nouser,hottrack,loop
->>    mount -o hottrack,nouser
+>> On Tue, Sep 25, 2012 at 10:02:16AM +0800, zwu.kernel@gmail.com wrote:
+>>>
+>>> From: Zhi Yong Wu<wuzhy@linux.vnet.ibm.com>
+>>>
+>>>    Some code pathes forget to free memory on exit.
+>>
+>>
+>> Same as with the fd's, kernel will free all memory for us at exit().
 >
-> I think that this option parsing should be done by the filesystem,
-> even though the tracking functionality is in the VFS. That way ony
-> the filesystems that can use the tracking information will turn it
-> on, rather than being able to turn it on for everything regardless
-> of whether it is useful or not.
 >
-> Along those lines, just using a normal superblock flag to indicate
-> it is active (e.g. MS_HOT_INODE_TRACKING in sb->s_flags) means you
-> don't need to allocate the sb->s_hot_info structure just to be able
-> to check whether we are tracking hot inodes or not.
+> I strongly disagree with this approach. The callee often don't know what
+> happen after and before the call. The same is true for the programmer,
+> because the code is quite often updated by several people. A clean exit() is
+> the right thing to do as general rule. I don't see any valid reason (in the
+> btrfs context) to do otherwise.
 >
-> This then means the hot inode tracking for the superblock can be
-> initialised by the filesystem as part of it's fill_super method,
-> along with the filesystem specific code that will use the hot
-> tracking information the VFS gathers....
-I can see what you mean, but don't know if other guys also agree with this.
-If so, all FS specific code which use hot tracking feature wll have to add
-the same chunk of code in it fill_super method. Is it good?
+> Relying on the exit() for a proper clean-up increase the likelihood of bug
+> when the code evolves (see my patch   [RESPOST][BTRFS-PROGS][PATCH]
+> btrfs_read_dev_super(): uninitialized variable for an example of what means
+> an incorrect deallocation of resource).
+>
+>
+>> If there's lots of memory allocated, it may be even faster to leave the
+>> unallocation process to kernel as it will do it in one go, while the
+>> application would unnecessarily free it chunk by chunk.
+>
+>
+> May be I am wrong, but I don't think that the increase of speed of the btrfs
+> "command" is even measurable relying on exit instead of free()-ing each
+> chunk of memory one at time.... The same should be true for the
+> open()/close()
+
+I fully agree with you. In one same function, i find that some code
+path free system sources,
+while other code path doesn't. This is one nice way.
 
 >
-> Cheers,
+> My 2¢
 >
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+> BR
+> G.Baroncelli
+>
+>>
+>> david
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+>>
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> .
+>>
+>
 
 
 
