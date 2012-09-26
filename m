@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab2IZKto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 06:49:44 -0400
-Received: from [213.199.154.206] ([213.199.154.206]:41897 "EHLO
+	id S1755977Ab2IZKtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 06:49:55 -0400
+Received: from [213.199.154.209] ([213.199.154.209]:27164 "EHLO
 	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753354Ab2IZKq2 (ORCPT
+	by vger.kernel.org with ESMTP id S1751803Ab2IZKq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 06:46:28 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Wed, 26 Sep 2012 06:46:27 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 1
 X-BigFish: VPS1(zzd6f1izz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1155h)
-X-WSS-ID: 0MAYDV4-01-D55-02
+X-WSS-ID: 0MAYDV2-02-54D-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
@@ -19,9 +19,9 @@ CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
         Yinghai Lu <yinghai@kernel.org>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 08/19] x86, io_apic: Convert setup_ioapic_entry to function pointer
-Date: Wed, 26 Sep 2012 12:44:40 +0200
-Message-ID: <1348656291-10375-9-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 03/19] x86, io_apic: Introduce x86_io_apic_ops.disable()
+Date: Wed, 26 Sep 2012 12:44:35 +0200
+Message-ID: <1348656291-10375-4-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
 References: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
@@ -32,119 +32,211 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pointer is changed to a different function when IRQ
-remapping is enabled.
+This function pointer is used to call a system-specific
+function for disabling the IO-APIC. Currently this is used
+for IRQ remapping which has its own disable routine.
+
+Also introduce the necessary infrastructure in the interrupt
+remapping code to overwrite this and other function pointers
+as necessary by interrupt remapping.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/io_apic.h  |    5 +++++
- arch/x86/include/asm/x86_init.h |    5 +++++
- arch/x86/kernel/apic/io_apic.c  |   14 +++++---------
- arch/x86/kernel/x86_init.c      |    1 +
- drivers/iommu/irq_remapping.c   |    1 +
- 5 files changed, 17 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/io_apic.h  |    2 ++
+ arch/x86/include/asm/x86_init.h |    9 +++++----
+ arch/x86/kernel/apic/io_apic.c  |   41 ++++++++++++++++++---------------------
+ arch/x86/kernel/x86_init.c      |    9 +++++----
+ drivers/iommu/irq_remapping.c   |   31 ++++++++++++++++++++++++++++-
+ 5 files changed, 61 insertions(+), 31 deletions(-)
 
 diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index a744cbb..71f5f08 100644
+index 73d8c53..d59e172 100644
 --- a/arch/x86/include/asm/io_apic.h
 +++ b/arch/x86/include/asm/io_apic.h
-@@ -149,6 +149,10 @@ extern int io_apic_set_pci_routing(struct device *dev, int irq,
- void setup_IO_APIC_irq_extra(u32 gsi);
- extern void ioapic_insert_resources(void);
+@@ -179,6 +179,7 @@ extern void __init native_io_apic_init_mappings(void);
+ extern unsigned int native_io_apic_read(unsigned int apic, unsigned int reg);
+ extern void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int val);
+ extern void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val);
++extern void native_disable_io_apic(void);
  
-+extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
-+				     unsigned int, int,
-+				     struct io_apic_irq_attr *);
-+
- int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
- 
- extern int save_ioapic_entries(void);
-@@ -232,6 +236,7 @@ static inline void disable_ioapic_support(void) { }
- #define native_disable_io_apic		NULL
- #define native_io_apic_print_entries	NULL
- #define native_ioapic_set_affinity	NULL
-+#define native_setup_ioapic_entry	NULL
+ static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
+ {
+@@ -223,6 +224,7 @@ static inline void disable_ioapic_support(void) { }
+ #define native_io_apic_read		NULL
+ #define native_io_apic_write		NULL
+ #define native_io_apic_modify		NULL
++#define native_disable_io_apic		NULL
  #endif
  
  #endif /* _ASM_X86_IO_APIC_H */
 diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index f5f712b..bc13022 100644
+index 38155f6..8e1b44c 100644
 --- a/arch/x86/include/asm/x86_init.h
 +++ b/arch/x86/include/asm/x86_init.h
-@@ -189,6 +189,8 @@ struct x86_msi_ops {
- 	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
+@@ -189,10 +189,11 @@ struct x86_msi_ops {
  };
  
-+struct IO_APIC_route_entry;
-+struct io_apic_irq_attr;
- struct irq_data;
- struct cpumask;
- 
-@@ -202,6 +204,9 @@ struct x86_io_apic_ops {
- 	int		(*set_affinity)(struct irq_data *data,
- 					const struct cpumask *mask,
- 					bool force);
-+	int		(*setup_entry)(int irq, struct IO_APIC_route_entry *entry,
-+				       unsigned int destination, int vector,
-+				       struct io_apic_irq_attr *attr);
+ struct x86_io_apic_ops {
+-	void		(*init)  (void);
+-	unsigned int	(*read)  (unsigned int apic, unsigned int reg);
+-	void		(*write) (unsigned int apic, unsigned int reg, unsigned int value);
+-	void		(*modify)(unsigned int apic, unsigned int reg, unsigned int value);
++	void		(*init)   (void);
++	unsigned int	(*read)   (unsigned int apic, unsigned int reg);
++	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
++	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
++	void		(*disable)(void);
  };
  
  extern struct x86_init_ops x86_init;
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 65c265ed..9500a07 100644
+index c265593..c28c991 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1319,14 +1319,10 @@ static void ioapic_register_intr(unsigned int irq, struct irq_cfg *cfg,
- 				      fasteoi ? "fasteoi" : "edge");
+@@ -1935,30 +1935,14 @@ void __init enable_IO_APIC(void)
+ 	clear_IO_APIC();
  }
  
--static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
--			       unsigned int destination, int vector,
--			       struct io_apic_irq_attr *attr)
-+int native_setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
-+			      unsigned int destination, int vector,
-+			      struct io_apic_irq_attr *attr)
+-/*
+- * Not an __init, needed by the reboot code
+- */
+-void disable_IO_APIC(void)
++void native_disable_io_apic(void)
  {
--	if (irq_remapping_enabled)
--		return setup_ioapic_remapped_entry(irq, entry, destination,
--						   vector, attr);
+ 	/*
+-	 * Clear the IO-APIC before rebooting:
+-	 */
+-	clear_IO_APIC();
 -
- 	memset(entry, 0, sizeof(*entry));
+-	if (!legacy_pic->nr_legacy_irqs)
+-		return;
+-
+-	/*
+ 	 * If the i8259 is routed through an IOAPIC
+ 	 * Put that IOAPIC in virtual wire mode
+ 	 * so legacy interrupts can be delivered.
+-	 *
+-	 * With interrupt-remapping, for now we will use virtual wire A mode,
+-	 * as virtual wire B is little complex (need to configure both
+-	 * IOAPIC RTE as well as interrupt-remapping table entry).
+-	 * As this gets called during crash dump, keep this simple for now.
+ 	 */
+-	if (ioapic_i8259.pin != -1 && !irq_remapping_enabled) {
++	if (ioapic_i8259.pin != -1) {
+ 		struct IO_APIC_route_entry entry;
  
- 	entry->delivery_mode = apic->irq_delivery_mode;
-@@ -1384,8 +1380,8 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
- 		    attr->ioapic, mpc_ioapic_id(attr->ioapic), attr->ioapic_pin,
- 		    cfg->vector, irq, attr->trigger, attr->polarity, dest);
+ 		memset(&entry, 0, sizeof(entry));
+@@ -1978,12 +1962,25 @@ void disable_IO_APIC(void)
+ 		ioapic_write_entry(ioapic_i8259.apic, ioapic_i8259.pin, entry);
+ 	}
  
--	if (setup_ioapic_entry(irq, &entry, dest, cfg->vector, attr)) {
--		pr_warn("Failed to setup ioapic entry for ioapic %d, pin %d\n",
-+	if (x86_io_apic_ops.setup_entry(irq, &entry, dest, cfg->vector, attr)) {
-+		pr_warn("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
- 			mpc_ioapic_id(attr->ioapic), attr->ioapic_pin);
- 		__clear_irq_vector(irq, cfg);
++	if (cpu_has_apic || apic_from_smp_config())
++		disconnect_bsp_APIC(ioapic_i8259.pin != -1);
++
++}
++
++/*
++ * Not an __init, needed by the reboot code
++ */
++void disable_IO_APIC(void)
++{
+ 	/*
+-	 * Use virtual wire A mode when interrupt remapping is enabled.
++	 * Clear the IO-APIC before rebooting:
+ 	 */
+-	if (cpu_has_apic || apic_from_smp_config())
+-		disconnect_bsp_APIC(!irq_remapping_enabled &&
+-				ioapic_i8259.pin != -1);
++	clear_IO_APIC();
++
++	if (!legacy_pic->nr_legacy_irqs)
++		return;
++
++	x86_io_apic_ops.disable();
+ }
  
+ #ifdef CONFIG_X86_32
 diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 8806d0b..3cd6bf7 100644
+index 9f3167e..3ea56c2 100644
 --- a/arch/x86/kernel/x86_init.c
 +++ b/arch/x86/kernel/x86_init.c
-@@ -129,4 +129,5 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.disable		= native_disable_io_apic,
- 	.print_entries		= native_io_apic_print_entries,
- 	.set_affinity		= native_ioapic_set_affinity,
-+	.setup_entry		= native_setup_ioapic_entry,
+@@ -120,8 +120,9 @@ struct x86_msi_ops x86_msi = {
+ };
+ 
+ struct x86_io_apic_ops x86_io_apic_ops = {
+-	.init	= native_io_apic_init_mappings,
+-	.read	= native_io_apic_read,
+-	.write	= native_io_apic_write,
+-	.modify	= native_io_apic_modify,
++	.init			= native_io_apic_init_mappings,
++	.read			= native_io_apic_read,
++	.write			= native_io_apic_write,
++	.modify			= native_io_apic_modify,
++	.disable		= native_disable_io_apic,
  };
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index ccf87e5..5b28e28 100644
+index 283a43f..f72a5e8 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -91,6 +91,7 @@ static void __init irq_remapping_modify_x86_ops(void)
+@@ -1,3 +1,4 @@
++#include <linux/cpumask.h>
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+ #include <linux/cpumask.h>
+@@ -6,6 +7,9 @@
+ 
+ #include <asm/hw_irq.h>
+ #include <asm/irq_remapping.h>
++#include <asm/processor.h>
++#include <asm/x86_init.h>
++#include <asm/apic.h>
+ 
+ #include "irq_remapping.h"
+ 
+@@ -17,6 +21,24 @@ int no_x2apic_optout;
+ 
+ static struct irq_remap_ops *remap_ops;
+ 
++static void irq_remapping_disable_io_apic(void)
++{
++	/*
++	 * With interrupt-remapping, for now we will use virtual wire A
++	 * mode, as virtual wire B is little complex (need to configure
++	 * both IOAPIC RTE as well as interrupt-remapping table entry).
++	 * As this gets called during crash dump, keep this simple for
++	 * now.
++	 */
++	if (cpu_has_apic || apic_from_smp_config())
++		disconnect_bsp_APIC(0);
++}
++
++static void __init irq_remapping_modify_x86_ops(void)
++{
++	x86_io_apic_ops.disable	=	irq_remapping_disable_io_apic;
++}
++
+ static __init int setup_nointremap(char *str)
  {
- 	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
- 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
-+	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
- 	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
- 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+ 	disable_irq_remap = 1;
+@@ -74,10 +96,17 @@ int __init irq_remapping_prepare(void)
+ 
+ int __init irq_remapping_enable(void)
+ {
++	int ret;
++
+ 	if (!remap_ops || !remap_ops->enable)
+ 		return -ENODEV;
+ 
+-	return remap_ops->enable();
++	ret = remap_ops->enable();
++
++	if (irq_remapping_enabled)
++		irq_remapping_modify_x86_ops();
++
++	return ret;
  }
+ 
+ void irq_remapping_disable(void)
 -- 
 1.7.9.5
 
