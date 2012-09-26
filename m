@@ -1,35 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab2IZDnZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 23:43:25 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:45075 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab2IZDnX (ORCPT
+	id S1751947Ab2IZDoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 23:44:03 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:58310 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab2IZDoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 23:43:23 -0400
-Message-ID: <506279D3.5030702@linux.vnet.ibm.com>
-Date: Wed, 26 Sep 2012 11:43:15 +0800
+	Tue, 25 Sep 2012 23:44:01 -0400
+Message-ID: <506279F8.10704@linux.vnet.ibm.com>
+Date: Wed, 26 Sep 2012 11:43:52 +0800
 From: Michael Wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
 To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@redhat.com,
-        svaidy@linux.vnet.ibm.com
-Subject: Re: [PATCH] sched: rewrite the wrong annotation for select_task_rq_fair()
-References: <1347956160-6946-1-git-send-email-wangyun@linux.vnet.ibm.com>
-In-Reply-To: <1347956160-6946-1-git-send-email-wangyun@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, kjwinchester@gmail.com,
+        borislav.petkov@amd.com, ak@linux.intel.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de
+Subject: Re: [PATCH] x86: remove the useless branch in c_start()
+References: <1348033343-23658-1-git-send-email-wangyun@linux.vnet.ibm.com>
+In-Reply-To: <1348033343-23658-1-git-send-email-wangyun@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12092603-5564-0000-0000-0000049E6DFC
+x-cbid: 12092603-2674-0000-0000-0000061CE381
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2012 04:16 PM, Michael Wang wrote:
-> The annotation for select_task_rq_fair() is wrong since commit c88d5910, it's
-> actually for a removed function.
+On 09/19/2012 01:42 PM, Michael Wang wrote:
+> Since 'cpu == -1' in cpumask_next() is legal, no need to handle '*pos == 0'
+> specially.
 > 
-> This patch rewrite the wrong annotation to make it correct.
+> About the comments:
+> 	/* just in case, cpu 0 is not the first */
+> A test with a cpumask in which cpu 0 is not the first has been done, and it
+> works well.
 
 Could I get some comments on this patch?
 
@@ -37,38 +41,28 @@ Regards,
 Michael Wang
 
 > 
+> This patch will remove that useless branch to clean the code.
+> 
 > Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 > ---
->  kernel/sched/fair.c |   14 ++++++++------
->  1 files changed, 8 insertions(+), 6 deletions(-)
+>  arch/x86/kernel/cpu/proc.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
 > 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 6b800a1..35eb43a 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2682,15 +2682,17 @@ done:
->  }
+> diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+> index 8022c66..fbd8955 100644
+> --- a/arch/x86/kernel/cpu/proc.c
+> +++ b/arch/x86/kernel/cpu/proc.c
+> @@ -140,10 +140,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
 > 
->  /*
-> - * sched_balance_self: balance the current task (running on cpu) in domains
-> - * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
-> - * SD_BALANCE_EXEC.
-> + * select_task_rq_fair:
-> + *	Select a suitable CPU for task p, in order to keep load balance.
->   *
-> - * Balance, ie. select the least loaded group.
-> + *	sd_flag:
-> + *		the domain we try to balance should have "sd_flag" flag set.
->   *
-> - * Returns the target CPU number, or the same CPU if no balancing is needed.
-> + *	wake_flags:
-> + *		indicate WF_SYNC.
->   *
-> - * preempt must be disabled.
-> + *	Must hold p->pi_lock and disable irq before invoke.
-> + *	Return the CPU number for task p to running on.
->   */
->  static int
->  select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>  static void *c_start(struct seq_file *m, loff_t *pos)
+>  {
+> -	if (*pos == 0)	/* just in case, cpu 0 is not the first */
+> -		*pos = cpumask_first(cpu_online_mask);
+> -	else
+> -		*pos = cpumask_next(*pos - 1, cpu_online_mask);
+> +	*pos = cpumask_next(*pos - 1, cpu_online_mask);
+>  	if ((*pos) < nr_cpu_ids)
+>  		return &cpu_data(*pos);
+>  	return NULL;
 > 
 
