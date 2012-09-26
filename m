@@ -1,477 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab2IZPvV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 11:51:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48258 "EHLO mx2.suse.de"
+	id S1756808Ab2IZPwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 11:52:08 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754515Ab2IZPvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 11:51:19 -0400
-Date: Wed, 26 Sep 2012 17:51:09 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
-Message-ID: <20120926155108.GE15801@dhcp22.suse.cz>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
- <1347977050-29476-7-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347977050-29476-7-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755401Ab2IZPwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 11:52:06 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        Heinz.Egger@linutronix.de, artem.bityutskiy@linux.intel.com,
+        tim.bird@am.sony.com
+Subject: UBI: Fastmap request for inclusion (v19)
+Date: Wed, 26 Sep 2012 17:51:40 +0200
+Message-Id: <1348674710-102885-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 18-09-12 18:04:03, Glauber Costa wrote:
-> This patch introduces infrastructure for tracking kernel memory pages to
-> a given memcg. This will happen whenever the caller includes the flag
-> __GFP_KMEMCG flag, and the task belong to a memcg other than the root.
-> 
-> In memcontrol.h those functions are wrapped in inline acessors.  The
-> idea is to later on, patch those with static branches, so we don't incur
-> any overhead when no mem cgroups with limited kmem are being used.
+UBI Fastmap is an optional feature which stores the physical to
+logical eraseblock relations in a checkpoint (called fastmap) to reduce
+the initialization time of UBI. The current init time of UBI is
+proportional to the number of physical erase blocks on the FLASH
+device. With fastmap enabled the scan time is limited to a fixed
+number of blocks.
 
-Could you describe the API a bit here, please? I guess the
-kernel user is supposed to call memcg_kmem_newpage_charge and
-memcg_kmem_commit_charge resp. memcg_kmem_uncharge_page.
-All other kmem functions here are just helpers, right?
-> 
-> [ v2: improved comments and standardized function names ]
-> [ v3: handle no longer opaque, functions not exported,
->   even more comments ]
-> [ v4: reworked Used bit handling and surroundings for more clarity ]
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  include/linux/memcontrol.h |  97 +++++++++++++++++++++++++
->  mm/memcontrol.c            | 177 +++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 274 insertions(+)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 8d9489f..82ede9a 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -21,6 +21,7 @@
->  #define _LINUX_MEMCONTROL_H
->  #include <linux/cgroup.h>
->  #include <linux/vm_event_item.h>
-> +#include <linux/hardirq.h>
->
->  struct mem_cgroup;
->  struct page_cgroup;
-> @@ -399,6 +400,17 @@ struct sock;
->  #ifdef CONFIG_MEMCG_KMEM
->  void sock_update_memcg(struct sock *sk);
->  void sock_release_memcg(struct sock *sk);
-> +
-> +static inline bool memcg_kmem_enabled(void)
-> +{
-> +	return true;
-> +}
-> +
-> +extern bool __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg,
-> +					int order);
-> +extern void __memcg_kmem_commit_charge(struct page *page,
-> +				       struct mem_cgroup *memcg, int order);
-> +extern void __memcg_kmem_uncharge_page(struct page *page, int order);
->  #else
->  static inline void sock_update_memcg(struct sock *sk)
->  {
-> @@ -406,6 +418,91 @@ static inline void sock_update_memcg(struct sock *sk)
->  static inline void sock_release_memcg(struct sock *sk)
->  {
->  }
-> +
-> +static inline bool memcg_kmem_enabled(void)
-> +{
-> +	return false;
-> +}
-> +
-> +static inline bool
-> +__memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
-> +{
-> +	return false;
-> +}
-> +
-> +static inline void  __memcg_kmem_uncharge_page(struct page *page, int order)
-> +{
-> +}
-> +
-> +static inline void
-> +__memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
-> +{
-> +}
+Fastmap does not affect any of the existing UBI robustness
+features and in fact the fastmap code falls back to scanning
+mode when the found fastmap is corrupted.
 
-I think we shouldn't care about these for !MEMCG_KMEM. It should be
-sufficient to define the main three functions bellow as return true
-resp. NOOP. This would reduce the code churn a bit and also make it
-better maintainable.
+A fastmap consists of two elements:
 
->  #endif /* CONFIG_MEMCG_KMEM */
-> +
-> +/**
-> + * memcg_kmem_newpage_charge: verify if a new kmem allocation is allowed.
-> + * @gfp: the gfp allocation flags.
-> + * @memcg: a pointer to the memcg this was charged against.
-> + * @order: allocation order.
-> + *
-> + * returns true if the memcg where the current task belongs can hold this
-> + * allocation.
-> + *
-> + * We return true automatically if this allocation is not to be accounted to
-> + * any memcg.
-> + */
-> +static __always_inline bool
-> +memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
-> +{
-> +	if (!memcg_kmem_enabled())
-> +		return true;
-> +
-> +	/*
-> +	 * __GFP_NOFAIL allocations will move on even if charging is not
-> +	 * possible. Therefore we don't even try, and have this allocation
-> +	 * unaccounted. We could in theory charge it with
-> +	 * res_counter_charge_nofail, but we hope those allocations are rare,
-> +	 * and won't be worth the trouble.
-> +	 */
-> +	if (!(gfp & __GFP_KMEMCG) || (gfp & __GFP_NOFAIL))
-> +		return true;
-> +	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
-> +		return true;
-> +	return __memcg_kmem_newpage_charge(gfp, memcg, order);
-> +}
-> +
-> +/**
-> + * memcg_kmem_uncharge_page: uncharge pages from memcg
-> + * @page: pointer to struct page being freed
-> + * @order: allocation order.
-> + *
-> + * there is no need to specify memcg here, since it is embedded in page_cgroup
-> + */
-> +static __always_inline void
-> +memcg_kmem_uncharge_page(struct page *page, int order)
-> +{
-> +	if (memcg_kmem_enabled())
-> +		__memcg_kmem_uncharge_page(page, order);
-> +}
-> +
-> +/**
-> + * memcg_kmem_commit_charge: embeds correct memcg in a page
-> + * @memcg: a pointer to the memcg this was charged against.
-      ^^^^^^^
-remove this one?
+1) A primary super block, which contains merrily a pointer to the
+   erase block(s) which hold the real fastmap data.
 
-> + * @page: pointer to struct page recently allocated
-> + * @memcg: the memcg structure we charged against
-> + * @order: allocation order.
-> + *
-> + * Needs to be called after memcg_kmem_newpage_charge, regardless of success or
-> + * failure of the allocation. if @page is NULL, this function will revert the
-> + * charges. Otherwise, it will commit the memcg given by @memcg to the
-> + * corresponding page_cgroup.
-> + */
-> +static __always_inline void
-> +memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
-> +{
-> +	if (memcg_kmem_enabled() && memcg)
-> +		__memcg_kmem_commit_charge(page, memcg, order);
-> +}
->  #endif /* _LINUX_MEMCONTROL_H */
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index f3fd354..0f36a01 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -10,6 +10,10 @@
->   * Copyright (C) 2009 Nokia Corporation
->   * Author: Kirill A. Shutemov
->   *
-> + * Kernel Memory Controller
-> + * Copyright (C) 2012 Parallels Inc. and Google Inc.
-> + * Authors: Glauber Costa and Suleiman Souhlal
-> + *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License as published by
->   * the Free Software Foundation; either version 2 of the License, or
-> @@ -426,6 +430,9 @@ struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
->  #include <net/ip.h>
->  
->  static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
-> +static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size);
-> +static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size);
-> +
+   This super block is guaranteed to be held within the first 64
+   eraseblocks of a device.
 
-Why the forward declarations here? We can simply move definitions up
-before they are used for the first time, can't we? Besides that they are
-never used/defined from outside of KMEM_MEMCG.
+2) The secondary fastmap blocks, which contain the real
+   fastmap data (physical to logical eraseblock relations,
+   erase counts, sequence numbers ...)
 
->  void sock_update_memcg(struct sock *sk)
->  {
->  	if (mem_cgroup_sockets_enabled) {
-> @@ -480,6 +487,110 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
->  }
->  EXPORT_SYMBOL(tcp_proto_cgroup);
->  #endif /* CONFIG_INET */
-> +
-> +static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
-> +{
-> +	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
-> +		memcg->kmem_accounted;
-> +}
-> +
-> +/*
-> + * We need to verify if the allocation against current->mm->owner's memcg is
-> + * possible for the given order. But the page is not allocated yet, so we'll
-> + * need a further commit step to do the final arrangements.
-> + *
-> + * It is possible for the task to switch cgroups in this mean time, so at
-> + * commit time, we can't rely on task conversion any longer.  We'll then use
-> + * the handle argument to return to the caller which cgroup we should commit
-> + * against. We could also return the memcg directly and avoid the pointer
-> + * passing, but a boolean return value gives better semantics considering
-> + * the compiled-out case as well.
-> + *
-> + * Returning true means the allocation is possible.
-> + */
-> +bool
-> +__memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
-> +{
-> +	struct mem_cgroup *memcg;
-> +	bool ret;
-> +	struct task_struct *p;
+   Aside of that the fastmap data contains a list of blocks
+   which belong to the active working pool. The active working pool is
+   a fixed number of blocks to be used by the WL sub-system itself and the
+   layer on top of UBI, which can be modified before the next fastmap
+   is written to FLASH. These blocks need to be scanned in the
+   conventional UBI scan mode.
 
-Johannes likes christmas trees ;) and /me would like to remove `p' and
-use mem_cgroup_from_task(rcu_dereference(current->mm->owner)) same as we
-do at other places (I guess it will be checkpatch safe).
+   The reason for these pool blocks is to reduce the fastmap
+   updates to the necessary minimum to avoid accelerated device
+   wearout in scenarios where data changes rapidly. The fastmap
+   data is updated whenever a working pool runs out of blocks.
 
-> +
-> +	*_memcg = NULL;
-> +	rcu_read_lock();
-> +	p = rcu_dereference(current->mm->owner);
-> +	memcg = mem_cgroup_from_task(p);
+So the fastmap scan consists of the following steps:
 
-mem_cgroup_from_task says it can return NULL. Do we care here? If not
-then please put VM_BUG_ON(!memcg) here.
+   1) Find the fastmap super block block by scanning the start of the
+      device.
 
-> +	rcu_read_unlock();
-> +
-> +	if (!memcg_can_account_kmem(memcg))
-> +		return true;
-> +
-> +	mem_cgroup_get(memcg);
+   2) Read the real fastmap data and construct the UBI device info
+      structures.
 
-I am confused. Why do we take a reference to memcg rather than css_get
-here? Ahh it is because we keep the reference while the page is
-allocated, right? Comment please.
+   3) Scan the pool blocks.
 
-I am still not sure whether we need css_get here as well. How do you
-know that the current is not moved in parallel and it is a last task in
-a group which then can go away?
+The fastmap functionality is fully compatible with existing UBI
+deployments. If no fastmap blocks can be found then the device is
+scanned and the fastmap blocks are created from the scanned
+information.
 
-> +
-> +	ret = memcg_charge_kmem(memcg, gfp, PAGE_SIZE << order) == 0;
-> +	if (ret)
-> +		*_memcg = memcg;
-> +	else
-> +		mem_cgroup_put(memcg);
-> +
-> +	return ret;
-> +}
-> +
-> +void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
-> +			      int order)
-> +{
-> +	struct page_cgroup *pc;
-> +
-> +	WARN_ON(mem_cgroup_is_root(memcg));
+Changes sinze v18:
+   - Aiaiai uncovered some issues, now the patch set is fully bisectable,
+     all compiler warnings have been fixed (set but unused variable),
+     coccinelle found a missing check for kmalloc()'s return value.
+     
+     "drivers/mtd/ubi/wl.c:284:3-9: preceding lock on line 282 [coccinelle]"
+     is a false positive.
 
-Why the warn? Nobody should use this directly and
-memcg_kmem_commit_charge takes care of the root same as
-__memcg_kmem_newpage_charge does. If it is for correctness then it
-should be VM_BUG_ON.
+Changes since v17:
 
-> +
-> +	/* The page allocation failed. Revert */
-> +	if (!page) {
-> +		memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
-> +		return;
-> +	}
-> +
-> +	pc = lookup_page_cgroup(page);
-> +	lock_page_cgroup(pc);
-> +	pc->mem_cgroup = memcg;
-> +	SetPageCgroupUsed(pc);
-> +	unlock_page_cgroup(pc);
-> +}
-> +
-> +void __memcg_kmem_uncharge_page(struct page *page, int order)
-> +{
-> +	struct mem_cgroup *memcg = NULL;
-> +	struct page_cgroup *pc;
-> +
-> +
-> +	pc = lookup_page_cgroup(page);
-> +	/*
-> +	 * Fast unlocked return. Theoretically might have changed, have to
-> +	 * check again after locking.
-> +	 */
-> +	if (!PageCgroupUsed(pc))
-> +		return;
-> +
-> +	lock_page_cgroup(pc);
-> +	if (PageCgroupUsed(pc)) {
-> +		memcg = pc->mem_cgroup;
-> +		ClearPageCgroupUsed(pc);
-> +	}
-> +	unlock_page_cgroup(pc);
-> +
-> +	/*
-> +	 * Checking if kmem accounted is enabled won't work for uncharge, since
-> +	 * it is possible that the user enabled kmem tracking, allocated, and
-> +	 * then disabled it again.
+   - UBI reserves now PEBs to hold two fastmaps. It is guaranteed that
+     each LEB has a corresponding PEB which can be used by an user.
 
-disabling cannot happen, right?
+   - Fastmap is automatically disabled if the FLASH devices has less than 64 PEBs
 
-> +	 *
-> +	 * We trust if there is a memcg associated with the page, it is a valid
-> +	 * allocation
-> +	 */
-> +	if (!memcg)
-> +		return;
-> +
-> +	WARN_ON(mem_cgroup_is_root(memcg));
+   - Fastmap is only available if CONFIG_MTD_UBI_FASTMAP is enabled.
+     It is per default N. If fastmap has proven stable over some time we can
+     remove CONFIG_MTD_UBI_FASTMAP and the corresponding #ifdefs.
+     Even with CONFIG_MTD_UBI_FASTMAP=Y UBI will not automatically
+     install a fastmap on existing images.
+     This behavior is controlled by the fm_autoconvert UBI module parameter.
+     Only if set to 1 UBI will install a fastmap automatically.
+     By default it will use the fastmap only if one is found.
 
-Same as above I do not see a reason for warn here. It just adds a code
-and if you want it for debugging then VM_BUG_ON sounds more appropriate.
-/me thinks
+     So, if you want to test fastmap enable CONFIG_MTD_UBI_FASTMAP and
+     set  fm_autoconvert to 1.
+     If the device was attached by a fastmap you'll observe the following log
+     message while attaching: "UBI: attached by fastmap".
 
-> +	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
-> +	mem_cgroup_put(memcg);
-> +}
->  #endif /* CONFIG_MEMCG_KMEM */
->  
->  #if defined(CONFIG_INET) && defined(CONFIG_MEMCG_KMEM)
-> @@ -5700,3 +5811,69 @@ static int __init enable_swap_account(char *s)
->  __setup("swapaccount=", enable_swap_account);
->  
->  #endif
-> +
-> +#ifdef CONFIG_MEMCG_KMEM
-> +int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
-> +{
-> +	struct res_counter *fail_res;
-> +	struct mem_cgroup *_memcg;
-> +	int ret;
-> +	bool may_oom;
-> +	bool nofail = false;
-> +
-> +	may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
-> +	    !(gfp & __GFP_NORETRY);
+State of fastmap:
 
-A comment please? Why __GFP_IO is not considered for example?
+We (linutronix gmbh) did numerous tests and are not aware of any issue or
+regression so far. The tests have been done on real hardware and simulators
+(nandsim and mtdram). Of course with and without bitflip emulation enabled
+and on NAND "bad" devices with bad blocks, bitflips, IO erros, ...
+The tests consisted of mtd-util's ubi-tests, my fastmap torture script[1]
+and real world use cases.
 
-> +
-> +	ret = 0;
-> +
-> +	if (!memcg)
-> +		return ret;
+Each test run was done with the following configurations:
+- CONFIG_MTD_UBI_FASTMAP=n
+To verify that traditional UBI works fine.
 
-How can we get a NULL memcg here without blowing in
-__memcg_kmem_newpage_charge?
+- CONFIG_MTD_UBI_FASTMAP=y, fm_autoconvert=0
+In this configuration the fastmap pool mechanism is active but
+no fastmap is written to non-fastmap devices.
 
-> +
-> +	_memcg = memcg;
-> +	ret = __mem_cgroup_try_charge(NULL, gfp, size / PAGE_SIZE,
+- CONFIG_MTD_UBI_FASTMAP=y, fm_autoconvert=1
+Fastmap is enabled and non-fastmap devices get fastmap enabled.
+Either at detach time or while writing.
 
-me likes >> PAGE_SHIFT more.
+I hope the MTD community do will also test fastmap in many different situations.
+Bug reports are welcome!
 
-> +	    &_memcg, may_oom);
-> +
-> +	if (ret == -EINTR)  {
-> +		nofail = true;
-> +		/*
-> +		 * __mem_cgroup_try_charge() chosed to bypass to root due to
-> +		 * OOM kill or fatal signal.  Since our only options are to
-> +		 * either fail the allocation or charge it to this cgroup, do
-> +		 * it as a temporary condition. But we can't fail. From a
-> +		 * kmem/slab perspective, the cache has already been selected,
-> +		 * by mem_cgroup_get_kmem_cache(), so it is too late to change
-> +		 * our minds
-> +		 */
-> +		res_counter_charge_nofail(&memcg->res, size, &fail_res);
-> +		if (do_swap_account)
-> +			res_counter_charge_nofail(&memcg->memsw, size,
-> +						  &fail_res);
-> +		ret = 0;
-> +	} else if (ret == -ENOMEM)
-> +		return ret;
-> +
-> +	if (nofail)
-> +		res_counter_charge_nofail(&memcg->kmem, size, &fail_res);
-> +	else
-> +		ret = res_counter_charge(&memcg->kmem, size, &fail_res);
-> +
-> +	if (ret) {
-> +		res_counter_uncharge(&memcg->res, size);
-> +		if (do_swap_account)
-> +			res_counter_uncharge(&memcg->memsw, size);
-> +	}
+Future work:
 
-You could save few lines and get rid of the strange nofail by:
-[...]
-+		res_counter_charge_nofail(&memcg->res, size, &fail_res);
-+		if (do_swap_account)
-+			res_counter_charge_nofail(&memcg->memsw, size,
-+						  &fail_res);
-+		res_counter_charge_nofail(&memcg->kmem, size, &fail_res);
-+		return 0;
-+	} else if (ret == -ENOMEM)
-+		return ret;
-+	else
-+		ret = res_counter_charge(&memcg->kmem, size, &fail_res);
-+
-+	if (ret) {
-+		res_counter_uncharge(&memcg->res, size);
-+		if (do_swap_account)
-+			res_counter_uncharge(&memcg->memsw, size);
-+	}
+- Currently fastmap's powercut policy is that it will fall back to scanning mode if
+  a power cut happened while writing the fastmap. If users really need fast attaching
+  also after a power cut we could use the adjacent blocks mechanism for writing fastmap.
+- Add fastmap support to ubinize
+- If fastmap has proven stable, we can remove CONFIG_MTD_UBI_FASTMAP
+  and enable it per default.
 
-> +
-> +	return ret;
-> +}
-> +
-> +void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
-> +{
-> +	if (!memcg)
-> +		return;
-> +
-> +	res_counter_uncharge(&memcg->kmem, size);
-> +	res_counter_uncharge(&memcg->res, size);
-> +	if (do_swap_account)
-> +		res_counter_uncharge(&memcg->memsw, size);
-> +}
-> +#endif /* CONFIG_MEMCG_KMEM */
-> -- 
-> 1.7.11.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This patch set is based on artems ubi repository:
+git://git.infradead.org/linux-ubi.git
 
--- 
-Michal Hocko
-SUSE Labs
+Thanks to the folks at CELF who sponsored this work!
+
+Thanks,
+//richard
+
+[1]
+http://lists.infradead.org/pipermail/linux-mtd/2012-June/042347.html
+
+ MAINTAINERS                 |    6 +
+ drivers/mtd/ubi/Kconfig     |   20 ++
+ drivers/mtd/ubi/Makefile    |    1 +
+ drivers/mtd/ubi/attach.c    |  386 +++++++++++++++++++---------
+ drivers/mtd/ubi/build.c     |   70 +++++-
+ drivers/mtd/ubi/eba.c       |  126 +++++++++-
+ drivers/mtd/ubi/ubi-media.h |  137 ++++++++++
+ drivers/mtd/ubi/ubi.h       |  118 +++++++++-
+ drivers/mtd/ubi/wl.c        |  599 ++++++++++++++++++++++++++++++++++++++-----
+ 9 files changed, 1252 insertions(+), 211 deletions(-)
+
+[PATCH 01/10] UBI: Add fastmap on-flash data structures
+[PATCH 02/10] UBI: Add fastmap stuff to ubi.h
+[PATCH 03/10] UBI: Export next_sqnum()
+[PATCH 04/10] UBI: Add self_check_eba()
+[PATCH 05/10] UBI: Add fastmap bits to build.c
+[PATCH 06/10] UBI: Wire-up ->fm_sem
+[PATCH 07/10] UBI: Add fastmap stuff to attach.c
+[PATCH 08/10] UBI: Add fastmap support to the WL sub-system
+[PATCH 09/10] UBI: Add fastmap core
+[PATCH 10/10] UBI: Wire-up fastmap
