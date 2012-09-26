@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab2IZWnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 18:43:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56742 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab2IZWnq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 18:43:46 -0400
-Date: Wed, 26 Sep 2012 15:43:45 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: Daniel Santos <danielfsantos@att.net>,
-        Michel Lespinasse <walken@google.com>, riel@redhat.com,
-        peterz@infradead.org, aarcange@redhat.com, dwmw2@infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH v3 2/9] rbtree: add __rb_change_child() helper function
-Message-Id: <20120926154345.52cb9f33.akpm@linux-foundation.org>
-In-Reply-To: <506382E3.3020102@att.net>
-References: <1345500331-10546-1-git-send-email-walken@google.com>
-	<1345500331-10546-3-git-send-email-walken@google.com>
-	<20120820151710.eeed9bcf.akpm@linux-foundation.org>
-	<506382E3.3020102@att.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753216Ab2IZWqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 18:46:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58037 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752863Ab2IZWqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 18:46:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,492,1344236400"; 
+   d="scan'208";a="149570800"
+Subject: Re: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the
+ irq affinity mask
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Chuansheng Liu <chuansheng.liu@intel.com>, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        yanmin_zhang@linux.intel.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+Date: Wed, 26 Sep 2012 15:46:27 -0700
+In-Reply-To: <50633BA0.5030700@linux.vnet.ibm.com>
+References: <1348681092.19514.10.camel@cliu38-desktop-build>
+	 <1348703122.19514.17.camel@cliu38-desktop-build>
+	 <50632767.5050607@linux.vnet.ibm.com>
+	 <1348679199.26695.455.camel@sbsiddha-desk.sc.intel.com>
+	 <50633BA0.5030700@linux.vnet.ibm.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1348699588.6644.21.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Sep 2012 17:34:11 -0500
-Daniel Santos <danielfsantos@att.net> wrote:
-
-> Sorry to resurrect the dead here, but I'm playing catch-up and this
-> looks important.
+On Wed, 2012-09-26 at 23:00 +0530, Srivatsa S. Bhat wrote:
+> On 09/26/2012 10:36 PM, Suresh Siddha wrote:
+> > On Wed, 2012-09-26 at 21:33 +0530, Srivatsa S. Bhat wrote:
+> >> I have some fundamental questions here:
+> >> 1. Why was the CPU never removed from the affinity masks in the original
+> >> code? I find it hard to believe that it was just an oversight, because the
+> >> whole point of fixup_irqs() is to affine the interrupts to other CPUs, IIUC.
+> >> So, is that really a bug or is the existing code correct for some reason
+> >> which I don't know of?
+> > 
+> > I am not aware of the history but my guess is that the affinity mask
+> > which is coming from the user-space wants to be preserved. And
+> > fixup_irqs() is fixing the underlying interrupt routing when the cpu
+> > goes down
 > 
-> On 08/20/2012 05:17 PM, Andrew Morton wrote:
-> > I'm inclined to agree with Peter here - "inline" is now a vague,
-> > pathetic and useless thing.  The problem is that the reader just
-> > doesn't *know* whether or not the writer really wanted it to be
-> > inlined.
-> >
-> > If we have carefully made a decision to inline a function, we should
-> > (now) use __always_inline.
-> Are we all aware here that __always_inline (a.k.a.
-> "__attribute__((always_inline))") just means "inline even when not
-> optimizing"?  This appears to be a very common misunderstanding (unless
-> the gcc docs are wrong, see
-> http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html#index-g_t_0040code_007bflatten_007d-function-attribute-2512).
-> 
-> If you want to *force* gcc to inline a function (when inlining is
-> enabled), you can currently only do it from the calling function by
-> adding the |flatten attribute to it, which I have proposed adding here:
-> https://lkml.org/lkml/2012/9/25/643.
-> 
-> Thus, all of the __always_inline markings we have in the kernel only
-> affect unoptimized builds (and maybe -O1?).  If we need this feature
-> (and I think it would be darned handy!) we'll have to work on gcc to get it.
+> and the code that corresponds to that is:
+> irq_force_complete_move(irq); is it?
 
-When I replace the four __always_inline's in fs/namei.c with "inline",
-namei.o's .text shrinks 2kbytes (gcc-4.4.4), so __always_inline does
-allear to be doing what we think it does?
+No. irq_set_affinity()
 
+> > with a hope that things will be corrected when the cpu comes
+> > back online. But  as Liu noted, we are not correcting the underlying
+> > routing when the cpu comes back online. I think we should fix that
+> > rather than modifying the user-specified affinity.
+> > 
+> 
+> Hmm, I didn't entirely get your suggestion. Are you saying that we should change
+> data->affinity (by calling ->irq_set_affinity()) during offline but maintain a
+> copy of the original affinity mask somewhere, so that we can try to match it
+> when possible (ie., when CPU comes back online)?
+
+Don't change the data->affinity in the fixup_irqs() and shortly after a
+cpu is online, call irq_chip's irq_set_affinity() for those irq's who
+affinity included this cpu (now that the cpu is back online,
+irq_set_affinity() will setup the HW routing tables correctly).
+
+This presumes that across the suspend/resume, cpu offline/online
+operations, we don't want to break the irq affinity setup by the
+user-level entity like irqbalance etc...
+
+> > That happens only if the irq chip doesn't have the irq_set_affinity() setup.
+> 
+> That is my other point of concern : setting irq affinity can fail even if
+> we have ->irq_set_affinity(). (If __ioapic_set_affinity() fails, for example).
+> Why don't we complain in that case? I think we should... and if its serious
+> enough, abort the hotplug operation or atleast indicate that offline failed..
+
+yes if there is a failure then we are in trouble, as the cpu is already
+disappeared from the online-masks etc. For platforms with
+interrupt-remapping, interrupts can be migrated from the process context
+and as such this all can be done much before.
+
+And for legacy platforms we have done quite a few changes in the recent
+past like using eoi_ioapic_irq() for level triggered interrupts etc,
+that makes it as safe as it can be. Perhaps we can move most of the
+fixup_irqs() code much ahead and the lost section of the current
+fixup_irqs() (which check IRR bits and use the retrigger function to
+trigger the interrupt on another cpu) can still be done late just like
+now.
+
+thanks,
+suresh
 
