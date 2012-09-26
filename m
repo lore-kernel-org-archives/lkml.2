@@ -1,201 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab2IZGrz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 02:47:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:36059 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab2IZGry convert rfc822-to-8bit (ORCPT
+	id S1752665Ab2IZGuJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 02:50:09 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50995 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab2IZGuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 02:47:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,488,1344236400"; 
-   d="scan'208";a="149167666"
-Message-ID: <1348642068.13371.135.camel@smile>
-Subject: Re: [PATCHv1 2/6] dmaengine: dw_dmac: add driver for Atmel AT32
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Date: Wed, 26 Sep 2012 09:47:48 +0300
-In-Reply-To: <CAOh2x=kEDfY_DaBdbeY+CREiRJDH5yeNLUUuSpGTZcdWtZEd7g@mail.gmail.com>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1348575190-11761-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAOh2x=kEDfY_DaBdbeY+CREiRJDH5yeNLUUuSpGTZcdWtZEd7g@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Wed, 26 Sep 2012 02:50:07 -0400
+Date: Wed, 26 Sep 2012 09:49:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Ilya gorskin <revent82@gmail.com>
+Cc: gregkh@linuxfoundation.org, forest@alittletooquiet.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:vt6656: Fix tabs error in 80211mgr.c
+Message-ID: <20120926064950.GB4587@mwanda>
+References: <1348639511-19305-1-git-send-email-revent82@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348639511-19305-1-git-send-email-revent82@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-26 at 09:20 +0530, viresh kumar wrote: 
-> On Tue, Sep 25, 2012 at 5:43 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> >
-> > This driver should be usable on all platforms that depend on clk API.
+On Wed, Sep 26, 2012 at 12:05:11PM +0600, Ilya gorskin wrote:
+> This is a patch to the 80211mgr.c file that fixes up a tabs
+> error found by the checkpatch.pl tool
 > 
-> This is not what you mentioned in subject :(
+> Signed-off-by: Goirskin Ilya <revent82@gmail.com>
+> ---
+>  drivers/staging/vt6656/80211mgr.c | 628 +++++++++++++++++++-------------------
+>  1 file changed, 310 insertions(+), 318 deletions(-)
+> 
+> diff --git a/drivers/staging/vt6656/80211mgr.c b/drivers/staging/vt6656/80211mgr.c
+> index 39f9842..4241d29 100644
+> --- a/drivers/staging/vt6656/80211mgr.c
+> +++ b/drivers/staging/vt6656/80211mgr.c
+> @@ -98,11 +98,11 @@ vMgrEncodeBeacon(
+>  
+>      /* Fixed Fields */
+>      pFrame->pqwTimestamp = (PQWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+> -                                    + WLAN_BEACON_OFF_TS);
+> +							+ WLAN_BEACON_OFF_TS);
 
-> 
-> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > ---
-> >  drivers/dma/Kconfig        |    9 +++
-> >  drivers/dma/Makefile       |    1 +
-> >  drivers/dma/dw_dmac.c      |   23 +------
-> >  drivers/dma/dw_dmac_at32.c |  150 ++++++++++++++++++++++++++++++++++++++++++++
-> 
-> I don't agree with the naming used here. There is nothing AT32
-> specific here. It is actively used
-> by SPEAr. It should be named dw_dmac_platform.c or *pltfm.c
+This was aligned correctly in the original.  (Although the line is
+messy so it explains why you were confused).
 
-This separate driver makes no sense in case it is built properly without
-CLK framework. Let me check this and leave comments at patch 1/6.
+>      pFrame->pwBeaconInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+> -                                       + WLAN_BEACON_OFF_BCN_INT);
+> +						+ WLAN_BEACON_OFF_BCN_INT);
+>      pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+> -                                + WLAN_BEACON_OFF_CAPINFO);
+> +						+ WLAN_BEACON_OFF_CAPINFO);
+>  
+>      pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_BEACON_OFF_SSID;
+>  
+> @@ -132,98 +132,90 @@ vMgrDecodeBeacon(
+>  
+>      /* Fixed Fields */
+>      pFrame->pqwTimestamp = (PQWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+> -                                    + WLAN_BEACON_OFF_TS);
+> +							+ WLAN_BEACON_OFF_TS);
+>      pFrame->pwBeaconInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+> -                                       + WLAN_BEACON_OFF_BCN_INT);
+> +						+ WLAN_BEACON_OFF_BCN_INT);
+>      pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+> -                                + WLAN_BEACON_OFF_CAPINFO);
+> +						+ WLAN_BEACON_OFF_CAPINFO);
+>  
+>      /* Information elements */
+>      pItem = (PWLAN_IE)((PBYTE)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3)))
+> -                       + WLAN_BEACON_OFF_SSID);
+> +						+ WLAN_BEACON_OFF_SSID);
 
-> 
-> >  4 files changed, 162 insertions(+), 21 deletions(-)
-> >  create mode 100644 drivers/dma/dw_dmac_at32.c
-> >
-> > diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> > index df32537..e47cc90 100644
-> > --- a/drivers/dma/Kconfig
-> > +++ b/drivers/dma/Kconfig
-> > @@ -89,6 +89,15 @@ config DW_DMAC
-> >           Support the Synopsys DesignWare AHB DMA controller.  This
-> >           can be integrated in chips such as the Atmel AT32ap7000.
-> >
-> > +config DW_DMAC_AT32
-> > +       tristate "Synopsys DesignWare AHB DMA support for Atmel"
-> 
-> :(
-> 
-> > +       depends on HAVE_CLK
-> 
-> Even this is not a must for all users of platform driver. So can leave this.
-> 
-> > +       select DW_DMAC
-> > +       default y if CPU_AT32AP7000
-> > +       help
-> > +         Support the Synopsys DesignWare AHB DMA controller in the chips
-> > +         such as the Atmel AT32ap7000.
-> > +
-> >  config AT_HDMAC
-> >         tristate "Atmel AHB DMA support"
-> >         depends on ARCH_AT91
-> 
-> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> > index d9344a7..9c8a500 100644
-> > --- a/drivers/dma/dw_dmac.c
-> > +++ b/drivers/dma/dw_dmac.c
-> > @@ -18,7 +18,6 @@
-> >  #include <linux/init.h>
-> >  #include <linux/interrupt.h>
-> >  #include <linux/io.h>
-> > -#include <linux/of.h>
-> >  #include <linux/mm.h>
-> >  #include <linux/module.h>
-> >  #include <linux/platform_device.h>
-> > @@ -1681,35 +1680,17 @@ static const struct dev_pm_ops dw_dev_pm_ops = {
-> >         .poweroff_noirq = dw_suspend_noirq,
-> >  };
-> >
-> > -#ifdef CONFIG_OF
-> > -static const struct of_device_id dw_dma_id_table[] = {
-> > -       { .compatible = "snps,dma-spear1340" },
-> > -       {}
-> > -};
-> > -MODULE_DEVICE_TABLE(of, dw_dma_id_table);
-> > -#endif
-> > -
-> >  static struct platform_driver dw_driver = {
-> > +       .probe          = dw_probe,
-> >         .remove         = __devexit_p(dw_remove),
-> >         .shutdown       = dw_shutdown,
-> >         .driver = {
-> >                 .name   = "dw_dmac",
-> >                 .pm     = &dw_dev_pm_ops,
-> > -               .of_match_table = of_match_ptr(dw_dma_id_table),
-> >         },
-> >  };
-> >
-> > -static int __init dw_init(void)
-> > -{
-> > -       return platform_driver_probe(&dw_driver, dw_probe);
-> > -}
-> > -subsys_initcall(dw_init);
-> > -
-> > -static void __exit dw_exit(void)
-> > -{
-> > -       platform_driver_unregister(&dw_driver);
-> > -}
-> > -module_exit(dw_exit);
-> > +module_platform_driver(dw_driver);
-> 
-> Shouldn't this be a separate patch?
-> 
-> >
-> >  MODULE_LICENSE("GPL v2");
-> >  MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller driver");
-> > diff --git a/drivers/dma/dw_dmac_at32.c b/drivers/dma/dw_dmac_at32.c
-> > new file mode 100644
-> > index 0000000..7bc7ac4
-> > --- /dev/null
-> > +++ b/drivers/dma/dw_dmac_at32.c
-> > @@ -0,0 +1,150 @@
-> > +/*
-> > + * Driver for the Synopsys DesignWare DMA Controller
-> 
-> How is this file different from dw_dmac.c?
-> 
-> > + *
-> > + * The driver is based on the excerpts from the original dw_dmac.c. That's why
-> > + * the same copyright holders are mentioned here as well.
-> > + *
-> > + * Copyright (C) 2007-2008 Atmel Corporation
-> > + * Copyright (C) 2010-2011 ST Microelectronics
-> > + * Copyright (C) 2012 Intel Corporation
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +#include <linux/module.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/clk.h>
-> > +#include <linux/of.h>
-> > +#include <linux/dw_dmac.h>
-> > +
-> > +struct dw_at32 {
-> > +       struct platform_device  *pdev;
-> > +       struct clk              *clk;
-> > +};
-> > +
-> > +static int __init dw_at32_probe(struct platform_device *pdev)
-> > +{
-> > +       struct dw_at32                  *at32;
-> > +       struct platform_device          *pd;
-> > +       struct dw_dma_platform_data     *pdata = pdev->dev.platform_data;
-> > +       static int                      instance;
-> > +       int                             ret;
-> > +
-> > +       at32 = devm_kzalloc(&pdev->dev, sizeof(*at32), GFP_KERNEL);
-> > +       if (!at32) {
-> > +               dev_err(&pdev->dev, "can't allocate memory\n");
-> > +               return -ENOMEM;
-> > +       }
-> > +
-> > +       pd = platform_device_alloc("dw_dmac", instance);
-> > +       if (!pd) {
-> > +               dev_err(&pdev->dev, "can't allocate dw_dmac platform device\n");
-> > +               return -ENOMEM;
-> > +       }
-> 
-> Why create another device? Why not simply call dw_probe() from here?
+Actually all of these were more correct in the original.
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Ah.  I see the problem.  The original used spaces.  Still the
+alignment was better.  It should be:
+[tab] [tab] [tab] [space] [space]
+
+You're allowed to use spaces to get the alignment to work.
+
+Really the '+' should probably be on the line before.  But it's not
+worth sending a patch over.
+
+>      pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+> -                                + WLAN_REASSOCREQ_OFF_CAP_INFO);
+> +											+ WLAN_REASSOCREQ_OFF_CAP_INFO);
+>      pFrame->pwListenInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+> -                                      + WLAN_REASSOCREQ_OFF_LISTEN_INT);
+> +											+ WLAN_REASSOCREQ_OFF_LISTEN_INT);
+
+Really???  I'm not a huge fan of the 80 character line limit, but at
+least the left side of the line should be within the 80 characters.
+
+Yeah.  This patch is going nowhere.
+
+regards,
+dan carpenter
