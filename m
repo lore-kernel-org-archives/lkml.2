@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab2IZGoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 02:44:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:6179 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855Ab2IZGoM convert rfc822-to-8bit (ORCPT
+	id S1752754Ab2IZGoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 02:44:21 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:62175 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab2IZGoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 02:44:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,488,1344236400"; 
-   d="scan'208";a="149165644"
-Message-ID: <1348641845.13371.132.camel@smile>
-Subject: Re: [PATCHv1 6/6] MAINTAINERS: add recently created files to
- dw_dmac section
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+	Wed, 26 Sep 2012 02:44:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <1348624007-16634-1-git-send-email-zhangwm@marvell.com>
+References: <1348624007-16634-1-git-send-email-zhangwm@marvell.com>
+Date: Wed, 26 Sep 2012 14:44:18 +0800
+Message-ID: <CAN1soZzoCHwrDiQEW7sBL3Tj8fc=yqh2Sbi=eZeqi7iTJjAZsQ@mail.gmail.com>
+Subject: Re: [PATCH V2] GPIO: gpio-pxa: fix bug when get gpio value
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Neil Zhang <zhangwm@marvell.com>
+Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 26 Sep 2012 09:44:05 +0300
-In-Reply-To: <1348592250.2648.7.camel@joe-AO722>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1348575190-11761-7-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1348579169.2476.1.camel@joe-AO722> <1348580274.13371.127.camel@smile>
-	 <1348592250.2648.7.camel@joe-AO722>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-25 at 09:57 -0700, Joe Perches wrote: 
-> On Tue, 2012-09-25 at 16:37 +0300, Andy Shevchenko wrote:
-> > On Tue, 2012-09-25 at 06:19 -0700, Joe Perches wrote: 
-> > > You also added yourself as a maintainer.
-> > > Congrats/sympathies, etc...
-> > Actually I prefer to be just a supporter, because I introduce few
-> > additional files. But if I understood correctly, there is no way to
-> > distinguish person statuses in one section.
+On Wed, Sep 26, 2012 at 9:46 AM, Neil Zhang <zhangwm@marvell.com> wrote:
+> We need to return 0 or 1 when get gpio value.
+>
+> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> ---
+>  drivers/gpio/gpio-pxa.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/gpio/gpio-pxa.c b/drivers/gpio/gpio-pxa.c
+> index 9cac88a..3c9dc8c 100644
+> --- a/drivers/gpio/gpio-pxa.c
+> +++ b/drivers/gpio/gpio-pxa.c
+> @@ -269,7 +269,9 @@ static int pxa_gpio_direction_output(struct gpio_chip *chip,
+>
+>  static int pxa_gpio_get(struct gpio_chip *chip, unsigned offset)
+>  {
+> -       return readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET) & (1 << offset);
+> +       u32 gplr = readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET);
+> +
+> +       return (gplr & (1 << offset)) ? 1 : 0;
+>  }
+>
+>  static void pxa_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+> --
+> 1.7.4.1
+>
 
-> True, the status refers to the section, not the person.
+gpio_get_value() is used to dump bits from GPLR register in mach-pxa directory.
+Unless you update those code at the same time, this patch can't be merged.
 
-> Supported is a nominally "higher" level of stewardship
-> than maintainer.  Supported is supposed to mean you get
-> paid to look after the code.
-Ah, thanks for explanation. Apparently I misunderstood the meaning of
-that status. So, I meant one level more, than just a contributor.
-
-> I think of these section blocks as one of the ways to
-> get the appropriate people to look at patches and bug
-> reports.
-Okay, that what I was thinking to fit myself into.
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Regards
+Haojian
