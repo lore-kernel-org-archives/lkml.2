@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab2IZWch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 18:32:37 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:40059 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752526Ab2IZWcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 18:32:36 -0400
-Message-ID: <506381B2.2060806@parallels.com>
-Date: Thu, 27 Sep 2012 02:29:06 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753058Ab2IZWdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 18:33:41 -0400
+Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:59748 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526Ab2IZWdk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 18:33:40 -0400
+Message-ID: <506382B0.8040908@cs.tu-berlin.de>
+Date: Thu, 27 Sep 2012 00:33:20 +0200
+From: =?ISO-8859-1?Q?=22Jan_H=2E_Sch=F6nherr=22?= 
+	<schnhrr@cs.tu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120324 Thunderbird/10.0.3
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <devel@openvz.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-References: <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com> <50634105.8060302@parallels.com> <20120926180124.GA12544@google.com> <50634FC9.4090609@parallels.com> <20120926193417.GJ12544@google.com> <50635B9D.8020205@parallels.com> <20120926195648.GA20342@google.com> <50635F46.7000700@parallels.com> <20120926201629.GB20342@google.com> <50637298.2090904@parallels.com> <20120926221046.GA10453@mtj.dyndns.org>
-In-Reply-To: <20120926221046.GA10453@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.3.27]
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
+References: <1348682325-8402-1-git-send-email-schnhrr@cs.tu-berlin.de> <20120926211526.GA30261@kroah.com>
+In-Reply-To: <20120926211526.GA30261@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 02:10 AM, Tejun Heo wrote:
-> Hello, Glauber.
+Am 26.09.2012 23:15, schrieb Greg Kroah-Hartman:
+> On Wed, Sep 26, 2012 at 07:58:45PM +0200, Jan H. Schönherr wrote:
+>> Against v3.6-rc7, only lightly tested.
 > 
-> On Thu, Sep 27, 2012 at 01:24:40AM +0400, Glauber Costa wrote:
->> "kmem_accounted" is not a switch. It is an internal representation only.
->> The semantics, that we discussed exhaustively in San Diego, is that a
->> group that is not limited is not accounted. This is simple and consistent.
->>
->> Since the limits are still per-cgroup, you are actually proposing more
->> user-visible complexity than me, since you are adding yet another file,
->> with its own semantics.
-> 
-> I was confused.  I thought it was exposed as a switch to userland (it
-> being right below .use_hierarchy tripped red alert). 
+> Well, against linux-next and highly tested would be best.  It's a bit
+> late to get this into linux-next for 3.7, how important is it really?
 
-Remember I was the one more vocally and radically so far trying to get
-rid of use_hierarchy. I should have been more clear - and I was, as soon
-as I better understood the nature of your opposition - but this is
-precisely what I meant by "inherently different".
+There are no conflicting commits in linux-next, so it should apply there
+as well.
 
-> 
-> So, the proposed behavior is to allow enabling kmemcg anytime but
-> ignore what happened inbetween?  Where the knob is changes but the
-> weirdity seems all the same.  What prevents us from having a single
-> switch at root which can only be flipped when there's no children?
+"Tested" as in: it fixes my use case: multiple printk()s shortly after each
+other -- with KERN_prefix but without a newline at the end. Those were
+sometimes concatenated since that printk-rewrite.
 
-So I view this very differently from you. We have no root-only switches
-in memcg. This would be a first, and this is the kind of thing that adds
-complexity, in my view.
+All other printk()s that I come across more often look as usual, before and
+after the patch. (Mostly singular printk()s, but I also checked the output
+from the oom-killer.)
 
-You have someone like libvirt or a systemd service using memcg. It
-probably starts at boot. Once it is started, it will pretty much prevent
-switching of any global switch like this.
+There is no need to include this hastily -- at least not from my point of view
+-- as it is already broken in 3.5 and nobody else seems to notice it
+(... and I have now a fix for my development printk()s). Should I resend the
+patch later?
 
-And then what? If you want a different behavior you need to go kill all
-your services that are using memcg so you can get the behavior you want?
-And if they happen to be making a specific flag choice by design, you
-just say "you really can't run A + B together" ?
+I was also hoping that Kay might share his opinion, as the LOG_CONT
+flag is rather young, and he might have some different plans for it.
 
-I myself think global switches are an unnecessary complication. And let
-us not talk about use_hierarchy, please. If it becomes global, it is
-going to be as part of a phase out plan anyway. The problem with that is
-not that it is global, is that it shouldn't even exist.
+(And of course, some more testing wouldn't hurt.)
 
-> 
-> Backward compatibility is covered with single switch and I really
-> don't think "you can enable limits for kernel memory anytime but we
-> don't keep track of whatever happened before it was flipped the first
-> time because the first time is always special" is a sane thing to
-> expose to userland.  Or am I misunderstanding the proposed behavior
-> again?
-> 
+Regards
+Jan
 
-You do keep track. Before you switch it for the first time, it all
-belongs to the root memcg.
+
+
