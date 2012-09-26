@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2IZUQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:16:35 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:64893 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab2IZUQd (ORCPT
+	id S1754323Ab2IZUTq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:19:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11405 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab2IZUTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:16:33 -0400
-Date: Wed, 26 Sep 2012 13:16:29 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120926201629.GB20342@google.com>
-References: <20120926163648.GO16296@google.com>
- <50633D24.6020002@parallels.com>
- <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com>
- <50634105.8060302@parallels.com>
- <20120926180124.GA12544@google.com>
- <50634FC9.4090609@parallels.com>
- <20120926193417.GJ12544@google.com>
- <50635B9D.8020205@parallels.com>
- <20120926195648.GA20342@google.com>
- <50635F46.7000700@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50635F46.7000700@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 26 Sep 2012 16:19:45 -0400
+X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=cGHOI4EiJiIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=xcvXsrr2BTgA:10 a=HxFpDGPoftOp0VsE8u4A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348690783.22822.61.camel@gandalf.local.home>
+Subject: Re: [PATCH] trace: replace strict_strto* with kstrto*
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Daniel Walter <sahne@0x90.at>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com
+Date: Wed, 26 Sep 2012 16:19:43 -0400
+In-Reply-To: <20120926200838.GC1244@0x90.at>
+References: <20120926200838.GC1244@0x90.at>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 12:02:14AM +0400, Glauber Costa wrote:
-> But think in terms of functionality: This thing here is a lot more
-> similar to swap than use_hierarchy. Would you argue that memsw should be
-> per-root ?
+On Wed, 2012-09-26 at 22:08 +0200, Daniel Walter wrote:
+> [trace] replace strict_strto* with kstrto*
+> 
+>  * remove old string conversions with kstrto*
+> 
+> Signed-off-by: Daniel Walter <sahne@0x90.at>
 
-I'm fairly sure you can make about the same argument about
-use_hierarchy.  There is a choice to make here and one is simpler than
-the other.  I want the additional complexity justified by actual use
-cases which isn't too much to ask for especially when the complexity
-is something visible to userland.
+Thanks! I'll queue it up.
 
-So let's please stop arguing semantics.  If this is definitely
-necessary for some use cases, sure let's have it.  If not, let's
-consider it later.  I'll stop responding on "inherent differences."  I
-don't think we'll get anywhere with that.
+-- Steve
 
-Michal, Johannes, Kamezawa, what are your thoughts?
 
-Thanks.
-
--- 
-tejun
