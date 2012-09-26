@@ -1,114 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab2IZHvM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 03:51:12 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:56872 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab2IZHvK (ORCPT
+	id S1753388Ab2IZH4G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 03:56:06 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55720 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab2IZH4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 03:51:10 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] MAINTAINERS: fix indentation for Viresh Kumar
-Date: Wed, 26 Sep 2012 13:20:59 +0530
-Message-Id: <236507874d6759bd3dc2ec8feca89a5d2971222c.1348645812.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-X-OriginalArrivalTime: 26 Sep 2012 07:51:08.0700 (UTC) FILETIME=[B08F8DC0:01CD9BBB]
-X-MC-Unique: 112092608510900201
-Content-Type: text/plain; charset=WINDOWS-1252
+	Wed, 26 Sep 2012 03:56:05 -0400
+X-AuditID: 9c930179-b7bf9ae000000e4c-fa-5062b5119303
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 00/16] perf report: Add suppport for event group view (v2)
+Date: Wed, 26 Sep 2012 16:47:27 +0900
+Message-Id: <1348645663-25303-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8Q7pGVY030246
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Hi,
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- MAINTAINERS | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+This is my second attempt to support event group on perf report.
+For basic idea and usage example, please see my original post [1].
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index f9d40d1..7dfd0eb 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -572,7 +572,7 @@ F:	drivers/net/appletalk/
- F:	net/appletalk/
- 
- ARASAN COMPACT FLASH PATA CONTROLLER
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- L:	linux-ide@vger.kernel.org
- S:	Maintained
- F:	include/linux/pata_arasan_cf_data.h
-@@ -5998,7 +5998,7 @@ S:	Maintained
- F:	drivers/tty/serial
- 
- SYNOPSYS DESIGNWARE DMAC DRIVER
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- S:	Maintained
- F:	include/linux/dw_dmac.h
- F:	drivers/dma/dw_dmac_regs.h
-@@ -6146,7 +6146,7 @@ S:	Maintained
- F:	drivers/mmc/host/sdhci-s3c.c
- 
- SECURE DIGITAL HOST CONTROLLER INTERFACE (SDHCI) ST SPEAR DRIVER
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- L:	spear-devel@list.st.com
- L:	linux-mmc@vger.kernel.org
- S:	Maintained
-@@ -6517,7 +6517,7 @@ S:	Maintained
- F:	include/linux/compiler.h
- 
- SPEAR PLATFORM SUPPORT
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- M:	Shiraz Hashim <shiraz.hashim@st.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-@@ -6526,7 +6526,7 @@ S:	Maintained
- F:	arch/arm/plat-spear/
- 
- SPEAR13XX MACHINE SUPPORT
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- M:	Shiraz Hashim <shiraz.hashim@st.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-@@ -6535,7 +6535,7 @@ S:	Maintained
- F:	arch/arm/mach-spear13xx/
- 
- SPEAR3XX MACHINE SUPPORT
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- M:	Shiraz Hashim <shiraz.hashim@st.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-@@ -6546,7 +6546,7 @@ F:	arch/arm/mach-spear3xx/
- SPEAR6XX MACHINE SUPPORT
- M:	Rajeev Kumar <rajeev-dlh.kumar@st.com>
- M:	Shiraz Hashim <shiraz.hashim@st.com>
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- W:	http://www.st.com/spear
-@@ -6554,7 +6554,7 @@ S:	Maintained
- F:	arch/arm/mach-spear6xx/
- 
- SPEAR CLOCK FRAMEWORK SUPPORT
--M:     Viresh Kumar <viresh.linux@gmail.com>
-+M:	Viresh Kumar <viresh.linux@gmail.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- W:	http://www.st.com/spear
+The main difference than v1 is adding HEADER_GROUP_DESC feature and
+use it for regenerating group relationship on perf report.  It will
+save actual (i.e. contains non-leader member) group information to
+perf header.
+
+Patch 1 is a bug fix which can be applied indenpedently.
+
+Patch 2-4 are cleanups to facilitate later changes and came from my
+cumulative report series [2].
+
+You can also access it via my tree at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git  perf/group-v2
+
+Any comments are welcome, thanks,
+Namhyung
+
+v1 -> v2:
+ * save group relation to header (Jiri)
+ * rebase on top of current acme/perf/core
+
+
+[1] https://lkml.org/lkml/2012/7/24/81
+[2] https://lkml.org/lkml/2012/9/13/81
+
+Namhyung Kim (16):
+  perf hists: Add missing period_* fields when collapsing a hist entry
+  perf hists: Introduce struct he_stat
+  perf hists: Move he->stat.nr_events initialization to a template
+  perf hists: Add more helpers for hist entry stat
+  perf tools: Keep group information
+  perf evlist: Add perf_evlist__recalc_nr_groups
+  perf header: Add HEADER_GROUP_DESC feature
+  perf hists: Collapse group hist_entries to a leader
+  perf hists: Maintain total periods of group members in the leader
+  perf report: Make another loop for output resorting
+  perf ui/hist: Add support for event group view
+  perf ui/browser: Add support for event group view
+  perf ui/gtk: Add support for event group view
+  perf report: Bypass non-leader events when event group is enabled
+  perf report: Show group description when event group is enabled
+  perf report: Add --group option
+
+ tools/perf/builtin-record.c    |   6 ++
+ tools/perf/builtin-report.c    |  29 +++++++
+ tools/perf/ui/browsers/hists.c | 107 ++++++++++++++++++++---
+ tools/perf/ui/gtk/browser.c    |  70 ++++++++++++---
+ tools/perf/ui/hist.c           | 104 +++++++++++++++++------
+ tools/perf/ui/stdio/hist.c     |   4 +-
+ tools/perf/util/evlist.c       |  26 +++++-
+ tools/perf/util/evlist.h       |   2 +
+ tools/perf/util/evsel.c        |  25 ++++++
+ tools/perf/util/evsel.h        |  23 +++++
+ tools/perf/util/header.c       | 149 ++++++++++++++++++++++++++++++++
+ tools/perf/util/header.h       |   2 +
+ tools/perf/util/hist.c         | 188 +++++++++++++++++++++++++++++++++++------
+ tools/perf/util/hist.h         |   2 +
+ tools/perf/util/parse-events.c |   1 +
+ tools/perf/util/parse-events.h |   1 +
+ tools/perf/util/parse-events.y |   4 +
+ tools/perf/util/sort.h         |  17 ++--
+ tools/perf/util/symbol.c       |   4 +
+ tools/perf/util/symbol.h       |   3 +-
+ 20 files changed, 683 insertions(+), 84 deletions(-)
+
 -- 
-1.7.12.rc2.18.g61b472e
-
+1.7.11.4
 
