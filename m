@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab2IZXTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 19:19:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48056 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab2IZXTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 19:19:03 -0400
-Date: Wed, 26 Sep 2012 20:18:55 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux EDAC Mailing List <linux-edac@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [GIT PULL for v3.6-final] EDAC fixes
-Message-ID: <20120926201855.1de686bf@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751888Ab2IZXUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 19:20:46 -0400
+Received: from nm20.bullet.mail.bf1.yahoo.com ([98.139.212.179]:41530 "HELO
+	nm20.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750950Ab2IZXUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 19:20:45 -0400
+X-Yahoo-Newman-Id: 589371.12461.bm@smtp111.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: TsgHMcMVM1kTTwkvdc9LuKZ6zjy.ah9PE8hk3yhy.Chu4yP
+ mUCaCUOqF_fuaZEOrW8QhdOWYcrcNdXpR8eJDaTxSoD2oY7Z40C92Yaya2Lz
+ _sVom4qtLqOIIDG4fHpR47FurHMcKkVgrfzm7H9CHdTzJflEsGUN2trntguP
+ 3vmJoFaXqHIjimzVRje6rCnDAsS293xqUtH8aTeOaRca2vbjdwcOS64V9K4s
+ 99ZUJxwMdxzUwcdeTt6a8wSmy24b1uLcwF5CHuoJ59hXD8GPzTMRbCIKGDGW
+ CY9ULmv0pInLFV6mTtdj5HiWvNgcvEc9nsAbrmzONa7OpEpHruBz577c_aEI
+ Jvu0jBQKEUfO3g_0CkK.QAEVBnI12.TCJglbPVgS6w5jkSXVc7fconTOal27
+ 4_vs8.JH7MT.qzW_tbu4n3v.HiozzVKZhW9v58CM_46lmbKPFkJ5oif9YC9v
+ AXw3j4FY7j531pyuCLiQL7p3Ss_ja_aNO2MWR4rVKnxNQDym_UQqjAG4TNqR
+ vhmP9taUe0ttfrAHm_w0zyi8Xnu0_FFms0hgGvIdgWBKVYxMdHvq7Eb.JAoe
+ UyMNlsDaBUwt4T18G.J2mJm0BDU3.H.ViUpk366foCFwLyaan_Q--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <50638DCC.5040506@att.net>
+Date: Wed, 26 Sep 2012 18:20:44 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        torvalds@linux-foundation.org
+Subject: Please be aware that __always_inline doesn't mean "always inline"!
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+I've noticed that there's a lot of misperception about the meaning of
+the __always_inline, or more specifically,
+__attribute__((always_inline)), which does not actually cause the
+function to always be inlined.  Rather, it *allows* gcc to inline the
+function, even when compiling without optimizations.  Here is the
+description of the attribute from gcc's docs
+(http://gcc.gnu.org/onlinedocs/gcc-4.7.2/gcc/Function-Attributes.html)
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
+always_inline
+Generally, functions are not inlined unless optimization is specified.
+For functions declared inline, this attribute inlines the function even
+if no optimization level was specified.
 
-For 3 edac fixes at the memory enumeration logic:
-	- i3200_edac: Fixes a regression at the memory rank size, when the
-		memorias are dual-rank;
-	- i5000_edac: Fix a longstanding bug when calculating the memory
-		size: before Kernel 3.6, the memory size were right only
-		with one specific configuration;
-	- sb_edac: Fixes a bug since the initial release of the driver:
-		with 16GB DIMMs, there's an overflow at the memory size,
-		causing the number of pages per dimm (an unsigned value)
-		to have the highest bit equal to 1, effectively mangling
-		the memory size.
+This would even appear to imply that such functions aren't even marked
+as "inline" (something I wasn't aware of until today).  The only
+mechanism I'm currently aware of to force gcc to inline a function is
+the flatten attribute (see https://lkml.org/lkml/2012/9/25/643) which
+works backwards, you declare it on the calling function, and it forces
+gcc to inline all functions (marked as inline) that it calls.
 
-The third bug can potentially affect the error decoding logic as well.
-
-Thank you!
-Mauro
-
--
-
-The following changes since commit 979570e02981d4a8fc20b3cc8fd651856c98ee9d:
-
-  Linux 3.6-rc7 (2012-09-23 18:10:57 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
-
-for you to fetch changes up to deb09ddaff1435f72dd598d38f9b58354c68a5ec:
-
-  sb_edac: Avoid overflow errors at memory size calculation (2012-09-25 07:38:20 -0300)
-
-----------------------------------------------------------------
-Mauro Carvalho Chehab (3):
-      i3200_edac: Fix memory rank size
-      i5000: Fix the memory size calculation with 2R memories
-      sb_edac: Avoid overflow errors at memory size calculation
-
- drivers/edac/i3200_edac.c | 2 +-
- drivers/edac/i5000_edac.c | 4 ++++
- drivers/edac/sb_edac.c    | 7 ++++---
- 3 files changed, 9 insertions(+), 4 deletions(-)
-
+Daniel
