@@ -1,143 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902Ab2IZRzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:55:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46832 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757794Ab2IZRzk (ORCPT
+	id S1757965Ab2IZR4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 13:56:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60659 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757657Ab2IZR4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:55:40 -0400
-Date: Wed, 26 Sep 2012 12:55:34 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-security-module@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
+	Wed, 26 Sep 2012 13:56:10 -0400
+Date: Wed, 26 Sep 2012 10:56:06 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: devel@linuxdriverproject.org
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/14] userns: On ia64 deal with current_uid and
- current_gid being kuid and kgid
-Message-ID: <20120926175534.GD30620@sergelap>
-References: <87k3vote43.fsf@xmission.com>
- <1348187330-6616-1-git-send-email-ebiederm@xmission.com>
- <1348187330-6616-13-git-send-email-ebiederm@xmission.com>
+Subject: staging tree closed for 3.7
+Message-ID: <20120926175606.GA10762@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1348187330-6616-13-git-send-email-ebiederm@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> These ia64 uses of current_uid and current_gid slipped through the
-> cracks when I was converting everything to kuids and kgids convert
-> them now.
-> 
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+With 3.6 about to be released, I've now closed the 3.7 staging-next tree
+for new features / cleanups.  It's bug-fixes only now until 3.7-rc1 is
+out.
 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  arch/ia64/kernel/mca_drv.c |    3 ++-
->  arch/ia64/kernel/perfmon.c |   32 ++++++++++++++++----------------
->  arch/ia64/kernel/signal.c  |    4 ++--
->  3 files changed, 20 insertions(+), 19 deletions(-)
-> 
-> diff --git a/arch/ia64/kernel/mca_drv.c b/arch/ia64/kernel/mca_drv.c
-> index 1c2e894..9392e02 100644
-> --- a/arch/ia64/kernel/mca_drv.c
-> +++ b/arch/ia64/kernel/mca_drv.c
-> @@ -158,7 +158,8 @@ mca_handler_bh(unsigned long paddr, void *iip, unsigned long ipsr)
->  	ia64_mlogbuf_dump();
->  	printk(KERN_ERR "OS_MCA: process [cpu %d, pid: %d, uid: %d, "
->  		"iip: %p, psr: 0x%lx,paddr: 0x%lx](%s) encounters MCA.\n",
-> -	       raw_smp_processor_id(), current->pid, current_uid(),
-> +	       raw_smp_processor_id(), current->pid,
-> +		from_kuid(&init_user_ns, current_uid()),
->  		iip, ipsr, paddr, current->comm);
->  
->  	spin_lock(&mca_bh_lock);
-> diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
-> index 3fa4bc5..5a5c222 100644
-> --- a/arch/ia64/kernel/perfmon.c
-> +++ b/arch/ia64/kernel/perfmon.c
-> @@ -2380,8 +2380,8 @@ static int
->  pfm_bad_permissions(struct task_struct *task)
->  {
->  	const struct cred *tcred;
-> -	uid_t uid = current_uid();
-> -	gid_t gid = current_gid();
-> +	kuid_t uid = current_uid();
-> +	kgid_t gid = current_gid();
->  	int ret;
->  
->  	rcu_read_lock();
-> @@ -2389,20 +2389,20 @@ pfm_bad_permissions(struct task_struct *task)
->  
->  	/* inspired by ptrace_attach() */
->  	DPRINT(("cur: uid=%d gid=%d task: euid=%d suid=%d uid=%d egid=%d sgid=%d\n",
-> -		uid,
-> -		gid,
-> -		tcred->euid,
-> -		tcred->suid,
-> -		tcred->uid,
-> -		tcred->egid,
-> -		tcred->sgid));
-> -
-> -	ret = ((uid != tcred->euid)
-> -	       || (uid != tcred->suid)
-> -	       || (uid != tcred->uid)
-> -	       || (gid != tcred->egid)
-> -	       || (gid != tcred->sgid)
-> -	       || (gid != tcred->gid)) && !capable(CAP_SYS_PTRACE);
-> +		from_kuid(&init_user_ns, uid),
-> +		from_kgid(&init_user_ns, gid),
-> +		from_kuid(&init_user_ns, tcred->euid),
-> +		from_kuid(&init_user_ns, tcred->suid),
-> +		from_kuid(&init_user_ns, tcred->uid),
-> +		from_kgid(&init_user_ns, tcred->egid),
-> +		from_kgid(&init_user_ns, tcred->sgid)));
-> +
-> +	ret = ((!uid_eq(uid, tcred->euid))
-> +	       || (!uid_eq(uid, tcred->suid))
-> +	       || (!uid_eq(uid, tcred->uid))
-> +	       || (!gid_eq(gid, tcred->egid))
-> +	       || (!gid_eq(gid, tcred->sgid))
-> +	       || (!gid_eq(gid, tcred->gid))) && !capable(CAP_SYS_PTRACE);
->  
->  	rcu_read_unlock();
->  	return ret;
-> diff --git a/arch/ia64/kernel/signal.c b/arch/ia64/kernel/signal.c
-> index a199be1..37dd795 100644
-> --- a/arch/ia64/kernel/signal.c
-> +++ b/arch/ia64/kernel/signal.c
-> @@ -220,7 +220,7 @@ ia64_rt_sigreturn (struct sigscratch *scr)
->  	si.si_errno = 0;
->  	si.si_code = SI_KERNEL;
->  	si.si_pid = task_pid_vnr(current);
-> -	si.si_uid = current_uid();
-> +	si.si_uid = from_kuid_munged(current_user_ns(), current_uid());
->  	si.si_addr = sc;
->  	force_sig_info(SIGSEGV, &si, current);
->  	return retval;
-> @@ -317,7 +317,7 @@ force_sigsegv_info (int sig, void __user *addr)
->  	si.si_errno = 0;
->  	si.si_code = SI_KERNEL;
->  	si.si_pid = task_pid_vnr(current);
-> -	si.si_uid = current_uid();
-> +	si.si_uid = from_kuid_munged(current_user_ns(), current_uid());
->  	si.si_addr = addr;
->  	force_sig_info(SIGSEGV, &si, current);
->  	return 0;
-> -- 
-> 1.7.5.4
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+Ian and Hartley, I've not applied a few of the last patches you sent me
+as it seems there was some disagreements.
+
+Also, the recent __user cleanups for the comedi drivers seemed to be way
+too big.  I'll take a look at them in the next few weeks, surely we can
+do this in a simpler manner without needing to get every driver
+involved, but I could be wrong.  I'll let you all know.
+
+The diffstat for the 3.7 merge is pretty big:
+ 660 files changed, 50816 insertions(+), 24515 deletions(-)
+with 1086 individual patches, which is quite a lot.
+
+thanks,
+
+greg k-h
