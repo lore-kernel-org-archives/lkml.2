@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab2IZUFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:05:47 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:33810 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533Ab2IZUFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:05:45 -0400
-Message-ID: <50635F46.7000700@parallels.com>
-Date: Thu, 27 Sep 2012 00:02:14 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <devel@openvz.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-References: <1347977050-29476-5-git-send-email-glommer@parallels.com> <20120926140347.GD15801@dhcp22.suse.cz> <20120926163648.GO16296@google.com> <50633D24.6020002@parallels.com> <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com> <50634105.8060302@parallels.com> <20120926180124.GA12544@google.com> <50634FC9.4090609@parallels.com> <20120926193417.GJ12544@google.com> <50635B9D.8020205@parallels.com> <20120926195648.GA20342@google.com>
-In-Reply-To: <20120926195648.GA20342@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752594Ab2IZUHr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:07:47 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33395
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751493Ab2IZUHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 16:07:46 -0400
+Date: Wed, 26 Sep 2012 17:07:37 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH] media: davinci: vpif: add check for NULL handler
+Message-ID: <20120926170737.5979b1e8@infradead.org>
+In-Reply-To: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com>
+References: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.11; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.3.27]
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2012 11:56 PM, Tejun Heo wrote:
-> Hello,
+Em Thu, 16 Aug 2012 19:32:00 +0530
+Prabhakar Lad <prabhakar.lad@ti.com> escreveu:
+
+It is amazing how many SOB's/acks are in this patch and nobody
+asked you to provide a patch description... the subject just
+tells what the code is also telling. Could you please provide
+a better patch description?
+
+Thanks!
+Mauro
+
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
 > 
-> On Wed, Sep 26, 2012 at 11:46:37PM +0400, Glauber Costa wrote:
->> Besides not being part of cgroup core, and respecting very much both
->> cgroups' and basic sanity properties, kmem is an actual feature that
->> some people want, and some people don't. There is no reason to believe
->> that applications that want will live in the same environment with ones
->> that don't want.
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> ---
+>  drivers/media/video/davinci/vpif_capture.c |   12 +++++++-----
+>  drivers/media/video/davinci/vpif_display.c |   14 ++++++++------
+>  2 files changed, 15 insertions(+), 11 deletions(-)
 > 
-> I don't know.  It definitely is less crazy than .use_hierarchy but I
-> wouldn't say it's an inherently different thing.  I mean, what does it
-> even mean to have u+k limit on one subtree and not on another branch?
-> And we worry about things like what if parent doesn't enable it but
-> its chlidren do.
-> 
+> diff --git a/drivers/media/video/davinci/vpif_capture.c b/drivers/media/video/davinci/vpif_capture.c
+> index 266025e..a87b7a5 100644
+> --- a/drivers/media/video/davinci/vpif_capture.c
+> +++ b/drivers/media/video/davinci/vpif_capture.c
+> @@ -311,12 +311,14 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+>  	}
+>  
+>  	/* configure 1 or 2 channel mode */
+> -	ret = vpif_config_data->setup_input_channel_mode
+> -					(vpif->std_info.ycmux_mode);
+> +	if (vpif_config_data->setup_input_channel_mode) {
+> +		ret = vpif_config_data->setup_input_channel_mode
+> +						(vpif->std_info.ycmux_mode);
+>  
+> -	if (ret < 0) {
+> -		vpif_dbg(1, debug, "can't set vpif channel mode\n");
+> -		return ret;
+> +		if (ret < 0) {
+> +			vpif_dbg(1, debug, "can't set vpif channel mode\n");
+> +			return ret;
+> +		}
+>  	}
+>  
+>  	/* Call vpif_set_params function to set the parameters and addresses */
+> diff --git a/drivers/media/video/davinci/vpif_display.c b/drivers/media/video/davinci/vpif_display.c
+> index e129c98..1e35f92 100644
+> --- a/drivers/media/video/davinci/vpif_display.c
+> +++ b/drivers/media/video/davinci/vpif_display.c
+> @@ -280,12 +280,14 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+>  	}
+>  
+>  	/* clock settings */
+> -	ret =
+> -	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
+> -					ch->vpifparams.std_info.hd_sd);
+> -	if (ret < 0) {
+> -		vpif_err("can't set clock\n");
+> -		return ret;
+> +	if (vpif_config_data->set_clock) {
+> +		ret =
+> +		vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
+> +						ch->vpifparams.std_info.hd_sd);
+> +		if (ret < 0) {
+> +			vpif_err("can't set clock\n");
+> +			return ret;
+> +		}
+>  	}
+>  
+>  	/* set the parameters and addresses */
 
-It is inherently different. To begin with, it actually contemplates two
-use cases. It is not a work around.
-
-The meaning is also very well defined. The meaning of having this
-enabled in one subtree and not in other is: Subtree A wants to track
-kernel memory. Subtree B does not. It's that, and never more than that.
-There is no maybes and no buts, no magic knobs that makes it behave in a
-crazy way.
-
-If a children enables it but the parent does not, this does what every
-tree does: enable it from that point downwards.
-
-> This is a feature which adds complexity.  If the feature is necessary
-> and justified, sure.  If not, let's please not and let's err on the
-> side of conservativeness.  We can always add it later but the other
-> direction is much harder.
-> 
-
-I disagree. Having kmem tracking adds complexity. Having to cope with
-the use case where we turn it on dynamically to cope with the "user page
-only" use case adds complexity. But I see no significant complexity
-being added by having it per subtree. Really.
-
-You have the use_hierarchy fiasco in mind, and I do understand that you
-are raising the flag and all that.
-
-But think in terms of functionality: This thing here is a lot more
-similar to swap than use_hierarchy. Would you argue that memsw should be
-per-root ?
-
-The reason why it shouldn't: Some people want to limit memory
-consumption all the way to the swap, some people don't. Same with kmem.
 
 
+
+Cheers,
+Mauro
