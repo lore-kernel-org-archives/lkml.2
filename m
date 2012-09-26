@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab2IZRwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:52:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46816 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757443Ab2IZRwb (ORCPT
+	id S1757760Ab2IZRzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 13:55:38 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33668 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757192Ab2IZRzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:52:31 -0400
-Date: Wed, 26 Sep 2012 12:52:24 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-security-module@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH 10/14] userns: Convert s390 hypfs to use kuid and kgid
- where appropriate
-Message-ID: <20120926175224.GC30620@sergelap>
-References: <87k3vote43.fsf@xmission.com>
- <1348187330-6616-1-git-send-email-ebiederm@xmission.com>
- <1348187330-6616-10-git-send-email-ebiederm@xmission.com>
+	Wed, 26 Sep 2012 13:55:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348187330-6616-10-git-send-email-ebiederm@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOh2x=nnUxJ4bvro_Rc95jRk7SR_yzxwZhNXeL4w5xDzsDj3nQ@mail.gmail.com>
+References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348663237-3237-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x=nnUxJ4bvro_Rc95jRk7SR_yzxwZhNXeL4w5xDzsDj3nQ@mail.gmail.com>
+Date: Wed, 26 Sep 2012 20:55:36 +0300
+Message-ID: <CAHp75VcGQ9jCpGb2jhCEX4NsbUsR0aytwd1AMkt4GpTXYVPnwQ@mail.gmail.com>
+Subject: Re: [PATCHv2 2/4] dmaengine: dw_dmac: Add PCI part of the driver
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+On Wed, Sep 26, 2012 at 5:33 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
+> Forgot earlier, please keep spear-devel in cc... They will be going to
+> use dw_dmac driver :)
+Oh, my bad. v3 will be Cc'ed there as well. Sorry.
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+> On Wed, Sep 26, 2012 at 6:10 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+>> diff --git a/drivers/dma/dw_dmac_pci.c b/drivers/dma/dw_dmac_pci.c
+>> +#include <linux/module.h>
+>> +#include <linux/pci.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/dw_dmac.h>
+>> +
+>> +#define DRIVER(_is_private, _chan_order, _chan_pri)            \
+>> +       ((kernel_ulong_t)&(struct dw_dma_platform_data) {       \
+>> +               .is_private = (_is_private),                    \
+>> +               .chan_allocation_order = (_chan_order),         \
+>> +               .chan_priority = (_chan_pri),                   \
+>
+> I believe you don't need these braces around input variables on right side
+> of "=". Even if there is something complex passed.
+Hmm... Have no idea if anyone will use robust stuff as a parameter to
+that macro. I could remove them.
 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  arch/s390/hypfs/inode.c |   20 ++++++++++++++------
->  1 files changed, 14 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/s390/hypfs/inode.c b/arch/s390/hypfs/inode.c
-> index 6767b43..124ec1a 100644
-> --- a/arch/s390/hypfs/inode.c
-> +++ b/arch/s390/hypfs/inode.c
-> @@ -31,8 +31,8 @@ static struct dentry *hypfs_create_update_file(struct super_block *sb,
->  					       struct dentry *dir);
->  
->  struct hypfs_sb_info {
-> -	uid_t uid;			/* uid used for files and dirs */
-> -	gid_t gid;			/* gid used for files and dirs */
-> +	kuid_t uid;			/* uid used for files and dirs */
-> +	kgid_t gid;			/* gid used for files and dirs */
->  	struct dentry *update_file;	/* file to trigger update */
->  	time_t last_update;		/* last update time in secs since 1970 */
->  	struct mutex lock;		/* lock to protect update process */
-> @@ -229,6 +229,8 @@ static int hypfs_parse_options(char *options, struct super_block *sb)
->  {
->  	char *str;
->  	substring_t args[MAX_OPT_ARGS];
-> +	kuid_t uid;
-> +	kgid_t gid;
->  
->  	if (!options)
->  		return 0;
-> @@ -243,12 +245,18 @@ static int hypfs_parse_options(char *options, struct super_block *sb)
->  		case opt_uid:
->  			if (match_int(&args[0], &option))
->  				return -EINVAL;
-> -			hypfs_info->uid = option;
-> +			uid = make_kuid(current_user_ns(), option);
-> +			if (!uid_valid(uid))
-> +				return -EINVAL;
-> +			hypfs_info->uid = uid;
->  			break;
->  		case opt_gid:
->  			if (match_int(&args[0], &option))
->  				return -EINVAL;
-> -			hypfs_info->gid = option;
-> +			gid = make_kgid(current_user_ns(), option);
-> +			if (!gid_valid(gid))
-> +				return -EINVAL;
-> +			hypfs_info->gid = gid;
->  			break;
->  		case opt_err:
->  		default:
-> @@ -263,8 +271,8 @@ static int hypfs_show_options(struct seq_file *s, struct dentry *root)
->  {
->  	struct hypfs_sb_info *hypfs_info = root->d_sb->s_fs_info;
->  
-> -	seq_printf(s, ",uid=%u", hypfs_info->uid);
-> -	seq_printf(s, ",gid=%u", hypfs_info->gid);
-> +	seq_printf(s, ",uid=%u", from_kuid_munged(&init_user_ns, hypfs_info->uid));
-> +	seq_printf(s, ",gid=%u", from_kgid_munged(&init_user_ns, hypfs_info->gid));
->  	return 0;
->  }
->  
-> -- 
-> 1.7.5.4
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+>
+> Did you try to align "\"? Sorry can't see it in gmail :(
+I checked - I have tabular indentation, that's why you see them at
+different columns. In vi they look pretty well formated.
+
+[snip]
+
+>> +       pd = platform_device_alloc("dw_dmac", instance);
+>> +       if (!pd) {
+>> +               dev_err(&pdev->dev, "can't allocate dw_dmac platform device\n");
+>> +               ret = -ENOMEM;
+>> +               goto err0;
+>> +       }
+>
+> Is this the correct approach? I doubt... We are creating a platform
+> device from a
+> pci driver... Don't know if it can lead to some issues within kernel.
+>
+> Lets call the specialist for his comments  :)
+> @Arnd: Can you please help us here?
+This approach is used among different drivers in kernel. As first
+example that comes to my mind you could consider chipidea USB driver
+(drivers/usb/chipidea).
+
+
+-- 
+With Best Regards,
+Andy Shevchenko
