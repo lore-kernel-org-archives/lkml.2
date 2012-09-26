@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab2IZX1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 19:27:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41050 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab2IZX1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 19:27:46 -0400
-Message-ID: <50638F5D.8070508@ti.com>
-Date: Wed, 26 Sep 2012 16:27:25 -0700
-From: "Cousson, Benoit" <b-cousson@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1752889Ab2IZXd7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 19:33:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57551 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371Ab2IZXdk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 19:33:40 -0400
+Date: Wed, 26 Sep 2012 16:33:34 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+Message-ID: <20120926233334.GD10453@mtj.dyndns.org>
+References: <20120926195648.GA20342@google.com>
+ <50635F46.7000700@parallels.com>
+ <20120926201629.GB20342@google.com>
+ <50637298.2090904@parallels.com>
+ <20120926221046.GA10453@mtj.dyndns.org>
+ <506381B2.2060806@parallels.com>
+ <20120926224235.GB10453@mtj.dyndns.org>
+ <50638793.7060806@parallels.com>
+ <20120926230807.GC10453@mtj.dyndns.org>
+ <50638DBB.4000002@parallels.com>
 MIME-Version: 1.0
-To: Omar Ramirez Luna <omar.luna@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] OMAP: mailbox initial device tree support
-References: <1347494898-16671-1-git-send-email-omar.luna@linaro.org> <1347494898-16671-4-git-send-email-omar.luna@linaro.org> <CALLhW=4d8zxekkeGr1S52aGbufyk-vGeE9REYhDSt8pnap_Dxw@mail.gmail.com>
-In-Reply-To: <CALLhW=4d8zxekkeGr1S52aGbufyk-vGeE9REYhDSt8pnap_Dxw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50638DBB.4000002@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Omar,
+Hello,
 
-On 9/26/2012 3:21 PM, Omar Ramirez Luna wrote:
-> Hi Benoit,
->
-> On 12 September 2012 19:08, Omar Ramirez Luna <omar.luna@linaro.org> wrote:
->> To allow mailbox driver to function with device tree.
->>
->> Tested in OMAP4 and OMAP3. OMAP2 untested.
->>
->> Patch: arm/dts: OMAP2+: Add mailbox nodes, was Acked by Benoit
->> however it seems it wasn't picked up, so resend.
->>
->> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg69121.html
->>
->> Patch: OMAP: mailbox: add device tree support, there wasn't an
->> opposition other than to cleanup the driver too, however I got
->> quite some patches to send before continuing the cleanup.
->>
->> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg69338.html
->>
->> Omar Ramirez Luna (2):
->>    OMAP: mailbox: add device tree support
->>    arm/dts: OMAP2+: Add mailbox nodes
->>
->>   .../devicetree/bindings/arm/omap/mailbox.txt       |    9 +++++++++
->>   arch/arm/boot/dts/omap2.dtsi                       |    5 +++++
->>   arch/arm/boot/dts/omap3.dtsi                       |    5 +++++
->>   arch/arm/boot/dts/omap4.dtsi                       |    5 +++++
->>   arch/arm/mach-omap2/devices.c                      |    3 +++
->>   arch/arm/mach-omap2/mailbox.c                      |   12 ++++++++++++
->>   6 files changed, 39 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/arm/omap/mailbox.txt
->
-> Ping. I'm in the understanding that these go through your tree, am I right?
+On Thu, Sep 27, 2012 at 03:20:27AM +0400, Glauber Costa wrote:
+> > One of the things wrong with that is that it exposes the limitation of
+> > the current implementation as interface to userland, which is never a
+> > good idea.  In addition, how is userland supposed to know which
+> > workload is shared kmem heavy or not?  Details like that are not even
+> > inherent to workloads.  It's highly dependent on kernel implementation
+> > which may change any day.  If we hit workloads like that the right
+> > thing to do is improving kmemcg so that such problems don't occur, not
+> > exposing another switch.
+> 
+> Sorry, there is nothing implementation dependent in here. One of the
+> biggest consumers of all this, are dentries. Dentries are related to
+> the paths you touch. If you touch files in a self-contained directory,
+> where you don't expect anyone else to touch, this can safely be
+> considered local. If you touch files all around, this can safely be
+> considered not local. Where is the implementation dependent part?
 
-Since it is too late for 3.7, you should probably do two more things:
-- move the mailbox driver outside mach-omap2
-- move the nr_mbox information in the driver as well instead of the 
-hwmod for the DT boot.
+For things like dentries and inodes and if that really matters, we
+should be able to account for the usage better, no?  And frankly I'm
+not even sold on that usecase.  Unless there's a way to detect and
+inform about these, userland isn't gonna know that they're doing
+something which consumes a lot of shared memory even that activity is
+filesystem walking.  You're still asking userland to tune something
+depending on parameters not easily visible from userland.  It's a lose
+lose situation.
 
+> >> Even after the limit is set, it is set only by workloads that want kmem
+> >> to be tracked. If you want to track it during the whole lifetime of the
+> >> cgroup, you switch it before you put tasks to it. What is so crazy about it?
+> > 
+> > The fact that the numbers don't really mean what they apparently
+> > should mean.
+> > 
+> 
+> This is vague. The usage file in the cgroup means how much kernel memory
+> was used by that cgroup. If it really bothers you that this may not be
+> set through the whole group's lifetime, it is also easily solvable.
 
-Regards,
-Benoit
+Yes, easily by having a global switch which can be manipulated when
+there's no children.  It really seems like a no brainer to me.
 
+> > So, this seems properly crazy to me at the similar level of
+> > use_hierarchy fiasco.  I'm gonna NACK on this.
+> 
+> As I said: all use cases I particularly care about are covered by a
+> global switch.
+> 
+> I am laying down my views because I really believe they make more sense.
+> But at some point, of course, I'll shut up if I believe I am a lone voice.
+> 
+> I believe it should still be good to hear from mhocko and kame, but from
+> your point of view, would all the rest, plus the introduction of a
+> global switch make it acceptable to you?
+
+The only thing I'm whining about is per-node switch + silently
+ignoring past accounting, so if those two are solved, I think I'm
+pretty happy with the rest.
+
+Thanks.
+
+-- 
+tejun
