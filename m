@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab2IZJwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 05:52:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754012Ab2IZJwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 05:52:40 -0400
-Message-ID: <5062D0B9.1030000@redhat.com>
-Date: Wed, 26 Sep 2012 11:54:01 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1754729Ab2IZJyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 05:54:10 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61485 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725Ab2IZJyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 05:54:08 -0400
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>
-Subject: ACPI regression in 3.6, no more battery status, with Dell Latitude
- E6430
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1348649419-16494-3-git-send-email-minchan@kernel.org>
+References: <1348649419-16494-1-git-send-email-minchan@kernel.org>
+	<1348649419-16494-3-git-send-email-minchan@kernel.org>
+Date: Wed, 26 Sep 2012 12:54:06 +0300
+X-Google-Sender-Auth: bH6AFkUfb-FUw8w6oXm1RaCv92c
+Message-ID: <CAOJsxLHZ5Zq5_gsLXVkJcixAHkYm78t=K0AnfnLHU30dqSTesg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] zram: promote zram from staging
+From: Pekka Enberg <penberg@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Sep 26, 2012 at 11:50 AM, Minchan Kim <minchan@kernel.org> wrote:
+> It's time to promote zram from staging because zram is in staging
+> for a long time and is improved by many contributors so code is
+> very clean. Most important issue, zram's dependency with x86 is
+> solved by making zsmalloc portable. In addition, many embedded
+> product uses zram in real practive so I think there is no reason
+> to prevent promotion now.
+>
+> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-First of all, sorry for not reporting this earlier in the cycle, but
-I only got this (new) laptop yesterday ...
+FWIW,
 
-With both the 3.5 kernels as well as with the 3.6 kernels, there is
-quite some unhappiness being reported in dmesg about the ACPI
-tables, esp. surrounding BAT0. But with 3.5 I do get battery
-status reported, where as with 3.6 I do not.
-
-Here is the dmesg output of booting with 3.5.4, resp. 3.6.0-rc7:
-http://people.fedoraproject.org/~jwrdegoede/dmesg-3.5
-http://people.fedoraproject.org/~jwrdegoede/dmesg-3.6
-
-Both boots were done with a standard Fedora kernel build.
-
-Please let me know what else I can do to help. I'm a kernel developer
-myself, so you can just throw a patch in my direction and I can build
-a test kernels without needing any hand-holding, etc.
-
-Regards,
-
-Hans
+Acked-by: Pekka Enberg <penberg@kernel.org>
