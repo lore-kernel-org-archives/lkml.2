@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab2IZLXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 07:23:36 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62316 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab2IZLXf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 07:23:35 -0400
-Date: Wed, 26 Sep 2012 13:23:30 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, tglx@linutronix.de,
-        hpa@zytor.com, Alex Shi <alex.shi@intel.com>
-Subject: Re: [PATCH] UV: fix incorrect tlb flush all issue
-Message-ID: <20120926112330.GC21143@gmail.com>
-References: <E1TGULk-000162-7Y@eag09.americas.sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755283Ab2IZL1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 07:27:54 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:56709 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab2IZL1x convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Wed, 26 Sep 2012 07:27:53 -0400
+Message-Id: <506302EE020000780009DF72@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 26 Sep 2012 12:28:14 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ingo Molnar" <mingo@kernel.org>
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Tao Guo" <glorioustao@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH] x86_64: Work around old gas bug
+References: <1348648102-12653-1-git-send-email-glorioustao@gmail.com>
+ <5062F267020000780009DF06@nat28.tlf.novell.com>
+ <20120926111610.GB21143@gmail.com>
+In-Reply-To: <20120926111610.GB21143@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <E1TGULk-000162-7Y@eag09.americas.sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 26.09.12 at 13:16, Ingo Molnar <mingo@kernel.org> wrote:
 
-* Cliff Wickman <cpw@sgi.com> wrote:
-
-> From: Cliff Wickman <cpw@sgi.com>
+> * Jan Beulich <JBeulich@suse.com> wrote:
 > 
-> (this was sent as an ack on 9/13, but with incorrect title and sign-off)
+>> >>> On 26.09.12 at 10:28, Tao Guo <glorioustao@gmail.com> wrote:
+>> > gas in binutils(2.16.91) could not parse parentheses within macro
+>> > parameters unless fully parenthesized, and this is a workaround to
+>> > make old gas work without generating below errors:
+>> > arch/x86/kernel/entry_64.S: Assembler messages:
+>> > arch/x86/kernel/entry_64.S:387: Error: too many positional arguments
+>> > arch/x86/kernel/entry_64.S:389: Error: too many positional arguments
+>> > arch/x86/kernel/entry_64.S:390: Error: too many positional arguments
+>> > arch/x86/kernel/entry_64.S:391: Error: too many positional arguments
+>> > arch/x86/kernel/entry_64.S:392: Error: too many positional arguments
+>> > arch/x86/kernel/entry_64.S:393: Error: too many positional arguments
+>> > arch/x86/kernel/entry_64.S:394: Error: too many positional arguments
+>> > 
+>> > Signed-off-by: Tao Guo <glorioustao@gmail.com>
+>> 
+>> This looks okay now to me, but I'm somewhat reluctant to 
+>> formally ack it given that we know how broken those particular 
+>> gas versions are.
 > 
-> Ack.
-> But with the adjustment below.  The 'end' argument was not declared long.
+> Well, assuming Tao Guo test-booted a kernel build with this old 
+> GAS version, we could apply this patch on a best-effort basis - 
+> the changes don't look particularly ugly. If other, unacceptable 
+> uglies or fragilities come up then we might balk.
 > 
-> I tested the patch on a UV.
-> It has the effect of either clearing 1 or all TLBs in a cpu.
-> I added some debugging to test for the cases when clearing all TLBs is
-> overkill, and in practice it happens very seldom.
-> 
-> Reported-by: Jan Beulich <jbeulich@suse.com>
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> Agreed?
 
-If this is still substantially the original patch then I suspect 
-this should be From: Alex Shi, and the small fix you made can be 
-added as:
+Fine with me.
 
- Signed-off-by: Alex Shi <alex.shi@intel.com>
- [ fixed the 'end' argument to be declared 'long'. ]
- Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Jan
 
-Thanks,
-
-	Ingo
