@@ -1,118 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758291Ab2IZTPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 15:15:43 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:53502 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757598Ab2IZTPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 15:15:42 -0400
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH] rapidio/rionet: fix multicast packet transmit logic
-Date: Wed, 26 Sep 2012 15:14:27 -0400
-Message-Id: <1348686867-28842-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1758252Ab2IZTeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 15:34:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62490 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756609Ab2IZTeV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 15:34:21 -0400
+Date: Wed, 26 Sep 2012 12:34:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+Message-ID: <20120926193417.GJ12544@google.com>
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
+ <1347977050-29476-5-git-send-email-glommer@parallels.com>
+ <20120926140347.GD15801@dhcp22.suse.cz>
+ <20120926163648.GO16296@google.com>
+ <50633D24.6020002@parallels.com>
+ <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com>
+ <50634105.8060302@parallels.com>
+ <20120926180124.GA12544@google.com>
+ <50634FC9.4090609@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50634FC9.4090609@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix multicast packet transmit logic to account for repetitive transmission
-of single skb:
-- correct check for available buffers (this bug may produce NULL pointer
-  crash dump in case of heavy traffic);
-- update skb user count (incorrect user counter causes a warning dump from
-  net_tx_action routine during multicast transfers in systems with three or
-  more rionet participants).
+Hello,
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
----
- drivers/net/rionet.c |   20 +++++++++++++++++---
- 1 files changed, 17 insertions(+), 3 deletions(-)
+On Wed, Sep 26, 2012 at 10:56:09PM +0400, Glauber Costa wrote:
+> For me, it is the other way around: it makes perfect sense to have a
+> per-subtree selection of features where it doesn't hurt us, provided it
+> is hierarchical. For the mere fact that not every application is
+> interested in this (Michal is the one that is being so far more vocal
+> about this not being needed in some use cases), and it is perfectly
+> valid to imagine such applications would coexist.
+> 
+> So given the flexibility it brings, the real question is, as I said,
+> backwards: what is it necessary to make it a global switch ?
 
-diff --git a/drivers/net/rionet.c b/drivers/net/rionet.c
-index 91d2588..1470d3e 100644
---- a/drivers/net/rionet.c
-+++ b/drivers/net/rionet.c
-@@ -79,6 +79,7 @@ static int rionet_capable = 1;
-  * on system trade-offs.
-  */
- static struct rio_dev **rionet_active;
-+static int nact;	/* total number of active rionet peers */
- 
- #define is_rionet_capable(src_ops, dst_ops)			\
- 			((src_ops & RIO_SRC_OPS_DATA_MSG) &&	\
-@@ -175,6 +176,7 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	struct ethhdr *eth = (struct ethhdr *)skb->data;
- 	u16 destid;
- 	unsigned long flags;
-+	int add_num = 1;
- 
- 	local_irq_save(flags);
- 	if (!spin_trylock(&rnet->tx_lock)) {
-@@ -182,7 +184,10 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- 		return NETDEV_TX_LOCKED;
- 	}
- 
--	if ((rnet->tx_cnt + 1) > RIONET_TX_RING_SIZE) {
-+	if (is_multicast_ether_addr(eth->h_dest))
-+		add_num = nact;
-+
-+	if ((rnet->tx_cnt + add_num) > RIONET_TX_RING_SIZE) {
- 		netif_stop_queue(ndev);
- 		spin_unlock_irqrestore(&rnet->tx_lock, flags);
- 		printk(KERN_ERR "%s: BUG! Tx Ring full when queue awake!\n",
-@@ -191,11 +196,16 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	}
- 
- 	if (is_multicast_ether_addr(eth->h_dest)) {
-+		int count = 0;
- 		for (i = 0; i < RIO_MAX_ROUTE_ENTRIES(rnet->mport->sys_size);
- 				i++)
--			if (rionet_active[i])
-+			if (rionet_active[i]) {
- 				rionet_queue_tx_msg(skb, ndev,
- 						    rionet_active[i]);
-+				if (count)
-+					atomic_inc(&skb->users);
-+				count++;
-+			}
- 	} else if (RIONET_MAC_MATCH(eth->h_dest)) {
- 		destid = RIONET_GET_DESTID(eth->h_dest);
- 		if (rionet_active[destid])
-@@ -220,14 +230,17 @@ static void rionet_dbell_event(struct rio_mport *mport, void *dev_id, u16 sid, u
- 	if (info == RIONET_DOORBELL_JOIN) {
- 		if (!rionet_active[sid]) {
- 			list_for_each_entry(peer, &rionet_peers, node) {
--				if (peer->rdev->destid == sid)
-+				if (peer->rdev->destid == sid) {
- 					rionet_active[sid] = peer->rdev;
-+					nact++;
-+				}
- 			}
- 			rio_mport_send_doorbell(mport, sid,
- 						RIONET_DOORBELL_JOIN);
- 		}
- 	} else if (info == RIONET_DOORBELL_LEAVE) {
- 		rionet_active[sid] = NULL;
-+		nact--;
- 	} else {
- 		if (netif_msg_intr(rnet))
- 			printk(KERN_WARNING "%s: unhandled doorbell\n",
-@@ -523,6 +536,7 @@ static int rionet_probe(struct rio_dev *rdev, const struct rio_device_id *id)
- 
- 		rc = rionet_setup_netdev(rdev->net->hport, ndev);
- 		rionet_check = 1;
-+		nact = 0;
- 	}
- 
- 	/*
+Because it hurts my head and it's better to keep things simple.  We're
+planning to retire .use_hierarhcy in sub hierarchies and I'd really
+like to prevent another fiasco like that unless there absolutely is no
+way around it.  Flexibility where necessary is fine but let's please
+try our best to avoid over-designing things.  We've been far too good
+at getting lost in flexbility maze.  Michal, care to chime in?
+
+Thanks.
+
 -- 
-1.7.8.4
-
+tejun
