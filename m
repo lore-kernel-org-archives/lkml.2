@@ -1,82 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab2IZRzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:55:38 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33668 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757192Ab2IZRzh (ORCPT
+	id S1757902Ab2IZRzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 13:55:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46832 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757794Ab2IZRzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:55:37 -0400
+	Wed, 26 Sep 2012 13:55:40 -0400
+Date: Wed, 26 Sep 2012 12:55:34 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-security-module@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/14] userns: On ia64 deal with current_uid and
+ current_gid being kuid and kgid
+Message-ID: <20120926175534.GD30620@sergelap>
+References: <87k3vote43.fsf@xmission.com>
+ <1348187330-6616-1-git-send-email-ebiederm@xmission.com>
+ <1348187330-6616-13-git-send-email-ebiederm@xmission.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOh2x=nnUxJ4bvro_Rc95jRk7SR_yzxwZhNXeL4w5xDzsDj3nQ@mail.gmail.com>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348663237-3237-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x=nnUxJ4bvro_Rc95jRk7SR_yzxwZhNXeL4w5xDzsDj3nQ@mail.gmail.com>
-Date: Wed, 26 Sep 2012 20:55:36 +0300
-Message-ID: <CAHp75VcGQ9jCpGb2jhCEX4NsbUsR0aytwd1AMkt4GpTXYVPnwQ@mail.gmail.com>
-Subject: Re: [PATCHv2 2/4] dmaengine: dw_dmac: Add PCI part of the driver
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348187330-6616-13-git-send-email-ebiederm@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 5:33 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
-> Forgot earlier, please keep spear-devel in cc... They will be going to
-> use dw_dmac driver :)
-Oh, my bad. v3 will be Cc'ed there as well. Sorry.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> 
+> These ia64 uses of current_uid and current_gid slipped through the
+> cracks when I was converting everything to kuids and kgids convert
+> them now.
+> 
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
 
-> On Wed, Sep 26, 2012 at 6:10 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
->> diff --git a/drivers/dma/dw_dmac_pci.c b/drivers/dma/dw_dmac_pci.c
->> +#include <linux/module.h>
->> +#include <linux/pci.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/dw_dmac.h>
->> +
->> +#define DRIVER(_is_private, _chan_order, _chan_pri)            \
->> +       ((kernel_ulong_t)&(struct dw_dma_platform_data) {       \
->> +               .is_private = (_is_private),                    \
->> +               .chan_allocation_order = (_chan_order),         \
->> +               .chan_priority = (_chan_pri),                   \
->
-> I believe you don't need these braces around input variables on right side
-> of "=". Even if there is something complex passed.
-Hmm... Have no idea if anyone will use robust stuff as a parameter to
-that macro. I could remove them.
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
->
-> Did you try to align "\"? Sorry can't see it in gmail :(
-I checked - I have tabular indentation, that's why you see them at
-different columns. In vi they look pretty well formated.
-
-[snip]
-
->> +       pd = platform_device_alloc("dw_dmac", instance);
->> +       if (!pd) {
->> +               dev_err(&pdev->dev, "can't allocate dw_dmac platform device\n");
->> +               ret = -ENOMEM;
->> +               goto err0;
->> +       }
->
-> Is this the correct approach? I doubt... We are creating a platform
-> device from a
-> pci driver... Don't know if it can lead to some issues within kernel.
->
-> Lets call the specialist for his comments  :)
-> @Arnd: Can you please help us here?
-This approach is used among different drivers in kernel. As first
-example that comes to my mind you could consider chipidea USB driver
-(drivers/usb/chipidea).
-
-
--- 
-With Best Regards,
-Andy Shevchenko
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  arch/ia64/kernel/mca_drv.c |    3 ++-
+>  arch/ia64/kernel/perfmon.c |   32 ++++++++++++++++----------------
+>  arch/ia64/kernel/signal.c  |    4 ++--
+>  3 files changed, 20 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/ia64/kernel/mca_drv.c b/arch/ia64/kernel/mca_drv.c
+> index 1c2e894..9392e02 100644
+> --- a/arch/ia64/kernel/mca_drv.c
+> +++ b/arch/ia64/kernel/mca_drv.c
+> @@ -158,7 +158,8 @@ mca_handler_bh(unsigned long paddr, void *iip, unsigned long ipsr)
+>  	ia64_mlogbuf_dump();
+>  	printk(KERN_ERR "OS_MCA: process [cpu %d, pid: %d, uid: %d, "
+>  		"iip: %p, psr: 0x%lx,paddr: 0x%lx](%s) encounters MCA.\n",
+> -	       raw_smp_processor_id(), current->pid, current_uid(),
+> +	       raw_smp_processor_id(), current->pid,
+> +		from_kuid(&init_user_ns, current_uid()),
+>  		iip, ipsr, paddr, current->comm);
+>  
+>  	spin_lock(&mca_bh_lock);
+> diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+> index 3fa4bc5..5a5c222 100644
+> --- a/arch/ia64/kernel/perfmon.c
+> +++ b/arch/ia64/kernel/perfmon.c
+> @@ -2380,8 +2380,8 @@ static int
+>  pfm_bad_permissions(struct task_struct *task)
+>  {
+>  	const struct cred *tcred;
+> -	uid_t uid = current_uid();
+> -	gid_t gid = current_gid();
+> +	kuid_t uid = current_uid();
+> +	kgid_t gid = current_gid();
+>  	int ret;
+>  
+>  	rcu_read_lock();
+> @@ -2389,20 +2389,20 @@ pfm_bad_permissions(struct task_struct *task)
+>  
+>  	/* inspired by ptrace_attach() */
+>  	DPRINT(("cur: uid=%d gid=%d task: euid=%d suid=%d uid=%d egid=%d sgid=%d\n",
+> -		uid,
+> -		gid,
+> -		tcred->euid,
+> -		tcred->suid,
+> -		tcred->uid,
+> -		tcred->egid,
+> -		tcred->sgid));
+> -
+> -	ret = ((uid != tcred->euid)
+> -	       || (uid != tcred->suid)
+> -	       || (uid != tcred->uid)
+> -	       || (gid != tcred->egid)
+> -	       || (gid != tcred->sgid)
+> -	       || (gid != tcred->gid)) && !capable(CAP_SYS_PTRACE);
+> +		from_kuid(&init_user_ns, uid),
+> +		from_kgid(&init_user_ns, gid),
+> +		from_kuid(&init_user_ns, tcred->euid),
+> +		from_kuid(&init_user_ns, tcred->suid),
+> +		from_kuid(&init_user_ns, tcred->uid),
+> +		from_kgid(&init_user_ns, tcred->egid),
+> +		from_kgid(&init_user_ns, tcred->sgid)));
+> +
+> +	ret = ((!uid_eq(uid, tcred->euid))
+> +	       || (!uid_eq(uid, tcred->suid))
+> +	       || (!uid_eq(uid, tcred->uid))
+> +	       || (!gid_eq(gid, tcred->egid))
+> +	       || (!gid_eq(gid, tcred->sgid))
+> +	       || (!gid_eq(gid, tcred->gid))) && !capable(CAP_SYS_PTRACE);
+>  
+>  	rcu_read_unlock();
+>  	return ret;
+> diff --git a/arch/ia64/kernel/signal.c b/arch/ia64/kernel/signal.c
+> index a199be1..37dd795 100644
+> --- a/arch/ia64/kernel/signal.c
+> +++ b/arch/ia64/kernel/signal.c
+> @@ -220,7 +220,7 @@ ia64_rt_sigreturn (struct sigscratch *scr)
+>  	si.si_errno = 0;
+>  	si.si_code = SI_KERNEL;
+>  	si.si_pid = task_pid_vnr(current);
+> -	si.si_uid = current_uid();
+> +	si.si_uid = from_kuid_munged(current_user_ns(), current_uid());
+>  	si.si_addr = sc;
+>  	force_sig_info(SIGSEGV, &si, current);
+>  	return retval;
+> @@ -317,7 +317,7 @@ force_sigsegv_info (int sig, void __user *addr)
+>  	si.si_errno = 0;
+>  	si.si_code = SI_KERNEL;
+>  	si.si_pid = task_pid_vnr(current);
+> -	si.si_uid = current_uid();
+> +	si.si_uid = from_kuid_munged(current_user_ns(), current_uid());
+>  	si.si_addr = addr;
+>  	force_sig_info(SIGSEGV, &si, current);
+>  	return 0;
+> -- 
+> 1.7.5.4
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
