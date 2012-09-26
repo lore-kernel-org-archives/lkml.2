@@ -1,143 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab2IZQ6A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 12:58:00 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59070 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757402Ab2IZQ56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 12:57:58 -0400
-Message-ID: <1348678677.15175.18.camel@joe-AO722>
-Subject: Re: [PATCH] drivers: phy: add generic PHY framework
-From: Joe Perches <joe@perches.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: akpm@linux-foundation.org, davem@davemloft.net, santosh.shilimkar@ti.com,
-        grant.likely@secretlab.ca, balbi@ti.com, arnd@arndb.de,
-        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        robherring2@gmail.com, richard.zhao@freescale.com,
-        B29397@freescale.com, alexander.shishkin@linux.intel.com,
-        mkl@pengutronix.de, marex@denx.de, p.paneri@samsung.com,
-        devicetree-discuss@lists.ozlabs.org,
-        broonie@opensource.wolfsonmicro.com
-Date: Wed, 26 Sep 2012 09:57:57 -0700
-In-Reply-To: <1348671675-20830-1-git-send-email-kishon@ti.com>
-References: <1348671675-20830-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757493Ab2IZQ6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 12:58:35 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:47148 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757397Ab2IZQ6a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 12:58:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1348194419-11486-2-git-send-email-sboyd@codeaurora.org>
+References: <1348194419-11486-1-git-send-email-sboyd@codeaurora.org>
+	<1348194419-11486-2-git-send-email-sboyd@codeaurora.org>
+Date: Wed, 26 Sep 2012 22:28:29 +0530
+Message-ID: <CADTbHxoFeYWPJpYTN85kBeF=kv2v1yDioJW-upzn1RcwVT_sKw@mail.gmail.com>
+Subject: Re: [PATCH 01/10] usb: otg: msm: Convert to clk_prepare/unprepare
+From: Pankaj Jangra <jangra.pankaj9@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-26 at 20:31 +0530, Kishon Vijay Abraham I wrote:
-> The PHY framework provides a set of API's for the PHY drivers to
-> create/destroy a PHY and API's 
+Hi..
 
-Just some trivial notes.
+On Fri, Sep 21, 2012 at 7:56 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> Add calls to clk_prepare and unprepare so that MSM can migrate to
+> the common clock framework.
+>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/usb/otg/msm_otg.c | 38 +++++++++++++++++++-------------------
+>  1 file changed, 19 insertions(+), 19 deletions(-)
+>
+> diff --git a/drivers/usb/otg/msm_otg.c b/drivers/usb/otg/msm_otg.c
+> index 9f5fc90..2ae0639 100644
+> --- a/drivers/usb/otg/msm_otg.c
+> +++ b/drivers/usb/otg/msm_otg.c
+> @@ -514,13 +514,13 @@ static int msm_otg_suspend(struct msm_otg *motg)
+>                         motg->pdata->otg_control == OTG_PMIC_CONTROL)
+>                 writel(readl(USB_PHY_CTRL) | PHY_RETEN, USB_PHY_CTRL);
+>
+> -       clk_disable(motg->pclk);
+> -       clk_disable(motg->clk);
+> +       clk_disable_unprepare(motg->pclk);
+> +       clk_disable_unprepare(motg->clk);
+>         if (motg->core_clk)
+> -               clk_disable(motg->core_clk);
+> +               clk_disable_unprepare(motg->core_clk);
+>
+I was under assumption that system suspend/resume might be called from
+the interrupt context. If that is case then its not appropriate to
+call clk_prepare/unprepare here right? or my understanding is not correct????
 
-> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-[]
-> @@ -0,0 +1,445 @@
-[]
-> +static void devm_phy_release(struct device *dev, void *res)
-> +{
-> +	struct phy *phy = *(struct phy **)res;
-
-That's a bit twisted isn't it?
-Perhaps
-	struct phy *phy = res;
-
-[]
-
-> +static int devm_phy_match(struct device *dev, void *res, void *match_data)
-> +{
-> +	return res == match_data;
-
-static bool devm_phy_match(etc...)
-
-[]
-
-> +struct phy *devm_of_phy_get(struct device *dev, const char *phandle, u8 index)
-> +{
-> +	struct phy *phy = NULL, **ptr;
-> +	struct device_node *node;
-> +
-> +	if (!dev->of_node) {
-> +		dev_dbg(dev, "device does not have a device node entry\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
-> +	node = of_parse_phandle(dev->of_node, phandle, index);
-> +	if (!node) {
-> +		dev_dbg(dev, "failed to get %s phandle in %s node\n", phandle,
-> +			dev->of_node->full_name);
-> +		return ERR_PTR(-ENODEV);
-> +	}
-> +
-> +	ptr = devres_alloc(devm_phy_release, sizeof(*ptr), GFP_KERNEL);
-
-Is this the right size?
-
-Because ptr is **, perhaps sizeof(struct phy) is clearer.
-
-> +	if (!ptr) {
-> +		dev_dbg(dev, "failed to allocate memory for devres\n");
-
-alloc failures generally don't need specific OOM messages
-as the general alloc OOM dumps stack.
-
-> +		return ERR_PTR(-ENOMEM);
-> +	}
-> +
-> +	mutex_lock(&phy_list_mutex);
-> +
-> +	phy = of_phy_lookup(dev, node);
-> +	if (IS_ERR(phy) || !phy->dev.class ||
-> +			!try_module_get(phy->dev.class->owner)) {
-
-I think it's tasteful coding style to align like:
-
-	if (IS_ERR(phy) || !phy->dev.class ||
-	    !try_module_get(phy->dev.class->owner)) {
-[]
-
-> +struct phy *phy_create(struct device *dev, struct phy_descriptor *desc)
-> +{
-> +	int ret;
-> +	struct phy *phy;
-> +	struct phy_bind *phy_bind;
-> +	const char *devname = NULL;
-> +
-> +	if (!dev || !desc) {
-> +		dev_err(dev, "no descriptor/device provided for PHY\n");
-> +		ret = -EINVAL;
-> +		goto err0;
-> +	}
-> +
-> +	if (!desc->ops) {
-> +		dev_err(dev, "no PHY ops provided\n");
-> +		ret = -EINVAL;
-> +		goto err0;
-> +	}
-> +
-> +	phy = kzalloc(sizeof(*phy), GFP_KERNEL);
-> +	if (!phy) {
-> +		dev_err(dev, "no memory for PHY\n");
-
-No OOM message required...
-
-[]
-
-> +static int __init phy_core_init(void)
-> +{
-> +	phy_class = class_create(THIS_MODULE, "phy");
-> +	if (IS_ERR(phy_class)) {
-> +		pr_err("failed to create phy class --> %ld\n",
-> +			PTR_ERR(phy_class));
-
-You might add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-before any include so that pr_<levels> are prefixed.
-
-cheers, Joe
-
+--
+Pankaj Jangra
