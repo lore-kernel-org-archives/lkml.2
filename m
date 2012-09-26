@@ -1,91 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069Ab2IZQPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 12:15:50 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:49446 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab2IZQPp (ORCPT
+	id S1757026Ab2IZQT7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 12:19:59 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58169 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754333Ab2IZQT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 12:15:45 -0400
-Date: Wed, 26 Sep 2012 12:15:46 -0400
-From: Matt Porter <mporter@ti.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tony Lindgren <tony@atomide.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        List List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: replacement for /sys/kernel/debug/omap_mux in DT/pinctrl land ?
-Message-ID: <20120926161546.GC5641@beef>
-References: <D7202A6C-5250-4B55-B3B8-FF15BCCA97AC@dominion.thruhere.net>
- <20120926125658.GA5641@beef>
- <CACRpkdYqVC4Vou+0Mn1OmQg8vPxDULDcFDD0yV5nassqkE1Zag@mail.gmail.com>
+	Wed, 26 Sep 2012 12:19:58 -0400
+Date: Wed, 26 Sep 2012 12:19:56 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        David Laight <David.Laight@ACULAB.COM>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, neilb@suse.de, bfields@fieldses.org,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        josh@joshtriplett.org, rmallon@gmail.com, palves@redhat.com
+Subject: Re: [PATCH v6] hashtable: introduce a small and naive hashtable
+Message-ID: <20120926161956.GB28648@Krystal>
+References: <1348663729-2584-1-git-send-email-levinsasha928@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B7008@saturn3.aculab.com> <1348667992.22822.50.camel@gandalf.local.home> <506310AA.2050700@gmail.com> <20120926143905.GB22699@Krystal> <1348675764.22822.56.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdYqVC4Vou+0Mn1OmQg8vPxDULDcFDD0yV5nassqkE1Zag@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1348675764.22822.56.camel@gandalf.local.home>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 03:03:27PM +0200, Linus Walleij wrote:
-> On Wed, Sep 26, 2012 at 2:56 PM, Matt Porter <mporter@ti.com> wrote:
-> > Adding Linus W. and lkml.
-> > On Wed, Sep 26, 2012 at 01:46:45PM +0200, Koen Kooi wrote:
-> >> Hi,
-> >>
-> >> With a patched 3.6rc7 on my beaglebone I can set the pinmux for pins using pinctrl and that seems to work. On the 3.2 vendor tree there was the omap_mux driver with an awesome debugfs interface:
-> >>
-> >> # cat /sys/kernel/debug/omap_mux/lcd_data0
-> >> name: lcd_data0.ehrpwm2A (0x44e108a0/0x8a0 = 0x0003), b NA, t NA
-> >> mode: OMAP_PIN_OUTPUT | OMAP_MUX_MODE3
-> >> signals: lcd_data0 | gpmc_a0 | pr1_mii_mt0_clk | ehrpwm2A | NA | pr1_pru1_pru_r30_0 | pr1_pru1_pru_r31_0 | gpio2_6
-> >>
-> >> Notice how it tells me that it's muxed the PWM in 2 ways: signal name (ehrpwm2A) and register content (0x0003). Compare to pinctrl:
-> >>
-> >> root@bone-mainline:/sys/kernel/debug/pinctrl/44e10800.pinmux# grep 8a0 *
-> >> pinconf-pins:pin 40 (44e108a0):
-> >> pingroups:pin 40 (44e108a0)
-> >> pinmux-pins:pin 40 (44e108a0): 4a300000.pruss (GPIO UNCLAIMED) function pinmux_pruss_led_pins group pinmux_pruss_led_pins
-> >> pins:pin 40 (44e108a0)  pinctrl-single
-> >>
-> >> What is that pin muxed to? It is part of the 'pinmux_pruss_led_pins' in the DT, but debugfs remains mute on how pin 40 is muxed.
-> >
-> > It does seem like a pretty big gap in the pinctrl/pinmux debugfs
-> > interface when viewed from an OMAP perspective. Ideally there would
-> > be a pinctrl/pinmux hook to the pinmux driver to provide the detailed
-> > h/w specific pin state info.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Wed, 2012-09-26 at 10:39 -0400, Mathieu Desnoyers wrote:
+> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+> > > On 09/26/2012 03:59 PM, Steven Rostedt wrote:
+> > > > On Wed, 2012-09-26 at 14:45 +0100, David Laight wrote:
+> > > >> Amazing how something simple gets lots of comments and versions :-)
+> > > >>
+> > > >>> ...
+> > > >>> + * This has to be a macro since HASH_BITS() will not work on pointers since
+> > > >>> + * it calculates the size during preprocessing.
+> > > >>> + */
+> > > >>> +#define hash_empty(hashtable)							\
+> > > >>> +({										\
+> > > >>> +	int __i;								\
+> > > >>> +	bool __ret = true;							\
+> > > >>> +										\
+> > > >>> +	for (__i = 0; __i < HASH_SIZE(hashtable); __i++)			\
+> > > >>> +		if (!hlist_empty(&hashtable[__i]))				\
+> > > >>> +			__ret = false;						\
+> > > >>> +										\
+> > > >>> +	__ret;									\
+> > > >>> +})
+> > > >>
+> > > >> Actually you could have a #define that calls a function
+> > > >> passing in the address and size.
+> > > > 
+> > > > Probably would be cleaner to do so.
+> > > 
+> > > I think it's worth it if it was more complex than a simple loop. We
+> > > were doing a similar thing with the _size() functions (see version 4
+> > > of this patch), but decided to remove it since it was becoming too
+> > > complex.
+> > 
+> > Defining local variables within statement-expressions can have some
+> > unexpected side-effects if the "caller" which embeds the macro use the
+> > same variable name. See rcu_dereference() as an example (Paul uses an
+> > awefully large number of underscores). It should be avoided whenever
+> > possible.
+> > 
+> > > > 
+> > > > 
+> > > >> Also, should the loop have a 'break' in it?
+> > > > 
+> > > > Yeah it should, and could do:
+> > > > 
+> > > > 	for (i = 0; i < HASH_SIZE(hashtable); i++)
+> > > > 		if (!hlist_empty(&hashtable[i]))
+> > > > 			break;
+> > > > 
+> > > > 	return i < HASH_SIZE(hashtable);
+> > 
+> > 
+> > Hrm, Steven, did you drink you morning coffee before writing this ? ;-)
+> > It looks like you did 2 bugs in 4 LOC.
 > 
-> So add the hooks you need?
- 
-Ok. :)
+> Coffee yes, but head cold as well. :-p
+> 
+> > 
+> > First, the condition should be reversed, because this function returns
+> > whether the hash is empty, not the other way around.
+> 
+> Bah, I was looking at the code the code and got the ret confused. I
+> originally had it the opposite, and then reversed it before sending.
+> 
+> > 
+> > And even then, if we would do:
+> > 
+> >  	for (i = 0; i < HASH_SIZE(hashtable); i++)
+> >  		if (!hlist_empty(&hashtable[i]))
+> >  			break;
+> >  
+> >  	return i >= HASH_SIZE(hashtable);
+> > 
+> > What happens if the last entry of the table is non-empty ?
+> 
+> It still works, as 'i' is not incremented due to the break. And i will
+> still be less than HASH_SIZE(hashtable). Did you have *your* cup of
+> coffee today? ;-)
 
-> I assume you are using Tony's pinctrl-single driver, so Tony is the one to ask.
+Ahh, right! Actually I had it already ;-)
 
-Yes, so roughly for pinctrl-single I have the following...likely broken
-for arbitrary register sizes but a starting point. Tony, any thoughts
-about this?
+> 
+> 
+> > 
+> > So I would advise that Sasha keep his original flag-based
+> > implementation, but add the missing break, and move the init and empty
+> > define loops into static inlines.
+> > 
+> 
+> Nah,
 
-Koen: you just need a userspace tool that groks the raw data for human
-consumption. The nice thing is that the old omap_mux implementation had
-plenty of OMAP-isms in the parser that didn't apply to AM33xx. A
-userspace tool can do a better job of parsing on a per-part basis.
+Agreed that the flags should be removed. Moving to define + static
+inline is still important though.
 
---- a/drivers/pinctrl/pinctrl-single.c
-+++ b/drivers/pinctrl/pinctrl-single.c
-@@ -246,7 +246,15 @@ static void pcs_pin_dbg_show(struct pinctrl_dev *pctldev,
- 					struct seq_file *s,
- 					unsigned offset)
- {
--	seq_printf(s, " " DRIVER_NAME);
-+	struct pcs_device *pcs;
-+	unsigned val;
-+
-+	pcs = pinctrl_dev_get_drvdata(pctldev);
-+
-+	val = pcs->read(pcs->base + offset);
-+	val &= pcs->fmask;
-+
-+	seq_printf(s, "%08x %s " , val, DRIVER_NAME);
- }
- 
- static void pcs_dt_free_map(struct pinctrl_dev *pctldev,
+Thanks,
+
+Mathieu
+
+
+> 
+> -- Steve
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
