@@ -1,69 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab2IZAno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 20:43:44 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:56018 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab2IZAnm (ORCPT
+	id S1754375Ab2IZAqZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 20:46:25 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63481 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab2IZAqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 20:43:42 -0400
-X-AuditID: cbfee61a-b7f726d000000ec7-00-50624fb85b38
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Durgadoss R <durgadoss.r@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Amit Dinel Kachhap <amit.kachhap@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH] Thermal: Fix bug on cpu_cooling,
- cooling device's id conflict problem.
-Date: Wed, 26 Sep 2012 09:43:31 +0900
-Message-id: <1348620211-1409-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPJMWRmVeSWpSXmKPExsVy+t9jAd0d/kkBBqeO6Ftc3jWHzeJz7xFG
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJ6m0+yF3zjrJi+4yZTA+MCji5GTg4JAROJC2v2M0PY
-	YhIX7q1n62Lk4hASWMQosa5lGiuE08Ik0fphOxNIFZuAjsT/fTfZQWwRARmJqVf2gxUxC7Qx
-	Sfy91sTSxcjBISwQKfF0sQ1IDYuAqkTD9W9g9bwC7hKNc5sZIbYpSCy495ZtAiP3AkaGVYyi
-	qQXJBcVJ6bmGesWJucWleel6yfm5mxjB3nwmtYNxZYPFIUYBDkYlHt6GX4kBQqyJZcWVuYcY
-	JTiYlUR4jZ8DhXhTEiurUovy44tKc1KLDzFKc7AoifMKfwoMEBJITyxJzU5NLUgtgskycXBK
-	NTDOev0lPE+n88sukdc+c1mY81aIre/4/5p7XfyWoCuyXHOlpF8f5zPJmPn32UKmb9Ev/tpt
-	nyTG25Y72Y8z+PuTA+G97mJt39jtElq4hYx//Lj9kvtp5TGJbyc7nfW07FNKt6/5zcbLoz7l
-	OseSCstIKTu+Wf8MlqS3MUR8cNipKPzUZ41v0hYlluKMREMt5qLiRACfRdNu4gEAAA==
+	Tue, 25 Sep 2012 20:46:24 -0400
+X-AuditID: 9c93016f-b7c19ae000000e6d-35-5062505dea3e
+Date: Wed, 26 Sep 2012 09:49:30 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] mm: compaction: Cache if a pageblock was scanned and
+ no pages were isolated
+Message-ID: <20120926004930.GA10229@bbox>
+References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
+ <1348224383-1499-9-git-send-email-mgorman@suse.de>
+ <20120921143656.60a9a6cd.akpm@linux-foundation.org>
+ <20120924093938.GZ11266@suse.de>
+ <20120924142644.06c38b80.akpm@linux-foundation.org>
+ <20120925091207.GD11266@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120925091207.GD11266@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes small bug on cpu_cooling. CPU cooling device has own
-id generated with idr mathod. However in the previous version, it swapped
-to all same id at last stage of probing as 0. This makes id's collision and
-also occures error when it releases that id.
+On Tue, Sep 25, 2012 at 10:12:07AM +0100, Mel Gorman wrote:
+> On Mon, Sep 24, 2012 at 02:26:44PM -0700, Andrew Morton wrote:
+> > On Mon, 24 Sep 2012 10:39:38 +0100
+> > Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> > > On Fri, Sep 21, 2012 at 02:36:56PM -0700, Andrew Morton wrote:
+> > > 
+> > > > Also, what has to be done to avoid the polling altogether?  eg/ie, zap
+> > > > a pageblock's PB_migrate_skip synchronously, when something was done to
+> > > > that pageblock which justifies repolling it?
+> > > > 
+> > > 
+> > > The "something" event you are looking for is pages being freed or
+> > > allocated in the page allocator. A movable page being allocated in block
+> > > or a page being freed should clear the PB_migrate_skip bit if it's set.
+> > > Unfortunately this would impact the fast path of the alloc and free paths
+> > > of the page allocator. I felt that that was too high a price to pay.
+> > 
+> > We already do a similar thing in the page allocator: clearing of
+> > ->all_unreclaimable and ->pages_scanned. 
+> 
+> That is true but that is a simple write (shared cache line but still) to
+> a struct zone. Worse, now that you point it out, that's pretty stupid. It
+> should be checking if the value is non-zero before writing to it to avoid
+> a cache line bounce.
+> 
+> Clearing the PG_migrate_skip in this path to avoid the need to ever pool is
+> not as cheap as it needs to
+> 
+> set_pageblock_skip
+>   -> set_pageblock_flags_group
+>     -> page_zone
+>     -> page_to_pfn
+>     -> get_pageblock_bitmap
+>     -> pfn_to_bitidx
+>     -> __set_bit
+> 
+> > But that isn't on the "fast
+> > path" really - it happens once per pcp unload. 
+> 
+> That's still an important enough path that I'm wary of making it fatter
+> and that only covers the free path. To avoid the polling, the allocation
+> side needs to be handled too. It could be shoved down into rmqueue() to
+> put it into a slightly colder path but still, it's a price to pay to keep
+> compaction happy.
+> 
+> > Can we do something
+> > like that?  Drop some hint into the zone without having to visit each
+> > page?
+> > 
+> 
+> Not without incurring a cost, but yes, t is possible to give a hint on when
+> PG_migrate_skip should be cleared and move away from that time-based hammer.
+> 
+> First, we'd introduce a variant of get_pageblock_migratetype() that returns
+> all the bits for the pageblock flags and then helpers to extract either the
+> migratetype or the PG_migrate_skip. We already are incurring the cost of
+> get_pageblock_migratetype() so it will not be much more expensive than what
+> is already there. If there is an allocation or free within a pageblock that
+> as the PG_migrate_skip bit set then we increment a counter. When the counter
+> reaches some to-be-decided "threshold" then compaction may clear all the
+> bits. This would match the criteria of the clearing being based on activity.
+> 
+> There are four potential problems with this
+> 
+> 1. The logic to retrieve all the bits and split them up will be a little
+>    convulated but maybe it would not be that bad.
+> 
+> 2. The counter is a shared-writable cache line but obviously it could
+>    be moved to vmstat and incremented with inc_zone_page_state to offset
+>    the cost a little.
+> 
+> 3. The biggested weakness is that there is not way to know if the
+>    counter is incremented based on activity in a small subset of blocks.
+> 
+> 4. What should the threshold be?
+> 
+> The first problem is minor but the other three are potentially a mess.
+> Adding another vmstat counter is bad enough in itself but if the counter
+> is incremented based on a small subsets of pageblocks, the hint becomes
+> is potentially useless.
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
----
- drivers/thermal/cpu_cooling.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Another idea is that we can add two bits(PG_check_migrate/PG_check_free)
+in pageblock_flags_group.
+In allocation path, we can set PG_check_migrate in a pageblock
+In free path, we can set PG_check_free in a pageblock.
+And they are cleared by compaction's scan like now.
+So we can discard 3 and 4 at least.
 
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index 99a5d75..9050c1b 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -351,7 +351,7 @@ struct thermal_cooling_device *cpufreq_cooling_register(
- 	struct cpufreq_cooling_device *cpufreq_dev = NULL;
- 	unsigned int cpufreq_dev_count = 0, min = 0, max = 0;
- 	char dev_name[THERMAL_NAME_LENGTH];
--	int ret = 0, id = 0, i;
-+	int ret = 0, i;
- 	struct cpufreq_policy policy;
- 
- 	list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node)
-@@ -396,7 +396,6 @@ struct thermal_cooling_device *cpufreq_cooling_register(
- 		kfree(cpufreq_dev);
- 		return ERR_PTR(-EINVAL);
- 	}
--	cpufreq_dev->id = id;
- 	cpufreq_dev->cool_dev = cool_dev;
- 	cpufreq_dev->cpufreq_state = 0;
- 	mutex_lock(&cooling_cpufreq_lock);
+Another idea is that let's cure it by fixing fundamental problem.
+Make zone's locks more fine-grained.
+As time goes by, system uses bigger memory but our lock of zone
+isn't scalable. Recently, lru_lock and zone->lock contention report
+isn't rare so i think it's good time that we move next step.
+
+How about defining struct sub_zone per 2G or 4G?
+so a zone can have several sub_zone as size and subzone can replace
+current zone's role and zone is just container of subzones.
+Of course, it's not easy to implement but I think someday we should
+go that way. Is it a really overkill?
+
+> 
+> However, does this match what you have in mind or am I over-complicating
+> things?
+> 
+> > > > >
+> > > > > ...
+> > > > >
+> > > > > +static void reset_isolation_suitable(struct zone *zone)
+> > > > > +{
+> > > > > +	unsigned long start_pfn = zone->zone_start_pfn;
+> > > > > +	unsigned long end_pfn = zone->zone_start_pfn + zone->spanned_pages;
+> > > > > +	unsigned long pfn;
+> > > > > +
+> > > > > +	/*
+> > > > > +	 * Do not reset more than once every five seconds. If allocations are
+> > > > > +	 * failing sufficiently quickly to allow this to happen then continually
+> > > > > +	 * scanning for compaction is not going to help. The choice of five
+> > > > > +	 * seconds is arbitrary but will mitigate excessive scanning.
+> > > > > +	 */
+> > > > > +	if (time_before(jiffies, zone->compact_blockskip_expire))
+> > > > > +		return;
+> > > > > +	zone->compact_blockskip_expire = jiffies + (HZ * 5);
+> > > > > +
+> > > > > +	/* Walk the zone and mark every pageblock as suitable for isolation */
+> > > > > +	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
+> > > > > +		struct page *page;
+> > > > > +		if (!pfn_valid(pfn))
+> > > > > +			continue;
+> > > > > +
+> > > > > +		page = pfn_to_page(pfn);
+> > > > > +		if (zone != page_zone(page))
+> > > > > +			continue;
+> > > > > +
+> > > > > +		clear_pageblock_skip(page);
+> > > > > +	}
+> > > > 
+> > > > What's the worst-case loop count here?
+> > > > 
+> > > 
+> > > zone->spanned_pages >> pageblock_order
+> > 
+> > What's the worst-case value of (zone->spanned_pages >> pageblock_order) :)
+> 
+> Lets take an unlikely case - 128G single-node machine. That loop count
+> on x86-64 would be 65536. It'll be fast enough, particularly in this
+> path.
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.4.1
-
+Kind regards,
+Minchan Kim
