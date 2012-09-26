@@ -1,162 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2IZKRX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 06:17:23 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:32859 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab2IZKRV convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Wed, 26 Sep 2012 06:17:21 -0400
-Message-Id: <5062F267020000780009DF06@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 26 Sep 2012 11:17:43 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Tao Guo" <glorioustao@gmail.com>
-Cc: "Ingo Molnar" <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86_64: Work around old gas bug
-References: <1348648102-12653-1-git-send-email-glorioustao@gmail.com>
-In-Reply-To: <1348648102-12653-1-git-send-email-glorioustao@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754529Ab2IZKST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 06:18:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57270 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754076Ab2IZKRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 06:17:33 -0400
+Date: Wed, 26 Sep 2012 11:17:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, Richard Davies <richard@arachsys.com>,
+        Shaohua Li <shli@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Avi Kivity <avi@redhat.com>, QEMU-devel <qemu-devel@nongnu.org>,
+        KVM <kvm@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] mm: compaction: Acquire the zone->lru_lock as late
+ as possible
+Message-ID: <20120926101727.GI11266@suse.de>
+References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
+ <1348224383-1499-6-git-send-email-mgorman@suse.de>
+ <20120925070517.GK13234@bbox>
+ <20120925075105.GC11266@suse.de>
+ <20120925081327.GA7759@bbox>
+ <20120925143931.f404ca22.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <20120925143931.f404ca22.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.09.12 at 10:28, Tao Guo <glorioustao@gmail.com> wrote:
-> gas in binutils(2.16.91) could not parse parentheses within macro
-> parameters unless fully parenthesized, and this is a workaround to
-> make old gas work without generating below errors:
-> arch/x86/kernel/entry_64.S: Assembler messages:
-> arch/x86/kernel/entry_64.S:387: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:389: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:390: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:391: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:392: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:393: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:394: Error: too many positional arguments
+On Tue, Sep 25, 2012 at 02:39:31PM -0700, Andrew Morton wrote:
+> On Tue, 25 Sep 2012 17:13:27 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
 > 
-> Signed-off-by: Tao Guo <glorioustao@gmail.com>
-
-This looks okay now to me, but I'm somewhat reluctant to formally
-ack it given that we know how broken those particular gas
-versions are.
-
-Jan
-
-> ---
->  arch/x86/include/asm/calling.h |   48 +++++++++++++++++++--------------------
->  arch/x86/kernel/entry_64.S     |   20 ++++++++--------
->  2 files changed, 33 insertions(+), 35 deletions(-)
+> > I see. To me, your saying is better than current comment.
+> > I hope comment could be more explicit.
+> > 
+> > diff --git a/mm/compaction.c b/mm/compaction.c
+> > index df01b4e..f1d2cc7 100644
+> > --- a/mm/compaction.c
+> > +++ b/mm/compaction.c
+> > @@ -542,8 +542,9 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> >                  * splitting and collapsing (collapsing has already happened
+> >                  * if PageLRU is set) but the lock is not necessarily taken
+> >                  * here and it is wasteful to take it just to check transhuge.
+> > -                * Check transhuge without lock and skip if it's either a
+> > -                * transhuge or hugetlbfs page.
+> > +                * Check transhuge without lock and *skip* if it's either a
+> > +                * transhuge or hugetlbfs page because it's not safe to call
+> > +                * compound_order.
+> >                  */
+> >                 if (PageTransHuge(page)) {
+> >                         if (!locked)
 > 
-> diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-> index a9e3a74..7f8422a 100644
-> --- a/arch/x86/include/asm/calling.h
-> +++ b/arch/x86/include/asm/calling.h
-> @@ -49,38 +49,36 @@ For 32-bit we have the following conventions - kernel is 
-> built with
->  #include "dwarf2.h"
->  
->  /*
-> - * 64-bit system call stack frame layout defines and helpers, for
-> - * assembly code (note that the seemingly unnecessary parentheses
-> - * are to prevent cpp from inserting spaces in expressions that get
-> - * passed to macros):
-> + * 64-bit system call stack frame layout defines and helpers,
-> + * for assembly code:
->   */
->  
-> -#define R15		  (0)
-> -#define R14		  (8)
-> -#define R13		 (16)
-> -#define R12		 (24)
-> -#define RBP		 (32)
-> -#define RBX		 (40)
-> +#define R15		  0
-> +#define R14		  8
-> +#define R13		 16
-> +#define R12		 24
-> +#define RBP		 32
-> +#define RBX		 40
->  
->  /* arguments: interrupts/non tracing syscalls only save up to here: */
-> -#define R11		 (48)
-> -#define R10		 (56)
-> -#define R9		 (64)
-> -#define R8		 (72)
-> -#define RAX		 (80)
-> -#define RCX		 (88)
-> -#define RDX		 (96)
-> -#define RSI		(104)
-> -#define RDI		(112)
-> -#define ORIG_RAX	(120)       /* + error_code */
-> +#define R11		 48
-> +#define R10		 56
-> +#define R9		 64
-> +#define R8		 72
-> +#define RAX		 80
-> +#define RCX		 88
-> +#define RDX		 96
-> +#define RSI		104
-> +#define RDI		112
-> +#define ORIG_RAX	120       /* + error_code */
->  /* end of arguments */
->  
->  /* cpu exception frame or undefined in case of fast syscall: */
-> -#define RIP		(128)
-> -#define CS		(136)
-> -#define EFLAGS		(144)
-> -#define RSP		(152)
-> -#define SS		(160)
-> +#define RIP		128
-> +#define CS		136
-> +#define EFLAGS		144
-> +#define RSP		152
-> +#define SS		160
->  
->  #define ARGOFFSET	R11
->  #define SWFRAME		ORIG_RAX
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 69babd8..bf77e70 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -342,15 +342,15 @@ ENDPROC(native_usergs_sysret64)
->  	.macro SAVE_ARGS_IRQ
->  	cld
->  	/* start from rbp in pt_regs and jump over */
-> -	movq_cfi rdi, RDI-RBP
-> -	movq_cfi rsi, RSI-RBP
-> -	movq_cfi rdx, RDX-RBP
-> -	movq_cfi rcx, RCX-RBP
-> -	movq_cfi rax, RAX-RBP
-> -	movq_cfi  r8,  R8-RBP
-> -	movq_cfi  r9,  R9-RBP
-> -	movq_cfi r10, R10-RBP
-> -	movq_cfi r11, R11-RBP
-> +	movq_cfi rdi, (RDI-RBP)
-> +	movq_cfi rsi, (RSI-RBP)
-> +	movq_cfi rdx, (RDX-RBP)
-> +	movq_cfi rcx, (RCX-RBP)
-> +	movq_cfi rax, (RAX-RBP)
-> +	movq_cfi  r8,  (R8-RBP)
-> +	movq_cfi  r9,  (R9-RBP)
-> +	movq_cfi r10, (R10-RBP)
-> +	movq_cfi r11, (R11-RBP)
->  
->  	/* Save rbp so that we can unwind from get_irq_regs() */
->  	movq_cfi rbp, 0
-> @@ -384,7 +384,7 @@ ENDPROC(native_usergs_sysret64)
->  	.endm
->  
->  ENTRY(save_rest)
-> -	PARTIAL_FRAME 1 REST_SKIP+8
-> +	PARTIAL_FRAME 1 (REST_SKIP+8)
->  	movq 5*8+16(%rsp), %r11	/* save return address */
->  	movq_cfi rbx, RBX+16
->  	movq_cfi rbp, RBP+16
-> -- 
-> 1.7.7.6
+> Going a bit further:
+> 
+> --- a/mm/compaction.c~mm-compaction-acquire-the-zone-lru_lock-as-late-as-possible-fix
+> +++ a/mm/compaction.c
+> @@ -415,7 +415,8 @@ isolate_migratepages_range(struct zone *
+>  		 * if PageLRU is set) but the lock is not necessarily taken
+>  		 * here and it is wasteful to take it just to check transhuge.
+>  		 * Check transhuge without lock and skip if it's either a
+> -		 * transhuge or hugetlbfs page.
+> +		 * transhuge or hugetlbfs page because calling compound_order()
+> +		 * requires lru_lock to exclude isolation and splitting.
+>  		 */
+>  		if (PageTransHuge(page)) {
+>  			if (!locked)
+> _
+> 
+> but...  the requirement to hold lru_lock for compound_order() is news
+> to me.  It doesn't seem to be written down or explained anywhere, and
+> one wonders why the cheerily undocumented compound_lock() doesn't have
+> this effect.  What's going on here??
+> 
 
+The lru_lock is not *required* for compound_order(). Normally, users of
+compound_order() know that the page is not going to collapse underneath
+them. The slub allocator is not going to have a compound page it controls
+disappear unexpectedly and does not need additional locking for example.
 
+In the case where we are potentially dealing with a THP page, we have to
+take into account if it can collapse underneath us. In this case, there is a
+race between when when PageTransHuge is checked and compound_order is called.
+The race is probably harmless but it was easy to take into account in
+this case.
+
+I think the comment saying that lru_lock is required is misleading. How
+about this?
+
+                 * Check TransHuge without lock and skip the whole
+                 * pageblock if it's either a transhuge or hugetlbfs page
+		 * as calling compound_order without preventing THP
+		 * splitting the page underneath us may return
+		 * surprising results.
+
+-- 
+Mel Gorman
+SUSE Labs
