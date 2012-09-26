@@ -1,190 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab2IZHNY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 03:13:24 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:60861 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab2IZHNW convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Wed, 26 Sep 2012 03:13:22 -0400
-Message-Id: <5062C748020000780009DE21@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 26 Sep 2012 08:13:44 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Tao Guo" <glorioustao@gmail.com>
-Cc: "Ingo Molnar" <mingo@elte.hu>, <stable@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86_64: Work around old gas bug
-References: <1348640118-26717-1-git-send-email-glorioustao@gmail.com>
-In-Reply-To: <1348640118-26717-1-git-send-email-glorioustao@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1752926Ab2IZH3Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 03:29:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41447 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab2IZH3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 03:29:22 -0400
+Date: Wed, 26 Sep 2012 00:29:16 -0700
+From: Steven Noonan <steven@uplinklabs.net>
+To: linux-kernel@vger.kernel.org, Seth Heasley <seth.heasley@intel.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [BISECTED] snd-hda-intel audio distortion in Linus' current tree
+Message-ID: <20120926072916.GA2654@croesus.uplinklabs.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.09.12 at 08:15, Tao Guo <glorioustao@gmail.com> wrote:
-> gas in binutils(2.16.91) could not parse parentheses within macro
-> parameters,
+Started having audio problems when trying out the latest tree
+(v3.6-rc7-10-g56d27ad). When playing any kind of audio, there was
+significant distortion, mostly crackling noise. I'm using a Lenovo
+ThinkPad X230 (Panther Point).
 
-This description of yours contradicts the last hunk of the patch -
-iirc the requirement for macro parameters in those old gas
-versions is to be fully parenthesized if there's any blank inside
-(which could possibly not even be present in source code, but
-get inserted by the C preprocessor).
+I did a git-bisect to locate the problem, and it seems this commit is to
+blame:
 
-> and this is a workaround to make old gas work without
-> generating below errors:
-> arch/x86/kernel/entry_64.S: Assembler messages:
-> arch/x86/kernel/entry_64.S:387: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:389: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:390: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:391: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:392: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:393: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:394: Error: too many positional arguments
-> 
-> Signed-off-by: Tao Guo <glorioustao@gmail.com>
-> ---
->  arch/x86/include/asm/calling.h |   52 +++++++++++++++++++--------------------
->  arch/x86/kernel/entry_64.S     |   18 +++++++-------
->  2 files changed, 34 insertions(+), 36 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-> index a9e3a74..7627e26 100644
-> --- a/arch/x86/include/asm/calling.h
-> +++ b/arch/x86/include/asm/calling.h
-> @@ -49,38 +49,36 @@ For 32-bit we have the following conventions - kernel is 
-> built with
->  #include "dwarf2.h"
->  
->  /*
-> - * 64-bit system call stack frame layout defines and helpers, for
-> - * assembly code (note that the seemingly unnecessary parentheses
-> - * are to prevent cpp from inserting spaces in expressions that get
-> - * passed to macros):
-> + * 64-bit system call stack frame layout defines and helpers,
-> + * for assembly code:
->   */
->  
-> -#define R15		  (0)
-> -#define R14		  (8)
-> -#define R13		 (16)
-> -#define R12		 (24)
-> -#define RBP		 (32)
-> -#define RBX		 (40)
-> +#define R15		  0
-> +#define R14		  8
-> +#define R13		 16
-> +#define R12		 24
-> +#define RBP		 32
-> +#define RBX		 40
->  
->  /* arguments: interrupts/non tracing syscalls only save up to here: */
-> -#define R11		 (48)
-> -#define R10		 (56)
-> -#define R9		 (64)
-> -#define R8		 (72)
-> -#define RAX		 (80)
-> -#define RCX		 (88)
-> -#define RDX		 (96)
-> -#define RSI		(104)
-> -#define RDI		(112)
-> -#define ORIG_RAX	(120)       /* + error_code */
-> +#define R11		 48
-> +#define R10		 56
-> +#define R9		 64
-> +#define R8		 72
-> +#define RAX		 80
-> +#define RCX		 88
-> +#define RDX		 96
-> +#define RSI		104
-> +#define RDI		112
-> +#define ORIG_RAX	120       /* + error_code */
->  /* end of arguments */
->  
->  /* cpu exception frame or undefined in case of fast syscall: */
-> -#define RIP		(128)
-> -#define CS		(136)
-> -#define EFLAGS		(144)
-> -#define RSP		(152)
-> -#define SS		(160)
-> +#define RIP		128
-> +#define CS		136
-> +#define EFLAGS		144
-> +#define RSP		152
-> +#define SS		160
->  
->  #define ARGOFFSET	R11
->  #define SWFRAME		ORIG_RAX
+	c20c5a841cbe47f5b7812b57bd25397497e5fbc0 is the first bad commit
+	commit c20c5a841cbe47f5b7812b57bd25397497e5fbc0
+	Author: Seth Heasley <seth.heasley@intel.com>
+	Date:   Thu Jun 14 14:23:53 2012 -0700
 
-While up the here the changes are certainly acceptable, ...
+		ALSA: hda_intel: activate COMBO mode for Intel client chipsets
+		
+		This patch activates the COMBO position_fix for recent Intel client chipsets.
+		COMBO mode is the recommended setting for Intel chipsets and eliminates HD
+		audio warnings in dmesg.  This patch has been tested on Lynx Point, Panther
+		Point, and Cougar Pont.
+		
+		Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+		Signed-off-by: Takashi Iwai <tiwai@suse.de>
 
-> @@ -107,7 +105,7 @@ For 32-bit we have the following conventions - kernel is 
-> built with
->  
->  	.endm
->  
-> -#define ARG_SKIP	(9*8)
-> +#define ARG_SKIP	9*8
->  
->  	.macro RESTORE_ARGS rstor_rax=1, addskip=0, rstor_rcx=1, rstor_r11=1, \
->  			    rstor_r8910=1, rstor_rdx=1
-> @@ -157,7 +155,7 @@ For 32-bit we have the following conventions - kernel is 
-> built with
->  	.endif
->  	.endm
->  
-> -#define REST_SKIP	(6*8)
-> +#define REST_SKIP	6*8
->  
->  	.macro SAVE_REST
->  	subq $REST_SKIP, %rsp
+It's pretty clear-cut. If I revert this patch, my sound starts
+functioning normally again.
 
-... these two ones aren't - you can't simply remove parentheses
-from expressions without causing (potentially future) problems,
-up to and including someone re-introducing the parentheses to
-address such problems. You ought to parenthesize the macro
-parameters where needed instead, as you did below.
+Any thoughts on how to proceed here? Can someone revert this, or is
+there some testing that I can do?
 
-But that's all leaving aside that in the past it was already
-suggested (by hpa iirc) to simply declare these 2.16-based
-assemblers non-suitable for building the kernel.
+Here's a pretty-printed bisection log, if needed:
 
-Jan
-
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 69babd8..784a5b6 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -342,15 +342,15 @@ ENDPROC(native_usergs_sysret64)
->  	.macro SAVE_ARGS_IRQ
->  	cld
->  	/* start from rbp in pt_regs and jump over */
-> -	movq_cfi rdi, RDI-RBP
-> -	movq_cfi rsi, RSI-RBP
-> -	movq_cfi rdx, RDX-RBP
-> -	movq_cfi rcx, RCX-RBP
-> -	movq_cfi rax, RAX-RBP
-> -	movq_cfi  r8,  R8-RBP
-> -	movq_cfi  r9,  R9-RBP
-> -	movq_cfi r10, R10-RBP
-> -	movq_cfi r11, R11-RBP
-> +	movq_cfi rdi, (RDI-RBP)
-> +	movq_cfi rsi, (RSI-RBP)
-> +	movq_cfi rdx, (RDX-RBP)
-> +	movq_cfi rcx, (RCX-RBP)
-> +	movq_cfi rax, (RAX-RBP)
-> +	movq_cfi  r8,  (R8-RBP)
-> +	movq_cfi  r9,  (R9-RBP)
-> +	movq_cfi r10, (R10-RBP)
-> +	movq_cfi r11, (R11-RBP)
->  
->  	/* Save rbp so that we can unwind from get_irq_regs() */
->  	movq_cfi rbp, 0
-> -- 
-> 1.7.7
+ # good: [28a33cbc] Linux 3.5
+ # bad:  [b13bc8dd] Merge tag 'staging-3.6-rc1' of git://git.kernel.or
+ # good: [3c4cfade] Merge git://git.kernel.org/pub/scm/linux/kernel/gi
+ # bad:  [9fc37779] Merge tag 'usb-3.6-rc1' of git://git.kernel.org/pu
+ # bad:  [f14121ab] Merge tag 'dt-for-3.6' of git://sources.calxeda.co
+ # good: [d14b7a41] Merge branch 'for-linus' of git://git.kernel.org/p
+ # good: [15d47763] Merge branch 'for-3.5' into for-3.6
+ # bad:  [dbf7b591] Merge tag 'sound-3.6' of git://git.kernel.org/pub/
+ # bad:  [1c76684d] ALSA: hda - add Haswell HDMI codec id
+ # bad:  [8b8d654b] ALSA: hda - Move one-time init codes from generic_
+ # good: [80c8bfbe] ALSA: HDA: Create phantom jacks for fixed inputs a
+ # bad:  [ceaa86ba] ALSA: hda - Remove invalid init verbs for Nvidia 2
+ # bad:  [4b6ace9e] ALSA: hda - Add the support for VIA HDMI pin detec
+ # bad:  [c20c5a84] ALSA: hda_intel: activate COMBO mode for Intel cli
 
 
+- Steven
