@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab2IZJDD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 05:03:03 -0400
-Received: from mga11.intel.com ([192.55.52.93]:20016 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753396Ab2IZJDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 05:03:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,489,1344236400"; 
-   d="scan'208";a="226661998"
-Date: Wed, 26 Sep 2012 16:56:41 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: <acme@redhat.com>, <mingo@elte.hu>, <a.p.zijlstra@chello.nl>,
-        <andi@firstfloor.org>, <dsahern@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH v3 3/9] perf script: Add more filter to find_scripts()
-Message-ID: <20120926165641.74f2e5b3@feng-i7>
-In-Reply-To: <87lifyyiug.fsf@sejong.aot.lge.com>
-References: <1348500251-9937-1-git-send-email-feng.tang@intel.com>
-	<1348500251-9937-4-git-send-email-feng.tang@intel.com>
-	<87lifyyiug.fsf@sejong.aot.lge.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755300Ab2IZJDX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 05:03:23 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:42451 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351Ab2IZJDW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 05:03:22 -0400
+Message-ID: <5062C4AE.6090203@linux.vnet.ibm.com>
+Date: Wed, 26 Sep 2012 14:32:38 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>
+Subject: Re: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the
+ irq affinity mask
+References: <1348681092.19514.10.camel@cliu38-desktop-build> <5062C183.20301@linux.vnet.ibm.com> <27240C0AC20F114CBF8149A2696CBE4A18A494@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A18A494@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12092609-1396-0000-0000-000001EC94CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Sep 2012 10:47:03 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+On 09/26/2012 02:26 PM, Liu, Chuansheng wrote:
+>> A return value of 0 and 1 are acceptable. So this check isn't correct.
+>>
+>> Regards,
+>> Srivatsa S. Bhat
+>>
+> Which case value 1 is acceptable, could you share? Thanks.
 
-> Hi Feng,
+I can see the following in include/linux/irq.h:
+
+/*
+ * Return value for chip->irq_set_affinity()
+ *
+ * IRQ_SET_MASK_OK      - OK, core updates irq_data.affinity
+ * IRQ_SET_MASK_NOCPY   - OK, chip did update irq_data.affinity
+ */
+enum {
+        IRQ_SET_MASK_OK = 0,
+        IRQ_SET_MASK_OK_NOCOPY,
+};
+
+And see some of those ->irq_set_affinity() implementations at various
+places.
+
+Regards,
+Srivatsa S. Bhat
+
 > 
-> On Mon, 24 Sep 2012 23:24:05 +0800, Feng Tang wrote:
-> > As suggested by Arnaldo, many scripts have their own usages and need
-> > capture specific events or tracepoints, so only those scripts whose
-> > targe events match the events in current perf data file should be
-> > listed in the script browser menu.
-> >
-> > This patch will add the event match checking.
-> >
-> > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > ---
-> >  tools/perf/builtin-script.c |   76 +++++++++++++++++++++++++++++++++++++++++--
-> >  1 files changed, 73 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> > index 4e2f10f..37a0df8 100644
-> > --- a/tools/perf/builtin-script.c
-> > +++ b/tools/perf/builtin-script.c
-> > @@ -1031,6 +1031,63 @@ static int list_available_scripts(const struct option *opt __maybe_unused,
-> >  }
-> >  
-> >  /*
-> > + * Some scripts specify the required events in their "xxx-record" file,
-> > + * this function will check if the events in perf.data match those
-> > + * mentioned in the "xxx-record".
-> > + */
-> > +static int check_ev_match(char *dir_name, char *scriptname,
-> > +			struct perf_session *session)
-> > +{
-> > +	char filename[MAXPATHLEN], evname[128];
-> > +	char line[BUFSIZ], *p, *temp;
-> > +	struct perf_evsel *pos;
-> > +	int match;
-> > +	FILE *fp;
-> > +
-> > +	sprintf(filename, "%s/bin/%s-record", dir_name, scriptname);
-> > +
-> > +	fp = fopen(filename, "r");
-> > +	if (!fp)
-> > +		return -1;
-> > +
-> > +	while (fgets(line, sizeof(line), fp)) {
-> > +		p = ltrim(line);
-> > +		if (strlen(p) == 0 ||*p == '#')
-> > +			continue;
-> > +
-> > +		while (strlen(p)) {
-> > +			temp = strstr(p, "-e");
-> > +			if (!temp)
-> > +				break;
-> > +
-> > +			p = temp + 3;
-> > +			temp = strchr(p, ' ');
-> > +			snprintf(evname, (temp - p) + 1, "%s", p);
+>> OMG, why did you drop the other hunk which cleared the cpu *before*
+>> invoking ->irq_set_affinity()? IMO, altering irq affinity involves more work
+>> than just altering the mask; that's why you have that ->irq_set_affinity()
+>> function. So, if you alter the mask *after* calling ->irq_set_affinity(),
+>> its not right..
+> Sorry the mistake, will update.
 > 
-> It can't recognize extra spaces, multiple events connected by commas,
-> event groups and probably more..  So I think it'd better if we can use
-> parse_events() here - but w/o an evlist.  Jiri, what do you think?
-
-Yes, this func was really a pain to me :) And fortunately, current
-intree "xxx-record" scripts are all in simple format: "-e eventname ",
-and this lightweight func basically works fine.
-
-I agree that we'd better have a separate parse_events() similar func 
-to cherry-pick the events names in parse-events.c, to not make
-hists.c too heavy. 
-
-And frankly speaking, I'm not familiar at all with these flex/bison
-handling, so can we do things in steps: fixes those space issue, add
-a "fixme" in comments and push the basically working version first?
-
-Any comments? Thanks
-
-- Feng
-
-
 
