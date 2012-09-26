@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab2IZNkc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 09:40:32 -0400
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:45522 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756549Ab2IZNkY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 09:40:24 -0400
-X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Sep 2012 09:40:23 EDT
-Message-Id: <50631F82020000A10000CB38@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Wed, 26 Sep 2012 15:30:10 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Subject: 3.0.38: strange boot message: "Time: 165:165:165  Date:
- 165/165/65" with Xen
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756360Ab2IZNlO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 09:41:14 -0400
+Received: from mail.anarazel.de ([217.115.131.40]:37825 "EHLO mail.anarazel.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752879Ab2IZNlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 09:41:12 -0400
+From: Andres Freund <andres@anarazel.de>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: radeon: Regression between v3.6-rc4 and v3.6-rc6: unable to allocate a PPLL
+Date: Wed, 26 Sep 2012 15:41:09 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5.0-rc3-andres-00231-g002b758; KDE/4.8.4; x86_64; ; )
+Cc: "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+References: <201209171329.15699.andres@anarazel.de> <A3397C8B8B789E45844E7EC5DEAD89D02C433574@sausexdag03.amd.com> <20120926130009.GE28937@mwanda>
+In-Reply-To: <20120926130009.GE28937@mwanda>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209261541.09835.andres@anarazel.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wednesday, September 26, 2012 03:00:09 PM Dan Carpenter wrote:
+> This is fixed now?
+Its been reverted in 2f1f4d9b60396d2df4cff829bd5376ffc8ed9a2c which is in rc6.
 
-I just discovered a strange "<6>[    0.123867] Time: 165:165:165  Date: 165/165/65" boot message in a Xen DomU VM for SLES11 SP2 on AMD Opteron (x86_64). The context is:
+On Monday, September 17, 2012 09:30:12 PM Deucher, Alexander wrote:
+Sorry, I somehow accidentally marked your  email as read and thus didn't 
+notice it.
 
-...
-<6>[    0.080197] Initializing cgroup subsys net_cls
-<6>[    0.080199] Initializing cgroup subsys blkio
-<6>[    0.080204] Initializing cgroup subsys perf_event
-<4>[    0.080245] ENERGY_PERF_BIAS: Set to 'normal', was 'performance'
-<4>[    0.080245] ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(
-8)
-<6>[    0.080293] SMP alternatives: switching to UP code
-<6>[    0.103716] Brought up 1 CPUs
-<6>[    0.103788] devtmpfs: initialized
-<6>[    0.103977] print_constraints: dummy:
-<6>[    0.123867] Time: 165:165:165  Date: 165/165/65
-<6>[    0.123908] NET: Registered protocol family 16
-<6>[    0.124081] SMP alternatives: switching to SMP code
-<6>[    0.150019] Brought up 4 CPUs
-<3>[    0.150019] PCI: Fatal: No config space access function found
-<6>[    0.150019] PCI: setting up Xen PCI frontend stub
-...
+> I think I see the problem.  I think it's a limitation of the current current 
+modesetting API.  The current API sets up each display independently which 
+doesn't work so well if there are resource restrictions.  There shouldn't be 
+any contention on your board since you are only using 2 non-DP displays.  It 
+looks like X is mapping different crtcs to displays than the kernel fb.  
+Initially the kernel set up the follow:
+> > [    2.134901] [drm] crtc 0 using pll 0x2
+> > [    2.362257] [drm] crtc 1 using pll 0x1
+> > [    2.386709] [drm] crtc 2 using pll 0x0
+> 
+> Crtc 0 -> DCPLL -> DP
+> Crtc 1 -> PPLL2 -> DVI
+> Crtc 2 -> PPLL1 -> DVI
+> 
+> When X loads, it tried to set a different crtc to display mapping:
+> > [   60.679310] [drm] crtc 0 using pll 0xff
+> > [   60.789183] [drm] crtc 1 using pll 0x2
+> > [   60.819594] [drm] crtc 2 using pll 0x1
+> 
+> Crtc 0 -> INVALID -> DVI 0
+> Crtc 1 -> DCPLL -> DP
+> Crtc 2 -> PPLL2 -> DVI 1
+> 
+> Crtc 0 should have used PPLL1 or PPLL2, but they were already in use by
+> crtc 1 and crtc  2 from the previous modeset.  Since the modeset API is
+> not atomic, it doesn't have the whole picture.  I'm not sure of a good
+> solution right now prior to the new atomic modeset API that is under
+> discussion.  I guess we can revert the patch for 3.6.  For 3.7 I guess we
+> need to validate the actual connector to make sure we aren't trying to set
+> a different configuration relating to the same connector without first
+> tearing down the first one.  In the interim, you should be able to work
+> around it by disabling the non-DP outputs and then bringing than back up.
+Thanks! That explanation makes sense. I can work around it just fine, starting 
+X multiple times works which coincides nicely with your explanation.
 
-Maybe it's related to this hypervisor message (xm dmesg) in Xen Dom0 (but the RTC is at 70, right?):
-(XEN) mm.c:833:d1 Non-privileged (1) attempt to map I/O space 000000f0
-(XEN) mm.c:833:d3 Non-privileged (3) attempt to map I/O space 000000f0
-(XEN) mm.c:833:d2 Non-privileged (2) attempt to map I/O space 000000f0
-(XEN) mm.c:833:d1 Non-privileged (1) attempt to map I/O space 000000f0
-(XEN) mm.c:833:d2 Non-privileged (2) attempt to map I/O space 000000f0
+The code in the 3.7 branch doesn't do that extended validation yet, rigth? If 
+you want/need you can CC for testing once thats ready.
 
-It's not a big issue, but maybe if the RTC cannot be read, it's better to skip rather tan outputting a wrong date/time.
+Greetings,
 
-Regards,
-Ulrich
-
-
+Andres
