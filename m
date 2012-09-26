@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab2IZSeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 14:34:46 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39705 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757436Ab2IZSeo (ORCPT
+	id S1757910Ab2IZSfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 14:35:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36049 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab2IZSfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 14:34:44 -0400
-From: Stan Hu <stanhu@gmail.com>
-To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Stan Hu <stanhu@gmail.com>
-Subject: [PATCH 1/1] ARM: Add option to configure output line for McSPI driver
-Date: Wed, 26 Sep 2012 11:34:27 -0700
-Message-Id: <1348684467-5707-1-git-send-email-stanhu@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <y>
-References: <y>
+	Wed, 26 Sep 2012 14:35:40 -0400
+Date: Wed, 26 Sep 2012 11:35:36 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/12] workqueue: destroy_worker() can only destory
+ idle worker not just created worker
+Message-ID: <20120926183536.GG12544@google.com>
+References: <1348680043-5077-1-git-send-email-laijs@cn.fujitsu.com>
+ <1348680043-5077-7-git-send-email-laijs@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348680043-5077-7-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-McSPI driver previously assumed that D0 was input (MISO) and D1 was output (MOSI).
-This forces the hardware designer to wire all SPI peripherals in this way when
-it should be a software configuration option.
+On Thu, Sep 27, 2012 at 01:20:37AM +0800, Lai Jiangshan wrote:
+> After we reimpletment hotplug code, we will not destroy just newly
+> created worker, all created worker will enter idle soon.
+> And destroy_worker() is not used to destroy just newly created worker,
+> it always destory idle worker, so we need to fix destroy_worker()
+> and update the comments.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/workqueue.c |   14 +++++++-------
+>  1 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 6c339bf..fe3b1d3 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1756,8 +1756,7 @@ static struct worker *alloc_worker(void)
+>   * @pool: pool the new worker will belong to
+>   *
+>   * Create a new worker which is bound to @pool.  The returned worker
+> - * can be started by calling start_worker() or destroyed using
+> - * destroy_worker().
+> + * can be started by calling start_worker();
+>   *
+>   * CONTEXT:
+>   * Might sleep.  Does GFP_KERNEL allocations.
+> @@ -1847,7 +1846,7 @@ static void start_worker(struct worker *worker)
+>  }
+>  
+>  /**
+> - * destroy_worker - destroy a workqueue worker
+> + * destroy_worker - destroy a idle workqueue worker
+>   * @worker: worker to be destroyed
+>   *
+>   * Destroy @worker and adjust @gcwq stats accordingly.
+> @@ -1864,11 +1863,12 @@ static void destroy_worker(struct worker *worker)
+>  	/* sanity check frenzy */
+>  	BUG_ON(worker->current_work);
+>  	BUG_ON(!list_empty(&worker->scheduled));
+> +	BUG_ON(!(worker->flags & WORKER_STARTED));
+> +	BUG_ON(!(worker->flags & WORKER_IDLE));
+> +	BUG_ON(list_empty(&worker->entry));
 
-Signed-off-by: Stan Hu <stanhu@gmail.com>
----
- arch/arm/plat-omap/include/plat/mcspi.h |    2 ++
- drivers/spi/spi-omap2-mcspi.c           |   11 +++++++++--
- 2 files changed, 11 insertions(+), 2 deletions(-)
+Let's go for WARN_ON() at least for the new ones.  Or let's convert
+all BUG()s to WARN_ON[_ONCE]() beforehand.
 
-diff --git a/arch/arm/plat-omap/include/plat/mcspi.h b/arch/arm/plat-omap/include/plat/mcspi.h
-index a357eb2..0a6b790 100644
---- a/arch/arm/plat-omap/include/plat/mcspi.h
-+++ b/arch/arm/plat-omap/include/plat/mcspi.h
-@@ -18,6 +18,8 @@ struct omap2_mcspi_dev_attr {
- 
- struct omap2_mcspi_device_config {
- 	unsigned turbo_mode:1;
-+	/* 1 -> [D0 = MOSI, D1 = MISO], otherwise vice versa */
-+	unsigned d0_is_output:1;
- };
- 
- #endif
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index b2fb141..1853527 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -717,6 +717,7 @@ static int omap2_mcspi_setup_transfer(struct spi_device *spi,
- 		struct spi_transfer *t)
- {
- 	struct omap2_mcspi_cs *cs = spi->controller_state;
-+	struct omap2_mcspi_device_config *cd = spi->controller_data;
- 	struct omap2_mcspi *mcspi;
- 	struct spi_master *spi_cntrl;
- 	u32 l = 0, div = 0;
-@@ -742,8 +743,14 @@ static int omap2_mcspi_setup_transfer(struct spi_device *spi,
- 	/* standard 4-wire master mode:  SCK, MOSI/out, MISO/in, nCS
- 	 * REVISIT: this controller could support SPI_3WIRE mode.
- 	 */
--	l &= ~(OMAP2_MCSPI_CHCONF_IS|OMAP2_MCSPI_CHCONF_DPE1);
--	l |= OMAP2_MCSPI_CHCONF_DPE0;
-+	l &= ~(OMAP2_MCSPI_CHCONF_IS|
-+		OMAP2_MCSPI_CHCONF_DPE0|OMAP2_MCSPI_CHCONF_DPE1);
-+
-+	/* set input selection for D0 and D1 */
-+	if (cd->d0_is_output)
-+		l |= OMAP2_MCSPI_CHCONF_IS|OMAP2_MCSPI_CHCONF_DPE1;
-+	else
-+		l |= OMAP2_MCSPI_CHCONF_DPE0;
- 
- 	/* wordlength */
- 	l &= ~OMAP2_MCSPI_CHCONF_WL_MASK;
+Thanks.
+
 -- 
-1.7.9.5
-
+tejun
