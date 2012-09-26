@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751116Ab2IZB1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 21:27:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36735 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab2IZB1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 21:27:20 -0400
-Date: Wed, 26 Sep 2012 11:27:13 +1000
-From: NeilBrown <neilb@suse.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: lkml <linux-kernel@vger.kernel.org>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] block: export trace_block_unplug
-Message-ID: <20120926112713.226be0ac@notabene.brown>
-In-Reply-To: <5061A89A.4050207@kernel.dk>
-References: <20120925095755.048903e8@notabene.brown>
-	<5061A89A.4050207@kernel.dk>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1751235Ab2IZB2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 21:28:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15621 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab2IZB2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 21:28:38 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=b9PsUg4mK9wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=TSMuYQ0iYaAA:10 a=6LM_PC-HNDL-7sbMh5kA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348622916.22822.44.camel@gandalf.local.home>
+Subject: Re: [PATCH v5 0/25] Generic Red-Black Trees (still WIP)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: linux-doc@vger.kernel.org, linux-sparse@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 25 Sep 2012 21:28:36 -0400
+In-Reply-To: <50625436.1020501@att.net>
+References: <1348615467-9850-1-git-send-email-daniel.santos@pobox.com>
+	 <1348618742.22822.39.camel@gandalf.local.home> <50625436.1020501@att.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/WbBJplYOPn+iaMHNqzMMuHt"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/WbBJplYOPn+iaMHNqzMMuHt
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2012-09-25 at 20:02 -0500, Daniel Santos wrote:
+> >> Q&A
+> >> ===
+> >> Q: Why did you add BUILD_BUG_ON_NON_CONST() and
+> >>    BUILD_BUG_ON_NON_CONST42()?
+> > A: Because BUILD_BUG_ON_NON_CONST42() will crash if it does not result
+> > in the answer to life, the universe and everything!
+> 
+> By the way, I have a theory before time, God was writing code on some
+> cosmic computer (beyond our understanding, of course) when he
+> accidentally tried to divide by zero, resulting in a core dump that we
+> now know as the universe we live in.  So thus, we are just the excrement
+> of some celestial computer after it failed to properly execute its code.
+> 
 
-On Tue, 25 Sep 2012 14:50:34 +0200 Jens Axboe <axboe@kernel.dk> wrote:
+And that operation on which God failed on was:
 
-> On 09/25/2012 01:57 AM, NeilBrown wrote:
-> >=20
-> > Hi Jens,
-> >  is there any chance this can be in the next merge window?  I'm
-> > adding block tracing to md and found I need another export.
->=20
-> No problem, applied.
->=20
+ans = 42 / 0
 
-Thanks.
-NeilBrown
+Which totally explains the point where... "to understand the answer, you
+must first understand the question".
 
---Sig_/WbBJplYOPn+iaMHNqzMMuHt
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+-- Steve
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUGJZ8Tnsnt1WYoG5AQILyg//XpHNGDwOZMFdBR7tj9Fu+jUP94O64ADL
-ag7LqQ3aCc6Lv8c/V2IfHUO4BbGj5Stuq5ufWlXt5ErYOEsGioGZ+AuDjsH8Iln5
-dZQO3wOjuaIPAew3PgG+sVh2Cf6j/mCIdCozVBHlbUHXR5WTzB7ZB91N/XsNMaFc
-an7orVVCPjilFw1867sRsp7LTW/rC4b19Ss6nK1/mlOpHGym/liVOVP6Cen7Ri08
-mWe/7UUWG/hqV3g0c5eDcLluyq4BVYy9O2hGLcfrpBH/qSl94yn4Dbdpad8KWG9f
-3Fhw+atrQRiKhOB2DBMdO7INQNSlGckbqKJJIMgCspSPWSPF4Mp4PInDzNI4arHw
-8VxoaGw7fbv0eXQ7pNpjgkPIt2oPcgbqwOB723GV6xNyz0x7HEzzhQ2Z7iZrTnPh
-LldePgatrGec+GV5NehS9pqI50sQH6MgFHGN4TSj6chM/oEQ7Xej5UBFB+KX8gti
-IzKUrcEwiUkp9fMRHe7CQUCfmOPmY11pqilNDoZs7khqHIVALoF6WG4A3l9FGwAI
-B1Pa45deijVvaKf1bV+/0M89a5L1srd8UMvoMKsYqPwQWkEH1Jvb7L0+qlnYtAsI
-fHDstkdQwm/nGe8N0YUOdfJCo0jm7iOCxFK41hK/s2qQaoorf9/FDeSaCVuE3/EG
-QZpC0sO/fUE=
-=UZI/
------END PGP SIGNATURE-----
-
---Sig_/WbBJplYOPn+iaMHNqzMMuHt--
