@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab2IZNDH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 09:03:07 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:46611 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754351Ab2IZNDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 09:03:06 -0400
-Date: Wed, 26 Sep 2012 15:02:57 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, kjwinchester@gmail.com,
-        ak@linux.intel.com, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de
-Subject: Re: [PATCH] x86: remove the useless branch in c_start()
-Message-ID: <20120926130257.GH17345@aftab.osrc.amd.com>
-References: <1348033343-23658-1-git-send-email-wangyun@linux.vnet.ibm.com>
- <506279F8.10704@linux.vnet.ibm.com>
+	id S1756401Ab2IZND3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 09:03:29 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:60297 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab2IZND1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 09:03:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506279F8.10704@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120926125658.GA5641@beef>
+References: <D7202A6C-5250-4B55-B3B8-FF15BCCA97AC@dominion.thruhere.net>
+	<20120926125658.GA5641@beef>
+Date: Wed, 26 Sep 2012 15:03:27 +0200
+Message-ID: <CACRpkdYqVC4Vou+0Mn1OmQg8vPxDULDcFDD0yV5nassqkE1Zag@mail.gmail.com>
+Subject: Re: replacement for /sys/kernel/debug/omap_mux in DT/pinctrl land ?
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Matt Porter <mporter@ti.com>, Tony Lindgren <tony@atomide.com>
+Cc: Koen Kooi <koen@dominion.thruhere.net>,
+        List List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 11:43:52AM +0800, Michael Wang wrote:
-> On 09/19/2012 01:42 PM, Michael Wang wrote:
-> > Since 'cpu == -1' in cpumask_next() is legal, no need to handle '*pos == 0'
-> > specially.
-> > 
-> > About the comments:
-> > 	/* just in case, cpu 0 is not the first */
-> > A test with a cpumask in which cpu 0 is not the first has been done, and it
-> > works well.
-> 
-> Could I get some comments on this patch?
+On Wed, Sep 26, 2012 at 2:56 PM, Matt Porter <mporter@ti.com> wrote:
+> Adding Linus W. and lkml.
+> On Wed, Sep 26, 2012 at 01:46:45PM +0200, Koen Kooi wrote:
+>> Hi,
+>>
+>> With a patched 3.6rc7 on my beaglebone I can set the pinmux for pins using pinctrl and that seems to work. On the 3.2 vendor tree there was the omap_mux driver with an awesome debugfs interface:
+>>
+>> # cat /sys/kernel/debug/omap_mux/lcd_data0
+>> name: lcd_data0.ehrpwm2A (0x44e108a0/0x8a0 = 0x0003), b NA, t NA
+>> mode: OMAP_PIN_OUTPUT | OMAP_MUX_MODE3
+>> signals: lcd_data0 | gpmc_a0 | pr1_mii_mt0_clk | ehrpwm2A | NA | pr1_pru1_pru_r30_0 | pr1_pru1_pru_r31_0 | gpio2_6
+>>
+>> Notice how it tells me that it's muxed the PWM in 2 ways: signal name (ehrpwm2A) and register content (0x0003). Compare to pinctrl:
+>>
+>> root@bone-mainline:/sys/kernel/debug/pinctrl/44e10800.pinmux# grep 8a0 *
+>> pinconf-pins:pin 40 (44e108a0):
+>> pingroups:pin 40 (44e108a0)
+>> pinmux-pins:pin 40 (44e108a0): 4a300000.pruss (GPIO UNCLAIMED) function pinmux_pruss_led_pins group pinmux_pruss_led_pins
+>> pins:pin 40 (44e108a0)  pinctrl-single
+>>
+>> What is that pin muxed to? It is part of the 'pinmux_pruss_led_pins' in the DT, but debugfs remains mute on how pin 40 is muxed.
+>
+> It does seem like a pretty big gap in the pinctrl/pinmux debugfs
+> interface when viewed from an OMAP perspective. Ideally there would
+> be a pinctrl/pinmux hook to the pinmux driver to provide the detailed
+> h/w specific pin state info.
 
-Looks ok to me:
+So add the hooks you need?
 
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+I assume you are using Tony's pinctrl-single driver, so Tony is the one to ask.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Yours,
+Linus Walleij
