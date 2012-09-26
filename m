@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab2IZFpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 01:45:55 -0400
-Received: from nm16-vm0.bullet.mail.ird.yahoo.com ([77.238.189.192]:45551 "HELO
-	nm16-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751397Ab2IZFpy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 01:45:54 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 959296.95222.bm@omp1012.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=ZZiirDunX+B3Z3YpLSfcyjgt3hsexE2+nNWo4ATyGaM+fj+tGLK2DlsyHgqDuqOonJaVwsJArzmhdYtyp3+k1Z5yN66YZD0VaDsPoSitdu0kSJJb9JQ3Kx2taVNoroNk8hBhSY5bhAtrBlh8N94euee4HKhbZVKomuOeH9bq24A=;
-X-YMail-OSG: t0ZcHioVM1l4OPHuTGZlVka6su.XTrfXfUbYX8PXjsOTaY_
- 2rI341vQPll1wjfqbw4PGr1fot3pG.LSKed5q3Az2LtoUlCDnd7o.ATzqLkE
- FSK8pvA7v1d1kQmsYnoUY7axLbr4hQbFZE4i6tQz_wGqS395vM7XE3aOrIpF
- MzLO9NMjSNtVk2xXOI4dsUnzkjLSKSmU0MiV_wjU3nJvRyGxzxdivqDTKKN_
- pKYPtSc.IdOQA9ly.RDq9_u1jlv1Gum8dH.CYaKoyYcQ0EGkGeiOOTMzU3ov
- Qg8bM7_torZtLrBq9Z27y6zQCHZrWL0Fp9cMiwNYLW4sstgG.xC6quETYN0R
- tOkPBQcMWzWT2.khzNTKHQvJfI4KFx8.Wz1XTJDpEzMPRt.pR3LdeAAOuSZI
- Lo9ZbhaqVYuQUiTSCtJkGENmlyl9RsEk7U0c4E8lCb2HK6Z.YIaQ0Q7JFud.
- U1nHPlriKAIGkXfX05vFBcNV5xU31EA84ReufaVMkxe5kd0G50LwuAH0XbQ-
- -
-X-Mailer: YahooMailWebService/0.8.121.434
-Message-ID: <1348638352.70148.YahooMailNeo@web132301.mail.ird.yahoo.com>
-Date: Wed, 26 Sep 2012 06:45:52 +0100 (BST)
-From: Corine Martire <corine1122mar@yahoo.com>
-Reply-To: Corine1122mar <corine1122mar@yahoo.com>
-Subject: #[For..6-12]c[EndFor]: 10'000 HD-quality videos that are about what every single man is thinking of
-To: "mnb@abv.bg" <mnb@abv.bg>
+	id S1751537Ab2IZFsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 01:48:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51321 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab2IZFsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 01:48:18 -0400
+Message-ID: <50629719.2010107@kernel.dk>
+Date: Wed, 26 Sep 2012 07:48:09 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Mikulas Patocka <mpatocka@redhat.com>
+CC: Jeff Moyer <jmoyer@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>,
+        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
+        lwoodman@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>
+Subject: Re: [PATCH 1/2] Fix a crash when block device is read and block size
+ is changed at the same time
+References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com> <x49k3xzq3jc.fsf@segfault.boston.devel.redhat.com> <Pine.LNX.4.64.1207281236230.30415@file.rdu.redhat.com> <Pine.LNX.4.64.1207281240270.30415@file.rdu.redhat.com> <1343508252.2626.13184.camel@edumazet-glaptop> <Pine.LNX.4.64.1207290107460.29910@file.rdu.redhat.com> <1343556630.2626.13257.camel@edumazet-glaptop> <1343586962.2626.13266.camel@edumazet-glaptop> <Pine.LNX.4.64.1208011601280.21832@file.rdu.redhat.com> <Pine.LNX.4.64.1208311433480.2212@file.rdu.redhat.com> <Pine.LNX.4.64.1208311518340.16960@file.rdu.redhat.com> <x49liguyg6r.fsf@segfault.boston.devel.redhat.com> <x49wqzswdn3.fsf@segfault.boston.devel.redhat.com> <Pine.LNX.4.64.1209181257410.11735@file.rdu.redhat.com> <x49ehlzrt01.fsf@segfault.boston.devel.redhat.com> <x49sja6ouv4.fsf@segfault.boston.devel.redhat.com> <5061F0E6.5000403@kernel.dk> <5061F3D2.6050502@kernel.dk> <Pine.LNX.4.64.1209251847340.21075@file.rdu.redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1209251847340.21075@file.rdu.redhat.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*http://ǘῆῂ.ihookingup.ru??ǹȫȏ
+On 2012-09-26 00:49, Mikulas Patocka wrote:
+> Here I'm resending it as two patches. The first one uses existing 
+> semaphore, the second converts it to RCU-based percpu semaphore.
+
+Thanks, applied. In the future, please send new patch 'series' as a new
+thread instead of replying to some email in the middle of an existing
+thread. It all becomes very messy pretty quickly. Patch #2 had a botched
+subject line, so that didn't help either :-)
+
+-- 
+Jens Axboe
+
