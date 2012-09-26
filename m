@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab2IZVNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 17:13:37 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:30079 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab2IZVNg convert rfc822-to-8bit (ORCPT
+	id S1752327Ab2IZVPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 17:15:31 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63729 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab2IZVPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 17:13:36 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-10.tower-127.messagelabs.com!1348694015!8880024!1
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.3; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 26 Sep 2012 16:13:33 -0500
-Subject: RE: staging tree closed for 3.7
-Thread-Topic: staging tree closed for 3.7
-Thread-Index: Ac2cIkpleFRIYE4tR2KA5TSlgbNEdAACTJjQ
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206B20BEE19@AUSP01VMBX24.collaborationhost.net>
-References: <20120926175606.GA10762@kroah.com>
- <20120926175634.GB10762@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F00206B20BED5D@AUSP01VMBX24.collaborationhost.net>
- <20120926200527.GC9994@kroah.com>
-In-Reply-To: <20120926200527.GC9994@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Sep 2012 17:15:30 -0400
+Date: Wed, 26 Sep 2012 14:15:26 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jan =?iso-8859-1?Q?H=2E_Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
+Message-ID: <20120926211526.GA30261@kroah.com>
+References: <1348682325-8402-1-git-send-email-schnhrr@cs.tu-berlin.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1348682325-8402-1-git-send-email-schnhrr@cs.tu-berlin.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 26, 2012 1:05 PM, Greg Kroah-Hartman wrote:
-> On Wed, Sep 26, 2012 at 01:47:11PM -0500, H Hartley Sweeten wrote:
->> On Wednesday, September 26, 2012 10:57 AM, Greg Kroah-Hartman wrote:
->>> On Wed, Sep 26, 2012 at 10:56:06AM -0700, Greg Kroah-Hartman wrote:
->>>> 
->>>> With 3.6 about to be released, I've now closed the 3.7 staging-next tree
->>>> for new features / cleanups.  It's bug-fixes only now until 3.7-rc1 is
->>>> out.
->>>
->>> Oh, and if I've missed any patches that people have sent me already,
->>> please let me know, because I don't have them anymore.
->> 
->> Greg,
->> 
->> What about my "staging: comedi: drivers: use comedi_fc.h cmdtest helpers"?
->> 
->> It's quite large but does have decent diffstat:
->> 46 files changed, 766 insertions(+), 1997 deletions(-)
->
-> Care to resend it?  I thought that was part of the __user rework, my
-> apologies.
+On Wed, Sep 26, 2012 at 07:58:45PM +0200, Jan H. Schönherr wrote:
+> From: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+> 
+> The meaning of LOG_CONT is unclear, i. e., whether a message is a starting,
+> ending, or middle fragment. Unfortunately, this cannot be inferred from
+> the LOG_PREFIX and LOG_NEWLINE flags, as they are not always kept.
+> Furthermore, in some cases LOG_CONT is set, although it is unknown if
+> there will be a continuation. This leads to wrongly concatenated output.
+> 
+> Fix this by dropping LOG_CONT and rely on LOG_PREFIX and LOG_NEWLINE to
+> distinguish the type of fragment. That is, if LOG_PREFIX is set, this
+> fragment does not continue the previous fragment. And if LOG_NEWLINE is
+> set, this fragment is not continued by the next fragment.
+> 
+> (Unfortunately, we still have to look at the previous fragment to catch the
+> case of an unset LOG_PREFIX on this fragment, but a set LOG_NEWLINE on
+> the previous fragment.)
+> 
+> Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+> ---
+> Against v3.6-rc7, only lightly tested.
 
-Not a problem. Just reposted it (v2).
+Well, against linux-next and highly tested would be best.  It's a bit
+late to get this into linux-next for 3.7, how important is it really?
 
->> If it doesn't apply due to conflicts, or you would rather just wait
->> until 3.7-rc1, it's not a problem.
->> 
->> I have updated the patch to fix the typo Ian pointed out and to remove
->> the Reported-by signoff from Dan if you would like me to repost it.
->
-> Please redo it and resend it, that must have been why I didn't apply it,
-> I was waiting for a newer version :)
+thanks,
 
-If there is a merge issue please let me know. If so I'll wait until 3.7-rc1 is
-out and rebase the patch.
-
-Thanks!
-Hartley
-
+greg k-h
