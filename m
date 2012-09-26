@@ -1,210 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757662Ab2IZSm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 14:42:58 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57745 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757209Ab2IZSm5 (ORCPT
+	id S1758193Ab2IZSrV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 14:47:21 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:8170 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757355Ab2IZSrT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 14:42:57 -0400
-Date: Wed, 26 Sep 2012 20:42:54 +0200 (CEST)
-From: Michael Langer <michael.brainbug.langer@googlemail.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] rtc: add wakealarm support for rtc-s35390A rtc chip
-Message-ID: <alpine.DEB.2.02.1209262038560.7840@localhost6.localdomain6>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 26 Sep 2012 14:47:19 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-9.tower-132.messagelabs.com!1348685228!14655377!14
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.3; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+CC: Ian Abbott <abbotti@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 26 Sep 2012 13:47:11 -0500
+Subject: RE: staging tree closed for 3.7
+Thread-Topic: staging tree closed for 3.7
+Thread-Index: Ac2cEEczwvFpCo8gTLa6CEXZkMB5pwABobdg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00206B20BED5D@AUSP01VMBX24.collaborationhost.net>
+References: <20120926175606.GA10762@kroah.com>
+ <20120926175634.GB10762@kroah.com>
+In-Reply-To: <20120926175634.GB10762@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Tue, 25 Sep 2012, Andrew Morton wrote:
-
-> The patch is wordwrapped and has its tabs replaced with spaces.  Please
-> fix these things, resend and cc myself?
+On Wednesday, September 26, 2012 10:57 AM, Greg Kroah-Hartman wrote:
+> On Wed, Sep 26, 2012 at 10:56:06AM -0700, Greg Kroah-Hartman wrote:
+>> 
+>> With 3.6 about to be released, I've now closed the 3.7 staging-next tree
+>> for new features / cleanups.  It's bug-fixes only now until 3.7-rc1 is
+>> out.
 >
-Resend patch with alpine. Hopefully without wordwrap and spaces. Sorry 
-for the inconvenience.
+> Oh, and if I've missed any patches that people have sent me already,
+> please let me know, because I don't have them anymore.
 
- 
->From a01affe35c049f66fc83ee151d760f3c943aa327 Mon Sep 17 00:00:00 2001
-From: Michael Langer <michael.brainbug.langer@googlemail.com>
-Date: Sun, 23 Sep 2012 08:27:24 +0200
-Subject: [PATCH] rtc: add wakealarm support for rtc-s35390A rtc chip
+Greg,
 
-This adds basic get/set alarm support for the Seiko Instruments S-35390A.
-The chip is used on the QNAP TS-219P+ NAS device.
+What about my "staging: comedi: drivers: use comedi_fc.h cmdtest helpers"?
 
-Signed-off-by: Michael Langer <michael.brainbug.langer@googlemail.com>
----
- drivers/rtc/rtc-s35390a.c |  116 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 116 insertions(+)
+It's quite large but does have decent diffstat:
+46 files changed, 766 insertions(+), 1997 deletions(-)
 
-diff --git a/drivers/rtc/rtc-s35390a.c b/drivers/rtc/rtc-s35390a.c
-index c9562ce..ef41e7e 100644
---- a/drivers/rtc/rtc-s35390a.c
-+++ b/drivers/rtc/rtc-s35390a.c
-@@ -19,6 +19,8 @@
- #define S35390A_CMD_STATUS1	0
- #define S35390A_CMD_STATUS2	1
- #define S35390A_CMD_TIME1	2
-+#define S35390A_CMD_TIME2	3
-+#define S35390A_CMD_INT2_REG1	5
- 
- #define S35390A_BYTE_YEAR	0
- #define S35390A_BYTE_MONTH	1
-@@ -28,12 +30,23 @@
- #define S35390A_BYTE_MINS	5
- #define S35390A_BYTE_SECS	6
- 
-+#define S35390A_ALRM_BYTE_WDAY	0
-+#define S35390A_ALRM_BYTE_HOURS	1
-+#define S35390A_ALRM_BYTE_MINS	2
-+
- #define S35390A_FLAG_POC	0x01
- #define S35390A_FLAG_BLD	0x02
- #define S35390A_FLAG_24H	0x40
- #define S35390A_FLAG_RESET	0x80
- #define S35390A_FLAG_TEST	0x01
- 
-+#define S35390A_INT2_MODE_MASK		0xF0
-+
-+#define S35390A_INT2_MODE_NOINTR	0x00
-+#define S35390A_INT2_MODE_FREQ		0x10
-+#define S35390A_INT2_MODE_ALARM		0x40
-+#define S35390A_INT2_MODE_PMIN_EDG	0x20
-+
- static const struct i2c_device_id s35390a_id[] = {
- 	{ "s35390a", 0 },
- 	{ }
-@@ -184,6 +197,104 @@ static int s35390a_get_datetime(struct i2c_client *client, struct rtc_time *tm)
- 	return rtc_valid_tm(tm);
- }
- 
-+static int s35390a_set_alarm(struct i2c_client *client, struct rtc_wkalrm *alm)
-+{
-+	struct s35390a *s35390a = i2c_get_clientdata(client);
-+	char buf[3], sts = 0;
-+	int err, i;
-+
-+	dev_dbg(&client->dev, "%s: alm is secs=%d, mins=%d, hours=%d mday=%d, "\
-+		"mon=%d, year=%d, wday=%d\n", __func__, alm->time.tm_sec,
-+		alm->time.tm_min, alm->time.tm_hour, alm->time.tm_mday,
-+		alm->time.tm_mon, alm->time.tm_year, alm->time.tm_wday);
-+
-+	/* disable interrupt */
-+	err = s35390a_set_reg(s35390a, S35390A_CMD_STATUS2, &sts, sizeof(sts));
-+	if (err < 0)
-+		return err;
-+
-+	/* clear pending interrupt, if any */
-+	err = s35390a_get_reg(s35390a, S35390A_CMD_STATUS1, &sts, sizeof(sts));
-+	if (err < 0)
-+		return err;
-+
-+	if (alm->enabled)
-+		sts = S35390A_INT2_MODE_ALARM;
-+	else
-+		sts = S35390A_INT2_MODE_NOINTR;
-+
-+	/* This chip expects the bits of each byte to be in reverse order */
-+	sts = bitrev8(sts);
-+
-+	/* set interupt mode*/
-+	err = s35390a_set_reg(s35390a, S35390A_CMD_STATUS2, &sts, sizeof(sts));
-+	if (err < 0)
-+		return err;
-+
-+	if (alm->time.tm_wday != -1)
-+		buf[S35390A_ALRM_BYTE_WDAY] = bin2bcd(alm->time.tm_wday) | 0x80;
-+
-+	buf[S35390A_ALRM_BYTE_HOURS] = s35390a_hr2reg(s35390a,
-+			alm->time.tm_hour) | 0x80;
-+	buf[S35390A_ALRM_BYTE_MINS] = bin2bcd(alm->time.tm_min) | 0x80;
-+
-+	if (alm->time.tm_hour >= 12)
-+		buf[S35390A_ALRM_BYTE_HOURS] |= 0x40;
-+
-+	for (i = 0; i < 3; ++i)
-+		buf[i] = bitrev8(buf[i]);
-+
-+	err = s35390a_set_reg(s35390a, S35390A_CMD_INT2_REG1, buf,
-+								sizeof(buf));
-+
-+	return err;
-+}
-+
-+static int s35390a_read_alarm(struct i2c_client *client, struct rtc_wkalrm *alm)
-+{
-+	struct s35390a *s35390a = i2c_get_clientdata(client);
-+	char buf[3], sts;
-+	int i, err;
-+
-+	err = s35390a_get_reg(s35390a, S35390A_CMD_STATUS2, &sts, sizeof(sts));
-+	if (err < 0)
-+		return err;
-+
-+	if (bitrev8(sts) != S35390A_INT2_MODE_ALARM)
-+		return -EINVAL;
-+
-+	err = s35390a_get_reg(s35390a, S35390A_CMD_INT2_REG1, buf, sizeof(buf));
-+	if (err < 0)
-+		return err;
-+
-+	/* This chip returns the bits of each byte in reverse order */
-+	for (i = 0; i < 3; ++i) {
-+		buf[i] = bitrev8(buf[i]);
-+		buf[i] &= ~0x80;
-+	}
-+
-+	alm->time.tm_wday = bcd2bin(buf[S35390A_ALRM_BYTE_WDAY]);
-+	alm->time.tm_hour = s35390a_reg2hr(s35390a,
-+						buf[S35390A_ALRM_BYTE_HOURS]);
-+	alm->time.tm_min = bcd2bin(buf[S35390A_ALRM_BYTE_MINS]);
-+
-+	dev_dbg(&client->dev, "%s: alm is mins=%d, hours=%d, wday=%d\n",
-+			__func__, alm->time.tm_min, alm->time.tm_hour,
-+			alm->time.tm_wday);
-+
-+	return 0;
-+}
-+
-+static int s35390a_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
-+{
-+	return s35390a_read_alarm(to_i2c_client(dev), alm);
-+}
-+
-+static int s35390a_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
-+{
-+	return s35390a_set_alarm(to_i2c_client(dev), alm);
-+}
-+
- static int s35390a_rtc_read_time(struct device *dev, struct rtc_time *tm)
- {
- 	return s35390a_get_datetime(to_i2c_client(dev), tm);
-@@ -197,6 +308,9 @@ static int s35390a_rtc_set_time(struct device *dev, struct rtc_time *tm)
- static const struct rtc_class_ops s35390a_rtc_ops = {
- 	.read_time	= s35390a_rtc_read_time,
- 	.set_time	= s35390a_rtc_set_time,
-+	.set_alarm	= s35390a_rtc_set_alarm,
-+	.read_alarm	= s35390a_rtc_read_alarm,
-+
- };
- 
- static struct i2c_driver s35390a_driver;
-@@ -261,6 +375,8 @@ static int s35390a_probe(struct i2c_client *client,
- 	if (s35390a_get_datetime(client, &tm) < 0)
- 		dev_warn(&client->dev, "clock needs to be set\n");
- 
-+	device_set_wakeup_capable(&client->dev, 1);
-+
- 	s35390a->rtc = rtc_device_register(s35390a_driver.driver.name,
- 				&client->dev, &s35390a_rtc_ops, THIS_MODULE);
- 
--- 
-1.7.10.4
+If it doesn't apply due to conflicts, or you would rather just wait
+until 3.7-rc1, it's not a problem.
+
+I have updated the patch to fix the typo Ian pointed out and to remove
+the Reported-by signoff from Dan if you would like me to repost it.
+
+Regards,
+Hartley
 
