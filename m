@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab2IZGvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 02:51:14 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58620 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab2IZGvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 02:51:13 -0400
+	id S1752889Ab2IZGw1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 02:52:27 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59047 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449Ab2IZGw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 02:52:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,488,1344236400"; 
+   d="scan'208";a="197207368"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: RE: [PATCH] x86/fixup_irq: Clean the offlining CPU from the irq
+ affinity mask
+Thread-Topic: [PATCH] x86/fixup_irq: Clean the offlining CPU from the irq
+ affinity mask
+Thread-Index: AQHNm7KGV53MezdF+kuvmdrX7HvLQZecLhqA
+Date: Wed, 26 Sep 2012 06:52:13 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A189F97@SHSMSX101.ccr.corp.intel.com>
+References: <1348669924.19514.6.camel@cliu38-desktop-build>
+ <5062A442.2030207@linux.vnet.ibm.com>
+In-Reply-To: <5062A442.2030207@linux.vnet.ibm.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1348642068.13371.135.camel@smile>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348575190-11761-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x=kEDfY_DaBdbeY+CREiRJDH5yeNLUUuSpGTZcdWtZEd7g@mail.gmail.com>
-	<1348642068.13371.135.camel@smile>
-Date: Wed, 26 Sep 2012 12:21:12 +0530
-X-Google-Sender-Auth: PVs5vpv_RSbOqsdopwDP1ZBaw7o
-Message-ID: <CAOh2x=k=WPh4uPor=K+J752dR-pqZbieytkx-G7JGt+6LE_qSw@mail.gmail.com>
-Subject: Re: [PATCHv1 2/6] dmaengine: dw_dmac: add driver for Atmel AT32
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8Q6qU1g030073
 
-On Wed, Sep 26, 2012 at 12:17 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
+> > +		} else if (cpumask_test_cpu(cpu, data->affinity))
+> > +			cpumask_clear_cpu(cpu, data->affinity);
+> >
+> 
+> You meant to use 'affinity' (instead of data->affinity) in the above 2 statements
+> right? Note that we do chip->irq_set_affinity(data, affinity, true); further down.
+> 
 
-> This separate driver makes no sense in case it is built properly without
-> CLK framework. Let me check this and leave comments at patch 1/6.
-
-Following is the commit that introduced this change :)
-
-commit 93abe8e4b13ae9a0428ce940a8a03ac72a7626f1
-Author: Viresh Kumar <viresh.kumar@st.com>
-Date:   Mon Jul 30 14:39:27 2012 -0700
-
-    clk: add non CONFIG_HAVE_CLK routines
-
-    Many drivers are shared between architectures that may or may not have
-    HAVE_CLK selected for them.  To remove compilation errors for them we
-    enclose clk_*() calls in these drivers within #ifdef CONFIG_HAVE_CLK,
-    #endif.
-
-    This patch removes the need of these CONFIG_HAVE_CLK statements, by
-    introducing dummy routines when HAVE_CLK is not selected by platforms.
-    So, definition of these routines will always be available.  These calls
-    will return error for platforms that don't select HAVE_CLK.
-
-    Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-    Cc: Wolfram Sang <w.sang@pengutronix.de>
-    Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Cc: Jeff Garzik <jgarzik@redhat.com>
-    Cc: Andrew Lunn <andrew@lunn.ch>
-    Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
-    Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-    Cc: Russell King <rmk@arm.linux.org.uk>
-    Cc: Mike Turquette <mturquette@linaro.org>
-    Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-    Cc: viresh kumar <viresh.linux@gmail.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Yes, I have noticed it, used data->affinity here is just for avoiding compile warning.
+in fact affinity == data->affinity, but affinity pointer is const type,
+And cpumask_clear_cpu needs non-const type,so here I am using data->affinity,
+instead of changing code "const struct cpumask *affinity;"
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
