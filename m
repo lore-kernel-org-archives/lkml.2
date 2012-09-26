@@ -1,113 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab2IZSC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 14:02:27 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35907 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2IZSC0 (ORCPT
+	id S1757970Ab2IZSDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 14:03:32 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:47544 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757739Ab2IZSDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 14:02:26 -0400
-Message-ID: <50634306.8050702@pengutronix.de>
-Date: Wed, 26 Sep 2012 20:01:42 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Wed, 26 Sep 2012 14:03:31 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Joe Perches <joe@perches.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        akpm@linux-foundation.org, davem@davemloft.net,
-        santosh.shilimkar@ti.com, grant.likely@secretlab.ca, balbi@ti.com,
-        arnd@arndb.de, gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        robherring2@gmail.com, richard.zhao@freescale.com,
-        B29397@freescale.com, alexander.shishkin@linux.intel.com,
-        marex@denx.de, p.paneri@samsung.com,
-        devicetree-discuss@lists.ozlabs.org,
-        broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] drivers: phy: add generic PHY framework
-References: <1348671675-20830-1-git-send-email-kishon@ti.com> <1348678677.15175.18.camel@joe-AO722> <2573688.gCRJ0R3vnc@dtor-d630.eng.vmware.com>
-In-Reply-To: <2573688.gCRJ0R3vnc@dtor-d630.eng.vmware.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigBAFF293761BECF07B5B71E4C"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1348194419-11486-10-git-send-email-sboyd@codeaurora.org>
+References: <1348194419-11486-1-git-send-email-sboyd@codeaurora.org>
+	<1348194419-11486-10-git-send-email-sboyd@codeaurora.org>
+Date: Wed, 26 Sep 2012 23:33:30 +0530
+Message-ID: <CADTbHxoNdmAWaZ1dDYz_8zFr6xDxp8NYHPGF_WjYbeTWLmuMQw@mail.gmail.com>
+Subject: Re: [PATCH 09/10] ARM: msm: Make proc_comm clock control into a
+ platform driver
+From: Pankaj Jangra <jangra.pankaj9@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigBAFF293761BECF07B5B71E4C
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Stephen,
 
-On 09/26/2012 07:41 PM, Dmitry Torokhov wrote:
-> On Wednesday, September 26, 2012 09:57:57 AM Joe Perches wrote:
->> On Wed, 2012-09-26 at 20:31 +0530, Kishon Vijay Abraham I wrote:
->>> The PHY framework provides a set of API's for the PHY drivers to
->>> create/destroy a PHY and API's
->>
->> Just some trivial notes.
->>
->>> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
->>
->> []
->>
->>> @@ -0,0 +1,445 @@
->>
->> []
->>
->>> +static void devm_phy_release(struct device *dev, void *res)
->>> +{
->>> +	struct phy *phy =3D *(struct phy **)res;
->>
->> That's a bit twisted isn't it?
->> Perhaps
->> 	struct phy *phy =3D res;
->=20
-> No, because you really need to dereference ptr, not simply cast.
+Its good  you started moving the msm to common clock framework.:)
+I hope msm's codeaurora tree will also be moved to CCF soon. :)
 
-To avoid this confusion I suggest to create a struct phy_res. For now
-its only member will be a pointer to a struct phy.
+On Fri, Sep 21, 2012 at 7:56 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> To move closer to the generic struct clock framework move the
+> proc_comm based clock code to a platform driver. The data
+> describing the struct clks still live in the devices-$ARCH file,
+> but the clock initialization is done at driver binding time.
+>
+> Cc: Saravana Kannan <skannan@codeaurora.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+Reviewed-by: Pankaj Jangra<jangra.pankaj9@gmail.com>
 
->=20
-> ...
->=20
->>> +
->>> +	ptr =3D devres_alloc(devm_phy_release, sizeof(*ptr), GFP_KERNEL);
->>
->> Is this the right size?
->>
->> Because ptr is **, perhaps sizeof(struct phy) is clearer.
->=20
-> But incorrect.
+>  arch/arm/mach-msm/board-halibut.c      |  2 +-
+>  arch/arm/mach-msm/board-msm7x30.c      |  2 +-
+>  arch/arm/mach-msm/board-qsd8x50.c      |  2 +-
+>  arch/arm/mach-msm/board-trout.c        |  3 +--
+>  arch/arm/mach-msm/clock-pcom.c         | 23 +++++++++++++++++++++--
+>  arch/arm/mach-msm/clock-pcom.h         |  5 +++++
+>  arch/arm/mach-msm/clock.c              |  2 +-
+>  arch/arm/mach-msm/clock.h              |  3 +++
+>  arch/arm/mach-msm/devices-msm7x00.c    | 12 ++++++++++--
+>  arch/arm/mach-msm/devices-msm7x30.c    | 11 +++++++++--
+>  arch/arm/mach-msm/devices-qsd8x50.c    | 11 +++++++++--
+>  arch/arm/mach-msm/devices.h            | 15 +++------------
+>  arch/arm/mach-msm/include/mach/board.h |  5 -----
+>  13 files changed, 65 insertions(+), 31 deletions(-)
+>
+> diff --git a/arch/arm/mach-msm/board-halibut.c b/arch/arm/mach-msm/board-halibut.c
+> index 6ce542e..3c8cfe4 100644
+> --- a/arch/arm/mach-msm/board-halibut.c
+> +++ b/arch/arm/mach-msm/board-halibut.c
+> @@ -59,6 +59,7 @@ static struct platform_device smc91x_device = {
+>  };
 
-A proper struct will make the code more readable here, too.
+> +
+> +static int __devinit msm_clock_pcom_probe(struct platform_device *pdev)
+> +{
+> +       struct pcom_clk_pdata *pdata = pdev->dev.platform_data;
 
-Marc
+Should'nt it be const struct?
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigBAFF293761BECF07B5B71E4C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iEYEARECAAYFAlBjQwYACgkQjTAFq1RaXHNP5ACeMWUXO7r58ffEqgXEJmCwMgr0
-Jb0AnRC76v1e2eDCAsPOC96/P2izcY0Q
-=JbkN
------END PGP SIGNATURE-----
-
---------------enigBAFF293761BECF07B5B71E4C--
+> +       msm_clock_init(pdata->lookup, pdata->num_lookups);
+> +       return 0;
+> +}
+> +
+--
+Pankaj Jangra
