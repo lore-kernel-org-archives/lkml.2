@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab2IZRof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:44:35 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:35688 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab2IZRoe (ORCPT
+	id S1757612Ab2IZRr3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 13:47:29 -0400
+Received: from wp118.webpack.hosteurope.de ([80.237.132.125]:37131 "EHLO
+	wp118.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754171Ab2IZRr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:44:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <50633D24.6020002@parallels.com>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
-	<1347977050-29476-5-git-send-email-glommer@parallels.com>
-	<20120926140347.GD15801@dhcp22.suse.cz>
-	<20120926163648.GO16296@google.com>
-	<50633D24.6020002@parallels.com>
-Date: Wed, 26 Sep 2012 10:44:32 -0700
-X-Google-Sender-Auth: 75kdb-bA9ZUScZLzrnc58nz2GHk
-Message-ID: <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Sep 2012 13:47:28 -0400
+Date: Wed, 26 Sep 2012 19:47:22 +0200
+From: Florian Dazinger <florian@dazinger.net>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        <linux-kernel@vger.kernel.org>,
+        iommu <iommu@lists.linux-foundation.org>
+Subject: Re: 3.6-rc7 boot crash + bisection
+Message-ID: <20120926194722.3d95847e@brain.lan>
+In-Reply-To: <20120926150407.GD10549@amd.com>
+References: <20120924210348.5f50677b@brain.lan>
+	<1348597970.28860.114.camel@bling.home>
+	<20120925205420.0a07dea2@brain.lan>
+	<1348602226.28860.132.camel@bling.home>
+	<20120926010154.49cc2588@brain.lan>
+	<20120926144345.GC10549@amd.com>
+	<1348671121.28860.186.camel@bling.home>
+	<20120926150407.GD10549@amd.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-bounce-key: webpack.hosteurope.de;florian@dazinger.net;1348681648;94923251;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Glauber.
+Am Wed, 26 Sep 2012 17:04:07 +0200
+schrieb "Roedel, Joerg" <Joerg.Roedel@amd.com>:
 
-On Wed, Sep 26, 2012 at 10:36 AM, Glauber Costa <glommer@parallels.com> wrote:
-> This was discussed multiple times. Our interest is to preserve existing
-> deployed setup, that were tuned in a world where kmem didn't exist.
-> Because we also feed kmem to the user counter, this may very well
-> disrupt their setup.
+> On Wed, Sep 26, 2012 at 08:52:01AM -0600, Alex Williamson wrote:
+> > Assuming this works, it may be ok as a 3.7 fix, but if there was
+> > actually more than one device behind the alias we'd expose them as
+> > separate iommu groups.  I don't think that's what we want.  Maybe it
+> > should at least get a pr_warn.  Thanks,
+> 
+> True, we need something more generic as the real fix. When Florian
+> reports success I'll try to get this still into 3.6, otherwise to
+> -stable.
+> 
+> 
+> 	Joerg
+> 
 
-So, that can be served by .kmem_accounted at root, no?
+ ... updating to the newest BIOS revision does not make any difference, rc7 is crashing, rc7+patch is not, I definitely need this patch.
+If there is more you want me to test, pls tell.
 
-> User memory, unlike kernel memory, may very well be totally in control
-> of the userspace application, so it is not unreasonable to believe that
-> extra pages appearing in a new kernel version may break them.
->
-> It is actually a much worse compatibility problem than flipping
-> hierarchy, in comparison
-
-Again, what's wrong with one switch at the root?
-
-Thanks.
-
--- 
-tejun
+Florian
