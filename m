@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab2IZS7l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 14:59:41 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:59980 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758068Ab2IZS7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 14:59:39 -0400
-Message-ID: <50634FC9.4090609@parallels.com>
-Date: Wed, 26 Sep 2012 22:56:09 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1758283Ab2IZTEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 15:04:41 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43663 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757438Ab2IZTEk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 15:04:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19kBXZyDfA42ErG0cHwxGIV
+Date: Wed, 26 Sep 2012 12:04:36 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Koen Kooi <koen@dominion.thruhere.net>
+Cc: Matt Porter <mporter@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        List List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: replacement for /sys/kernel/debug/omap_mux in DT/pinctrl land ?
+Message-ID: <20120926190435.GI4840@atomide.com>
+References: <D7202A6C-5250-4B55-B3B8-FF15BCCA97AC@dominion.thruhere.net>
+ <20120926125658.GA5641@beef>
+ <CACRpkdYqVC4Vou+0Mn1OmQg8vPxDULDcFDD0yV5nassqkE1Zag@mail.gmail.com>
+ <20120926161546.GC5641@beef>
+ <50515DB7-8D0C-4F74-B390-78BC9CD86FC9@dominion.thruhere.net>
+ <20120926185202.GF4840@atomide.com>
+ <39625BB0-1F8A-4ED1-B50C-5FB846B97934@dominion.thruhere.net>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <devel@openvz.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-5-git-send-email-glommer@parallels.com> <20120926140347.GD15801@dhcp22.suse.cz> <20120926163648.GO16296@google.com> <50633D24.6020002@parallels.com> <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com> <50634105.8060302@parallels.com> <20120926180124.GA12544@google.com>
-In-Reply-To: <20120926180124.GA12544@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.3.27]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <39625BB0-1F8A-4ED1-B50C-5FB846B97934@dominion.thruhere.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2012 10:01 PM, Tejun Heo wrote:
-> Hello,
+* Koen Kooi <koen@dominion.thruhere.net> [120926 11:54]:
 > 
-> On Wed, Sep 26, 2012 at 09:53:09PM +0400, Glauber Costa wrote:
->> I understand your trauma about over flexibility, and you know I share of
->> it. But I don't think there is any need to cap it here. Given kmem
->> accounted is perfectly hierarchical, and there seem to be plenty of
->> people who only care about user memory, I see no reason to disallow a
->> mixed use case here.
->>
->> I must say that for my particular use case, enabling it unconditionally
->> would just work, so it is not that what I have in mind.
-> 
-> So, I'm not gonna go as far as pushing for enabling it unconditionally
-> but would really like to hear why it's necessary to make it per node
-> instead of one global switch.  Maybe it has already been discussed to
-> hell and back.  Care to summarize / point me to it?
-> 
+> It's for am335x :)
 
-For me, it is the other way around: it makes perfect sense to have a
-per-subtree selection of features where it doesn't hurt us, provided it
-is hierarchical. For the mere fact that not every application is
-interested in this (Michal is the one that is being so far more vocal
-about this not being needed in some use cases), and it is perfectly
-valid to imagine such applications would coexist.
+Ah OK we don't have that data in the kernel then. But
+if you have some format in mind suitable I can still
+generate the other omap+package+mode data for you.
 
-So given the flexibility it brings, the real question is, as I said,
-backwards: what is it necessary to make it a global switch ?
+Regards,
 
+Tony
