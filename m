@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab2IZRhg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 13:37:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46729 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab2IZRhe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 13:37:34 -0400
-Date: Wed, 26 Sep 2012 12:37:18 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: akpm@linux-foundation.org, manfred@colorfullife.com,
-        a.p.zijlstra@chello.nl, netdev@vger.kernel.org, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, cmetcalf@tilera.com, jmorris@namei.org,
-        linux-driver@qlogic.com, linux-security-module@vger.kernel.org,
-        hughd@google.com, ron.mercer@qlogic.com, viro@zeniv.linux.org.uk,
-        james.l.morris@oracle.com, catalin.marinas@arm.com,
-        casey@schaufler-ca.com, eparis@parisplace.org, sds@tycho.nsa.gov,
-        jitendra.kalsaria@qlogic.com, devel@openvz.org
-Subject: Re: [PATCH v5 01/10] ipc: remove forced assignment of selected
- message
-Message-ID: <20120926173718.GA30620@sergelap>
-References: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
- <20120919160531.11254.48182.stgit@localhost6.localdomain6>
+	id S1757416Ab2IZRkM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 13:40:12 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:55534 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756607Ab2IZRkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 13:40:10 -0400
+Message-ID: <50633D24.6020002@parallels.com>
+Date: Wed, 26 Sep 2012 21:36:36 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120919160531.11254.48182.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <devel@openvz.org>, <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-5-git-send-email-glommer@parallels.com> <20120926140347.GD15801@dhcp22.suse.cz> <20120926163648.GO16296@google.com>
+In-Reply-To: <20120926163648.GO16296@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.3.27]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stanislav Kinsbursky (skinsbursky@parallels.com):
-> This is a cleanup patch. The assignment is redundant.
+On 09/26/2012 08:36 PM, Tejun Heo wrote:
+> Hello, Michal, Glauber.
 > 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->  ipc/msg.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+> On Wed, Sep 26, 2012 at 04:03:47PM +0200, Michal Hocko wrote:
+>> Haven't we already discussed that a new memcg should inherit kmem_accounted
+>> from its parent for use_hierarchy?
+>> Say we have
+>> root
+>> |
+>> A (kmem_accounted = 1, use_hierachy = 1)
+>>  \
+>>   B (kmem_accounted = 0)
+>>    \
+>>     C (kmem_accounted = 1)
+>>
+>> B find's itself in an awkward situation becuase it doesn't want to
+>> account u+k but it ends up doing so becuase C.
 > 
-> diff --git a/ipc/msg.c b/ipc/msg.c
-> index 7385de2..f3bfbb8 100644
-> --- a/ipc/msg.c
-> +++ b/ipc/msg.c
-> @@ -787,7 +787,6 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
->  			    !security_msg_queue_msgrcv(msq, walk_msg, current,
->  						       msgtyp, mode)) {
->  
-> -				msg = walk_msg;
->  				if (mode == SEARCH_LESSEQUAL &&
->  						walk_msg->m_type != 1) {
->  					msg = walk_msg;
+> Do we really want this level of flexibility?  What's wrong with a
+> global switch at the root?  I'm not even sure we want this to be
+> optional at all.  The only reason I can think of is that it might
+> screw up some configurations in use which are carefully crafted to
+> suit userland-only usage but for that isn't what we need a transition
+> plan rather than another ultra flexible config option that not many
+> really understand the implication of?
+> 
+> In the same vein, do we really need both .kmem_accounted and config
+> option?  If someone is turning on MEMCG, just include kmem accounting.
+> 
 
-Perhaps your tree is different from mine, but it looks to me like it would
-be simpler to remove the 'msg = walk_msg' from both the 'if' and 'else',
-and keep them above the if/else?
+Yes, we do.
+
+This was discussed multiple times. Our interest is to preserve existing
+deployed setup, that were tuned in a world where kmem didn't exist.
+Because we also feed kmem to the user counter, this may very well
+disrupt their setup.
+
+User memory, unlike kernel memory, may very well be totally in control
+of the userspace application, so it is not unreasonable to believe that
+extra pages appearing in a new kernel version may break them.
+
+It is actually a much worse compatibility problem than flipping
+hierarchy, in comparison
+
