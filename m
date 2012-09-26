@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab2IZXYA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 19:24:00 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:55981 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750854Ab2IZXX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 19:23:57 -0400
-Message-ID: <50638DBB.4000002@parallels.com>
-Date: Thu, 27 Sep 2012 03:20:27 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <devel@openvz.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-References: <20120926193417.GJ12544@google.com> <50635B9D.8020205@parallels.com> <20120926195648.GA20342@google.com> <50635F46.7000700@parallels.com> <20120926201629.GB20342@google.com> <50637298.2090904@parallels.com> <20120926221046.GA10453@mtj.dyndns.org> <506381B2.2060806@parallels.com> <20120926224235.GB10453@mtj.dyndns.org> <50638793.7060806@parallels.com> <20120926230807.GC10453@mtj.dyndns.org>
-In-Reply-To: <20120926230807.GC10453@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751500Ab2IZXZF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 19:25:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56870 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab2IZXZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 19:25:03 -0400
+Date: Wed, 26 Sep 2012 16:25:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] binfmt_elf: Uninitialized variable
+Message-Id: <20120926162502.3b31071d.akpm@linux-foundation.org>
+In-Reply-To: <20120919144446.16893.24530.stgit@localhost.localdomain>
+References: <20120919144410.16893.57933.stgit@localhost.localdomain>
+	<20120919144446.16893.24530.stgit@localhost.localdomain>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.3.27]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 03:08 AM, Tejun Heo wrote:
-> Hello, Glauber.
+On Wed, 19 Sep 2012 15:45:01 +0100
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+
+> load_elf_interp has interp_map_addr carefully described as
+> "uninitialized_var" and marked so as to avoid a warning. However
+> if you trace the code it is passed into load_elf_interp and then
+> this value is checked against NULL.
 > 
-> On Thu, Sep 27, 2012 at 02:54:11AM +0400, Glauber Costa wrote:
->> I don't. Much has been said in the past about the problem of sharing. A
->> lot of the kernel objects are shared by nature, this is pretty much
->> unavoidable. The answer we have been giving to this inquiry, is that the
->> workloads (us) interested in kmem accounted tend to be quite local in
->> their file accesses (and other kernel objects as well).
->>
->> It should be obvious that not all workloads are like this, and some of
->> them would actually prefer to have their umem limited only.
->>
->> There is nothing unreasonable in tracking user memory only.
->>
->> If we have a global switch for "tracking all kernel memory", who would
->> you account the objects that are heavily shared to? I solve this by not
->> tracking kernel memory for cgroups in such workloads. What do you propose?
+> As this return value isn't used this is actually safe but it freaks
+> various analysis tools that see un-initialized memory addresses
+> being read before their value is ever defined.
 > 
-> One of the things wrong with that is that it exposes the limitation of
-> the current implementation as interface to userland, which is never a
-> good idea.  In addition, how is userland supposed to know which
-> workload is shared kmem heavy or not?  Details like that are not even
-> inherent to workloads.  It's highly dependent on kernel implementation
-> which may change any day.  If we hit workloads like that the right
-> thing to do is improving kmemcg so that such problems don't occur, not
-> exposing another switch.
+> Set it to NULL as a matter of programming good taste if nothing else
 > 
-
-Sorry, there is nothing implementation dependent in here. One of the
-biggest consumers of all this, are dentries. Dentries are related to
-the paths you touch. If you touch files in a self-contained directory,
-where you don't expect anyone else to touch, this can safely be
-considered local. If you touch files all around, this can safely be
-considered not local. Where is the implementation dependent part?
-
-> If we can't make that work in reasonable (doesn't have to be perfect)
-> way, we might as well just give up on kmem controller.  If userland
-> has to second-guess kernel implementation details to make use of it,
-> it's useless.
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
 > 
-As I said above, it shouldn't.
-
->>> Well, that's really playing with words.  Limit is per cgroup and
->>> before the limit is set for the first time, everything is accounted to
->>> something else.  How is that keeping track?
->>>
->>
->> Even after the limit is set, it is set only by workloads that want kmem
->> to be tracked. If you want to track it during the whole lifetime of the
->> cgroup, you switch it before you put tasks to it. What is so crazy about it?
+>  fs/binfmt_elf.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> The fact that the numbers don't really mean what they apparently
-> should mean.
-> 
+> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+> index bf6d82b..5fb4801 100644
+> --- a/fs/binfmt_elf.c
+> +++ b/fs/binfmt_elf.c
+> @@ -880,7 +880,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+>  	}
+>  
+>  	if (elf_interpreter) {
+> -		unsigned long uninitialized_var(interp_map_addr);
+> +		unsigned long interp_map_addr = 0;
+>  
+>  		elf_entry = load_elf_interp(&loc->interp_elf_ex,
+>  					    interpreter,
 
-This is vague. The usage file in the cgroup means how much kernel memory
-was used by that cgroup. If it really bothers you that this may not be
-set through the whole group's lifetime, it is also easily solvable.
-
-> So, this seems properly crazy to me at the similar level of
-> use_hierarchy fiasco.  I'm gonna NACK on this.
-> 
-
-As I said: all use cases I particularly care about are covered by a
-global switch.
-
-I am laying down my views because I really believe they make more sense.
-But at some point, of course, I'll shut up if I believe I am a lone voice.
-
-I believe it should still be good to hear from mhocko and kame, but from
-your point of view, would all the rest, plus the introduction of a
-global switch make it acceptable to you?
-
+That looks right to me.
