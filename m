@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab2IZNZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 09:25:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43384 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab2IZNZx (ORCPT
+	id S1756469Ab2IZN02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 09:26:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51237 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756194Ab2IZN00 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 09:25:53 -0400
-Date: Wed, 26 Sep 2012 06:25:49 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tao Guo <glorioustao@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jan Beulich <jbeulich@novell.com>,
-        Ingo Molnar <mingo@elte.hu>, stable@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86_64: Work around old gas bug
-Message-ID: <20120926132549.GA23630@kroah.com>
-References: <1348648102-12653-1-git-send-email-glorioustao@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348648102-12653-1-git-send-email-glorioustao@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Sep 2012 09:26:26 -0400
+Message-ID: <1348665971.3881.102.camel@twins>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Jones <drjones@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Date: Wed, 26 Sep 2012 15:26:11 +0200
+In-Reply-To: <20120926132013.GB7633@turtle.usersys.redhat.com>
+References: <20120921115942.27611.67488.sendpatchset@codeblue>
+	 <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com>
+	 <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com>
+	 <1348494895.11847.64.camel@twins> <50608176.1040805@redhat.com>
+	 <1348502600.11847.90.camel@twins> <5060883C.4050901@redhat.com>
+	 <20120926132013.GB7633@turtle.usersys.redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 04:28:22AM -0400, Tao Guo wrote:
-> gas in binutils(2.16.91) could not parse parentheses within macro
-> parameters unless fully parenthesized, and this is a workaround to
-> make old gas work without generating below errors:
-> arch/x86/kernel/entry_64.S: Assembler messages:
-> arch/x86/kernel/entry_64.S:387: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:389: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:390: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:391: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:392: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:393: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:394: Error: too many positional arguments
-> 
-> Signed-off-by: Tao Guo <glorioustao@gmail.com>
-> ---
->  arch/x86/include/asm/calling.h |   48 +++++++++++++++++++--------------------
->  arch/x86/kernel/entry_64.S     |   20 ++++++++--------
->  2 files changed, 33 insertions(+), 35 deletions(-)
+On Wed, 2012-09-26 at 15:20 +0200, Andrew Jones wrote:
+> Wouldn't a clean solution be to promote a task's scheduler
+> class to the spinner class when we PLE (or come from some special
+> syscall
+> for userspace spinlocks?)? 
 
-<formletter>
+Userspace spinlocks are typically employed to avoid syscalls..
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+> That class would be higher priority than the
+> fair class and would schedule in FIFO order, but it would only run its
+> tasks for short periods before switching. 
 
-</formletter>
+Since lock hold times aren't limited, esp. for things like userspace
+'spin' locks, you've got a very good denial of service / opportunity for
+abuse right there.
+
+
