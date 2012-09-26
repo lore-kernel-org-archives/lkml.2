@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab2IZC0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 22:26:43 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57751 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab2IZC0l (ORCPT
+	id S1751541Ab2IZCdJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 22:33:09 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12980 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab2IZCdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 22:26:41 -0400
-Date: Tue, 25 Sep 2012 19:26:39 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi.kleen@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pagemap: fix wrong KPF_THP on slab pages
-In-Reply-To: <1348625168-28983-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.DEB.2.00.1209251926200.25890@chino.kir.corp.google.com>
-References: <1348625168-28983-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 25 Sep 2012 22:33:06 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6846"; a="241187539"
+X-IronPort-AV: E=Sophos;i="4.80,487,1344236400"; 
+   d="scan'208";a="124003655"
+From: Sujith Manoharan <c_manoha@qualcomm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <20578.26916.325009.547470@gargle.gargle.HOWL>
+Date: Wed, 26 Sep 2012 08:02:04 +0530
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "John W. Linville" <linville@tuxdriver.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "Sujith Manoharan" <c_manoha@qualcomm.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        "Bjorn Helgaas" <bhelgaas@google.com>
+Subject: linux-next: manual merge of the wireless-next tree with the pci
+ tree
+In-Reply-To: <20120926120317.63d0b4acb0502bc4c2ffe4b8@canb.auug.org.au>
+References: <20120926120317.63d0b4acb0502bc4c2ffe4b8@canb.auug.org.au>
+X-Mailer: VM 8.2.0b under 24.2.1 (x86_64-unknown-linux-gnu)
+X-Originating-IP: [10.100.2.38]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Sep 2012, Naoya Horiguchi wrote:
+Stephen Rothwell wrote:
+> Hi John,
+> 
+> Today's linux-next merge of the wireless-next tree got a conflict in
+> drivers/net/wireless/ath/ath9k/pci.c between commit 08bd108096b6 ("ath9k:
+> Use PCI Express Capability accessors") from the pci tree and commit
+> 046b6802c8d3 ("ath9k: Disable ASPM only for AR9285") from the
+> wireless-next tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-> KPF_THP can be set on non-huge compound pages like slab pages, because
-> PageTransCompound only sees PG_head and PG_tail. Obviously this is a bug
-> and breaks user space applications which look for thp via /proc/kpageflags.
-> This patch rules out setting KPF_THP wrongly by additional PageSlab check.
-> 
-> Changelog in v3:
->   - check PageSlab instead of PageAnon
->   - fix patch subject
-> 
-> Changelog in v2:
->   - add a comment in code
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+The fix looks good, thanks.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Sujith
