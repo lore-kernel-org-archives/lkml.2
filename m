@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756999Ab2IZPFq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 11:05:46 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34999 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755624Ab2IZPFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 11:05:45 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <rpurdie@rpsys.net>, <thierry.reding@avionic-design.de>
-CC: <broonie@opensource.wolfsonmicro.com>, <shawn.guo@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>,
-        <gururaja.hebbar@ti.com>, "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v3] pwm_backlight: Add device tree support for Low Threshold Brightness
-Date: Wed, 26 Sep 2012 20:17:07 +0530
-Message-ID: <1348670827-5720-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756875Ab2IZPKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 11:10:55 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:27701
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756565Ab2IZPKx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 11:10:53 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VPS-8(zz98dI179dNzz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MAYQ5Y-01-864-02
+X-M-MSG: 
+Date: Wed, 26 Sep 2012 17:10:44 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Florian Dazinger <florian@dazinger.net>, <linux-kernel@vger.kernel.org>,
+        iommu <iommu@lists.linux-foundation.org>
+Subject: Re: 3.6-rc7 boot crash + bisection
+Message-ID: <20120926151044.GE10549@amd.com>
+References: <20120924210348.5f50677b@brain.lan>
+ <1348597970.28860.114.camel@bling.home>
+ <20120925205420.0a07dea2@brain.lan>
+ <1348602226.28860.132.camel@bling.home>
+ <20120926132050.GB10549@amd.com>
+ <1348670159.28860.183.camel@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1348670159.28860.183.camel@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some back lights perform poorly when driven by a PWM with a short
-duty-cycle. For such devices, the low threshold can be used to specify a
-lower bound for the duty-cycle and should be chosen to exclude the
-problematic range.
+On Wed, Sep 26, 2012 at 08:35:59AM -0600, Alex Williamson wrote:
+> Hmm, that throws a kink in iommu groups.  So perhaps we need to make an
+> alias interface to iommu groups.  Seems like this could just be an extra
+> parameter to iommu_group_get and iommu_group_add_device (empty in the
+> typical case).  Then we have the problem of what's the type for an
+> alias?  For AMI-Vi, it's a u16, but we need to be more generic than
+> that.  Maybe iommu groups should just treat it as a void* so iommus can
+> use a pointer to some structure or a fixed value like a u16 bus:slot.
+> Thoughts?
 
-Add device tree probing support for lth_brightness putting
-low-threshold-brightness as optional property.
+Good question. The iommu-groups are part of the IOMMU-API, with an
+interface to the IOMMU drivers and one to the users of IOMMU-API. So the
+alias handling itself should be a function of the interface to the IOMMU
+driver. In general the interface should not be bus specific.
 
-Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
----
-Changes since v2:
-        - Added documentation part for configuring low-threshold-brightness
+So a void pointer seems the only logical choice then. But I would not
+limit its scope to alias handling. How about making it a bus-private
+pointer where IOMMU driver store bus-specific information. That way we
+make sure that there is one struct per bus-type for this pointer, and
+not one structure per IOMMU driver.
 
-Changes since v1:
-        - Updated commit message.
-	- Changes to low-threshold-brightness.
-	- Merged example section to original.
 
-:100644 100644 1e4fc72... 4e29912... M	Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-:100644 100644 995f016... 29e6fe1... M	drivers/video/backlight/pwm_bl.c
- .../bindings/video/backlight/pwm-backlight.txt     |   10 ++++++++++
- drivers/video/backlight/pwm_bl.c                   |    5 +++++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+	Joerg
 
-diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-index 1e4fc72..4e29912 100644
---- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-@@ -14,6 +14,15 @@ Required properties:
- Optional properties:
-   - pwm-names: a list of names for the PWM devices specified in the
-                "pwms" property (see PWM binding[0])
-+  - low-threshold-brightness: brightness threshold low level. Low threshold
-+    brightness set to value so that backlight present on low end of
-+    brightness.
-+    Some panels, backlight would absent if duty percentage of PWM wave is less
-+    than certain level (say 20%). By setting low-threshold-brightness to a
-+    value above (percentage of brightness-levels max) 50 (20% of 255, if 255
-+    is max). On setting low-threshold-brightness, range of brightness-levels
-+    is calculated in a region of low-threshold-brightness to brightness-levels
-+    max.
- 
- [0]: Documentation/devicetree/bindings/pwm/pwm.txt
- 
-@@ -25,4 +34,5 @@ Example:
- 
- 		brightness-levels = <0 4 8 16 32 64 128 255>;
- 		default-brightness-level = <6>;
-+		low-threshold-brightness = <50>;
- 	};
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 995f016..29e6fe1 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -143,6 +143,11 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 
- 		data->dft_brightness = value;
- 		data->max_brightness--;
-+
-+		ret = of_property_read_u32(node, "low-threshold-brightness",
-+					   &value);
-+		if (!ret)
-+			data->lth_brightness = value;
- 	}
- 
- 	/*
 -- 
-1.7.0.4
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
