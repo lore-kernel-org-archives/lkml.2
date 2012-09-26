@@ -1,36 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab2IZU2S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:28:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44552 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab2IZU2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:28:16 -0400
-Date: Wed, 26 Sep 2012 13:28:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Rene Buergel <rene.buergel@sohard.de>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [Patch v5] ezusb: move ezusb.c from drivers/usb/serial to
- drivers/usb/misc
-Message-ID: <20120926202812.GA9728@kroah.com>
-References: <c28594f9-45a3-4232-82fc-2f7c65cfb30c@shmail0>
- <47b117b0-5776-41c4-8b49-e3a21e80a6a4@shmail0>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <47b117b0-5776-41c4-8b49-e3a21e80a6a4@shmail0>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756026Ab2IZU2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:28:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755287Ab2IZU2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 16:28:53 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andi Kleen <andi.kleen@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4] kpageflags: fix wrong KPF_THP on non-huge compound pages
+Date: Wed, 26 Sep 2012 16:27:14 -0400
+Message-Id: <1348691234-31729-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 10:20:19PM +0200, Rene Buergel wrote:
-> This patch 
-> - moves drivers/usb/serial/ezusb.c to drivers/usb/misc/
-> - renamed CONFIG_USB_EZUSB to CONFIG_USB_EZUSB_FX2 to avoid build errors
+KPF_THP can be set on non-huge compound pages (like slab pages or pages
+allocated by drivers with __GFP_COMP) because PageTransCompound only
+checks PG_head and PG_tail. Obviously this is a bug and breaks user space
+applications which look for thp via /proc/kpageflags.
 
-Ah, does this solve the error I was seeing?  Nice job figuring that one
-out.
+This patch rules out setting KPF_THP wrongly by additionally checking
+PageLRU on the head pages.
 
-greg k-h
+Changelog in v4:
+  - check PageLRU with compound_trans_head()
+  - fix patch subject again
+
+Changelog in v3:
+  - check PageSlab instead of PageAnon
+  - fix patch subject
+
+Changelog in v2:
+  - add a comment in code
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ fs/proc/page.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git v3.6-rc6.orig/fs/proc/page.c v3.6-rc6/fs/proc/page.c
+index 7fcd0d6..b8730d9 100644
+--- v3.6-rc6.orig/fs/proc/page.c
++++ v3.6-rc6/fs/proc/page.c
+@@ -115,7 +115,13 @@ u64 stable_page_flags(struct page *page)
+ 		u |= 1 << KPF_COMPOUND_TAIL;
+ 	if (PageHuge(page))
+ 		u |= 1 << KPF_HUGE;
+-	else if (PageTransCompound(page))
++	/*
++	 * PageTransCompound can be true for non-huge compound pages (slab
++	 * pages or pages allocated by drivers with __GFP_COMP) because it
++	 * just checks PG_head/PG_tail, so we need to check PageLRU to make
++	 * sure a given page is a thp, not a non-huge compound page.
++	 */
++	else if (PageTransCompound(page) && PageLRU(compound_trans_head(page)))
+ 		u |= 1 << KPF_THP;
+ 
+ 	/*
+-- 
+1.7.11.4
+
