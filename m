@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab2IZOwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 10:52:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42758 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755443Ab2IZOwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 10:52:08 -0400
-Message-ID: <1348671121.28860.186.camel@bling.home>
-Subject: Re: 3.6-rc7 boot crash + bisection
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: Florian Dazinger <florian@dazinger.net>, linux-kernel@vger.kernel.org,
-        iommu <iommu@lists.linux-foundation.org>
-Date: Wed, 26 Sep 2012 08:52:01 -0600
-In-Reply-To: <20120926144345.GC10549@amd.com>
-References: <20120924210348.5f50677b@brain.lan>
-	 <1348597970.28860.114.camel@bling.home> <20120925205420.0a07dea2@brain.lan>
-	 <1348602226.28860.132.camel@bling.home> <20120926010154.49cc2588@brain.lan>
-	 <20120926144345.GC10549@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756862Ab2IZOx0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 10:53:26 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:62389 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755443Ab2IZOxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 10:53:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1348663237-3237-4-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348663237-3237-4-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Wed, 26 Sep 2012 20:23:24 +0530
+X-Google-Sender-Auth: 0DbPt_6JTQL7UXOcwkUDKbzIJ5Q
+Message-ID: <CAOh2x=kPAKXXo7C6meHvy4g0Vpwsx98dMbA6568pmt978eVq6w@mail.gmail.com>
+Subject: Re: [PATCHv2 3/4] dma: move dw_dmac driver to an own directory
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-26 at 16:43 +0200, Roedel, Joerg wrote:
-> Florian,
-> 
-> On Wed, Sep 26, 2012 at 01:01:54AM +0200, Florian Dazinger wrote:
-> > you're right, either "amd_iommu=off" or removing the audio card makes
-> > the failure disappear. I will test the new BIOS rev. tomorrow.
-> 
-> Can you please test this diff and report if it fixes the problem for
-> you?
-> 
-> Thanks.
-> 
-> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-> index b64502d..e89daf1 100644
-> --- a/drivers/iommu/amd_iommu.c
-> +++ b/drivers/iommu/amd_iommu.c
-> @@ -266,7 +266,7 @@ static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
->  
->  static int iommu_init_device(struct device *dev)
->  {
-> -	struct pci_dev *dma_pdev, *pdev = to_pci_dev(dev);
-> +	struct pci_dev *dma_pdev = NULL, *pdev = to_pci_dev(dev);
->  	struct iommu_dev_data *dev_data;
->  	struct iommu_group *group;
->  	u16 alias;
-> @@ -293,7 +293,9 @@ static int iommu_init_device(struct device *dev)
->  		dev_data->alias_data = alias_data;
->  
->  		dma_pdev = pci_get_bus_and_slot(alias >> 8, alias & 0xff);
-> -	} else
-> +	}
-> +
-> +	if (dma_pdev == NULL)
->  		dma_pdev = pci_dev_get(pdev);
->  
->  	/* Account for quirked devices */
-> 
+On Wed, Sep 26, 2012 at 6:10 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> The dw_dmac driver contains multiple files. To make a managment of them more
+> convenient move it to an own directory.
 
-Assuming this works, it may be ok as a 3.7 fix, but if there was
-actually more than one device behind the alias we'd expose them as
-separate iommu groups.  I don't think that's what we want.  Maybe it
-should at least get a pr_warn.  Thanks,
+git format-patch has a option -C or -M or both... that makes such
+changes easier to review.
+If you create patches with these options, we will not get such long
+patches for renames....
+instead a single line will tell "foo.c file is renamed as dw/foo.c"
 
-Alex
+So this patch will have only few lines after that.
 
+Please resend with that... as its impossible to review it currently.
+
+--
+viresh
