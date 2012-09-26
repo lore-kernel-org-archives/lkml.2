@@ -1,40 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab2IZUdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:33:50 -0400
-Received: from mail-ob0-f194.google.com ([209.85.214.194]:47313 "EHLO
-	mail-ob0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab2IZUdt convert rfc822-to-8bit (ORCPT
+	id S1752887Ab2IZUgb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:36:31 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54547 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab2IZUga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:33:49 -0400
+	Wed, 26 Sep 2012 16:36:30 -0400
+Date: Wed, 26 Sep 2012 13:36:26 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Ming Lei <tom.leiming@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [BUG] Deferred probing in driver model is racy, resulting in
+ lost probes
+Message-ID: <20120926203626.GA23766@kroah.com>
+References: <20120818145856.GP18957@n2100.arm.linux.org.uk>
+ <CACVXFVPahbFVEP4p2Z9-TvjQ52tUCMuDeLx0X6GP5t0h5gEV8g@mail.gmail.com>
+ <20120916082510.GN12245@n2100.arm.linux.org.uk>
+ <CACVXFVOZ=4HFAy38q_8ZUjOPffcv_mMTi7KCdh3HcX=MCLw5SQ@mail.gmail.com>
+ <20120926200833.GA14340@kroah.com>
+ <20120926202321.GD30938@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Reply-To: webmailcontrolunit@cyberservices.com
-Date: Wed, 26 Sep 2012 21:33:48 +0100
-X-Google-Sender-Auth: 9zprowSi6k_lw30fgq1pSNnw6DU
-Message-ID: <CAOig8-McqRCvkDCfuVULMMiY=W5NYv=msJnFq8nbezCmkcs3VA@mail.gmail.com>
-Subject: Urgent Notice!!!
-From: Webmaster Email Help Desk <webmailcontrolunit@cyberservices.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120926202321.GD30938@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-Dear Webmail User
+On Wed, Sep 26, 2012 at 09:23:21PM +0100, Russell King - ARM Linux wrote:
+> On Wed, Sep 26, 2012 at 01:08:33PM -0700, Greg Kroah-Hartman wrote:
+> > On Sun, Sep 16, 2012 at 09:24:43PM +0800, Ming Lei wrote:
+> > > diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+> > > index 181ed26..17d7437 100644
+> > > --- a/drivers/base/bus.c
+> > > +++ b/drivers/base/bus.c
+> > > @@ -714,12 +714,12 @@ int bus_add_driver(struct device_driver *drv)
+> > >  	if (error)
+> > >  		goto out_unregister;
+> > > 
+> > > +	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+> > >  	if (drv->bus->p->drivers_autoprobe) {
+> > >  		error = driver_attach(drv);
+> > >  		if (error)
+> > >  			goto out_unregister;
+> > >  	}
+> > > -	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+> > >  	module_add_driver(drv->owner, drv);
+> > > 
+> > >  	error = driver_create_file(drv, &driver_attr_uevent);
+> > > 
+> > > 
+> > > 
+> > 
+> > Did the above patch ever prove to solve the issue or not?
+> 
+> To be honest, I've not bothered to test the above patch, and now when I
+> look at it, I notice it's broken - in that on error it will corrupt the
+> driver list.  Take a look at the error path.
+> 
+> priv is drv->p.  We add priv->knode_bus to the driver list.  If
+> driver_attach() returns an error, then we go to out_unregister, which
+> does:
+> 
+> out_unregister:
+>         kobject_put(&priv->kobj);
+>         kfree(drv->p);
+>         drv->p = NULL;
+> 
+> thereby freeing the node we just added to the driver list without first
+> removing it.
+> 
+> I suspect it will fix the problem, but let's get the patch to be correct
+> before it gets tested...
 
-Your mailbox has exceeded the limit of Quota Usage, which is as set by
-your manager, and access to your mailbox via our mail portal will be
-unavailable for sometime during this maintenance period.
+Good catch.  Ming, care to redo this?
 
-You will not be able to create new e-mail to send or receive again
-until you validate your mailbox.
-
-To re-validate your mailbox, you can CLICK
-http://www.cedele.com.mx/phpform/forms/form1.html
-
-Thanks
-System Administrator.
-
-Copyright © 2012 # WEBMASTER ADMIN • ALL RIGHTS RESERVED •
+greg k-h
