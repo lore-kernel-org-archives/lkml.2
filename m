@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab2IZIwO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 04:52:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755734Ab2IZIwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 04:52:09 -0400
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Benjamin Marzinski <bmarzins@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 27/27] GFS2: Write out dirty inode metadata in delayed deletes
-Date: Wed, 26 Sep 2012 09:25:48 +0100
-Message-Id: <1348647948-3219-28-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1348647948-3219-1-git-send-email-swhiteho@redhat.com>
-References: <1348647948-3219-1-git-send-email-swhiteho@redhat.com>
+	id S1755955Ab2IZIwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 04:52:17 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47198 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755860Ab2IZIwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 04:52:15 -0400
+Message-ID: <5062C215.8030602@linux.vnet.ibm.com>
+Date: Wed, 26 Sep 2012 14:21:33 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] x86/fixup_irq: Clean the offlining CPU from the irq affinity
+ mask
+References: <1348669924.19514.6.camel@cliu38-desktop-build> <5062A442.2030207@linux.vnet.ibm.com> <27240C0AC20F114CBF8149A2696CBE4A189F97@SHSMSX101.ccr.corp.intel.com> <5062B602.6000502@linux.vnet.ibm.com> <27240C0AC20F114CBF8149A2696CBE4A18A27F@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A18A27F@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092608-5490-0000-0000-000002325168
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Marzinski <bmarzins@redhat.com>
+On 09/26/2012 01:40 PM, Liu, Chuansheng wrote:
+>> Btw, on a slightly different note, I'm also rather surprised that the above
+>> code doesn't care about the return value of chip->irq_set_affinity() ..
+>> Shouldn't we warn if that fails?
+> 
+> It seems another case when irq_set_affinity is NULL whenever affinity is changed or not before that,
+> For this case, I suppose the chip is not supporting set_affinity, then the chip should set all
+> related irqs into just CPU0, otherwise, it will bring some trouble, do you agree?
+> 
 
-If a dirty GFS2 inode was being deleted but was in use by another node, its
-metadata was not getting written out before GFS2 checked for dirty buffers in
-gfs2_ail_flush().  GFS2 was relying on inode_go_sync() to write out the
-metadata when the other node tried to free the file, but it failed the error
-check before it got that far. This patch writes out the metadata before calling
-gfs2_ail_flush()
+Hmm.. no, I wouldn't jump to do that. Moreover, note that there are patches in -tip to
+enable CPU 0 hotplug. So doing the above might not be terribly helpful going forward.
 
-Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-
-diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
-index 79cac70..a8d90f2 100644
---- a/fs/gfs2/super.c
-+++ b/fs/gfs2/super.c
-@@ -1545,6 +1545,11 @@ static void gfs2_evict_inode(struct inode *inode)
+> I guess this case should be covered outside fixup_irqs() code.
+> 
  
- out_truncate:
- 	gfs2_log_flush(sdp, ip->i_gl);
-+	if (test_bit(GLF_DIRTY, &ip->i_gl->gl_flags)) {
-+		struct address_space *metamapping = gfs2_glock2aspace(ip->i_gl);
-+		filemap_fdatawrite(metamapping);
-+		filemap_fdatawait(metamapping);
-+	}
- 	write_inode_now(inode, 1);
- 	gfs2_ail_flush(ip->i_gl, 0);
- 
--- 
-1.7.4
+Regards,
+Srivatsa S. Bhat
 
