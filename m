@@ -1,71 +1,858 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab2IZGBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 02:01:45 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48165 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab2IZGBi (ORCPT
+	id S1752327Ab2IZGFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 02:05:20 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50085 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab2IZGFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 02:01:38 -0400
-Date: Wed, 26 Sep 2012 16:01:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>
-Subject: linux-next: build failure after merge of the akpm tree
-Message-Id: <20120926160127.c34cb6d3e5dcc9ab32e8b573@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Sep_2012_16_01_27_+1000_M8LjVwyiXBMI+2kR"
+	Wed, 26 Sep 2012 02:05:18 -0400
+From: Ilya gorskin <revent82@gmail.com>
+To: gregkh@linuxfoundation.org, forest@alittletooquiet.net, revent82@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging:vt6656: Fix tabs error in 80211mgr.c
+Date: Wed, 26 Sep 2012 12:05:11 +0600
+Message-Id: <1348639511-19305-1-git-send-email-revent82@gmail.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Sep_2012_16_01_27_+1000_M8LjVwyiXBMI+2kR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a patch to the 80211mgr.c file that fixes up a tabs
+error found by the checkpatch.pl tool
 
-Hi Andrew,
+Signed-off-by: Goirskin Ilya <revent82@gmail.com>
+---
+ drivers/staging/vt6656/80211mgr.c | 628 +++++++++++++++++++-------------------
+ 1 file changed, 310 insertions(+), 318 deletions(-)
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+diff --git a/drivers/staging/vt6656/80211mgr.c b/drivers/staging/vt6656/80211mgr.c
+index 39f9842..4241d29 100644
+--- a/drivers/staging/vt6656/80211mgr.c
++++ b/drivers/staging/vt6656/80211mgr.c
+@@ -98,11 +98,11 @@ vMgrEncodeBeacon(
+ 
+     /* Fixed Fields */
+     pFrame->pqwTimestamp = (PQWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                    + WLAN_BEACON_OFF_TS);
++							+ WLAN_BEACON_OFF_TS);
+     pFrame->pwBeaconInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                       + WLAN_BEACON_OFF_BCN_INT);
++						+ WLAN_BEACON_OFF_BCN_INT);
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_BEACON_OFF_CAPINFO);
++						+ WLAN_BEACON_OFF_CAPINFO);
+ 
+     pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_BEACON_OFF_SSID;
+ 
+@@ -132,98 +132,90 @@ vMgrDecodeBeacon(
+ 
+     /* Fixed Fields */
+     pFrame->pqwTimestamp = (PQWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                    + WLAN_BEACON_OFF_TS);
++							+ WLAN_BEACON_OFF_TS);
+     pFrame->pwBeaconInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                       + WLAN_BEACON_OFF_BCN_INT);
++						+ WLAN_BEACON_OFF_BCN_INT);
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_BEACON_OFF_CAPINFO);
++						+ WLAN_BEACON_OFF_CAPINFO);
+ 
+     /* Information elements */
+     pItem = (PWLAN_IE)((PBYTE)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3)))
+-                       + WLAN_BEACON_OFF_SSID);
++						+ WLAN_BEACON_OFF_SSID);
+     while (((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) {
+ 
+-        switch (pItem->byElementID) {
+-        case WLAN_EID_SSID:
+-            if (pFrame->pSSID == NULL)
+-                pFrame->pSSID = (PWLAN_IE_SSID)pItem;
+-            break;
+-        case WLAN_EID_SUPP_RATES:
+-            if (pFrame->pSuppRates == NULL)
+-                pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-        case WLAN_EID_FH_PARMS:
+-            /* pFrame->pFHParms = (PWLAN_IE_FH_PARMS)pItem; */
+-            break;
+-        case WLAN_EID_DS_PARMS:
+-            if (pFrame->pDSParms == NULL)
+-                pFrame->pDSParms = (PWLAN_IE_DS_PARMS)pItem;
+-            break;
+-        case WLAN_EID_CF_PARMS:
+-            if (pFrame->pCFParms == NULL)
+-                pFrame->pCFParms = (PWLAN_IE_CF_PARMS)pItem;
+-            break;
+-        case WLAN_EID_IBSS_PARMS:
+-            if (pFrame->pIBSSParms == NULL)
+-                pFrame->pIBSSParms = (PWLAN_IE_IBSS_PARMS)pItem;
+-            break;
+-        case WLAN_EID_TIM:
+-            if (pFrame->pTIM == NULL)
+-                pFrame->pTIM = (PWLAN_IE_TIM)pItem;
+-            break;
+-
+-        case WLAN_EID_RSN:
+-            if (pFrame->pRSN == NULL) 
+-                pFrame->pRSN = (PWLAN_IE_RSN)pItem;
+-            break;
+-        case WLAN_EID_RSN_WPA:
+-            if (pFrame->pRSNWPA == NULL) {
+-                if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
+-                    pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
+-            }
+-            break;
+-
+-        case WLAN_EID_ERP:
+-            if (pFrame->pERP == NULL)
+-                pFrame->pERP = (PWLAN_IE_ERP)pItem;
+-            break;
+-        case WLAN_EID_EXTSUPP_RATES:
+-            if (pFrame->pExtSuppRates == NULL)
+-                pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-
+-        case WLAN_EID_COUNTRY:      /* 7 */
+-            if (pFrame->pIE_Country == NULL)
+-                pFrame->pIE_Country = (PWLAN_IE_COUNTRY)pItem;
+-            break;
+-
+-        case WLAN_EID_PWR_CONSTRAINT:   /* 32 */
+-            if (pFrame->pIE_PowerConstraint == NULL)
+-                pFrame->pIE_PowerConstraint = (PWLAN_IE_PW_CONST)pItem;
+-            break;
+-
+-        case WLAN_EID_CH_SWITCH:    /* 37 */
+-            if (pFrame->pIE_CHSW == NULL)
+-                pFrame->pIE_CHSW = (PWLAN_IE_CH_SW)pItem;
+-            break;
+-
+-        case WLAN_EID_QUIET:        /* 40 */
+-            if (pFrame->pIE_Quiet == NULL)
+-                pFrame->pIE_Quiet = (PWLAN_IE_QUIET)pItem;
+-            break;
+-
+-        case WLAN_EID_IBSS_DFS:
+-            if (pFrame->pIE_IBSSDFS == NULL)
+-                pFrame->pIE_IBSSDFS = (PWLAN_IE_IBSS_DFS)pItem;
+-            break;
+-
+-        default:
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Unrecognized EID=%dd in beacon decode.\n", pItem->byElementID);
+-                break;
+-
+-        }
+-        pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 + pItem->len);
+-    }
++		switch (pItem->byElementID) {
++		case WLAN_EID_SSID:
++			if (pFrame->pSSID == NULL)
++				pFrame->pSSID = (PWLAN_IE_SSID)pItem;
++			break;
++		case WLAN_EID_SUPP_RATES:
++			if (pFrame->pSuppRates == NULL)
++				pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
++		case WLAN_EID_FH_PARMS:
++		/* pFrame->pFHParms = (PWLAN_IE_FH_PARMS)pItem; */
++			break;
++		case WLAN_EID_DS_PARMS:
++			if (pFrame->pDSParms == NULL)
++				pFrame->pDSParms = (PWLAN_IE_DS_PARMS)pItem;
++			break;
++		case WLAN_EID_CF_PARMS:
++			if (pFrame->pCFParms == NULL)
++				pFrame->pCFParms = (PWLAN_IE_CF_PARMS)pItem;
++			break;
++		case WLAN_EID_IBSS_PARMS:
++			if (pFrame->pIBSSParms == NULL)
++				pFrame->pIBSSParms = (PWLAN_IE_IBSS_PARMS)pItem;
++			break;
++		case WLAN_EID_TIM:
++			if (pFrame->pTIM == NULL)
++				pFrame->pTIM = (PWLAN_IE_TIM)pItem;
++			break;
++		case WLAN_EID_RSN:
++			if (pFrame->pRSN == NULL)
++				pFrame->pRSN = (PWLAN_IE_RSN)pItem;
++			break;
++		case WLAN_EID_RSN_WPA:
++			if (pFrame->pRSNWPA == NULL) {
++				if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
++					pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
++			}
++			break;
++		case WLAN_EID_ERP:
++			if (pFrame->pERP == NULL)
++				pFrame->pERP = (PWLAN_IE_ERP)pItem;
++			break;
++		case WLAN_EID_EXTSUPP_RATES:
++			if (pFrame->pExtSuppRates == NULL)
++				pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
++		case WLAN_EID_COUNTRY:      /* 7 */
++			if (pFrame->pIE_Country == NULL)
++				pFrame->pIE_Country = (PWLAN_IE_COUNTRY)pItem;
++			break;
++		case WLAN_EID_PWR_CONSTRAINT:   /* 32 */
++			if (pFrame->pIE_PowerConstraint == NULL)
++				pFrame->pIE_PowerConstraint = (PWLAN_IE_PW_CONST)pItem
++			break;
++		case WLAN_EID_CH_SWITCH:    /* 37 */
++			if (pFrame->pIE_CHSW == NULL)
++				pFrame->pIE_CHSW = (PWLAN_IE_CH_SW)pItem;
++			break;
++		case WLAN_EID_QUIET:        /* 40 */
++			if (pFrame->pIE_Quiet == NULL)
++				pFrame->pIE_Quiet = (PWLAN_IE_QUIET)pItem;
++			break;
++		case WLAN_EID_IBSS_DFS:
++			if (pFrame->pIE_IBSSDFS == NULL)
++				pFrame->pIE_IBSSDFS = (PWLAN_IE_IBSS_DFS)pItem;
++			break;
++		default:
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Unrecognized EID=%dd in beacon decode.\n", pItem->byElementID);
++			break;
++
++		}
++		pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 + pItem->len);
++	}
+ }
+ 
+ 
+@@ -290,7 +282,7 @@ vMgrEncodeDisassociation(
+ 
+     /* Fixed Fields */
+     pFrame->pwReason = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_DISASSOC_OFF_REASON);
++												+ WLAN_DISASSOC_OFF_REASON);
+     pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_DISASSOC_OFF_REASON + sizeof(*(pFrame->pwReason));
+ }
+ 
+@@ -315,7 +307,7 @@ vMgrDecodeDisassociation(
+ 
+     /* Fixed Fields */
+     pFrame->pwReason = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_DISASSOC_OFF_REASON);
++						+ WLAN_DISASSOC_OFF_REASON);
+ }
+ 
+ /*+
+@@ -338,9 +330,9 @@ vMgrEncodeAssocRequest(
+     pFrame->pHdr = (PUWLAN_80211HDR)pFrame->pBuf;
+     /* Fixed Fields */
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_ASSOCREQ_OFF_CAP_INFO);
++											+ WLAN_ASSOCREQ_OFF_CAP_INFO);
+     pFrame->pwListenInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                       + WLAN_ASSOCREQ_OFF_LISTEN_INT);
++											+ WLAN_ASSOCREQ_OFF_LISTEN_INT);
+     pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_ASSOCREQ_OFF_LISTEN_INT + sizeof(*(pFrame->pwListenInterval));
+ }
+ 
+@@ -366,47 +358,45 @@ vMgrDecodeAssocRequest(
+     pFrame->pHdr = (PUWLAN_80211HDR)pFrame->pBuf;
+     /* Fixed Fields */
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_ASSOCREQ_OFF_CAP_INFO);
++											+ WLAN_ASSOCREQ_OFF_CAP_INFO);
+     pFrame->pwListenInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_ASSOCREQ_OFF_LISTEN_INT);
++											+ WLAN_ASSOCREQ_OFF_LISTEN_INT);
+ 
+     /* Information elements */
+     pItem = (PWLAN_IE)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                            + WLAN_ASSOCREQ_OFF_SSID);
+-
+-    while (((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) {
+-        switch (pItem->byElementID) {
+-        case WLAN_EID_SSID:
+-            if (pFrame->pSSID == NULL)
+-                pFrame->pSSID = (PWLAN_IE_SSID)pItem;
+-            break;
+-        case WLAN_EID_SUPP_RATES:
+-            if (pFrame->pSuppRates == NULL)
+-                pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-
+-        case WLAN_EID_RSN:
+-            if (pFrame->pRSN == NULL)
+-                pFrame->pRSN = (PWLAN_IE_RSN)pItem;
+-            break;
+-        case WLAN_EID_RSN_WPA:
+-            if (pFrame->pRSNWPA == NULL) {
+-                if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
+-                    pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
+-            }
+-            break;
+-        case WLAN_EID_EXTSUPP_RATES:
+-            if (pFrame->pExtSuppRates == NULL)
+-                pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-
+-        default:
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Unrecognized EID=%dd in assocreq decode.\n",
+-                    pItem->byElementID);
+-            break;
+-        }
+-        pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 + pItem->len);
+-    }
++											+ WLAN_ASSOCREQ_OFF_SSID);
++
++	while (((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) {
++		switch (pItem->byElementID) {
++		case WLAN_EID_SSID:
++			if (pFrame->pSSID == NULL)
++				pFrame->pSSID = (PWLAN_IE_SSID)pItem;
++			break;
++		case WLAN_EID_SUPP_RATES:
++			if (pFrame->pSuppRates == NULL)
++				pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
++		case WLAN_EID_RSN:
++			if (pFrame->pRSN == NULL)
++				pFrame->pRSN = (PWLAN_IE_RSN)pItem;
++			break;
++		case WLAN_EID_RSN_WPA:
++			if (pFrame->pRSNWPA == NULL) {
++				if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
++					pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
++			}
++			break;
++		case WLAN_EID_EXTSUPP_RATES:
++			if (pFrame->pExtSuppRates == NULL)
++				pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
++		default:
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Unrecognized EID=%dd in assocreq decode.\n",
++			pItem->byElementID);
++			break;
++		}
++	pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 + pItem->len);
++	}
+ }
+ 
+ /*+
+@@ -425,17 +415,17 @@ vMgrEncodeAssocResponse(
+       PWLAN_FR_ASSOCRESP  pFrame
+      )
+ {
+-    pFrame->pHdr = (PUWLAN_80211HDR)pFrame->pBuf;
++	pFrame->pHdr = (PUWLAN_80211HDR)pFrame->pBuf;
+ 
+     /* Fixed Fields */
+-    pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_ASSOCRESP_OFF_CAP_INFO);
+-    pFrame->pwStatus = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_ASSOCRESP_OFF_STATUS);
+-    pFrame->pwAid = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                            + WLAN_ASSOCRESP_OFF_AID);
+-    pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_ASSOCRESP_OFF_AID
+-                  + sizeof(*(pFrame->pwAid));
++	pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
++											+ WLAN_ASSOCRESP_OFF_CAP_INFO);
++	pFrame->pwStatus = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
++											+ WLAN_ASSOCRESP_OFF_STATUS);
++	pFrame->pwAid = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
++											+ WLAN_ASSOCRESP_OFF_AID);
++	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_ASSOCRESP_OFF_AID
++											+ sizeof(*(pFrame->pwAid));
+ }
+ 
+ 
+@@ -461,24 +451,24 @@ vMgrDecodeAssocResponse(
+ 
+     /* Fixed Fields */
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_ASSOCRESP_OFF_CAP_INFO);
++											+ WLAN_ASSOCRESP_OFF_CAP_INFO);
+     pFrame->pwStatus = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_ASSOCRESP_OFF_STATUS);
++											+ WLAN_ASSOCRESP_OFF_STATUS);
+     pFrame->pwAid = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                            + WLAN_ASSOCRESP_OFF_AID);
++											+ WLAN_ASSOCRESP_OFF_AID);
+ 
+     /* Information elements */
+     pFrame->pSuppRates  = (PWLAN_IE_SUPP_RATES)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                           + WLAN_ASSOCRESP_OFF_SUPP_RATES);
++											+ WLAN_ASSOCRESP_OFF_SUPP_RATES);
+ 
+     pItem = (PWLAN_IE)(pFrame->pSuppRates);
+     pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 + pItem->len);
+ 
+     if ((((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) && (pItem->byElementID == WLAN_EID_EXTSUPP_RATES)) {
+-        pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "pFrame->pExtSuppRates=[%p].\n", pItem);
++		pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "pFrame->pExtSuppRates=[%p].\n", pItem);
+ 	} else
+-        pFrame->pExtSuppRates = NULL;
++		pFrame->pExtSuppRates = NULL;
+ }
+ 
+ 
+@@ -502,11 +492,11 @@ vMgrEncodeReassocRequest(
+ 
+     /* Fixed Fields */
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_REASSOCREQ_OFF_CAP_INFO);
++											+ WLAN_REASSOCREQ_OFF_CAP_INFO);
+     pFrame->pwListenInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                      + WLAN_REASSOCREQ_OFF_LISTEN_INT);
++											+ WLAN_REASSOCREQ_OFF_LISTEN_INT);
+     pFrame->pAddrCurrAP = (PIEEE_ADDR)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                       + WLAN_REASSOCREQ_OFF_CURR_AP);
++											+ WLAN_REASSOCREQ_OFF_CURR_AP);
+     pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_REASSOCREQ_OFF_CURR_AP + sizeof(*(pFrame->pAddrCurrAP));
+ }
+ 
+@@ -533,49 +523,48 @@ vMgrDecodeReassocRequest(
+ 
+     /* Fixed Fields */
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_REASSOCREQ_OFF_CAP_INFO);
++											+ WLAN_REASSOCREQ_OFF_CAP_INFO);
+     pFrame->pwListenInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                      + WLAN_REASSOCREQ_OFF_LISTEN_INT);
++											+ WLAN_REASSOCREQ_OFF_LISTEN_INT);
+     pFrame->pAddrCurrAP = (PIEEE_ADDR)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                       + WLAN_REASSOCREQ_OFF_CURR_AP);
++											+ WLAN_REASSOCREQ_OFF_CURR_AP);
+ 
+     /* Information elements */
+     pItem = (PWLAN_IE)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                       + WLAN_REASSOCREQ_OFF_SSID);
+-
+-    while (((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) {
+-
+-        switch (pItem->byElementID) {
+-        case WLAN_EID_SSID:
+-            if (pFrame->pSSID == NULL)
+-                pFrame->pSSID = (PWLAN_IE_SSID)pItem;
+-            break;
+-        case WLAN_EID_SUPP_RATES:
+-            if (pFrame->pSuppRates == NULL)
+-                pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-
+-        case WLAN_EID_RSN:
+-            if (pFrame->pRSN == NULL)
+-                pFrame->pRSN = (PWLAN_IE_RSN)pItem;
+-            break;
+-        case WLAN_EID_RSN_WPA:
+-		if (pFrame->pRSNWPA == NULL)
+-                if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
+-                    pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
+-            break;
+-
+-        case WLAN_EID_EXTSUPP_RATES:
+-            if (pFrame->pExtSuppRates == NULL)
+-                pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-        default:
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Unrecognized EID=%dd in reassocreq decode.\n",
+-                        pItem->byElementID);
+-            break;
+-        }
+-        pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 + pItem->len);
+-    }
++											+ WLAN_REASSOCREQ_OFF_SSID);
++
++	while (((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) {
++
++		switch (pItem->byElementID) {
++		case WLAN_EID_SSID:
++			if (pFrame->pSSID == NULL)
++				pFrame->pSSID = (PWLAN_IE_SSID)pItem;
++			break;
++		case WLAN_EID_SUPP_RATES:
++			if (pFrame->pSuppRates == NULL)
++				pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
++
++		case WLAN_EID_RSN:\
++			if (pFrame->pRSN == NULL)
++				pFrame->pRSN = (PWLAN_IE_RSN)pItem;
++			break;
++		case WLAN_EID_RSN_WPA:
++			if (pFrame->pRSNWPA == NULL)
++				if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
++					pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
++			break;
++
++		case WLAN_EID_EXTSUPP_RATES:
++			if (pFrame->pExtSuppRates == NULL)
++				pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
++		default:
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Unrecognized EID=%dd in reassocreq decode.\n", pItem->byElementID);
++			break;
++		}
++	pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 + pItem->len);
++	}
+ }
+ 
+ 
+@@ -624,31 +613,31 @@ vMgrDecodeProbeRequest(
+     /* Information elements */
+     pItem = (PWLAN_IE)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3)));
+ 
+-    while (((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) {
++	while (((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) {
++
++		switch (pItem->byElementID) {
++		case WLAN_EID_SSID:
++			if (pFrame->pSSID == NULL)
++				pFrame->pSSID = (PWLAN_IE_SSID)pItem;
++			break;
++
++		case WLAN_EID_SUPP_RATES:
++			if (pFrame->pSuppRates == NULL)
++				pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
++
++		case WLAN_EID_EXTSUPP_RATES:
++			if (pFrame->pExtSuppRates == NULL)
++				pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
+ 
+-        switch (pItem->byElementID) {
+-        case WLAN_EID_SSID:
+-            if (pFrame->pSSID == NULL)
+-                pFrame->pSSID = (PWLAN_IE_SSID)pItem;
+-            break;
+-
+-        case WLAN_EID_SUPP_RATES:
+-            if (pFrame->pSuppRates == NULL)
+-                pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-
+-        case WLAN_EID_EXTSUPP_RATES:
+-            if (pFrame->pExtSuppRates == NULL)
+-                pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-
+-        default:
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Bad EID=%dd in probereq\n", pItem->byElementID);
+-            break;
+-        }
+-
+-        pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 +  pItem->len);
+-    }
++		default:
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Bad EID=%dd in probereq\n", pItem->byElementID);
++			break;
++		}
++
++		pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 +  pItem->len);
++	}
+ }
+ 
+ 
+@@ -673,14 +662,14 @@ vMgrEncodeProbeResponse(
+ 
+     /* Fixed Fields */
+     pFrame->pqwTimestamp = (PQWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                    + WLAN_PROBERESP_OFF_TS);
++												+ WLAN_PROBERESP_OFF_TS);
+     pFrame->pwBeaconInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                       + WLAN_PROBERESP_OFF_BCN_INT);
++												+ WLAN_PROBERESP_OFF_BCN_INT);
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_PROBERESP_OFF_CAP_INFO);
++												+ WLAN_PROBERESP_OFF_CAP_INFO);
+ 
+     pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_PROBERESP_OFF_CAP_INFO +
+-                  sizeof(*(pFrame->pwCapInfo));
++												sizeof(*(pFrame->pwCapInfo));
+ }
+ 
+ 
+@@ -708,92 +697,92 @@ vMgrDecodeProbeResponse(
+ 
+     /* Fixed Fields */
+     pFrame->pqwTimestamp = (PQWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                    + WLAN_PROBERESP_OFF_TS);
++												+ WLAN_PROBERESP_OFF_TS);
+     pFrame->pwBeaconInterval = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                       + WLAN_PROBERESP_OFF_BCN_INT);
++												+ WLAN_PROBERESP_OFF_BCN_INT);
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_PROBERESP_OFF_CAP_INFO);
++												+ WLAN_PROBERESP_OFF_CAP_INFO);
+ 
+     /* Information elements */
+     pItem = (PWLAN_IE)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                       + WLAN_PROBERESP_OFF_SSID);
+-
+-    while (((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) {
+-        switch (pItem->byElementID) {
+-        case WLAN_EID_SSID:
+-            if (pFrame->pSSID == NULL)
+-                pFrame->pSSID = (PWLAN_IE_SSID)pItem;
+-            break;
+-        case WLAN_EID_SUPP_RATES:
+-            if (pFrame->pSuppRates == NULL)
+-                pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-        case WLAN_EID_FH_PARMS:
+-            break;
+-        case WLAN_EID_DS_PARMS:
+-            if (pFrame->pDSParms == NULL)
+-                pFrame->pDSParms = (PWLAN_IE_DS_PARMS)pItem;
+-            break;
+-        case WLAN_EID_CF_PARMS:
+-            if (pFrame->pCFParms == NULL)
+-                pFrame->pCFParms = (PWLAN_IE_CF_PARMS)pItem;
+-            break;
+-        case WLAN_EID_IBSS_PARMS:
+-            if (pFrame->pIBSSParms == NULL)
+-                pFrame->pIBSSParms = (PWLAN_IE_IBSS_PARMS)pItem;
+-            break;
+-
+-        case WLAN_EID_RSN:
+-            if (pFrame->pRSN == NULL)
+-                pFrame->pRSN = (PWLAN_IE_RSN)pItem;
+-            break;
+-        case WLAN_EID_RSN_WPA:
+-            if (pFrame->pRSNWPA == NULL) {
+-                if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
+-                    pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
+-            }
+-            break;
+-        case WLAN_EID_ERP:
+-            if (pFrame->pERP == NULL)
+-                pFrame->pERP = (PWLAN_IE_ERP)pItem;
+-            break;
+-        case WLAN_EID_EXTSUPP_RATES:
+-            if (pFrame->pExtSuppRates == NULL)
+-                pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+-            break;
+-
+-        case WLAN_EID_COUNTRY:      /* 7 */
+-            if (pFrame->pIE_Country == NULL)
+-                pFrame->pIE_Country = (PWLAN_IE_COUNTRY)pItem;
+-            break;
+-
+-        case WLAN_EID_PWR_CONSTRAINT:   /* 32 */
+-            if (pFrame->pIE_PowerConstraint == NULL)
+-                pFrame->pIE_PowerConstraint = (PWLAN_IE_PW_CONST)pItem;
+-            break;
+-
+-        case WLAN_EID_CH_SWITCH:    /* 37 */
+-            if (pFrame->pIE_CHSW == NULL)
+-                pFrame->pIE_CHSW = (PWLAN_IE_CH_SW)pItem;
+-            break;
+-
+-        case WLAN_EID_QUIET:        /* 40 */
+-            if (pFrame->pIE_Quiet == NULL)
+-                pFrame->pIE_Quiet = (PWLAN_IE_QUIET)pItem;
+-            break;
+-
+-        case WLAN_EID_IBSS_DFS:
+-            if (pFrame->pIE_IBSSDFS == NULL)
+-                pFrame->pIE_IBSSDFS = (PWLAN_IE_IBSS_DFS)pItem;
+-            break;
+-
+-        default:
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Bad EID=%dd in proberesp\n", pItem->byElementID);
+-            break;
+-        }
+-
+-        pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 +  pItem->len);
+-    }
++												+ WLAN_PROBERESP_OFF_SSID);
++
++	while (((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) {
++		switch (pItem->byElementID) {
++		case WLAN_EID_SSID:
++			if (pFrame->pSSID == NULL)
++				pFrame->pSSID = (PWLAN_IE_SSID)pItem;
++			break;
++		case WLAN_EID_SUPP_RATES:
++			if (pFrame->pSuppRates == NULL)
++				pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
++		case WLAN_EID_FH_PARMS:
++			break;
++		case WLAN_EID_DS_PARMS:
++			if (pFrame->pDSParms == NULL)
++				pFrame->pDSParms = (PWLAN_IE_DS_PARMS)pItem;
++			break;
++		case WLAN_EID_CF_PARMS:
++			if (pFrame->pCFParms == NULL)
++				pFrame->pCFParms = (PWLAN_IE_CF_PARMS)pItem;
++			break;
++		case WLAN_EID_IBSS_PARMS:
++			if (pFrame->pIBSSParms == NULL)
++				pFrame->pIBSSParms = (PWLAN_IE_IBSS_PARMS)pItem;
++			break;
++
++		case WLAN_EID_RSN:
++			if (pFrame->pRSN == NULL)
++				pFrame->pRSN = (PWLAN_IE_RSN)pItem;
++			break;
++		case WLAN_EID_RSN_WPA:
++			if (pFrame->pRSNWPA == NULL) {
++				if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
++					pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
++			}
++			break;
++		case WLAN_EID_ERP:
++			if (pFrame->pERP == NULL)
++				pFrame->pERP = (PWLAN_IE_ERP)pItem;
++			break;
++		case WLAN_EID_EXTSUPP_RATES:
++			if (pFrame->pExtSuppRates == NULL)
++				pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++			break;
++
++		case WLAN_EID_COUNTRY:      /* 7 */
++			if (pFrame->pIE_Country == NULL)
++				pFrame->pIE_Country = (PWLAN_IE_COUNTRY)pItem;
++			break;
++
++		case WLAN_EID_PWR_CONSTRAINT:   /* 32 */
++			if (pFrame->pIE_PowerConstraint == NULL)
++				pFrame->pIE_PowerConstraint = (PWLAN_IE_PW_CONST)pItem;
++			break;
++
++		case WLAN_EID_CH_SWITCH:    /* 37 */
++			if (pFrame->pIE_CHSW == NULL)
++				pFrame->pIE_CHSW = (PWLAN_IE_CH_SW)pItem;
++			break;
++
++		case WLAN_EID_QUIET:        /* 40 */
++			if (pFrame->pIE_Quiet == NULL)
++				pFrame->pIE_Quiet = (PWLAN_IE_QUIET)pItem;
++			break;
++
++		case WLAN_EID_IBSS_DFS:
++			if (pFrame->pIE_IBSSDFS == NULL)
++				pFrame->pIE_IBSSDFS = (PWLAN_IE_IBSS_DFS)pItem;
++			break;
++
++		default:
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Bad EID=%dd in proberesp\n", pItem->byElementID);
++			break;
++		}
++
++		pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 +  pItem->len);
++	}
+ }
+ 
+ 
+@@ -817,12 +806,13 @@ vMgrEncodeAuthen(
+ 
+     /* Fixed Fields */
+     pFrame->pwAuthAlgorithm = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                      + WLAN_AUTHEN_OFF_AUTH_ALG);
++											+ WLAN_AUTHEN_OFF_AUTH_ALG);
+     pFrame->pwAuthSequence = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                     + WLAN_AUTHEN_OFF_AUTH_SEQ);
++											+ WLAN_AUTHEN_OFF_AUTH_SEQ);
+     pFrame->pwStatus = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_AUTHEN_OFF_STATUS);
+-    pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_AUTHEN_OFF_STATUS + sizeof(*(pFrame->pwStatus));
++											+ WLAN_AUTHEN_OFF_STATUS);
++    pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_AUTHEN_OFF_STATUS
++											+ sizeof(*(pFrame->pwStatus));
+ }
+ 
+ 
+@@ -848,18 +838,18 @@ vMgrDecodeAuthen(
+ 
+     /* Fixed Fields */
+     pFrame->pwAuthAlgorithm = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                      + WLAN_AUTHEN_OFF_AUTH_ALG);
++											+ WLAN_AUTHEN_OFF_AUTH_ALG);
+     pFrame->pwAuthSequence = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                     + WLAN_AUTHEN_OFF_AUTH_SEQ);
++											+ WLAN_AUTHEN_OFF_AUTH_SEQ);
+     pFrame->pwStatus = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_AUTHEN_OFF_STATUS);
++											+ WLAN_AUTHEN_OFF_STATUS);
+ 
+     /* Information elements */
+     pItem = (PWLAN_IE)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                       + WLAN_AUTHEN_OFF_CHALLENGE);
+-
+-    if ((((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) && (pItem->byElementID == WLAN_EID_CHALLENGE))
+-        pFrame->pChallenge = (PWLAN_IE_CHALLENGE)pItem;
++											+ WLAN_AUTHEN_OFF_CHALLENGE);
++	if ((((PBYTE)pItem) < (pFrame->pBuf + pFrame->len))
++							&& (pItem->byElementID == WLAN_EID_CHALLENGE))
++			pFrame->pChallenge = (PWLAN_IE_CHALLENGE)pItem;
+ }
+ 
+ 
+@@ -883,8 +873,9 @@ vMgrEncodeDeauthen(
+ 
+     /* Fixed Fields */
+     pFrame->pwReason = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_DEAUTHEN_OFF_REASON);
+-    pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_DEAUTHEN_OFF_REASON + sizeof(*(pFrame->pwReason));
++												+ WLAN_DEAUTHEN_OFF_REASON);
++    pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_DEAUTHEN_OFF_REASON
++												+ sizeof(*(pFrame->pwReason));
+ }
+ 
+ 
+@@ -908,7 +899,7 @@ vMgrDecodeDeauthen(
+ 
+     /* Fixed Fields */
+     pFrame->pwReason = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_DEAUTHEN_OFF_REASON);
++												+ WLAN_DEAUTHEN_OFF_REASON);
+ }
+ 
+ 
+@@ -932,13 +923,14 @@ vMgrEncodeReassocResponse(
+ 
+     /* Fixed Fields */
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_REASSOCRESP_OFF_CAP_INFO);
++											+ WLAN_REASSOCRESP_OFF_CAP_INFO);
+     pFrame->pwStatus = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_REASSOCRESP_OFF_STATUS);
++											+ WLAN_REASSOCRESP_OFF_STATUS);
+     pFrame->pwAid = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                            + WLAN_REASSOCRESP_OFF_AID);
++											+ WLAN_REASSOCRESP_OFF_AID);
+ 
+-    pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_REASSOCRESP_OFF_AID + sizeof(*(pFrame->pwAid));
++    pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_REASSOCRESP_OFF_AID
++											+ sizeof(*(pFrame->pwAid));
+ }
+ 
+ 
+@@ -965,19 +957,19 @@ vMgrDecodeReassocResponse(
+ 
+     /* Fixed Fields */
+     pFrame->pwCapInfo = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                + WLAN_REASSOCRESP_OFF_CAP_INFO);
++											+ WLAN_REASSOCRESP_OFF_CAP_INFO);
+     pFrame->pwStatus = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                               + WLAN_REASSOCRESP_OFF_STATUS);
++											+ WLAN_REASSOCRESP_OFF_STATUS);
+     pFrame->pwAid = (PWORD)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                            + WLAN_REASSOCRESP_OFF_AID);
++											+ WLAN_REASSOCRESP_OFF_AID);
+ 
+     /* Information elements */
+     pFrame->pSuppRates = (PWLAN_IE_SUPP_RATES)(WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3))
+-                                               + WLAN_REASSOCRESP_OFF_SUPP_RATES);
++											+ WLAN_REASSOCRESP_OFF_SUPP_RATES);
+ 
+     pItem = (PWLAN_IE)(pFrame->pSuppRates);
+     pItem = (PWLAN_IE)(((PBYTE)pItem) + 2 + pItem->len);
+ 
+     if ((((PBYTE)pItem) < (pFrame->pBuf + pFrame->len)) && (pItem->byElementID == WLAN_EID_EXTSUPP_RATES))
+-        pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
++		pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+ }
+-- 
+1.7.12
 
-net/key/af_key.c: In function 'pfkey_add':
-net/key/af_key.c:1476:9: error: implicit declaration of function 'audit_get=
-_sessionid' [-Werror=3Dimplicit-function-declaration]
-net/core/dev.c: In function '__dev_set_promiscuity':
-net/core/dev.c:4573:5: error: implicit declaration of function 'audit_get_s=
-essionid' [-Werror=3Dimplicit-function-declaration]
-
-Caused by commit "audit.h: replace defines with C stubs".
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__26_Sep_2012_16_01_27_+1000_M8LjVwyiXBMI+2kR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQYpo3AAoJEECxmPOUX5FEvZQP/1shf6QORAUryr+0j2HMuAtv
-cxpkKm/l7PRrR27+Iq5Sy/RB1XNwCjiQoJeJ/lpYw+hNMhLsDe4doRQku9WO+O14
-YVVd+PgmvLG+pAvyIIGDj+4futJuczOkqCO2QbONrbate5MgA5VU9jKIPSeEHJY7
-W/+BPRlOFCALTuMi4srkPEpLx+0mA06McOhINC93Ci1PFHmJmDI0Xblb/yr5T4O1
-9xqldWQZdhglW4H4H1eO2q8YPJQA0tA+hLsRKEWvA3V/GAcDOghRRp0BOZ3IZvQ5
-VFqtF25ucmdFq/dlfYLjdTBqH2SFPcU1EgvEyxnv6XcTW5AKc9Uwlm44GxjUhP2u
-5Zg7XuIOcifzYmflQWYfZXqxsTaK5SWIpx1L6KCS4CY66URS/kqhm/z57c3Pc0Vo
-QMlds+3yFOvINkBtpUtgKrl3nuEu0KHpm0wjdTDs7x+aMovJMENykcgIxk3NQOI7
-lcF/xcBTUfYUzmG8j6uPVd91a/AmJloEn76dkO+msVoT6Pt/boKDKpv1wsg6IJjx
-zSZ1kgMBsLKzlyZbgUEm56vSFUCc+JlTkobIRI/N+01cWUOnJRiOVrg78lV/+dWS
-crIctOZPU7IF2z/GNtfyerk5CyhVvNuovI7UOgTTJZvQt0vZJvZ5IICgeTRYSDCK
-EgKDgjhDhDfuCUZjPvYR
-=DgOC
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_Sep_2012_16_01_27_+1000_M8LjVwyiXBMI+2kR--
