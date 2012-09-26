@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab2IZLld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 07:41:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637Ab2IZLlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 07:41:32 -0400
-From: Yan Hong <clouds.yan@gmail.com>
-To: apw@canonical.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] scripts/checkpatch.pl: seperate mutiple results with black line
-Date: Wed, 26 Sep 2012 19:41:23 +0800
-Message-Id: <1348659683-9202-1-git-send-email-clouds.yan@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756071Ab2IZLqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 07:46:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52037 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754846Ab2IZLqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 07:46:04 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <thierry.reding@avionic-design.de>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>,
+        <gururaja.hebbar@ti.com>, "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH 0/2] DT binding support for ECAP & EHRPWM driver
+Date: Wed, 26 Sep 2012 16:57:41 +0530
+Message-ID: <1348658863-29428-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before:
-total: 0 errors, 0 warnings, 14 lines checked
+These patch set adds
+1. DT binding support in drivers.
+2. Add custom of_xlate function to request set period & polarity of
+   pwm device from client drivers DT.
 
-XXXX.patch has no obvious style problems and is ready for submission.
-total: 0 errors, 0 warnings, 7 lines checked
+This has been tested on AM335X-EVM for PWM backlight based on tree
+[1] merged with [2].
+1. linux-next/master
+2. linux-omap-dt/for_3.7/dts_part2
 
-XXXX.patch has no obvious style problems and is ready for submission.
-total: 0 errors, 0 warnings, 25 lines checked
+Philip, Avinash (2):
+  pwm: pwm-tiecap: Add device-tree binding support for APWM driver
+  pwm: pwm-tiehrpwm: Add device-tree binding support for EHRPWM driver
 
-XXXX.patch has no obvious style problems and is ready for submission.
-
-After:
-total: 0 errors, 0 warnings, 14 lines checked
-XXXX.patch has no obvious style problems and is ready for submission.
-
-total: 0 errors, 0 warnings, 7 lines checked
-XXXX.patch has no obvious style problems and is ready for submission.
-
-total: 0 errors, 0 warnings, 25 lines checked
-XXXX.patch has no obvious style problems and is ready for submission.
-
-Also leave two blank lines after the error message if check fails.
-
-Signed-off-by: Yan Hong <clouds.yan@gmail.com>
----
- scripts/checkpatch.pl |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index ca05ba2..15d9f08 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3588,7 +3588,7 @@ sub process {
- 		print "$filename " if ($summary_file);
- 		print "total: $cnt_error errors, $cnt_warn warnings, " .
- 			(($check)? "$cnt_chk checks, " : "") .
--			"$cnt_lines lines checked\n";
-+			"$cnt_lines lines checked";
- 		print "\n" if ($quiet == 0);
- 	}
- 
-@@ -3617,7 +3617,7 @@ sub process {
- 	}
- 
- 	if ($clean == 1 && $quiet == 0) {
--		print "$vname has no obvious style problems and is ready for submission.\n"
-+		print "$vname has no obvious style problems and is ready for submission.\n\n"
- 	}
- 	if ($clean == 0 && $quiet == 0) {
- 		print << "EOM";
-@@ -3625,6 +3625,8 @@ $vname has style problems, please review.
- 
- If any of these errors are false positives, please report
- them to the maintainer, see CHECKPATCH in MAINTAINERS.
-+
-+
- EOM
- 	}
- 
--- 
-1.7.9.5
+ .../devicetree/bindings/pwm/pwm-tiecap.txt         |   26 +++++
+ .../devicetree/bindings/pwm/pwm-tiehrpwm.txt       |   26 +++++
+ drivers/pwm/pwm-tiecap.c                           |  108 +++++++++++++++++++
+ drivers/pwm/pwm-tiehrpwm.c                         |  110 ++++++++++++++++++++
+ 4 files changed, 270 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiehrpwm.txt
 
