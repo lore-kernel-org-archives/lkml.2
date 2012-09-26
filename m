@@ -1,66 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab2IZMkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 08:40:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3832 "EHLO mga01.intel.com"
+	id S1754815Ab2IZMkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 08:40:51 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32250 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753039Ab2IZMkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 08:40:45 -0400
+	id S1756093Ab2IZMkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 08:40:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,490,1344236400"; 
-   d="scan'208";a="226764229"
+   d="scan'208";a="149311228"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv2 0/4] dw_dmac: split the driver and introduce PCI part
-Date: Wed, 26 Sep 2012 15:40:33 +0300
-Message-Id: <1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2 1/4] dmaengine: dw_dmac: convert to platform driver
+Date: Wed, 26 Sep 2012 15:40:34 +0300
+Message-Id: <1348663237-3237-2-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is dedicated to support different platform devices via the same
-core driver. In our case the dw_dmac could be used as a PCI device, regular
-embedded device or something else. This split allows to support the controller
-connected to any bus by adding a little piece of code without duplicating a
-core driver functionality.
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
-Since v1:
- - indentation fix in MAINTAINERS is droped away to separate patch (not related
-   to this series)
- - CLK framework uses stubs for platforms w/o it, in the result it eliminates 3
-   patches and produces 1
- - driver files are moved to an own folder
+This driver could be used on different platforms. Thus, we converted it to be
+a platform driver. The HAVE_CLK dependency is dropped away as well.
 
-Andy Shevchenko (2):
-  dma: move dw_dmac driver to an own directory
-  MAINTAINERS: add recently created files to dw_dmac section
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/Kconfig   |    2 --
+ drivers/dma/dw_dmac.c |   21 +++++++--------------
+ 2 files changed, 7 insertions(+), 16 deletions(-)
 
-Heikki Krogerus (2):
-  dmaengine: dw_dmac: convert to platform driver
-  dmaengine: dw_dmac: Add PCI part of the driver
-
- MAINTAINERS                   |    4 +-
- drivers/dma/Kconfig           |   11 +-
- drivers/dma/Makefile          |    2 +-
- drivers/dma/dw/Makefile       |    2 +
- drivers/dma/dw/dw_dmac.c      | 1720 ++++++++++++++++++++++++++++++++++++++++
- drivers/dma/dw/dw_dmac_pci.c  |  127 +++
- drivers/dma/dw/dw_dmac_regs.h |  294 +++++++
- drivers/dma/dw_dmac.c         | 1727 -----------------------------------------
- drivers/dma/dw_dmac_regs.h    |  294 -------
- 9 files changed, 2155 insertions(+), 2026 deletions(-)
- create mode 100644 drivers/dma/dw/Makefile
- create mode 100644 drivers/dma/dw/dw_dmac.c
- create mode 100644 drivers/dma/dw/dw_dmac_pci.c
- create mode 100644 drivers/dma/dw/dw_dmac_regs.h
- delete mode 100644 drivers/dma/dw_dmac.c
- delete mode 100644 drivers/dma/dw_dmac_regs.h
-
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 677cd6e..75cdcb5 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -83,9 +83,7 @@ config INTEL_IOP_ADMA
+ 
+ config DW_DMAC
+ 	tristate "Synopsys DesignWare AHB DMA support"
+-	depends on HAVE_CLK
+ 	select DMA_ENGINE
+-	default y if CPU_AT32AP7000
+ 	help
+ 	  Support the Synopsys DesignWare AHB DMA controller.  This
+ 	  can be integrated in chips such as the Atmel AT32ap7000.
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index c4b0eb3..9f0129d 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1,14 +1,15 @@
+ /*
+- * Driver for the Synopsys DesignWare DMA Controller (aka DMACA on
+- * AVR32 systems.)
++ * Core driver for the Synopsys DesignWare DMA Controller
+  *
+  * Copyright (C) 2007-2008 Atmel Corporation
+  * Copyright (C) 2010-2011 ST Microelectronics
++ * Copyright (C) 2012 Intel Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  */
++
+ #include <linux/bitops.h>
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+@@ -222,7 +223,6 @@ static inline void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
+ 		channel_readl(dwc, CTL_LO));
+ }
+ 
+-
+ static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ {
+ 	channel_clear_bit(dw, CH_EN, dwc->mask);
+@@ -1679,6 +1679,7 @@ static int dw_resume_noirq(struct device *dev)
+ 
+ 	clk_prepare_enable(dw->clk);
+ 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
++
+ 	return 0;
+ }
+ 
+@@ -1700,6 +1701,7 @@ MODULE_DEVICE_TABLE(of, dw_dma_id_table);
+ #endif
+ 
+ static struct platform_driver dw_driver = {
++	.probe		= dw_probe,
+ 	.remove		= __devexit_p(dw_remove),
+ 	.shutdown	= dw_shutdown,
+ 	.driver = {
+@@ -1709,18 +1711,9 @@ static struct platform_driver dw_driver = {
+ 	},
+ };
+ 
+-static int __init dw_init(void)
+-{
+-	return platform_driver_probe(&dw_driver, dw_probe);
+-}
+-subsys_initcall(dw_init);
+-
+-static void __exit dw_exit(void)
+-{
+-	platform_driver_unregister(&dw_driver);
+-}
+-module_exit(dw_exit);
++module_platform_driver(dw_driver);
+ 
++MODULE_ALIAS("platform:dw_dmac");
+ MODULE_LICENSE("GPL v2");
+ MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller driver");
+ MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
 -- 
 1.7.10.4
 
