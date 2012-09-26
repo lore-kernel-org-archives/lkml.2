@@ -1,103 +1,494 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab2IZXIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 19:08:14 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:60887 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab2IZXIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 19:08:12 -0400
-Date: Wed, 26 Sep 2012 16:08:07 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120926230807.GC10453@mtj.dyndns.org>
-References: <20120926193417.GJ12544@google.com>
- <50635B9D.8020205@parallels.com>
- <20120926195648.GA20342@google.com>
- <50635F46.7000700@parallels.com>
- <20120926201629.GB20342@google.com>
- <50637298.2090904@parallels.com>
- <20120926221046.GA10453@mtj.dyndns.org>
- <506381B2.2060806@parallels.com>
- <20120926224235.GB10453@mtj.dyndns.org>
- <50638793.7060806@parallels.com>
+	id S1752070Ab2IZXSM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 19:18:12 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:50780 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134Ab2IZXSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 19:18:09 -0400
+Date: Thu, 27 Sep 2012 01:18:01 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Cc: hjk@hansjkoch.de, gregkh@linuxfoundation.org, magnus.damm@gmail.com,
+        horms@verge.net.au, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org, hdk@igel.co.jp
+Subject: Re: [v2 PATCH 1/2] Add new uio device for dynamic memory allocation
+Message-ID: <20120926231801.GB4776@local>
+References: <1348553352-14334-1-git-send-email-dhobsong@igel.co.jp>
+ <1348553352-14334-2-git-send-email-dhobsong@igel.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50638793.7060806@parallels.com>
+In-Reply-To: <1348553352-14334-2-git-send-email-dhobsong@igel.co.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Glauber.
-
-On Thu, Sep 27, 2012 at 02:54:11AM +0400, Glauber Costa wrote:
-> I don't. Much has been said in the past about the problem of sharing. A
-> lot of the kernel objects are shared by nature, this is pretty much
-> unavoidable. The answer we have been giving to this inquiry, is that the
-> workloads (us) interested in kmem accounted tend to be quite local in
-> their file accesses (and other kernel objects as well).
+On Tue, Sep 25, 2012 at 03:09:11PM +0900, Damian Hobson-Garcia wrote:
+> This device extends the uio_pdrv_genirq driver to provide limited
+> dynamic memory allocation for UIO devices.  This allows UIO devices
+> to use CMA and IOMMU allocated memory regions. This driver is based
+> on the uio_pdrv_genirq driver and provides the same generic interrupt
+> handling capabilities.  Like uio_prdv_genirq,
+> a fixed number of memory regions, defined in the platform device's
+> .resources field are exported to userpace. This driver adds the ability
+> to export additional regions whose number and size are known at boot time,
+> but whose memory is not allocated until the uio device file is opened for
+> the first time.  When the device file is closed, the allocated memory block
+> is freed.  Physical (DMA) addresses for the dynamic regions are provided to
+> the userspace via /sys/class/uio/uioX/maps/mapY/addr in the same way as
+> static addresses are when the uio device file is open, when no processes
+> are holding the device file open, the address returned to userspace is
+> DMA_ERROR_CODE.
 > 
-> It should be obvious that not all workloads are like this, and some of
-> them would actually prefer to have their umem limited only.
+> Signed-off-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+
+Thanks for your contribution!
+
+Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
+
+> ---
+>  drivers/uio/Kconfig                           |   16 ++
+>  drivers/uio/Makefile                          |    1 +
+>  drivers/uio/uio_dmem_genirq.c                 |  354 +++++++++++++++++++++++++
+>  include/linux/platform_data/uio_dmem_genirq.h |   26 ++
+>  4 files changed, 397 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/uio/uio_dmem_genirq.c
+>  create mode 100644 include/linux/platform_data/uio_dmem_genirq.h
 > 
-> There is nothing unreasonable in tracking user memory only.
+> diff --git a/drivers/uio/Kconfig b/drivers/uio/Kconfig
+> index 6f3ea9b..82e2b89 100644
+> --- a/drivers/uio/Kconfig
+> +++ b/drivers/uio/Kconfig
+> @@ -44,6 +44,22 @@ config UIO_PDRV_GENIRQ
+>  
+>  	  If you don't know what to do here, say N.
+>  
+> +config UIO_DMEM_GENIRQ
+> +	tristate "Userspace platform driver with generic irq and dynamic memory"
+> +	help
+> +	  Platform driver for Userspace I/O devices, including generic
+> +	  interrupt handling code. Shared interrupts are not supported.
+> +
+> +	  Memory regions can be specified with the same platform device
+> +	  resources as the UIO_PDRV drivers, but dynamic regions can also
+> +	  be specified.
+> +	  The number and size of these regions is static,
+> +	  but the memory allocation is not performed until
+> +	  the associated device file is opened. The
+> +	  memory is freed once the uio device is closed.
+> +
+> +	  If you don't know what to do here, say N.
+> +
+>  config UIO_AEC
+>  	tristate "AEC video timestamp device"
+>  	depends on PCI
+> diff --git a/drivers/uio/Makefile b/drivers/uio/Makefile
+> index d4dd9a5..b354c53 100644
+> --- a/drivers/uio/Makefile
+> +++ b/drivers/uio/Makefile
+> @@ -2,6 +2,7 @@ obj-$(CONFIG_UIO)	+= uio.o
+>  obj-$(CONFIG_UIO_CIF)	+= uio_cif.o
+>  obj-$(CONFIG_UIO_PDRV)	+= uio_pdrv.o
+>  obj-$(CONFIG_UIO_PDRV_GENIRQ)	+= uio_pdrv_genirq.o
+> +obj-$(CONFIG_UIO_DMEM_GENIRQ)	+= uio_dmem_genirq.o
+>  obj-$(CONFIG_UIO_AEC)	+= uio_aec.o
+>  obj-$(CONFIG_UIO_SERCOS3)	+= uio_sercos3.o
+>  obj-$(CONFIG_UIO_PCI_GENERIC)	+= uio_pci_generic.o
+> diff --git a/drivers/uio/uio_dmem_genirq.c b/drivers/uio/uio_dmem_genirq.c
+> new file mode 100644
+> index 0000000..4d4dd00
+> --- /dev/null
+> +++ b/drivers/uio/uio_dmem_genirq.c
+> @@ -0,0 +1,354 @@
+> +/*
+> + * drivers/uio/uio_dmem_genirq.c
+> + *
+> + * Userspace I/O platform driver with generic IRQ handling code.
+> + *
+> + * Copyright (C) 2012 Damian Hobson-Garcia
+> + *
+> + * Based on uio_pdrv_genirq.c by Magnus Damm
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <linux/uio_driver.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/bitops.h>
+> +#include <linux/module.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/platform_data/uio_dmem_genirq.h>
+> +#include <linux/stringify.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/dma-mapping.h>
+> +#include <linux/slab.h>
+> +
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_address.h>
+> +
+> +#define DRIVER_NAME "uio_dmem_genirq"
+> +
+> +struct uio_dmem_genirq_platdata {
+> +	struct uio_info *uioinfo;
+> +	spinlock_t lock;
+> +	unsigned long flags;
+> +	struct platform_device *pdev;
+> +	unsigned int dmem_region_start;
+> +	unsigned int num_dmem_regions;
+> +	struct mutex alloc_lock;
+> +	unsigned int refcnt;
+> +};
+> +
+> +static int uio_dmem_genirq_open(struct uio_info *info, struct inode *inode)
+> +{
+> +	struct uio_dmem_genirq_platdata *priv = info->priv;
+> +	struct uio_mem *uiomem;
+> +	int ret = 0;
+> +
+> +	uiomem = &priv->uioinfo->mem[priv->dmem_region_start];
+> +
+> +	mutex_lock(&priv->alloc_lock);
+> +	while (!priv->refcnt && uiomem < &priv->uioinfo->mem[MAX_UIO_MAPS]) {
+> +		void *addr;
+> +		if (!uiomem->size)
+> +			break;
+> +
+> +		addr = dma_alloc_coherent(&priv->pdev->dev, uiomem->size,
+> +				(dma_addr_t *)&uiomem->addr, GFP_KERNEL);
+> +		if (!addr) {
+> +			ret = -ENOMEM;
+> +			break;
+> +		}
+> +
+> +		uiomem->internal_addr = addr;
+> +		++uiomem;
+> +	}
+> +	priv->refcnt++;
+> +
+> +	mutex_unlock(&priv->alloc_lock);
+> +	/* Wait until the Runtime PM code has woken up the device */
+> +	pm_runtime_get_sync(&priv->pdev->dev);
+> +	return ret;
+> +}
+> +
+> +static int uio_dmem_genirq_release(struct uio_info *info, struct inode *inode)
+> +{
+> +	struct uio_dmem_genirq_platdata *priv = info->priv;
+> +	struct uio_mem *uiomem;
+> +
+> +	/* Tell the Runtime PM code that the device has become idle */
+> +	pm_runtime_put_sync(&priv->pdev->dev);
+> +
+> +	uiomem = &priv->uioinfo->mem[priv->dmem_region_start];
+> +
+> +	mutex_lock(&priv->alloc_lock);
+> +
+> +	priv->refcnt--;
+> +	while (!priv->refcnt && uiomem < &priv->uioinfo->mem[MAX_UIO_MAPS]) {
+> +		if (!uiomem->size)
+> +			break;
+> +
+> +		dma_free_coherent(&priv->pdev->dev, uiomem->size,
+> +				uiomem->internal_addr, uiomem->addr);
+> +		uiomem->addr = DMA_ERROR_CODE;
+> +		++uiomem;
+> +	}
+> +
+> +	mutex_unlock(&priv->alloc_lock);
+> +	return 0;
+> +}
+> +
+> +static irqreturn_t uio_dmem_genirq_handler(int irq, struct uio_info *dev_info)
+> +{
+> +	struct uio_dmem_genirq_platdata *priv = dev_info->priv;
+> +
+> +	/* Just disable the interrupt in the interrupt controller, and
+> +	 * remember the state so we can allow user space to enable it later.
+> +	 */
+> +
+> +	if (!test_and_set_bit(0, &priv->flags))
+> +		disable_irq_nosync(irq);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int uio_dmem_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
+> +{
+> +	struct uio_dmem_genirq_platdata *priv = dev_info->priv;
+> +	unsigned long flags;
+> +
+> +	/* Allow user space to enable and disable the interrupt
+> +	 * in the interrupt controller, but keep track of the
+> +	 * state to prevent per-irq depth damage.
+> +	 *
+> +	 * Serialize this operation to support multiple tasks.
+> +	 */
+> +
+> +	spin_lock_irqsave(&priv->lock, flags);
+> +	if (irq_on) {
+> +		if (test_and_clear_bit(0, &priv->flags))
+> +			enable_irq(dev_info->irq);
+> +	} else {
+> +		if (!test_and_set_bit(0, &priv->flags))
+> +			disable_irq(dev_info->irq);
+> +	}
+> +	spin_unlock_irqrestore(&priv->lock, flags);
+> +
+> +	return 0;
+> +}
+> +
+> +static int uio_dmem_genirq_probe(struct platform_device *pdev)
+> +{
+> +	struct uio_dmem_genirq_pdata *pdata = pdev->dev.platform_data;
+> +	struct uio_info *uioinfo = &pdata->uioinfo;
+> +	struct uio_dmem_genirq_platdata *priv;
+> +	struct uio_mem *uiomem;
+> +	int ret = -EINVAL;
+> +	int i;
+> +
+> +	if (!uioinfo) {
+> +		int irq;
+> +
+> +		/* alloc uioinfo for one device */
+> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+> +		if (!uioinfo) {
+> +			ret = -ENOMEM;
+> +			dev_err(&pdev->dev, "unable to kmalloc\n");
+> +			goto bad2;
+> +		}
+> +		uioinfo->name = pdev->dev.of_node->name;
+> +		uioinfo->version = "devicetree";
+> +
+> +		/* Multiple IRQs are not supported */
+> +		irq = platform_get_irq(pdev, 0);
+> +		if (irq == -ENXIO)
+> +			uioinfo->irq = UIO_IRQ_NONE;
+> +		else
+> +			uioinfo->irq = irq;
+> +	}
+> +
+> +	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+> +		dev_err(&pdev->dev, "missing platform_data\n");
+> +		goto bad0;
+> +	}
+> +
+> +	if (uioinfo->handler || uioinfo->irqcontrol ||
+> +	    uioinfo->irq_flags & IRQF_SHARED) {
+> +		dev_err(&pdev->dev, "interrupt configuration error\n");
+> +		goto bad0;
+> +	}
+> +
+> +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+> +	if (!priv) {
+> +		ret = -ENOMEM;
+> +		dev_err(&pdev->dev, "unable to kmalloc\n");
+> +		goto bad0;
+> +	}
+> +
+> +	dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+> +
+> +	priv->uioinfo = uioinfo;
+> +	spin_lock_init(&priv->lock);
+> +	priv->flags = 0; /* interrupt is enabled to begin with */
+> +	priv->pdev = pdev;
+> +	mutex_init(&priv->alloc_lock);
+> +
+> +	if (!uioinfo->irq) {
+> +		ret = platform_get_irq(pdev, 0);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev, "failed to get IRQ\n");
+> +			goto bad0;
+> +		}
+> +		uioinfo->irq = ret;
+> +	}
+> +	uiomem = &uioinfo->mem[0];
+> +
+> +	for (i = 0; i < pdev->num_resources; ++i) {
+> +		struct resource *r = &pdev->resource[i];
+> +
+> +		if (r->flags != IORESOURCE_MEM)
+> +			continue;
+> +
+> +		if (uiomem >= &uioinfo->mem[MAX_UIO_MAPS]) {
+> +			dev_warn(&pdev->dev, "device has more than "
+> +					__stringify(MAX_UIO_MAPS)
+> +					" I/O memory resources.\n");
+> +			break;
+> +		}
+> +
+> +		uiomem->memtype = UIO_MEM_PHYS;
+> +		uiomem->addr = r->start;
+> +		uiomem->size = resource_size(r);
+> +		++uiomem;
+> +	}
+> +
+> +	priv->dmem_region_start = i;
+> +	priv->num_dmem_regions = pdata->num_dynamic_regions;
+> +
+> +	for (i = 0; i < pdata->num_dynamic_regions; ++i) {
+> +		if (uiomem >= &uioinfo->mem[MAX_UIO_MAPS]) {
+> +			dev_warn(&pdev->dev, "device has more than "
+> +					__stringify(MAX_UIO_MAPS)
+> +					" dynamic and fixed memory regions.\n");
+> +			break;
+> +		}
+> +		uiomem->memtype = UIO_MEM_PHYS;
+> +		uiomem->addr = DMA_ERROR_CODE;
+> +		uiomem->size = pdata->dynamic_region_sizes[i];
+> +		++uiomem;
+> +	}
+> +
+> +	while (uiomem < &uioinfo->mem[MAX_UIO_MAPS]) {
+> +		uiomem->size = 0;
+> +		++uiomem;
+> +	}
+> +
+> +	/* This driver requires no hardware specific kernel code to handle
+> +	 * interrupts. Instead, the interrupt handler simply disables the
+> +	 * interrupt in the interrupt controller. User space is responsible
+> +	 * for performing hardware specific acknowledge and re-enabling of
+> +	 * the interrupt in the interrupt controller.
+> +	 *
+> +	 * Interrupt sharing is not supported.
+> +	 */
+> +
+> +	uioinfo->handler = uio_dmem_genirq_handler;
+> +	uioinfo->irqcontrol = uio_dmem_genirq_irqcontrol;
+> +	uioinfo->open = uio_dmem_genirq_open;
+> +	uioinfo->release = uio_dmem_genirq_release;
+> +	uioinfo->priv = priv;
+> +
+> +	/* Enable Runtime PM for this device:
+> +	 * The device starts in suspended state to allow the hardware to be
+> +	 * turned off by default. The Runtime PM bus code should power on the
+> +	 * hardware and enable clocks at open().
+> +	 */
+> +	pm_runtime_enable(&pdev->dev);
+> +
+> +	ret = uio_register_device(&pdev->dev, priv->uioinfo);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "unable to register uio device\n");
+> +		goto bad1;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, priv);
+> +	return 0;
+> + bad1:
+> +	kfree(priv);
+> +	pm_runtime_disable(&pdev->dev);
+> + bad0:
+> +	/* kfree uioinfo for OF */
+> +	if (pdev->dev.of_node)
+> +		kfree(uioinfo);
+> + bad2:
+> +	return ret;
+> +}
+> +
+> +static int uio_dmem_genirq_remove(struct platform_device *pdev)
+> +{
+> +	struct uio_dmem_genirq_platdata *priv = platform_get_drvdata(pdev);
+> +
+> +	uio_unregister_device(priv->uioinfo);
+> +	pm_runtime_disable(&pdev->dev);
+> +
+> +	priv->uioinfo->handler = NULL;
+> +	priv->uioinfo->irqcontrol = NULL;
+> +
+> +	/* kfree uioinfo for OF */
+> +	if (pdev->dev.of_node)
+> +		kfree(priv->uioinfo);
+> +
+> +	kfree(priv);
+> +	return 0;
+> +}
+> +
+> +static int uio_dmem_genirq_runtime_nop(struct device *dev)
+> +{
+> +	/* Runtime PM callback shared between ->runtime_suspend()
+> +	 * and ->runtime_resume(). Simply returns success.
+> +	 *
+> +	 * In this driver pm_runtime_get_sync() and pm_runtime_put_sync()
+> +	 * are used at open() and release() time. This allows the
+> +	 * Runtime PM code to turn off power to the device while the
+> +	 * device is unused, ie before open() and after release().
+> +	 *
+> +	 * This Runtime PM callback does not need to save or restore
+> +	 * any registers since user space is responsbile for hardware
+> +	 * register reinitialization after open().
+> +	 */
+> +	return 0;
+> +}
+> +
+> +static const struct dev_pm_ops uio_dmem_genirq_dev_pm_ops = {
+> +	.runtime_suspend = uio_dmem_genirq_runtime_nop,
+> +	.runtime_resume = uio_dmem_genirq_runtime_nop,
+> +};
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id uio_of_genirq_match[] = {
+> +	{ /* empty for now */ },
+> +};
+> +MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+> +#else
+> +# define uio_of_genirq_match NULL
+> +#endif
+> +
+> +static struct platform_driver uio_dmem_genirq = {
+> +	.probe = uio_dmem_genirq_probe,
+> +	.remove = uio_dmem_genirq_remove,
+> +	.driver = {
+> +		.name = DRIVER_NAME,
+> +		.owner = THIS_MODULE,
+> +		.pm = &uio_dmem_genirq_dev_pm_ops,
+> +		.of_match_table = uio_of_genirq_match,
+> +	},
+> +};
+> +
+> +module_platform_driver(uio_dmem_genirq);
+> +
+> +MODULE_AUTHOR("Damian Hobson-Garcia");
+> +MODULE_DESCRIPTION("Userspace I/O platform driver with dynamic memory.");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:" DRIVER_NAME);
+> diff --git a/include/linux/platform_data/uio_dmem_genirq.h b/include/linux/platform_data/uio_dmem_genirq.h
+> new file mode 100644
+> index 0000000..973c1bb
+> --- /dev/null
+> +++ b/include/linux/platform_data/uio_dmem_genirq.h
+> @@ -0,0 +1,26 @@
+> +/*
+> + * include/linux/platform_data/uio_dmem_genirq.h
+> + *
+> + * Copyright (C) 2012 Damian Hobson-Garcia
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation version 2.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> + * kind, whether express or implied; without even the implied warranty
+> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#ifndef _UIO_DMEM_GENIRQ_H
+> +#define _UIO_DMEM_GENIRQ_H
+> +
+> +#include <linux/uio_driver.h>
+> +
+> +struct uio_dmem_genirq_pdata {
+> +	struct uio_info	uioinfo;
+> +	unsigned int *dynamic_region_sizes;
+> +	unsigned int num_dynamic_regions;
+> +};
+> +#endif /* _UIO_DMEM_GENIRQ_H */
+> -- 
+> 1.7.5.4
 > 
-> If we have a global switch for "tracking all kernel memory", who would
-> you account the objects that are heavily shared to? I solve this by not
-> tracking kernel memory for cgroups in such workloads. What do you propose?
-
-One of the things wrong with that is that it exposes the limitation of
-the current implementation as interface to userland, which is never a
-good idea.  In addition, how is userland supposed to know which
-workload is shared kmem heavy or not?  Details like that are not even
-inherent to workloads.  It's highly dependent on kernel implementation
-which may change any day.  If we hit workloads like that the right
-thing to do is improving kmemcg so that such problems don't occur, not
-exposing another switch.
-
-If we can't make that work in reasonable (doesn't have to be perfect)
-way, we might as well just give up on kmem controller.  If userland
-has to second-guess kernel implementation details to make use of it,
-it's useless.
-
-> > Well, that's really playing with words.  Limit is per cgroup and
-> > before the limit is set for the first time, everything is accounted to
-> > something else.  How is that keeping track?
-> > 
 > 
-> Even after the limit is set, it is set only by workloads that want kmem
-> to be tracked. If you want to track it during the whole lifetime of the
-> cgroup, you switch it before you put tasks to it. What is so crazy about it?
-
-The fact that the numbers don't really mean what they apparently
-should mean.
-
-> > The proposed behavior seems really crazy to me.  Do people really
-> > think this is a good idea?
-> 
-> It is really sad that you lost the opportunity to say that in a room
-> full of mm developers that could add to this discussion in real time,
-> when after an explanation about this was given, Mel asked if anyone
-> would have any objections to this.
-
-Sure, conferences are useful for building consensus but that's the
-extent of it.  Sorry that I didn't realize the implications then but
-conferences don't really add any finality to decisions.
-
-So, this seems properly crazy to me at the similar level of
-use_hierarchy fiasco.  I'm gonna NACK on this.
-
-Thanks.
-
--- 
-tejun
