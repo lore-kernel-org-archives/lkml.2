@@ -1,376 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab2IZGVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 02:21:14 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53880 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369Ab2IZGVM (ORCPT
+	id S1752588Ab2IZGaB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 02:30:01 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58499 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369Ab2IZG3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 02:21:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <2021405.UgE6taEESn@avalon>
-References: <1348577965-17351-1-git-send-email-prabhakar.lad@ti.com> <2021405.UgE6taEESn@avalon>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Wed, 26 Sep 2012 11:50:51 +0530
-Message-ID: <CA+V-a8t9aDa9Vvy-VD+-NBPsO=cmgnzTkyAUeyAZ3_yDytDrCQ@mail.gmail.com>
-Subject: Re: [PATCH] media: mt9p031/mt9t001/mt9v032: use V4L2_CID_TEST_PATTERN
- for test pattern control
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        VGER <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Sep 2012 02:29:40 -0400
+X-AuditID: 9c93016f-b7b23ae000004419-8e-5062a0d05d15
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH] CMA: migrate mlocked page
+Date: Wed, 26 Sep 2012 15:32:45 +0900
+Message-Id: <1348641165-29108-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+Now CMA can't migrate mlocked page so it ends up fail to allocate
+contiguous memory space. It's not good for CMA.
+This patch makes mlocked page be migrated out.
+Of course, it can affect realtime processes but in CMA usecase,
+contiguos memory allocation failing is far worse than access latency
+to an mlcoked page being vairable while CMA is running.
+If someone want to make the system realtime, he shouldn't enable
+CMA because stall happens in random time.
 
-Thanks for the review.
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ include/linux/mmzone.h |    2 ++
+ mm/compaction.c        |    8 ++++++--
+ mm/internal.h          |    2 +-
+ mm/page_alloc.c        |    2 +-
+ mm/vmscan.c            |    4 ++--
+ 5 files changed, 12 insertions(+), 6 deletions(-)
 
-On Tue, Sep 25, 2012 at 9:30 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Prabhakar,
->
-> Thank you for the patch.
->
-> On Tuesday 25 September 2012 18:29:25 Prabhakar wrote:
->> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->> ---
->>  drivers/media/i2c/mt9p031.c |   27 ++++++++----------------
->>  drivers/media/i2c/mt9t001.c |   33 +++++++++++++++++++++++-------
->>  drivers/media/i2c/mt9v032.c |   46 ++++++++++++++++++++++++++++------------
->>  3 files changed, 66 insertions(+), 40 deletions(-)
->>
->> diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
->> index 2c0f407..a45c2ea 100644
->> --- a/drivers/media/i2c/mt9p031.c
->> +++ b/drivers/media/i2c/mt9p031.c
->> @@ -574,11 +574,10 @@ static int mt9p031_set_crop(struct v4l2_subdev
->> *subdev, * V4L2 subdev control operations
->>   */
->>
->> -#define V4L2_CID_TEST_PATTERN                (V4L2_CID_USER_BASE | 0x1001)
->> -#define V4L2_CID_BLC_AUTO            (V4L2_CID_USER_BASE | 0x1002)
->> -#define V4L2_CID_BLC_TARGET_LEVEL    (V4L2_CID_USER_BASE | 0x1003)
->> -#define V4L2_CID_BLC_ANALOG_OFFSET   (V4L2_CID_USER_BASE | 0x1004)
->> -#define V4L2_CID_BLC_DIGITAL_OFFSET  (V4L2_CID_USER_BASE | 0x1005)
->> +#define V4L2_CID_BLC_AUTO            (V4L2_CID_USER_BASE | 0x1001)
->> +#define V4L2_CID_BLC_TARGET_LEVEL    (V4L2_CID_USER_BASE | 0x1002)
->> +#define V4L2_CID_BLC_ANALOG_OFFSET   (V4L2_CID_USER_BASE | 0x1003)
->> +#define V4L2_CID_BLC_DIGITAL_OFFSET  (V4L2_CID_USER_BASE | 0x1004)
->
-> Let's not change the value of the other device-specific controls.
->
-Ok
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 10aa549..2c9348a 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -218,6 +218,8 @@ struct lruvec {
+ #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x2)
+ /* Isolate for asynchronous migration */
+ #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x4)
++/* Isolate unevictable pages */
++#define ISOLATE_UNEVICTABLE	((__force isolate_mode_t)0x8)
+ 
+ /* LRU Isolation modes. */
+ typedef unsigned __bitwise__ isolate_mode_t;
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 5037399..891637d 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -445,6 +445,7 @@ static bool too_many_isolated(struct zone *zone)
+  * @cc:		Compaction control structure.
+  * @low_pfn:	The first PFN of the range.
+  * @end_pfn:	The one-past-the-last PFN of the range.
++ * @unevictable: true if it allows to isolate unevictable pages
+  *
+  * Isolate all pages that can be migrated from the range specified by
+  * [low_pfn, end_pfn).  Returns zero if there is a fatal signal
+@@ -460,7 +461,7 @@ static bool too_many_isolated(struct zone *zone)
+  */
+ unsigned long
+ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+-			   unsigned long low_pfn, unsigned long end_pfn)
++		unsigned long low_pfn, unsigned long end_pfn, bool unevictable)
+ {
+ 	unsigned long last_pageblock_nr = 0, pageblock_nr;
+ 	unsigned long nr_scanned = 0, nr_isolated = 0;
+@@ -585,6 +586,9 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		if (!cc->sync)
+ 			mode |= ISOLATE_ASYNC_MIGRATE;
+ 
++		if (unevictable)
++			mode |= ISOLATE_UNEVICTABLE;
++
+ 		lruvec = mem_cgroup_page_lruvec(page, zone);
+ 
+ 		/* Try isolate the page */
+@@ -790,7 +794,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	}
+ 
+ 	/* Perform the isolation */
+-	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn);
++	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
+ 	if (!low_pfn || cc->contended)
+ 		return ISOLATE_ABORT;
+ 
+diff --git a/mm/internal.h b/mm/internal.h
+index d1e84fd..9d5d276 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -138,7 +138,7 @@ unsigned long
+ isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn);
+ unsigned long
+ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+-			   unsigned long low_pfn, unsigned long end_pfn);
++	unsigned long low_pfn, unsigned long end_pfn, bool unevictable);
+ 
+ #endif
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1a69094..296bea9 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5694,7 +5694,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+ 		if (list_empty(&cc.migratepages)) {
+ 			cc.nr_migratepages = 0;
+ 			pfn = isolate_migratepages_range(cc.zone, &cc,
+-							 pfn, end);
++							 pfn, end, true);
+ 			if (!pfn) {
+ 				ret = -EINTR;
+ 				break;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index b5e45f4..1df51f4 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1009,8 +1009,8 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode)
+ 	if (!PageLRU(page))
+ 		return ret;
+ 
+-	/* Do not give back unevictable pages for compaction */
+-	if (PageUnevictable(page))
++	/* Compaction can't handle unevictable pages but CMA can do */
++	if (PageUnevictable(page) && !(mode & ISOLATE_UNEVICTABLE))
+ 		return ret;
+ 
+ 	ret = -EBUSY;
+-- 
+1.7.9.5
 
->>  static int mt9p031_s_ctrl(struct v4l2_ctrl *ctrl)
->>  {
->> @@ -740,18 +739,6 @@ static const char * const mt9p031_test_pattern_menu[] =
->> { static const struct v4l2_ctrl_config mt9p031_ctrls[] = {
->>       {
->>               .ops            = &mt9p031_ctrl_ops,
->> -             .id             = V4L2_CID_TEST_PATTERN,
->> -             .type           = V4L2_CTRL_TYPE_MENU,
->> -             .name           = "Test Pattern",
->> -             .min            = 0,
->> -             .max            = ARRAY_SIZE(mt9p031_test_pattern_menu) - 1,
->> -             .step           = 0,
->> -             .def            = 0,
->> -             .flags          = 0,
->> -             .menu_skip_mask = 0,
->> -             .qmenu          = mt9p031_test_pattern_menu,
->> -     }, {
->> -             .ops            = &mt9p031_ctrl_ops,
->>               .id             = V4L2_CID_BLC_AUTO,
->>               .type           = V4L2_CTRL_TYPE_BOOLEAN,
->>               .name           = "BLC, Auto",
->> @@ -950,7 +937,7 @@ static int mt9p031_probe(struct i2c_client *client,
->>       mt9p031->model = did->driver_data;
->>       mt9p031->reset = -1;
->>
->> -     v4l2_ctrl_handler_init(&mt9p031->ctrls, ARRAY_SIZE(mt9p031_ctrls) + 5);
->> +     v4l2_ctrl_handler_init(&mt9p031->ctrls, ARRAY_SIZE(mt9p031_ctrls) + 6);
->>
->>       v4l2_ctrl_new_std(&mt9p031->ctrls, &mt9p031_ctrl_ops,
->>                         V4L2_CID_EXPOSURE, MT9P031_SHUTTER_WIDTH_MIN,
->> @@ -966,6 +953,10 @@ static int mt9p031_probe(struct i2c_client *client,
->>       v4l2_ctrl_new_std(&mt9p031->ctrls, &mt9p031_ctrl_ops,
->>                         V4L2_CID_PIXEL_RATE, pdata->target_freq,
->>                         pdata->target_freq, 1, pdata->target_freq);
->> +     v4l2_ctrl_new_std_menu_items(&mt9p031->ctrls, &mt9p031_ctrl_ops,
->> +                       V4L2_CID_TEST_PATTERN,
->> +                       ARRAY_SIZE(mt9p031_test_pattern_menu) - 1, 0,
->> +                       0, mt9p031_test_pattern_menu);
->>
->>       for (i = 0; i < ARRAY_SIZE(mt9p031_ctrls); ++i)
->>               v4l2_ctrl_new_custom(&mt9p031->ctrls, &mt9p031_ctrls[i], NULL);
->> diff --git a/drivers/media/i2c/mt9t001.c b/drivers/media/i2c/mt9t001.c
->> index 6d343ad..16eac3f 100644
->> --- a/drivers/media/i2c/mt9t001.c
->> +++ b/drivers/media/i2c/mt9t001.c
->> @@ -124,6 +124,7 @@ struct mt9t001 {
->>
->>       u16 output_control;
->>       u16 black_level;
->> +     bool test_pattern;
->>  };
->>
->>  static inline struct mt9t001 *to_mt9t001(struct v4l2_subdev *sd)
->> @@ -371,10 +372,10 @@ static int mt9t001_set_crop(struct v4l2_subdev
->> *subdev, * V4L2 subdev control operations
->>   */
->>
->> -#define V4L2_CID_TEST_PATTERN                (V4L2_CID_USER_BASE | 0x1001)
->> -#define V4L2_CID_BLACK_LEVEL_AUTO    (V4L2_CID_USER_BASE | 0x1002)
->> -#define V4L2_CID_BLACK_LEVEL_OFFSET  (V4L2_CID_USER_BASE | 0x1003)
->> -#define V4L2_CID_BLACK_LEVEL_CALIBRATE       (V4L2_CID_USER_BASE | 0x1004)
->> +#define V4L2_CID_PARAMETRIC_TEST_PATTERN     (V4L2_CID_USER_BASE | 0x1001)
->
-> That's a bit of a long name. What about V4L2_CID_TEST_PATTERN_COLOR ?
->
-Ok.
-
->> +#define V4L2_CID_BLACK_LEVEL_AUTO            (V4L2_CID_USER_BASE | 0x1002)
->> +#define V4L2_CID_BLACK_LEVEL_OFFSET          (V4L2_CID_USER_BASE | 0x1003)
->> +#define V4L2_CID_BLACK_LEVEL_CALIBRATE               (V4L2_CID_USER_BASE | 0x1004)
->>
->>  #define V4L2_CID_GAIN_RED            (V4L2_CTRL_CLASS_CAMERA | 0x1001)
->>  #define V4L2_CID_GAIN_GREEN_RED              (V4L2_CTRL_CLASS_CAMERA | 0x1002)
->> @@ -485,8 +486,15 @@ static int mt9t001_s_ctrl(struct v4l2_ctrl *ctrl)
->>
->>               return mt9t001_write(client, MT9T001_SHUTTER_WIDTH_HIGH,
->>                                    ctrl->val >> 16);
->> -
->>       case V4L2_CID_TEST_PATTERN:
->> +             mt9t001->test_pattern = ctrl->val;
->> +             break;
->> +
->> +     case V4L2_CID_PARAMETRIC_TEST_PATTERN:
->> +             if (!mt9t001->test_pattern) {
->> +                     pr_warn("Enable test pattern!!");
->> +                     return -EINVAL;
->> +             }
->
-> I don't think this really requires a pr_warn(). I would just accept the value
-> without returning an error and write it to the MT9T001_TEST_DATA register. The
-> V4L2_CID_TEST_PATTERN control would then enable/disable the test pattern,
-> instead of storing the value in mt9t001->test_pattern.
->
-Agreed.
-
->>               ret = mt9t001_set_output_control(mt9t001,
->>                       ctrl->val ? 0 : MT9T001_OUTPUT_CONTROL_TEST_DATA,
->>                       ctrl->val ? MT9T001_OUTPUT_CONTROL_TEST_DATA : 0);
->> @@ -533,12 +541,17 @@ static struct v4l2_ctrl_ops mt9t001_ctrl_ops = {
->>       .s_ctrl = mt9t001_s_ctrl,
->>  };
->>
->> +static const char * const mt9t001_test_pattern_menu[] = {
->> +     "Disabled",
->> +     "Enable",
->
-> "Enabled" please.
->
-Ok.
-
->> +};
->> +
->>  static const struct v4l2_ctrl_config mt9t001_ctrls[] = {
->>       {
->>               .ops            = &mt9t001_ctrl_ops,
->> -             .id             = V4L2_CID_TEST_PATTERN,
->> +             .id             = V4L2_CID_PARAMETRIC_TEST_PATTERN,
->>               .type           = V4L2_CTRL_TYPE_INTEGER,
->> -             .name           = "Test pattern",
->> +             .name           = "Parametric Test Pattern Values",
->
-> "Test Pattern Color" ?
->
-Ok.
-
->>               .min            = 0,
->>               .max            = 1023,
->>               .step           = 1,
->> @@ -741,7 +754,7 @@ static int mt9t001_probe(struct i2c_client *client,
->>               return -ENOMEM;
->>
->>       v4l2_ctrl_handler_init(&mt9t001->ctrls, ARRAY_SIZE(mt9t001_ctrls) +
->> -                                             ARRAY_SIZE(mt9t001_gains) + 3);
->> +                                             ARRAY_SIZE(mt9t001_gains) + 4);
->>
->>       v4l2_ctrl_new_std(&mt9t001->ctrls, &mt9t001_ctrl_ops,
->>                         V4L2_CID_EXPOSURE, MT9T001_SHUTTER_WIDTH_MIN,
->> @@ -752,6 +765,10 @@ static int mt9t001_probe(struct i2c_client *client,
->>       v4l2_ctrl_new_std(&mt9t001->ctrls, &mt9t001_ctrl_ops,
->>                         V4L2_CID_PIXEL_RATE, pdata->ext_clk, pdata->ext_clk,
->>                         1, pdata->ext_clk);
->> +     v4l2_ctrl_new_std_menu_items(&mt9t001->ctrls, &mt9t001_ctrl_ops,
->> +                     V4L2_CID_TEST_PATTERN,
->> +                     ARRAY_SIZE(mt9t001_test_pattern_menu) - 1, 0,
->> +                     0, mt9t001_test_pattern_menu);
->>
->>       for (i = 0; i < ARRAY_SIZE(mt9t001_ctrls); ++i)
->>               v4l2_ctrl_new_custom(&mt9t001->ctrls, &mt9t001_ctrls[i], NULL);
->> diff --git a/drivers/media/i2c/mt9v032.c b/drivers/media/i2c/mt9v032.c
->> index e217740..7ef01c0 100644
->> --- a/drivers/media/i2c/mt9v032.c
->> +++ b/drivers/media/i2c/mt9v032.c
->> @@ -141,6 +141,7 @@ struct mt9v032 {
->>       u16 chip_control;
->>       u16 aec_agc;
->>       u16 hblank;
->> +     u32 test_pattern;
->>  };
->>
->>  static struct mt9v032 *to_mt9v032(struct v4l2_subdev *sd)
->> @@ -500,7 +501,7 @@ static int mt9v032_set_crop(struct v4l2_subdev *subdev,
->>   * V4L2 subdev control operations
->>   */
->>
->> -#define V4L2_CID_TEST_PATTERN                (V4L2_CID_USER_BASE | 0x1001)
->> +#define V4L2_CID_PARAMETRIC_TEST_PATTERN     (V4L2_CID_USER_BASE | 0x1001)
->
-> Same comment as for the mt9t001 driver, V4L2_CID_TEST_PATTERN_COLOR ?
->
->>  static int mt9v032_s_ctrl(struct v4l2_ctrl *ctrl)
->>  {
->> @@ -508,7 +509,7 @@ static int mt9v032_s_ctrl(struct v4l2_ctrl *ctrl)
->>                       container_of(ctrl->handler, struct mt9v032, ctrls);
->>       struct i2c_client *client = v4l2_get_subdevdata(&mt9v032->subdev);
->>       u32 freq;
->> -     u16 data;
->> +     u16 data = 0;
->>
->>       switch (ctrl->id) {
->>       case V4L2_CID_AUTOGAIN:
->> @@ -543,8 +544,10 @@ static int mt9v032_s_ctrl(struct v4l2_ctrl *ctrl)
->>               mt9v032->pixel_rate->val64 = freq;
->>               mt9v032->sysclk = freq;
->>               break;
->> -
->>       case V4L2_CID_TEST_PATTERN:
->> +             mt9v032->test_pattern = ctrl->val;
->> +             if (mt9v032->test_pattern > 3)
->> +                     break;
->
-> No need to store this, just select the requested test pattern.
->
-Ok.
-
->>               switch (ctrl->val) {
->>               case 0:
->>                       data = 0;
->> @@ -561,15 +564,18 @@ static int mt9v032_s_ctrl(struct v4l2_ctrl *ctrl)
->>                       data = MT9V032_TEST_PATTERN_GRAY_DIAGONAL
->>
->>                            | MT9V032_TEST_PATTERN_ENABLE;
->>
->>                       break;
->> -             default:
->> -                     data = (ctrl->val << MT9V032_TEST_PATTERN_DATA_SHIFT)
->> -                          | MT9V032_TEST_PATTERN_USE_DATA
->> -                          | MT9V032_TEST_PATTERN_ENABLE
->> -                          | MT9V032_TEST_PATTERN_FLIP;
->> -                     break;
->
-> This will need to be kept.
->
->>               }
->>
->>               return mt9v032_write(client, MT9V032_TEST_PATTERN, data);
->> +
->> +     case V4L2_CID_PARAMETRIC_TEST_PATTERN:
->> +             if (mt9v032->test_pattern != 4)
->> +                     return 0;
->
-> No need to check that, just write the test pattern color to the
-> MT9V032_TEST_PATTERN_DATA field without changing the rest of the register. You
-> could also put the two test pattern controls in a cluster.
->
-Agreed.
-
->> +             data = (ctrl->val << MT9V032_TEST_PATTERN_DATA_SHIFT)
->> +                  | MT9V032_TEST_PATTERN_USE_DATA
->> +                  | MT9V032_TEST_PATTERN_ENABLE
->> +                  | MT9V032_TEST_PATTERN_FLIP;
->> +             return mt9v032_write(client, MT9V032_TEST_PATTERN, data);
->>       }
->>
->>       return 0;
->> @@ -579,16 +585,24 @@ static struct v4l2_ctrl_ops mt9v032_ctrl_ops = {
->>       .s_ctrl = mt9v032_s_ctrl,
->>  };
->>
->> +static const char * const mt9v032_test_pattern_menu[] = {
->> +     "Disabled",
->> +     "Gray Vertical Shade",
->> +     "Gray Horizontal Shade",
->> +     "Gray Diagonal Shade",
->> +     "Parametric Test Pattern",
->
-> I would just say "Plain".
->
-Ok I'll make it 'Plain'
-
->> +};
->> +
->>  static const struct v4l2_ctrl_config mt9v032_ctrls[] = {
->>       {
->>               .ops            = &mt9v032_ctrl_ops,
->> -             .id             = V4L2_CID_TEST_PATTERN,
->> +             .id             = V4L2_CID_PARAMETRIC_TEST_PATTERN,
->>               .type           = V4L2_CTRL_TYPE_INTEGER,
->> -             .name           = "Test pattern",
->> -             .min            = 0,
->> +             .name           = "Parametric Test Pattern Values",
->
-> "Test Pattern Color"
->
-Ok.
-
-Regards,
---Prabhakar Lad
-
->> +             .min            = 4,
->>               .max            = 1023,
->>               .step           = 1,
->> -             .def            = 0,
->> +             .def            = 4,
->>               .flags          = 0,
->>       }
->>  };
->> @@ -741,7 +755,7 @@ static int mt9v032_probe(struct i2c_client *client,
->>       mutex_init(&mt9v032->power_lock);
->>       mt9v032->pdata = pdata;
->>
->> -     v4l2_ctrl_handler_init(&mt9v032->ctrls, ARRAY_SIZE(mt9v032_ctrls) + 8);
->> +     v4l2_ctrl_handler_init(&mt9v032->ctrls, ARRAY_SIZE(mt9v032_ctrls) + 9);
->>
->>       v4l2_ctrl_new_std(&mt9v032->ctrls, &mt9v032_ctrl_ops,
->>                         V4L2_CID_AUTOGAIN, 0, 1, 1, 1);
->> @@ -763,6 +777,10 @@ static int mt9v032_probe(struct i2c_client *client,
->>                         V4L2_CID_VBLANK, MT9V032_VERTICAL_BLANKING_MIN,
->>                         MT9V032_VERTICAL_BLANKING_MAX, 1,
->>                         MT9V032_VERTICAL_BLANKING_DEF);
->> +     v4l2_ctrl_new_std_menu_items(&mt9v032->ctrls, &mt9v032_ctrl_ops,
->> +                     V4L2_CID_TEST_PATTERN,
->> +                     ARRAY_SIZE(mt9v032_test_pattern_menu) - 1, 0,
->> +                     0, mt9v032_test_pattern_menu);
->>
->>       mt9v032->pixel_rate =
->>               v4l2_ctrl_new_std(&mt9v032->ctrls, &mt9v032_ctrl_ops,
-> --
-> Regards,
->
-> Laurent Pinchart
->
