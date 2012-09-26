@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab2IZLqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 07:46:07 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52037 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754846Ab2IZLqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 07:46:04 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: <thierry.reding@avionic-design.de>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <rob@landley.net>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>,
-        <gururaja.hebbar@ti.com>, "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH 0/2] DT binding support for ECAP & EHRPWM driver
-Date: Wed, 26 Sep 2012 16:57:41 +0530
-Message-ID: <1348658863-29428-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756137Ab2IZLqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 07:46:35 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63473 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754846Ab2IZLqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 07:46:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20120926114024.GA26353@gmail.com>
+References: <1348577479-2564-1-git-send-email-fweisbec@gmail.com>
+	<20120926114024.GA26353@gmail.com>
+Date: Wed, 26 Sep 2012 13:46:33 +0200
+Message-ID: <CAFTL4hzjrHnvG-=HEF7JHAxRcU_G5DGu-mLmc_jPxxVh8eHrXA@mail.gmail.com>
+Subject: Re: [PATCH] x86: Unspaghettize do_trap()
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patch set adds
-1. DT binding support in drivers.
-2. Add custom of_xlate function to request set period & polarity of
-   pwm device from client drivers DT.
+2012/9/26 Ingo Molnar <mingo@kernel.org>:
+>
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> +             return -1
+>
+> this bit wasn't very well tested. I applied it with the obvious
+> fix, lets hope it holds up in testing.
 
-This has been tested on AM335X-EVM for PWM backlight based on tree
-[1] merged with [2].
-1. linux-next/master
-2. linux-omap-dt/for_3.7/dts_part2
+Ouch. Bad indeed. I booted with x86-64 but forgot to try x86-32.
 
-Philip, Avinash (2):
-  pwm: pwm-tiecap: Add device-tree binding support for APWM driver
-  pwm: pwm-tiehrpwm: Add device-tree binding support for EHRPWM driver
-
- .../devicetree/bindings/pwm/pwm-tiecap.txt         |   26 +++++
- .../devicetree/bindings/pwm/pwm-tiehrpwm.txt       |   26 +++++
- drivers/pwm/pwm-tiecap.c                           |  108 +++++++++++++++++++
- drivers/pwm/pwm-tiehrpwm.c                         |  110 ++++++++++++++++++++
- 4 files changed, 270 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiehrpwm.txt
-
+Sorry about that.
