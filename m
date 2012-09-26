@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab2IZKrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 06:47:09 -0400
-Received: from [216.32.180.186] ([216.32.180.186]:29180 "EHLO
-	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754475Ab2IZKqb (ORCPT
+	id S1754404Ab2IZKqa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 06:46:30 -0400
+Received: from [216.32.181.182] ([216.32.181.182]:32235 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752874Ab2IZKq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 06:46:31 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+	Wed, 26 Sep 2012 06:46:27 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 1
 X-BigFish: VPS1(zzd6f1izz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1155h)
-X-WSS-ID: 0MAYDUU-02-546-02
+X-WSS-ID: 0MAYDV3-01-D4Y-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
@@ -19,9 +19,9 @@ CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
         Yinghai Lu <yinghai@kernel.org>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 04/19] x86, io_apic: Introduce x86_io_apic_ops.print_entries for debugging
-Date: Wed, 26 Sep 2012 12:44:36 +0200
-Message-ID: <1348656291-10375-5-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 05/19] x86, hpet: Introduce x86_msi_ops.setup_hpet_msi
+Date: Wed, 26 Sep 2012 12:44:37 +0200
+Message-ID: <1348656291-10375-6-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
 References: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
@@ -32,210 +32,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This call-back is used to dump IO-APIC entries for debugging
-purposes into the kernel log. VT-d needs a special routine
-for this and will overwrite the default.
+This function pointer can be overwritten by the IRQ
+remapping code. The irq_remapping_enabled check can be
+removed from default_setup_hpet_msi.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/io_apic.h      |    3 +
- arch/x86/include/asm/x86_init.h     |    1 +
- arch/x86/kernel/apic/io_apic.c      |  109 ++++++++++++++++++-----------------
- arch/x86/kernel/x86_init.c          |    1 +
- drivers/iommu/intel_irq_remapping.c |    8 +++
- 5 files changed, 69 insertions(+), 53 deletions(-)
+ arch/x86/include/asm/hpet.h     |    5 +++--
+ arch/x86/include/asm/x86_init.h |    1 +
+ arch/x86/kernel/apic/io_apic.c  |    7 +------
+ arch/x86/kernel/hpet.c          |    2 +-
+ arch/x86/kernel/x86_init.c      |   10 ++++++----
+ drivers/iommu/irq_remapping.c   |    3 ++-
+ 6 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index d59e172..21aa81e 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -180,6 +180,8 @@ extern unsigned int native_io_apic_read(unsigned int apic, unsigned int reg);
- extern void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int val);
- extern void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val);
- extern void native_disable_io_apic(void);
-+extern void native_io_apic_print_entries(unsigned int apic, unsigned int nr_entries);
-+extern void intel_ir_io_apic_print_entries(unsigned int apic, unsigned int nr_entries);
+diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
+index 2c392d6..ad2dae0 100644
+--- a/arch/x86/include/asm/hpet.h
++++ b/arch/x86/include/asm/hpet.h
+@@ -82,9 +82,9 @@ extern void hpet_msi_write(struct hpet_dev *hdev, struct msi_msg *msg);
+ extern void hpet_msi_read(struct hpet_dev *hdev, struct msi_msg *msg);
  
- static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
+ #ifdef CONFIG_PCI_MSI
+-extern int arch_setup_hpet_msi(unsigned int irq, unsigned int id);
++extern int default_setup_hpet_msi(unsigned int irq, unsigned int id);
+ #else
+-static inline int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
++static inline int default_setup_hpet_msi(unsigned int irq, unsigned int id)
  {
-@@ -225,6 +227,7 @@ static inline void disable_ioapic_support(void) { }
- #define native_io_apic_write		NULL
- #define native_io_apic_modify		NULL
- #define native_disable_io_apic		NULL
-+#define native_io_apic_print_entries	NULL
- #endif
+ 	return -EINVAL;
+ }
+@@ -113,6 +113,7 @@ extern void hpet_unregister_irq_handler(rtc_irq_handler handler);
+ static inline int hpet_enable(void) { return 0; }
+ static inline int is_hpet_enabled(void) { return 0; }
+ #define hpet_readl(a) 0
++#define default_setup_hpet_msi	NULL
  
- #endif /* _ASM_X86_IO_APIC_H */
+ #endif
+ #endif /* _ASM_X86_HPET_H */
 diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 8e1b44c..be8e9a6 100644
+index be8e9a6..1f49c8a 100644
 --- a/arch/x86/include/asm/x86_init.h
 +++ b/arch/x86/include/asm/x86_init.h
-@@ -194,6 +194,7 @@ struct x86_io_apic_ops {
- 	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*disable)(void);
-+	void		(*print_entries)(unsigned int apic, unsigned int nr_entries);
+@@ -186,6 +186,7 @@ struct x86_msi_ops {
+ 	void (*teardown_msi_irq)(unsigned int irq);
+ 	void (*teardown_msi_irqs)(struct pci_dev *dev);
+ 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
++	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
  };
  
- extern struct x86_init_ops x86_init;
+ struct x86_io_apic_ops {
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index c28c991..8c6260f 100644
+index 8c6260f..ab07371 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1527,9 +1527,63 @@ static void __init setup_timer_IRQ0_pin(unsigned int ioapic_idx,
- 	ioapic_write_entry(ioapic_idx, pin, entry);
- }
+@@ -3307,17 +3307,12 @@ static struct irq_chip hpet_msi_type = {
+ 	.irq_retrigger = ioapic_retrigger_irq,
+ };
  
--__apicdebuginit(void) print_IO_APIC(int ioapic_idx)
-+void native_io_apic_print_entries(unsigned int apic, unsigned int nr_entries)
-+{
-+	int i;
-+
-+	pr_debug(" NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:\n");
-+
-+	for (i = 0; i <= nr_entries; i++) {
-+		struct IO_APIC_route_entry entry;
-+
-+		entry = ioapic_read_entry(apic, i);
-+
-+		pr_debug(" %02x %02X  ", i, entry.dest);
-+		pr_cont("%1d    %1d    %1d   %1d   %1d    "
-+			"%1d    %1d    %02X\n",
-+			entry.mask,
-+			entry.trigger,
-+			entry.irr,
-+			entry.polarity,
-+			entry.delivery_status,
-+			entry.dest_mode,
-+			entry.delivery_mode,
-+			entry.vector);
-+	}
-+}
-+
-+void intel_ir_io_apic_print_entries(unsigned int apic,
-+				    unsigned int nr_entries)
+-int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
++int default_setup_hpet_msi(unsigned int irq, unsigned int id)
  {
- 	int i;
-+
-+	pr_debug(" NR Indx Fmt Mask Trig IRR Pol Stat Indx2 Zero Vect:\n");
-+
-+	for (i = 0; i <= nr_entries; i++) {
-+		struct IR_IO_APIC_route_entry *ir_entry;
-+		struct IO_APIC_route_entry entry;
-+
-+		entry = ioapic_read_entry(apic, i);
-+
-+		ir_entry = (struct IR_IO_APIC_route_entry *)&entry;
-+
-+		pr_debug(" %02x %04X ", i, ir_entry->index);
-+		pr_cont("%1d   %1d    %1d    %1d   %1d   "
-+			"%1d    %1d     %X    %02X\n",
-+			ir_entry->format,
-+			ir_entry->mask,
-+			ir_entry->trigger,
-+			ir_entry->irr,
-+			ir_entry->polarity,
-+			ir_entry->delivery_status,
-+			ir_entry->index2,
-+			ir_entry->zero,
-+			ir_entry->vector);
-+	}
-+}
-+
-+__apicdebuginit(void) print_IO_APIC(int ioapic_idx)
-+{
- 	union IO_APIC_reg_00 reg_00;
- 	union IO_APIC_reg_01 reg_01;
- 	union IO_APIC_reg_02 reg_02;
-@@ -1582,58 +1636,7 @@ __apicdebuginit(void) print_IO_APIC(int ioapic_idx)
- 
- 	printk(KERN_DEBUG ".... IRQ redirection table:\n");
+ 	struct irq_chip *chip = &hpet_msi_type;
+ 	struct msi_msg msg;
+ 	int ret;
  
 -	if (irq_remapping_enabled) {
--		printk(KERN_DEBUG " NR Indx Fmt Mask Trig IRR"
--			" Pol Stat Indx2 Zero Vect:\n");
--	} else {
--		printk(KERN_DEBUG " NR Dst Mask Trig IRR Pol"
--			" Stat Dmod Deli Vect:\n");
+-		if (!setup_hpet_msi_remapped(irq, id))
+-			return -1;
 -	}
 -
--	for (i = 0; i <= reg_01.bits.entries; i++) {
--		if (irq_remapping_enabled) {
--			struct IO_APIC_route_entry entry;
--			struct IR_IO_APIC_route_entry *ir_entry;
--
--			entry = ioapic_read_entry(ioapic_idx, i);
--			ir_entry = (struct IR_IO_APIC_route_entry *) &entry;
--			printk(KERN_DEBUG " %02x %04X ",
--				i,
--				ir_entry->index
--			);
--			pr_cont("%1d   %1d    %1d    %1d   %1d   "
--				"%1d    %1d     %X    %02X\n",
--				ir_entry->format,
--				ir_entry->mask,
--				ir_entry->trigger,
--				ir_entry->irr,
--				ir_entry->polarity,
--				ir_entry->delivery_status,
--				ir_entry->index2,
--				ir_entry->zero,
--				ir_entry->vector
--			);
--		} else {
--			struct IO_APIC_route_entry entry;
--
--			entry = ioapic_read_entry(ioapic_idx, i);
--			printk(KERN_DEBUG " %02x %02X  ",
--				i,
--				entry.dest
--			);
--			pr_cont("%1d    %1d    %1d   %1d   %1d    "
--				"%1d    %1d    %02X\n",
--				entry.mask,
--				entry.trigger,
--				entry.irr,
--				entry.polarity,
--				entry.delivery_status,
--				entry.dest_mode,
--				entry.delivery_mode,
--				entry.vector
--			);
--		}
--	}
-+	x86_io_apic_ops.print_entries(ioapic_idx, reg_01.bits.entries);
- }
+ 	ret = msi_compose_msg(NULL, irq, &msg, id);
+ 	if (ret < 0)
+ 		return ret;
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index 1460a5d..22d4fe5 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -478,7 +478,7 @@ static int hpet_msi_next_event(unsigned long delta,
  
- __apicdebuginit(void) print_IO_APICs(void)
+ static int hpet_setup_msi_irq(unsigned int irq)
+ {
+-	if (arch_setup_hpet_msi(irq, hpet_blockid)) {
++	if (x86_msi.setup_hpet_msi(irq, hpet_blockid)) {
+ 		destroy_irq(irq);
+ 		return -EINVAL;
+ 	}
 diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 3ea56c2..dc19c50 100644
+index dc19c50..339e108 100644
 --- a/arch/x86/kernel/x86_init.c
 +++ b/arch/x86/kernel/x86_init.c
-@@ -125,4 +125,5 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.write			= native_io_apic_write,
- 	.modify			= native_io_apic_modify,
- 	.disable		= native_disable_io_apic,
-+	.print_entries		= native_io_apic_print_entries,
+@@ -19,6 +19,7 @@
+ #include <asm/time.h>
+ #include <asm/irq.h>
+ #include <asm/io_apic.h>
++#include <asm/hpet.h>
+ #include <asm/pat.h>
+ #include <asm/tsc.h>
+ #include <asm/iommu.h>
+@@ -113,10 +114,11 @@ struct x86_platform_ops x86_platform = {
+ 
+ EXPORT_SYMBOL_GPL(x86_platform);
+ struct x86_msi_ops x86_msi = {
+-	.setup_msi_irqs = native_setup_msi_irqs,
+-	.teardown_msi_irq = native_teardown_msi_irq,
+-	.teardown_msi_irqs = default_teardown_msi_irqs,
+-	.restore_msi_irqs = default_restore_msi_irqs,
++	.setup_msi_irqs		= native_setup_msi_irqs,
++	.teardown_msi_irq	= native_teardown_msi_irq,
++	.teardown_msi_irqs	= default_teardown_msi_irqs,
++	.restore_msi_irqs	= default_restore_msi_irqs,
++	.setup_hpet_msi		= default_setup_hpet_msi,
  };
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index af8904d..cb9a72d 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -617,6 +617,14 @@ static int __init intel_enable_irq_remapping(void)
- 		goto error;
  
- 	irq_remapping_enabled = 1;
-+
-+	/*
-+	 * VT-d has a different layout for IO-APIC entries when
-+	 * interrupt remapping is enabled. So it needs a special routine
-+	 * to print IO-APIC entries for debugging purposes too.
-+	 */
-+	x86_io_apic_ops.print_entries = intel_ir_io_apic_print_entries;
-+
- 	pr_info("Enabled IRQ remapping in %s mode\n", eim ? "x2apic" : "xapic");
+ struct x86_io_apic_ops x86_io_apic_ops = {
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index f72a5e8..f439151 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -36,7 +36,8 @@ static void irq_remapping_disable_io_apic(void)
  
- 	return eim ? IRQ_REMAP_X2APIC_MODE : IRQ_REMAP_XAPIC_MODE;
+ static void __init irq_remapping_modify_x86_ops(void)
+ {
+-	x86_io_apic_ops.disable	=	irq_remapping_disable_io_apic;
++	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
++	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+ }
+ 
+ static __init int setup_nointremap(char *str)
 -- 
 1.7.9.5
 
