@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab2IZH5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 03:57:55 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54410 "EHLO
+	id S1754045Ab2IZH6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 03:58:12 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55720 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549Ab2IZH4M (ORCPT
+	with ESMTP id S1752910Ab2IZH4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 03:56:12 -0400
-X-AuditID: 9c930179-b7bf9ae000000e4c-58-5062b5176a3e
+	Wed, 26 Sep 2012 03:56:11 -0400
+X-AuditID: 9c930179-b7bf9ae000000e4c-56-5062b517c9e9
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 13/16] perf ui/gtk: Add support for event group view
-Date: Wed, 26 Sep 2012 16:47:40 +0900
-Message-Id: <1348645663-25303-14-git-send-email-namhyung@kernel.org>
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 12/16] perf ui/browser: Add support for event group view
+Date: Wed, 26 Sep 2012 16:47:39 +0900
+Message-Id: <1348645663-25303-13-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1348645663-25303-1-git-send-email-namhyung@kernel.org>
 References: <1348645663-25303-1-git-send-email-namhyung@kernel.org>
@@ -35,94 +34,89 @@ patch settled down.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/gtk/browser.c | 58 +++++++++++++++++++++++++++++++++++----------
- 1 file changed, 45 insertions(+), 13 deletions(-)
+ tools/perf/ui/browsers/hists.c | 29 ++++++++++++++++++++++++++++-
+ tools/perf/ui/hist.c           |  5 ++++-
+ 2 files changed, 32 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 7107edc6c08d..775f209fe795 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -45,25 +45,56 @@ static const char *perf_gtk__get_percent_color(double percent)
- 	return NULL;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index b9b1b173637c..da3d1e4a44fa 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -565,6 +565,33 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 	return row - first_row;
  }
  
-+static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
-+					    u64 period, u64 total_period)
-+{
-+	int ret = 0;
-+	const char *markup;
-+	double percent = 100.0 * period / total_period;
-+
-+	markup = perf_gtk__get_percent_color(percent);
-+	if (markup)
-+		ret += scnprintf(buf, size, markup);
-+
-+	ret += scnprintf(buf + ret, size - ret, "%6.2f%%", percent);
-+
-+	if (markup)
-+		ret += scnprintf(buf + ret, size - ret, "</span>");
-+
-+	return ret;
-+}
-+
-+static int perf_gtk__hpp_color_overhead(struct perf_hpp *hpp,
-+					struct hist_entry *he)
++static int hist_browser__hpp_color_overhead(struct perf_hpp *hpp,
++					    struct hist_entry *he)
 +{
 +	int ret;
++	double percent = 100.0 * he->stat.period / hpp->total_period;
 +
-+	ret = perf_gtk__percent_color_snprintf(hpp->buf, hpp->size,
-+				       he->stat.period, hpp->total_period);
++	/* the leader determines color */
++	*(double *) hpp->ptr = percent;
++
++	ret = scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
 +
 +	if (symbol_conf.event_group) {
 +		int i;
 +		struct perf_evsel *evsel = hists_2_evsel(hpp->hists);
 +
 +		for (i = 0; i < evsel->nr_members; i++) {
-+			ret += scnprintf(hpp->buf + ret, hpp->size - ret, " ");
-+			ret += perf_gtk__percent_color_snprintf(hpp->buf + ret,
-+					hpp->size - ret,
-+					he->group_stats[i].period,
-+					hpp->hists->group_stats[i].total_period);
++			u64 period = he->group_stats[i].period;
++			u64 total = hpp->hists->group_stats[i].total_period;
++
++			percent = 100.0 * period / total;
++			ret += scnprintf(hpp->buf + ret, hpp->size - ret,
++					 " %6.2f%%", percent);
 +		}
 +	}
 +	return ret;
 +}
 +
- #define HPP__COLOR_FN(_name, _field)						\
- static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
- 					 struct hist_entry *he)			\
- {										\
--	double percent = 100.0 * he->stat._field / hpp->total_period;		\
--	const char *markup;							\
--	int ret = 0;								\
--										\
--	markup = perf_gtk__get_percent_color(percent);				\
--	if (markup)								\
--		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\
--	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%6.2f%%", percent); 	\
--	if (markup)								\
--		ret += scnprintf(hpp->buf + ret, hpp->size - ret, "</span>"); 	\
--										\
--	return ret;								\
-+	return perf_gtk__percent_color_snprintf(hpp->buf, hpp->size, 		\
-+					he->stat._field, hpp->total_period);	\
+ #define HPP__COLOR_FN(_name, _field)					\
+ static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
+ 					     struct hist_entry *he)	\
+@@ -574,7 +601,6 @@ static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
+ 	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
  }
  
 -HPP__COLOR_FN(overhead, period)
  HPP__COLOR_FN(overhead_sys, period_sys)
  HPP__COLOR_FN(overhead_us, period_us)
  HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
-@@ -103,6 +134,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 		.buf		= s,
- 		.size		= sizeof(s),
- 		.total_period	= hists->stats.total_period,
-+		.hists		= hists,
- 	};
+@@ -625,6 +651,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 			.buf		= s,
+ 			.size		= sizeof(s),
+ 			.total_period	= browser->hists->stats.total_period,
++			.hists		= browser->hists,
+ 		};
  
- 	nr_cols = 0;
+ 		ui_browser__gotorc(&browser->b, row, 0);
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index b8e97c3577c1..d8491fcff6ee 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -422,6 +422,9 @@ unsigned int hists__sort_list_width(struct hists *hists)
+ {
+ 	struct sort_entry *se;
+ 	int i, ret = 0;
++	struct perf_hpp dummy_hpp = {
++		.hists	= hists,
++	};
+ 
+ 	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+ 		if (!perf_hpp__format[i].cond)
+@@ -429,7 +432,7 @@ unsigned int hists__sort_list_width(struct hists *hists)
+ 		if (i)
+ 			ret += 2;
+ 
+-		ret += perf_hpp__format[i].width(NULL);
++		ret += perf_hpp__format[i].width(&dummy_hpp);
+ 	}
+ 
+ 	list_for_each_entry(se, &hist_entry__sort_list, list)
 -- 
 1.7.11.4
 
