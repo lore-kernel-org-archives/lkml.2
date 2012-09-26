@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab2IZGw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 02:52:27 -0400
-Received: from mga14.intel.com ([143.182.124.37]:59047 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752449Ab2IZGw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 02:52:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,488,1344236400"; 
-   d="scan'208";a="197207368"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: RE: [PATCH] x86/fixup_irq: Clean the offlining CPU from the irq
- affinity mask
-Thread-Topic: [PATCH] x86/fixup_irq: Clean the offlining CPU from the irq
- affinity mask
-Thread-Index: AQHNm7KGV53MezdF+kuvmdrX7HvLQZecLhqA
-Date: Wed, 26 Sep 2012 06:52:13 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A189F97@SHSMSX101.ccr.corp.intel.com>
-References: <1348669924.19514.6.camel@cliu38-desktop-build>
- <5062A442.2030207@linux.vnet.ibm.com>
-In-Reply-To: <5062A442.2030207@linux.vnet.ibm.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753003Ab2IZGzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 02:55:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61406 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861Ab2IZGzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 02:55:23 -0400
 MIME-Version: 1.0
+In-Reply-To: <5062938F.2080703@hitachi.com>
+References: <CANFS6bZtOPe8XbsgC0V0encVLssFShWGhNLZQkCvEhKcNT946w@mail.gmail.com>
+	<5062938F.2080703@hitachi.com>
+Date: Wed, 26 Sep 2012 15:55:23 +0900
+Message-ID: <CANFS6bYRS24woCsuqKdfZxTNFzNNS-honfKPyPPGLTiP1fnBEQ@mail.gmail.com>
+Subject: Re: [QUESTION] Can uprobe_event support @ADDR, $retval, offs(FETCHARG)?
+From: Hyeoncheol Lee <hyc.lee@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: srikar@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8Q6qU1g030073
 
-> > +		} else if (cpumask_test_cpu(cpu, data->affinity))
-> > +			cpumask_clear_cpu(cpu, data->affinity);
-> >
-> 
-> You meant to use 'affinity' (instead of data->affinity) in the above 2 statements
-> right? Note that we do chip->irq_set_affinity(data, affinity, true); further down.
-> 
+Hi,
 
-Yes, I have noticed it, used data->affinity here is just for avoiding compile warning.
-in fact affinity == data->affinity, but affinity pointer is const type,
-And cpumask_clear_cpu needs non-const type,so here I am using data->affinity,
-instead of changing code "const struct cpumask *affinity;"
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+2012/9/26 Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>:
+> (2012/09/26 11:52), Hyeoncheol Lee wrote:
+>> Hi,
+>>
+>> uprobe_event only supports %REG arguments. I think that memory fetch,
+>> return value fetch, memory dereference functions in
+>> kernel/trace/trace_probe.c are good for uprobe_event. So with a little
+>> modification of parse_probe_arg(), uprobe_event can support @ADDR,
+>> $retval, offs(FETCHARGS) except @SYM, $stack, $stackN. Is it right?
+>
+> Hi Hyeoncheol,
+>
+> Perhaps, it is not so small things, but at least, we can try.
+> In the userspace, memories(pages) can be paged out on swap or
+> files. In that case, memory dereference function needs to track
+> down the data on the disk and it causes I/O. This means we will
+> see the visible performance degradation with tracing.
+> And also, sometime a pointer value (address) is broken, in that
+> case we have to ensure the address is actually valid before
+> accessing it.
+>
+> Of cause, without tracking paged-out data, it is easy
+> to support, because that is already done in kprobe event.
+> I'm not sure how it is useful, because sometimes it will
+> fail to access gather the data.
+> However it is good for the first step, I think.
+
+Yes, we should consider paged-out data. I forgot this.
+
+>
+> Srikar, what would you think?
+>
+> BTW, if we can support offs(FETCHARGS), $stack and $stackN
+> are also available. ;)
+
+Yes, but we should check whether the given address is in an user stack
+or not. and these require CPU architecture dependent codes.
+
+>
+> Thank you,
+>
+> --
+> Masami HIRAMATSU
+> Software Platform Research Dept. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
+>
+>
+
+Thanks for your answer. It is very help to me. ;)
+
+Hyeoncheol
