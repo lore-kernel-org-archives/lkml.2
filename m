@@ -1,165 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab2IZDUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 23:20:33 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44699 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab2IZDU3 (ORCPT
+	id S1751921Ab2IZD3t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 23:29:49 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64131 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605Ab2IZD3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 23:20:29 -0400
+	Tue, 25 Sep 2012 23:29:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120925102059.GB2456@ram-ThinkPad-T61>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
-	<1348404995-14372-2-git-send-email-zwu.kernel@gmail.com>
-	<20120925102059.GB2456@ram-ThinkPad-T61>
-Date: Wed, 26 Sep 2012 11:20:27 +0800
-Message-ID: <CAEH94Lhys9T+FGOzS=xzp8pD0SVn8TOv4gXx31B+6pXsg=3wOw@mail.gmail.com>
-Subject: Re: [RFC v2 01/10] vfs: introduce private rb structures
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, david@fromorbit.com,
-        stroetmann@ontolinux.com, diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+In-Reply-To: <1348573156-5032-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <CAOh2x=n4ZCsQ1ccqobZF6fz-Kuj_VE-ua5PftAHQkTobA=p+pw@mail.gmail.com>
+	<1348573156-5032-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Wed, 26 Sep 2012 08:59:47 +0530
+X-Google-Sender-Auth: gyI-QU3Giwml5AmvY-li4XW2ofg
+Message-ID: <CAOh2x=mwz95vMTP4DXQ69vR1xE2C3xjTs9Ymp2qcojX6b9-uSw@mail.gmail.com>
+Subject: Re: [PATCHv3] dw_dmac: autoconfigure data_width or get it via
+ platform data
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 6:20 PM, Ram Pai <linuxram@us.ibm.com> wrote:
-> On Sun, Sep 23, 2012 at 08:56:26PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->>   One root structure hot_info is defined, is hooked
->> up in super_block, and will be used to hold rb trees
->> root, hash list root and some other information, etc.
->>   Adds hot_inode_tree struct to keep track of
->> frequently accessed files, and be keyed by {inode, offset}.
->> Trees contain hot_inode_items representing those files
->> and ranges.
->>   Having these trees means that vfs can quickly determine the
->> temperature of some data by doing some calculations on the
->> hot_freq_data struct that hangs off of the tree item.
->>   Define two items hot_inode_item and hot_range_item,
->> one of them represents one tracked file
->> to keep track of its access frequency and the tree of
->> ranges in this file, while the latter represents
->> a file range of one inode.
->>   Each of the two structures contains a hot_freq_data
->> struct with its frequency of access metrics (number of
->> {reads, writes}, last {read,write} time, frequency of
->> {reads,writes}).
->>   Also, each hot_inode_item contains one hot_range_tree
->> struct which is keyed by {inode, offset, length}
->> and used to keep track of all the ranges in this file.
->>
->> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> ---
->> +
-> ..snip..
+On Tue, Sep 25, 2012 at 5:09 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> Not all of the controllers support the 64 bit data width. Make it configurable
+> via platform data. The driver will try to get a value from the component
+> parameters, otherwise it will use the platform data.
 >
->> +/* A tree that sits on the hot_info */
->> +struct hot_inode_tree {
->> +     struct rb_root map;
->> +     rwlock_t lock;
->> +};
->> +
->> +/* A tree of ranges for each inode in the hot_inode_tree */
->> +struct hot_range_tree {
->> +     struct rb_root map;
->> +     rwlock_t lock;
->> +};
->
-> Can as well have a generic datastructure called hot_tree instead
-> of having two different datastructure which basically are the same.
-OK.
->
->> +
->> +/* A frequency data struct holds values that are used to
->> + * determine temperature of files and file ranges. These structs
->> + * are members of hot_inode_item and hot_range_item
->> + */
->> +struct hot_freq_data {
->> +     struct timespec last_read_time;
->> +     struct timespec last_write_time;
->> +     u32 nr_reads;
->> +     u32 nr_writes;
->> +     u64 avg_delta_reads;
->> +     u64 avg_delta_writes;
->> +     u8 flags;
->> +     u32 last_temperature;
->> +};
->> +
->> +/* An item representing an inode and its access frequency */
->> +struct hot_inode_item {
->> +     /* node for hot_inode_tree rb_tree */
->> +     struct rb_node rb_node;
->> +     /* tree of ranges in this inode */
->> +     struct hot_range_tree hot_range_tree;
->> +     /* frequency data for this inode */
->> +     struct hot_freq_data hot_freq_data;
->> +     /* inode number, copied from inode */
->> +     unsigned long i_ino;
->> +     /* used to check for errors in ref counting */
->> +     u8 in_tree;
->> +     /* protects hot_freq_data, i_no, in_tree */
->> +     spinlock_t lock;
->> +     /* prevents kfree */
->> +     struct kref refs;
->> +};
->> +
->> +/*
->> + * An item representing a range inside of an inode whose frequency
->> + * is being tracked
->> + */
->> +struct hot_range_item {
->> +     /* node for hot_range_tree rb_tree */
->> +     struct rb_node rb_node;
->> +     /* frequency data for this range */
->> +     struct hot_freq_data hot_freq_data;
->> +     /* the hot_inode_item associated with this hot_range_item */
->> +     struct hot_inode_item *hot_inode;
->> +     /* starting offset of this range */
->> +     u64 start;
->> +     /* length of this range */
->> +     u64 len;
->> +     /* used to check for errors in ref counting */
->> +     u8 in_tree;
->> +     /* protects hot_freq_data, start, len, and in_tree */
->> +     spinlock_t lock;
->> +     /* prevents kfree */
->> +     struct kref refs;
->> +};
->
-> might as well have just one generic datastructure called hot_item with
-> all the common fields and then have
->
->         struct hot_inode_item  {
->                 struct hot_item hot_inode;
->                 struct hot_tree hot_range_tree;
->                 unsigned long i_ino;
->         }
->
->         and
->
->         struct hot_range_item {
->                 struct hot_item hot_range;
->                 u64 start;
->                 u64 len;        /* length of this range */
->         }
->
-> This should help you eliminate some duplicate code as well.
-OK, i will try to apply them. thanks.
->
->
-> RP
->
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+> Since v2:
+> - sometimes memory-to-memory test is failed, that's why we need to choose
+>   minimum data portion between source and destination limits
 
-
-
--- 
-Regards,
-
-Zhi Yong Wu
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
