@@ -1,64 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab2IZT4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 15:56:54 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44672 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab2IZT4x (ORCPT
+	id S1752167Ab2IZUAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:00:18 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61742 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab2IZUAQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 15:56:53 -0400
-Date: Wed, 26 Sep 2012 12:56:48 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120926195648.GA20342@google.com>
-References: <1347977050-29476-5-git-send-email-glommer@parallels.com>
- <20120926140347.GD15801@dhcp22.suse.cz>
- <20120926163648.GO16296@google.com>
- <50633D24.6020002@parallels.com>
- <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com>
- <50634105.8060302@parallels.com>
- <20120926180124.GA12544@google.com>
- <50634FC9.4090609@parallels.com>
- <20120926193417.GJ12544@google.com>
- <50635B9D.8020205@parallels.com>
+	Wed, 26 Sep 2012 16:00:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50635B9D.8020205@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CABGkUuhte-0xUQTpehKid5jD5=pwDKNSG_2Cq7isTJkaBZKGHw@mail.gmail.com>
+References: <1348433304-28320-1-git-send-email-tero.keski-valkama@neter.fi>
+	<CABGkUujMCRazGy1+69SWBsS15B97rNEXWNsR4gG8D+5WyeF2jg@mail.gmail.com>
+	<20120925090151.GB1247@liondog.tnic>
+	<CABGkUugOvWCSfXvLW33jmntGYAAiPP9fStXbdRAozx3bEoKBOA@mail.gmail.com>
+	<20120925222417.GA31780@liondog.tnic>
+	<CABGkUuhte-0xUQTpehKid5jD5=pwDKNSG_2Cq7isTJkaBZKGHw@mail.gmail.com>
+Date: Wed, 26 Sep 2012 23:00:14 +0300
+X-Google-Sender-Auth: 6sLMiISqQcOe8NLgVl0kjg2lSPE
+Message-ID: <CABGkUugaB4rmE_tiyEdhTPBaXUnE=a0A4w13U+L+Ux_NGrA4Vw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] x86: Added support for Acer Aspire 5755G fan control.
+From: Tero Keski-Valkama <tero.keski-valkama@neter.fi>
+To: Borislav Petkov <bp@alien8.de>,
+        Tero Keski-Valkama <tero.keski-valkama@neter.fi>,
+        linux-kernel@vger.kernel.org, peter@piie.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2012/9/26 Tero Keski-Valkama <tero.keski-valkama@neter.fi>:
+> 2012/9/26 Borislav Petkov <bp@alien8.de>:
+>> Adding Peter.
+>>
+>> On Tue, Sep 25, 2012 at 12:41:11PM +0300, Tero Keski-Valkama wrote:
+>>> 2012/9/25 Borislav Petkov <bp@alien8.de>:
+>>> > On Tue, Sep 25, 2012 at 10:34:13AM +0300, Tero Keski-Valkama wrote:
+>>> >
+>>> > But before we go with this any further: you mentioned some issues still
+>>> > with acerhdf - you don't want to turn off your fan but to turn it to
+>>> > full?
+>>> >
+>>> > I think in this case, you want to simply not load the driver and use the
+>>> > BIOS settings, no?
+>>> >
+>>> > --
+>>> > Regards/Gruss,
+>>> >     Boris.
+>>>
+>>> Technically I think my original issue is about thermal zones, and BIOS
+>>> control doesn't solve it as is. However, the patch should be valid,
+>>> even if it doesn't solve my original issue.
+>>>
+>>> The thing is that passive cooling thermal zones throttle all the cores
+>>> to stone age, to 800 MHz, before the fan even really starts powering
+>>> up from the low default level.
+>>
+>> I don't understand: you want the thermal zones to not throttle your cpu
+>> to 800 Mhz and/or the fan to start sooner?
+>>
+>>> So, my original problem would be solved
+>>> by:
+>>> a) Direct control of the fan, to be able to put it on full for example
+>>> through userspace control,
+>>
+>> That's always a bad idea, especially if userspace dies on you.
+>>
+>>> b) Changing the active cooling thermal zones, so that the fan speeds
+>>> up earlier, or
+>>
+>> Ok, I see, here's what you want.
+>
+> Yes. I disabled acpi_cpufreq and cpufreq daemon, so throttling to iron
+> age didn't happen now, but the fan didn't start increasing cooling
+> either. So while it seems during testing different values with the EC
+> registers I achieved at one point automatic fan control by BIOS, but
+> it's not the default state. The default state is still constant speed,
+> as it was in the start, and I can't get it to change anymore.
+>
+>>
+>> Also, you've added yourself to the copyright - this means that you're
+>> pretty much going to get all future email about acerhdf. Do you really
+>> want that?
+>
+> For now, that is what I want to the foreseeable future, as long as I
+> own such a laptop. I can perhaps contribute to the development a bit.
+>
+>>
+>> --
+>> Regards/Gruss,
+>>     Boris.
+>
+>
+>
+> --
+> Kind Regards / Ystävällisin terveisin,
+>
+> Tero Keski-Valkama, MSc(Tech)
+>
+> +358 (0)46 876 0485
+>
+> tero.keski-valkama@neter.fi
+> http://www.neter.fi
 
-On Wed, Sep 26, 2012 at 11:46:37PM +0400, Glauber Costa wrote:
-> Besides not being part of cgroup core, and respecting very much both
-> cgroups' and basic sanity properties, kmem is an actual feature that
-> some people want, and some people don't. There is no reason to believe
-> that applications that want will live in the same environment with ones
-> that don't want.
+Now I have confirmed that:
+a) In default state fan does not speed up even in temperatures above
+90 degrees, and
+b) Now, fan provably sped up, two times, at temperature of about 77 degrees.
 
-I don't know.  It definitely is less crazy than .use_hierarchy but I
-wouldn't say it's an inherently different thing.  I mean, what does it
-even mean to have u+k limit on one subtree and not on another branch?
-And we worry about things like what if parent doesn't enable it but
-its chlidren do.
+The configuration now:
+# ./acer_ec.pl regs
 
-This is a feature which adds complexity.  If the feature is necessary
-and justified, sure.  If not, let's please not and let's err on the
-side of conservativeness.  We can always add it later but the other
-direction is much harder.
+  	00	01	02	03	04	05	06	07	|	08	09	0A	0B	0C	0D	0E	0F
+  	__	__	__	__	__	__	__	__	|	__	__	__	__	__	__	__	__
+00 |	2	0	0	0	2	2	0	1	|	0	9	0	0	0	0	0	0	
+10 |	0	0	0	0	0	0	0	0	|	0	0	0	0	0	0	0	0	
+20 |	0	0	0	0	0	0	0	0	|	0	0	0	0	0	0	0	0	
+30 |	0	0	0	0	0	0	0	0	|	0	0	0	0	0	0	0	0	
+40 |	0	0	0	0	0	0	0	0	|	0	0	0	0	0	0	0	0	
+50 |	0	0	0	0	0	34	0	0	|	0	0	0	0	0	0	0	0	
+60 |	0	0	0	0	0	0	0	0	|	0	0	0	0	0	0	0	0	
+70 |	0	0	0	0	0	0	0	0	|	0	0	0	0	0	0	0	0	
+80 |	0	0	0	0	0	0	0	0	|	0	0	0	0	0	0	0	0	
+90 |	83	65	78	89	79	0	0	0	|	0	65	83	49	48	68	51	49	
+A0 |	0	0	0	128	193	0	0	95	|	255	0	0	14	100	31	0	0	
+B0 |	0	0	0	80	78	0	0	0	|	0	9	0	4	0	2	17	17	
+C0 |	19	0	201	15	63	171	155	48	|	48	42	48	17	201	15	100	31	
+D0 |	0	0	0	0	25	124	156	35	|	0	0	2	19	0	0	224	64	
+E0 |	0	0	0	59	16	50	16	47	|	16	0	0	0	0	0	0	0	
+F0 |	75	16	0	0	3	63	0	0	|	68	0	0	0	0	0	0	0	
 
-Thanks.
+Somehow the fan speedup has always coincided with "acer_ec.pl regs"
+command, which might be caused by:
+a) Processor warms up in that command, or
+b) Reading EC has some consequences.
+
+The above register dump differs from the default boot-up state by
+obviously registers to read, with volatile values, and:
+- Register 0xAB from original value 0x08 to 0x0E.
+- Register 0xAD from original value 0x17 to 0x1F.
+This means that some of these register changes seem to enable
+automatic BIOS fan control:
+- FAN2 0 -> 1
+- FANT 0 -> 1
+- FANU 0x7 -> 0xF
+
+I have been trying to do some web searches for these register names to
+determine their meaning, but while many people have found them, they
+have only made invalid or no documented guesses about their purpose.
 
 -- 
-tejun
+Kind Regards / Ystävällisin terveisin,
+
+Tero Keski-Valkama, MSc(Tech)
+
++358 (0)46 876 0485
+
+tero.keski-valkama@neter.fi
+http://www.neter.fi
