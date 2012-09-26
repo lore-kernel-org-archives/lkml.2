@@ -1,376 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab2IZSMq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 14:12:46 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:59914 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758014Ab2IZSMn (ORCPT
+	id S1758043Ab2IZSOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 14:14:25 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40248 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757739Ab2IZSOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 14:12:43 -0400
-Date: Wed, 26 Sep 2012 14:12:52 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
-        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
-Subject: [PATCH V3 1/1] perf, Add support for Xeon-Phi Knights Corner PMU
-Message-ID: <alpine.DEB.2.02.1209261405320.8398@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 26 Sep 2012 14:14:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6847"; a="239218684"
+Message-ID: <506345FD.8010609@codeaurora.org>
+Date: Wed, 26 Sep 2012 11:14:21 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Pankaj Jangra <jangra.pankaj9@gmail.com>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 08/10] ARM: msm: Prepare clk_get() users in mach-msm for
+ clock-pcom driver
+References: <1348194419-11486-1-git-send-email-sboyd@codeaurora.org> <1348194419-11486-9-git-send-email-sboyd@codeaurora.org> <CADTbHxrQQ9GQKm1Xd3gn4eLu=uKvkdHRvBYDq0iRLiJwy+1amw@mail.gmail.com>
+In-Reply-To: <CADTbHxrQQ9GQKm1Xd3gn4eLu=uKvkdHRvBYDq0iRLiJwy+1amw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On 09/26/12 10:35, Pankaj Jangra wrote:
+> Hi,
+>
+> On Fri, Sep 21, 2012 at 7:56 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> In the near future we'll be moving clock-pcom to a platform
+>> driver, in which case these two users of clk_get() in mach-msm
+>> need to be updated. Have board-trout-panel.c make the proc_comm
+>> call directly so that we don't have to port this board specific
+>> code to the driver right now and reorder the initcall order of
+>> dma.c so that it initializes after the clock driver probes but
+>> before any drivers use dma APIs.
+>>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> ---
+>>  arch/arm/mach-msm/Makefile            |  9 ++++++---
+>>  arch/arm/mach-msm/board-trout-panel.c | 19 +++++++------------
+>>  arch/arm/mach-msm/dma.c               |  5 ++---
+>>  3 files changed, 15 insertions(+), 18 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+>> index 17519fa..3dbae74 100644
+>> --- a/arch/arm/mach-msm/Makefile
+>> +++ b/arch/arm/mach-msm/Makefile
+>> @@ -5,12 +5,15 @@ obj-$(CONFIG_DEBUG_FS) += clock-debug.o
+>>  obj-$(CONFIG_MSM_VIC) += irq-vic.o
+>>  obj-$(CONFIG_MSM_IOMMU) += devices-iommu.o
+>>
+>> -obj-$(CONFIG_ARCH_MSM7X00A) += dma.o irq.o
+>> -obj-$(CONFIG_ARCH_MSM7X30) += dma.o
+>> -obj-$(CONFIG_ARCH_QSD8X50) += dma.o sirc.o
+>> +obj-$(CONFIG_ARCH_MSM7X00A) += irq.o
+>> +obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
+>>
+>>  obj-$(CONFIG_MSM_PROC_COMM) += proc_comm.o clock-pcom.o vreg.o
+>>
+>> +obj-$(CONFIG_ARCH_MSM7X00A) += dma.o
+>> +obj-$(CONFIG_ARCH_MSM7X30) += dma.o
+>> +obj-$(CONFIG_ARCH_QSD8X50) += dma.o
+>> +
+> I did not understand what is the need of this change in Makefile?
 
-Version 3 of the patch simply renames all occurances of PHI to KNC
-as Xeon Phi is a marketing term that will probably map to many
-chips but Knights Corner (KNC) is the codename for this specific model.
+Quoted from commit text:
 
-The following patch adds perf_event support for the Xeon-Phi PMU,
-as documented in the "Intel Xeon Phi Coprocessor (codename: Knights 
-Corner) Performance Monitoring Units" manual.
+reorder the initcall order of
+dma.c so that it initializes after the clock driver probes but
+before any drivers use dma APIs.
 
-Even though it is a co-processor, a Phi runs a full Linux environment
-and can support performance counters.
 
-This is just barebones support, it does not add support for
-interesting new features such as the SPFLT intruction that
-allows starting/stopping events without entering the kernel.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-The PMU internally is just like that of an original Pentium, but 
-a "P6-like" MSR interface is provided.  The interface is different enough
-from a real P6 that it's not easy (or practical) to re-use the code in 
-perf_event_p6.c
-
-Acked-by: Lawrence F Meadows <lawrence.f.meadows@intel.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-
-diff -Nur linux-3.6-rc6/arch/x86/include/asm/msr-index.h linux-3.6-rc6-mic/arch/x86/include/asm/msr-index.h
---- linux-3.6-rc6/arch/x86/include/asm/msr-index.h	2012-09-16 17:58:51.000000000 -0400
-+++ linux-3.6-rc6-mic/arch/x86/include/asm/msr-index.h	2012-09-26 12:44:45.409898989 -0400
-@@ -121,6 +121,11 @@
- #define MSR_P6_EVNTSEL0			0x00000186
- #define MSR_P6_EVNTSEL1			0x00000187
- 
-+#define MSR_KNC_PERFCTR0               0x00000020
-+#define MSR_KNC_PERFCTR1               0x00000021
-+#define MSR_KNC_EVNTSEL0               0x00000028
-+#define MSR_KNC_EVNTSEL1               0x00000029
-+
- /* AMD64 MSRs. Not complete. See the architecture manual for a more
-    complete list. */
- 
-diff -Nur linux-3.6-rc6/arch/x86/kernel/cpu/Makefile linux-3.6-rc6-mic/arch/x86/kernel/cpu/Makefile
---- linux-3.6-rc6/arch/x86/kernel/cpu/Makefile	2012-09-16 17:58:51.000000000 -0400
-+++ linux-3.6-rc6-mic/arch/x86/kernel/cpu/Makefile	2012-09-26 12:41:24.129899156 -0400
-@@ -32,7 +32,7 @@
- 
- ifdef CONFIG_PERF_EVENTS
- obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o
--obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_p4.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o
- endif
-diff -Nur linux-3.6-rc6/arch/x86/kernel/cpu/perfctr-watchdog.c linux-3.6-rc6-mic/arch/x86/kernel/cpu/perfctr-watchdog.c
---- linux-3.6-rc6/arch/x86/kernel/cpu/perfctr-watchdog.c	2012-09-16 17:58:51.000000000 -0400
-+++ linux-3.6-rc6-mic/arch/x86/kernel/cpu/perfctr-watchdog.c	2012-09-26 12:45:52.109898934 -0400
-@@ -56,6 +56,8 @@
- 		switch (boot_cpu_data.x86) {
- 		case 6:
- 			return msr - MSR_P6_PERFCTR0;
-+		case 11:
-+			return msr - MSR_KNC_PERFCTR0;
- 		case 15:
- 			return msr - MSR_P4_BPU_PERFCTR0;
- 		}
-@@ -82,6 +84,8 @@
- 		switch (boot_cpu_data.x86) {
- 		case 6:
- 			return msr - MSR_P6_EVNTSEL0;
-+		case 11:
-+			return msr - MSR_KNC_EVNTSEL0;
- 		case 15:
- 			return msr - MSR_P4_BSU_ESCR0;
- 		}
-diff -Nur linux-3.6-rc6/arch/x86/kernel/cpu/perf_event.h linux-3.6-rc6-mic/arch/x86/kernel/cpu/perf_event.h
---- linux-3.6-rc6/arch/x86/kernel/cpu/perf_event.h	2012-09-16 17:58:51.000000000 -0400
-+++ linux-3.6-rc6-mic/arch/x86/kernel/cpu/perf_event.h	2012-09-26 12:41:43.585899140 -0400
-@@ -624,6 +624,8 @@
- 
- int p6_pmu_init(void);
- 
-+int knc_pmu_init(void);
-+
- #else /* CONFIG_CPU_SUP_INTEL */
- 
- static inline void reserve_ds_buffers(void)
-diff -Nur linux-3.6-rc6/arch/x86/kernel/cpu/perf_event_intel.c linux-3.6-rc6-mic/arch/x86/kernel/cpu/perf_event_intel.c
---- linux-3.6-rc6/arch/x86/kernel/cpu/perf_event_intel.c	2012-09-16 17:58:51.000000000 -0400
-+++ linux-3.6-rc6-mic/arch/x86/kernel/cpu/perf_event_intel.c	2012-09-26 12:41:54.161899131 -0400
-@@ -1906,6 +1906,8 @@
- 		switch (boot_cpu_data.x86) {
- 		case 0x6:
- 			return p6_pmu_init();
-+		case 0xb:
-+			return knc_pmu_init();
- 		case 0xf:
- 			return p4_pmu_init();
- 		}
-diff -Nur linux-3.6-rc6/arch/x86/kernel/cpu/perf_event_knc.c linux-3.6-rc6-mic/arch/x86/kernel/cpu/perf_event_knc.c
---- linux-3.6-rc6/arch/x86/kernel/cpu/perf_event_knc.c	1969-12-31 19:00:00.000000000 -0500
-+++ linux-3.6-rc6-mic/arch/x86/kernel/cpu/perf_event_knc.c	2012-09-26 12:43:04.713899073 -0400
-@@ -0,0 +1,248 @@
-+/* Driver for Intel Xeon Phi "Knights Corner" PMU */
-+
-+#include <linux/perf_event.h>
-+#include <linux/types.h>
-+
-+#include "perf_event.h"
-+
-+static const u64 knc_perfmon_event_map[] =
-+{
-+  [PERF_COUNT_HW_CPU_CYCLES]		= 0x002a,
-+  [PERF_COUNT_HW_INSTRUCTIONS]		= 0x0016,
-+  [PERF_COUNT_HW_CACHE_REFERENCES]	= 0x0028,
-+  [PERF_COUNT_HW_CACHE_MISSES]		= 0x0029,
-+  [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x0012,
-+  [PERF_COUNT_HW_BRANCH_MISSES]		= 0x002b,
-+};
-+
-+static __initconst u64 knc_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(L1D) ] = {
-+	[ C(OP_READ) ] = {
-+		/* On Xeon Phi event "0" is a valid DATA_READ          */
-+		/*   (L1 Data Cache Reads) Instruction.                */
-+		/* We code this as ARCH_PERFMON_EVENTSEL_INT as this   */
-+		/* bit will always be set in x86_pmu_hw_config().      */
-+		[ C(RESULT_ACCESS) ] = ARCH_PERFMON_EVENTSEL_INT,
-+						/* DATA_READ           */
-+		[ C(RESULT_MISS)   ] = 0x0003,	/* DATA_READ_MISS      */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0001,	/* DATA_WRITE          */
-+		[ C(RESULT_MISS)   ] = 0x0004,	/* DATA_WRITE_MISS     */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0011,	/* L1_DATA_PF1         */
-+		[ C(RESULT_MISS)   ] = 0x001c,	/* L1_DATA_PF1_MISS    */
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x000c,	/* CODE_READ          */
-+		[ C(RESULT_MISS)   ] = 0x000e,	/* CODE_CACHE_MISS    */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0x10cb,	/* L2_READ_MISS */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x10cc,	/* L2_WRITE_HIT */
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x10fc,	/* L2_DATA_PF2      */
-+		[ C(RESULT_MISS)   ] = 0x10fe,	/* L2_DATA_PF2_MISS */
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = ARCH_PERFMON_EVENTSEL_INT,
-+						/* DATA_READ */
-+						/* see note on L1 OP_READ */
-+		[ C(RESULT_MISS)   ] = 0x0002,	/* DATA_PAGE_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0001,	/* DATA_WRITE */
-+		[ C(RESULT_MISS)   ] = 0x0002,	/* DATA_PAGE_WALK */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x000c,	/* CODE_READ */
-+		[ C(RESULT_MISS)   ] = 0x000d,	/* CODE_PAGE_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0012,	/* BRANCHES */
-+		[ C(RESULT_MISS)   ] = 0x002b,	/* BRANCHES_MISPREDICTED */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
-+
-+
-+static u64 knc_pmu_event_map(int hw_event)
-+{
-+	return knc_perfmon_event_map[hw_event];
-+}
-+
-+static struct event_constraint knc_event_constraints[] =
-+{
-+	INTEL_EVENT_CONSTRAINT(0xc3, 0x1),	/* HWP_L2HIT */
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0x1),	/* HWP_L2MISS */
-+	INTEL_EVENT_CONSTRAINT(0xc8, 0x1),	/* L2_READ_HIT_E */
-+	INTEL_EVENT_CONSTRAINT(0xc9, 0x1),	/* L2_READ_HIT_M */
-+	INTEL_EVENT_CONSTRAINT(0xca, 0x1),	/* L2_READ_HIT_S */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),	/* L2_READ_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xcc, 0x1),	/* L2_WRITE_HIT */
-+	INTEL_EVENT_CONSTRAINT(0xce, 0x1),	/* L2_STRONGLY_ORDERED_STREAMING_VSTORES_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xcf, 0x1),	/* L2_WEAKLY_ORDERED_STREAMING_VSTORE_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xd7, 0x1),	/* L2_VICTIM_REQ_WITH_DATA */
-+	INTEL_EVENT_CONSTRAINT(0xe3, 0x1),	/* SNP_HITM_BUNIT */
-+	INTEL_EVENT_CONSTRAINT(0xe6, 0x1),	/* SNP_HIT_L2 */
-+	INTEL_EVENT_CONSTRAINT(0xe7, 0x1),	/* SNP_HITM_L2 */
-+	INTEL_EVENT_CONSTRAINT(0xf1, 0x1),	/* L2_DATA_READ_MISS_CACHE_FILL */
-+	INTEL_EVENT_CONSTRAINT(0xf2, 0x1),	/* L2_DATA_WRITE_MISS_CACHE_FILL */
-+	INTEL_EVENT_CONSTRAINT(0xf6, 0x1),	/* L2_DATA_READ_MISS_MEM_FILL */
-+	INTEL_EVENT_CONSTRAINT(0xf7, 0x1),	/* L2_DATA_WRITE_MISS_MEM_FILL */
-+	INTEL_EVENT_CONSTRAINT(0xfc, 0x1),	/* L2_DATA_PF2 */
-+	INTEL_EVENT_CONSTRAINT(0xfd, 0x1),	/* L2_DATA_PF2_DROP */
-+	INTEL_EVENT_CONSTRAINT(0xfe, 0x1),	/* L2_DATA_PF2_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xff, 0x1),	/* L2_DATA_HIT_INFLIGHT_PF2 */
-+	EVENT_CONSTRAINT_END
-+};
-+
-+#define MSR_KNC_IA32_PERF_GLOBAL_STATUS		0x0000002d
-+#define MSR_KNC_IA32_PERF_GLOBAL_OVF_CONTROL	0x0000002e
-+#define MSR_KNC_IA32_PERF_GLOBAL_CTRL		0x0000002f
-+
-+#define KNC_ENABLE_COUNTER0			0x00000001
-+#define KNC_ENABLE_COUNTER1			0x00000002
-+
-+static void knc_pmu_disable_all(void)
-+{
-+	u64 val;
-+
-+	rdmsrl(MSR_KNC_IA32_PERF_GLOBAL_CTRL, val);
-+	val &= ~(KNC_ENABLE_COUNTER0|KNC_ENABLE_COUNTER1);
-+	wrmsrl(MSR_KNC_IA32_PERF_GLOBAL_CTRL, val);
-+}
-+
-+static void knc_pmu_enable_all(int added)
-+{
-+	u64 val;
-+
-+	rdmsrl(MSR_KNC_IA32_PERF_GLOBAL_CTRL, val);
-+	val |= (KNC_ENABLE_COUNTER0|KNC_ENABLE_COUNTER1);
-+	wrmsrl(MSR_KNC_IA32_PERF_GLOBAL_CTRL, val);
-+}
-+
-+static inline void
-+knc_pmu_disable_event(struct perf_event *event)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct hw_perf_event *hwc = &event->hw;
-+	u64 val;
-+
-+	val = hwc->config;
-+	if (cpuc->enabled)
-+		val &= ~ARCH_PERFMON_EVENTSEL_ENABLE;
-+
-+	(void)wrmsrl_safe(hwc->config_base + hwc->idx, val);
-+}
-+
-+static void knc_pmu_enable_event(struct perf_event *event)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct hw_perf_event *hwc = &event->hw;
-+	u64 val;
-+
-+	val = hwc->config;
-+	if (cpuc->enabled)
-+		val |= ARCH_PERFMON_EVENTSEL_ENABLE;
-+
-+	(void)wrmsrl_safe(hwc->config_base + hwc->idx, val);
-+}
-+
-+PMU_FORMAT_ATTR(event,	"config:0-7"	);
-+PMU_FORMAT_ATTR(umask,	"config:8-15"	);
-+PMU_FORMAT_ATTR(edge,	"config:18"	);
-+PMU_FORMAT_ATTR(inv,	"config:23"	);
-+PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
-+
-+static struct attribute *intel_knc_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask.attr,
-+	NULL,
-+};
-+
-+static __initconst struct x86_pmu knc_pmu = {
-+	.name			= "knc",
-+	.handle_irq		= x86_pmu_handle_irq,
-+	.disable_all		= knc_pmu_disable_all,
-+	.enable_all		= knc_pmu_enable_all,
-+	.enable			= knc_pmu_enable_event,
-+	.disable		= knc_pmu_disable_event,
-+	.hw_config		= x86_pmu_hw_config,
-+	.schedule_events	= x86_schedule_events,
-+	.eventsel		= MSR_KNC_EVNTSEL0,
-+	.perfctr		= MSR_KNC_PERFCTR0,
-+	.event_map		= knc_pmu_event_map,
-+	.max_events             = ARRAY_SIZE(knc_perfmon_event_map),
-+	.apic			= 1,
-+	.max_period		= (1ULL << 31) - 1,
-+	.version		= 0,
-+	.num_counters		= 2,
-+	/* in theory 40 bits, early silicon is buggy though */
-+	.cntval_bits		= 32,
-+	.cntval_mask		= (1ULL << 32) - 1,
-+	.get_event_constraints	= x86_get_event_constraints,
-+	.event_constraints	= knc_event_constraints,
-+	.format_attrs		= intel_knc_formats_attr,
-+};
-+
-+__init int knc_pmu_init(void)
-+{
-+	x86_pmu = knc_pmu;
-+
-+	memcpy(hw_cache_event_ids, knc_hw_cache_event_ids, 
-+		sizeof(hw_cache_event_ids));
-+
-+	return 0;
-+}
