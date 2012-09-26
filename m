@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab2IZOn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 10:43:57 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:12810
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751455Ab2IZOn4 (ORCPT
+	id S1756803Ab2IZOpV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 10:45:21 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:38631 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab2IZOpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 10:43:56 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dId6f1izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
-X-WSS-ID: 0MAYOWZ-02-2VC-02
-X-M-MSG: 
-Date: Wed, 26 Sep 2012 16:43:45 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Florian Dazinger <florian@dazinger.net>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        <linux-kernel@vger.kernel.org>,
-        iommu <iommu@lists.linux-foundation.org>
-Subject: Re: 3.6-rc7 boot crash + bisection
-Message-ID: <20120926144345.GC10549@amd.com>
-References: <20120924210348.5f50677b@brain.lan>
- <1348597970.28860.114.camel@bling.home>
- <20120925205420.0a07dea2@brain.lan>
- <1348602226.28860.132.camel@bling.home>
- <20120926010154.49cc2588@brain.lan>
+	Wed, 26 Sep 2012 10:45:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120926010154.49cc2588@brain.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1348663237-3237-5-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348663237-3237-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348663237-3237-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Wed, 26 Sep 2012 20:15:19 +0530
+X-Google-Sender-Auth: JhXbPvuZfh9fjWR5reI79Oq3Ubs
+Message-ID: <CAOh2x==ZCozF-Q1rjKapSYKK+x6HdyHs8N2ZJ96iSxoYZKPRXQ@mail.gmail.com>
+Subject: Re: [PATCHv2 4/4] MAINTAINERS: add recently created files to dw_dmac section
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Florian,
+On Wed, Sep 26, 2012 at 6:10 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> Append myself to mail subsection as well.
 
-On Wed, Sep 26, 2012 at 01:01:54AM +0200, Florian Dazinger wrote:
-> you're right, either "amd_iommu=off" or removing the audio card makes
-> the failure disappear. I will test the new BIOS rev. tomorrow.
+Mail subsection? You are adding yourself as Maintainer of dw_dmac...
+Do you really want that.
+I am asking this, because that's not the normal practice followed in kernel.
 
-Can you please test this diff and report if it fixes the problem for
-you?
+This isn't done until unless, somebody has done a MAJOR modification
+to the driver.
 
-Thanks.
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  MAINTAINERS |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 7dfd0eb..b87cbb1d 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -5999,10 +5999,10 @@ F:      drivers/tty/serial
+>
+>  SYNOPSYS DESIGNWARE DMAC DRIVER
+>  M:     Viresh Kumar <viresh.linux@gmail.com>
+> +M:     Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>  S:     Maintained
+>  F:     include/linux/dw_dmac.h
+> -F:     drivers/dma/dw_dmac_regs.h
+> -F:     drivers/dma/dw_dmac.c
+> +F:     drivers/dma/dw/
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index b64502d..e89daf1 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -266,7 +266,7 @@ static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
- 
- static int iommu_init_device(struct device *dev)
- {
--	struct pci_dev *dma_pdev, *pdev = to_pci_dev(dev);
-+	struct pci_dev *dma_pdev = NULL, *pdev = to_pci_dev(dev);
- 	struct iommu_dev_data *dev_data;
- 	struct iommu_group *group;
- 	u16 alias;
-@@ -293,7 +293,9 @@ static int iommu_init_device(struct device *dev)
- 		dev_data->alias_data = alias_data;
- 
- 		dma_pdev = pci_get_bus_and_slot(alias >> 8, alias & 0xff);
--	} else
-+	}
-+
-+	if (dma_pdev == NULL)
- 		dma_pdev = pci_dev_get(pdev);
- 
- 	/* Account for quirked devices */
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+I can't see this change...
