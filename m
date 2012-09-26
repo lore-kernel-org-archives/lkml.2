@@ -1,318 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751247Ab2IZUmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:42:09 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40406 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab2IZUmF (ORCPT
+	id S1751431Ab2IZUr3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:47:29 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39191 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab2IZUr1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:42:05 -0400
+	Wed, 26 Sep 2012 16:47:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120926133335.b012417e.akpm@linux-foundation.org>
-References: <20120926160127.c34cb6d3e5dcc9ab32e8b573@canb.auug.org.au>
-	<CAGXu5jJJPLXP1cjtWAwHNmYQ6ZxtVu=Oo6vh=NkowzT+26RWPg@mail.gmail.com>
-	<20120926133335.b012417e.akpm@linux-foundation.org>
-Date: Wed, 26 Sep 2012 13:42:05 -0700
-X-Google-Sender-Auth: kyhoYdq3gVWzX9eiQwAuZTwRyEE
-Message-ID: <CAGXu5jK1i_0t+qGpC0XfE=G1r5qWJDfx2A64T1Yb=w2LDiLW1g@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
+In-Reply-To: <CABGkUugaB4rmE_tiyEdhTPBaXUnE=a0A4w13U+L+Ux_NGrA4Vw@mail.gmail.com>
+References: <1348433304-28320-1-git-send-email-tero.keski-valkama@neter.fi>
+	<CABGkUujMCRazGy1+69SWBsS15B97rNEXWNsR4gG8D+5WyeF2jg@mail.gmail.com>
+	<20120925090151.GB1247@liondog.tnic>
+	<CABGkUugOvWCSfXvLW33jmntGYAAiPP9fStXbdRAozx3bEoKBOA@mail.gmail.com>
+	<20120925222417.GA31780@liondog.tnic>
+	<CABGkUuhte-0xUQTpehKid5jD5=pwDKNSG_2Cq7isTJkaBZKGHw@mail.gmail.com>
+	<CABGkUugaB4rmE_tiyEdhTPBaXUnE=a0A4w13U+L+Ux_NGrA4Vw@mail.gmail.com>
+Date: Wed, 26 Sep 2012 23:47:26 +0300
+X-Google-Sender-Auth: xJ8Wy4yVbTccidnHmulWcVjNWAs
+Message-ID: <CABGkUugX9m=0+tGP05WhEG9Y=cyp1jZjoxULpZN3+c7Tcf1ywg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] x86: Added support for Acer Aspire 5755G fan control.
+From: Tero Keski-Valkama <tero.keski-valkama@neter.fi>
+To: Borislav Petkov <bp@alien8.de>,
+        Tero Keski-Valkama <tero.keski-valkama@neter.fi>,
+        linux-kernel@vger.kernel.org, peter@piie.net
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2012/9/26 Tero Keski-Valkama <tero.keski-valkama@neter.fi>:
+> 2012/9/26 Tero Keski-Valkama <tero.keski-valkama@neter.fi>:
+>
+> Now I have confirmed that:
+> a) In default state fan does not speed up even in temperatures above
+> 90 degrees, and
+> b) Now, fan provably sped up, two times, at temperature of about 77 degrees.
+>
+> Somehow the fan speedup has always coincided with "acer_ec.pl regs"
+> command, which might be caused by:
+> a) Processor warms up in that command, or
+> b) Reading EC has some consequences.
+>
+> The above register dump differs from the default boot-up state by
+> obviously registers to read, with volatile values, and:
+> - Register 0xAB from original value 0x08 to 0x0E.
+> - Register 0xAD from original value 0x17 to 0x1F.
+> This means that some of these register changes seem to enable
+> automatic BIOS fan control:
+> - FAN2 0 -> 1
+> - FANT 0 -> 1
+> - FANU 0x7 -> 0xF
+>
+> I have been trying to do some web searches for these register names to
+> determine their meaning, but while many people have found them, they
+> have only made invalid or no documented guesses about their purpose.
+>
+> --
+> Kind Regards / Ystävällisin terveisin,
+>
+> Tero Keski-Valkama, MSc(Tech)
+>
+> +358 (0)46 876 0485
+>
+> tero.keski-valkama@neter.fi
+> http://www.neter.fi
 
-Thanks! This almost matched what I was preparing. Notes below...
+The automatic fan speed up has now been confirmed under CPU stress,
+without running acer_ec.pl regs, so reading the registry is not the
+cause.
 
-On Wed, Sep 26, 2012 at 1:33 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 26 Sep 2012 13:15:58 -0700
-> Kees Cook <keescook@chromium.org> wrote:
->
->> This is weird -- my original patch doesn't touch audit_get_sessionid() at all:
->> http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=commitdiff;h=7bbfec58ed33d5e74043530b87992f16da718ba2
->
-> That patch has been broken multiple times as things change under its
-> feet.  I've just repaired my most recent attempt to repair it.
->
->
-> From: Kees Cook <keescook@chromium.org>
-> Subject: audit.h: replace defines with C stubs
->
-> Replace the #defines used when CONFIG_AUDIT or CONFIG_AUDIT_SYSCALLS are
-> disabled so we get type checking during those builds.
->
-> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->
->  include/linux/audit.h |  206 +++++++++++++++++++++++++++++-----------
->  1 file changed, 153 insertions(+), 53 deletions(-)
->
-> diff -puN include/linux/audit.h~audith-replace-defines-with-c-stubs include/linux/audit.h
-> --- a/include/linux/audit.h~audith-replace-defines-with-c-stubs
-> +++ a/include/linux/audit.h
-> @@ -528,9 +528,18 @@ static inline void audit_ptrace(struct t
->  extern unsigned int audit_serial(void);
->  extern int auditsc_get_stamp(struct audit_context *ctx,
->                               struct timespec *t, unsigned int *serial);
-> -extern int  audit_set_loginuid(kuid_t loginuid);
-> -#define audit_get_loginuid(t) ((t)->loginuid)
-> -#define audit_get_sessionid(t) ((t)->sessionid)
-> +extern int audit_set_loginuid(kuid_t loginuid);
-> +
-> +static inline int audit_get_loginuid(struct task_struct *tsk)
+It seems that setting the above register values actually changes the
+FAN to be BIOS controlled correctly, as opposed to the default values,
+which seem to keep the fan at a constant, medium speed.
 
-Shouldn't this return kuid_t, due to "userns: Convert the audit
-loginuid  to be a kuid"?
+At the moment it's my best guess that FANU register change does
+nothing, but this needs to be confirmed. I'll check that out at some
+point. At least playing around with its different values does not seem
+to have any effect whatsoever.
 
-> +{
-> +       return tsk->loginuid
-> +}
-> +
-> +static inline int audit_get_sessionid(struct task_struct *tsk)
-> +{
-> +       return tsk->sessionid;
-> +}
-> +
->  extern void audit_log_task_context(struct audit_buffer *ab);
->  extern void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk);
->  extern void __audit_ipc_obj(struct kern_ipc_perm *ipcp);
-> @@ -627,38 +636,101 @@ static inline void audit_mmap_fd(int fd,
->  extern int audit_n_rules;
->  extern int audit_signals;
->  #else /* CONFIG_AUDITSYSCALL */
-> -#define audit_alloc(t) ({ 0; })
-> -#define audit_free(t) do { ; } while (0)
-> -#define audit_syscall_entry(ta,a,b,c,d,e) do { ; } while (0)
-> -#define audit_syscall_exit(r) do { ; } while (0)
-> -#define audit_dummy_context() 1
-> -#define audit_getname(n) do { ; } while (0)
-> -#define audit_putname(n) do { ; } while (0)
-> -#define __audit_inode(n,d) do { ; } while (0)
-> -#define __audit_inode_child(i,p) do { ; } while (0)
-> -#define audit_inode(n,d) do { (void)(d); } while (0)
-> -#define audit_inode_child(i,p) do { ; } while (0)
-> -#define audit_core_dumps(i) do { ; } while (0)
-> -#define audit_seccomp(i,s,c) do { ; } while (0)
-> -#define auditsc_get_stamp(c,t,s) (0)
-> -#define audit_get_loginuid(t) (INVALID_UID)
-> -#define audit_get_sessionid(t) (-1)
-> -#define audit_log_task_context(b) do { ; } while (0)
-> -#define audit_log_task_info(b, t) do { ; } while (0)
-> -#define audit_ipc_obj(i) ((void)0)
-> -#define audit_ipc_set_perm(q,u,g,m) ((void)0)
-> -#define audit_bprm(p) ({ 0; })
-> -#define audit_socketcall(n,a) ((void)0)
-> -#define audit_fd_pair(n,a) ((void)0)
-> -#define audit_sockaddr(len, addr) ({ 0; })
-> -#define audit_mq_open(o,m,a) ((void)0)
-> -#define audit_mq_sendrecv(d,l,p,t) ((void)0)
-> -#define audit_mq_notify(d,n) ((void)0)
-> -#define audit_mq_getsetattr(d,s) ((void)0)
-> -#define audit_log_bprm_fcaps(b, ncr, ocr) ({ 0; })
-> -#define audit_log_capset(pid, ncr, ocr) ((void)0)
-> -#define audit_mmap_fd(fd, flags) ((void)0)
-> -#define audit_ptrace(t) ((void)0)
-> +static inline int audit_alloc(struct task_struct *task)
-> +{
-> +       return 0;
-> +}
-> +static inline void audit_free(struct task_struct *task)
-> +{ }
-> +static inline void audit_syscall_entry(int arch, int major, unsigned long a0,
-> +                                      unsigned long a1, unsigned long a2,
-> +                                      unsigned long a3)
-> +{ }
-> +static inline void audit_syscall_exit(void *pt_regs)
-> +{ }
-> +static inline int audit_dummy_context(void)
-> +{
-> +       return 1;
-> +}
-> +static inline void audit_getname(const char *name)
-> +{ }
-> +static inline void audit_putname(const char *name)
-> +{ }
-> +static inline void __audit_inode(const char *name, const struct dentry *dentry)
-> +{ }
-> +static inline void __audit_inode_child(const struct dentry *dentry,
-> +                                       const struct inode *parent)
-> +{ }
-> +static inline void audit_inode(const char *name, const struct dentry *dentry)
-> +{ }
-> +static inline void audit_inode_child(const struct dentry *dentry,
-> +                                    const struct inode *parent)
-> +{ }
-> +static inline void audit_core_dumps(long signr)
-> +{ }
-> +static inline void __audit_seccomp(unsigned long syscall, long signr, int code)
-> +{ }
-> +static inline void audit_seccomp(unsigned long syscall, long signr, int code)
-> +{ }
-> +static inline int auditsc_get_stamp(struct audit_context *ctx,
-> +                             struct timespec *t, unsigned int *serial)
-> +{
-> +       return 0;
-> +}
-> +static inline int audit_get_loginuid(struct task_struct *tsk)
+After checking that, the patch should probably be changed from just
+continuing the default boot up status in AUTO mode, because that seems
+not to be truly automatic, and use the value 0x0E instead of 0x08 for
+this setting.
 
-Same here?
-
-> +{
-> +       return INVALID_UID;
-> +}
-> +static inline int audit_get_sessionid(struct task_struct *tsk)
-> +{
-> +       return -1;
-> +}
-> +static inline void audit_log_task_context(struct audit_buffer *ab)
-> +{ }
-> +static inline void audit_log_task_info(struct audit_buffer *ab,
-> +                                      struct task_struct *tsk)
-> +{ }
-> +static inline void audit_ipc_obj(struct kern_ipc_perm *ipcp)
-> +{ }
-> +static inline void audit_ipc_set_perm(unsigned long qbytes, uid_t uid,
-> +                                       gid_t gid, umode_t mode)
-> +{ }
-> +static inline int audit_bprm(struct linux_binprm *bprm)
-> +{
-> +       return 0;
-> +}
-> +static inline void audit_socketcall(int nargs, unsigned long *args)
-> +{ }
-> +static inline void audit_fd_pair(int fd1, int fd2)
-> +{ }
-> +static inline int audit_sockaddr(int len, void *addr)
-> +{
-> +       return 0;
-> +}
-> +static inline void audit_mq_open(int oflag, umode_t mode, struct mq_attr *attr)
-> +{ }
-> +static inline void audit_mq_sendrecv(mqd_t mqdes, size_t msg_len,
-> +                                    unsigned int msg_prio,
-> +                                    const struct timespec *abs_timeout)
-> +{ }
-> +static inline void audit_mq_notify(mqd_t mqdes,
-> +                                  const struct sigevent *notification)
-> +{ }
-> +static inline void audit_mq_getsetattr(mqd_t mqdes, struct mq_attr *mqstat)
-> +{ }
-> +static inline int audit_log_bprm_fcaps(struct linux_binprm *bprm,
-> +                                      const struct cred *new,
-> +                                      const struct cred *old)
-> +{
-> +       return 0;
-> +}
-> +static inline void audit_log_capset(pid_t pid, const struct cred *new,
-> +                                  const struct cred *old)
-> +{ }
-> +static inline void audit_mmap_fd(int fd, int flags)
-> +{ }
-> +static inline void audit_ptrace(struct task_struct *t)
-> +{ }
->  #define audit_n_rules 0
->  #define audit_signals 0
->  #endif /* CONFIG_AUDITSYSCALL */
-> @@ -682,7 +754,6 @@ extern void             audit_log_n_hex(struct
->  extern void                audit_log_n_string(struct audit_buffer *ab,
->                                                const char *buf,
->                                                size_t n);
-> -#define audit_log_string(a,b) audit_log_n_string(a, b, strlen(b));
->  extern void                audit_log_n_untrustedstring(struct audit_buffer *ab,
->                                                         const char *string,
->                                                         size_t n);
-> @@ -699,7 +770,8 @@ extern void             audit_log_lost(const ch
->  #ifdef CONFIG_SECURITY
->  extern void                audit_log_secctx(struct audit_buffer *ab, u32 secid);
->  #else
-> -#define audit_log_secctx(b,s) do { ; } while (0)
-> +static inline void         audit_log_secctx(struct audit_buffer *ab, u32 secid)
-> +{ }
->  #endif
->
->  extern int                 audit_update_lsm_rules(void);
-> @@ -711,22 +783,50 @@ extern int  audit_receive_filter(int typ
->                                 void *data, size_t datasz, kuid_t loginuid,
->                                 u32 sessionid, u32 sid);
->  extern int audit_enabled;
-> -#else
-> -#define audit_log(c,g,t,f,...) do { ; } while (0)
-> -#define audit_log_start(c,g,t) ({ NULL; })
-> -#define audit_log_vformat(b,f,a) do { ; } while (0)
-> -#define audit_log_format(b,f,...) do { ; } while (0)
-> -#define audit_log_end(b) do { ; } while (0)
-> -#define audit_log_n_hex(a,b,l) do { ; } while (0)
-> -#define audit_log_n_string(a,c,l) do { ; } while (0)
-> -#define audit_log_string(a,c) do { ; } while (0)
-> -#define audit_log_n_untrustedstring(a,n,s) do { ; } while (0)
-> -#define audit_log_untrustedstring(a,s) do { ; } while (0)
-> -#define audit_log_d_path(b, p, d) do { ; } while (0)
-> -#define audit_log_key(b, k) do { ; } while (0)
-> -#define audit_log_link_denied(o, l) do { ; } while (0)
-> -#define audit_log_secctx(b,s) do { ; } while (0)
-> +#else /* CONFIG_AUDIT */
-> +static inline __printf(4, 5)
-> +void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
-> +              const char *fmt, ...)
-> +{ }
-> +static inline struct audit_buffer *audit_log_start(struct audit_context *ctx,
-> +                                                  gfp_t gfp_mask, int type)
-> +{
-> +       return NULL;
-> +}
-> +static inline __printf(2, 3)
-> +void audit_log_format(struct audit_buffer *ab, const char *fmt, ...)
-> +{ }
-> +static inline void audit_log_end(struct audit_buffer *ab)
-> +{ }
-> +static inline void audit_log_n_hex(struct audit_buffer *ab,
-> +                                  const unsigned char *buf, size_t len)
-> +{ }
-> +static inline void audit_log_n_string(struct audit_buffer *ab,
-> +                                     const char *buf, size_t n)
-> +{ }
-> +static inline void  audit_log_n_untrustedstring(struct audit_buffer *ab,
-> +                                               const char *string, size_t n)
-> +{ }
-> +static inline void audit_log_untrustedstring(struct audit_buffer *ab,
-> +                                            const char *string)
-> +{ }
-> +static inline void audit_log_d_path(struct audit_buffer *ab,
-> +                                   const char *prefix,
-> +                                   const struct path *path)
-> +{ }
-> +static inline void audit_log_key(struct audit_buffer *ab, char *key)
-> +{ }
-> +static inline void audit_log_link_denied(const char *string,
-> +                                        const struct path *link)
-> +{ }
-> +static inline void audit_log_secctx(struct audit_buffer *ab, u32 secid)
-> +{ }
->  #define audit_enabled 0
-> -#endif
-> +#endif /* CONFIG_AUDIT */
-> +static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
-> +{
-> +       audit_log_n_string(ab, buf, strlen(buf));
-> +}
-> +
->  #endif
->  #endif
-> _
->
-
--Kees
+However, this means that people not running this module will still be
+left with the non-automatic fan mode for these laptops.
 
 -- 
-Kees Cook
-Chrome OS Security
+Kind Regards / Ystävällisin terveisin,
+
+Tero Keski-Valkama, MSc(Tech)
+
++358 (0)46 876 0485
+
+tero.keski-valkama@neter.fi
+http://www.neter.fi
