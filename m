@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab2IZUFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:05:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64583 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab2IZUFb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:05:31 -0400
-Date: Wed, 26 Sep 2012 13:05:27 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: staging tree closed for 3.7
-Message-ID: <20120926200527.GC9994@kroah.com>
-References: <20120926175606.GA10762@kroah.com>
- <20120926175634.GB10762@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F00206B20BED5D@AUSP01VMBX24.collaborationhost.net>
+	id S1753278Ab2IZUFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:05:47 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:33810 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752533Ab2IZUFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 16:05:45 -0400
+Message-ID: <50635F46.7000700@parallels.com>
+Date: Thu, 27 Sep 2012 00:02:14 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206B20BED5D@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <devel@openvz.org>, <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+References: <1347977050-29476-5-git-send-email-glommer@parallels.com> <20120926140347.GD15801@dhcp22.suse.cz> <20120926163648.GO16296@google.com> <50633D24.6020002@parallels.com> <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com> <50634105.8060302@parallels.com> <20120926180124.GA12544@google.com> <50634FC9.4090609@parallels.com> <20120926193417.GJ12544@google.com> <50635B9D.8020205@parallels.com> <20120926195648.GA20342@google.com>
+In-Reply-To: <20120926195648.GA20342@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.3.27]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 01:47:11PM -0500, H Hartley Sweeten wrote:
-> On Wednesday, September 26, 2012 10:57 AM, Greg Kroah-Hartman wrote:
-> > On Wed, Sep 26, 2012 at 10:56:06AM -0700, Greg Kroah-Hartman wrote:
-> >> 
-> >> With 3.6 about to be released, I've now closed the 3.7 staging-next tree
-> >> for new features / cleanups.  It's bug-fixes only now until 3.7-rc1 is
-> >> out.
-> >
-> > Oh, and if I've missed any patches that people have sent me already,
-> > please let me know, because I don't have them anymore.
+On 09/26/2012 11:56 PM, Tejun Heo wrote:
+> Hello,
 > 
-> Greg,
+> On Wed, Sep 26, 2012 at 11:46:37PM +0400, Glauber Costa wrote:
+>> Besides not being part of cgroup core, and respecting very much both
+>> cgroups' and basic sanity properties, kmem is an actual feature that
+>> some people want, and some people don't. There is no reason to believe
+>> that applications that want will live in the same environment with ones
+>> that don't want.
 > 
-> What about my "staging: comedi: drivers: use comedi_fc.h cmdtest helpers"?
+> I don't know.  It definitely is less crazy than .use_hierarchy but I
+> wouldn't say it's an inherently different thing.  I mean, what does it
+> even mean to have u+k limit on one subtree and not on another branch?
+> And we worry about things like what if parent doesn't enable it but
+> its chlidren do.
 > 
-> It's quite large but does have decent diffstat:
-> 46 files changed, 766 insertions(+), 1997 deletions(-)
 
-Care to resend it?  I thought that was part of the __user rework, my
-apologies.
+It is inherently different. To begin with, it actually contemplates two
+use cases. It is not a work around.
 
-> If it doesn't apply due to conflicts, or you would rather just wait
-> until 3.7-rc1, it's not a problem.
+The meaning is also very well defined. The meaning of having this
+enabled in one subtree and not in other is: Subtree A wants to track
+kernel memory. Subtree B does not. It's that, and never more than that.
+There is no maybes and no buts, no magic knobs that makes it behave in a
+crazy way.
+
+If a children enables it but the parent does not, this does what every
+tree does: enable it from that point downwards.
+
+> This is a feature which adds complexity.  If the feature is necessary
+> and justified, sure.  If not, let's please not and let's err on the
+> side of conservativeness.  We can always add it later but the other
+> direction is much harder.
 > 
-> I have updated the patch to fix the typo Ian pointed out and to remove
-> the Reported-by signoff from Dan if you would like me to repost it.
 
-Please redo it and resend it, that must have been why I didn't apply it,
-I was waiting for a newer version :)
+I disagree. Having kmem tracking adds complexity. Having to cope with
+the use case where we turn it on dynamically to cope with the "user page
+only" use case adds complexity. But I see no significant complexity
+being added by having it per subtree. Really.
 
-thanks,
+You have the use_hierarchy fiasco in mind, and I do understand that you
+are raising the flag and all that.
 
-greg k-h
+But think in terms of functionality: This thing here is a lot more
+similar to swap than use_hierarchy. Would you argue that memsw should be
+per-root ?
+
+The reason why it shouldn't: Some people want to limit memory
+consumption all the way to the swap, some people don't. Same with kmem.
+
+
