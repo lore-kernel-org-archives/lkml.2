@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab2IZO5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 10:57:24 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:3926 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752550Ab2IZO5X (ORCPT
+	id S1756923Ab2IZO6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 10:58:05 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:34145 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756565Ab2IZO6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 10:57:23 -0400
-Date: Wed, 26 Sep 2012 14:57:21 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: David Rientjes <rientjes@google.com>
-cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
-In-Reply-To: <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com>
-Message-ID: <0000013a03150b18-b7c1bfbe-967f-4c33-86e0-f3ca344706cd-000000@email.amazonses.com>
-References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 26 Sep 2012 10:58:03 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+In-Reply-To: <5061F7C7.7060107@gmail.com>
+References: <20120922155613.GB2934@linux.vnet.ibm.com>
+	<505DFA65.3080805@gmail.com>
+	<20120922212735.GG2934@linux.vnet.ibm.com>
+	<20120923002105.GA1112@linux.vnet.ibm.com>
+	<505EA09B.6040105@gmail.com>
+	<CAFTL4hwqzS8iO2zOOGaizzMtT85MJExTxEgGbponJ4_gfv0nwA@mail.gmail.com>
+	<5060E31B.3070203@gmail.com>
+	<5060E498.7030003@gmail.com>
+	<CAFTL4hzVSBkcDRnzvpmXyBHqydqy=nJxdMtjUHrvR8MwN_M0jQ@mail.gmail.com>
+	<5060E863.6020006@gmail.com>
+	<20120925120549.GC2310@somewhere.redhat.com>
+	<5061F7C7.7060107@gmail.com>
+Date: Wed, 26 Sep 2012 16:58:01 +0200
+Message-ID: <CAFTL4hyj43L1b_7B+BjSbdGAE4RNYqFBz01G+ifwKu=0k9v+2w@mail.gmail.com>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Sep 2012, David Rientjes wrote:
+2012/9/25 Sasha Levin <levinsasha928@gmail.com>:
+> On 09/25/2012 02:06 PM, Frederic Weisbecker wrote:
+>> Sasha, sorry to burden you with more testing request.
+>> Could you please try out this new branch? It includes some fixes after Wu Fenguang and
+>> Dan Carpenter reports (not related to your warnings though) and a patch on the top
+>> of the pile to ensure I diagnosed well the problem, which return immediately from
+>> rcu_user_*() APIs if we are in an interrupt.
+>>
+>> This way we'll have a clearer view. I also would like to know if there are other
+>> problems with the rcu user mode.
+>>
+>> Thanks!
+>
+> Alrighty, I don't see any warnings anymore.
+>
+> I'll keep everything running just in case.
 
-> Nack, this is already handled by CREATE_MASK in the mm/slab.c allocator;
+Cool! I'm pushing the fix tree to Paul then.
 
-CREATE_MASK defines legal flags that can be specified. Other flags cause
-and error. This is about flags that are internal that should be ignored
-when specified.
-
-I think it makes sense to reserve some top flags for internal purposes.
-
-> the flag extensions beyond those defined in the generic slab.h header are
-> implementation defined.  It may be true that SLAB uses a bit only
-> internally (and already protects it with a BUG_ON() in
-> __kmem_cache_create()) but that doesn't mean other implementations can't
-> use such a flag that would be a no-op on another allocator.
-
-Other implementations such as SLUB also use the bits in that high range.
-
-Simply ignoring the internal bits on cache creation if they are set is
-IMHO not a bit issue and simplifies Glaubers task.
-
+Thanks a lot for your testing!
