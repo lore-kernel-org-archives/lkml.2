@@ -1,37 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656Ab2IZNBQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 09:01:16 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37762 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229Ab2IZNBP (ORCPT
+	id S1756226Ab2IZNBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 09:01:42 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:42812 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755995Ab2IZNBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 09:01:15 -0400
-Date: Wed, 26 Sep 2012 16:00:09 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-Cc: Andres Freund <andres@anarazel.de>, LKML <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: radeon: Regression between v3.6-rc4 and v3.6-rc6: unable to
- allocate a PPLL
-Message-ID: <20120926130009.GE28937@mwanda>
-References: <201209171329.15699.andres@anarazel.de>
- <201209171555.43008.andres@anarazel.de>
- <A3397C8B8B789E45844E7EC5DEAD89D02C4333B6@sausexdag03.amd.com>
- <201209171915.45267.andres@anarazel.de>
- <A3397C8B8B789E45844E7EC5DEAD89D02C433574@sausexdag03.amd.com>
+	Wed, 26 Sep 2012 09:01:41 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl: clarify idle vs sleep states
+Date: Wed, 26 Sep 2012 15:01:04 +0200
+Message-ID: <1348664464-12079-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02C433574@sausexdag03.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is fixed now?
+From: Linus Walleij <linus.walleij@linaro.org>
 
-regards,
-dan carpenter
+This pure documentation fix tries to align the "idle" and
+"sleep" pin states to the idle and suspend states from
+runtime PM.
+
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ include/linux/pinctrl/pinctrl-state.h | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/pinctrl/pinctrl-state.h b/include/linux/pinctrl/pinctrl-state.h
+index 634608dc..2dbf71d 100644
+--- a/include/linux/pinctrl/pinctrl-state.h
++++ b/include/linux/pinctrl/pinctrl-state.h
+@@ -6,13 +6,15 @@
+  * @PINCTRL_STATE_DEFAULT: the state the pinctrl handle shall be put
+  *	into as default, usually this means the pins are up and ready to
+  *	be used by the device driver. This state is commonly used by
+- *	hogs to configure muxing and pins at boot.
++ *	hogs to configure muxing and pins at boot, and also as a state
++ *	to go into when returning from sleep and idle in
++ *	.pm_runtime_resume() or ordinary .resume() for example.
+  * @PINCTRL_STATE_IDLE: the state the pinctrl handle shall be put into
+  *	when the pins are idle. Could typically be set from a
+- *	pm_runtime_suspend() operation.
++ *	pm_runtime_idle() operation.
+  * @PINCTRL_STATE_SLEEP: the state the pinctrl handle shall be put into
+  *	when the pins are sleeping. Could typically be set from a
+- *	common suspend() function.
++ *	common pm_runtime_suspend() or ordinary .suspend() function.
+  */
+ #define PINCTRL_STATE_DEFAULT "default"
+ #define PINCTRL_STATE_IDLE "idle"
+-- 
+1.7.11.3
+
