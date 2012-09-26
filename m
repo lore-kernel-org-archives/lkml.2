@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab2IZFj3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 01:39:29 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45768 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab2IZFj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 01:39:27 -0400
+	id S1752358Ab2IZFjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 01:39:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45719 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975Ab2IZFjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 01:39:52 -0400
 From: "Patil, Rachna" <rachna@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
         <linux-iio@vger.kernel.org>
@@ -14,9 +13,9 @@ CC: Samuel Ortiz <sameo@linux.intel.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>,
         "Patil, Rachna" <rachna@ti.com>
-Subject: [PATCH v4 2/5] MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
-Date: Wed, 26 Sep 2012 10:50:11 +0530
-Message-ID: <1348636814-14129-3-git-send-email-rachna@ti.com>
+Subject: [PATCH v4 3/5] input: TSC: ti_tsc: Convert TSC into a MFDevice
+Date: Wed, 26 Sep 2012 10:50:12 +0530
+Message-ID: <1348636814-14129-4-git-send-email-rachna@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1348636814-14129-1-git-send-email-rachna@ti.com>
 References: <1348636814-14129-1-git-send-email-rachna@ti.com>
@@ -26,16 +25,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the mfd core driver which supports touchscreen
-and ADC.
-With this patch we are only adding infrastructure to
-support the MFD clients.
+This patch converts touchscreen into a MFD client.
+All the register definitions, clock initialization,
+etc has been moved to MFD core driver.
 
 Signed-off-by: Patil, Rachna <rachna@ti.com>
 ---
 Changes in v2:
-	Merged "[PATCH 5/5] MFD: ti_tscadc: Add check on number of i/p channels",
-	patch submitted in previous version into this file.
+	No changes
 
 Changes in v3:
 	No changes
@@ -43,384 +40,494 @@ Changes in v3:
 Changes in v4:
 	No changes
 
- drivers/mfd/Kconfig                  |    9 ++
- drivers/mfd/Makefile                 |    1 +
- drivers/mfd/ti_am335x_tscadc.c       |  193 ++++++++++++++++++++++++++++++++++
- include/linux/mfd/ti_am335x_tscadc.h |  133 +++++++++++++++++++++++
- 4 files changed, 336 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/ti_am335x_tscadc.c
- create mode 100644 include/linux/mfd/ti_am335x_tscadc.h
+ drivers/input/touchscreen/ti_am335x_tsc.c |  277 ++++++-----------------------
+ drivers/mfd/ti_am335x_tscadc.c            |   11 ++
+ include/linux/mfd/ti_am335x_tscadc.h      |   10 +-
+ 3 files changed, 74 insertions(+), 224 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index b1a1462..e472184 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -94,6 +94,15 @@ config MFD_TI_SSP
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called ti-ssp.
- 
-+config MFD_TI_AM335X_TSCADC
-+	tristate "TI ADC / Touch Screen chip support"
-+	depends on ARCH_OMAP2PLUS
-+	help
-+	  If you say yes here you get support for Texas Instruments series
-+	  of Touch Screen /ADC chips.
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called ti_am335x_tscadc.
-+
- config HTC_EGPIO
- 	bool "HTC EGPIO support"
- 	depends on GENERIC_HARDIRQS && GPIOLIB && ARM
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 79dd22d..bc6b2f0 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_HTC_I2CPLD)	+= htc-i2cpld.o
- obj-$(CONFIG_MFD_DAVINCI_VOICECODEC)	+= davinci_voicecodec.o
- obj-$(CONFIG_MFD_DM355EVM_MSP)	+= dm355evm_msp.o
- obj-$(CONFIG_MFD_TI_SSP)	+= ti-ssp.o
-+obj-$(CONFIG_MFD_TI_AM335X_TSCADC)	+= ti_am335x_tscadc.o
- 
- obj-$(CONFIG_MFD_STA2X11)	+= sta2x11-mfd.o
- obj-$(CONFIG_MFD_STMPE)		+= stmpe.o
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-new file mode 100644
-index 0000000..ae93b48
---- /dev/null
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -0,0 +1,193 @@
-+/*
-+ * TI Touch Screen / ADC MFD driver
-+ *
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/mfd/core.h>
-+#include <linux/pm_runtime.h>
+diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+index e71dee6..2d9dec1 100644
+--- a/drivers/input/touchscreen/ti_am335x_tsc.c
++++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+@@ -26,123 +26,31 @@
+ #include <linux/io.h>
+ #include <linux/input/ti_am335x_tsc.h>
+ #include <linux/delay.h>
+-
+-#define REG_RAWIRQSTATUS	0x024
+-#define REG_IRQSTATUS		0x028
+-#define REG_IRQENABLE		0x02C
+-#define REG_IRQWAKEUP		0x034
+-#define REG_CTRL		0x040
+-#define REG_ADCFSM		0x044
+-#define REG_CLKDIV		0x04C
+-#define REG_SE			0x054
+-#define REG_IDLECONFIG		0x058
+-#define REG_CHARGECONFIG	0x05C
+-#define REG_CHARGEDELAY		0x060
+-#define REG_STEPCONFIG(n)	(0x64 + ((n - 1) * 8))
+-#define REG_STEPDELAY(n)	(0x68 + ((n - 1) * 8))
+-#define REG_FIFO0CNT		0xE4
+-#define REG_FIFO0THR		0xE8
+-#define REG_FIFO1THR		0xF4
+-#define REG_FIFO0		0x100
+-#define REG_FIFO1		0x200
+-
+-/*	Register Bitfields	*/
+-#define IRQWKUP_ENB		BIT(0)
+-
+-/* Step Enable */
+-#define STEPENB_MASK		(0x1FFFF << 0)
+-#define STEPENB(val)		(val << 0)
+-#define STPENB_STEPENB		STEPENB(0x7FFF)
+-
+-/* IRQ enable */
+-#define IRQENB_FIFO0THRES	BIT(2)
+-#define IRQENB_FIFO1THRES	BIT(5)
+-#define IRQENB_PENUP		BIT(9)
+-
+-/* Step Configuration */
+-#define STEPCONFIG_MODE_MASK	(3 << 0)
+-#define STEPCONFIG_MODE(val)	(val << 0)
+-#define STEPCONFIG_MODE_HWSYNC	STEPCONFIG_MODE(2)
+-#define STEPCONFIG_AVG_MASK	(7 << 2)
+-#define STEPCONFIG_AVG(val)	(val << 2)
+-#define STEPCONFIG_AVG_16	STEPCONFIG_AVG(4)
+-#define STEPCONFIG_XPP		BIT(5)
+-#define STEPCONFIG_XNN		BIT(6)
+-#define STEPCONFIG_YPP		BIT(7)
+-#define STEPCONFIG_YNN		BIT(8)
+-#define STEPCONFIG_XNP		BIT(9)
+-#define STEPCONFIG_YPN		BIT(10)
+-#define STEPCONFIG_INM_MASK	(0xF << 15)
+-#define STEPCONFIG_INM(val)	(val << 15)
+-#define STEPCONFIG_INM_ADCREFM	STEPCONFIG_INM(8)
+-#define STEPCONFIG_INP_MASK	(0xF << 19)
+-#define STEPCONFIG_INP(val)	(val << 19)
+-#define STEPCONFIG_INP_AN2	STEPCONFIG_INP(2)
+-#define STEPCONFIG_INP_AN3	STEPCONFIG_INP(3)
+-#define STEPCONFIG_INP_AN4	STEPCONFIG_INP(4)
+-#define STEPCONFIG_INP_ADCREFM	STEPCONFIG_INP(8)
+-#define STEPCONFIG_FIFO1	BIT(26)
+-
+-/* Delay register */
+-#define STEPDELAY_OPEN_MASK	(0x3FFFF << 0)
+-#define STEPDELAY_OPEN(val)	(val << 0)
+-#define STEPCONFIG_OPENDLY	STEPDELAY_OPEN(0x098)
+-
+-/* Charge Config */
+-#define STEPCHARGE_RFP_MASK	(7 << 12)
+-#define STEPCHARGE_RFP(val)	(val << 12)
+-#define STEPCHARGE_RFP_XPUL	STEPCHARGE_RFP(1)
+-#define STEPCHARGE_INM_MASK	(0xF << 15)
+-#define STEPCHARGE_INM(val)	(val << 15)
+-#define STEPCHARGE_INM_AN1	STEPCHARGE_INM(1)
+-#define STEPCHARGE_INP_MASK	(0xF << 19)
+-#define STEPCHARGE_INP(val)	(val << 19)
+-#define STEPCHARGE_INP_AN1	STEPCHARGE_INP(1)
+-#define STEPCHARGE_RFM_MASK	(3 << 23)
+-#define STEPCHARGE_RFM(val)	(val << 23)
+-#define STEPCHARGE_RFM_XNUR	STEPCHARGE_RFM(1)
+-
+-/* Charge delay */
+-#define CHARGEDLY_OPEN_MASK	(0x3FFFF << 0)
+-#define CHARGEDLY_OPEN(val)	(val << 0)
+-#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(1)
+-
+-/* Control register */
+-#define CNTRLREG_TSCSSENB	BIT(0)
+-#define CNTRLREG_STEPID		BIT(1)
+-#define CNTRLREG_STEPCONFIGWRT	BIT(2)
+-#define CNTRLREG_AFE_CTRL_MASK	(3 << 5)
+-#define CNTRLREG_AFE_CTRL(val)	(val << 5)
+-#define CNTRLREG_4WIRE		CNTRLREG_AFE_CTRL(1)
+-#define CNTRLREG_5WIRE		CNTRLREG_AFE_CTRL(2)
+-#define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
+-#define CNTRLREG_TSCENB		BIT(7)
 +#include <linux/mfd/ti_am335x_tscadc.h>
+ 
+ #define ADCFSM_STEPID		0x10
+ #define SEQ_SETTLE		275
+-#define ADC_CLK			3000000
+ #define MAX_12BIT		((1 << 12) - 1)
+ 
+ struct tscadc {
+ 	struct input_dev	*input;
+-	struct clk		*tsc_ick;
+-	void __iomem		*tsc_base;
+ 	unsigned int		irq;
+ 	unsigned int		wires;
+ 	unsigned int		x_plate_resistance;
+ 	bool			pen_down;
+ 	int			steps_to_configure;
++	struct ti_tscadc_dev	*mfd_tscadc;
+ };
+ 
+ static unsigned int tscadc_readl(struct tscadc *ts, unsigned int reg)
+ {
+-	return readl(ts->tsc_base + reg);
++	return readl(ts->mfd_tscadc->tscadc_base + reg);
+ }
+ 
+ static void tscadc_writel(struct tscadc *tsc, unsigned int reg,
+ 					unsigned int val)
+ {
+-	writel(val, tsc->tsc_base + reg);
++	writel(val, tsc->mfd_tscadc->tscadc_base + reg);
+ }
+ 
+ static void tscadc_step_config(struct tscadc *ts_dev)
+@@ -219,17 +127,7 @@ static void tscadc_step_config(struct tscadc *ts_dev)
+ 	tscadc_writel(ts_dev, REG_STEPDELAY(total_steps + 2),
+ 			STEPCONFIG_OPENDLY);
+ 
+-	tscadc_writel(ts_dev, REG_SE, STPENB_STEPENB);
+-}
+-
+-static void tscadc_idle_config(struct tscadc *ts_config)
+-{
+-	unsigned int idleconfig;
+-
+-	idleconfig = STEPCONFIG_YNN |
+-			STEPCONFIG_INM_ADCREFM |
+-			STEPCONFIG_YPN | STEPCONFIG_INP_ADCREFM;
+-	tscadc_writel(ts_config, REG_IDLECONFIG, idleconfig);
++	tscadc_writel(ts_dev, REG_SE, STPENB_STEPENB_TC);
+ }
+ 
+ static void tscadc_read_coordinates(struct tscadc *ts_dev,
+@@ -239,7 +137,7 @@ static void tscadc_read_coordinates(struct tscadc *ts_dev,
+ 	unsigned int prev_val_x = ~0, prev_val_y = ~0;
+ 	unsigned int prev_diff_x = ~0, prev_diff_y = ~0;
+ 	unsigned int read, diff;
+-	unsigned int i;
++	unsigned int i, channel;
+ 
+ 	/*
+ 	 * Delta filter is used to remove large variations in sampled
+@@ -250,21 +148,32 @@ static void tscadc_read_coordinates(struct tscadc *ts_dev,
+ 	 * if true the value is reported to the sub system.
+ 	 */
+ 	for (i = 0; i < fifocount - 1; i++) {
+-		read = tscadc_readl(ts_dev, REG_FIFO0) & 0xfff;
+-		diff = abs(read - prev_val_x);
+-		if (diff < prev_diff_x) {
+-			prev_diff_x = diff;
+-			*x = read;
++		read = tscadc_readl(ts_dev, REG_FIFO0);
++		channel = read & 0xf0000;
++		channel = channel >> 0x10;
++		if ((channel >= 0) && (channel < ts_dev->steps_to_configure)) {
++			read &= 0xfff;
++			diff = abs(read - prev_val_x);
++			if (diff < prev_diff_x) {
++				prev_diff_x = diff;
++				*x = read;
++			}
++			prev_val_x = read;
+ 		}
+-		prev_val_x = read;
+ 
+-		read = tscadc_readl(ts_dev, REG_FIFO1) & 0xfff;
+-		diff = abs(read - prev_val_y);
+-		if (diff < prev_diff_y) {
+-			prev_diff_y = diff;
+-			*y = read;
+-		}
++		read = tscadc_readl(ts_dev, REG_FIFO1);
++		channel = read & 0xf0000;
++		channel = channel >> 0x10;
++		if ((channel >= ts_dev->steps_to_configure) &&
++			(channel < (2 * ts_dev->steps_to_configure - 1))) {
++			read &= 0xfff;
++			diff = abs(read - prev_val_y);
++			if (diff < prev_diff_y) {
++				prev_diff_y = diff;
++				*y = read;
++			}
+ 		prev_val_y = read;
++		}
+ 	}
+ }
+ 
+@@ -276,6 +185,8 @@ static irqreturn_t tscadc_irq(int irq, void *dev)
+ 	unsigned int x = 0, y = 0;
+ 	unsigned int z1, z2, z;
+ 	unsigned int fsm;
++	unsigned int fifo1count, fifo0count;
++	int i;
+ 
+ 	status = tscadc_readl(ts_dev, REG_IRQSTATUS);
+ 	if (status & IRQENB_FIFO0THRES) {
+@@ -284,6 +195,14 @@ static irqreturn_t tscadc_irq(int irq, void *dev)
+ 		z1 = tscadc_readl(ts_dev, REG_FIFO0) & 0xfff;
+ 		z2 = tscadc_readl(ts_dev, REG_FIFO1) & 0xfff;
+ 
++		fifo1count = tscadc_readl(ts_dev, REG_FIFO1CNT);
++		for (i = 0; i < fifo1count; i++)
++			tscadc_readl(ts_dev, REG_FIFO1);
 +
-+static unsigned int tscadc_readl(struct ti_tscadc_dev *tsadc, unsigned int reg)
-+{
-+	return readl(tsadc->tscadc_base + reg);
-+}
++		fifo0count = tscadc_readl(ts_dev, REG_FIFO0CNT);
++		for (i = 0; i < fifo0count; i++)
++			tscadc_readl(ts_dev, REG_FIFO0);
 +
-+static void tscadc_writel(struct ti_tscadc_dev *tsadc, unsigned int reg,
-+					unsigned int val)
-+{
-+	writel(val, tsadc->tscadc_base + reg);
-+}
-+
-+static void tscadc_idle_config(struct ti_tscadc_dev *config)
-+{
-+	unsigned int idleconfig;
-+
-+	idleconfig = STEPCONFIG_YNN | STEPCONFIG_INM_ADCREFM |
-+			STEPCONFIG_INP_ADCREFM | STEPCONFIG_YPN;
-+
-+	tscadc_writel(config, REG_IDLECONFIG, idleconfig);
-+}
-+
-+static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
-+{
-+	struct ti_tscadc_dev	*tscadc;
-+	struct resource		*res;
-+	struct clk		*clk;
-+	struct mfd_tscadc_board	*pdata = pdev->dev.platform_data;
-+	int			irq;
-+	int			err, ctrl;
-+	int			clk_value, clock_rate;
-+
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "Could not find platform data\n");
-+		return -EINVAL;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "no memory resource defined.\n");
-+		return -EINVAL;
-+	}
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0) {
-+		dev_err(&pdev->dev, "no irq ID is specified.\n");
-+		return -EINVAL;
-+	}
-+
-+	/* Allocate memory for device */
-+	tscadc = kzalloc(sizeof(struct ti_tscadc_dev), GFP_KERNEL);
-+	if (!tscadc) {
-+		dev_err(&pdev->dev, "failed to allocate memory.\n");
-+		return -ENOMEM;
-+	}
-+	tscadc->dev = &pdev->dev;
-+	tscadc->irq = irq;
-+
-+	res = request_mem_region(res->start, resource_size(res), pdev->name);
-+	if (!res) {
-+		dev_err(&pdev->dev, "failed to reserve registers.\n");
-+		err = -EBUSY;
+ 		if (ts_dev->pen_down && z1 != 0 && z2 != 0) {
+ 			/*
+ 			 * Calculate pressure using formula
+@@ -340,28 +259,15 @@ static irqreturn_t tscadc_irq(int irq, void *dev)
+ 
+ static int __devinit tscadc_probe(struct platform_device *pdev)
+ {
+-	const struct tsc_data *pdata = pdev->dev.platform_data;
+-	struct resource *res;
+ 	struct tscadc *ts_dev;
+ 	struct input_dev *input_dev;
+-	struct clk *clk;
+ 	int err;
+-	int clk_value, ctrl, irq;
++	struct ti_tscadc_dev *tscadc_dev = pdev->dev.platform_data;
++	struct mfd_tscadc_board	*pdata;
+ 
++	pdata = (struct mfd_tscadc_board *)tscadc_dev->dev->platform_data;
+ 	if (!pdata) {
+-		dev_err(&pdev->dev, "missing platform data.\n");
+-		return -EINVAL;
+-	}
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "no memory resource defined.\n");
+-		return -EINVAL;
+-	}
+-
+-	irq = platform_get_irq(pdev, 0);
+-	if (irq < 0) {
+-		dev_err(&pdev->dev, "no irq ID is specified.\n");
++		dev_err(tscadc_dev->dev, "Could not find platform data\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -374,85 +280,26 @@ static int __devinit tscadc_probe(struct platform_device *pdev)
+ 		goto err_free_mem;
+ 	}
+ 
++	tscadc_dev->tsc = ts_dev;
++	ts_dev->mfd_tscadc = tscadc_dev;
+ 	ts_dev->input = input_dev;
+-	ts_dev->irq = irq;
+-	ts_dev->wires = pdata->wires;
+-	ts_dev->x_plate_resistance = pdata->x_plate_resistance;
+-	ts_dev->steps_to_configure = pdata->steps_to_configure;
+-
+-	res = request_mem_region(res->start, resource_size(res), pdev->name);
+-	if (!res) {
+-		dev_err(&pdev->dev, "failed to reserve registers.\n");
+-		err = -EBUSY;
+-		goto err_free_mem;
+-	}
+-
+-	ts_dev->tsc_base = ioremap(res->start, resource_size(res));
+-	if (!ts_dev->tsc_base) {
+-		dev_err(&pdev->dev, "failed to map registers.\n");
+-		err = -ENOMEM;
+-		goto err_release_mem_region;
+-	}
++	ts_dev->irq = tscadc_dev->irq;
++	ts_dev->wires = pdata->tsc_init->wires;
++	ts_dev->x_plate_resistance = pdata->tsc_init->x_plate_resistance;
++	ts_dev->steps_to_configure = pdata->tsc_init->steps_to_configure;
+ 
+ 	err = request_irq(ts_dev->irq, tscadc_irq,
+ 			  0, pdev->dev.driver->name, ts_dev);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "failed to allocate irq.\n");
+-		goto err_unmap_regs;
+-	}
+-
+-	ts_dev->tsc_ick = clk_get(&pdev->dev, "adc_tsc_ick");
+-	if (IS_ERR(ts_dev->tsc_ick)) {
+-		dev_err(&pdev->dev, "failed to get TSC ick\n");
+-		goto err_free_irq;
+-	}
+-	clk_enable(ts_dev->tsc_ick);
+-
+-	clk = clk_get(&pdev->dev, "adc_tsc_fck");
+-	if (IS_ERR(clk)) {
+-		dev_err(&pdev->dev, "failed to get TSC fck\n");
+-		err = PTR_ERR(clk);
+-		goto err_disable_clk;
+-	}
+-
+-	clk_value = clk_get_rate(clk) / ADC_CLK;
+-	clk_put(clk);
+-
+-	if (clk_value < 7) {
+-		dev_err(&pdev->dev, "clock input less than min clock requirement\n");
+-		goto err_disable_clk;
+-	}
+-	/* CLKDIV needs to be configured to the value minus 1 */
+-	tscadc_writel(ts_dev, REG_CLKDIV, clk_value - 1);
+-
+-	 /* Enable wake-up of the SoC using touchscreen */
+-	tscadc_writel(ts_dev, REG_IRQWAKEUP, IRQWKUP_ENB);
+-
+-	ctrl = CNTRLREG_STEPCONFIGWRT |
+-			CNTRLREG_TSCENB |
+-			CNTRLREG_STEPID;
+-	switch (ts_dev->wires) {
+-	case 4:
+-		ctrl |= CNTRLREG_4WIRE;
+-		break;
+-	case 5:
+-		ctrl |= CNTRLREG_5WIRE;
+-		break;
+-	case 8:
+-		ctrl |= CNTRLREG_8WIRE;
+-		break;
 +		goto err_free_mem;
-+	}
+ 	}
+-	tscadc_writel(ts_dev, REG_CTRL, ctrl);
+ 
+-	tscadc_idle_config(ts_dev);
+ 	tscadc_writel(ts_dev, REG_IRQENABLE, IRQENB_FIFO0THRES);
+ 	tscadc_step_config(ts_dev);
+ 	tscadc_writel(ts_dev, REG_FIFO0THR, ts_dev->steps_to_configure);
+ 
+-	ctrl |= CNTRLREG_TSCSSENB;
+-	tscadc_writel(ts_dev, REG_CTRL, ctrl);
+-
+-	input_dev->name = "ti-tsc-adc";
++	input_dev->name = "ti-tsc";
+ 	input_dev->dev.parent = &pdev->dev;
+ 
+ 	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+@@ -465,20 +312,13 @@ static int __devinit tscadc_probe(struct platform_device *pdev)
+ 	/* register to the input system */
+ 	err = input_register_device(input_dev);
+ 	if (err)
+-		goto err_disable_clk;
++		goto err_free_irq;
+ 
+ 	platform_set_drvdata(pdev, ts_dev);
+ 	return 0;
+ 
+-err_disable_clk:
+-	clk_disable(ts_dev->tsc_ick);
+-	clk_put(ts_dev->tsc_ick);
+ err_free_irq:
+ 	free_irq(ts_dev->irq, ts_dev);
+-err_unmap_regs:
+-	iounmap(ts_dev->tsc_base);
+-err_release_mem_region:
+-	release_mem_region(res->start, resource_size(res));
+ err_free_mem:
+ 	input_free_device(input_dev);
+ 	kfree(ts_dev);
+@@ -487,22 +327,13 @@ err_free_mem:
+ 
+ static int __devexit tscadc_remove(struct platform_device *pdev)
+ {
+-	struct tscadc *ts_dev = platform_get_drvdata(pdev);
+-	struct resource *res;
++	struct ti_tscadc_dev *tscadc_dev = pdev->dev.platform_data;
++	struct tscadc *ts_dev = tscadc_dev->tsc;
+ 
+ 	free_irq(ts_dev->irq, ts_dev);
+-
+ 	input_unregister_device(ts_dev->input);
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	iounmap(ts_dev->tsc_base);
+-	release_mem_region(res->start, resource_size(res));
+-
+-	clk_disable(ts_dev->tsc_ick);
+-	clk_put(ts_dev->tsc_ick);
+-
+ 	kfree(ts_dev);
+-
+ 	platform_set_drvdata(pdev, NULL);
+ 	return 0;
+ }
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index ae93b48..168313e 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -22,6 +22,7 @@
+ #include <linux/mfd/core.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/mfd/ti_am335x_tscadc.h>
++#include <linux/input/ti_am335x_tsc.h>
+ 
+ static unsigned int tscadc_readl(struct ti_tscadc_dev *tsadc, unsigned int reg)
+ {
+@@ -50,15 +51,19 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
+ 	struct resource		*res;
+ 	struct clk		*clk;
+ 	struct mfd_tscadc_board	*pdata = pdev->dev.platform_data;
++	struct mfd_cell		*cell;
+ 	int			irq;
+ 	int			err, ctrl;
+ 	int			clk_value, clock_rate;
++	int			tsc_wires;
+ 
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "Could not find platform data\n");
+ 		return -EINVAL;
+ 	}
+ 
++	tsc_wires = pdata->tsc_init->wires;
 +
-+	tscadc->tscadc_base = ioremap(res->start, resource_size(res));
-+	if (!tscadc->tscadc_base) {
-+		dev_err(&pdev->dev, "failed to map registers.\n");
-+		err = -ENOMEM;
-+		goto err_release_mem_region;
-+	}
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "no memory resource defined.\n");
+@@ -138,6 +143,12 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
+ 	ctrl |= CNTRLREG_TSCSSENB;
+ 	tscadc_writel(tscadc, REG_CTRL, ctrl);
+ 
++	/* TSC Cell */
++	cell = &tscadc->cells[TSC_CELL];
++	cell->name = "tsc";
++	cell->platform_data = tscadc;
++	cell->pdata_size = sizeof(*tscadc);
 +
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_get_sync(&pdev->dev);
-+
-+	/*
-+	 * The TSC_ADC_Subsystem has 2 clock domains
-+	 * OCP_CLK and ADC_CLK.
-+	 * The ADC clock is expected to run at target of 3MHz,
-+	 * and expected to capture 12-bit data at a rate of 200 KSPS.
-+	 * The TSC_ADC_SS controller design assumes the OCP clock is
-+	 * at least 6x faster than the ADC clock.
-+	 */
-+	clk = clk_get(&pdev->dev, "adc_tsc_fck");
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "failed to get TSC fck\n");
-+		err = PTR_ERR(clk);
-+		goto err_disable_clk;
-+	}
-+	clock_rate = clk_get_rate(clk);
-+	clk_put(clk);
-+	clk_value = clock_rate / ADC_CLK;
-+	if (clk_value < MAX_CLK_DIV) {
-+		dev_err(&pdev->dev, "clock input less than min clock requirement\n");
-+		err = -EINVAL;
-+		goto err_disable_clk;
-+	}
-+	/* TSCADC_CLKDIV needs to be configured to the value minus 1 */
-+	clk_value = clk_value - 1;
-+	tscadc_writel(tscadc, REG_CLKDIV, clk_value);
-+
-+	/* Set the control register bits */
-+	ctrl = CNTRLREG_STEPCONFIGWRT |
-+			CNTRLREG_TSCENB |
-+			CNTRLREG_STEPID |
-+			CNTRLREG_4WIRE;
-+	tscadc_writel(tscadc, REG_CTRL, ctrl);
-+
-+	/* Set register bits for Idle Config Mode */
-+	tscadc_idle_config(tscadc);
-+
-+	/* Enable the TSC module enable bit */
-+	ctrl = tscadc_readl(tscadc, REG_CTRL);
-+	ctrl |= CNTRLREG_TSCSSENB;
-+	tscadc_writel(tscadc, REG_CTRL, ctrl);
-+
-+	err = mfd_add_devices(&pdev->dev, pdev->id, tscadc->cells,
-+			TSCADC_CELLS, NULL, 0, NULL);
-+	if (err < 0)
-+		goto err_disable_clk;
-+
-+	platform_set_drvdata(pdev, tscadc);
-+	return 0;
-+
-+err_disable_clk:
-+	pm_runtime_put_sync(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+	iounmap(tscadc->tscadc_base);
-+err_release_mem_region:
-+	release_mem_region(res->start, resource_size(res));
-+	mfd_remove_devices(tscadc->dev);
-+err_free_mem:
-+	kfree(tscadc);
-+	return err;
-+}
-+
-+static int __devexit ti_tscadc_remove(struct platform_device *pdev)
-+{
-+	struct ti_tscadc_dev	*tscadc = platform_get_drvdata(pdev);
-+	struct resource		*res;
-+
-+	tscadc_writel(tscadc, REG_SE, 0x00);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	iounmap(tscadc->tscadc_base);
-+	release_mem_region(res->start, resource_size(res));
-+
-+	pm_runtime_put_sync(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+
-+	mfd_remove_devices(tscadc->dev);
-+	kfree(tscadc);
-+	return 0;
-+}
-+
-+static struct platform_driver ti_tscadc_driver = {
-+	.driver = {
-+		.name   = "ti_tscadc",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe	= ti_tscadc_probe,
-+	.remove	= __devexit_p(ti_tscadc_remove),
-+
-+};
-+
-+module_platform_driver(ti_tscadc_driver);
-+
-+MODULE_DESCRIPTION("TI touchscreen / ADC MFD controller driver");
-+MODULE_AUTHOR("Rachna Patil <rachna@ti.com>");
-+MODULE_LICENSE("GPL");
+ 	err = mfd_add_devices(&pdev->dev, pdev->id, tscadc->cells,
+ 			TSCADC_CELLS, NULL, 0, NULL);
+ 	if (err < 0)
 diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-new file mode 100644
-index 0000000..b1eec17
---- /dev/null
+index b1eec17..458accd 100644
+--- a/include/linux/mfd/ti_am335x_tscadc.h
 +++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -0,0 +1,133 @@
-+#ifndef __LINUX_TI_AM335X_TSCADC_MFD_H
-+#define __LINUX_TI_AM335X_TSCADC_MFD_H
+@@ -44,6 +44,7 @@
+ #define STEPENB_MASK		(0x1FFFF << 0)
+ #define STEPENB(val)		((val) << 0)
+ #define STPENB_STEPENB		STEPENB(0x1FFFF)
++#define STPENB_STEPENB_TC	STEPENB(0x1FFF)
+ 
+ /* IRQ enable */
+ #define IRQENB_HW_PEN		BIT(0)
+@@ -117,7 +118,11 @@
+ #define ADC_CLK			3000000
+ #define	MAX_CLK_DIV		7
+ 
+-#define TSCADC_CELLS		0
++#define TSCADC_CELLS		1
 +
-+/*
-+ * TI Touch Screen / ADC MFD driver
-+ *
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/mfd/core.h>
-+
-+#define REG_RAWIRQSTATUS	0x024
-+#define REG_IRQSTATUS		0x028
-+#define REG_IRQENABLE		0x02C
-+#define REG_IRQCLR		0x030
-+#define REG_IRQWAKEUP		0x034
-+#define REG_CTRL		0x040
-+#define REG_ADCFSM		0x044
-+#define REG_CLKDIV		0x04C
-+#define REG_SE			0x054
-+#define REG_IDLECONFIG		0x058
-+#define REG_CHARGECONFIG	0x05C
-+#define REG_CHARGEDELAY		0x060
-+#define REG_STEPCONFIG(n)	(0x64 + ((n - 1) * 8))
-+#define REG_STEPDELAY(n)	(0x68 + ((n - 1) * 8))
-+#define REG_FIFO0CNT		0xE4
-+#define REG_FIFO0THR		0xE8
-+#define REG_FIFO1CNT		0xF0
-+#define REG_FIFO1THR		0xF4
-+#define REG_FIFO0		0x100
-+#define REG_FIFO1		0x200
-+
-+/*	Register Bitfields	*/
-+/* Step Enable */
-+#define STEPENB_MASK		(0x1FFFF << 0)
-+#define STEPENB(val)		((val) << 0)
-+#define STPENB_STEPENB		STEPENB(0x1FFFF)
-+
-+/* IRQ enable */
-+#define IRQENB_HW_PEN		BIT(0)
-+#define IRQENB_FIFO0THRES	BIT(2)
-+#define IRQENB_FIFO1THRES	BIT(5)
-+#define IRQENB_PENUP		BIT(9)
-+
-+/* Step Configuration */
-+#define STEPCONFIG_MODE_MASK	(3 << 0)
-+#define STEPCONFIG_MODE(val)	((val) << 0)
-+#define STEPCONFIG_MODE_HWSYNC	STEPCONFIG_MODE(2)
-+#define STEPCONFIG_AVG_MASK	(7 << 2)
-+#define STEPCONFIG_AVG(val)	((val) << 2)
-+#define STEPCONFIG_AVG_16	STEPCONFIG_AVG(4)
-+#define STEPCONFIG_XPP		BIT(5)
-+#define STEPCONFIG_XNN		BIT(6)
-+#define STEPCONFIG_YPP		BIT(7)
-+#define STEPCONFIG_YNN		BIT(8)
-+#define STEPCONFIG_XNP		BIT(9)
-+#define STEPCONFIG_YPN		BIT(10)
-+#define STEPCONFIG_INM_MASK	(0xF << 15)
-+#define STEPCONFIG_INM(val)	((val) << 15)
-+#define STEPCONFIG_INM_ADCREFM	STEPCONFIG_INM(8)
-+#define STEPCONFIG_INP_MASK	(0xF << 19)
-+#define STEPCONFIG_INP(val)	((val) << 19)
-+#define STEPCONFIG_INP_AN2	STEPCONFIG_INP(2)
-+#define STEPCONFIG_INP_AN3	STEPCONFIG_INP(3)
-+#define STEPCONFIG_INP_AN4	STEPCONFIG_INP(4)
-+#define STEPCONFIG_INP_ADCREFM	STEPCONFIG_INP(8)
-+#define STEPCONFIG_FIFO1	BIT(26)
-+
-+/* Delay register */
-+#define STEPDELAY_OPEN_MASK	(0x3FFFF << 0)
-+#define STEPDELAY_OPEN(val)	((val) << 0)
-+#define STEPCONFIG_OPENDLY	STEPDELAY_OPEN(0x098)
-+#define STEPDELAY_SAMPLE_MASK	(0xFF << 24)
-+#define STEPDELAY_SAMPLE(val)	((val) << 24)
-+#define STEPCONFIG_SAMPLEDLY	STEPDELAY_SAMPLE(0)
-+
-+/* Charge Config */
-+#define STEPCHARGE_RFP_MASK	(7 << 12)
-+#define STEPCHARGE_RFP(val)	((val) << 12)
-+#define STEPCHARGE_RFP_XPUL	STEPCHARGE_RFP(1)
-+#define STEPCHARGE_INM_MASK	(0xF << 15)
-+#define STEPCHARGE_INM(val)	((val) << 15)
-+#define STEPCHARGE_INM_AN1	STEPCHARGE_INM(1)
-+#define STEPCHARGE_INP_MASK	(0xF << 19)
-+#define STEPCHARGE_INP(val)	((val) << 19)
-+#define STEPCHARGE_INP_AN1	STEPCHARGE_INP(1)
-+#define STEPCHARGE_RFM_MASK	(3 << 23)
-+#define STEPCHARGE_RFM(val)	((val) << 23)
-+#define STEPCHARGE_RFM_XNUR	STEPCHARGE_RFM(1)
-+
-+/* Charge delay */
-+#define CHARGEDLY_OPEN_MASK	(0x3FFFF << 0)
-+#define CHARGEDLY_OPEN(val)	((val) << 0)
-+#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(1)
-+
-+/* Control register */
-+#define CNTRLREG_TSCSSENB	BIT(0)
-+#define CNTRLREG_STEPID		BIT(1)
-+#define CNTRLREG_STEPCONFIGWRT	BIT(2)
-+#define CNTRLREG_POWERDOWN	BIT(4)
-+#define CNTRLREG_AFE_CTRL_MASK	(3 << 5)
-+#define CNTRLREG_AFE_CTRL(val)	((val) << 5)
-+#define CNTRLREG_4WIRE		CNTRLREG_AFE_CTRL(1)
-+#define CNTRLREG_5WIRE		CNTRLREG_AFE_CTRL(2)
-+#define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
-+#define CNTRLREG_TSCENB		BIT(7)
-+
-+#define ADC_CLK			3000000
-+#define	MAX_CLK_DIV		7
-+
-+#define TSCADC_CELLS		0
-+
-+struct mfd_tscadc_board {
-+	struct tsc_data *tsc_init;
++enum tscadc_cells {
++	TSC_CELL,
 +};
+ 
+ struct mfd_tscadc_board {
+ 	struct tsc_data *tsc_init;
+@@ -128,6 +133,9 @@ struct ti_tscadc_dev {
+ 	void __iomem *tscadc_base;
+ 	int irq;
+ 	struct mfd_cell cells[TSCADC_CELLS];
 +
-+struct ti_tscadc_dev {
-+	struct device *dev;
-+	void __iomem *tscadc_base;
-+	int irq;
-+	struct mfd_cell cells[TSCADC_CELLS];
-+};
-+
-+#endif
++	/* tsc device */
++	struct tscadc *tsc;
+ };
+ 
+ #endif
 -- 
 1.7.0.4
 
