@@ -1,127 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab2IZHtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 03:49:09 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:38193 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753039Ab2IZHtI (ORCPT
+	id S1753304Ab2IZHvM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 03:51:12 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:56872 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809Ab2IZHvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 03:49:08 -0400
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Amit Shah <amit.shah@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "sjurbren@gmail.com" <sjurbren@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Date: Wed, 26 Sep 2012 09:48:12 +0200
-Subject: RE: [PATCH 1/3] virtio_console:Merge struct buffer_token into
- struct port_buffer
-Thread-Topic: [PATCH 1/3] virtio_console:Merge struct buffer_token into
- struct port_buffer
-Thread-Index: Ac2bkOOebLasAkCqSHq7T1MYcCtjKAAI0u2Q
-Message-ID: <81C3A93C17462B4BBD7E272753C1057923BD8365F7@EXDCVYMBSTM005.EQ1STM.local>
-References: <1348580837-10919-1-git-send-email-sjur.brandeland@stericsson.com>
- <1348580837-10919-2-git-send-email-sjur.brandeland@stericsson.com>
- <50626C11.9040708@hitachi.com>
-In-Reply-To: <50626C11.9040708@hitachi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 26 Sep 2012 03:51:10 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] MAINTAINERS: fix indentation for Viresh Kumar
+Date: Wed, 26 Sep 2012 13:20:59 +0530
+Message-Id: <236507874d6759bd3dc2ec8feca89a5d2971222c.1348645812.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 26 Sep 2012 07:51:08.0700 (UTC) FILETIME=[B08F8DC0:01CD9BBB]
+X-MC-Unique: 112092608510900201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8Q7nFWd030238
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8Q7pGVY030246
 
-> > This merge reduces code size by unifying the approach for
-> > sending scatter-lists and regular buffers. Any type of
-> > write operation (splice, write, put_chars) will now allocate
-> > a port_buffer and send_buf() and free_buf() can always be used.
-> 
-> Thanks!
-> This looks much nicer and simpler. I just have some comments below.
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-OK, good to hear that you agree to this kind of change. I'll do a respin
-of this patch fixing the issues you have pointed out.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ MAINTAINERS | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-> >  static void free_buf(struct port_buffer *buf)
-> >  {
-> > +	int i;
-> > +
-> >  	kfree(buf->buf);
-> 
-> this should be done only when !buf->sgpages, or (see below)
+diff --git a/MAINTAINERS b/MAINTAINERS
+index f9d40d1..7dfd0eb 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -572,7 +572,7 @@ F:	drivers/net/appletalk/
+ F:	net/appletalk/
+ 
+ ARASAN COMPACT FLASH PATA CONTROLLER
+-M:     Viresh Kumar <viresh.linux@gmail.com>
++M:	Viresh Kumar <viresh.linux@gmail.com>
+ L:	linux-ide@vger.kernel.org
+ S:	Maintained
+ F:	include/linux/pata_arasan_cf_data.h
+@@ -5998,7 +5998,7 @@ S:	Maintained
+ F:	drivers/tty/serial
+ 
+ SYNOPSYS DESIGNWARE DMAC DRIVER
+-M:     Viresh Kumar <viresh.linux@gmail.com>
++M:	Viresh Kumar <viresh.linux@gmail.com>
+ S:	Maintained
+ F:	include/linux/dw_dmac.h
+ F:	drivers/dma/dw_dmac_regs.h
+@@ -6146,7 +6146,7 @@ S:	Maintained
+ F:	drivers/mmc/host/sdhci-s3c.c
+ 
+ SECURE DIGITAL HOST CONTROLLER INTERFACE (SDHCI) ST SPEAR DRIVER
+-M:     Viresh Kumar <viresh.linux@gmail.com>
++M:	Viresh Kumar <viresh.linux@gmail.com>
+ L:	spear-devel@list.st.com
+ L:	linux-mmc@vger.kernel.org
+ S:	Maintained
+@@ -6517,7 +6517,7 @@ S:	Maintained
+ F:	include/linux/compiler.h
+ 
+ SPEAR PLATFORM SUPPORT
+-M:     Viresh Kumar <viresh.linux@gmail.com>
++M:	Viresh Kumar <viresh.linux@gmail.com>
+ M:	Shiraz Hashim <shiraz.hashim@st.com>
+ L:	spear-devel@list.st.com
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+@@ -6526,7 +6526,7 @@ S:	Maintained
+ F:	arch/arm/plat-spear/
+ 
+ SPEAR13XX MACHINE SUPPORT
+-M:     Viresh Kumar <viresh.linux@gmail.com>
++M:	Viresh Kumar <viresh.linux@gmail.com>
+ M:	Shiraz Hashim <shiraz.hashim@st.com>
+ L:	spear-devel@list.st.com
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+@@ -6535,7 +6535,7 @@ S:	Maintained
+ F:	arch/arm/mach-spear13xx/
+ 
+ SPEAR3XX MACHINE SUPPORT
+-M:     Viresh Kumar <viresh.linux@gmail.com>
++M:	Viresh Kumar <viresh.linux@gmail.com>
+ M:	Shiraz Hashim <shiraz.hashim@st.com>
+ L:	spear-devel@list.st.com
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+@@ -6546,7 +6546,7 @@ F:	arch/arm/mach-spear3xx/
+ SPEAR6XX MACHINE SUPPORT
+ M:	Rajeev Kumar <rajeev-dlh.kumar@st.com>
+ M:	Shiraz Hashim <shiraz.hashim@st.com>
+-M:     Viresh Kumar <viresh.linux@gmail.com>
++M:	Viresh Kumar <viresh.linux@gmail.com>
+ L:	spear-devel@list.st.com
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ W:	http://www.st.com/spear
+@@ -6554,7 +6554,7 @@ S:	Maintained
+ F:	arch/arm/mach-spear6xx/
+ 
+ SPEAR CLOCK FRAMEWORK SUPPORT
+-M:     Viresh Kumar <viresh.linux@gmail.com>
++M:	Viresh Kumar <viresh.linux@gmail.com>
+ L:	spear-devel@list.st.com
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ W:	http://www.st.com/spear
+-- 
+1.7.12.rc2.18.g61b472e
 
-Agree, I'll put this statement in an else branch to the if-statement below.
 
-> 
-> > +
-> > +	if (buf->sgpages)
-> > +		for (i = 0; i < buf->sgpages; i++) {
-> > +			struct page *page = sg_page(&buf->sg[i]);
-> > +			if (!page)
-> > +				break;
-> > +			put_page(page);
-> > +		}
-> > +
-> >  	kfree(buf);
-> >  }
-> >
-> > -static struct port_buffer *alloc_buf(size_t buf_size)
-> > +static struct port_buffer *alloc_buf(struct virtqueue *vq, size_t buf_size,
-> > +				     int nrbufs)
-> >  {
-> >  	struct port_buffer *buf;
-> > +	size_t alloc_size;
-> >
-> > -	buf = kmalloc(sizeof(*buf), GFP_KERNEL);
-> > +	/* Allocate buffer and the scatter list */
-> > +	alloc_size = sizeof(*buf) + sizeof(struct scatterlist) * nrbufs;
-> 
-> This allocates one redundant sg entry when nrbuf > 0,
-> but I think it is OK. (just a comment)
-
-I did this on purpose for the sake of simplicity, but I can
-change this to something like:
-	 alloc_size = sizeof(*buf) + sizeof(buf->sg) * max(nrbufs - 1, 1);
-
-
-> > +	buf = kmalloc(alloc_size, GFP_ATOMIC);
-> 
-> This should be kzalloc(), or buf->buf and others are not initialized,
-> which will cause unexpected kfree bug at kfree(buf->buf) in free_buf.
-
-Agree, kzalloc() is better in this case. 
-
-> >  	if (!buf)
-> >  		goto fail;
-> > -	buf->buf = kzalloc(buf_size, GFP_KERNEL);
-> > +
-> > +	buf->sgpages = nrbufs;
-> > +	if (nrbufs > 0)
-> > +		return buf;
-> > +
-> > +	buf->buf = kmalloc(buf_size, GFP_ATOMIC);
-> 
-> You can also use kzalloc here as previous code does.
-> But if the reason why using kzalloc comes from the security,
-> I think kmalloc is enough here, since the host can access
-> all the guest pages anyway.
-
-With this new patch alloc_buf() is used both for both RX and TX.
-The out_vq did previously use malloc(). But I have preserved
-the legacy behavior for the in_vq by calling memset() in function
-fill_queue().
-
-Thanks,
-Sjur
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
