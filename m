@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab2IZKtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 06:49:46 -0400
-Received: from [216.32.181.183] ([216.32.181.183]:43960 "EHLO
-	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753879Ab2IZKq2 (ORCPT
+	id S1754482Ab2IZKzZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 06:55:25 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64236 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab2IZKzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 06:46:28 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzd6f1izz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1155h)
-X-WSS-ID: 0MAYDV3-01-D52-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <x86@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 12/19] x86, irq: Add data structure to keep AMD specific irq remapping information
-Date: Wed, 26 Sep 2012 12:44:44 +0200
-Message-ID: <1348656291-10375-13-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
-References: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
+	Wed, 26 Sep 2012 06:55:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <CABb+yY36pQ7oXC1OKEQ-1V55c2SZurcTAPaZ=_PWugqxdL2rgg@mail.gmail.com>
+References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
+	<1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
+	<CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
+	<CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
+	<CABb+yY36pQ7oXC1OKEQ-1V55c2SZurcTAPaZ=_PWugqxdL2rgg@mail.gmail.com>
+Date: Wed, 26 Sep 2012 16:25:22 +0530
+Message-ID: <CAG17yqQ5NDr4sLvWbA85q5y079j2M2OV-uRjXSSL=OFPfCw3Zg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
+From: Inderpal Singh <inderpal.singh@linaro.org>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        boojin.kim@samsung.com, vinod.koul@intel.com, patches@linaro.org,
+        kgene.kim@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a data structure to store information the IOMMU driver
-can use to get from a 'struct irq_cfg' to the remapping
-entry.
+On 26 September 2012 15:02, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+> On Wed, Sep 26, 2012 at 12:11 PM, Inderpal Singh
+> <inderpal.singh@linaro.org> wrote:
+>
+>> How about conditionally DMA_TERMINATE_ALL and free resources like below ?
+>>
+>> @@ -3017,9 +3017,11 @@ static int __devexit pl330_remove(struct
+>> amba_device *adev)
+>>                 /* Remove the channel */
+>>                 list_del(&pch->chan.device_node);
+>>
+>> -               /* Flush the channel */
+>> -               pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+>> -               pl330_free_chan_resources(&pch->chan);
+>> +               if (pch->chan.client_count != 0) {
+>> +                       /* Flush the channel */
+>> +                       pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+>> +                       pl330_free_chan_resources(&pch->chan);
+>> +               }
+>>         }
+>>
+> It is perfectly safe to flush the channels that have client_count == 0
+> as well. Which is already the case.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/include/asm/hw_irq.h |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+As per my understanding, if client_count ==0, It may mean following:
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index eb92a6e..fc89a2a 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -101,6 +101,7 @@ static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
- 	irq_attr->polarity	= polarity;
- }
- 
-+/* Intel specific interrupt remapping information */
- struct irq_2_iommu {
- 	struct intel_iommu *iommu;
- 	u16 irte_index;
-@@ -108,6 +109,12 @@ struct irq_2_iommu {
- 	u8  irte_mask;
- };
- 
-+/* AMD specific interrupt remapping information */
-+struct irq_2_irte {
-+	u16 devid; /* Device ID for IRTE table */
-+	u16 index; /* Index into IRTE table*/
-+};
-+
- /*
-  * This is performance-critical, we want to do it O(1)
-  *
-@@ -120,7 +127,10 @@ struct irq_cfg {
- 	u8			vector;
- 	u8			move_in_progress : 1;
- #ifdef CONFIG_IRQ_REMAP
--	struct irq_2_iommu	irq_2_iommu;
-+	union {
-+		struct irq_2_iommu irq_2_iommu;
-+		struct irq_2_irte  irq_2_irte;
-+	};
- #endif
- };
- 
--- 
-1.7.9.5
+1. This channel was never allocated to any client. Hence
+alloc_chan_resources was not done for it.
+So, no need to flush and free resources if it was never allocated at
+the first place. If we free_chan_resources, it will not be balanced
+against alloc_chan_resources. Scenario: insmod and then rmmod.
 
+Or,
 
+2. The channel was allocated to some client, alloc_chan_resource was
+done, the work for the client is completed and free_chan_resources was
+performed. Now  since resources have already been freed, no need to
+flush and free_chan_resources again in remove.
+
+The whole idea of this patch is to balance alloc_chan_resources and
+free_chan_resources.
+
+Thanks,
+Inder
