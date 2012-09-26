@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab2IZN7y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 09:59:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48911 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756152Ab2IZN7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 09:59:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,490,1344236400"; 
-   d="scan'208";a="197397358"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ying.huang@intel.com, linux-acpi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-pci@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH RESEND] ACPI/PCI: Make PCI devices notified when its power resource turned on
-Date: Wed, 26 Sep 2012 21:59:31 +0800
-Message-Id: <1348667971-30876-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756697Ab2IZOAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 10:00:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14392 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756152Ab2IZN77 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 09:59:59 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=LrhBLfKaQO8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=vGTJrHkHN-MZZtNr4fIA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348667992.22822.50.camel@gandalf.local.home>
+Subject: Re: [PATCH v6] hashtable: introduce a small and naive hashtable
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, mathieu.desnoyers@efficios.com, neilb@suse.de,
+        bfields@fieldses.org, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, josh@joshtriplett.org, rmallon@gmail.com,
+        palves@redhat.com
+Date: Wed, 26 Sep 2012 09:59:52 -0400
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7008@saturn3.aculab.com>
+References: <1348663729-2584-1-git-send-email-levinsasha928@gmail.com>
+	 <AE90C24D6B3A694183C094C60CF0A2F6026B7008@saturn3.aculab.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for bothering.  It appears that this patch should go through ACPI
-tree because code changed are under drivers/acpi.
+On Wed, 2012-09-26 at 14:45 +0100, David Laight wrote:
+> Amazing how something simple gets lots of comments and versions :-)
+> 
+> > ...
+> > + * This has to be a macro since HASH_BITS() will not work on pointers since
+> > + * it calculates the size during preprocessing.
+> > + */
+> > +#define hash_empty(hashtable)							\
+> > +({										\
+> > +	int __i;								\
+> > +	bool __ret = true;							\
+> > +										\
+> > +	for (__i = 0; __i < HASH_SIZE(hashtable); __i++)			\
+> > +		if (!hlist_empty(&hashtable[__i]))				\
+> > +			__ret = false;						\
+> > +										\
+> > +	__ret;									\
+> > +})
+> 
+> Actually you could have a #define that calls a function
+> passing in the address and size.
 
-A set of power resources may be shared by multiple devices.  When all
-devices share one set of power resources is put into D3_COLD state,
-the power resources will be turned off.  When one of the device is
-waked, the power resource will be turned on and all devices share it
-will be powered on to D0uninitialized state.  These devices should be
-resumed, so that they can get opportunity to go to low power state
-later.
+Probably would be cleaner to do so.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/acpi/pci_bind.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/drivers/acpi/pci_bind.c
-+++ b/drivers/acpi/pci_bind.c
-@@ -45,6 +45,7 @@ static int acpi_pci_unbind(struct acpi_d
- 
- 	device_set_run_wake(&dev->dev, false);
- 	pci_acpi_remove_pm_notifier(device);
-+	acpi_power_resource_unregister_device(dev, device->handle);
- 
- 	if (!dev->subordinate)
- 		goto out;
-@@ -71,6 +72,7 @@ static int acpi_pci_bind(struct acpi_dev
- 		return 0;
- 
- 	pci_acpi_add_pm_notifier(device, dev);
-+	acpi_power_resource_register_device(dev, device->handle);
- 	if (device->wakeup.flags.run_wake)
- 		device_set_run_wake(&dev->dev, true);
- 
+> Also, should the loop have a 'break' in it?
+
+Yeah it should, and could do:
+
+	for (i = 0; i < HASH_SIZE(hashtable); i++)
+		if (!hlist_empty(&hashtable[i]))
+			break;
+
+	return i < HASH_SIZE(hashtable);
+
+-- Steve
+
+
