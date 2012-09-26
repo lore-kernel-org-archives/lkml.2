@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab2IZQuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 12:50:07 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46450 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757374Ab2IZQuD (ORCPT
+	id S1757332Ab2IZQzZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 12:55:25 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45193 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062Ab2IZQzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 12:50:03 -0400
-Date: Wed, 26 Sep 2012 09:49:58 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/10] workqueue: restructure flush_workqueue() and
- start all flusher at the same time
-Message-ID: <20120926164958.GR16296@google.com>
-References: <1348481238-6138-1-git-send-email-laijs@cn.fujitsu.com>
- <20120924203954.GD29689@google.com>
- <50617333.9020903@cn.fujitsu.com>
- <20120925202427.GM16296@google.com>
- <5062893B.70908@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5062893B.70908@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 26 Sep 2012 12:55:24 -0400
+Date: Wed, 26 Sep 2012 12:55:16 -0400 (EDT)
+Message-Id: <20120926.125516.829958573312746035.davem@davemloft.net>
+To: tim.c.chen@linux.intel.com
+Cc: herbert@gondor.hengli.com.au, hpa@zytor.com, wajdi.k.feghali@intel.com,
+        james.guilford@intel.com, david.m.cote@intel.com,
+        suresh.b.siddha@intel.com, chaohong.guo@intel.com,
+        austin_zhang@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 0/3] Optimize CRC32C calculation using PCLMULQDQ in
+ crc32c-intel module
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1348609808.9977.205.camel@schen9-DESK>
+References: <cover.1348599489.git.tim.c.chen@linux.intel.com>
+	<1348609808.9977.205.camel@schen9-DESK>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+From: Tim Chen <tim.c.chen@linux.intel.com>
+Date: Tue, 25 Sep 2012 14:50:08 -0700
 
-On Wed, Sep 26, 2012 at 12:48:59PM +0800, Lai Jiangshan wrote:
-> > Hmmm... so, that's a lot simpler.  flush_workqueue() isn't a super-hot
-> > code path and I don't think grabbing mutex twice is too big a deal.  I
-> > haven't actually reviewed the code but if it can be much simpler and
-> > thus easier to understand and verify, I might go for that.
+> This patch series optimized CRC32C calculations with PCLMULQDQ
+> instruction for crc32c-intel module.  It speeds up the original
+> implementation by 1.6x for 1K buffer and by 3x for buffer 4k or
+> more.  The tcrypt module was enhanced for doing speed test
+> on crc32c calculations.
 > 
-> I updated it. it is attached, it forces flush_workqueue() to grab
-> mutex twice(no other forcing).  overflow queue is implemented in a
-> different way. This new algorithm may become our choice likely,
-> please review this one.
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 
-Will do shortly.
+Great work.
 
-> I did not know this history, thank you.
-> 
-> But the number of colors is not essential.
-> "Does the algorithm chain flushers" is essential.
-> 
-> If we can have multiple flushers for each color. It is not chained.
-> If we have only one flusher for one color. It is chained. Even we
-> have multiple color, it is still partially chained(image we have
-> very high frequent flush_workqueue()).
+I intend to do something nearly identical on sparc64 since we have
+similar instructions in the form of "xmulx" and "xmulxhi" which return
+the lower and upper 64-bits (respectively) of a XOR multiply.
 
-If you have very few colors, you can end up merging flushes of a lot
-of work items which in turn delays the next flush and thus merging
-more of them.  This was what Linus was worried about.
-
-> The initial implementation of flush_workqueue() is "chained" algorithm.
-
-I don't know what you mean by "chained" here.  The current mainline
-implementation has enough colors for most use cases and don't assign a
-color to single work item.  It's specifically designed to avoid
-chained latencies.
-
-> The initial implementation of SRCU is also "chained" algorithm.
-> but the current SRCU which was implemented by me is not "chained"
-> (I don't propose to use SRCU for flush_workqueue(), I just discuss it)
-
-So, you lost me.  The current implementation doesn't have a problem on
-that front.
-
-> The simple version of flush_workqueue() which I sent yesterday is "chained",
-> because it forces overflow flushers wait for free color and forces only one
-> flusher for one color.
->
-> Since "not chaining" is important/essential. I sent a new draft implement today.
-> it uses multiple queues, one for each color(like SRCU).
-> this version is also simple, it remove 90 LOC.
-
-I'll review your patch but the current implementation is enough on
-that regard.  I was trying to advise against going for two-color
-scheme.
-
-Thanks.
-
--- 
-tejun
