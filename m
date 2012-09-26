@@ -1,177 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab2IZUI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:08:58 -0400
-Received: from www.0x90.at ([78.46.59.21]:39733 "EHLO mail.0x90.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752219Ab2IZUI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:08:56 -0400
-Date: Wed, 26 Sep 2012 22:08:38 +0200
-From: Daniel Walter <sahne@0x90.at>
-To: mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com
-Subject: [PATCH] trace: replace strict_strto* with kstrto*
-Message-ID: <20120926200838.GC1244@0x90.at>
+	id S1753668Ab2IZUPR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:15:17 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46597 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab2IZUPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 16:15:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1348243658-5127-1-git-send-email-jiang.liu@huawei.com>
+References: <CAErSpo5QwebVypZK21R9_mXaWic0NJqMPzx8vd-FVfTDq9Ui4Q@mail.gmail.com>
+ <1348243658-5127-1-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 26 Sep 2012 14:14:51 -0600
+Message-ID: <CAErSpo4Wa1s3O3pnt67_KVBEKkV0D-CQhtRX9yCjrnTmoHbN0w@mail.gmail.com>
+Subject: Re: [PATCH v4] PCI: introduce two interfaces to walk PCI buses
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[trace] replace strict_strto* with kstrto*
+On Fri, Sep 21, 2012 at 10:07 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> The pci_find_next_bus() is not hotplug safe, so introduce PCI hotplug
+> safe interfaces to walk PCI buses. To avoid some deadlock scenarios,
+> two interfaces are introduced.
+>
+> The first one is pci_for_each_bus(), which walks all PCI buses holding
+> read lock on the pci_bus_sem.
+>
+> The second one is pci_for_each_started_bus(), which walks all started
+> PCI buses without holding any global locks. Started PCI buses are those
+> which have been added to the device tree by calling device_add().
+> ---
+> Hi Bjorn,
+>         How about this PCI bus iterator design? It's a little ugly that
+> we need to two interfaces to work around some deadlock scenarios.
+> And I plan to split the task into two parts:
+>         1) a hotplug safe PCI bus iteraror to replace pci_find_next_bus
+>         2) handle hotplug notifications to update bus related states.
+>
+> My patchset at http://www.spinics.net/lists/linux-pci/msg17515.html has
+> patially solved issue 2 above for x86/ACPI, and will add more supports
+> for other platforms.
+>         Thanks!
+>         Gerry
 
- * remove old string conversions with kstrto*
+I like this interface:
 
-Signed-off-by: Daniel Walter <sahne@0x90.at>
----
- kernel/trace/ftrace.c              |    2 +-
- kernel/trace/trace.c               |    2 +-
- kernel/trace/trace_events_filter.c |    4 ++--
- kernel/trace/trace_functions.c     |    2 +-
- kernel/trace/trace_kprobe.c        |    2 +-
- kernel/trace/trace_probe.c         |   14 +++++++-------
- kernel/trace/trace_uprobe.c        |    2 +-
- 7 files changed, 14 insertions(+), 14 deletions(-)
----
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index b4f20fb..5c1f213 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4215,7 +4215,7 @@ ftrace_pid_write(struct file *filp, const char __user *ubuf,
- 	if (strlen(tmp) == 0)
- 		return 1;
- 
--	ret = strict_strtol(tmp, 10, &val);
-+	ret = kstrtol(tmp, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 5c38c81..807cb78 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -431,7 +431,7 @@ static int __init set_tracing_thresh(char *str)
- 
- 	if (!str)
- 		return 0;
--	ret = strict_strtoul(str, 0, &threshhold);
-+	ret = kstrtoul(str, 0, &threshhold);
- 	if (ret < 0)
- 		return 0;
- 	tracing_thresh = threshhold * 1000;
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 431dba8..2a6440f 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -1000,9 +1000,9 @@ static int init_pred(struct filter_parse_state *ps,
- 		}
- 	} else {
- 		if (field->is_signed)
--			ret = strict_strtoll(pred->regex.pattern, 0, &val);
-+			ret = kstrtoll(pred->regex.pattern, 0, &val);
- 		else
--			ret = strict_strtoull(pred->regex.pattern, 0, &val);
-+			ret = kstrtoull(pred->regex.pattern, 0, &val);
- 		if (ret) {
- 			parse_error(ps, FILT_ERR_ILLEGAL_INTVAL, 0);
- 			return -EINVAL;
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index a426f41..6e2be2d 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -375,7 +375,7 @@ ftrace_trace_onoff_callback(struct ftrace_hash *hash,
- 	 * We use the callback data field (which is a pointer)
- 	 * as our counter.
- 	 */
--	ret = strict_strtoul(number, 0, (unsigned long *)&count);
-+	ret = kstrtoul(number, 0, (unsigned long *)&count);
- 	if (ret)
- 		return ret;
- 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 1a21170..5a3c533 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -444,7 +444,7 @@ static int create_trace_probe(int argc, char **argv)
- 			return -EINVAL;
- 		}
- 		/* an address specified */
--		ret = strict_strtoul(&argv[1][0], 0, (unsigned long *)&addr);
-+		ret = kstrtoul(&argv[1][0], 0, (unsigned long *)&addr);
- 		if (ret) {
- 			pr_info("Failed to parse address.\n");
- 			return ret;
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index daa9980..412e959 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -441,7 +441,7 @@ static const struct fetch_type *find_fetch_type(const char *type)
- 			goto fail;
- 
- 		type++;
--		if (strict_strtoul(type, 0, &bs))
-+		if (kstrtoul(type, 0, &bs))
- 			goto fail;
- 
- 		switch (bs) {
-@@ -501,8 +501,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
- 
- 	tmp = strchr(symbol, '+');
- 	if (tmp) {
--		/* skip sign because strict_strtol doesn't accept '+' */
--		ret = strict_strtoul(tmp + 1, 0, offset);
-+		/* skip sign because kstrtoul doesn't accept '+' */
-+		ret = kstrtoul(tmp + 1, 0, offset);
- 		if (ret)
- 			return ret;
- 
-@@ -533,7 +533,7 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
- 			else
- 				ret = -EINVAL;
- 		} else if (isdigit(arg[5])) {
--			ret = strict_strtoul(arg + 5, 10, &param);
-+			ret = kstrtoul(arg + 5, 10, &param);
- 			if (ret || param > PARAM_MAX_STACK)
- 				ret = -EINVAL;
- 			else {
-@@ -579,7 +579,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 
- 	case '@':	/* memory or symbol */
- 		if (isdigit(arg[1])) {
--			ret = strict_strtoul(arg + 1, 0, &param);
-+			ret = kstrtoul(arg + 1, 0, &param);
- 			if (ret)
- 				break;
- 
-@@ -597,14 +597,14 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 		break;
- 
- 	case '+':	/* deref memory */
--		arg++;	/* Skip '+', because strict_strtol() rejects it. */
-+		arg++;	/* Skip '+', because kstrtol() rejects it. */
- 	case '-':
- 		tmp = strchr(arg, '(');
- 		if (!tmp)
- 			break;
- 
- 		*tmp = '\0';
--		ret = strict_strtol(arg, 0, &offset);
-+		ret = kstrtol(arg, 0, &offset);
- 
- 		if (ret)
- 			break;
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 03003cd..4ff9ca4 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -252,7 +252,7 @@ static int create_trace_uprobe(int argc, char **argv)
- 	if (ret)
- 		goto fail_address_parse;
- 
--	ret = strict_strtoul(arg, 0, &offset);
-+	ret = kstrtoul(arg, 0, &offset);
- 	if (ret)
- 		goto fail_address_parse;
- 
+    int pci_for_each_bus(int (* cb)(struct pci_bus *, void *), void *data)
+
+quite a bit because it has the potential for removing all the list
+knowledge from the callers, but there are two things I don't like:
+
+  1) The interface would allow the PCI core to call the callback for
+future hot-added buses, but your implementation doesn't have that yet.
+
+  2) I'd rather have something like "pci_for_each_dev()"  so this is
+device-based instead of bus-based.  The struct pci_bus is of limited
+usefulness outside the core, except as a container for a set of
+devices.  So the users of pci_for_each_bus() would often iterate
+through that set of devices, and given the complications of SR-IOV
+virtual buses, I don't think it's really clear how to do that
+iteration correctly.
+
+> ---
+>  drivers/pci/bus.c   |   42 ++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pci.h |    1 +
+>  2 files changed, 43 insertions(+)
+>
+> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> index e16a8f0f..21b0ade 100644
+> --- a/drivers/pci/bus.c
+> +++ b/drivers/pci/bus.c
+> @@ -327,6 +327,48 @@ void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
+>  }
+>  EXPORT_SYMBOL_GPL(pci_walk_bus);
+>
+> +static int pci_bus_iter(struct pci_bus *bus,
+> +                       int (* cb)(struct pci_bus *, void *), void *data)
+> +{
+> +       int rc;
+> +
+> +       rc = cb(bus, data);
+> +       if (rc == 0)
+> +               list_for_each_entry(bus, &bus->children, node) {
+> +                       rc = pci_bus_iter(bus, cb, data);
+> +                       if (rc)
+> +                               break;
+> +               }
+> +
+> +       return rc;
+> +}
+> +
+> +/** pci_for_each_bus - walk all PCI buses and call the provided callback.
+> + *  @cb   callback to be called for each bus found
+> + *  @data arbitrary pointer to be passed to callback.
+> + *
+> + *  Walk all PCI buses and call the provided callback with pci_bus_sem held.
+> + *
+> + *  We check the return of @cb each time. If it returns anything
+> + *  other than 0, we break out.
+> + */
+> +int pci_for_each_bus(int (* cb)(struct pci_bus *, void *), void *data)
+> +{
+> +       int rc = 0;
+> +       struct pci_bus *bus;
+> +
+> +       down_read(&pci_bus_sem);
+> +       list_for_each_entry(bus, &pci_root_buses, node) {
+> +               rc = pci_bus_iter(bus, cb, data);
+> +               if (rc)
+> +                       break;
+> +       }
+> +       up_read(&pci_bus_sem);
+> +
+> +       return rc;
+> +}
+> +EXPORT_SYMBOL(pci_for_each_bus);
+> +
+>  struct pci_bus *pci_bus_get(struct pci_bus *bus)
+>  {
+>         if (bus)
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 3c5017d..1423a24 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -1060,6 +1060,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+>
+>  void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
+>                   void *userdata);
+> +int pci_for_each_bus(int (* cb)(struct pci_bus *, void *), void *data);
+>  int pci_cfg_space_size_ext(struct pci_dev *dev);
+>  int pci_cfg_space_size(struct pci_dev *dev);
+>  unsigned char pci_bus_max_busnr(struct pci_bus *bus);
+> --
+> 1.7.9.5
+>
