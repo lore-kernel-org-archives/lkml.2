@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2IZH3Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 03:29:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41447 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab2IZH3W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 03:29:22 -0400
-Date: Wed, 26 Sep 2012 00:29:16 -0700
-From: Steven Noonan <steven@uplinklabs.net>
-To: linux-kernel@vger.kernel.org, Seth Heasley <seth.heasley@intel.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [BISECTED] snd-hda-intel audio distortion in Linus' current tree
-Message-ID: <20120926072916.GA2654@croesus.uplinklabs.net>
+	id S1753071Ab2IZHiu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 03:38:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51992 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752505Ab2IZHit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 03:38:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,489,1344236400"; 
+   d="scan'208";a="226612430"
+Date: Wed, 26 Sep 2012 15:38:41 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi.kleen@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pagemap: fix wrong KPF_THP on slab pages
+Message-ID: <20120926073841.GA26028@localhost>
+References: <1348632154-31508-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1348639568-10648-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1348639568-10648-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Started having audio problems when trying out the latest tree
-(v3.6-rc7-10-g56d27ad). When playing any kind of audio, there was
-significant distortion, mostly crackling noise. I'm using a Lenovo
-ThinkPad X230 (Panther Point).
+On Wed, Sep 26, 2012 at 02:06:08AM -0400, Naoya Horiguchi wrote:
+> On Wed, Sep 26, 2012 at 12:02:34AM -0400, Naoya Horiguchi wrote:
+> ...
+> > > > +	 * page is a thp, not a non-huge compound page.
+> > > > +	 */
+> > > > +	else if (PageTransCompound(page) && !PageSlab(page))
+> > > >  		u |= 1 << KPF_THP;
+> > > 
+> > > Good catch!
+> > > 
+> > > Will this report THP for the various drivers that do __GFP_COMP
+> > > page allocations?
+> > 
+> > I'm afraid it will. I think of checking PageLRU as an alternative,
+> > but it needs compound_head() to report tail pages correctly.
+> > In this context, pages are not pinned or locked, so it's unsafe to
+> > use compound_head() because it can return a dangling pointer.
+> > Maybe it's a thp's/hugetlbfs's (not kpageflags specific) problem,
+> > so going forward with compound_head() expecting that it will be
+> > fixed in the future work can be an option.
+> 
+> It seems that compound_trans_head() solves this problem, so I'll
+> simply use it.
 
-I did a git-bisect to locate the problem, and it seems this commit is to
-blame:
+Naoya, in fact I didn't quite catch your concerns. Why not just test
 
-	c20c5a841cbe47f5b7812b57bd25397497e5fbc0 is the first bad commit
-	commit c20c5a841cbe47f5b7812b57bd25397497e5fbc0
-	Author: Seth Heasley <seth.heasley@intel.com>
-	Date:   Thu Jun 14 14:23:53 2012 -0700
+        PageTransCompound(page) && PageLRU(page)
 
-		ALSA: hda_intel: activate COMBO mode for Intel client chipsets
-		
-		This patch activates the COMBO position_fix for recent Intel client chipsets.
-		COMBO mode is the recommended setting for Intel chipsets and eliminates HD
-		audio warnings in dmesg.  This patch has been tested on Lynx Point, Panther
-		Point, and Cougar Pont.
-		
-		Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-		Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The whole page flag report thing is inherently racy and it's fine to
+report wrong values due to races. The "__GFP_COMP reported as THP",
+however, should be avoided because it will make consistent wrong
+reporting of page flags.
 
-It's pretty clear-cut. If I revert this patch, my sound starts
-functioning normally again.
-
-Any thoughts on how to proceed here? Can someone revert this, or is
-there some testing that I can do?
-
-Here's a pretty-printed bisection log, if needed:
-
- # good: [28a33cbc] Linux 3.5
- # bad:  [b13bc8dd] Merge tag 'staging-3.6-rc1' of git://git.kernel.or
- # good: [3c4cfade] Merge git://git.kernel.org/pub/scm/linux/kernel/gi
- # bad:  [9fc37779] Merge tag 'usb-3.6-rc1' of git://git.kernel.org/pu
- # bad:  [f14121ab] Merge tag 'dt-for-3.6' of git://sources.calxeda.co
- # good: [d14b7a41] Merge branch 'for-linus' of git://git.kernel.org/p
- # good: [15d47763] Merge branch 'for-3.5' into for-3.6
- # bad:  [dbf7b591] Merge tag 'sound-3.6' of git://git.kernel.org/pub/
- # bad:  [1c76684d] ALSA: hda - add Haswell HDMI codec id
- # bad:  [8b8d654b] ALSA: hda - Move one-time init codes from generic_
- # good: [80c8bfbe] ALSA: HDA: Create phantom jacks for fixed inputs a
- # bad:  [ceaa86ba] ALSA: hda - Remove invalid init verbs for Nvidia 2
- # bad:  [4b6ace9e] ALSA: hda - Add the support for VIA HDMI pin detec
- # bad:  [c20c5a84] ALSA: hda_intel: activate COMBO mode for Intel cli
-
-
-- Steven
+Thanks,
+Fengguang
