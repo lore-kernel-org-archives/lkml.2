@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab2IZXm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 19:42:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41215 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab2IZXm1 (ORCPT
+	id S1752665Ab2IZXrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 19:47:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:62239 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab2IZXrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 19:42:27 -0400
-Date: Wed, 26 Sep 2012 16:42:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Re: 3.4.10 i915 [GM45] regression
-Message-ID: <20120926234223.GC26223@kroah.com>
-References: <2372445.fuIXicT4H0@tux200s>
- <20120907011542.GA26688@kroah.com>
- <2329337.9aFzn0oRxF@tux200s>
- <CAKMK7uHqk1x4dM9ZA0usskNoArR6eTFmEtVw+_juzVq1NeYg+A@mail.gmail.com>
- <20120910135803.GB2972@herton-Z68MA-D2H-B3>
- <20120910140734.GC2972@herton-Z68MA-D2H-B3>
+	Wed, 26 Sep 2012 19:47:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910140734.GC2972@herton-Z68MA-D2H-B3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120926202321.GD30938@n2100.arm.linux.org.uk>
+References: <20120818145856.GP18957@n2100.arm.linux.org.uk>
+	<CACVXFVPahbFVEP4p2Z9-TvjQ52tUCMuDeLx0X6GP5t0h5gEV8g@mail.gmail.com>
+	<20120916082510.GN12245@n2100.arm.linux.org.uk>
+	<CACVXFVOZ=4HFAy38q_8ZUjOPffcv_mMTi7KCdh3HcX=MCLw5SQ@mail.gmail.com>
+	<20120926200833.GA14340@kroah.com>
+	<20120926202321.GD30938@n2100.arm.linux.org.uk>
+Date: Thu, 27 Sep 2012 07:47:46 +0800
+Message-ID: <CACVXFVPnpQ6yHiDaoo_CPG7oSEq+ZzxpmTgQv55-tRRyaavDfA@mail.gmail.com>
+Subject: Re: [BUG] Deferred probing in driver model is racy, resulting in lost probes
+From: Ming Lei <tom.leiming@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 11:07:38AM -0300, Herton Ronaldo Krzesinski wrote:
-> On Mon, Sep 10, 2012 at 10:58:03AM -0300, Herton Ronaldo Krzesinski wrote:
-> > Couldn't it be that it happens because 3.4 doesn't have commits
-> > b7884eb45ec98c0d34c7f49005ae9d4b4b4e38f6 and
-> > f01db988ef6f6c70a6cc36ee71e4a98a68901229 applied? May be they are needed
-> > after all.
-> 
-> Nevermind, the description on the freedesktop bug report states that
-> these commits were already tried and didn't work (if "3.4.10 + follow-up
-> patches in Herton's reply - failed" means it)
+On Thu, Sep 27, 2012 at 4:23 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Wed, Sep 26, 2012 at 01:08:33PM -0700, Greg Kroah-Hartman wrote:
+>> On Sun, Sep 16, 2012 at 09:24:43PM +0800, Ming Lei wrote:
+>> > diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+>> > index 181ed26..17d7437 100644
+>> > --- a/drivers/base/bus.c
+>> > +++ b/drivers/base/bus.c
+>> > @@ -714,12 +714,12 @@ int bus_add_driver(struct device_driver *drv)
+>> >     if (error)
+>> >             goto out_unregister;
+>> >
+>> > +   klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+>> >     if (drv->bus->p->drivers_autoprobe) {
+>> >             error = driver_attach(drv);
+>> >             if (error)
+>> >                     goto out_unregister;
+>> >     }
+>> > -   klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+>> >     module_add_driver(drv->owner, drv);
+>> >
+>> >     error = driver_create_file(drv, &driver_attr_uevent);
+>> >
+>> >
+>> >
+>>
+>> Did the above patch ever prove to solve the issue or not?
+>
+> To be honest, I've not bothered to test the above patch, and now when I
+> look at it, I notice it's broken - in that on error it will corrupt the
+> driver list.  Take a look at the error path.
+>
+> priv is drv->p.  We add priv->knode_bus to the driver list.  If
+> driver_attach() returns an error, then we go to out_unregister, which
 
-Did anything ever come from this?  I haven't reverted anything, or
-applied anything different, so if something needs to be done here,
-please let me know.
+In fact, driver_attach() always returns zero, so it does __not__ affect
+your test.
 
-thanks,
+I knew the failure shouldn't be handled in theory because the probe
+failure on one device should not cause failure of driver_register, and
+it should be fixed, IMO.
 
-greg k-h
+> does:
+>
+> out_unregister:
+>         kobject_put(&priv->kobj);
+>         kfree(drv->p);
+>         drv->p = NULL;
+>
+> thereby freeing the node we just added to the driver list without first
+> removing it.
+>
+> I suspect it will fix the problem, but let's get the patch to be correct
+> before it gets tested...
+
+Trust me, please go ahead to test and it doesn't affect it...
+
+Thanks,
+-- 
+Ming Lei
