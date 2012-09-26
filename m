@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab2IZND3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 09:03:29 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60297 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab2IZND1 (ORCPT
+	id S1756257Ab2IZNSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 09:18:08 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10286 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753619Ab2IZNSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 09:03:27 -0400
+	Wed, 26 Sep 2012 09:18:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 26 Sep 2012 06:16:32 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <sameo@linux.intel.com>
+CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [REPOST/PATCH] mfd: tps65910: remove warning during dt node parsing
+Date: Wed, 26 Sep 2012 18:18:04 +0530
+Message-ID: <1348663684-1377-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-In-Reply-To: <20120926125658.GA5641@beef>
-References: <D7202A6C-5250-4B55-B3B8-FF15BCCA97AC@dominion.thruhere.net>
-	<20120926125658.GA5641@beef>
-Date: Wed, 26 Sep 2012 15:03:27 +0200
-Message-ID: <CACRpkdYqVC4Vou+0Mn1OmQg8vPxDULDcFDD0yV5nassqkE1Zag@mail.gmail.com>
-Subject: Re: replacement for /sys/kernel/debug/omap_mux in DT/pinctrl land ?
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Matt Porter <mporter@ti.com>, Tony Lindgren <tony@atomide.com>
-Cc: Koen Kooi <koen@dominion.thruhere.net>,
-        List List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 2:56 PM, Matt Porter <mporter@ti.com> wrote:
-> Adding Linus W. and lkml.
-> On Wed, Sep 26, 2012 at 01:46:45PM +0200, Koen Kooi wrote:
->> Hi,
->>
->> With a patched 3.6rc7 on my beaglebone I can set the pinmux for pins using pinctrl and that seems to work. On the 3.2 vendor tree there was the omap_mux driver with an awesome debugfs interface:
->>
->> # cat /sys/kernel/debug/omap_mux/lcd_data0
->> name: lcd_data0.ehrpwm2A (0x44e108a0/0x8a0 = 0x0003), b NA, t NA
->> mode: OMAP_PIN_OUTPUT | OMAP_MUX_MODE3
->> signals: lcd_data0 | gpmc_a0 | pr1_mii_mt0_clk | ehrpwm2A | NA | pr1_pru1_pru_r30_0 | pr1_pru1_pru_r31_0 | gpio2_6
->>
->> Notice how it tells me that it's muxed the PWM in 2 ways: signal name (ehrpwm2A) and register content (0x0003). Compare to pinctrl:
->>
->> root@bone-mainline:/sys/kernel/debug/pinctrl/44e10800.pinmux# grep 8a0 *
->> pinconf-pins:pin 40 (44e108a0):
->> pingroups:pin 40 (44e108a0)
->> pinmux-pins:pin 40 (44e108a0): 4a300000.pruss (GPIO UNCLAIMED) function pinmux_pruss_led_pins group pinmux_pruss_led_pins
->> pins:pin 40 (44e108a0)  pinctrl-single
->>
->> What is that pin muxed to? It is part of the 'pinmux_pruss_led_pins' in the DT, but debugfs remains mute on how pin 40 is muxed.
->
-> It does seem like a pretty big gap in the pinctrl/pinmux debugfs
-> interface when viewed from an OMAP perspective. Ideally there would
-> be a pinctrl/pinmux hook to the pinmux driver to provide the detailed
-> h/w specific pin state info.
+Driver throw the warning message if dt node does not
+have the info for VMBCH-Threshold and VMBCH2-Threshold.
+These properties are optional property and hence it
+is not mandatory to have these on DT node and in this case
+it should not throw the warning message.
+It creates noise from driver as follows:
+[    0.384605] tps65910 4-002d: VMBCH-Threshold not specified
+[    0.384616] tps65910 4-002d: VMBCH2-Threshold not specified
 
-So add the hooks you need?
+Removing the warning message from driver.
 
-I assume you are using Tony's pinctrl-single driver, so Tony is the one to ask.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+It seems orginal patch has been lost. Reposting it.
 
-Yours,
-Linus Walleij
+ drivers/mfd/tps65910.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index ca90294..665e1b6 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -184,14 +184,10 @@ static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
+ 	ret = of_property_read_u32(np, "ti,vmbch-threshold", &prop);
+ 	if (!ret)
+ 		board_info->vmbch_threshold = prop;
+-	else if (*chip_id == TPS65911)
+-		dev_warn(&client->dev, "VMBCH-Threshold not specified");
+ 
+ 	ret = of_property_read_u32(np, "ti,vmbch2-threshold", &prop);
+ 	if (!ret)
+ 		board_info->vmbch2_threshold = prop;
+-	else if (*chip_id == TPS65911)
+-		dev_warn(&client->dev, "VMBCH2-Threshold not specified");
+ 
+ 	prop = of_property_read_bool(np, "ti,en-ck32k-xtal");
+ 	board_info->en_ck32k_xtal = prop;
+-- 
+1.7.1.1
+
