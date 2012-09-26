@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475Ab2IZFu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 01:50:56 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:52565 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751918Ab2IZFuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 01:50:55 -0400
-Date: Wed, 26 Sep 2012 10:53:09 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Hyeoncheol Lee <hyc.lee@gmail.com>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [QUESTION] Can uprobe_event support @ADDR, $retval,
- offs(FETCHARG)?
-Message-ID: <20120926052309.GD27339@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <CANFS6bZtOPe8XbsgC0V0encVLssFShWGhNLZQkCvEhKcNT946w@mail.gmail.com>
- <5062938F.2080703@hitachi.com>
+	id S1752458Ab2IZFxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 01:53:39 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54285 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918Ab2IZFxi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 01:53:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <5062938F.2080703@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12092605-5930-0000-0000-00000C783FD2
+In-Reply-To: <CACRpkdbA8Uiy2ed5DJ99Aoztp=VOSL_2t9VGNi2bC3264LE7Hg@mail.gmail.com>
+References: <1347624124-27535-1-git-send-email-sachin.kamat@linaro.org>
+	<CACRpkdbA8Uiy2ed5DJ99Aoztp=VOSL_2t9VGNi2bC3264LE7Hg@mail.gmail.com>
+Date: Wed, 26 Sep 2012 11:23:37 +0530
+Message-ID: <CAK9yfHy7xCTo8Xzt3-LAcYiTM+k9W8MLKJB_ucoPVNeaeu4Fig@mail.gmail.com>
+Subject: Re: [PATCH 1/1] pinctrl: Samsung: Fix return value
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Thomas Abraham <thomas.ab@samsung.com>, linux-kernel@vger.kernel.org,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Perhaps, it is not so small things, but at least, we can try.
-> In the userspace, memories(pages) can be paged out on swap or
-> files. In that case, memory dereference function needs to track
-> down the data on the disk and it causes I/O. This means we will
-> see the visible performance degradation with tracing.
-> And also, sometime a pointer value (address) is broken, in that
-> case we have to ensure the address is actually valid before
-> accessing it.
-> 
-> Of cause, without tracking paged-out data, it is easy
-> to support, because that is already done in kprobe event.
-> I'm not sure how it is useful, because sometimes it will
-> fail to access gather the data.
-> However it is good for the first step, I think.
-> 
-> Srikar, what would you think?
+Hi Thomas,
 
-I think we should do the best effort basis first. i.e support for
-tracking data thats not paged out.
-Most times the data that is requested tends to the hot data.
+Please provide your review comments.
 
-We could look at supporting data that is paged out later.
+On 14 September 2012 19:37, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Sep 14, 2012 at 2:02 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+>
+>> Return the value obtained from of_property_count_strings()
+>> instead of -EINVAL.
+>>
+>> Silences the following smatch warning:
+>> drivers/pinctrl/pinctrl-samsung.c:529 samsung_pinctrl_parse_dt_pins()
+>> info: why not propagate '*npins' from of_property_count_strings()
+>> instead of -22?
+>>
+>> Cc: Thomas Abraham <thomas.ab@samsung.com>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> ---
+>>  drivers/pinctrl/pinctrl-samsung.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
+>> index 8a24223..824fda9 100644
+>> --- a/drivers/pinctrl/pinctrl-samsung.c
+>> +++ b/drivers/pinctrl/pinctrl-samsung.c
+>> @@ -526,7 +526,7 @@ static int __init samsung_pinctrl_parse_dt_pins(struct platform_device *pdev,
+>>         *npins = of_property_count_strings(cfg_np, "samsung,pins");
+>>         if (*npins < 0) {
+>>                 dev_err(dev, "invalid pin list in %s node", cfg_np->name);
+>> -               return -EINVAL;
+>> +               return *npins;
+>>         }
+>
+> Thomas, please check this ...
+>
+> Yours,
+> Linus Walleij
 
-> 
-> BTW, if we can support offs(FETCHARGS), $stack and $stackN
-> are also available. ;)
-> 
+
 
 -- 
-Thanks and Regards
-Srikar Dronamraju
-
+With warm regards,
+Sachin
