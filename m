@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab2IZCXf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 22:23:35 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:52502 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751104Ab2IZCXc (ORCPT
+	id S1751528Ab2IZC0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 22:26:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57751 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab2IZC0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 22:23:32 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/uG+c56QruGyOPj9aTxgl1YKfXXni1Kuy9bjln8k
-	Z0exZYyBhM01nt
-Message-ID: <1348626206.7100.166.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
+	Tue, 25 Sep 2012 22:26:41 -0400
+Date: Tue, 25 Sep 2012 19:26:39 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Wed, 26 Sep 2012 04:23:26 +0200
-In-Reply-To: <20120925184245.GA13694@liondog.tnic>
-References: <1348505683.11847.111.camel@twins>
-	 <1348511193.6951.44.camel@marge.simpson.net>
-	 <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
-	 <20120924192056.GB4082@liondog.tnic>
-	 <1348538258.7100.23.camel@marge.simpson.net>
-	 <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
-	 <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com>
-	 <20120925170058.GC30158@x1.osrc.amd.com>
-	 <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
-	 <20120925184245.GA13694@liondog.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+        Andi Kleen <andi.kleen@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pagemap: fix wrong KPF_THP on slab pages
+In-Reply-To: <1348625168-28983-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.DEB.2.00.1209251926200.25890@chino.kir.corp.google.com>
+References: <1348625168-28983-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-25 at 20:42 +0200, Borislav Petkov wrote:
+On Tue, 25 Sep 2012, Naoya Horiguchi wrote:
 
-> Right, so why did we need it all, in the first place? There has to be
-> some reason for it.
+> KPF_THP can be set on non-huge compound pages like slab pages, because
+> PageTransCompound only sees PG_head and PG_tail. Obviously this is a bug
+> and breaks user space applications which look for thp via /proc/kpageflags.
+> This patch rules out setting KPF_THP wrongly by additional PageSlab check.
+> 
+> Changelog in v3:
+>   - check PageSlab instead of PageAnon
+>   - fix patch subject
+> 
+> Changelog in v2:
+>   - add a comment in code
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-Easy.  Take two communicating tasks.  Is an affine wakeup a good idea?
-It depends on how much execution overlap there is.  Wake affine when
-there is overlap larger than cache miss cost, and you just tossed
-throughput into the bin.
-
-select_idle_sibling() was originally about shared L2, where any overlap
-was salvageable.  On modern processors with no shared L2, you have to
-get past the cost, but the gain is still there.  Intel wins with loads
-that AMD loses very bady on, so I can only guess that Intel must feed
-caches more efficiently.  Dunno.  It just doesn't matter though, point
-is that there is a win to be had in both cases, the breakeven just isn't
-at the same point.
-
--Mike
-
+Acked-by: David Rientjes <rientjes@google.com>
