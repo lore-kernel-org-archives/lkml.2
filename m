@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab2IZFeW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 01:34:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:9602 "EHLO mga14.intel.com"
+	id S1752154Ab2IZFiu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 01:38:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33209 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585Ab2IZFeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 01:34:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,487,1344236400"; 
-   d="scan'208";a="149130081"
-Subject: [PATCH] x86/fixup_irq: Clean the offlining CPU from the irq
- affinity mask
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com,
-        chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Sep 2012 22:32:04 +0800
-Message-ID: <1348669924.19514.6.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751585Ab2IZFis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 01:38:48 -0400
+From: "Patil, Rachna" <rachna@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>,
+        "Patil, Rachna" <rachna@ti.com>
+Subject: [PATCH v4 0/5] Support for TSC/ADC MFD driver
+Date: Wed, 26 Sep 2012 10:50:09 +0530
+Message-ID: <1348636814-14129-1-git-send-email-rachna@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch set adds a MFD core driver which registers
+touchscreen and ADC as its client drivers.
+The existing touchscreen has been modified to work as
+a MFD client driver and a new ADC driver has been added
+in the IIO subsystem.
 
-When one CPU is going offline, and fixup_irqs() will re-set the
-irq affinity in some cases, we should clean the offlining CPU from
-the irq affinity.
+There are 8 analog input lines, which can be used as:
+1. 8 general purpose ADC channels
+2. 4 wire TS, with 4 general purpose ADC channels
+3. 5 wire TS, with 3 general purpose ADC channels
 
-The reason is setting offlining CPU as of the affinity is useless.
-Moreover, the smp_affinity value will be confusing when the
-offlining CPU come back again.
+This patch set has been tested on AM335x EVM.
 
-Example:
-For irq 93 with 4 CPUS, the default affinity f(1111),
-normal cases: 4 CPUS will receive the irq93 interrupts.
+These set of patches are based on top of Touchscreen patch
+set submitted.
+Subject: [PATCH 0/4] input: TSC: ti_tscadc: TI Touchscreen driver updates [1]
 
-When echo 0 > /sys/devices/system/cpu/cpu3/online, just CPU0,1,2 will
-receive the interrupts.
+[1] http://www.spinics.net/lists/linux-input/msg22107.html
 
-But after the CPU3 is online again, we will not set affinity,the result
-will be:
-the smp_affinity is f, but still just CPU0,1,2 can receive the interrupts.
+Changes in v2:
+	Dropped one patch send in the last version after
+	receiving internal comments. I have merged the changes
+	into existing patches.
+	Also added a new patch to support suspend/resume feature.
+	Fixed review comments by Matthias Kaehlcke.
 
-So we should clean the offlining CPU from irq affinity mask
-in fixup_irqs().
+Changes in v3:
+	Addressed review comments by Jonathan Cameron.
+	Improved ADC driver with more readable labels,
+	spaces and comments.
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- arch/x86/kernel/irq.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Changes in v4:
+	Renamed the drivers from ti_xxx to ti_am335x_xxx.
+	For consistency with other drivers renamed idev to indio_dev
+	in IIO ADC driver.
+	Replaced suspend/resume callbacks with dev_pm_ops.
 
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index d44f782..671d462 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -239,6 +239,7 @@ void fixup_irqs(void)
- 	struct irq_desc *desc;
- 	struct irq_data *data;
- 	struct irq_chip *chip;
-+	int cpu = smp_processor_id();
- 
- 	for_each_irq_desc(irq, desc) {
- 		int break_affinity = 0;
-@@ -271,7 +272,8 @@ void fixup_irqs(void)
- 		if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
- 			break_affinity = 1;
- 			affinity = cpu_online_mask;
--		}
-+		} else if (cpumask_test_cpu(cpu, data->affinity))
-+			cpumask_clear_cpu(cpu, data->affinity);
- 
- 		chip = irq_data_get_irq_chip(data);
- 		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
--- 
-1.7.0.4
+Patil, Rachna (5):
+  input: TSC: ti_tscadc: Rename the existing touchscreen driver
+  MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
+  input: TSC: ti_tsc: Convert TSC into a MFDevice
+  IIO : ADC: tiadc: Add support of TI's ADC driver
+  MFD: ti_tscadc: add suspend/resume functionality
 
-
+ drivers/iio/adc/Kconfig                            |    7 +
+ drivers/iio/adc/Makefile                           |    1 +
+ drivers/iio/adc/ti_am335x_adc.c                    |  258 ++++++++++++++++
+ drivers/input/touchscreen/Kconfig                  |    4 +-
+ drivers/input/touchscreen/Makefile                 |    2 +-
+ .../touchscreen/{ti_tscadc.c => ti_am335x_tsc.c}   |  319 ++++++--------------
+ drivers/mfd/Kconfig                                |    9 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/ti_am335x_tscadc.c                     |  259 ++++++++++++++++
+ .../linux/input/{ti_tscadc.h => ti_am335x_tsc.h}   |    4 +-
+ include/linux/mfd/ti_am335x_tscadc.h               |  151 +++++++++
+ include/linux/platform_data/ti_am335x_adc.h        |   14 +
+ 12 files changed, 801 insertions(+), 228 deletions(-)
+ create mode 100644 drivers/iio/adc/ti_am335x_adc.c
+ rename drivers/input/touchscreen/{ti_tscadc.c => ti_am335x_tsc.c} (55%)
+ create mode 100644 drivers/mfd/ti_am335x_tscadc.c
+ rename include/linux/input/{ti_tscadc.h => ti_am335x_tsc.h} (88%)
+ create mode 100644 include/linux/mfd/ti_am335x_tscadc.h
+ create mode 100644 include/linux/platform_data/ti_am335x_adc.h
 
