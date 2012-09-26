@@ -1,104 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab2IZXd7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 19:33:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57551 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371Ab2IZXdk (ORCPT
+	id S1752352Ab2IZXiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 19:38:52 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56675 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab2IZXiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 19:33:40 -0400
-Date: Wed, 26 Sep 2012 16:33:34 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120926233334.GD10453@mtj.dyndns.org>
-References: <20120926195648.GA20342@google.com>
- <50635F46.7000700@parallels.com>
- <20120926201629.GB20342@google.com>
- <50637298.2090904@parallels.com>
- <20120926221046.GA10453@mtj.dyndns.org>
- <506381B2.2060806@parallels.com>
- <20120926224235.GB10453@mtj.dyndns.org>
- <50638793.7060806@parallels.com>
- <20120926230807.GC10453@mtj.dyndns.org>
- <50638DBB.4000002@parallels.com>
+	Wed, 26 Sep 2012 19:38:51 -0400
+Date: Wed, 26 Sep 2012 16:35:56 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@android.com>
+Subject: Re: [PATCH] pstore: avoid recursive spinlocks in the
+ oops_in_progress case
+Message-ID: <20120926233553.GA7203@lizard>
+References: <1347903824.29767.15.camel@cliu38-desktop-build>
+ <20120920225727.GD29721@lizard>
+ <3908561D78D1C84285E8C5FCA982C28F19D43812@ORSMSX108.amr.corp.intel.com>
+ <20120920232536.GB8209@lizard>
+ <3908561D78D1C84285E8C5FCA982C28F19D43892@ORSMSX108.amr.corp.intel.com>
+ <20120921003706.GB14399@lizard>
+ <3908561D78D1C84285E8C5FCA982C28F19D4404F@ORSMSX108.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50638DBB.4000002@parallels.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D4404F@ORSMSX108.amr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thu, Sep 27, 2012 at 03:20:27AM +0400, Glauber Costa wrote:
-> > One of the things wrong with that is that it exposes the limitation of
-> > the current implementation as interface to userland, which is never a
-> > good idea.  In addition, how is userland supposed to know which
-> > workload is shared kmem heavy or not?  Details like that are not even
-> > inherent to workloads.  It's highly dependent on kernel implementation
-> > which may change any day.  If we hit workloads like that the right
-> > thing to do is improving kmemcg so that such problems don't occur, not
-> > exposing another switch.
+On Mon, Sep 24, 2012 at 03:02:35PM +0000, Luck, Tony wrote:
+> > And my plan was to get rid of the fact that backends touch pstore->buf
+> > directly. Backends would always receive anonymous 'buf' pointer (we
+> > already have write_buf callback that does exactly this), and thus it
 > 
-> Sorry, there is nothing implementation dependent in here. One of the
-> biggest consumers of all this, are dentries. Dentries are related to
-> the paths you touch. If you touch files in a self-contained directory,
-> where you don't expect anyone else to touch, this can safely be
-> considered local. If you touch files all around, this can safely be
-> considered not local. Where is the implementation dependent part?
+> It feels like we are just shuffling the lock problem from one place
+> to another.  In the panic case we have to use a pre-allocated buffer
+> (hoping that we can allocate one seems to be a foolish plan).
 
-For things like dentries and inodes and if that really matters, we
-should be able to account for the usage better, no?  And frankly I'm
-not even sold on that usecase.  Unless there's a way to detect and
-inform about these, userland isn't gonna know that they're doing
-something which consumes a lot of shared memory even that activity is
-filesystem walking.  You're still asking userland to tune something
-depending on parameters not easily visible from userland.  It's a lose
-lose situation.
+Yes, we definitely need some buffer pre-allocated for panics, so I have no
+plans to get rid of the 'buf' -- both 'buf' and 'buf_lock' are going to
+stay. But it will not be multi-purpose anymore (which I see as an
+improvement).
 
-> >> Even after the limit is set, it is set only by workloads that want kmem
-> >> to be tracked. If you want to track it during the whole lifetime of the
-> >> cgroup, you switch it before you put tasks to it. What is so crazy about it?
-> > 
-> > The fact that the numbers don't really mean what they apparently
-> > should mean.
-> > 
-> 
-> This is vague. The usage file in the cgroup means how much kernel memory
-> was used by that cgroup. If it really bothers you that this may not be
-> set through the whole group's lifetime, it is also easily solvable.
+The thing is, what I dislike is the whole console_write routine:
 
-Yes, easily by having a global switch which can be manipulated when
-there's no children.  It really seems like a no brainer to me.
+static void pstore_console_write(struct console *con, const char *s, unsigned c)
+{
+	const char *e = s + c;
 
-> > So, this seems properly crazy to me at the similar level of
-> > use_hierarchy fiasco.  I'm gonna NACK on this.
-> 
-> As I said: all use cases I particularly care about are covered by a
-> global switch.
-> 
-> I am laying down my views because I really believe they make more sense.
-> But at some point, of course, I'll shut up if I believe I am a lone voice.
-> 
-> I believe it should still be good to hear from mhocko and kame, but from
-> your point of view, would all the rest, plus the introduction of a
-> global switch make it acceptable to you?
+	while (s < e) {
+		unsigned long flags;
 
-The only thing I'm whining about is per-node switch + silently
-ignoring past accounting, so if those two are solved, I think I'm
-pretty happy with the rest.
+		if (c > psinfo->bufsize)
+			c = psinfo->bufsize;
+		spin_lock_irqsave(&psinfo->buf_lock, flags);
+		memcpy(psinfo->buf, s, c);
+		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
+		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+		s += c;
+		c = e - s;
+	}
+}
 
-Thanks.
+It's bad not because of the locks, but because we unnecessary copy things
+around -- and that's the only reason why we need the lock in the first
+place.
 
--- 
-tejun
+With write_buf, the above would turn into just:
+
+static void pstore_console_write(struct console *con, const char *s, unsigned c)
+{
+	psinfo->write_buf(PSTORE_TYPE_CONSOLE, 0, NULL, 0, s, c, psinfo);
+}
+
+Of course, this assumes that write_buf does its own hw/driver-specific
+protection, but only if necessary: for ram backend no locks would be
+necessary at all.
+
+And as it appears, both erst and efivars drivers do their own locks in the
+->write callback anyways. (Btw, efi pstore backend just grabs its lock w/o
+trying it first, is it in trouble?)
+
+
+But for panic case, we will use buf and buf_lock:
+
+pstore_dump()
+{
+	lock(buf_lock);
+	...
+	psinfo->write_buf(PSTORE_TYPE_DMESG, ..., psinfo->buf, ...);
+	...
+	unlock(buf_lock);
+}
+
+So, we will use them, but only when necessary (for dumping). We can think
+of them as dump_buf and dump_buf_lock, because that's the only when this
+stuff will be needed, actually.
+
+Thanks,
+Anton.
