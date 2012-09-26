@@ -1,263 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab2IZNpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 09:45:24 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:49412 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab2IZNod (ORCPT
+	id S1756714Ab2IZNpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 09:45:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49166 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756645Ab2IZNp1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 09:44:33 -0400
-From: Matt Porter <mporter@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Benoit Cousson <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH 1/3] uio: uio_pruss: port to AM33xx
-Date: Wed, 26 Sep 2012 09:44:29 -0400
-Message-Id: <1348667071-12631-2-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348667071-12631-1-git-send-email-mporter@ti.com>
-References: <1348667071-12631-1-git-send-email-mporter@ti.com>
+	Wed, 26 Sep 2012 09:45:27 -0400
+Message-ID: <1348667110.3881.108.camel@twins>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Jones <drjones@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Date: Wed, 26 Sep 2012 15:45:10 +0200
+In-Reply-To: <20120926133905.GA8842@turtle.usersys.redhat.com>
+References: <1348486479.11847.46.camel@twins>
+	 <50604988.2030506@linux.vnet.ibm.com> <1348490165.11847.58.camel@twins>
+	 <50606050.309@linux.vnet.ibm.com> <1348494895.11847.64.camel@twins>
+	 <50608176.1040805@redhat.com> <1348502600.11847.90.camel@twins>
+	 <5060883C.4050901@redhat.com>
+	 <20120926132013.GB7633@turtle.usersys.redhat.com>
+	 <1348665971.3881.102.camel@twins>
+	 <20120926133905.GA8842@turtle.usersys.redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ifdefery hacks to only use SRAM on Davinci. This
-needs to be cleaned up with a sane generic SRAM allocator
-(like the DT based driver available that can't be used on
-Davinci which is just starting DT conversion) before it
-can go upstream.
+On Wed, 2012-09-26 at 15:39 +0200, Andrew Jones wrote:
+> On Wed, Sep 26, 2012 at 03:26:11PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2012-09-26 at 15:20 +0200, Andrew Jones wrote:
+> > > Wouldn't a clean solution be to promote a task's scheduler
+> > > class to the spinner class when we PLE (or come from some special
+> > > syscall
+> > > for userspace spinlocks?)? 
+> > 
+> > Userspace spinlocks are typically employed to avoid syscalls..
+> 
+> I'm guessing there could be a slow path - spin N times and then give
+> up and yield.
 
-Adds DT, pinctrl, and runtime PM support for use on
-AM33xx.
+Much better they should do a blocking futex call or so, once you do the
+syscall you're in kernel space anyway and have paid the transition cost.
 
-Signed-off-by: Matt Porter <mporter@ti.com>
----
- Documentation/devicetree/bindings/uio/pruss.txt    |   17 ++++++
- .../devicetree/bindings/uio/uio_pruss.txt          |   17 ++++++
- drivers/uio/Kconfig                                |    4 +-
- drivers/uio/uio_pruss.c                            |   63 +++++++++++++++++++-
- 4 files changed, 98 insertions(+), 3 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/uio/pruss.txt
- create mode 100644 Documentation/devicetree/bindings/uio/uio_pruss.txt
+> > 
+> > > That class would be higher priority than the
+> > > fair class and would schedule in FIFO order, but it would only run its
+> > > tasks for short periods before switching. 
+> > 
+> > Since lock hold times aren't limited, esp. for things like userspace
+> > 'spin' locks, you've got a very good denial of service / opportunity for
+> > abuse right there.
+> 
+> Maybe add some throttling to avoid overuse/maliciousness?
 
-diff --git a/Documentation/devicetree/bindings/uio/pruss.txt b/Documentation/devicetree/bindings/uio/pruss.txt
-new file mode 100644
-index 0000000..2ac45c5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/uio/pruss.txt
-@@ -0,0 +1,17 @@
-+TI PRUSS device
-+
-+Required properties:
-+- compatible :
-+  - "ti,pruss-v1" for AM18xx/OMAP-L138/DA850
-+  - "ti,pruss-v2" for AM33xx.
-+- ti,pintc-offset : Offset of the PINTC from the PRUSS address base
-+- ti,hwmods: Name of the hwmod associated to the PRUSS
-+
-+Example:
-+
-+pruss: pruss@4a300000 {
-+	compatible = "ti,pruss-v2";
-+	ti,hwmods = "pruss";
-+	reg = <0x4a300000 0x080000>;
-+	ti,pintc-offset = <0x20000>;
-+};
-diff --git a/Documentation/devicetree/bindings/uio/uio_pruss.txt b/Documentation/devicetree/bindings/uio/uio_pruss.txt
-new file mode 100644
-index 0000000..2ac45c5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/uio/uio_pruss.txt
-@@ -0,0 +1,17 @@
-+TI PRUSS device
-+
-+Required properties:
-+- compatible :
-+  - "ti,pruss-v1" for AM18xx/OMAP-L138/DA850
-+  - "ti,pruss-v2" for AM33xx.
-+- ti,pintc-offset : Offset of the PINTC from the PRUSS address base
-+- ti,hwmods: Name of the hwmod associated to the PRUSS
-+
-+Example:
-+
-+pruss: pruss@4a300000 {
-+	compatible = "ti,pruss-v2";
-+	ti,hwmods = "pruss";
-+	reg = <0x4a300000 0x080000>;
-+	ti,pintc-offset = <0x20000>;
-+};
-diff --git a/drivers/uio/Kconfig b/drivers/uio/Kconfig
-index 6f3ea9b..8da7d9b 100644
---- a/drivers/uio/Kconfig
-+++ b/drivers/uio/Kconfig
-@@ -96,9 +96,9 @@ config UIO_NETX
- 
- config UIO_PRUSS
- 	tristate "Texas Instruments PRUSS driver"
--	depends on ARCH_DAVINCI_DA850
-+	depends on ARCH_DAVINCI_DA850 || SOC_AM33XX
- 	help
--	  PRUSS driver for OMAPL138/DA850/AM18XX devices
-+	  PRUSS driver for OMAPL138/DA850/AM18XX and AM33XX devices
- 	  PRUSS driver requires user space components, examples and user space
- 	  driver is available from below SVN repo - you may use anonymous login
- 
-diff --git a/drivers/uio/uio_pruss.c b/drivers/uio/uio_pruss.c
-index 33a7a27..326ce40 100644
---- a/drivers/uio/uio_pruss.c
-+++ b/drivers/uio/uio_pruss.c
-@@ -25,7 +25,15 @@
- #include <linux/clk.h>
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/err.h>
-+#include <linux/pm_runtime.h>
-+
-+#ifdef CONFIG_ARCH_DAVINCI_DA850
- #include <mach/sram.h>
-+#endif
- 
- #define DRV_NAME "pruss_uio"
- #define DRV_VERSION "1.0"
-@@ -105,8 +113,10 @@ static void pruss_cleanup(struct platform_device *dev,
- 		dma_free_coherent(&dev->dev, extram_pool_sz, gdev->ddr_vaddr,
- 			gdev->ddr_paddr);
- 	}
-+#ifdef CONFIG_ARCH_DAVINCI_DA850
- 	if (gdev->sram_vaddr)
- 		sram_free(gdev->sram_vaddr, sram_pool_sz);
-+#endif
- 	kfree(gdev->info);
- 	clk_put(gdev->pruss_clk);
- 	kfree(gdev);
-@@ -117,8 +127,10 @@ static int __devinit pruss_probe(struct platform_device *dev)
- 	struct uio_info *p;
- 	struct uio_pruss_dev *gdev;
- 	struct resource *regs_prussio;
-+	struct resource res;
- 	int ret = -ENODEV, cnt = 0, len;
- 	struct uio_pruss_pdata *pdata = dev->dev.platform_data;
-+	struct pinctrl *pinctrl;
- 
- 	gdev = kzalloc(sizeof(struct uio_pruss_dev), GFP_KERNEL);
- 	if (!gdev)
-@@ -129,6 +141,7 @@ static int __devinit pruss_probe(struct platform_device *dev)
- 		kfree(gdev);
- 		return -ENOMEM;
- 	}
-+#ifdef CONFIG_ARCH_DAVINCI_DA850
- 	/* Power on PRU in case its not done as part of boot-loader */
- 	gdev->pruss_clk = clk_get(&dev->dev, "pruss");
- 	if (IS_ERR(gdev->pruss_clk)) {
-@@ -140,6 +153,28 @@ static int __devinit pruss_probe(struct platform_device *dev)
- 	} else {
- 		clk_enable(gdev->pruss_clk);
- 	}
-+#endif
-+
-+	if (dev->dev.of_node) {
-+		pm_runtime_enable(&dev->dev);
-+		ret = pm_runtime_get_sync(&dev->dev);
-+		if (IS_ERR_VALUE(ret)) {
-+			dev_err(&dev->dev, "pm_runtime_get_sync() failed\n");
-+			return ret;
-+		}
-+
-+		ret = of_address_to_resource(dev->dev.of_node, 0, &res);
-+		if (IS_ERR_VALUE(ret)) {
-+			dev_err(&dev->dev, "failed to parse DT reg\n");
-+			return ret;
-+		}
-+		regs_prussio = &res;
-+	}
-+
-+	pinctrl = devm_pinctrl_get_select_default(&dev->dev);
-+	if (IS_ERR(pinctrl))
-+		dev_warn(&dev->dev,
-+			"pins are not configured from the driver\n");
- 
- 	regs_prussio = platform_get_resource(dev, IORESOURCE_MEM, 0);
- 	if (!regs_prussio) {
-@@ -152,11 +187,13 @@ static int __devinit pruss_probe(struct platform_device *dev)
- 		goto out_free;
- 	}
- 
-+#ifdef CONFIG_ARCH_DAVINCI_DA850
- 	gdev->sram_vaddr = sram_alloc(sram_pool_sz, &(gdev->sram_paddr));
- 	if (!gdev->sram_vaddr) {
- 		dev_err(&dev->dev, "Could not allocate SRAM pool\n");
- 		goto out_free;
- 	}
-+#endif
- 
- 	gdev->ddr_vaddr = dma_alloc_coherent(&dev->dev, extram_pool_sz,
- 				&(gdev->ddr_paddr), GFP_KERNEL | GFP_DMA);
-@@ -172,7 +209,17 @@ static int __devinit pruss_probe(struct platform_device *dev)
- 		goto out_free;
- 	}
- 
--	gdev->pintc_base = pdata->pintc_base;
-+	if (dev->dev.of_node) {
-+		ret = of_property_read_u32(dev->dev.of_node,
-+					   "ti,pintc-offset",
-+					   &gdev->pintc_base);
-+		if (ret < 0) {
-+			dev_err(&dev->dev,
-+				"Can't parse ti,pintc-offset property\n");
-+			goto out_free;
-+		}
-+	} else
-+		gdev->pintc_base = pdata->pintc_base;
- 	gdev->hostirq_start = platform_get_irq(dev, 0);
- 
- 	for (cnt = 0, p = gdev->info; cnt < MAX_PRUSS_EVT; cnt++, p++) {
-@@ -180,6 +227,7 @@ static int __devinit pruss_probe(struct platform_device *dev)
- 		p->mem[0].size = resource_size(regs_prussio);
- 		p->mem[0].memtype = UIO_MEM_PHYS;
- 
-+#ifdef CONFIG_ARCH_DAVINCI_DA850
- 		p->mem[1].addr = gdev->sram_paddr;
- 		p->mem[1].size = sram_pool_sz;
- 		p->mem[1].memtype = UIO_MEM_PHYS;
-@@ -187,6 +235,11 @@ static int __devinit pruss_probe(struct platform_device *dev)
- 		p->mem[2].addr = gdev->ddr_paddr;
- 		p->mem[2].size = extram_pool_sz;
- 		p->mem[2].memtype = UIO_MEM_PHYS;
-+#else
-+		p->mem[1].addr = gdev->ddr_paddr;
-+		p->mem[1].size = extram_pool_sz;
-+		p->mem[1].memtype = UIO_MEM_PHYS;
-+#endif
- 
- 		p->name = kasprintf(GFP_KERNEL, "pruss_evt%d", cnt);
- 		p->version = DRV_VERSION;
-@@ -218,12 +271,20 @@ static int __devexit pruss_remove(struct platform_device *dev)
- 	return 0;
- }
- 
-+static const struct of_device_id pruss_dt_ids[] = {
-+	{ .compatible = "ti,pruss-v1", .data = NULL, },
-+	{ .compatible = "ti,pruss-v2", .data = NULL, },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, pruss_dt_ids);
-+
- static struct platform_driver pruss_driver = {
- 	.probe = pruss_probe,
- 	.remove = __devexit_p(pruss_remove),
- 	.driver = {
- 		   .name = DRV_NAME,
- 		   .owner = THIS_MODULE,
-+		   .of_match_table = pruss_dt_ids,
- 		   },
- };
- 
--- 
-1.7.9.5
+At which point you're pretty much back to where you started.
 
+A much better approach is using things like priority inheritance, which
+can be extended to cover the fair class just fine..
+
+Also note that user-space spinning is inherently prone to live-locks
+when combined with the static priority RT scheduling classes.
+
+In general its a very bad idea..
