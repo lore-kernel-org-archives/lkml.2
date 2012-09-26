@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316Ab2IZTlY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 15:41:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61691 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab2IZTlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 15:41:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: Re: [PATCHv2 2/4] dmaengine: dw_dmac: Add PCI part of the driver
-Date: Wed, 26 Sep 2012 19:41:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: viresh kumar <viresh.kumar@linaro.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "spear-devel" <spear-devel@list.st.com>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com> <CAOh2x=nnUxJ4bvro_Rc95jRk7SR_yzxwZhNXeL4w5xDzsDj3nQ@mail.gmail.com> <CAHp75VcGQ9jCpGb2jhCEX4NsbUsR0aytwd1AMkt4GpTXYVPnwQ@mail.gmail.com>
-In-Reply-To: <CAHp75VcGQ9jCpGb2jhCEX4NsbUsR0aytwd1AMkt4GpTXYVPnwQ@mail.gmail.com>
+	id S1751676Ab2IZTuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 15:50:10 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:49146 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750897Ab2IZTuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 15:50:08 -0400
+Message-ID: <50635B9D.8020205@parallels.com>
+Date: Wed, 26 Sep 2012 23:46:37 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <devel@openvz.org>, <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-5-git-send-email-glommer@parallels.com> <20120926140347.GD15801@dhcp22.suse.cz> <20120926163648.GO16296@google.com> <50633D24.6020002@parallels.com> <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com> <50634105.8060302@parallels.com> <20120926180124.GA12544@google.com> <50634FC9.4090609@parallels.com> <20120926193417.GJ12544@google.com>
+In-Reply-To: <20120926193417.GJ12544@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209261941.11944.arnd@arndb.de>
-X-Provags-ID: V02:K0:Sxse/683HWL9hT2hdp+G5hk71IowdC06mhnF5AzOklC
- WfPhQW8zQGrnRA7b1YevxFIiXfq1PJNiR8oljIbXaH4SVzgxLe
- 36uSRWbvLBc1BXMANVwEV9xAShnEIJhmjNouQC2FHadh/SeLNr
- 9W69t/g9/68x9J3tA+ZFAn7mjpSR/5YGDAZrNLrzbbfjdMRMiY
- m7V9bbXkEiZG1Ux6mp+HJ24f79VQarIBTYVNyeeXvGK5DKVC15
- +YH8SnDR3LgS5yK0bzweUwsYCqjk2i8zzErogQY3to4666LBNL
- VLb4lFDmN/Ku6uUE8YuuAV40ebITRIMXqXw/u2tbnYYpQjXUYO
- RWhTN7L9YMgIbatM6Noo=
+X-Originating-IP: [109.173.3.27]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 September 2012, Andy Shevchenko wrote:
-> On Wed, Sep 26, 2012 at 5:33 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
-> > On Wed, Sep 26, 2012 at 6:10 PM, Andy Shevchenko
-> > <andriy.shevchenko@linux.intel.com> wrote:
-> >> diff --git a/drivers/dma/dw_dmac_pci.c b/drivers/dma/dw_dmac_pci.c
-> >> +#include <linux/module.h>
-> >> +#include <linux/pci.h>
-> >> +#include <linux/platform_device.h>
-> >> +#include <linux/dw_dmac.h>
-> >> +
-> >> +#define DRIVER(_is_private, _chan_order, _chan_pri)            \
-> >> +       ((kernel_ulong_t)&(struct dw_dma_platform_data) {       \
-> >> +               .is_private = (_is_private),                    \
-> >> +               .chan_allocation_order = (_chan_order),         \
-> >> +               .chan_priority = (_chan_pri),                   \
-> >
-> > I believe you don't need these braces around input variables on right side
-> > of "=". Even if there is something complex passed.
-> Hmm... Have no idea if anyone will use robust stuff as a parameter to
-> that macro. I could remove them.
-
-IMHO It's better to leave them in as general practice in case of a macro.
-
-However, I would prefer not having this macro at all and just open-code
-the contents. If you use traditional struct initializers, the amount of
-code is almost exactly the same.
-
+On 09/26/2012 11:34 PM, Tejun Heo wrote:
+> Hello,
 > 
-> >> +       pd = platform_device_alloc("dw_dmac", instance);
-> >> +       if (!pd) {
-> >> +               dev_err(&pdev->dev, "can't allocate dw_dmac platform device\n");
-> >> +               ret = -ENOMEM;
-> >> +               goto err0;
-> >> +       }
-> >
-> > Is this the correct approach? I doubt... We are creating a platform
-> > device from a
-> > pci driver... Don't know if it can lead to some issues within kernel.
-> >
-> > Lets call the specialist for his comments  :)
-> > @Arnd: Can you please help us here?
-> This approach is used among different drivers in kernel. As first
-> example that comes to my mind you could consider chipidea USB driver
-> (drivers/usb/chipidea).
+> On Wed, Sep 26, 2012 at 10:56:09PM +0400, Glauber Costa wrote:
+>> For me, it is the other way around: it makes perfect sense to have a
+>> per-subtree selection of features where it doesn't hurt us, provided it
+>> is hierarchical. For the mere fact that not every application is
+>> interested in this (Michal is the one that is being so far more vocal
+>> about this not being needed in some use cases), and it is perfectly
+>> valid to imagine such applications would coexist.
+>>
+>> So given the flexibility it brings, the real question is, as I said,
+>> backwards: what is it necessary to make it a global switch ?
+> 
+> Because it hurts my head and it's better to keep things simple.  We're
+> planning to retire .use_hierarhcy in sub hierarchies and I'd really
+> like to prevent another fiasco like that unless there absolutely is no
+> way around it.  Flexibility where necessary is fine but let's please
+> try our best to avoid over-designing things.  We've been far too good
+> at getting lost in flexbility maze.  Michal, care to chime in?
+> 
 
-Yes, this is fine for a PCI device with multiple logical devices. You could
-also use the MFD framework if that results in smaller code. For a driver
-that can be either a platform device or a pci device with no other sub-devices,
-I would however recommend having a common initialization function for stuff
-that can be called from either bus_type but with no extra level of indirection.
+I would very much like to hear Michal here as well, sure.
 
-	Arnd
+But as I said in this very beginning of this, you pretty much know that
+I am heavily involved in trying to get rid of use_hierarchy, and by no
+means I consider this en pair with that.
+
+use_hierarchy is a hack around a core property of cgroups, the fact that
+they are hierarchical. Its mere existence came to be to overcome a
+performance limitation.
+
+It puts you in contradictory situation where you have cgroups organized
+as directories, and then not satisfied in making this hierarchical
+representation be gravely ignored, forces you to use nonsensical terms
+like "flat hierarchy", making us grasp at how it is to be a politician
+once in our lifetimes.
+
+Besides not being part of cgroup core, and respecting very much both
+cgroups' and basic sanity properties, kmem is an actual feature that
+some people want, and some people don't. There is no reason to believe
+that applications that want will live in the same environment with ones
+that don't want.
+
+
+
