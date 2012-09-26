@@ -1,150 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab2IZCon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Sep 2012 22:44:43 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:57237 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab2IZCom (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Sep 2012 22:44:42 -0400
-X-AuditID: b753bd60-96850ba000002f78-04-50626c17ae58
-X-AuditID: b753bd60-96850ba000002f78-04-50626c17ae58
-Message-ID: <50626C11.9040708@hitachi.com>
-Date: Wed, 26 Sep 2012 11:44:33 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751498Ab2IZCs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Sep 2012 22:48:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45571 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751165Ab2IZCs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Sep 2012 22:48:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,487,1344236400"; 
+   d="scan'208";a="226489841"
+Date: Wed, 26 Sep 2012 10:47:54 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi.kleen@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pagemap: fix wrong KPF_THP on slab pages
+Message-ID: <20120926024754.GA12716@localhost>
+References: <alpine.DEB.2.00.1209251719400.21751@chino.kir.corp.google.com>
+ <1348625168-28983-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-To: sjur.brandeland@stericsson.com
-Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, sjurbren@stericsson.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] virtio_console:Merge struct buffer_token into struct
- port_buffer
-References: <1348580837-10919-1-git-send-email-sjur.brandeland@stericsson.com> <1348580837-10919-2-git-send-email-sjur.brandeland@stericsson.com>
-In-Reply-To: <1348580837-10919-2-git-send-email-sjur.brandeland@stericsson.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348625168-28983-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/09/25 22:47), sjur.brandeland@stericsson.com wrote:
-> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+On Tue, Sep 25, 2012 at 10:06:08PM -0400, Naoya Horiguchi wrote:
+> On Tue, Sep 25, 2012 at 05:20:48PM -0700, David Rientjes wrote:
+> > On Tue, 25 Sep 2012, Naoya Horiguchi wrote:
+> > 
+> > > KPF_THP can be set on non-huge compound pages like slab pages, because
+> > > PageTransCompound only sees PG_head and PG_tail. Obviously this is a bug
+> > > and breaks user space applications which look for thp via /proc/kpageflags.
+> > > Currently thp is constructed only on anonymous pages, so this patch makes
+> > > KPF_THP be set when both of PageAnon and PageTransCompound are true.
+> > > 
+> > > Changelog in v2:
+> > >   - add a comment in code
+> > > 
+> > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > 
+> > Wouldn't PageTransCompound(page) && !PageHuge(page) && !PageSlab(page) be 
+> > better for a future extension of thp support?
 > 
-> This merge reduces code size by unifying the approach for
-> sending scatter-lists and regular buffers. Any type of
-> write operation (splice, write, put_chars) will now allocate
-> a port_buffer and send_buf() and free_buf() can always be used.
-
-Thanks!
-This looks much nicer and simpler. I just have some comments below.
-
-> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-> cc: Rusty Russell <rusty@rustcorp.com.au>
-> cc: Michael S. Tsirkin <mst@redhat.com>
-> cc: Amit Shah <amit.shah@redhat.com>
-> cc: Linus Walleij <linus.walleij@linaro.org>
-> cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Yes, this saves us an additional change when thp starts handling pagecaches.
+> Andrew, can you replace the previous version in -mm tree with new one below?
+> 
+> Thanks,
+> Naoya
 > ---
->  drivers/char/virtio_console.c |  141 ++++++++++++++++++-----------------------
->  1 files changed, 62 insertions(+), 79 deletions(-)
+> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Date: Tue, 25 Sep 2012 21:30:25 -0400
+> Subject: [PATCH v3] kpageflags: fix wrong KPF_THP on slab pages
 > 
-> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index 8ab9c3d..f4f7b04 100644
-> --- a/drivers/char/virtio_console.c
-> +++ b/drivers/char/virtio_console.c
-> @@ -111,6 +111,11 @@ struct port_buffer {
->  	size_t len;
->  	/* offset in the buf from which to consume data */
->  	size_t offset;
-> +
-> +	/* If sgpages == 0 then buf is used, else sg is used */
-> +	unsigned int sgpages;
-> +
-> +	struct scatterlist sg[1];
->  };
->  
->  /*
-> @@ -338,23 +343,46 @@ static inline bool use_multiport(struct ports_device *portdev)
->  
->  static void free_buf(struct port_buffer *buf)
->  {
-> +	int i;
-> +
->  	kfree(buf->buf);
+> KPF_THP can be set on non-huge compound pages like slab pages, because
+> PageTransCompound only sees PG_head and PG_tail. Obviously this is a bug
 
-this should be done only when !buf->sgpages, or (see below)
+s/sees/checks/
 
-> +
-> +	if (buf->sgpages)
-> +		for (i = 0; i < buf->sgpages; i++) {
-> +			struct page *page = sg_page(&buf->sg[i]);
-> +			if (!page)
-> +				break;
-> +			put_page(page);
-> +		}
-> +
->  	kfree(buf);
->  }
->  
-> -static struct port_buffer *alloc_buf(size_t buf_size)
-> +static struct port_buffer *alloc_buf(struct virtqueue *vq, size_t buf_size,
-> +				     int nrbufs)
->  {
->  	struct port_buffer *buf;
-> +	size_t alloc_size;
->  
-> -	buf = kmalloc(sizeof(*buf), GFP_KERNEL);
-> +	/* Allocate buffer and the scatter list */
-> +	alloc_size = sizeof(*buf) + sizeof(struct scatterlist) * nrbufs;
+> and breaks user space applications which look for thp via /proc/kpageflags.
+> This patch rules out setting KPF_THP wrongly by additional PageSlab check.
+> 
+> Changelog in v3:
+>   - check PageSlab instead of PageAnon
+>   - fix patch subject
+> 
+> Changelog in v2:
+>   - add a comment in code
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  fs/proc/page.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/proc/page.c b/fs/proc/page.c
+> index 7fcd0d6..e36d1f3 100644
+> --- a/fs/proc/page.c
+> +++ b/fs/proc/page.c
+> @@ -115,7 +115,12 @@ u64 stable_page_flags(struct page *page)
+>  		u |= 1 << KPF_COMPOUND_TAIL;
+>  	if (PageHuge(page))
+>  		u |= 1 << KPF_HUGE;
+> -	else if (PageTransCompound(page))
+> +	/*
+> +	 * PageTransCompound can be true for slab pages because it just sees
 
-This allocates one redundant sg entry when nrbuf > 0,
-but I think it is OK. (just a comment)
+s/sees/checks/
 
-> +	buf = kmalloc(alloc_size, GFP_ATOMIC);
+> +	 * PG_head/PG_head, so we need to check PageSlab to make sure the given
 
-This should be kzalloc(), or buf->buf and others are not initialized,
-which will cause unexpected kfree bug at kfree(buf->buf) in free_buf.
+PG_head/PG_head should be PG_head/PG_tail.
 
->  	if (!buf)
->  		goto fail;
-> -	buf->buf = kzalloc(buf_size, GFP_KERNEL);
-> +
-> +	buf->sgpages = nrbufs;
-> +	if (nrbufs > 0)
-> +		return buf;
-> +
-> +	buf->buf = kmalloc(buf_size, GFP_ATOMIC);
+> +	 * page is a thp, not a non-huge compound page.
+> +	 */
+> +	else if (PageTransCompound(page) && !PageSlab(page))
+>  		u |= 1 << KPF_THP;
 
-You can also use kzalloc here as previous code does.
-But if the reason why using kzalloc comes from the security,
-I think kmalloc is enough here, since the host can access
-all the guest pages anyway.
+Good catch!
 
->  	if (!buf->buf)
->  		goto free_buf;
->  	buf->len = 0;
->  	buf->offset = 0;
->  	buf->size = buf_size;
-> +
-> +	/* Prepare scatter buffer for sending */
-> +	sg_init_one(buf->sg, buf->buf, buf_size);
->  	return buf;
->  
->  free_buf:
+Will this report THP for the various drivers that do __GFP_COMP
+page allocations?
 
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Thanks,
+Fengguang
