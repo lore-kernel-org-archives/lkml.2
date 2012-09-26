@@ -1,83 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab2IZUgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:36:31 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54547 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab2IZUga (ORCPT
+	id S1751247Ab2IZUmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:42:09 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40406 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab2IZUmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:36:30 -0400
-Date: Wed, 26 Sep 2012 13:36:26 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ming Lei <tom.leiming@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [BUG] Deferred probing in driver model is racy, resulting in
- lost probes
-Message-ID: <20120926203626.GA23766@kroah.com>
-References: <20120818145856.GP18957@n2100.arm.linux.org.uk>
- <CACVXFVPahbFVEP4p2Z9-TvjQ52tUCMuDeLx0X6GP5t0h5gEV8g@mail.gmail.com>
- <20120916082510.GN12245@n2100.arm.linux.org.uk>
- <CACVXFVOZ=4HFAy38q_8ZUjOPffcv_mMTi7KCdh3HcX=MCLw5SQ@mail.gmail.com>
- <20120926200833.GA14340@kroah.com>
- <20120926202321.GD30938@n2100.arm.linux.org.uk>
+	Wed, 26 Sep 2012 16:42:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120926202321.GD30938@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120926133335.b012417e.akpm@linux-foundation.org>
+References: <20120926160127.c34cb6d3e5dcc9ab32e8b573@canb.auug.org.au>
+	<CAGXu5jJJPLXP1cjtWAwHNmYQ6ZxtVu=Oo6vh=NkowzT+26RWPg@mail.gmail.com>
+	<20120926133335.b012417e.akpm@linux-foundation.org>
+Date: Wed, 26 Sep 2012 13:42:05 -0700
+X-Google-Sender-Auth: kyhoYdq3gVWzX9eiQwAuZTwRyEE
+Message-ID: <CAGXu5jK1i_0t+qGpC0XfE=G1r5qWJDfx2A64T1Yb=w2LDiLW1g@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 09:23:21PM +0100, Russell King - ARM Linux wrote:
-> On Wed, Sep 26, 2012 at 01:08:33PM -0700, Greg Kroah-Hartman wrote:
-> > On Sun, Sep 16, 2012 at 09:24:43PM +0800, Ming Lei wrote:
-> > > diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-> > > index 181ed26..17d7437 100644
-> > > --- a/drivers/base/bus.c
-> > > +++ b/drivers/base/bus.c
-> > > @@ -714,12 +714,12 @@ int bus_add_driver(struct device_driver *drv)
-> > >  	if (error)
-> > >  		goto out_unregister;
-> > > 
-> > > +	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
-> > >  	if (drv->bus->p->drivers_autoprobe) {
-> > >  		error = driver_attach(drv);
-> > >  		if (error)
-> > >  			goto out_unregister;
-> > >  	}
-> > > -	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
-> > >  	module_add_driver(drv->owner, drv);
-> > > 
-> > >  	error = driver_create_file(drv, &driver_attr_uevent);
-> > > 
-> > > 
-> > > 
-> > 
-> > Did the above patch ever prove to solve the issue or not?
-> 
-> To be honest, I've not bothered to test the above patch, and now when I
-> look at it, I notice it's broken - in that on error it will corrupt the
-> driver list.  Take a look at the error path.
-> 
-> priv is drv->p.  We add priv->knode_bus to the driver list.  If
-> driver_attach() returns an error, then we go to out_unregister, which
-> does:
-> 
-> out_unregister:
->         kobject_put(&priv->kobj);
->         kfree(drv->p);
->         drv->p = NULL;
-> 
-> thereby freeing the node we just added to the driver list without first
-> removing it.
-> 
-> I suspect it will fix the problem, but let's get the patch to be correct
-> before it gets tested...
+Hi,
 
-Good catch.  Ming, care to redo this?
+Thanks! This almost matched what I was preparing. Notes below...
 
-greg k-h
+On Wed, Sep 26, 2012 at 1:33 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 26 Sep 2012 13:15:58 -0700
+> Kees Cook <keescook@chromium.org> wrote:
+>
+>> This is weird -- my original patch doesn't touch audit_get_sessionid() at all:
+>> http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=commitdiff;h=7bbfec58ed33d5e74043530b87992f16da718ba2
+>
+> That patch has been broken multiple times as things change under its
+> feet.  I've just repaired my most recent attempt to repair it.
+>
+>
+> From: Kees Cook <keescook@chromium.org>
+> Subject: audit.h: replace defines with C stubs
+>
+> Replace the #defines used when CONFIG_AUDIT or CONFIG_AUDIT_SYSCALLS are
+> disabled so we get type checking during those builds.
+>
+> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>
+>  include/linux/audit.h |  206 +++++++++++++++++++++++++++++-----------
+>  1 file changed, 153 insertions(+), 53 deletions(-)
+>
+> diff -puN include/linux/audit.h~audith-replace-defines-with-c-stubs include/linux/audit.h
+> --- a/include/linux/audit.h~audith-replace-defines-with-c-stubs
+> +++ a/include/linux/audit.h
+> @@ -528,9 +528,18 @@ static inline void audit_ptrace(struct t
+>  extern unsigned int audit_serial(void);
+>  extern int auditsc_get_stamp(struct audit_context *ctx,
+>                               struct timespec *t, unsigned int *serial);
+> -extern int  audit_set_loginuid(kuid_t loginuid);
+> -#define audit_get_loginuid(t) ((t)->loginuid)
+> -#define audit_get_sessionid(t) ((t)->sessionid)
+> +extern int audit_set_loginuid(kuid_t loginuid);
+> +
+> +static inline int audit_get_loginuid(struct task_struct *tsk)
+
+Shouldn't this return kuid_t, due to "userns: Convert the audit
+loginuid  to be a kuid"?
+
+> +{
+> +       return tsk->loginuid
+> +}
+> +
+> +static inline int audit_get_sessionid(struct task_struct *tsk)
+> +{
+> +       return tsk->sessionid;
+> +}
+> +
+>  extern void audit_log_task_context(struct audit_buffer *ab);
+>  extern void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk);
+>  extern void __audit_ipc_obj(struct kern_ipc_perm *ipcp);
+> @@ -627,38 +636,101 @@ static inline void audit_mmap_fd(int fd,
+>  extern int audit_n_rules;
+>  extern int audit_signals;
+>  #else /* CONFIG_AUDITSYSCALL */
+> -#define audit_alloc(t) ({ 0; })
+> -#define audit_free(t) do { ; } while (0)
+> -#define audit_syscall_entry(ta,a,b,c,d,e) do { ; } while (0)
+> -#define audit_syscall_exit(r) do { ; } while (0)
+> -#define audit_dummy_context() 1
+> -#define audit_getname(n) do { ; } while (0)
+> -#define audit_putname(n) do { ; } while (0)
+> -#define __audit_inode(n,d) do { ; } while (0)
+> -#define __audit_inode_child(i,p) do { ; } while (0)
+> -#define audit_inode(n,d) do { (void)(d); } while (0)
+> -#define audit_inode_child(i,p) do { ; } while (0)
+> -#define audit_core_dumps(i) do { ; } while (0)
+> -#define audit_seccomp(i,s,c) do { ; } while (0)
+> -#define auditsc_get_stamp(c,t,s) (0)
+> -#define audit_get_loginuid(t) (INVALID_UID)
+> -#define audit_get_sessionid(t) (-1)
+> -#define audit_log_task_context(b) do { ; } while (0)
+> -#define audit_log_task_info(b, t) do { ; } while (0)
+> -#define audit_ipc_obj(i) ((void)0)
+> -#define audit_ipc_set_perm(q,u,g,m) ((void)0)
+> -#define audit_bprm(p) ({ 0; })
+> -#define audit_socketcall(n,a) ((void)0)
+> -#define audit_fd_pair(n,a) ((void)0)
+> -#define audit_sockaddr(len, addr) ({ 0; })
+> -#define audit_mq_open(o,m,a) ((void)0)
+> -#define audit_mq_sendrecv(d,l,p,t) ((void)0)
+> -#define audit_mq_notify(d,n) ((void)0)
+> -#define audit_mq_getsetattr(d,s) ((void)0)
+> -#define audit_log_bprm_fcaps(b, ncr, ocr) ({ 0; })
+> -#define audit_log_capset(pid, ncr, ocr) ((void)0)
+> -#define audit_mmap_fd(fd, flags) ((void)0)
+> -#define audit_ptrace(t) ((void)0)
+> +static inline int audit_alloc(struct task_struct *task)
+> +{
+> +       return 0;
+> +}
+> +static inline void audit_free(struct task_struct *task)
+> +{ }
+> +static inline void audit_syscall_entry(int arch, int major, unsigned long a0,
+> +                                      unsigned long a1, unsigned long a2,
+> +                                      unsigned long a3)
+> +{ }
+> +static inline void audit_syscall_exit(void *pt_regs)
+> +{ }
+> +static inline int audit_dummy_context(void)
+> +{
+> +       return 1;
+> +}
+> +static inline void audit_getname(const char *name)
+> +{ }
+> +static inline void audit_putname(const char *name)
+> +{ }
+> +static inline void __audit_inode(const char *name, const struct dentry *dentry)
+> +{ }
+> +static inline void __audit_inode_child(const struct dentry *dentry,
+> +                                       const struct inode *parent)
+> +{ }
+> +static inline void audit_inode(const char *name, const struct dentry *dentry)
+> +{ }
+> +static inline void audit_inode_child(const struct dentry *dentry,
+> +                                    const struct inode *parent)
+> +{ }
+> +static inline void audit_core_dumps(long signr)
+> +{ }
+> +static inline void __audit_seccomp(unsigned long syscall, long signr, int code)
+> +{ }
+> +static inline void audit_seccomp(unsigned long syscall, long signr, int code)
+> +{ }
+> +static inline int auditsc_get_stamp(struct audit_context *ctx,
+> +                             struct timespec *t, unsigned int *serial)
+> +{
+> +       return 0;
+> +}
+> +static inline int audit_get_loginuid(struct task_struct *tsk)
+
+Same here?
+
+> +{
+> +       return INVALID_UID;
+> +}
+> +static inline int audit_get_sessionid(struct task_struct *tsk)
+> +{
+> +       return -1;
+> +}
+> +static inline void audit_log_task_context(struct audit_buffer *ab)
+> +{ }
+> +static inline void audit_log_task_info(struct audit_buffer *ab,
+> +                                      struct task_struct *tsk)
+> +{ }
+> +static inline void audit_ipc_obj(struct kern_ipc_perm *ipcp)
+> +{ }
+> +static inline void audit_ipc_set_perm(unsigned long qbytes, uid_t uid,
+> +                                       gid_t gid, umode_t mode)
+> +{ }
+> +static inline int audit_bprm(struct linux_binprm *bprm)
+> +{
+> +       return 0;
+> +}
+> +static inline void audit_socketcall(int nargs, unsigned long *args)
+> +{ }
+> +static inline void audit_fd_pair(int fd1, int fd2)
+> +{ }
+> +static inline int audit_sockaddr(int len, void *addr)
+> +{
+> +       return 0;
+> +}
+> +static inline void audit_mq_open(int oflag, umode_t mode, struct mq_attr *attr)
+> +{ }
+> +static inline void audit_mq_sendrecv(mqd_t mqdes, size_t msg_len,
+> +                                    unsigned int msg_prio,
+> +                                    const struct timespec *abs_timeout)
+> +{ }
+> +static inline void audit_mq_notify(mqd_t mqdes,
+> +                                  const struct sigevent *notification)
+> +{ }
+> +static inline void audit_mq_getsetattr(mqd_t mqdes, struct mq_attr *mqstat)
+> +{ }
+> +static inline int audit_log_bprm_fcaps(struct linux_binprm *bprm,
+> +                                      const struct cred *new,
+> +                                      const struct cred *old)
+> +{
+> +       return 0;
+> +}
+> +static inline void audit_log_capset(pid_t pid, const struct cred *new,
+> +                                  const struct cred *old)
+> +{ }
+> +static inline void audit_mmap_fd(int fd, int flags)
+> +{ }
+> +static inline void audit_ptrace(struct task_struct *t)
+> +{ }
+>  #define audit_n_rules 0
+>  #define audit_signals 0
+>  #endif /* CONFIG_AUDITSYSCALL */
+> @@ -682,7 +754,6 @@ extern void             audit_log_n_hex(struct
+>  extern void                audit_log_n_string(struct audit_buffer *ab,
+>                                                const char *buf,
+>                                                size_t n);
+> -#define audit_log_string(a,b) audit_log_n_string(a, b, strlen(b));
+>  extern void                audit_log_n_untrustedstring(struct audit_buffer *ab,
+>                                                         const char *string,
+>                                                         size_t n);
+> @@ -699,7 +770,8 @@ extern void             audit_log_lost(const ch
+>  #ifdef CONFIG_SECURITY
+>  extern void                audit_log_secctx(struct audit_buffer *ab, u32 secid);
+>  #else
+> -#define audit_log_secctx(b,s) do { ; } while (0)
+> +static inline void         audit_log_secctx(struct audit_buffer *ab, u32 secid)
+> +{ }
+>  #endif
+>
+>  extern int                 audit_update_lsm_rules(void);
+> @@ -711,22 +783,50 @@ extern int  audit_receive_filter(int typ
+>                                 void *data, size_t datasz, kuid_t loginuid,
+>                                 u32 sessionid, u32 sid);
+>  extern int audit_enabled;
+> -#else
+> -#define audit_log(c,g,t,f,...) do { ; } while (0)
+> -#define audit_log_start(c,g,t) ({ NULL; })
+> -#define audit_log_vformat(b,f,a) do { ; } while (0)
+> -#define audit_log_format(b,f,...) do { ; } while (0)
+> -#define audit_log_end(b) do { ; } while (0)
+> -#define audit_log_n_hex(a,b,l) do { ; } while (0)
+> -#define audit_log_n_string(a,c,l) do { ; } while (0)
+> -#define audit_log_string(a,c) do { ; } while (0)
+> -#define audit_log_n_untrustedstring(a,n,s) do { ; } while (0)
+> -#define audit_log_untrustedstring(a,s) do { ; } while (0)
+> -#define audit_log_d_path(b, p, d) do { ; } while (0)
+> -#define audit_log_key(b, k) do { ; } while (0)
+> -#define audit_log_link_denied(o, l) do { ; } while (0)
+> -#define audit_log_secctx(b,s) do { ; } while (0)
+> +#else /* CONFIG_AUDIT */
+> +static inline __printf(4, 5)
+> +void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
+> +              const char *fmt, ...)
+> +{ }
+> +static inline struct audit_buffer *audit_log_start(struct audit_context *ctx,
+> +                                                  gfp_t gfp_mask, int type)
+> +{
+> +       return NULL;
+> +}
+> +static inline __printf(2, 3)
+> +void audit_log_format(struct audit_buffer *ab, const char *fmt, ...)
+> +{ }
+> +static inline void audit_log_end(struct audit_buffer *ab)
+> +{ }
+> +static inline void audit_log_n_hex(struct audit_buffer *ab,
+> +                                  const unsigned char *buf, size_t len)
+> +{ }
+> +static inline void audit_log_n_string(struct audit_buffer *ab,
+> +                                     const char *buf, size_t n)
+> +{ }
+> +static inline void  audit_log_n_untrustedstring(struct audit_buffer *ab,
+> +                                               const char *string, size_t n)
+> +{ }
+> +static inline void audit_log_untrustedstring(struct audit_buffer *ab,
+> +                                            const char *string)
+> +{ }
+> +static inline void audit_log_d_path(struct audit_buffer *ab,
+> +                                   const char *prefix,
+> +                                   const struct path *path)
+> +{ }
+> +static inline void audit_log_key(struct audit_buffer *ab, char *key)
+> +{ }
+> +static inline void audit_log_link_denied(const char *string,
+> +                                        const struct path *link)
+> +{ }
+> +static inline void audit_log_secctx(struct audit_buffer *ab, u32 secid)
+> +{ }
+>  #define audit_enabled 0
+> -#endif
+> +#endif /* CONFIG_AUDIT */
+> +static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
+> +{
+> +       audit_log_n_string(ab, buf, strlen(buf));
+> +}
+> +
+>  #endif
+>  #endif
+> _
+>
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
