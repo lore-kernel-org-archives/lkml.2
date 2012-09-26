@@ -1,298 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab2IZUdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 16:33:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56135 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab2IZUdg (ORCPT
+	id S1752891Ab2IZUdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 16:33:50 -0400
+Received: from mail-ob0-f194.google.com ([209.85.214.194]:47313 "EHLO
+	mail-ob0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab2IZUdt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 16:33:36 -0400
-Date: Wed, 26 Sep 2012 13:33:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-Id: <20120926133335.b012417e.akpm@linux-foundation.org>
-In-Reply-To: <CAGXu5jJJPLXP1cjtWAwHNmYQ6ZxtVu=Oo6vh=NkowzT+26RWPg@mail.gmail.com>
-References: <20120926160127.c34cb6d3e5dcc9ab32e8b573@canb.auug.org.au>
-	<CAGXu5jJJPLXP1cjtWAwHNmYQ6ZxtVu=Oo6vh=NkowzT+26RWPg@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Sep 2012 16:33:49 -0400
+MIME-Version: 1.0
+Reply-To: webmailcontrolunit@cyberservices.com
+Date: Wed, 26 Sep 2012 21:33:48 +0100
+X-Google-Sender-Auth: 9zprowSi6k_lw30fgq1pSNnw6DU
+Message-ID: <CAOig8-McqRCvkDCfuVULMMiY=W5NYv=msJnFq8nbezCmkcs3VA@mail.gmail.com>
+Subject: Urgent Notice!!!
+From: Webmaster Email Help Desk <webmailcontrolunit@cyberservices.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Sep 2012 13:15:58 -0700
-Kees Cook <keescook@chromium.org> wrote:
+-- 
+Dear Webmail User
 
-> This is weird -- my original patch doesn't touch audit_get_sessionid() at all:
-> http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=commitdiff;h=7bbfec58ed33d5e74043530b87992f16da718ba2
+Your mailbox has exceeded the limit of Quota Usage, which is as set by
+your manager, and access to your mailbox via our mail portal will be
+unavailable for sometime during this maintenance period.
 
-That patch has been broken multiple times as things change under its
-feet.  I've just repaired my most recent attempt to repair it.
+You will not be able to create new e-mail to send or receive again
+until you validate your mailbox.
 
+To re-validate your mailbox, you can CLICK
+http://www.cedele.com.mx/phpform/forms/form1.html
 
-From: Kees Cook <keescook@chromium.org>
-Subject: audit.h: replace defines with C stubs
+Thanks
+System Administrator.
 
-Replace the #defines used when CONFIG_AUDIT or CONFIG_AUDIT_SYSCALLS are
-disabled so we get type checking during those builds.
-
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- include/linux/audit.h |  206 +++++++++++++++++++++++++++++-----------
- 1 file changed, 153 insertions(+), 53 deletions(-)
-
-diff -puN include/linux/audit.h~audith-replace-defines-with-c-stubs include/linux/audit.h
---- a/include/linux/audit.h~audith-replace-defines-with-c-stubs
-+++ a/include/linux/audit.h
-@@ -528,9 +528,18 @@ static inline void audit_ptrace(struct t
- extern unsigned int audit_serial(void);
- extern int auditsc_get_stamp(struct audit_context *ctx,
- 			      struct timespec *t, unsigned int *serial);
--extern int  audit_set_loginuid(kuid_t loginuid);
--#define audit_get_loginuid(t) ((t)->loginuid)
--#define audit_get_sessionid(t) ((t)->sessionid)
-+extern int audit_set_loginuid(kuid_t loginuid);
-+
-+static inline int audit_get_loginuid(struct task_struct *tsk)
-+{
-+	return tsk->loginuid
-+}
-+
-+static inline int audit_get_sessionid(struct task_struct *tsk)
-+{
-+	return tsk->sessionid;
-+}
-+
- extern void audit_log_task_context(struct audit_buffer *ab);
- extern void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk);
- extern void __audit_ipc_obj(struct kern_ipc_perm *ipcp);
-@@ -627,38 +636,101 @@ static inline void audit_mmap_fd(int fd,
- extern int audit_n_rules;
- extern int audit_signals;
- #else /* CONFIG_AUDITSYSCALL */
--#define audit_alloc(t) ({ 0; })
--#define audit_free(t) do { ; } while (0)
--#define audit_syscall_entry(ta,a,b,c,d,e) do { ; } while (0)
--#define audit_syscall_exit(r) do { ; } while (0)
--#define audit_dummy_context() 1
--#define audit_getname(n) do { ; } while (0)
--#define audit_putname(n) do { ; } while (0)
--#define __audit_inode(n,d) do { ; } while (0)
--#define __audit_inode_child(i,p) do { ; } while (0)
--#define audit_inode(n,d) do { (void)(d); } while (0)
--#define audit_inode_child(i,p) do { ; } while (0)
--#define audit_core_dumps(i) do { ; } while (0)
--#define audit_seccomp(i,s,c) do { ; } while (0)
--#define auditsc_get_stamp(c,t,s) (0)
--#define audit_get_loginuid(t) (INVALID_UID)
--#define audit_get_sessionid(t) (-1)
--#define audit_log_task_context(b) do { ; } while (0)
--#define audit_log_task_info(b, t) do { ; } while (0)
--#define audit_ipc_obj(i) ((void)0)
--#define audit_ipc_set_perm(q,u,g,m) ((void)0)
--#define audit_bprm(p) ({ 0; })
--#define audit_socketcall(n,a) ((void)0)
--#define audit_fd_pair(n,a) ((void)0)
--#define audit_sockaddr(len, addr) ({ 0; })
--#define audit_mq_open(o,m,a) ((void)0)
--#define audit_mq_sendrecv(d,l,p,t) ((void)0)
--#define audit_mq_notify(d,n) ((void)0)
--#define audit_mq_getsetattr(d,s) ((void)0)
--#define audit_log_bprm_fcaps(b, ncr, ocr) ({ 0; })
--#define audit_log_capset(pid, ncr, ocr) ((void)0)
--#define audit_mmap_fd(fd, flags) ((void)0)
--#define audit_ptrace(t) ((void)0)
-+static inline int audit_alloc(struct task_struct *task)
-+{
-+	return 0;
-+}
-+static inline void audit_free(struct task_struct *task)
-+{ }
-+static inline void audit_syscall_entry(int arch, int major, unsigned long a0,
-+				       unsigned long a1, unsigned long a2,
-+				       unsigned long a3)
-+{ }
-+static inline void audit_syscall_exit(void *pt_regs)
-+{ }
-+static inline int audit_dummy_context(void)
-+{
-+	return 1;
-+}
-+static inline void audit_getname(const char *name)
-+{ }
-+static inline void audit_putname(const char *name)
-+{ }
-+static inline void __audit_inode(const char *name, const struct dentry *dentry)
-+{ }
-+static inline void __audit_inode_child(const struct dentry *dentry,
-+					const struct inode *parent)
-+{ }
-+static inline void audit_inode(const char *name, const struct dentry *dentry)
-+{ }
-+static inline void audit_inode_child(const struct dentry *dentry,
-+				     const struct inode *parent)
-+{ }
-+static inline void audit_core_dumps(long signr)
-+{ }
-+static inline void __audit_seccomp(unsigned long syscall, long signr, int code)
-+{ }
-+static inline void audit_seccomp(unsigned long syscall, long signr, int code)
-+{ }
-+static inline int auditsc_get_stamp(struct audit_context *ctx,
-+			      struct timespec *t, unsigned int *serial)
-+{
-+	return 0;
-+}
-+static inline int audit_get_loginuid(struct task_struct *tsk)
-+{
-+	return INVALID_UID;
-+}
-+static inline int audit_get_sessionid(struct task_struct *tsk)
-+{
-+	return -1;
-+}
-+static inline void audit_log_task_context(struct audit_buffer *ab)
-+{ }
-+static inline void audit_log_task_info(struct audit_buffer *ab,
-+				       struct task_struct *tsk)
-+{ }
-+static inline void audit_ipc_obj(struct kern_ipc_perm *ipcp)
-+{ }
-+static inline void audit_ipc_set_perm(unsigned long qbytes, uid_t uid,
-+					gid_t gid, umode_t mode)
-+{ }
-+static inline int audit_bprm(struct linux_binprm *bprm)
-+{
-+	return 0;
-+}
-+static inline void audit_socketcall(int nargs, unsigned long *args)
-+{ }
-+static inline void audit_fd_pair(int fd1, int fd2)
-+{ }
-+static inline int audit_sockaddr(int len, void *addr)
-+{
-+	return 0;
-+}
-+static inline void audit_mq_open(int oflag, umode_t mode, struct mq_attr *attr)
-+{ }
-+static inline void audit_mq_sendrecv(mqd_t mqdes, size_t msg_len,
-+				     unsigned int msg_prio,
-+				     const struct timespec *abs_timeout)
-+{ }
-+static inline void audit_mq_notify(mqd_t mqdes,
-+				   const struct sigevent *notification)
-+{ }
-+static inline void audit_mq_getsetattr(mqd_t mqdes, struct mq_attr *mqstat)
-+{ }
-+static inline int audit_log_bprm_fcaps(struct linux_binprm *bprm,
-+				       const struct cred *new,
-+				       const struct cred *old)
-+{
-+	return 0;
-+}
-+static inline void audit_log_capset(pid_t pid, const struct cred *new,
-+				   const struct cred *old)
-+{ }
-+static inline void audit_mmap_fd(int fd, int flags)
-+{ }
-+static inline void audit_ptrace(struct task_struct *t)
-+{ }
- #define audit_n_rules 0
- #define audit_signals 0
- #endif /* CONFIG_AUDITSYSCALL */
-@@ -682,7 +754,6 @@ extern void		    audit_log_n_hex(struct 
- extern void		    audit_log_n_string(struct audit_buffer *ab,
- 					       const char *buf,
- 					       size_t n);
--#define audit_log_string(a,b) audit_log_n_string(a, b, strlen(b));
- extern void		    audit_log_n_untrustedstring(struct audit_buffer *ab,
- 							const char *string,
- 							size_t n);
-@@ -699,7 +770,8 @@ extern void		    audit_log_lost(const ch
- #ifdef CONFIG_SECURITY
- extern void 		    audit_log_secctx(struct audit_buffer *ab, u32 secid);
- #else
--#define audit_log_secctx(b,s) do { ; } while (0)
-+static inline void	    audit_log_secctx(struct audit_buffer *ab, u32 secid)
-+{ }
- #endif
- 
- extern int		    audit_update_lsm_rules(void);
-@@ -711,22 +783,50 @@ extern int  audit_receive_filter(int typ
- 				void *data, size_t datasz, kuid_t loginuid,
- 				u32 sessionid, u32 sid);
- extern int audit_enabled;
--#else
--#define audit_log(c,g,t,f,...) do { ; } while (0)
--#define audit_log_start(c,g,t) ({ NULL; })
--#define audit_log_vformat(b,f,a) do { ; } while (0)
--#define audit_log_format(b,f,...) do { ; } while (0)
--#define audit_log_end(b) do { ; } while (0)
--#define audit_log_n_hex(a,b,l) do { ; } while (0)
--#define audit_log_n_string(a,c,l) do { ; } while (0)
--#define audit_log_string(a,c) do { ; } while (0)
--#define audit_log_n_untrustedstring(a,n,s) do { ; } while (0)
--#define audit_log_untrustedstring(a,s) do { ; } while (0)
--#define audit_log_d_path(b, p, d) do { ; } while (0)
--#define audit_log_key(b, k) do { ; } while (0)
--#define audit_log_link_denied(o, l) do { ; } while (0)
--#define audit_log_secctx(b,s) do { ; } while (0)
-+#else /* CONFIG_AUDIT */
-+static inline __printf(4, 5)
-+void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
-+	       const char *fmt, ...)
-+{ }
-+static inline struct audit_buffer *audit_log_start(struct audit_context *ctx,
-+						   gfp_t gfp_mask, int type)
-+{
-+	return NULL;
-+}
-+static inline __printf(2, 3)
-+void audit_log_format(struct audit_buffer *ab, const char *fmt, ...)
-+{ }
-+static inline void audit_log_end(struct audit_buffer *ab)
-+{ }
-+static inline void audit_log_n_hex(struct audit_buffer *ab,
-+				   const unsigned char *buf, size_t len)
-+{ }
-+static inline void audit_log_n_string(struct audit_buffer *ab,
-+				      const char *buf, size_t n)
-+{ }
-+static inline void  audit_log_n_untrustedstring(struct audit_buffer *ab,
-+						const char *string, size_t n)
-+{ }
-+static inline void audit_log_untrustedstring(struct audit_buffer *ab,
-+					     const char *string)
-+{ }
-+static inline void audit_log_d_path(struct audit_buffer *ab,
-+				    const char *prefix,
-+				    const struct path *path)
-+{ }
-+static inline void audit_log_key(struct audit_buffer *ab, char *key)
-+{ }
-+static inline void audit_log_link_denied(const char *string,
-+					 const struct path *link)
-+{ }
-+static inline void audit_log_secctx(struct audit_buffer *ab, u32 secid)
-+{ }
- #define audit_enabled 0
--#endif
-+#endif /* CONFIG_AUDIT */
-+static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
-+{
-+	audit_log_n_string(ab, buf, strlen(buf));
-+}
-+
- #endif
- #endif
-_
-
+Copyright © 2012 # WEBMASTER ADMIN • ALL RIGHTS RESERVED •
