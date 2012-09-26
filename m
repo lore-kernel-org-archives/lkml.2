@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab2IZNjY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 09:39:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34854 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751493Ab2IZNjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 09:39:23 -0400
-Date: Wed, 26 Sep 2012 15:39:05 +0200
-From: Andrew Jones <drjones@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Avi Kivity <avi@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
- in PLE handler
-Message-ID: <20120926133905.GA8842@turtle.usersys.redhat.com>
-References: <1348486479.11847.46.camel@twins>
- <50604988.2030506@linux.vnet.ibm.com>
- <1348490165.11847.58.camel@twins>
- <50606050.309@linux.vnet.ibm.com>
- <1348494895.11847.64.camel@twins>
- <50608176.1040805@redhat.com>
- <1348502600.11847.90.camel@twins>
- <5060883C.4050901@redhat.com>
- <20120926132013.GB7633@turtle.usersys.redhat.com>
- <1348665971.3881.102.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756585Ab2IZNkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 09:40:32 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:45522 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756549Ab2IZNkY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 09:40:24 -0400
+X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Sep 2012 09:40:23 EDT
+Message-Id: <50631F82020000A10000CB38@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Wed, 26 Sep 2012 15:30:10 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Subject: 3.0.38: strange boot message: "Time: 165:165:165  Date:
+ 165/165/65" with Xen
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1348665971.3881.102.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 03:26:11PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-09-26 at 15:20 +0200, Andrew Jones wrote:
-> > Wouldn't a clean solution be to promote a task's scheduler
-> > class to the spinner class when we PLE (or come from some special
-> > syscall
-> > for userspace spinlocks?)? 
-> 
-> Userspace spinlocks are typically employed to avoid syscalls..
+Hi!
 
-I'm guessing there could be a slow path - spin N times and then give
-up and yield.
+I just discovered a strange "<6>[    0.123867] Time: 165:165:165  Date: 165/165/65" boot message in a Xen DomU VM for SLES11 SP2 on AMD Opteron (x86_64). The context is:
 
-> 
-> > That class would be higher priority than the
-> > fair class and would schedule in FIFO order, but it would only run its
-> > tasks for short periods before switching. 
-> 
-> Since lock hold times aren't limited, esp. for things like userspace
-> 'spin' locks, you've got a very good denial of service / opportunity for
-> abuse right there.
+...
+<6>[    0.080197] Initializing cgroup subsys net_cls
+<6>[    0.080199] Initializing cgroup subsys blkio
+<6>[    0.080204] Initializing cgroup subsys perf_event
+<4>[    0.080245] ENERGY_PERF_BIAS: Set to 'normal', was 'performance'
+<4>[    0.080245] ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(
+8)
+<6>[    0.080293] SMP alternatives: switching to UP code
+<6>[    0.103716] Brought up 1 CPUs
+<6>[    0.103788] devtmpfs: initialized
+<6>[    0.103977] print_constraints: dummy:
+<6>[    0.123867] Time: 165:165:165  Date: 165/165/65
+<6>[    0.123908] NET: Registered protocol family 16
+<6>[    0.124081] SMP alternatives: switching to SMP code
+<6>[    0.150019] Brought up 4 CPUs
+<3>[    0.150019] PCI: Fatal: No config space access function found
+<6>[    0.150019] PCI: setting up Xen PCI frontend stub
+...
 
-Maybe add some throttling to avoid overuse/maliciousness?
+Maybe it's related to this hypervisor message (xm dmesg) in Xen Dom0 (but the RTC is at 70, right?):
+(XEN) mm.c:833:d1 Non-privileged (1) attempt to map I/O space 000000f0
+(XEN) mm.c:833:d3 Non-privileged (3) attempt to map I/O space 000000f0
+(XEN) mm.c:833:d2 Non-privileged (2) attempt to map I/O space 000000f0
+(XEN) mm.c:833:d1 Non-privileged (1) attempt to map I/O space 000000f0
+(XEN) mm.c:833:d2 Non-privileged (2) attempt to map I/O space 000000f0
 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+It's not a big issue, but maybe if the RTC cannot be read, it's better to skip rather tan outputting a wrong date/time.
+
+Regards,
+Ulrich
+
+
