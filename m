@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2I0TkT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 15:40:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53332 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab2I0TkS (ORCPT
+	id S1754628Ab2I0Tke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 15:40:34 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37721 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754330Ab2I0Tkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 15:40:18 -0400
-Date: Thu, 27 Sep 2012 21:40:11 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: guanxuetao@mprc.pku.edu.cn
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, Qin Rui <qinrui@mprc.pku.edu.cn>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] unicore32: pwm: Use module_platform_driver()
-Message-ID: <20120927194011.GB5483@avionic-0098.mockup.avionic-design.de>
-References: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
- <1347956633-15667-3-git-send-email-thierry.reding@avionic-design.de>
- <50847.162.105.203.8.1348282590.squirrel@mprc.pku.edu.cn>
- <20120922073207.GB2538@avionic-0098.mockup.avionic-design.de>
- <54116.162.105.203.8.1348310959.squirrel@mprc.pku.edu.cn>
+	Thu, 27 Sep 2012 15:40:32 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bn2rw/3z4jIqBvZU"
-Content-Disposition: inline
-In-Reply-To: <54116.162.105.203.8.1348310959.squirrel@mprc.pku.edu.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:sej9nkU20EiKu5xAl8xK5xI55H8mgQ5STIxaGfMTS5g
- 2k2ifExhDowWnXI4cK6NDzSMLAkDihIc/92w8jV1YJpLGSLfsO
- S8WtlhJiM7rz3SbG0GvqOvfn79GV/K1W0FmSHGG5ixFTc/ksi+
- Nm5He/hMzMl+1SYQdg8y/6DJzBt3GfxKkvgEsZ7kym9iB6eQji
- EdS8D77H092O2kEN6ZU+rKt3yMssrNuMxCgk2Lg5/Rs9aP9BKU
- i7pST4UtxHrQ74oidy03HVS/tjzIkvgrIXz6DzWgdOhCZtASgN
- 8SNfJ8Ns3SDnpq8EAmEpHnNaR+Gof17HcrToSG54RRAILv9zZ0
- sggUZZi8QotQf1EpUk3JuiKYob7x5C/nrmLNeGPDultGnRpRFq
- 0kat1yehKSQX3hyvwlWFQFxLJWo7/cBuZg=
+In-Reply-To: <20120927173622.GB21025@kroah.com>
+References: <cover.1342566495.git.luto@amacapital.net> <20120927173622.GB21025@kroah.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 27 Sep 2012 12:40:10 -0700
+Message-ID: <CALCETrUi5RrJoq9CS8mA31tiT9WPW4cc27zyjymAj5uqWqMptw@mail.gmail.com>
+Subject: Re: [PATCH 3.5 0/2] seccomp and vsyscall fixes
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>, James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[cc James Morris]
 
---Bn2rw/3z4jIqBvZU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This has been pending since the 3.6 merge window.  Patch 2/2 barely
+matters because it's almost impossible to detect its effect -- it's
+more about future proofing against new architectures.  Patch 1/2 has
+been slightly tweaked here:
 
-On Sat, Sep 22, 2012 at 06:49:19PM +0800, guanxuetao@mprc.pku.edu.cn wrote:
-> > On Sat, Sep 22, 2012 at 10:56:30AM +0800, guanxuetao@mprc.pku.edu.cn
-> > wrote:
-> >> > Some of the boilerplate code can be eliminated by using this macro.
-> >> The
-> >> > driver was previously registered with an arch_initcall(), so
-> >> technically
-> >> > this is no longer the same, but when the driver is moved to the PWM
-> >> > framework, deferred probing will take care of any driver probe
-> >> ordering
-> >> > issues.
-> >> >
-> >> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> >>
-> >> Tested-by: Qin Rui <qinrui@mprc.pku.edu.cn>
-> >> Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> >>
-> >> Thanks & Regards,
-> >> Guan Xuetao
-> >
-> > Great! If you don't mind I'll take this through the PWM tree with your
-> > Acked-by.
-> >
-> > Thierry
-> >
->=20
-> It's my pleasure.
+http://lkml.kernel.org/r/%3C744e07394a02be3d3ef52c22ccedb24d9a478fe1.1343869850.git.luto@amacapital.net%3E
 
-All patches applied, thanks.
+and will soon appear here (once the cache refreshes)
 
-Thierry
+https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=shortlog;h=refs/heads/seccomp-vsyscall/patch_v2
 
---Bn2rw/3z4jIqBvZU
-Content-Type: application/pgp-signature
+I can wait for someone to pick it up or I can send a pull request from
+my tree.  FWIW, the same patch applies cleanly to -next.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+--Andy
 
-iQIcBAEBAgAGBQJQZKubAAoJEN0jrNd/PrOhV4wQALBMuH6LqGb/aLUdRpaJ8++F
-FPH96c/YAgIgQpAhCTE7j7V7CVXHbBB3OdmW0PUMv0q7shpQ964PVR3kiKDqrDD4
-M54oOqFHSZ8pKBUKd3yKX3fxryY/1pq03ZDON1klpCHiiNKORShU1m6C2mMSe4ds
-FXggoJH7swbHGltGMgn0u7z3wMkfNvUphnm+/81uJ2vZL7laFTzPZtgwC9CMpT9S
-5+QIVa26PPRpUO7sKUgcztevp4mE0CGSfcBKkvnoRld0boc942Y6YDhv2JvUERdO
-vrVCAX+SCkyRIGHJk66UDIQjk5JlGp6hDuShYOq6JTG+vQRJOYyETYfs9Uq1HVmj
-VmOTPN4tIzM26fVL71sTwoRkw2Q+ge1Za3MWZPaV4so3d3N46lXRrJ6alAc6dEkc
-Qhamrwq6jveoENHvZFjxaFI5VvvTTY6x02paQ67UW8Khkt9ufmvwODS5MLteOvid
-IN80gfIxJKrdo1zsu2o5UfuPOfGRA9nNZuT3amHpoyHh24KKd4vTh5mF/YfYW59o
-VsPfvHwVWXp20lZvXEt9dUk00E3CcOoq4CcLJ/WsFQSX+HeanBoBbvapeTX5ihh1
-RgB/guiNPODG28sUbsKE9Zcf3u7rTNxZY5OnS7cXtmRuf7c7wwKdxxhSr+K/evav
-XnGAHMMvzsKuk6G3k96X
-=VoU7
------END PGP SIGNATURE-----
+On Thu, Sep 27, 2012 at 10:36 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Jul 17, 2012 at 04:19:18PM -0700, Andy Lutomirski wrote:
+>> Apologies for the lateness of this stuff.  I was at a conference last
+>> week when the Chrome issue was discovered and I couldn't do this
+>> properly until I got back.
+>>
+>> Will, can you confirm that this version is okay and passes your tests?
+>> It passes mine.
+>>
+>> While there are no known seccomp users that will have trouble,
+>> SECCOMP_RET_TRAP and SECCOMP_RET_TRACE currently interact oddly with
+>> emulated vsyscalls.  This might lead to ABI issues down the road (if
+>> something starts to rely on current behavior) or unexpected malfunctions
+>> (if something tries to change, say, sys_gettimeofday, into a different
+>> syscall and gets completely bogus results on a vsyscall-using distro.
+>>
+>> It's unlikely that fixing this later will cause issues, but it would be
+>> nice to nail down and document the vsyscall quirks for the first
+>> released kernel with seccomp mode 2 support.
+>>
+>> (Patch 2/2 is very much optional.  It fixes a strange corner case.  It
+>>  ought to be fine for 3.6, since I very much doubt that any real code
+>>  will hit that corner case and cause ABI problems.)
+>>
+>> Andy Lutomirski (2):
+>>   seccomp: Make syscall skipping and nr changes more consistent
+>>   seccomp: Future-proof against silly tracers
+>>
+>>  Documentation/prctl/seccomp_filter.txt |   74 ++++++++++++++++++++--
+>>  arch/x86/include/asm/syscall.h         |   11 +++
+>>  arch/x86/kernel/vsyscall_64.c          |  110 +++++++++++++++++---------------
+>>  kernel/seccomp.c                       |   28 +++++++-
+>>  4 files changed, 163 insertions(+), 60 deletions(-)
+>
+> What ever happened to these patches?  I don't see them in 3.6-rc7, are
+> they pending for 3.7?
+>
+> thanks,
+>
+> greg k-h
 
---Bn2rw/3z4jIqBvZU--
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
