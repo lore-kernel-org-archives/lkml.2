@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab2I0SUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 14:20:11 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44743 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab2I0SUH (ORCPT
+	id S1754705Ab2I0SWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 14:22:17 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:47488 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754278Ab2I0SWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 14:20:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120927180507.GD8527@x1.osrc.amd.com>
-References: <20120926163233.GA5339@x1.osrc.amd.com> <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
- <20120926213723.GA27692@liondog.tnic> <1348722568.7059.115.camel@marge.simpson.net>
- <20120927054742.GA4370@gmail.com> <1348727665.7059.160.camel@marge.simpson.net>
- <20120927064142.GB5996@gmail.com> <1348728852.7059.171.camel@marge.simpson.net>
- <20120927071011.GA8980@gmail.com> <CA+55aFyxjdir-LZneBTk1JQV0cVSRFzEK9Jpxje2SJqA6aP3Yg@mail.gmail.com>
- <20120927180507.GD8527@x1.osrc.amd.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 27 Sep 2012 11:19:46 -0700
-X-Google-Sender-Auth: iN7iwI7FbCOQHaRWnJi14dKMeL8
-Message-ID: <CA+55aFyTrcmx3Uf7UGU=-K=BwTym8aN15fTo==cV2bCK6so0Fg@mail.gmail.com>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-To: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Sep 2012 14:22:16 -0400
+X-Greylist: delayed 864 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Sep 2012 14:22:16 EDT
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: konrad.wilk@oracle.com, andrew.cooper3@citrix.com, jbeulich@suse.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: [PATCH 00/11] xen: Initial kexec/kdump implementation
+Date: Thu, 27 Sep 2012 20:06:27 +0200
+Message-Id: <1348769198-29580-1-git-send-email-daniel.kiper@oracle.com>
+X-Mailer: git-send-email 1.5.6.5
+X-Bogosity: No, spamicity=0.074274
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 11:05 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Sep 27, 2012 at 10:44:26AM -0700, Linus Torvalds wrote:
->> Or could we just improve the heuristics. What happens if the
->> scheduling granularity is increased, for example? It's set to 1ms
->> right now, with a logarithmic scaling by number of cpus.
->
-> /proc/sys/kernel/sched_wakeup_granularity_ns=10000000 (10ms)
-> ------------------------------------------------------
-> tps = 4994.730809 (including connections establishing)
-> tps = 5000.260764 (excluding connections establishing)
->
-> A bit better over the default NO_WAKEUP_PREEMPTION setting.
+Hi,
 
-Ok, so this gives us something possible to actually play with.
+This set of patches contains initial kexec/kdump implementation for Xen.
+Currently only dom0 is supported, however, almost all infrustructure
+required for domU support is ready.
 
-For example, maybe SCHED_TUNABLESCALING_LINEAR is more appropriate
-than SCHED_TUNABLESCALING_LOG. At least for WAKEUP_PREEMPTION. Hmm?
+Daniel
 
-(Btw, "linear" right now looks like 1:1. That's linear, but it's a
-very aggressive linearity. Something like "factor = (cpus+1)/2" would
-also be linear, but by a less extreme factor.
+ arch/x86/include/asm/kexec.h         |   10 +-
+ arch/x86/include/asm/xen/hypercall.h |    6 +
+ arch/x86/include/asm/xen/kexec.h     |   83 +++++++++
+ arch/x86/kernel/machine_kexec_64.c   |   12 +-
+ arch/x86/kernel/vmlinux.lds.S        |    7 +-
+ arch/x86/xen/Makefile                |    3 +
+ arch/x86/xen/enlighten.c             |   12 ++
+ arch/x86/xen/kexec.c                 |  150 ++++++++++++++++
+ arch/x86/xen/machine_kexec_32.c      |  245 ++++++++++++++++++++++++++
+ arch/x86/xen/machine_kexec_64.c      |  301 +++++++++++++++++++++++++++++++
+ arch/x86/xen/relocate_kernel_32.S    |  323 ++++++++++++++++++++++++++++++++++
+ arch/x86/xen/relocate_kernel_64.S    |  309 ++++++++++++++++++++++++++++++++
+ drivers/xen/sys-hypervisor.c         |   42 +++++-
+ include/linux/kexec.h                |   18 ++
+ include/xen/interface/xen.h          |   33 ++++
+ kernel/kexec.c                       |  125 ++++++++++----
+ 16 files changed, 1636 insertions(+), 43 deletions(-)
 
-              Linus
+Daniel Kiper (11):
+      kexec: introduce kexec_ops struct
+      x86/kexec: Add extra pointers to transition page table PGD, PUD, PMD and PTE
+      xen: Introduce architecture independent data for kexec/kdump
+      x86/xen: Introduce architecture dependent data for kexec/kdump
+      x86/xen: Register resources required by kexec-tools
+      x86/xen: Add i386 kexec/kdump implementation
+      x86/xen: Add x86_64 kexec/kdump implementation
+      x86/xen: Add kexec/kdump makefile rules
+      x86/xen/enlighten: Add init and crash kexec/kdump hooks
+      drivers/xen: Export vmcoreinfo through sysfs
+      x86: Add Xen kexec control code size check to linker script
