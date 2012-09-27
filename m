@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab2I0SQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 14:16:11 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64132 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117Ab2I0SQJ (ORCPT
+	id S1754413Ab2I0STE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 14:19:04 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33418 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab2I0STC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 14:16:09 -0400
+	Thu, 27 Sep 2012 14:19:02 -0400
+Date: Thu, 27 Sep 2012 22:18:58 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, hpa@zytor.com, xemul@parallels.com
+Subject: Re: [patch 1/2] tty: pty - Move TIOCPKT handling into pty.c
+Message-ID: <20120927181858.GV6618@moon>
+References: <20120927165958.287690622@openvz.org>
+ <20120927170137.722717394@openvz.org>
+ <50648DE7.2060904@suse.cz>
+ <20120927173714.GQ6618@moon>
+ <20120927181417.GA10536@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1209271039500.8808@asgard.lang.hm>
-References: <1348505683.11847.111.camel@twins> <1348511193.6951.44.camel@marge.simpson.net>
- <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
- <20120924192056.GB4082@liondog.tnic> <1348538258.7100.23.camel@marge.simpson.net>
- <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
- <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com>
- <20120925170058.GC30158@x1.osrc.amd.com> <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
- <20120926163233.GA5339@x1.osrc.amd.com> <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
- <1348734104.3292.5.camel@twins> <alpine.DEB.2.02.1209270935080.5162@asgard.lang.hm>
- <1348767498.3292.29.camel@twins> <alpine.DEB.2.02.1209271039500.8808@asgard.lang.hm>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 27 Sep 2012 11:15:47 -0700
-X-Google-Sender-Auth: hUVJPn8EMGHA6fG6fZ17l6Om9oA
-Message-ID: <CA+55aFwSapFvbRJ-mCL+vUTvJwDufVPQR7q92KNA=eWiSKo2sg@mail.gmail.com>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-To: david@lang.hm
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Borislav Petkov <bp@alien8.de>,
-        Mike Galbraith <efault@gmx.de>, Mel Gorman <mgorman@suse.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120927181417.GA10536@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 10:45 AM,  <david@lang.hm> wrote:
->
-> For the initial starup of a new process, finding as idle and remote a core
-> to start on (minimum sharing with existing processes) is probably the smart
-> thing to do.
+On Thu, Sep 27, 2012 at 11:14:17AM -0700, Greg KH wrote:
+> On Thu, Sep 27, 2012 at 09:37:14PM +0400, Cyrill Gorcunov wrote:
+> > On Thu, Sep 27, 2012 at 07:33:27PM +0200, Jiri Slaby wrote:
+> > > 
+> > > Hi!
+> > > 
+> > > This check is not needed as the ioctls are master-only.
+> > 
+> > Hi, thanks, Jiri, i'll update (was hurry to provide patches
+> > so missed this ;)
+> 
+> Don't rush, anything you do here will be for 3.8, not 3.7, it's too late
+> for that, the tty tree already has lots of changes for 3.7.
+> 
+> So take your time please.
 
-Actually, no.
+Sure, patching other archs ioctls is not as simple as I thought,
+need to recheck everything and I think better to do all this in
+3 patches
 
-It's *exec* that should go remote. New processes (fork, vfork or
-clone) absolutely should *not* go remote at all.
+ - move ptkmode setting into pty
+ - introduce new ioctl codes (including patching other archs)
+ - add real handlers for this new ioctl codes
 
-vfork() should stay on the same CPU (synchronous wakeup), fork()
-should possibly go SMT (likely exec in the near future will spread it
-out), and clone should likely just stay close too.
+this will help for bisection.
 
-           Linus
+	Cyrill
