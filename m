@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab2I0PXL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 11:23:11 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54497 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab2I0PXJ (ORCPT
+	id S1755002Ab2I0PXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 11:23:39 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:60364 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab2I0PXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 11:23:09 -0400
+	Thu, 27 Sep 2012 11:23:37 -0400
+Date: Thu, 27 Sep 2012 19:23:33 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
+Message-ID: <20120927152333.GN6618@moon>
+References: <20120923010953.GA17663@kroah.com>
+ <20120923064007.GA2994@moon>
+ <34f6ba7b-2c50-492e-9267-52d328a8d37f@email.android.com>
+ <20120924141441.GD16532@moon>
+ <20120927140502.GB12552@moon>
+ <20120927151447.2460ce44@pyramind.ukuu.org.uk>
+ <20120927141425.GG6618@moon>
+ <5064600D.1090506@zytor.com>
+ <20120927142149.GH6618@moon>
+ <20120927161312.1eadd5d6@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <29084.1348557014@neuling.org>
-References: <28857.1345091034@neuling.org>
-	<20120817161554.GA3772@somewhere>
-	<11821.1345240695@neuling.org>
-	<29084.1348557014@neuling.org>
-Date: Thu, 27 Sep 2012 17:23:08 +0200
-Message-ID: <CAFTL4hzj=maY1SVjM2iHSer8vTA5h6nGd77DCMgX6W4QRfd3pA@mail.gmail.com>
-Subject: Re: powerpc/perf: hw breakpoints return ENOSPC
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Michael Neuling <mikey@neuling.org>
-Cc: K Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120927161312.1eadd5d6@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/25 Michael Neuling <mikey@neuling.org>:
-> Michael Neuling <mikey@neuling.org> wrote:
->
->> Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>
->> > On Thu, Aug 16, 2012 at 02:23:54PM +1000, Michael Neuling wrote:
->> > > Hi,
->> > >
->> > > I've been trying to get hardware breakpoints with perf to work on POWER7
->> > > but I'm getting the following:
->> > >
->> > >   % perf record -e mem:0x10000000 true
->> > >
->> > >     Error: sys_perf_event_open() syscall returned with 28 (No space left on device).  /bin/dmesg may provide additional information.
->> > >
->> > >     Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
->> > >
->> > >   true: Terminated
->> > >
->> > > (FWIW adding -a and it works fine)
->> > >
->> > > Debugging it seems that __reserve_bp_slot() is returning ENOSPC because
->> > > it thinks there are no free breakpoint slots on this CPU.
->> > >
->> > > I have a 2 CPUs, so perf userspace is doing two perf_event_open syscalls
->> > > to add a counter to each CPU [1].  The first syscall succeeds but the
->> > > second is failing.
->> > >
->> > > On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
->> > > despite there being no breakpoint on this CPU.  This is because the call
->> > > the task_bp_pinned, checks all CPUs, rather than just the current CPU.
->> > > POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
->> > > return ENOSPC.
->> > >
->> > > The following patch fixes this by checking the associated CPU for each
->> > > breakpoint in task_bp_pinned.  I'm not familiar with this code, so it's
->> > > provided as a reference to the above issue.
->> > >
->> > > Mikey
->> > >
->> > > 1. not sure why it doesn't just do one syscall and specify all CPUs, but
->> > > that's another issue.  Using two syscalls should work.
->> >
->> > This patch seems to make sense. I'll try it and run some tests.
->> > Can I have your Signed-off-by ?
->
-> Frederic,
->
-> Did you ever get to testing or integrating this patch?
->
-> Mikey
+On Thu, Sep 27, 2012 at 04:13:12PM +0100, Alan Cox wrote:
+> > Well, sure inside our tool before doing checkpoint we stop all
+> > tasks which are part of dumpee process tree. This unfortunatly
+> > doesn't apply to these ioctl calls. Peter, any idea how to deal
+> > with that?
+> 
+> I suspect you can't deal with that. Which isn't to say you can't still
+> build something useful. The query interfaces are trivial enough and
+> beyond that it's simply a case of documenting that they are not intended
+> to be generically "safe" but provide a spot sample.
 
-Sorry, I forgot this in my mailbox. I'm going to look at this in the
-next few days.
-Feel free to harass me by email or IRC if I don't give news on this soon.
+I see, thanks Alan!
+
+> Otherwise - TICOGPKT is specific to pty devices. Please therefore put it
+> in the pty.c code and note that not all platforms use asm-geneic TTY
+> ioctls so check carefully they all build.
+
+I put it into tty_ioctl.c simply because TIOCPKT was there already so
+I thought it's good idea to keep them close to each other in code.
