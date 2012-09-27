@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab2I0F6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 01:58:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54537 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab2I0F6W (ORCPT
+	id S1755002Ab2I0F7I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 01:59:08 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41500 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab2I0F7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 01:58:22 -0400
-Date: Wed, 26 Sep 2012 22:57:56 -0700
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Message-ID: <tip-1dbd3d35fe64c555aed63eaa615e9fa085bb7b57@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
-        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] mm/pgprot: Move the pgprot_modify()
-  fallback definition to mm.h
-Git-Commit-ID: 1dbd3d35fe64c555aed63eaa615e9fa085bb7b57
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 27 Sep 2012 01:59:06 -0400
+Date: Thu, 27 Sep 2012 07:59:00 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+Message-ID: <20120927055900.GA4739@gmail.com>
+References: <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+ <1348574286.3881.40.camel@twins>
+ <20120925131736.GA30652@x1.osrc.amd.com>
+ <20120925170058.GC30158@x1.osrc.amd.com>
+ <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
+ <20120926163233.GA5339@x1.osrc.amd.com>
+ <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+ <20120926213723.GA27692@liondog.tnic>
+ <1348722568.7059.115.camel@marge.simpson.net>
+ <20120927054742.GA4370@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 22:58:02 -0700 (PDT)
+In-Reply-To: <20120927054742.GA4370@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1dbd3d35fe64c555aed63eaa615e9fa085bb7b57
-Gitweb:     http://git.kernel.org/tip/1dbd3d35fe64c555aed63eaa615e9fa085bb7b57
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Wed, 26 Sep 2012 11:48:08 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 26 Sep 2012 11:48:30 +0200
 
-mm/pgprot: Move the pgprot_modify() fallback definition to mm.h
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-pgprot_modify() is available on x86, but on other architectures it only
-gets defined in mm/mprotect.c - breaking the build if anything outside
-of mprotect.c tries to make use of this function.
+> * Mike Galbraith <efault@gmx.de> wrote:
+> 
+> > I think the pgbench problem is more about latency for the 1 
+> > in 1:N than spinlocks.
+> 
+> So my understanding of the psql workload is that basically 
+> we've got a central psql proxy process that is distributing 
+> work to worker psql processes. If a freshly woken worker 
+> process ever preempts the central proxy process then it is 
+> preventing a lot of new work from getting distributed.
 
-Move it to the generic pgprot area in mm.h, so that an upcoming patch
-can make use of it.
+Also, I'd like to stress that despite the optimization dilemma, 
+the psql workload is *important*. More important than tbench - 
+because psql does some real SQL work and it also matches the 
+design of many real desktop and server workloads.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Paul Turner <pjt@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-nfvarGMj9gjavowroorkizb4@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/linux/mm.h |   13 +++++++++++++
- mm/mprotect.c      |    7 -------
- 2 files changed, 13 insertions(+), 7 deletions(-)
+So if indeed the above is the main problem of psql it would be 
+nice to add a 'perf bench sched proxy' testcase that emulates it 
+- that would remove psql version dependencies and would ease the 
+difficulty of running the benchmarks.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 311be90..7d573b8 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -177,6 +177,19 @@ static inline int is_pfn_mapping(struct vm_area_struct *vma)
- }
- 
- /*
-+ * Some architectures (such as x86) may need to preserve certain pgprot
-+ * bits, without complicating generic pgprot code.
-+ *
-+ * Most architectures don't care:
-+ */
-+#ifndef pgprot_modify
-+static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
-+{
-+	return newprot;
-+}
-+#endif
-+
-+/*
-  * vm_fault is filled by the the pagefault handler and passed to the vma's
-  * ->fault function. The vma's ->fault is responsible for returning a bitmask
-  * of VM_FAULT_xxx flags that give details about how the fault was handled.
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index a409926..e97b0d6 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -28,13 +28,6 @@
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
- 
--#ifndef pgprot_modify
--static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
--{
--	return newprot;
--}
--#endif
--
- static void change_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
+We alread have 'perf bench sched pipe' and 'perf bench sched 
+messaging' - but neither shows the psql pattern currently.
+
+I suspect a couple of udelay()s in the messaging benchmark would 
+do the trick? The wakeup work there already matches much of how 
+psql looks like.
+
+Thanks,
+
+	Ingo
