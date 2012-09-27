@@ -1,93 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab2I0Dx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 23:53:57 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:41059 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab2I0Dx4 (ORCPT
+	id S1754628Ab2I0Dyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 23:54:31 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:2030 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754529Ab2I0Dy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 23:53:56 -0400
+	Wed, 26 Sep 2012 23:54:28 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqQMACnNY1B5LPfb/2dsb2JhbABFvHgBAoEQgQmCIAEBBAEnExwjBQsIAxUDLhQNGAM0h3MDCQWuDQ2JVBSKImJsSoEzgyADlBSBVIshhQuCeQ
+Date: Thu, 27 Sep 2012 13:54:25 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
+        diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v2 06/10] vfs: enable hot data tracking
+Message-ID: <20120927035425.GN15236@dastard>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+ <1348404995-14372-7-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <201209261941.11944.arnd@arndb.de>
-References: <1348575190-11761-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x=nnUxJ4bvro_Rc95jRk7SR_yzxwZhNXeL4w5xDzsDj3nQ@mail.gmail.com>
-	<CAHp75VcGQ9jCpGb2jhCEX4NsbUsR0aytwd1AMkt4GpTXYVPnwQ@mail.gmail.com>
-	<201209261941.11944.arnd@arndb.de>
-Date: Thu, 27 Sep 2012 09:23:55 +0530
-X-Google-Sender-Auth: 4jyN3486QpAkSL2jMikEp0yHyL0
-Message-ID: <CAOh2x=kKYsvYKqpJ6EUpv_OL5f6OsvyS0Lq9yO2uouPPSXSgvw@mail.gmail.com>
-Subject: Re: [PATCHv2 2/4] dmaengine: dw_dmac: Add PCI part of the driver
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348404995-14372-7-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 1:11 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 26 September 2012, Andy Shevchenko wrote:
->> >> +#define DRIVER(_is_private, _chan_order, _chan_pri)            \
->> >> +       ((kernel_ulong_t)&(struct dw_dma_platform_data) {       \
->> >> +               .is_private = (_is_private),                    \
->> >> +               .chan_allocation_order = (_chan_order),         \
->> >> +               .chan_priority = (_chan_pri),                   \
->> >
->> > I believe you don't need these braces around input variables on right side
->> > of "=". Even if there is something complex passed.
->> Hmm... Have no idea if anyone will use robust stuff as a parameter to
->> that macro. I could remove them.
->
-> IMHO It's better to leave them in as general practice in case of a macro.
+On Sun, Sep 23, 2012 at 08:56:31PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+>   Miscellaneous features that implement hot data tracking
+> and generally make the hot data functions a bit more friendly.
+> 
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> ---
+>  fs/direct-io.c               |   10 ++++++++++
+>  include/linux/hot_tracking.h |   11 +++++++++++
+>  mm/filemap.c                 |    8 ++++++++
+>  mm/page-writeback.c          |   21 +++++++++++++++++++++
+>  mm/readahead.c               |    9 +++++++++
+>  5 files changed, 59 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/direct-io.c b/fs/direct-io.c
+> index f86c720..3773f44 100644
+> --- a/fs/direct-io.c
+> +++ b/fs/direct-io.c
+> @@ -37,6 +37,7 @@
+>  #include <linux/uio.h>
+>  #include <linux/atomic.h>
+>  #include <linux/prefetch.h>
+> +#include "hot_tracking.h"
+>  
+>  /*
+>   * How many user pages to map in one call to get_user_pages().  This determines
+> @@ -1297,6 +1298,15 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+>  	prefetch(bdev->bd_queue);
+>  	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
+>  
+> +	/* Hot data tracking */
+> +	if (TRACK_THIS_INODE(iocb->ki_filp->f_mapping->host)
+> +			&& iov_length(iov, nr_segs) > 0) {
+> +		hot_rb_update_freqs(iocb->ki_filp->f_mapping->host,
+> +				(u64)offset,
+> +				(u64)iov_length(iov, nr_segs),
+> +				rw & WRITE);
+> +	}
 
-I agree with the general practice followed, what i was saying is: Until unless
-somebody is passing arguments which contain "=" OR ","... there can't be
-anything wrong as they are on Right Hand Side of an equal statement.
+That's a bit messy. I'd prefer a static inline function that hides
+all this. e.g.
 
-Those practices were more common when we do something like:
-param1 * param2.. Here if param1 or 2 contains + or - or *... we will get
-a different meaning with and without ()... But for the above case, that can't
-be true.
+track_hot_inode_ranges(inode, offset, length, rw)
+{
+	if (inode->i_sb->s_flags & MS_HOT_TRACKING)
+		hot_inode_freq_update(inode, offset, length, rw);
+}
 
-> However, I would prefer not having this macro at all and just open-code
-> the contents. If you use traditional struct initializers, the amount of
-> code is almost exactly the same.
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 5ad5ce2..552c861 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -35,6 +35,7 @@
+>  #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
+>  #include <linux/pagevec.h>
+>  #include <linux/timer.h>
+> +#include <linux/hot_tracking.h>
+>  #include <trace/events/writeback.h>
+>  
+>  /*
+> @@ -1895,13 +1896,33 @@ EXPORT_SYMBOL(generic_writepages);
+>  int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
+>  {
+>  	int ret;
+> +	pgoff_t start = 0;
+> +	u64 prev_count = 0, count = 0;
+>  
+>  	if (wbc->nr_to_write <= 0)
+>  		return 0;
+> +
+> +	/* Hot data tracking */
+> +	if (TRACK_THIS_INODE(mapping->host)
+> +		&& wbc->range_cyclic) {
+> +		start = mapping->writeback_index << PAGE_CACHE_SHIFT;
+> +		prev_count = (u64)wbc->nr_to_write;
+> +	}
 
-Even this is good too.
+Why only wbc->range_cyclic? This won't record things like
+synchronous writes or fsync-triggered writes, are are far more
+likely to be to hot ranges in a file...
 
->> >> +       pd = platform_device_alloc("dw_dmac", instance);
->> >> +       if (!pd) {
->> >> +               dev_err(&pdev->dev, "can't allocate dw_dmac platform device\n");
->> >> +               ret = -ENOMEM;
->> >> +               goto err0;
->> >> +       }
->> >
->> > Is this the correct approach? I doubt... We are creating a platform
->> > device from a
->> > pci driver... Don't know if it can lead to some issues within kernel.
->> >
->> > Lets call the specialist for his comments  :)
->> > @Arnd: Can you please help us here?
->> This approach is used among different drivers in kernel. As first
->> example that comes to my mind you could consider chipidea USB driver
->> (drivers/usb/chipidea).
->
-> Yes, this is fine for a PCI device with multiple logical devices. You could
-> also use the MFD framework if that results in smaller code. For a driver
-> that can be either a platform device or a pci device with no other sub-devices,
-> I would however recommend having a common initialization function for stuff
-> that can be called from either bus_type but with no extra level of indirection.
+Cheers,
 
-Ahh.. something new :)
-I will still ask not to put it as an MFD, as it is not a MFD device at all...
-I believe there is no common initialization part here, because PCI device in any
-case would be calling probe of platform device. :)
-
-Thanks Arnd...
-
---
-viresh
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
