@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab2I0PSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 11:18:46 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49386 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab2I0PSp (ORCPT
+	id S1754877Ab2I0PXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 11:23:11 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54497 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab2I0PXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 11:18:45 -0400
-Date: Thu, 27 Sep 2012 08:18:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ben Skeggs <bskeggs@redhat.com>
-Subject: Re: debugfs file creation from a user process ioctl
-Message-ID: <20120927151841.GB23895@kroah.com>
-References: <CAPM=9twE-xoeFgKGyRuF1mwn17XUhxvoLTgJU1UC3CaHnrwFNQ@mail.gmail.com>
+	Thu, 27 Sep 2012 11:23:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM=9twE-xoeFgKGyRuF1mwn17XUhxvoLTgJU1UC3CaHnrwFNQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <29084.1348557014@neuling.org>
+References: <28857.1345091034@neuling.org>
+	<20120817161554.GA3772@somewhere>
+	<11821.1345240695@neuling.org>
+	<29084.1348557014@neuling.org>
+Date: Thu, 27 Sep 2012 17:23:08 +0200
+Message-ID: <CAFTL4hzj=maY1SVjM2iHSer8vTA5h6nGd77DCMgX6W4QRfd3pA@mail.gmail.com>
+Subject: Re: powerpc/perf: hw breakpoints return ENOSPC
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Michael Neuling <mikey@neuling.org>
+Cc: K Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 02:17:05PM +1000, Dave Airlie wrote:
-> Hi guys,
-> 
-> we've been seeing an error with nouveau and I'm not sure if its new or
-> we just never spent time looking into it.
-> 
-> The basics are when a new drm client opens the device it gets a
-> channel assigned, we allocate the channel and a side effect of channel
-> allocation is we get a file in debugfs with some info on the channel.
-> However this fails as the process context we are in is non-root, and
-> the directory is 755.
+2012/9/25 Michael Neuling <mikey@neuling.org>:
+> Michael Neuling <mikey@neuling.org> wrote:
+>
+>> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>
+>> > On Thu, Aug 16, 2012 at 02:23:54PM +1000, Michael Neuling wrote:
+>> > > Hi,
+>> > >
+>> > > I've been trying to get hardware breakpoints with perf to work on POWER7
+>> > > but I'm getting the following:
+>> > >
+>> > >   % perf record -e mem:0x10000000 true
+>> > >
+>> > >     Error: sys_perf_event_open() syscall returned with 28 (No space left on device).  /bin/dmesg may provide additional information.
+>> > >
+>> > >     Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+>> > >
+>> > >   true: Terminated
+>> > >
+>> > > (FWIW adding -a and it works fine)
+>> > >
+>> > > Debugging it seems that __reserve_bp_slot() is returning ENOSPC because
+>> > > it thinks there are no free breakpoint slots on this CPU.
+>> > >
+>> > > I have a 2 CPUs, so perf userspace is doing two perf_event_open syscalls
+>> > > to add a counter to each CPU [1].  The first syscall succeeds but the
+>> > > second is failing.
+>> > >
+>> > > On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
+>> > > despite there being no breakpoint on this CPU.  This is because the call
+>> > > the task_bp_pinned, checks all CPUs, rather than just the current CPU.
+>> > > POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
+>> > > return ENOSPC.
+>> > >
+>> > > The following patch fixes this by checking the associated CPU for each
+>> > > breakpoint in task_bp_pinned.  I'm not familiar with this code, so it's
+>> > > provided as a reference to the above issue.
+>> > >
+>> > > Mikey
+>> > >
+>> > > 1. not sure why it doesn't just do one syscall and specify all CPUs, but
+>> > > that's another issue.  Using two syscalls should work.
+>> >
+>> > This patch seems to make sense. I'll try it and run some tests.
+>> > Can I have your Signed-off-by ?
+>
+> Frederic,
+>
+> Did you ever get to testing or integrating this patch?
+>
+> Mikey
 
-But the kernel is the thing that is creating the file, so shouldn't it
-be created no matter the permission setting?  I guess I never thought of
-something other than the "root" process ever creating debugfs files,
-odd.
-
-> I don't think I want to be modifiying fsuid, but is there another
-> practical way to do this, its not majorly urgent, Ben has indicated
-> he's probably ripping the channel debugfs code out but I was just
-> wondering for future reference.
-
-I don't think anything other than modifying fsuid would work here,
-sorry.  Put it in the "create the debugfs file" function and you should
-be fine.
-
-thanks,
-
-greg k-h
+Sorry, I forgot this in my mailbox. I'm going to look at this in the
+next few days.
+Feel free to harass me by email or IRC if I don't give news on this soon.
