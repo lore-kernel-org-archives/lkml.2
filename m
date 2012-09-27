@@ -1,55 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab2I0PIX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 11:08:23 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46416 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab2I0PIV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 11:08:21 -0400
-Date: Thu, 27 Sep 2012 16:13:12 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
-Message-ID: <20120927161312.1eadd5d6@pyramind.ukuu.org.uk>
-In-Reply-To: <20120927142149.GH6618@moon>
-References: <20120922201144.GD11610@moon>
-	<20120922215232.GA25778@moon>
-	<20120923010953.GA17663@kroah.com>
-	<20120923064007.GA2994@moon>
-	<34f6ba7b-2c50-492e-9267-52d328a8d37f@email.android.com>
-	<20120924141441.GD16532@moon>
-	<20120927140502.GB12552@moon>
-	<20120927151447.2460ce44@pyramind.ukuu.org.uk>
-	<20120927141425.GG6618@moon>
-	<5064600D.1090506@zytor.com>
-	<20120927142149.GH6618@moon>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754747Ab2I0PJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 11:09:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48134 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754480Ab2I0PJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 11:09:52 -0400
+Date: Thu, 27 Sep 2012 17:09:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+Message-ID: <20120927150950.GG29104@dhcp22.suse.cz>
+References: <20120926180124.GA12544@google.com>
+ <50634FC9.4090609@parallels.com>
+ <20120926193417.GJ12544@google.com>
+ <50635B9D.8020205@parallels.com>
+ <20120926195648.GA20342@google.com>
+ <50635F46.7000700@parallels.com>
+ <20120926201629.GB20342@google.com>
+ <50637298.2090904@parallels.com>
+ <20120927120806.GA29104@dhcp22.suse.cz>
+ <20120927143300.GA4251@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120927143300.GA4251@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Well, sure inside our tool before doing checkpoint we stop all
-> tasks which are part of dumpee process tree. This unfortunatly
-> doesn't apply to these ioctl calls. Peter, any idea how to deal
-> with that?
+On Thu 27-09-12 07:33:00, Tejun Heo wrote:
+> Hello, Michal.
+> 
+> On Thu, Sep 27, 2012 at 02:08:06PM +0200, Michal Hocko wrote:
+> > Yes, because we have many users (basically almost all) who care only
+> > about the user memory because that's what occupies the vast majority of
+> > the memory. They usually want to isolate workload which would disrupt
+> > the global memory otherwise (e.g. backup process vs. database). You
+> > really do not want to pay an additional overhead for kmem accounting
+> > here.
+> 
+> I'm not too convinced.  First of all, the overhead added by kmemcg
+> isn't big. 
 
-I suspect you can't deal with that. Which isn't to say you can't still
-build something useful. The query interfaces are trivial enough and
-beyond that it's simply a case of documenting that they are not intended
-to be generically "safe" but provide a spot sample.
+You are probably talking about memory overhead which is indeed not that
+big (except for possible side effects as fragmentation which you mention
+bellow). But the runtime overhead is present, as far as I understand from
+what Glauber said. But, on the other hand, it is fair to say that those
+who _want_ use the feature should pay for it.
 
-Otherwise - TICOGPKT is specific to pty devices. Please therefore put it
-in the pty.c code and note that not all platforms use asm-geneic TTY
-ioctls so check carefully they all build.
+> The hot path overhead is quite minimal - it doesn't do much more than
+> indirecting one more time.  In terms of memory usage, it sure could
+> lead to a bit more fragmentation but even if it gets to several megs
+> per cgroup, I don't think that's something excessive.  So, there is
+> overhead but I don't believe it to be prohibitive.
 
-Alan
+Remember that users do not want to pay even "something minimal" when the
+feature is not needed.
 
+> > > So your question for global vs local switch (that again, doesn't
+> > > exist; only a local *limit* exists) should really be posed in the
+> > > following way:  "Can two different use cases with different needs be
+> > > hosted in the same box?"
+> > 
+> > I think this is a good and a relevant question. I think this boils down
+> > to whether you want to have trusted and untrusted workloads at the same
+> > machine.
+> > Trusted loads usually only need user memory accounting because kmem
+> > consumption should be really negligible (unless kernel is doing
+> > something really stupid and no kmem limit will help here). 
+> > On the other hand, untrusted workloads can do nasty things that
+> > administrator has hard time to mitigate and setting a kmem limit can
+> > help significantly.
+> > 
+> > IMHO such a different loads exist on a single machine quite often (Web
+> > server and a back up process as the most simplistic one). The per
+> > hierarchy accounting, therefore, sounds like a good idea without too
+> > much added complexity (actually the only added complexity is in the
+> > proper kmem.limit_in_bytes handling which is a single place).
+> 
+> The distinction between "trusted" and "untrusted" is something
+> artificially created due to the assumed deficiency of kmemcg
+> implementation.  
+
+Not really. It doesn't have to do anything with the overhead (be it
+memory or runtime). It really boils down to "do I need/want it at all".
+Why would I want to think about how much kernel memory is in use in the
+first place? Or do you think that user memory accounting should be
+deprecated?
+
+> Making things like this visible to userland is a bad
+> idea because it locks us into a place where we can't or don't need to
+> improve the said deficiencies and end up pushing the difficult
+> problems to somewhere else where it will likely be implemented in a
+> shabbier way.  There sure are cases when such approach simply cannot
+> be avoided, but I really don't think that's the case here - the
+> overhead already seems to be at an acceptable level and we're not
+> taking away the escape switch.
+> 
+> This is userland visible API.  
+
+I am not sure which API visible part you have in mind but
+kmem.limit_in_bytes will be there whether we go with global knob or "no
+limit no accounting" approach. 
+
+> We better err on the side of being conservative than going overboard
+> with flexibility.  Even if we eventually need to make this switching
+> fullly hierarchical, we really should be doing,
+> 
+> 1. Implement simple global switching and look for problem cases.
+> 
+> 2. Analyze them and see whether the problem case can't be solved in a
+>    better, more intelligent way.
+> 
+> 3. If the problem is something structurally inherent or reasonably too
+>    difficult to solve any other way, consider dumping the problem as
+>    config parameters to userland.
+> 
+> We can always expand the flexibility.  Let's do the simple thing
+> first.  As an added bonus, it would enable using static_keys for
+> accounting branches too.
+
+While I do agree with you in general and being careful is at place in
+this area as time shown several times, this seems to be too restrictive
+in this particular case.
+We won't save almost no code with the global knob so I am not sure
+what we are actually saving here. Global knob will just give us all or
+nothing semantic without making the whole thing simpler. You will stick
+with static branches and checkes whether the group accountable anyway,
+right?
+-- 
+Michal Hocko
+SUSE Labs
