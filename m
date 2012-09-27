@@ -1,1222 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab2I0E30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 00:29:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52938 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab2I0E3X (ORCPT
+	id S1753874Ab2I0EdD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 00:33:03 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:53657 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751277Ab2I0EdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 00:29:23 -0400
-Date: Wed, 26 Sep 2012 21:27:01 -0700
-From: tip-bot for Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Message-ID: <tip-bcf6edcd6fdb8965290f0b635a530fa3c6c212e1@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, runzhen@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, haodong@linux.vnet.ibm.com,
-        mtosatti@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
-        avi@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, runzhen@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, haodong@linux.vnet.ibm.com,
-        mtosatti@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
-        avi@redhat.com
-In-Reply-To: <1347870675-31495-4-git-send-email-haodong@linux.vnet.ibm.com>
-References: <1347870675-31495-4-git-send-email-haodong@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Events analysis tool
-Git-Commit-ID: bcf6edcd6fdb8965290f0b635a530fa3c6c212e1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 21:27:08 -0700 (PDT)
+	Thu, 27 Sep 2012 00:33:00 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18Pz4457AEPR2BP+jPEkYWxAY9GbUWKyJwPU7YdrO
+	eC2UgchpksgNdD
+Message-ID: <1348720373.7059.95.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Thu, 27 Sep 2012 06:32:53 +0200
+In-Reply-To: <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+References: <1348505683.11847.111.camel@twins>
+	 <1348511193.6951.44.camel@marge.simpson.net>
+	 <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
+	 <20120924192056.GB4082@liondog.tnic>
+	 <1348538258.7100.23.camel@marge.simpson.net>
+	 <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+	 <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com>
+	 <20120925170058.GC30158@x1.osrc.amd.com>
+	 <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
+	 <20120926163233.GA5339@x1.osrc.amd.com>
+	 <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bcf6edcd6fdb8965290f0b635a530fa3c6c212e1
-Gitweb:     http://git.kernel.org/tip/bcf6edcd6fdb8965290f0b635a530fa3c6c212e1
-Author:     Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-AuthorDate: Mon, 17 Sep 2012 16:31:15 +0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 21 Sep 2012 12:51:22 -0300
+On Wed, 2012-09-26 at 11:19 -0700, Linus Torvalds wrote: 
+> On Wed, Sep 26, 2012 at 9:32 AM, Borislav Petkov <bp@alien8.de> wrote:
+> > On Tue, Sep 25, 2012 at 10:21:28AM -0700, Linus Torvalds wrote:
+> >> How does pgbench look? That's the one that apparently really wants to
+> >> spread out, possibly due to user-level spinlocks. So I assume it will
+> >> show the reverse pattern, with "kill select_idle_sibling" being the
+> >> worst case. Sad, because it really would be lovely to just remove that
+> >> thing ;)
+> >
+> > Yep, correct. It hurts.
+> 
+> I'm *so* not surprised.
 
-perf kvm: Events analysis tool
+Any other result would have induced mushroom cloud, glazed eyes, and jaw
+meets floor here.
 
-Add 'perf kvm stat' support to analyze kvm vmexit/mmio/ioport smartly
+> That said, I think your "kill select_idle_sibling()" one was
+> interesting, but the wrong kind of "get rid of that logic".
+> 
+> It always selected target_cpu, but the fact is, that doesn't really
+> sound very sane. The target cpu is either the previous cpu or the
+> current cpu, depending on whether they should be balanced or not. But
+> that still doesn't make any *sense*.
+> 
+> In fact, the whole select_idle_sibling() logic makes no sense
+> what-so-ever to me. It seems to be total garbage.
 
-Usage:
-- kvm stat
-  run a command and gather performance counter statistics, it is the alias of
-  perf stat
+Oh, it's not _that_ bad.  It does have it's troubles, but if it were
+complete shite it wouldn't the make numbers that I showed, and wouldn't
+make the even better numbers it does with some other loads. 
 
-- trace kvm events:
-  perf kvm stat record, or, if other tracepoints are interesting as well, we
-  can append the events like this:
-  perf kvm stat record -e timer:* -a
+> For example, it starts with the maximum target scheduling domain, and
+> works its way in over the scheduling groups within that domain. What
+> the f*ck is the logic of that kind of crazy thing? It never makes
+> sense to look at a biggest domain first. If you want to be close to
+> something, you want to look at the *smallest* domain first. But
+> because it looks at things in the wrong order, it then needs to have
+> that inner loop saying "does this group actually cover the cpu I am
+> interested in?"
+> 
+> Please tell me I am mis-reading this?
 
-  If many guests are running, we can track the specified guest by using -p or
-  --pid, -a is used to track events generated by all guests.
+We start at MC to get the tbench win I showed (Intel) vs loss at SMT.
+Riddle me this, why does that produce the wins I showed?  I'm still
+hoping someone can shed some light on why the heck there's such a
+disparity in processor behaviors.
 
-- show the result:
-  perf kvm stat report
+> But starting from the biggest ("llc" group) is wrong *anyway*, since
+> it means that it starts looking at the L3 level, and then if it finds
+> an acceptable cpu inside that level, it's all done. But that's
+> *crazy*. Once again, it's much better to try to find an idle sibling
+> *closeby* rather than at the L3 level. No? So once again, we should
+> start at the inner level and if we can't find something really close,
+> we work our way out, rather than starting from the outer level and
+> working our way in.
 
-The output example is following:
-13005
-13059
+Domains on my E5620 look like so when SMT is enabled (seldom):
 
-total 2 guests are running on the host
+[    0.473692] CPU0 attaching sched-domain:                                                                                                                                                                                                 
+[    0.477616]  domain 0: span 0,4 level SIBLING                                                                                                                                                                                            
+[    0.481982]   groups: 0 (cpu_power = 589) 4 (cpu_power = 589)                                                                                                                                                                            
+[    0.487805]   domain 1: span 0-7 level MC                                                                                                                                                                                                
+[    0.491829]    groups: 0,4 (cpu_power = 1178) 1,5 (cpu_power = 1178) 2,6 (cpu_power = 1178) 3,7 (cpu_power = 1178)
+...
 
-Then, track the guest whose pid is 13059:
-^C[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.253 MB perf.data.guest (~11065 samples) ]
+I usually have SMT off, which gives me more oomph at the bottom end (smt
+affects turboboost gizmo methinks), have only one domain, so say I'm
+waking from CPU0.  With cross wire thingy, we'll always wake to CPU1 if
+idle.  That demonstrably works well despite it being L3.  Box coughs up
+wins at fast movers I too would expect L3 to lose at.  If L2 is my only
+viable target for fast movers, I'm stuck with SMT siblings, which I have
+measured.  They aren't wonderful for this.  They do improve max
+throughput markedly though, so aren't a complete waste of silicon ;-)
 
-See the vmexit events:
+I wonder what domains look like on Bulldog. (boot w. sched_debug)
+> If I read the code correctly, we can have both "prev" and "cpu" in the
+> same L2 domain, but because we start looking at the L3 domain, we may
+> end up picking another "affine" CPU that isn't even sharing L2's
+> *before* we pick one that actually *is* sharing L2's with the target
+> CPU. But that code is confusing enough with the scheduler groups inner
+> loop that maybe I am mis-reading it entirely.
 
-Analyze events for all VCPUs:
+Yup, and on Intel, it manages to not suck.
 
-             VM-EXIT    Samples  Samples%     Time%         Avg time
+> There are other oddities in select_idle_sibling() too, if I read
+> things correctly.
+> 
+> For example, it uses "cpu_idle(target)", but if we're actively trying
+> to move to the current CPU (ie wake_affine() returned true), then
+> target is the current cpu, which is certainly *not* going to be idle
+> for a sync wakeup. So it should actually check whether it's a sync
+> wakeup and the only thing pending is that synchronous waker, no?
 
-         APIC_ACCESS        460    70.55%     0.01%     22.44us ( +-   1.75% )
-                 HLT         93    14.26%    99.98% 832077.26us ( +-  10.42% )
-  EXTERNAL_INTERRUPT         64     9.82%     0.00%     35.35us ( +-  14.21% )
-   PENDING_INTERRUPT         24     3.68%     0.00%      9.29us ( +-  31.39% )
-           CR_ACCESS          7     1.07%     0.00%      8.12us ( +-   5.76% )
-      IO_INSTRUCTION          3     0.46%     0.00%     18.00us ( +-  11.79% )
-       EXCEPTION_NMI          1     0.15%     0.00%      5.83us ( +-   -nan% )
+Your logic is fine, but the missing element is that the sync wakeup hint
+doesn't imply as much as you think it does.
 
-Total Samples:652, Total events handled time:77396109.80us.
+> Maybe I'm missing something really fundamental, but it all really does
+> look very odd to me.
 
-See the mmio events:
+Yeah, the sync hint.
 
-Analyze events for all VCPUs:
+> Attached is a totally untested and probably very buggy patch, so
+> please consider it a "shouldn't we do something like this instead" RFC
+> rather than anything serious. So this RFC patch is more a "ok, the
+> patch tries to fix the above oddnesses, please tell me where I went
+> wrong" than anything else.
+> 
+> Comments?
 
-         MMIO Access    Samples  Samples%     Time%         Avg time
+You busted it all to pieces with the sync hint.  Take for example mysql
++oltp, I've run that a zillion times.  It does sync wakeups iirc, been
+quite a while, but definitely produced wins on my Q6600.  Those wins can
+only exist if there is reclaimable overlap.  Sure, the Q6600 is taking
+advantage of its shared L2, but that just moves the breakeven.
 
-        0xfee00380:W        387    84.31%    79.28%      8.29us ( +-   3.32% )
-        0xfee00300:W         24     5.23%     9.96%     16.79us ( +-   1.97% )
-        0xfee00300:R         24     5.23%     7.83%     13.20us ( +-   3.00% )
-        0xfee00310:W         24     5.23%     2.93%      4.94us ( +-   3.84% )
+-Mike
 
-Total Samples:459, Total events handled time:4044.59us.
-
-See the ioport event:
-
-Analyze events for all VCPUs:
-
-      IO Port Access    Samples  Samples%     Time%         Avg time
-
-         0xc050:POUT          3   100.00%   100.00%     13.75us ( +-  10.83% )
-
-Total Samples:3, Total events handled time:41.26us.
-
-And, --vcpu is used to track the specified vcpu and --key is used to sort the
-result:
-
-Analyze events for VCPU 0:
-
-             VM-EXIT    Samples  Samples%     Time%         Avg time
-
-                 HLT         27    13.85%    99.97% 405790.24us ( +-  12.70% )
-  EXTERNAL_INTERRUPT         13     6.67%     0.00%     27.94us ( +-  22.26% )
-         APIC_ACCESS        146    74.87%     0.03%     21.69us ( +-   2.91% )
-      IO_INSTRUCTION          2     1.03%     0.00%     17.77us ( +-  20.56% )
-           CR_ACCESS          2     1.03%     0.00%      8.55us ( +-   6.47% )
-   PENDING_INTERRUPT          5     2.56%     0.00%      6.27us ( +-   3.94% )
-
-Total Samples:195, Total events handled time:10959950.90us.
-
-Signed-off-by: Dong Hao <haodong@linux.vnet.ibm.com>
-Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-[ Dong Hao <haodong@linux.vnet.ibm.com>
-  Runzhen Wang <runzhen@linux.vnet.ibm.com>:
-     - rebase it on current acme's tree
-     - fix the compiling-error on i386 ]
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1347870675-31495-4-git-send-email-haodong@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-kvm.txt |   30 ++-
- tools/perf/MANIFEST                   |    3 +
- tools/perf/builtin-kvm.c              |  840 ++++++++++++++++++++++++++++++++-
- tools/perf/util/header.c              |   59 +++-
- tools/perf/util/header.h              |    1 +
- tools/perf/util/thread.h              |    2 +
- 6 files changed, 929 insertions(+), 6 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
-index dd84cb2..326f2cb 100644
---- a/tools/perf/Documentation/perf-kvm.txt
-+++ b/tools/perf/Documentation/perf-kvm.txt
-@@ -12,7 +12,7 @@ SYNOPSIS
- 	[--guestkallsyms=<path> --guestmodules=<path> | --guestvmlinux=<path>]]
- 	{top|record|report|diff|buildid-list}
- 'perf kvm' [--host] [--guest] [--guestkallsyms=<path> --guestmodules=<path>
--	| --guestvmlinux=<path>] {top|record|report|diff|buildid-list}
-+	| --guestvmlinux=<path>] {top|record|report|diff|buildid-list|stat}
- 
- DESCRIPTION
- -----------
-@@ -38,6 +38,18 @@ There are a couple of variants of perf kvm:
-   so that other tools can be used to fetch packages with matching symbol tables
-   for use by perf report.
- 
-+  'perf kvm stat <command>' to run a command and gather performance counter
-+  statistics.
-+  Especially, perf 'kvm stat record/report' generates a statistical analysis
-+  of KVM events. Currently, vmexit, mmio and ioport events are supported.
-+  'perf kvm stat record <command>' records kvm events and the events between
-+  start and end <command>.
-+  And this command produces a file which contains tracing results of kvm
-+  events.
-+
-+  'perf kvm stat report' reports statistical data which includes events
-+  handled time, samples, and so on.
-+
- OPTIONS
- -------
- -i::
-@@ -68,7 +80,21 @@ OPTIONS
- --guestvmlinux=<path>::
- 	Guest os kernel vmlinux.
- 
-+STAT REPORT OPTIONS
-+-------------------
-+--vcpu=<value>::
-+       analyze events which occures on this vcpu. (default: all vcpus)
-+
-+--events=<value>::
-+       events to be analyzed. Possible values: vmexit, mmio, ioport.
-+       (default: vmexit)
-+-k::
-+--key=<value>::
-+       Sorting key. Possible values: sample (default, sort by samples
-+       number), time (sort by average time).
-+
- SEE ALSO
- --------
- linkperf:perf-top[1], linkperf:perf-record[1], linkperf:perf-report[1],
--linkperf:perf-diff[1], linkperf:perf-buildid-list[1]
-+linkperf:perf-diff[1], linkperf:perf-buildid-list[1],
-+linkperf:perf-stat[1]
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 0518079..80db3f4 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -16,3 +16,6 @@ arch/*/lib/memset*.S
- include/linux/poison.h
- include/linux/magic.h
- include/linux/hw_breakpoint.h
-+arch/x86/include/asm/svm.h
-+arch/x86/include/asm/vmx.h
-+arch/x86/include/asm/kvm_host.h
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 4d2aa2c..1878947 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1,6 +1,7 @@
- #include "builtin.h"
- #include "perf.h"
- 
-+#include "util/evsel.h"
- #include "util/util.h"
- #include "util/cache.h"
- #include "util/symbol.h"
-@@ -10,8 +11,10 @@
- 
- #include "util/parse-options.h"
- #include "util/trace-event.h"
--
- #include "util/debug.h"
-+#include "util/debugfs.h"
-+#include "util/tool.h"
-+#include "util/stat.h"
- 
- #include <sys/prctl.h>
- 
-@@ -19,11 +22,840 @@
- #include <pthread.h>
- #include <math.h>
- 
--static const char		*file_name;
-+#include "../../arch/x86/include/asm/svm.h"
-+#include "../../arch/x86/include/asm/vmx.h"
-+#include "../../arch/x86/include/asm/kvm.h"
-+
-+struct event_key {
-+	#define INVALID_KEY     (~0ULL)
-+	u64 key;
-+	int info;
-+};
-+
-+struct kvm_events_ops {
-+	bool (*is_begin_event)(struct event_format *event, void *data,
-+				struct event_key *key);
-+	bool (*is_end_event)(struct event_format *event, void *data,
-+				struct event_key *key);
-+	void (*decode_key)(struct event_key *key, char decode[20]);
-+	const char *name;
-+};
-+
-+static void exit_event_get_key(struct event_format *event, void *data,
-+				struct event_key *key)
-+{
-+	key->info = 0;
-+	key->key = raw_field_value(event, "exit_reason", data);
-+}
-+
-+static bool kvm_exit_event(struct event_format *event)
-+{
-+	return !strcmp(event->name, "kvm_exit");
-+}
-+
-+static bool exit_event_begin(struct event_format *event, void *data,
-+				struct event_key *key)
-+{
-+	if (kvm_exit_event(event)) {
-+		exit_event_get_key(event, data, key);
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+static bool kvm_entry_event(struct event_format *event)
-+{
-+	return !strcmp(event->name, "kvm_entry");
-+}
-+
-+static bool exit_event_end(struct event_format *event, void *data __maybe_unused,
-+				struct event_key *key __maybe_unused)
-+{
-+	return kvm_entry_event(event);
-+}
-+
-+struct exit_reasons_table {
-+	unsigned long exit_code;
-+	const char *reason;
-+};
-+
-+struct exit_reasons_table vmx_exit_reasons[] = {
-+	VMX_EXIT_REASONS
-+};
-+
-+struct exit_reasons_table svm_exit_reasons[] = {
-+	SVM_EXIT_REASONS
-+};
-+
-+static int cpu_isa;
-+
-+static const char *get_exit_reason(u64 exit_code)
-+{
-+	int table_size = ARRAY_SIZE(svm_exit_reasons);
-+	struct exit_reasons_table *table = svm_exit_reasons;
-+
-+	if (cpu_isa == 1) {
-+		table = vmx_exit_reasons;
-+		table_size = ARRAY_SIZE(vmx_exit_reasons);
-+	}
-+
-+	while (table_size--) {
-+		if (table->exit_code == exit_code)
-+			return table->reason;
-+		table++;
-+	}
-+
-+	pr_err("unknown kvm exit code:%lld on %s\n",
-+		(unsigned long long)exit_code, cpu_isa ? "VMX" : "SVM");
-+	return "UNKNOWN";
-+}
-+
-+static void exit_event_decode_key(struct event_key *key, char decode[20])
-+{
-+	const char *exit_reason = get_exit_reason(key->key);
-+
-+	scnprintf(decode, 20, "%s", exit_reason);
-+}
-+
-+static struct kvm_events_ops exit_events = {
-+	.is_begin_event = exit_event_begin,
-+	.is_end_event = exit_event_end,
-+	.decode_key = exit_event_decode_key,
-+	.name = "VM-EXIT"
-+};
-+
-+    /*
-+     * For the mmio events, we treat:
-+     * the time of MMIO write: kvm_mmio(KVM_TRACE_MMIO_WRITE...) -> kvm_entry
-+     * the time of MMIO read: kvm_exit -> kvm_mmio(KVM_TRACE_MMIO_READ...).
-+     */
-+static void mmio_event_get_key(struct event_format *event, void *data,
-+				struct event_key *key)
-+{
-+	key->key = raw_field_value(event, "gpa", data);
-+	key->info = raw_field_value(event, "type", data);
-+}
-+
-+#define KVM_TRACE_MMIO_READ_UNSATISFIED 0
-+#define KVM_TRACE_MMIO_READ 1
-+#define KVM_TRACE_MMIO_WRITE 2
-+
-+static bool mmio_event_begin(struct event_format *event, void *data,
-+				struct event_key *key)
-+{
-+	/* MMIO read begin event in kernel. */
-+	if (kvm_exit_event(event))
-+		return true;
-+
-+	/* MMIO write begin event in kernel. */
-+	if (!strcmp(event->name, "kvm_mmio") &&
-+		raw_field_value(event, "type", data) == KVM_TRACE_MMIO_WRITE) {
-+		mmio_event_get_key(event, data, key);
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+static bool mmio_event_end(struct event_format *event,  void *data,
-+			struct event_key *key)
-+{
-+	/* MMIO write end event in kernel. */
-+	if (kvm_entry_event(event))
-+		return true;
-+
-+	/* MMIO read end event in kernel.*/
-+	if (!strcmp(event->name, "kvm_mmio") &&
-+		raw_field_value(event, "type", data) == KVM_TRACE_MMIO_READ) {
-+		mmio_event_get_key(event, data, key);
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+static void mmio_event_decode_key(struct event_key *key, char decode[20])
-+{
-+	scnprintf(decode, 20, "%#lx:%s", (unsigned long)key->key,
-+				key->info == KVM_TRACE_MMIO_WRITE ? "W" : "R");
-+}
-+
-+static struct kvm_events_ops mmio_events = {
-+	.is_begin_event = mmio_event_begin,
-+	.is_end_event = mmio_event_end,
-+	.decode_key = mmio_event_decode_key,
-+	.name = "MMIO Access"
-+};
-+
-+ /* The time of emulation pio access is from kvm_pio to kvm_entry. */
-+static void ioport_event_get_key(struct event_format *event, void *data,
-+			struct event_key *key)
-+{
-+	key->key = raw_field_value(event, "port", data);
-+	key->info = raw_field_value(event, "rw", data);
-+}
-+
-+static bool ioport_event_begin(struct event_format *event, void *data,
-+			struct event_key *key)
-+{
-+	if (!strcmp(event->name, "kvm_pio")) {
-+		ioport_event_get_key(event, data, key);
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+static bool ioport_event_end(struct event_format *event, void *data __maybe_unused,
-+			     struct event_key *key __maybe_unused)
-+{
-+	if (kvm_entry_event(event))
-+		return true;
-+
-+	return false;
-+}
-+
-+static void ioport_event_decode_key(struct event_key *key, char decode[20])
-+{
-+	scnprintf(decode, 20, "%#llx:%s", (unsigned long long)key->key,
-+				key->info ? "POUT" : "PIN");
-+}
-+
-+static struct kvm_events_ops ioport_events = {
-+	.is_begin_event = ioport_event_begin,
-+	.is_end_event = ioport_event_end,
-+	.decode_key = ioport_event_decode_key,
-+	.name = "IO Port Access"
-+};
-+
-+static const char *report_event = "vmexit";
-+struct kvm_events_ops *events_ops;
-+
-+static bool register_kvm_events_ops(void)
-+{
-+	bool ret = true;
-+
-+	if (!strcmp(report_event, "vmexit"))
-+		events_ops = &exit_events;
-+	else if (!strcmp(report_event, "mmio"))
-+		events_ops = &mmio_events;
-+	else if (!strcmp(report_event, "ioport"))
-+		events_ops = &ioport_events;
-+	else {
-+		pr_err("Unknown report event:%s\n", report_event);
-+		ret = false;
-+	}
-+
-+	return ret;
-+}
-+
-+struct kvm_event_stats {
-+	u64 time;
-+	struct stats stats;
-+};
-+
-+struct kvm_event {
-+	struct list_head hash_entry;
-+	struct rb_node rb;
-+
-+	struct event_key key;
-+
-+	struct kvm_event_stats total;
-+
-+	#define DEFAULT_VCPU_NUM 8
-+	int max_vcpu;
-+	struct kvm_event_stats *vcpu;
-+};
-+
-+struct vcpu_event_record {
-+	int vcpu_id;
-+	u64 start_time;
-+	struct kvm_event *last_event;
-+};
-+
-+#define EVENTS_BITS			12
-+#define EVENTS_CACHE_SIZE	(1UL << EVENTS_BITS)
-+
-+static u64 total_time;
-+static u64 total_count;
-+static struct list_head kvm_events_cache[EVENTS_CACHE_SIZE];
-+
-+static void init_kvm_event_record(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < (int)EVENTS_CACHE_SIZE; i++)
-+		INIT_LIST_HEAD(&kvm_events_cache[i]);
-+}
-+
-+static int kvm_events_hash_fn(u64 key)
-+{
-+	return key & (EVENTS_CACHE_SIZE - 1);
-+}
-+
-+static bool kvm_event_expand(struct kvm_event *event, int vcpu_id)
-+{
-+	int old_max_vcpu = event->max_vcpu;
-+
-+	if (vcpu_id < event->max_vcpu)
-+		return true;
-+
-+	while (event->max_vcpu <= vcpu_id)
-+		event->max_vcpu += DEFAULT_VCPU_NUM;
-+
-+	event->vcpu = realloc(event->vcpu,
-+			      event->max_vcpu * sizeof(*event->vcpu));
-+	if (!event->vcpu) {
-+		pr_err("Not enough memory\n");
-+		return false;
-+	}
-+
-+	memset(event->vcpu + old_max_vcpu, 0,
-+	       (event->max_vcpu - old_max_vcpu) * sizeof(*event->vcpu));
-+	return true;
-+}
-+
-+static struct kvm_event *kvm_alloc_init_event(struct event_key *key)
-+{
-+	struct kvm_event *event;
-+
-+	event = zalloc(sizeof(*event));
-+	if (!event) {
-+		pr_err("Not enough memory\n");
-+		return NULL;
-+	}
-+
-+	event->key = *key;
-+	return event;
-+}
-+
-+static struct kvm_event *find_create_kvm_event(struct event_key *key)
-+{
-+	struct kvm_event *event;
-+	struct list_head *head;
-+
-+	BUG_ON(key->key == INVALID_KEY);
-+
-+	head = &kvm_events_cache[kvm_events_hash_fn(key->key)];
-+	list_for_each_entry(event, head, hash_entry)
-+		if (event->key.key == key->key && event->key.info == key->info)
-+			return event;
-+
-+	event = kvm_alloc_init_event(key);
-+	if (!event)
-+		return NULL;
-+
-+	list_add(&event->hash_entry, head);
-+	return event;
-+}
-+
-+static bool handle_begin_event(struct vcpu_event_record *vcpu_record,
-+			       struct event_key *key, u64 timestamp)
-+{
-+	struct kvm_event *event = NULL;
-+
-+	if (key->key != INVALID_KEY)
-+		event = find_create_kvm_event(key);
-+
-+	vcpu_record->last_event = event;
-+	vcpu_record->start_time = timestamp;
-+	return true;
-+}
-+
-+static void
-+kvm_update_event_stats(struct kvm_event_stats *kvm_stats, u64 time_diff)
-+{
-+	kvm_stats->time += time_diff;
-+	update_stats(&kvm_stats->stats, time_diff);
-+}
-+
-+static double kvm_event_rel_stddev(int vcpu_id, struct kvm_event *event)
-+{
-+	struct kvm_event_stats *kvm_stats = &event->total;
-+
-+	if (vcpu_id != -1)
-+		kvm_stats = &event->vcpu[vcpu_id];
-+
-+	return rel_stddev_stats(stddev_stats(&kvm_stats->stats),
-+				avg_stats(&kvm_stats->stats));
-+}
-+
-+static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
-+			     u64 time_diff)
-+{
-+	kvm_update_event_stats(&event->total, time_diff);
-+
-+	if (!kvm_event_expand(event, vcpu_id))
-+		return false;
-+
-+	kvm_update_event_stats(&event->vcpu[vcpu_id], time_diff);
-+	return true;
-+}
-+
-+static bool handle_end_event(struct vcpu_event_record *vcpu_record,
-+			     struct event_key *key, u64 timestamp)
-+{
-+	struct kvm_event *event;
-+	u64 time_begin, time_diff;
-+
-+	event = vcpu_record->last_event;
-+	time_begin = vcpu_record->start_time;
-+
-+	/* The begin event is not caught. */
-+	if (!time_begin)
-+		return true;
-+
-+	/*
-+	 * In some case, the 'begin event' only records the start timestamp,
-+	 * the actual event is recognized in the 'end event' (e.g. mmio-event).
-+	 */
-+
-+	/* Both begin and end events did not get the key. */
-+	if (!event && key->key == INVALID_KEY)
-+		return true;
-+
-+	if (!event)
-+		event = find_create_kvm_event(key);
-+
-+	if (!event)
-+		return false;
-+
-+	vcpu_record->last_event = NULL;
-+	vcpu_record->start_time = 0;
-+
-+	BUG_ON(timestamp < time_begin);
-+
-+	time_diff = timestamp - time_begin;
-+	return update_kvm_event(event, vcpu_record->vcpu_id, time_diff);
-+}
-+
-+static struct vcpu_event_record
-+*per_vcpu_record(struct thread *thread, struct event_format *event, void *data)
-+{
-+	/* Only kvm_entry records vcpu id. */
-+	if (!thread->priv && kvm_entry_event(event)) {
-+		struct vcpu_event_record *vcpu_record;
-+
-+		vcpu_record = zalloc(sizeof(struct vcpu_event_record));
-+		if (!vcpu_record) {
-+			pr_err("Not enough memory\n");
-+			return NULL;
-+		}
-+
-+		vcpu_record->vcpu_id = raw_field_value(event, "vcpu_id", data);
-+		thread->priv = vcpu_record;
-+	}
-+
-+	return (struct vcpu_event_record *)thread->priv;
-+}
-+
-+static bool handle_kvm_event(struct thread *thread, struct event_format *event,
-+			     void *data, u64 timestamp)
-+{
-+	struct vcpu_event_record *vcpu_record;
-+	struct event_key key = {.key = INVALID_KEY};
-+
-+	vcpu_record = per_vcpu_record(thread, event, data);
-+	if (!vcpu_record)
-+		return true;
-+
-+	if (events_ops->is_begin_event(event, data, &key))
-+		return handle_begin_event(vcpu_record, &key, timestamp);
-+
-+	if (events_ops->is_end_event(event, data, &key))
-+		return handle_end_event(vcpu_record, &key, timestamp);
-+
-+	return true;
-+}
-+
-+typedef int (*key_cmp_fun)(struct kvm_event*, struct kvm_event*, int);
-+struct kvm_event_key {
-+	const char *name;
-+	key_cmp_fun key;
-+};
-+
-+static int trace_vcpu = -1;
-+#define GET_EVENT_KEY(func, field)					\
-+static u64 get_event_ ##func(struct kvm_event *event, int vcpu)		\
-+{									\
-+	if (vcpu == -1)							\
-+		return event->total.field;				\
-+									\
-+	if (vcpu >= event->max_vcpu)					\
-+		return 0;						\
-+									\
-+	return event->vcpu[vcpu].field;					\
-+}
-+
-+#define COMPARE_EVENT_KEY(func, field)					\
-+GET_EVENT_KEY(func, field)						\
-+static int compare_kvm_event_ ## func(struct kvm_event *one,		\
-+					struct kvm_event *two, int vcpu)\
-+{									\
-+	return get_event_ ##func(one, vcpu) >				\
-+				get_event_ ##func(two, vcpu);		\
-+}
-+
-+GET_EVENT_KEY(time, time);
-+COMPARE_EVENT_KEY(count, stats.n);
-+COMPARE_EVENT_KEY(mean, stats.mean);
-+
-+#define DEF_SORT_NAME_KEY(name, compare_key)				\
-+	{ #name, compare_kvm_event_ ## compare_key }
-+
-+static struct kvm_event_key keys[] = {
-+	DEF_SORT_NAME_KEY(sample, count),
-+	DEF_SORT_NAME_KEY(time, mean),
-+	{ NULL, NULL }
-+};
-+
-+static const char *sort_key = "sample";
-+static key_cmp_fun compare;
-+
-+static bool select_key(void)
-+{
-+	int i;
-+
-+	for (i = 0; keys[i].name; i++) {
-+		if (!strcmp(keys[i].name, sort_key)) {
-+			compare = keys[i].key;
-+			return true;
-+		}
-+	}
-+
-+	pr_err("Unknown compare key:%s\n", sort_key);
-+	return false;
-+}
-+
-+static struct rb_root result;
-+static void insert_to_result(struct kvm_event *event, key_cmp_fun bigger,
-+			     int vcpu)
-+{
-+	struct rb_node **rb = &result.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct kvm_event *p;
-+
-+	while (*rb) {
-+		p = container_of(*rb, struct kvm_event, rb);
-+		parent = *rb;
-+
-+		if (bigger(event, p, vcpu))
-+			rb = &(*rb)->rb_left;
-+		else
-+			rb = &(*rb)->rb_right;
-+	}
-+
-+	rb_link_node(&event->rb, parent, rb);
-+	rb_insert_color(&event->rb, &result);
-+}
-+
-+static void update_total_count(struct kvm_event *event, int vcpu)
-+{
-+	total_count += get_event_count(event, vcpu);
-+	total_time += get_event_time(event, vcpu);
-+}
-+
-+static bool event_is_valid(struct kvm_event *event, int vcpu)
-+{
-+	return !!get_event_count(event, vcpu);
-+}
-+
-+static void sort_result(int vcpu)
-+{
-+	unsigned int i;
-+	struct kvm_event *event;
-+
-+	for (i = 0; i < EVENTS_CACHE_SIZE; i++)
-+		list_for_each_entry(event, &kvm_events_cache[i], hash_entry)
-+			if (event_is_valid(event, vcpu)) {
-+				update_total_count(event, vcpu);
-+				insert_to_result(event, compare, vcpu);
-+			}
-+}
-+
-+/* returns left most element of result, and erase it */
-+static struct kvm_event *pop_from_result(void)
-+{
-+	struct rb_node *node = rb_first(&result);
-+
-+	if (!node)
-+		return NULL;
-+
-+	rb_erase(node, &result);
-+	return container_of(node, struct kvm_event, rb);
-+}
-+
-+static void print_vcpu_info(int vcpu)
-+{
-+	pr_info("Analyze events for ");
-+
-+	if (vcpu == -1)
-+		pr_info("all VCPUs:\n\n");
-+	else
-+		pr_info("VCPU %d:\n\n", vcpu);
-+}
-+
-+static void print_result(int vcpu)
-+{
-+	char decode[20];
-+	struct kvm_event *event;
-+
-+	pr_info("\n\n");
-+	print_vcpu_info(vcpu);
-+	pr_info("%20s ", events_ops->name);
-+	pr_info("%10s ", "Samples");
-+	pr_info("%9s ", "Samples%");
-+
-+	pr_info("%9s ", "Time%");
-+	pr_info("%16s ", "Avg time");
-+	pr_info("\n\n");
-+
-+	while ((event = pop_from_result())) {
-+		u64 ecount, etime;
-+
-+		ecount = get_event_count(event, vcpu);
-+		etime = get_event_time(event, vcpu);
-+
-+		events_ops->decode_key(&event->key, decode);
-+		pr_info("%20s ", decode);
-+		pr_info("%10llu ", (unsigned long long)ecount);
-+		pr_info("%8.2f%% ", (double)ecount / total_count * 100);
-+		pr_info("%8.2f%% ", (double)etime / total_time * 100);
-+		pr_info("%9.2fus ( +-%7.2f%% )", (double)etime / ecount/1e3,
-+			kvm_event_rel_stddev(vcpu, event));
-+		pr_info("\n");
-+	}
-+
-+	pr_info("\nTotal Samples:%lld, Total events handled time:%.2fus.\n\n",
-+		(unsigned long long)total_count, total_time / 1e3);
-+}
-+
-+static int process_sample_event(struct perf_tool *tool __maybe_unused,
-+				union perf_event *event,
-+				struct perf_sample *sample,
-+				struct perf_evsel *evsel,
-+				struct machine *machine)
-+{
-+	struct thread *thread = machine__findnew_thread(machine, sample->tid);
-+
-+	if (thread == NULL) {
-+		pr_debug("problem processing %d event, skipping it.\n",
-+			event->header.type);
-+		return -1;
-+	}
-+
-+	if (!handle_kvm_event(thread, evsel->tp_format, sample->raw_data,
-+			 sample->time))
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static struct perf_tool eops = {
-+	.sample			= process_sample_event,
-+	.comm			= perf_event__process_comm,
-+	.ordered_samples	= true,
-+};
-+
-+static int get_cpu_isa(struct perf_session *session)
-+{
-+	char *cpuid;
-+	int isa;
-+
-+	cpuid = perf_header__read_feature(session, HEADER_CPUID);
-+
-+	if (!cpuid) {
-+		pr_err("read HEADER_CPUID failed.\n");
-+		return -ENOTSUP;
-+	}
-+
-+	if (strstr(cpuid, "Intel"))
-+		isa = 1;
-+	else if (strstr(cpuid, "AMD"))
-+		isa = 0;
-+	else {
-+		pr_err("CPU %s is not supported.\n", cpuid);
-+		isa = -ENOTSUP;
-+	}
-+
-+	free(cpuid);
-+	return isa;
-+}
-+
-+static const char *file_name;
-+
-+static int read_events(void)
-+{
-+	struct perf_session *kvm_session;
-+	int ret;
-+
-+	kvm_session = perf_session__new(file_name, O_RDONLY, 0, false, &eops);
-+	if (!kvm_session) {
-+		pr_err("Initializing perf session failed\n");
-+		return -EINVAL;
-+	}
-+
-+	if (!perf_session__has_traces(kvm_session, "kvm record"))
-+		return -EINVAL;
-+
-+	/*
-+	 * Do not use 'isa' recorded in kvm_exit tracepoint since it is not
-+	 * traced in the old kernel.
-+	 */
-+	ret = get_cpu_isa(kvm_session);
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	cpu_isa = ret;
-+
-+	return perf_session__process_events(kvm_session, &eops);
-+}
-+
-+static bool verify_vcpu(int vcpu)
-+{
-+	if (vcpu != -1 && vcpu < 0) {
-+		pr_err("Invalid vcpu:%d.\n", vcpu);
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+static int kvm_events_report_vcpu(int vcpu)
-+{
-+	int ret = -EINVAL;
-+
-+	if (!verify_vcpu(vcpu))
-+		goto exit;
-+
-+	if (!select_key())
-+		goto exit;
-+
-+	if (!register_kvm_events_ops())
-+		goto exit;
-+
-+	init_kvm_event_record();
-+	setup_pager();
-+
-+	ret = read_events();
-+	if (ret)
-+		goto exit;
-+
-+	sort_result(vcpu);
-+	print_result(vcpu);
-+exit:
-+	return ret;
-+}
-+
-+static const char * const record_args[] = {
-+	"record",
-+	"-R",
-+	"-f",
-+	"-m", "1024",
-+	"-c", "1",
-+	"-e", "kvm:kvm_entry",
-+	"-e", "kvm:kvm_exit",
-+	"-e", "kvm:kvm_mmio",
-+	"-e", "kvm:kvm_pio",
-+};
-+
-+#define STRDUP_FAIL_EXIT(s)		\
-+	({	char *_p;		\
-+	_p = strdup(s);		\
-+		if (!_p)		\
-+			return -ENOMEM;	\
-+		_p;			\
-+	})
-+
-+static int kvm_events_record(int argc, const char **argv)
-+{
-+	unsigned int rec_argc, i, j;
-+	const char **rec_argv;
-+
-+	rec_argc = ARRAY_SIZE(record_args) + argc + 2;
-+	rec_argv = calloc(rec_argc + 1, sizeof(char *));
-+
-+	if (rec_argv == NULL)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < ARRAY_SIZE(record_args); i++)
-+		rec_argv[i] = STRDUP_FAIL_EXIT(record_args[i]);
-+
-+	rec_argv[i++] = STRDUP_FAIL_EXIT("-o");
-+	rec_argv[i++] = STRDUP_FAIL_EXIT(file_name);
-+
-+	for (j = 1; j < (unsigned int)argc; j++, i++)
-+		rec_argv[i] = argv[j];
-+
-+	return cmd_record(i, rec_argv, NULL);
-+}
-+
-+static const char * const kvm_events_report_usage[] = {
-+	"perf kvm stat report [<options>]",
-+	NULL
-+};
-+
-+static const struct option kvm_events_report_options[] = {
-+	OPT_STRING(0, "event", &report_event, "report event",
-+		    "event for reporting: vmexit, mmio, ioport"),
-+	OPT_INTEGER(0, "vcpu", &trace_vcpu,
-+		    "vcpu id to report"),
-+	OPT_STRING('k', "key", &sort_key, "sort-key",
-+		    "key for sorting: sample(sort by samples number)"
-+		    " time (sort by avg time)"),
-+	OPT_END()
-+};
-+
-+static int kvm_events_report(int argc, const char **argv)
-+{
-+	symbol__init();
-+
-+	if (argc) {
-+		argc = parse_options(argc, argv,
-+				     kvm_events_report_options,
-+				     kvm_events_report_usage, 0);
-+		if (argc)
-+			usage_with_options(kvm_events_report_usage,
-+					   kvm_events_report_options);
-+	}
-+
-+	return kvm_events_report_vcpu(trace_vcpu);
-+}
-+
-+static void print_kvm_stat_usage(void)
-+{
-+	printf("Usage: perf kvm stat <command>\n\n");
-+
-+	printf("# Available commands:\n");
-+	printf("\trecord: record kvm events\n");
-+	printf("\treport: report statistical data of kvm events\n");
-+
-+	printf("\nOtherwise, it is the alias of 'perf stat':\n");
-+}
-+
-+static int kvm_cmd_stat(int argc, const char **argv)
-+{
-+	if (argc == 1) {
-+		print_kvm_stat_usage();
-+		goto perf_stat;
-+	}
-+
-+	if (!strncmp(argv[1], "rec", 3))
-+		return kvm_events_record(argc - 1, argv + 1);
-+
-+	if (!strncmp(argv[1], "rep", 3))
-+		return kvm_events_report(argc - 1 , argv + 1);
-+
-+perf_stat:
-+	return cmd_stat(argc, argv, NULL);
-+}
-+
- static char			name_buffer[256];
- 
- static const char * const kvm_usage[] = {
--	"perf kvm [<options>] {top|record|report|diff|buildid-list}",
-+	"perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
- 	NULL
- };
- 
-@@ -135,6 +967,8 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
- 		return cmd_top(argc, argv, NULL);
- 	else if (!strncmp(argv[0], "buildid-list", 12))
- 		return __cmd_buildid_list(argc, argv);
-+	else if (!strncmp(argv[0], "stat", 4))
-+		return kvm_cmd_stat(argc, argv);
- 	else
- 		usage_with_options(kvm_usage, kvm_options);
- 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index acbf633..ad72b28 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1673,6 +1673,11 @@ static int process_build_id(struct perf_file_section *section,
- 	return 0;
- }
- 
-+static char *read_cpuid(struct perf_header *ph, int fd)
-+{
-+	return do_read_string(fd, ph);
-+}
-+
- static struct perf_evsel *
- perf_evlist__find_by_index(struct perf_evlist *evlist, int idx)
- {
-@@ -1726,6 +1731,7 @@ process_event_desc(struct perf_file_section *section __maybe_unused,
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-+	char *(*read)(struct perf_header *h, int fd);
- 	int (*process)(struct perf_file_section *section,
- 		       struct perf_header *h, int feat, int fd, void *data);
- 	const char *name;
-@@ -1740,6 +1746,9 @@ struct feature_ops {
- #define FEAT_OPF(n, func) \
- 	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
- 		.full_only = true }
-+#define FEAT_OPA_R(n, func) \
-+	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
-+		.read  = read_##func }
- 
- /* feature_ops not implemented: */
- #define print_tracing_data	NULL
-@@ -1754,7 +1763,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPA(HEADER_ARCH,		arch),
- 	FEAT_OPA(HEADER_NRCPUS,		nrcpus),
- 	FEAT_OPA(HEADER_CPUDESC,	cpudesc),
--	FEAT_OPA(HEADER_CPUID,		cpuid),
-+	FEAT_OPA_R(HEADER_CPUID,	cpuid),
- 	FEAT_OPA(HEADER_TOTAL_MEM,	total_mem),
- 	FEAT_OPP(HEADER_EVENT_DESC,	event_desc),
- 	FEAT_OPA(HEADER_CMDLINE,	cmdline),
-@@ -1809,6 +1818,54 @@ int perf_header__fprintf_info(struct perf_session *session, FILE *fp, bool full)
- 	return 0;
- }
- 
-+struct header_read_data {
-+	int feat;
-+	char *result;
-+};
-+
-+static int perf_file_section__read_feature(struct perf_file_section *section,
-+				struct perf_header *ph,
-+				int feat, int fd, void *data)
-+{
-+	struct header_read_data *hd = data;
-+
-+	if (feat != hd->feat)
-+		return 0;
-+
-+	if (lseek(fd, section->offset, SEEK_SET) == (off_t)-1) {
-+		pr_debug("Failed to lseek to %" PRIu64 " offset for feature "
-+				"%d, continuing...\n", section->offset, feat);
-+	return 0;
-+	}
-+
-+	if (feat >= HEADER_LAST_FEATURE) {
-+		pr_warning("unknown feature %d\n", feat);
-+		return 0;
-+	}
-+
-+	if (!feat_ops[feat].read) {
-+		pr_warning("read is not supported for feature %d\n", feat);
-+		return 0;
-+	}
-+
-+	hd->result = feat_ops[feat].read(ph, fd);
-+	return 0;
-+}
-+
-+char *perf_header__read_feature(struct perf_session *session, int feat)
-+{
-+	struct perf_header *header = &session->header;
-+	struct header_read_data hd;
-+	int fd = session->fd;
-+
-+	hd.feat = feat;
-+	hd.result = NULL;
-+
-+	perf_header__process_sections(header, fd, &hd,
-+				perf_file_section__read_feature);
-+	return hd.result;
-+}
-+
- static int do_write_feat(int fd, struct perf_header *h, int type,
- 			 struct perf_file_section **p,
- 			 struct perf_evlist *evlist)
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 209dad4..58de08b 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -94,6 +94,7 @@ int perf_header__process_sections(struct perf_header *header, int fd,
- 				  int feat, int fd, void *data));
- 
- int perf_header__fprintf_info(struct perf_session *s, FILE *fp, bool full);
-+char *perf_header__read_feature(struct perf_session *session, int feat);
- 
- int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
- 			  const char *name, bool is_kallsyms, bool is_vdso);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 70c2c13..f66610b 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -16,6 +16,8 @@ struct thread {
- 	bool			comm_set;
- 	char			*comm;
- 	int			comm_len;
-+
-+	void			*priv;
- };
- 
- struct machine;
