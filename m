@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab2I0BdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 21:33:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54290 "EHLO mga02.intel.com"
+	id S1753845Ab2I0Bdr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 21:33:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:48573 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab2I0BdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 21:33:17 -0400
+	id S1753783Ab2I0Bd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 21:33:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,492,1344236400"; 
-   d="scan'208";a="213995623"
-Message-ID: <5063ACDB.8090203@intel.com>
-Date: Thu, 27 Sep 2012 09:33:15 +0800
+   d="scan'208";a="197692038"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [BUG] perf/x86: Intel uncore_pmu_to_box() local variable typo
-References: <CABPqkBQkXtBKJUQX1czwyVAFMvro4akvfpAvLyStPLzntdZhuQ@mail.gmail.com>
-In-Reply-To: <CABPqkBQkXtBKJUQX1czwyVAFMvro4akvfpAvLyStPLzntdZhuQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: eranian@google.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH] perf/x86: Fix typo in uncore_pmu_to_box
+Date: Thu, 27 Sep 2012 09:33:26 +0800
+Message-Id: <1348709606-2759-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2012 06:44 PM, Stephane Eranian wrote:
-> Hi,
-> 
-> I don't understand why the local variable box needs to
-> be declared static here:
-> 
-> static struct intel_uncore_box *
-> uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
-> {
->         static struct intel_uncore_box *box;
-> 
->         box = *per_cpu_ptr(pmu->box, cpu);
->         if (box)
->                 return box;
->         ....
-> }
-> 
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-My fault, sorry
+the variable box should not be declared as static
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index db917ec..99d96a4 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1950,7 +1950,7 @@ struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type, int cp
+ static struct intel_uncore_box *
+ uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+ {
+-	static struct intel_uncore_box *box;
++	struct intel_uncore_box *box;
+ 
+ 	box = *per_cpu_ptr(pmu->box, cpu);
+ 	if (box)
+-- 
+1.7.11.4
+
