@@ -1,47 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2I0Rlf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 13:41:35 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:28076 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2I0Rld (ORCPT
+	id S1753355Ab2I0Rmm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 13:42:42 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46742 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2I0Rml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 13:41:33 -0400
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH scsi] Add NULL checking of return value from scsi_cmd_to_driver()
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1348464626.2475.13.camel@ThinkPad-T420>
-	<1348465493.2467.3.camel@dabdike>
-	<1348470210.2475.47.camel@ThinkPad-T420>
-	<1348472104.2467.8.camel@dabdike> <yq13924b4uw.fsf@sermon.lab.mkp.net>
-	<1348721055.2509.0.camel@dabdike>
-Date: Thu, 27 Sep 2012 13:41:20 -0400
-In-Reply-To: <1348721055.2509.0.camel@dabdike> (James Bottomley's message of
-	"Thu, 27 Sep 2012 08:44:15 +0400")
-Message-ID: <yq1bogr8itb.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.0.97 (gnu/linux)
+	Thu, 27 Sep 2012 13:42:41 -0400
+Date: Thu, 27 Sep 2012 21:42:37 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: alan@lxorguk.ukuu.org.uk, hpa@zytor.com, gregkh@linuxfoundation.org,
+        xemul@parallels.com, jslaby@suse.cz
+Subject: Re: [patch 2/2] tty: Add get- ioctls to fetch tty status v2
+Message-ID: <20120927174237.GS6618@moon>
+References: <20120927165958.287690622@openvz.org>
+ <20120927170137.805935065@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120927170137.805935065@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "James" == James Bottomley <James.Bottomley@HansenPartnership.com> writes:
+On Thu, Sep 27, 2012 at 09:00:00PM +0400, Cyrill Gorcunov wrote:
+> For checkpoint/restore we need to know if tty has
+> exclusive or packet mode set, as well as if pty
+> is currently locked. Just to be able to restore
+> this characteristics.
 
->> I'm fine with having the eh action be triggered for FS requests only,
->> if that's what you're asking?
+Here is an updated version with redundand code ripped off (by jslaby@)
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: tty: Add get- ioctls to fetch tty status v2
 
-James> Sort of ... I was thinking do it for all non REQ_TYPE_BLOCK_PC
-James> commands (which includes flush and other strange types), but if
-James> you think it should only be for REQ_TYPE_FS, that's fine too.
+For checkpoint/restore we need to know if tty has
+exclusive or packet mode set, as well as if pty
+is currently locked. Just to be able to restore
+this characteristics.
 
-I'm ok either way.
+For this sake the following ioctl codes are introduced
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+ - TIOCGPKT to get packet mode state
+ - TIOCGPTLCK to get Pty locked state
+ - TIOCGEXCL to get Exclusive mode state
+
+Note this ioctls are a bit unsafe in terms of data
+obtained consistency. The tty characteristics might
+be changed right after ioctl complete. Keep it in
+mind and use this ioctl carefully.
+
+v2:
+ - Use TIOC prefix for ioctl codes (by jslaby@)
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/pty.c            |   32 ++++++++++++++++++++++++++++++++
+ drivers/tty/tty_io.c         |    7 +++++++
+ fs/compat_ioctl.c            |    3 +++
+ include/asm-generic/ioctls.h |    3 +++
+ 4 files changed, 45 insertions(+)
+
+Index: tty.git/drivers/tty/pty.c
+===================================================================
+--- tty.git.orig/drivers/tty/pty.c
++++ tty.git/drivers/tty/pty.c
+@@ -174,6 +174,14 @@ static int pty_set_lock(struct tty_struc
+ 	return 0;
+ }
+ 
++static int pty_get_lock(struct tty_struct *tty, int __user *arg)
++{
++	int locked = test_bit(TTY_PTY_LOCK, &tty->flags);
++	if (put_user(locked, arg))
++		return -EFAULT;
++	return 0;
++}
++
+ /* Set the packet mode on a pty */
+ static int pty_set_pktmode(struct tty_struct *tty, int __user *arg)
+ {
+@@ -196,6 +204,22 @@ static int pty_set_pktmode(struct tty_st
+ 	return 0;
+ }
+ 
++/* Get the packet mode of a pty */
++static int pty_get_pktmode(struct tty_struct *tty, int __user *arg)
++{
++	unsigned long flags;
++	int pktmode;
++
++	spin_lock_irqsave(&tty->ctrl_lock, flags);
++	pktmode = tty->packet;
++	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
++
++	if (put_user(pktmode, arg))
++		return -EFAULT;
++
++	return 0;
++}
++
+ /* Send a signal to the slave */
+ static int pty_signal(struct tty_struct *tty, int sig)
+ {
+@@ -415,8 +439,12 @@ static int pty_bsd_ioctl(struct tty_stru
+ 	switch (cmd) {
+ 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+ 		return pty_set_lock(tty, (int __user *) arg);
++	case TIOCGPTLCK: /* Get PT Lock status */
++		return pty_get_lock(tty, (int __user *)arg);
+ 	case TIOCPKT: /* Set PT packet mode */
+ 		return pty_set_pktmode(tty, (int __user *)arg);
++	case TIOCGPKT: /* Get PT packet mode */
++		return pty_get_pktmode(tty, (int __user *)arg);
+ 	case TIOCSIG:    /* Send signal to other side of pty */
+ 		return pty_signal(tty, (int) arg);
+ 	}
+@@ -531,8 +559,12 @@ static int pty_unix98_ioctl(struct tty_s
+ 	switch (cmd) {
+ 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+ 		return pty_set_lock(tty, (int __user *)arg);
++	case TIOCGPTLCK: /* Get PT Lock status */
++		return pty_get_lock(tty, (int __user *)arg);
+ 	case TIOCPKT: /* Set PT packet mode */
+ 		return pty_set_pktmode(tty, (int __user *)arg);
++	case TIOCGPKT: /* Get PT packet mode */
++		return pty_get_pktmode(tty, (int __user *)arg);
+ 	case TIOCGPTN: /* Get PT Number */
+ 		return put_user(tty->index, (unsigned int __user *)arg);
+ 	case TIOCSIG:    /* Send signal to other side of pty */
+Index: tty.git/drivers/tty/tty_io.c
+===================================================================
+--- tty.git.orig/drivers/tty/tty_io.c
++++ tty.git/drivers/tty/tty_io.c
+@@ -2693,6 +2693,13 @@ long tty_ioctl(struct file *file, unsign
+ 	case TIOCNXCL:
+ 		clear_bit(TTY_EXCLUSIVE, &tty->flags);
+ 		return 0;
++	case TIOCGEXCL:
++	{
++		int excl = test_bit(TTY_EXCLUSIVE, &tty->flags);
++		if (put_user(excl, (int __user *)p))
++			return -EFAULT;
++		return 0;
++	}
+ 	case TIOCNOTTY:
+ 		if (current->signal->tty != tty)
+ 			return -ENOTTY;
+Index: tty.git/fs/compat_ioctl.c
+===================================================================
+--- tty.git.orig/fs/compat_ioctl.c
++++ tty.git/fs/compat_ioctl.c
+@@ -842,6 +842,9 @@ COMPATIBLE_IOCTL(TIOCGDEV)
+ COMPATIBLE_IOCTL(TIOCCBRK)
+ COMPATIBLE_IOCTL(TIOCGSID)
+ COMPATIBLE_IOCTL(TIOCGICOUNT)
++COMPATIBLE_IOCTL(TIOCGPKT)
++COMPATIBLE_IOCTL(TIOCGPTLCK)
++COMPATIBLE_IOCTL(TIOCGEXCL)
+ /* Little t */
+ COMPATIBLE_IOCTL(TIOCGETD)
+ COMPATIBLE_IOCTL(TIOCSETD)
+Index: tty.git/include/asm-generic/ioctls.h
+===================================================================
+--- tty.git.orig/include/asm-generic/ioctls.h
++++ tty.git/include/asm-generic/ioctls.h
+@@ -74,6 +74,9 @@
+ #define TCSETXW		0x5435
+ #define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
+ #define TIOCVHANGUP	0x5437
++#define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
++#define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
++#define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
+ 
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
