@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab2I0UUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 16:20:07 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49096 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab2I0UUF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 16:20:05 -0400
+	id S1754825Ab2I0UZx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 16:25:53 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43354 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752578Ab2I0UZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 16:25:51 -0400
+Message-ID: <5064B647.3000906@linux.vnet.ibm.com>
+Date: Thu, 27 Sep 2012 15:25:43 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1348724705-23779-5-git-send-email-wency@cn.fujitsu.com>
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-5-git-send-email-wency@cn.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 27 Sep 2012 16:19:45 -0400
-X-Google-Sender-Auth: hzUFJMpmyMhS_JsADdnrfZmgv94
-Message-ID: <CAHGf_=qpGTfW_KW5uhLrCft6Bkq=c+bu171PwhUH+Y=VQ-iPfA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] memory-hotplug: auto offline page_cgroup when
- onlining memory block failed
-To: wency@cn.fujitsu.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        isimatu.yasuaki@jp.fujitsu.com
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Konrad Wilk <konrad.wilk@oracle.com>, Mel Gorman <mgorman@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120921161252.GV11266@suse.de> <20120921180222.GA7220@phenom.dumpdata.com> <505CB9BC.8040905@linux.vnet.ibm.com> <42d62a30-bd6c-4bd7-97d1-bec2f237756b@default> <50609794.8030508@linux.vnet.ibm.com> <b34c65c9-4b25-431d-8b82-cbe911126be9@default>
+In-Reply-To: <b34c65c9-4b25-431d-8b82-cbe911126be9@default>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092720-7182-0000-0000-000002B4D4C9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 1:45 AM,  <wency@cn.fujitsu.com> wrote:
-> From: Wen Congyang <wency@cn.fujitsu.com>
->
-> When a memory block is onlined, we will try allocate memory on that node
-> to store page_cgroup. If onlining the memory block failed, we don't
-> offline the page cgroup, and we have no chance to offline this page cgroup
-> unless the memory block is onlined successfully again. It will cause
-> that we can't hot-remove the memory device on that node, because some
-> memory is used to store page cgroup. If onlining the memory block
-> is failed, there is no need to stort page cgroup for this memory. So
-> auto offline page_cgroup when onlining memory block failed.
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  mm/page_cgroup.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-> index 5ddad0c..44db00e 100644
-> --- a/mm/page_cgroup.c
-> +++ b/mm/page_cgroup.c
-> @@ -251,6 +251,9 @@ static int __meminit page_cgroup_callback(struct notifier_block *self,
->                                 mn->nr_pages, mn->status_change_nid);
->                 break;
->         case MEM_CANCEL_ONLINE:
-> +               offline_page_cgroup(mn->start_pfn,
-> +                               mn->nr_pages, mn->status_change_nid);
-> +               break;
->         case MEM_GOING_OFFLINE:
->                 break;
->         case MEM_ONLINE:
+On 09/24/2012 02:17 PM, Dan Magenheimer wrote:
+>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>> Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+> 
+> Once again, you have completely ignored a reasonable
+> compromise proposal.  Why?
 
-Looks straight forward and reasonable.
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+We have users who are interested in zcache and we had hoped for a path
+that didn't introduce an additional 6-12 month delay.  I am talking
+with our team to determine a compromise that resolves this, but also
+gets this feature into the hands of users that they can work with.
+I'll be away from email until next week, but I wanted to get something
+out to the mailing list before I left.  I need a couple days to give a
+more definite answer.
+
+Seth
+
+
