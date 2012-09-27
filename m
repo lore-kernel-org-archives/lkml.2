@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab2I0SDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 14:03:23 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:45105 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752861Ab2I0SDW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 14:03:22 -0400
-X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Sep 2012 14:03:21 EDT
-Date: Thu, 27 Sep 2012 17:53:57 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+	id S1754094Ab2I0SEr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 14:04:47 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50387 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752697Ab2I0SEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 14:04:45 -0400
+Date: Thu, 27 Sep 2012 20:05:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 4/4] sl[au]b: process slabinfo_show in common code
-In-Reply-To: <506480FB.40802@parallels.com>
-Message-ID: <0000013a08dd105c-06e1ed72-defd-4e0e-aee6-89f6244328f0-000000@email.amazonses.com>
-References: <1348756660-16929-1-git-send-email-glommer@parallels.com> <1348756660-16929-5-git-send-email-glommer@parallels.com> <0000013a08443b02-5715bfe6-9c47-49c5-a951-8a48cc432e42-000000@email.amazonses.com> <506480FB.40802@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+Message-ID: <20120927180507.GD8527@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+	linux-kernel@vger.kernel.org,
+	Andreas Herrmann <andreas.herrmann3@amd.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Suresh Siddha <suresh.b.siddha@intel.com>
+References: <20120926163233.GA5339@x1.osrc.amd.com>
+ <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+ <20120926213723.GA27692@liondog.tnic>
+ <1348722568.7059.115.camel@marge.simpson.net>
+ <20120927054742.GA4370@gmail.com>
+ <1348727665.7059.160.camel@marge.simpson.net>
+ <20120927064142.GB5996@gmail.com>
+ <1348728852.7059.171.camel@marge.simpson.net>
+ <20120927071011.GA8980@gmail.com>
+ <CA+55aFyxjdir-LZneBTk1JQV0cVSRFzEK9Jpxje2SJqA6aP3Yg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyxjdir-LZneBTk1JQV0cVSRFzEK9Jpxje2SJqA6aP3Yg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Sep 2012, Glauber Costa wrote:
+On Thu, Sep 27, 2012 at 10:44:26AM -0700, Linus Torvalds wrote:
+> Or could we just improve the heuristics. What happens if the
+> scheduling granularity is increased, for example? It's set to 1ms
+> right now, with a logarithmic scaling by number of cpus.
 
-> Yes. As a matter of fact, I first implemented it this way, and later
-> switched. I was anticipating that people would be likely to point out
-> that those properties are directly derivable from the caches, and it
-> would be better to just get them from there.
+/proc/sys/kernel/sched_wakeup_granularity_ns=10000000 (10ms)
+------------------------------------------------------
+tps = 4994.730809 (including connections establishing)
+tps = 5000.260764 (excluding connections establishing)
 
-That is not the case if the information is packet as in the case of SLUB.
+A bit better over the default NO_WAKEUP_PREEMPTION setting.
 
-SLOB (which at some point also could be supported) has an altogether
-different way of arranging objects in pagbes.
-
-
+-- 
+Regards/Gruss,
+Boris.
