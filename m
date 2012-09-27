@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab2I0OIb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 10:08:31 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46322 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab2I0OI3 (ORCPT
+	id S1752352Ab2I0OIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 10:08:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57736 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751013Ab2I0OIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 10:08:29 -0400
-Date: Thu, 27 Sep 2012 15:13:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Davide Ciminaghi <ciminaghi@gnudd.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, sameo@linux.intel.com,
-        rubini@gnudd.com, giancarlo.asnaghi@st.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] sta2x11-mfd : add apb-soc regs driver and factor
- out common code
-Message-ID: <20120927151314.118c86c1@pyramind.ukuu.org.uk>
-In-Reply-To: <20120927134110.GD6799@mail.gnudd.com>
-References: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com>
-	<1347445374-32140-2-git-send-email-ciminaghi@gnudd.com>
-	<20120925192048.GA17038@sirena.org.uk>
-	<20120926145615.GJ10147@mail.gnudd.com>
-	<20120926150429.GQ4428@opensource.wolfsonmicro.com>
-	<20120926163145.GK10147@mail.gnudd.com>
-	<20120926164932.GS4428@opensource.wolfsonmicro.com>
-	<20120927134110.GD6799@mail.gnudd.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Sep 2012 10:08:46 -0400
+Date: Thu, 27 Sep 2012 15:08:44 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: sameo@linux.intel.com, marex@denx.de, ashish.jangam@kpitcummins.com,
+        dchen@diasemi.com, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] mfd: da9052-core: Fix request_threaded_irq() parameter
+Message-ID: <20120927140843.GX4428@opensource.wolfsonmicro.com>
+References: <1348718135-10300-1-git-send-email-festevam@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348718135-10300-1-git-send-email-festevam@gmail.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> as far as I know, nested locks are fine provided that you always take them in
-> the same order and release them in the opposite order (lock A, lock B,
-> unlock B, unlock A). So my conclusion is that nested spinlocks require
-> potential regmap users of sta2x11 registers to take the sta2x11-mfd spinlock
-> first. The pattern would be (sctl registers for instance):
+On Thu, Sep 27, 2012 at 12:55:35AM -0300, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+> 
+> On a mx53qsb dt-kernel the da9052-core driver fails to probe:
+> 
+> da9052 1-0048: DA9052 ADC IRQ failed ret=-22
+> 
+> In request_threaded_irq() the first parameter is missing the da9052->irq_base.
+> 
+> Fix it and avoid the error.
 
-The release order does not matter. Taking AB and releasing AB or BA is
-fine. Taking AB and dropping B and retaking B is fine. Taking AB and
-somewhere else taking BA is not. There are performance reasons in some
-cases why taking AB releasing A is best with locks, but thats generally
-with sleepable locks.
-
-It's a bit more subtle because you often have other interactions. In
-particular people often come unstuck on del_timer_sync or waiting for
-workqueues and IRQs to finish (even in free_irq) while holding a lock
-that the handler needs to take.
-
-Alan
+The driver shouldn't be relying on irq_base at all, it should use
+regmap_get_virq() to look up the interrupt number.  If it relies on
+irq_base then the user is forced to assign one (or rely on automatic
+assignment, which is a bit erratic.  Otherwise it can use a linear
+domain which doesn't rely on being able to allocate a big block of
+interrupt numbers.
