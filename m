@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab2I0MIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 08:08:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38787 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140Ab2I0MIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 08:08:09 -0400
-Date: Thu, 27 Sep 2012 14:08:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120927120806.GA29104@dhcp22.suse.cz>
-References: <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com>
- <50634105.8060302@parallels.com>
- <20120926180124.GA12544@google.com>
- <50634FC9.4090609@parallels.com>
- <20120926193417.GJ12544@google.com>
- <50635B9D.8020205@parallels.com>
- <20120926195648.GA20342@google.com>
- <50635F46.7000700@parallels.com>
- <20120926201629.GB20342@google.com>
- <50637298.2090904@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50637298.2090904@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753874Ab2I0MJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 08:09:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20077 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab2I0MJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 08:09:26 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=LrhBLfKaQO8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=SzY6Sz0nNkzNtCK9TloA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348747763.22822.70.camel@gandalf.local.home>
+Subject: Re: [PATCH v6] hashtable: introduce a small and naive hashtable
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        torvalds@linux-foundation.org, tj@kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, neilb@suse.de, bfields@fieldses.org,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        josh@joshtriplett.org, rmallon@gmail.com, palves@redhat.com
+Date: Thu, 27 Sep 2012 08:09:23 -0400
+In-Reply-To: <50640F4E.4020305@gmail.com>
+References: <1348663729-2584-1-git-send-email-levinsasha928@gmail.com>
+	 <AE90C24D6B3A694183C094C60CF0A2F6026B7008@saturn3.aculab.com>
+	 <1348667992.22822.50.camel@gandalf.local.home> <506310AA.2050700@gmail.com>
+	 <20120926143905.GB22699@Krystal>
+	 <1348675764.22822.56.camel@gandalf.local.home>
+	 <20120926161956.GB28648@Krystal>
+	 <AE90C24D6B3A694183C094C60CF0A2F6026B7009@saturn3.aculab.com>
+	 <50640F4E.4020305@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 27-09-12 01:24:40, Glauber Costa wrote:
-[...]
-> About use cases, I've already responded: my containers use case is kmem
-> limited. There are people like Michal that specifically asked for
-> user-only semantics to be preserved. 
+On Thu, 2012-09-27 at 10:33 +0200, Sasha Levin wrote:
 
-Yes, because we have many users (basically almost all) who care only
-about the user memory because that's what occupies the vast majority of
-the memory. They usually want to isolate workload which would disrupt
-the global memory otherwise (e.g. backup process vs. database). You
-really do not want to pay an additional overhead for kmem accounting
-here.
+> Right, the flag thing in the macro was there just to make it work properly as a macro.
+> 
+> >> Agreed that the flags should be removed. Moving to define + static
+> >> inline is still important though.
+> > 
+> > Not sure I'd bother making the function inline.
+> 
+> I usually never make anything 'inline', I just let gcc do it's own thing when it compiles the code. If there are any objections
+> please let me know before I send the new version.
 
-> So your question for global vs local switch (that again, doesn't
-> exist; only a local *limit* exists) should really be posed in the
-> following way:  "Can two different use cases with different needs be
-> hosted in the same box?"
+But this is a header file. You guys have no problem with macros, but
+refuse to use 'inline' for functions defined in header files? That
+doesn't make sense. A 'static inline' is basically a gcc macro, but
+without the side-effects.
 
-I think this is a good and a relevant question. I think this boils down
-to whether you want to have trusted and untrusted workloads at the same
-machine.
-Trusted loads usually only need user memory accounting because kmem
-consumption should be really negligible (unless kernel is doing
-something really stupid and no kmem limit will help here). 
-On the other hand, untrusted workloads can do nasty things that
-administrator has hard time to mitigate and setting a kmem limit can
-help significantly.
+-- Steve
 
-IMHO such a different loads exist on a single machine quite often (Web
-server and a back up process as the most simplistic one). The per
-hierarchy accounting, therefore, sounds like a good idea without too
-much added complexity (actually the only added complexity is in the
-proper kmem.limit_in_bytes handling which is a single place).
 
-So I would rather go with per-hierarchy thing.
-
-> > Michal, Johannes, Kamezawa, what are your thoughts?
-> >
-> waiting! =)
-
-Well, you guys generated a lot of discussion that one has to read
-through, didn't you :P
-
--- 
-Michal Hocko
-SUSE Labs
