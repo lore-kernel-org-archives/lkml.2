@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab2I0MHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 08:07:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2315 "EHLO mx1.redhat.com"
+	id S1753993Ab2I0MIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 08:08:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38787 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140Ab2I0MHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 08:07:10 -0400
-Message-ID: <50644148.5090201@redhat.com>
-Date: Thu, 27 Sep 2012 14:06:32 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1751140Ab2I0MIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 08:08:09 -0400
+Date: Thu, 27 Sep 2012 14:08:06 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+Message-ID: <20120927120806.GA29104@dhcp22.suse.cz>
+References: <CAOS58YNj-L4ocwn-c27ho4WPW41MKOeJbnLZ8N8r4eUkoxC7GA@mail.gmail.com>
+ <50634105.8060302@parallels.com>
+ <20120926180124.GA12544@google.com>
+ <50634FC9.4090609@parallels.com>
+ <20120926193417.GJ12544@google.com>
+ <50635B9D.8020205@parallels.com>
+ <20120926195648.GA20342@google.com>
+ <50635F46.7000700@parallels.com>
+ <20120926201629.GB20342@google.com>
+ <50637298.2090904@parallels.com>
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Jiannan Ouyang <ouyang@cs.pitt.edu>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <5060851E.1030404@redhat.com> <506166B4.4010207@linux.vnet.ibm.com> <5061713D.5060406@redhat.com> <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com> <50641356.5070008@redhat.com> <50643802.5050200@linux.vnet.ibm.com>
-In-Reply-To: <50643802.5050200@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50637298.2090904@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 01:26 PM, Raghavendra K T wrote:
-> On 09/27/2012 02:20 PM, Avi Kivity wrote:
->> On 09/25/2012 04:43 PM, Jiannan Ouyang wrote:
->>> I've actually implemented this preempted_bitmap idea.
->>
->> Interesting, please share the code if you can.
->>
->>> However, I'm doing this to expose this information to the guest, so the
->>> guest is able to know if the lock holder is preempted or not before
->>> spining. Right now, I'm doing experiment to show that this idea works.
->>>
->>> I'm wondering what do you guys think of the relationship between the
->>> pv_ticketlock approach and PLE handler approach. Are we going to adopt
->>> PLE instead of the pv ticketlock, and why?
->>
->> Right now we're searching for the best solution.  The tradeoffs are more
->> or less:
->>
->> PLE:
->> - works for unmodified / non-Linux guests
->> - works for all types of spins (e.g. smp_call_function*())
->> - utilizes an existing hardware interface (PAUSE instruction) so likely
->> more robust compared to a software interface
->>
->> PV:
->> - has more information, so it can perform better
-> 
-> Should we also consider that we always have an edge here for non-PLE
-> machine?
+On Thu 27-09-12 01:24:40, Glauber Costa wrote:
+[...]
+> About use cases, I've already responded: my containers use case is kmem
+> limited. There are people like Michal that specifically asked for
+> user-only semantics to be preserved. 
 
-True.  The deployment share for these is decreasing rapidly though.  I
-hate optimizing for obsolete hardware.
+Yes, because we have many users (basically almost all) who care only
+about the user memory because that's what occupies the vast majority of
+the memory. They usually want to isolate workload which would disrupt
+the global memory otherwise (e.g. backup process vs. database). You
+really do not want to pay an additional overhead for kmem accounting
+here.
 
+> So your question for global vs local switch (that again, doesn't
+> exist; only a local *limit* exists) should really be posed in the
+> following way:  "Can two different use cases with different needs be
+> hosted in the same box?"
+
+I think this is a good and a relevant question. I think this boils down
+to whether you want to have trusted and untrusted workloads at the same
+machine.
+Trusted loads usually only need user memory accounting because kmem
+consumption should be really negligible (unless kernel is doing
+something really stupid and no kmem limit will help here). 
+On the other hand, untrusted workloads can do nasty things that
+administrator has hard time to mitigate and setting a kmem limit can
+help significantly.
+
+IMHO such a different loads exist on a single machine quite often (Web
+server and a back up process as the most simplistic one). The per
+hierarchy accounting, therefore, sounds like a good idea without too
+much added complexity (actually the only added complexity is in the
+proper kmem.limit_in_bytes handling which is a single place).
+
+So I would rather go with per-hierarchy thing.
+
+> > Michal, Johannes, Kamezawa, what are your thoughts?
+> >
+> waiting! =)
+
+Well, you guys generated a lot of discussion that one has to read
+through, didn't you :P
 
 -- 
-error compiling committee.c: too many arguments to function
+Michal Hocko
+SUSE Labs
