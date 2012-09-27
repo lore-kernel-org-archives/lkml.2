@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab2I0Rq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 13:46:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59902 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578Ab2I0RqZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 13:46:25 -0400
-Date: Thu, 27 Sep 2012 10:46:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120927174605.GA2713@localhost>
-References: <20120926201629.GB20342@google.com>
- <50637298.2090904@parallels.com>
- <20120926221046.GA10453@mtj.dyndns.org>
- <506381B2.2060806@parallels.com>
- <20120926224235.GB10453@mtj.dyndns.org>
- <50638793.7060806@parallels.com>
- <20120926230807.GC10453@mtj.dyndns.org>
- <20120927142822.GG3429@suse.de>
- <20120927144942.GB4251@mtj.dyndns.org>
- <50646977.40300@parallels.com>
+	id S1753783Ab2I0RsF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 13:48:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40888 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753250Ab2I0RsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 13:48:03 -0400
+Date: Thu, 27 Sep 2012 19:48:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jason Vas Dias <jason.vas.dias@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Comrade DOS <suloevdmitry@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: PROBLEM: Performance drop
+Message-ID: <20120927174824.GD8759@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jason Vas Dias <jason.vas.dias@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+	Comrade DOS <suloevdmitry@gmail.com>, linux-kernel@vger.kernel.org,
+	Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <CA+fU7qen=cwc1vMY1bv21_0GuNKXPQZXsQLVszYG1WG_r1XUGA@mail.gmail.com>
+ <20120524123116.GA4048@alberich.amd.com>
+ <CA+fU7qfPznJpRABC4Z=xmRZW6p5Mw3dFLBySk9HuPnaCYMMnEg@mail.gmail.com>
+ <20120529140940.GA10421@alberich.amd.com>
+ <CA+fU7qdKYA3KJr3xET_evO_1ztSKh0K0csn5Coro7Mkv_my+eg@mail.gmail.com>
+ <20120530124333.GA3008@alberich.amd.com>
+ <CALyZvKxcdNWMHEGwgdO=sGTTs9sZYerYXcQEyqFwixKzzz3giA@mail.gmail.com>
+ <20120711220643.GD10930@kroah.com>
+ <CALyZvKwDoOPESJPHy5zBviVBuxT92eNGGCJrfd+XBdmya=uQEA@mail.gmail.com>
+ <20120927173456.GA21025@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50646977.40300@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120927173456.GA21025@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thu, Sep 27, 2012 at 06:57:59PM +0400, Glauber Costa wrote:
-> > Because we're not even trying to actually solve the problem but just
-> > dumping it to userland.  If dentry/inode usage is the only case we're
-> > being worried about, there can be better ways to solve it or at least
-> > we should strive for that.
-> 
-> Not only it is not the only case we care about, this is not even touched
-> in this series. (It is only touched in the next one). This one, for
-> instance, cares about the stack. The reason everything is being dumped
-> into "kmem", is precisely to make things simpler. I argue that at some
-> point it makes sense to draw a line, and "kmem" is a much better line
-> than any fine grained control - precisely because it is conceptually
-> easier to grasp.
-
-Can you please give other examples of cases where this type of issue
-exists (plenty of shared kernel data structure which is inherent to
-the workload at hand)?  Until now, this has been the only example for
-this type of issues.
-
-> > I think the cost isn't too prohibitive considering it's already using
-> > memcg.  Charging / uncharging happens only as pages enter and leave
-> > slab caches and the hot path overhead is essentially single
-> > indirection.  Glauber's benchmark seemed pretty reasonable to me and I
-> > don't yet think that warrants exposing this subtle tree of
-> > configuration.
-> 
-> Only so we can get some numbers: the cost is really minor if this is all
-> disabled. It this is fully enable, it can get to some 2 or 3 %, which
-> may or may not be acceptable to an application. But for me this is not
-> even about cost, and that's why I haven't brought it up so far
-
-It seems like Mel's concern is mostly based on performance overhead
-concerns tho.
-
-> > The part I nacked is enabling kmemcg on a populated cgroup and then
-> > starting accounting from then without any apparent indication that any
-> > past allocation hasn't been considered.  You end up with numbers which
-> > nobody can't tell what they really mean and there's no mechanism to
-> > guarantee any kind of ordering between populating the cgroup and
-> > configuring it and there's *no* way to find out what happened
-> > afterwards neither.  This is properly crazy and definitely deserves a
-> > nack.
+On Thu, Sep 27, 2012 at 10:34:56AM -0700, Greg Kroah-Hartman wrote:
+> On Sat, Jul 14, 2012 at 12:11:41PM +0100, Jason Vas Dias wrote:
+> > Hi - any progress on this or on the patch I submitted for it ? -
+> > please see enclosed - apologies for my being forced to use gmail which
+> > has mandatory line wrap -
+> > Please do something about restoring correct thermal operation on
+> > x86_64 K8's with HP BIOS !
+> > Thanks & Regards,
+> > Jason
 > > 
+> > Re: [PATCH: 1/1] ACPI: make evaluation of thermal trip points before
+> > temperature or vice versa dependant on new "temp_b4_trip" module
+> > parameter to support older AMD x86_64s
 > 
-> Mel suggestion of not allowing this to happen once the cgroup has tasks
-> takes care of this, and is something I thought of myself.
+> I don't see this patch in Linus's tree, so I can't do anything about it
+> in a stable kernel release.  Please work with the ACPI developers to get
+> it pushed to Linus's tree, and after that, let me know what the git
+> commit id is of it so I can add it to a stable release.
 
-You mean Michal's?  It should also disallow switching if there are
-children cgroups, right?
+Yeah,
 
-> This would remove this particular piece of objection, and maintain the
-> per-subtree control.
+this patch adds a dmi quirk *and* a module parameter which looks kinda
+too much to me. In any case, Andreas needs to look at this since he's
+been dealing with those old laptops.
 
-Yeah, I don't see anything broken with that although I'll try to argue
-for simpler one a bit more.
+Jason, can you clean up your patch, drop the module parameter, write a
+proper commit message, run it through checkpatch.pl and send it as a
+reply to this thread with a mail client which doesn't mangle it so that
+we can look at it further?
 
 Thanks.
 
 -- 
-tejun
+Regards/Gruss,
+Boris.
