@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab2I0Qlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 12:41:52 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:59072 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888Ab2I0Qlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 12:41:51 -0400
-Message-ID: <506480FB.40802@parallels.com>
-Date: Thu, 27 Sep 2012 20:38:19 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752392Ab2I0QoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 12:44:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59157 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab2I0QoL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 12:44:11 -0400
+Date: Thu, 27 Sep 2012 09:44:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [GIT PATCH] USB fixes for 3.6-rc7
+Message-ID: <20120927164407.GA20305@kroah.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 4/4] sl[au]b: process slabinfo_show in common code
-References: <1348756660-16929-1-git-send-email-glommer@parallels.com> <1348756660-16929-5-git-send-email-glommer@parallels.com> <0000013a08443b02-5715bfe6-9c47-49c5-a951-8a48cc432e42-000000@email.amazonses.com>
-In-Reply-To: <0000013a08443b02-5715bfe6-9c47-49c5-a951-8a48cc432e42-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.3.27]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 07:07 PM, Christoph Lameter wrote:
-> On Thu, 27 Sep 2012, Glauber Costa wrote:
-> 
->> --- a/mm/slab_common.c
->> +++ b/mm/slab_common.c
->> @@ -239,7 +239,23 @@ static void s_stop(struct seq_file *m, void *p)
->>
->>  static int s_show(struct seq_file *m, void *p)
->>  {
->> -	return slabinfo_show(m, p);
->> +	struct kmem_cache *s = list_entry(p, struct kmem_cache, list);
->> +	struct slabinfo sinfo;
->> +
->> +	memset(&sinfo, 0, sizeof(sinfo));
->> +	get_slabinfo(s, &sinfo);
-> 
-> Could get_slabinfo() also set the objects per slab etc in some additional
-> field in struct slabinfo? Then we can avoid the exporting of the oo_
-> functions and we do not need the cache_order() etc functions.
-> 
-Yes. As a matter of fact, I first implemented it this way, and later
-switched. I was anticipating that people would be likely to point out
-that those properties are directly derivable from the caches, and it
-would be better to just get them from there.
+The following changes since commit 5698bd757d55b1bb87edd1a9744ab09c142abfc2:
 
-I am more than happy to stick them in the slabinfo struct.
+  Linux 3.6-rc6 (2012-09-16 14:58:51 -0700)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.6-rc7
+
+for you to fetch changes up to 0d00dc2611abbe6ad244d50569c2ee82ce42846c:
+
+  USB: Fix race condition when removing host controllers (2012-09-27 09:17:49 -0700)
+
+----------------------------------------------------------------
+USB fixes for 3.6-rc7
+
+Here are two USB bugfixes for your 3.6-rc7 tree.
+
+The OHCI fix has been reported a number of times and is a regression
+from 3.5, and the patch that causes the regression was on the way to the
+-stable trees before I was reminded (again) that this fix needed to get
+to your tree soon.
+
+The host controller bugfix was reported in older kernels as being pretty
+easy to trigger, and has been tested by Red Hat and their customers.
+
+Both have been in the usb-next branch in the -next tree for a while now,
+I just cherry-picked them out to get to you in time for the 3.6 release.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alan Stern (1):
+      USB: Fix race condition when removing host controllers
+
+Joachim Eastwood (1):
+      USB: ohci-at91: fix null pointer in ohci_hcd_at91_overcurrent_irq
+
+ drivers/usb/core/devices.c   |    2 +-
+ drivers/usb/core/hcd.c       |    6 ++----
+ drivers/usb/host/ohci-at91.c |    3 ++-
+ 3 files changed, 5 insertions(+), 6 deletions(-)
