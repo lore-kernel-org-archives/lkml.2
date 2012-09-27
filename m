@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab2I0Caq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 22:30:46 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42195 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab2I0Can (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 22:30:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120927022045.GK15236@dastard>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
-	<1348404995-14372-4-git-send-email-zwu.kernel@gmail.com>
-	<20120925092819.GC29154@dastard>
-	<CAEH94Li+-nz58P=SwNDq5itDR+PqLhhmqEzMGgO219CyC4RRKA@mail.gmail.com>
-	<20120927022045.GK15236@dastard>
-Date: Thu, 27 Sep 2012 10:30:41 +0800
-Message-ID: <CAEH94Lgwhgfd1j9wHrrdkhO4jhWG2_KUgCDfrVeyTK5DUc+aLA@mail.gmail.com>
-Subject: Re: [RFC v2 03/10] vfs: add one new mount option '-o hottrack'
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
-        diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754120Ab2I0ChZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 22:37:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45370 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751537Ab2I0ChX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 22:37:23 -0400
+Date: Thu, 27 Sep 2012 12:37:15 +1000
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux RAID <linux-raid@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PULL REQUEST] 2 bugfixes for md in 3.6
+Message-ID: <20120927123715.2e17d5de@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/ZJgT7RkGN+mSyonh3aY2aNC"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 10:20 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Wed, Sep 26, 2012 at 10:56:08AM +0800, Zhi Yong Wu wrote:
->> On Tue, Sep 25, 2012 at 5:28 PM, Dave Chinner <david@fromorbit.com> wrote:
->> > On Sun, Sep 23, 2012 at 08:56:28PM +0800, zwu.kernel@gmail.com wrote:
->> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> >>
->> >>   Introduce one new mount option '-o hottrack',
->> >> and add its parsing support.
->> >>   Its usage looks like:
->> >>    mount -o hottrack
->> >>    mount -o nouser,hottrack
->> >>    mount -o nouser,hottrack,loop
->> >>    mount -o hottrack,nouser
->> >
->> > I think that this option parsing should be done by the filesystem,
->> > even though the tracking functionality is in the VFS. That way ony
->> > the filesystems that can use the tracking information will turn it
->> > on, rather than being able to turn it on for everything regardless
->> > of whether it is useful or not.
->> >
->> > Along those lines, just using a normal superblock flag to indicate
->> > it is active (e.g. MS_HOT_INODE_TRACKING in sb->s_flags) means you
->> > don't need to allocate the sb->s_hot_info structure just to be able
->> > to check whether we are tracking hot inodes or not.
->> >
->> > This then means the hot inode tracking for the superblock can be
->> > initialised by the filesystem as part of it's fill_super method,
->> > along with the filesystem specific code that will use the hot
->> > tracking information the VFS gathers....
->> I can see what you mean, but don't know if other guys also agree with this.
->> If so, all FS specific code which use hot tracking feature wll have to add
->> the same chunk of code in it fill_super method. Is it good?
->
-> Most filesystems will only need to add 3-4 lines of code to their
-> existing parser, so it's not a big deal I think...
-OK, i try to do it. thanks a lot.
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+--Sig_/ZJgT7RkGN+mSyonh3aY2aNC
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+The following changes since commit 6dafab6b1383e912cd252fa809570b484eb6e0dc:
 
+  md: make sure metadata is updated when spares are activated or removed. (=
+2012-09-19 12:54:22 +1000)
 
--- 
-Regards,
+are available in the git repository at:
 
-Zhi Yong Wu
+  git://neil.brown.name/md/ tags/md-3.6-fixes
+
+for you to fetch changes up to 80b4812407c6b1f66a4f2430e69747a13f010839:
+
+  md/raid10: fix "enough" function for detecting if array is failed. (2012-=
+09-27 12:35:21 +1000)
+
+----------------------------------------------------------------
+2 bugfixes for md in 3.6
+
+One (missing spinlock init) was only introduced recently.
+The other has been present as long as raid10 has been supported,
+so is tagged for -stable.
+
+----------------------------------------------------------------
+NeilBrown (2):
+      md/raid5: add missing spin_lock_init.
+      md/raid10: fix "enough" function for detecting if array is failed.
+
+ drivers/md/raid10.c | 8 +++++---
+ drivers/md/raid5.c  | 1 +
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+Thanks,
+NeilBrown
+
+--Sig_/ZJgT7RkGN+mSyonh3aY2aNC
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUGO72znsnt1WYoG5AQJ7Og//UhHOOdAMHmbEdxa3bzW71a/+PgGabMes
+HuM+IobyGSjq0/TEQarfinVOITKlSrkMBSVDfgqexyrMb6GUGoul6szHMti4t01Q
+fJO3vv8e4dMiScarvECgoCpIEnqQv4NauBYTU6ut06zDireR3QmnBPklfHmEQlvH
+RENOwpKlxEDEwK0eJMedO1ijTUbxVbywpmL9xbbpkdSAMNOZOdBIboFjD7/gnrA4
+GTgMt3jMrCLUcl/HpHMgIckDvZoCodXPw6/Pme6GjHYEfx2fK07/fRH/OPSVC5fV
+d0iE+SlOzsDk3jsgDxk1fOGz9BvxJnKk8U4Gebc9jDYjl5/zpi9v7uxNwxhYFED6
+BKPTCuriali5BMr01DDj4sQ95Hr1rMwD0q/vG1rD/rb0Y4Dm7RXbQNblVVmr+1OQ
+ntaZ6yKSNqefdJ15gojE/2ExVYwTNjrMSHTxv62CwjR/IEVjTwC5/KBXI2CpPxMB
+sOBBHglhWXpih1Z5uWrfVj7Ko8fY9OIxoSUuOfs5tocd5gGzwrgQx6yQdrrW60cs
+38KCL1Ov8t6xUlWArdmvHDRvyAAEjMlgDR4mRqo0k4Cqe68V/+ZzxLn4Fz3YVVsn
+fTq2vlVAPheLSXXZ0fWulvPg879ykJ1a7eqTV6L4gp1ehd8XbF/ZCjiJgYaZ+eg6
+TUvBaTfoPBw=
+=FwRS
+-----END PGP SIGNATURE-----
+
+--Sig_/ZJgT7RkGN+mSyonh3aY2aNC--
