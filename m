@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab2I0GJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 02:09:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54740 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab2I0GJd (ORCPT
+	id S1756004Ab2I0GKH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 02:10:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47584 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755454Ab2I0GKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 02:09:33 -0400
-Date: Wed, 26 Sep 2012 23:07:18 -0700
-From: tip-bot for Michael Wang <wangyun@linux.vnet.ibm.com>
-Message-ID: <tip-dec08a837fda146fee498ffc5ecd0d2eeeacd025@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        wangyun@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        wangyun@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <1348033343-23658-1-git-send-email-wangyun@linux.vnet.ibm.com>
-References: <1348033343-23658-1-git-send-email-wangyun@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86: Remove the useless branch in c_start()
-Git-Commit-ID: dec08a837fda146fee498ffc5ecd0d2eeeacd025
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 23:07:23 -0700 (PDT)
+	Thu, 27 Sep 2012 02:10:05 -0400
+Date: Thu, 27 Sep 2012 16:09:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: linux-next: please clean up the msm tree
+Message-Id: <20120927160955.2b26954a0daf42af6d3f7cd3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__27_Sep_2012_16_09_55_+1000_Y0wStl.Ekee7FX4J"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dec08a837fda146fee498ffc5ecd0d2eeeacd025
-Gitweb:     http://git.kernel.org/tip/dec08a837fda146fee498ffc5ecd0d2eeeacd025
-Author:     Michael Wang <wangyun@linux.vnet.ibm.com>
-AuthorDate: Wed, 19 Sep 2012 13:42:23 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 26 Sep 2012 13:27:56 +0200
+--Signature=_Thu__27_Sep_2012_16_09_55_+1000_Y0wStl.Ekee7FX4J
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-x86: Remove the useless branch in c_start()
+Hi David,
 
-Since 'cpu == -1' in cpumask_next() is legal, no need to handle
-'*pos == 0' specially.
+Since all of the patches in the msm tree have been merged into the
+arm-soc tree (but as different commits :-(), can you please clean up the
+msm tree.  It is causing unneeded conflicts in linux-next.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-About the comments:
+--Signature=_Thu__27_Sep_2012_16_09_55_+1000_Y0wStl.Ekee7FX4J
+Content-Type: application/pgp-signature
 
-	/* just in case, cpu 0 is not the first */
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-A test with a cpumask in which cpu 0 is not the first has been
-done, and it works well.
+iQIcBAEBCAAGBQJQY+2zAAoJEECxmPOUX5FERvwP/iC0CsFC7FZ2hNEvrzf5s/iA
+arqIZP3AUAIkMr7T9eYBR4fkvGVJ7LNs+uTXWEUo9eYRju1LCNJszKcAGlXADInf
+MSoPAA2SecAyjGrlU6XZgyQWoVQZ4pkK4hVL8IczaHji+4szeN16NDGL8NN9J+Zy
+VInh1gtzt7pj3Ilw1YxOzLE19rZkmRS8AZmNPF00dWrIp8MkGGHqGTb8CrQlhIR2
+rmtu+sMOaBK42qNZR/rt7a/fXX/1nCuia7PCEWbUXrREwy3wy94WqwOv5p9Lf8Ol
+IfEF/RVepUPeGzzxEqxoIy2jbv1kwdHIH4Tc7nWjuRxsJQta24cYD/WgBXc7Rryb
+Y7XlG3fIk3XqEGgSIb4yGEPRTe0L4Zds5/fLXKAm+Cp1NfGIiIWHPE915LN/kuto
+92xyNSSOjf7CFCaHtIhSGpNUjBMQp6HFrHF8eD89U+Mj1zK5mBt7xrjHSnTGfYsC
+6/MBk0ZGjWmJWRz3OtTIIeu7Z0QifPdzHePUF7Ks7i02QJxup3fwx/FbpHaXV/L9
+aF3NmbJWpmVDWmC+gmvqiXFlcux/kajECq1BhFbTdfftZf4GJ1chhMMh+nXq0y6c
+XwEKPOtYfsxz8Kwp0ULZmdl7FTRhVlHdnPvP2Jx75d4xEc8Q4kezb74ojYy8qNNp
+uVP5lOW5hfQ8hzj0ein6
+=EnQF
+-----END PGP SIGNATURE-----
 
-This patch will remove that useless branch to clean the code.
-
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: kjwinchester@gmail.com
-Cc: borislav.petkov@amd.com
-Cc: ak@linux.intel.com
-Link: http://lkml.kernel.org/r/1348033343-23658-1-git-send-email-wangyun@linux.vnet.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/proc.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 8022c66..fbd8955 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -140,10 +140,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- 
- static void *c_start(struct seq_file *m, loff_t *pos)
- {
--	if (*pos == 0)	/* just in case, cpu 0 is not the first */
--		*pos = cpumask_first(cpu_online_mask);
--	else
--		*pos = cpumask_next(*pos - 1, cpu_online_mask);
-+	*pos = cpumask_next(*pos - 1, cpu_online_mask);
- 	if ((*pos) < nr_cpu_ids)
- 		return &cpu_data(*pos);
- 	return NULL;
+--Signature=_Thu__27_Sep_2012_16_09_55_+1000_Y0wStl.Ekee7FX4J--
