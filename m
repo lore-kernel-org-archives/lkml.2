@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab2I0PNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 11:13:33 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43907 "EHLO
+	id S1755546Ab2I0PNy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 11:13:54 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36711 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754895Ab2I0PM1 (ORCPT
+	with ESMTP id S1754877Ab2I0PM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 11:12:27 -0400
+	Thu, 27 Sep 2012 11:12:26 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 5/7] ARM: ux500: Create a Device Tree for early HREFs
-Date: Thu, 27 Sep 2012 16:12:04 +0100
-Message-Id: <1348758726-25336-6-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 4/7] ARM: ux500: Create a DTS hierarchy for ST-Ericsson's HREF boards
+Date: Thu, 27 Sep 2012 16:12:03 +0100
+Message-Id: <1348758726-25336-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348758726-25336-1-git-send-email-lee.jones@linaro.org>
 References: <1348758726-25336-1-git-send-email-lee.jones@linaro.org>
@@ -21,25 +21,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ux500 platform code we currently support a number of devices.
-Two of these devices are fairly similar, but have key differences.
-Early (pre-v60) HREFs and the more up-to-date versions (v60+), and
-they both need to be supported by Device Tree. Here we apply a DT
-source file for the earlier versions.
+There are two main versions of the ST-Ericsson hardware reference board,
+each with subtle differences. These versions are described in current
+platform data as 'mop500' for HREF v1.1 & v2.0 and 'hrefv60+' for latter
+incarnations. However, the boards have much in common, so this patch
+creates a .dtsi (Device Tree Source Include) file which describes the
+similarities between the two boards and individual 'hrefprev60' and
+'hrefv60plus' .dts files which depict the differences.
 
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/hrefprev60.dts |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
- create mode 100644 arch/arm/boot/dts/hrefprev60.dts
+ arch/arm/boot/dts/href.dtsi       |  262 +++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/hrefv60plus.dts |  256 +-----------------------------------
+ 2 files changed, 264 insertions(+), 254 deletions(-)
+ create mode 100644 arch/arm/boot/dts/href.dtsi
 
-diff --git a/arch/arm/boot/dts/hrefprev60.dts b/arch/arm/boot/dts/hrefprev60.dts
+diff --git a/arch/arm/boot/dts/href.dtsi b/arch/arm/boot/dts/href.dtsi
 new file mode 100644
-index 0000000..2dd28b9
+index 0000000..27baa44
 --- /dev/null
-+++ b/arch/arm/boot/dts/hrefprev60.dts
-@@ -0,0 +1,28 @@
++++ b/arch/arm/boot/dts/href.dtsi
+@@ -0,0 +1,262 @@
 +/*
 + * Copyright 2012 ST-Ericsson AB
 + *
@@ -51,23 +54,525 @@ index 0000000..2dd28b9
 + * http://www.gnu.org/copyleft/gpl.html
 + */
 +
-+/dts-v1/;
 +/include/ "dbx5x0.dtsi"
-+/include/ "href.dtsi"
 +
 +/ {
-+	model = "ST-Ericsson HREF (pre-v60) platform with Device Tree";
-+	compatible = "st-ericsson,mop500";
++	memory {
++		reg = <0x00000000 0x20000000>;
++	};
 +
 +	soc-u9500 {
++		uart@80120000 {
++			status = "okay";
++		};
++
++		uart@80121000 {
++			status = "okay";
++		};
++
++		uart@80007000 {
++			status = "okay";
++		};
++
 +		i2c@80004000 {
-+			tps61052@33 {
-+				compatible = "tps61052";
++			tc3589x@42 {
++				compatible = "tc3589x";
++				reg = <0x42>;
++				interrupt-parent = <&gpio6>;
++				interrupts = <25 0x1>;
++
++				interrupt-controller;
++				#interrupt-cells = <2>;
++
++				tc3589x_gpio: tc3589x_gpio {
++					compatible = "tc3589x-gpio";
++					interrupts = <0 0x1>;
++
++					interrupt-controller;
++					#interrupt-cells = <2>;
++					gpio-controller;
++					#gpio-cells = <2>;
++				};
++			};
++		};
++
++		i2c@80128000 {
++			lp5521@0x33 {
++				compatible = "lp5521";
 +				reg = <0x33>;
++			};
++
++			lp5521@0x34 {
++				compatible = "lp5521";
++				reg = <0x34>;
++			};
++
++			bh1780@0x29 {
++				compatible = "rohm,bh1780gli";
++				reg = <0x33>;
++			};
++		};
++
++		// External Micro SD slot
++		sdi0_per1@80126000 {
++			arm,primecell-periphid = <0x10480180>;
++			max-frequency = <50000000>;
++			bus-width = <4>;
++			mmc-cap-sd-highspeed;
++			mmc-cap-mmc-highspeed;
++			vmmc-supply = <&ab8500_ldo_aux3_reg>;
++
++			cd-gpios  = <&tc3589x_gpio 3 0x4>;
++
++			status = "okay";
++		};
++
++		// WLAN SDIO channel
++		sdi1_per2@80118000 {
++			arm,primecell-periphid = <0x10480180>;
++			max-frequency = <50000000>;
++			bus-width = <4>;
++
++			status = "okay";
++		};
++
++		// PoP:ed eMMC
++		sdi2_per3@80005000 {
++			arm,primecell-periphid = <0x10480180>;
++			max-frequency = <50000000>;
++			bus-width = <8>;
++			mmc-cap-mmc-highspeed;
++
++			status = "okay";
++		};
++
++		// On-board eMMC
++		sdi4_per2@80114000 {
++			arm,primecell-periphid = <0x10480180>;
++		        max-frequency = <50000000>;
++			bus-width = <8>;
++			mmc-cap-mmc-highspeed;
++			vmmc-supply = <&ab8500_ldo_aux2_reg>;
++
++			status = "okay";
++		};
++
++		sound {
++			compatible = "stericsson,snd-soc-mop500";
++
++			stericsson,cpu-dai = <&msp1 &msp3>;
++			stericsson,audio-codec = <&codec>;
++		};
++
++		msp1: msp@80124000 {
++			status = "okay";
++		};
++
++		msp3: msp@80125000 {
++			status = "okay";
++		};
++
++		prcmu@80157000 {
++			db8500-prcmu-regulators {
++				db8500_vape_reg: db8500_vape {
++					regulator-name = "db8500-vape";
++				};
++
++				db8500_varm_reg: db8500_varm {
++					regulator-name = "db8500-varm";
++				};
++
++				db8500_vmodem_reg: db8500_vmodem {
++					regulator-name = "db8500-vmodem";
++				};
++
++				db8500_vpll_reg: db8500_vpll {
++					regulator-name = "db8500-vpll";
++				};
++
++				db8500_vsmps1_reg: db8500_vsmps1 {
++					regulator-name = "db8500-vsmps1";
++				};
++
++				db8500_vsmps2_reg: db8500_vsmps2 {
++					regulator-name = "db8500-vsmps2";
++				};
++
++				db8500_vsmps3_reg: db8500_vsmps3 {
++					regulator-name = "db8500-vsmps3";
++				};
++
++				db8500_vrf1_reg: db8500_vrf1 {
++					regulator-name = "db8500-vrf1";
++				};
++
++				db8500_sva_mmdsp_reg: db8500_sva_mmdsp {
++					regulator-name = "db8500-sva-mmdsp";
++				};
++
++				db8500_sva_mmdsp_ret_reg: db8500_sva_mmdsp_ret {
++					regulator-name = "db8500-sva-mmdsp-ret";
++				};
++
++				db8500_sva_pipe_reg: db8500_sva_pipe {
++					regulator-name = "db8500_sva_pipe";
++				};
++
++				db8500_sia_mmdsp_reg: db8500_sia_mmdsp {
++					regulator-name = "db8500_sia_mmdsp";
++				};
++
++				db8500_sia_mmdsp_ret_reg: db8500_sia_mmdsp_ret {
++					regulator-name = "db8500-sia-mmdsp-ret";
++				};
++
++				db8500_sia_pipe_reg: db8500_sia_pipe {
++					regulator-name = "db8500-sia-pipe";
++				};
++
++				db8500_sga_reg: db8500_sga {
++					regulator-name = "db8500-sga";
++				};
++
++				db8500_b2r2_mcde_reg: db8500_b2r2_mcde {
++					regulator-name = "db8500-b2r2-mcde";
++				};
++
++				db8500_esram12_reg: db8500_esram12 {
++					regulator-name = "db8500-esram12";
++				};
++
++				db8500_esram12_ret_reg: db8500_esram12_ret {
++					regulator-name = "db8500-esram12-ret";
++				};
++
++				db8500_esram34_reg: db8500_esram34 {
++					regulator-name = "db8500-esram34";
++				};
++
++				db8500_esram34_ret_reg: db8500_esram34_ret {
++					regulator-name = "db8500-esram34-ret";
++				};
++			};
++
++			ab8500@5 {
++				ab8500-regulators {
++					ab8500_ldo_aux1_reg: ab8500_ldo_aux1 {
++						regulator-name = "V-DISPLAY";
++					};
++
++					ab8500_ldo_aux2_reg: ab8500_ldo_aux2 {
++						regulator-name = "V-eMMC1";
++					};
++
++					ab8500_ldo_aux3_reg: ab8500_ldo_aux3 {
++						regulator-name = "V-MMC-SD";
++					};
++
++					ab8500_ldo_initcore_reg: ab8500_ldo_initcore {
++						regulator-name = "V-INTCORE";
++					};
++
++					ab8500_ldo_tvout_reg: ab8500_ldo_tvout {
++						regulator-name = "V-TVOUT";
++					};
++
++					ab8500_ldo_usb_reg: ab8500_ldo_usb {
++						regulator-name = "dummy";
++					};
++
++					ab8500_ldo_audio_reg: ab8500_ldo_audio {
++						regulator-name = "V-AUD";
++					};
++
++					ab8500_ldo_anamic1_reg: ab8500_ldo_anamic1 {
++						regulator-name = "V-AMIC1";
++					};
++
++					ab8500_ldo_amamic2_reg: ab8500_ldo_amamic2 {
++						regulator-name = "V-AMIC2";
++					};
++
++					ab8500_ldo_dmic_reg: ab8500_ldo_dmic {
++						regulator-name = "V-DMIC";
++					};
++
++					ab8500_ldo_ana_reg: ab8500_ldo_ana {
++						regulator-name = "V-CSI/DSI";
++					};
++				};
 +			};
 +		};
 +	};
 +};
+diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
+index 3fd83c6..2a85893 100644
+--- a/arch/arm/boot/dts/hrefv60plus.dts
++++ b/arch/arm/boot/dts/hrefv60plus.dts
+@@ -11,261 +11,9 @@
+ 
+ /dts-v1/;
+ /include/ "dbx5x0.dtsi"
++/include/ "href.dtsi"
+ 
+ / {
+-	model = "ST-Ericsson HREF platform with Device Tree";
++	model = "ST-Ericsson HREF (v60+) platform with Device Tree";
+ 	compatible = "st-ericsson,hrefv60+";
+-
+-	memory {
+-		reg = <0x00000000 0x20000000>;
+-	};
+-
+-	soc-u9500 {
+-		uart@80120000 {
+-			status = "okay";
+-		};
+-
+-		uart@80121000 {
+-			status = "okay";
+-		};
+-
+-		uart@80007000 {
+-			status = "okay";
+-		};
+-
+-		i2c@80004000 {
+-			tc3589x@42 {
+-				compatible = "tc3589x";
+-				reg = <0x42>;
+-				interrupt-parent = <&gpio6>;
+-				interrupts = <25 0x1>;
+-
+-				interrupt-controller;
+-				#interrupt-cells = <2>;
+-
+-				tc3589x_gpio: tc3589x_gpio {
+-					compatible = "tc3589x-gpio";
+-					interrupts = <0 0x1>;
+-
+-					interrupt-controller;
+-					#interrupt-cells = <2>;
+-					gpio-controller;
+-					#gpio-cells = <2>;
+-				};
+-			};
+-
+-			tps61052@33 {
+-				compatible = "tps61052";
+-				reg = <0x33>;
+-			};
+-		};
+-
+-		i2c@80128000 {
+-			lp5521@0x33 {
+-				compatible = "lp5521";
+-				reg = <0x33>;
+-			};
+-
+-			lp5521@0x34 {
+-				compatible = "lp5521";
+-				reg = <0x34>;
+-			};
+-
+-			bh1780@0x29 {
+-				compatible = "rohm,bh1780gli";
+-				reg = <0x33>;
+-			};
+-		};
+-
+-		// External Micro SD slot
+-		sdi0_per1@80126000 {
+-			arm,primecell-periphid = <0x10480180>;
+-			max-frequency = <50000000>;
+-			bus-width = <4>;
+-			mmc-cap-sd-highspeed;
+-			mmc-cap-mmc-highspeed;
+-			vmmc-supply = <&ab8500_ldo_aux3_reg>;
+-
+-			cd-gpios  = <&tc3589x_gpio 3 0x4>;
+-
+-			status = "okay";
+-		};
+-
+-		// WLAN SDIO channel
+-		sdi1_per2@80118000 {
+-			arm,primecell-periphid = <0x10480180>;
+-			max-frequency = <50000000>;
+-			bus-width = <4>;
+-
+-			status = "okay";
+-		};
+-
+-		// PoP:ed eMMC
+-		sdi2_per3@80005000 {
+-			arm,primecell-periphid = <0x10480180>;
+-			max-frequency = <50000000>;
+-			bus-width = <8>;
+-			mmc-cap-mmc-highspeed;
+-
+-			status = "okay";
+-		};
+-
+-		// On-board eMMC
+-		sdi4_per2@80114000 {
+-			arm,primecell-periphid = <0x10480180>;
+-		        max-frequency = <50000000>;
+-			bus-width = <8>;
+-			mmc-cap-mmc-highspeed;
+-			vmmc-supply = <&ab8500_ldo_aux2_reg>;
+-
+-			status = "okay";
+-		};
+-
+-		sound {
+-			compatible = "stericsson,snd-soc-mop500";
+-
+-			stericsson,cpu-dai = <&msp1 &msp3>;
+-			stericsson,audio-codec = <&codec>;
+-		};
+-
+-		msp1: msp@80124000 {
+-			status = "okay";
+-		};
+-
+-		msp3: msp@80125000 {
+-			status = "okay";
+-		};
+-
+-		prcmu@80157000 {
+-			db8500-prcmu-regulators {
+-				db8500_vape_reg: db8500_vape {
+-					regulator-name = "db8500-vape";
+-				};
+-
+-				db8500_varm_reg: db8500_varm {
+-					regulator-name = "db8500-varm";
+-				};
+-
+-				db8500_vmodem_reg: db8500_vmodem {
+-					regulator-name = "db8500-vmodem";
+-				};
+-
+-				db8500_vpll_reg: db8500_vpll {
+-					regulator-name = "db8500-vpll";
+-				};
+-
+-				db8500_vsmps1_reg: db8500_vsmps1 {
+-					regulator-name = "db8500-vsmps1";
+-				};
+-
+-				db8500_vsmps2_reg: db8500_vsmps2 {
+-					regulator-name = "db8500-vsmps2";
+-				};
+-
+-				db8500_vsmps3_reg: db8500_vsmps3 {
+-					regulator-name = "db8500-vsmps3";
+-				};
+-
+-				db8500_vrf1_reg: db8500_vrf1 {
+-					regulator-name = "db8500-vrf1";
+-				};
+-
+-				db8500_sva_mmdsp_reg: db8500_sva_mmdsp {
+-					regulator-name = "db8500-sva-mmdsp";
+-				};
+-
+-				db8500_sva_mmdsp_ret_reg: db8500_sva_mmdsp_ret {
+-					regulator-name = "db8500-sva-mmdsp-ret";
+-				};
+-
+-				db8500_sva_pipe_reg: db8500_sva_pipe {
+-					regulator-name = "db8500_sva_pipe";
+-				};
+-
+-				db8500_sia_mmdsp_reg: db8500_sia_mmdsp {
+-					regulator-name = "db8500_sia_mmdsp";
+-				};
+-
+-				db8500_sia_mmdsp_ret_reg: db8500_sia_mmdsp_ret {
+-					regulator-name = "db8500-sia-mmdsp-ret";
+-				};
+-
+-				db8500_sia_pipe_reg: db8500_sia_pipe {
+-					regulator-name = "db8500-sia-pipe";
+-				};
+-
+-				db8500_sga_reg: db8500_sga {
+-					regulator-name = "db8500-sga";
+-				};
+-
+-				db8500_b2r2_mcde_reg: db8500_b2r2_mcde {
+-					regulator-name = "db8500-b2r2-mcde";
+-				};
+-
+-				db8500_esram12_reg: db8500_esram12 {
+-					regulator-name = "db8500-esram12";
+-				};
+-
+-				db8500_esram12_ret_reg: db8500_esram12_ret {
+-					regulator-name = "db8500-esram12-ret";
+-				};
+-
+-				db8500_esram34_reg: db8500_esram34 {
+-					regulator-name = "db8500-esram34";
+-				};
+-
+-				db8500_esram34_ret_reg: db8500_esram34_ret {
+-					regulator-name = "db8500-esram34-ret";
+-				};
+-			};
+-
+-			ab8500@5 {
+-				ab8500-regulators {
+-					ab8500_ldo_aux1_reg: ab8500_ldo_aux1 {
+-						regulator-name = "V-DISPLAY";
+-					};
+-
+-					ab8500_ldo_aux2_reg: ab8500_ldo_aux2 {
+-						regulator-name = "V-eMMC1";
+-					};
+-
+-					ab8500_ldo_aux3_reg: ab8500_ldo_aux3 {
+-						regulator-name = "V-MMC-SD";
+-					};
+-
+-					ab8500_ldo_initcore_reg: ab8500_ldo_initcore {
+-						regulator-name = "V-INTCORE";
+-					};
+-
+-					ab8500_ldo_tvout_reg: ab8500_ldo_tvout {
+-						regulator-name = "V-TVOUT";
+-					};
+-
+-					ab8500_ldo_usb_reg: ab8500_ldo_usb {
+-						regulator-name = "dummy";
+-					};
+-
+-					ab8500_ldo_audio_reg: ab8500_ldo_audio {
+-						regulator-name = "V-AUD";
+-					};
+-
+-					ab8500_ldo_anamic1_reg: ab8500_ldo_anamic1 {
+-						regulator-name = "V-AMIC1";
+-					};
+-
+-					ab8500_ldo_amamic2_reg: ab8500_ldo_amamic2 {
+-						regulator-name = "V-AMIC2";
+-					};
+-
+-					ab8500_ldo_dmic_reg: ab8500_ldo_dmic {
+-						regulator-name = "V-DMIC";
+-					};
+-
+-					ab8500_ldo_ana_reg: ab8500_ldo_ana {
+-						regulator-name = "V-CSI/DSI";
+-					};
+-				};
+-			};
+-		};
+-	};
+ };
 -- 
 1.7.9.5
 
