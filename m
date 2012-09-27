@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab2I0Iuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 04:50:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28678 "EHLO mx1.redhat.com"
+	id S1754494Ab2I0I5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 04:57:07 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:50811 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753754Ab2I0Iur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 04:50:47 -0400
-Message-ID: <50641356.5070008@redhat.com>
-Date: Thu, 27 Sep 2012 10:50:30 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Jiannan Ouyang <ouyang@cs.pitt.edu>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <5060851E.1030404@redhat.com> <506166B4.4010207@linux.vnet.ibm.com> <5061713D.5060406@redhat.com> <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com>
-In-Reply-To: <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754141Ab2I0I5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 04:57:05 -0400
+Date: Thu, 27 Sep 2012 10:56:49 +0200
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] sta2x11-mfd : add apb-soc regs driver and factor out common code
+Message-ID: <20120927085649.GC6799@mail.gnudd.com>
+References: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com> <1347445374-32140-2-git-send-email-ciminaghi@gnudd.com> <20120925192048.GA17038@sirena.org.uk> <20120926145615.GJ10147@mail.gnudd.com> <20120926150429.GQ4428@opensource.wolfsonmicro.com> <20120926163145.GK10147@mail.gnudd.com> <20120926164932.GS4428@opensource.wolfsonmicro.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120926164932.GS4428@opensource.wolfsonmicro.com>
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2012 04:43 PM, Jiannan Ouyang wrote:
-> I've actually implemented this preempted_bitmap idea. 
-
-Interesting, please share the code if you can.
-
-> However, I'm doing this to expose this information to the guest, so the
-> guest is able to know if the lock holder is preempted or not before
-> spining. Right now, I'm doing experiment to show that this idea works.
+On Wed, Sep 26, 2012 at 05:49:33PM +0100, Mark Brown wrote:
+> On Wed, Sep 26, 2012 at 06:31:45PM +0200, Davide Ciminaghi wrote:
 > 
-> I'm wondering what do you guys think of the relationship between the
-> pv_ticketlock approach and PLE handler approach. Are we going to adopt
-> PLE instead of the pv ticketlock, and why?
+> > Oh, and there's another problem (I'm looking at the code right now, I had
+> > forgotten about this): the clock framework also asks for a spinlock_t *.
+> > Regmap has its own spinlock (or mutex), and I don't think it would be a
+> > good idea trying to export it.
+> 
+> Why is this a problem?  Nested spinlocks are perfectly fine.
 
-Right now we're searching for the best solution.  The tradeoffs are more
-or less:
+sorry, forget my last reply, I had not enough sleep tonight. That's ok,
+I will use nested spinlocks.
 
-PLE:
-- works for unmodified / non-Linux guests
-- works for all types of spins (e.g. smp_call_function*())
-- utilizes an existing hardware interface (PAUSE instruction) so likely
-more robust compared to a software interface
-
-PV:
-- has more information, so it can perform better
-
-Given these tradeoffs, if we can get PLE to work for moderate amounts of
-overcommit then I'll prefer it (even if it slightly underperforms PV).
-If we are unable to make it work well, then we'll have to add PV.
-
--- 
-error compiling committee.c: too many arguments to function
+Thanks
+Davide
