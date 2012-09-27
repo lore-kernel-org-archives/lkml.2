@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab2I0Dzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 23:55:46 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39979 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744Ab2I0Dzp (ORCPT
+	id S1751411Ab2I0EDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 00:03:43 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:46077 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab2I0EDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 23:55:45 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: sameo@linux.intel.com
-Cc: broonie@opensource.wolfsonmicro.com, marex@denx.de,
-        ashish.jangam@kpitcummins.com, dchen@diasemi.com,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] mfd: da9052-core: Fix request_threaded_irq() parameter
-Date: Thu, 27 Sep 2012 00:55:35 -0300
-Message-Id: <1348718135-10300-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 27 Sep 2012 00:03:40 -0400
+Date: Thu, 27 Sep 2012 06:03:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 -tip 0/5] x86, MSI, AHCI: Support multiple MSIs
+Message-ID: <20120927040335.GA1957@gmail.com>
+References: <cover.1346653435.git.agordeev@redhat.com>
+ <20120926123824.GB7123@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120926123824.GB7123@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
 
-On a mx53qsb dt-kernel the da9052-core driver fails to probe:
+* Alexander Gordeev <agordeev@redhat.com> wrote:
 
-da9052 1-0048: DA9052 ADC IRQ failed ret=-22
+> On Mon, Sep 03, 2012 at 11:16:55AM +0200, Alexander Gordeev wrote:
+> >   5/5:	based on Jeff's comments:
+> > 
+> > 	- AHCI specific code moved from libata-core.c to libahci.c;
+> > 
+> > 	- the host-wide lock concern addressed - ahci_interrupt() handler
+> > 	  split in two parts: ahci_hw_interrupt() hardware context handler
+> > 	  and ahci_thread_fn() threaded handler;
+> > 
+> > 	- host->lock statistics attached;
+> 
+> Hi Jeff,
+> 
+> Would you please comment on the changes and numbers?
 
-In request_threaded_irq() the first parameter is missing the da9052->irq_base.
+Yep, given the diffstat:
 
-Fix it and avoid the error.
+ Documentation/PCI/MSI-HOWTO.txt |   37 ++++++-
+ arch/x86/kernel/apic/io_apic.c  |  170 +++++++++++++++++++++++++++++--
+ drivers/ata/ahci.c              |   14 ++-
+ drivers/ata/ahci.h              |    5 +
+ drivers/ata/libahci.c           |  211 +++++++++++++++++++++++++++++++++++++-
+ drivers/pci/msi.c               |   36 ++++++-
+ include/linux/irq.h             |    6 +
+ include/linux/msi.h             |    1 +
+ include/linux/pci.h             |    7 ++
+ kernel/irq/chip.c               |   30 ++++--
+ kernel/irq/irqdesc.c            |   31 ++++++
+ 11 files changed, 509 insertions(+), 39 deletions(-)
 
-Also define 'DA9052_IRQF' for improving readability.
+We absolutely need a very happy and enthusiastic Acked-by from 
+Jeff before we can pursue it :-)
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/mfd/da9052-core.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Thaks,
 
-diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
-index a0a62b2..a3450d2 100644
---- a/drivers/mfd/da9052-core.c
-+++ b/drivers/mfd/da9052-core.c
-@@ -33,6 +33,7 @@
- #define DA9052_IRQ_MASK_POS_6		0x20
- #define DA9052_IRQ_MASK_POS_7		0x40
- #define DA9052_IRQ_MASK_POS_8		0x80
-+#define DA9052_IRQF			(IRQF_TRIGGER_LOW | IRQF_ONESHOT)
- 
- static bool da9052_reg_readable(struct device *dev, unsigned int reg)
- {
-@@ -788,16 +789,15 @@ int __devinit da9052_device_init(struct da9052 *da9052, u8 chip_id)
- 		da9052->irq_base = pdata->irq_base;
- 
- 	ret = regmap_add_irq_chip(da9052->regmap, da9052->chip_irq,
--				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
--				  da9052->irq_base, &da9052_regmap_irq_chip,
--				  &da9052->irq_data);
-+				  DA9052_IRQF, da9052->irq_base,
-+				  &da9052_regmap_irq_chip, &da9052->irq_data);
- 	if (ret < 0)
- 		goto regmap_err;
- 
- 	da9052->irq_base = regmap_irq_chip_get_base(da9052->irq_data);
- 
--	ret = request_threaded_irq(DA9052_IRQ_ADC_EOM, NULL, da9052_auxadc_irq,
--				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+	ret = request_threaded_irq(da9052->irq_base + DA9052_IRQ_ADC_EOM, NULL,
-+				   da9052_auxadc_irq, DA9052_IRQF,
- 				   "adc irq", da9052);
- 	if (ret != 0)
- 		dev_err(da9052->dev, "DA9052 ADC IRQ failed ret=%d\n", ret);
--- 
-1.7.9.5
-
+	Ingo
