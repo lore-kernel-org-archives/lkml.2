@@ -1,66 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab2I0Rg1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 13:36:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58125 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab2I0Rg0 (ORCPT
+	id S1753159Ab2I0RhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 13:37:21 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50396 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab2I0RhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 13:36:26 -0400
-Date: Thu, 27 Sep 2012 10:36:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 3.5 0/2] seccomp and vsyscall fixes
-Message-ID: <20120927173622.GB21025@kroah.com>
-References: <cover.1342566495.git.luto@amacapital.net>
+	Thu, 27 Sep 2012 13:37:18 -0400
+Date: Thu, 27 Sep 2012 21:37:14 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk, hpa@zytor.com,
+        gregkh@linuxfoundation.org, xemul@parallels.com
+Subject: Re: [patch 1/2] tty: pty - Move TIOCPKT handling into pty.c
+Message-ID: <20120927173714.GQ6618@moon>
+References: <20120927165958.287690622@openvz.org>
+ <20120927170137.722717394@openvz.org>
+ <50648DE7.2060904@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1342566495.git.luto@amacapital.net>
+In-Reply-To: <50648DE7.2060904@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 04:19:18PM -0700, Andy Lutomirski wrote:
-> Apologies for the lateness of this stuff.  I was at a conference last
-> week when the Chrome issue was discovered and I couldn't do this
-> properly until I got back.
+On Thu, Sep 27, 2012 at 07:33:27PM +0200, Jiri Slaby wrote:
 > 
-> Will, can you confirm that this version is okay and passes your tests?
-> It passes mine.
+> Hi!
 > 
-> While there are no known seccomp users that will have trouble,
-> SECCOMP_RET_TRAP and SECCOMP_RET_TRACE currently interact oddly with
-> emulated vsyscalls.  This might lead to ABI issues down the road (if
-> something starts to rely on current behavior) or unexpected malfunctions
-> (if something tries to change, say, sys_gettimeofday, into a different
-> syscall and gets completely bogus results on a vsyscall-using distro.
-> 
-> It's unlikely that fixing this later will cause issues, but it would be
-> nice to nail down and document the vsyscall quirks for the first
-> released kernel with seccomp mode 2 support.
-> 
-> (Patch 2/2 is very much optional.  It fixes a strange corner case.  It
->  ought to be fine for 3.6, since I very much doubt that any real code
->  will hit that corner case and cause ABI problems.)
-> 
-> Andy Lutomirski (2):
->   seccomp: Make syscall skipping and nr changes more consistent
->   seccomp: Future-proof against silly tracers
-> 
->  Documentation/prctl/seccomp_filter.txt |   74 ++++++++++++++++++++--
->  arch/x86/include/asm/syscall.h         |   11 +++
->  arch/x86/kernel/vsyscall_64.c          |  110 +++++++++++++++++---------------
->  kernel/seccomp.c                       |   28 +++++++-
->  4 files changed, 163 insertions(+), 60 deletions(-)
+> This check is not needed as the ioctls are master-only.
 
-What ever happened to these patches?  I don't see them in 3.6-rc7, are
-they pending for 3.7?
+Hi, thanks, Jiri, i'll update (was hurry to provide patches
+so missed this ;)
 
-thanks,
-
-greg k-h
+	Cyrill
