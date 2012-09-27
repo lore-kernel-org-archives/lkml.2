@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab2I0HEc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 03:04:32 -0400
-Received: from orion.CARNet.hr ([161.53.160.90]:59707 "EHLO orion.carnet.hr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756562Ab2I0HEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 03:04:31 -0400
-Date: Thu, 27 Sep 2012 09:04:26 +0200
-From: Josip Rodin <joy@debbugs.entuzijast.net>
-To: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        685360@bugs.debian.org, john.ettedgui@gmail.com, barz621@gmail.com,
-        dh.herrmann@googlemail.com
-Subject: Re: [PATCH 1/1] HID: Fix missing Unifying device issue
-Message-ID: <20120927070426.GA27734@entuzijast.net>
-References: <1348222894-6767-1-git-send-email-nlopezcasad@logitech.com>
- <20120923102318.GA12946@entuzijast.net>
- <CAE7qMroQOxo7kci7roLbS5HXjpkyhRi=cj1WCoYtAPB328xNQg@mail.gmail.com>
+	id S1756628Ab2I0HFP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 03:05:15 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:17757 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755624Ab2I0HFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 03:05:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AucMAAH6Y1B5LPfb/2dsb2JhbABFhSK3VwECgRKBCYIgAQEFJxMcIxAIAxUDLhQNGAMhE4dzAw6uBw2JVBSKImJtRYRrA5QUgVSLIYULgnk
+Date: Thu, 27 Sep 2012 17:05:08 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
+        diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v2 03/10] vfs: add one new mount option '-o hottrack'
+Message-ID: <20120927070508.GS15236@dastard>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+ <1348404995-14372-4-git-send-email-zwu.kernel@gmail.com>
+ <20120925092819.GC29154@dastard>
+ <CAEH94LimEZcAFKFMVNUzBcTeDxvkgeD3jCO3AgmkEKXVE4ym+A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE7qMroQOxo7kci7roLbS5HXjpkyhRi=cj1WCoYtAPB328xNQg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
+In-Reply-To: <CAEH94LimEZcAFKFMVNUzBcTeDxvkgeD3jCO3AgmkEKXVE4ym+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 11:30:28AM +0200, Nestor Lopez Casado wrote:
-> Josip, this is a different issue from the one addressed with the patch.
-> 
-> 1) Can you try it on a 3.2 kernel ?
+On Thu, Sep 27, 2012 at 01:25:34PM +0800, Zhi Yong Wu wrote:
+> On Tue, Sep 25, 2012 at 5:28 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > On Sun, Sep 23, 2012 at 08:56:28PM +0800, zwu.kernel@gmail.com wrote:
+> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> >>
+> >>   Introduce one new mount option '-o hottrack',
+> >> and add its parsing support.
+> >>   Its usage looks like:
+> >>    mount -o hottrack
+> >>    mount -o nouser,hottrack
+> >>    mount -o nouser,hottrack,loop
+> >>    mount -o hottrack,nouser
+> >
+> > I think that this option parsing should be done by the filesystem,
+> > even though the tracking functionality is in the VFS. That way ony
+> > the filesystems that can use the tracking information will turn it
+> > on, rather than being able to turn it on for everything regardless
+> > of whether it is useful or not.
+> >
+> > Along those lines, just using a normal superblock flag to indicate
+> > it is active (e.g. MS_HOT_INODE_TRACKING in sb->s_flags) means you
+> > don't need to allocate the sb->s_hot_info structure just to be able
+> If we don't allocate one sb->s_hot_info, where will those hash list
+> head and btree roots locate?
 
-I can try that too, I'll let you know how it went.
+I wrote that thinking (mistakenly) that s-hot)info was dynamically
+allocated rather than being embedded in the struct super_block.
 
-(Unfortunately the machine is in the same room with a crib, so I don't
-get a lot of time slots for testing. *shrug* :)
+Indeed, if the mount option is held in s_flags, then it could be
+dynamically allocated, but I don't think that's really necessary...
 
-> 2) The problem you describe, does it happen all the time ?
+Cheers,
 
-Yes. The keyboard simply stopped working after I upgraded to Linux 3.2.
-It works fine under 3.1 and earlier, and under Windows.
-
+Dave.
 -- 
-     2. That which causes joy or happiness.
+Dave Chinner
+david@fromorbit.com
