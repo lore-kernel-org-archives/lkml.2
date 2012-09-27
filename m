@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab2I0QoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 12:44:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59157 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab2I0QoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 12:44:11 -0400
-Date: Thu, 27 Sep 2012 09:44:07 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [GIT PATCH] USB fixes for 3.6-rc7
-Message-ID: <20120927164407.GA20305@kroah.com>
+	id S1752726Ab2I0Qsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 12:48:52 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:53730 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752369Ab2I0Qsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 12:48:51 -0400
+Message-ID: <5064836F.8000109@mev.co.uk>
+Date: Thu, 27 Sep 2012 17:48:47 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: staging tree closed for 3.7
+References: <20120926175606.GA10762@kroah.com> <20120926175634.GB10762@kroah.com> <50641CE5.8070107@mev.co.uk> <20120927153515.GA1555@kroah.com>
+In-Reply-To: <20120927153515.GA1555@kroah.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 5698bd757d55b1bb87edd1a9744ab09c142abfc2:
+On 2012-09-27 16:35, Greg Kroah-Hartman wrote:
+> On Thu, Sep 27, 2012 at 10:31:17AM +0100, Ian Abbott wrote:
+>> On 2012-09-26 18:56, Greg Kroah-Hartman wrote:
+>>> On Wed, Sep 26, 2012 at 10:56:06AM -0700, Greg Kroah-Hartman wrote:
+>>>>
+>>>> With 3.6 about to be released, I've now closed the 3.7 staging-next tree
+>>>> for new features / cleanups.  It's bug-fixes only now until 3.7-rc1 is
+>>>> out.
+>>>
+>>> Oh, and if I've missed any patches that people have sent me already,
+>>> please let me know, because I don't have them anymore.
+>>
+>> I have an outstanding patch for the jr3_pci driver that was mostly
+>> __iomem tagging, but also included a one-line fix for an invalid
+>> iomem dereference.  Do you want me to resend the whole patch or just
+>> split out the one-line fix for 3.6?
+>
+> The one line fix for now would be great, and then the __iomem one to
+> apply after that for 3.7 would be also ok.
+>
+> Can you resend those?
 
-  Linux 3.6-rc6 (2012-09-16 14:58:51 -0700)
+Okay, I've sent the one-line fix.  I'll send the rest of it when the 
+staging-next tree reopens.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.6-rc7
-
-for you to fetch changes up to 0d00dc2611abbe6ad244d50569c2ee82ce42846c:
-
-  USB: Fix race condition when removing host controllers (2012-09-27 09:17:49 -0700)
-
-----------------------------------------------------------------
-USB fixes for 3.6-rc7
-
-Here are two USB bugfixes for your 3.6-rc7 tree.
-
-The OHCI fix has been reported a number of times and is a regression
-from 3.5, and the patch that causes the regression was on the way to the
--stable trees before I was reminded (again) that this fix needed to get
-to your tree soon.
-
-The host controller bugfix was reported in older kernels as being pretty
-easy to trigger, and has been tested by Red Hat and their customers.
-
-Both have been in the usb-next branch in the -next tree for a while now,
-I just cherry-picked them out to get to you in time for the 3.6 release.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Alan Stern (1):
-      USB: Fix race condition when removing host controllers
-
-Joachim Eastwood (1):
-      USB: ohci-at91: fix null pointer in ohci_hcd_at91_overcurrent_irq
-
- drivers/usb/core/devices.c   |    2 +-
- drivers/usb/core/hcd.c       |    6 ++----
- drivers/usb/host/ohci-at91.c |    3 ++-
- 3 files changed, 5 insertions(+), 6 deletions(-)
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
