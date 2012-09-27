@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab2I0EIG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 00:08:06 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50769 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab2I0EIE (ORCPT
+	id S1751725Ab2I0EKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 00:10:22 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44354 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab2I0EKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 00:08:04 -0400
+	Thu, 27 Sep 2012 00:10:21 -0400
+X-AuditID: 9c930179-b7bf9ae000000e4c-bf-5063d1ab4987
+From: Namhyung Kim <namhyung@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
+        a.p.zijlstra@chello.nl, andi@firstfloor.org, dsahern@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 8/9] perf hists browser: Add option for runtime switching perf data file
+References: <1348500251-9937-1-git-send-email-feng.tang@intel.com>
+	<1348500251-9937-9-git-send-email-feng.tang@intel.com>
+	<87d31ayhpy.fsf@sejong.aot.lge.com> <20120925162053.51f60773@feng-i7>
+	<20120925111703.GC28902@infradead.org> <20120926075707.GA4919@feng-i7>
+Date: Thu, 27 Sep 2012 13:02:05 +0900
+In-Reply-To: <20120926075707.GA4919@feng-i7> (Feng Tang's message of "Wed, 26
+	Sep 2012 15:57:07 +0800")
+Message-ID: <874nmkw1tu.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVOV9GfWxmbxDhKCOd0UWRPoORj5=dSiKdQrwnkf3cdNJw@mail.gmail.com>
-References: <CACVXFVOV9GfWxmbxDhKCOd0UWRPoORj5=dSiKdQrwnkf3cdNJw@mail.gmail.com>
-Date: Thu, 27 Sep 2012 12:08:03 +0800
-Message-ID: <CACVXFVPLacVi-tiurDBKsH-Y_nRv9r89vr0i7yJFn9croQc9WA@mail.gmail.com>
-Subject: Re: Question on irq autoprobe
-From: Ming Lei <tom.leiming@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 10:02 AM, Ming Lei <tom.leiming@gmail.com> wrote:
-> Hi,
->
-> I see the below comments on probe_irq_off:
->
->      *  BUGS: When used in a module (which arguably shouldn't happen)
->      *  nothing prevents two IRQ probe callers from overlapping. The
->      *  results of this are non-optimal.
->      */
->
-> But from the code of probe_irq_on and probe_irq_off, the mutex of
-> probing_active is held during the whole irq probe procedure, so
-> I don't understand why the above said that 'nothing prevents two
-> IRQ probe callers from overlapping", and why isn't the mutex of
-> probing_active enough to avoid the overlapping?
+Hi Feng,
 
-Thomas, I really appreciate that if you may clarify the question, :-)
+On Wed, 26 Sep 2012 15:57:07 +0800, Feng Tang wrote:
+> On Tue, Sep 25, 2012 at 08:17:03AM -0300, Arnaldo Carvalho de Melo wrote:
+>> Em Tue, Sep 25, 2012 at 04:20:53PM +0800, Feng Tang escreveu:
+>> > On Tue, 25 Sep 2012 11:11:21 +0900
+>> > Namhyung Kim <namhyung@kernel.org> wrote:
+>> > > Ditto.  Plus it might leak previous input_name.
+>> > 
+>> > Nice catch, will check the return value of "strdup". 
+>> > 
+>> > For input_name mem leak, in some cases the input_name can't be called
+>> >  with free(), like those got from parse "-i" option. In case the old
+>> > input_name is got from malloc through strdup, I think it's not a big
+>> > issue given that buffer will be freed any way when the application exit.
+>> 
+>> I think this is a matter of discipline, leaking is bad, kernel or
+>> userspace, why special case it?
+>>
+>
+> I see, then we need make sure all "input_name" point to a malloced buffer, 
+> here is a initial debug patch will only touch the annotate/report/script
+> cmds, pls review and more suggestions are welcomed:
 
+Well, how about adding a flag like "input_name_alloced" and checking it
+before new allocation?  This way we can avoid needless strdup when
+runtime switching is not used.
 
-Thank,
--- 
-Ming Lei
+Thanks,
+Namhyung
