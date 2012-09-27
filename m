@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab2I0J1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 05:27:54 -0400
-Received: from hotel311.server4you.de ([85.25.146.15]:49446 "EHLO
-	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab2I0J1w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 05:27:52 -0400
-Message-ID: <50641C16.9030806@monom.org>
-Date: Thu, 27 Sep 2012 11:27:50 +0200
-From: Daniel Wagner <wagi@monom.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1754639Ab2I0JbZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 05:31:25 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:52710 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751316Ab2I0JbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 05:31:24 -0400
+Message-ID: <50641CE5.8070107@mev.co.uk>
+Date: Thu, 27 Sep 2012 10:31:17 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Casey Schaufler <casey@schaufler-ca.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] Documentation: Update git repository URL for Smack userland
- tools
-References: <1348489289-14212-1-git-send-email-wagi@monom.org> <50632EA0.4060900@schaufler-ca.com>
-In-Reply-To: <50632EA0.4060900@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: staging tree closed for 3.7
+References: <20120926175606.GA10762@kroah.com> <20120926175634.GB10762@kroah.com>
+In-Reply-To: <20120926175634.GB10762@kroah.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Casey,
-
-On 26.09.2012 18:34, Casey Schaufler wrote:
-> On 9/24/2012 5:21 AM, Daniel Wagner wrote:
->> From: Daniel Wagner <daniel.wagner@bmw-carit.de>
+On 2012-09-26 18:56, Greg Kroah-Hartman wrote:
+> On Wed, Sep 26, 2012 at 10:56:06AM -0700, Greg Kroah-Hartman wrote:
 >>
->> The userland git repository has been moved to a new place.
->>
->> Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+>> With 3.6 about to be released, I've now closed the 3.7 staging-next tree
+>> for new features / cleanups.  It's bug-fixes only now until 3.7-rc1 is
+>> out.
 >
-> Applied to git://git.gitorious.org/smack-next/kernel.git#for-1209
+> Oh, and if I've missed any patches that people have sent me already,
+> please let me know, because I don't have them anymore.
 
-Thanks.
+I have an outstanding patch for the jr3_pci driver that was mostly 
+__iomem tagging, but also included a one-line fix for an invalid iomem 
+dereference.  Do you want me to resend the whole patch or just split out 
+the one-line fix for 3.6?
 
-BTW, I am sorry I got lkml address wrong... How could that ever happen? :)
-
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
