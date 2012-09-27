@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2I0SfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 14:35:07 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184Ab2I0SfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 14:35:05 -0400
+	id S1753841Ab2I0Sic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 14:38:32 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:37695 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab2I0Sia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 14:38:30 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -next] staging: dgrp: Add missing #include <linux/uaccess.h>
+Date: Thu, 27 Sep 2012 20:38:26 +0200
+Message-Id: <1348771106-14105-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 27 Sep 2012 22:49:11 +0200
-From: Richard Weinberger <richard@nod.at>
-To: <torvalds@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>,
-        <user-mode-linux-devel@lists.sourceforge.net>
-Subject: [GIT PULL] UML fixes for 3.6-final
-Message-ID: <a6566f1b02f315ebb5669a59b1acce21@radon2.swed.at>
-User-Agent: RoundCube Webmail
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 
-5e19997a742c7c8203be628a7a69babc3bcf01a4:
+On m68k:
 
-  Merge tag 'for-linus' of 
-git://linux-c6x.org/git/projects/linux-c6x-upstreaming (2012-09-26 
-14:28:17 -0700)
+drivers/staging/dgrp/dgrp_mon_ops.c: In function ‘dgrp_mon_read’:
+drivers/staging/dgrp/dgrp_mon_ops.c:304: error: implicit declaration of function ‘copy_to_user’
+drivers/staging/dgrp/dgrp_specproc.c: In function ‘config_proc_write’:
+drivers/staging/dgrp/dgrp_specproc.c:470: error: implicit declaration of function ‘copy_from_user’
+drivers/staging/dgrp/dgrp_tty.c: In function ‘drp_wmove’:
+drivers/staging/dgrp/dgrp_tty.c:1284: error: implicit declaration of function ‘copy_from_user’
+drivers/staging/dgrp/dgrp_tty.c: In function ‘get_modem_info’:
+drivers/staging/dgrp/dgrp_tty.c:2267: error: implicit declaration of function ‘put_user’
+drivers/staging/dgrp/dgrp_tty.c: In function ‘set_modem_info’:
+drivers/staging/dgrp/dgrp_tty.c:2283: error: implicit declaration of function ‘access_ok’
+drivers/staging/dgrp/dgrp_tty.c:2283: error: ‘VERIFY_READ’ undeclared (first use in this function)
+drivers/staging/dgrp/dgrp_tty.c:2283: error: (Each undeclared identifier is reported only once
+drivers/staging/dgrp/dgrp_tty.c:2283: error: for each function it appears in.)
+drivers/staging/dgrp/dgrp_tty.c:2287: error: implicit declaration of function ‘get_user’
+drivers/staging/dgrp/dgrp_tty.c: In function ‘dgrp_tty_digigetedelay’:
+drivers/staging/dgrp/dgrp_tty.c:2474: error: implicit declaration of function ‘copy_to_user’
+drivers/staging/dgrp/dgrp_tty.c: In function ‘dgrp_tty_ioctl’:
+drivers/staging/dgrp/dgrp_tty.c:2618: error: ‘VERIFY_WRITE’ undeclared (first use in this function)
 
-are available in the git repository at:
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+See also http://kisskb.ellerman.id.au/kisskb/buildresult/7277002/
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git 
-for-linus-3.6-rc-final
+ drivers/staging/dgrp/dgrp_mon_ops.c  |    1 +
+ drivers/staging/dgrp/dgrp_specproc.c |    1 +
+ drivers/staging/dgrp/dgrp_tty.c      |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
 
-Al Viro (4):
-      um: take cleaning singlestep to start_thread()
-      um: don't leak floating point state and segment registers on 
-execve()
-      um: let signal_delivered() do SIGTRAP on singlestepping into 
-handler
-      um: kill thread->forking
-
-Geert Uytterhoeven (1):
-      um: Preinclude include/linux/kern_levels.h
-
-Richard Weinberger (1):
-      um: Fix IPC on um
-
- arch/um/include/asm/processor-generic.h    |    9 ---------
- arch/um/include/shared/common-offsets.h    |   10 ----------
- arch/um/include/shared/user.h              |   11 +++++++++++
- arch/um/kernel/exec.c                      |   25 
-++++++-------------------
- arch/um/kernel/process.c                   |    8 ++++----
- arch/um/kernel/signal.c                    |    6 +++++-
- arch/um/kernel/syscall.c                   |   24 
-++++++++++++------------
- arch/um/scripts/Makefile.rules             |    2 +-
- arch/x86/um/Kconfig                        |    1 +
- arch/x86/um/shared/sysdep/kernel-offsets.h |    3 ---
- arch/x86/um/shared/sysdep/syscalls.h       |    2 ++
- arch/x86/um/signal.c                       |    6 ------
- arch/x86/um/sys_call_table_32.c            |    2 +-
- arch/x86/um/syscalls_32.c                  |   27 
-+++++++--------------------
- arch/x86/um/syscalls_64.c                  |   23 
-+++--------------------
- 15 files changed, 53 insertions(+), 106 deletions(-)
+diff --git a/drivers/staging/dgrp/dgrp_mon_ops.c b/drivers/staging/dgrp/dgrp_mon_ops.c
+index 268dcb9..4792d05 100644
+--- a/drivers/staging/dgrp/dgrp_mon_ops.c
++++ b/drivers/staging/dgrp/dgrp_mon_ops.c
+@@ -38,6 +38,7 @@
+ #include <linux/sched.h>
+ #include <asm/unaligned.h>
+ #include <linux/proc_fs.h>
++#include <linux/uaccess.h>
+ 
+ #include "dgrp_common.h"
+ 
+diff --git a/drivers/staging/dgrp/dgrp_specproc.c b/drivers/staging/dgrp/dgrp_specproc.c
+index 28f5c9a..a5840e7 100644
+--- a/drivers/staging/dgrp/dgrp_specproc.c
++++ b/drivers/staging/dgrp/dgrp_specproc.c
+@@ -39,6 +39,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/ctype.h>
+ #include <linux/seq_file.h>
++#include <linux/uaccess.h>
+ #include <linux/vmalloc.h>
+ 
+ #include "dgrp_common.h"
+diff --git a/drivers/staging/dgrp/dgrp_tty.c b/drivers/staging/dgrp/dgrp_tty.c
+index 7d7de87..72f6fcf 100644
+--- a/drivers/staging/dgrp/dgrp_tty.c
++++ b/drivers/staging/dgrp/dgrp_tty.c
+@@ -40,6 +40,7 @@
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
+ #include <linux/sched.h>
++#include <linux/uaccess.h>
+ 
+ #include "dgrp_common.h"
+ 
+-- 
+1.7.0.4
 
