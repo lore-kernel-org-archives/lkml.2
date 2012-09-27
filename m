@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab2I0FYm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 01:24:42 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51135 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab2I0FYl (ORCPT
+	id S1754755Ab2I0FZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 01:25:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44097 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab2I0FZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 01:24:41 -0400
+	Thu, 27 Sep 2012 01:25:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <1348620211-1409-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1348620211-1409-1-git-send-email-jonghwa3.lee@samsung.com>
-Date: Thu, 27 Sep 2012 10:54:40 +0530
-Message-ID: <CAK44p219E_AHQZ_4MRB=+hMpcT78cAdzvVdLg7Y3jEfW3Gyhfw@mail.gmail.com>
-Subject: Re: [PATCH] Thermal: Fix bug on cpu_cooling, cooling device's id
- conflict problem.
-From: Amit Kachhap <amit.kachhap@linaro.org>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>
+In-Reply-To: <20120925092819.GC29154@dastard>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+	<1348404995-14372-4-git-send-email-zwu.kernel@gmail.com>
+	<20120925092819.GC29154@dastard>
+Date: Thu, 27 Sep 2012 13:25:34 +0800
+Message-ID: <CAEH94LimEZcAFKFMVNUzBcTeDxvkgeD3jCO3AgmkEKXVE4ym+A@mail.gmail.com>
+Subject: Re: [RFC v2 03/10] vfs: add one new mount option '-o hottrack'
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
+        diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2012 06:13, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
-> This patch fixes small bug on cpu_cooling. CPU cooling device has own
-> id generated with idr mathod. However in the previous version, it swapped
-> to all same id at last stage of probing as 0. This makes id's collision and
-> also occures error when it releases that id.
+On Tue, Sep 25, 2012 at 5:28 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Sun, Sep 23, 2012 at 08:56:28PM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>>   Introduce one new mount option '-o hottrack',
+>> and add its parsing support.
+>>   Its usage looks like:
+>>    mount -o hottrack
+>>    mount -o nouser,hottrack
+>>    mount -o nouser,hottrack,loop
+>>    mount -o hottrack,nouser
 >
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> ---
->  drivers/thermal/cpu_cooling.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
+> I think that this option parsing should be done by the filesystem,
+> even though the tracking functionality is in the VFS. That way ony
+> the filesystems that can use the tracking information will turn it
+> on, rather than being able to turn it on for everything regardless
+> of whether it is useful or not.
 >
-> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-> index 99a5d75..9050c1b 100644
-> --- a/drivers/thermal/cpu_cooling.c
-> +++ b/drivers/thermal/cpu_cooling.c
-> @@ -351,7 +351,7 @@ struct thermal_cooling_device *cpufreq_cooling_register(
->         struct cpufreq_cooling_device *cpufreq_dev = NULL;
->         unsigned int cpufreq_dev_count = 0, min = 0, max = 0;
->         char dev_name[THERMAL_NAME_LENGTH];
-> -       int ret = 0, id = 0, i;
-> +       int ret = 0, i;
->         struct cpufreq_policy policy;
->
->         list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node)
-> @@ -396,7 +396,6 @@ struct thermal_cooling_device *cpufreq_cooling_register(
->                 kfree(cpufreq_dev);
->                 return ERR_PTR(-EINVAL);
->         }
-> -       cpufreq_dev->id = id;
+> Along those lines, just using a normal superblock flag to indicate
+> it is active (e.g. MS_HOT_INODE_TRACKING in sb->s_flags) means you
+> don't need to allocate the sb->s_hot_info structure just to be able
+If we don't allocate one sb->s_hot_info, where will those hash list
+head and btree roots locate?
 
-This change looks fine. May be some last minute typo caused this bug.
-
-Thanks,
-Amit Daniel
->         cpufreq_dev->cool_dev = cool_dev;
->         cpufreq_dev->cpufreq_state = 0;
->         mutex_lock(&cooling_cpufreq_lock);
+> to check whether we are tracking hot inodes or not.
+>
+> This then means the hot inode tracking for the superblock can be
+> initialised by the filesystem as part of it's fill_super method,
+> along with the filesystem specific code that will use the hot
+> tracking information the VFS gathers....
+>
+> Cheers,
+>
+> Dave.
 > --
-> 1.7.4.1
->
+> Dave Chinner
+> david@fromorbit.com
+
+
+
+-- 
+Regards,
+
+Zhi Yong Wu
