@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab2I0Uoz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 16:44:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35130 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab2I0Uoy (ORCPT
+	id S1754917Ab2I0Utd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 16:49:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47263 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407Ab2I0Utb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 16:44:54 -0400
-Date: Thu, 27 Sep 2012 13:44:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] 3.0-stable timekeeping fixes merged in 3.6
-Message-ID: <20120927204450.GE19489@kroah.com>
-References: <1347410993-19004-1-git-send-email-john.stultz@linaro.org>
+	Thu, 27 Sep 2012 16:49:31 -0400
+From: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Re: Re: 3.4.10 i915 [GM45] regression
+Date: Thu, 27 Sep 2012 22:48:51 +0200
+Message-ID: <2328453.JEpHkx50FR@tux200s>
+Organization: Andreas Sturmlechner
+User-Agent: KMail/4.9.1 (Linux/3.6.0-rc7; KDE/4.9.1; x86_64; ; )
+In-Reply-To: <20120926234223.GC26223@kroah.com>
+References: <2372445.fuIXicT4H0@tux200s> <20120910140734.GC2972@herton-Z68MA-D2H-B3> <20120926234223.GC26223@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347410993-19004-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 08:49:50PM -0400, John Stultz wrote:
-> Just wanted to send out a few timekeeping fixes that were merged
-> in 3.6 which are appropriate for -stable.
 > 
-> This queue backports the following fixes:
-> -----------------------------------------
-> cee58483cf56e0ba355fdd97ff5e8925329aa936    time: Move ktime_t overflow checking into timespec_valid_strict
-> bf2ac312195155511a0f79325515cbb61929898a    time: Avoid making adjustments if we haven't accumulated anything
-> 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b    time: Improve sanity checking of timekeeping inputs
+> Did anything ever come from this?  I haven't reverted anything, or
+> applied anything different, so if something needs to be done here,
+> please let me know.
 > 
-> I've run these through my timetest suite w/ kvm on both i386
-> & x86_64. But more testing would be of course appreciated.
-> 	https://github.com/johnstultz-work/timetests
 
-All applied, thanks.
-
-greg k-h
+I haven't tried 3.4.11 yet, I was only coming back from 3.5 in the hunt for a different bug, so - with a lot of bad coincidence - it is 
+not entirely impossible that something else is actually causing the black screen, because it doesn't happen all the time. On your request 
+I could give it some more testing time.
