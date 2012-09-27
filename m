@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab2I0JyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 05:54:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:40706 "EHLO mga03.intel.com"
+	id S1753365Ab2I0KAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 06:00:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20936 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab2I0JyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 05:54:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,494,1344236400"; 
-   d="scan'208";a="149767335"
-Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with
- probe
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Inderpal Singh <inderpal.singh@linaro.org>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, boojin.kim@samsung.com,
-        patches@linaro.org, kgene.kim@samsung.com
-In-Reply-To: <CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
-References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
-	 <1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
-	 <CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
-	 <CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Sep 2012 15:18:12 +0530
-Message-ID: <1348739292.1648.15.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751468Ab2I0KAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 06:00:10 -0400
+Date: Thu, 27 Sep 2012 11:58:24 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+Message-ID: <20120927095824.GJ23096@redhat.com>
+References: <505C654B.2050106@redhat.com>
+ <505CA2EB.7050403@linux.vnet.ibm.com>
+ <50607F1F.2040704@redhat.com>
+ <5060851E.1030404@redhat.com>
+ <506166B4.4010207@linux.vnet.ibm.com>
+ <5061713D.5060406@redhat.com>
+ <20120927074405.GE23096@redhat.com>
+ <50641569.9060305@redhat.com>
+ <20120927091112.GG23096@redhat.com>
+ <50641D84.2020807@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50641D84.2020807@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-26 at 12:11 +0530, Inderpal Singh wrote:
-> If we fail pl330_remove while some client is queued, the force unload
-> will fail and the
-> force unload will lose its purpose.
-> How about conditionally DMA_TERMINATE_ALL and free resources like
-> below ? 
-Why would you want to remove the driver when it is doing something
-useful? You have to ensure driver is not doing anything.
+On Thu, Sep 27, 2012 at 11:33:56AM +0200, Avi Kivity wrote:
+> On 09/27/2012 11:11 AM, Gleb Natapov wrote:
+> >> 
+> >> User return notifier is per-cpu, not per-task.  There is a new task_work
+> >> (<linux/task_work.h>) that does what you want.  With these
+> >> technicalities out of the way, I think it's the wrong idea.  If a vcpu
+> >> thread is in userspace, that doesn't mean it's preempted, there's no
+> >> point in boosting it if it's already running.
+> >> 
+> > Ah, so you want to set bit in kvm->preempted_vcpus if task is _not_
+> > TASK_RUNNING in sched_out (you wrote opposite in your email)? If a task 
+> > is in userspace it is definitely not preempted.
+> 
+> No, as I originally wrote.  If it's TASK_RUNNING when it saw sched_out,
+> then it is preempted (i.e. runnable), not sleeping on some waitqueue,
+> voluntarily (HLT) or involuntarily (page fault).
+> 
+Of course, I got it all backwards. Need more coffee.
 
-What is point here?
+> >  
+> >> btw, we can have secondary effects.  A vcpu can be waiting for a lock in
+> >> the host kernel, or for a host page fault.  There's no point in boosting
+> >> anything for that.  Or a vcpu in userspace can be waiting for a lock
+> >> that is held by another thread, which has been preempted. 
+> > Do you mean userspace spinlock? Because otherwise task that's waits on
+> > a kernel lock will sleep in the kernel.
+> 
+> I meant a kernel mutex.
+> 
+> vcpu 0: take guest spinlock
+> vcpu 0: vmexit
+> vcpu 0: spin_lock(some_lock)
+> vcpu 1: take same guest spinlock
+> vcpu 1: PLE vmexit
+> vcpu 1: wtf?
+> 
+> Waiting on a host kernel spinlock is not too bad because we expect to be
+> out shortly.  Waiting on a host kernel mutex can be a lot worse.
+> 
+We can't do much about it without PV spinlock since there is not
+information about what vcpu holds which guest spinlock, no?
 
--- 
-~Vinod
-
+--
+			Gleb.
