@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab2I0Nop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:44:45 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:33408 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751870Ab2I0Non (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:44:43 -0400
-Message-ID: <50645771.3030204@parallels.com>
-Date: Thu, 27 Sep 2012 17:41:05 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1751790Ab2I0NtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:49:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35123 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750759Ab2I0NtW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 09:49:22 -0400
+Date: Thu, 27 Sep 2012 14:49:19 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Davide Ciminaghi <ciminaghi@gnudd.com>
+Cc: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] sta2x11-mfd : add apb-soc regs driver and factor out
+ common code
+Message-ID: <20120927134919.GW4428@opensource.wolfsonmicro.com>
+References: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com>
+ <1347445374-32140-2-git-send-email-ciminaghi@gnudd.com>
+ <20120925192048.GA17038@sirena.org.uk>
+ <20120926145615.GJ10147@mail.gnudd.com>
+ <20120926150429.GQ4428@opensource.wolfsonmicro.com>
+ <20120926163145.GK10147@mail.gnudd.com>
+ <20120926164932.GS4428@opensource.wolfsonmicro.com>
+ <20120927134110.GD6799@mail.gnudd.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH v3 05/13] Add a __GFP_KMEMCG flag
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-6-git-send-email-glommer@parallels.com> <20120927133435.GE3429@suse.de>
-In-Reply-To: <20120927133435.GE3429@suse.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120927134110.GD6799@mail.gnudd.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 05:34 PM, Mel Gorman wrote:
-> On Tue, Sep 18, 2012 at 06:04:02PM +0400, Glauber Costa wrote:
->> This flag is used to indicate to the callees that this allocation is a
->> kernel allocation in process context, and should be accounted to
->> current's memcg. It takes numerical place of the of the recently removed
->> __GFP_NO_KSWAPD.
->>
->> Signed-off-by: Glauber Costa <glommer@parallels.com>
->> CC: Christoph Lameter <cl@linux.com>
->> CC: Pekka Enberg <penberg@cs.helsinki.fi>
->> CC: Michal Hocko <mhocko@suse.cz>
->> CC: Johannes Weiner <hannes@cmpxchg.org>
->> CC: Suleiman Souhlal <suleiman@google.com>
->> CC: Rik van Riel <riel@redhat.com>
->> CC: Mel Gorman <mel@csn.ul.ie>
->> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> I agree with Christophs recommendation that this flag always exist instead
-> of being 0 in the !MEMCG_KMEM case. If __GFP_KMEMCG ever is used in another
-> part of the VM (which would be unexpected but still) then the behaviour
-> might differ too much between MEMCG_KMEM and !MEMCG_KMEM cases. As unlikely
-> as the case is, it's not impossible.
-> 
-> For tracing __GFP_KMEMCG should have an entry in
-> include/trace/events/gfpflags.h
-> 
-> Get rid of the CONFIG_MEMCG_KMEM check and update
-> include/trace/events/gfpflags.h and then feel free to stick my Acked-by
-> on it.
-> 
+On Thu, Sep 27, 2012 at 03:41:10PM +0200, Davide Ciminaghi wrote:
 
-Thanks, that is certainly doable.
+> Maybe there's another solution: what about adding a couple of function
+> pointers (lock, unlock) to struct regmap_config ? If they're set to NULL,
+> everything works as usual. If they're not NULL, regmap uses such functions
+> to do locking and unlocking instead of the usual ones (and regmap_bus.fast_io
+> is ignored). I think this wouldn't hurt existing regmap users and allow
+> sta2x11-mfd to have just one spinlock for everything, no need for nested
+> locking this way.
 
+That might work, yes, and would be generally useful I think.  Or we
+could add regmap based versions of the clock utilities (which would also
+be useful anyway).  Or both.
