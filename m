@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab2I0VD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 17:03:57 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52215 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754623Ab2I0VDx (ORCPT
+	id S1755208Ab2I0VFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 17:05:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63790 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab2I0VFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 17:03:53 -0400
-X-Sasl-enc: q0sqc9e/on/bMQjum61mKo9RS3GHvyITnDIlObPnBtkL 1348779831
-Date: Thu, 27 Sep 2012 14:03:35 -0700
-From: Greg KH <greg@kroah.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Phillip Lougher <phillip@lougher.demon.co.uk>,
-        Cyril Strejc <strejc@unicontrols.cz>, phillip@squashfs.org.uk,
-        squashfs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [Squashfs-devel] PROBLEM: mount empty SquashFS
-Message-ID: <20120927210335.GA3468@kroah.com>
-References: <5017A064.1030605@unicontrols.cz>
- <5018AFA8.8070709@lougher.demon.co.uk>
- <CAMuHMdXXP=iF8qiBydYGgaKUpTR=88Y7uUTf9uquA7cbwMeo7w@mail.gmail.com>
+	Thu, 27 Sep 2012 17:05:10 -0400
+Date: Thu, 27 Sep 2012 14:04:40 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Stable <stable@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: Re: [PATCH] pch_uart: Add eg20t_port lock field, avoid recursive
+ spinlocks
+Message-ID: <20120927210440.GB3468@kroah.com>
+References: <422aa2054659680fb138d2153dcc852b2620b04d.1346889148.git.dvhart@linux.intel.com>
+ <20120906001448.GA7278@kroah.com>
+ <20120906001841.GA7433@kroah.com>
+ <5047ED8C.1060005@linux.intel.com>
+ <5047F045.5060103@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdXXP=iF8qiBydYGgaKUpTR=88Y7uUTf9uquA7cbwMeo7w@mail.gmail.com>
+In-Reply-To: <5047F045.5060103@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 08:52:44PM +0200, Geert Uytterhoeven wrote:
-> Hi Phillip,
+On Wed, Sep 05, 2012 at 05:37:25PM -0700, Darren Hart wrote:
+> On 09/05/2012 05:25 PM, Darren Hart wrote:
+> > 
+> > 
+> > On 09/05/2012 05:18 PM, Greg Kroah-Hartman wrote:
+> >> On Wed, Sep 05, 2012 at 05:14:48PM -0700, Greg Kroah-Hartman wrote:
+> >>> On Wed, Sep 05, 2012 at 05:04:07PM -0700, Darren Hart wrote:
+> >>>> The following patch has been included in linux-next
+> >>>> (fe89def79c48e2149abdd1e816523e69a9067191) but has not yet landed in mainline
+> >>>> nor been queued for stable so far as I can determine. This patch addresses a
+> >>>> deadlock in mainline and is a prerequisite for an additional fix required by the
+> >>>> PREEMPT_RT kernel. Can we get this pulled into 3.4.11 please?
+> >>>
+> >>> 3.4.11?  It has to hit Linus's tree first.
+> >>>
+> >>>> Perhaps I am
+> >>>> jumping the gun, but this patch was originally pulled on June 19, 2012.
+> >>>
+> >>> Remember, we missed a pull cycle for tty due to other problems, I
+> >>> thought I picked all of the different pieces needed for 3.6, but I must
+> >>> of missed this one.
+> >>
+> >> Nope, it made it, it is commit 2588aba002d14e938c2f56d299ecf3e7ce1302a5.
+> > 
+> > Doh, I pulled master and stable, but only checked stable. Sigh. My
+> > apologies Greg.
+> > 
+> >>
+> >> Now, do you want that patch in the -stable releases?  If so, how far
+> >> back? :)
+> > 
+> > Yes, back to 3.0 would be ideal. It needs mangling for 3.2 and back
+> > though. I will send patches for 3.4, 3.2 and possibly 3.0 following the
+> > stable_kernel_rules.txt procedure.
 > 
-> On Wed, Aug 1, 2012 at 6:25 AM, Phillip Lougher
-> <phillip@lougher.demon.co.uk> wrote:
-> > Cyril Strejc wrote:
-> >> I have problem when mounting empty SquashFS. Mount syscall ends with EINVAL.
-> >>
-> >> Kernel vesions: mainline
-> >> SquashFS tools version: 4.2
-> >>
-> >> Steps to reproduce:
-> >> 1. create empty directory (mkdir empty)
-> >> 2. create SquashFS image (my mksquashfs output below)
-> >> 3. mount image using block or loop device (strace output below)
-> >>
-> >> I've add some printk to
-> >> super.c: squashfs_fill_super()
-> >>
-> >> /* code starts here */
-> >> ...
-> >> handle_fragments:
-> >>      fragments = le32_to_cpu(sblk->fragments);
-> >>      printk("fragments = %u\n", fragments);
-> >> ...
-> >> check_directory_table:
-> >>      /* Sanity check directory_table */
-> >>      if (msblk->directory_table >= next_table) {
-> >>          printk("directory_table = %llu, next_table = %llu\n",
-> >> msblk->directory_table, next_table);
-> >>                  err = -EINVAL;
-> >>                  printk("mount error: 16\n");
-> >>                  goto failed_mount;
-> >>          }
-> >> ...
-> >>
-> >> dmesg after mount:
-> >> fragments = 0
-> >> directory_table = 125, next_table = 125
-> >> mount error: 16
-> >>
-> >>
-> >> I hardly understand these details. Please, do You have any idea?
-> >>
-> >
-> > Hi Cyril,
-> >
-> > This is a Squashfs kernel bug introduced by some extra superblock
-> > sanity checks added in kernel 3.0.  These extra sanity checks were
-> > necessary to harden Squashfs against corrupted Squashfs filesystems
-> > generated by the latest version of fsfuzzer (a tool used to randomly
-> > corrupt filesystems with the aim of making the filesystem code
-> > behave badly).
-> >
-> > I discovered the sanity checks mistakenly flagged empty filesystems
-> > as invalid in January, and added a fix to the mainline kernel, FYI
-> > the commit is here:
-> >
-> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=cc37f75a9ffbbfcb1c3297534f293c8284e3c5a6
-> >
-> > This bug has been fixed in kernel versions 3.3 and newer, but, kernel
-> > versions 3.0, 3.1 and 3.2 unfortunately have this bug.
-> >
-> > There's really only three solutions to this problem:
-> >
-> > - upgrade to a later kernel, 3.3 or newer,
-> > - apply the above commit to your kernel, or
-> > - avoid generating empty filesystems and trying to mount them
-> >
-> > The one obvious question that arises here is why are you generating
-> > completely empty filesystems and then trying to mount them?  An
-> > empty Squashfs filesystem doesn't seem to serve any useful purpose?
-> 
-> I can easily imagine a system that has an optional filesystem mounted,
-> which may be empty. For such a system, it's a regression.
-> 
-> So I think this warrants application to the stable 3.0, 3.1, and 3.2 branches.
-> Commit cc37f75a9ffbbfcb1c3297534f293c8284e3c5a6 ("Squashfs: fix
-> mount time sanity check for corrupted superblock") seems to cherry-pick just
-> fine on v3.0.42, v3.1.10, and v3.2.28.
+> On second thought, there are way too many changes to pch_uart that are
+> required before this patch can really be applied prior to 3.4. I suspect
+> these are not all appropriate for -stable. I'd be happy just getting
+> this into 3.4.11. 2588aba002d14e938c2f56d299ecf3e7ce1302a5 cherry-picks
+> cleanly to 3.4.
 
-Queued up for 3.0.y, thanks.
+Now queued up for 3.4.y and 3.5.y, thanks.
 
 greg k-h
