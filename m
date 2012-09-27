@@ -1,166 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab2I0G5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 02:57:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57489 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189Ab2I0G5L (ORCPT
+	id S1756154Ab2I0G5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 02:57:34 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:17340 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754720Ab2I0G5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 02:57:11 -0400
-Date: Thu, 27 Sep 2012 16:57:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20120927165707.3baaa7f083da9f157a09c653@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__27_Sep_2012_16_57_07_+1000_klRVFTiG39yZuYlk"
+	Thu, 27 Sep 2012 02:57:32 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugMAGX3Y1B5LPfb/2dsb2JhbABFhSK3VwECgRKBCYIgAQEEAScTHBwHBQsIAxUDLhQNGAMhE4dzAwkFrgcNiVQUiiJibUWEawOUFIFUiyGFC4J5
+Date: Thu, 27 Sep 2012 16:57:26 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
+        diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v2 05/10] vfs: introduce one hash table
+Message-ID: <20120927065726.GP15236@dastard>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+ <1348404995-14372-6-git-send-email-zwu.kernel@gmail.com>
+ <20120927034310.GM15236@dastard>
+ <CAEH94Liftb9zhTt=5TFUOay=aAQ+MA6YXsQWWt0Kn+F8U2MJNg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAEH94Liftb9zhTt=5TFUOay=aAQ+MA6YXsQWWt0Kn+F8U2MJNg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_Sep_2012_16_57_07_+1000_klRVFTiG39yZuYlk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 27, 2012 at 02:23:16PM +0800, Zhi Yong Wu wrote:
+> On Thu, Sep 27, 2012 at 11:43 AM, Dave Chinner <david@fromorbit.com> wrote:
+> > On Sun, Sep 23, 2012 at 08:56:30PM +0800, zwu.kernel@gmail.com wrote:
+> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> >>
+> >>   Adds a hash table structure which contains
+> >> a lot of hash list and is used to efficiently
+> >> look up the data temperature of a file or its
+> >> ranges.
+> >>   In each hash list of hash table, the hash node
+> >> will keep track of temperature info.
+> >
+> > So, let me see if I've got the relationship straight:
+> >
+> > - sb->s_hot_info.hot_inode_tree indexes hot_inode_items, one per inode
+> >
+> > - hot_inode_item contains access frequency data for that inode
+> >
+> > - hot_inode_item holds a heat hash node to index the access
+> >   frequency data for that inode
+> >
+> > - hot_inode_item.hot_range_tree indexes hot_range_items for that inode
+> >
+> > - hot_range_item contains access frequency data for that range
+> >
+> > - hot_range_item holds a heat hash node to index the access
+> >   frequency data for that range
+> >
+> > - sb->s_hot_info.heat_inode_hl indexes per-inode heat hash nodes
+> >
+> > - sb->s_hot_info.heat_range_hl indexes per-range heat hash nodes
+> Correct.
+> >
+> > How about some ascii art? :) Just looking at the hot inode item case
+> > (the range item case is the same pattern, though), we have:
+> >
+> >
+> > heat_inode_hl           hot_inode_tree
+> >     |                         |
+> >     |                         V
+> >     |           +-------hot_inode_item-------+
+> > +---+           |       frequency data       |
+> > |               V            ^               V
+> > | ...<--hot_inode_item-->... |    ...<--hot_inode_item-->....
+> > |       frequency data       |          frequency data
+> > |               ^            |               ^
+> > |               |            |               |
+> > |               |            |               |
+> > +------>hot_hash_node-->hot_hash_node-->hot_hash_node-->....
+> Great, can we put them in hot_tracking.txt in Documentation?
+> >
+> >
+> > There's no actual data stored in the hot_hash_node, just pointer
+> > back to the frequency data, a hlist_node and a pointer to the
+> > hashlist head. IOWs, I agree with Ram that this does not need to
+> > exist and just embedding a hlist_node inside the hot_inode_item is
+> > all that is needed. i.e:
+> >
+> > heat_inode_hl           hot_inode_tree
+> >     |                         |
+> >     |                         V
+> >     |           +-------hot_inode_item-------+
+> >     |           |       frequency data       |
+> > +---+           |       hlist_node           |
+> > |               V            ^ |             V
+> > | ...<--hot_inode_item-->... | |  ...<--hot_inode_item-->....
+> > |       frequency data       | |        frequency data
+> > +------>hlist_node-----------+ +------->hlist_node--->.....
+> >
+> > There's no need for separate allocations, initialisations, locks and
+> > reference counting - all that is already in the hot_inode_item. The
+> > items have the same lifecycle limitations - a hot_hash_node must be
+> > torn down before the frequency data it points to is freed. Finally,
+> > there's no difference in how you move it between lists.
+> How will you know if one hot_inode_item should be moved between lists
+> when its freq data is changed?
 
-Hi Andrew,
+Record the current temperature in the frequency data, and if it
+changes, change the list it is on.
 
-Today's linux-next merge of the akpm tree got a conflict in
-mm/mempolicy.c between commit 4d58c795f691 ("mm/mpol: Check for misplaced
-page") from the tip tree and commit "mempolicy: fix refcount leak in
-mpol_set_shared_policy()" from the akpm tree.
+> > Indeed, calling it a hash is wrong - there's not hashing at all
+> > - it keeping an array of list where each entry corresponds to a
+> > specific temperature. It is a *heat map*, not a hash list. i.e.
+> > inode_heat_map, not heat_inode_hl. HEAT_MAP_SIZE, not HASH_SIZE.
+> OK.
+> >
+> > As it is, there aren't any users of the heat maps that are generated
+> > in this patch set - it's not even exported to userspace or to
+> > debugfs, so I'm not sure how it will be used yet. How are these heat
+> > maps going to be used by filesystems, Zhi?
+> In hot_hash_calc_temperature(), you can see that one hot_inode or
+> hot_range's freq data will be distilled into one temperature value,
+> then it will be inserted to the heat map based on its temperature.
+> When the file corresponding to the inode or range got hotter or cold,
+> its location will be changed in the heat map based on its new
+> temperature in hot_hash_update_hash_table().
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Yes, but a hot_inode_item or hot_range_item can only have one
+location in the heat map, right? So it doesn't need external
+structure to point to the frequency data to track this....
 
---=20
+> And the user will retrieve those freq data and temperature info via
+> debugfs or ioctl interfaces.
+
+Right - but that data is only extracted after an initial
+hot_inode_tree lookup - The heat map itself is never directly used
+for lookups. If it's not used for lookups based on temperature, why
+is it needed?
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc mm/mempolicy.c
-index a0eec0e,1763418..0000000
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@@ -2174,82 -2157,12 +2174,88 @@@ mpol_shared_policy_lookup(struct shared
-  	return pol;
-  }
- =20
- +/**
- + * mpol_misplaced - check whether current page node is valid in policy
- + *
- + * @page   - page to be checked
- + * @vma    - vm area where page mapped
- + * @addr   - virtual address where page mapped
- + *
- + * Lookup current policy node id for vma,addr and "compare to" page's
- + * node id.
- + *
- + * Returns:
- + *	-1	- not misplaced, page is in the right node
- + *	node	- node id where the page should be
- + *
- + * Policy determination "mimics" alloc_page_vma().
- + * Called from fault path where we know the vma and faulting address.
- + */
- +int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigne=
-d long addr)
- +{
- +	struct mempolicy *pol;
- +	struct zone *zone;
- +	int curnid =3D page_to_nid(page);
- +	unsigned long pgoff;
- +	int polnid =3D -1;
- +	int ret =3D -1;
- +
- +	BUG_ON(!vma);
- +
- +	pol =3D get_vma_policy(current, vma, addr);
- +	if (!(pol->flags & MPOL_F_MOF))
- +		goto out;
- +
- +	switch (pol->mode) {
- +	case MPOL_INTERLEAVE:
- +		BUG_ON(addr >=3D vma->vm_end);
- +		BUG_ON(addr < vma->vm_start);
- +
- +		pgoff =3D vma->vm_pgoff;
- +		pgoff +=3D (addr - vma->vm_start) >> PAGE_SHIFT;
- +		polnid =3D offset_il_node(pol, vma, pgoff);
- +		break;
- +
- +	case MPOL_PREFERRED:
- +		if (pol->flags & MPOL_F_LOCAL)
- +			polnid =3D numa_node_id();
- +		else
- +			polnid =3D pol->v.preferred_node;
- +		break;
- +
- +	case MPOL_BIND:
- +		/*
- +		 * allows binding to multiple nodes.
- +		 * use current page if in policy nodemask,
- +		 * else select nearest allowed node, if any.
- +		 * If no allowed nodes, use current [!misplaced].
- +		 */
- +		if (node_isset(curnid, pol->v.nodes))
- +			goto out;
- +		(void)first_zones_zonelist(
- +				node_zonelist(numa_node_id(), GFP_HIGHUSER),
- +				gfp_zone(GFP_HIGHUSER),
- +				&pol->v.nodes, &zone);
- +		polnid =3D zone->node;
- +		break;
- +
- +	default:
- +		BUG();
- +	}
- +	if (curnid !=3D polnid)
- +		ret =3D polnid;
- +out:
- +	mpol_cond_put(pol);
- +
- +	return ret;
- +}
- +
-+ static void sp_free(struct sp_node *n)
-+ {
-+ 	mpol_put(n->policy);
-+ 	kmem_cache_free(sn_cache, n);
-+ }
-+=20
-  static void sp_delete(struct shared_policy *sp, struct sp_node *n)
-  {
-  	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
-
---Signature=_Thu__27_Sep_2012_16_57_07_+1000_klRVFTiG39yZuYlk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQY/jDAAoJEECxmPOUX5FEmq4P/if8m78p8QfnFsIPdq5c6hHX
-02TQVj0ppr1QCv9oq8Hz492UZYAakoBBRXdzpNsPSccn8lK7niSNqjQ3OotBESvz
-pMap7rXzBIFnT/XpynBELnyBt4m1FRPYZG/FDZJ7hEnpQlWpQE2svFX0u8VlYsbu
-hOgOl/+NtgZjPHquaPej1pyaE9PYQnqJJITiFZ/38zwMm8bSoNKmFyJakp7vmFBL
-ediB/vcbd1Wtk5BL3jzhqhs9YoSY/mgMozI4tSSOq+qPBE4KHvOwNiJH3osegRb/
-sRNJZbYLgLC7H+zFfyEwAbuFedwy7nK8RdBPAeCdWrMNFqXiOsZzYTlkqd1lGEbn
-IJqigdfmVhpC5tLE5AJYEAFgTn6jVcVbnGQ0CQKZaWkS5FWsbCMphF/uNT+1OqGA
-z5cOgMcRPIY2X+zMSjnFMsSqlhg9mpFqgOaByet9Zx+VrxWHmx03BEuAiWh8xrQW
-A3pC7AoJn66IdHTO+krywc+kJZ9jeu6+ooY7TSNhAmtIXqLUf4mfyvMa96VHrd/e
-ECjmZVFx+bw9pIbNb9ztgt5bmaEkFLVBfWGW6MnLaKgInQpYVrpqyJrDpQ5uPl5b
-YI8AHuFeRPNszHzsD7g0vMyBFYnSONONn7d2d0CdlmUD4xNo8kX/ZCnsQewYsK1w
-w1d/9++x9WG6kgePxhRJ
-=Lerw
------END PGP SIGNATURE-----
-
---Signature=_Thu__27_Sep_2012_16_57_07_+1000_klRVFTiG39yZuYlk--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
