@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab2I0NO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:14:28 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:48924 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751235Ab2I0NO0 (ORCPT
+	id S1752945Ab2I0NTl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:19:41 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59123 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab2I0NTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:14:26 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 3/4] pinctrl/nomadik: use simple or linear IRQ domain
-Date: Thu, 27 Sep 2012 15:13:59 +0200
-Message-ID: <1348751639-17457-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Thu, 27 Sep 2012 09:19:40 -0400
+Message-ID: <5064525E.5080901@gmail.com>
+Date: Thu, 27 Sep 2012 21:19:26 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] memory_hotplug: Don't modify the zone_start_pfn outside
+ of zone_span_writelock()
+References: <1348728470-5580-1-git-send-email-laijs@cn.fujitsu.com> <1348728470-5580-4-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1348728470-5580-4-git-send-email-laijs@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On 09/27/2012 02:47 PM, Lai Jiangshan wrote:
+> The __add_zone() maybe call sleep-able init_currently_empty_zone()
+> to init wait_table,
+>
+> But this function also modifies the zone_start_pfn without any lock.
+> It is bugy.
+>
+> So we move this modification out, and we ensure the modification
+> of zone_start_pfn is only done with zone_span_writelock() held or in booting.
+>
+> Since zone_start_pfn is not modified by init_currently_empty_zone()
+> grow_zone_span() needs to check zone_start_pfn before update it.
+>
+> CC: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Reported-by: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+> Tested-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>   mm/memory_hotplug.c |    2 +-
+>   mm/page_alloc.c     |    3 +--
+>   2 files changed, 2 insertions(+), 3 deletions(-)
+>
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index b62d429b..790561f 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -205,7 +205,7 @@ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
+>   	zone_span_writelock(zone);
+>   
+>   	old_zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
+> -	if (start_pfn < zone->zone_start_pfn)
+> +	if (!zone->zone_start_pfn || start_pfn < zone->zone_start_pfn)
+>   		zone->zone_start_pfn = start_pfn;
+>   
+>   	zone->spanned_pages = max(old_zone_end_pfn, end_pfn) -
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index c13ea75..2545013 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -3997,8 +3997,6 @@ int __meminit init_currently_empty_zone(struct zone *zone,
+>   		return ret;
+>   	pgdat->nr_zones = zone_idx(zone) + 1;
+>   
+> -	zone->zone_start_pfn = zone_start_pfn;
+> -
 
-This alters the Nomadik pinctrl driver to:
+then how can mminit_dprintk print zone->zone_start_pfn ? always print 0 
+make no sense.
 
-- Call irqdomain_add_linear() for the DT case so we get
-  all independent from IRQ numbers in this case.
-- Call irqdomain_add_simple() for the legacy case, which
-  allocates the IRQ descriptors for the Nomadik pin controller
-  dynamically.
-
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-nomadik.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index e031c84..6aab107 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -1286,9 +1286,19 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 
- 	platform_set_drvdata(dev, nmk_chip);
- 
--	nmk_chip->domain = irq_domain_add_legacy(np, NMK_GPIO_PER_CHIP,
--						NOMADIK_GPIO_TO_IRQ(pdata->first_gpio),
--						0, &nmk_gpio_irq_simple_ops, nmk_chip);
-+	if (np) {
-+		/* The DT case will just grab a set of IRQ numbers */
-+		nmk_chip->domain = irq_domain_add_linear(np, NMK_GPIO_PER_CHIP,
-+				&nmk_gpio_irq_simple_ops, nmk_chip);
-+	} else {
-+		/* Non-DT legacy mode, use hardwired IRQ numbers */
-+		int irq_start;
-+
-+		irq_start = NOMADIK_GPIO_TO_IRQ(pdata->first_gpio);
-+		nmk_chip->domain = irq_domain_add_simple(NULL,
-+				NMK_GPIO_PER_CHIP, irq_start,
-+				&nmk_gpio_irq_simple_ops, nmk_chip);
-+	}
- 	if (!nmk_chip->domain) {
- 		dev_err(&dev->dev, "failed to create irqdomain\n");
- 		ret = -ENOSYS;
--- 
-1.7.11.3
+>   	mminit_dprintk(MMINIT_TRACE, "memmap_init",
+>   			"Initialising map node %d zone %lu pfns %lu -> %lu\n",
+>   			pgdat->node_id,
+> @@ -4465,6 +4463,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+>   		ret = init_currently_empty_zone(zone, zone_start_pfn,
+>   						size, MEMMAP_EARLY);
+>   		BUG_ON(ret);
+> +		zone->zone_start_pfn = zone_start_pfn;
+>   		memmap_init(size, nid, j, zone_start_pfn);
+>   		zone_start_pfn += size;
+>   	}
 
