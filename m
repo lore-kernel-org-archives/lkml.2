@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411Ab2I0EDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 00:03:43 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:46077 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab2I0EDk (ORCPT
+	id S1751917Ab2I0EEG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 00:04:06 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:18358 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751452Ab2I0EED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 00:03:40 -0400
-Date: Thu, 27 Sep 2012 06:03:35 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 -tip 0/5] x86, MSI, AHCI: Support multiple MSIs
-Message-ID: <20120927040335.GA1957@gmail.com>
-References: <cover.1346653435.git.agordeev@redhat.com>
- <20120926123824.GB7123@dhcp-26-207.brq.redhat.com>
+	Thu, 27 Sep 2012 00:04:03 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuYMAKzPY1B5LPfb/2dsb2JhbABFhSK3VwECgRCBCYIgAQEFOhwjEAgDFQMuFA0YAzSHcwMOrhMNiVQUiiJibUWBS4MgA5QUgVSLIYULgnk
+Date: Thu, 27 Sep 2012 14:03:57 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
+        diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v2 07/10] vfs: fork one kthread to update data temperature
+Message-ID: <20120927040357.GO15236@dastard>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+ <1348404995-14372-8-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120926123824.GB7123@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <1348404995-14372-8-git-send-email-zwu.kernel@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Alexander Gordeev <agordeev@redhat.com> wrote:
-
-> On Mon, Sep 03, 2012 at 11:16:55AM +0200, Alexander Gordeev wrote:
-> >   5/5:	based on Jeff's comments:
-> > 
-> > 	- AHCI specific code moved from libata-core.c to libahci.c;
-> > 
-> > 	- the host-wide lock concern addressed - ahci_interrupt() handler
-> > 	  split in two parts: ahci_hw_interrupt() hardware context handler
-> > 	  and ahci_thread_fn() threaded handler;
-> > 
-> > 	- host->lock statistics attached;
+On Sun, Sep 23, 2012 at 08:56:32PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 > 
-> Hi Jeff,
-> 
-> Would you please comment on the changes and numbers?
+>   Fork and run one kernel kthread to calculate
+> that temperature based on some metrics kept
+> in custom frequency data structs, and store
+> the info in the hash table.
 
-Yep, given the diffstat:
+No new kthreads, please. Use a per-superblock workqueue and a struct
+delayed_work to run periodic work on each superblock.
 
- Documentation/PCI/MSI-HOWTO.txt |   37 ++++++-
- arch/x86/kernel/apic/io_apic.c  |  170 +++++++++++++++++++++++++++++--
- drivers/ata/ahci.c              |   14 ++-
- drivers/ata/ahci.h              |    5 +
- drivers/ata/libahci.c           |  211 +++++++++++++++++++++++++++++++++++++-
- drivers/pci/msi.c               |   36 ++++++-
- include/linux/irq.h             |    6 +
- include/linux/msi.h             |    1 +
- include/linux/pci.h             |    7 ++
- kernel/irq/chip.c               |   30 ++++--
- kernel/irq/irqdesc.c            |   31 ++++++
- 11 files changed, 509 insertions(+), 39 deletions(-)
+That will also remove all the nasty, nasty
+!hot_track_temperature_update_kthread checks from the code, too.
 
-We absolutely need a very happy and enthusiastic Acked-by from 
-Jeff before we can pursue it :-)
+Also, I'd separate the work that the workqueue does from the patch
+that introduces the work queue. That way there is only one new thing
+to comment on in the patch. Further, I'd separate the aging code
+from the code that updates the temperature map into it's own patch
+as well..
 
-Thaks,
+Finally, you're going to need a shrinker to control the amount of
+memory that is used in tracking hot regions - if we are throwing
+inodes out of memory due to memory pressure, we most definitely are
+going to need to reduce the amount of memory the tracking code is
+using, even if it means losing useful information (i.e. the shrinker
+accelerates the aging process).
 
-	Ingo
+Given the above, and the other comments earlier in the series,
+there's not a lot of point in me spending time commenting on ethe
+code in detail here as it will change significantly as a result of
+all the earlier comments....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
