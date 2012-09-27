@@ -1,177 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab2I0VLf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 17:11:35 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39222 "EHLO
+	id S1755753Ab2I0VMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 17:12:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43233 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278Ab2I0VL2 (ORCPT
+	with ESMTP id S1755164Ab2I0VL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 17:11:28 -0400
-Message-Id: <20120927211121.732319261@openvz.org>
+	Thu, 27 Sep 2012 17:11:27 -0400
+Message-Id: <20120927211121.651422569@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 28 Sep 2012 01:10:34 +0400
+Date: Fri, 28 Sep 2012 01:10:33 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: alan@lxorguk.ukuu.org.uk, hpa@zytor.com, gregkh@linuxfoundation.org,
         xemul@parallels.com, jslaby@suse.cz,
         Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [patch 2/3] tty, ioctls -- Add new ioctl definitions for tty flags fetching
+Subject: [patch 1/3] tty: pty - Move TIOCPKT handling into pty.c
 References: <20120927211032.576475929@openvz.org>
-Content-Disposition: inline; filename=tty-add-new-ioctls
+Content-Disposition: inline; filename=tty-move-pktmode-set-2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines new ioctl codes TIOCGPKT, TIOCGPTLCK,
-TIOCGEXCL for fetching pty's packet mode and locking state,
-and exclusive mode of tty.
+Since this ioctl is for pty devices only move it to pty.c.
 
-[ No real handlers for the codes though, this will be
-  addressed in another patch for easier review and
-  bisectability ]
+v2:
+ - drop PTY_TYPE_MASTER test since it's master peer
+   ioctl anyway (by jslaby@)
 
+Suggested-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
 CC: "H. Peter Anvin" <hpa@zytor.com>
 CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 CC: Pavel Emelyanov <xemul@parallels.com>
 CC: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/alpha/include/asm/ioctls.h   |    3 +++
- arch/mips/include/asm/ioctls.h    |    3 +++
- arch/parisc/include/asm/ioctls.h  |    3 +++
- arch/powerpc/include/asm/ioctls.h |    3 +++
- arch/sh/include/asm/ioctls.h      |    3 +++
- arch/sparc/include/asm/ioctls.h   |    3 +++
- arch/xtensa/include/asm/ioctls.h  |    3 +++
- fs/compat_ioctl.c                 |    3 +++
- include/asm-generic/ioctls.h      |    3 +++
- 9 files changed, 27 insertions(+)
+ drivers/tty/pty.c       |   26 ++++++++++++++++++++++++++
+ drivers/tty/tty_ioctl.c |   20 --------------------
+ 2 files changed, 26 insertions(+), 20 deletions(-)
 
-Index: tty.git/arch/alpha/include/asm/ioctls.h
+Index: tty.git/drivers/tty/pty.c
 ===================================================================
---- tty.git.orig/arch/alpha/include/asm/ioctls.h
-+++ tty.git/arch/alpha/include/asm/ioctls.h
-@@ -95,6 +95,9 @@
- #define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
- #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
- #define TIOCVHANGUP	0x5437
-+#define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
-+#define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
-+#define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
+--- tty.git.orig/drivers/tty/pty.c
++++ tty.git/drivers/tty/pty.c
+@@ -174,6 +174,28 @@ static int pty_set_lock(struct tty_struc
+ 	return 0;
+ }
  
- #define TIOCSERCONFIG	0x5453
- #define TIOCSERGWILD	0x5454
-Index: tty.git/arch/mips/include/asm/ioctls.h
++/* Set the packet mode on a pty */
++static int pty_set_pktmode(struct tty_struct *tty, int __user *arg)
++{
++	unsigned long flags;
++	int pktmode;
++
++	if (get_user(pktmode, arg))
++		return -EFAULT;
++
++	spin_lock_irqsave(&tty->ctrl_lock, flags);
++	if (pktmode) {
++		if (!tty->packet) {
++			tty->packet = 1;
++			tty->link->ctrl_status = 0;
++		}
++	} else
++		tty->packet = 0;
++	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
++
++	return 0;
++}
++
+ /* Send a signal to the slave */
+ static int pty_signal(struct tty_struct *tty, int sig)
+ {
+@@ -393,6 +415,8 @@ static int pty_bsd_ioctl(struct tty_stru
+ 	switch (cmd) {
+ 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+ 		return pty_set_lock(tty, (int __user *) arg);
++	case TIOCPKT: /* Set PT packet mode */
++		return pty_set_pktmode(tty, (int __user *)arg);
+ 	case TIOCSIG:    /* Send signal to other side of pty */
+ 		return pty_signal(tty, (int) arg);
+ 	}
+@@ -507,6 +531,8 @@ static int pty_unix98_ioctl(struct tty_s
+ 	switch (cmd) {
+ 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+ 		return pty_set_lock(tty, (int __user *)arg);
++	case TIOCPKT: /* Set PT packet mode */
++		return pty_set_pktmode(tty, (int __user *)arg);
+ 	case TIOCGPTN: /* Get PT Number */
+ 		return put_user(tty->index, (unsigned int __user *)arg);
+ 	case TIOCSIG:    /* Send signal to other side of pty */
+Index: tty.git/drivers/tty/tty_ioctl.c
 ===================================================================
---- tty.git.orig/arch/mips/include/asm/ioctls.h
-+++ tty.git/arch/mips/include/asm/ioctls.h
-@@ -86,6 +86,9 @@
- #define TIOCGDEV	_IOR('T', 0x32, unsigned int) /* Get primary device node of /dev/console */
- #define TIOCSIG		_IOW('T', 0x36, int)  /* Generate signal on Pty slave */
- #define TIOCVHANGUP	0x5437
-+#define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
-+#define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
-+#define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
- 
- /* I hope the range from 0x5480 on is free ... */
- #define TIOCSCTTY	0x5480		/* become controlling tty */
-Index: tty.git/arch/parisc/include/asm/ioctls.h
-===================================================================
---- tty.git.orig/arch/parisc/include/asm/ioctls.h
-+++ tty.git/arch/parisc/include/asm/ioctls.h
-@@ -55,6 +55,9 @@
- #define TIOCGDEV	_IOR('T',0x32, int)  /* Get primary device node of /dev/console */
- #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
- #define TIOCVHANGUP	0x5437
-+#define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
-+#define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
-+#define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
- 
- #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
- #define FIOCLEX		0x5451
-Index: tty.git/arch/powerpc/include/asm/ioctls.h
-===================================================================
---- tty.git.orig/arch/powerpc/include/asm/ioctls.h
-+++ tty.git/arch/powerpc/include/asm/ioctls.h
-@@ -97,6 +97,9 @@
- #define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
- #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
- #define TIOCVHANGUP	0x5437
-+#define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
-+#define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
-+#define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
- 
- #define TIOCSERCONFIG	0x5453
- #define TIOCSERGWILD	0x5454
-Index: tty.git/arch/sh/include/asm/ioctls.h
-===================================================================
---- tty.git.orig/arch/sh/include/asm/ioctls.h
-+++ tty.git/arch/sh/include/asm/ioctls.h
-@@ -88,6 +88,9 @@
- #define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
- #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
- #define TIOCVHANGUP	_IO('T', 0x37)
-+#define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
-+#define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
-+#define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
- 
- #define TIOCSERCONFIG	_IO('T', 83) /* 0x5453 */
- #define TIOCSERGWILD	_IOR('T', 84,  int) /* 0x5454 */
-Index: tty.git/arch/sparc/include/asm/ioctls.h
-===================================================================
---- tty.git.orig/arch/sparc/include/asm/ioctls.h
-+++ tty.git/arch/sparc/include/asm/ioctls.h
-@@ -21,6 +21,9 @@
- #define TCSETSF2	_IOW('T', 15, struct termios2)
- #define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
- #define TIOCVHANGUP	_IO('T', 0x37)
-+#define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
-+#define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
-+#define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
- 
- /* Note that all the ioctls that are not available in Linux have a 
-  * double underscore on the front to: a) avoid some programs to
-Index: tty.git/arch/xtensa/include/asm/ioctls.h
-===================================================================
---- tty.git.orig/arch/xtensa/include/asm/ioctls.h
-+++ tty.git/arch/xtensa/include/asm/ioctls.h
-@@ -101,6 +101,9 @@
- #define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
- #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
- #define TIOCVHANGUP	_IO('T', 0x37)
-+#define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
-+#define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
-+#define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
- 
- #define TIOCSERCONFIG	_IO('T', 83)
- #define TIOCSERGWILD	_IOR('T', 84,  int)
-Index: tty.git/fs/compat_ioctl.c
-===================================================================
---- tty.git.orig/fs/compat_ioctl.c
-+++ tty.git/fs/compat_ioctl.c
-@@ -842,6 +842,9 @@ COMPATIBLE_IOCTL(TIOCGDEV)
- COMPATIBLE_IOCTL(TIOCCBRK)
- COMPATIBLE_IOCTL(TIOCGSID)
- COMPATIBLE_IOCTL(TIOCGICOUNT)
-+COMPATIBLE_IOCTL(TIOCGPKT)
-+COMPATIBLE_IOCTL(TIOCGPTLCK)
-+COMPATIBLE_IOCTL(TIOCGEXCL)
- /* Little t */
- COMPATIBLE_IOCTL(TIOCGETD)
- COMPATIBLE_IOCTL(TIOCSETD)
-Index: tty.git/include/asm-generic/ioctls.h
-===================================================================
---- tty.git.orig/include/asm-generic/ioctls.h
-+++ tty.git/include/asm-generic/ioctls.h
-@@ -74,6 +74,9 @@
- #define TCSETXW		0x5435
- #define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
- #define TIOCVHANGUP	0x5437
-+#define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
-+#define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
-+#define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
- 
- #define FIONCLEX	0x5450
- #define FIOCLEX		0x5451
+--- tty.git.orig/drivers/tty/tty_ioctl.c
++++ tty.git/drivers/tty/tty_ioctl.c
+@@ -1153,26 +1153,6 @@ int n_tty_ioctl_helper(struct tty_struct
+ 		return 0;
+ 	case TCFLSH:
+ 		return tty_perform_flush(tty, arg);
+-	case TIOCPKT:
+-	{
+-		int pktmode;
+-
+-		if (tty->driver->type != TTY_DRIVER_TYPE_PTY ||
+-		    tty->driver->subtype != PTY_TYPE_MASTER)
+-			return -ENOTTY;
+-		if (get_user(pktmode, (int __user *) arg))
+-			return -EFAULT;
+-		spin_lock_irqsave(&tty->ctrl_lock, flags);
+-		if (pktmode) {
+-			if (!tty->packet) {
+-				tty->packet = 1;
+-				tty->link->ctrl_status = 0;
+-			}
+-		} else
+-			tty->packet = 0;
+-		spin_unlock_irqrestore(&tty->ctrl_lock, flags);
+-		return 0;
+-	}
+ 	default:
+ 		/* Try the mode commands */
+ 		return tty_mode_ioctl(tty, file, cmd, arg);
 
