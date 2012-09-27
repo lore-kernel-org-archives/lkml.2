@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab2I0Rpj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 13:45:39 -0400
-Received: from mail.lang.hm ([64.81.33.126]:57735 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552Ab2I0Rpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 13:45:38 -0400
-Date: Thu, 27 Sep 2012 10:45:06 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Mike Galbraith <efault@gmx.de>,
-        Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-In-Reply-To: <1348767498.3292.29.camel@twins>
-Message-ID: <alpine.DEB.2.02.1209271039500.8808@asgard.lang.hm>
-References: <1348505683.11847.111.camel@twins>   <1348511193.6951.44.camel@marge.simpson.net>   <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>   <20120924192056.GB4082@liondog.tnic>   <1348538258.7100.23.camel@marge.simpson.net>  
- <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>   <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com>   <20120925170058.GC30158@x1.osrc.amd.com>   <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
-  <20120926163233.GA5339@x1.osrc.amd.com>   <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>  <1348734104.3292.5.camel@twins>  <alpine.DEB.2.02.1209270935080.5162@asgard.lang.hm> <1348767498.3292.29.camel@twins>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753744Ab2I0Rq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 13:46:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59902 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578Ab2I0RqZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 13:46:25 -0400
+Date: Thu, 27 Sep 2012 10:46:05 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+Message-ID: <20120927174605.GA2713@localhost>
+References: <20120926201629.GB20342@google.com>
+ <50637298.2090904@parallels.com>
+ <20120926221046.GA10453@mtj.dyndns.org>
+ <506381B2.2060806@parallels.com>
+ <20120926224235.GB10453@mtj.dyndns.org>
+ <50638793.7060806@parallels.com>
+ <20120926230807.GC10453@mtj.dyndns.org>
+ <20120927142822.GG3429@suse.de>
+ <20120927144942.GB4251@mtj.dyndns.org>
+ <50646977.40300@parallels.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50646977.40300@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Sep 2012, Peter Zijlstra wrote:
+Hello,
 
-> On Thu, 2012-09-27 at 09:48 -0700, david@lang.hm wrote:
->> I think you are bing too smart for your own good. you don't know if it's
->> best to move them further apart or not.
->
-> Well yes and no.. You're right, however in general the load-balancer has
-> always tried to not use (SMT) siblings whenever possible, in that regard
-> not using an idle sibling is consistent here.
->
-> Also, for short running tasks the wakeup balancing is typically all we
-> have, the 'big' periodic load-balancer will 'never' see them, making the
-> multiple moves argument hard.
+On Thu, Sep 27, 2012 at 06:57:59PM +0400, Glauber Costa wrote:
+> > Because we're not even trying to actually solve the problem but just
+> > dumping it to userland.  If dentry/inode usage is the only case we're
+> > being worried about, there can be better ways to solve it or at least
+> > we should strive for that.
+> 
+> Not only it is not the only case we care about, this is not even touched
+> in this series. (It is only touched in the next one). This one, for
+> instance, cares about the stack. The reason everything is being dumped
+> into "kmem", is precisely to make things simpler. I argue that at some
+> point it makes sense to draw a line, and "kmem" is a much better line
+> than any fine grained control - precisely because it is conceptually
+> easier to grasp.
 
-For the initial starup of a new process, finding as idle and remote a core 
-to start on (minimum sharing with existing processes) is probably the 
-smart thing to do.
+Can you please give other examples of cases where this type of issue
+exists (plenty of shared kernel data structure which is inherent to
+the workload at hand)?  Until now, this has been the only example for
+this type of issues.
 
-But I thought that this conversation (pgbench) was dealing with long 
-running processes, and how to deal with the overload where one master 
-process is kicking off many child processes and the core that the master 
-process starts off on gets overloaded as a result, with the question being 
-how to spread the load out from this one core as it gets overloaded.
+> > I think the cost isn't too prohibitive considering it's already using
+> > memcg.  Charging / uncharging happens only as pages enter and leave
+> > slab caches and the hot path overhead is essentially single
+> > indirection.  Glauber's benchmark seemed pretty reasonable to me and I
+> > don't yet think that warrants exposing this subtle tree of
+> > configuration.
+> 
+> Only so we can get some numbers: the cost is really minor if this is all
+> disabled. It this is fully enable, it can get to some 2 or 3 %, which
+> may or may not be acceptable to an application. But for me this is not
+> even about cost, and that's why I haven't brought it up so far
 
-David Lang
+It seems like Mel's concern is mostly based on performance overhead
+concerns tho.
 
-> Measuring resource contention on the various levels is a fun research
-> subject, I've spoken to various people who are/were doing so, I've
-> always encouraged them to send their code just so we can see/learn, even
-> if not integrate, sadly I can't remember ever having seen any of it :/
->
-> And yeah, all the load-balancing stuff is very near to scrying or
-> tealeaf reading. We can't know all current state (too expensive) nor can
-> we know the future.
->
-> That said, I'm all for less/simpler code, pesky benchmarks aside ;-)
->
+> > The part I nacked is enabling kmemcg on a populated cgroup and then
+> > starting accounting from then without any apparent indication that any
+> > past allocation hasn't been considered.  You end up with numbers which
+> > nobody can't tell what they really mean and there's no mechanism to
+> > guarantee any kind of ordering between populating the cgroup and
+> > configuring it and there's *no* way to find out what happened
+> > afterwards neither.  This is properly crazy and definitely deserves a
+> > nack.
+> > 
+> 
+> Mel suggestion of not allowing this to happen once the cgroup has tasks
+> takes care of this, and is something I thought of myself.
+
+You mean Michal's?  It should also disallow switching if there are
+children cgroups, right?
+
+> This would remove this particular piece of objection, and maintain the
+> per-subtree control.
+
+Yeah, I don't see anything broken with that although I'll try to argue
+for simpler one a bit more.
+
+Thanks.
+
+-- 
+tejun
