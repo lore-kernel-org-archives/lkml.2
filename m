@@ -1,137 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab2I0C2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 22:28:07 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:21765 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751461Ab2I0C2F (ORCPT
+	id S1753974Ab2I0C3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 22:29:43 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48637 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab2I0C3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 22:28:05 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqQMAE65Y1B5LPfb/2dsb2JhbABFvHgBAoESgQmCIAEBBAEnExwjBQsIAxUDLhQNGAM0h3MDCQWuKA2JVBSKImJsSoEzgyADlBSBVIshhQuCeQ
-Date: Thu, 27 Sep 2012 12:27:51 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
-        diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v2 04/10] vfs: add init and exit support
-Message-ID: <20120927022751.GL15236@dastard>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
- <1348404995-14372-5-git-send-email-zwu.kernel@gmail.com>
+	Wed, 26 Sep 2012 22:29:42 -0400
+Message-ID: <5063BA0C.50304@linux.vnet.ibm.com>
+Date: Thu, 27 Sep 2012 10:29:32 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348404995-14372-5-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, kjwinchester@gmail.com,
+        ak@linux.intel.com, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de
+Subject: Re: [PATCH] x86: remove the useless branch in c_start()
+References: <1348033343-23658-1-git-send-email-wangyun@linux.vnet.ibm.com> <506279F8.10704@linux.vnet.ibm.com> <20120926130257.GH17345@aftab.osrc.amd.com>
+In-Reply-To: <20120926130257.GH17345@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092702-2000-0000-0000-0000094310F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 23, 2012 at 08:56:29PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 09/26/2012 09:02 PM, Borislav Petkov wrote:
+> On Wed, Sep 26, 2012 at 11:43:52AM +0800, Michael Wang wrote:
+>> On 09/19/2012 01:42 PM, Michael Wang wrote:
+>>> Since 'cpu == -1' in cpumask_next() is legal, no need to handle '*pos == 0'
+>>> specially.
+>>>
+>>> About the comments:
+>>> 	/* just in case, cpu 0 is not the first */
+>>> A test with a cpumask in which cpu 0 is not the first has been done, and it
+>>> works well.
+>>
+>> Could I get some comments on this patch?
 > 
->   Add initialization function to create some
-> key data structures when hot tracking is enabled;
-> Clean up them when hot tracking is disabled
+> Looks ok to me:
 > 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> ---
->  fs/hot_tracking.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/hot_tracking.h |    2 +
->  fs/namespace.c    |    4 +++
->  fs/super.c        |    6 +++++
->  4 files changed, 72 insertions(+), 0 deletions(-)
+> Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-> index f97e8a6..fa89f70 100644
-> --- a/fs/hot_tracking.c
-> +++ b/fs/hot_tracking.c
-> @@ -135,6 +135,51 @@ static void hot_rb_free_hot_range_item(struct hot_range_item *hr)
->  	}
->  }
->  
-> +static int hot_rb_remove_hot_inode_item(struct hot_inode_tree *tree,
-> +                                struct hot_inode_item *he)
+> Thanks.
 
-hot_inode_item_remove()
+Thanks for your review.
 
-> +{
-> +        int ret = 0;
-> +        rb_erase(&he->rb_node, &tree->map);
-> +        he->in_tree = 0;
-> +        return ret;
-> +}
-> +
-> +static int hot_rb_remove_hot_range_item(struct hot_range_tree *tree,
-> +                                struct hot_range_item *hr)
+Regards,
+Michael Wang
+> 
 
-hot_range_item_remove()
-
-(repeat for other function names ;)
-
-> +{
-> +        int ret = 0;
-> +        rb_erase(&hr->rb_node, &tree->map);
-> +        hr->in_tree = 0;
-> +        return ret;
-> +}
-
-these can probably be void functions are they don't use the return
-value at all.
-
-> +
-> +/* Frees the entire hot_inode_tree. */
-> +static void hot_rb_inode_tree_free(struct hot_info *root)
-> +{
-> +	struct rb_node *node, *node2;
-> +	struct hot_inode_item *he;
-> +	struct hot_range_item *hr;
-> +
-> +	/* Free hot inode and range trees on fs root */
-> +	node = rb_first(&root->hot_inode_tree.map);
-> +
-> +	while (node) {
-
-	while ((node = rb_first(&root->hot_inode_tree.map))) {
-
-> +		he = rb_entry(node, struct hot_inode_item, rb_node);
-> +
-> +		node2 = rb_first(&he->hot_range_tree.map);
-> +		while (node2) {
-
-		while ((node2 = rb_first(&he->hot_range_tree.map))) {
-
-.....
->  
-> +	if (sb->s_hotinfo.mount_opt & HOT_MOUNT_HOT_TRACK)
-> +		hot_track_exit(sb);
-> +
-
-Let the filesystems call in .put_super()
-
->  	down_write(&namespace_sem);
->  	br_write_lock(&vfsmount_lock);
->  	event++;
-> diff --git a/fs/super.c b/fs/super.c
-> index 7eb3b0c..0999d5c 100644
-> --- a/fs/super.c
-> +++ b/fs/super.c
-> @@ -1153,6 +1153,9 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
->  	WARN_ON(sb->s_bdi == &default_backing_dev_info);
->  	sb->s_flags |= MS_BORN;
->  
-> +	if (hottrack)
-> +		hot_track_init(sb, name);
-
-And call this in .fill_super() after parsing the hottrack argument.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
