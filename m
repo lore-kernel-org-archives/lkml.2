@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab2I0I02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 04:26:28 -0400
-Received: from svenfoo.org ([82.94.215.22]:56206 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab2I0I0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 04:26:24 -0400
-From: Daniel Mack <zonque@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, stable@kernel.org
-Subject: [PATCH] ALSA: snd-usb: fix next_packet_size calls for pause case
-Date: Thu, 27 Sep 2012 10:26:01 +0200
-Message-Id: <1348734361-13352-1-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	id S1752266Ab2I0I3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 04:29:16 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:35970 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750990Ab2I0I3J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 04:29:09 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v6] hashtable: introduce a small and naive hashtable
+Date: Thu, 27 Sep 2012 09:25:25 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7009@saturn3.aculab.com>
+In-Reply-To: <20120926161956.GB28648@Krystal>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH v6] hashtable: introduce a small and naive hashtable
+thread-index: Ac2cAs0ZmYnQGw2KRryfA0lJsPhaqAAhdFRw
+References: <1348663729-2584-1-git-send-email-levinsasha928@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B7008@saturn3.aculab.com> <1348667992.22822.50.camel@gandalf.local.home> <506310AA.2050700@gmail.com> <20120926143905.GB22699@Krystal> <1348675764.22822.56.camel@gandalf.local.home> <20120926161956.GB28648@Krystal>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>,
+        "Steven Rostedt" <rostedt@goodmis.org>
+Cc: "Sasha Levin" <levinsasha928@gmail.com>, <torvalds@linux-foundation.org>,
+        <tj@kernel.org>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <ebiederm@xmission.com>,
+        <neilb@suse.de>, <bfields@fieldses.org>, <ejt@redhat.com>,
+        <snitzer@redhat.com>, <edumazet@google.com>, <josh@joshtriplett.org>,
+        <rmallon@gmail.com>, <palves@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also fix the calls to next_packet_size() for the pause case. This was
-missed in 245baf983 ("ALSA: snd-usb: fix calls to next_packet_size").
+> > > And even then, if we would do:
+> > >
+> > >  	for (i = 0; i < HASH_SIZE(hashtable); i++)
+> > >  		if (!hlist_empty(&hashtable[i]))
+> > >  			break;
+> > >
+> > >  	return i >= HASH_SIZE(hashtable);
+> > >
+> > > What happens if the last entry of the table is non-empty ?
+> >
+> > It still works, as 'i' is not incremented due to the break. And i will
+> > still be less than HASH_SIZE(hashtable). Did you have *your* cup of
+> > coffee today? ;-)
+> 
+> Ahh, right! Actually I had it already ;-)
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reviewed-by: Takashi Iwai <tiwai@suse.de>
-Reported-and-tested-by: Christian Tefzer <ctrefzer@gmx.de>
-Cc: stable@kernel.org
----
-Hi Linus,
+I tend to dislike the repeated test, gcc might be able to optimise
+it away, but the code is cleaner written as:
 
-Takashi is currently on vacation and asked me to contact you directly
-for merging this patch for 3.6. FWIW, it's also available here:
+	for (i = 0; i < HASH_SIZE(hashtable); i++)
+		if (!hlist_empty(&hashtable[i]))
+			return false;
+	return true;
 
-git://github.com/zonque/linux.git alsa-for-3.6
+> Agreed that the flags should be removed. Moving to define + static
+> inline is still important though.
 
-Thanks,
-Daniel
+Not sure I'd bother making the function inline.
 
- sound/usb/endpoint.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+	David
 
-diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
-index a83a18d..d9de667 100644
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -203,7 +203,13 @@ static void prepare_outbound_urb(struct snd_usb_endpoint *ep,
- 			/* no data provider, so send silence */
- 			unsigned int offs = 0;
- 			for (i = 0; i < ctx->packets; ++i) {
--				int counts = ctx->packet_size[i];
-+				int counts;
-+
-+				if (ctx->packet_size[i])
-+					counts = ctx->packet_size[i];
-+				else
-+					counts = snd_usb_endpoint_next_packet_size(ep);
-+
- 				urb->iso_frame_desc[i].offset = offs * ep->stride;
- 				urb->iso_frame_desc[i].length = counts * ep->stride;
- 				offs += counts;
--- 
-1.7.11.4
+
 
