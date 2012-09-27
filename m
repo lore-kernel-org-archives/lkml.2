@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab2I0RyF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 13:54:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:42425 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752992Ab2I0RyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 13:54:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,496,1344236400"; 
-   d="scan'208";a="227749583"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] x86/mce allow bios to set per-bank CMCI threshold
-Date: Thu, 27 Sep 2012 10:54:03 -0700
-Message-Id: <506492bb2170819722@agluck-desktop.sc.intel.com>
+	id S1753883Ab2I0R4l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 13:56:41 -0400
+Received: from mail-tx2.bigfish.com ([65.55.88.10]:6621 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753123Ab2I0R4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 13:56:39 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MB0SHY-02-BI3-02
+X-M-MSG: 
+Date: Thu, 27 Sep 2012 19:56:23 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Joerg Roedel <joro@8bytes.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+Message-ID: <20120927175623.GG10549@amd.com>
+References: <20120807134156.GP1996@amd.com>
+ <20120927145217.GA18962@8bytes.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
+ <20120927153928.GB18962@8bytes.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 961ebea4ae68075bb5a0acc19f5852bed82bb877:
+On Thu, Sep 27, 2012 at 04:16:25PM +0000, Myklebust, Trond wrote:
+> > Yes, it contains that commit. I was about to test plain v3.6-rc7 without
+> > my patches (not nfs related, of cource) on-top, but unfortunatly the
+> > disk with the root-fs died :-/
+> > I am about to set up the box again and test plain -rc7.
+> 
+> Please do.
 
-  Merge tag 'ras_queue_for_3.7' of git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras into x86/mce (2012-09-19 17:01:50 +0200)
+Okay, the box is running again and the bug does not reproduce anymore
+with the new installation. Unfortunatly the old kernel configuration is
+gone together with the previous version of the nfs-utils :-/ I'll try to
+play around with the kernel config a little bit more and see if it
+reproduces again.
 
-are available in the git repository at:
 
+	Joerg
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-naveen
+-- 
+AMD Operating System Research Center
 
-for you to fetch changes up to 450cc201038f31bd496e1b3a44a49790b8827a06:
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-  x86/mce: Provide boot argument to honour bios-set CMCI threshold (2012-09-27 10:08:00 -0700)
-
-----------------------------------------------------------------
-Option to let the bios set per-bank CMCI thresholds so they can
-filter noisy error sources at a fine grained level based on platform
-specific knowledge.
-
-----------------------------------------------------------------
-Naveen N. Rao (1):
-      x86/mce: Provide boot argument to honour bios-set CMCI threshold
-
- Documentation/x86/x86_64/boot-options.txt |  7 +++++++
- arch/x86/include/asm/mce.h                |  1 +
- arch/x86/kernel/cpu/mcheck/mce.c          | 10 +++++++++
- arch/x86/kernel/cpu/mcheck/mce_intel.c    | 35 ++++++++++++++++++++++++++++---
- 4 files changed, 50 insertions(+), 3 deletions(-)
