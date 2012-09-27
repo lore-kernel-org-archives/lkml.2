@@ -1,79 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433Ab2I0LCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 07:02:55 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:1216 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751561Ab2I0LCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 07:02:54 -0400
-Message-ID: <1348743767.1512.13.camel@x61.thuisdomein>
-Subject: [PATCH] mm: frontswap: silence GCC warning
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 27 Sep 2012 13:02:47 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Sep 2012 11:02:47.0937 (UTC) FILETIME=[A10D9F10:01CD9C9F]
+	id S1756522Ab2I0LKX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 07:10:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2736 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755679Ab2I0LKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 07:10:14 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 06/14] perf tool: Add hpp interface to enable/disable hpp column
+Date: Thu, 27 Sep 2012 13:09:27 +0200
+Message-Id: <1348744175-11115-7-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building frontswap.o (which, unsurprisingly, implements frontswap)
-triggers this GCC warning:
-    mm/frontswap.c: In function 'frontswap_shrink':
-    mm/frontswap.c:306:15: warning: 'type' may be used uninitialized in this function [-Wmaybe-uninitialized]
+Adding perf_hpp__column_enable function to enable/disable hists
+column and removing diff command specific stuff 'need_pair and
+show_displacement' from hpp code.
 
-So GCC thinks try_to_unuse() can be called while type is still
-uninitialized. That's not correct. That function will actually only be
-called if type is set. It seems GCC has trouble in determining that type
-must be set if ret is zero and pages_to_unuse is non-zero. But it turns
-out that if __frontswap_shrink() returns non-zero in the nothing-to-do
-case, GCC can figure that out. So let's do that.
+The diff command now enables/disables columns separately according
+to the user arguments. This will be helpful in future patches where
+more columns are added into diff output.
 
-While we're at it, stop setting pages_to_unuse to zero in
-__frontswap_shrink(), as that's not needed there.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
-0) I noticed this warning while building v3.6-rc7 on current Fedora
-17, using Fedora's default config.
+ tools/perf/builtin-diff.c      | 18 +++++++++++++++++-
+ tools/perf/builtin-report.c    |  2 +-
+ tools/perf/ui/browsers/hists.c |  2 +-
+ tools/perf/ui/gtk/browser.c    |  2 +-
+ tools/perf/ui/hist.c           | 15 ++++++---------
+ tools/perf/ui/setup.c          |  2 +-
+ tools/perf/util/hist.h         |  3 ++-
+ 7 files changed, 29 insertions(+), 15 deletions(-)
 
-1) Kernel with this patch runs OK. I'm not sure how to actually test for
-frontswap specifically. But this patch shouldn't change run time
-behavior anyhow. 
-
-2) A nicer patch might be one that stops tracking both 'ret' and
-'pages_to_unuse' here and tracks only one of these two values. Eg, I
-feel that if 'pages_to_unuse' could be made long we might be able to
-clean up the code a little. That is, make some functions return
-'pages_to_unuse', where:
-    pages_to_unuse <  0: error or nothing to do
-                   == 0: unuse all (not actually used here)
-                   >  0: unuse that number of pages
-
- mm/frontswap.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 6b3e71a..739571a 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -273,9 +273,8 @@ static int __frontswap_shrink(unsigned long target_pages,
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 1c36673..1063c31 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -283,6 +283,21 @@ static const struct option options[] = {
+ 	OPT_END()
+ };
  
- 	total_pages = __frontswap_curr_pages();
- 	if (total_pages <= target_pages) {
--		/* Nothing to do */
--		*pages_to_unuse = 0;
--		return 0;
-+		/* There's no ENOTHINGTODO, so return something non-zero */
-+		return -1;
++static void ui_init(void)
++{
++	perf_hpp__init();
++
++	/* No overhead column. */
++	perf_hpp__column_enable(PERF_HPP__OVERHEAD, false);
++
++	/* Display baseline/delta/displacement columns. */
++	perf_hpp__column_enable(PERF_HPP__BASELINE, true);
++	perf_hpp__column_enable(PERF_HPP__DELTA, true);
++
++	if (show_displacement)
++		perf_hpp__column_enable(PERF_HPP__DISPL, true);
++}
++
+ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	sort_order = diff__default_sort_order;
+@@ -305,7 +320,8 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (symbol__init() < 0)
+ 		return -1;
+ 
+-	perf_hpp__init(true, show_displacement);
++	ui_init();
++
+ 	setup_sorting(diff_usage, options);
+ 	setup_pager();
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 95e7ea8..a61725d 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -691,7 +691,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		setup_browser(true);
+ 	else {
+ 		use_browser = 0;
+-		perf_hpp__init(false, false);
++		perf_hpp__init();
  	}
- 	total_pages_to_unuse = total_pages - target_pages;
- 	return __frontswap_unuse_pages(total_pages_to_unuse, pages_to_unuse, type);
+ 
+ 	setup_sorting(report_usage, options);
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index a21f40b..bbd11c2 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -584,7 +584,7 @@ HPP__COLOR_FN(overhead_guest_us, period_guest_us)
+ 
+ void hist_browser__init_hpp(void)
+ {
+-	perf_hpp__init(false, false);
++	perf_hpp__init();
+ 
+ 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
+ 				hist_browser__hpp_color_overhead;
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 7ff99ec..2bc08f6 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -73,7 +73,7 @@ HPP__COLOR_FN(overhead_guest_us, period_guest_us)
+ 
+ void perf_gtk__init_hpp(void)
+ {
+-	perf_hpp__init(false, false);
++	perf_hpp__init();
+ 
+ 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
+ 				perf_gtk__hpp_color_overhead;
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 2dbec2d..81bb03e 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -302,7 +302,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
+ #undef HPP__COLOR_PRINT_FNS
+ #undef HPP__PRINT_FNS
+ 
+-void perf_hpp__init(bool need_pair, bool show_displacement)
++void perf_hpp__init(void)
+ {
+ 	if (symbol_conf.show_cpu_utilization) {
+ 		perf_hpp__format[PERF_HPP__OVERHEAD_SYS].cond = true;
+@@ -319,15 +319,12 @@ void perf_hpp__init(bool need_pair, bool show_displacement)
+ 
+ 	if (symbol_conf.show_total_period)
+ 		perf_hpp__format[PERF_HPP__PERIOD].cond = true;
++}
+ 
+-	if (need_pair) {
+-		perf_hpp__format[PERF_HPP__OVERHEAD].cond = false;
+-		perf_hpp__format[PERF_HPP__BASELINE].cond = true;
+-		perf_hpp__format[PERF_HPP__DELTA].cond = true;
+-
+-		if (show_displacement)
+-			perf_hpp__format[PERF_HPP__DISPL].cond = true;
+-	}
++void perf_hpp__column_enable(unsigned col, bool enable)
++{
++	BUG_ON(col >= PERF_HPP__MAX_INDEX);
++	perf_hpp__format[col].cond = enable;
+ }
+ 
+ static inline void advance_hpp(struct perf_hpp *hpp, int inc)
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+index bd7d460..ebb4cc1 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/setup.c
+@@ -30,7 +30,7 @@ void setup_browser(bool fallback_to_pager)
+ 		if (fallback_to_pager)
+ 			setup_pager();
+ 
+-		perf_hpp__init(false, false);
++		perf_hpp__init();
+ 		break;
+ 	}
+ }
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 6cd7535..c99317f 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -147,7 +147,8 @@ enum {
+ 	PERF_HPP__MAX_INDEX
+ };
+ 
+-void perf_hpp__init(bool need_pair, bool show_displacement);
++void perf_hpp__init(void);
++void perf_hpp__column_enable(unsigned col, bool enable);
+ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+ 				bool color);
+ 
 -- 
 1.7.11.4
 
