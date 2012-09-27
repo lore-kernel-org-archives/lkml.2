@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab2I0Kim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 06:38:42 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:48706 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756268Ab2I0Kij (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 06:38:39 -0400
-Message-ID: <50642CA7.5070208@gmail.com>
-Date: Thu, 27 Sep 2012 18:38:31 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: wency@cn.fujitsu.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [PATCH 2/4] memory-hotplug: add node_device_release
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-3-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1348724705-23779-3-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756815Ab2I0Ki4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 06:38:56 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54466 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756130Ab2I0Kis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 06:38:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,495,1344236400"; 
+   d="scan'208";a="197866924"
+Subject: Re: [PATCHv3 5/7] dmaengine: dw_dmac: add PCI part of the driver
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+In-Reply-To: <CAOh2x=ntwp22Z3sHf9QehVwab--ZayF-kmTpZsjbkyQYVxrzpw@mail.gmail.com>
+References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1348731121-2515-6-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1348735450.1648.5.camel@vkoul-udesk3> <1348739022.13371.157.camel@smile>
+	 <1348740071.1648.25.camel@vkoul-udesk3>
+	 <CAOh2x=ntwp22Z3sHf9QehVwab--ZayF-kmTpZsjbkyQYVxrzpw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Sep 2012 16:02:52 +0530
+Message-ID: <1348741972.1648.28.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 01:45 PM, wency@cn.fujitsu.com wrote:
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
-> When calling unregister_node(), the function shows following message at
-> device_release().
->
-> Device 'node2' does not have a release() function, it is broken and must be
-> fixed.
->
-> So the patch implements node_device_release()
-looks reasonable to me.
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->   drivers/base/node.c |   11 +++++++++++
->   1 files changed, 11 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/base/node.c b/drivers/base/node.c
-> index af1a177..07523fb 100644
-> --- a/drivers/base/node.c
-> +++ b/drivers/base/node.c
-> @@ -252,6 +252,16 @@ static inline void hugetlb_register_node(struct node *node) {}
->   static inline void hugetlb_unregister_node(struct node *node) {}
->   #endif
->   
-> +static void node_device_release(struct device *dev)
-> +{
-> +	struct node *node_dev = to_node(dev);
-> +
-> +#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
-> +	flush_work(&node_dev->node_work);
-> +#endif
-> +
-> +	memset(node_dev, 0, sizeof(struct node));
-> +}
->   
->   /*
->    * register_node - Setup a sysfs device for a node.
-> @@ -265,6 +275,7 @@ int register_node(struct node *node, int num, struct node *parent)
->   
->   	node->dev.id = num;
->   	node->dev.bus = &node_subsys;
-> +	node->dev.release = node_device_release;
->   	error = device_register(&node->dev);
->   
->   	if (!error){
+On Thu, 2012-09-27 at 15:41 +0530, viresh kumar wrote:
+> On Thu, Sep 27, 2012 at 3:31 PM, Vinod Koul <vinod.koul@linux.intel.com> wrote:
+> > Let me try again.
+> >
+> > what does it take to do platform and PCI driver for this:
+> > 1. make dma h/w access (read/write) platform independent. which you have
+> > already done
+> > 2. Device registration: Create two probes, or use common probe.
+> > You smartly chose the second one BUT by creating another device.
+> > If you look closely at the probe then I would say it would be easy to
+> > create library for probe which can be used across both pci and platform
+> > driver probes. The probe library which initializes driver and registers
+> > with dmaengine needs device struct and resources can be provided by each
+> > probe.
+> 
+> Or in other words... create three files
+> - dw_dmac.c
+> - dw_dmac-pltfm.c
+> - dw_dmac-pci.c...
+> 
+> Don't do anything specific to platform or pci in dw_dmac.c...
+> Keep pltfm and pci files to smallest possible size, and keep as much of
+> common part in dmac.c...
+> 
+> Similar is done in drivers/mmc/host/sdhci*...
+Yes that IMHO would be simpler approach :)
+
+
+-- 
+~Vinod
 
