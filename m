@@ -1,182 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab2I0HPu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 03:15:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34319 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979Ab2I0HPt (ORCPT
+	id S1756575Ab2I0HSa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 03:18:30 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53326 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755454Ab2I0HS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 03:15:49 -0400
-Date: Thu, 27 Sep 2012 17:15:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20120927171545.79c597f3fa5f7d5f66a7e2ce@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__27_Sep_2012_17_15_45_+1000_Cu.KDYiTw.nMLf6D"
+	Thu, 27 Sep 2012 03:18:28 -0400
+Date: Thu, 27 Sep 2012 00:15:42 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: mathieu.poirier@linaro.org
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: [PATCH 20/57] power: Adds support for legacy USB chargers
+Message-ID: <20120927071542.GJ8836@lizard>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-21-git-send-email-mathieu.poirier@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1348589574-25655-21-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_Sep_2012_17_15_45_+1000_Cu.KDYiTw.nMLf6D
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 25, 2012 at 10:12:17AM -0600, mathieu.poirier@linaro.org wrote:
+> From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+> 
+> A Legacy USB charger should be handled directly by the charger
+> driver.
+> 
+> Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> Reviewed-by: Karl KOMIEROWSKI <karl.komierowski@stericsson.com>
+> Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+> ---
+>  drivers/power/ab8500_charger.c |   66 ++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 57 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+> index 4155feb..7cd4165 100644
+> --- a/drivers/power/ab8500_charger.c
+> +++ b/drivers/power/ab8500_charger.c
+> @@ -85,6 +85,9 @@
+>  /* Step up/down delay in us */
+>  #define STEP_UDELAY			1000
+>  
+> +/* Wait for enumeration before charging in ms */
+> +#define WAIT_FOR_USB_ENUMERATION	(5 * 1000)
+> +
+>  #define CHARGER_STATUS_POLL 10 /* in ms */
+>  
+>  /* UsbLineStatus register - usb types */
+> @@ -198,6 +201,7 @@ struct ab8500_charger_usb_state {
+>   *			charger is enabled
+>   * @vbat		Battery voltage
+>   * @old_vbat		Previously measured battery voltage
+> + * @usb_device_is_unrecognised	USB device is unrecognised by the hardware
+>   * @autopower		Indicate if we should have automatic pwron after pwrloss
+>   * @parent:		Pointer to the struct ab8500
+>   * @gpadc:		Pointer to the struct gpadc
+> @@ -216,6 +220,7 @@ struct ab8500_charger_usb_state {
+>   * @check_usbchgnotok_work:	Work for checking USB charger not ok status
+>   * @kick_wd_work:		Work for kicking the charger watchdog in case
+>   *				of ABB rev 1.* due to the watchog logic bug
+> + * @attach_work:		Work for checking the usb enumeration
+>   * @ac_charger_attached_work:	Work for checking if AC charger is still
+>   *				connected
+>   * @usb_charger_attached_work:	Work for checking if USB charger is still
+> @@ -239,6 +244,7 @@ struct ab8500_charger {
+>  	bool vddadc_en_usb;
+>  	int vbat;
+>  	int old_vbat;
+> +	bool usb_device_is_unrecognised;
+>  	bool autopower;
+>  	struct ab8500 *parent;
+>  	struct ab8500_gpadc *gpadc;
+> @@ -256,6 +262,7 @@ struct ab8500_charger {
+>  	struct delayed_work check_hw_failure_work;
+>  	struct delayed_work check_usbchgnotok_work;
+>  	struct delayed_work kick_wd_work;
+> +	struct delayed_work attach_work;
+>  	struct delayed_work ac_charger_attached_work;
+>  	struct delayed_work usb_charger_attached_work;
 
-Hi Andrew,
+Quite a lot of these. I doubt that the driver really needs all this stuff
+executed in parallel. I guess something is wrong with the driver design.
 
-Today's linux-next merge of the akpm tree got a conflict in
-mm/huge_memory.c between commit 93c9d633bd9e ("93c9d633bd9e") from the
-tip tree and commit "thp: introduce pmdp_invalidate()" from the akpm tree.
+Maybe there should be just one delayed work: you can probably queue it
+early from the irq handler, and do all the work there...
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+>  	struct work_struct ac_work;
+> @@ -588,6 +595,8 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+>  {
+>  	int ret = 0;
+>  
+> +	di->usb_device_is_unrecognised = false;
+> +
+>  	switch (link_status) {
+>  	case USB_STAT_STD_HOST_NC:
+>  	case USB_STAT_STD_HOST_C_NS:
+> @@ -633,9 +642,15 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+>  		dev_dbg(di->dev, "USB Type - 0x%02x MaxCurr: %d", link_status,
+>  				di->max_usb_in_curr);
+>  		break;
+> +	case USB_STAT_NOT_CONFIGURED:
+> +		if (di->vbus_detected) {
+> +			di->usb_device_is_unrecognised = true;
+> +			dev_dbg(di->dev, "USB Type - Legacy charger.\n");
+> +			di->max_usb_in_curr = USB_CH_IP_CUR_LVL_1P5;
+> +			break;
+> +		}
+>  	case USB_STAT_HM_IDGND:
+>  	case USB_STAT_NOT_VALID_LINK:
+> -	case USB_STAT_NOT_CONFIGURED:
+>  		dev_err(di->dev, "USB Type - Charging not allowed\n");
+>  		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P05;
+>  		ret = -ENXIO;
+> @@ -1899,6 +1914,30 @@ static void ab8500_charger_detect_usb_type_work(struct work_struct *work)
+>  }
+>  
+>  /**
+> + * ab8500_charger_usb_link_attach_work() - delayd work to detect USB type
+> + * @work:	pointer to the work_struct structure
+> + *
+> + * Detect the type of USB plugged
+> + */
+> +static void ab8500_charger_usb_link_attach_work(struct work_struct *work)
+> +{
+> +	int ret;
+> +
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This empty line is not needed.
 
-diff --cc mm/huge_memory.c
-index 9267537,56f9443..0000000
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@@ -1384,55 -1312,59 +1384,54 @@@ static int __split_huge_page_map(struc
-  	spin_lock(&mm->page_table_lock);
-  	pmd =3D page_check_address_pmd(page, mm, address,
-  				     PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG);
- -	if (pmd) {
- -		pgtable =3D pgtable_trans_huge_withdraw(mm);
- -		pmd_populate(mm, &_pmd, pgtable);
- -
- -		for (i =3D 0, haddr =3D address; i < HPAGE_PMD_NR;
- -		     i++, haddr +=3D PAGE_SIZE) {
- -			pte_t *pte, entry;
- -			BUG_ON(PageCompound(page+i));
- -			entry =3D mk_pte(page + i, vma->vm_page_prot);
- -			entry =3D maybe_mkwrite(pte_mkdirty(entry), vma);
- -			if (!pmd_write(*pmd))
- -				entry =3D pte_wrprotect(entry);
- -			else
- -				BUG_ON(page_mapcount(page) !=3D 1);
- -			if (!pmd_young(*pmd))
- -				entry =3D pte_mkold(entry);
- -			pte =3D pte_offset_map(&_pmd, haddr);
- -			BUG_ON(!pte_none(*pte));
- -			set_pte_at(mm, haddr, pte, entry);
- -			pte_unmap(pte);
- -		}
- +	if (!pmd)
- +		goto unlock;
- =20
- -		smp_wmb(); /* make pte visible before pmd */
- -		/*
- -		 * Up to this point the pmd is present and huge and
- -		 * userland has the whole access to the hugepage
- -		 * during the split (which happens in place). If we
- -		 * overwrite the pmd with the not-huge version
- -		 * pointing to the pte here (which of course we could
- -		 * if all CPUs were bug free), userland could trigger
- -		 * a small page size TLB miss on the small sized TLB
- -		 * while the hugepage TLB entry is still established
- -		 * in the huge TLB. Some CPU doesn't like that. See
- -		 * http://support.amd.com/us/Processor_TechDocs/41322.pdf,
- -		 * Erratum 383 on page 93. Intel should be safe but is
- -		 * also warns that it's only safe if the permission
- -		 * and cache attributes of the two entries loaded in
- -		 * the two TLB is identical (which should be the case
- -		 * here). But it is generally safer to never allow
- -		 * small and huge TLB entries for the same virtual
- -		 * address to be loaded simultaneously. So instead of
- -		 * doing "pmd_populate(); flush_tlb_range();" we first
- -		 * mark the current pmd notpresent (atomically because
- -		 * here the pmd_trans_huge and pmd_trans_splitting
- -		 * must remain set at all times on the pmd until the
- -		 * split is complete for this pmd), then we flush the
- -		 * SMP TLB and finally we write the non-huge version
- -		 * of the pmd entry with pmd_populate.
- -		 */
- -		pmdp_invalidate(vma, address, pmd);
- -		pmd_populate(mm, pmd, pgtable);
- -		ret =3D 1;
- +	prot =3D pmd_pgprot(*pmd);
- +	pgtable =3D pgtable_trans_huge_withdraw(mm);
- +	pmd_populate(mm, &_pmd, pgtable);
- +
- +	for (i =3D 0, haddr =3D address; i < HPAGE_PMD_NR; i++, haddr +=3D PAGE_=
-SIZE) {
- +		pte_t *pte, entry;
- +
- +		BUG_ON(PageCompound(page+i));
- +		entry =3D mk_pte(page + i, prot);
- +		entry =3D pte_mkdirty(entry);
- +		if (!pmd_young(*pmd))
- +			entry =3D pte_mkold(entry);
- +		pte =3D pte_offset_map(&_pmd, haddr);
- +		BUG_ON(!pte_none(*pte));
- +		set_pte_at(mm, haddr, pte, entry);
- +		pte_unmap(pte);
-  	}
- +
- +	smp_wmb(); /* make ptes visible before pmd, see __pte_alloc */
- +	/*
- +	 * Up to this point the pmd is present and huge.
- +	 *
- +	 * If we overwrite the pmd with the not-huge version, we could trigger
- +	 * a small page size TLB miss on the small sized TLB while the hugepage
- +	 * TLB entry is still established in the huge TLB.
- +	 *
- +	 * Some CPUs don't like that. See
- +	 * http://support.amd.com/us/Processor_TechDocs/41322.pdf, Erratum 383
- +	 * on page 93.
- +	 *
- +	 * Thus it is generally safer to never allow small and huge TLB entries
- +	 * for overlapping virtual addresses to be loaded. So we first mark the
- +	 * current pmd not present, then we flush the TLB and finally we write
- +	 * the non-huge version of the pmd entry with pmd_populate.
- +	 *
- +	 * The above needs to be done under the ptl because pmd_trans_huge and
- +	 * pmd_trans_splitting must remain set on the pmd until the split is
- +	 * complete. The ptl also protects against concurrent faults due to
- +	 * making the pmd not-present.
- +	 */
-- 	set_pmd_at(mm, address, pmd, pmd_mknotpresent(*pmd));
-- 	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
-++	pmdp_invalidate(vma, address, pmd);
- +	pmd_populate(mm, pmd, pgtable);
- +	ret =3D 1;
- +
- +unlock:
-  	spin_unlock(&mm->page_table_lock);
- =20
-  	return ret;
+> +	struct ab8500_charger *di = container_of(work,
+> +		struct ab8500_charger, attach_work.work);
+> +
+> +	/* Update maximum input current if USB enumeration is not detected */
+> +	if (!di->usb.charger_online) {
+> +		ret = ab8500_charger_set_vbus_in_curr(di, di->max_usb_in_curr);
+> +		if (ret)
+> +			return;
+> +	}
+> +
+> +	ab8500_charger_set_usb_connected(di, true);
+> +	ab8500_power_supply_changed(di, &di->usb_chg.psy);
+> +}
+> +
+> +/**
+>   * ab8500_charger_usb_link_status_work() - work to detect USB type
+>   * @work:	pointer to the work_struct structure
+>   *
+> @@ -1928,14 +1967,20 @@ static void ab8500_charger_usb_link_status_work(struct work_struct *work)
+>  		di->vbus_detected = 1;
+>  		ret = ab8500_charger_read_usb_type(di);
+>  		if (!ret) {
+> -			/* Update maximum input current */
+> -			ret = ab8500_charger_set_vbus_in_curr(di,
+> -					di->max_usb_in_curr);
+> -			if (ret)
+> -				return;
+> -
+> -			ab8500_charger_set_usb_connected(di, true);
+> -			ab8500_power_supply_changed(di, &di->usb_chg.psy);
+> +			if (di->usb_device_is_unrecognised) {
+> +				dev_dbg(di->dev,
+> +					"Potential Legacy Charger device. "
+> +					"Delay work for %d msec for USB enum "
+> +					"to finish",
+> +					WAIT_FOR_USB_ENUMERATION);
+> +				queue_delayed_work(di->charger_wq,
+> +					&di->attach_work,
+> +					msecs_to_jiffies
+> +						(WAIT_FOR_USB_ENUMERATION));
 
---Signature=_Thu__27_Sep_2012_17_15_45_+1000_Cu.KDYiTw.nMLf6D
-Content-Type: application/pgp-signature
+Very weird way to wrap lines. I'd prefer "(" to stay on the previous line.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I also think that it's possible to refactor this function to make it less
+indented.
 
-iQIcBAEBCAAGBQJQY/0hAAoJEECxmPOUX5FEAZcQAI8u/7YY+HNw5hl0Z77xf2ri
-cbKIZFc8zO6HSRHqzgkJa/YhHAjW9wh+F/zZU2Q0oYa8lVLAUGvRhZY4S2Mwr+vE
-9eZw7WD7TtOtLsunaZ2ijMclS5drfw9XRVIAULFV0ieJxsDSTcLM8STEcbHjSdu1
-tr9ANLJhmISjGkxxHAw0WFtemFi59J6em2KTQYhLdqzgGvTsw7HetDvc+Esr2R05
-BlAr+IHi0c8HDfwHdeyTgBBM6U+Gvc3Ak5Q8eEHc53DewE1nucnTGYXmn+H7r1it
-yizCLb57EFGufQST7VdhGPPAVYJQWFDNvBNu23VjSDYf7gDalw8RdAUjtAU0iM1S
-jD6lkJhKeXebLXFoKWSNQADEYk83cu4wce9vVZpvN5nqaHEqiL/2yxmGqhuQadOR
-Vtu7Ho67DPCeNBUFRNPVJDHF44YTRVX7DxEiTgTuCG1gsg8J9iz+w1/TMjSGv7oj
-sm3CquG1V/70NXfxc3+wHKMcG742YP6KbIGiKSWG/R/njjZmxFisNSpTiZhDooww
-FvRzt+Tx7uQBQZJYPm95YaDzPmZK4mLBCYaZC3VsSp4SVGCh0T7UAhfrEMWf5rfs
-7zMCW6lwiYqfOXoAGPqdKzmUYoJU0ouA2OAV8sz3AhNtuV1SEvXF/GEt7dfE0Bpz
-n4/zumsn6a2IHhK9prWL
-=ujUu
------END PGP SIGNATURE-----
-
---Signature=_Thu__27_Sep_2012_17_15_45_+1000_Cu.KDYiTw.nMLf6D--
+> +			} else {
+> +				queue_delayed_work(di->charger_wq,
+> +							&di->attach_work, 0);
+> +			}
+>  		} else if (ret == -ENXIO) {
+>  			/* No valid charger type detected */
+>  			ab8500_charger_set_usb_connected(di, false);
+> @@ -2886,6 +2931,9 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+>  	INIT_DELAYED_WORK_DEFERRABLE(&di->kick_wd_work,
+>  		ab8500_charger_kick_watchdog_work);
+>  
+> +	INIT_DELAYED_WORK(&di->attach_work,
+> +		ab8500_charger_usb_link_attach_work);
