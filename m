@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab2I0UeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 16:34:11 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45120 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755230Ab2I0UeJ (ORCPT
+	id S1755186Ab2I0UjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 16:39:18 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:55705 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab2I0UjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 16:34:09 -0400
-Message-ID: <5064B814.9010106@linux.vnet.ibm.com>
-Date: Fri, 28 Sep 2012 02:03:24 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 27 Sep 2012 16:39:17 -0400
+Date: Thu, 27 Sep 2012 13:39:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] 3.2-stable timekeeping fixes merged in 3.6
+Message-ID: <20120927203911.GC19489@kroah.com>
+References: <1347402926-34813-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: Chuansheng Liu <chuansheng.liu@intel.com>, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        yanmin_zhang@linux.intel.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Subject: Re: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the
- irq affinity mask
-References: <1348681092.19514.10.camel@cliu38-desktop-build> <1348703122.19514.17.camel@cliu38-desktop-build> <50632767.5050607@linux.vnet.ibm.com> <1348679199.26695.455.camel@sbsiddha-desk.sc.intel.com> <50633BA0.5030700@linux.vnet.ibm.com> <1348699588.6644.21.camel@sbsiddha-desk.sc.intel.com> <50649E1C.40602@linux.vnet.ibm.com> <1348773658.6644.36.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1348773658.6644.36.camel@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12092720-5140-0000-0000-000002228DA6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347402926-34813-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 12:50 AM, Suresh Siddha wrote:
-> On Fri, 2012-09-28 at 00:12 +0530, Srivatsa S. Bhat wrote:
->> On 09/27/2012 04:16 AM, Suresh Siddha wrote:
->>>
->>> No. irq_set_affinity()
->>>
->>
->> Um? That takes the updated/changed affinity and sets data->affinity to
->> that value no? You mentioned that probably the intention of the original
->> code was to preserve the user-set affinity mask, but still change the
->> underlying interrupt routing. Sorry, but I still didn't quite understand
->> what is that part of the code that achieves that.
+On Tue, Sep 11, 2012 at 06:35:23PM -0400, John Stultz wrote:
+> Just wanted to send out a few timekeeping fixes that were merged
+> in 3.6 which are appropriate for -stable.
 > 
-> For the HW routing to be changed we AND it with cpu_online_map and use
-> that for programming the interrupt entries etc.
-
-Ah, now I see.. you were referring to the __assign_irq_vector() code, whereas
-I was looking only at fixup_irqs() and was trying to find the code that did
-what you said.. that's what got me confused earlier :-)
-
-> The user-specified
-> affinity still has the cpu that is offlined.
+> This queue backports the following fixes:
+> -----------------------------------------
+> cee58483cf56e0ba355fdd97ff5e8925329aa936    time: Move ktime_t overflow checking into timespec_valid_strict
+> bf2ac312195155511a0f79325515cbb61929898a    time: Avoid making adjustments if we haven't accumulated anything
+> 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b    time: Improve sanity checking of timekeeping inputs
 > 
-
-Right, so data->affinity is untouched, whereas cfg->domain is updated when
-the CPU is offlined..
-
-> And when the cpu comes online and if it is part of the user-specified
-> affinity, then the HW routing can be again modified to include the new
-> cpu.
+> I've run these through my timetest suite w/ kvm on both i386
+> & x86_64. But more testing would be of course appreciated.
+> 	https://github.com/johnstultz-work/timetests
 > 
+> I also have patch queues for all the -stable trees that I'll be
+> sending out as my testing completes for those trees.
 
-Right, got it.
+Did you also send these out for the 3.0.y tree and I just missed them?
+Should I just take this 3.2.y series and see how they well apply?
 
-> hope this clears it!
->
+thanks,
 
-Yep, thanks a lot!
-
-Regards,
-Srivatsa S. Bhat
-
+greg k-h
