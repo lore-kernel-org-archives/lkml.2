@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab2I0OlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 10:41:09 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:17587 "EHLO relay.sw.ru"
+	id S1753762Ab2I0OlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 10:41:07 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:23499 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab2I0OlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752533Ab2I0OlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Sep 2012 10:41:05 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
@@ -13,9 +13,9 @@ Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
         Glauber Costa <glommer@parallels.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH 1/4] sl[au]b: move slabinfo processing to slab_common.c
-Date: Thu, 27 Sep 2012 18:37:37 +0400
-Message-Id: <1348756660-16929-2-git-send-email-glommer@parallels.com>
+Subject: [PATCH 3/4] slub: move slub internal functions to its header
+Date: Thu, 27 Sep 2012 18:37:39 +0400
+Message-Id: <1348756660-16929-4-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1348756660-16929-1-git-send-email-glommer@parallels.com>
 References: <1348756660-16929-1-git-send-email-glommer@parallels.com>
@@ -23,324 +23,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves all the common machinery to slabinfo processing
-to slab_common.c. We can do better by noticing that the output is
-heavily common, and having the allocators to just provide finished
-information about this. But after this first step, this can be done
-easier.
+The functions oo_order() and oo_objects() are used by the slub to
+determine respectively the order of a candidate allocation, and the
+number of objects made available from it. I would like a stable visible
+location outside slub.c so it can be acessed from slab_common.c.
+
+I considered also just making it a common field between slub and slab,
+but decided to move those to slub_def.h due to two main reasons: first,
+it still deals with implementation specific details of the caches, so it
+is better to just use wrappers. Second, because it is not necessarily
+the order determined at cache creation time, but possibly a smaller
+order in case of a retry. When we use it in slab_common.c we will be
+talking about "base" values, but those functions would still have to
+exist inside slub, so doing this we can just reuse them.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: David Rientjes <rientjes@google.com>
 ---
- mm/slab.c        | 72 ++++++++++----------------------------------------------
- mm/slab.h        |  6 +++++
- mm/slab_common.c | 70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/slub.c        | 51 ++++-----------------------------------
- 4 files changed, 94 insertions(+), 105 deletions(-)
+ include/linux/slub_def.h | 14 ++++++++++++++
+ mm/slub.c                | 14 --------------
+ 2 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 8524923..9502dfc 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -4284,7 +4284,7 @@ out:
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index df448ad..f1590c9 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -73,6 +73,20 @@ struct kmem_cache_order_objects {
+ 	unsigned long x;
+ };
  
- #ifdef CONFIG_SLABINFO
- 
--static void print_slabinfo_header(struct seq_file *m)
-+void print_slabinfo_header(struct seq_file *m)
- {
- 	/*
- 	 * Output format version, so at least we can change it
-@@ -4307,28 +4307,7 @@ static void print_slabinfo_header(struct seq_file *m)
- 	seq_putc(m, '\n');
- }
- 
--static void *s_start(struct seq_file *m, loff_t *pos)
--{
--	loff_t n = *pos;
--
--	mutex_lock(&slab_mutex);
--	if (!n)
--		print_slabinfo_header(m);
--
--	return seq_list_start(&slab_caches, *pos);
--}
--
--static void *s_next(struct seq_file *m, void *p, loff_t *pos)
--{
--	return seq_list_next(p, &slab_caches, pos);
--}
--
--static void s_stop(struct seq_file *m, void *p)
--{
--	mutex_unlock(&slab_mutex);
--}
--
--static int s_show(struct seq_file *m, void *p)
-+int slabinfo_show(struct seq_file *m, void *p)
- {
- 	struct kmem_cache *cachep = list_entry(p, struct kmem_cache, list);
- 	struct slab *slabp;
-@@ -4425,27 +4404,6 @@ static int s_show(struct seq_file *m, void *p)
- 	return 0;
- }
- 
--/*
-- * slabinfo_op - iterator that generates /proc/slabinfo
-- *
-- * Output layout:
-- * cache-name
-- * num-active-objs
-- * total-objs
-- * object size
-- * num-active-slabs
-- * total-slabs
-- * num-pages-per-slab
-- * + further values on SMP and with statistics enabled
-- */
--
--static const struct seq_operations slabinfo_op = {
--	.start = s_start,
--	.next = s_next,
--	.stop = s_stop,
--	.show = s_show,
--};
--
- #define MAX_SLABINFO_WRITE 128
- /**
-  * slabinfo_write - Tuning for the slab allocator
-@@ -4454,7 +4412,7 @@ static const struct seq_operations slabinfo_op = {
-  * @count: data length
-  * @ppos: unused
++#define OO_SHIFT	16
++#define OO_MASK		((1 << OO_SHIFT) - 1)
++#define MAX_OBJS_PER_PAGE	32767 /* since page.objects is u15 */
++
++static inline int oo_order(struct kmem_cache_order_objects x)
++{
++	return x.x >> OO_SHIFT;
++}
++
++static inline int oo_objects(struct kmem_cache_order_objects x)
++{
++	return x.x & OO_MASK;
++}
++
+ /*
+  * Slab cache management.
   */
--static ssize_t slabinfo_write(struct file *file, const char __user *buffer,
-+ssize_t slabinfo_write(struct file *file, const char __user *buffer,
- 		       size_t count, loff_t *ppos)
- {
- 	char kbuf[MAX_SLABINFO_WRITE + 1], *tmp;
-@@ -4497,19 +4455,6 @@ static ssize_t slabinfo_write(struct file *file, const char __user *buffer,
- 	return res;
- }
- 
--static int slabinfo_open(struct inode *inode, struct file *file)
--{
--	return seq_open(file, &slabinfo_op);
--}
--
--static const struct file_operations proc_slabinfo_operations = {
--	.open		= slabinfo_open,
--	.read		= seq_read,
--	.write		= slabinfo_write,
--	.llseek		= seq_lseek,
--	.release	= seq_release,
--};
--
- #ifdef CONFIG_DEBUG_SLAB_LEAK
- 
- static void *leaks_start(struct seq_file *m, loff_t *pos)
-@@ -4638,6 +4583,16 @@ static int leaks_show(struct seq_file *m, void *p)
- 	return 0;
- }
- 
-+static void *s_next(struct seq_file *m, void *p, loff_t *pos)
-+{
-+	return seq_list_next(p, &slab_caches, pos);
-+}
-+
-+static void s_stop(struct seq_file *m, void *p)
-+{
-+	mutex_unlock(&slab_mutex);
-+}
-+
- static const struct seq_operations slabstats_op = {
- 	.start = leaks_start,
- 	.next = s_next,
-@@ -4672,7 +4627,6 @@ static const struct file_operations proc_slabstats_operations = {
- 
- static int __init slab_proc_init(void)
- {
--	proc_create("slabinfo",S_IWUSR|S_IRUSR,NULL,&proc_slabinfo_operations);
- #ifdef CONFIG_DEBUG_SLAB_LEAK
- 	proc_create("slab_allocators", 0, NULL, &proc_slabstats_operations);
- #endif
-diff --git a/mm/slab.h b/mm/slab.h
-index 7deeb44..ac0053f6 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -47,4 +47,10 @@ static inline struct kmem_cache *__kmem_cache_alias(const char *name, size_t siz
- 
- int __kmem_cache_shutdown(struct kmem_cache *);
- 
-+void print_slabinfo_header(struct seq_file *m);
-+
-+int slabinfo_show(struct seq_file *m, void *p);
-+
-+ssize_t slabinfo_write(struct file *file, const char __user *buffer,
-+		       size_t count, loff_t *ppos);
- #endif
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 9c21725..2e0061a 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -13,6 +13,8 @@
- #include <linux/module.h>
- #include <linux/cpu.h>
- #include <linux/uaccess.h>
-+#include <linux/seq_file.h>
-+#include <linux/proc_fs.h>
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
- #include <asm/page.h>
-@@ -189,3 +191,71 @@ int slab_is_available(void)
- {
- 	return slab_state >= UP;
- }
-+
-+#ifdef CONFIG_SLABINFO
-+static void *s_start(struct seq_file *m, loff_t *pos)
-+{
-+	loff_t n = *pos;
-+
-+	mutex_lock(&slab_mutex);
-+	if (!n)
-+		print_slabinfo_header(m);
-+
-+	return seq_list_start(&slab_caches, *pos);
-+}
-+
-+static void *s_next(struct seq_file *m, void *p, loff_t *pos)
-+{
-+	return seq_list_next(p, &slab_caches, pos);
-+}
-+
-+static void s_stop(struct seq_file *m, void *p)
-+{
-+	mutex_unlock(&slab_mutex);
-+}
-+
-+static int s_show(struct seq_file *m, void *p)
-+{
-+	return slabinfo_show(m, p);
-+}
-+
-+/*
-+ * slabinfo_op - iterator that generates /proc/slabinfo
-+ *
-+ * Output layout:
-+ * cache-name
-+ * num-active-objs
-+ * total-objs
-+ * object size
-+ * num-active-slabs
-+ * total-slabs
-+ * num-pages-per-slab
-+ * + further values on SMP and with statistics enabled
-+ */
-+static const struct seq_operations slabinfo_op = {
-+	.start = s_start,
-+	.next = s_next,
-+	.stop = s_stop,
-+	.show = s_show,
-+};
-+
-+static int slabinfo_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &slabinfo_op);
-+}
-+
-+static const struct file_operations proc_slabinfo_operations = {
-+	.open		= slabinfo_open,
-+	.read		= seq_read,
-+	.write          = slabinfo_write,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
-+
-+static int __init slab_proc_init(void)
-+{
-+	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
-+	return 0;
-+}
-+module_init(slab_proc_init);
-+#endif /* CONFIG_SLABINFO */
 diff --git a/mm/slub.c b/mm/slub.c
-index 2258ed8..6383622 100644
+index 4c2c092..9e72722 100644
 --- a/mm/slub.c
 +++ b/mm/slub.c
-@@ -5392,7 +5392,7 @@ __initcall(slab_sysfs_init);
-  * The /proc/slabinfo ABI
+@@ -171,10 +171,6 @@ static inline int kmem_cache_debug(struct kmem_cache *s)
+ #define SLUB_MERGE_SAME (SLAB_DEBUG_FREE | SLAB_RECLAIM_ACCOUNT | \
+ 		SLAB_CACHE_DMA | SLAB_NOTRACK)
+ 
+-#define OO_SHIFT	16
+-#define OO_MASK		((1 << OO_SHIFT) - 1)
+-#define MAX_OBJS_PER_PAGE	32767 /* since page.objects is u15 */
+-
+ /* Internal SLUB flags */
+ #define __OBJECT_POISON		0x80000000UL /* Poison object */
+ #define __CMPXCHG_DOUBLE	0x40000000UL /* Use cmpxchg_double */
+@@ -325,16 +321,6 @@ static inline struct kmem_cache_order_objects oo_make(int order,
+ 	return x;
+ }
+ 
+-static inline int oo_order(struct kmem_cache_order_objects x)
+-{
+-	return x.x >> OO_SHIFT;
+-}
+-
+-static inline int oo_objects(struct kmem_cache_order_objects x)
+-{
+-	return x.x & OO_MASK;
+-}
+-
+ /*
+  * Per slab locking using the pagelock
   */
- #ifdef CONFIG_SLABINFO
--static void print_slabinfo_header(struct seq_file *m)
-+void print_slabinfo_header(struct seq_file *m)
- {
- 	seq_puts(m, "slabinfo - version: 2.1\n");
- 	seq_puts(m, "# name            <active_objs> <num_objs> <object_size> "
-@@ -5402,28 +5402,7 @@ static void print_slabinfo_header(struct seq_file *m)
- 	seq_putc(m, '\n');
- }
- 
--static void *s_start(struct seq_file *m, loff_t *pos)
--{
--	loff_t n = *pos;
--
--	mutex_lock(&slab_mutex);
--	if (!n)
--		print_slabinfo_header(m);
--
--	return seq_list_start(&slab_caches, *pos);
--}
--
--static void *s_next(struct seq_file *m, void *p, loff_t *pos)
--{
--	return seq_list_next(p, &slab_caches, pos);
--}
--
--static void s_stop(struct seq_file *m, void *p)
--{
--	mutex_unlock(&slab_mutex);
--}
--
--static int s_show(struct seq_file *m, void *p)
-+int slabinfo_show(struct seq_file *m, void *p)
- {
- 	unsigned long nr_partials = 0;
- 	unsigned long nr_slabs = 0;
-@@ -5459,29 +5438,9 @@ static int s_show(struct seq_file *m, void *p)
- 	return 0;
- }
- 
--static const struct seq_operations slabinfo_op = {
--	.start = s_start,
--	.next = s_next,
--	.stop = s_stop,
--	.show = s_show,
--};
--
--static int slabinfo_open(struct inode *inode, struct file *file)
--{
--	return seq_open(file, &slabinfo_op);
--}
--
--static const struct file_operations proc_slabinfo_operations = {
--	.open		= slabinfo_open,
--	.read		= seq_read,
--	.llseek		= seq_lseek,
--	.release	= seq_release,
--};
--
--static int __init slab_proc_init(void)
-+ssize_t slabinfo_write(struct file *file, const char __user *buffer,
-+		       size_t count, loff_t *ppos)
- {
--	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
--	return 0;
-+	return -EIO;
- }
--module_init(slab_proc_init);
- #endif /* CONFIG_SLABINFO */
 -- 
 1.7.11.4
 
