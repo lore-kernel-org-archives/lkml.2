@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab2I0Nib (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:38:31 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:50286 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750747Ab2I0Ni3 (ORCPT
+	id S1752051Ab2I0Njb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:39:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:32865 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab2I0Nj3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:38:29 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+/EvN1Dn+/EsGQm7Q0nBWlYTZAX6HStgDBM9Lixv
-	GAPRm/7mfvqf5D
-Message-ID: <1348753100.7059.214.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Thu, 27 Sep 2012 15:38:20 +0200
-In-Reply-To: <20120927102050.GA967@liondog.tnic>
-References: <1348538258.7100.23.camel@marge.simpson.net>
-	 <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
-	 <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com>
-	 <20120925170058.GC30158@x1.osrc.amd.com>
-	 <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
-	 <20120926163233.GA5339@x1.osrc.amd.com>
-	 <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
-	 <20120926213723.GA27692@liondog.tnic>
-	 <alpine.DEB.2.02.1209270013270.5162@asgard.lang.hm>
-	 <20120927102050.GA967@liondog.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Thu, 27 Sep 2012 09:39:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <506382B0.8040908@cs.tu-berlin.de>
+References: <1348682325-8402-1-git-send-email-schnhrr@cs.tu-berlin.de>
+ <20120926211526.GA30261@kroah.com> <506382B0.8040908@cs.tu-berlin.de>
+From: Kay Sievers <kay@vrfy.org>
+Date: Thu, 27 Sep 2012 15:39:08 +0200
+Message-ID: <CAPXgP11xwBDSZ9q9thzbXd5xZW_jeq-OW96hSoXFbXQBjQWbqw@mail.gmail.com>
+Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
+To: =?UTF-8?Q?Jan_H=2E_Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-27 at 12:20 +0200, Borislav Petkov wrote: 
-> On Thu, Sep 27, 2012 at 12:17:22AM -0700, david@lang.hm wrote:
-> > It seems to me that trying to figure out if you are going to
-> > overload the L2 is an impossible task, so just assume that it will
-> > all fit, and the worst case is you have one balancing cycle where
-> > you can't do as much work and then the normal balancing will kick in
-> > and move something anyway.
-> 
-> Right, and this implies that when the load balancer runs, it will
-> definitely move the task away from the L2. But what do I do in the cases
-> where the two tasks don't overload the L2 and it is actually beneficial
-> to keep them there? How does the load balancer know that?
+On Thu, Sep 27, 2012 at 12:33 AM, "Jan H. Schönherr"
+<schnhrr@cs.tu-berlin.de> wrote:
+> Am 26.09.2012 23:15, schrieb Greg Kroah-Hartman:
+>> On Wed, Sep 26, 2012 at 07:58:45PM +0200, Jan H. Schönherr wrote:
+>>> Against v3.6-rc7, only lightly tested.
+>>
+>> Well, against linux-next and highly tested would be best.  It's a bit
+>> late to get this into linux-next for 3.7, how important is it really?
+>
+> There are no conflicting commits in linux-next, so it should apply there
+> as well.
+>
+> "Tested" as in: it fixes my use case: multiple printk()s shortly after each
+> other -- with KERN_prefix but without a newline at the end. Those were
+> sometimes concatenated since that printk-rewrite.
 
-It doesn't, but it has task_hot().  A preempted buddy may be pulled, but
-the next wakeup will try to bring buddies back together.
+Please provide the output of /dev/kmsg so we can see what's going on here.
 
--Mike 
+> All other printk()s that I come across more often look as usual, before and
+> after the patch. (Mostly singular printk()s, but I also checked the output
+> from the oom-killer.)
+>
+> There is no need to include this hastily -- at least not from my point of view
+> -- as it is already broken in 3.5 and nobody else seems to notice it
+> (... and I have now a fix for my development printk()s). Should I resend the
+> patch later?
+>
+> I was also hoping that Kay might share his opinion, as the LOG_CONT
+> flag is rather young, and he might have some different plans for it.
 
+It is a flag that we have not been able to merge a continuation line
+in the buffer, because we had a race with another thread, or the
+console lock was taken for a long time and we couldn't use the merge
+buffer.
 
+LOG_CONT is used to merge (not intended to be) separate records at
+time we read them from the record buffer, and print them, it is also
+exported as a flag in /dev/kmsg.
+
+I don't think we can just remove it, we can not get that information
+from the prefix+newlines, they are not sufficient.
+
+Thanks,
+Kay
