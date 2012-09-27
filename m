@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab2I0WSa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 18:18:30 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36295 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab2I0WS2 (ORCPT
+	id S1755791Ab2I0WTy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 18:19:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17470 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287Ab2I0WTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 18:18:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <1348674710-102885-1-git-send-email-richard@nod.at>
-References: <1348674710-102885-1-git-send-email-richard@nod.at>
-Date: Fri, 28 Sep 2012 00:18:26 +0200
-Message-ID: <CAFLxGvw+As5-d-kVOFztZG-n9gLEn9_Aouvmk+VUtsnmmbA3UA@mail.gmail.com>
-Subject: Re: UBI: Fastmap request for inclusion (v19)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, Heinz.Egger@linutronix.de,
-        artem.bityutskiy@linux.intel.com, tim.bird@am.sony.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Sep 2012 18:19:52 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=a9-q7-gJKaUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=YS7ez-4iEAYA:10 a=VwQbUJbxAAAA:8 a=cfkqPTykAAAA:8 a=w5m9ts5_Bw_MLl2stG8A:9 a=PUjeQqilurYA:10 a=HEdnscJc8mAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348784389.22822.85.camel@gandalf.local.home>
+Subject: [ANNOUNCE] Stable RT tarballs... Back by popular demand!!!!
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Frank Rowand <frank.rowand@am.sony.com>
+Date: Thu, 27 Sep 2012 18:19:49 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 5:51 PM, Richard Weinberger <richard@nod.at> wrote:
->  MAINTAINERS                 |    6 +
->  drivers/mtd/ubi/Kconfig     |   20 ++
->  drivers/mtd/ubi/Makefile    |    1 +
->  drivers/mtd/ubi/attach.c    |  386 +++++++++++++++++++---------
->  drivers/mtd/ubi/build.c     |   70 +++++-
->  drivers/mtd/ubi/eba.c       |  126 +++++++++-
->  drivers/mtd/ubi/ubi-media.h |  137 ++++++++++
->  drivers/mtd/ubi/ubi.h       |  118 +++++++++-
->  drivers/mtd/ubi/wl.c        |  599 ++++++++++++++++++++++++++++++++++++++-----
->  9 files changed, 1252 insertions(+), 211 deletions(-)
+I stated that I would be willing to put back the stable tarballs to
+kernel.org at Linux Plumbers. Well, I finally had time to finish my
+tarball script, which basically just does what the README tells you to
+do:
 
-For what ever reason the diff stat misses fastmap.c
-Here the correct one:
+ $ git checkout v3.4.1-rt9-rebase
+ $ mkdir patches
+ $ git format-patch -o patches v3.4.1
+ $ ls patches > series
+ $ mv series patches
 
- MAINTAINERS                 |    6 +
- drivers/mtd/ubi/Kconfig     |   20 +
- drivers/mtd/ubi/Makefile    |    1 +
- drivers/mtd/ubi/attach.c    |  386 +++++++----
- drivers/mtd/ubi/build.c     |   70 ++-
- drivers/mtd/ubi/eba.c       |  126 ++++-
- drivers/mtd/ubi/fastmap.c   | 1560 +++++++++++++++++++++++++++++++++++++++++++
- drivers/mtd/ubi/ubi-media.h |  137 ++++
- drivers/mtd/ubi/ubi.h       |  118 ++++-
- drivers/mtd/ubi/wl.c        |  599 +++++++++++++++--
- 10 files changed, 2812 insertions(+), 211 deletions(-)
 
-> [PATCH 01/10] UBI: Add fastmap on-flash data structures
-> [PATCH 02/10] UBI: Add fastmap stuff to ubi.h
-> [PATCH 03/10] UBI: Export next_sqnum()
-> [PATCH 04/10] UBI: Add self_check_eba()
-> [PATCH 05/10] UBI: Add fastmap bits to build.c
-> [PATCH 06/10] UBI: Wire-up ->fm_sem
-> [PATCH 07/10] UBI: Add fastmap stuff to attach.c
-> [PATCH 08/10] UBI: Add fastmap support to the WL sub-system
-> [PATCH 09/10] UBI: Add fastmap core
-> [PATCH 10/10] UBI: Wire-up fastmap
+And packages it all up nicely into a tarball. I will be pushing up the
+tarballs as I do the rebase branches, as they are based off of the
+rebase branch.
 
--- 
-Thanks,
-//richard
+The current tarballs are:
+
+http://kernel.org/pub/linux/kernel/projects/rt/3.0/patches-3.0.43-rt65.tar.xz
+
+http://kernel.org/pub/linux/kernel/projects/rt/3.2/patches-3.2.30-rt45.tar.xz
+
+http://kernel.org/pub/linux/kernel/projects/rt/3.4/patches-3.4.11-rt19.tar.xz
+
+Enjoy,
+
+-- Steve
+
+
