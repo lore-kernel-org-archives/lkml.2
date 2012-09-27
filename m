@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab2I0Na3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:30:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14915 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab2I0Na0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:30:26 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=LrhBLfKaQO8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=YO3Hm7etAV1sroPDY0oA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1348752623.22822.73.camel@gandalf.local.home>
-Subject: Re: [PATCH v6] hashtable: introduce a small and naive hashtable
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        David Laight <David.Laight@ACULAB.COM>, torvalds@linux-foundation.org,
-        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, neilb@suse.de, bfields@fieldses.org,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        josh@joshtriplett.org, rmallon@gmail.com, palves@redhat.com
-Date: Thu, 27 Sep 2012 09:30:23 -0400
-In-Reply-To: <20120927131118.GC30139@Krystal>
-References: <1348663729-2584-1-git-send-email-levinsasha928@gmail.com>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B7008@saturn3.aculab.com>
-	 <1348667992.22822.50.camel@gandalf.local.home> <506310AA.2050700@gmail.com>
-	 <20120926143905.GB22699@Krystal>
-	 <1348675764.22822.56.camel@gandalf.local.home>
-	 <20120926161956.GB28648@Krystal>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B7009@saturn3.aculab.com>
-	 <50640F4E.4020305@gmail.com> <20120927131118.GC30139@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751650Ab2I0Neq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:34:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43230 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750759Ab2I0Neo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 09:34:44 -0400
+Date: Thu, 27 Sep 2012 14:34:35 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v3 05/13] Add a __GFP_KMEMCG flag
+Message-ID: <20120927133435.GE3429@suse.de>
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
+ <1347977050-29476-6-git-send-email-glommer@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1347977050-29476-6-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-27 at 09:11 -0400, Mathieu Desnoyers wrote:
+On Tue, Sep 18, 2012 at 06:04:02PM +0400, Glauber Costa wrote:
+> This flag is used to indicate to the callees that this allocation is a
+> kernel allocation in process context, and should be accounted to
+> current's memcg. It takes numerical place of the of the recently removed
+> __GFP_NO_KSWAPD.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+> CC: Rik van Riel <riel@redhat.com>
+> CC: Mel Gorman <mel@csn.ul.ie>
+> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> AFAIK, gcc nowadays use "inline" only as a hint
+I agree with Christophs recommendation that this flag always exist instead
+of being 0 in the !MEMCG_KMEM case. If __GFP_KMEMCG ever is used in another
+part of the VM (which would be unexpected but still) then the behaviour
+might differ too much between MEMCG_KMEM and !MEMCG_KMEM cases. As unlikely
+as the case is, it's not impossible.
 
-Only if CONFIG_OPTIMIZE_INLINING is set.
+For tracing __GFP_KMEMCG should have an entry in
+include/trace/events/gfpflags.h
 
->From include/linux/compiler-gcc.h:
+Get rid of the CONFIG_MEMCG_KMEM check and update
+include/trace/events/gfpflags.h and then feel free to stick my Acked-by
+on it.
 
-#if !defined(CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING) || \
-    !defined(CONFIG_OPTIMIZE_INLINING) || (__GNUC__ < 4)
-# define inline         inline          __attribute__((always_inline)) notrace
-# define __inline__     __inline__      __attribute__((always_inline)) notrace
-# define __inline       __inline        __attribute__((always_inline)) notrace
-#else
-/* A lot of inline functions can cause havoc with function tracing */
-# define inline         inline          notrace
-# define __inline__     __inline__      notrace
-# define __inline       __inline        notrace
-#endif
-
--- Steve
-
-
+-- 
+Mel Gorman
+SUSE Labs
