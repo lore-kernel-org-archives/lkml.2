@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab2I0JEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 05:04:42 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:49416 "EHLO
+	id S1754574Ab2I0JEx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 05:04:53 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50413 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2I0JEk (ORCPT
+	with ESMTP id S1754108Ab2I0JEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 05:04:40 -0400
+	Thu, 27 Sep 2012 05:04:50 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
@@ -16,105 +16,55 @@ Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
         amit.kucheria@linaro.org, vincent.guittot@linaro.org,
         linaro-dev@lists.linaro.org, patches@linaro.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 0/3] Create sched_select_cpu() and use it in workqueues
-Date: Thu, 27 Sep 2012 14:34:02 +0530
-Message-Id: <cover.1348736069.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 3/3] workqueue: Schedule work on non-idle cpu instead of current one
+Date: Thu, 27 Sep 2012 14:34:05 +0530
+Message-Id: <7d5c2cac08134446583624cc124d46d9726bdb2d.1348736069.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-X-OriginalArrivalTime: 27 Sep 2012 09:04:13.0146 (UTC) FILETIME=[104EABA0:01CD9C8F]
-X-MC-Unique: 112092710041400901
+In-Reply-To: <cover.1348736069.git.viresh.kumar@linaro.org>
+References: <cover.1348736069.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1348736069.git.viresh.kumar@linaro.org>
+References: <cover.1348736069.git.viresh.kumar@linaro.org>
+X-OriginalArrivalTime: 27 Sep 2012 09:04:18.0833 (UTC) FILETIME=[13B27010:01CD9C8F]
+X-MC-Unique: 112092710043928601
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8R94mgJ004056
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8R94wOl004060
 
-Hi All,
+Workqueues queues work on current cpu, if the caller haven't passed a preferred
+cpu. This may wake up an idle CPU, which is actually not required.
 
-This is V2 of my sched_select_cpu() work.
+This work can be processed by any CPU and so we must select a non-idle CPU here.
+This patch adds in support in workqueue framework to get preferred CPU details
+from the scheduler, instead of using current CPU.
 
-In order to save power, it would be useful to schedule work onto non-IDLE cpus
-instead of waking up an IDLE one.
+Most of the time when a work is queued, the current cpu isn't idle and so we
+will choose it only. There are cases when a cpu is idle when it queues some
+work. For example, consider following scenario:
+- A cpu has programmed a timer and is IDLE now.
+- CPU gets into interrupt handler due to timer and queues a work. As the CPU is
+  currently IDLE, we can queue this work to some other CPU.
 
-To achieve this, we need scheduler to guide kernel frameworks (like: timers &
-workqueues) on which is the most preferred CPU that must be used for these
-tasks.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ kernel/workqueue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This patchset is about implementing this concept.
-
-- The first patch adds sched_select_cpu() routine which returns the preferred
-  cpu which is non-idle. 
-- Second patch removes idle_cpu() calls from timer & hrtimer.
-- Third patch is about adapting this change in workqueue framework.
-
-Earlier discussions over v1 can be found here:
-http://www.mail-archive.com/linaro-dev@lists.linaro.org/msg13342.html
-
-Earlier discussions over this concept were done at last LPC:
-http://summit.linuxplumbersconf.org/lpc-2012/meeting/90/lpc2012-sched-timer-workqueue/
-
-Module created for testing this behavior is present here:
-http://git.linaro.org/gitweb?p=people/vireshk/module.git;a=summary
-
-Following are the steps followed in test module:
-1. Run single work on each cpu
-2. This work will start a timer after x (tested with 10) jiffies of delay
-3. Timer routine queues a work... (This may be called from idle or non-idle cpu)
-   and starts the same timer again STEP 3 is done for n number of times (i.e.
-   queuing n works, one after other)
-4. All works will call a single routine, which will count following per cpu:
- - Total works processed by a CPU
- - Total works processed by a CPU, which are queued from it
- - Total works processed by a CPU, which aren't queued from it
-
-Setup:
------
-- ARM Vexpress TC2 - big.LITTLE CPU
-- Core 0-1: A15, 2-4: A7
-- rootfs: linaro-ubuntu-nano
-
-Results:
--------
-Without Workqueue Modification, i.e. PATCH 3/3:
-[ 2493.022335] Workqueue Analyser: works processsed by CPU0, Total: 1000, Own: 0, migrated: 0
-[ 2493.047789] Workqueue Analyser: works processsed by CPU1, Total: 1000, Own: 0, migrated: 0
-[ 2493.072918] Workqueue Analyser: works processsed by CPU2, Total: 1000, Own: 0, migrated: 0
-[ 2493.098576] Workqueue Analyser: works processsed by CPU3, Total: 1000, Own: 0, migrated: 0
-[ 2493.123702] Workqueue Analyser: works processsed by CPU4, Total: 1000, Own: 0, migrated: 0
-
-With Workqueue Modification, i.e. PATCH 3/3:
-[ 2493.022335] Workqueue Analyser: works processsed by CPU0, Total: 1002, Own: 999, migrated: 3
-[ 2493.047789] Workqueue Analyser: works processsed by CPU1, Total: 998,  Own: 997, migrated: 1
-[ 2493.072918] Workqueue Analyser: works processsed by CPU2, Total: 1013, Own: 996, migrated: 17
-[ 2493.098576] Workqueue Analyser: works processsed by CPU3, Total: 998,  Own: 993, migrated: 5
-[ 2493.123702] Workqueue Analyser: works processsed by CPU4, Total: 989,  Own: 987, migrated: 2
-
-V1->V2
------
-- New SD_* macros removed now and earlier ones used
-- sched_select_cpu() rewritten and it includes the check on current cpu's
-  idleness.
-- cpu_idle() calls from timer and hrtimer removed now.
-- Patch 2/3 from V1, removed as it doesn't apply to latest workqueue branch from
-  tejun.
-- CONFIG_MIGRATE_WQ removed and so is wq_select_cpu()
-- sched_select_cpu() called only from __queue_work()
-- got tejun/for-3.7 branch in my tree, before making workqueue changes.
-
-Viresh Kumar (3):
-  sched: Create sched_select_cpu() to give preferred CPU for power
-    saving
-  timer: hrtimer: Don't check idle_cpu() before calling
-    get_nohz_timer_target()
-  workqueue: Schedule work on non-idle cpu instead of current one
-
- include/linux/sched.h | 16 ++++++++++--
- kernel/hrtimer.c      |  2 +-
- kernel/sched/core.c   | 69 +++++++++++++++++++++++++++++++--------------------
- kernel/timer.c        |  9 ++++---
- kernel/workqueue.c    |  2 +-
- 5 files changed, 63 insertions(+), 35 deletions(-)
-
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 143fd8c..5fa4ba4 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1238,7 +1238,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+ 		struct global_cwq *last_gcwq;
+ 
+ 		if (cpu == WORK_CPU_UNBOUND)
+-			cpu = raw_smp_processor_id();
++			cpu = sched_select_cpu(0);
+ 
+ 		/*
+ 		 * It's multi cpu.  If @work was previously on a different
 -- 
 1.7.12.rc2.18.g61b472e
 
