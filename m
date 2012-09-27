@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab2I0Inr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 04:43:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216Ab2I0Inm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 04:43:42 -0400
-Message-ID: <50641195.5040208@redhat.com>
-Date: Thu, 27 Sep 2012 10:43:01 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1754045Ab2I0Io5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 04:44:57 -0400
+Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:36992 "EHLO
+	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753216Ab2I0Ioz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 04:44:55 -0400
+Date: Thu, 27 Sep 2012 11:39:56 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [PATCHv3 6/7] dma: move dw_dmac driver to an own directory
+Message-ID: <20120927083955.GT12592@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1348731121-2515-7-git-send-email-andriy.shevchenko@linux.intel.com>
+ <CAOh2x=m=14TCV7LEM4zk9Z9KattosnNwR-UvYqe5tNiCksCo0g@mail.gmail.com>
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <50615EE4.1040809@linux.vnet.ibm.com> <50616781.3000406@redhat.com> <20120925232122.e6fabbc5c472148aeec70234@gmail.com>
-In-Reply-To: <20120925232122.e6fabbc5c472148aeec70234@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mgIE+9cwyCTt+85Z"
+Content-Disposition: inline
+In-Reply-To: <CAOh2x=m=14TCV7LEM4zk9Z9KattosnNwR-UvYqe5tNiCksCo0g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2012 04:21 PM, Takuya Yoshikawa wrote:
-> On Tue, 25 Sep 2012 10:12:49 +0200
-> Avi Kivity <avi@redhat.com> wrote:
-> 
->> It will.  The tradeoff is between false-positive costs (undercommit) and
->> true positive costs (overcommit).  I think undercommit should perform
->> well no matter what.
->> 
->> If we utilize preempt notifiers to track overcommit dynamically, then we
->> can vary the spin time dynamically.  Keep it long initially, as we get
->> more preempted vcpus make it shorter.
-> 
-> What will happen if we pin each vcpu thread to some core?
-> I don't want to see so many vcpu threads moving around without
-> being pinned at all.
 
-If you do that you've removed a lot of flexibility from the scheduler,
-so overcommit becomes even less likely to work well (a trivial example
-is pinning two vcpus from the same vm to the same core -- it's so
-obviously bad no one considers doing it).
+--mgIE+9cwyCTt+85Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> In that case, we don't want to make KVM do any work of searching
-> a vcpu thread to yield to.
+On Thu, Sep 27, 2012 at 01:52:24PM +0530, viresh kumar wrote:
+> On Thu, Sep 27, 2012 at 1:02 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> > The dw_dmac driver contains multiple files. To make a managment of them=
+ more
+> > convenient move it to an own directory.
+> >
+>=20
+> Looks readable now :)
+>=20
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> (After fixing Felipe's comment)
 
-Why not?  If a vcpu thread on another core has been preempted, and is
-the lock holder, and we can boost it, then we've fixed our problem.
-Even if the spinning thread keeps spinning because it is the only task
-eligible to run on its core.
+And here's mine (after fixing the typo):
 
--- 
-error compiling committee.c: too many arguments to function
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--mgIE+9cwyCTt+85Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQZBDbAAoJEIaOsuA1yqRE9kMP/01nHmnz8XThIpdX7TBwxrji
+z0jzCpnuicvPH0tN99yKgXXcWq5KvJVCQ+2viYqQdHcxoT9pIfCp1aOG6vv+atZS
+7p4zsZwL66+ohy/4gJxsBxckdW4UBy27+fge2yWdM8HEhEKQbC/THfclR6rJVhxJ
+1ky1qBNR3KuRHcrwi6SEd2dwQPeMiOExVwcjZBTXCrQyQBAzKQaQ6zajAQOOUG3H
+huGccPPd4NG23+u7zwS6t6HRPR8R8zLBK0L/pcEX4VN9nt05aeefXhqUQ8UTLSWZ
+hOs4OcaGbTQFK4a4p88NL0+O9kRCqvQYKtrEq70nFRCc9q68vXacHwN6dRQZONal
+BXsGnJJ++8O6xBqOOGSgv+eP1ysADtic7fjgcQ5iG5hUJxbYF0H4rbwPBiFcpwW6
+iHHNTf4PzHdk+Jvc2hksfmxudy73U/fjFr0R/MkzbLW2+fnngUSqtt/XWlU3izNd
+IwGxGW+iT4oTndaceZ3Sv7pCfrXvEyGlnK2MZQhCDET41988OflCeVAIoaPAl1hR
++e6eftMAf/eQRpMtLWriToXTNOzRslWK8jQTIkQkWllGRrTK2zo0t29C7IX0u7rn
+WTxKz9NsnMimiCop5pRtFSkcGhqloBRgO/wKZ7IoMbPkPKrEEccj1apAMv9rDcZq
+ICPbN614qSSUpAGgq8GL
+=sjLP
+-----END PGP SIGNATURE-----
+
+--mgIE+9cwyCTt+85Z--
