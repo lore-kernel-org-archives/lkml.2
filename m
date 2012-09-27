@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab2I0Fd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 01:33:57 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:51943 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab2I0Fd4 (ORCPT
+	id S1755249Ab2I0FeH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 01:34:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54017 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab2I0FeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 01:33:56 -0400
-From: Prabhakar <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        VGER <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: [PATCH v2] media: davinci: vpif: add check for NULL handler
-Date: Thu, 27 Sep 2012 11:03:12 +0530
-Message-Id: <1348723992-3199-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 27 Sep 2012 01:34:03 -0400
+Date: Wed, 26 Sep 2012 22:33:43 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-2f9e97aa8b4c6220c0770a966fb99d7366679813@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        xiaoguangrong@linux.vnet.ibm.com, haodong@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        haodong@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1348474503-15070-6-git-send-email-namhyung@kernel.org>
+References: <1348474503-15070-6-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf kvm: Use perf_session_env for reading cpuid
+Git-Commit-ID: 2f9e97aa8b4c6220c0770a966fb99d7366679813
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 22:33:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+Commit-ID:  2f9e97aa8b4c6220c0770a966fb99d7366679813
+Gitweb:     http://git.kernel.org/tip/2f9e97aa8b4c6220c0770a966fb99d7366679813
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 24 Sep 2012 17:15:02 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 24 Sep 2012 11:47:27 -0300
 
-for da850/omap-l138, there is no need to setup_input_channel_mode()
-and set_clock(), to avoid adding dummy code in board file just returning
-zero add a check in the driver itself to call the handler only if its
-not NULL.
+perf kvm: Use perf_session_env for reading cpuid
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+We have processed and saved cpuid information to perf_session_env so
+reuse it for get_cpu_isa().
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Dong Hao <haodong@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1348474503-15070-6-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- Changes for v2:
- 1: Added patch description, pointed by Mauro.
+ tools/perf/builtin-kvm.c |   10 +---------
+ 1 files changed, 1 insertions(+), 9 deletions(-)
 
- drivers/media/platform/davinci/vpif_capture.c |   13 +++++++------
- drivers/media/platform/davinci/vpif_display.c |   13 +++++++------
- 2 files changed, 14 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index 13aa46d..7b5e09a 100644
---- a/drivers/media/platform/davinci/vpif_capture.c
-+++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -311,12 +311,13 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- 	}
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 3eb53e3..a28c9ca 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -664,16 +664,9 @@ static struct perf_tool eops = {
  
- 	/* configure 1 or 2 channel mode */
--	ret = vpif_config_data->setup_input_channel_mode
--					(vpif->std_info.ycmux_mode);
+ static int get_cpu_isa(struct perf_session *session)
+ {
+-	char *cpuid;
++	char *cpuid = session->header.env.cpuid;
+ 	int isa;
+ 
+-	cpuid = perf_header__read_feature(session, HEADER_CPUID);
 -
--	if (ret < 0) {
--		vpif_dbg(1, debug, "can't set vpif channel mode\n");
--		return ret;
-+	if (vpif_config_data->setup_input_channel_mode) {
-+		ret = vpif_config_data->
-+			setup_input_channel_mode(vpif->std_info.ycmux_mode);
-+		if (ret < 0) {
-+			vpif_dbg(1, debug, "can't set vpif channel mode\n");
-+			return ret;
-+		}
+-	if (!cpuid) {
+-		pr_err("read HEADER_CPUID failed.\n");
+-		return -ENOTSUP;
+-	}
+-
+ 	if (strstr(cpuid, "Intel"))
+ 		isa = 1;
+ 	else if (strstr(cpuid, "AMD"))
+@@ -683,7 +676,6 @@ static int get_cpu_isa(struct perf_session *session)
+ 		isa = -ENOTSUP;
  	}
  
- 	/* Call vpif_set_params function to set the parameters and addresses */
-diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index e401aea..e8a0286 100644
---- a/drivers/media/platform/davinci/vpif_display.c
-+++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -280,12 +280,13 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- 	}
+-	free(cpuid);
+ 	return isa;
+ }
  
- 	/* clock settings */
--	ret =
--	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
--					ch->vpifparams.std_info.hd_sd);
--	if (ret < 0) {
--		vpif_err("can't set clock\n");
--		return ret;
-+	if (vpif_config_data->set_clock) {
-+		ret = vpif_config_data->set_clock(ch->vpifparams.std_info.
-+		ycmux_mode, ch->vpifparams.std_info.hd_sd);
-+		if (ret < 0) {
-+			vpif_err("can't set clock\n");
-+			return ret;
-+		}
- 	}
- 
- 	/* set the parameters and addresses */
--- 
-1.7.4.1
-
