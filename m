@@ -1,126 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2I0CaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 22:30:04 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50342 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab2I0CaB (ORCPT
+	id S1754225Ab2I0CaM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 22:30:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34385 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab2I0CaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 22:30:01 -0400
-Date: Wed, 26 Sep 2012 19:29:58 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org
-Subject: [patch] mm, thp: fix mlock statistics
-In-Reply-To: <alpine.DEB.2.00.1209261821380.7745@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1209261929270.8567@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com> <alpine.LSU.2.00.1209192021270.28543@eggly.anvils> <alpine.DEB.2.00.1209261821380.7745@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 26 Sep 2012 22:30:07 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120927021919.GJ15236@dastard>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+	<1348404995-14372-3-git-send-email-zwu.kernel@gmail.com>
+	<20120925091739.GB29154@dastard>
+	<CAEH94Lg5haGMh0rkiv27tchthhFGk0o-+FAGiJ5zvPTcO8QbwA@mail.gmail.com>
+	<20120927021919.GJ15236@dastard>
+Date: Thu, 27 Sep 2012 10:30:05 +0800
+Message-ID: <CAEH94LhvN4YFE-=j+5JD9JRdEmsbQ3OOx86WTkWT_4Eyf29u4w@mail.gmail.com>
+Subject: Re: [RFC v2 02/10] vfs: add support for updating access frequency
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
+        diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NR_MLOCK is only accounted in single page units: there's no logic to
-handle transparent hugepages.  This patch checks the appropriate number
-of pages to adjust the statistics by so that the correct amount of memory
-is reflected.
+On Thu, Sep 27, 2012 at 10:19 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Wed, Sep 26, 2012 at 10:53:07AM +0800, Zhi Yong Wu wrote:
+>> On Tue, Sep 25, 2012 at 5:17 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > On Sun, Sep 23, 2012 at 08:56:27PM +0800, zwu.kernel@gmail.com wrote:
+>> > I note that the code will always insert range items of a length
+>> > RANGE_SIZE. This means you have a fixed object granularity and hence
+>> > you have no need for a range based search. That is, you could use a
+>> > radix tree where each entry in the radix tree points directly to the
+>> > range object similar to how the page cache uses a radix tree for
+>> > indexing pages. That brings the possibility of lockless range item
+>> > lookups....
+>> Great suggestion, but can we temporarily put it in TODO list? because
+>> it will bring one big code change.
+>
+> Sure. I just wanted to point out that there are better choices for
+> indexing fixed size elements than rb-trees and why it might make
+> sense to use a different type of tree.
+Got it, thanks. Moreover, it should also be better to use radix tree
+to hold hot_inode, not only hot_range.
 
-Currently:
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
 
-		$ grep Mlocked /proc/meminfo
-		Mlocked:           19636 kB
 
-	#define MAP_SIZE	(4 << 30)	/* 4GB */
 
-	void *ptr = mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE,
-			 MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-	mlock(ptr, MAP_SIZE);
+-- 
+Regards,
 
-		$ grep Mlocked /proc/meminfo
-		Mlocked:           29844 kB
-
-	munlock(ptr, MAP_SIZE);
-
-		$ grep Mlocked /proc/meminfo
-		Mlocked:           19636 kB
-
-And with this patch:
-
-		$ grep Mlock /proc/meminfo
-		Mlocked:           19636 kB
-
-	mlock(ptr, MAP_SIZE);
-
-		$ grep Mlock /proc/meminfo
-		Mlocked:         4213664 kB
-
-	munlock(ptr, MAP_SIZE);
-
-		$ grep Mlock /proc/meminfo
-		Mlocked:           19636 kB
-
-Reported-by: Hugh Dickens <hughd@google.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/internal.h   |    3 ++-
- mm/mlock.c      |    6 ++++--
- mm/page_alloc.c |    2 +-
- 3 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/mm/internal.h b/mm/internal.h
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -180,7 +180,8 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
- 		return 0;
- 
- 	if (!TestSetPageMlocked(page)) {
--		inc_zone_page_state(page, NR_MLOCK);
-+		mod_zone_page_state(page_zone(page), NR_MLOCK,
-+				    hpage_nr_pages(page));
- 		count_vm_event(UNEVICTABLE_PGMLOCKED);
- 	}
- 	return 1;
-diff --git a/mm/mlock.c b/mm/mlock.c
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -81,7 +81,8 @@ void mlock_vma_page(struct page *page)
- 	BUG_ON(!PageLocked(page));
- 
- 	if (!TestSetPageMlocked(page)) {
--		inc_zone_page_state(page, NR_MLOCK);
-+		mod_zone_page_state(page_zone(page), NR_MLOCK,
-+				    hpage_nr_pages(page));
- 		count_vm_event(UNEVICTABLE_PGMLOCKED);
- 		if (!isolate_lru_page(page))
- 			putback_lru_page(page);
-@@ -108,7 +109,8 @@ void munlock_vma_page(struct page *page)
- 	BUG_ON(!PageLocked(page));
- 
- 	if (TestClearPageMlocked(page)) {
--		dec_zone_page_state(page, NR_MLOCK);
-+		mod_zone_page_state(page_zone(page), NR_MLOCK,
-+				    -hpage_nr_pages(page));
- 		if (!isolate_lru_page(page)) {
- 			int ret = SWAP_AGAIN;
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -604,7 +604,7 @@ out:
-  */
- static inline void free_page_mlock(struct page *page)
- {
--	__dec_zone_page_state(page, NR_MLOCK);
-+	__mod_zone_page_state(page_zone(page), NR_MLOCK, -hpage_nr_pages(page));
- 	__count_vm_event(UNEVICTABLE_MLOCKFREED);
- }
- 
+Zhi Yong Wu
