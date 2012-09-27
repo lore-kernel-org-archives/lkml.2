@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab2I0JEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 05:04:53 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:50413 "EHLO
+	id S1754820Ab2I0JFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 05:05:09 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49452 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab2I0JEu (ORCPT
+	with ESMTP id S1752090Ab2I0JEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 05:04:50 -0400
+	Thu, 27 Sep 2012 05:04:41 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
@@ -16,55 +16,79 @@ Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
         amit.kucheria@linaro.org, vincent.guittot@linaro.org,
         linaro-dev@lists.linaro.org, patches@linaro.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 3/3] workqueue: Schedule work on non-idle cpu instead of current one
-Date: Thu, 27 Sep 2012 14:34:05 +0530
-Message-Id: <7d5c2cac08134446583624cc124d46d9726bdb2d.1348736069.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 2/3] timer: hrtimer: Don't check idle_cpu() before calling get_nohz_timer_target()
+Date: Thu, 27 Sep 2012 14:34:04 +0530
+Message-Id: <169feed8cddec1edecb311d2471df0a553d6e865.1348736069.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1348736069.git.viresh.kumar@linaro.org>
 References: <cover.1348736069.git.viresh.kumar@linaro.org>
 In-Reply-To: <cover.1348736069.git.viresh.kumar@linaro.org>
 References: <cover.1348736069.git.viresh.kumar@linaro.org>
-X-OriginalArrivalTime: 27 Sep 2012 09:04:18.0833 (UTC) FILETIME=[13B27010:01CD9C8F]
-X-MC-Unique: 112092710043928601
+X-OriginalArrivalTime: 27 Sep 2012 09:04:16.0943 (UTC) FILETIME=[12920BF0:01CD9C8F]
+X-MC-Unique: 112092710043920701
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8R94wOl004060
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8R95C1t004064
 
-Workqueues queues work on current cpu, if the caller haven't passed a preferred
-cpu. This may wake up an idle CPU, which is actually not required.
+Check for current cpu's idleness already done in implementation of
+sched_select_cpu() which is called by get_nohz_timer_target(). So, no need to
+call idle_cpu() twice, once from sched_select_cpu() and once from timer and
+hrtimer before calling get_nohz_timer_target().
 
-This work can be processed by any CPU and so we must select a non-idle CPU here.
-This patch adds in support in workqueue framework to get preferred CPU details
-from the scheduler, instead of using current CPU.
-
-Most of the time when a work is queued, the current cpu isn't idle and so we
-will choose it only. There are cases when a cpu is idle when it queues some
-work. For example, consider following scenario:
-- A cpu has programmed a timer and is IDLE now.
-- CPU gets into interrupt handler due to timer and queues a work. As the CPU is
-  currently IDLE, we can queue this work to some other CPU.
+This patch removes calls to idle_cpu() from timer and hrtimer.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- kernel/workqueue.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/hrtimer.c | 2 +-
+ kernel/timer.c   | 9 +++++----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 143fd8c..5fa4ba4 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1238,7 +1238,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
- 		struct global_cwq *last_gcwq;
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 6db7a5e..74bdaf6 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -159,7 +159,7 @@ struct hrtimer_clock_base *lock_hrtimer_base(const struct hrtimer *timer,
+ static int hrtimer_get_target(int this_cpu, int pinned)
+ {
+ #ifdef CONFIG_NO_HZ
+-	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
++	if (!pinned && get_sysctl_timer_migration())
+ 		return get_nohz_timer_target();
+ #endif
+ 	return this_cpu;
+diff --git a/kernel/timer.c b/kernel/timer.c
+index d5de1b2..8409d9d 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -720,7 +720,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
+ {
+ 	struct tvec_base *base, *new_base;
+ 	unsigned long flags;
+-	int ret = 0 , cpu;
++	int ret = 0 , cpu = 0;
  
- 		if (cpu == WORK_CPU_UNBOUND)
--			cpu = raw_smp_processor_id();
-+			cpu = sched_select_cpu(0);
+ 	timer_stats_timer_set_start_info(timer);
+ 	BUG_ON(!timer->function);
+@@ -733,12 +733,13 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
  
- 		/*
- 		 * It's multi cpu.  If @work was previously on a different
+ 	debug_activate(timer, expires);
+ 
+-	cpu = smp_processor_id();
+-
+ #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
+-	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
++	if (!pinned && get_sysctl_timer_migration())
+ 		cpu = get_nohz_timer_target();
+ #endif
++	if (!cpu)
++		cpu = smp_processor_id();
++
+ 	new_base = per_cpu(tvec_bases, cpu);
+ 
+ 	if (base != new_base) {
 -- 
 1.7.12.rc2.18.g61b472e
 
