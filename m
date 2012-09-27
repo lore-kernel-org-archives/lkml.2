@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab2I0Rnl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 13:43:41 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46149 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab2I0Rnj (ORCPT
+	id S1753529Ab2I0Rot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 13:44:49 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:42578 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2I0Ror (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 13:43:39 -0400
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH scsi] Short the path length of scsi_cmd_to_driver()
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1348464626.2475.13.camel@ThinkPad-T420>
-	<1348465493.2467.3.camel@dabdike>
-	<1348470210.2475.47.camel@ThinkPad-T420>
-	<1348472104.2467.8.camel@dabdike> <yq13924b4uw.fsf@sermon.lab.mkp.net>
-	<1348721055.2509.0.camel@dabdike>
-	<1348739495.3596.55.camel@ThinkPad-T420>
-Date: Thu, 27 Sep 2012 13:43:18 -0400
-In-Reply-To: <1348739495.3596.55.camel@ThinkPad-T420> (Li Zhong's message of
-	"Thu, 27 Sep 2012 17:51:35 +0800")
-Message-ID: <yq1a9wb8iq1.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.0.97 (gnu/linux)
+	Thu, 27 Sep 2012 13:44:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20120927071011.GA8980@gmail.com>
+References: <20120925170058.GC30158@x1.osrc.amd.com> <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
+ <20120926163233.GA5339@x1.osrc.amd.com> <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+ <20120926213723.GA27692@liondog.tnic> <1348722568.7059.115.camel@marge.simpson.net>
+ <20120927054742.GA4370@gmail.com> <1348727665.7059.160.camel@marge.simpson.net>
+ <20120927064142.GB5996@gmail.com> <1348728852.7059.171.camel@marge.simpson.net>
+ <20120927071011.GA8980@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 27 Sep 2012 10:44:26 -0700
+X-Google-Sender-Auth: fPOKatNtd1vPlneohFWC3X5LpiE
+Message-ID: <CA+55aFyxjdir-LZneBTk1JQV0cVSRFzEK9Jpxje2SJqA6aP3Yg@mail.gmail.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>, Borislav Petkov <bp@alien8.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Li" == Li Zhong <zhong@linux.vnet.ibm.com> writes:
+On Thu, Sep 27, 2012 at 12:10 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Just in case someone prefers patches to user-space approaches (I
+> certainly do!), here's one that turns off wakeup driven
+> preemption by default.
 
-> @@ -845,8 +844,11 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
-> 
-> 	scsi_eh_restore_cmnd(scmd, &ses);
-> 
->-	if (sdrv && sdrv->eh_action)
->-		rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
->+	if (scmd->request->cmd_type == REQ_TYPE_FS) {
->+		struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
->+		if (sdrv->eh_action)
->+			rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
->+	}
-> 
-> 	return rtn;
-> }
+Ok, so apparently this fixes performance in a big way, and might allow
+us to simplify select_idle_sibling(), which is clearly way too random.
 
-My only concern is whether our device lifetime rules guarantee that the
-ULD is always attached when we service an error handling command?
+That is, if we could make it automatic, some way. Not the "let the
+user tune it" - that's just fundamentally broken.
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+What is the common pattern for the wakeups for psql?
+
+Can we detect this somehow? Are they sync? It looks wrong to preempt
+for sync wakeups, for example, but we seem to do that.
+
+Or could we just improve the heuristics. What happens if the
+scheduling granularity is increased, for example? It's set to 1ms
+right now, with a logarithmic scaling by number of cpus.
+
+        Linus
