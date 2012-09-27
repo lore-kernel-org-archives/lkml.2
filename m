@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab2I0EMl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 00:12:41 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34474 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2I0EMj (ORCPT
+	id S1752216Ab2I0ENQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 00:13:16 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57122 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab2I0ENO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 00:12:39 -0400
-Date: Thu, 27 Sep 2012 06:12:33 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tao Guo <glorioustao@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        stable@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86_64: Work around old gas bug
-Message-ID: <20120927041233.GA3013@gmail.com>
-References: <1348648102-12653-1-git-send-email-glorioustao@gmail.com>
- <20120926132549.GA23630@kroah.com>
- <CAAV8rnK_+g7jFZ-_V4VG-e4FGWqevkA-mJvy=d3ivmoEWnUo1g@mail.gmail.com>
+	Thu, 27 Sep 2012 00:13:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAV8rnK_+g7jFZ-_V4VG-e4FGWqevkA-mJvy=d3ivmoEWnUo1g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABb+yY0dvtOZoa=T+gyTeWy3XyAictXJnqSkbF39E=peHSXDuQ@mail.gmail.com>
+References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
+	<1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
+	<CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
+	<CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
+	<CABb+yY36pQ7oXC1OKEQ-1V55c2SZurcTAPaZ=_PWugqxdL2rgg@mail.gmail.com>
+	<CAG17yqQ5NDr4sLvWbA85q5y079j2M2OV-uRjXSSL=OFPfCw3Zg@mail.gmail.com>
+	<CABb+yY0dvtOZoa=T+gyTeWy3XyAictXJnqSkbF39E=peHSXDuQ@mail.gmail.com>
+Date: Thu, 27 Sep 2012 09:43:13 +0530
+Message-ID: <CAG17yqQbRMaaEFyTBngMwdiKVBsGaOit1ufv3t5TdwLBgSKmfw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
+From: Inderpal Singh <inderpal.singh@linaro.org>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        boojin.kim@samsung.com, vinod.koul@intel.com, patches@linaro.org,
+        kgene.kim@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26 September 2012 22:19, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+> On Wed, Sep 26, 2012 at 4:25 PM, Inderpal Singh
+> <inderpal.singh@linaro.org> wrote:
+>> On 26 September 2012 15:02, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>>> On Wed, Sep 26, 2012 at 12:11 PM, Inderpal Singh
+>>> <inderpal.singh@linaro.org> wrote:
+>>>
+>>>> How about conditionally DMA_TERMINATE_ALL and free resources like below ?
+>>>>
+>>>> @@ -3017,9 +3017,11 @@ static int __devexit pl330_remove(struct
+>>>> amba_device *adev)
+>>>>                 /* Remove the channel */
+>>>>                 list_del(&pch->chan.device_node);
+>>>>
+>>>> -               /* Flush the channel */
+>>>> -               pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+>>>> -               pl330_free_chan_resources(&pch->chan);
+>>>> +               if (pch->chan.client_count != 0) {
+>>>> +                       /* Flush the channel */
+>>>> +                       pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+>>>> +                       pl330_free_chan_resources(&pch->chan);
+>>>> +               }
+>>>>         }
+>>>>
+>>> It is perfectly safe to flush the channels that have client_count == 0
+>>> as well. Which is already the case.
+>>
+>> As per my understanding, if client_count ==0, It may mean following:
+>>
+>> 1. This channel was never allocated to any client. Hence
+>> alloc_chan_resources was not done for it.
+>> So, no need to flush and free resources if it was never allocated at
+>> the first place. If we free_chan_resources, it will not be balanced
+>> against alloc_chan_resources. Scenario: insmod and then rmmod.
+>>
+>> Or,
+>>
+>> 2. The channel was allocated to some client, alloc_chan_resource was
+>> done, the work for the client is completed and free_chan_resources was
+>> performed. Now  since resources have already been freed, no need to
+>> flush and free_chan_resources again in remove.
+>>
+>> The whole idea of this patch is to balance alloc_chan_resources and
+>> free_chan_resources.
+>>
+> Do you see any issue with channels that have zero client_count ?
 
-* Tao Guo <glorioustao@gmail.com> wrote:
+As I explained in my previous mail, If the client_count is zero,
+either the alloc_chan_resources is not done(or failed) for that
+channel or the free_chan_resource have already been done. Please refer
+below code from dmaengine.c
 
-> On Wed, Sep 26, 2012 at 9:25 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Sep 26, 2012 at 04:28:22AM -0400, Tao Guo wrote:
-> >> gas in binutils(2.16.91) could not parse parentheses within macro
-> >> parameters unless fully parenthesized, and this is a workaround to
-> >> make old gas work without generating below errors:
-> >> arch/x86/kernel/entry_64.S: Assembler messages:
-> >> arch/x86/kernel/entry_64.S:387: Error: too many positional arguments
-> >> arch/x86/kernel/entry_64.S:389: Error: too many positional arguments
-> >> arch/x86/kernel/entry_64.S:390: Error: too many positional arguments
-> >> arch/x86/kernel/entry_64.S:391: Error: too many positional arguments
-> >> arch/x86/kernel/entry_64.S:392: Error: too many positional arguments
-> >> arch/x86/kernel/entry_64.S:393: Error: too many positional arguments
-> >> arch/x86/kernel/entry_64.S:394: Error: too many positional arguments
-> >>
-> >> Signed-off-by: Tao Guo <glorioustao@gmail.com>
-> >> ---
-> >>  arch/x86/include/asm/calling.h |   48 +++++++++++++++++++--------------------
-> >>  arch/x86/kernel/entry_64.S     |   20 ++++++++--------
-> >>  2 files changed, 33 insertions(+), 35 deletions(-)
-> >
-> > <formletter>
-> >
-> > This is not the correct way to submit patches for inclusion in the
-> > stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> > for how to do this properly.
-> >
-> > </formletter>
-> 
-> Thanks Greg, I just realized that I followed the old rules in 
-> an old Documentation/stable_kernel_rules.txt file. Since the 
-> patches for other stable branches will be a little different 
-> from this one, I will send them later to 
-> stable@vger.kernel.org after this patch gets accepted.
+static void dma_chan_put(struct dma_chan *chan)
+{
+        if (!chan->client_count)
+                return; /* this channel failed alloc_chan_resources */
+        chan->client_count--;
+        module_put(dma_chan_to_owner(chan));
+        if (chan->client_count == 0)
+                chan->device->device_free_chan_resources(chan);
+}
 
-Please don't send this to -stale yet (or at all).
+As you mentioned channel flush is needed if some client is queued and
+force unload happens.
+I am not against flushing and freeing channels. I am __only__
+suggesting to flush and free channels for which alloc_chan_resource
+was successful, which can be decided by "chan->client_count" as being
+done in above function.
 
-I have queued up the patch for v3.7, not even for v3.6. It needs 
-more testing - old GAS users are probably better off having a 
-non-building kernel than a subtly broken one. v3.7 and onwards 
-stable kernels will have the fix - hopefully by the time it's 
-released any more subtle bugs are found and fixed.
+Don't you think free_chan_resource should be done __only if__
+alloc_chan_resource was successful ?
 
 Thanks,
+Inder
 
-	Ingo
+> AFAIU there are already enough checks in the path to weed out unused
+> channels, so let us please not uglify the code by adding new
+> unnecessary checks.
+>
+> thanks.
