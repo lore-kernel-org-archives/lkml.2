@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab2I0FqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 01:46:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54287 "EHLO
+	id S1756135Ab2I0FrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 01:47:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54306 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab2I0FqL (ORCPT
+	with ESMTP id S1754544Ab2I0FrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 01:46:11 -0400
-Date: Wed, 26 Sep 2012 22:45:48 -0700
+	Thu, 27 Sep 2012 01:47:03 -0400
+Date: Wed, 26 Sep 2012 22:46:44 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-6du8dl1hz0y5l4cybodye7hn@git.kernel.org>
+Message-ID: <tip-g3rm9b3wtim4djx3z8dkftrj@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, dsahern@gmail.com,
-        tglx@linutronix.de
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, dsahern@gmail.com,
-        tglx@linutronix.de
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel:
-  Provide a new constructor for tracepoints
-Git-Commit-ID: efd2b924d3af0efd360cb5b7f29ddc9bc74fce4b
+Subject: [tip:perf/core] perf test:
+  Add test for the sched tracepoint format fields
+Git-Commit-ID: 6a6cd11d4e5793ce1a2fb88dc7a09dbf43f9c618
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,28 +30,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 22:45:54 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 22:46:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  efd2b924d3af0efd360cb5b7f29ddc9bc74fce4b
-Gitweb:     http://git.kernel.org/tip/efd2b924d3af0efd360cb5b7f29ddc9bc74fce4b
+Commit-ID:  6a6cd11d4e5793ce1a2fb88dc7a09dbf43f9c618
+Gitweb:     http://git.kernel.org/tip/6a6cd11d4e5793ce1a2fb88dc7a09dbf43f9c618
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 18 Sep 2012 11:21:50 -0300
+AuthorDate: Tue, 18 Sep 2012 11:56:28 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Sep 2012 12:26:59 -0300
+CommitDate: Mon, 24 Sep 2012 12:29:19 -0300
 
-perf evsel: Provide a new constructor for tracepoints
+perf test: Add test for the sched tracepoint format fields
 
-The existing constructor receives a perf_event_attr filled with the
-event type and the config.
-
-To reduce the boilerplate for tracepoints, provide a new constructor,
-perf_evsel__newtp() that receives the tracepoint name and will open
-the debugfs file, call into libtraceevent new pevent_parse_format file
-to fill its ->tp_format member, so that users can then just call
-perf_evsel__field() to access its fields.
+So that we make sure the routines that do event format parsing are
+working on at least two well know scheduler tracepoints.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -63,168 +55,120 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-6du8dl1hz0y5l4cybodye7hn@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-g3rm9b3wtim4djx3z8dkftrj@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c |   88 +++++++++++++++++++++++++++++++++++++++++++---
- tools/perf/util/evsel.h |    5 +++
- 2 files changed, 87 insertions(+), 6 deletions(-)
+ tools/perf/builtin-test.c |   86 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 86 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 1506ba0..00936ad 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -10,6 +10,7 @@
- #include <byteswap.h>
- #include <linux/bitops.h>
- #include "asm/bug.h"
-+#include "debugfs.h"
- #include "event-parse.h"
- #include "evsel.h"
- #include "evlist.h"
-@@ -69,6 +70,72 @@ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
- 	return evsel;
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 4aed155..32caf13 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -14,6 +14,7 @@
+ #include "util/symbol.h"
+ #include "util/thread_map.h"
+ #include "util/pmu.h"
++#include "event-parse.h"
+ #include "../../include/linux/hw_breakpoint.h"
+ 
+ #include <sys/mman.h>
+@@ -1207,6 +1208,87 @@ static int perf_evsel__roundtrip_name_test(void)
+ 	return ret;
  }
  
-+static struct event_format *event_format__new(const char *sys, const char *name)
++static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
++				  int size, bool should_be_signed)
 +{
-+	int fd, n;
-+	char *filename;
-+	void *bf = NULL, *nbf;
-+	size_t size = 0, alloc_size = 0;
-+	struct event_format *format = NULL;
++	struct format_field *field = perf_evsel__field(evsel, name);
++	int is_signed;
++	int ret = 0;
 +
-+	if (asprintf(&filename, "%s/%s/%s/format", tracing_events_path, sys, name) < 0)
-+		goto out;
-+
-+	fd = open(filename, O_RDONLY);
-+	if (fd < 0)
-+		goto out_free_filename;
-+
-+	do {
-+		if (size == alloc_size) {
-+			alloc_size += BUFSIZ;
-+			nbf = realloc(bf, alloc_size);
-+			if (nbf == NULL)
-+				goto out_free_bf;
-+			bf = nbf;
-+		}
-+
-+		n = read(fd, bf + size, BUFSIZ);
-+		if (n < 0)
-+			goto out_free_bf;
-+		size += n;
-+	} while (n > 0);
-+
-+	pevent_parse_format(&format, bf, size, sys);
-+
-+out_free_bf:
-+	free(bf);
-+	close(fd);
-+out_free_filename:
-+	free(filename);
-+out:
-+	return format;
-+}
-+
-+struct perf_evsel *perf_evsel__newtp(const char *sys, const char *name, int idx)
-+{
-+	struct perf_evsel *evsel = zalloc(sizeof(*evsel));
-+
-+	if (evsel != NULL) {
-+		struct perf_event_attr attr = {
-+			.type = PERF_TYPE_TRACEPOINT,
-+		};
-+
-+		evsel->tp_format = event_format__new(sys, name);
-+		if (evsel->tp_format == NULL)
-+			goto out_free;
-+
-+		attr.config = evsel->tp_format->id;
-+		perf_evsel__init(evsel, &attr, idx);
-+		evsel->name = evsel->tp_format->name;
++	if (field == NULL) {
++		pr_debug("%s: \"%s\" field not found!\n", evsel->name, name);
++		return -1;
 +	}
 +
-+	return evsel;
-+
-+out_free:
-+	free(evsel);
-+	return NULL;
-+}
-+
- const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX] = {
- 	"cycles",
- 	"instructions",
-@@ -495,6 +562,10 @@ void perf_evsel__delete(struct perf_evsel *evsel)
- 	perf_evsel__exit(evsel);
- 	close_cgroup(evsel->cgrp);
- 	free(evsel->group_name);
-+	if (evsel->tp_format && evsel->name == evsel->tp_format->name) {
-+		evsel->name = NULL;
-+		pevent_free_format(evsel->tp_format);
++	is_signed = !!(field->flags | FIELD_IS_SIGNED);
++	if (should_be_signed && !is_signed) {
++		pr_debug("%s: \"%s\" signedness(%d) is wrong, should be %d\n",
++			 evsel->name, name, is_signed, should_be_signed);
++		ret = -1;
 +	}
- 	free(evsel->name);
- 	free(evsel);
- }
-@@ -1002,14 +1073,19 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 	return 0;
- }
- 
-+struct format_field *perf_evsel__field(struct perf_evsel *evsel, const char *name)
-+{
-+	return pevent_find_field(evsel->tp_format, name);
++
++	if (field->size != size) {
++		pr_debug("%s: \"%s\" size (%d) should be %d!\n",
++			 evsel->name, name, field->size, size);
++		ret = -1;
++	}
++
++	return 0;
 +}
 +
- char *perf_evsel__strval(struct perf_evsel *evsel, struct perf_sample *sample,
- 			 const char *name)
- {
--	struct format_field *field = pevent_find_field(evsel->tp_format, name);
-+	struct format_field *field = perf_evsel__field(evsel, name);
- 	int offset;
- 
--        if (!field)
--                return NULL;
-+	if (!field)
-+		return NULL;
- 
- 	offset = field->offset;
- 
-@@ -1024,11 +1100,11 @@ char *perf_evsel__strval(struct perf_evsel *evsel, struct perf_sample *sample,
- u64 perf_evsel__intval(struct perf_evsel *evsel, struct perf_sample *sample,
- 		       const char *name)
- {
--	struct format_field *field = pevent_find_field(evsel->tp_format, name);
-+	struct format_field *field = perf_evsel__field(evsel, name);
- 	u64 val;
- 
--        if (!field)
--                return 0;
-+	if (!field)
-+		return 0;
- 
- 	val = pevent_read_number(evsel->tp_format->pevent,
- 				 sample->raw_data + field->offset, field->size);
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 93876ba..bb445d1 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -81,6 +81,7 @@ struct perf_evlist;
- struct perf_record_opts;
- 
- struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx);
-+struct perf_evsel *perf_evsel__newtp(const char *sys, const char *name, int idx);
- void perf_evsel__init(struct perf_evsel *evsel,
- 		      struct perf_event_attr *attr, int idx);
- void perf_evsel__exit(struct perf_evsel *evsel);
-@@ -128,6 +129,10 @@ char *perf_evsel__strval(struct perf_evsel *evsel, struct perf_sample *sample,
- u64 perf_evsel__intval(struct perf_evsel *evsel, struct perf_sample *sample,
- 		       const char *name);
- 
-+struct format_field;
++static int perf_evsel__tp_sched_test(void)
++{
++	struct perf_evsel *evsel = perf_evsel__newtp("sched", "sched_switch", 0);
++	int ret = 0;
 +
-+struct format_field *perf_evsel__field(struct perf_evsel *evsel, const char *name);
++	if (evsel == NULL) {
++		pr_debug("perf_evsel__new\n");
++		return -1;
++	}
 +
- #define perf_evsel__match(evsel, t, c)		\
- 	(evsel->attr.type == PERF_TYPE_##t &&	\
- 	 evsel->attr.config == PERF_COUNT_##c)
++	if (perf_evsel__test_field(evsel, "prev_comm", 16, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "prev_pid", 4, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "prev_prio", 4, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "prev_state", 8, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "next_comm", 16, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "next_pid", 4, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "next_prio", 4, true))
++		ret = -1;
++
++	perf_evsel__delete(evsel);
++
++	evsel = perf_evsel__newtp("sched", "sched_wakeup", 0);
++
++	if (perf_evsel__test_field(evsel, "comm", 16, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "pid", 4, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "prio", 4, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "success", 4, true))
++		ret = -1;
++
++	if (perf_evsel__test_field(evsel, "target_cpu", 4, true))
++		ret = -1;
++
++	return 0;
++}
++
+ static struct test {
+ 	const char *desc;
+ 	int (*func)(void);
+@@ -1254,6 +1336,10 @@ static struct test {
+ 		.func = perf_evsel__roundtrip_name_test,
+ 	},
+ 	{
++		.desc = "Check parsing of sched tracepoints fields",
++		.func = perf_evsel__tp_sched_test,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
