@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab2I0MyV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 08:54:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41000 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751676Ab2I0MyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 08:54:18 -0400
-Date: Thu, 27 Sep 2012 14:54:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120927125415.GD29104@dhcp22.suse.cz>
-References: <506381B2.2060806@parallels.com>
- <20120926224235.GB10453@mtj.dyndns.org>
- <50638793.7060806@parallels.com>
- <20120926230807.GC10453@mtj.dyndns.org>
- <50638DBB.4000002@parallels.com>
- <20120926233334.GD10453@mtj.dyndns.org>
- <20120927121558.GB29104@dhcp22.suse.cz>
- <506444A7.5060303@parallels.com>
- <20120927124031.GC29104@dhcp22.suse.cz>
- <50644923.2060008@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50644923.2060008@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752266Ab2I0M7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 08:59:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15721 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab2I0M7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 08:59:09 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=uYhUNWhNYUiux16SLwsA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348750745.22822.71.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.2.30-rt45
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Thu, 27 Sep 2012 08:59:05 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 27-09-12 16:40:03, Glauber Costa wrote:
-> On 09/27/2012 04:40 PM, Michal Hocko wrote:
-> > On Thu 27-09-12 16:20:55, Glauber Costa wrote:
-> >> On 09/27/2012 04:15 PM, Michal Hocko wrote:
-> >>> On Wed 26-09-12 16:33:34, Tejun Heo wrote:
-> >>> [...]
-> >>>>>> So, this seems properly crazy to me at the similar level of
-> >>>>>> use_hierarchy fiasco.  I'm gonna NACK on this.
-> >>>>>
-> >>>>> As I said: all use cases I particularly care about are covered by a
-> >>>>> global switch.
-> >>>>>
-> >>>>> I am laying down my views because I really believe they make more sense.
-> >>>>> But at some point, of course, I'll shut up if I believe I am a lone voice.
-> >>>>>
-> >>>>> I believe it should still be good to hear from mhocko and kame, but from
-> >>>>> your point of view, would all the rest, plus the introduction of a
-> >>>>> global switch make it acceptable to you?
-> >>>>
-> >>>> The only thing I'm whining about is per-node switch + silently
-> >>>> ignoring past accounting, so if those two are solved, I think I'm
-> >>>> pretty happy with the rest.
-> >>>
-> >>> I think that per-group "switch" is not nice as well but if we make it
-> >>> hierarchy specific (which I am proposing for quite some time) and do not
-> >>> let enable accounting for a group with tasks then we get both
-> >>> flexibility and reasonable semantic. A global switch sounds too coars to
-> >>> me and it really not necessary.
-> >>>
-> >>> Would this work with you?
-> >>>
-> >>
-> >> How exactly would that work? AFAIK, we have a single memcg root, we
-> >> can't have multiple memcg hierarchies in a system. Am I missing something?
-> > 
-> > Well root is so different that we could consider the first level as the
-> > real roots for hierarchies.
-> > 
-> So let's favor clarity: What you are proposing is that the first level
-> can have a switch for that, and the first level only. Is that right ?
 
-I do not want any more switches. I am fine with your "set the limit and
-start accounting apprach" and then inherit the _internal_ flag down the
-hierarchy.
-If you are in a child and want to set the limit then you can do that
-only if your parent is accounted already (so that you can have your own
-limit). We will need the same thing for oom_controll and swappinness.
--- 
-Michal Hocko
-SUSE Labs
+Dear RT Folks,
+
+I'm pleased to announce the 3.2.30-rt45 stable release.
+
+
+This release is just an update to the new stable 3.2.30 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 6674e5257742c7852038926912dc22d88468990b
+
+
+Or to build 3.2.30-rt45 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.30.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.30-rt45.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
