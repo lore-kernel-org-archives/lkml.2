@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab2I0L3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 07:29:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60951 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2I0L3Q (ORCPT
+	id S1751877Ab2I0Lat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 07:30:49 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48580 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab2I0Lar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 07:29:16 -0400
-Date: Thu, 27 Sep 2012 13:29:11 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org
-Subject: CMA broken in next-20120926
-Message-ID: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
+	Thu, 27 Sep 2012 07:30:47 -0400
+Message-ID: <50643802.5050200@linux.vnet.ibm.com>
+Date: Thu, 27 Sep 2012 16:56:58 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:tvmnC9JzNV73/q+gyDCcIPVN5fKDHRn2h31FwB5um2f
- LCrh+pMyzSpTW/TRoM8mJ6iGON6fAe2FJrNk1QPcrcKBObonvC
- YM59/jvkP49DGjeete7yqCR9GcbhucP5ZFoTCzDHu1WxzJj/W8
- cggryahvUXvayanHe3q7rMWeZpIwxNXC1nP8ZbAlxufTU1FuCz
- uscjvRP+iVkAa7XnYcqkBZ5M6rb7HxXqKIMBPmEjNz7Z+zhlDJ
- US3ddljpMOnexICrFED7AU438nSjydlNLXv2/ypcQstwsUa7Zs
- LdDd+sFPJahI0zGwkV6K1fLLYTv8WPK858r7Ef0jdYr5g5K88Y
- eWgL7+bzO1tv4yDZ+KcYKfbnDftroc9LoSwAIScyPN8IfcN9SS
- CdkL1mHsjh9ZsO9TZeSMN2ZB4mI65/qw6qoPqbaHT9mxmDMV6K
- CiaNN
+To: Avi Kivity <avi@redhat.com>
+CC: Jiannan Ouyang <ouyang@cs.pitt.edu>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <5060851E.1030404@redhat.com> <506166B4.4010207@linux.vnet.ibm.com> <5061713D.5060406@redhat.com> <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com> <50641356.5070008@redhat.com>
+In-Reply-To: <50641356.5070008@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092711-5140-0000-0000-0000022235D1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/27/2012 02:20 PM, Avi Kivity wrote:
+> On 09/25/2012 04:43 PM, Jiannan Ouyang wrote:
+>> I've actually implemented this preempted_bitmap idea.
+>
+> Interesting, please share the code if you can.
+>
+>> However, I'm doing this to expose this information to the guest, so the
+>> guest is able to know if the lock holder is preempted or not before
+>> spining. Right now, I'm doing experiment to show that this idea works.
+>>
+>> I'm wondering what do you guys think of the relationship between the
+>> pv_ticketlock approach and PLE handler approach. Are we going to adopt
+>> PLE instead of the pv ticketlock, and why?
+>
+> Right now we're searching for the best solution.  The tradeoffs are more
+> or less:
+>
+> PLE:
+> - works for unmodified / non-Linux guests
+> - works for all types of spins (e.g. smp_call_function*())
+> - utilizes an existing hardware interface (PAUSE instruction) so likely
+> more robust compared to a software interface
+>
+> PV:
+> - has more information, so it can perform better
 
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Should we also consider that we always have an edge here for non-PLE
+machine?
 
-Hi Marek,
+>
+> Given these tradeoffs, if we can get PLE to work for moderate amounts of
+> overcommit then I'll prefer it (even if it slightly underperforms PV).
+> If we are unable to make it work well, then we'll have to add PV.
+>
+Avi,
+Thanks for this summary.. It is of great help to proceed in right
+direction..
 
-any idea why CMA might be broken in next-20120926. I see that there
-haven't been any major changes to CMA itself, but there's been quite a
-bit of restructuring of various memory allocation bits lately. I wasn't
-able to track the problem down, though.
-
-What I see is this during boot (with CMA_DEBUG enabled):
-
-[    0.266904] cma: dma_alloc_from_contiguous(cma db474f80, count 64, align 6)
-[    0.284469] cma: dma_alloc_from_contiguous(): memory range at c09d7000 is busy, retrying
-[    0.293648] cma: dma_alloc_from_contiguous(): memory range at c09d7800 is busy, retrying
-...
-[    2.648619] DMA: failed to allocate 256 KiB pool for atomic coherent allocation
-...
-[    4.196193] WARNING: at /home/thierry.reding/src/kernel/linux-ipmp.git/arch/arm/mm/dma-mapping.c:485 __alloc_from_pool+0xdc/0x110()
-[    4.207988] coherent pool not initialised!
-
-So the pool isn't getting initialized properly because CMA can't get at
-the memory. Do you have any hints as to what might be going on? If it's
-any help, I started seeing this with next-20120926 and it is in today's
-next as well.
-
-Thierry
-
---d6Gm4EdcadzBjdND
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQZDiHAAoJEN0jrNd/PrOhsVUQAKLGabYy5yGw6glae+q6hIG/
-XoPKR3WQW/UDBOX0rJo2PW9z6I+jeAydqQ2Z1nEN1C9JiyhdZv6oMAk7NXBd56F+
-GjQSeGhlFKrjqtEGidoaExm5c0VOKb+FFTFXI5kYpqmawYIqevUsi8GQKSJTRToE
-Ozl39Lzk6FFiYii0bjgm7KHMiWW0TydvcIGBiUrN9A68NJpb6nPuTP9Q2Kbjs0ej
-SxRlKkk/xQu7fnFnV2nppVUVauR2Gv3+tWIqXrfPbIWtvzBpnj9dkI+FI+wmB9dP
-avK7dsYV5MIoMPRIG93bdfjvujg5m4sKbrvkwwfGnNkioMBQJF99bdIxZdB8o++9
-NR6ns/+jIV0JnaLem0lc8E0/VN5rPYfVDZNirfVwqD9vQxl62OlKVzlfCGBGstWd
-il0N0D2lD0/G1mPDgsDiVCzmTQPHQkeDWmClxhnPnBM6FshOiyFJ7Aq7rW8f5HUM
-oc/0lQSUkqu9+L++I/smTqVuPhtfaZ3zHpg4Fmwkr2xJ5M/2RT8Dg6BPzgLQa5Qy
-ddR4rpsFPm3g0GUkzhDBoMjpe1xJSeSymzNOHCVigxYfzMW4xBnxTAgnoLF6JVcJ
-bI9K6zV7nD7s0vFgfbyEFoUKEPnaabc5vRvRgWQROCfGkdurqo8KtUlOKLv+j/wZ
-61WEuc+MegPL7StZyr6e
-=xCJK
------END PGP SIGNATURE-----
-
---d6Gm4EdcadzBjdND--
