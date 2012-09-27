@@ -1,112 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab2I0OYh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 10:24:37 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:65042 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab2I0OYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 10:24:36 -0400
-Message-ID: <506461A0.4050103@gmail.com>
-Date: Thu, 27 Sep 2012 09:24:32 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1752835Ab2I0O2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 10:28:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45833 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420Ab2I0O23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 10:28:29 -0400
+Date: Thu, 27 Sep 2012 15:28:22 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+Message-ID: <20120927142822.GG3429@suse.de>
+References: <50635B9D.8020205@parallels.com>
+ <20120926195648.GA20342@google.com>
+ <50635F46.7000700@parallels.com>
+ <20120926201629.GB20342@google.com>
+ <50637298.2090904@parallels.com>
+ <20120926221046.GA10453@mtj.dyndns.org>
+ <506381B2.2060806@parallels.com>
+ <20120926224235.GB10453@mtj.dyndns.org>
+ <50638793.7060806@parallels.com>
+ <20120926230807.GC10453@mtj.dyndns.org>
 MIME-Version: 1.0
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-CC: grant.likely@secretlab.ca, rob@landley.net, b-cousson@ti.com,
-        tony@atomide.com, linux@arm.linux.org.uk, balbi@ti.com,
-        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/5] drivers: usb: phy: add a new driver for omap usb2
- phy
-References: <1346943430-18236-1-git-send-email-kishon@ti.com> <1346943430-18236-2-git-send-email-kishon@ti.com> <50605CFB.5090402@gmail.com> <CAAe_U6+2Vxd8F_JMafm41+0SnZSrZCa_9VKRbdB200BUHw5vEQ@mail.gmail.com>
-In-Reply-To: <CAAe_U6+2Vxd8F_JMafm41+0SnZSrZCa_9VKRbdB200BUHw5vEQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120926230807.GC10453@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2012 05:06 AM, ABRAHAM, KISHON VIJAY wrote:
-> Hi,
+On Wed, Sep 26, 2012 at 04:08:07PM -0700, Tejun Heo wrote:
+> Hello, Glauber.
 > 
-> On Mon, Sep 24, 2012 at 6:45 PM, Rob Herring <robherring2@gmail.com> wrote:
->> On 09/06/2012 09:57 AM, Kishon Vijay Abraham I wrote:
->>> All phy related programming like enabling/disabling the clocks, powering
->>> on/off the phy is taken care of by this driver. It is also used for OTG
->>> related functionality like srp.
->>>
->>> This also includes device tree support for usb2 phy driver and
->>> the documentation with device tree binding information is updated.
->>>
->>> Currently writing to control module register is taken care in this
->>> driver which will be removed once the control module driver is in place.
->>>
->>> Cc: Felipe Balbi <balbi@ti.com>
->>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>> ---
->>>  Documentation/devicetree/bindings/usb/usb-phy.txt |   17 ++
->>>  drivers/usb/phy/Kconfig                           |    9 +
->>>  drivers/usb/phy/Makefile                          |    1 +
->>>  drivers/usb/phy/omap-usb2.c                       |  271 +++++++++++++++++++++
->>>  include/linux/usb/omap_usb.h                      |   46 ++++
->>>  include/linux/usb/phy_companion.h                 |   34 +++
->>>  6 files changed, 378 insertions(+)
->>>  create mode 100644 Documentation/devicetree/bindings/usb/usb-phy.txt
->>>  create mode 100644 drivers/usb/phy/omap-usb2.c
->>>  create mode 100644 include/linux/usb/omap_usb.h
->>>  create mode 100644 include/linux/usb/phy_companion.h
->>>
->>> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
->>> new file mode 100644
->>> index 0000000..80d4148
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
->>
->> This is a very generic name...
->>
->>> @@ -0,0 +1,17 @@
->>> +USB PHY
->>> +
->>> +OMAP USB2 PHY
->>> +
->>> +Required properties:
->>> + - compatible: Should be "ti,omap-usb2"
->>
->> ...for a specific phy. However, I do think a generic binding to describe
->> host ctrlr to phy connections is needed.
->>
->>> + - reg : Address and length of the register set for the device. Also
->>> +add the address of control module dev conf register until a driver for
->>> +control module is added
->>
->> The dts should describe the h/w, not what you need for the current
->> driver. The 2nd reg field does not belong here.
+> On Thu, Sep 27, 2012 at 02:54:11AM +0400, Glauber Costa wrote:
+> > I don't. Much has been said in the past about the problem of sharing. A
+> > lot of the kernel objects are shared by nature, this is pretty much
+> > unavoidable. The answer we have been giving to this inquiry, is that the
+> > workloads (us) interested in kmem accounted tend to be quite local in
+> > their file accesses (and other kernel objects as well).
+> > 
+> > It should be obvious that not all workloads are like this, and some of
+> > them would actually prefer to have their umem limited only.
+> > 
+> > There is nothing unreasonable in tracking user memory only.
+> > 
+> > If we have a global switch for "tracking all kernel memory", who would
+> > you account the objects that are heavily shared to? I solve this by not
+> > tracking kernel memory for cgroups in such workloads. What do you propose?
 > 
-> Indeed. This was discussed and agreed upon as a interim solution till
-> we have a control module driver in place to write to the control
-> module register.
+> One of the things wrong with that is that it exposes the limitation of
+> the current implementation as interface to userland, which is never a
+> good idea.
 
-Discussed where and agreed by who? I for one do not agree.
+I think the limitations have been fairly clearly explained and any admin
+using the interface is going to have *some* familiarity with the limitations.
 
-Rob
+> In addition, how is userland supposed to know which
+> workload is shared kmem heavy or not? 
 
->>
->>> +
->>> +This is usually a subnode of ocp2scp to which it is connected.
->>
->> How is usb port to phy connection described?
-> Currently the usb controller to phy connection is established only by
-> type. We have a couple of patches being currently discussed in the
-> list to establish the connection by phandle.
+By using a bit of common sense.
+
+An application may not be able to figure this out but the administrator
+is going to be able to make a very educated guess. If processes running
+within two containers are not sharing a filesystem hierarchy for example
+then it'll be clear they are not sharing dentries.
+
+If there was a suspicion they were then it could be analysed with
+something like SystemTap probing when files are opened and see if files
+are being opened that are shared between containers.
+
+It's not super-easy but it's not impossible either and I fail to see why
+it's such a big deal for you.
+
+>Details like that are not even
+> inherent to workloads.  It's highly dependent on kernel implementation
+> which may change any day.  If we hit workloads like that the right
+> thing to do is improving kmemcg so that such problems don't occur, not
+> exposing another switch.
 > 
-> https://patchwork.kernel.org/patch/1457801/ (Generic PHY Framework:
-> devm_of_phy_get())
-> http://www.spinics.net/lists/linux-usb/msg69547.html
+> If we can't make that work in reasonable (doesn't have to be perfect)
+> way, we might as well just give up on kmem controller.  If userland
+> has to second-guess kernel implementation details to make use of it,
+> it's useless.
 > 
-> Thanks
-> Kishon
+> > > Well, that's really playing with words.  Limit is per cgroup and
+> > > before the limit is set for the first time, everything is accounted to
+> > > something else.  How is that keeping track?
+> > > 
+> > 
+> > Even after the limit is set, it is set only by workloads that want kmem
+> > to be tracked. If you want to track it during the whole lifetime of the
+> > cgroup, you switch it before you put tasks to it. What is so crazy about it?
+> 
+> The fact that the numbers don't really mean what they apparently
+> should mean.
 > 
 
+I think it is a reasonable limitation that only some kernel allocations are
+accounted for although I'll freely admit I'm not a cgroup or memcg user
+either.
+
+My understanding is that this comes down to cost -- accounting for the
+kernel memory usage is expensive so it is limited only to the allocations
+that are easy to abuse by an unprivileged process. Hence this is
+initially concerned with stack pages with dentries and TCP usage to
+follow in later patches.
+
+Further I would expect that an administrator would be aware of these
+limitations and set kmem_accounting at cgroup creation time before any
+processes start. Maybe that should be enforced but it's not a
+fundamental problem.
+
+Due to the cost of accounting, I can see why it would be desirable to
+enable kmem_accounting for some cgroup trees and not others. It is not
+unreasonable to expect that an administrator might want to account within
+one cgroup where processes are accessing millions of files without
+impairing the performance of another cgroup that is mostly using
+anonymous memory.
+
+> > > The proposed behavior seems really crazy to me.  Do people really
+> > > think this is a good idea?
+> > 
+> > It is really sad that you lost the opportunity to say that in a room
+> > full of mm developers that could add to this discussion in real time,
+> > when after an explanation about this was given, Mel asked if anyone
+> > would have any objections to this.
+> 
+> Sure, conferences are useful for building consensus but that's the
+> extent of it.  Sorry that I didn't realize the implications then but
+> conferences don't really add any finality to decisions.
+> 
+> So, this seems properly crazy to me at the similar level of
+> use_hierarchy fiasco.  I'm gonna NACK on this.
+> 
+
+I think you're over-reacting to say the very least :|
+
+-- 
+Mel Gorman
+SUSE Labs
