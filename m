@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab2IZX4a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 19:56:30 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62088 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2IZX42 (ORCPT
+	id S1752821Ab2I0AD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 20:03:59 -0400
+Received: from nm10.bullet.mail.bf1.yahoo.com ([98.139.212.169]:42928 "HELO
+	nm10.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751167Ab2I0ADy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 19:56:28 -0400
-Date: Wed, 26 Sep 2012 16:56:41 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, Anmar Oueja <anmar.oueja@linaro.org>,
-        Patrice Chotard <patrice.chotard@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] ARM: ux500: 8500: update I2C sleep states pinctrl
-Message-ID: <20120926235641.GB6567@quad.lixom.net>
-References: <1348570915-3116-1-git-send-email-linus.walleij@stericsson.com>
+	Wed, 26 Sep 2012 20:03:54 -0400
+X-Yahoo-Newman-Id: 530763.94523.bm@omp1022.access.mail.mud.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ClGUYAQVM1nnODR_x89IvnvlsGQ8FuMhFetqqPFctE45j4E
+ 28wA.rAaEF8M2u9f4505ZK4ayJzuxTIuoEo6n5nUTBPKxqrM5tkDmwJgu2Dw
+ 4YAmQ.cyv8ob6OTF1S_X7mb8vm83t7ul8vH8.h48SwsvsrgaLo2ZYvD6Bvgc
+ hTSTf2r.n0mfWbfU0K32VAHmbHP406QzfFTVRBAb0JIgRjjlDHfa1vTOgHIt
+ uRXZZAhlLH9azv9spuEMApH4DRtSkXn297O0jthk35nVQf72eJLpvlj6W1Lf
+ 2rLzHo.tav5RvbRlEsHkOfsQS97a8NWVIqivekksV16Cr.SIaEduLCS2NzjQ
+ rFO3svqohPHmvXgoJkeGfp9vQWxNEMUmAzK2aco63.7WolxbKk900bUIQ1fu
+ onmWbST1PLV6ZklhSzEycZbBUCfZL7fnlXtCPucyyBu2UmqX58A--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <506397E9.1070000@att.net>
+Date: Wed, 26 Sep 2012 19:03:53 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348570915-3116-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Daniel Santos <daniel.santos@pobox.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        torvalds@linux-foundation.org
+Subject: Re: Please be aware that __always_inline doesn't mean "always inline"!
+References: <50638DCC.5040506@att.net> <20120926165044.46b8f7d6.akpm@linux-foundation.org>
+In-Reply-To: <20120926165044.46b8f7d6.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 01:01:55PM +0200, Linus Walleij wrote:
-> From: Patrice Chotard <patrice.chotard@stericsson.com>
-> 
-> This defines the proper sleep states for all the I2C pins of
-> the MOP500 DB8500 ASIC setting.
-> 
-> Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Requesting ARM SoC ACKs to take this through pinctrl for
-> ease-of-merge going forward, as dependecies are in there.
+On 09/26/2012 06:50 PM, Andrew Morton wrote:
+> As I mentioned in the other thread, the __always_inline's in fs/namei.c
+> (at least) are doing exactly what we want them to do, so some more
+> investigation is needed here?
+Yes, definitely. When I did some tests on it (to confirm the behavior) a
+few months ago, it did behave as advertised. Sounds like this definitely
+needs more research. Thanks Andrew.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+Daniel
 
-
--Olof
