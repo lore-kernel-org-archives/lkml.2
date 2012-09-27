@@ -1,85 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab2I0Q7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 12:59:36 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50252 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab2I0Q7f (ORCPT
+	id S1752581Ab2I0RBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 13:01:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47818 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab2I0RBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 12:59:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120807134156.GP1996@amd.com> <20120927145217.GA18962@8bytes.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
- <20120927153928.GB18962@8bytes.org> <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 27 Sep 2012 09:59:13 -0700
-X-Google-Sender-Auth: v4bkvAoTcDz79JR_IEq2FqYyRXU
-Message-ID: <CA+55aFx5CtDDpXTunJDtkDQWPX7sY0hYMRyekuPErC+s5yXpWw@mail.gmail.com>
-Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Sep 2012 13:01:42 -0400
+Message-Id: <20120927170137.722717394@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 27 Sep 2012 20:59:59 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: alan@lxorguk.ukuu.org.uk, hpa@zytor.com, gregkh@linuxfoundation.org,
+        xemul@parallels.com, jslaby@suse.cz,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [patch 1/2] tty: pty - Move TIOCPKT handling into pty.c
+References: <20120927165958.287690622@openvz.org>
+Content-Disposition: inline; filename=tty-move-pktmode-set
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 9:16 AM, Myklebust, Trond
-<Trond.Myklebust@netapp.com> wrote:
->
-> I cannot see how that BUG_ON can be triggered in the current code, given
-> that the only place where idmap->idmap_key_cons is set to a non-NULL
-> value is covered by a mutex, and that it is always cleared before we
-> release said mutex.
+Since this ioctl is for pty devices only move it to pty.c.
 
-Quite frankly, the "I cannot see" thing is *never* an excuse for a BUG_ON().
+Suggested-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/pty.c       |   29 +++++++++++++++++++++++++++++
+ drivers/tty/tty_ioctl.c |   20 --------------------
+ 2 files changed, 29 insertions(+), 20 deletions(-)
 
-We don't do kernel-killing asserts in Linux. Never.
+Index: tty.git/drivers/tty/pty.c
+===================================================================
+--- tty.git.orig/drivers/tty/pty.c
++++ tty.git/drivers/tty/pty.c
+@@ -174,6 +174,31 @@ static int pty_set_lock(struct tty_struc
+ 	return 0;
+ }
+ 
++/* Set the packet mode on a pty */
++static int pty_set_pktmode(struct tty_struct *tty, int __user *arg)
++{
++	unsigned long flags;
++	int pktmode;
++
++	if (tty->driver->subtype != PTY_TYPE_MASTER)
++		return -ENOTTY;
++
++	if (get_user(pktmode, arg))
++		return -EFAULT;
++
++	spin_lock_irqsave(&tty->ctrl_lock, flags);
++	if (pktmode) {
++		if (!tty->packet) {
++			tty->packet = 1;
++			tty->link->ctrl_status = 0;
++		}
++	} else
++		tty->packet = 0;
++	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
++
++	return 0;
++}
++
+ /* Send a signal to the slave */
+ static int pty_signal(struct tty_struct *tty, int sig)
+ {
+@@ -393,6 +418,8 @@ static int pty_bsd_ioctl(struct tty_stru
+ 	switch (cmd) {
+ 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+ 		return pty_set_lock(tty, (int __user *) arg);
++	case TIOCPKT: /* Set PT packet mode */
++		return pty_set_pktmode(tty, (int __user *)arg);
+ 	case TIOCSIG:    /* Send signal to other side of pty */
+ 		return pty_signal(tty, (int) arg);
+ 	}
+@@ -507,6 +534,8 @@ static int pty_unix98_ioctl(struct tty_s
+ 	switch (cmd) {
+ 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+ 		return pty_set_lock(tty, (int __user *)arg);
++	case TIOCPKT: /* Set PT packet mode */
++		return pty_set_pktmode(tty, (int __user *)arg);
+ 	case TIOCGPTN: /* Get PT Number */
+ 		return put_user(tty->index, (unsigned int __user *)arg);
+ 	case TIOCSIG:    /* Send signal to other side of pty */
+Index: tty.git/drivers/tty/tty_ioctl.c
+===================================================================
+--- tty.git.orig/drivers/tty/tty_ioctl.c
++++ tty.git/drivers/tty/tty_ioctl.c
+@@ -1153,26 +1153,6 @@ int n_tty_ioctl_helper(struct tty_struct
+ 		return 0;
+ 	case TCFLSH:
+ 		return tty_perform_flush(tty, arg);
+-	case TIOCPKT:
+-	{
+-		int pktmode;
+-
+-		if (tty->driver->type != TTY_DRIVER_TYPE_PTY ||
+-		    tty->driver->subtype != PTY_TYPE_MASTER)
+-			return -ENOTTY;
+-		if (get_user(pktmode, (int __user *) arg))
+-			return -EFAULT;
+-		spin_lock_irqsave(&tty->ctrl_lock, flags);
+-		if (pktmode) {
+-			if (!tty->packet) {
+-				tty->packet = 1;
+-				tty->link->ctrl_status = 0;
+-			}
+-		} else
+-			tty->packet = 0;
+-		spin_unlock_irqrestore(&tty->ctrl_lock, flags);
+-		return 0;
+-	}
+ 	default:
+ 		/* Try the mode commands */
+ 		return tty_mode_ioctl(tty, file, cmd, arg);
 
-The only excuse for a BUG_ON() is "I cannot possibly continue, I don't
-even have an error path I can take".
-
-If it's a fundamentally impossible situation, the BUG_ON() should
-never have been there in the first place!
-
-And if it's a "I don't see how it could happen", then it should have
-been something like
-
-    if (WARN_ON_ONCE(condition))
-        goto cleanup;
-
-rather than a BUG_ON().
-
-We have too many f*cking BUG_ON's in the kernel, and the fact that one
-triggers and it has taken a month and a half without it even being
-resolved is a problem.
-
-Get rid of the thing, already, dammit. If you cannot figure out how it
-can happen, then the *last* thing you want to do is then kill the
-machine so that it's impossible to debug it sanely.
-
-Besides, as far as I can tell, idmap_key_cons locking is suspect
-anyway. Stuff like this:
-
-                cons = ACCESS_ONCE(idmap->idmap_key_cons);
-                idmap->idmap_key_cons = NULL;
-
-is an almost certain example of "the code is racy, and we did it
-wrong". The above is basically *never* correct.
-
-If the access is properly locked, then the ACCESS_ONCE() is a bug.
-
-And if the access *isn't* properly locked, then setting things to NULL
-afterwards is in no way safe.
-
-IOW, either way, it's broken. And there's at least two of those
-clearly buggy code-sequences involving that field.
-
-So get rid of the BUG_ON() (possibly replacing it with the
-WARN_ON_ONCE), and please look at those ACCESS_ONCE() sequences and
-fix them. Either they happen under a lock, or they don't. None of this
-crazy racy crap, please.
-
-                   Linus
