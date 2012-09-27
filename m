@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab2I0LKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 07:10:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62660 "EHLO mx1.redhat.com"
+	id S1756692Ab2I0LKi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 07:10:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54510 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753546Ab2I0LK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 07:10:28 -0400
+	id S1754911Ab2I0LK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 07:10:29 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -14,20 +14,24 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 02/14] perf diff: Refactor diff displacement possition info
-Date: Thu, 27 Sep 2012 13:09:23 +0200
-Message-Id: <1348744175-11115-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 03/14] perf hists: Separate overhead and baseline columns
+Date: Thu, 27 Sep 2012 13:09:24 +0200
+Message-Id: <1348744175-11115-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
 References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving the position calculation into the diff command, so the position
-is prepared inside struct hist_entry data and there's no need to compute
-in the output display path.
+Currently the overhead and baseline columns are handled within
+single function and the distinction is made by 'baseline hists'
+pointer passed by 'struct perf_hpp::ptr'.
 
-Removing 'displacement' from struct perf_hpp as it is no longer needed.
+Since hists pointer is now part of each hist_entry, it's possible
+to locate paired hists pointer directly from the passed struct
+hist_entry pointer.
+
+Also separating those 2 columns makes the code more obvious.
 
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -38,260 +42,204 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-diff.c   | 49 +++++++++++++++++++++++++++++----------------
- tools/perf/builtin-report.c |  2 +-
- tools/perf/builtin-top.c    |  2 +-
- tools/perf/ui/hist.c        |  8 +++++---
- tools/perf/ui/stdio/hist.c  | 17 +++-------------
- tools/perf/util/hist.h      |  4 +---
- tools/perf/util/sort.h      |  2 +-
- 7 files changed, 44 insertions(+), 40 deletions(-)
+ tools/perf/ui/hist.c       | 74 ++++++++++++++++++++++++++++++----------------
+ tools/perf/ui/stdio/hist.c | 11 +++++--
+ tools/perf/util/hist.h     |  1 +
+ 3 files changed, 58 insertions(+), 28 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 761f419..5cb577a 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -70,8 +70,8 @@ static struct perf_tool tool = {
- 	.ordering_requires_timestamps = true,
- };
- 
--static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
--						    struct hist_entry *he)
-+static void insert_hist_entry_by_name(struct rb_root *root,
-+				      struct hist_entry *he)
- {
- 	struct rb_node **p = &root->rb_node;
- 	struct rb_node *parent = NULL;
-@@ -90,7 +90,7 @@ static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
- 	rb_insert_color(&he->rb_node, root);
- }
- 
--static void hists__resort_entries(struct hists *self)
-+static void hists__name_resort(struct hists *self, bool sort)
- {
- 	unsigned long position = 1;
- 	struct rb_root tmp = RB_ROOT;
-@@ -100,12 +100,16 @@ static void hists__resort_entries(struct hists *self)
- 		struct hist_entry *n = rb_entry(next, struct hist_entry, rb_node);
- 
- 		next = rb_next(&n->rb_node);
--		rb_erase(&n->rb_node, &self->entries);
- 		n->position = position++;
--		perf_session__insert_hist_entry_by_name(&tmp, n);
-+
-+		if (sort) {
-+			rb_erase(&n->rb_node, &self->entries);
-+			insert_hist_entry_by_name(&tmp, n);
-+		}
- 	}
- 
--	self->entries = tmp;
-+	if (sort)
-+		self->entries = tmp;
- }
- 
- static struct hist_entry *hists__find_entry(struct hists *self,
-@@ -121,7 +125,7 @@ static struct hist_entry *hists__find_entry(struct hists *self,
- 			n = n->rb_left;
- 		else if (cmp > 0)
- 			n = n->rb_right;
--		else 
-+		else
- 			return iter;
- 	}
- 
-@@ -150,6 +154,24 @@ static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
- 	return NULL;
- }
- 
-+static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool name)
-+{
-+	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		struct hists *hists = &evsel->hists;
-+
-+		hists__output_resort(hists);
-+
-+		/*
-+		 * The hists__name_resort only sets possition
-+		 * if name is false.
-+		 */
-+		if (name || ((!name) && show_displacement))
-+			hists__name_resort(hists, name);
-+	}
-+}
-+
- static int __cmd_diff(void)
- {
- 	int ret, i;
-@@ -176,15 +198,8 @@ static int __cmd_diff(void)
- 	evlist_old = older->evlist;
- 	evlist_new = newer->evlist;
- 
--	list_for_each_entry(evsel, &evlist_new->entries, node)
--		hists__output_resort(&evsel->hists);
--
--	list_for_each_entry(evsel, &evlist_old->entries, node) {
--		hists__output_resort(&evsel->hists);
--
--		if (show_displacement)
--			hists__resort_entries(&evsel->hists);
--	}
-+	perf_evlist__resort_hists(evlist_old, true);
-+	perf_evlist__resort_hists(evlist_new, false);
- 
- 	list_for_each_entry(evsel, &evlist_new->entries, node) {
- 		struct perf_evsel *evsel_old;
-@@ -200,7 +215,7 @@ static int __cmd_diff(void)
- 
- 		hists__match(&evsel_old->hists, &evsel->hists);
- 		hists__fprintf(&evsel->hists, &evsel_old->hists,
--			       show_displacement, true, 0, 0, stdout);
-+			       true, 0, 0, stdout);
- 	}
- 
- out_delete:
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 1da243d..6748cac 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -320,7 +320,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
- 		const char *evname = perf_evsel__name(pos);
- 
- 		hists__fprintf_nr_sample_events(hists, evname, stdout);
--		hists__fprintf(hists, NULL, false, true, 0, 0, stdout);
-+		hists__fprintf(hists, NULL, true, 0, 0, stdout);
- 		fprintf(stdout, "\n\n");
- 	}
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e434a16..6b8c629 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -316,7 +316,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
- 	hists__output_recalc_col_len(&top->sym_evsel->hists,
- 				     top->winsize.ws_row - 3);
- 	putchar('\n');
--	hists__fprintf(&top->sym_evsel->hists, NULL, false, false,
-+	hists__fprintf(&top->sym_evsel->hists, NULL, false,
- 		       top->winsize.ws_row - 4 - printed, win_width, stdout);
- }
- 
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index e3f8cd4..55b9ca8 100644
+index 55b9ca8..920001d 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -244,13 +244,15 @@ static int hpp__width_displ(struct perf_hpp *hpp __maybe_unused)
+@@ -8,9 +8,7 @@
+ /* hist period print (hpp) functions */
+ static int hpp__header_overhead(struct perf_hpp *hpp)
+ {
+-	const char *fmt = hpp->ptr ? "Baseline" : "Overhead";
+-
+-	return scnprintf(hpp->buf, hpp->size, fmt);
++	return scnprintf(hpp->buf, hpp->size, "Overhead");
  }
  
- static int hpp__entry_displ(struct perf_hpp *hpp,
--			    struct hist_entry *he __maybe_unused)
-+			    struct hist_entry *he)
+ static int hpp__width_overhead(struct perf_hpp *hpp __maybe_unused)
+@@ -22,17 +20,6 @@ static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
  {
+ 	double percent = 100.0 * he->period / hpp->total_period;
+ 
+-	if (hpp->ptr) {
+-		struct hists *old_hists = hpp->ptr;
+-		u64 total_period = old_hists->stats.total_period;
+-		u64 base_period = he->pair ? he->pair->period : 0;
+-
+-		if (total_period)
+-			percent = 100.0 * base_period / total_period;
+-		else
+-			percent = 0.0;
+-	}
+-
+ 	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
+ }
+ 
+@@ -41,17 +28,6 @@ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ 	double percent = 100.0 * he->period / hpp->total_period;
+ 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
+ 
+-	if (hpp->ptr) {
+-		struct hists *old_hists = hpp->ptr;
+-		u64 total_period = old_hists->stats.total_period;
+-		u64 base_period = he->pair ? he->pair->period : 0;
+-
+-		if (total_period)
+-			percent = 100.0 * base_period / total_period;
+-		else
+-			percent = 0.0;
+-	}
+-
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
+@@ -159,6 +135,47 @@ static int hpp__entry_overhead_guest_us(struct perf_hpp *hpp,
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
++static int hpp__header_baseline(struct perf_hpp *hpp)
++{
++	return scnprintf(hpp->buf, hpp->size, "Baseline");
++}
++
++static int hpp__width_baseline(struct perf_hpp *hpp __maybe_unused)
++{
++	return 8;
++}
++
++static double baseline_percent(struct hist_entry *he)
++{
 +	struct hist_entry *pair = he->pair;
-+	long displacement = pair ? pair->position - he->position : 0;
- 	const char *fmt = symbol_conf.field_sep ? "%s" : "%6.6s";
- 	char buf[32] = " ";
- 
--	if (hpp->displacement)
--		scnprintf(buf, sizeof(buf), "%+4ld", hpp->displacement);
-+	if (displacement)
-+		scnprintf(buf, sizeof(buf), "%+4ld", displacement);
- 
- 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
- }
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 882461a..d7405f0 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -308,7 +308,7 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
- 
- static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 			       struct hists *hists, struct hists *pair_hists,
--			       long displacement, u64 total_period, FILE *fp)
-+			       u64 total_period, FILE *fp)
++	struct hists *pair_hists = pair ? pair->hists : NULL;
++	double percent = 0.0;
++
++	if (pair) {
++		u64 total_period = pair_hists->stats.total_period;
++		u64 base_period  = pair->period;
++
++		percent = 100.0 * base_period / total_period;
++	}
++
++	return percent;
++}
++
++static int hpp__color_baseline(struct perf_hpp *hpp, struct hist_entry *he)
++{
++	double percent = baseline_percent(he);
++
++	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%%", percent);
++}
++
++static int hpp__entry_baseline(struct perf_hpp *hpp, struct hist_entry *he)
++{
++	double percent = baseline_percent(he);
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%%";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, percent);
++}
++
+ static int hpp__header_samples(struct perf_hpp *hpp)
  {
- 	char bf[512];
- 	int ret;
-@@ -316,7 +316,6 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 		.buf		= bf,
- 		.size		= size,
- 		.total_period	= total_period,
--		.displacement	= displacement,
- 		.ptr		= pair_hists,
- 	};
- 	bool color = !symbol_conf.field_sep;
-@@ -337,15 +336,13 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- }
+ 	const char *fmt = symbol_conf.field_sep ? "%s" : "%11s";
+@@ -269,6 +286,7 @@ static int hpp__entry_displ(struct perf_hpp *hpp,
+ 	.entry	= hpp__entry_ ## _name
  
- size_t hists__fprintf(struct hists *hists, struct hists *pair,
--		      bool show_displacement, bool show_header, int max_rows,
-+		      bool show_header, int max_rows,
- 		      int max_cols, FILE *fp)
- {
- 	struct sort_entry *se;
- 	struct rb_node *nd;
- 	size_t ret = 0;
- 	u64 total_period;
--	unsigned long position = 1;
--	long displacement = 0;
- 	unsigned int width;
+ struct perf_hpp_fmt perf_hpp__format[] = {
++	{ .cond = false, HPP__COLOR_PRINT_FNS(baseline) },
+ 	{ .cond = true,  HPP__COLOR_PRINT_FNS(overhead) },
+ 	{ .cond = false, HPP__COLOR_PRINT_FNS(overhead_sys) },
+ 	{ .cond = false, HPP__COLOR_PRINT_FNS(overhead_us) },
+@@ -302,6 +320,8 @@ void perf_hpp__init(bool need_pair, bool show_displacement)
+ 		perf_hpp__format[PERF_HPP__PERIOD].cond = true;
+ 
+ 	if (need_pair) {
++		perf_hpp__format[PERF_HPP__OVERHEAD].cond = false;
++		perf_hpp__format[PERF_HPP__BASELINE].cond = true;
+ 		perf_hpp__format[PERF_HPP__DELTA].cond = true;
+ 
+ 		if (show_displacement)
+@@ -321,6 +341,7 @@ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
  	const char *sep = symbol_conf.field_sep;
- 	const char *col_width = symbol_conf.col_width_list_str;
-@@ -449,15 +446,7 @@ print_entries:
- 		if (h->filtered)
+ 	char *start = hpp->buf;
+ 	int i, ret;
++	bool first = true;
+ 
+ 	if (symbol_conf.exclude_other && !he->parent)
+ 		return 0;
+@@ -329,9 +350,10 @@ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+ 		if (!perf_hpp__format[i].cond)
  			continue;
  
--		if (show_displacement) {
--			if (h->pair != NULL)
--				displacement = ((long)h->pair->position -
--					        (long)position);
--			else
--				displacement = 0;
--			++position;
--		}
--		ret += hist_entry__fprintf(h, max_cols, hists, pair, displacement,
-+		ret += hist_entry__fprintf(h, max_cols, hists, pair,
- 					   total_period, fp);
+-		if (!sep || i > 0) {
++		if (!sep || !first) {
+ 			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+ 			advance_hpp(hpp, ret);
++			first = false;
+ 		}
  
- 		if (max_rows && ++nr_rows >= max_rows)
+ 		if (color && perf_hpp__format[i].color)
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index d7405f0..0aa6776 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -353,6 +353,7 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 		.size	= sizeof(bf),
+ 		.ptr	= pair,
+ 	};
++	bool first = true;
+ 
+ 	init_rem_hits();
+ 
+@@ -364,8 +365,10 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 		if (!perf_hpp__format[idx].cond)
+ 			continue;
+ 
+-		if (idx)
++		if (!first)
+ 			fprintf(fp, "%s", sep ?: "  ");
++		else
++			first = false;
+ 
+ 		perf_hpp__format[idx].header(&dummy_hpp);
+ 		fprintf(fp, "%s", bf);
+@@ -400,6 +403,8 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 	if (sep)
+ 		goto print_entries;
+ 
++	first = true;
++
+ 	fprintf(fp, "# ");
+ 	for (idx = 0; idx < PERF_HPP__MAX_INDEX; idx++) {
+ 		unsigned int i;
+@@ -407,8 +412,10 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 		if (!perf_hpp__format[idx].cond)
+ 			continue;
+ 
+-		if (idx)
++		if (!first)
+ 			fprintf(fp, "%s", sep ?: "  ");
++		else
++			first = false;
+ 
+ 		width = perf_hpp__format[idx].width(&dummy_hpp);
+ 		for (i = 0; i < width; i++)
 diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index f011ad4..6d07f1a 100644
+index 6d07f1a..4fd8ddb 100644
 --- a/tools/perf/util/hist.h
 +++ b/tools/perf/util/hist.h
-@@ -99,8 +99,7 @@ void hists__inc_nr_events(struct hists *self, u32 type);
- size_t hists__fprintf_nr_events(struct hists *self, FILE *fp);
+@@ -133,6 +133,7 @@ struct perf_hpp_fmt {
+ extern struct perf_hpp_fmt perf_hpp__format[];
  
- size_t hists__fprintf(struct hists *self, struct hists *pair,
--		      bool show_displacement, bool show_header,
--		      int max_rows, int max_cols, FILE *fp);
-+		      bool show_header, int max_rows, int max_cols, FILE *fp);
- 
- int hist_entry__inc_addr_samples(struct hist_entry *self, int evidx, u64 addr);
- int hist_entry__annotate(struct hist_entry *self, size_t privsize);
-@@ -120,7 +119,6 @@ struct perf_hpp {
- 	size_t size;
- 	u64 total_period;
- 	const char *sep;
--	long displacement;
- 	void *ptr;
- };
- 
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index eb3959b..f070b52 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -73,8 +73,8 @@ struct hist_entry {
- 	u8			filtered;
- 	char			*srcline;
- 	struct symbol		*parent;
-+	unsigned long		position;
- 	union {
--		unsigned long	  position;
- 		struct hist_entry *pair;
- 		struct rb_root	  sorted_chain;
- 	};
+ enum {
++	PERF_HPP__BASELINE,
+ 	PERF_HPP__OVERHEAD,
+ 	PERF_HPP__OVERHEAD_SYS,
+ 	PERF_HPP__OVERHEAD_US,
 -- 
 1.7.11.4
 
