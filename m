@@ -1,36 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2I0C4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 22:56:31 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:32906 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab2I0C4a (ORCPT
+	id S1754148Ab2I0C6k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 22:58:40 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49535 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab2I0C6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 22:56:30 -0400
-Date: Wed, 26 Sep 2012 19:53:40 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: mathieu.poirier@linaro.org
-Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: [PATCH 04/57] power: ab8500: bm: movimg back to ab8500 platform
- data managment
-Message-ID: <20120927025340.GC8836@lizard>
-References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
- <1348589574-25655-5-git-send-email-mathieu.poirier@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1348589574-25655-5-git-send-email-mathieu.poirier@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Sep 2012 22:58:38 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-1f-5063bbe30cb1
+From: Hyeoncheol Lee <hyc.lee@gmail.com>
+To: acme@ghostprotocols.net
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH] perf probe: print an enum type variable in "enum variable-name" format when showing accessible variables
+Date: Thu, 27 Sep 2012 11:36:39 +0900
+Message-Id: <1348713399-4541-1-git-send-email-hyc.lee@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 10:12:01AM -0600, mathieu.poirier@linaro.org wrote:
-> From: Philippe Langlais <philippe.langlais@linaro.org>
+When showing accessible variables, an enum type variable was
+ printed in "variable-name" format. Change this format into
+"enum variable-name".
 
-Oh, and there's also a typo in the subject line.
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
+---
+ tools/perf/util/dwarf-aux.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-> Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> ---
-...
+diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+index ee51e9b..3e5f543 100644
+--- a/tools/perf/util/dwarf-aux.c
++++ b/tools/perf/util/dwarf-aux.c
+@@ -804,6 +804,8 @@ int die_get_typename(Dwarf_Die *vr_die, char *buf, int len)
+ 			tmp = "union ";
+ 		else if (tag == DW_TAG_structure_type)
+ 			tmp = "struct ";
++		else if (tag == DW_TAG_enumeration_type)
++			tmp = "enum ";
+ 		/* Write a base name */
+ 		ret = snprintf(buf, len, "%s%s", tmp, dwarf_diename(&type));
+ 		return (ret >= len) ? -E2BIG : ret;
+-- 
+1.7.10.4
+
