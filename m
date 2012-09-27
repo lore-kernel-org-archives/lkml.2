@@ -1,89 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab2I0NoL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:44:11 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:56038 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab2I0NoK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:44:10 -0400
-X-Auth-Info: 1kij2cmfyZHF/5XrX3aS1fgJ1wkO64TAskO6gjlvXFU=
-From: Marek Vasut <marex@denx.de>
-To: Fabio Estevam <festevam@gmail.com>
-Subject: Re: [PATCH] mfd: da9052-core: Fix request_threaded_irq() parameter
-Date: Thu, 27 Sep 2012 15:21:06 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
-        ashish.jangam@kpitcummins.com, dchen@diasemi.com,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-References: <1348718135-10300-1-git-send-email-festevam@gmail.com>
-In-Reply-To: <1348718135-10300-1-git-send-email-festevam@gmail.com>
+	id S1752887Ab2I0Nog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:44:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43674 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752300Ab2I0Noe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 09:44:34 -0400
+Date: Thu, 27 Sep 2012 15:44:32 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
+Message-ID: <20120927134432.GE29104@dhcp22.suse.cz>
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
+ <1347977050-29476-7-git-send-email-glommer@parallels.com>
+ <20120926155108.GE15801@dhcp22.suse.cz>
+ <5064392D.5040707@parallels.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209271521.07084.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5064392D.5040707@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Fabio Estevam,
+On Thu 27-09-12 15:31:57, Glauber Costa wrote:
+> On 09/26/2012 07:51 PM, Michal Hocko wrote:
+> > On Tue 18-09-12 18:04:03, Glauber Costa wrote:
+[...]
+> >> +	*_memcg = NULL;
+> >> +	rcu_read_lock();
+> >> +	p = rcu_dereference(current->mm->owner);
+> >> +	memcg = mem_cgroup_from_task(p);
+> > 
+> > mem_cgroup_from_task says it can return NULL. Do we care here? If not
+> > then please put VM_BUG_ON(!memcg) here.
+> > 
+> >> +	rcu_read_unlock();
+> >> +
+> >> +	if (!memcg_can_account_kmem(memcg))
+> >> +		return true;
+> >> +
+> >> +	mem_cgroup_get(memcg);
+> > 
+> > I am confused. Why do we take a reference to memcg rather than css_get
+> > here? Ahh it is because we keep the reference while the page is
+> > allocated, right? Comment please.
+> ok.
+> 
+> > 
+> > I am still not sure whether we need css_get here as well. How do you
+> > know that the current is not moved in parallel and it is a last task in
+> > a group which then can go away?
+> 
+> the reference count aquired by mem_cgroup_get will still prevent the
+> memcg from going away, no?
 
-> From: Fabio Estevam <fabio.estevam@freescale.com>
-> 
-> On a mx53qsb dt-kernel the da9052-core driver fails to probe:
-> 
-> da9052 1-0048: DA9052 ADC IRQ failed ret=-22
-> 
-> In request_threaded_irq() the first parameter is missing the
-> da9052->irq_base.
-> 
-> Fix it and avoid the error.
-> 
-> Also define 'DA9052_IRQF' for improving readability.
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Yes but you are outside of the rcu now and we usually do css_get before
+we rcu_unlock. mem_cgroup_get just makes sure the group doesn't get
+deallocated but it could be gone before you call it. Or I am just
+confused - these 2 levels of ref counting is really not nice.
 
-Reviewed-by: Marek Vasut <marex@denx.de>
+Anyway, I have just noticed that __mem_cgroup_try_charge does
+VM_BUG_ON(css_is_removed(&memcg->css)) on a given memcg so you should
+keep css ref count up as well.
 
-> ---
->  drivers/mfd/da9052-core.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
-> index a0a62b2..a3450d2 100644
-> --- a/drivers/mfd/da9052-core.c
-> +++ b/drivers/mfd/da9052-core.c
-> @@ -33,6 +33,7 @@
->  #define DA9052_IRQ_MASK_POS_6		0x20
->  #define DA9052_IRQ_MASK_POS_7		0x40
->  #define DA9052_IRQ_MASK_POS_8		0x80
-> +#define DA9052_IRQF			(IRQF_TRIGGER_LOW | IRQF_ONESHOT)
-> 
->  static bool da9052_reg_readable(struct device *dev, unsigned int reg)
->  {
-> @@ -788,16 +789,15 @@ int __devinit da9052_device_init(struct da9052
-> *da9052, u8 chip_id) da9052->irq_base = pdata->irq_base;
-> 
->  	ret = regmap_add_irq_chip(da9052->regmap, da9052->chip_irq,
-> -				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> -				  da9052->irq_base, &da9052_regmap_irq_chip,
-> -				  &da9052->irq_data);
-> +				  DA9052_IRQF, da9052->irq_base,
-> +				  &da9052_regmap_irq_chip, &da9052->irq_data);
->  	if (ret < 0)
->  		goto regmap_err;
-> 
->  	da9052->irq_base = regmap_irq_chip_get_base(da9052->irq_data);
-> 
-> -	ret = request_threaded_irq(DA9052_IRQ_ADC_EOM, NULL, da9052_auxadc_irq,
-> -				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +	ret = request_threaded_irq(da9052->irq_base + DA9052_IRQ_ADC_EOM, NULL,
-> +				   da9052_auxadc_irq, DA9052_IRQF,
->  				   "adc irq", da9052);
->  	if (ret != 0)
->  		dev_err(da9052->dev, "DA9052 ADC IRQ failed ret=%d\n", ret);
+> >> +	/* The page allocation failed. Revert */
+> >> +	if (!page) {
+> >> +		memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
+> >> +		return;
+> >> +	}
+> >> +
+> >> +	pc = lookup_page_cgroup(page);
+> >> +	lock_page_cgroup(pc);
+> >> +	pc->mem_cgroup = memcg;
+> >> +	SetPageCgroupUsed(pc);
+> >> +	unlock_page_cgroup(pc);
+> >> +}
+> >> +
+> >> +void __memcg_kmem_uncharge_page(struct page *page, int order)
+> >> +{
+> >> +	struct mem_cgroup *memcg = NULL;
+> >> +	struct page_cgroup *pc;
+> >> +
+> >> +
+> >> +	pc = lookup_page_cgroup(page);
+> >> +	/*
+> >> +	 * Fast unlocked return. Theoretically might have changed, have to
+> >> +	 * check again after locking.
+> >> +	 */
+> >> +	if (!PageCgroupUsed(pc))
+> >> +		return;
+> >> +
+> >> +	lock_page_cgroup(pc);
+> >> +	if (PageCgroupUsed(pc)) {
+> >> +		memcg = pc->mem_cgroup;
+> >> +		ClearPageCgroupUsed(pc);
+> >> +	}
+> >> +	unlock_page_cgroup(pc);
+> >> +
+> >> +	/*
+> >> +	 * Checking if kmem accounted is enabled won't work for uncharge, since
+> >> +	 * it is possible that the user enabled kmem tracking, allocated, and
+> >> +	 * then disabled it again.
+> > 
+> > disabling cannot happen, right?
+> > 
+> not anymore, right. I can update the comment, 
 
-Best regards,
-Marek Vasut
+yes, it is confusing
+
+> but I still believe it is a lot saner to trust information in
+> page_cgroup.
+
+I have no objections against that. PageCgroupUsed test and using
+pc->mem_cgroup is fine.
+
+> >> +#ifdef CONFIG_MEMCG_KMEM
+> >> +int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+> >> +{
+> >> +	struct res_counter *fail_res;
+> >> +	struct mem_cgroup *_memcg;
+> >> +	int ret;
+> >> +	bool may_oom;
+> >> +	bool nofail = false;
+> >> +
+> >> +	may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
+> >> +	    !(gfp & __GFP_NORETRY);
+> > 
+> > A comment please? Why __GFP_IO is not considered for example?
+> > 
+> > 
+> 
+> Actually, I believe testing for GFP_WAIT and !GFP_NORETRY would be enough.
+> 
+> The rationale here is, of course, under which circumstance would it be
+> valid to call the oom killer? Which is, if the allocation can wait, and
+> can retry.
+
+Yes __GFP_WAIT is clear because memcg OOM can wait for arbitrary amount
+of time (wait for userspace action on oom_control). __GFP_NORETRY
+couldn't get to oom before because oom was excluded explicitely for THP
+and migration didn't go through the charging path to reach the oom.
+But I do agree that __GFP_NORETRY allocations shouldn't cause the OOM
+because we should rather fail the allocation from kernel rather than
+shoot something.
+
+-- 
+Michal Hocko
+SUSE Labs
