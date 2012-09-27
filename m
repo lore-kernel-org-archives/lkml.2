@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab2I0MG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 08:06:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38736 "EHLO mx2.suse.de"
+	id S1753788Ab2I0MHM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 08:07:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2315 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751627Ab2I0MG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 08:06:27 -0400
-Date: Thu, 27 Sep 2012 13:06:21 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: compaction: cache if a pageblock was scanned and no
- pages were isolated -fix2
-Message-ID: <20120927120621.GB3429@suse.de>
-References: <1348224383-1499-1-git-send-email-mgorman@suse.de>
- <1348224383-1499-9-git-send-email-mgorman@suse.de>
- <20120921143656.60a9a6cd.akpm@linux-foundation.org>
- <20120924093938.GZ11266@suse.de>
- <20120924142644.06c38b80.akpm@linux-foundation.org>
- <20120925091207.GD11266@suse.de>
- <20120925130352.0d60957a.akpm@linux-foundation.org>
+	id S1751140Ab2I0MHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 08:07:10 -0400
+Message-ID: <50644148.5090201@redhat.com>
+Date: Thu, 27 Sep 2012 14:06:32 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120925130352.0d60957a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Jiannan Ouyang <ouyang@cs.pitt.edu>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <5060851E.1030404@redhat.com> <506166B4.4010207@linux.vnet.ibm.com> <5061713D.5060406@redhat.com> <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com> <50641356.5070008@redhat.com> <50643802.5050200@linux.vnet.ibm.com>
+In-Reply-To: <50643802.5050200@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clearing of PG_migrate_skip potentially takes a long time if the
-zone is massive. Be safe and check if it needs to reschedule.
+On 09/27/2012 01:26 PM, Raghavendra K T wrote:
+> On 09/27/2012 02:20 PM, Avi Kivity wrote:
+>> On 09/25/2012 04:43 PM, Jiannan Ouyang wrote:
+>>> I've actually implemented this preempted_bitmap idea.
+>>
+>> Interesting, please share the code if you can.
+>>
+>>> However, I'm doing this to expose this information to the guest, so the
+>>> guest is able to know if the lock holder is preempted or not before
+>>> spining. Right now, I'm doing experiment to show that this idea works.
+>>>
+>>> I'm wondering what do you guys think of the relationship between the
+>>> pv_ticketlock approach and PLE handler approach. Are we going to adopt
+>>> PLE instead of the pv ticketlock, and why?
+>>
+>> Right now we're searching for the best solution.  The tradeoffs are more
+>> or less:
+>>
+>> PLE:
+>> - works for unmodified / non-Linux guests
+>> - works for all types of spins (e.g. smp_call_function*())
+>> - utilizes an existing hardware interface (PAUSE instruction) so likely
+>> more robust compared to a software interface
+>>
+>> PV:
+>> - has more information, so it can perform better
+> 
+> Should we also consider that we always have an edge here for non-PLE
+> machine?
 
-This is a fix for
-mm-compaction-cache-if-a-pageblock-was-scanned-and-no-pages-were-isolated.patch
+True.  The deployment share for these is decreasing rapidly though.  I
+hate optimizing for obsolete hardware.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/compaction.c |    3 +++
- 1 file changed, 3 insertions(+)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index fb07abb..722d10f 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -85,6 +85,9 @@ static void reset_isolation_suitable(struct zone *zone)
- 	/* Walk the zone and mark every pageblock as suitable for isolation */
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
- 		struct page *page;
-+
-+		cond_resched();
-+
- 		if (!pfn_valid(pfn))
- 			continue;
- 
+-- 
+error compiling committee.c: too many arguments to function
