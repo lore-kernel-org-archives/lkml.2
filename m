@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab2I0HjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 03:39:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55703 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757501Ab2I0HjD (ORCPT
+	id S1756685Ab2I0HnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 03:43:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40599 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360Ab2I0HnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 03:39:03 -0400
-Date: Thu, 27 Sep 2012 00:38:50 -0700
-From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
-Message-ID: <tip-402537fd9f5499d1a50a6f20cdd9031d24ee2e47@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        zheng.z.yan@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1348709606-2759-1-git-send-email-zheng.z.yan@intel.com>
-References: <1348709606-2759-1-git-send-email-zheng.z.yan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86: Fix typo in uncore_pmu_to_box
-Git-Commit-ID: 402537fd9f5499d1a50a6f20cdd9031d24ee2e47
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 27 Sep 2012 00:38:56 -0700 (PDT)
+	Thu, 27 Sep 2012 03:43:24 -0400
+Date: Thu, 27 Sep 2012 17:43:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20120927174316.c6c4485c392aef3c552183f7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__27_Sep_2012_17_43_16_+1000_5t0J8aLogWHj9VJD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  402537fd9f5499d1a50a6f20cdd9031d24ee2e47
-Gitweb:     http://git.kernel.org/tip/402537fd9f5499d1a50a6f20cdd9031d24ee2e47
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Thu, 27 Sep 2012 09:33:26 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 27 Sep 2012 08:05:13 +0200
+--Signature=_Thu__27_Sep_2012_17_43_16_+1000_5t0J8aLogWHj9VJD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-perf/x86: Fix typo in uncore_pmu_to_box
+Hi Andrew,
 
-The variable box should not be declared as static.
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-This could probably cause crashes with sufficiently parallel
-uncore PMU use.
+In file included from arch/x86/include/asm/syscall.h:16:0,
+                 from arch/x86/kernel/signal.c:40:
+include/linux/audit.h: In function 'audit_get_loginuid':
+include/linux/audit.h:536:1: error: expected ';' before '}' token
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Cc: eranian@google.com
-Cc: a.p.zijlstra@chello.nl
-Link: http://lkml.kernel.org/r/1348709606-2759-1-git-send-email-zheng.z.yan@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Caused by commit 57fb5bbce51d ("audit.h: replace defines with C stubs").
+
+I have added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 27 Sep 2012 17:35:06 +1000
+Subject: [PATCH] audit.h: replace defines with C stubs fix
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/audit.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 38e4894..c7c55e7 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -1950,7 +1950,7 @@ struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type, int cp
- static struct intel_uncore_box *
- uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index f1cfe02..30e9bea 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -532,7 +532,7 @@ extern int audit_set_loginuid(kuid_t loginuid);
+=20
+ static inline kuid_t audit_get_loginuid(struct task_struct *tsk)
  {
--	static struct intel_uncore_box *box;
-+	struct intel_uncore_box *box;
- 
- 	box = *per_cpu_ptr(pmu->box, cpu);
- 	if (box)
+-	return tsk->loginuid
++	return tsk->loginuid;
+ }
+=20
+ static inline int audit_get_sessionid(struct task_struct *tsk)
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__27_Sep_2012_17_43_16_+1000_5t0J8aLogWHj9VJD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQZAOUAAoJEECxmPOUX5FEivkP/3x/c7qDEadxxGiOgV5wWr0p
+dhqk5JZaKX4ub34o3wBh1+yGPvOqMNnWxdXjugEGyT3l6N0rYYf3viKDM05jWWdE
+KFsKhkhYqvBNRpCUh6zWGAsZkll9y9l+PRGZjd08RunqE0HH/fp0So+9WACScNfw
+wD+MRUdJ5IM6wjxu94jfhNE/h+gZsbkHBk0rXmduJWwO+TSg56S2asEy6YWNQuQr
+a70dzYSgVSCNUQKCr1urnQt9xi6VCIgr9ddduxDQo1ac2Ea473ZGsvi1+wsRBsXZ
+sxv6LMGTsZIPtbzIgpLpX1mOJJRsTlciTALRbDrnJzfnfNjrok4J+5CSpL9fQ4f6
+6xLr5B84uD5TxOpUshHOpZx/aGsrNXXhY9IYbcFXvPIvyF7TsoM5/kMz72R6muKt
+4QdNttYsOqKw/dfGvKs756WP267HC4kreTromUi5CsFSkcCpvdHMySzhwi19GzkV
+AVNbVjHfoqwFlAGTbpVQMeRAEKzX9ZgW2UucRrs+ZkSmLtW6GpJyWFlnbg73reBC
+pW8X0/85WXivxGtr8Imh1dnzhtpRRa61sFNBdLRtCBUpBvZzL3lR9BHywSA3QUF1
+sC7V/T8B4cTm3aasGCg9YVXgBLpo+BTi6w/ZxKER2e7kyUZUhx5RxVrkCBs/8gm0
+C2Oz9+m/JnCLu8Bqx1OB
+=066J
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__27_Sep_2012_17_43_16_+1000_5t0J8aLogWHj9VJD--
