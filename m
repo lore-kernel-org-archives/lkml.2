@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab2I0EmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 00:42:14 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60139 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab2I0EmL (ORCPT
+	id S1753833Ab2I0EoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 00:44:21 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44495 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750759Ab2I0EoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 00:42:11 -0400
-Date: Wed, 26 Sep 2012 21:41:37 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tj@kernel.org, axboe@kernel.dk, vgoyal@redhat.com
-Subject: Re: [PATCH v3 05/26] md: Convert md_trim_bio() to use bio_advance()
-Message-ID: <20120927044137.GC29160@moria.home.lan>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
- <1348526106-17074-6-git-send-email-koverstreet@google.com>
- <20120926103827.4d880cf4@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120926103827.4d880cf4@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 27 Sep 2012 00:44:20 -0400
+Message-ID: <1348721055.2509.0.camel@dabdike>
+Subject: Re: [PATCH scsi] Add NULL checking of return value from
+ scsi_cmd_to_driver()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 27 Sep 2012 08:44:15 +0400
+In-Reply-To: <yq13924b4uw.fsf@sermon.lab.mkp.net>
+References: <1348464626.2475.13.camel@ThinkPad-T420>
+	 <1348465493.2467.3.camel@dabdike> <1348470210.2475.47.camel@ThinkPad-T420>
+	 <1348472104.2467.8.camel@dabdike> <yq13924b4uw.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 10:38:27AM +1000, NeilBrown wrote:
-> On Mon, 24 Sep 2012 15:34:45 -0700 Kent Overstreet <koverstreet@google.com>
-> wrote:
+On Wed, 2012-09-26 at 22:02 -0400, Martin K. Petersen wrote:
+> >>>>> "James" == James Bottomley <James.Bottomley@HansenPartnership.com> writes:
 > 
-> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > CC: Jens Axboe <axboe@kernel.dk>
-> > CC: NeilBrown <neilb@suse.de>
-> > ---
-> >  drivers/md/md.c | 19 +++++--------------
-> >  1 file changed, 5 insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/drivers/md/md.c b/drivers/md/md.c
-> > index 7a2b079..51ce48c 100644
-> > --- a/drivers/md/md.c
-> > +++ b/drivers/md/md.c
-> > @@ -190,25 +190,16 @@ void md_trim_bio(struct bio *bio, int offset, int size)
-> >  	struct bio_vec *bvec;
-> >  	int sofar = 0;
-> >  
-> > -	size <<= 9;
-> >  	if (offset == 0 && size == bio->bi_size)
-> >  		return;
+> James> Plus, I think it fixes a bug where you get different behaviours
+> James> from REQ_TYPE_BLOCK_PC commands when a driver is and isn't
+> James> attached (I've cc'd Martin to see what he thinks).
 > 
-> Safer to leave the "size <<= 9" where it is, otherwise that condition will
-> always fail.
+> I'm fine with having the eh action be triggered for FS requests only, if
+> that's what you're asking?
 
-Whoops, moving that certainly didn't make sense. Thanks!
+Sort of ... I was thinking do it for all non REQ_TYPE_BLOCK_PC commands
+(which includes flush and other strange types), but if you think it
+should only be for REQ_TYPE_FS, that's fine too.
+
+James
+
+
+
