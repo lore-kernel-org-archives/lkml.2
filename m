@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab2I0SKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 14:10:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46533 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab2I0SKN convert rfc822-to-8bit (ORCPT
+	id S1754221Ab2I0SNC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 14:13:02 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:35127 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276Ab2I0SNA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 14:10:13 -0400
-Message-ID: <1348769391.3292.41.camel@twins>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: david@lang.hm
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Mike Galbraith <efault@gmx.de>,
-        Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Thu, 27 Sep 2012 20:09:51 +0200
-In-Reply-To: <alpine.DEB.2.02.1209271039500.8808@asgard.lang.hm>
-References: <1348505683.11847.111.camel@twins>
-	   <1348511193.6951.44.camel@marge.simpson.net>
-	   <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
-	   <20120924192056.GB4082@liondog.tnic>
-	   <1348538258.7100.23.camel@marge.simpson.net>
-	   <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
-	   <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com>
-	   <20120925170058.GC30158@x1.osrc.amd.com>
-	   <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
-	 <20120926163233.GA5339@x1.osrc.amd.com>
-	   <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
-	  <1348734104.3292.5.camel@twins>
-	  <alpine.DEB.2.02.1209270935080.5162@asgard.lang.hm>
-	 <1348767498.3292.29.camel@twins>
-	 <alpine.DEB.2.02.1209271039500.8808@asgard.lang.hm>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 27 Sep 2012 14:13:00 -0400
+Message-ID: <50649715.1090507@ahsoftware.de>
+Date: Thu, 27 Sep 2012 20:12:37 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG at fs/buffer.c:3205 (stable 3.5.3)
+References: <50531629.9020107@ahsoftware.de> <20120925110206.GD28937@mwanda> <50643C4A.9010202@ahsoftware.de> <20120927151232.GA12210@quack.suse.cz> <506474E8.3030300@ahsoftware.de> <50647CCC.7010407@ahsoftware.de> <5064945C.4020403@ahsoftware.de>
+In-Reply-To: <5064945C.4020403@ahsoftware.de>
+Content-Type: text/plain; charset=iso-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-27 at 10:45 -0700, david@lang.hm wrote:
-> But I thought that this conversation (pgbench) was dealing with long 
-> running processes, 
+Am 27.09.2012 20:01, schrieb Alexander Holler:
 
-Ah, I think we've got a confusion on long vs short.. yes pgbench is a
-long-running process, however the tasks might not be long in runnable
-state. Ie it receives a request, computes a bit, blocks on IO, computes
-a bit, replies, goes idle to wait for a new request.
+> After 2 successful tries in sequence, the third failed (sorry, LANG=de):
+>
+> ---------------------------------------------------------------
+> [root@krabat bind]# tar cp . | mbuffer | bzip2smp
+>  >/mnt/usb3/Krabat.Fedora17.sdb2.27.09.12.tar.bz2
+> in @ 33.1 MiB/s, out @ 38.3 MiB/s,  888 MiB total, buffer  95% fulltar:
+> ./tmp/.X11-unix/X0: Socket ignoriert
+> in @  0.0 KiB/s, out @ 20.8 MiB/s, 24.9 GiB total, buffer  22% full
+> summary: 24.9 GiByte in 19 min 53.0 sec - average of 21.4 MiB/s
+> [root@krabat bind]# tar djf /mnt/usb3/Krabat.Fedora17.sdb2.27.09.12.tar.bz2
+> ./var/log/messages: Änderungszeit ist unterschiedlich
+> ./var/log/messages: Größe ist unterschiedlich
+> ./var/tmp/kdecache-aholler/icon-cache.kcache: Änderungszeit ist
+> unterschiedlich
+> ./var/tmp/kdecache-aholler/icon-cache.kcache: Unterschiedliche Inhalte
+> ./var/tmp/kdecache-aholler/plasma_theme_oxygen.kcache: Änderungszeit ist
+> unterschiedlich
+> ./var/tmp/kdecache-aholler/plasma_theme_oxygen.kcache: Unterschiedliche
+> Inhalte
+> ./var/lib/chrony/drift: Änderungszeit ist unterschiedlich
+> ./var/lib/chrony/drift: Unterschiedliche Inhalte
+> ./home/aholler/.kde/share/apps/konqueror/autosave/_1.77: Änderungszeit
+> ist unterschiedlich
+> ./home/aholler/.kde/share/apps/konqueror/autosave/_1.77: Größe ist
+> unterschiedlich
+> ./home/aholler/.kde/share/apps/konqueror/konq_history: Änderungszeit ist
+> unterschiedlich
+> ./home/aholler/.kde/share/apps/konqueror/konq_history: Größe ist
+> unterschiedlich
+> ./home/aholler/.kde/share/apps/kcookiejar/cookies: Änderungszeit ist
+> unterschiedlich
+> ./home/aholler/thinstation_src-2.0beta2.tar.bz2: Unterschiedliche Inhalte
+>
+> bzip2: Data integrity error when decompressing.
+>          Input file = (stdin), output file = (stdout)
+>
+> It is possible that the compressed file(s) have become corrupted.
+> You can use the -tvv option to test integrity of such files.
+>
+> You can use the `bzip2recover' program to attempt to recover
+> data from undamaged sections of corrupted files.
+>
+> tar: Unerwartetes Dateiende im Archiv.
+> tar: Child returned status 2
+> tar: Error is not recoverable: exiting now
+> [root@krabat bind]#
+> ---------------------------------------------------------------
+>
+> This time without any oops, dmesg just shows some
+>
+> ---------------------------------------------------------------
+> [  111.087356] EXT4-fs (sdc1): mounted filesystem with ordered data
+> mode. Opts: (null)
+> [  672.868948] CPU4: Core temperature above threshold, cpu clock
+> throttled (total events = 1)
+> [  672.868949] CPU0: Core temperature above threshold, cpu clock
+> throttled (total events = 1)
+> [  672.869970] CPU0: Core temperature/speed normal
+> [  672.869971] CPU4: Core temperature/speed normal
+> [  688.285419] CPU6: Core temperature above threshold, cpu clock
+> throttled (total events = 1)
+> [  688.285421] CPU2: Core temperature above threshold, cpu clock
+> throttled (total events = 1)
+> [  688.286442] CPU2: Core temperature/speed normal
+> [  688.286443] CPU6: Core temperature/speed normal
+> [  698.822614] CPU3: Core temperature above threshold, cpu clock
+> throttled (total events = 1)
+> [  698.822615] CPU7: Core temperature above threshold, cpu clock
+> throttled (total events = 1)
+> [  698.824674] CPU3: Core temperature/speed normal
+> [  698.824675] CPU7: Core temperature/speed normal
+> [  706.979633] CPU1: Core temperature above threshold, cpu clock
+> throttled (total events = 1)
+> [  706.979635] CPU5: Core temperature above threshold, cpu clock
+> throttled (total events = 1)
+> [  706.980648] CPU1: Core temperature/speed normal
+> [  706.980649] CPU5: Core temperature/speed normal
+> [  899.540485] [Hardware Error]: Machine check events logged
+> ---------------------------------------------------------------
+>
+> Nothing else. Kernel is 3.5.4 userland now F17.
 
-If all those runnable sections are short enough, it will 'never' be
-around when the periodic load-balancer does its thing, since that only
-looks at the tasks in runnable state at that moment in time.
+Maybe it's really a heating problem and the stock fan (or throttling by 
+the kernel) isn't enough if the processor (or the chipset) is used like 
+that for about 60 minutes. I will checkout if one or more additional 
+fans will help.
 
-I say 'never' because while it will occasionally show up due to pure
-chance, it will unlikely be a very big player in placement.
+Regards,
 
-Once a cpu is overloaded enough to get real queueing they'll show up,
-get dispersed and then its back to wakeup stuff.
+Alexander
 
-Then again, it might be completely irrelevant to pgbench, its been a
-while since I looked at how it schedules.
