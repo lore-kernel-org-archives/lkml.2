@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab2I0DPF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 23:15:05 -0400
-Received: from ozlabs.org ([203.10.76.45]:60326 "EHLO ozlabs.org"
+	id S1754355Ab2I0DPE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 23:15:04 -0400
+Received: from ozlabs.org ([203.10.76.45]:57832 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754045Ab2I0DPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754006Ab2I0DPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Sep 2012 23:15:02 -0400
-Date: Thu, 27 Sep 2012 13:14:44 +1000
+Date: Thu, 27 Sep 2012 13:14:10 +1000
 From: Paul Mackerras <paulus@samba.org>
 To: John Stultz <john.stultz@linaro.org>
 Cc: linux-kernel <linux-kernel@vger.kernel.org>,
@@ -18,23 +18,23 @@ Cc: linux-kernel <linux-kernel@vger.kernel.org>,
         Richard Cochran <richardcochran@gmail.com>,
         Prarit Bhargava <prarit@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/6][RFC] time: Convert CONFIG_GENERIC_TIME_VSYSCALL to
- CONFIG_GENERIC_TIME_VSYSCALL_OLD
-Message-ID: <20120927031444.GB14959@drongo>
+Subject: Re: [PATCH 2/6][RFC] time: Move update_vsyscall definitions to
+ timekeeper_internal.h
+Message-ID: <20120927031410.GA14959@drongo>
 References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
- <1347919501-64534-4-git-send-email-john.stultz@linaro.org>
+ <1347919501-64534-3-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347919501-64534-4-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1347919501-64534-3-git-send-email-john.stultz@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 06:04:58PM -0400, John Stultz wrote:
-> To help migrate archtectures over to the new update_vsyscall method,
-> redfine CONFIG_GENERIC_TIME_VSYSCALL as CONFIG_GENERIC_TIME_VSYSCALL_OLD
+On Mon, Sep 17, 2012 at 06:04:57PM -0400, John Stultz wrote:
+> Since users will need to include timekeeper_internal.h, move
+> update_vsyscall definitions to timekeeper_internal.h.
 > 
 > Cc: Tony Luck <tony.luck@intel.com>
 > Cc: Paul Mackerras <paulus@samba.org>
