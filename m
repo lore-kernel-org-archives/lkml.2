@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab2I0PXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 11:23:39 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:60364 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab2I0PXh (ORCPT
+	id S1755354Ab2I0PcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 11:32:10 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:42161 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754467Ab2I0PcG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 11:23:37 -0400
-Date: Thu, 27 Sep 2012 19:23:33 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
-Message-ID: <20120927152333.GN6618@moon>
-References: <20120923010953.GA17663@kroah.com>
- <20120923064007.GA2994@moon>
- <34f6ba7b-2c50-492e-9267-52d328a8d37f@email.android.com>
- <20120924141441.GD16532@moon>
- <20120927140502.GB12552@moon>
- <20120927151447.2460ce44@pyramind.ukuu.org.uk>
- <20120927141425.GG6618@moon>
- <5064600D.1090506@zytor.com>
- <20120927142149.GH6618@moon>
- <20120927161312.1eadd5d6@pyramind.ukuu.org.uk>
+	Thu, 27 Sep 2012 11:32:06 -0400
+X-IronPort-AV: E=Sophos;i="4.80,496,1344236400"; 
+   d="scan'208";a="694863761"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Joerg Roedel <joro@8bytes.org>
+CC: Joerg Roedel <joerg.roedel@amd.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Subject: RE: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+Thread-Topic: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+Thread-Index: AQHNdKJvypEw9t3CEUmeaLKAlM+spZefC3UA//+TOzA=
+Date: Thu, 27 Sep 2012 15:32:02 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20120807134156.GP1996@amd.com>
+ <20120927145217.GA18962@8bytes.org>
+In-Reply-To: <20120927145217.GA18962@8bytes.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120927161312.1eadd5d6@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 04:13:12PM +0100, Alan Cox wrote:
-> > Well, sure inside our tool before doing checkpoint we stop all
-> > tasks which are part of dumpee process tree. This unfortunatly
-> > doesn't apply to these ioctl calls. Peter, any idea how to deal
-> > with that?
+> -----Original Message-----
+> From: Joerg Roedel [mailto:joro@8bytes.org]
+> Sent: Thursday, September 27, 2012 10:52 AM
+> To: Myklebust, Trond
+> Cc: Joerg Roedel; linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org;
+> torvalds@linux-foundation.org
+> Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
 > 
-> I suspect you can't deal with that. Which isn't to say you can't still
-> build something useful. The query interfaces are trivial enough and
-> beyond that it's simply a case of documenting that they are not intended
-> to be generically "safe" but provide a spot sample.
+> On Tue, Aug 07, 2012 at 03:41:56PM +0200, Joerg Roedel wrote:
+> > starting with Linux 3.6-rc1 I experience this BUG on one of my test
+> > machines. Please let me know if you need any additional information.
+> >
+> > [   20.271810] ------------[ cut here ]------------
+> > [   20.276869] kernel BUG at
+> /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+> > [   20.284306] invalid opcode: 0000 [#1] SMP
+> > [   20.288806] Modules linked in: nfs4 auth_rpcgss nfs fscache lockd sunrpc
+> kvm_intel radeon kvm ttm drm_kms_helper i7core_edac drm edac_core
+> joydev hpilo psmouse hid_generic i2c_algo_bit serio_raw usbhid hid bnx2
+> 
+> I still see this BUG with 3.6-rc7. Any fix in sight?
 
-I see, thanks Alan!
+Does your checked out copy of 3.6-rc7 contain commit c50669 (NFS: Clear key construction data if the idmap upcall fails)? The latter was merged in3.6-rc3, and is reported to fix the problem for the other testers.
 
-> Otherwise - TICOGPKT is specific to pty devices. Please therefore put it
-> in the pty.c code and note that not all platforms use asm-geneic TTY
-> ioctls so check carefully they all build.
-
-I put it into tty_ioctl.c simply because TIOCPKT was there already so
-I thought it's good idea to keep them close to each other in code.
+Trond
