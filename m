@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab2I0FJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 01:09:35 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:55418 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751332Ab2I0FJe (ORCPT
+	id S1754609Ab2I0FNK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 01:13:10 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:40738 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752923Ab2I0FNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 01:09:34 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18okb8u2wUo/VH8chz1QKVzIFFJSQzdU1wAFC5Dlv
-	TUUa9NfHWnVhqN
-Message-ID: <1348722568.7059.115.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Thu, 27 Sep 2012 07:09:28 +0200
-In-Reply-To: <20120926213723.GA27692@liondog.tnic>
-References: <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
-	 <20120924192056.GB4082@liondog.tnic>
-	 <1348538258.7100.23.camel@marge.simpson.net>
-	 <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
-	 <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com>
-	 <20120925170058.GC30158@x1.osrc.amd.com>
-	 <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
-	 <20120926163233.GA5339@x1.osrc.amd.com>
-	 <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
-	 <20120926213723.GA27692@liondog.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Thu, 27 Sep 2012 01:13:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120926182719.GA10326@arwen.pp.htv.fi>
+References: <1348054229-27362-1-git-send-email-kishon@ti.com>
+	<1348054229-27362-5-git-send-email-kishon@ti.com>
+	<20120919115647.GI3772@arwen.pp.htv.fi>
+	<CAAe_U6Kr8t1=T7MGMjAe+1n6S-NncypnPkXYqA2_FtVK=uxULA@mail.gmail.com>
+	<20120926182719.GA10326@arwen.pp.htv.fi>
+Date: Thu, 27 Sep 2012 10:43:06 +0530
+Message-ID: <CAAe_U6+t1rQh4VWsFRob3gQHMjbfXzhnfCswF-Ah7da_Xsfv8g@mail.gmail.com>
+Subject: Re: [PATCH 4/4] usb: phy: omap-usb2: enable 960Mhz clock for omap5
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: balbi@ti.com
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-26 at 23:37 +0200, Borislav Petkov wrote:
+Hi,
 
-> The way I understand it is, you either want to share L2 with a process,
-> because, for example, both working sets fit in the L2 and/or there's
-> some sharing which saves you moving everything over the L3. This is
-> where selecting a core on the same L2 is actually a good thing.
+On Wed, Sep 26, 2012 at 11:57 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Wed, Sep 26, 2012 at 11:10:48AM +0530, ABRAHAM, KISHON VIJAY wrote:
+>> Hi,
+>>
+>> On Wed, Sep 19, 2012 at 5:26 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> > On Wed, Sep 19, 2012 at 05:00:29PM +0530, Kishon Vijay Abraham I wrote:
+>> >> "usb_otg_ss_refclk960m" is needed by usb2 phy present in omap5. For
+>> >> omap4, the clk_get of this clock will fail since it does not have this
+>> >> clock.
+>> >>
+>> >> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> >> ---
+>> >>  Documentation/devicetree/bindings/usb/usb-phy.txt |    3 +++
+>> >>  drivers/usb/phy/omap-usb2.c                       |   28 ++++++++++++++++++++-
+>> >>  2 files changed, 30 insertions(+), 1 deletion(-)
+>> >>
+>> >> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
+>> >> index 7c5fd89..d5626de 100644
+>> >> --- a/Documentation/devicetree/bindings/usb/usb-phy.txt
+>> >> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
+>> >> @@ -24,6 +24,9 @@ Required properties:
+>> >>  add the address of control module phy power register until a driver for
+>> >>  control module is added
+>> >>
+>> >> +Optional properties:
+>> >> + - has960mhzclk: should be added if the phy needs 960mhz clock
+>> >> +
+>> >>  This is usually a subnode of ocp2scp to which it is connected.
+>> >>
+>> >>  usb3phy@4a084400 {
+>> >> diff --git a/drivers/usb/phy/omap-usb2.c b/drivers/usb/phy/omap-usb2.c
+>> >> index d36c282..d6612ba 100644
+>> >> --- a/drivers/usb/phy/omap-usb2.c
+>> >> +++ b/drivers/usb/phy/omap-usb2.c
+>> >> @@ -146,6 +146,7 @@ static int __devinit omap_usb2_probe(struct platform_device *pdev)
+>> >>       struct omap_usb                 *phy;
+>> >>       struct usb_otg                  *otg;
+>> >>       struct resource                 *res;
+>> >> +     struct device_node              *np = pdev->dev.of_node;
+>> >>
+>> >>       phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+>> >>       if (!phy) {
+>> >> @@ -190,6 +191,15 @@ static int __devinit omap_usb2_probe(struct platform_device *pdev)
+>> >>       }
+>> >>       clk_prepare(phy->wkupclk);
+>> >>
+>> >> +     if (of_property_read_bool(np, "has960mhzclk")) {
+>> >> +             phy->optclk = devm_clk_get(phy->dev, "usb_otg_ss_refclk960m");
+>> >> +             if (IS_ERR(phy->optclk)) {
+>> >> +                     dev_err(&pdev->dev, "unable to get refclk960m\n");
+>> >> +                     return PTR_ERR(phy->optclk);
+>> >> +             }
+>> >> +             clk_prepare(phy->optclk);
+>> >> +     }
+>> >
+>> > instead, can't you just always try to get the clock but ignore the error
+>> > if it fails ?
+>>
+>> This clock is needed for usb2 to work in dwc3 (omap5). So we have to
+>> report the error in case we dont get the clock no?
+>
+> sure, but you don't need to bail out. Print a warning message such as:
+>
+> dev_dbg(&pdev->dev, "couldn't get refclk960m, trying without\n");
 
-Yeah, and if the wakee can't get to the L2 hot data instantly, it may be
-better to let wakee drag the data to an instantly accessible spot.
+but then we'll get this debug message for omap4 which actually doesn't
+need 960m clk.
 
-> Or, they're too big to fit into the L2 and they start kicking each-other
-> out. Then you want to spread them out to different L2s - i.e., different
-> HT groups in Intel-speak.
-> 
-> Oh, and then there's the userspace spinlocks thingie where Mike's patch
-> hurts us.
-> 
-> Btw, Mike, you can jump in anytime :-)
-
-I think the pgbench problem is more about latency for the 1 in 1:N than
-spinlocks.
-
-> So I'd say, this is the hard scheduling problem where fitting the
-> workload to the architecture doesn't make everyone happy.
-
-Yup.  I find it hard at least.
-
-> A crazy thought: one could go and sample tasks while running their
-> timeslices with the perf counters to know exactly what type of workload
-> we're looking at. I.e., do I have a large number of L2 evictions? Yes,
-> then spread them out. No, then select the other core on the L2. And so
-> on.
-
-Hm.  That sampling better be really cheap.  Might help... but how does
-that affect pgbench and ilk that must spread regardless of footprints.
-
--Mike
-
+Thanks
+Kishon
