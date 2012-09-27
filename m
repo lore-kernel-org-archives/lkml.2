@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab2I0OdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 10:33:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48644 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab2I0OdG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 10:33:06 -0400
-Date: Thu, 27 Sep 2012 07:33:00 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120927143300.GA4251@mtj.dyndns.org>
-References: <50634105.8060302@parallels.com>
- <20120926180124.GA12544@google.com>
- <50634FC9.4090609@parallels.com>
- <20120926193417.GJ12544@google.com>
- <50635B9D.8020205@parallels.com>
- <20120926195648.GA20342@google.com>
- <50635F46.7000700@parallels.com>
- <20120926201629.GB20342@google.com>
- <50637298.2090904@parallels.com>
- <20120927120806.GA29104@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120927120806.GA29104@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753734Ab2I0OdW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 10:33:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42679 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753342Ab2I0OdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 10:33:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,496,1344236400"; 
+   d="scan'208";a="197946366"
+Subject: Re: [PATCHv3] dw_dmac: autoconfigure data_width or get it via
+ platform data
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        viresh.kumar@linaro.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
+In-Reply-To: <CAHp75VfCYWqic9MbBZrTO-dM+Yfn6P8q33Fb_LMwmg4rYS5N=w@mail.gmail.com>
+References: <CAOh2x=n4ZCsQ1ccqobZF6fz-Kuj_VE-ua5PftAHQkTobA=p+pw@mail.gmail.com>
+	 <1348573156-5032-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1348740388.1648.27.camel@vkoul-udesk3>
+	 <CAHp75VfCYWqic9MbBZrTO-dM+Yfn6P8q33Fb_LMwmg4rYS5N=w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Sep 2012 19:57:10 +0530
+Message-ID: <1348756030.1648.37.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
-
-On Thu, Sep 27, 2012 at 02:08:06PM +0200, Michal Hocko wrote:
-> Yes, because we have many users (basically almost all) who care only
-> about the user memory because that's what occupies the vast majority of
-> the memory. They usually want to isolate workload which would disrupt
-> the global memory otherwise (e.g. backup process vs. database). You
-> really do not want to pay an additional overhead for kmem accounting
-> here.
-
-I'm not too convinced.  First of all, the overhead added by kmemcg
-isn't big.  The hot path overhead is quite minimal - it doesn't do
-much more than indirecting one more time.  In terms of memory usage,
-it sure could lead to a bit more fragmentation but even if it gets to
-several megs per cgroup, I don't think that's something excessive.
-So, there is overhead but I don't believe it to be prohibitive.
-
-> > So your question for global vs local switch (that again, doesn't
-> > exist; only a local *limit* exists) should really be posed in the
-> > following way:  "Can two different use cases with different needs be
-> > hosted in the same box?"
+On Thu, 2012-09-27 at 17:00 +0300, Andy Shevchenko wrote:
+> On Thu, Sep 27, 2012 at 1:06 PM, Vinod Koul <vinod.koul@linux.intel.com> wrote:
+> > On Tue, 2012-09-25 at 14:39 +0300, Andy Shevchenko wrote:
+> >> Not all of the controllers support the 64 bit data width. Make it configurable
+> >> via platform data. The driver will try to get a value from the component
+> >> parameters, otherwise it will use the platform data.
+> >>
+> > What was this gen against, I can apply this.
+> Just rebased to recent linux-next, no conflicts.
+And I dont apply patches against linux-next!! I apply against
+slave-dma-next.
+> ...
+> Applying: dw_dmac: mark dwc_dump_chan_regs as inline
+> Applying: dw_dmac: fill optional encoded parameters in register structure
+> Applying: dw_dmac: get number of channels from hardware if possible
+> Applying: dw_dmac: autoconfigure block_size or use platform data
+> Applying: dw_dmac: autoconfigure data_width or get it via platform data
+> Applying: dw_dmac: introduce software emulation of LLP transfers
+> ...
 > 
-> I think this is a good and a relevant question. I think this boils down
-> to whether you want to have trusted and untrusted workloads at the same
-> machine.
-> Trusted loads usually only need user memory accounting because kmem
-> consumption should be really negligible (unless kernel is doing
-> something really stupid and no kmem limit will help here). 
-> On the other hand, untrusted workloads can do nasty things that
-> administrator has hard time to mitigate and setting a kmem limit can
-> help significantly.
-> 
-> IMHO such a different loads exist on a single machine quite often (Web
-> server and a back up process as the most simplistic one). The per
-> hierarchy accounting, therefore, sounds like a good idea without too
-> much added complexity (actually the only added complexity is in the
-> proper kmem.limit_in_bytes handling which is a single place).
+> Have you kept the order of the patches?
+Obviously see my next
 
-The distinction between "trusted" and "untrusted" is something
-artificially created due to the assumed deficiency of kmemcg
-implementation.  Making things like this visible to userland is a bad
-idea because it locks us into a place where we can't or don't need to
-improve the said deficiencies and end up pushing the difficult
-problems to somewhere else where it will likely be implemented in a
-shabbier way.  There sure are cases when such approach simply cannot
-be avoided, but I really don't think that's the case here - the
-overhead already seems to be at an acceptable level and we're not
-taking away the escape switch.
+The reason for conflict is nature of this patch. It should be split up. 
+arch/arm/mach-spear13xx/spear13xx.c |    2 ++
+arch/avr32/mach-at32ap/at32ap700x.c |    2 ++
 
-This is userland visible API.  We better err on the side of being
-conservative than going overboard with flexibility.  Even if we
-eventually need to make this switching fullly hierarchical, we really
-should be doing,
+It fails here, send these separately to Arnd.
 
-1. Implement simple global switching and look for problem cases.
-
-2. Analyze them and see whether the problem case can't be solved in a
-   better, more intelligent way.
-
-3. If the problem is something structurally inherent or reasonably too
-   difficult to solve any other way, consider dumping the problem as
-   config parameters to userland.
-
-We can always expand the flexibility.  Let's do the simple thing
-first.  As an added bonus, it would enable using static_keys for
-accounting branches too.
-
-Thanks.
 
 -- 
-tejun
+~Vinod
+
