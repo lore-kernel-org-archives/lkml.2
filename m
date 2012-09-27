@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab2I0Tke (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 15:40:34 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37721 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754330Ab2I0Tkc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754543Ab2I0Tkc (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 27 Sep 2012 15:40:32 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:57729 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754382Ab2I0Tk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 15:40:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120927173622.GB21025@kroah.com>
-References: <cover.1342566495.git.luto@amacapital.net> <20120927173622.GB21025@kroah.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 27 Sep 2012 12:40:10 -0700
-Message-ID: <CALCETrUi5RrJoq9CS8mA31tiT9WPW4cc27zyjymAj5uqWqMptw@mail.gmail.com>
-Subject: Re: [PATCH 3.5 0/2] seccomp and vsyscall fixes
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>, James Morris <jmorris@namei.org>
+In-Reply-To: <1348770584.3292.44.camel@twins>
+References: <20120926163233.GA5339@x1.osrc.amd.com> <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+ <20120926213723.GA27692@liondog.tnic> <1348722568.7059.115.camel@marge.simpson.net>
+ <20120927054742.GA4370@gmail.com> <1348727665.7059.160.camel@marge.simpson.net>
+ <20120927064142.GB5996@gmail.com> <1348728852.7059.171.camel@marge.simpson.net>
+ <20120927071011.GA8980@gmail.com> <CA+55aFyxjdir-LZneBTk1JQV0cVSRFzEK9Jpxje2SJqA6aP3Yg@mail.gmail.com>
+ <20120927180507.GD8527@x1.osrc.amd.com> <CA+55aFyTrcmx3Uf7UGU=-K=BwTym8aN15fTo==cV2bCK6so0Fg@mail.gmail.com>
+ <1348770584.3292.44.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 27 Sep 2012 12:40:08 -0700
+X-Google-Sender-Auth: 7EP-3X6K4pFYv_1g4zsou7KHlaU
+Message-ID: <CA+55aFwnos6qFMi6R9uGxY2QtkUVm3hEc_Lgx1R0+AZt5V=SRA@mail.gmail.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc James Morris]
-
-This has been pending since the 3.6 merge window.  Patch 2/2 barely
-matters because it's almost impossible to detect its effect -- it's
-more about future proofing against new architectures.  Patch 1/2 has
-been slightly tweaked here:
-
-http://lkml.kernel.org/r/%3C744e07394a02be3d3ef52c22ccedb24d9a478fe1.1343869850.git.luto@amacapital.net%3E
-
-and will soon appear here (once the cache refreshes)
-
-https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=shortlog;h=refs/heads/seccomp-vsyscall/patch_v2
-
-I can wait for someone to pick it up or I can send a pull request from
-my tree.  FWIW, the same patch applies cleanly to -next.
-
---Andy
-
-On Thu, Sep 27, 2012 at 10:36 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Jul 17, 2012 at 04:19:18PM -0700, Andy Lutomirski wrote:
->> Apologies for the lateness of this stuff.  I was at a conference last
->> week when the Chrome issue was discovered and I couldn't do this
->> properly until I got back.
->>
->> Will, can you confirm that this version is okay and passes your tests?
->> It passes mine.
->>
->> While there are no known seccomp users that will have trouble,
->> SECCOMP_RET_TRAP and SECCOMP_RET_TRACE currently interact oddly with
->> emulated vsyscalls.  This might lead to ABI issues down the road (if
->> something starts to rely on current behavior) or unexpected malfunctions
->> (if something tries to change, say, sys_gettimeofday, into a different
->> syscall and gets completely bogus results on a vsyscall-using distro.
->>
->> It's unlikely that fixing this later will cause issues, but it would be
->> nice to nail down and document the vsyscall quirks for the first
->> released kernel with seccomp mode 2 support.
->>
->> (Patch 2/2 is very much optional.  It fixes a strange corner case.  It
->>  ought to be fine for 3.6, since I very much doubt that any real code
->>  will hit that corner case and cause ABI problems.)
->>
->> Andy Lutomirski (2):
->>   seccomp: Make syscall skipping and nr changes more consistent
->>   seccomp: Future-proof against silly tracers
->>
->>  Documentation/prctl/seccomp_filter.txt |   74 ++++++++++++++++++++--
->>  arch/x86/include/asm/syscall.h         |   11 +++
->>  arch/x86/kernel/vsyscall_64.c          |  110 +++++++++++++++++---------------
->>  kernel/seccomp.c                       |   28 +++++++-
->>  4 files changed, 163 insertions(+), 60 deletions(-)
+On Thu, Sep 27, 2012 at 11:29 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 >
-> What ever happened to these patches?  I don't see them in 3.6-rc7, are
-> they pending for 3.7?
->
-> thanks,
->
-> greg k-h
+> Don't forget to run the desktop interactivity benchmarks after you're
+> done wriggling with this knob... wakeup preemption is important for most
+> those.
 
+So I don't think we want to *just* wiggle that knob per se. We
+definitely don't want to hurt latency on actual interactive asks. But
+it's interesting that it helps psql so much, and that there seems to
+be some interaction with the select_idle_sibling().
 
+So I do have a few things I react to when looking at that wakeup granularity..
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+I wonder about this comment, for example:
+
+         * By using 'se' instead of 'curr' we penalize light tasks, so
+         * they get preempted easier. That is, if 'se' < 'curr' then
+         * the resulting gran will be larger, therefore penalizing the
+         * lighter, if otoh 'se' > 'curr' then the resulting gran will
+         * be smaller, again penalizing the lighter task.
+
+why would we want to preempt light tasks easier? It sounds backwards
+to me. If they are light, we have *less* reason to preempt them, since
+they are more likely to just go to sleep on their own, no?
+
+Another question is whether the fact that this same load interacts
+with select_idle_sibling() is perhaps a sign that maybe the preemption
+logic is all fine, but it interacts badly with the "pick new cpu"
+code. In particular, after having changed rq's, is the vruntime really
+comparable? IOW, maybe this is an interaction between "place_entity()"
+and then the immediately following (?) call to check wakeup
+preemption?
+
+The fact that *either* changing select_idle_sibling() *or* changing
+the wakeup preemption granularity seems to have such a huge impact
+does seem to tie them together somehow for this particular load. No?
+
+             Linus
