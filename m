@@ -1,243 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab2I0Ftr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 01:49:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54368 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab2I0Ftp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 01:49:45 -0400
-Date: Wed, 26 Sep 2012 22:49:33 -0700
-From: tip-bot for Ezequiel Garcia <elezegarcia@gmail.com>
-Message-ID: <tip-8781915ad2716adcd8cd5cc52cee791fc8b00fdf@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, elezegarcia@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        elezegarcia@gmail.com, rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <1347461277-25302-1-git-send-email-elezegarcia@gmail.com>
-References: <1347461277-25302-1-git-send-email-elezegarcia@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] trace:
-  Move trace event enable from fs_initcall to core_initcall
-Git-Commit-ID: 8781915ad2716adcd8cd5cc52cee791fc8b00fdf
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756138Ab2I0Fty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 01:49:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52114 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754645Ab2I0Ftx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 01:49:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,493,1344236400"; 
+   d="scan'208";a="198406861"
+Date: Thu, 27 Sep 2012 13:43:31 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
+        a.p.zijlstra@chello.nl, andi@firstfloor.org, dsahern@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 8/9] perf hists browser: Add option for runtime
+ switching perf data file
+Message-ID: <20120927054331.GA10038@feng-i7>
+References: <1348500251-9937-1-git-send-email-feng.tang@intel.com>
+ <1348500251-9937-9-git-send-email-feng.tang@intel.com>
+ <87d31ayhpy.fsf@sejong.aot.lge.com>
+ <20120925162053.51f60773@feng-i7>
+ <20120925111703.GC28902@infradead.org>
+ <20120926075707.GA4919@feng-i7>
+ <874nmkw1tu.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 22:49:38 -0700 (PDT)
+In-Reply-To: <874nmkw1tu.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8781915ad2716adcd8cd5cc52cee791fc8b00fdf
-Gitweb:     http://git.kernel.org/tip/8781915ad2716adcd8cd5cc52cee791fc8b00fdf
-Author:     Ezequiel Garcia <elezegarcia@gmail.com>
-AuthorDate: Wed, 12 Sep 2012 11:47:57 -0300
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 24 Sep 2012 14:13:02 -0400
+Hi Namhyung,
 
-trace: Move trace event enable from fs_initcall to core_initcall
+On Thu, Sep 27, 2012 at 01:02:05PM +0900, Namhyung Kim wrote:
+> Hi Feng,
+> 
+> On Wed, 26 Sep 2012 15:57:07 +0800, Feng Tang wrote:
+> > On Tue, Sep 25, 2012 at 08:17:03AM -0300, Arnaldo Carvalho de Melo wrote:
+> >> Em Tue, Sep 25, 2012 at 04:20:53PM +0800, Feng Tang escreveu:
+> >> > On Tue, 25 Sep 2012 11:11:21 +0900
+> >> > Namhyung Kim <namhyung@kernel.org> wrote:
+> >> > > Ditto.  Plus it might leak previous input_name.
+> >> > 
+> >> > Nice catch, will check the return value of "strdup". 
+> >> > 
+> >> > For input_name mem leak, in some cases the input_name can't be called
+> >> >  with free(), like those got from parse "-i" option. In case the old
+> >> > input_name is got from malloc through strdup, I think it's not a big
+> >> > issue given that buffer will be freed any way when the application exit.
+> >> 
+> >> I think this is a matter of discipline, leaking is bad, kernel or
+> >> userspace, why special case it?
+> >>
+> >
+> > I see, then we need make sure all "input_name" point to a malloced buffer, 
+> > here is a initial debug patch will only touch the annotate/report/script
+> > cmds, pls review and more suggestions are welcomed:
+> 
+> Well, how about adding a flag like "input_name_alloced" and checking it
+> before new allocation?  This way we can avoid needless strdup when
+> runtime switching is not used.
 
-This patch splits trace event initialization in two stages:
- * ftrace enable
- * sysfs event entry creation
+Right, myself have checked that only the runtime switch will malloc a
+buffer for the new "input_name", IOW "input_name" in other case can't be
+called with free(). So one flag only inside hists.c is ok to cover this,
+like the following code.
 
-This allows to capture trace events from an earlier point
-by using 'trace_event' kernel parameter and is important
-to trace boot-up allocations.
+btw, thanks for your patch about the parse-events()! will try it out.
 
-Note that, in order to enable events at core_initcall,
-it's necessary to move init_ftrace_syscalls() from
-core_initcall to early_initcall.
+- Feng
 
-Link: http://lkml.kernel.org/r/1347461277-25302-1-git-send-email-elezegarcia@gmail.com
-
-Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_events.c   |  108 +++++++++++++++++++++++++++--------------
- kernel/trace/trace_syscalls.c |    2 +-
- 2 files changed, 73 insertions(+), 37 deletions(-)
-
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index bbb0e63..d608d09 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1199,6 +1199,31 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
- 	return 0;
- }
- 
-+static void event_remove(struct ftrace_event_call *call)
-+{
-+	ftrace_event_enable_disable(call, 0);
-+	if (call->event.funcs)
-+		__unregister_ftrace_event(&call->event);
-+	list_del(&call->list);
-+}
-+
-+static int event_init(struct ftrace_event_call *call)
-+{
-+	int ret = 0;
-+
-+	if (WARN_ON(!call->name))
-+		return -EINVAL;
-+
-+	if (call->class->raw_init) {
-+		ret = call->class->raw_init(call);
-+		if (ret < 0 && ret != -ENOSYS)
-+			pr_warn("Could not initialize trace events/%s\n",
-+				call->name);
-+	}
-+
-+	return ret;
-+}
-+
- static int
- __trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
- 		       const struct file_operations *id,
-@@ -1209,19 +1234,9 @@ __trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
- 	struct dentry *d_events;
- 	int ret;
- 
--	/* The linker may leave blanks */
--	if (!call->name)
--		return -EINVAL;
--
--	if (call->class->raw_init) {
--		ret = call->class->raw_init(call);
--		if (ret < 0) {
--			if (ret != -ENOSYS)
--				pr_warning("Could not initialize trace events/%s\n",
--					   call->name);
--			return ret;
--		}
--	}
-+	ret = event_init(call);
-+	if (ret < 0)
-+		return ret;
- 
- 	d_events = event_trace_events_dir();
- 	if (!d_events)
-@@ -1272,13 +1287,10 @@ static void remove_subsystem_dir(const char *name)
-  */
- static void __trace_remove_event_call(struct ftrace_event_call *call)
- {
--	ftrace_event_enable_disable(call, 0);
--	if (call->event.funcs)
--		__unregister_ftrace_event(&call->event);
--	debugfs_remove_recursive(call->dir);
--	list_del(&call->list);
-+	event_remove(call);
- 	trace_destroy_fields(call);
- 	destroy_preds(call);
-+	debugfs_remove_recursive(call->dir);
- 	remove_subsystem_dir(call->class->system);
- }
- 
-@@ -1450,15 +1462,43 @@ static __init int setup_trace_event(char *str)
- }
- __setup("trace_event=", setup_trace_event);
- 
-+static __init int event_trace_enable(void)
-+{
-+	struct ftrace_event_call **iter, *call;
-+	char *buf = bootup_event_buf;
-+	char *token;
-+	int ret;
-+
-+	for_each_event(iter, __start_ftrace_events, __stop_ftrace_events) {
-+
-+		call = *iter;
-+		ret = event_init(call);
-+		if (!ret)
-+			list_add(&call->list, &ftrace_events);
-+	}
-+
-+	while (true) {
-+		token = strsep(&buf, ",");
-+
-+		if (!token)
-+			break;
-+		if (!*token)
-+			continue;
-+
-+		ret = ftrace_set_clr_event(token, 1);
-+		if (ret)
-+			pr_warn("Failed to enable trace event: %s\n", token);
-+	}
-+	return 0;
-+}
-+
- static __init int event_trace_init(void)
- {
--	struct ftrace_event_call **call;
-+	struct ftrace_event_call *call;
- 	struct dentry *d_tracer;
- 	struct dentry *entry;
- 	struct dentry *d_events;
- 	int ret;
--	char *buf = bootup_event_buf;
--	char *token;
- 
- 	d_tracer = tracing_init_dentry();
- 	if (!d_tracer)
-@@ -1497,24 +1537,19 @@ static __init int event_trace_init(void)
- 	if (trace_define_common_fields())
- 		pr_warning("tracing: Failed to allocate common fields");
- 
--	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
--		__trace_add_event_call(*call, NULL, &ftrace_event_id_fops,
-+	/*
-+	 * Early initialization already enabled ftrace event.
-+	 * Now it's only necessary to create the event directory.
-+	 */
-+	list_for_each_entry(call, &ftrace_events, list) {
-+
-+		ret = event_create_dir(call, d_events,
-+				       &ftrace_event_id_fops,
- 				       &ftrace_enable_fops,
- 				       &ftrace_event_filter_fops,
- 				       &ftrace_event_format_fops);
--	}
--
--	while (true) {
--		token = strsep(&buf, ",");
--
--		if (!token)
--			break;
--		if (!*token)
--			continue;
--
--		ret = ftrace_set_clr_event(token, 1);
--		if (ret)
--			pr_warning("Failed to enable trace event: %s\n", token);
-+		if (ret < 0)
-+			event_remove(call);
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 6048820..c29335a 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1125,6 +1125,13 @@ static inline void free_popup_options(char **options, int n)
  	}
- 
- 	ret = register_module_notifier(&trace_module_nb);
-@@ -1523,6 +1558,7 @@ static __init int event_trace_init(void)
- 
- 	return 0;
  }
-+core_initcall(event_trace_enable);
- fs_initcall(event_trace_init);
  
- #ifdef CONFIG_FTRACE_STARTUP_TEST
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 6b245f64..2485a7d 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -487,7 +487,7 @@ int __init init_ftrace_syscalls(void)
- 
- 	return 0;
- }
--core_initcall(init_ftrace_syscalls);
-+early_initcall(init_ftrace_syscalls);
- 
- #ifdef CONFIG_PERF_EVENTS
- 
++/*
++ * Only runtime switching of perf data file will make "input_name" point
++ * to a malloced buffer. So add "is_input_name_malloced" flag to decide
++ * whether we need to call free() for current "input_name" during the switch.
++ */
++static bool is_input_name_malloced = false;
++
+ static int switch_data_file(void)
+ {
+ 	char *pwd, *options[256], *abs_path[256], *tmp;
+@@ -1186,8 +1193,10 @@ close_file_and_continue:
+ 		if (choice < nr_options && choice >= 0) {
+ 			tmp = strdup(abs_path[choice]);
+ 			if (tmp) {
++				if (is_input_name_malloced)
++					free((void *)input_name);
+ 				input_name = tmp;
++				is_input_name_malloced = true;
+ 				ret = 0;
+ 			}
+ 		}
+
+
