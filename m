@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355Ab2I0LVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 07:21:30 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:39039 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab2I0LV3 (ORCPT
+	id S1751493Ab2I0LZd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 07:25:33 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:47333 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab2I0LZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 07:21:29 -0400
+	Thu, 27 Sep 2012 07:25:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB591D41F5@BGSMSX101.gar.corp.intel.com>
-References: <1348743492-30852-1-git-send-email-sachin.kamat@linaro.org>
-	<4D68720C2E767A4AA6A8796D42C8EB591D41F5@BGSMSX101.gar.corp.intel.com>
-Date: Thu, 27 Sep 2012 16:51:29 +0530
-Message-ID: <CAK9yfHxhpp66QsiXQOYEGN+wQ7k73Yi--41biPFS+WvkwWTx1A@mail.gmail.com>
-Subject: Re: [PATCH] thermal: step_wise: Add missing static storage class specifiers
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: "R, Durgadoss" <durgadoss.r@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Rui" <rui.zhang@intel.com>,
-        "patches@linaro.org" <patches@linaro.org>
+In-Reply-To: <87d318w7u9.fsf@sejong.aot.lge.com>
+References: <1348428446-28245-1-git-send-email-irina.tirdea@gmail.com>
+ <1348428446-28245-4-git-send-email-irina.tirdea@gmail.com>
+ <1348578539.1877.40.camel@leonhard> <CANg8OW+u=dsi=5Y04ka0D=VLKEUELAo1L3mkWhs5mOqTS4c1jA@mail.gmail.com>
+ <87d318w7u9.fsf@sejong.aot.lge.com>
+From: Irina Tirdea <irina.tirdea@gmail.com>
+Date: Thu, 27 Sep 2012 14:25:10 +0300
+Message-ID: <CANg8OWLR64RQYMwi=vx78tWBfcML4CPrerXV3nE+ngYkJ3Ru=A@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] perf annotate: configure objdump path at compile time
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Irina Tirdea <irina.tirdea@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 September 2012 16:45, R, Durgadoss <durgadoss.r@intel.com> wrote:
->> -----Original Message-----
->> From: Sachin Kamat [mailto:sachin.kamat@linaro.org]
->> Sent: Thursday, September 27, 2012 4:28 PM
->> To: linux-kernel@vger.kernel.org
->> Cc: R, Durgadoss; Zhang, Rui; sachin.kamat@linaro.org; patches@linaro.org
->> Subject: [PATCH] thermal: step_wise: Add missing static storage class
->> specifiers
+>> The perf built to run on the host needs to use arm-eabi-objdump from
+>> the toolchain so that it can analyse data recorded on Android. This
+>> patch is targeting this scenario, not the previous one. In this case,
+>> the CROSS_COMPILE option would be different than arm-eabi- so using
+>> $(CROSS_COMPILE)objdump would be wrong. objdump should be overridden
+>> when running make since there is no connection between the toolchain
+>> used here and the path for objdump. I am always overriding objdump
+>> when calling make, so I did not catch this.
 >>
->> Fixes the following sparse warnings:
->> drivers/thermal/step_wise.c:153:5: warning:
->> symbol 'step_wise_throttle' was not declared. Should it be static?
->> drivers/thermal/step_wise.c:172:25: warning:
->> symbol 'thermal_gov_step_wise' was not declared. Should it be static?
+>> I think that I should change DEFAULT_OBJDUMP_PATH=objdump in the
+>> Makefile to handle the first scenario. I'll also explain this in the
+>> commit message so that it is more clear and make the same change for
+>> the addr2line patch.
+>>
+>> What do you think?
 >
-> Looks fine.
-> Acked-by: Durgadoss R <durgadoss.r@intel.com>
->
-> Care to fix the same things in fair_share.c and user_space.c ?
-
-Sure. Right away :)
-
->
-> Thanks,
-> Durga
->
->>
->> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
->> ---
->>  drivers/thermal/step_wise.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
->> index 3f9cfcf..1242cff 100644
->> --- a/drivers/thermal/step_wise.c
->> +++ b/drivers/thermal/step_wise.c
->> @@ -150,7 +150,7 @@ static void thermal_zone_trip_update(struct
->> thermal_zone_device *tz, int trip)
->>   * step. If the zone is 'cooling down' it brings back the performance of
->>   * the devices by one step.
->>   */
->> -int step_wise_throttle(struct thermal_zone_device *tz, int trip)
->> +static int step_wise_throttle(struct thermal_zone_device *tz, int trip)
->>  {
->>       struct thermal_instance *instance;
->>
->> @@ -169,7 +169,7 @@ int step_wise_throttle(struct thermal_zone_device
->> *tz, int trip)
->>       return 0;
->>  }
->>
->> -struct thermal_governor thermal_gov_step_wise = {
->> +static struct thermal_governor thermal_gov_step_wise = {
->>       .name           = DEFAULT_THERMAL_GOVERNOR,
->>       .throttle       = step_wise_throttle,
->>       .owner          = THIS_MODULE,
->> --
->> 1.7.4.1
+> I think the right thing to do is finding a correct objdump at runtime in
+> some way.  Why do you want to make it compile-time configurable?
 >
 
+The correct objdump path can be detected at runtime by setting the
+toolchain path. But since the name is arm-eabi-objdump and not
+objdump, it does not know to use it instead.
 
+The only way (I can think of) to change objdump at runtime would be to
+use the --objdump option for perf annotate (and provide a similar
+option for addr2line). The problem with this approach is that the user
+has to be aware that perf annotate uses the objdump tool and that he
+has to use the cross-compiler version instead. Since the user will
+have perf compiled for host as part of his Android tree, he will
+expect it to work without these further changes from his part. The
+path for objdump can be set in the Android Makefile at compile time so
+that the user doesn't need to be aware of it.
 
--- 
-With warm regards,
-Sachin
+If compiling directly from the kernel tree, the advantage is not that
+obvious. The user would still have to specify the name for objdump in
+the command line when running make. But I think this is still a better
+user experience compared to having to set this every time when using
+perf annotate.
+
+Thanks,
+Irina
