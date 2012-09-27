@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab2I0KsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 06:48:15 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43876 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab2I0KsO (ORCPT
+	id S1756439Ab2I0KsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 06:48:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38967 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755768Ab2I0KsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 06:48:14 -0400
-X-AuditID: 9c93016f-b7b1eae000000815-50-50642eec585f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Feng Tang <feng.tang@intel.com>
-Cc: <acme@redhat.com>, <mingo@elte.hu>, <a.p.zijlstra@chello.nl>,
-        <andi@firstfloor.org>, <dsahern@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH v3 3/9] perf script: Add more filter to find_scripts()
-References: <1348500251-9937-1-git-send-email-feng.tang@intel.com>
-	<1348500251-9937-4-git-send-email-feng.tang@intel.com>
-	<87lifyyiug.fsf@sejong.aot.lge.com> <20120926165641.74f2e5b3@feng-i7>
-	<87vcf0ul91.fsf@sejong.aot.lge.com>
-Date: Thu, 27 Sep 2012 19:39:59 +0900
-In-Reply-To: <87vcf0ul91.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Thu, 27 Sep 2012 13:45:30 +0900")
-Message-ID: <87mx0bvjeo.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 27 Sep 2012 06:48:18 -0400
+Message-ID: <50642ECB.20707@kernel.dk>
+Date: Thu, 27 Sep 2012 12:47:39 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Tejun Heo <tj@kernel.org>
+CC: Maxim Levitsky <maximlevitsky@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alex Dubov <oakad@yahoo.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] scatterlist: add sg_nents
+References: <1348652941-31899-1-git-send-email-maximlevitsky@gmail.com> <1348652941-31899-2-git-send-email-maximlevitsky@gmail.com> <20120926163851.GP16296@google.com>
+In-Reply-To: <20120926163851.GP16296@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Sep 2012 13:45:30 +0900, Namhyung Kim wrote:
-> It'd not that hard.  How about using below (untested) patch?
+On 09/26/2012 06:38 PM, Tejun Heo wrote:
+> (cc'ing Jens)
+> 
+> On Wed, Sep 26, 2012 at 11:49:00AM +0200, Maxim Levitsky wrote:
+>> Useful helper to know the number of entries in scatterlist.
+>>
+>> Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+>> ---
+>>  include/linux/scatterlist.h |    1 +
+>>  lib/scatterlist.c           |   22 ++++++++++++++++++++++
+>>  2 files changed, 23 insertions(+)
+>>
+>> diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
+>> index 7b600da..4bd6c06 100644
+>> --- a/include/linux/scatterlist.h
+>> +++ b/include/linux/scatterlist.h
+>> @@ -201,6 +201,7 @@ static inline void *sg_virt(struct scatterlist *sg)
+>>  	return page_address(sg_page(sg)) + sg->offset;
+>>  }
+>>  
+>> +int sg_nents(struct scatterlist *sg);
+>>  struct scatterlist *sg_next(struct scatterlist *);
+>>  struct scatterlist *sg_last(struct scatterlist *s, unsigned int);
+>>  void sg_init_table(struct scatterlist *, unsigned int);
+>> diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+>> index e76d85c..5cd9cdc 100644
+>> --- a/lib/scatterlist.c
+>> +++ b/lib/scatterlist.c
+>> @@ -39,6 +39,28 @@ struct scatterlist *sg_next(struct scatterlist *sg)
+>>  EXPORT_SYMBOL(sg_next);
+>>  
+>>  /**
+>> + * sg_nents - return total count of entries in scatterlist
+>> + * @sg:		The scatterlist
+>> + *
+>> + * Description:
+>> + * Allows to know how many entries are in sg, taking into acount
+>> + * chaining as well
+>> + *
+>> + **/
+>> +int sg_nents(struct scatterlist *sg)
+>> +{
+>> +	int nents = 0;
+>> +	while (sg) {
+>> +		nents++;
+>> +		sg = sg_next(sg);
+>> +	}
+>> +
+>> +	return nents;
+>> +}
+>> +EXPORT_SYMBOL(sg_nents);
+> 
+> How about the following instead?
+> 
+> 	for (nents = 0; sg; sg = sg_next(sg))
+> 		nents++;
+> 	return nents;
+> 
+> Other than that,
+> 
+>  Acked-by: Tejun Heo <tj@kernel.org>
 
-Hmm... it won't work for some cases.  Please ignore this.
+Agree, that'd be cleaner. I've just applied it as-is. Maxim, feel free
+to send an update to it. I pulled the driver bit into the
+for-3.7/drivers branch as well.
 
-Thanks,
-Namhyung
+-- 
+Jens Axboe
 
->
-> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-> index bf5d033ee1b4..5dc71f598028 100644
-> --- a/tools/perf/util/parse-events.c
-> +++ b/tools/perf/util/parse-events.c
-> @@ -817,6 +817,21 @@ int parse_events_terms(struct list_head *terms, const char *str)
->  	return ret;
->  }
->  
-> +int __parse_events(struct list_head *evsel_list, const char *str)
-> +{
-> +	int ret;
-> +	struct parse_events_data__events data = {
-> +		.list = LIST_HEAD_INIT(data.list),
-> +	};
-> +
-> +	ret = parse_events__scanner(str, &data, PE_START_EVENTS);
-> +	if (!ret) {
-> +		list_splice(evsel_list, &data.list);
-> +		return 0;
-> +	}
-> +	return -1;
-> +}
-> +
->  int parse_events(struct perf_evlist *evlist, const char *str,
->  		 int unset __maybe_unused)
->  {
-> diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-> index c356e443448d..c13e9bd0f041 100644
-> --- a/tools/perf/util/parse-events.h
-> +++ b/tools/perf/util/parse-events.h
-> @@ -32,6 +32,7 @@ extern int parse_events_option(const struct option *opt, const char *str,
->  extern int parse_events(struct perf_evlist *evlist, const char *str,
->  			int unset);
->  extern int parse_events_terms(struct list_head *terms, const char *str);
-> +extern int __parse_events(struct list_head *evsel_list, const char *str);
->  extern int parse_filter(const struct option *opt, const char *str, int unset);
->  
->  #define EVENTS_HELP_MAX (128*1024)
