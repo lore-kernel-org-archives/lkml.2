@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab2I0PGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 11:06:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48032 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533Ab2I0PGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 11:06:31 -0400
-Message-ID: <50646B70.5010100@suse.cz>
-Date: Thu, 27 Sep 2012 17:06:24 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Kbuild: use normal compression settings for tar*-pkg
-References: <1347133679-14641-1-git-send-email-andi@firstfloor.org> <20120911004633.GA21147@localhost>
-In-Reply-To: <20120911004633.GA21147@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754671Ab2I0PIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 11:08:23 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46416 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754380Ab2I0PIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 11:08:21 -0400
+Date: Thu, 27 Sep 2012 16:13:12 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
+Message-ID: <20120927161312.1eadd5d6@pyramind.ukuu.org.uk>
+In-Reply-To: <20120927142149.GH6618@moon>
+References: <20120922201144.GD11610@moon>
+	<20120922215232.GA25778@moon>
+	<20120923010953.GA17663@kroah.com>
+	<20120923064007.GA2994@moon>
+	<34f6ba7b-2c50-492e-9267-52d328a8d37f@email.android.com>
+	<20120924141441.GD16532@moon>
+	<20120927140502.GB12552@moon>
+	<20120927151447.2460ce44@pyramind.ukuu.org.uk>
+	<20120927141425.GG6618@moon>
+	<5064600D.1090506@zytor.com>
+	<20120927142149.GH6618@moon>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.9.2012 02:46, Fengguang Wu wrote:
-> On Sat, Sep 08, 2012 at 12:47:59PM -0700, Andi Kleen wrote:
->> From: Andi Kleen <ak@linux.intel.com>
->>
->> For large kernel configurations (like a distribution kernel)
->> targz-pkg takes a quite long time to just do the compression.
->> I clocked it at 15+mins for a SUSE kernel like config on a fast
->> system.  And tarxz and bzip2 are even slower.
->>
->> The main reason is that the script that is doing the taring sets
->> the highest compression level (-9).  When I change it to just
->> use the defaults the gzip time for the same kernel goes down
->> to ~3 mins. I haven't tested xz and bzip, but I expect those
->> to be much faster too.
->>
->> I'm not willing to wait that long for a small compression
->> gain. So just change the script to use the defaults.
-> 
-> Makes sense to me.
-> 
-> Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+> Well, sure inside our tool before doing checkpoint we stop all
+> tasks which are part of dumpee process tree. This unfortunatly
+> doesn't apply to these ioctl calls. Peter, any idea how to deal
+> with that?
 
-Applied to kbuild.git#kbuild.
+I suspect you can't deal with that. Which isn't to say you can't still
+build something useful. The query interfaces are trivial enough and
+beyond that it's simply a case of documenting that they are not intended
+to be generically "safe" but provide a spot sample.
 
-Michal
+Otherwise - TICOGPKT is specific to pty devices. Please therefore put it
+in the pty.c code and note that not all platforms use asm-geneic TTY
+ioctls so check carefully they all build.
+
+Alan
 
