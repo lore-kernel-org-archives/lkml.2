@@ -1,78 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab2I0NUB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:20:01 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:55524 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342Ab2I0NUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:20:00 -0400
+	id S1751677Ab2I0NYD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:24:03 -0400
+Received: from mail.anarazel.de ([217.115.131.40]:57519 "EHLO mail.anarazel.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab2I0NYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 09:24:01 -0400
+From: Andres Freund <andres@anarazel.de>
+To: Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: radeon: Regression between v3.6-rc4 and v3.6-rc6: unable to allocate a PPLL
+Date: Thu, 27 Sep 2012 15:23:49 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc7-andres-00112-g2710a2b-dirty; KDE/4.8.4; x86_64; ; )
+Cc: "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+References: <201209171329.15699.andres@anarazel.de> <201209270846.00376.andres@anarazel.de> <CADnq5_ME14tfMz9ZzVqBFx7TYSyKLc=iPQVthu1n77j-yfdxVA@mail.gmail.com>
+In-Reply-To: <CADnq5_ME14tfMz9ZzVqBFx7TYSyKLc=iPQVthu1n77j-yfdxVA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1348682889-9509-2-git-send-email-m-karicheri2@ti.com>
-References: <1348682889-9509-1-git-send-email-m-karicheri2@ti.com>
-	<1348682889-9509-2-git-send-email-m-karicheri2@ti.com>
-Date: Thu, 27 Sep 2012 15:19:58 +0200
-Message-ID: <CACRpkdZ=8m+X2KnUPFFhT2LsvTe-jPR_m6oVt_CEFfY-LvFHmg@mail.gmail.com>
-Subject: Re: [PATCH 01/13] clk: davinci - add Main PLL clock driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: mturquette@linaro.org, arnd@arndb.de, akpm@linux-foundation.org,
-        shawn.guo@linaro.org, rob.herring@calxeda.com, viresh.linux@gmail.com,
-        linux-kernel@vger.kernel.org, nsekhar@ti.com, khilman@ti.com,
-        linux@arm.linux.org.uk, davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, linux-keystone@list.ti.com,
-        linux-c6x-dev@linux-c6x.org, cyril@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209271523.49437.andres@anarazel.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 8:07 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+On Thursday, September 27, 2012 03:14:31 PM Alex Deucher wrote:
+> On Thu, Sep 27, 2012 at 2:46 AM, Andres Freund <andres@anarazel.de> wrote:
+> > On Wednesday, September 26, 2012 03:42:40 PM Deucher, Alexander wrote:
+> >> > -----Original Message-----
+> >> > From: Andres Freund [mailto:andres@anarazel.de]
+> >> > Sent: Wednesday, September 26, 2012 9:41 AM
+> >> > To: Dan Carpenter
+> >> > Cc: Deucher, Alexander; LKML; David Airlie;
+> >> > dri-devel@lists.freedesktop.org Subject: Re: radeon: Regression
+> >> > between v3.6-rc4 and v3.6-rc6: unable to allocate a PPLL
+> >> > 
+> >> > On Wednesday, September 26, 2012 03:00:09 PM Dan Carpenter wrote:
+> >> > > This is fixed now?
+> >> > 
+> >> > Its been reverted in 2f1f4d9b60396d2df4cff829bd5376ffc8ed9a2c which is
+> >> > in rc6.
+> >> > 
+> >> > On Monday, September 17, 2012 09:30:12 PM Deucher, Alexander wrote:
+> >> > Sorry, I somehow accidentally marked your  email as read and thus
+> >> > didn't notice it.
+> >> > 
+> >> > > I think I see the problem.  I think it's a limitation of the current
+> >> > > current
+> >> > 
+> >> > modesetting API.  The current API sets up each display independently
+> >> > which doesn't work so well if there are resource restrictions.  There
+> >> > shouldn't be any contention on your board since you are only using 2
+> >> > non-DP displays.  It looks like X is mapping different crtcs to
+> >> > displays than the kernel fb.
+> >> > 
+> >> > Initially the kernel set up the follow:
+> >> > > > [    2.134901] [drm] crtc 0 using pll 0x2
+> >> > > > [    2.362257] [drm] crtc 1 using pll 0x1
+> >> > > > [    2.386709] [drm] crtc 2 using pll 0x0
+> >> > > 
+> >> > > Crtc 0 -> DCPLL -> DP
+> >> > > Crtc 1 -> PPLL2 -> DVI
+> >> > > Crtc 2 -> PPLL1 -> DVI
+> >> > > 
+> >> > > When X loads, it tried to set a different crtc to display mapping:
+> >> > > > [   60.679310] [drm] crtc 0 using pll 0xff
+> >> > > > [   60.789183] [drm] crtc 1 using pll 0x2
+> >> > > > [   60.819594] [drm] crtc 2 using pll 0x1
+> >> > > 
+> >> > > Crtc 0 -> INVALID -> DVI 0
+> >> > > Crtc 1 -> DCPLL -> DP
+> >> > > Crtc 2 -> PPLL2 -> DVI 1
+> >> > > 
+> >> > > Crtc 0 should have used PPLL1 or PPLL2, but they were already in use
+> >> > > by crtc 1 and crtc  2 from the previous modeset.  Since the modeset
+> >> > > API is not atomic, it doesn't have the whole picture.  I'm not sure
+> >> > > of a good solution right now prior to the new atomic modeset API
+> >> > > that is under discussion.  I guess we can revert the patch for 3.6.
+> >> > >  For 3.7 I guess we need to validate the actual connector to make
+> >> > > sure we aren't trying to set a different configuration relating to
+> >> > > the same connector without first tearing down the first one.  In
+> >> > > the interim, you should be able to work around it by disabling the
+> >> > > non-DP outputs and then bringing than back up.
+> >> > 
+> >> > Thanks! That explanation makes sense. I can work around it just fine,
+> >> > starting X multiple times works which coincides nicely with your
+> >> > explanation.
+> >> > 
+> >> > The code in the 3.7 branch doesn't do that extended validation yet,
+> >> > rigth? If you want/need you can CC for testing once thats ready.
+> >> 
+> >> It should handle it now.  If you could test it that would be great.
+> > 
+> > Ok, just to be sure I tested Linus' tree and everything works fine there.
+> > 
+> > Unfortunately thats not the case with a straight merge of
+> > alexdeucher/drm- next-3.7-wip. When gdm started *the first time* the
+> > DVI-connected (uhm, same sink type? Thats the saphire magic allowing
+> > more monitors on that type of graphics card?) I got a "unable to
+> > allocate a PPLL" error again. Logging in/starting a new X seems to fix
+> > that.
+> 
+> So you have a xorg.conf with a hardcoded configuration?  If so can you
+> send it to me?
+Yes, but just setting the xrand positions:
 
-> +struct clk_davinci_pll_data {
-> +       /* physical addresses set by platform code */
-> +       u32 phy_pllm;
-> +       /* if PLL has a prediv register this should be non zero */
-> +       u32 phy_prediv;
-> +       /* if PLL has a postdiv register this should be non zero */
-> +       u32 phy_postdiv;
-> +       /* mapped addresses. should be initialized by  */
-> +       void __iomem *pllm;
-> +       void __iomem *prediv;
-> +       void __iomem *postdiv;
-> +       u32 pllm_mask;
-> +       u32 prediv_mask;
-> +       u32 postdiv_mask;
-> +       u32 num;
-> +       /* framework flags */
-> +       u32 flags;
-> +       /* pll flags */
-> +       u32 pll_flags;
-> +       /* use this value for prediv */
-> +       u32 fixed_prediv;
-> +       /* multiply PLLM by this factor. By default most SOC set this to zero
-> +        * that translates to a multiplier of 1 and incrementer of 1.
-> +        * To override default, set this factor
-> +        */
-> +       u32 pllm_multiplier;
-> +};
-> +
+Section "Monitor"
+	Identifier   "DVI-1"
+	Option	     "Primary"		"True"
+EndSection
 
-No, that's not what I meant.
+Section "Monitor"
+	Identifier   "DVI-0"
+        Option	     "RightOf"		"DVI-1"
+	Option	     "Rotate"		"Left"
+	Option	     "Primary"		"False"
+EndSection
 
-I meant like this:
+Section "Monitor"
+	Identifier   "Displayport-0"
+        Option	     "LeftOf"		"DVI-1"
+	Option	     "Rotate"		"Left"
+	Option	     "Primary"		"False"
+EndSection
 
-/**
- * struct clk_davinci_pll_data - struct holding the PLL data
- * phy_pllm: physical addresses set by platform code
- * phy_prediv: ...
-(...)
- */
-struct clk_davinci_pll_data {
-      u32 phy_pllm;
-      u32 phy_prediv;
-(...)
-};
 
-Yours,
-Linus Walleij
+Andres
