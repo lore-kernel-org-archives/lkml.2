@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757071Ab2I0HcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 03:32:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2571 "EHLO mga09.intel.com"
+	id S1757351Ab2I0Hcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 03:32:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58599 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756198Ab2I0HcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 03:32:11 -0400
+	id S1757003Ab2I0HcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 03:32:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,494,1344236400"; 
-   d="scan'208";a="198436985"
+   d="scan'208";a="227160703"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv3 4/7] dmaengine: dw_dmac: amend description and indentation
-Date: Thu, 27 Sep 2012 10:31:58 +0300
-Message-Id: <1348731121-2515-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3 6/7] dma: move dw_dmac driver to an own directory
+Date: Thu, 27 Sep 2012 10:32:00 +0300
+Message-Id: <1348731121-2515-7-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -24,56 +23,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+The dw_dmac driver contains multiple files. To make a managment of them more
+convenient move it to an own directory.
 
-The driver will be used as a core part for various implementations of the
-DesignWare DMA device. The patch adjusts description on the top and corrects
-paragraph indentation in few places across the code.
-
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/dma/dw_dmac.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/dma/Makefile                |    3 +--
+ drivers/dma/dw/Makefile             |    2 ++
+ drivers/dma/{ => dw}/dw_dmac.c      |    2 +-
+ drivers/dma/{ => dw}/dw_dmac_pci.c  |    0
+ drivers/dma/{ => dw}/dw_dmac_regs.h |    0
+ 5 files changed, 4 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/dma/dw/Makefile
+ rename drivers/dma/{ => dw}/dw_dmac.c (99%)
+ rename drivers/dma/{ => dw}/dw_dmac_pci.c (100%)
+ rename drivers/dma/{ => dw}/dw_dmac_regs.h (100%)
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index bbb2a82..9f0129d 100644
+diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
+index 15eef5f..122a48a 100644
+--- a/drivers/dma/Makefile
++++ b/drivers/dma/Makefile
+@@ -11,8 +11,7 @@ obj-$(CONFIG_INTEL_IOP_ADMA) += iop-adma.o
+ obj-$(CONFIG_FSL_DMA) += fsldma.o
+ obj-$(CONFIG_MPC512X_DMA) += mpc512x_dma.o
+ obj-$(CONFIG_MV_XOR) += mv_xor.o
+-obj-$(CONFIG_DW_DMAC) += dw_dmac.o
+-obj-$(CONFIG_DW_DMAC_PCI) += dw_dmac_pci.o
++obj-$(CONFIG_DW_DMAC) += dw/
+ obj-$(CONFIG_AT_HDMAC) += at_hdmac.o
+ obj-$(CONFIG_MX3_IPU) += ipu/
+ obj-$(CONFIG_TXX9_DMAC) += txx9dmac.o
+diff --git a/drivers/dma/dw/Makefile b/drivers/dma/dw/Makefile
+new file mode 100644
+index 0000000..2edfb24
+--- /dev/null
++++ b/drivers/dma/dw/Makefile
+@@ -0,0 +1,2 @@
++obj-$(CONFIG_DW_DMAC) += dw_dmac.o
++obj-$(CONFIG_DW_DMAC_PCI) += dw_dmac_pci.o
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw/dw_dmac.c
+similarity index 99%
+rename from drivers/dma/dw_dmac.c
+rename to drivers/dma/dw/dw_dmac.c
+index 9f0129d..fa0471a 100644
 --- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1,14 +1,15 @@
++++ b/drivers/dma/dw/dw_dmac.c
+@@ -24,8 +24,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ 
++#include "../dmaengine.h"
+ #include "dw_dmac_regs.h"
+-#include "dmaengine.h"
+ 
  /*
-- * Driver for the Synopsys DesignWare DMA Controller (aka DMACA on
-- * AVR32 systems.)
-+ * Core driver for the Synopsys DesignWare DMA Controller
-  *
-  * Copyright (C) 2007-2008 Atmel Corporation
-  * Copyright (C) 2010-2011 ST Microelectronics
-+ * Copyright (C) 2012 Intel Corporation
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  */
-+
- #include <linux/bitops.h>
- #include <linux/clk.h>
- #include <linux/delay.h>
-@@ -222,7 +223,6 @@ static inline void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
- 		channel_readl(dwc, CTL_LO));
- }
- 
--
- static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
- {
- 	channel_clear_bit(dw, CH_EN, dwc->mask);
-@@ -1679,6 +1679,7 @@ static int dw_resume_noirq(struct device *dev)
- 
- 	clk_prepare_enable(dw->clk);
- 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
-+
- 	return 0;
- }
- 
+  * This supports the Synopsys "DesignWare AHB Central DMA Controller",
+diff --git a/drivers/dma/dw_dmac_pci.c b/drivers/dma/dw/dw_dmac_pci.c
+similarity index 100%
+rename from drivers/dma/dw_dmac_pci.c
+rename to drivers/dma/dw/dw_dmac_pci.c
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw/dw_dmac_regs.h
+similarity index 100%
+rename from drivers/dma/dw_dmac_regs.h
+rename to drivers/dma/dw/dw_dmac_regs.h
 -- 
 1.7.10.4
 
