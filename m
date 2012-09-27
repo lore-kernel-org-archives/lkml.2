@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab2I0Hdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 03:33:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58599 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756588Ab2I0HcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 03:32:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,494,1344236400"; 
-   d="scan'208";a="227160691"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv3 2/7] dmaengine: dw_dmac: add module alias
-Date: Thu, 27 Sep 2012 10:31:56 +0300
-Message-Id: <1348731121-2515-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1757456Ab2I0Hhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 03:37:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36281 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756481Ab2I0Hhx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 03:37:53 -0400
+Message-ID: <5064022C.4080202@kernel.dk>
+Date: Thu, 27 Sep 2012 09:37:16 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: linux-next: build failure after merge of the block tree
+References: <20120927132700.7e6ef4b714fb4a8251e68775@canb.auug.org.au>
+In-Reply-To: <20120927132700.7e6ef4b714fb4a8251e68775@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+On 09/27/2012 05:27 AM, Stephen Rothwell wrote:
+> Hi Jens,
+> 
+> After merging the block tree, today's linux-next build (x86
+> 64_allmodconfig) failed like this:
+> 
+> usr/include/linux/fs.h:13: included file 'linux/percpu-rwsem.h' is not exported
+> 
+> Caused by commit 62ac665ff9fc ("blockdev: turn a rw semaphore into a
+> percpu rw semaphore").
+> 
+> I have used the block tree from next-20120926 for today.  This will also
+> affect the device-mapper tree which is based on the block tree (of which I
+> will also use the next-20120926 version).
 
-It's good to have a quasistatic name for the platform driver.
+Bah, sorry about that. I have fixed it up now.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 0b88ced..bbb2a82 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1712,6 +1712,7 @@ static struct platform_driver dw_driver = {
- 
- module_platform_driver(dw_driver);
- 
-+MODULE_ALIAS("platform:dw_dmac");
- MODULE_LICENSE("GPL v2");
- MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller driver");
- MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
 -- 
-1.7.10.4
+Jens Axboe
 
