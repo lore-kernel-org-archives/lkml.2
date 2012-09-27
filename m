@@ -1,78 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab2I0M2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 08:28:13 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:40863 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab2I0M2M (ORCPT
+	id S1755273Ab2I0M25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 08:28:57 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:51355 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754285Ab2I0M24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 08:28:12 -0400
-Message-ID: <50644639.9000804@gmail.com>
-Date: Thu, 27 Sep 2012 20:27:37 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Thu, 27 Sep 2012 08:28:56 -0400
+Message-ID: <50644D1D.9040708@micron.com>
+Date: Thu, 27 Sep 2012 06:57:01 -0600
+From: Selvan Mani <smani@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: wency@cn.fujitsu.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [PATCH 3/4] memory-hotplug: clear hwpoisoned flag when onlining
- pages
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-4-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1348724705-23779-4-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: <axboe@kernel.dk>
+CC: <linux-kernel@vger.kernel.org>, <sbradshaw@micron.com>,
+        <asamymuthupa@micron.com>
+Subject: mtip32xx:Added appropriate timeout value for secure erase
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19214.007
+X-TM-AS-Result: No--12.103300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 01:45 PM, wency@cn.fujitsu.com wrote:
-> From: Wen Congyang <wency@cn.fujitsu.com>
->
-> hwpoisoned may set when we offline a page by the sysfs interface
-> /sys/devices/system/memory/soft_offline_page or
-> /sys/devices/system/memory/hard_offline_page. If we don't clear
-> this flag when onlining pages, this page can't be freed, and will
-> not in free list. So we can't offline these pages again. So we
-> should clear this flag when onlining pages.
+Hi Jens,
 
-page hwpoisoned maybe cause by a multi-bit ECC memory or cache failure, 
-so this page should not be used, why you online and free it again? can 
-any users use it?
+Please queue this patch for 3.7.
 
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->   mm/memory_hotplug.c |    8 ++++++++
->   1 files changed, 8 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 6a5b90d..9a5b10f 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -431,6 +431,14 @@ EXPORT_SYMBOL_GPL(__online_page_increment_counters);
->   
->   void __online_page_free(struct page *page)
->   {
-> +#ifdef CONFIG_MEMORY_FAILURE
-> +	/* The page may be marked HWPoisoned by soft/hard offline page */
-> +	if (PageHWPoison(page)) {
-> +		atomic_long_sub(1, &mce_bad_pages);
-> +		ClearPageHWPoison(page);
-> +	}
-> +#endif
-> +
->   	ClearPageReserved(page);
->   	init_page_count(page);
->   	__free_page(page);
+Added appropriate timeout value for secure erase based on identify device data
+
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+Signed-off-by: Selvan Mani <smani@micron.com>
+---
+ drivers/block/mtip32xx/mtip32xx.c |   19 +++++++++++++++----
+ drivers/block/mtip32xx/mtip32xx.h |    3 +++
+ 2 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index f56205f..cbaacd7 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -2038,8 +2038,9 @@ static unsigned int implicit_sector(unsigned char command,
+ 	}
+ 	return rv;
+ }
+-
+-static void mtip_set_timeout(struct host_to_dev_fis *fis, unsigned int *timeout)
++static void mtip_set_timeout(struct driver_data *dd,
++					struct host_to_dev_fis *fis,
++					unsigned int *timeout, u8 erasemode)
+ {
+ 	switch (fis->command) {
+ 	case ATA_CMD_DOWNLOAD_MICRO:
+@@ -2047,7 +2048,10 @@ static void mtip_set_timeout(struct host_to_dev_fis *fis, unsigned int *timeout)
+ 		break;
+ 	case ATA_CMD_SEC_ERASE_UNIT:
+ 	case 0xFC:
+-		*timeout = 240000; /* 4 minutes */
++		if (erasemode)
++			*timeout = ((*(dd->port->identify + 90) * 2) * 60000);
++		else
++			*timeout = ((*(dd->port->identify + 89) * 2) * 60000);
+ 		break;
+ 	case ATA_CMD_STANDBYNOW1:
+ 		*timeout = 120000;  /* 2 minutes */
+@@ -2090,6 +2094,7 @@ static int exec_drive_taskfile(struct driver_data *dd,
+ 	unsigned int transfer_size;
+ 	unsigned long task_file_data;
+ 	int intotal = outtotal + req_task->out_size;
++	int erasemode = 0;
+ 
+ 	taskout = req_task->out_size;
+ 	taskin = req_task->in_size;
+@@ -2215,7 +2220,13 @@ static int exec_drive_taskfile(struct driver_data *dd,
+ 		fis.lba_hi,
+ 		fis.device);
+ 
+-	mtip_set_timeout(&fis, &timeout);
++	/* check for erase mode support during secure erase.*/
++	if ((fis.command == ATA_CMD_SEC_ERASE_UNIT)
++					&& (outbuf[0] & MTIP_SEC_ERASE_MODE)) {
++		erasemode = 1;
++	}
++
++	mtip_set_timeout(dd, &fis, &timeout, erasemode);
+ 
+ 	/* Determine the correct transfer size.*/
+ 	if (force_single_sector)
+diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
+index 18627a1..8498e99 100644
+--- a/drivers/block/mtip32xx/mtip32xx.h
++++ b/drivers/block/mtip32xx/mtip32xx.h
+@@ -33,6 +33,9 @@
+ /* offset of Device Control register in PCIe extended capabilites space */
+ #define PCIE_CONFIG_EXT_DEVICE_CONTROL_OFFSET	0x48
+ 
++/* check for erase mode support during secure erase */
++#define MTIP_SEC_ERASE_MODE     0x3
++
+ /* # of times to retry timed out/failed IOs */
+ #define MTIP_MAX_RETRIES	2
+ 
+-- 
+1.7.1
+
 
