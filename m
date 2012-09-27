@@ -1,124 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753Ab2I0VMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 17:12:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43233 "EHLO
+	id S1755182Ab2I0VNU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 17:13:20 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38625 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164Ab2I0VL1 (ORCPT
+	with ESMTP id S1753343Ab2I0VNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 17:11:27 -0400
-Message-Id: <20120927211121.651422569@openvz.org>
-User-Agent: quilt/0.48-1
-Date: Fri, 28 Sep 2012 01:10:33 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: alan@lxorguk.ukuu.org.uk, hpa@zytor.com, gregkh@linuxfoundation.org,
-        xemul@parallels.com, jslaby@suse.cz,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [patch 1/3] tty: pty - Move TIOCPKT handling into pty.c
-References: <20120927211032.576475929@openvz.org>
-Content-Disposition: inline; filename=tty-move-pktmode-set-2
+	Thu, 27 Sep 2012 17:13:18 -0400
+From: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Re: Re: 3.4.10 i915 [GM45] regression
+Date: Thu, 27 Sep 2012 23:12:36 +0200
+Message-ID: <149867410.YtZVH8QMr4@tux200s>
+Organization: Andreas Sturmlechner
+User-Agent: KMail/4.9.1 (Linux/3.6.0-rc7; KDE/4.9.1; x86_64; ; )
+In-Reply-To: <2328453.JEpHkx50FR@tux200s>
+References: <2372445.fuIXicT4H0@tux200s> <20120926234223.GC26223@kroah.com> <2328453.JEpHkx50FR@tux200s>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this ioctl is for pty devices only move it to pty.c.
+> 
+> I haven't tried 3.4.11 yet
 
-v2:
- - drop PTY_TYPE_MASTER test since it's master peer
-   ioctl anyway (by jslaby@)
+OK, first two tries just now, instant black screens:
 
-Suggested-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Jiri Slaby <jslaby@suse.cz>
----
- drivers/tty/pty.c       |   26 ++++++++++++++++++++++++++
- drivers/tty/tty_ioctl.c |   20 --------------------
- 2 files changed, 26 insertions(+), 20 deletions(-)
-
-Index: tty.git/drivers/tty/pty.c
-===================================================================
---- tty.git.orig/drivers/tty/pty.c
-+++ tty.git/drivers/tty/pty.c
-@@ -174,6 +174,28 @@ static int pty_set_lock(struct tty_struc
- 	return 0;
- }
- 
-+/* Set the packet mode on a pty */
-+static int pty_set_pktmode(struct tty_struct *tty, int __user *arg)
-+{
-+	unsigned long flags;
-+	int pktmode;
-+
-+	if (get_user(pktmode, arg))
-+		return -EFAULT;
-+
-+	spin_lock_irqsave(&tty->ctrl_lock, flags);
-+	if (pktmode) {
-+		if (!tty->packet) {
-+			tty->packet = 1;
-+			tty->link->ctrl_status = 0;
-+		}
-+	} else
-+		tty->packet = 0;
-+	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
-+
-+	return 0;
-+}
-+
- /* Send a signal to the slave */
- static int pty_signal(struct tty_struct *tty, int sig)
- {
-@@ -393,6 +415,8 @@ static int pty_bsd_ioctl(struct tty_stru
- 	switch (cmd) {
- 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
- 		return pty_set_lock(tty, (int __user *) arg);
-+	case TIOCPKT: /* Set PT packet mode */
-+		return pty_set_pktmode(tty, (int __user *)arg);
- 	case TIOCSIG:    /* Send signal to other side of pty */
- 		return pty_signal(tty, (int) arg);
- 	}
-@@ -507,6 +531,8 @@ static int pty_unix98_ioctl(struct tty_s
- 	switch (cmd) {
- 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
- 		return pty_set_lock(tty, (int __user *)arg);
-+	case TIOCPKT: /* Set PT packet mode */
-+		return pty_set_pktmode(tty, (int __user *)arg);
- 	case TIOCGPTN: /* Get PT Number */
- 		return put_user(tty->index, (unsigned int __user *)arg);
- 	case TIOCSIG:    /* Send signal to other side of pty */
-Index: tty.git/drivers/tty/tty_ioctl.c
-===================================================================
---- tty.git.orig/drivers/tty/tty_ioctl.c
-+++ tty.git/drivers/tty/tty_ioctl.c
-@@ -1153,26 +1153,6 @@ int n_tty_ioctl_helper(struct tty_struct
- 		return 0;
- 	case TCFLSH:
- 		return tty_perform_flush(tty, arg);
--	case TIOCPKT:
--	{
--		int pktmode;
--
--		if (tty->driver->type != TTY_DRIVER_TYPE_PTY ||
--		    tty->driver->subtype != PTY_TYPE_MASTER)
--			return -ENOTTY;
--		if (get_user(pktmode, (int __user *) arg))
--			return -EFAULT;
--		spin_lock_irqsave(&tty->ctrl_lock, flags);
--		if (pktmode) {
--			if (!tty->packet) {
--				tty->packet = 1;
--				tty->link->ctrl_status = 0;
--			}
--		} else
--			tty->packet = 0;
--		spin_unlock_irqrestore(&tty->ctrl_lock, flags);
--		return 0;
--	}
- 	default:
- 		/* Try the mode commands */
- 		return tty_mode_ioctl(tty, file, cmd, arg);
-
+- 3.4.11
+- 3.0.42
