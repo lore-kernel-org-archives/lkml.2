@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab2I0VSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 17:18:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49037 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab2I0VSq (ORCPT
+	id S1755794Ab2I0VS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 17:18:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35901 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755681Ab2I0VS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 17:18:46 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Hyeoncheol Lee <hyc.lee@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/3] perf probe: Print an enum type variable in "enum variable-name" format when showing accessible variables
-Date: Thu, 27 Sep 2012 18:18:05 -0300
-Message-Id: <1348780686-16108-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1348780686-16108-1-git-send-email-acme@infradead.org>
-References: <1348780686-16108-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 27 Sep 2012 17:18:58 -0400
+Date: Thu, 27 Sep 2012 14:18:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: wency@cn.fujitsu.com, Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH 0/4] bugfix for memory hotplug
+Message-Id: <20120927141856.732ded79.akpm@linux-foundation.org>
+In-Reply-To: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com>
+References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hyeoncheol Lee <hyc.lee@gmail.com>
+I'll assume that you will be preparing a new revision of these patches.
 
-When showing accessible variables, an enum type variable was printed in
-"variable-name" format. Change this format into "enum variable-name".
+We have another patch series today called "memory_hotplug: fix memory
+hotplug bug", from another Fujitsu person.  But you people aren't
+cc'ing each other.  Please do so and please review and if possible test
+each others' work?
 
-Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/1348713399-4541-1-git-send-email-hyc.lee@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/dwarf-aux.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
-index ee51e9b..3e5f543 100644
---- a/tools/perf/util/dwarf-aux.c
-+++ b/tools/perf/util/dwarf-aux.c
-@@ -804,6 +804,8 @@ int die_get_typename(Dwarf_Die *vr_die, char *buf, int len)
- 			tmp = "union ";
- 		else if (tag == DW_TAG_structure_type)
- 			tmp = "struct ";
-+		else if (tag == DW_TAG_enumeration_type)
-+			tmp = "enum ";
- 		/* Write a base name */
- 		ret = snprintf(buf, len, "%s%s", tmp, dwarf_diename(&type));
- 		return (ret >= len) ? -E2BIG : ret;
--- 
-1.7.9.2.358.g22243
-
+I'm assuming that the "memory_hotplug: fix memory hotplug bug" series
+will also go through another revision?  I don't think I was cc'ed on
+the second patch in that series btw.
