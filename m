@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab2I0U1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 16:27:14 -0400
-Received: from nm17-vm0.bullet.mail.ird.yahoo.com ([77.238.189.214]:47437 "HELO
-	nm17-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753585Ab2I0U1N convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 16:27:13 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 907942.62197.bm@omp1018.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=BP+tezkYc5Xtwgyg4k/4WLCg1MRlYKsS+VR7nyiY9ppuMIfpbANrVwKEShhISDQjaViEzOZBNBkSZUo6+lQBjX8cx7uO3vx7IPrLFSSc/cHunVc5vWCntrhfBI9xiw5ve9OCBQWl8AwLD1MTBUSXJSTLrssmgdpBUQTMBDgasr4=;
-X-YMail-OSG: 6qKHnvgVM1nJ.IcQ_QvW82v2mEs6pKqzRdNpgNu02.krkXc
- zw3wxAiyA7YdV5tjyjMvXpoZKCbPY1pvXp8aWkmP55hXgQwtOqliJMF1VI.L
- IrLw46VCMq447yjhrMoLksSNtzotg44V5wbXnOEFvUyFpkitHbIBamM0PupT
- C6tEabyKS1qbOgr.15hGNqJ3WyqG7J5DK5_76Va9k5d25GGa3abp0YH2Siv0
- nRlRrpiXke.h4rQsttUKvbBNgAjHUQ_V9BhoGcICQVTGfEFq_OVgLUkp5vzO
- _lS73CK5yk_5ZrMcL0FCdhn5yhqB1GPemc27D_gHFVnkMvfFixGj2be6fye7
- 1UCzL89tWhLdbvoUWMHkIhqAWmFsbnvvxR8HV7oq1MwjpfWrxRmKhcd.nnPd
- QZBPh5foJzr6ApF49CVYl8M6b.WDCH3GlCAGJJwuG2e717bABlsaoudePMNB
- pngFbiQ--
-X-Mailer: YahooMailWebService/0.8.121.434
-Message-ID: <1348777631.30093.YahooMailNeo@web29304.mail.ird.yahoo.com>
-Date: Thu, 27 Sep 2012 21:27:11 +0100 (BST)
-From: Zula Hash <poldie7788dante@yahoo.com>
-Reply-To: Zula Hash <zula.hash@yahoo.com>
-Subject: You are probably the happiest man in the world because girls write to you themselves:)
-To: "mnb@abv.bg" <mnb@abv.bg>
+	id S1754973Ab2I0Uav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 16:30:51 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38354 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754676Ab2I0Uat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 16:30:49 -0400
+X-Sasl-enc: cSebnNR54PZnVm2DOp7wLHAaCQQRybup6dcuI/axYyUq 1348777848
+Date: Thu, 27 Sep 2012 13:30:46 -0700
+From: Greg KH <greg@kroah.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] 3.5-stable timekeeping fixes merged in 3.6
+Message-ID: <20120927203046.GA19489@kroah.com>
+References: <1347389781-54602-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347389781-54602-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Zula. 
-I'm 26 yo and I really like spending nice time with my buddies. 
-Yeah, it always brings me delight to go on parties, going to night clubs, bars and other things like it. It always exciting and interesting with me. 
-And... I am so sexual! I won the most wonderful cutie in class competition two times. 
-So, if u're interesting man and like me, want to relax and spend wonderful time together, then write me back here :)
-Zula
+On Tue, Sep 11, 2012 at 02:56:18PM -0400, John Stultz wrote:
+> Just wanted to send out a few timekeeping fixes that were merged
+> in 3.6 which are appropriate for -stable.
+> 
+> This queue backports the following fixes:
+> -----------------------------------------
+> cee58483cf56e0ba355fdd97ff5e8925329aa936    time: Move ktime_t overflow checking into timespec_valid_strict
+> bf2ac312195155511a0f79325515cbb61929898a    time: Avoid making adjustments if we haven't accumulated anything
+> 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b    time: Improve sanity checking of timekeeping inputs
+> 
+> I've run these through my timetest suite w/ kvm on both i386
+> & x86_64. But more testing would be of course appreciated.
+> 	https://github.com/johnstultz-work/timetests
+> 
+> I also have patch queues for all the -stable trees that I'll be
+> sending out as my testing completes for those trees.
+
+Applied, thanks.
+
+greg k-h
