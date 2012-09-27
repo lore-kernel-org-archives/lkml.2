@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab2I0GyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 02:54:19 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:38510 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754773Ab2I0GyS (ORCPT
+	id S1755531Ab2I0Gy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 02:54:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33497 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720Ab2I0GyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 02:54:18 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18eoxIPInQei4DzfK0CBaKEogD51NzDdA8Ne5lOGr
-	RE7p519/ReC81R
-Message-ID: <1348728852.7059.171.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Thu, 27 Sep 2012 08:54:12 +0200
-In-Reply-To: <20120927064142.GB5996@gmail.com>
-References: <1348574286.3881.40.camel@twins>
-	 <20120925131736.GA30652@x1.osrc.amd.com>
-	 <20120925170058.GC30158@x1.osrc.amd.com>
-	 <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
-	 <20120926163233.GA5339@x1.osrc.amd.com>
-	 <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
-	 <20120926213723.GA27692@liondog.tnic>
-	 <1348722568.7059.115.camel@marge.simpson.net>
-	 <20120927054742.GA4370@gmail.com>
-	 <1348727665.7059.160.camel@marge.simpson.net>
-	 <20120927064142.GB5996@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Thu, 27 Sep 2012 02:54:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120927040357.GO15236@dastard>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+	<1348404995-14372-8-git-send-email-zwu.kernel@gmail.com>
+	<20120927040357.GO15236@dastard>
+Date: Thu, 27 Sep 2012 14:54:22 +0800
+Message-ID: <CAEH94LgMXNZ_6Cs-YbhWVocO6jWb+Xq8=xgooimCFGnFbuEw5Q@mail.gmail.com>
+Subject: Re: [RFC v2 07/10] vfs: fork one kthread to update data temperature
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
+        diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-27 at 08:41 +0200, Ingo Molnar wrote: 
-> * Mike Galbraith <efault@gmx.de> wrote:
-> 
-> > > Just to confirm, if you turn off all preemption via a hack 
-> > > (basically if you turn SCHED_OTHER into SCHED_BATCH), does 
-> > > psql perform and scale much better, with the quality of 
-> > > sibling selection and spreading of processes only being a 
-> > > secondary effect?
-> > 
-> > That has always been the case here.  Preemption dominates.
-> 
-> Yes, so we get the best psql performance if we allow the central 
-> proxy process to dominate a single CPU (IIRC it can easily go up 
-> to 100% CPU utilization on that CPU - it is what determines max 
-> psql throughput), and not let any worker run there much, right?
+On Thu, Sep 27, 2012 at 12:03 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Sun, Sep 23, 2012 at 08:56:32PM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>>   Fork and run one kernel kthread to calculate
+>> that temperature based on some metrics kept
+>> in custom frequency data structs, and store
+>> the info in the hash table.
+>
+> No new kthreads, please. Use a per-superblock workqueue and a struct
+> delayed_work to run periodic work on each superblock.
+If no new kthread is created, which kthread will work on these
+delayed_work tasks?
 
-Running the thing RT didn't cut it iirc (will try that again).  For RT,
-we won't look for an empty spot on wakeup, we'll just squash an ant.
+>
+> That will also remove all the nasty, nasty
+> !hot_track_temperature_update_kthread checks from the code, too.
+>
+> Also, I'd separate the work that the workqueue does from the patch
+> that introduces the work queue. That way there is only one new thing
+> to comment on in the patch. Further, I'd separate the aging code
+> from the code that updates the temperature map into it's own patch
+> as well..
+>
+> Finally, you're going to need a shrinker to control the amount of
+> memory that is used in tracking hot regions - if we are throwing
+> inodes out of memory due to memory pressure, we most definitely are
+> going to need to reduce the amount of memory the tracking code is
+> using, even if it means losing useful information (i.e. the shrinker
+> accelerates the aging process).
+Great, I agree with you.
+>
+> Given the above, and the other comments earlier in the series,
+> there's not a lot of point in me spending time commenting on ethe
+> code in detail here as it will change significantly as a result of
+> all the earlier comments....
+OK,  i will complete the code change based on all your earlier comments ASAP.
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> > Others should play with it too, and let their boxen speak.
-> 
-> Do you have an easy-to-apply hack patch by chance that has the 
-> effect of turning off all such preemption, which people could 
-> try?
 
-They don't need any hacks, all they have to do is start postgreqsl
-SCHED_BATCH, then run pgbench the same way.
 
-I use schedctl, but in chrt speak, chrt -b 0 /etc/init.d/postgresql
-start, and then the same for pgbench itself.
+-- 
+Regards,
 
--Mike
-
+Zhi Yong Wu
