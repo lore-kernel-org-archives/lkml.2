@@ -1,123 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab2I0VWD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 17:22:03 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:13767 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752697Ab2I0VWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 17:22:01 -0400
-X-IronPort-AV: E=Sophos;i="4.80,496,1344236400"; 
-   d="scan'208";a="695005250"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Joerg Roedel <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-Thread-Topic: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-Thread-Index: AQHNdKJvypEw9t3CEUmeaLKAlM+spZefC3UA//+TOzCAAHnyAIAACk6AgAAL+oCAAElqAA==
-Date: Thu, 27 Sep 2012 21:21:59 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FF0BA2@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120807134156.GP1996@amd.com>
-	 <20120927145217.GA18962@8bytes.org>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
-	 <20120927153928.GB18962@8bytes.org>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
-	 <CA+55aFx5CtDDpXTunJDtkDQWPX7sY0hYMRyekuPErC+s5yXpWw@mail.gmail.com>
-In-Reply-To: <CA+55aFx5CtDDpXTunJDtkDQWPX7sY0hYMRyekuPErC+s5yXpWw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <4D87843DCFDF0644807960D0333C0D42@tahoe.netapp.com>
-MIME-Version: 1.0
+	id S1755664Ab2I0VWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 17:22:32 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:32447 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755304Ab2I0VWa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 17:22:30 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RFC 2/2] gpio-max730x: Add block GPIO API
+Date: Thu, 27 Sep 2012 23:22:03 +0200
+Message-Id: <1348780923-27428-2-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1348780923-27428-1-git-send-email-stigge@antcom.de>
+References: <1348780923-27428-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8RLMDgB007296
 
-On Thu, 2012-09-27 at 09:59 -0700, Linus Torvalds wrote:
-> On Thu, Sep 27, 2012 at 9:16 AM, Myklebust, Trond
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > I cannot see how that BUG_ON can be triggered in the current code, given
-> > that the only place where idmap->idmap_key_cons is set to a non-NULL
-> > value is covered by a mutex, and that it is always cleared before we
-> > release said mutex.
-> 
-> Quite frankly, the "I cannot see" thing is *never* an excuse for a BUG_ON().
-> 
-> We don't do kernel-killing asserts in Linux. Never.
-> 
-> The only excuse for a BUG_ON() is "I cannot possibly continue, I don't
-> even have an error path I can take".
-> 
-> If it's a fundamentally impossible situation, the BUG_ON() should
-> never have been there in the first place!
-> 
-> And if it's a "I don't see how it could happen", then it should have
-> been something like
-> 
->     if (WARN_ON_ONCE(condition))
->         goto cleanup;
-> 
-> rather than a BUG_ON().
-> 
-> We have too many f*cking BUG_ON's in the kernel, and the fact that one
-> triggers and it has taken a month and a half without it even being
-> resolved is a problem.
-> 
-> Get rid of the thing, already, dammit. If you cannot figure out how it
-> can happen, then the *last* thing you want to do is then kill the
-> machine so that it's impossible to debug it sanely.
-> 
-> Besides, as far as I can tell, idmap_key_cons locking is suspect
-> anyway. Stuff like this:
-> 
->                 cons = ACCESS_ONCE(idmap->idmap_key_cons);
->                 idmap->idmap_key_cons = NULL;
-> 
-> is an almost certain example of "the code is racy, and we did it
-> wrong". The above is basically *never* correct.
-> 
-> If the access is properly locked, then the ACCESS_ONCE() is a bug.
-> 
-> And if the access *isn't* properly locked, then setting things to NULL
-> afterwards is in no way safe.
-> 
-> IOW, either way, it's broken. And there's at least two of those
-> clearly buggy code-sequences involving that field.
-> 
-> So get rid of the BUG_ON() (possibly replacing it with the
-> WARN_ON_ONCE), and please look at those ACCESS_ONCE() sequences and
-> fix them. Either they happen under a lock, or they don't. None of this
-> crazy racy crap, please.
+This patch adds block GPIO API support to the MAX730x driver.
 
-The ACCESS_ONCE is a bug. It isn't needed, since the whole upcall is
-covered by the idmap_mutex. I'll remove it and the BUG_ON() come the
-merge window (or I can send a patch sooner if you care).
+Due to hardware constraints in this chip, simultaneous access to GPIO lines can
+only be done in groups of 8: GPIOs 0-7, 8-15, 16-23, 24-27. However, setting
+and clearing will be done at once.
 
-The downcall is ordered w.r.t. idmap_pipe_destroy_msg() (which clears
-idmap->idmap_key_cons only on upcall failure). The downcall is also
-protected against collisions with idmap_release_pipe() by means of the
-inode->i_mutex. Finally, the call to request_key() (during which the
-idmap_mutex is held) will always do an uninterruptible wait for one of
-those 3 functions to complete.
-IOW: all the functions that manipulate idmap->idmap_key_cons are
-theoretically ordered w.r.t. each other. That's what I mean when I say
-that I really don't understand why this is happening.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-So the first thing to do is to try a _vanilla_ 3.6-rc7, and see if the
-problem is reproducible without Joerg's extra patches.
+---
+ drivers/gpio/gpio-max730x.c |   53 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--- linux-2.6.orig/drivers/gpio/gpio-max730x.c
++++ linux-2.6/drivers/gpio/gpio-max730x.c
+@@ -146,6 +146,37 @@ static int max7301_get(struct gpio_chip
+ 	return level;
+ }
+ 
++static void max7301_get_block(struct gpio_chip *chip, u8 *values, size_t size)
++{
++	struct max7301 *ts = container_of(chip, struct max7301, chip);
++	int i, j;
++
++	for (i = 0; i < size; i++) {
++		u8 in_level = ts->read(ts->dev, 0x44 + i * 8);
++		u8 in_mask = 0;
++		u8 out_level = (ts->out_level >> (i * 8 + 4)) & 0xFF;
++		u8 out_mask = 0;
++
++		for (j = 0; j < 8; j++) {
++			int offset = 4 + i * 8 + j;
++			int config = (ts->port_config[offset >> 2] >>
++				      ((offset & 3) << 1)) &
++				     PIN_CONFIG_MASK;
++
++			switch (config) {
++			case PIN_CONFIG_OUT:
++				out_mask |= BIT(j);
++				break;
++			case PIN_CONFIG_IN_WO_PULLUP:
++			case PIN_CONFIG_IN_PULLUP:
++				in_mask |= BIT(j);
++			}
++		}
++
++		values[i] = (in_level & in_mask) | (out_level & out_mask);
++	}
++}
++
+ static void max7301_set(struct gpio_chip *chip, unsigned offset, int value)
+ {
+ 	struct max7301 *ts = container_of(chip, struct max7301, chip);
+@@ -160,6 +191,26 @@ static void max7301_set(struct gpio_chip
+ 	mutex_unlock(&ts->lock);
+ }
+ 
++static
++void max7301_set_block(struct gpio_chip *chip, u8 *set, u8 *clr, size_t size)
++{
++	struct max7301 *ts = container_of(chip, struct max7301, chip);
++	int i;
++
++	mutex_lock(&ts->lock);
++
++	for (i = 0; i < size; i++) {
++		if (set[i] | clr[i]) { /* only on change */
++			ts->out_level |= (u32)set[i] << (i * 8 + 4);
++			ts->out_level &= ~((u32)clr[i] << (i * 8 + 4));
++			ts->write(ts->dev, 0x44 + i * 8,
++				  (ts->out_level >> (i * 8 + 4)) & 0xFF);
++		}
++	}
++
++	mutex_unlock(&ts->lock);
++}
++
+ int __devinit __max730x_probe(struct max7301 *ts)
+ {
+ 	struct device *dev = ts->dev;
+@@ -183,8 +234,10 @@ int __devinit __max730x_probe(struct max
+ 
+ 	ts->chip.direction_input = max7301_direction_input;
+ 	ts->chip.get = max7301_get;
++	ts->chip.get_block = max7301_get_block;
+ 	ts->chip.direction_output = max7301_direction_output;
+ 	ts->chip.set = max7301_set;
++	ts->chip.set_block = max7301_set_block;
+ 
+ 	ts->chip.base = pdata->base;
+ 	ts->chip.ngpio = PIN_NUMBER;
