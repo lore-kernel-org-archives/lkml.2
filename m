@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab2I0WIr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 18:08:47 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41755 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595Ab2I0WIp (ORCPT
+	id S1756044Ab2I0WJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 18:09:45 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58807 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543Ab2I0WJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 18:08:45 -0400
-Message-ID: <5064CE6B.7020107@linaro.org>
-Date: Thu, 27 Sep 2012 16:08:43 -0600
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: [PATCH 00/57] power: Upgrade to ux500 battery management driver
-References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org> <20120927033806.GA22791@lizard>
-In-Reply-To: <20120927033806.GA22791@lizard>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=UTF-8
+	Thu, 27 Sep 2012 18:09:43 -0400
+Date: Thu, 27 Sep 2012 18:09:42 -0400 (EDT)
+Message-Id: <20120927.180942.969924012897168294.davem@davemloft.net>
+To: haicheng.li@linux.intel.com
+Cc: netdev@vger.kernel.org, tshimizu818@gmail.com,
+        linux-kernel@vger.kernel.org, haicheng.lee@gmail.com
+Subject: Re: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
+ dependency.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5060F97F.3040809@linux.intel.com>
+References: <506009A4.8000202@linux.intel.com>
+	<5060F97F.3040809@linux.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-09-26 09:38 PM, Anton Vorontsov wrote:
-> On Tue, Sep 25, 2012 at 10:11:57AM -0600, mathieu.poirier@linaro.org wrote:
->> From: "Mathieu J. Poirier" <mathieu.poirier@linaro.org>
->>
->> This patch set upgrades the current ux500 battery management driver
->> to the latest HW and functionality.
->>
->> Pull request for convenience:
->>
->> The following changes since commit 56d27adcb536b7430d5f8a6240df8ad261eb00bd:
->>
->>   Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile (2012-09-24 16:17:17 -0700)
->>
->> are available in the git repository at:
->>
->>   git://git.linaro.org/people/mpoirier/linux.git ux500-battery-management
-> 
-> I reviewed this series before, and all looked quite good overall. But I
-> took another look, especially at the patches w/ empty commit messages, and
-> there are some issues.
-> 
-> I tried to write some descriptions myself, but I failed: some changes are
-> not obvious to me, so I couldn't write rationale for them. :-/
-> 
-> Thanks,
-> Anton.
-> 
+From: Haicheng Li <haicheng.li@linux.intel.com>
+Date: Tue, 25 Sep 2012 08:23:27 +0800
 
-Thank you very much for the review.
+> From 898e3214b3406c620571cedf704719784b0df049 Mon Sep 17 00:00:00 2001
+> From: Haicheng Li <haicheng.li@linux.intel.com>
+> Date: Mon, 24 Sep 2012 15:52:30 +0800
+> Subject: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
+> dependency.
+> 
+> The .config is:
+>         CONFIG_PCH_GBE=y
+>         CONFIG_PCH_PTP=y
+>         CONFIG_PTP_1588_CLOCK=m
+> 
+> The build error:
 
-I am half way through your comments - some I can handle myself, for
-others I needed to go back to the original author for clarification.
-Another set will follow shortly.
+Your patch submissions are of a very low quality.
 
-Your time is much appreciated,
-Mathieu.
+And the main reason is that you microscopically look at problems and
+do not investigate how the same thing might be handled elsewhere.
+
+Therefore you will never become accustomed to the proper way problems
+are fixed, and the proper way to submit patches.
+
+Look at how other people submit patches, do any other patch submissions
+look like your's having all of this metadata in the message body:
+
+> From 898e3214b3406c620571cedf704719784b0df049 Mon Sep 17 00:00:00 2001
+> From: Haicheng Li <haicheng.li@linux.intel.com>
+> Date: Mon, 24 Sep 2012 15:52:30 +0800
+> Subject: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
+> dependency.
+
+No, nobody else does this.
+
+As for this specific patch:
+
+> -	depends on PTP_1588_CLOCK_PCH
+> +	depends on PTP_1588_CLOCK_PCH = PCH_GBE
+
+This is not the correct way to ensure that the module'ness of one
+config option meets the module'ness requirements of another.
+
+The correct way is to say something like "&& (PCH_GBE || PCH_GBE=n)"
