@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab2I0LLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 07:11:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37856 "EHLO mx1.redhat.com"
+	id S1756732Ab2I0LKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 07:10:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62660 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756742Ab2I0LKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 07:10:42 -0400
+	id S1753546Ab2I0LK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 07:10:28 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -14,27 +14,20 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 10/14] perf diff: Add weighted diff computation way to compare hist entries
-Date: Thu, 27 Sep 2012 13:09:31 +0200
-Message-Id: <1348744175-11115-11-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 02/14] perf diff: Refactor diff displacement possition info
+Date: Thu, 27 Sep 2012 13:09:23 +0200
+Message-Id: <1348744175-11115-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
 References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding 'wdiff' as new computation way to compare hist entries.
+Moving the position calculation into the diff command, so the position
+is prepared inside struct hist_entry data and there's no need to compute
+in the output display path.
 
-If specified the 'Weighted diff' column is displayed with value 'd'
-computed as:
-
-   d = B->period * WEIGHT-A - A->period * WEIGHT-B
-
-  - A/B being matching hist entry from first/second file specified
-    (or perf.data/perf.data.old) respectively.
-  - period being the hist entry period value
-  - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
-    behind ':' separator like '-c wdiff:1,2'.
+Removing 'displacement' from struct perf_hpp as it is no longer needed.
 
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -45,317 +38,260 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Documentation/perf-diff.txt |  15 ++++-
- tools/perf/builtin-diff.c              | 114 +++++++++++++++++++++++++++++++--
- tools/perf/ui/hist.c                   |  30 +++++++++
- tools/perf/util/hist.h                 |   2 +
- tools/perf/util/sort.h                 |   3 +
- 5 files changed, 159 insertions(+), 5 deletions(-)
+ tools/perf/builtin-diff.c   | 49 +++++++++++++++++++++++++++++----------------
+ tools/perf/builtin-report.c |  2 +-
+ tools/perf/builtin-top.c    |  2 +-
+ tools/perf/ui/hist.c        |  8 +++++---
+ tools/perf/ui/stdio/hist.c  | 17 +++-------------
+ tools/perf/util/hist.h      |  4 +---
+ tools/perf/util/sort.h      |  2 +-
+ 7 files changed, 44 insertions(+), 40 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index cff3d9b..fa413ac 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -78,7 +78,7 @@ OPTIONS
- 
- -c::
- --compute::
--        Differential computation selection - delta,ratio (default is delta).
-+        Differential computation selection - delta,ratio,wdiff (default is delta).
-         If '+' is specified as a first character, the output is sorted based
-         on the computation results.
-         See COMPARISON METHODS section for more info.
-@@ -110,6 +110,19 @@ with:
- 
-   - period being the hist entry period value
- 
-+wdiff
-+~~~~~
-+If specified the 'Weighted diff' column is displayed with value 'd' computed as:
-+
-+   d = B->period * WEIGHT-A - A->period * WEIGHT-B
-+
-+  - A/B being matching hist entry from first/second file specified
-+    (or perf.data/perf.data.old) respectively.
-+
-+  - period being the hist entry period value
-+
-+  - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
-+    behind ':' separator like '-c wdiff:1,2'.
- 
- SEE ALSO
- --------
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 14bc244..b0a08aa 100644
+index 761f419..5cb577a 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -27,24 +27,81 @@ static bool show_displacement;
- static bool show_baseline_only;
- static bool sort_compute;
- 
-+static s64 compute_wdiff_w1;
-+static s64 compute_wdiff_w2;
-+
- enum {
- 	COMPUTE_DELTA,
- 	COMPUTE_RATIO,
-+	COMPUTE_WEIGHTED_DIFF,
- 	COMPUTE_MAX,
+@@ -70,8 +70,8 @@ static struct perf_tool tool = {
+ 	.ordering_requires_timestamps = true,
  };
  
- const char *compute_names[COMPUTE_MAX] = {
- 	[COMPUTE_DELTA] = "delta",
- 	[COMPUTE_RATIO] = "ratio",
-+	[COMPUTE_WEIGHTED_DIFF] = "wdiff",
- };
- 
- static int compute;
- 
-+static int setup_compute_opt_wdiff(char *opt)
-+{
-+	char *w1_str = opt;
-+	char *w2_str;
-+
-+	int ret = -EINVAL;
-+
-+	if (!opt)
-+		goto out;
-+
-+	w2_str = strchr(opt, ',');
-+	if (!w2_str)
-+		goto out;
-+
-+	*w2_str++ = 0x0;
-+	if (!*w2_str)
-+		goto out;
-+
-+	compute_wdiff_w1 = strtol(w1_str, NULL, 10);
-+	compute_wdiff_w2 = strtol(w2_str, NULL, 10);
-+
-+	if (!compute_wdiff_w1 || !compute_wdiff_w2)
-+		goto out;
-+
-+	pr_debug("compute wdiff w1(%" PRId64 ") w2(%" PRId64 ")\n",
-+		  compute_wdiff_w1, compute_wdiff_w2);
-+
-+	ret = 0;
-+
-+ out:
-+	if (ret)
-+		pr_err("Weight parsing failed.");
-+
-+	return ret;
-+}
-+
-+static int setup_compute_opt(char *opt)
-+{
-+	if (compute == COMPUTE_WEIGHTED_DIFF)
-+		return setup_compute_opt_wdiff(opt);
-+
-+	if (opt) {
-+		pr_err("Extra option specified.");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int setup_compute(const struct option *opt, const char *str,
- 			 int unset __maybe_unused)
+-static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
+-						    struct hist_entry *he)
++static void insert_hist_entry_by_name(struct rb_root *root,
++				      struct hist_entry *he)
  {
- 	int *cp = (int *) opt->value;
-+	char *cstr = (char *) str;
-+	char buf[50];
- 	unsigned i;
-+	char *option;
+ 	struct rb_node **p = &root->rb_node;
+ 	struct rb_node *parent = NULL;
+@@ -90,7 +90,7 @@ static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
+ 	rb_insert_color(&he->rb_node, root);
+ }
  
- 	if (!str) {
- 		*cp = COMPUTE_DELTA;
-@@ -53,15 +110,33 @@ static int setup_compute(const struct option *opt, const char *str,
+-static void hists__resort_entries(struct hists *self)
++static void hists__name_resort(struct hists *self, bool sort)
+ {
+ 	unsigned long position = 1;
+ 	struct rb_root tmp = RB_ROOT;
+@@ -100,12 +100,16 @@ static void hists__resort_entries(struct hists *self)
+ 		struct hist_entry *n = rb_entry(next, struct hist_entry, rb_node);
  
- 	if (*str == '+') {
- 		sort_compute = true;
--		str++;
-+		cstr = (char *) ++str;
- 		if (!*str)
- 			return 0;
+ 		next = rb_next(&n->rb_node);
+-		rb_erase(&n->rb_node, &self->entries);
+ 		n->position = position++;
+-		perf_session__insert_hist_entry_by_name(&tmp, n);
++
++		if (sort) {
++			rb_erase(&n->rb_node, &self->entries);
++			insert_hist_entry_by_name(&tmp, n);
++		}
  	}
  
-+	option = strchr(str, ':');
-+	if (option) {
-+		unsigned len = option++ - str;
+-	self->entries = tmp;
++	if (sort)
++		self->entries = tmp;
+ }
+ 
+ static struct hist_entry *hists__find_entry(struct hists *self,
+@@ -121,7 +125,7 @@ static struct hist_entry *hists__find_entry(struct hists *self,
+ 			n = n->rb_left;
+ 		else if (cmp > 0)
+ 			n = n->rb_right;
+-		else 
++		else
+ 			return iter;
+ 	}
+ 
+@@ -150,6 +154,24 @@ static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
+ 	return NULL;
+ }
+ 
++static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool name)
++{
++	struct perf_evsel *evsel;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		struct hists *hists = &evsel->hists;
++
++		hists__output_resort(hists);
 +
 +		/*
-+		 * The str data are not writeable, so we need
-+		 * to use another buffer.
++		 * The hists__name_resort only sets possition
++		 * if name is false.
 +		 */
-+
-+		/* No option value is longer. */
-+		if (len >= sizeof(buf))
-+			return -EINVAL;
-+
-+		strncpy(buf, str, len);
-+		buf[len] = 0x0;
-+		cstr = buf;
++		if (name || ((!name) && show_displacement))
++			hists__name_resort(hists, name);
 +	}
-+
- 	for (i = 0; i < COMPUTE_MAX; i++)
--		if (!strcmp(str, compute_names[i])) {
-+		if (!strcmp(cstr, compute_names[i])) {
- 			*cp = i;
--			return 0;
-+			return setup_compute_opt(option);
- 		}
- 
- 	pr_err("Failed to find valid compute string\n");
-@@ -96,6 +171,23 @@ double perf_diff__compute_ratio(struct hist_entry *he)
- 	return he->diff.period_ratio;
- }
- 
-+double perf_diff__compute_wdiff(struct hist_entry *he)
-+{
-+	struct hist_entry *pair = he->pair;
-+	u64 new_period = he->period;
-+	u64 old_period = pair ? pair->period : 0;
-+
-+	he->diff.computed = true;
-+
-+	if (!pair)
-+		he->diff.wdiff = 0;
-+	else
-+		he->diff.wdiff = new_period * compute_wdiff_w2 -
-+				 old_period * compute_wdiff_w1;
-+
-+	return he->diff.wdiff;
 +}
 +
- static int hists__add_entry(struct hists *self,
- 			    struct addr_location *al, u64 period)
+ static int __cmd_diff(void)
  {
-@@ -274,6 +366,9 @@ static void hists__precompute(struct hists *hists)
- 		case COMPUTE_RATIO:
- 			perf_diff__compute_ratio(he);
- 			break;
-+		case COMPUTE_WEIGHTED_DIFF:
-+			perf_diff__compute_wdiff(he);
-+			break;
- 		default:
- 			BUG_ON(1);
- 		}
-@@ -309,6 +404,13 @@ hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
+ 	int ret, i;
+@@ -176,15 +198,8 @@ static int __cmd_diff(void)
+ 	evlist_old = older->evlist;
+ 	evlist_new = newer->evlist;
  
- 		return cmp_doubles(l, r);
+-	list_for_each_entry(evsel, &evlist_new->entries, node)
+-		hists__output_resort(&evsel->hists);
+-
+-	list_for_each_entry(evsel, &evlist_old->entries, node) {
+-		hists__output_resort(&evsel->hists);
+-
+-		if (show_displacement)
+-			hists__resort_entries(&evsel->hists);
+-	}
++	perf_evlist__resort_hists(evlist_old, true);
++	perf_evlist__resort_hists(evlist_new, false);
+ 
+ 	list_for_each_entry(evsel, &evlist_new->entries, node) {
+ 		struct perf_evsel *evsel_old;
+@@ -200,7 +215,7 @@ static int __cmd_diff(void)
+ 
+ 		hists__match(&evsel_old->hists, &evsel->hists);
+ 		hists__fprintf(&evsel->hists, &evsel_old->hists,
+-			       show_displacement, true, 0, 0, stdout);
++			       true, 0, 0, stdout);
  	}
-+	case COMPUTE_WEIGHTED_DIFF:
-+	{
-+		s64 l = left->diff.wdiff;
-+		s64 r = right->diff.wdiff;
-+
-+		return r - l;
-+	}
- 	default:
- 		BUG_ON(1);
+ 
+ out_delete:
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 1da243d..6748cac 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -320,7 +320,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
+ 		const char *evname = perf_evsel__name(pos);
+ 
+ 		hists__fprintf_nr_sample_events(hists, evname, stdout);
+-		hists__fprintf(hists, NULL, false, true, 0, 0, stdout);
++		hists__fprintf(hists, NULL, true, 0, 0, stdout);
+ 		fprintf(stdout, "\n\n");
  	}
-@@ -433,7 +535,8 @@ static const struct option options[] = {
- 		    "Show position displacement relative to baseline"),
- 	OPT_BOOLEAN('b', "baseline-only", &show_baseline_only,
- 		    "Show only items with match in baseline"),
--	OPT_CALLBACK('c', "compute", &compute, "delta,ratio (default delta)",
-+	OPT_CALLBACK('c', "compute", &compute,
-+		     "delta,ratio,wdiff:w1,w2 (default delta)",
- 		     "Entries differential computation selection",
- 		     setup_compute),
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
-@@ -474,6 +577,9 @@ static void ui_init(void)
- 	case COMPUTE_RATIO:
- 		perf_hpp__column_enable(PERF_HPP__RATIO, true);
- 		break;
-+	case COMPUTE_WEIGHTED_DIFF:
-+		perf_hpp__column_enable(PERF_HPP__WEIGHTED_DIFF, true);
-+		break;
- 	default:
- 		BUG_ON(1);
- 	};
+ 
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e434a16..6b8c629 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -316,7 +316,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
+ 	hists__output_recalc_col_len(&top->sym_evsel->hists,
+ 				     top->winsize.ws_row - 3);
+ 	putchar('\n');
+-	hists__fprintf(&top->sym_evsel->hists, NULL, false, false,
++	hists__fprintf(&top->sym_evsel->hists, NULL, false,
+ 		       top->winsize.ws_row - 4 - printed, win_width, stdout);
+ }
+ 
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 21b57a2..5980ca5 100644
+index e3f8cd4..55b9ca8 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -286,6 +286,35 @@ static int hpp__entry_ratio(struct perf_hpp *hpp, struct hist_entry *he)
- 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
+@@ -244,13 +244,15 @@ static int hpp__width_displ(struct perf_hpp *hpp __maybe_unused)
  }
  
-+static int hpp__header_wdiff(struct perf_hpp *hpp)
-+{
-+	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
-+
-+	return scnprintf(hpp->buf, hpp->size, fmt, "Weighted diff");
-+}
-+
-+static int hpp__width_wdiff(struct perf_hpp *hpp __maybe_unused)
-+{
-+	return 14;
-+}
-+
-+static int hpp__entry_wdiff(struct perf_hpp *hpp, struct hist_entry *he)
-+{
-+	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
-+	char buf[32] = " ";
-+	u64 wdiff;
-+
-+	if (he->diff.computed)
-+		wdiff = he->diff.wdiff;
-+	else
-+		wdiff = perf_diff__compute_wdiff(he);
-+
-+	if (wdiff > 0)
-+		scnprintf(buf, sizeof(buf), "%14ld", wdiff);
-+
-+	return scnprintf(hpp->buf, hpp->size, fmt, buf);
-+}
-+
- static int hpp__header_displ(struct perf_hpp *hpp)
+ static int hpp__entry_displ(struct perf_hpp *hpp,
+-			    struct hist_entry *he __maybe_unused)
++			    struct hist_entry *he)
  {
- 	return scnprintf(hpp->buf, hpp->size, "Displ.");
-@@ -332,6 +361,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	{ .cond = false, HPP__PRINT_FNS(period) },
- 	{ .cond = false, HPP__PRINT_FNS(delta) },
- 	{ .cond = false, HPP__PRINT_FNS(ratio) },
-+	{ .cond = false, HPP__PRINT_FNS(wdiff) },
- 	{ .cond = false, HPP__PRINT_FNS(displ) }
- };
++	struct hist_entry *pair = he->pair;
++	long displacement = pair ? pair->position - he->position : 0;
+ 	const char *fmt = symbol_conf.field_sep ? "%s" : "%6.6s";
+ 	char buf[32] = " ";
  
+-	if (hpp->displacement)
+-		scnprintf(buf, sizeof(buf), "%+4ld", hpp->displacement);
++	if (displacement)
++		scnprintf(buf, sizeof(buf), "%+4ld", displacement);
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
+ }
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 882461a..d7405f0 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -308,7 +308,7 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
+ 
+ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 			       struct hists *hists, struct hists *pair_hists,
+-			       long displacement, u64 total_period, FILE *fp)
++			       u64 total_period, FILE *fp)
+ {
+ 	char bf[512];
+ 	int ret;
+@@ -316,7 +316,6 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 		.buf		= bf,
+ 		.size		= size,
+ 		.total_period	= total_period,
+-		.displacement	= displacement,
+ 		.ptr		= pair_hists,
+ 	};
+ 	bool color = !symbol_conf.field_sep;
+@@ -337,15 +336,13 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ }
+ 
+ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+-		      bool show_displacement, bool show_header, int max_rows,
++		      bool show_header, int max_rows,
+ 		      int max_cols, FILE *fp)
+ {
+ 	struct sort_entry *se;
+ 	struct rb_node *nd;
+ 	size_t ret = 0;
+ 	u64 total_period;
+-	unsigned long position = 1;
+-	long displacement = 0;
+ 	unsigned int width;
+ 	const char *sep = symbol_conf.field_sep;
+ 	const char *col_width = symbol_conf.col_width_list_str;
+@@ -449,15 +446,7 @@ print_entries:
+ 		if (h->filtered)
+ 			continue;
+ 
+-		if (show_displacement) {
+-			if (h->pair != NULL)
+-				displacement = ((long)h->pair->position -
+-					        (long)position);
+-			else
+-				displacement = 0;
+-			++position;
+-		}
+-		ret += hist_entry__fprintf(h, max_cols, hists, pair, displacement,
++		ret += hist_entry__fprintf(h, max_cols, hists, pair,
+ 					   total_period, fp);
+ 
+ 		if (max_rows && ++nr_rows >= max_rows)
 diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 2dbb340..27866b5 100644
+index f011ad4..6d07f1a 100644
 --- a/tools/perf/util/hist.h
 +++ b/tools/perf/util/hist.h
-@@ -142,6 +142,7 @@ enum {
- 	PERF_HPP__PERIOD,
- 	PERF_HPP__DELTA,
- 	PERF_HPP__RATIO,
-+	PERF_HPP__WEIGHTED_DIFF,
- 	PERF_HPP__DISPL,
+@@ -99,8 +99,7 @@ void hists__inc_nr_events(struct hists *self, u32 type);
+ size_t hists__fprintf_nr_events(struct hists *self, FILE *fp);
  
- 	PERF_HPP__MAX_INDEX
-@@ -208,4 +209,5 @@ unsigned int hists__sort_list_width(struct hists *self);
+ size_t hists__fprintf(struct hists *self, struct hists *pair,
+-		      bool show_displacement, bool show_header,
+-		      int max_rows, int max_cols, FILE *fp);
++		      bool show_header, int max_rows, int max_cols, FILE *fp);
  
- double perf_diff__compute_delta(struct hist_entry *he);
- double perf_diff__compute_ratio(struct hist_entry *he);
-+double perf_diff__compute_wdiff(struct hist_entry *he);
- #endif	/* __PERF_HIST_H */
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 2090670..19d68ee 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -54,6 +54,9 @@ struct hist_entry_diff {
- 
- 	/* PERF_HPP__RATIO */
- 	double	period_ratio;
-+
-+	/* HISTC_WEIGHTED_DIFF */
-+	s64	wdiff;
+ int hist_entry__inc_addr_samples(struct hist_entry *self, int evidx, u64 addr);
+ int hist_entry__annotate(struct hist_entry *self, size_t privsize);
+@@ -120,7 +119,6 @@ struct perf_hpp {
+ 	size_t size;
+ 	u64 total_period;
+ 	const char *sep;
+-	long displacement;
+ 	void *ptr;
  };
  
- /**
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index eb3959b..f070b52 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -73,8 +73,8 @@ struct hist_entry {
+ 	u8			filtered;
+ 	char			*srcline;
+ 	struct symbol		*parent;
++	unsigned long		position;
+ 	union {
+-		unsigned long	  position;
+ 		struct hist_entry *pair;
+ 		struct rb_root	  sorted_chain;
+ 	};
 -- 
 1.7.11.4
 
