@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab2I0SUE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 14:20:04 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43482 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467Ab2I0SUC (ORCPT
+	id S1754640Ab2I0SUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 14:20:11 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44743 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127Ab2I0SUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 14:20:02 -0400
-From: Josh Taylor <joshua.taylor0@gmail.com>
-To: akpm@linux-foundation.org, mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, Josh Taylor <joshua.taylor0@gmail.com>
-Subject: [PATCH 3/3] Kernel: Corrected space error after ','
-Date: Thu, 27 Sep 2012 14:19:28 -0400
-Message-Id: <1348769968-2696-1-git-send-email-joshua.taylor0@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 27 Sep 2012 14:20:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120927180507.GD8527@x1.osrc.amd.com>
+References: <20120926163233.GA5339@x1.osrc.amd.com> <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+ <20120926213723.GA27692@liondog.tnic> <1348722568.7059.115.camel@marge.simpson.net>
+ <20120927054742.GA4370@gmail.com> <1348727665.7059.160.camel@marge.simpson.net>
+ <20120927064142.GB5996@gmail.com> <1348728852.7059.171.camel@marge.simpson.net>
+ <20120927071011.GA8980@gmail.com> <CA+55aFyxjdir-LZneBTk1JQV0cVSRFzEK9Jpxje2SJqA6aP3Yg@mail.gmail.com>
+ <20120927180507.GD8527@x1.osrc.amd.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 27 Sep 2012 11:19:46 -0700
+X-Google-Sender-Auth: iN7iwI7FbCOQHaRWnJi14dKMeL8
+Message-ID: <CA+55aFyTrcmx3Uf7UGU=-K=BwTym8aN15fTo==cV2bCK6so0Fg@mail.gmail.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+To: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Josh Taylor <joshua.taylor0@gmail.com>
----
- kernel/panic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, Sep 27, 2012 at 11:05 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Sep 27, 2012 at 10:44:26AM -0700, Linus Torvalds wrote:
+>> Or could we just improve the heuristics. What happens if the
+>> scheduling granularity is increased, for example? It's set to 1ms
+>> right now, with a logarithmic scaling by number of cpus.
+>
+> /proc/sys/kernel/sched_wakeup_granularity_ns=10000000 (10ms)
+> ------------------------------------------------------
+> tps = 4994.730809 (including connections establishing)
+> tps = 5000.260764 (excluding connections establishing)
+>
+> A bit better over the default NO_WAKEUP_PREEMPTION setting.
 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index e1b2822..176d58c 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -100,7 +100,7 @@ void panic(const char *fmt, ...)
- 	va_start(args, fmt);
- 	vsnprintf(buf, sizeof(buf), fmt, args);
- 	va_end(args);
--	printk(KERN_EMERG "Kernel panic - not syncing: %s\n",buf);
-+	printk(KERN_EMERG "Kernel panic - not syncing: %s\n", buf);
- #ifdef CONFIG_DEBUG_BUGVERBOSE
- 	/*
- 	 * Avoid nested stack-dumping if a panic occurs during oops processing
--- 
-1.7.9.5
+Ok, so this gives us something possible to actually play with.
 
+For example, maybe SCHED_TUNABLESCALING_LINEAR is more appropriate
+than SCHED_TUNABLESCALING_LOG. At least for WAKEUP_PREEMPTION. Hmm?
+
+(Btw, "linear" right now looks like 1:1. That's linear, but it's a
+very aggressive linearity. Something like "factor = (cpus+1)/2" would
+also be linear, but by a less extreme factor.
+
+              Linus
