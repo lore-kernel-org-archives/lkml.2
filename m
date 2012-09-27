@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab2I0V1Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 17:27:16 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:52770 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754850Ab2I0V1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 17:27:15 -0400
-Date: Thu, 27 Sep 2012 17:27:08 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: next/mmotm: ext4 causes !rwsem_is_locked warnings
-Message-ID: <20120927212708.GA10044@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Hugh Dickins <hughd@google.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Christoph Hellwig <hch@infradead.org>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <alpine.LSU.2.00.1209271334560.2226@eggly.anvils>
-MIME-Version: 1.0
+	id S1755646Ab2I0VbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 17:31:11 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:37760 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab2I0VbJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 17:31:09 -0400
+Date: Thu, 27 Sep 2012 23:31:02 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCHv2 00/14] perf diff: Factor diff command
+Message-ID: <20120927213102.GO16230@one.firstfloor.org>
+References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1209271334560.2226@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 02:05:00PM -0700, Hugh Dickins wrote:
-> Hi Ted,
+On Thu, Sep 27, 2012 at 01:09:21PM +0200, Jiri Olsa wrote:
+> hi,
+> this is v2 of diff command changes proposed in here:
+> https://lkml.org/lkml/2012/9/6/344
 > 
-> mmotm (or next) now gives me lots of WARNING at fs/fs-writeback.c:1312 from
-> writeback_inodes_sb_nr().  That's WARN_ON(!rwsem_is_locked(&sb->s_umount))
-> (some useful safety from hch) in writeback_inodes_sb_nr().
-> 
-> Your commit 40e684e5c597a98996cf4616e31fb2581ec82060
-> "ext4: fix potential deadlock in ext4_nonda_switch()" needs more change
-> to fs/fs-writeback.c.  I guess I'm the only one using a nearly full ext4.
-> 
-> I am, of course, applying the patch at the bottom to my tree for now;
-> but I think you'd do better not to eliminate that check.  Maybe add a
-> special wb_reason for your case, and skip rwsem check in that case.
+> It's now rebased on new hists hpp* interface plus few
+> more additional changes.
 
-Yeah, we were just discussing this on another thread.  I didn't think
-of the option of creating a new special wb_reason option, but that's a
-much better option than the other ones I had been considering, so I
-think I will give that a try.   Thanks for the suggestion!!
+FWIW I've been playing around with it a bit. It seems useful
+both for scaling problems and likely for performance regression tracking too.
 
-      	     	       	 	       - Ted
+Some minor issues I ran into (but no show stoppers):
+- The error messages for bad -c expressions could be better
+- I found the requirement for no space after -c unintuitive.
+- It would be nice to have support for doing the bucketizing per line
+instead of per function. With a large function and/or inlining 
+it's sometimes hard to identify the actual problem
+Acme recently added this for perf report.
+
+I agree it would be good to merge.
+
+-Andi
