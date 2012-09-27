@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab2I0Q4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 12:56:36 -0400
-Received: from mail.lang.hm ([64.81.33.126]:53179 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140Ab2I0Q4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 12:56:35 -0400
-Date: Thu, 27 Sep 2012 09:55:30 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Borislav Petkov <bp@alien8.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Mel Gorman <mgorman@suse.de>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-In-Reply-To: <20120927102050.GA967@liondog.tnic>
-Message-ID: <alpine.DEB.2.02.1209270948300.5162@asgard.lang.hm>
-References: <1348538258.7100.23.camel@marge.simpson.net> <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com> <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com> <20120925170058.GC30158@x1.osrc.amd.com>
- <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com> <20120926163233.GA5339@x1.osrc.amd.com> <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com> <20120926213723.GA27692@liondog.tnic> <alpine.DEB.2.02.1209270013270.5162@asgard.lang.hm>
- <20120927102050.GA967@liondog.tnic>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752369Ab2I0Q7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 12:59:36 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50252 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab2I0Q7f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 12:59:35 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20120807134156.GP1996@amd.com> <20120927145217.GA18962@8bytes.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
+ <20120927153928.GB18962@8bytes.org> <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 27 Sep 2012 09:59:13 -0700
+X-Google-Sender-Auth: v4bkvAoTcDz79JR_IEq2FqYyRXU
+Message-ID: <CA+55aFx5CtDDpXTunJDtkDQWPX7sY0hYMRyekuPErC+s5yXpWw@mail.gmail.com>
+Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Sep 2012, Borislav Petkov wrote:
-
-> On Thu, Sep 27, 2012 at 12:17:22AM -0700, david@lang.hm wrote:
->> It seems to me that trying to figure out if you are going to
->> overload the L2 is an impossible task, so just assume that it will
->> all fit, and the worst case is you have one balancing cycle where
->> you can't do as much work and then the normal balancing will kick in
->> and move something anyway.
+On Thu, Sep 27, 2012 at 9:16 AM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
 >
-> Right, and this implies that when the load balancer runs, it will
-> definitely move the task away from the L2. But what do I do in the cases
-> where the two tasks don't overload the L2 and it is actually beneficial
-> to keep them there? How does the load balancer know that?
+> I cannot see how that BUG_ON can be triggered in the current code, given
+> that the only place where idmap->idmap_key_cons is set to a non-NULL
+> value is covered by a mutex, and that it is always cleared before we
+> release said mutex.
 
-no, I'm saying that you should assume that the two tasks won't overload 
-the L2, try it, and if they do overload the L2, move one of the tasks 
-again the next balancing cycle.
+Quite frankly, the "I cannot see" thing is *never* an excuse for a BUG_ON().
 
-there is a lot of possible sharing going on between 'cores'
+We don't do kernel-killing asserts in Linux. Never.
 
-shared everything (a single core)
-different registers, shared everything else (HT core)
-shared floating point, shared cache, different everything else
-shared L2/L3/Memory, different everything else
-shared L3/Memory, different everything else
-shared Memory, different everything else
-different everything
+The only excuse for a BUG_ON() is "I cannot possibly continue, I don't
+even have an error path I can take".
 
-and just wait a couple of years and someone will add a new entry to this 
-list (if I haven't already missed a few :-)
+If it's a fundamentally impossible situation, the BUG_ON() should
+never have been there in the first place!
 
-the more that is shared, the cheaper it is to move the process (the less 
-cached state you throw away), so ideally you want to move the process as 
-little as possible, just enough to eliminate whatever the contended 
-resource it. But since you really don't know the footprint of each process 
-in each of these layers, all you can measure is what percentage of the 
-total core time the process used, just move it a little and see if that 
-was enough.
+And if it's a "I don't see how it could happen", then it should have
+been something like
 
-David Lang
+    if (WARN_ON_ONCE(condition))
+        goto cleanup;
+
+rather than a BUG_ON().
+
+We have too many f*cking BUG_ON's in the kernel, and the fact that one
+triggers and it has taken a month and a half without it even being
+resolved is a problem.
+
+Get rid of the thing, already, dammit. If you cannot figure out how it
+can happen, then the *last* thing you want to do is then kill the
+machine so that it's impossible to debug it sanely.
+
+Besides, as far as I can tell, idmap_key_cons locking is suspect
+anyway. Stuff like this:
+
+                cons = ACCESS_ONCE(idmap->idmap_key_cons);
+                idmap->idmap_key_cons = NULL;
+
+is an almost certain example of "the code is racy, and we did it
+wrong". The above is basically *never* correct.
+
+If the access is properly locked, then the ACCESS_ONCE() is a bug.
+
+And if the access *isn't* properly locked, then setting things to NULL
+afterwards is in no way safe.
+
+IOW, either way, it's broken. And there's at least two of those
+clearly buggy code-sequences involving that field.
+
+So get rid of the BUG_ON() (possibly replacing it with the
+WARN_ON_ONCE), and please look at those ACCESS_ONCE() sequences and
+fix them. Either they happen under a lock, or they don't. None of this
+crazy racy crap, please.
+
+                   Linus
