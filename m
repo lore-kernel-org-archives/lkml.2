@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab2I0HAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 03:00:00 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:62947 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751790Ab2I0G74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 02:59:56 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AucMAGv4Y1B5LPfb/2dsb2JhbABFhSK3VwECgRKBCYIgAQEFJxMcIxAIAxUDLhQNGAMhE4dzAw6uBw2JVBSKImJtRYRrA5QUgVSLIYULgnk
-Date: Thu, 27 Sep 2012 16:59:53 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
-        diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v2 06/10] vfs: enable hot data tracking
-Message-ID: <20120927065953.GQ15236@dastard>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
- <1348404995-14372-7-git-send-email-zwu.kernel@gmail.com>
- <20120927035425.GN15236@dastard>
- <CAEH94LgxOLhyP50hyjQxsECZP1knkYB+11N4=UtJ4mTb5Bmm1g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAEH94LgxOLhyP50hyjQxsECZP1knkYB+11N4=UtJ4mTb5Bmm1g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756264Ab2I0HAR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 03:00:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:46578 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756219Ab2I0HAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 03:00:13 -0400
+X-IronPort-AV: E=Sophos;i="4.80,495,1344182400"; 
+   d="scan'208";a="5926300"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org
+Subject: [PATCH 2/3] slub, hotplug: ignore unrelated node's hot-adding and hot-removing
+Date: Thu, 27 Sep 2012 14:47:49 +0800
+Message-Id: <1348728470-5580-3-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1348728470-5580-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1348728470-5580-1-git-send-email-laijs@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/27 14:46:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/27 14:46:53,
+	Serialize complete at 2012/09/27 14:46:53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 02:28:12PM +0800, Zhi Yong Wu wrote:
-> On Thu, Sep 27, 2012 at 11:54 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Sun, Sep 23, 2012 at 08:56:31PM +0800, zwu.kernel@gmail.com wrote:
-> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> >>
-> >>   Miscellaneous features that implement hot data tracking
-> >> and generally make the hot data functions a bit more friendly.
-> >>
-> >> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> >> ---
-> >>  fs/direct-io.c               |   10 ++++++++++
-> >>  include/linux/hot_tracking.h |   11 +++++++++++
-> >>  mm/filemap.c                 |    8 ++++++++
-> >>  mm/page-writeback.c          |   21 +++++++++++++++++++++
-> >>  mm/readahead.c               |    9 +++++++++
-> >>  5 files changed, 59 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> >> index f86c720..3773f44 100644
-> >> --- a/fs/direct-io.c
-> >> +++ b/fs/direct-io.c
-> >> @@ -37,6 +37,7 @@
-> >>  #include <linux/uio.h>
-> >>  #include <linux/atomic.h>
-> >>  #include <linux/prefetch.h>
-> >> +#include "hot_tracking.h"
-> >>
-> >>  /*
-> >>   * How many user pages to map in one call to get_user_pages().  This determines
-> >> @@ -1297,6 +1298,15 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
-> >>       prefetch(bdev->bd_queue);
-> >>       prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
-> >>
-> >> +     /* Hot data tracking */
-> >> +     if (TRACK_THIS_INODE(iocb->ki_filp->f_mapping->host)
-> >> +                     && iov_length(iov, nr_segs) > 0) {
-> >> +             hot_rb_update_freqs(iocb->ki_filp->f_mapping->host,
-> >> +                             (u64)offset,
-> >> +                             (u64)iov_length(iov, nr_segs),
-> >> +                             rw & WRITE);
-> >> +     }
-> >
-> > That's a bit messy. I'd prefer a static inline function that hides
-> > all this. e.g.
-> Do you think of moving the condition into hot_inode_udate_freqs(), not
-> adding another new function?
+SLUB only fucus on the nodes which has normal memory, so ignore the other
+node's hot-adding and hot-removing.
 
-Moving it into hot_inode_udate_freqs() will add a function call
-overhead even when tracking is not enabled. a static inline function
-will just result in no extra overhead other than the if
-statement....
+Aka: if some memroy of a node(which has no onlined memory) is online,
+but this new memory onlined is not normal memory(HIGH memory example),
+we should not allocate kmem_cache_node for SLUB.
 
-Cheers,
+And if the last normal memory is offlined, but the node still has memroy,
+we should remove kmem_cache_node for that node.(current code delay it when
+all of the memory is offlined)
 
-Dave.
+so we only do something when marg->status_change_nid_normal > 0.
+marg->status_change_nid is not suitable here.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ mm/slub.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 2fdd96f..2d78639 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3577,7 +3577,7 @@ static void slab_mem_offline_callback(void *arg)
+ 	struct memory_notify *marg = arg;
+ 	int offline_node;
+ 
+-	offline_node = marg->status_change_nid;
++	offline_node = marg->status_change_nid_normal;
+ 
+ 	/*
+ 	 * If the node still has available memory. we need kmem_cache_node
+@@ -3610,7 +3610,7 @@ static int slab_mem_going_online_callback(void *arg)
+ 	struct kmem_cache_node *n;
+ 	struct kmem_cache *s;
+ 	struct memory_notify *marg = arg;
+-	int nid = marg->status_change_nid;
++	int nid = marg->status_change_nid_normal;
+ 	int ret = 0;
+ 
+ 	/*
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.4.4
+
