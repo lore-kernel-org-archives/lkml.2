@@ -1,174 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2I0FrG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 01:47:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54306 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544Ab2I0FrD (ORCPT
+	id S1755124Ab2I0Fru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 01:47:50 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:60548 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639Ab2I0Frs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 01:47:03 -0400
-Date: Wed, 26 Sep 2012 22:46:44 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-g3rm9b3wtim4djx3z8dkftrj@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf test:
-  Add test for the sched tracepoint format fields
-Git-Commit-ID: 6a6cd11d4e5793ce1a2fb88dc7a09dbf43f9c618
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 27 Sep 2012 01:47:48 -0400
+Date: Thu, 27 Sep 2012 07:47:42 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+Message-ID: <20120927054742.GA4370@gmail.com>
+References: <1348538258.7100.23.camel@marge.simpson.net>
+ <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+ <1348574286.3881.40.camel@twins>
+ <20120925131736.GA30652@x1.osrc.amd.com>
+ <20120925170058.GC30158@x1.osrc.amd.com>
+ <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
+ <20120926163233.GA5339@x1.osrc.amd.com>
+ <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+ <20120926213723.GA27692@liondog.tnic>
+ <1348722568.7059.115.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 22:46:49 -0700 (PDT)
+In-Reply-To: <1348722568.7059.115.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6a6cd11d4e5793ce1a2fb88dc7a09dbf43f9c618
-Gitweb:     http://git.kernel.org/tip/6a6cd11d4e5793ce1a2fb88dc7a09dbf43f9c618
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 18 Sep 2012 11:56:28 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Sep 2012 12:29:19 -0300
 
-perf test: Add test for the sched tracepoint format fields
+* Mike Galbraith <efault@gmx.de> wrote:
 
-So that we make sure the routines that do event format parsing are
-working on at least two well know scheduler tracepoints.
+> I think the pgbench problem is more about latency for the 1 in 
+> 1:N than spinlocks.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-g3rm9b3wtim4djx3z8dkftrj@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-test.c |   86 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 86 insertions(+), 0 deletions(-)
+So my understanding of the psql workload is that basically we've 
+got a central psql proxy process that is distributing work to 
+worker psql processes. If a freshly woken worker process ever 
+preempts the central proxy process then it is preventing a lot 
+of new work from getting distributed.
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 4aed155..32caf13 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -14,6 +14,7 @@
- #include "util/symbol.h"
- #include "util/thread_map.h"
- #include "util/pmu.h"
-+#include "event-parse.h"
- #include "../../include/linux/hw_breakpoint.h"
- 
- #include <sys/mman.h>
-@@ -1207,6 +1208,87 @@ static int perf_evsel__roundtrip_name_test(void)
- 	return ret;
- }
- 
-+static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
-+				  int size, bool should_be_signed)
-+{
-+	struct format_field *field = perf_evsel__field(evsel, name);
-+	int is_signed;
-+	int ret = 0;
-+
-+	if (field == NULL) {
-+		pr_debug("%s: \"%s\" field not found!\n", evsel->name, name);
-+		return -1;
-+	}
-+
-+	is_signed = !!(field->flags | FIELD_IS_SIGNED);
-+	if (should_be_signed && !is_signed) {
-+		pr_debug("%s: \"%s\" signedness(%d) is wrong, should be %d\n",
-+			 evsel->name, name, is_signed, should_be_signed);
-+		ret = -1;
-+	}
-+
-+	if (field->size != size) {
-+		pr_debug("%s: \"%s\" size (%d) should be %d!\n",
-+			 evsel->name, name, field->size, size);
-+		ret = -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int perf_evsel__tp_sched_test(void)
-+{
-+	struct perf_evsel *evsel = perf_evsel__newtp("sched", "sched_switch", 0);
-+	int ret = 0;
-+
-+	if (evsel == NULL) {
-+		pr_debug("perf_evsel__new\n");
-+		return -1;
-+	}
-+
-+	if (perf_evsel__test_field(evsel, "prev_comm", 16, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "prev_pid", 4, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "prev_prio", 4, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "prev_state", 8, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "next_comm", 16, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "next_pid", 4, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "next_prio", 4, true))
-+		ret = -1;
-+
-+	perf_evsel__delete(evsel);
-+
-+	evsel = perf_evsel__newtp("sched", "sched_wakeup", 0);
-+
-+	if (perf_evsel__test_field(evsel, "comm", 16, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "pid", 4, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "prio", 4, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "success", 4, true))
-+		ret = -1;
-+
-+	if (perf_evsel__test_field(evsel, "target_cpu", 4, true))
-+		ret = -1;
-+
-+	return 0;
-+}
-+
- static struct test {
- 	const char *desc;
- 	int (*func)(void);
-@@ -1254,6 +1336,10 @@ static struct test {
- 		.func = perf_evsel__roundtrip_name_test,
- 	},
- 	{
-+		.desc = "Check parsing of sched tracepoints fields",
-+		.func = perf_evsel__tp_sched_test,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
+Correct?
+
+So the central proxy psql process is 'much more important' to 
+run than any of the worker processes - an importance that is not 
+(currently) visible from the behavioral statistics the scheduler 
+keeps on tasks.
+
+So the scheduler has the following problem here: a new wakee 
+might be starved enough and the proxy might have run long enough 
+to really justify the preemption here and now. The buddy 
+statistics help avoid some of these cases - but not all and the 
+difference is measurable.
+
+Yet the 'best' way for psql to run is for this proxy process to 
+never be preempted. Your SCHED_BATCH experiments confirmed that.
+
+The way remote CPU selection affects it is that if we ever get 
+more aggressive in selecting a remote CPU then we, as a side 
+effect, also reduce the chance of harmful preemption of the 
+central proxy psql process.
+
+So in that sense sibling selection is somewhat of an indirect 
+red herring: it really only helps psql indirectly by preventing 
+the harmful preemption. It also, somewhat paradoxially argues 
+for suboptimal code: for example tearing apart buddies is 
+beneficial in the psql workload, because it also allows the more 
+important part of the buddy to run more (the proxy).
+
+In that sense the *real* problem isnt even parallelism (although 
+we obviously should improve the decisions there - and the logic 
+has suffered in the past from the psql dilemma outlined above), 
+but whether the scheduler can (and should) identify the central 
+proxy and keep it running as much as possible, deprioritizing 
+fairness, wakeup buddies, runtime overlap and cache affinity 
+considerations.
+
+There's two broad solutions that I can see:
+
+ - Add a kernel solution to somehow identify 'central' processes
+   and bias them. Xorg is a similar kind of process, so it would
+   help other workloads as well. That way lie dragons, but might
+   be worth an attempt or two. We already try to do a couple of
+   robust metrics, like overlap statistics to identify buddies. 
+
+ - Let user-space occasionally identify its important (and less
+   important) tasks - say psql could mark it worker processes as
+   SCHED_BATCH and keep its central process(es) higher prio. A
+   single line of obvious code in 100 KLOCs of user-space code.
+
+Just to confirm, if you turn off all preemption via a hack 
+(basically if you turn SCHED_OTHER into SCHED_BATCH), does psql 
+perform and scale much better, with the quality of sibling 
+selection and spreading of processes only being a secondary 
+effect?
+
+Thanks,
+
+	Ingo
