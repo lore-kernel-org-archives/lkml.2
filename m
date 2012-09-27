@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab2I0HVP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 03:21:15 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62038 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755961Ab2I0HVN (ORCPT
+	id S1756542Ab2I0HXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 03:23:32 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57922 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab2I0HXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 03:21:13 -0400
+	Thu, 27 Sep 2012 03:23:31 -0400
+Date: Thu, 27 Sep 2012 00:20:49 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: mathieu.poirier@linaro.org
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: [PATCH 27/57] power: sysfs interface update
+Message-ID: <20120927072049.GK8836@lizard>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-28-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20120927070508.GS15236@dastard>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
-	<1348404995-14372-4-git-send-email-zwu.kernel@gmail.com>
-	<20120925092819.GC29154@dastard>
-	<CAEH94LimEZcAFKFMVNUzBcTeDxvkgeD3jCO3AgmkEKXVE4ym+A@mail.gmail.com>
-	<20120927070508.GS15236@dastard>
-Date: Thu, 27 Sep 2012 15:21:11 +0800
-Message-ID: <CAEH94LhZWUHiA9gJQGc8Zn9c9xOSmWsg_stXyXQjnQ3kntTGbA@mail.gmail.com>
-Subject: Re: [RFC v2 03/10] vfs: add one new mount option '-o hottrack'
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
-        diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1348589574-25655-28-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 3:05 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Sep 27, 2012 at 01:25:34PM +0800, Zhi Yong Wu wrote:
->> On Tue, Sep 25, 2012 at 5:28 PM, Dave Chinner <david@fromorbit.com> wrote:
->> > On Sun, Sep 23, 2012 at 08:56:28PM +0800, zwu.kernel@gmail.com wrote:
->> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> >>
->> >>   Introduce one new mount option '-o hottrack',
->> >> and add its parsing support.
->> >>   Its usage looks like:
->> >>    mount -o hottrack
->> >>    mount -o nouser,hottrack
->> >>    mount -o nouser,hottrack,loop
->> >>    mount -o hottrack,nouser
->> >
->> > I think that this option parsing should be done by the filesystem,
->> > even though the tracking functionality is in the VFS. That way ony
->> > the filesystems that can use the tracking information will turn it
->> > on, rather than being able to turn it on for everything regardless
->> > of whether it is useful or not.
->> >
->> > Along those lines, just using a normal superblock flag to indicate
->> > it is active (e.g. MS_HOT_INODE_TRACKING in sb->s_flags) means you
->> > don't need to allocate the sb->s_hot_info structure just to be able
->> If we don't allocate one sb->s_hot_info, where will those hash list
->> head and btree roots locate?
->
-> I wrote that thinking (mistakenly) that s-hot)info was dynamically
-> allocated rather than being embedded in the struct super_block.
->
-> Indeed, if the mount option is held in s_flags, then it could be
-> dynamically allocated, but I don't think that's really necessary...
-ah, you prefer allocating it, OK, let me try. thanks for your explaination.
+On Tue, Sep 25, 2012 at 10:12:24AM -0600, mathieu.poirier@linaro.org wrote:
+> From: Michel JAOUEN <michel.jaouen@stericsson.com>
+> 
+> Add new sysfs interface to get current charge status
+> 
+> Signed-off-by: Michel JAOUEN <michel.jaouen@stericsson.com>
+> Signed-off-by: Loic Pallardy <loic.pallardy@stericsson.com>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> Reviewed-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
+> Reviewed-by: Olivier CLERGEAUD <olivier.clergeaud@stericsson.com>
+> Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+> ---
+>  drivers/power/ab8500_charger.c  |    3 +++
+>  drivers/power/abx500_chargalg.c |   24 +++++++++++++++++++++++-
+>  2 files changed, 26 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+> index 4129599..0a781a0 100644
+> --- a/drivers/power/ab8500_charger.c
+> +++ b/drivers/power/ab8500_charger.c
+> @@ -2759,6 +2759,9 @@ static int ab8500_charger_usb_notifier_call(struct notifier_block *nb,
+>  	enum ab8500_usb_state bm_usb_state;
+>  	unsigned mA = *((unsigned *)power);
+>  
+> +	if (di == NULL)
+> +		return NOTIFY_DONE;
+> +
 
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+I'd write !di.
 
+[...]
+> +static ssize_t abx500_chargalg_sysfs_show(struct kobject *kobj,
+> +	struct attribute *attr, char *buf)
+> +{
+> +	struct abx500_chargalg *di = container_of(kobj,
+> +		struct abx500_chargalg, chargalg_kobject);
+> +
+> +	if ((di->susp_status.ac_suspended == true) &&
+> +		(di->susp_status.usb_suspended == true))
+> +		return sprintf(buf, "0\n");
+> +	else
+> +		return sprintf(buf, "1\n");
 
+just
 
--- 
-Regards,
+return sprintf(buf, "%d\n", di->susp_status.ac_suspended &&
+			    di->susp_status.usb_suspended);
 
-Zhi Yong Wu
+> +}
+> +
+>  /* Exposure to the sysfs interface */
+>  
+>  /**
+> @@ -1749,7 +1770,7 @@ static ssize_t abx500_chargalg_sysfs_charger(struct kobject *kobj,
+>  static struct attribute abx500_chargalg_en_charger = \
+>  {
+>  	.name = "chargalg",
+> -	.mode = S_IWUGO,
+> +	.mode = S_IRUGO | S_IWUSR,
+>  };
+>  
+>  static struct attribute *abx500_chargalg_chg[] = {
+> @@ -1758,6 +1779,7 @@ static struct attribute *abx500_chargalg_chg[] = {
+>  };
+>  
+>  static const struct sysfs_ops abx500_chargalg_sysfs_ops = {
+> +	.show = abx500_chargalg_sysfs_show,
+>  	.store = abx500_chargalg_sysfs_charger,
+>  };
+>  
+> -- 
+> 1.7.5.4
