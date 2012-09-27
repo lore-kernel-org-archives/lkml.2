@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab2I0QEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 12:04:42 -0400
-Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:47413 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab2I0QEl (ORCPT
+	id S1753918Ab2I0QG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 12:06:28 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:37988 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab2I0QG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 12:04:41 -0400
-Message-ID: <5064790E.4000207@cs.tu-berlin.de>
-Date: Thu, 27 Sep 2012 18:04:30 +0200
-From: =?UTF-8?B?IkphbiBILiBTY2jDtm5oZXJyIg==?= <schnhrr@cs.tu-berlin.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120919 Thunderbird/10.0.7
+	Thu, 27 Sep 2012 12:06:27 -0400
 MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
-References: <1348682325-8402-1-git-send-email-schnhrr@cs.tu-berlin.de> <20120926211526.GA30261@kroah.com> <506382B0.8040908@cs.tu-berlin.de> <CAPXgP11xwBDSZ9q9thzbXd5xZW_jeq-OW96hSoXFbXQBjQWbqw@mail.gmail.com> <506474D0.9020406@cs.tu-berlin.de>
-In-Reply-To: <506474D0.9020406@cs.tu-berlin.de>
+In-Reply-To: <CAG17yqRxZFsKpx+gpEGoZTbs4x7ijmqywX39=ezq2+RZkvk=TA@mail.gmail.com>
+References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
+	<1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
+	<CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
+	<CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
+	<1348739292.1648.15.camel@vkoul-udesk3>
+	<CAG17yqRxZFsKpx+gpEGoZTbs4x7ijmqywX39=ezq2+RZkvk=TA@mail.gmail.com>
+Date: Thu, 27 Sep 2012 21:36:25 +0530
+Message-ID: <CABb+yY1qbs_s7a-rb91wehEUbO1Azax+-PCaH2QQ=gr+Mc5ioA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Inderpal Singh <inderpal.singh@linaro.org>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, boojin.kim@samsung.com,
+        patches@linaro.org, kgene.kim@samsung.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.09.2012 17:46, schrieb "Jan H. Schönherr":
-> If we say "if LOG_CONT is set, this message continues the previous one",
-> we can also say "there is no prefix on this message". Then on the other
-> hand, we would need a "whatever comes next, it does not continue this
-> message"....
+On Thu, Sep 27, 2012 at 9:11 PM, Inderpal Singh
+<inderpal.singh@linaro.org> wrote:
+> On 27 September 2012 15:18, Vinod Koul <vinod.koul@linux.intel.com> wrote:
+>> On Wed, 2012-09-26 at 12:11 +0530, Inderpal Singh wrote:
+>>> If we fail pl330_remove while some client is queued, the force unload
+>>> will fail and the
+>>> force unload will lose its purpose.
+>>> How about conditionally DMA_TERMINATE_ALL and free resources like
+>>> below ?
+>> Why would you want to remove the driver when it is doing something
+>> useful? You have to ensure driver is not doing anything.
+>>
+>> What is point here?
+>>
+> As mentioned by jassi,  if the pl330 module is forced unloaded while
+> some client is queued, we have to manually do DMA_TERMINATE_ALL.
+>
+I meant that in the current situation. Not ideally.
 
-Thinking a bit longer about this one.
-
-If really, really everything passes through vprintk_emit()
-then we could keep all info about the previous message
-there and definitely decide whether the current message continues
-the previous one.
-
-Then, we wouldn't need to track the previous flags everywhere.
-
-Do I miss something?
-
-Regards
-Jan
+> If failing remove is a better option in case some client is queued, we
+> can do away with DMA_TERMINATE_ALL and free_chan_resources and simply
+> return a suitable error code from remove.
+>
+That was exactly what I suggested as an alternative.
