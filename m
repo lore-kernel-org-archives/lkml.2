@@ -1,115 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab2I0JLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 05:11:14 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:46427 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316Ab2I0JLN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 05:11:13 -0400
+	id S1754955Ab2I0JLj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 05:11:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50510 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753250Ab2I0JLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 05:11:36 -0400
+Date: Thu, 27 Sep 2012 11:11:12 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+Message-ID: <20120927091112.GG23096@redhat.com>
+References: <20120921115942.27611.67488.sendpatchset@codeblue>
+ <20120921120000.27611.71321.sendpatchset@codeblue>
+ <505C654B.2050106@redhat.com>
+ <505CA2EB.7050403@linux.vnet.ibm.com>
+ <50607F1F.2040704@redhat.com>
+ <5060851E.1030404@redhat.com>
+ <506166B4.4010207@linux.vnet.ibm.com>
+ <5061713D.5060406@redhat.com>
+ <20120927074405.GE23096@redhat.com>
+ <50641569.9060305@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1347545457-28124-1-git-send-email-eranian@google.com>
-References: <1347545457-28124-1-git-send-email-eranian@google.com>
-Date: Thu, 27 Sep 2012 11:11:11 +0200
-Message-ID: <CABPqkBTmJMRO6v+RukpYGJFgsGRyRheJe+mCdf9AmmKRbPGbuw@mail.gmail.com>
-Subject: Re: [PATCH v3 0/3] perf: use hrtimer for event multiplexing
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Robert Richter <robert.richter@amd.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50641569.9060305@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comment on this patch set?
-This is an important improvement for any system-wide measurement.
+On Thu, Sep 27, 2012 at 10:59:21AM +0200, Avi Kivity wrote:
+> On 09/27/2012 09:44 AM, Gleb Natapov wrote:
+> > On Tue, Sep 25, 2012 at 10:54:21AM +0200, Avi Kivity wrote:
+> >> On 09/25/2012 10:09 AM, Raghavendra K T wrote:
+> >> > On 09/24/2012 09:36 PM, Avi Kivity wrote:
+> >> >> On 09/24/2012 05:41 PM, Avi Kivity wrote:
+> >> >>>
+> >> >>>>
+> >> >>>> case 2)
+> >> >>>> rq1 : vcpu1->wait(lockA) (spinning)
+> >> >>>> rq2 : vcpu3 (running) ,  vcpu2->holding(lockA) [scheduled out]
+> >> >>>>
+> >> >>>> I agree that checking rq1 length is not proper in this case, and as
+> >> >>>> you
+> >> >>>> rightly pointed out, we are in trouble here.
+> >> >>>> nr_running()/num_online_cpus() would give more accurate picture here,
+> >> >>>> but it seemed costly. May be load balancer save us a bit here in not
+> >> >>>> running to such sort of cases. ( I agree load balancer is far too
+> >> >>>> complex).
+> >> >>>
+> >> >>> In theory preempt notifier can tell us whether a vcpu is preempted or
+> >> >>> not (except for exits to userspace), so we can keep track of whether
+> >> >>> it's we're overcommitted in kvm itself.  It also avoids false positives
+> >> >>> from other guests and/or processes being overcommitted while our vm
+> >> >>> is fine.
+> >> >>
+> >> >> It also allows us to cheaply skip running vcpus.
+> >> >
+> >> > Hi Avi,
+> >> >
+> >> > Could you please elaborate on how preempt notifiers can be used
+> >> > here to keep track of overcommit or skip running vcpus?
+> >> >
+> >> > Are we planning set some flag in sched_out() handler etc?
+> >> >
+> >> 
+> >> Keep a bitmap kvm->preempted_vcpus.
+> >> 
+> >> In sched_out, test whether we're TASK_RUNNING, and if so, set a vcpu
+> >> flag and our bit in kvm->preempted_vcpus.  On sched_in, if the flag is
+> >> set, clear our bit in kvm->preempted_vcpus.  We can also keep a counter
+> >> of preempted vcpus.
+> >> 
+> >> We can use the bitmap and the counter to quickly see if spinning is
+> >> worthwhile (if the counter is zero, better to spin).  If not, we can use
+> >> the bitmap to select target vcpus quickly.
+> >> 
+> >> The only problem is that in order to keep this accurate we need to keep
+> >> the preempt notifiers active during exits to userspace.  But we can
+> >> prototype this without this change, and add it later if it works.
+> >> 
+> > Can user return notifier can be used instead? Set bit in
+> > kvm->preempted_vcpus on return to userspace.
+> > 
+> 
+> User return notifier is per-cpu, not per-task.  There is a new task_work
+> (<linux/task_work.h>) that does what you want.  With these
+> technicalities out of the way, I think it's the wrong idea.  If a vcpu
+> thread is in userspace, that doesn't mean it's preempted, there's no
+> point in boosting it if it's already running.
+> 
+Ah, so you want to set bit in kvm->preempted_vcpus if task is _not_
+TASK_RUNNING in sched_out (you wrote opposite in your email)? If a task 
+is in userspace it is definitely not preempted.
+ 
+> btw, we can have secondary effects.  A vcpu can be waiting for a lock in
+> the host kernel, or for a host page fault.  There's no point in boosting
+> anything for that.  Or a vcpu in userspace can be waiting for a lock
+> that is held by another thread, which has been preempted. 
+Do you mean userspace spinlock? Because otherwise task that's waits on
+a kernel lock will sleep in the kernel.
 
-On Thu, Sep 13, 2012 at 4:10 PM, Stephane Eranian <eranian@google.com> wrote:
-> The current scheme of using the timer tick was fine
-> for per-thread events. However, it was causing
-> bias issues in system-wide mode (including for
-> uncore PMUs). Event groups would not get their
-> fair share of runtime on the PMU. With tickless
-> kernels, if a core is idle there is no timer tick,
-> and thus no event rotation (multiplexing). However,
-> there are events (especially uncore events) which do
-> count even though cores are asleep.
->
-> This patch changes the timer source for multiplexing.
-> It introduces a per-cpu hrtimer. The advantage is that
-> even when the core goes idle, it will come back to
-> service the hrtimer, thus multiplexing on system-wide
-> events works much better.
->
-> In order to minimize the impact of the hrtimer, it
-> is turned on and off on demand. When the PMU on
-> a CPU is overcommited, the hrtimer is activated.
-> It is stopped when the PMU is not overcommitted.
->
-> In order for this to work properly with HOTPLUG_CPU,
-> we had to change the order of initialization in
-> start_kernel() such that hrtimer_init() is run
-> before perf_event_init().
->
-> The second patch provide a sysctl control to
-> adjust the multiplexing interval. Unit is
-> milliseconds.
->
-> Here is a simple before/after example with
-> two event groups which do require multiplexing.
-> This is done in system-wide mode on an idle
-> system. What matters here is the scaling factor
-> in [] in not the total counts.
->
-> Before:
->
-> # perf stat -a -e ref-cycles,ref-cycles sleep 10
->  Performance counter stats for 'sleep 10':
->  34,319,545 ref-cycles  [56.51%]
->  31,917,229 ref-cycles  [43.50%]
->
->  10.000827569 seconds time elapsed
->
-> After:
-> # perf stat -a -e ref-cycles,ref-cycles sleep 10
->  Performance counter stats for 'sleep 10':
->  11,144,822,193 ref-cycles [50.00%]
->  11,103,760,513 ref-cycles [50.00%]
->
->  10.000672946 seconds time elapsed
->
-> In this second version of the patchset, we now
-> have the hrtimer_interval per PMU instance. The
-> tunable is in /sys/devices/XXX/mux_interval_ms,
-> where XXX is the name of the PMU instance. Due
-> to initialization changes of each hrtimer, we
-> had to introduce hrtimer_init_cpu() to initialize
-> a hrtimer from another CPU.
->
-> In the 3rd version, we simplify the code a bit
-> by using hrtimer_active(). We stopped using
-> the rotation_list for perf_cpu_hrtimer_cancel().
-> We also fix an intialization problem.
->
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->
-> Stephane Eranian (3):
->   hrtimer: add hrtimer_init_cpu()
->   perf: use hrtimer for event multiplexing
->   perf: add sysfs entry to adjust multiplexing interval per PMU
->
->  include/linux/hrtimer.h    |    2 +
->  include/linux/perf_event.h |    5 +-
->  init/main.c                |    2 +-
->  kernel/events/core.c       |  166 +++++++++++++++++++++++++++++++++++++++++---
->  kernel/hrtimer.c           |   17 +++--
->  5 files changed, 176 insertions(+), 16 deletions(-)
->
-> --
-> 1.7.5.4
->
+>                                                            This is (like
+> I think Peter already said) a priority inheritance problem.  However
+> with fine-grained locking in userspace, we can make it go away.  The
+> guest kernel is unlikely to access one device simultaneously from two
+> threads (and if it does, we just need to improve the threading in the
+> device model).
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
+
+--
+			Gleb.
