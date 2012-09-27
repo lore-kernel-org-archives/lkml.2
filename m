@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab2I0U0D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 16:26:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54696 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab2I0UZ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 16:25:58 -0400
-Date: Thu, 27 Sep 2012 13:25:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Re: 3.4.10 i915 [GM45] regression
-Message-ID: <20120927202553.GA19276@kroah.com>
-References: <2372445.fuIXicT4H0@tux200s>
- <20120907011542.GA26688@kroah.com>
- <2329337.9aFzn0oRxF@tux200s>
- <CAKMK7uHqk1x4dM9ZA0usskNoArR6eTFmEtVw+_juzVq1NeYg+A@mail.gmail.com>
- <20120910135803.GB2972@herton-Z68MA-D2H-B3>
- <20120910140734.GC2972@herton-Z68MA-D2H-B3>
- <20120926234223.GC26223@kroah.com>
- <20120927185917.GC3211@herton-Z68MA-D2H-B3>
+	id S1754911Ab2I0U1O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 16:27:14 -0400
+Received: from nm17-vm0.bullet.mail.ird.yahoo.com ([77.238.189.214]:47437 "HELO
+	nm17-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753585Ab2I0U1N convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 16:27:13 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 907942.62197.bm@omp1018.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=BP+tezkYc5Xtwgyg4k/4WLCg1MRlYKsS+VR7nyiY9ppuMIfpbANrVwKEShhISDQjaViEzOZBNBkSZUo6+lQBjX8cx7uO3vx7IPrLFSSc/cHunVc5vWCntrhfBI9xiw5ve9OCBQWl8AwLD1MTBUSXJSTLrssmgdpBUQTMBDgasr4=;
+X-YMail-OSG: 6qKHnvgVM1nJ.IcQ_QvW82v2mEs6pKqzRdNpgNu02.krkXc
+ zw3wxAiyA7YdV5tjyjMvXpoZKCbPY1pvXp8aWkmP55hXgQwtOqliJMF1VI.L
+ IrLw46VCMq447yjhrMoLksSNtzotg44V5wbXnOEFvUyFpkitHbIBamM0PupT
+ C6tEabyKS1qbOgr.15hGNqJ3WyqG7J5DK5_76Va9k5d25GGa3abp0YH2Siv0
+ nRlRrpiXke.h4rQsttUKvbBNgAjHUQ_V9BhoGcICQVTGfEFq_OVgLUkp5vzO
+ _lS73CK5yk_5ZrMcL0FCdhn5yhqB1GPemc27D_gHFVnkMvfFixGj2be6fye7
+ 1UCzL89tWhLdbvoUWMHkIhqAWmFsbnvvxR8HV7oq1MwjpfWrxRmKhcd.nnPd
+ QZBPh5foJzr6ApF49CVYl8M6b.WDCH3GlCAGJJwuG2e717bABlsaoudePMNB
+ pngFbiQ--
+X-Mailer: YahooMailWebService/0.8.121.434
+Message-ID: <1348777631.30093.YahooMailNeo@web29304.mail.ird.yahoo.com>
+Date: Thu, 27 Sep 2012 21:27:11 +0100 (BST)
+From: Zula Hash <poldie7788dante@yahoo.com>
+Reply-To: Zula Hash <zula.hash@yahoo.com>
+Subject: You are probably the happiest man in the world because girls write to you themselves:)
+To: "mnb@abv.bg" <mnb@abv.bg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120927185917.GC3211@herton-Z68MA-D2H-B3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 03:59:18PM -0300, Herton Ronaldo Krzesinski wrote:
-> On Wed, Sep 26, 2012 at 04:42:23PM -0700, Greg KH wrote:
-> > On Mon, Sep 10, 2012 at 11:07:38AM -0300, Herton Ronaldo Krzesinski wrote:
-> > > On Mon, Sep 10, 2012 at 10:58:03AM -0300, Herton Ronaldo Krzesinski wrote:
-> > > > Couldn't it be that it happens because 3.4 doesn't have commits
-> > > > b7884eb45ec98c0d34c7f49005ae9d4b4b4e38f6 and
-> > > > f01db988ef6f6c70a6cc36ee71e4a98a68901229 applied? May be they are needed
-> > > > after all.
-> > > 
-> > > Nevermind, the description on the freedesktop bug report states that
-> > > these commits were already tried and didn't work (if "3.4.10 + follow-up
-> > > patches in Herton's reply - failed" means it)
-> > 
-> > Did anything ever come from this?  I haven't reverted anything, or
-> > applied anything different, so if something needs to be done here,
-> > please let me know.
-> 
-> I think the conclusion looking at the bug report
-> (https://bugs.freedesktop.org/show_bug.cgi?id=54575) is
-> that the commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 should be 
-> reverted on 3.4, please correct me if I'm wrong.
-
-Daniel, do you agree with this?
-
-thanks,
-
-greg k-h
+I am Zula. 
+I'm 26 yo and I really like spending nice time with my buddies. 
+Yeah, it always brings me delight to go on parties, going to night clubs, bars and other things like it. It always exciting and interesting with me. 
+And... I am so sexual! I won the most wonderful cutie in class competition two times. 
+So, if u're interesting man and like me, want to relax and spend wonderful time together, then write me back here :)
+Zula
