@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab2I0CGW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 22:06:22 -0400
-Received: from ozlabs.org ([203.10.76.45]:46395 "EHLO ozlabs.org"
+	id S1753920Ab2I0CJq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 22:09:46 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:39551 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833Ab2I0CFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 22:05:39 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Anthony Liguori <aliguori@us.ibm.com>, Adam Litke <agl@us.ibm.com>,
-        Amit Shah <amit.shah@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Avishay Traeger <AVISHAY@il.ibm.com>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Pawel Moll <pawel.moll@arm.com>, Sasha Levin <levinsasha928@gmail.com>,
-        "Cornelia Huck" <cornelia.huck@de.ibm.com>
-Cc: <virtualization@lists.linux-foundation.org>,
-        "LKML" <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        "qemu-devel" <qemu-devel@nongnu.org>
-Subject: Proposal for virtio standardization.
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 27 Sep 2012 09:59:33 +0930
-Message-ID: <87zk4c2tqq.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752866Ab2I0CJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Sep 2012 22:09:44 -0400
+Message-ID: <1348711443.17807.12.camel@falcor>
+Subject: Re: [GIT PULL] Asymmetric keys and module signing
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: David Howells <dhowells@redhat.com>, herbert@gondor.hengli.com.au,
+        pjones@redhat.com, jwboyer@redhat.com, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        keyrings@linux-nfs.org
+Date: Wed, 26 Sep 2012 22:04:03 -0400
+In-Reply-To: <87ehlp30pd.fsf@rustcorp.com.au>
+References: <5555.1348531649@warthog.procyon.org.uk>
+	 <87ehlp30pd.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12092702-8974-0000-0000-00000E7D1800
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00177609; UDB=6.00040218; UTC=2012-09-27
+ 02:09:35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, 2012-09-26 at 13:16 +0930, Rusty Russell wrote:
+> David Howells <dhowells@redhat.com> writes:
+> > The module signing patches provide:
+> >
+> >  - Some fixes to Rusty's patch.  Also an additional patch to extend the policy
+> >    handling for modules signed with an unknown key and to handle FIPS mode.
+> 
+> Ok, I merged some of this (after our previous accidentally-off-list
+> discussion).
 
-	I've had several requests for a more formal approach to the
-virtio draft spec, and (after some soul-searching) I'd like to try that.
+Rusty, have you pushed this branch out yet?
 
-	The proposal is to use OASIS as the standards body, as it's
-fairly light-weight as these things go.  For me this means paperwork and
-setting up a Working Group and getting the right people involved as
-Voting members starting with the current contributors; for most of you
-it just means a new mailing list, though I'll be cross-posting any
-drafts and major changes here anyway.
+thanks,
 
-	I believe that a documented standard (aka virtio 1.0) will
-increase visibility and adoption in areas outside our normal linux/kvm
-universe.  There's been some of that already, but this is the clearest
-path to accelerate it.  Not the easiest path, but I believe that a solid
-I/O standard is a Good Thing for everyone.
+Mimi
 
-	Yet I also want to decouple new and experimental development
-from the standards effort; running code comes first.  New feature bits
-and new device numbers should be reservable without requiring a full
-spec change.
-
-So the essence of my proposal is:
-1) I start a Working Group within OASIS where we can aim for virtio spec
-   1.0.
-
-2) The current spec is textually reordered so the core is clearly
-   bus-independent, with PCI, mmio, etc appendices.
-
-3) Various clarifications, formalizations and cleanups to the spec text,
-   and possibly elimination of old deprecated features.
-
-4) The only significant change to the spec is that we use PCI
-   capabilities, so we can have infinite feature bits.
-   (see
-http://lists.linuxfoundation.org/pipermail/virtualization/2011-December/019198.html)
-
-5) Changes to the ring layout and other such things are deferred to a
-   future virtio version; whether this is done within OASIS or
-   externally depends on how well this works for the 1.0 release.
-
-Thoughts?
-Rusty.
