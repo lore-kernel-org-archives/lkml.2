@@ -1,83 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab2I0Nl1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:41:27 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:50186 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054Ab2I0NlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:41:25 -0400
-Date: Thu, 27 Sep 2012 15:41:10 +0200
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] sta2x11-mfd : add apb-soc regs driver and factor out common code
-Message-ID: <20120927134110.GD6799@mail.gnudd.com>
-References: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com> <1347445374-32140-2-git-send-email-ciminaghi@gnudd.com> <20120925192048.GA17038@sirena.org.uk> <20120926145615.GJ10147@mail.gnudd.com> <20120926150429.GQ4428@opensource.wolfsonmicro.com> <20120926163145.GK10147@mail.gnudd.com> <20120926164932.GS4428@opensource.wolfsonmicro.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120926164932.GS4428@opensource.wolfsonmicro.com>
-X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M >ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
+	id S1752410Ab2I0Nl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:41:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61203 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab2I0Nl5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 09:41:57 -0400
+Message-ID: <506457A1.8050404@gmail.com>
+Date: Thu, 27 Sep 2012 08:41:53 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 2/4] irqdomain: augment add_simple() to allocate descs
+References: <1348751625-17420-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1348751625-17420-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 05:49:33PM +0100, Mark Brown wrote:
-> On Wed, Sep 26, 2012 at 06:31:45PM +0200, Davide Ciminaghi wrote:
+On 09/27/2012 08:13 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> > Oh, and there's another problem (I'm looking at the code right now, I had
-> > forgotten about this): the clock framework also asks for a spinlock_t *.
-> > Regmap has its own spinlock (or mutex), and I don't think it would be a
-> > good idea trying to export it.
+> Currently we rely on all IRQ chip instances to dynamically
+> allocate their IRQ descriptors unless they use the linear
+> IRQ domain. So for irqdomain_add_legacy() and
+> irqdomain_add_simple() the caller need to make sure that
+> descriptors are allocated.
 > 
-> Why is this a problem?  Nested spinlocks are perfectly fine.
+> Let's slightly augment the yet unused irqdomain_add_simple()
+> to also allocate descriptors as a means to simplify usage
+> and avoid code duplication throughout the kernel.
+> 
+> We warn if descriptors cannot be allocated, e.g. if a
+> platform has the bad habit of hogging descriptors at boot
+> time.
+> 
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> Rob/Grant/Thomas if you ACK this I will take it through the
+> pinctrl tree since I introduce its only user right there.
 
-after some cups of coffee, I tried thinking about this subject again, and
-here's what I found:
+You really should have Grant's ack here.
 
-as far as I know, nested locks are fine provided that you always take them in
-the same order and release them in the opposite order (lock A, lock B,
-unlock B, unlock A). So my conclusion is that nested spinlocks require
-potential regmap users of sta2x11 registers to take the sta2x11-mfd spinlock
-first. The pattern would be (sctl registers for instance):
+> ---
+>  kernel/irq/irqdomain.c | 21 ++++++++++++++++-----
+>  1 file changed, 16 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index 49a7772..a0655b6 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -148,7 +148,8 @@ static unsigned int irq_domain_legacy_revmap(struct irq_domain *domain,
+>   * @host_data: Controller private data pointer
+>   *
+>   * Allocates a legacy irq_domain if irq_base is positive or a linear
+> - * domain otherwise.
+> + * domain otherwise. For the legacy domain, IRQ descriptors will also
+> + * be allocated.
+>   *
+>   * This is intended to implement the expected behaviour for most
+>   * interrupt controllers which is that a linear mapping should
+> @@ -162,11 +163,21 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
+>  					 const struct irq_domain_ops *ops,
+>  					 void *host_data)
+>  {
+> -	if (first_irq > 0)
+> -		return irq_domain_add_legacy(of_node, size, first_irq, 0,
+> +	if (first_irq > 0) {
+> +		int irq_base;
+> +
+> +		irq_base = irq_alloc_descs(first_irq, 0, size, numa_node_id());
 
-spinlock_t *mfd_lock;
-void *addr;
+This will always fail for !SPARSE_IRQ, so we probably don't want warn in
+that case. So perhaps something like this:
 
-/* 
-   Read sta2x11-mfd spinlock address for sctl registers and put it into
-   mfd_lock
-*/
-sta2x11_mfd_get_regs_data(pdev, sta2x11_sctl, &addr, &mfd_lock);
+int irq_base = first_irq;
 
-......
+if (is_enabled(CONFIG_SPARSE_IRQ)) {
+	irq_base = irq_alloc_descs(first_irq, 0, size, numa_node_id());
+	if (irq_base < 0) {
+		WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+		     first_irq);
+		irq_base = first_irq;
+	}
+}
 
-/* Take the outer lock */
-spin_lock(mfd_lock);
-/* 
-   Take the inner lock, do whatever you need to do and release the inner lock
-*/
-regmap_...();
-/* Release the outer lock */
-spin_unlock(mfd_lock);
-
-The other way around (taking the regmap spinlock as the "outer" one)
-would imply at least exporting the regmap spinlock/mutex address or making the
-regmap.lock/unlock function pointers public somehow, not
-to mention the fact that, for instance, the clock framework helpers should be
-modified to deal with nested locking.
-
-If the above is correct, I'm not sure we'd gain a lot from regmap,
-because we'd still need some sta2x11 extra code around regmap calls.
-
-Maybe there's another solution: what about adding a couple of function
-pointers (lock, unlock) to struct regmap_config ? If they're set to NULL,
-everything works as usual. If they're not NULL, regmap uses such functions
-to do locking and unlocking instead of the usual ones (and regmap_bus.fast_io
-is ignored). I think this wouldn't hurt existing regmap users and allow
-sta2x11-mfd to have just one spinlock for everything, no need for nested
-locking this way.
-
-Thanks and regards
-Davide
+> +		if (irq_base < 0) {
+> +			WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+> +			     first_irq);
+> +			irq_base = first_irq;
+> +		}
+> +		return irq_domain_add_legacy(of_node, size, irq_base, 0,
+>  					     ops, host_data);
+> -	else
+> -		return irq_domain_add_linear(of_node, size, ops, host_data);
+> +	}
+> +
+> +	/* A linear domain is the default */
+> +	return irq_domain_add_linear(of_node, size, ops, host_data);
+>  }
+>  
+>  /**
+> 
