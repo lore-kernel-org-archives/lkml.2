@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab2I0Epa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 00:45:30 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44511 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751192Ab2I0Ep2 (ORCPT
+	id S1754037Ab2I0Exs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 00:53:48 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56788 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab2I0Exr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 00:45:28 -0400
-Message-ID: <1348721124.2509.1.camel@dabdike>
-Subject: Re: [SCSI PATCH] sd: max-retries becomes configurable
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Jeff Garzik <jeff@garzik.org>, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 27 Sep 2012 08:45:24 +0400
-In-Reply-To: <yq1y5jw9pfd.fsf@sermon.lab.mkp.net>
-References: <20120924210049.GA18527@havoc.gtf.org>
-	 <1348546019.2457.3.camel@dabdike> <yq1y5jw9pfd.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Sep 2012 00:53:47 -0400
+X-AuditID: 9c930179-b7bf9ae000000e4c-08-5063dbd813a4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: <acme@redhat.com>, <mingo@elte.hu>, <a.p.zijlstra@chello.nl>,
+        <andi@firstfloor.org>, <dsahern@gmail.com>,
+        <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH v3 3/9] perf script: Add more filter to find_scripts()
+References: <1348500251-9937-1-git-send-email-feng.tang@intel.com>
+	<1348500251-9937-4-git-send-email-feng.tang@intel.com>
+	<87lifyyiug.fsf@sejong.aot.lge.com> <20120926165641.74f2e5b3@feng-i7>
+Date: Thu, 27 Sep 2012 13:45:30 +0900
+In-Reply-To: <20120926165641.74f2e5b3@feng-i7> (Feng Tang's message of "Wed,
+	26 Sep 2012 16:56:41 +0800")
+Message-ID: <87vcf0ul91.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-26 at 22:20 -0400, Martin K. Petersen wrote:
-> >>>>> "James" == James Bottomley <James.Bottomley@HansenPartnership.com> writes:
-> 
-> James> On Mon, 2012-09-24 at 17:00 -0400, Jeff Garzik wrote:
-> >> 
-> >> drivers/scsi/sd.c | 4 ++++ drivers/scsi/sd.h | 2 +- 2 files changed,
-> >> 5 insertions(+), 1 deletion(-)
-> 
-> James> I'm not opposed in principle to doing this (except that it should
-> James> be a sysfs parameter like all our other controls),
-> 
-> Now that we're in that department. I never got any feedback on the
-> following patch.
-> 
-> Hannes told me in person that he felt the eh_timeout belonged in
-> scsi_device and not in the request queue. Whereas I favored making it a
-> block layer tunable despite currently only being used by SCSI. Any
-> opinions?
+On Wed, 26 Sep 2012 16:56:41 +0800, Feng Tang wrote:
+> On Tue, 25 Sep 2012 10:47:03 +0900
+> Namhyung Kim <namhyung@kernel.org> wrote:
+>> It can't recognize extra spaces, multiple events connected by commas,
+>> event groups and probably more..  So I think it'd better if we can use
+>> parse_events() here - but w/o an evlist.  Jiri, what do you think?
+>
+> Yes, this func was really a pain to me :) And fortunately, current
+> intree "xxx-record" scripts are all in simple format: "-e eventname ",
+> and this lightweight func basically works fine.
+>
+> I agree that we'd better have a separate parse_events() similar func 
+> to cherry-pick the events names in parse-events.c, to not make
+> hists.c too heavy. 
+>
+> And frankly speaking, I'm not familiar at all with these flex/bison
+> handling, so can we do things in steps: fixes those space issue, add
+> a "fixme" in comments and push the basically working version first?
 
-request_queue makes more sense to me because there was once a plan to
-move all our timeout processing to block.  I think it got stalled
-somewhere, but this would act as a reminder.
+It'd not that hard.  How about using below (untested) patch?
 
-James
+Thanks,
+Namhyung
 
 
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index bf5d033ee1b4..5dc71f598028 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -817,6 +817,21 @@ int parse_events_terms(struct list_head *terms, const char *str)
+ 	return ret;
+ }
+ 
++int __parse_events(struct list_head *evsel_list, const char *str)
++{
++	int ret;
++	struct parse_events_data__events data = {
++		.list = LIST_HEAD_INIT(data.list),
++	};
++
++	ret = parse_events__scanner(str, &data, PE_START_EVENTS);
++	if (!ret) {
++		list_splice(evsel_list, &data.list);
++		return 0;
++	}
++	return -1;
++}
++
+ int parse_events(struct perf_evlist *evlist, const char *str,
+ 		 int unset __maybe_unused)
+ {
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index c356e443448d..c13e9bd0f041 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -32,6 +32,7 @@ extern int parse_events_option(const struct option *opt, const char *str,
+ extern int parse_events(struct perf_evlist *evlist, const char *str,
+ 			int unset);
+ extern int parse_events_terms(struct list_head *terms, const char *str);
++extern int __parse_events(struct list_head *evsel_list, const char *str);
+ extern int parse_filter(const struct option *opt, const char *str, int unset);
+ 
+ #define EVENTS_HELP_MAX (128*1024)
