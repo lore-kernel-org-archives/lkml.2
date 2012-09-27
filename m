@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab2I0LKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 07:10:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4219 "EHLO mx1.redhat.com"
+	id S1754770Ab2I0LQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 07:16:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32292 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756167Ab2I0LKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 07:10:14 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 01/14] perf hists: Add struct hists pointer to struct hist_entry
-Date: Thu, 27 Sep 2012 13:09:22 +0200
-Message-Id: <1348744175-11115-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
-References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+	id S1752552Ab2I0LQQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 07:16:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,495,1344236400"; 
+   d="scan'208";a="214298966"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: RE: [PATCH] thermal: step_wise: Add missing static storage class
+ specifiers
+Thread-Topic: [PATCH] thermal: step_wise: Add missing static storage class
+ specifiers
+Thread-Index: AQHNnJ+SuBKpTaE2+kamcfIr1wyF25eeCTaA
+Date: Thu, 27 Sep 2012 11:15:22 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB591D41F5@BGSMSX101.gar.corp.intel.com>
+References: <1348743492-30852-1-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1348743492-30852-1-git-send-email-sachin.kamat@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding pointer back to the parent struct hists for struct hists_entry.
+> -----Original Message-----
+> From: Sachin Kamat [mailto:sachin.kamat@linaro.org]
+> Sent: Thursday, September 27, 2012 4:28 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: R, Durgadoss; Zhang, Rui; sachin.kamat@linaro.org; patches@linaro.org
+> Subject: [PATCH] thermal: step_wise: Add missing static storage class
+> specifiers
+> 
+> Fixes the following sparse warnings:
+> drivers/thermal/step_wise.c:153:5: warning:
+> symbol 'step_wise_throttle' was not declared. Should it be static?
+> drivers/thermal/step_wise.c:172:25: warning:
+> symbol 'thermal_gov_step_wise' was not declared. Should it be static?
 
-This will be useful in future for any hist_entry's data computation,
-that depends on total data of its parent hists.
+Looks fine.
+Acked-by: Durgadoss R <durgadoss.r@intel.com>
 
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/hist.c | 2 ++
- tools/perf/util/sort.h | 1 +
- 2 files changed, 3 insertions(+)
+Care to fix the same things in fair_share.c and user_space.c ?
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 236bc9d..040f34c 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -325,6 +325,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
- 		.branch_info = bi,
-+		.hists	= self,
- 	};
- 
- 	return add_hist_entry(self, &entry, al, period);
-@@ -346,6 +347,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
- 		.period	= period,
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
-+		.hists	= self,
- 	};
- 
- 	return add_hist_entry(self, &entry, al, period);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 12d6347..eb3959b 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -79,6 +79,7 @@ struct hist_entry {
- 		struct rb_root	  sorted_chain;
- 	};
- 	struct branch_info	*branch_info;
-+	struct hists		*hists;
- 	struct callchain_root	callchain[0];
- };
- 
--- 
-1.7.11.4
+Thanks,
+Durga
+
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/thermal/step_wise.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+> index 3f9cfcf..1242cff 100644
+> --- a/drivers/thermal/step_wise.c
+> +++ b/drivers/thermal/step_wise.c
+> @@ -150,7 +150,7 @@ static void thermal_zone_trip_update(struct
+> thermal_zone_device *tz, int trip)
+>   * step. If the zone is 'cooling down' it brings back the performance of
+>   * the devices by one step.
+>   */
+> -int step_wise_throttle(struct thermal_zone_device *tz, int trip)
+> +static int step_wise_throttle(struct thermal_zone_device *tz, int trip)
+>  {
+>  	struct thermal_instance *instance;
+> 
+> @@ -169,7 +169,7 @@ int step_wise_throttle(struct thermal_zone_device
+> *tz, int trip)
+>  	return 0;
+>  }
+> 
+> -struct thermal_governor thermal_gov_step_wise = {
+> +static struct thermal_governor thermal_gov_step_wise = {
+>  	.name		= DEFAULT_THERMAL_GOVERNOR,
+>  	.throttle	= step_wise_throttle,
+>  	.owner		= THIS_MODULE,
+> --
+> 1.7.4.1
 
