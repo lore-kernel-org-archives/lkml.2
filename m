@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab2I0VdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 17:33:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36000 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab2I0VdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 17:33:10 -0400
-Date: Thu, 27 Sep 2012 14:33:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <rpurdie@rpsys.net>, <thierry.reding@avionic-design.de>,
-        <broonie@opensource.wolfsonmicro.com>, <shawn.guo@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>,
-        <gururaja.hebbar@ti.com>
-Subject: Re: [PATCH v3] pwm_backlight: Add device tree support for Low
- Threshold Brightness
-Message-Id: <20120927143309.02614908.akpm@linux-foundation.org>
-In-Reply-To: <1348670827-5720-1-git-send-email-avinashphilip@ti.com>
-References: <1348670827-5720-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754966Ab2I0VsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 17:48:24 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:49452 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753287Ab2I0VsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 17:48:22 -0400
+Message-ID: <5064C99E.9050801@linaro.org>
+Date: Thu, 27 Sep 2012 14:48:14 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] 3.2-stable timekeeping fixes merged in 3.6
+References: <1347402926-34813-1-git-send-email-john.stultz@linaro.org> <20120927203911.GC19489@kroah.com>
+In-Reply-To: <20120927203911.GC19489@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+x-cbid: 12092721-5930-0000-0000-00000C8B4B70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Sep 2012 20:17:07 +0530
-"Philip, Avinash" <avinashphilip@ti.com> wrote:
+On 09/27/2012 01:39 PM, Greg KH wrote:
+> On Tue, Sep 11, 2012 at 06:35:23PM -0400, John Stultz wrote:
+>> Just wanted to send out a few timekeeping fixes that were merged
+>> in 3.6 which are appropriate for -stable.
+>>
+>> This queue backports the following fixes:
+>> -----------------------------------------
+>> cee58483cf56e0ba355fdd97ff5e8925329aa936    time: Move ktime_t overflow checking into timespec_valid_strict
+>> bf2ac312195155511a0f79325515cbb61929898a    time: Avoid making adjustments if we haven't accumulated anything
+>> 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b    time: Improve sanity checking of timekeeping inputs
+>>
+>> I've run these through my timetest suite w/ kvm on both i386
+>> & x86_64. But more testing would be of course appreciated.
+>> 	https://github.com/johnstultz-work/timetests
+>>
+>> I also have patch queues for all the -stable trees that I'll be
+>> sending out as my testing completes for those trees.
+> Did you also send these out for the 3.0.y tree and I just missed them?
+> Should I just take this 3.2.y series and see how they well apply?
+I did send them out for 3.0, on  Sep 11.
 
-> Some back lights perform poorly when driven by a PWM with a short
-> duty-cycle. For such devices, the low threshold can be used to specify a
-> lower bound for the duty-cycle and should be chosen to exclude the
-> problematic range.
-> 
-> Add device tree probing support for lth_brightness putting
-> low-threshold-brightness as optional property.
-> 
-> ...
->
-> --- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-> +++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-> @@ -14,6 +14,15 @@ Required properties:
->  Optional properties:
->    - pwm-names: a list of names for the PWM devices specified in the
->                 "pwms" property (see PWM binding[0])
-> +  - low-threshold-brightness: brightness threshold low level. Low threshold
-> +    brightness set to value so that backlight present on low end of
-> +    brightness.
-> +    Some panels, backlight would absent if duty percentage of PWM wave is less
-> +    than certain level (say 20%). By setting low-threshold-brightness to a
-> +    value above (percentage of brightness-levels max) 50 (20% of 255, if 255
-> +    is max). On setting low-threshold-brightness, range of brightness-levels
-> +    is calculated in a region of low-threshold-brightness to brightness-levels
-> +    max.
+Let me know if you can't find them and I'll resend.
 
-hoo boy, that's hard to follow.  How does this look?
-
---- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt~pwm_backlight-add-device-tree-support-for-low-threshold-brightness-fix
-+++ a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-@@ -14,15 +14,15 @@ Required properties:
- Optional properties:
-   - pwm-names: a list of names for the PWM devices specified in the
-                "pwms" property (see PWM binding[0])
--  - low-threshold-brightness: brightness threshold low level. Low threshold
--    brightness set to value so that backlight present on low end of
--    brightness.
--    Some panels, backlight would absent if duty percentage of PWM wave is less
--    than certain level (say 20%). By setting low-threshold-brightness to a
--    value above (percentage of brightness-levels max) 50 (20% of 255, if 255
--    is max). On setting low-threshold-brightness, range of brightness-levels
--    is calculated in a region of low-threshold-brightness to brightness-levels
--    max.
-+  - low-threshold-brightness: brightness threshold low level. Sets the lowest
-+    brightness value.
-+    On some panels the backlight misbehaves if the duty cycle percentage of the
-+    PWM wave is less than a certain level (say 20%).  In this example the user
-+    can set low-threshold-brightness to a value above 50 (ie, 20% of 255), thus
-+    preventing the PWM duty cycle from going too low.
-+    On setting low-threshold-brightness the range of brightness levels is
-+    calculated in the range low-threshold-brightness to the maximum value in
-+    brightness-levels, described above.
- 
- [0]: Documentation/devicetree/bindings/pwm/pwm.txt
- 
+thanks
+-john
 
 
-Also, I'm wondering if we really needed a new property - couldn't one
-do this simply by setting brightness-levels to 50..255?
+
