@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab2I0EEG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 00:04:06 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:18358 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751452Ab2I0EED (ORCPT
+	id S1751609Ab2I0EIG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 00:08:06 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50769 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab2I0EIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 00:04:03 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuYMAKzPY1B5LPfb/2dsb2JhbABFhSK3VwECgRCBCYIgAQEFOhwjEAgDFQMuFA0YAzSHcwMOrhMNiVQUiiJibUWBS4MgA5QUgVSLIYULgnk
-Date: Thu, 27 Sep 2012 14:03:57 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
-        diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v2 07/10] vfs: fork one kthread to update data temperature
-Message-ID: <20120927040357.GO15236@dastard>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
- <1348404995-14372-8-git-send-email-zwu.kernel@gmail.com>
+	Thu, 27 Sep 2012 00:08:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348404995-14372-8-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACVXFVOV9GfWxmbxDhKCOd0UWRPoORj5=dSiKdQrwnkf3cdNJw@mail.gmail.com>
+References: <CACVXFVOV9GfWxmbxDhKCOd0UWRPoORj5=dSiKdQrwnkf3cdNJw@mail.gmail.com>
+Date: Thu, 27 Sep 2012 12:08:03 +0800
+Message-ID: <CACVXFVPLacVi-tiurDBKsH-Y_nRv9r89vr0i7yJFn9croQc9WA@mail.gmail.com>
+Subject: Re: Question on irq autoprobe
+From: Ming Lei <tom.leiming@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 23, 2012 at 08:56:32PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
->   Fork and run one kernel kthread to calculate
-> that temperature based on some metrics kept
-> in custom frequency data structs, and store
-> the info in the hash table.
+On Fri, Sep 14, 2012 at 10:02 AM, Ming Lei <tom.leiming@gmail.com> wrote:
+> Hi,
+>
+> I see the below comments on probe_irq_off:
+>
+>      *  BUGS: When used in a module (which arguably shouldn't happen)
+>      *  nothing prevents two IRQ probe callers from overlapping. The
+>      *  results of this are non-optimal.
+>      */
+>
+> But from the code of probe_irq_on and probe_irq_off, the mutex of
+> probing_active is held during the whole irq probe procedure, so
+> I don't understand why the above said that 'nothing prevents two
+> IRQ probe callers from overlapping", and why isn't the mutex of
+> probing_active enough to avoid the overlapping?
 
-No new kthreads, please. Use a per-superblock workqueue and a struct
-delayed_work to run periodic work on each superblock.
+Thomas, I really appreciate that if you may clarify the question, :-)
 
-That will also remove all the nasty, nasty
-!hot_track_temperature_update_kthread checks from the code, too.
 
-Also, I'd separate the work that the workqueue does from the patch
-that introduces the work queue. That way there is only one new thing
-to comment on in the patch. Further, I'd separate the aging code
-from the code that updates the temperature map into it's own patch
-as well..
-
-Finally, you're going to need a shrinker to control the amount of
-memory that is used in tracking hot regions - if we are throwing
-inodes out of memory due to memory pressure, we most definitely are
-going to need to reduce the amount of memory the tracking code is
-using, even if it means losing useful information (i.e. the shrinker
-accelerates the aging process).
-
-Given the above, and the other comments earlier in the series,
-there's not a lot of point in me spending time commenting on ethe
-code in detail here as it will change significantly as a result of
-all the earlier comments....
-
-Cheers,
-
-Dave.
+Thank,
 -- 
-Dave Chinner
-david@fromorbit.com
+Ming Lei
