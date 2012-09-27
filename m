@@ -1,50 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab2I0Dku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 23:40:50 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59981 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab2I0Dks (ORCPT
+	id S1754494Ab2I0DnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 23:43:17 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:56129 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753682Ab2I0DnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 23:40:48 -0400
-Date: Wed, 26 Sep 2012 20:38:06 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: mathieu.poirier@linaro.org
-Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: [PATCH 00/57] power: Upgrade to ux500 battery management driver
-Message-ID: <20120927033806.GA22791@lizard>
-References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+	Wed, 26 Sep 2012 23:43:15 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqQMAIzKY1B5LPfb/2dsb2JhbABFvHgBAoERgQmCIAEBBScTHBwHEAgDFQMuFA0YAzSHcwMOrg8NiVQUiiJibEqBM4MgA5QUgVSLIYULgnk
+Date: Thu, 27 Sep 2012 13:43:10 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
+        diegocg@gmail.com, chris@csamuel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v2 05/10] vfs: introduce one hash table
+Message-ID: <20120927034310.GM15236@dastard>
+References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
+ <1348404995-14372-6-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+In-Reply-To: <1348404995-14372-6-git-send-email-zwu.kernel@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 10:11:57AM -0600, mathieu.poirier@linaro.org wrote:
-> From: "Mathieu J. Poirier" <mathieu.poirier@linaro.org>
+On Sun, Sep 23, 2012 at 08:56:30PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 > 
-> This patch set upgrades the current ux500 battery management driver
-> to the latest HW and functionality.
-> 
-> Pull request for convenience:
-> 
-> The following changes since commit 56d27adcb536b7430d5f8a6240df8ad261eb00bd:
-> 
->   Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile (2012-09-24 16:17:17 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.linaro.org/people/mpoirier/linux.git ux500-battery-management
+>   Adds a hash table structure which contains
+> a lot of hash list and is used to efficiently
+> look up the data temperature of a file or its
+> ranges.
+>   In each hash list of hash table, the hash node
+> will keep track of temperature info.
 
-I reviewed this series before, and all looked quite good overall. But I
-took another look, especially at the patches w/ empty commit messages, and
-there are some issues.
+So, let me see if I've got the relationship straight:
 
-I tried to write some descriptions myself, but I failed: some changes are
-not obvious to me, so I couldn't write rationale for them. :-/
+- sb->s_hot_info.hot_inode_tree indexes hot_inode_items, one per inode
 
-Thanks,
-Anton.
+- hot_inode_item contains access frequency data for that inode
+
+- hot_inode_item holds a heat hash node to index the access
+  frequency data for that inode
+
+- hot_inode_item.hot_range_tree indexes hot_range_items for that inode
+
+- hot_range_item contains access frequency data for that range
+
+- hot_range_item holds a heat hash node to index the access
+  frequency data for that range
+
+- sb->s_hot_info.heat_inode_hl indexes per-inode heat hash nodes
+
+- sb->s_hot_info.heat_range_hl indexes per-range heat hash nodes
+
+How about some ascii art? :) Just looking at the hot inode item case
+(the range item case is the same pattern, though), we have:
+
+
+heat_inode_hl		hot_inode_tree
+    |			      |
+    |			      V
+    |		+-------hot_inode_item-------+
++---+		|	frequency data       |
+|		V            ^               V
+| ...<--hot_inode_item-->... |	  ...<--hot_inode_item-->....
+|	frequency data	     |		frequency data
+|		^	     |		     ^
+|		|	     |		     |
+|		|	     |		     |
++------>hot_hash_node-->hot_hash_node-->hot_hash_node-->....
+
+
+There's no actual data stored in the hot_hash_node, just pointer
+back to the frequency data, a hlist_node and a pointer to the
+hashlist head. IOWs, I agree with Ram that this does not need to
+exist and just embedding a hlist_node inside the hot_inode_item is
+all that is needed. i.e:
+
+heat_inode_hl		hot_inode_tree
+    |			      |
+    |			      V
+    |		+-------hot_inode_item-------+
+    |		|	frequency data       |
++---+		|	hlist_node           |
+|		V            ^ |             V
+| ...<--hot_inode_item-->... | |  ...<--hot_inode_item-->....
+|	frequency data	     | |	frequency data
++------>hlist_node-----------+ +------->hlist_node--->.....
+
+There's no need for separate allocations, initialisations, locks and
+reference counting - all that is already in the hot_inode_item. The
+items have the same lifecycle limitations - a hot_hash_node must be
+torn down before the frequency data it points to is freed. Finally,
+there's no difference in how you move it between lists.
+
+Indeed, calling it a hash is wrong - there's not hashing at all
+- it keeping an array of list where each entry corresponds to a
+specific temperature. It is a *heat map*, not a hash list. i.e.
+inode_heat_map, not heat_inode_hl. HEAT_MAP_SIZE, not HASH_SIZE.
+
+As it is, there aren't any users of the heat maps that are generated
+in this patch set - it's not even exported to userspace or to
+debugfs, so I'm not sure how it will be used yet. How are these heat
+maps going to be used by filesystems, Zhi?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
