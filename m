@@ -1,106 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab2I0Fsy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 01:48:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54346 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755201Ab2I0Fsw (ORCPT
+	id S1756011Ab2I0FtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 01:49:13 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52303 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755918Ab2I0FtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 01:48:52 -0400
-Date: Wed, 26 Sep 2012 22:48:37 -0700
-From: tip-bot for Mandeep Singh Baines <mandeep.baines@gmail.com>
-Message-ID: <tip-5224c3a31549f1c056039545b289e1b01ed02f12@git.kernel.org>
-Cc: msb@chromium.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        mandeep.baines@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        msb@chromium.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        mandeep.baines@gmail.com, tglx@linutronix.de
-In-Reply-To: <1347066739-26285-1-git-send-email-msb@chromium.org>
-References: <1347066739-26285-1-git-send-email-msb@chromium.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Add an option for disabling markers
-Git-Commit-ID: 5224c3a31549f1c056039545b289e1b01ed02f12
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 22:48:44 -0700 (PDT)
+	Thu, 27 Sep 2012 01:49:09 -0400
+Date: Thu, 27 Sep 2012 15:48:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20120927154851.4ec680a2d4a9c4999db5b39d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__27_Sep_2012_15_48_51_+1000_X5aUXIhAnvdbMO8K"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5224c3a31549f1c056039545b289e1b01ed02f12
-Gitweb:     http://git.kernel.org/tip/5224c3a31549f1c056039545b289e1b01ed02f12
-Author:     Mandeep Singh Baines <mandeep.baines@gmail.com>
-AuthorDate: Fri, 7 Sep 2012 18:12:19 -0700
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 24 Sep 2012 14:10:44 -0400
+--Signature=_Thu__27_Sep_2012_15_48_51_+1000_X5aUXIhAnvdbMO8K
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-tracing: Add an option for disabling markers
+Hi all,
 
-In our application, we have trace markers spread through user-space.
-We have markers in GL, X, etc. These are super handy for Chrome's
-about:tracing feature (Chrome + system + kernel trace view), but
-can be very distracting when you're trying to debug a kernel issue.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/include/asm/timex.h between commit 56942fec06ef ("ARM: 7538/1:
+delay: add registration mechanism for delay timer sources") from the arm
+tree and commit 387798b37c8d ("ARM: initial multiplatform support") from
+the arm-soc tree.
 
-I normally, use "grep -v tracing_mark_write" but it would be nice
-if I could just temporarily disable markers all together.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Link: http://lkml.kernel.org/r/1347066739-26285-1-git-send-email-msb@chromium.org
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |    6 +++++-
- kernel/trace/trace.h |    1 +
- 2 files changed, 6 insertions(+), 1 deletions(-)
+diff --cc arch/arm/include/asm/timex.h
+index 9acc135,963342a..0000000
+--- a/arch/arm/include/asm/timex.h
++++ b/arch/arm/include/asm/timex.h
+@@@ -12,9 -12,19 +12,13 @@@
+  #ifndef _ASMARM_TIMEX_H
+  #define _ASMARM_TIMEX_H
+ =20
+ -#include <asm/arch_timer.h>
++ #ifdef CONFIG_ARCH_MULTIPLATFORM
++ #define CLOCK_TICK_RATE 1000000
++ #else
+  #include <mach/timex.h>
++ #endif
+ =20
+  typedef unsigned long cycles_t;
+ -
+ -#ifdef ARCH_HAS_READ_CURRENT_TIMER
+  #define get_cycles()	({ cycles_t c; read_current_timer(&c) ? 0 : c; })
+ -#else
+ -#define get_cycles()	(0)
+ -#endif
+ =20
+  #endif
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 08acf42..1ec5c1d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -328,7 +328,7 @@ static DECLARE_WAIT_QUEUE_HEAD(trace_wait);
- unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
- 	TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
- 	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE |
--	TRACE_ITER_IRQ_INFO;
-+	TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS;
- 
- static int trace_stop_count;
- static DEFINE_RAW_SPINLOCK(tracing_start_lock);
-@@ -470,6 +470,7 @@ static const char *trace_options[] = {
- 	"overwrite",
- 	"disable_on_free",
- 	"irq-info",
-+	"markers",
- 	NULL
- };
- 
-@@ -3886,6 +3887,9 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
- 	if (tracing_disabled)
- 		return -EINVAL;
- 
-+	if (!(trace_flags & TRACE_ITER_MARKERS))
-+		return -EINVAL;
-+
- 	if (cnt > TRACE_BUF_SIZE)
- 		cnt = TRACE_BUF_SIZE;
- 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 593debe..63a2da0 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -680,6 +680,7 @@ enum trace_iterator_flags {
- 	TRACE_ITER_OVERWRITE		= 0x200000,
- 	TRACE_ITER_STOP_ON_FREE		= 0x400000,
- 	TRACE_ITER_IRQ_INFO		= 0x800000,
-+	TRACE_ITER_MARKERS		= 0x1000000,
- };
- 
- /*
+--Signature=_Thu__27_Sep_2012_15_48_51_+1000_X5aUXIhAnvdbMO8K
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQY+jDAAoJEECxmPOUX5FEd2kQAKLgsC1195OrBM9J9KN8gzsG
+TNnwCCjO/WJuTb++qrcAYboWOZL5vAPLq7Jw1Zk4hhMBn4EU0SQzJKyMvuUnTtQN
+wQXsdtRb4QfmVwBdOucfmfXqpmi13N+SbpmR+8ZR5icifgX7jyaJSX4nXsQNBYUj
+R1xpD/ZNM9bJ+qEUUy0njSNJ/W/OKQY8VaQzisS3gEfuQqS3Kunkrt6b0pzxDY/a
+n5m8HRdY1ntKoQABmExEgsSWarg/syTT1amEgIJ0LoLo/mQcnzAJeTDrUB1HgRol
+iZWRpXHinAANAeO1k+VMBp3EObXajNIVeTxJSuKGmTAMsdCjN54hT9AGM0VxkMFp
+ZxDgBuFwx4axsf3nOAdyBqrVB5PRQv8C+BUQ4FnYKYb3LNjFs1ff5drKSYX0Bk/K
+iV+z1oACzGfPP9g3VroWDCx1KwvEdn5FPjy1QdqyJMSbNpzN6iBWpL8vWWrIDa7f
+xtxKLPfHbJcq4z/oT9g6NRGBaCaClmBqgkjPKaTDUQw1TXLwkhywurRBq55OUgMa
+10+WD3RINLvL2wHj3jtOOScyCdCOa6XYPtSd5zpJ/WXU3AeMHNuIDHne+QbkjBbV
+Soz8gmkD1Y25JKubOpVAJbteYH+u9kegNL0OGyD/gqNxQP5gQ9EZxFer5K7rldoG
+LdH9GOuzjEy2QTeR0XvO
+=jnSU
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__27_Sep_2012_15_48_51_+1000_X5aUXIhAnvdbMO8K--
