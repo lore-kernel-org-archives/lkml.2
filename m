@@ -1,194 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab2I0GDE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 02:03:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54633 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899Ab2I0GDB (ORCPT
+	id S1755547Ab2I0GDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 02:03:14 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:57059 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754924Ab2I0GDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 02:03:01 -0400
-Date: Wed, 26 Sep 2012 23:02:35 -0700
-From: tip-bot for Lee Schermerhorn <lee.schermerhorn@hp.com>
-Message-ID: <tip-7rsodo9x8zvm5awru5o7zo0y@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        lee.schermerhorn@hp.com, riel@redhat.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        lee.schermerhorn@hp.com, riel@redhat.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] mm/mpol: Add MPOL_MF_LAZY ...
-Git-Commit-ID: 84e3a981648d6f4836b499cbe668f68d15527507
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 27 Sep 2012 02:03:11 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAG17yqSDi7_-VixEDfViLj0u99QBVDzePwhqswM__dp1ANpr7w@mail.gmail.com>
+References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
+	<1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
+	<CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
+	<CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
+	<CABb+yY36pQ7oXC1OKEQ-1V55c2SZurcTAPaZ=_PWugqxdL2rgg@mail.gmail.com>
+	<CAG17yqQ5NDr4sLvWbA85q5y079j2M2OV-uRjXSSL=OFPfCw3Zg@mail.gmail.com>
+	<CABb+yY0dvtOZoa=T+gyTeWy3XyAictXJnqSkbF39E=peHSXDuQ@mail.gmail.com>
+	<CAG17yqQbRMaaEFyTBngMwdiKVBsGaOit1ufv3t5TdwLBgSKmfw@mail.gmail.com>
+	<CABb+yY0YAkaKaFRO14wYR52-Si5S=qfVczXs_2Z+jZYEpXFh2Q@mail.gmail.com>
+	<CAG17yqSDi7_-VixEDfViLj0u99QBVDzePwhqswM__dp1ANpr7w@mail.gmail.com>
+Date: Thu, 27 Sep 2012 11:33:10 +0530
+Message-ID: <CABb+yY3iw5dWyKsdcOawMad+7L7HkyEZaHnvwQ4VUQ5Br4BoBw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Inderpal Singh <inderpal.singh@linaro.org>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        boojin.kim@samsung.com, vinod.koul@intel.com, patches@linaro.org,
+        kgene.kim@samsung.com
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 23:02:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  84e3a981648d6f4836b499cbe668f68d15527507
-Gitweb:     http://git.kernel.org/tip/84e3a981648d6f4836b499cbe668f68d15527507
-Author:     Lee Schermerhorn <lee.schermerhorn@hp.com>
-AuthorDate: Thu, 12 Jan 2012 12:37:17 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 26 Sep 2012 11:48:32 +0200
+On Thu, Sep 27, 2012 at 11:00 AM, Inderpal Singh
+<inderpal.singh@linaro.org> wrote:
+> On 27 September 2012 10:35, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>> On Thu, Sep 27, 2012 at 9:43 AM, Inderpal Singh
+>> <inderpal.singh@linaro.org> wrote:
+>>>
+>>> Don't you think free_chan_resource should be done __only if__
+>>> alloc_chan_resource was successful ?
+>>>
+>> No, I don't think so. Thanks.
+>
+> Thanks for quick response.
+> Please elaborate more on this as I find it against the general rule
+> and against the dmaengine implementation which checks on the same
+> condition before proceeding for free_chan_resouces in dma_chan_put
+> function.
+>
+I thought I already explained it, but here is the summary.
+Calling pl330_free_chan_resources() for channels that have zero client
+is already safe. Preventing the call by checking !client_count only
+increases LOC making it uglier.
 
-mm/mpol: Add MPOL_MF_LAZY ...
+** If the new check provides any more security, please let me know. **
 
-This patch adds another mbind() flag to request "lazy migration".
-The flag, MPOL_MF_LAZY, modifies MPOL_MF_MOVE* such that the selected
-pages are simply unmapped from the calling task's page table ['_MOVE]
-or from all referencing page tables [_MOVE_ALL].  Anon pages will first
-be added to the swap [or migration?] cache, if necessary.  The pages
-will be migrated in the fault path on "first touch", if the policy
-dictates at that time.
-
-"Lazy Migration" will allow testing of migrate-on-fault via mbind().
-Also allows applications to specify that only subsequently touched
-pages be migrated to obey new policy, instead of all pages in range.
-This can be useful for multi-threaded applications working on a
-large shared data area that is initialized by an initial thread
-resulting in all pages on one [or a few, if overflowed] nodes.
-After unmap, the pages in regions assigned to the worker threads
-will be automatically migrated local to the threads on 1st touch.
-
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-[ nearly complete rewrite.. ]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-7rsodo9x8zvm5awru5o7zo0y@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/mempolicy.h |   13 +++++++++--
- mm/mempolicy.c            |   46 ++++++++++++++++++++++++++++----------------
- 2 files changed, 39 insertions(+), 20 deletions(-)
-
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index dbd48cc..73683fb 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -48,9 +48,16 @@ enum mpol_rebind_step {
- 
- /* Flags for mbind */
- #define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
--#define MPOL_MF_MOVE	(1<<1)	/* Move pages owned by this process to conform to mapping */
--#define MPOL_MF_MOVE_ALL (1<<2)	/* Move every page to conform to mapping */
--#define MPOL_MF_INTERNAL (1<<3)	/* Internal flags start here */
-+#define MPOL_MF_MOVE	 (1<<1)	/* Move pages owned by this process to conform
-+				   to policy */
-+#define MPOL_MF_MOVE_ALL (1<<2)	/* Move every page to conform to policy */
-+#define MPOL_MF_LAZY	 (1<<3)	/* Modifies '_MOVE:  lazy migrate on fault */
-+#define MPOL_MF_INTERNAL (1<<4)	/* Internal flags start here */
-+
-+#define MPOL_MF_VALID	(MPOL_MF_STRICT   | 	\
-+			 MPOL_MF_MOVE     | 	\
-+			 MPOL_MF_MOVE_ALL |	\
-+			 MPOL_MF_LAZY)
- 
- /*
-  * Internal flags that share the struct mempolicy flags word with
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index c4e6065..52c268b 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -589,22 +589,32 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 		return ERR_PTR(-EFAULT);
- 	prev = NULL;
- 	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
-+		unsigned long endvma = vma->vm_end;
-+
-+		if (endvma > end)
-+			endvma = end;
-+		if (vma->vm_start > start)
-+			start = vma->vm_start;
-+
- 		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
- 			if (!vma->vm_next && vma->vm_end < end)
- 				return ERR_PTR(-EFAULT);
- 			if (prev && prev->vm_end < vma->vm_start)
- 				return ERR_PTR(-EFAULT);
- 		}
--		if (!is_vm_hugetlb_page(vma) &&
--		    ((flags & MPOL_MF_STRICT) ||
-+
-+		if (is_vm_hugetlb_page(vma))
-+			goto next;
-+
-+		if (flags & MPOL_MF_LAZY) {
-+			change_prot_none(vma, start, endvma);
-+			goto next;
-+		}
-+
-+		if ((flags & MPOL_MF_STRICT) ||
- 		     ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
--				vma_migratable(vma)))) {
--			unsigned long endvma = vma->vm_end;
-+		      vma_migratable(vma))) {
- 
--			if (endvma > end)
--				endvma = end;
--			if (vma->vm_start > start)
--				start = vma->vm_start;
- 			err = check_pgd_range(vma, start, endvma, nodes,
- 						flags, private);
- 			if (err) {
-@@ -612,6 +622,7 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 				break;
- 			}
- 		}
-+next:
- 		prev = vma;
- 	}
- 	return first;
-@@ -1118,8 +1129,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	int err;
- 	LIST_HEAD(pagelist);
- 
--	if (flags & ~(unsigned long)(MPOL_MF_STRICT |
--				     MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
-+  	if (flags & ~(unsigned long)MPOL_MF_VALID)
- 		return -EINVAL;
- 	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
- 		return -EPERM;
-@@ -1178,21 +1188,23 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	vma = check_range(mm, start, end, nmask,
- 			  flags | MPOL_MF_INVERT, &pagelist);
- 
--	err = PTR_ERR(vma);
--	if (!IS_ERR(vma)) {
--		int nr_failed = 0;
--
-+	err = PTR_ERR(vma);	/* maybe ... */
-+	if (!IS_ERR(vma))
- 		err = mbind_range(mm, start, end, new);
- 
-+	if (!err) {
-+		int nr_failed = 0;
-+
- 		if (!list_empty(&pagelist)) {
-+			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
- 			nr_failed = migrate_pages(&pagelist, new_vma_page,
--						(unsigned long)vma,
--						false, MIGRATE_SYNC);
-+						  (unsigned long)vma,
-+						  false, MIGRATE_SYNC);
- 			if (nr_failed)
- 				putback_lru_pages(&pagelist);
- 		}
- 
--		if (!err && nr_failed && (flags & MPOL_MF_STRICT))
-+		if (nr_failed && (flags & MPOL_MF_STRICT))
- 			err = -EIO;
- 	} else
- 		putback_lru_pages(&pagelist);
+Food for thought : we never check for NULL before passing a pointer to
+kfree(). Why ?
