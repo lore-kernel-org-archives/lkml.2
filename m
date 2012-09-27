@@ -1,166 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab2I0GAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 02:00:23 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:47445 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab2I0GAT (ORCPT
+	id S1755344Ab2I0GBC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 02:01:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54607 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab2I0GBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 02:00:19 -0400
+	Thu, 27 Sep 2012 02:01:00 -0400
+Date: Wed, 26 Sep 2012 23:00:43 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-eyi25t4eh3l4cd2zp4k3bj6c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
+        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
+        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/numa] mm/thp: Preserve pgprot across huge page split
+Git-Commit-ID: 93c9d633bd9e183f105bc59d798d61c216a514f0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120926202247.GA20920@quack.suse.cz>
-References: <1347798342-2830-1-git-send-email-linkinjeon@gmail.com>
-	<20120920084422.GA5697@localhost>
-	<20120924222306.GC30997@quack.suse.cz>
-	<20120926165602.GA24672@localhost>
-	<20120926202247.GA20920@quack.suse.cz>
-Date: Thu, 27 Sep 2012 15:00:18 +0900
-Message-ID: <CAKYAXd_=TkHM4s8hyyEZpkJCv3N7HOeXKxoEOpwigFYfR9+ReA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] writeback: add dirty_background_centisecs per bdi variable
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 23:00:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/27, Jan Kara <jack@suse.cz>:
-> On Thu 27-09-12 00:56:02, Wu Fengguang wrote:
->> On Tue, Sep 25, 2012 at 12:23:06AM +0200, Jan Kara wrote:
->> > On Thu 20-09-12 16:44:22, Wu Fengguang wrote:
->> > > On Sun, Sep 16, 2012 at 08:25:42AM -0400, Namjae Jeon wrote:
->> > > > From: Namjae Jeon <namjae.jeon@samsung.com>
->> > > >
->> > > > This patch is based on suggestion by Wu Fengguang:
->> > > > https://lkml.org/lkml/2011/8/19/19
->> > > >
->> > > > kernel has mechanism to do writeback as per dirty_ratio and
->> > > > dirty_background
->> > > > ratio. It also maintains per task dirty rate limit to keep balance
->> > > > of
->> > > > dirty pages at any given instance by doing bdi bandwidth
->> > > > estimation.
->> > > >
->> > > > Kernel also has max_ratio/min_ratio tunables to specify percentage
->> > > > of
->> > > > writecache to control per bdi dirty limits and task throttling.
->> > > >
->> > > > However, there might be a usecase where user wants a per bdi
->> > > > writeback tuning
->> > > > parameter to flush dirty data once per bdi dirty data reach a
->> > > > threshold
->> > > > especially at NFS server.
->> > > >
->> > > > dirty_background_centisecs provides an interface where user can
->> > > > tune
->> > > > background writeback start threshold using
->> > > > /sys/block/sda/bdi/dirty_background_centisecs
->> > > >
->> > > > dirty_background_centisecs is used alongwith average bdi write
->> > > > bandwidth
->> > > > estimation to start background writeback.
->> >   The functionality you describe, i.e. start flushing bdi when there's
->> > reasonable amount of dirty data on it, looks sensible and useful.
->> > However
->> > I'm not so sure whether the interface you propose is the right one.
->> > Traditionally, we allow user to set amount of dirty data (either in
->> > bytes
->> > or percentage of memory) when background writeback should start. You
->> > propose setting the amount of data in centisecs-to-write. Why that
->> > difference? Also this interface ties our throughput estimation code
->> > (which
->> > is an implementation detail of current dirty throttling) with the
->> > userspace
->> > API. So we'd have to maintain the estimation code forever, possibly
->> > also
->> > face problems when we change the estimation code (and thus estimates in
->> > some cases) and users will complain that the values they set originally
->> > no
->> > longer work as they used to.
->>
->> Yes, that bandwidth estimation is not all that (and in theory cannot
->> be made) reliable which may be a surprise to the user. Which make the
->> interface flaky.
->>
->> > Also, as with each knob, there's a problem how to properly set its
->> > value?
->> > Most admins won't know about the knob and so won't touch it. Others
->> > might
->> > know about the knob but will have hard time figuring out what value
->> > should
->> > they set. So if there's a new knob, it should have a sensible initial
->> > value. And since this feature looks like a useful one, it shouldn't be
->> > zero.
->>
->> Agreed in principle. There seems be no reasonable defaults for the
->> centisecs-to-write interface, mainly due to its inaccurate nature,
->> especially the initial value may be wildly wrong on fresh system
->> bootup. This is also true for your proposed interfaces, see below.
->>
->> > So my personal preference would be to have bdi->dirty_background_ratio
->> > and
->> > bdi->dirty_background_bytes and start background writeback whenever
->> > one of global background limit and per-bdi background limit is exceeded.
->> > I
->> > think this interface will do the job as well and it's easier to maintain
->> > in
->> > future.
->>
->> bdi->dirty_background_ratio, if I understand its semantics right, is
->> unfortunately flaky in the same principle as centisecs-to-write,
->> because it relies on the (implicitly estimation of) writeout
->> proportions. The writeout proportions for each bdi starts with 0,
->> which is even worse than the 100MB/s initial value for
->> bdi->write_bandwidth and will trigger background writeback on the
->> first write.
->   Well, I meant bdi->dirty_backround_ratio wouldn't use writeout proportion
-> estimates at all. Limit would be
->   dirtiable_memory * bdi->dirty_backround_ratio.
->
-> After all we want to start writeout to bdi when we have enough pages to
-> reasonably load the device for a while which has nothing to do with how
-> much is written to this device as compared to other devices.
->
-> OTOH I'm not particularly attached to this interface. Especially since on a
-> lot of today's machines, 1% is rather big so people might often end up
-> using dirty_background_bytes anyway.
->
->> bdi->dirty_background_bytes is, however, reliable, and gives users
->> total control. If we export this interface alone, I'd imagine users
->> who want to control centisecs-to-write could run a simple script to
->> periodically get the write bandwith value out of the existing bdi
->> interface and echo it into bdi->dirty_background_bytes. Which makes
->> simple yet good enough centisecs-to-write controlling.
->>
->> So what do you think about exporting a really dumb
->> bdi->dirty_background_bytes, which will effectively give smart users
->> the freedom to do smart control over per-bdi background writeback
->> threshold? The users are offered the freedom to do his own bandwidth
->> estimation and choose not to rely on the kernel estimation, which will
->> free us from the burden of maintaining a flaky interface as well. :)
->   That's fine with me. Just it would be nice if we gave
-> bdi->dirty_background_bytes some useful initial value. Maybe like
-> dirtiable_memory * dirty_background_ratio?
-Hi. Jan.
-Global dirty_background_bytes default value is zero that means
-flushing is started based on dirty_background_ratio and dirtiable
-memory.
-Is it correct to set per bdi default dirty threshold
-(bdi->dirty_background_bytes) equal to global dirty threshold  -
-dirtiable_memory * dirty_background_ratio ?
-In my opinion, default setting for per bdi-> dirty_background_bytes
-should be zero to avoid any confusion and any change in default
-writeback behaviour.
+Commit-ID:  93c9d633bd9e183f105bc59d798d61c216a514f0
+Gitweb:     http://git.kernel.org/tip/93c9d633bd9e183f105bc59d798d61c216a514f0
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Tue, 17 Jul 2012 18:25:14 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 26 Sep 2012 11:48:31 +0200
 
-Thanks.
->
-> 								Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
->
+mm/thp: Preserve pgprot across huge page split
+
+If we marked a THP with our special PROT_NONE protections, ensure we
+don't loose them over a split.
+
+Collapse seems to always allocate a new (huge) page which should
+already end up on the new target node so loosing protections there
+isn't a problem.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Paul Turner <pjt@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-eyi25t4eh3l4cd2zp4k3bj6c@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/pgtable.h |    1 +
+ mm/huge_memory.c               |  104 +++++++++++++++++++---------------------
+ 2 files changed, 50 insertions(+), 55 deletions(-)
+
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 49afb3f..402704f 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -350,6 +350,7 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+ }
+ 
+ #define pte_pgprot(x) __pgprot(pte_flags(x) & PTE_FLAGS_MASK)
++#define pmd_pgprot(x) __pgprot(pmd_val(x) & ~_HPAGE_CHG_MASK)
+ 
+ #define canon_pgprot(p) __pgprot(massage_pgprot(p))
+ 
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 57c4b93..4a74e34 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1353,64 +1353,60 @@ static int __split_huge_page_map(struct page *page,
+ 	int ret = 0, i;
+ 	pgtable_t pgtable;
+ 	unsigned long haddr;
++	pgprot_t prot;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	pmd = page_check_address_pmd(page, mm, address,
+ 				     PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG);
+-	if (pmd) {
+-		pgtable = get_pmd_huge_pte(mm);
+-		pmd_populate(mm, &_pmd, pgtable);
+-
+-		for (i = 0, haddr = address; i < HPAGE_PMD_NR;
+-		     i++, haddr += PAGE_SIZE) {
+-			pte_t *pte, entry;
+-			BUG_ON(PageCompound(page+i));
+-			entry = mk_pte(page + i, vma->vm_page_prot);
+-			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+-			if (!pmd_write(*pmd))
+-				entry = pte_wrprotect(entry);
+-			else
+-				BUG_ON(page_mapcount(page) != 1);
+-			if (!pmd_young(*pmd))
+-				entry = pte_mkold(entry);
+-			pte = pte_offset_map(&_pmd, haddr);
+-			BUG_ON(!pte_none(*pte));
+-			set_pte_at(mm, haddr, pte, entry);
+-			pte_unmap(pte);
+-		}
++	if (!pmd)
++		goto unlock;
+ 
+-		smp_wmb(); /* make pte visible before pmd */
+-		/*
+-		 * Up to this point the pmd is present and huge and
+-		 * userland has the whole access to the hugepage
+-		 * during the split (which happens in place). If we
+-		 * overwrite the pmd with the not-huge version
+-		 * pointing to the pte here (which of course we could
+-		 * if all CPUs were bug free), userland could trigger
+-		 * a small page size TLB miss on the small sized TLB
+-		 * while the hugepage TLB entry is still established
+-		 * in the huge TLB. Some CPU doesn't like that. See
+-		 * http://support.amd.com/us/Processor_TechDocs/41322.pdf,
+-		 * Erratum 383 on page 93. Intel should be safe but is
+-		 * also warns that it's only safe if the permission
+-		 * and cache attributes of the two entries loaded in
+-		 * the two TLB is identical (which should be the case
+-		 * here). But it is generally safer to never allow
+-		 * small and huge TLB entries for the same virtual
+-		 * address to be loaded simultaneously. So instead of
+-		 * doing "pmd_populate(); flush_tlb_range();" we first
+-		 * mark the current pmd notpresent (atomically because
+-		 * here the pmd_trans_huge and pmd_trans_splitting
+-		 * must remain set at all times on the pmd until the
+-		 * split is complete for this pmd), then we flush the
+-		 * SMP TLB and finally we write the non-huge version
+-		 * of the pmd entry with pmd_populate.
+-		 */
+-		set_pmd_at(mm, address, pmd, pmd_mknotpresent(*pmd));
+-		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
+-		pmd_populate(mm, pmd, pgtable);
+-		ret = 1;
++	prot = pmd_pgprot(*pmd);
++	pgtable = get_pmd_huge_pte(mm);
++	pmd_populate(mm, &_pmd, pgtable);
++
++	for (i = 0, haddr = address; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
++		pte_t *pte, entry;
++
++		BUG_ON(PageCompound(page+i));
++		entry = mk_pte(page + i, prot);
++		entry = pte_mkdirty(entry);
++		if (!pmd_young(*pmd))
++			entry = pte_mkold(entry);
++		pte = pte_offset_map(&_pmd, haddr);
++		BUG_ON(!pte_none(*pte));
++		set_pte_at(mm, haddr, pte, entry);
++		pte_unmap(pte);
+ 	}
++
++	smp_wmb(); /* make ptes visible before pmd, see __pte_alloc */
++	/*
++	 * Up to this point the pmd is present and huge.
++	 *
++	 * If we overwrite the pmd with the not-huge version, we could trigger
++	 * a small page size TLB miss on the small sized TLB while the hugepage
++	 * TLB entry is still established in the huge TLB.
++	 *
++	 * Some CPUs don't like that. See
++	 * http://support.amd.com/us/Processor_TechDocs/41322.pdf, Erratum 383
++	 * on page 93.
++	 *
++	 * Thus it is generally safer to never allow small and huge TLB entries
++	 * for overlapping virtual addresses to be loaded. So we first mark the
++	 * current pmd not present, then we flush the TLB and finally we write
++	 * the non-huge version of the pmd entry with pmd_populate.
++	 *
++	 * The above needs to be done under the ptl because pmd_trans_huge and
++	 * pmd_trans_splitting must remain set on the pmd until the split is
++	 * complete. The ptl also protects against concurrent faults due to
++	 * making the pmd not-present.
++	 */
++	set_pmd_at(mm, address, pmd, pmd_mknotpresent(*pmd));
++	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
++	pmd_populate(mm, pmd, pgtable);
++	ret = 1;
++
++unlock:
+ 	spin_unlock(&mm->page_table_lock);
+ 
+ 	return ret;
+@@ -2241,9 +2237,7 @@ static int khugepaged_wait_event(void)
+ static void khugepaged_do_scan(struct page **hpage)
+ {
+ 	unsigned int progress = 0, pass_through_head = 0;
+-	unsigned int pages = khugepaged_pages_to_scan;
+-
+-	barrier(); /* write khugepaged_pages_to_scan to local stack */
++	unsigned int pages = ACCESS_ONCE(khugepaged_pages_to_scan);
+ 
+ 	while (progress < pages) {
+ 		cond_resched();
