@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab2I0D1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 23:27:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41750 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab2I0D1M (ORCPT
+	id S1754407Ab2I0DcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 23:32:19 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37415 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab2I0DcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 23:27:12 -0400
-Date: Thu, 27 Sep 2012 13:27:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: linux-next: build failure after merge of the block tree
-Message-Id: <20120927132700.7e6ef4b714fb4a8251e68775@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__27_Sep_2012_13_27_00_+1000_SCroD2VAo/P.GRyr"
+	Wed, 26 Sep 2012 23:32:17 -0400
+Date: Wed, 26 Sep 2012 20:29:24 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: mathieu.poirier@linaro.org
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: [PATCH 11/57] power: Recharge condition not optimal for battery
+Message-ID: <20120927032924.GF8836@lizard>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-12-git-send-email-mathieu.poirier@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1348589574-25655-12-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_Sep_2012_13_27_00_+1000_SCroD2VAo/P.GRyr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 25, 2012 at 10:12:08AM -0600, mathieu.poirier@linaro.org wrote:
+> From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+> 
+> Today the battery recharge is determined with a voltage threshold. This
+> voltage threshold is only valid when the battery is relaxed. In charging
+> algorithm the voltage read is the loaded battery voltage and no
+> compensation is done to get the relaxed voltage. When maintenance
+> charging is not selected, this makes the recharging condition to almost
+> immediately activate when there is a discharge present on the battery.
+> 
+> Depending on which vendor the battery comes from this behavior can wear
+> out the battery much faster than normal.
+> 
+> The fuelgauge driver is responsible to monitor the actual battery
+> capacity and is able to estimate the remaining capacity. It is better to
+> use the remaining capacity as a limit to determine when battery should
+> be recharged.
+> 
+> Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> Reviewed-by: Hakan BERG <hakan.berg@stericsson.com>
+> Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+> ---
+[...]
+> @@ -2092,6 +2212,9 @@ static int ab8500_fg_get_ext_psy_data(struct device *dev, void *data)
+>  						break;
+>  					di->flags.charging = false;
+>  					di->flags.fully_charged = false;
+> +					if (di->bat->capacity_scaling)
+> +						ab8500_fg_update_cap_scalers
+> +									(di);
 
-Hi Jens,
+The fact that you need to wrap lines in this strange way is just an
+evidence that this function needs some refactorings to lower indentation
+level.
 
-After merging the block tree, today's linux-next build (x86
-64_allmodconfig) failed like this:
+[...]
+> +		} else {
+> +			/* Maintenance A */
+> +			if (di->maint_state == MAINT_A &&
+> +					di->batt_data.volt <
+> +					di->bat->bat_type[di->bat->batt_id].
+> +					maint_a_vol_lvl) {
+> +				abx500_chargalg_state_to(di,
+> +						STATE_MAINTENANCE_A_INIT);
+> +			}
+> +			/* Maintenance B */
+> +			else if (di->maint_state == MAINT_B &&
+> +					di->batt_data.volt <
+> +					di->bat->bat_type[di->bat->batt_id].
+> +					maint_b_vol_lvl)  {
+> +				abx500_chargalg_state_to(di,
+> +						STATE_MAINTENANCE_B_INIT);
+> +			}
 
-usr/include/linux/fs.h:13: included file 'linux/percpu-rwsem.h' is not expo=
-rted
+I understand that the logic is complex, but things are really really
+unreadable and incomprehensible.
 
-Caused by commit 62ac665ff9fc ("blockdev: turn a rw semaphore into a
-percpu rw semaphore").
+Can we make it more nicer by putting some love into the code:
 
-I have used the block tree from next-20120926 for today.  This will also
-affect the device-mapper tree which is based on the block tree (of which I
-will also use the next-20120926 version).
+struct something_bat *bat = di->bat;
+int maint_a_volt = bat->bat_type[bat->batt_id].maint_a_vol_lvl;
+int maint_b_volt = bat->bat_type[bat->batt_id].maint_b_vol_lvl;
+int cur_volt = di->batt_data.volt;
+bool maint_a = di->maint_state == MAINT_A;
+bool maint_b = di->maint_state == MAINT_B;
+int state;
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+if (maint_a && cur_volt < maint_a_volt)
+	state = STATE_MAINTENANCE_A_INIT;
+else if (maint_b && cur_volt < main_b_volt)
+	state = STATE_MAINTENANCE_B_INIT;
+else
+	break;
 
---Signature=_Thu__27_Sep_2012_13_27_00_+1000_SCroD2VAo/P.GRyr
-Content-Type: application/pgp-signature
+abx500_chargalg_state_to(di, state);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+(And this is across all the driver...)
 
-iQIcBAEBCAAGBQJQY8eEAAoJEECxmPOUX5FEBWsP/0tfVlPWPrKJklc9ZZVtL0Y7
-U3RFAgXtXGyMP85NdolzkNyP5SRNUbIMQwtWuUmChgyd/kZ9wcaOLq0CKMjX/htD
-jtHSWzVJyoCmad66ZGYOzfq4UyUiPxO1y4YADAvrWivBihQkJWqrJ/Osy8HQW1Va
-Mz93UYaeRTLfKuHpzRuV8ecZIgRpGiJwqiodRV4JL7eN4Opf16P8rdysJpE2fPCJ
-vLBU+YoApHbKvSXeKPeUadP8oInyj0iwKef75pXPSPEqLRoOJrACj1OyJl0kazU9
-veMYOQW6U40fRz0X5olh2xgy3unH9HjUY8tIwE5/1c+yz6TsqRPukjZOYdcNEbXZ
-T5nx0BsSCXYTU3FzcSgUxwaop3V+N5kMxcSUaN20oqUKSv1P/5UREs6bN58n3PQX
-1darjBZryZEPaRE34ilJtQZ4ZwPsiGKn05Soeh/k/4M+SUc04wC2EZn/WMPrDhm/
-aQN+efF3k+9eNjmNbQapfetZq3SyR/VHLg2kt3jPNqkJ3hFWggvFRV8d6/XDhJmo
-FKxfoJe4GlnHtuOIWNQngNztd8t86dl76EQ42HrivpodMt1bNvuGLsb+Luvex6T6
-h0gzDVUWhUSsHHghycsRX206CI8OIj7ovTsoXoJm8HVA81IE/wBNMMqVbS9mht20
-4ukPXOobosnE9qBLEDwS
-=SVVZ
------END PGP SIGNATURE-----
+At least this way I can actually understand what it does (and without
+comments).
 
---Signature=_Thu__27_Sep_2012_13_27_00_+1000_SCroD2VAo/P.GRyr--
+I'm OK with a patch on top of this series (since rebasing the whole thing
+on top of the changed code would probably create tons of conflicts), but
+something has to be done with this.
+
+Thanks,
+Anton.
