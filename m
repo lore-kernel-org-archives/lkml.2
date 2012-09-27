@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab2I0TUq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 15:20:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:40299 "EHLO mga03.intel.com"
+	id S1753577Ab2I0TYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 15:24:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56803 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751904Ab2I0TUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 15:20:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,496,1344236400"; 
-   d="scan'208";a="198057014"
-Subject: Re: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the
- irq affinity mask
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Chuansheng Liu <chuansheng.liu@intel.com>, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        yanmin_zhang@linux.intel.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Date: Thu, 27 Sep 2012 12:20:57 -0700
-In-Reply-To: <50649E1C.40602@linux.vnet.ibm.com>
-References: <1348681092.19514.10.camel@cliu38-desktop-build>
-	 <1348703122.19514.17.camel@cliu38-desktop-build>
-	 <50632767.5050607@linux.vnet.ibm.com>
-	 <1348679199.26695.455.camel@sbsiddha-desk.sc.intel.com>
-	 <50633BA0.5030700@linux.vnet.ibm.com>
-	 <1348699588.6644.21.camel@sbsiddha-desk.sc.intel.com>
-	 <50649E1C.40602@linux.vnet.ibm.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1348773658.6644.36.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1751904Ab2I0TYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 15:24:05 -0400
+Date: Thu, 27 Sep 2012 21:24:27 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+Message-ID: <20120927192426.GF8527@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+	Mel Gorman <mgorman@suse.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+	linux-kernel@vger.kernel.org,
+	Andreas Herrmann <andreas.herrmann3@amd.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Suresh Siddha <suresh.b.siddha@intel.com>
+References: <1348722568.7059.115.camel@marge.simpson.net>
+ <20120927054742.GA4370@gmail.com>
+ <1348727665.7059.160.camel@marge.simpson.net>
+ <20120927064142.GB5996@gmail.com>
+ <1348728852.7059.171.camel@marge.simpson.net>
+ <20120927071011.GA8980@gmail.com>
+ <CA+55aFyxjdir-LZneBTk1JQV0cVSRFzEK9Jpxje2SJqA6aP3Yg@mail.gmail.com>
+ <20120927180507.GD8527@x1.osrc.amd.com>
+ <CA+55aFyTrcmx3Uf7UGU=-K=BwTym8aN15fTo==cV2bCK6so0Fg@mail.gmail.com>
+ <1348770584.3292.44.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1348770584.3292.44.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-28 at 00:12 +0530, Srivatsa S. Bhat wrote:
-> On 09/27/2012 04:16 AM, Suresh Siddha wrote:
+On Thu, Sep 27, 2012 at 08:29:44PM +0200, Peter Zijlstra wrote:
+> > >> Or could we just improve the heuristics. What happens if the
+> > >> scheduling granularity is increased, for example? It's set to 1ms
+> > >> right now, with a logarithmic scaling by number of cpus.
+> > >
+> > > /proc/sys/kernel/sched_wakeup_granularity_ns=10000000 (10ms)
+> > > ------------------------------------------------------
+> > > tps = 4994.730809 (including connections establishing)
+> > > tps = 5000.260764 (excluding connections establishing)
+> > >
+> > > A bit better over the default NO_WAKEUP_PREEMPTION setting.
 > > 
-> > No. irq_set_affinity()
+> > Ok, so this gives us something possible to actually play with.
 > > 
+> > For example, maybe SCHED_TUNABLESCALING_LINEAR is more appropriate
+> > than SCHED_TUNABLESCALING_LOG. At least for WAKEUP_PREEMPTION. Hmm?
 > 
-> Um? That takes the updated/changed affinity and sets data->affinity to
-> that value no? You mentioned that probably the intention of the original
-> code was to preserve the user-set affinity mask, but still change the
-> underlying interrupt routing. Sorry, but I still didn't quite understand
-> what is that part of the code that achieves that.
+> Don't forget to run the desktop interactivity benchmarks after you're
+> done wriggling with this knob... wakeup preemption is important for most
+> those.
 
-For the HW routing to be changed we AND it with cpu_online_map and use
-that for programming the interrupt entries etc. The user-specified
-affinity still has the cpu that is offlined.
+Setting sched_tunable_scaling to SCHED_TUNABLESCALING_LINEAR made
+wakeup_granularity go to 4ms:
 
-And when the cpu comes online and if it is part of the user-specified
-affinity, then the HW routing can be again modified to include the new
-cpu.
+sched_autogroup_enabled:1
+sched_child_runs_first:0
+sched_latency_ns:24000000
+sched_migration_cost_ns:500000
+sched_min_granularity_ns:3000000
+sched_nr_migrate:32
+sched_rt_period_us:1000000
+sched_rt_runtime_us:950000
+sched_shares_window_ns:10000000
+sched_time_avg_ms:1000
+sched_tunable_scaling:2
+sched_wakeup_granularity_ns:4000000
 
-hope this clears it!
+pgbench results look good:
 
-thanks.
+tps = 4997.675331 (including connections establishing)
+tps = 5003.256870 (excluding connections establishing)
 
+This is still with Ingo's NO_WAKEUP_PREEMPTION patch.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
