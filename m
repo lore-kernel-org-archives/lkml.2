@@ -1,163 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab2I0MYc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 08:24:32 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:58233 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab2I0MY2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 08:24:28 -0400
-Date: Thu, 27 Sep 2012 05:24:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        paul.mckenney@linaro.org, rakib.mullick@gmail.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/rcu] sched: Fix load avg vs cpu-hotplug
-Message-ID: <20120927122408.GB6556@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <tip-5d18023294abc22984886bd7185344e0c2be0daf@git.kernel.org>
- <1348734171.3292.6.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348734171.3292.6.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092712-2876-0000-0000-00000088AAF8
+	id S1754924Ab2I0MZw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 08:25:52 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:43883 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754320Ab2I0MZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 08:25:50 -0400
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit
+ scenarios in PLE handler
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Avi Kivity <avi@redhat.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+In-Reply-To: <506440AF.9080202@redhat.com>
+References: <20120921115942.27611.67488.sendpatchset@codeblue>
+	 <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com>
+	 <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com>
+	 <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com>
+	 <5061B437.8070300@linux.vnet.ibm.com> <5064101A.5070902@redhat.com>
+	 <50643745.6010202@linux.vnet.ibm.com>  <506440AF.9080202@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Thu, 27 Sep 2012 07:25:41 -0500
+Message-ID: <1348748741.10325.198.camel@oc6622382223.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092712-3534-0000-0000-00000D2BA7E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 10:22:51AM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-09-26 at 22:12 -0700, tip-bot for Peter Zijlstra wrote:
-> > Commit-ID:  5d18023294abc22984886bd7185344e0c2be0daf
-> > Gitweb:     http://git.kernel.org/tip/5d18023294abc22984886bd7185344e0c2be0daf
-> > Author:     Peter Zijlstra <peterz@infradead.org>
-> > AuthorDate: Mon, 20 Aug 2012 11:26:57 +0200
-> > Committer:  Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > CommitDate: Sun, 23 Sep 2012 07:43:56 -0700
+On Thu, 2012-09-27 at 14:03 +0200, Avi Kivity wrote:
+> On 09/27/2012 01:23 PM, Raghavendra K T wrote:
+> >>
+> >> This gives us a good case for tracking preemption on a per-vm basis.  As
+> >> long as we aren't preempted, we can keep the PLE window high, and also
+> >> return immediately from the handler without looking for candidates.
 > > 
-> > sched: Fix load avg vs cpu-hotplug
-> > 
-> > Rabik and Paul reported two different issues related to the same few
-> > lines of code.
-> > 
-> > Rabik's issue is that the nr_uninterruptible migration code is wrong in
-> > that he sees artifacts due to this (Rabik please do expand in more
-> > detail).
-> > 
-> > Paul's issue is that this code as it stands relies on us using
-> > stop_machine() for unplug, we all would like to remove this assumption
-> > so that eventually we can remove this stop_machine() usage altogether.
-> > 
-> > The only reason we'd have to migrate nr_uninterruptible is so that we
-> > could use for_each_online_cpu() loops in favour of
-> > for_each_possible_cpu() loops, however since nr_uninterruptible() is the
-> > only such loop and its using possible lets not bother at all.
-> > 
-> > The problem Rabik sees is (probably) caused by the fact that by
-> > migrating nr_uninterruptible we screw rq->calc_load_active for both rqs
-> > involved.
-> > 
-> > So don't bother with fancy migration schemes (meaning we now have to
-> > keep using for_each_possible_cpu()) and instead fold any nr_active delta
-> > after we migrate all tasks away to make sure we don't have any skewed
-> > nr_active accounting.
-> > 
-> > [ paulmck: Move call to calc_load_migration to CPU_DEAD to avoid
-> > miscounting noted by Rakib. ]
-> > 
-> > Reported-by: Rakib Mullick <rakib.mullick@gmail.com>
-> > Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > ---
-> >  kernel/sched/core.c |   41 ++++++++++++++++++++---------------------
-> >  1 files changed, 20 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index fbf1fd0..8c38b5e 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -5304,27 +5304,17 @@ void idle_task_exit(void)
-> >  }
-> >  
-> >  /*
-> > - * While a dead CPU has no uninterruptible tasks queued at this point,
-> > - * it might still have a nonzero ->nr_uninterruptible counter, because
-> > - * for performance reasons the counter is not stricly tracking tasks to
-> > - * their home CPUs. So we just add the counter to another CPU's counter,
-> > - * to keep the global sum constant after CPU-down:
-> > - */
-> > -static void migrate_nr_uninterruptible(struct rq *rq_src)
-> > -{
-> > -	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
-> > -
-> > -	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
-> > -	rq_src->nr_uninterruptible = 0;
-> > -}
-> > -
-> > -/*
-> > - * remove the tasks which were accounted by rq from calc_load_tasks.
-> > + * Since this CPU is going 'away' for a while, fold any nr_active delta
-> > + * we might have. Assumes we're called after migrate_tasks() so that the
-> > + * nr_active count is stable.
-> > + *
-> > + * Also see the comment "Global load-average calculations".
-> >   */
-> > -static void calc_global_load_remove(struct rq *rq)
-> > +static void calc_load_migrate(struct rq *rq)
-> >  {
-> > -	atomic_long_sub(rq->calc_load_active, &calc_load_tasks);
-> > -	rq->calc_load_active = 0;
-> > +	long delta = calc_load_fold_active(rq);
-> > +	if (delta)
-> > +		atomic_long_add(delta, &calc_load_tasks);
-> >  }
-> >  
-> >  /*
-> > @@ -5617,9 +5607,18 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
-> >  		migrate_tasks(cpu);
-> >  		BUG_ON(rq->nr_running != 1); /* the migration thread */
-> >  		raw_spin_unlock_irqrestore(&rq->lock, flags);
-> > +		break;
-> >  
-> > -		migrate_nr_uninterruptible(rq);
-> > -		calc_global_load_remove(rq);
-> > +	case CPU_DEAD:
-> > +		{
-> > +			struct rq *dest_rq;
-> > +
-> > +			local_irq_save(flags);
-> > +			dest_rq = cpu_rq(smp_processor_id());
-> > +			raw_spin_lock(&dest_rq->lock);
-> > +			calc_load_migrate(rq);
-> > +			raw_spin_unlock_irqrestore(&dest_rq->lock, flags);
-> > +		}
-> >  		break;
-> >  #endif
-> >  	}
+> > 1) So do you think, deferring preemption patch ( Vatsa was mentioning
+> > long back)  is also another thing worth trying, so we reduce the chance
+> > of LHP.
 > 
+> Yes, we have to keep it in mind.  It will be useful for fine grained
+> locks, not so much so coarse locks or IPIs.
 > 
-> Huh, what is this patch doing??! Didn't we merge my version of this? 
+> I would still of course prefer a PLE solution, but if we can't get it to
+> work we can consider preemption deferral.
+> 
+> > 
+> > IIRC, with defer preemption :
+> > we will have hook in spinlock/unlock path to measure depth of lock held,
+> > and shared with host scheduler (may be via MSRs now).
+> > Host scheduler 'prefers' not to preempt lock holding vcpu. (or rather
+> > give say one chance.
+> 
+> A downside is that we have to do that even when undercommitted.
+> 
+> Also there may be a lot of false positives (deferred preemptions even
+> when there is no contention).
+> 
+> > 
+> > 2) looking at the result (comparing A & C) , I do feel we have
+> > significant in iterating over vcpus (when compared to even vmexit)
+> > so We still would need undercommit fix sugested by PeterZ (improving by
+> > 140%). ?
+> 
+> Looking only at the current runqueue?  My worry is that it misses a lot
+> of cases.  Maybe try the current runqueue first and then others.
+> 
+> Or were you referring to something else?
+> 
+> > 
+> > So looking back at threads/ discussions so far, I am trying to
+> > summarize, the discussions so far. I feel, at least here are the few
+> > potential candidates to go in:
+> > 
+> > 1) Avoiding double runqueue lock overhead  (Andrew Theurer/ PeterZ)
+> > 2) Dynamically changing PLE window (Avi/Andrew/Chegu)
+> > 3) preempt_notify handler to identify preempted VCPUs (Avi)
+> > 4) Avoiding iterating over VCPUs in undercommit scenario. (Raghu/PeterZ)
+> > 5) Avoiding unnecessary spinning in overcommit scenario (Raghu/Rik)
+> > 6) Pv spinlock
+> > 7) Jiannan's proposed improvements
+> > 8) Defer preemption patches
+> > 
+> > Did we miss anything (or added extra?)
+> > 
+> > So here are my action items:
+> > - I plan to repost this series with what PeterZ, Rik suggested with
+> > performance analysis.
+> > - I ll go back and explore on (3) and (6) ..
+> > 
+> > Please Let me know..
+> 
+> Undoubtedly we'll think of more stuff.  But this looks like a good start.
 
-Yep, it all got straightened out in the merge commit 593d1006
-(Merge remote-tracking branch 'tip/core/rcu' into next.2012.09.25b).
-After this merge commit, the code looks as follows:
+9) lazy gang-like scheduling with PLE to cover the non-gang-like
+exceptions  (/me runs and hides from scheduler folks)
 
-		migrate_tasks(cpu);
-		BUG_ON(rq->nr_running != 1); /* the migration thread */
-		raw_spin_unlock_irqrestore(&rq->lock, flags);
-		break;
-
-	case CPU_DEAD:
-		calc_load_migrate(rq);
-		break;
-
-Which is what you had in https://lkml.org/lkml/2012/9/5/585.  I am
-not sure what happened to that patch, but as you can see from the
-merge commit, it had not made it yet.
-
-							Thanx, Paul
+-Andrew Theurer
 
