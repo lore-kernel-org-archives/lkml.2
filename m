@@ -1,68 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455Ab2I0QQa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 12:16:30 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:45654 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012Ab2I0QQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 12:16:29 -0400
-X-IronPort-AV: E=Sophos;i="4.80,496,1344236400"; 
-   d="scan'208";a="694885684"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-Thread-Topic: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-Thread-Index: AQHNdKJvypEw9t3CEUmeaLKAlM+spZefC3UA//+TOzCAAHnyAIAACk6A
-Date: Thu, 27 Sep 2012 16:16:25 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120807134156.GP1996@amd.com>
-	 <20120927145217.GA18962@8bytes.org>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
-	 <20120927153928.GB18962@8bytes.org>
-In-Reply-To: <20120927153928.GB18962@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <FBA65B587F72984AB9A298AA92156A9F@tahoe.netapp.com>
+	id S1751347Ab2I0QT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 12:19:57 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36758 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2I0QT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 12:19:56 -0400
 MIME-Version: 1.0
+In-Reply-To: <CADnq5_O0Y+=29ZkKxW-DgrAsFh+kiRAJBh0oC+a_SNEPu3VguQ@mail.gmail.com>
+References: <201209171329.15699.andres@anarazel.de>
+	<201209270846.00376.andres@anarazel.de>
+	<CADnq5_ME14tfMz9ZzVqBFx7TYSyKLc=iPQVthu1n77j-yfdxVA@mail.gmail.com>
+	<201209271523.49437.andres@anarazel.de>
+	<CADnq5_O0Y+=29ZkKxW-DgrAsFh+kiRAJBh0oC+a_SNEPu3VguQ@mail.gmail.com>
+Date: Thu, 27 Sep 2012 12:19:53 -0400
+Message-ID: <CADnq5_OOFuXhMrAifxN2pLnKNgX2CGSBP+BRCCf99LS2-BOs9A@mail.gmail.com>
+Subject: Re: radeon: Regression between v3.6-rc4 and v3.6-rc6: unable to
+ allocate a PPLL
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Andres Freund <andres@anarazel.de>
+Cc: "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8RGGcdB005906
 
-On Thu, 2012-09-27 at 17:39 +0200, Joerg Roedel wrote:
-> On Thu, Sep 27, 2012 at 03:32:02PM +0000, Myklebust, Trond wrote:
-> 
-> > Does your checked out copy of 3.6-rc7 contain commit c50669 (NFS:
-> > Clear key construction data if the idmap upcall fails)? The latter was
-> > merged in3.6-rc3, and is reported to fix the problem for the other
-> > testers.
-> 
-> Yes, it contains that commit. I was about to test plain v3.6-rc7 without
-> my patches (not nfs related, of cource) on-top, but unfortunatly the
-> disk with the root-fs died :-/
-> I am about to set up the box again and test plain -rc7.
+On Thu, Sep 27, 2012 at 10:54 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> On Thu, Sep 27, 2012 at 9:23 AM, Andres Freund <andres@anarazel.de> wrote:
+>> On Thursday, September 27, 2012 03:14:31 PM Alex Deucher wrote:
+>>> On Thu, Sep 27, 2012 at 2:46 AM, Andres Freund <andres@anarazel.de> wrote:
+>>> > On Wednesday, September 26, 2012 03:42:40 PM Deucher, Alexander wrote:
+>>> >> > -----Original Message-----
+>>> >> > From: Andres Freund [mailto:andres@anarazel.de]
+>>> >> > Sent: Wednesday, September 26, 2012 9:41 AM
+>>> >> > To: Dan Carpenter
+>>> >> > Cc: Deucher, Alexander; LKML; David Airlie;
+>>> >> > dri-devel@lists.freedesktop.org Subject: Re: radeon: Regression
+>>> >> > between v3.6-rc4 and v3.6-rc6: unable to allocate a PPLL
+>>> >> >
+>>> >> > On Wednesday, September 26, 2012 03:00:09 PM Dan Carpenter wrote:
+>>> >> > > This is fixed now?
+>>> >> >
+>>> >> > Its been reverted in 2f1f4d9b60396d2df4cff829bd5376ffc8ed9a2c which is
+>>> >> > in rc6.
+>>> >> >
+>>> >> > On Monday, September 17, 2012 09:30:12 PM Deucher, Alexander wrote:
+>>> >> > Sorry, I somehow accidentally marked your  email as read and thus
+>>> >> > didn't notice it.
+>>> >> >
+>>> >> > > I think I see the problem.  I think it's a limitation of the current
+>>> >> > > current
+>>> >> >
+>>> >> > modesetting API.  The current API sets up each display independently
+>>> >> > which doesn't work so well if there are resource restrictions.  There
+>>> >> > shouldn't be any contention on your board since you are only using 2
+>>> >> > non-DP displays.  It looks like X is mapping different crtcs to
+>>> >> > displays than the kernel fb.
+>>> >> >
+>>> >> > Initially the kernel set up the follow:
+>>> >> > > > [    2.134901] [drm] crtc 0 using pll 0x2
+>>> >> > > > [    2.362257] [drm] crtc 1 using pll 0x1
+>>> >> > > > [    2.386709] [drm] crtc 2 using pll 0x0
+>>> >> > >
+>>> >> > > Crtc 0 -> DCPLL -> DP
+>>> >> > > Crtc 1 -> PPLL2 -> DVI
+>>> >> > > Crtc 2 -> PPLL1 -> DVI
+>>> >> > >
+>>> >> > > When X loads, it tried to set a different crtc to display mapping:
+>>> >> > > > [   60.679310] [drm] crtc 0 using pll 0xff
+>>> >> > > > [   60.789183] [drm] crtc 1 using pll 0x2
+>>> >> > > > [   60.819594] [drm] crtc 2 using pll 0x1
+>>> >> > >
+>>> >> > > Crtc 0 -> INVALID -> DVI 0
+>>> >> > > Crtc 1 -> DCPLL -> DP
+>>> >> > > Crtc 2 -> PPLL2 -> DVI 1
+>>> >> > >
+>>> >> > > Crtc 0 should have used PPLL1 or PPLL2, but they were already in use
+>>> >> > > by crtc 1 and crtc  2 from the previous modeset.  Since the modeset
+>>> >> > > API is not atomic, it doesn't have the whole picture.  I'm not sure
+>>> >> > > of a good solution right now prior to the new atomic modeset API
+>>> >> > > that is under discussion.  I guess we can revert the patch for 3.6.
+>>> >> > >  For 3.7 I guess we need to validate the actual connector to make
+>>> >> > > sure we aren't trying to set a different configuration relating to
+>>> >> > > the same connector without first tearing down the first one.  In
+>>> >> > > the interim, you should be able to work around it by disabling the
+>>> >> > > non-DP outputs and then bringing than back up.
+>>> >> >
+>>> >> > Thanks! That explanation makes sense. I can work around it just fine,
+>>> >> > starting X multiple times works which coincides nicely with your
+>>> >> > explanation.
+>>> >> >
+>>> >> > The code in the 3.7 branch doesn't do that extended validation yet,
+>>> >> > rigth? If you want/need you can CC for testing once thats ready.
+>>> >>
+>>> >> It should handle it now.  If you could test it that would be great.
+>>> >
+>>> > Ok, just to be sure I tested Linus' tree and everything works fine there.
+>>> >
+>>> > Unfortunately thats not the case with a straight merge of
+>>> > alexdeucher/drm- next-3.7-wip. When gdm started *the first time* the
+>>> > DVI-connected (uhm, same sink type? Thats the saphire magic allowing
+>>> > more monitors on that type of graphics card?) I got a "unable to
+>>> > allocate a PPLL" error again. Logging in/starting a new X seems to fix
+>>> > that.
+>>>
+>>> So you have a xorg.conf with a hardcoded configuration?  If so can you
+>>> send it to me?
+>> Yes, but just setting the xrand positions:
+>
+> Thanks.  I can't seem to reproduce it here, but I've pushed an updated
+> drm-next-3.7-wip which may help.  If not, can you apply the attached
+> patch and send me the output?
 
-Please do.
+Ok, I was finally able to reproduce your issue and it's working fine
+here with my latest drm-next-3.7-wip branch.
 
-I cannot see how that BUG_ON can be triggered in the current code, given
-that the only place where idmap->idmap_key_cons is set to a non-NULL
-value is covered by a mutex, and that it is always cleared before we
-release said mutex.
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Alex
