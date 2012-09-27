@@ -1,115 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab2I0Gtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 02:49:39 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34882 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915Ab2I0Gth (ORCPT
+	id S1755100Ab2I0GyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 02:54:19 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:38510 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754773Ab2I0GyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 02:49:37 -0400
-Date: Thu, 27 Sep 2012 16:49:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20120927164927.03f9dafeb014f11738daa2af@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Thu, 27 Sep 2012 02:54:18 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18eoxIPInQei4DzfK0CBaKEogD51NzDdA8Ne5lOGr
+	RE7p519/ReC81R
+Message-ID: <1348728852.7059.171.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Thu, 27 Sep 2012 08:54:12 +0200
+In-Reply-To: <20120927064142.GB5996@gmail.com>
+References: <1348574286.3881.40.camel@twins>
+	 <20120925131736.GA30652@x1.osrc.amd.com>
+	 <20120925170058.GC30158@x1.osrc.amd.com>
+	 <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
+	 <20120926163233.GA5339@x1.osrc.amd.com>
+	 <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+	 <20120926213723.GA27692@liondog.tnic>
+	 <1348722568.7059.115.camel@marge.simpson.net>
+	 <20120927054742.GA4370@gmail.com>
+	 <1348727665.7059.160.camel@marge.simpson.net>
+	 <20120927064142.GB5996@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__27_Sep_2012_16_49_27_+1000_gxoyf51dLhmolkLq"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_Sep_2012_16_49_27_+1000_gxoyf51dLhmolkLq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2012-09-27 at 08:41 +0200, Ingo Molnar wrote: 
+> * Mike Galbraith <efault@gmx.de> wrote:
+> 
+> > > Just to confirm, if you turn off all preemption via a hack 
+> > > (basically if you turn SCHED_OTHER into SCHED_BATCH), does 
+> > > psql perform and scale much better, with the quality of 
+> > > sibling selection and spreading of processes only being a 
+> > > secondary effect?
+> > 
+> > That has always been the case here.  Preemption dominates.
+> 
+> Yes, so we get the best psql performance if we allow the central 
+> proxy process to dominate a single CPU (IIRC it can easily go up 
+> to 100% CPU utilization on that CPU - it is what determines max 
+> psql throughput), and not let any worker run there much, right?
 
-Hi Andrew,
+Running the thing RT didn't cut it iirc (will try that again).  For RT,
+we won't look for an empty spot on wakeup, we'll just squash an ant.
 
-Today's linux-next merge of the akpm tree got a conflict in
-include/linux/mm.h between commit 1dbd3d35fe64 ("mm/pgprot: Move the
-pgprot_modify() fallback definition to mm.h") from the tip tree and
-commit "mm, x86, pat: rework linear pfn-mmap tracking" from the akpm tree.
+> > Others should play with it too, and let their boxen speak.
+> 
+> Do you have an easy-to-apply hack patch by chance that has the 
+> effect of turning off all such preemption, which people could 
+> try?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+They don't need any hacks, all they have to do is start postgreqsl
+SCHED_BATCH, then run pgbench the same way.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I use schedctl, but in chrt speak, chrt -b 0 /etc/init.d/postgresql
+start, and then the same for pgbench itself.
 
-diff --cc include/linux/mm.h
-index 4adea2c,a66f646..0000000
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@@ -160,37 -160,6 +160,19 @@@ extern pgprot_t protection_map[16]
-  #define FAULT_FLAG_TRIED	0x40	/* second try */
- =20
-  /*
--  * This interface is used by x86 PAT code to identify a pfn mapping that =
-is
--  * linear over entire vma. This is to optimize PAT code that deals with
--  * marking the physical region with a particular prot. This is not for ge=
-neric
--  * mm use. Note also that this check will not work if the pfn mapping is
--  * linear for a vma starting at physical address 0. In which case PAT code
--  * falls back to slow path of reserving physical range page by page.
--  */
-- static inline int is_linear_pfn_mapping(struct vm_area_struct *vma)
-- {
-- 	return !!(vma->vm_flags & VM_PFN_AT_MMAP);
-- }
--=20
-- static inline int is_pfn_mapping(struct vm_area_struct *vma)
-- {
-- 	return !!(vma->vm_flags & VM_PFNMAP);
-- }
--=20
-- /*
- + * Some architectures (such as x86) may need to preserve certain pgprot
- + * bits, without complicating generic pgprot code.
- + *
- + * Most architectures don't care:
- + */
- +#ifndef pgprot_modify
- +static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
- +{
- +	return newprot;
- +}
- +#endif
- +
- +/*
-   * vm_fault is filled by the the pagefault handler and passed to the vma's
-   * ->fault function. The vma's ->fault is responsible for returning a bit=
-mask
-   * of VM_FAULT_xxx flags that give details about how the fault was handle=
-d.
+-Mike
 
---Signature=_Thu__27_Sep_2012_16_49_27_+1000_gxoyf51dLhmolkLq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQY/b3AAoJEECxmPOUX5FExoQP/Av4nyX+H+lRb/y1p9WQbZrB
-9zl6WQlgSesgeqUfVQ+22VAyuLRkZWGjVsWLj4dH1ayVgCSV/VmsnawM1SRIkqRl
-VccxWzFWqlpiZ01KiBadtRUNlTKZZVGBxpNK+Y/mIfUOEYu8xcZyII4/hV1mEdTy
-cqhC9ZGW1LIkpi9mcqY/sE99tcyJyyJ50lhFBSUflBXGac6GbkRb3zVKKknsHhOp
-roym/cRSERF//TAZ3OaTwWu5oggOt4TtY4kpSAI2HZMh1S8IxmQtin+a8nSkYR7y
-fU5qLAr4117CuDAQngHCwP6cTUBB/pafvYz3VYdNWEBmsrrsZ5U9qEnXHh016iok
-47d2XyYYVwA772mZGTdzDQ3Sz+5BQ7TS2VL7ofeibCDjWKCLpXjlTaE0/ijXNpbg
-K4cX4+/+phQVvjWSYheDx02ilxvQz3OdbarrvPR6xIgniWAi3vFxlO+587lONMMK
-Qx0sV6pjU88Ypku3nVi9uitFPuMRl/ItLiN3/ZlCpevnWmGXzU9iloJg/q8KtkKZ
-xluckH46DgpNkDRcB/urvUqJtP5vzzzMnqhfSqHrMYezs+0vaNZBRBJJwueo6/fn
-Ilrr7AV5I0cpHRoYpaSugjrnDs2zEe+z0eeNfiSu9B1tJQ5HdJ8tuFKxh7q5UTen
-vdM3Zz2L7Wi3ITMa0sbx
-=8if8
------END PGP SIGNATURE-----
-
---Signature=_Thu__27_Sep_2012_16_49_27_+1000_gxoyf51dLhmolkLq--
