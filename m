@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab2I0SeQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 14:34:16 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:48145 "EHLO mx2.parallels.com"
+	id S1753858Ab2I0SfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 14:35:07 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522Ab2I0SeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 14:34:14 -0400
-Message-ID: <50649B4C.8000208@parallels.com>
-Date: Thu, 27 Sep 2012 22:30:36 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1751184Ab2I0SfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 14:35:05 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-References: <50634FC9.4090609@parallels.com> <20120926193417.GJ12544@google.com> <50635B9D.8020205@parallels.com> <20120926195648.GA20342@google.com> <50635F46.7000700@parallels.com> <20120926201629.GB20342@google.com> <50637298.2090904@parallels.com> <20120927120806.GA29104@dhcp22.suse.cz> <20120927143300.GA4251@mtj.dyndns.org> <20120927144307.GH3429@suse.de> <20120927145802.GC4251@mtj.dyndns.org>
-In-Reply-To: <20120927145802.GC4251@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.3.27]
+Date: Thu, 27 Sep 2012 22:49:11 +0200
+From: Richard Weinberger <richard@nod.at>
+To: <torvalds@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>,
+        <user-mode-linux-devel@lists.sourceforge.net>
+Subject: [GIT PULL] UML fixes for 3.6-final
+Message-ID: <a6566f1b02f315ebb5669a59b1acce21@radon2.swed.at>
+User-Agent: RoundCube Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 06:58 PM, Tejun Heo wrote:
-> Hello, Mel.
-> 
-> On Thu, Sep 27, 2012 at 03:43:07PM +0100, Mel Gorman wrote:
->>> I'm not too convinced.  First of all, the overhead added by kmemcg
->>> isn't big. 
->>
->> Really?
->>
->> If kmemcg was globally accounted then every __GFP_KMEMCG allocation in
->> the page allocator potentially ends up down in
->> __memcg_kmem_newpage_charge which
->>
->> 1. takes RCU read lock
->> 2. looks up cgroup from task
->> 3. takes a reference count
->> 4. memcg_charge_kmem -> __mem_cgroup_try_charge
->> 5. release reference count
->>
->> That's a *LOT* of work to incur for cgroups that do not care about kernel
->> accounting. This is why I thought it was reasonable that the kmem accounting
->> not be global.
-> 
-> But that happens only when pages enter and leave slab and if it still
-> is significant, we can try to further optimize charging.  Given that
-> this is only for cases where memcg is already in use and we provide a
-> switch to disable it globally, I really don't think this warrants
-> implementing fully hierarchy configuration.
-> 
+The following changes since commit 
+5e19997a742c7c8203be628a7a69babc3bcf01a4:
 
-Not totally true. We still have to match every allocation to the right
-cache, and that is actually our heaviest hit, responsible for the 2, 3 %
-we're seeing when this is enabled. It is the kind of path so hot that
-people frown upon branches being added, so I don't think we'll ever get
-this close to being free.
+  Merge tag 'for-linus' of 
+git://linux-c6x.org/git/projects/linux-c6x-upstreaming (2012-09-26 
+14:28:17 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git 
+for-linus-3.6-rc-final
+
+Al Viro (4):
+      um: take cleaning singlestep to start_thread()
+      um: don't leak floating point state and segment registers on 
+execve()
+      um: let signal_delivered() do SIGTRAP on singlestepping into 
+handler
+      um: kill thread->forking
+
+Geert Uytterhoeven (1):
+      um: Preinclude include/linux/kern_levels.h
+
+Richard Weinberger (1):
+      um: Fix IPC on um
+
+ arch/um/include/asm/processor-generic.h    |    9 ---------
+ arch/um/include/shared/common-offsets.h    |   10 ----------
+ arch/um/include/shared/user.h              |   11 +++++++++++
+ arch/um/kernel/exec.c                      |   25 
+++++++-------------------
+ arch/um/kernel/process.c                   |    8 ++++----
+ arch/um/kernel/signal.c                    |    6 +++++-
+ arch/um/kernel/syscall.c                   |   24 
+++++++++++++------------
+ arch/um/scripts/Makefile.rules             |    2 +-
+ arch/x86/um/Kconfig                        |    1 +
+ arch/x86/um/shared/sysdep/kernel-offsets.h |    3 ---
+ arch/x86/um/shared/sysdep/syscalls.h       |    2 ++
+ arch/x86/um/signal.c                       |    6 ------
+ arch/x86/um/sys_call_table_32.c            |    2 +-
+ arch/x86/um/syscalls_32.c                  |   27 
++++++++--------------------
+ arch/x86/um/syscalls_64.c                  |   23 
++++--------------------
+ 15 files changed, 53 insertions(+), 106 deletions(-)
 
