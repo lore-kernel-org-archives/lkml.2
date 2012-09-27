@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab2I0KLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 06:11:14 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:38926 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468Ab2I0KLN (ORCPT
+	id S1755746Ab2I0KLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 06:11:38 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:41795 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab2I0KLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 06:11:13 -0400
+	Thu, 27 Sep 2012 06:11:36 -0400
+Message-ID: <5064256E.7050003@linux.vnet.ibm.com>
+Date: Thu, 27 Sep 2012 15:37:42 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1348740071.1648.25.camel@vkoul-udesk3>
-References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348731121-2515-6-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348735450.1648.5.camel@vkoul-udesk3>
-	<1348739022.13371.157.camel@smile>
-	<1348740071.1648.25.camel@vkoul-udesk3>
-Date: Thu, 27 Sep 2012 15:41:12 +0530
-X-Google-Sender-Auth: lyNHCzq3EmWz1Fcp8PINv_3XiY8
-Message-ID: <CAOh2x=ntwp22Z3sHf9QehVwab--ZayF-kmTpZsjbkyQYVxrzpw@mail.gmail.com>
-Subject: Re: [PATCHv3 5/7] dmaengine: dw_dmac: add PCI part of the driver
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Vinod Koul <vinod.koul@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>, Dor Laor <dlaor@redhat.com>
+CC: Chegu Vinod <chegu_vinod@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <505C691D.4080801@hp.com> <505CA5BA.4020801@linux.vnet.ibm.com> <50601CE7.60801@redhat.com> <50604BF0.1070607@linux.vnet.ibm.com> <5061C70E.2090308@redhat.com> <20120926122725.GE7356@phenom.dumpdata.com>
+In-Reply-To: <20120926122725.GE7356@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092710-5490-0000-0000-00000233D299
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 3:31 PM, Vinod Koul <vinod.koul@linux.intel.com> wrote:
-> Let me try again.
+On 09/26/2012 05:57 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Sep 25, 2012 at 05:00:30PM +0200, Dor Laor wrote:
+>> On 09/24/2012 02:02 PM, Raghavendra K T wrote:
+>>> On 09/24/2012 02:12 PM, Dor Laor wrote:
+>>>> In order to help PLE and pvticketlock converge I thought that a small
+>>>> test code should be developed to test this in a predictable,
+>>>> deterministic way.
+>>>>
+>>>> The idea is to have a guest kernel module that spawn a new thread each
+>>>> time you write to a /sys/.... entry.
+>>>>
+>>>> Each such a thread spins over a spin lock. The specific spin lock is
+>>>> also chosen by the /sys/ interface. Let's say we have an array of spin
+>>>> locks *10 times the amount of vcpus.
+>>>>
+>>>> All the threads are running a
+>>>> while (1) {
+>>>>
+>>>> spin_lock(my_lock);
+>>>> sum += execute_dummy_cpu_computation(time);
+>>>> spin_unlock(my_lock);
+>>>>
+>>>> if (sys_tells_thread_to_die()) break;
+>>>> }
+>>>>
+>>>> print_result(sum);
+>>>>
+>>>> Instead of calling the kernel's spin_lock functions, clone them and make
+>>>> the ticket lock order deterministic and known (like a linear walk of all
+>>>> the threads trying to catch that lock).
+>>>
+>>> By Cloning you mean hierarchy of the locks?
+>>
+>> No, I meant to clone the implementation of the current spin lock
+>> code in order to set any order you may like for the ticket
+>> selection.
+>> (even for a non pvticket lock version)
 >
-> what does it take to do platform and PCI driver for this:
-> 1. make dma h/w access (read/write) platform independent. which you have
-> already done
-> 2. Device registration: Create two probes, or use common probe.
-> You smartly chose the second one BUT by creating another device.
-> If you look closely at the probe then I would say it would be easy to
-> create library for probe which can be used across both pci and platform
-> driver probes. The probe library which initializes driver and registers
-> with dmaengine needs device struct and resources can be provided by each
-> probe.
+> Wouldn't that defeat the purpose of trying the test the different
+> implementations that try to fix the lock-holder preemption problem?
+> You want something that you can shoe-in for all work-loads - also
+> for this test system.
 
-Or in other words... create three files
-- dw_dmac.c
-- dw_dmac-pltfm.c
-- dw_dmac-pci.c...
+Hmm true. I think it is indeed difficult to shoe-in all workloads.
 
-Don't do anything specific to platform or pci in dw_dmac.c...
-Keep pltfm and pci files to smallest possible size, and keep as much of
-common part in dmac.c...
-
-Similar is done in drivers/mmc/host/sdhci*...
-
-This is what i was thinking when i questioned multiple device  creation...
-
---
-viresh
