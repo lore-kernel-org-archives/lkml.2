@@ -1,117 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2I0Jww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 05:52:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60745 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950Ab2I0Jwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 05:52:51 -0400
-Date: Thu, 27 Sep 2012 11:52:40 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: GeneralTouch <aroundight77@gmail.com>
-Cc: yxhma <yxhma@163.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: Re: [PATCH 1/1] hid:Fix problem on GeneralTouch multi-touchscreen
-In-Reply-To: <1348725525-3687-1-git-send-email-aroundight77@gmail.com>
-Message-ID: <alpine.LNX.2.00.1209271149250.3587@pobox.suse.cz>
-References: <1348725525-3687-1-git-send-email-aroundight77@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754911Ab2I0Jxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 05:53:42 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:49895 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab2I0Jxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 05:53:40 -0400
+Message-ID: <50642139.80309@linux.vnet.ibm.com>
+Date: Thu, 27 Sep 2012 15:19:45 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: dlaor@redhat.com
+CC: Chegu Vinod <chegu_vinod@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <505C691D.4080801@hp.com> <505CA5BA.4020801@linux.vnet.ibm.com> <50601CE7.60801@redhat.com> <50604BF0.1070607@linux.vnet.ibm.com> <5061C70E.2090308@redhat.com>
+In-Reply-To: <5061C70E.2090308@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092709-1396-0000-0000-000001EDE2ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Sep 2012, GeneralTouch wrote:
+On 09/25/2012 08:30 PM, Dor Laor wrote:
+> On 09/24/2012 02:02 PM, Raghavendra K T wrote:
+>> On 09/24/2012 02:12 PM, Dor Laor wrote:
+>>> In order to help PLE and pvticketlock converge I thought that a small
+>>> test code should be developed to test this in a predictable,
+>>> deterministic way.
+>>>
+>>> The idea is to have a guest kernel module that spawn a new thread each
+>>> time you write to a /sys/.... entry.
+>>>
+>>> Each such a thread spins over a spin lock. The specific spin lock is
+>>> also chosen by the /sys/ interface. Let's say we have an array of spin
+>>> locks *10 times the amount of vcpus.
+>>>
+>>> All the threads are running a
+>>> while (1) {
+>>>
+>>> spin_lock(my_lock);
+>>> sum += execute_dummy_cpu_computation(time);
+>>> spin_unlock(my_lock);
+>>>
+>>> if (sys_tells_thread_to_die()) break;
+>>> }
+>>>
+>>> print_result(sum);
+>>>
+>>> Instead of calling the kernel's spin_lock functions, clone them and make
+>>> the ticket lock order deterministic and known (like a linear walk of all
+>>> the threads trying to catch that lock).
+>>
+>> By Cloning you mean hierarchy of the locks?
+>
+> No, I meant to clone the implementation of the current spin lock code in
+> order to set any order you may like for the ticket selection.
+> (even for a non pvticket lock version)
+>
+> For instance, let's say you have N threads trying to grab the lock, you
+> can always make the ticket go linearly from 1->2...->N.
+> Not sure it's a good idea, just a recommendation.
+>
+>> Also I believe time should be passed via sysfs / hardcoded for each
+>> type of lock we are mimicking
+>
+> Yap
+>
+>>
+>>>
+>>> This way you can easy calculate:
+>>> 1. the score of a single vcpu running a single thread
+>>> 2. the score of sum of all thread scores when #thread==#vcpu all
+>>> taking the same spin lock. The overall sum should be close as
+>>> possible to #1.
+>>> 3. Like #2 but #threads > #vcpus and other versions of #total vcpus
+>>> (belonging to all VMs) > #pcpus.
+>>> 4. Create #thread == #vcpus but let each thread have it's own spin
+>>> lock
+>>> 5. Like 4 + 2
+>>>
+>>> Hopefully this way will allows you to judge and evaluate the exact
+>>> overhead of scheduling VMs and threads since you have the ideal result
+>>> in hand and you know what the threads are doing.
+>>>
+>>> My 2 cents, Dor
+>>>
+>>
+>> Thank you,
+>> I think this is an excellent idea. ( Though I am trying to put all the
+>> pieces together you mentioned). So overall we should be able to measure
+>> the performance of pvspinlock/PLE improvements with a deterministic
+>> load in guest.
+>>
+>> Only thing I am missing is,
+>> How to generate different combinations of the lock.
+>>
+>> Okay, let me see if I can come with a solid model for this.
+>>
+>
+> Do you mean the various options for PLE/pvticket/other? I haven't
+> thought of it and assumed its static but it can also be controlled
+> through the temporary /sys interface.
+>
 
-> From: Xianhan Yu <aroundight77@gmail.com>
-> 
-> Fix the touch-up no response problem on GeneralTouch twofingers 
-> touchscreen and modify the driver for new GeneralTouch PWT touchscreen.
-> 
-> Signed-off-by: Xianhan Yu <aroundight77@gmail.com>
+No, I am not there yet.
 
-Thank you for the patch. Please find a few comments below. Please address 
-those and resubmit.
+So In summary, we are suffering with inconsistent benchmark result,
+while measuring the benefit of our improvement in PLE/pvlock etc..
 
-Also adding Henrik to CC, as he is maintainer of hid multitouch.
+So good point from your suggestion is,
+- Giving predictability to workload that runs in guest, so that we have
+pi-pi comparison of improvement.
 
-> ---
->  drivers/hid/hid-ids.h        |    1 +
->  drivers/hid/hid-multitouch.c |   18 +++++++++++++++++-
->  2 files changed, 18 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 1dcb76f..1325695 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -305,6 +305,7 @@
->  
->  #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
->  #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
-> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
->  
->  #define USB_VENDOR_ID_GLAB		0x06c2
->  #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 59c8b5c..959a892 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -115,6 +115,8 @@ struct mt_device {
->  #define MT_CLS_EGALAX_SERIAL			0x0104
->  #define MT_CLS_TOPSEED				0x0105
->  #define MT_CLS_PANASONIC			0x0106
-> +#define MT_CLS_GENERALTOUCH_TWOFINGERS          0X0107
-> +#define MT_CLS_GENERALTOUCH_PWT_TENFINGERS      0X0108
+- we can easily tune the workload via sysfs, and we can have script to
+automate them.
 
-Please use '0x' here as a prefix. Both are correct, but the convention is 
-to use 0x at least in the kernel.
+What is complicated is:
+- How can we simulate a workload close to what we measure with
+benchmarks?
+- How can we mimic lock holding time/ lock hierarchy close to the way
+it is seen with real workloads (for e.g. highly contended zone lru lock
+with similar amount of lockholding times).
+- How close it would be to when we forget about other types of spinning
+(for e.g, flush_tlb).
 
-Also please use tabs instead of spaces to properly align with the rest of 
-the constants.
+So I feel it is not as trivial as it looks like.
 
->  
->  #define MT_DEFAULT_MAXCONTACT	10
->  
-> @@ -215,6 +217,17 @@ static struct mt_class mt_classes[] = {
->  	{ .name = MT_CLS_PANASONIC,
->  		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
->  		.maxcontacts = 4 },
-> +        { .name = MT_CLS_GENERALTOUCH_TWOFINGERS,
-> +		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
-> +                        MT_QUIRK_VALID_IS_INRANGE |
-> +		        MT_QUIRK_SLOT_IS_CONTACTNUMBER,
-> +		.maxcontacts = 2 
-> +        },
-> +        { .name = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-> +		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
-> +                        MT_QUIRK_SLOT_IS_CONTACTNUMBER,
-> +		.maxcontacts = 10 
-> +        },
-
-Please use tabs as well here, to use the same formatting as the rest of 
-the file.
-
->  
->  	{ }
->  };
-> @@ -893,9 +906,12 @@ static const struct hid_device_id mt_devices[] = {
->  			USB_DEVICE_ID_ELO_TS2515) },
->  
->  	/* GeneralTouch panel */
-> -	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
-> +	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
->  		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
->  			USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
-> +        { .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
->  
->  	/* Gametel game controller */
->  	{ .driver_data = MT_CLS_DEFAULT,
-
-And here as well.
-
--- 
-Jiri Kosina
-SUSE Labs
