@@ -1,130 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677Ab2I0NYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:24:03 -0400
-Received: from mail.anarazel.de ([217.115.131.40]:57519 "EHLO mail.anarazel.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab2I0NYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:24:01 -0400
-From: Andres Freund <andres@anarazel.de>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: radeon: Regression between v3.6-rc4 and v3.6-rc6: unable to allocate a PPLL
-Date: Thu, 27 Sep 2012 15:23:49 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc7-andres-00112-g2710a2b-dirty; KDE/4.8.4; x86_64; ; )
-Cc: "Deucher, Alexander" <Alexander.Deucher@amd.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-References: <201209171329.15699.andres@anarazel.de> <201209270846.00376.andres@anarazel.de> <CADnq5_ME14tfMz9ZzVqBFx7TYSyKLc=iPQVthu1n77j-yfdxVA@mail.gmail.com>
-In-Reply-To: <CADnq5_ME14tfMz9ZzVqBFx7TYSyKLc=iPQVthu1n77j-yfdxVA@mail.gmail.com>
+	id S1752499Ab2I0NYZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:24:25 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49019 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab2I0NYX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 09:24:23 -0400
+X-AuditID: 9c930179-b7bf9ae000000e4c-64-5064538483cc
+From: Namhyung Kim <namhyung@kernel.org>
+To: Irina Tirdea <irina.tirdea@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Irina Tirdea <irina.tirdea@intel.com>
+Subject: Re: [PATCH v2 3/4] perf annotate: configure objdump path at compile time
+References: <1348428446-28245-1-git-send-email-irina.tirdea@gmail.com>
+	<1348428446-28245-4-git-send-email-irina.tirdea@gmail.com>
+	<1348578539.1877.40.camel@leonhard>
+	<CANg8OW+u=dsi=5Y04ka0D=VLKEUELAo1L3mkWhs5mOqTS4c1jA@mail.gmail.com>
+	<87d318w7u9.fsf@sejong.aot.lge.com>
+	<CANg8OWLR64RQYMwi=vx78tWBfcML4CPrerXV3nE+ngYkJ3Ru=A@mail.gmail.com>
+Date: Thu, 27 Sep 2012 22:16:08 +0900
+In-Reply-To: <CANg8OWLR64RQYMwi=vx78tWBfcML4CPrerXV3nE+ngYkJ3Ru=A@mail.gmail.com>
+	(Irina Tirdea's message of "Thu, 27 Sep 2012 14:25:10 +0300")
+Message-ID: <87haqjvc6f.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209271523.49437.andres@anarazel.de>
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 27, 2012 03:14:31 PM Alex Deucher wrote:
-> On Thu, Sep 27, 2012 at 2:46 AM, Andres Freund <andres@anarazel.de> wrote:
-> > On Wednesday, September 26, 2012 03:42:40 PM Deucher, Alexander wrote:
-> >> > -----Original Message-----
-> >> > From: Andres Freund [mailto:andres@anarazel.de]
-> >> > Sent: Wednesday, September 26, 2012 9:41 AM
-> >> > To: Dan Carpenter
-> >> > Cc: Deucher, Alexander; LKML; David Airlie;
-> >> > dri-devel@lists.freedesktop.org Subject: Re: radeon: Regression
-> >> > between v3.6-rc4 and v3.6-rc6: unable to allocate a PPLL
-> >> > 
-> >> > On Wednesday, September 26, 2012 03:00:09 PM Dan Carpenter wrote:
-> >> > > This is fixed now?
-> >> > 
-> >> > Its been reverted in 2f1f4d9b60396d2df4cff829bd5376ffc8ed9a2c which is
-> >> > in rc6.
-> >> > 
-> >> > On Monday, September 17, 2012 09:30:12 PM Deucher, Alexander wrote:
-> >> > Sorry, I somehow accidentally marked your  email as read and thus
-> >> > didn't notice it.
-> >> > 
-> >> > > I think I see the problem.  I think it's a limitation of the current
-> >> > > current
-> >> > 
-> >> > modesetting API.  The current API sets up each display independently
-> >> > which doesn't work so well if there are resource restrictions.  There
-> >> > shouldn't be any contention on your board since you are only using 2
-> >> > non-DP displays.  It looks like X is mapping different crtcs to
-> >> > displays than the kernel fb.
-> >> > 
-> >> > Initially the kernel set up the follow:
-> >> > > > [    2.134901] [drm] crtc 0 using pll 0x2
-> >> > > > [    2.362257] [drm] crtc 1 using pll 0x1
-> >> > > > [    2.386709] [drm] crtc 2 using pll 0x0
-> >> > > 
-> >> > > Crtc 0 -> DCPLL -> DP
-> >> > > Crtc 1 -> PPLL2 -> DVI
-> >> > > Crtc 2 -> PPLL1 -> DVI
-> >> > > 
-> >> > > When X loads, it tried to set a different crtc to display mapping:
-> >> > > > [   60.679310] [drm] crtc 0 using pll 0xff
-> >> > > > [   60.789183] [drm] crtc 1 using pll 0x2
-> >> > > > [   60.819594] [drm] crtc 2 using pll 0x1
-> >> > > 
-> >> > > Crtc 0 -> INVALID -> DVI 0
-> >> > > Crtc 1 -> DCPLL -> DP
-> >> > > Crtc 2 -> PPLL2 -> DVI 1
-> >> > > 
-> >> > > Crtc 0 should have used PPLL1 or PPLL2, but they were already in use
-> >> > > by crtc 1 and crtc  2 from the previous modeset.  Since the modeset
-> >> > > API is not atomic, it doesn't have the whole picture.  I'm not sure
-> >> > > of a good solution right now prior to the new atomic modeset API
-> >> > > that is under discussion.  I guess we can revert the patch for 3.6.
-> >> > >  For 3.7 I guess we need to validate the actual connector to make
-> >> > > sure we aren't trying to set a different configuration relating to
-> >> > > the same connector without first tearing down the first one.  In
-> >> > > the interim, you should be able to work around it by disabling the
-> >> > > non-DP outputs and then bringing than back up.
-> >> > 
-> >> > Thanks! That explanation makes sense. I can work around it just fine,
-> >> > starting X multiple times works which coincides nicely with your
-> >> > explanation.
-> >> > 
-> >> > The code in the 3.7 branch doesn't do that extended validation yet,
-> >> > rigth? If you want/need you can CC for testing once thats ready.
-> >> 
-> >> It should handle it now.  If you could test it that would be great.
-> > 
-> > Ok, just to be sure I tested Linus' tree and everything works fine there.
-> > 
-> > Unfortunately thats not the case with a straight merge of
-> > alexdeucher/drm- next-3.7-wip. When gdm started *the first time* the
-> > DVI-connected (uhm, same sink type? Thats the saphire magic allowing
-> > more monitors on that type of graphics card?) I got a "unable to
-> > allocate a PPLL" error again. Logging in/starting a new X seems to fix
-> > that.
-> 
-> So you have a xorg.conf with a hardcoded configuration?  If so can you
-> send it to me?
-Yes, but just setting the xrand positions:
+On Thu, 27 Sep 2012 14:25:10 +0300, Irina Tirdea wrote:
+>>> The perf built to run on the host needs to use arm-eabi-objdump from
+>>> the toolchain so that it can analyse data recorded on Android. This
+>>> patch is targeting this scenario, not the previous one. In this case,
+>>> the CROSS_COMPILE option would be different than arm-eabi- so using
+>>> $(CROSS_COMPILE)objdump would be wrong. objdump should be overridden
+>>> when running make since there is no connection between the toolchain
+>>> used here and the path for objdump. I am always overriding objdump
+>>> when calling make, so I did not catch this.
+>>>
+>>> I think that I should change DEFAULT_OBJDUMP_PATH=objdump in the
+>>> Makefile to handle the first scenario. I'll also explain this in the
+>>> commit message so that it is more clear and make the same change for
+>>> the addr2line patch.
+>>>
+>>> What do you think?
+>>
+>> I think the right thing to do is finding a correct objdump at runtime in
+>> some way.  Why do you want to make it compile-time configurable?
+>>
+>
+> The correct objdump path can be detected at runtime by setting the
+> toolchain path. But since the name is arm-eabi-objdump and not
+> objdump, it does not know to use it instead.
+>
+> The only way (I can think of) to change objdump at runtime would be to
+> use the --objdump option for perf annotate (and provide a similar
+> option for addr2line). The problem with this approach is that the user
+> has to be aware that perf annotate uses the objdump tool and that he
+> has to use the cross-compiler version instead. Since the user will
+> have perf compiled for host as part of his Android tree, he will
+> expect it to work without these further changes from his part. The
+> path for objdump can be set in the Android Makefile at compile time so
+> that the user doesn't need to be aware of it.
 
-Section "Monitor"
-	Identifier   "DVI-1"
-	Option	     "Primary"		"True"
-EndSection
+What I'm thinking is that perf can try to find cross-built binutils when
+it detects perf.data file is came from other machine/architecture.
+Fortunately perf_session_env was added recently and it has the arch
+information from the file so we can use it to find the path.
 
-Section "Monitor"
-	Identifier   "DVI-0"
-        Option	     "RightOf"		"DVI-1"
-	Option	     "Rotate"		"Left"
-	Option	     "Primary"		"False"
-EndSection
+Following patch is a proof-of-concept patch and only build tested.
+What do you think?  Could you play with it for some time? :)
 
-Section "Monitor"
-	Identifier   "Displayport-0"
-        Option	     "LeftOf"		"DVI-1"
-	Option	     "Rotate"		"Left"
-	Option	     "Primary"		"False"
-EndSection
+Thanks,
+Namhyung
 
 
-Andres
+>From 7068a43a4b450c60fdcc8a3916ce624c1ef2c9b2 Mon Sep 17 00:00:00 2001
+From: Namhyung Kim <namhyung.kim@lge.com>
+Date: Thu, 27 Sep 2012 21:54:33 +0900
+Subject: [RFC] perf tools: Try to find cross-built objdump path
+
+As we have architecture information of saved perf.data file, we can
+try to find cross-built objdump path.
+
+The triplets are incomplete and maybe need some regexp works.
+
+Cc: Irina Tirdea <irina.tirdea@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Makefile           |  2 +
+ tools/perf/arch/common.c      | 42 +++++++++++++++++++
+ tools/perf/builtin-annotate.c |  3 ++
+ tools/perf/util/annotate.c    | 96 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/annotate.h    | 10 +++++
+ 5 files changed, 153 insertions(+)
+ create mode 100644 tools/perf/arch/common.c
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 5973f383eb8e..b189229eb576 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -412,6 +412,8 @@ LIB_OBJS += $(OUTPUT)ui/helpline.o
+ LIB_OBJS += $(OUTPUT)ui/hist.o
+ LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
+ 
++LIB_OBJS += $(OUTPUT)arch/common.o
++
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+ # Benchmark modules
+diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
+new file mode 100644
+index 000000000000..c3872427d135
+--- /dev/null
++++ b/tools/perf/arch/common.c
+@@ -0,0 +1,42 @@
++#include <stdio.h>
++
++const char * const arm_triplets[] = {
++	"arm-eabi-",
++	"arm-unknown-linux-",
++	"arm-unknown-linux-gnu-",
++	"arm-unknown-linux-gnueabi-",
++	NULL
++};
++
++const char * const powerpc_triplets[] = {
++	"powerpc-unknown-linux-gnu-",
++	"powerpc64-unknown-linux-gnu-",
++	NULL
++};
++
++const char * const s390_triplets[] = {
++	"s390-ibm-linux-",
++	NULL
++};
++
++const char * const sh_triplets[] = {
++	"sh-unknown-linux-gnu-",
++	"sh64-unknown-linux-gnu-",
++	NULL
++};
++
++const char * const sparc_triplets[] = {
++	"sparc-unknown-linux-gnu-",
++	"sparc64-unknown-linux-gnu-",
++	NULL
++};
++
++const char * const x86_triplets[] = {
++	"x86_64-pc-linux-gnu-",
++	"x86_64-unknown-linux-gnu-",
++	"i686-pc-linux-gnu-",
++	"i586-pc-linux-gnu-",
++	"i486-pc-linux-gnu-",
++	"i386-pc-linux-gnu-",
++	NULL
++};
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 9ea38540b873..20fe9bb6505b 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -186,6 +186,9 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 			goto out_delete;
+ 	}
+ 
++	if (!objdump_path)
++		try_objdump_path(session);
++
+ 	ret = perf_session__process_events(session, &ann->tool);
+ 	if (ret)
+ 		goto out_delete;
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index f0a910371377..afe181af56d6 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -15,6 +15,7 @@
+ #include "debug.h"
+ #include "annotate.h"
+ #include <pthread.h>
++#include <sys/utsname.h>
+ 
+ const char 	*disassembler_style;
+ const char	*objdump_path;
+@@ -1140,3 +1141,98 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
+ 
+ 	return 0;
+ }
++
++static int lookup_path(char *name)
++{
++	char *path, *tmp;
++	char buf[PATH_MAX];
++	char *env = getenv("PATH");
++
++	if (!env)
++		return 0;
++
++	path = strtok_r(env, ":", &tmp);
++	while (path) {
++		scnprintf(buf, sizeof(buf), "%s%s", path, name);
++		if (access(buf, F_OK) == 0)
++			return 1;
++
++		strtok_r(NULL, ":", &tmp);
++	}
++	return 0;
++}
++
++static int lookup_triplets(const char **triplets, const char *name)
++{
++	int i;
++	char buf[PATH_MAX];
++
++	for (i = 0; triplets[i] != NULL; i++) {
++		scnprintf(buf, sizeof(buf), "%s%s", triplets[i], name);
++		if (lookup_path(buf))
++			return i;
++	}
++	return -1;
++}
++
++static char *try_binutils_path(struct perf_session *session, const char *name)
++{
++	int idx;
++	char *arch, *env;
++	struct utsname uts;
++	const char **path_list;
++	char buf[PATH_MAX];
++
++	if (uname(&uts) < 0)
++		return NULL;
++
++	/*
++	 * We don't need to try to find objdump path for native system.
++	 * Just use default "objdump".
++	 */
++	if (!strcmp(uts.machine, session->header.env.arch))
++		return NULL;
++
++	env = getenv("CROSS_COMPILE");
++	if (env) {
++		scnprintf(buf, sizeof(buf), "%s%s", env, name);
++		if (buf[0] == '/') {
++			if (access(buf, F_OK) == 0)
++				return strdup(buf);
++
++			return NULL;
++		}
++
++		if (lookup_path(buf))
++			return strdup(buf);
++	}
++
++	arch = session->header.env.arch;
++
++	if (!strcmp(arch, "arm"))
++		path_list = arm_triplets;
++	else if (!strcmp(arch, "powerpc"))
++		path_list = powerpc_triplets;
++	else if (!strcmp(arch, "sh"))
++		path_list = sh_triplets;
++	else if (!strcmp(arch, "s390"))
++		path_list = s390_triplets;
++	else if (!strcmp(arch, "sparc"))
++		path_list = sparc_triplets;
++	else if (!strcmp(arch, "x86"))
++		path_list = x86_triplets;
++	else
++		BUG_ON(1);
++
++	idx = lookup_triplets(path_list, name);
++	if (idx < 0)
++		return NULL;
++
++	scnprintf(buf, sizeof(buf), path_list[idx], name);
++	return strdup(buf);
++}
++
++void try_objdump_path(struct perf_session *session)
++{
++	objdump_path = try_binutils_path(session, "objdump");
++}
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index 9b5b21e7b032..cbf2d9537320 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -5,6 +5,7 @@
+ #include <stdint.h>
+ #include "types.h"
+ #include "symbol.h"
++#include "session.h"
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <pthread.h>
+@@ -156,4 +157,13 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ extern const char	*disassembler_style;
+ extern const char	*objdump_path;
+ 
++extern const char *arm_triplets[];
++extern const char *powerpc_triplets[];
++extern const char *sh_triplets[];
++extern const char *s390_triplets[];
++extern const char *sparc_triplets[];
++extern const char *x86_triplets[];
++
++void try_objdump_path(struct perf_session *session);
++
+ #endif	/* __PERF_ANNOTATE_H */
+-- 
+1.7.11.4
+
