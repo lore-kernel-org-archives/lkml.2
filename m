@@ -1,122 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab2I0QT5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 12:19:57 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36758 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab2I0QT4 (ORCPT
+	id S1751522Ab2I0QU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 12:20:59 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:38773 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab2I0QU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 12:19:56 -0400
+	Thu, 27 Sep 2012 12:20:58 -0400
+Message-ID: <50647CCC.7010407@ahsoftware.de>
+Date: Thu, 27 Sep 2012 18:20:28 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <CADnq5_O0Y+=29ZkKxW-DgrAsFh+kiRAJBh0oC+a_SNEPu3VguQ@mail.gmail.com>
-References: <201209171329.15699.andres@anarazel.de>
-	<201209270846.00376.andres@anarazel.de>
-	<CADnq5_ME14tfMz9ZzVqBFx7TYSyKLc=iPQVthu1n77j-yfdxVA@mail.gmail.com>
-	<201209271523.49437.andres@anarazel.de>
-	<CADnq5_O0Y+=29ZkKxW-DgrAsFh+kiRAJBh0oC+a_SNEPu3VguQ@mail.gmail.com>
-Date: Thu, 27 Sep 2012 12:19:53 -0400
-Message-ID: <CADnq5_OOFuXhMrAifxN2pLnKNgX2CGSBP+BRCCf99LS2-BOs9A@mail.gmail.com>
-Subject: Re: radeon: Regression between v3.6-rc4 and v3.6-rc6: unable to
- allocate a PPLL
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Andres Freund <andres@anarazel.de>
-Cc: "Deucher, Alexander" <Alexander.Deucher@amd.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jan Kara <jack@suse.cz>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG at fs/buffer.c:3205 (stable 3.5.3)
+References: <50531629.9020107@ahsoftware.de> <20120925110206.GD28937@mwanda> <50643C4A.9010202@ahsoftware.de> <20120927151232.GA12210@quack.suse.cz> <506474E8.3030300@ahsoftware.de>
+In-Reply-To: <506474E8.3030300@ahsoftware.de>
+Content-Type: text/plain; charset=iso-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 10:54 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> On Thu, Sep 27, 2012 at 9:23 AM, Andres Freund <andres@anarazel.de> wrote:
->> On Thursday, September 27, 2012 03:14:31 PM Alex Deucher wrote:
->>> On Thu, Sep 27, 2012 at 2:46 AM, Andres Freund <andres@anarazel.de> wrote:
->>> > On Wednesday, September 26, 2012 03:42:40 PM Deucher, Alexander wrote:
->>> >> > -----Original Message-----
->>> >> > From: Andres Freund [mailto:andres@anarazel.de]
->>> >> > Sent: Wednesday, September 26, 2012 9:41 AM
->>> >> > To: Dan Carpenter
->>> >> > Cc: Deucher, Alexander; LKML; David Airlie;
->>> >> > dri-devel@lists.freedesktop.org Subject: Re: radeon: Regression
->>> >> > between v3.6-rc4 and v3.6-rc6: unable to allocate a PPLL
->>> >> >
->>> >> > On Wednesday, September 26, 2012 03:00:09 PM Dan Carpenter wrote:
->>> >> > > This is fixed now?
->>> >> >
->>> >> > Its been reverted in 2f1f4d9b60396d2df4cff829bd5376ffc8ed9a2c which is
->>> >> > in rc6.
->>> >> >
->>> >> > On Monday, September 17, 2012 09:30:12 PM Deucher, Alexander wrote:
->>> >> > Sorry, I somehow accidentally marked your  email as read and thus
->>> >> > didn't notice it.
->>> >> >
->>> >> > > I think I see the problem.  I think it's a limitation of the current
->>> >> > > current
->>> >> >
->>> >> > modesetting API.  The current API sets up each display independently
->>> >> > which doesn't work so well if there are resource restrictions.  There
->>> >> > shouldn't be any contention on your board since you are only using 2
->>> >> > non-DP displays.  It looks like X is mapping different crtcs to
->>> >> > displays than the kernel fb.
->>> >> >
->>> >> > Initially the kernel set up the follow:
->>> >> > > > [    2.134901] [drm] crtc 0 using pll 0x2
->>> >> > > > [    2.362257] [drm] crtc 1 using pll 0x1
->>> >> > > > [    2.386709] [drm] crtc 2 using pll 0x0
->>> >> > >
->>> >> > > Crtc 0 -> DCPLL -> DP
->>> >> > > Crtc 1 -> PPLL2 -> DVI
->>> >> > > Crtc 2 -> PPLL1 -> DVI
->>> >> > >
->>> >> > > When X loads, it tried to set a different crtc to display mapping:
->>> >> > > > [   60.679310] [drm] crtc 0 using pll 0xff
->>> >> > > > [   60.789183] [drm] crtc 1 using pll 0x2
->>> >> > > > [   60.819594] [drm] crtc 2 using pll 0x1
->>> >> > >
->>> >> > > Crtc 0 -> INVALID -> DVI 0
->>> >> > > Crtc 1 -> DCPLL -> DP
->>> >> > > Crtc 2 -> PPLL2 -> DVI 1
->>> >> > >
->>> >> > > Crtc 0 should have used PPLL1 or PPLL2, but they were already in use
->>> >> > > by crtc 1 and crtc  2 from the previous modeset.  Since the modeset
->>> >> > > API is not atomic, it doesn't have the whole picture.  I'm not sure
->>> >> > > of a good solution right now prior to the new atomic modeset API
->>> >> > > that is under discussion.  I guess we can revert the patch for 3.6.
->>> >> > >  For 3.7 I guess we need to validate the actual connector to make
->>> >> > > sure we aren't trying to set a different configuration relating to
->>> >> > > the same connector without first tearing down the first one.  In
->>> >> > > the interim, you should be able to work around it by disabling the
->>> >> > > non-DP outputs and then bringing than back up.
->>> >> >
->>> >> > Thanks! That explanation makes sense. I can work around it just fine,
->>> >> > starting X multiple times works which coincides nicely with your
->>> >> > explanation.
->>> >> >
->>> >> > The code in the 3.7 branch doesn't do that extended validation yet,
->>> >> > rigth? If you want/need you can CC for testing once thats ready.
->>> >>
->>> >> It should handle it now.  If you could test it that would be great.
->>> >
->>> > Ok, just to be sure I tested Linus' tree and everything works fine there.
->>> >
->>> > Unfortunately thats not the case with a straight merge of
->>> > alexdeucher/drm- next-3.7-wip. When gdm started *the first time* the
->>> > DVI-connected (uhm, same sink type? Thats the saphire magic allowing
->>> > more monitors on that type of graphics card?) I got a "unable to
->>> > allocate a PPLL" error again. Logging in/starting a new X seems to fix
->>> > that.
->>>
->>> So you have a xorg.conf with a hardcoded configuration?  If so can you
->>> send it to me?
->> Yes, but just setting the xrand positions:
+Am 27.09.2012 17:46, schrieb Alexander Holler:
+> Hello,
 >
-> Thanks.  I can't seem to reproduce it here, but I've pushed an updated
-> drm-next-3.7-wip which may help.  If not, can you apply the attached
-> patch and send me the output?
+> Am 27.09.2012 17:12, schrieb Jan Kara:
+>>    Just some thoughts about your oops:
+>> The assertion which fails is:
+>> BUG_ON(!list_empty(&bh->b_assoc_buffers));
+>>
+>> Now b_assoc_buffers isn't used very much. In particular ext4 which you
+>> seem
+>> to be using doesn't use this list at all (except when mounted in
+>> nojournal
+>> mode but that doesn't seem to be your case). That would point rather
+>> strongly at a memory corruption issue.
+>>
+>> So if you can reproduce the oops, it might be interesting to print
+>> bh->b_assoc_buffers.next and &bh->b_assoc_buffers.next if the list is
+>> found
+>> to be non-empty.
+>
+> Hmm, a loose pointer would explain it all too. Especially the cases when
+> I just have seen wrong content in the archive without having any oops. I
+> try to reproduce it with
+>
+> pr_info("AHO: %p %p\n", bh->b_assoc_buffers.next,
+> &bh->b_assoc_buffers.next);
+>
+> after the BUG_ON().
+>
+> Thanks for the hint. I wasn't already that far to know that
+> b_assoc_buffers isn't used that much.
 
-Ok, I was finally able to reproduce your issue and it's working fine
-here with my latest drm-next-3.7-wip branch.
+Hmm, that doesn't look very practicable because b_assoc_buffers seems to 
+be used a lot here. ;)
+Maybe I should have mentioned that I'm mounting the source filesystem 
+(root with ext4) with 
+nodelalloc(rw,noatime,nodelalloc,errors=remount-ro,data=ordered), and to 
+backup it, I'm using a bind-mount (mount -o bind / /foo) as source.
 
-Alex
+But the debug output starts very early on boot, where no bind-mount is used:
+
+---------------------
+Sep 27 18:03:23 krabat udevd[1254]: invalid rule 
+'/etc/udev/rules.d/80-aho.rules:26'
+Sep 27 18:03:23 krabat kernel: [    4.562670] usb usb8: New USB device 
+found, idVendor=1d6b, idProduct=0001
+Sep 27 18:03:23 krabat kernel: [    4.562671] usb usb8: New USB device 
+strings: Mfr=3, Product=2, SerialNumber=1
+Sep 27 18:03:23 krabat systemd-uaccess[1363]: Failed to apply ACL on 
+/dev/kvm: Operation not supported
+Sep 27 18:03:23 krabat kernel: [    4.562673] usb usb8: Product: UHCI 
+Host Controller
+Sep 27 18:03:23 krabat kernel: [    4.562674] usb usb8: Manufacturer: 
+Linux 3.5.4-00009-gfa43f23-dirty uhci_hcd
+Sep 27 18:03:23 krabat kernel: [    4.562676] usb usb8: SerialNumber: 
+0000:00:1d.0
+Sep 27 18:03:23 krabat systemd-uaccess[1716]: Failed to apply ACL on 
+/dev/kvm: Operation not supported
+Sep 27 18:03:23 krabat kernel: [    4.563285] hub 8-0:1.0: USB hub found
+Sep 27 18:03:23 krabat kernel: [    4.563288] hub 8-0:1.0: 2 ports detected
+Sep 27 18:03:23 krabat systemd-uaccess[2324]: Failed to apply ACL on 
+/dev/snd/timer: Operation not supported
+Sep 27 18:03:23 krabat kernel: [    4.563316] AHO: ffff880212e4b048 
+ffff880212e4b048
+Sep 27 18:03:23 krabat kernel: [    4.563318] AHO: ffff880212e4b0b0 
+ffff880212e4b0b0
+Sep 27 18:03:23 krabat kernel: [    4.563319] AHO: ffff880212e4b118 
+ffff880212e4b118
+---------------------
+
+And afterwards I see tons of those messages, so it doesn't look usable. 
+Anyway, I retry to repdroduce the problem without that debug line, just 
+to see if still can reproduce the problem with F17 as userspace (and 
+kernel 3.5.4 instead of 3.5.3).
+
+Regards,
+
+Alexander
