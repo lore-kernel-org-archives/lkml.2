@@ -1,152 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab2I0GK2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 02:10:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54765 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab2I0GKX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 02:10:23 -0400
-Date: Wed, 26 Sep 2012 23:10:06 -0700
-From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Message-ID: <tip-c416ddf5b909736f5b57d348f5de159693e699ad@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        fweisbec@gmail.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        fweisbec@gmail.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        oleg@redhat.com
-In-Reply-To: <1348577479-2564-1-git-send-email-fweisbec@gmail.com>
-References: <1348577479-2564-1-git-send-email-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86: Unspaghettize do_trap()
-Git-Commit-ID: c416ddf5b909736f5b57d348f5de159693e699ad
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756202Ab2I0GLT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 02:11:19 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55853 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754855Ab2I0GLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 02:11:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,493,1344236400"; 
+   d="scan'208";a="197775384"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "Zhang, Rui" <rui.zhang@intel.com>, Hugh Dickins <hughd@google.com>
+CC: Sedat Dilek <sedat.dilek@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: RE: inux-next: Tree for Sept 26 (not bootable on AMD64:
+ thermal|acpi|drm/i915|pci related?)
+Thread-Topic: inux-next: Tree for Sept 26 (not bootable on AMD64:
+ thermal|acpi|drm/i915|pci related?)
+Thread-Index: AQHNnCByirXMmWGWZEuoEpkz8JZ0PJedWHIAgABcucA=
+Date: Thu, 27 Sep 2012 06:11:07 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB591D3CF5@BGSMSX101.gar.corp.intel.com>
+References: <CA+icZUWF92LaJ6pOMUPh6M-MVhF1GikJfyb9_1xXdNTxGLahXw@mail.gmail.com>
+	 <alpine.LSU.2.00.1209261241190.2175@eggly.anvils>
+ <1348726082.10877.276.camel@rui.sh.intel.com>
+In-Reply-To: <1348726082.10877.276.camel@rui.sh.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 26 Sep 2012 23:10:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8R6BP8I003376
 
-Commit-ID:  c416ddf5b909736f5b57d348f5de159693e699ad
-Gitweb:     http://git.kernel.org/tip/c416ddf5b909736f5b57d348f5de159693e699ad
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Tue, 25 Sep 2012 14:51:19 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 26 Sep 2012 13:36:50 +0200
+Hi Rui,
 
-x86: Unspaghettize do_trap()
 
-Cleanup the label maze in this function. Having a
-seperate function to first handle the traps that don't
-generate a signal makes it easier to convert into
-more readable conditional paths.
+> -----Original Message-----
+> From: Zhang, Rui
+> Sent: Thursday, September 27, 2012 11:38 AM
+> To: Hugh Dickins
+> Cc: Sedat Dilek; Stephen Rothwell; Andrew Morton; Dan Carpenter; R,
+> Durgadoss; linux-next@vger.kernel.org; linux-kernel@vger.kernel.org;
+> Rafael J. Wysocki; Dave Airlie; Daniel Vetter; Linux ACPI; linux-
+> pci@vger.kernel.org; DRI; Bjorn Helgaas
+> Subject: Re: inux-next: Tree for Sept 26 (not bootable on AMD64:
+> thermal|acpi|drm/i915|pci related?)
+> 
+> Hi, hugh,
+> 
+> On ä¸‰, 2012-09-26 at 12:51 -0700, Hugh Dickins wrote:
+> > On Wed, 26 Sep 2012, Sedat Dilek wrote:
+> > >
+> > > on my Ubuntu/precise AMD64 today's Linux-Next runs into the following
+> > > call-trace (machine freezes):
+> > >
+> > >  Sep 26 19:22:58 fambox kernel: [   11.124739] BUG: unable to handle
+> > > kernel NULL pointer dereference at 0000000000000018
+> > > Sep 26 19:22:58 fambox kernel: [   11.124806] IP: [<ffffffff814bb058>]
+> > > thermal_cooling_device_register+0x2c8/0x3d0
+> > > Sep 26 19:22:58 fambox kernel: [   11.124869] PGD 0
+> > > Sep 26 19:22:58 fambox kernel: [   11.124895] Oops: 0000 [#1] SMP
+> > > Sep 26 19:22:58 fambox kernel: [   11.124919] Modules linked in:
+> > > coretemp kvm_intel kvm snd_hda_intel(+) arc4 snd_hda_codec iwldvm
+> > > snd_hwdep ghash_clmulni_intel snd_pcm aesni_intel uvcvideo mac80211
+> > > aes_x86_64 snd_page_alloc ablk_helper i915(+) snd_seq_midi cryptd
+> > > videobuf2_vmalloc snd_seq_midi_event xts videobuf2_memops lrw
+> > > snd_rawmidi videobuf2_core joydev gf128mul videodev snd_seq
+> > > snd_seq_device hid_generic snd_timer drm_kms_helper iwlwifi drm snd
+> > > psmouse i2c_algo_bit soundcore btusb microcode serio_raw
+> > > samsung_laptop wmi cfg80211 bluetooth mei mac_hid video lpc_ich lp
+> > > parport ext4 jbd2 usbhid hid r8169
+> > > Sep 26 19:22:58 fambox kernel: [   11.125319] CPU 2
+> > > Sep 26 19:22:58 fambox kernel: [   11.125332] Pid: 579, comm: modprobe
+> > > Not tainted 3.6.0-rc7-next20120926-2-iniza-generic #1 SAMSUNG
+> > > ELECTRONICS CO., LTD.
+> 530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH
+> > > Sep 26 19:22:58 fambox kernel: [   11.125401] RIP:
+> > > 0010:[<ffffffff814bb058>]  [<ffffffff814bb058>]
+> > > thermal_cooling_device_register+0x2c8/0x3d0
+> > > Sep 26 19:22:58 fambox kernel: [   11.125450] RSP:
+> > > 0018:ffff88010f23d838  EFLAGS: 00010246
+> > > Sep 26 19:22:58 fambox kernel: [   11.125475] RAX: 0000000000000000
+> > > RBX: ffff88010bfd4c00 RCX: 0000000000000001
+> > > Sep 26 19:22:58 fambox kernel: [   11.125507] RDX: 0000000000000000
+> > > RSI: 0000000000000282 RDI: 0000000000000282
+> > > Sep 26 19:22:58 fambox kernel: [   11.125539] RBP: ffff88010f23d878
+> > > R08: 0000000000000000 R09: 0000000000000001
+> > > Sep 26 19:22:58 fambox kernel: [   11.125570] R10: ffff8801054fc460
+> > > R11: 0000000000000000 R12: ffff88010bfd4c04
+> > > Sep 26 19:22:58 fambox kernel: [   11.125602] R13: ffff88011a73e000
+> > > R14: 0000000000000000 R15: 0000000000000000
+> > > Sep 26 19:22:58 fambox kernel: [   11.125634] FS:
+> > > 00007f6b8da29700(0000) GS:ffff88011fa80000(0000)
+> > > knlGS:0000000000000000
+> > > Sep 26 19:22:58 fambox kernel: [   11.125670] CS:  0010 DS: 0000 ES:
+> > > 0000 CR0: 0000000080050033
+> > > Sep 26 19:22:58 fambox kernel: [   11.125697] CR2: 0000000000000018
+> > > CR3: 0000000110185000 CR4: 00000000000407e0
+> > > Sep 26 19:22:58 fambox kernel: [   11.125729] DR0: 0000000000000000
+> > > DR1: 0000000000000000 DR2: 0000000000000000
+> > > Sep 26 19:22:58 fambox kernel: [   11.125761] DR3: 0000000000000000
+> > > DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > > Sep 26 19:22:58 fambox kernel: [   11.125793] Process modprobe (pid:
+> > > 579, threadinfo ffff88010f23c000, task ffff880116648000)
+> > > Sep 26 19:22:58 fambox kernel: [   11.127133] Stack:
+> > > Sep 26 19:22:58 fambox kernel: [   11.128461]  ffff88011a5d9098
+> > > ffff88010d74c300 ffff88010f23d878 ffff880110b06480
+> > > Sep 26 19:22:58 fambox kernel: [   11.129755]  ffff88010bfd1000
+> > > ffff88011a5d9098 ffff88010d74c300 ffff88011a625000
+> > > Sep 26 19:22:58 fambox kernel: [   11.130943]  ffff88010f23d958
+> > > ffffffffa00e5868 0000000000000000 ffffffff811fa033
+> > > Sep 26 19:22:58 fambox kernel: [   11.132749] Call Trace:
+> > > Sep 26 19:22:58 fambox kernel: [   11.133939]  [<ffffffffa00e5868>]
+> > > acpi_video_bus_add+0x9ba/0xce6 [video]
+> > > Sep 26 19:22:58 fambox kernel: [   11.135130]  [<ffffffff811fa033>] ?
+> > > sysfs_addrm_finish+0x33/0xc0
+> > > Sep 26 19:22:58 fambox kernel: [   11.136313]  [<ffffffff813454cc>]
+> > > acpi_device_probe+0x4e/0x11c
+> > > Sep 26 19:22:58 fambox kernel: [   11.137482]  [<ffffffff813d472b>]
+> > > driver_probe_device+0x7b/0x240
+> > > Sep 26 19:22:58 fambox kernel: [   11.138642]  [<ffffffff813d499b>]
+> > > __driver_attach+0xab/0xb0
+> > > Sep 26 19:22:58 fambox kernel: [   11.139798]  [<ffffffff813d48f0>] ?
+> > > driver_probe_device+0x240/0x240
+> > > Sep 26 19:22:58 fambox kernel: [   11.140981]  [<ffffffff813d2b46>]
+> > > bus_for_each_dev+0x56/0x90
+> > > Sep 26 19:22:58 fambox kernel: [   11.142129]  [<ffffffff813d425e>]
+> > > driver_attach+0x1e/0x20
+> > > Sep 26 19:22:58 fambox kernel: [   11.143264]  [<ffffffff813d3dd0>]
+> > > bus_add_driver+0x190/0x290
+> > > Sep 26 19:22:58 fambox kernel: [   11.144443]  [<ffffffff813d4efa>]
+> > > driver_register+0x7a/0x160
+> > > Sep 26 19:22:58 fambox kernel: [   11.145583]  [<ffffffff81345ccf>]
+> > > acpi_bus_register_driver+0x43/0x45
+> > > Sep 26 19:22:58 fambox kernel: [   11.146871]  [<ffffffffa00e4dac>]
+> > > acpi_video_register+0x20/0x39 [video]
+> > > Sep 26 19:22:58 fambox kernel: [   11.148167]  [<ffffffffa02f4bad>]
+> > > i915_driver_load+0x83d/0xea0 [i915]
+> > > Sep 26 19:22:58 fambox kernel: [   11.149451]  [<ffffffffa020ebc1>]
+> > > drm_get_pci_dev+0x191/0x2b0 [drm]
+> > > Sep 26 19:22:58 fambox kernel: [   11.150739]  [<ffffffffa0345e2b>]
+> > > i915_pci_probe+0x4f/0x57 [i915]
+> > > Sep 26 19:22:58 fambox kernel: [   11.152015]  [<ffffffff81309af9>]
+> > > local_pci_probe+0x79/0x100
+> > > Sep 26 19:22:58 fambox kernel: [   11.153287]  [<ffffffff8130b1f9>]
+> > > pci_device_probe+0x109/0x130
+> > > Sep 26 19:22:58 fambox kernel: [   11.154546]  [<ffffffff813d472b>]
+> > > driver_probe_device+0x7b/0x240
+> > > Sep 26 19:22:58 fambox kernel: [   11.155796]  [<ffffffff813d499b>]
+> > > __driver_attach+0xab/0xb0
+> > > Sep 26 19:22:58 fambox kernel: [   11.157048]  [<ffffffff813d48f0>] ?
+> > > driver_probe_device+0x240/0x240
+> > > Sep 26 19:22:58 fambox kernel: [   11.158280]  [<ffffffff813d2b46>]
+> > > bus_for_each_dev+0x56/0x90
+> > > Sep 26 19:22:58 fambox kernel: [   11.159496]  [<ffffffff813d425e>]
+> > > driver_attach+0x1e/0x20
+> > > Sep 26 19:22:58 fambox kernel: [   11.160708]  [<ffffffff813d3dd0>]
+> > > bus_add_driver+0x190/0x290
+> > > Sep 26 19:22:58 fambox kernel: [   11.161909]  [<ffffffff813d4efa>]
+> > > driver_register+0x7a/0x160
+> > > Sep 26 19:22:58 fambox kernel: [   11.163121]  [<ffffffff8130a159>]
+> > > __pci_register_driver+0x49/0x50
+> > > Sep 26 19:22:58 fambox kernel: [   11.164227]  [<ffffffffa020edfa>]
+> > > drm_pci_init+0x11a/0x130 [drm]
+> > > Sep 26 19:22:58 fambox kernel: [   11.165295]  [<ffffffffa037c000>] ?
+> > > 0xffffffffa037bfff
+> > > Sep 26 19:22:58 fambox kernel: [   11.166351]  [<ffffffffa037c066>]
+> > > i915_init+0x66/0x68 [i915]
+> > > Sep 26 19:22:58 fambox kernel: [   11.167360]  [<ffffffff8100203f>]
+> > > do_one_initcall+0x3f/0x170
+> > > Sep 26 19:22:58 fambox kernel: [   11.168332]  [<ffffffff810bc9be>]
+> > > sys_init_module+0xbe/0x220
+> > > Sep 26 19:22:58 fambox kernel: [   11.169276]  [<ffffffff8164a0bd>]
+> > > system_call_fastpath+0x1a/0x1f
+> > > Sep 26 19:22:58 fambox kernel: [   11.170200] Code: 1b 7e 00 48 3d c0
+> > > cb c9 81 4c 8d a8 b0 fc ff ff 0f 84 bf 00 00 00 0f 1f 44 00 00 4d 8b
+> > > bd f0 02 00 00 4d 85 ff 0f 84 c0 00 00 00 <49> 8b 77 18 48 85 f6 0f 84
+> > > d3 fe ff ff 41 8b 47 14 85 c0 7e 7b
+> > > Sep 26 19:22:58 fambox kernel: [   11.172467] RIP
+> > > [<ffffffff814bb058>] thermal_cooling_device_register+0x2c8/0x3d0
+> > > Sep 26 19:22:58 fambox kernel: [   11.173542]  RSP <ffff88010f23d838>
+> > > Sep 26 19:22:58 fambox kernel: [   11.174603] CR2: 0000000000000018
+> > > Sep 26 19:22:58 fambox kernel: [   11.175675] ---[ end trace
+> > > 0f2bc437662fc097 ]---
+> > >
+> > > I have CCed some maintainers, hope they might have a look at it
+> > > (sorry, didnt check any MLs).
+> > >
+> > > My kern.log and kernel-config are attached.
+> >
+> > I get oops in bind_cdev() called from thermal_cooling_device_register()
+> > on mmotm, I expect yours is the same (but bind_cdev inlined so it doesn't
+> > appear in the backtrace).  This patch gets me booting (note it also fixes
+> > return to break to unlock the mutex), does it help you?  Whether the root
+> > problem is elsewhere or not, I've no idea; but I see Dan already spotted
+> > other errors hereabouts - probably needs more thorough review.
+> >
+> 
+> 
+> > Hugh
+> >
+> > --- mmotm/drivers/thermal/thermal_sys.c	2012-09-26
+> 10:15:28.652071362 -0700
+> > +++ linux/drivers/thermal/thermal_sys.c	2012-09-26
+> 11:41:01.549684983 -0700
+> > @@ -252,8 +252,8 @@ static void bind_cdev(struct thermal_coo
+> >  		}
+> >
+> >  		tzp = pos->tzp;
+> > -		if (!tzp->tbp)
+> > -			return;
+> > +		if (!tzp || !tzp->tbp)
+> > +			break;
+> >
+> >  		for (i = 0; i < tzp->num_tbps; i++) {
+> >  			if (tzp->tbp[i].cdev || !tzp->tbp[i].match)
+> 
+> thanks for the fix, this patch looks good to me.
+> could you please resend it in a proper format, say, with changelog and
+> Singed-off-by, so that I can apply to my -next tree?
+> 
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1348577479-2564-1-git-send-email-fweisbec@gmail.com
-[ Fixed 32-bit build failure. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/traps.c |   60 ++++++++++++++++++++++------------------------
- 1 files changed, 29 insertions(+), 31 deletions(-)
+Shouldn't this be a 'continue' instead of the 'break' here ?
+With this change, I just sent a patch, 
 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index b481341..6ff7715 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -107,30 +107,45 @@ static inline void preempt_conditional_cli(struct pt_regs *regs)
- 	dec_preempt_count();
- }
- 
--static void __kprobes
--do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
--	long error_code, siginfo_t *info)
-+static int __kprobes
-+do_trap_no_signal(struct task_struct *tsk, int trapnr, char *str,
-+		  struct pt_regs *regs,	long error_code)
- {
--	struct task_struct *tsk = current;
--
- #ifdef CONFIG_X86_32
- 	if (regs->flags & X86_VM_MASK) {
- 		/*
--		 * traps 0, 1, 3, 4, and 5 should be forwarded to vm86.
-+		 * Traps 0, 1, 3, 4, and 5 should be forwarded to vm86.
- 		 * On nmi (interrupt 2), do_trap should not be called.
- 		 */
--		if (trapnr < X86_TRAP_UD)
--			goto vm86_trap;
--		goto trap_signal;
-+		if (trapnr < X86_TRAP_UD) {
-+			if (!handle_vm86_trap((struct kernel_vm86_regs *) regs,
-+						error_code, trapnr))
-+				return 0;
-+		}
-+		return -1;
- 	}
- #endif
-+	if (!user_mode(regs)) {
-+		if (!fixup_exception(regs)) {
-+			tsk->thread.error_code = error_code;
-+			tsk->thread.trap_nr = trapnr;
-+			die(str, regs, error_code);
-+		}
-+		return 0;
-+	}
- 
--	if (!user_mode(regs))
--		goto kernel_trap;
-+	return -1;
-+}
- 
--#ifdef CONFIG_X86_32
--trap_signal:
--#endif
-+static void __kprobes
-+do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
-+	long error_code, siginfo_t *info)
-+{
-+	struct task_struct *tsk = current;
-+
-+
-+	if (!do_trap_no_signal(tsk, trapnr, str, regs, error_code))
-+		return;
- 	/*
- 	 * We want error_code and trap_nr set for userspace faults and
- 	 * kernelspace faults which result in die(), but not
-@@ -158,23 +173,6 @@ trap_signal:
- 		force_sig_info(signr, info, tsk);
- 	else
- 		force_sig(signr, tsk);
--	return;
--
--kernel_trap:
--	if (!fixup_exception(regs)) {
--		tsk->thread.error_code = error_code;
--		tsk->thread.trap_nr = trapnr;
--		die(str, regs, error_code);
--	}
--	return;
--
--#ifdef CONFIG_X86_32
--vm86_trap:
--	if (handle_vm86_trap((struct kernel_vm86_regs *) regs,
--						error_code, trapnr))
--		goto trap_signal;
--	return;
--#endif
- }
- 
- #define DO_ERROR(trapnr, signr, str, name)				\
+Thanks,
+Durga
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
