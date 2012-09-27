@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870Ab2I0NvB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:51:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43898 "EHLO mx2.suse.de"
+	id S1752082Ab2I0Nwm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:52:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43984 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750794Ab2I0Nu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:50:59 -0400
-Date: Thu, 27 Sep 2012 14:50:53 +0100
-From: Mel Gorman <mgorman@suse.de>
+	id S1750794Ab2I0Nwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 09:52:41 -0400
+Date: Thu, 27 Sep 2012 15:52:39 +0200
+From: Michal Hocko <mhocko@suse.cz>
 To: Glauber Costa <glommer@parallels.com>
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
         Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
         Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
         Johannes Weiner <hannes@cmpxchg.org>
 Subject: Re: [PATCH v3 07/13] mm: Allocate kernel pages to the right memcg
-Message-ID: <20120927135053.GF3429@suse.de>
+Message-ID: <20120927135239.GF29104@dhcp22.suse.cz>
 References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
  <1347977050-29476-8-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <1347977050-29476-8-git-send-email-glommer@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
@@ -30,7 +30,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 06:04:04PM +0400, Glauber Costa wrote:
+On Tue 18-09-12 18:04:04, Glauber Costa wrote:
 > When a process tries to allocate a page with the __GFP_KMEMCG flag, the
 > page allocator will call the corresponding memcg functions to validate
 > the allocation. Tasks in the root memcg can always proceed.
@@ -53,6 +53,11 @@ On Tue, Sep 18, 2012 at 06:04:04PM +0400, Glauber Costa wrote:
 > CC: Suleiman Souhlal <suleiman@google.com>
 > CC: Mel Gorman <mgorman@suse.de>
 > Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+Thanks!
+
 > ---
 >  include/linux/gfp.h |  3 +++
 >  mm/page_alloc.c     | 35 +++++++++++++++++++++++++++++++++++
@@ -95,30 +100,6 @@ On Tue, Sep 18, 2012 at 06:04:04PM +0400, Glauber Costa wrote:
 > +	if (!memcg_kmem_newpage_charge(gfp_mask, &memcg, order))
 > +		return NULL;
 > +
-
-1. returns quickly if memcg disabled
-2. returns quickly if !__GFP_KMEMCG
-3. returns quickly for kernel threads and interrupts
-
-I'm expecting that these paths are completely dead when kmem accounting
-is off so
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
-
-That said, it's not directly related to this patch but I would suggest that
-you also check for TIF_MEMDIE in memcg_kmem_newpage_charge. It would be very
-silly if a process failed to exit because it couldn't allocate a page it
-needed. I expect that such a case is impossible today but it might change in
-the future. If you're doing another revision, an extra check would not hurt.
-
-It's difficult to predict if it should be making all the checks that
-gfp_to_alloc_flags() does but you might need to in the future so keep it
-in mind.
-
-
-
-
 >  retry_cpuset:
 >  	cpuset_mems_cookie = get_mems_allowed();
 >  
@@ -129,9 +110,6 @@ in mind.
 > +	memcg_kmem_commit_charge(page, memcg, order);
 > +
 >  	return page;
-
-Ok.
-
 >  }
 >  EXPORT_SYMBOL(__alloc_pages_nodemask);
 > @@ -2676,6 +2686,31 @@ void free_pages(unsigned long addr, unsigned int order)
@@ -159,10 +137,6 @@ Ok.
 > +{
 > +	if (addr != 0) {
 > +		VM_BUG_ON(!virt_addr_valid((void *)addr));
-
-This is probably overkill. If it's invalid, the next line is likely to
-blow up anyway. It's no biggie.
-
 > +		__free_accounted_pages(virt_to_page((void *)addr), order);
 > +	}
 > +}
@@ -173,7 +147,11 @@ blow up anyway. It's no biggie.
 > -- 
 > 1.7.11.4
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Mel Gorman
+Michal Hocko
 SUSE Labs
