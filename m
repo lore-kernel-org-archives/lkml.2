@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab2I0WTy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 18:19:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17470 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab2I0WTw (ORCPT
+	id S1756054Ab2I0War (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 18:30:47 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:53605 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836Ab2I0Waq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 18:19:52 -0400
-X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=a9-q7-gJKaUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=YS7ez-4iEAYA:10 a=VwQbUJbxAAAA:8 a=cfkqPTykAAAA:8 a=w5m9ts5_Bw_MLl2stG8A:9 a=PUjeQqilurYA:10 a=HEdnscJc8mAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1348784389.22822.85.camel@gandalf.local.home>
-Subject: [ANNOUNCE] Stable RT tarballs... Back by popular demand!!!!
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Frank Rowand <frank.rowand@am.sony.com>
-Date: Thu, 27 Sep 2012 18:19:49 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Thu, 27 Sep 2012 18:30:46 -0400
+Message-ID: <5064D391.5080102@gmail.com>
+Date: Thu, 27 Sep 2012 18:30:41 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH 3/3] memory_hotplug: Don't modify the zone_start_pfn outside
+ of zone_span_writelock()
+References: <1348728470-5580-1-git-send-email-laijs@cn.fujitsu.com> <1348728470-5580-4-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1348728470-5580-4-git-send-email-laijs@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I stated that I would be willing to put back the stable tarballs to
-kernel.org at Linux Plumbers. Well, I finally had time to finish my
-tarball script, which basically just does what the README tells you to
-do:
+(9/27/12 2:47 AM), Lai Jiangshan wrote:
+> The __add_zone() maybe call sleep-able init_currently_empty_zone()
+> to init wait_table,
 
- $ git checkout v3.4.1-rt9-rebase
- $ mkdir patches
- $ git format-patch -o patches v3.4.1
- $ ls patches > series
- $ mv series patches
+This doesn't explain why sleepable is critical important. I think sleepable
+is jsut unrelated. The fact is only: to write zone->zone_start_pfn require
+zone_span_writelock, but init_currently_empty_zone() doesn't take it.
 
 
-And packages it all up nicely into a tarball. I will be pushing up the
-tarballs as I do the rebase branches, as they are based off of the
-rebase branch.
+> 
+> But this function also modifies the zone_start_pfn without any lock.
+> It is bugy.
 
-The current tarballs are:
+buggy?
 
-http://kernel.org/pub/linux/kernel/projects/rt/3.0/patches-3.0.43-rt65.tar.xz
 
-http://kernel.org/pub/linux/kernel/projects/rt/3.2/patches-3.2.30-rt45.tar.xz
+> So we move this modification out, and we ensure the modification
+> of zone_start_pfn is only done with zone_span_writelock() held or in booting.
+> 
+> Since zone_start_pfn is not modified by init_currently_empty_zone()
+> grow_zone_span() needs to check zone_start_pfn before update it.
+> 
+> CC: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Reported-by: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+> Tested-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  mm/memory_hotplug.c |    2 +-
+>  mm/page_alloc.c     |    3 +--
+>  2 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index b62d429b..790561f 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -205,7 +205,7 @@ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
+>  	zone_span_writelock(zone);
+>  
+>  	old_zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
+> -	if (start_pfn < zone->zone_start_pfn)
+> +	if (!zone->zone_start_pfn || start_pfn < zone->zone_start_pfn)
+>  		zone->zone_start_pfn = start_pfn;
 
-http://kernel.org/pub/linux/kernel/projects/rt/3.4/patches-3.4.11-rt19.tar.xz
+Wrong. zone->zone_start_pfn==0 may be valid pfn. You shouldn't assume it is uninitialized
+value.
 
-Enjoy,
 
--- Steve
-
+>  
+>  	zone->spanned_pages = max(old_zone_end_pfn, end_pfn) -
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index c13ea75..2545013 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -3997,8 +3997,6 @@ int __meminit init_currently_empty_zone(struct zone *zone,
+>  		return ret;
+>  	pgdat->nr_zones = zone_idx(zone) + 1;
+>  
+> -	zone->zone_start_pfn = zone_start_pfn;
+> -
+>  	mminit_dprintk(MMINIT_TRACE, "memmap_init",
+>  			"Initialising map node %d zone %lu pfns %lu -> %lu\n",
+>  			pgdat->node_id,
+> @@ -4465,6 +4463,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+>  		ret = init_currently_empty_zone(zone, zone_start_pfn,
+>  						size, MEMMAP_EARLY);
+>  		BUG_ON(ret);
+> +		zone->zone_start_pfn = zone_start_pfn;
+>  		memmap_init(size, nid, j, zone_start_pfn);
+>  		zone_start_pfn += size;
+>  	}
+> 
 
