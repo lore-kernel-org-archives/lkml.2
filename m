@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab2I0NTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 09:19:41 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59123 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab2I0NTk (ORCPT
+	id S1754082Ab2I0NUB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 09:20:01 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:55524 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342Ab2I0NUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 09:19:40 -0400
-Message-ID: <5064525E.5080901@gmail.com>
-Date: Thu, 27 Sep 2012 21:19:26 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Thu, 27 Sep 2012 09:20:00 -0400
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] memory_hotplug: Don't modify the zone_start_pfn outside
- of zone_span_writelock()
-References: <1348728470-5580-1-git-send-email-laijs@cn.fujitsu.com> <1348728470-5580-4-git-send-email-laijs@cn.fujitsu.com>
-In-Reply-To: <1348728470-5580-4-git-send-email-laijs@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1348682889-9509-2-git-send-email-m-karicheri2@ti.com>
+References: <1348682889-9509-1-git-send-email-m-karicheri2@ti.com>
+	<1348682889-9509-2-git-send-email-m-karicheri2@ti.com>
+Date: Thu, 27 Sep 2012 15:19:58 +0200
+Message-ID: <CACRpkdZ=8m+X2KnUPFFhT2LsvTe-jPR_m6oVt_CEFfY-LvFHmg@mail.gmail.com>
+Subject: Re: [PATCH 01/13] clk: davinci - add Main PLL clock driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: mturquette@linaro.org, arnd@arndb.de, akpm@linux-foundation.org,
+        shawn.guo@linaro.org, rob.herring@calxeda.com, viresh.linux@gmail.com,
+        linux-kernel@vger.kernel.org, nsekhar@ti.com, khilman@ti.com,
+        linux@arm.linux.org.uk, davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, linux-keystone@list.ti.com,
+        linux-c6x-dev@linux-c6x.org, cyril@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 02:47 PM, Lai Jiangshan wrote:
-> The __add_zone() maybe call sleep-able init_currently_empty_zone()
-> to init wait_table,
->
-> But this function also modifies the zone_start_pfn without any lock.
-> It is bugy.
->
-> So we move this modification out, and we ensure the modification
-> of zone_start_pfn is only done with zone_span_writelock() held or in booting.
->
-> Since zone_start_pfn is not modified by init_currently_empty_zone()
-> grow_zone_span() needs to check zone_start_pfn before update it.
->
-> CC: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Reported-by: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-> Tested-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->   mm/memory_hotplug.c |    2 +-
->   mm/page_alloc.c     |    3 +--
->   2 files changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index b62d429b..790561f 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -205,7 +205,7 @@ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
->   	zone_span_writelock(zone);
->   
->   	old_zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-> -	if (start_pfn < zone->zone_start_pfn)
-> +	if (!zone->zone_start_pfn || start_pfn < zone->zone_start_pfn)
->   		zone->zone_start_pfn = start_pfn;
->   
->   	zone->spanned_pages = max(old_zone_end_pfn, end_pfn) -
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index c13ea75..2545013 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -3997,8 +3997,6 @@ int __meminit init_currently_empty_zone(struct zone *zone,
->   		return ret;
->   	pgdat->nr_zones = zone_idx(zone) + 1;
->   
-> -	zone->zone_start_pfn = zone_start_pfn;
-> -
+On Wed, Sep 26, 2012 at 8:07 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
 
-then how can mminit_dprintk print zone->zone_start_pfn ? always print 0 
-make no sense.
+> +struct clk_davinci_pll_data {
+> +       /* physical addresses set by platform code */
+> +       u32 phy_pllm;
+> +       /* if PLL has a prediv register this should be non zero */
+> +       u32 phy_prediv;
+> +       /* if PLL has a postdiv register this should be non zero */
+> +       u32 phy_postdiv;
+> +       /* mapped addresses. should be initialized by  */
+> +       void __iomem *pllm;
+> +       void __iomem *prediv;
+> +       void __iomem *postdiv;
+> +       u32 pllm_mask;
+> +       u32 prediv_mask;
+> +       u32 postdiv_mask;
+> +       u32 num;
+> +       /* framework flags */
+> +       u32 flags;
+> +       /* pll flags */
+> +       u32 pll_flags;
+> +       /* use this value for prediv */
+> +       u32 fixed_prediv;
+> +       /* multiply PLLM by this factor. By default most SOC set this to zero
+> +        * that translates to a multiplier of 1 and incrementer of 1.
+> +        * To override default, set this factor
+> +        */
+> +       u32 pllm_multiplier;
+> +};
+> +
 
->   	mminit_dprintk(MMINIT_TRACE, "memmap_init",
->   			"Initialising map node %d zone %lu pfns %lu -> %lu\n",
->   			pgdat->node_id,
-> @@ -4465,6 +4463,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->   		ret = init_currently_empty_zone(zone, zone_start_pfn,
->   						size, MEMMAP_EARLY);
->   		BUG_ON(ret);
-> +		zone->zone_start_pfn = zone_start_pfn;
->   		memmap_init(size, nid, j, zone_start_pfn);
->   		zone_start_pfn += size;
->   	}
+No, that's not what I meant.
 
+I meant like this:
+
+/**
+ * struct clk_davinci_pll_data - struct holding the PLL data
+ * phy_pllm: physical addresses set by platform code
+ * phy_prediv: ...
+(...)
+ */
+struct clk_davinci_pll_data {
+      u32 phy_pllm;
+      u32 phy_prediv;
+(...)
+};
+
+Yours,
+Linus Walleij
