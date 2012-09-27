@@ -1,121 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab2I0Dyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Sep 2012 23:54:31 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:2030 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754529Ab2I0Dy2 (ORCPT
+	id S1754626Ab2I0Dzq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Sep 2012 23:55:46 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39979 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744Ab2I0Dzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Sep 2012 23:54:28 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqQMACnNY1B5LPfb/2dsb2JhbABFvHgBAoEQgQmCIAEBBAEnExwjBQsIAxUDLhQNGAM0h3MDCQWuDQ2JVBSKImJsSoEzgyADlBSBVIshhQuCeQ
-Date: Thu, 27 Sep 2012 13:54:25 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, marco.stornelli@gmail.com, stroetmann@ontolinux.com,
-        diegocg@gmail.com, chris@csamuel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v2 06/10] vfs: enable hot data tracking
-Message-ID: <20120927035425.GN15236@dastard>
-References: <1348404995-14372-1-git-send-email-zwu.kernel@gmail.com>
- <1348404995-14372-7-git-send-email-zwu.kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348404995-14372-7-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Sep 2012 23:55:45 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: sameo@linux.intel.com
+Cc: broonie@opensource.wolfsonmicro.com, marex@denx.de,
+        ashish.jangam@kpitcummins.com, dchen@diasemi.com,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] mfd: da9052-core: Fix request_threaded_irq() parameter
+Date: Thu, 27 Sep 2012 00:55:35 -0300
+Message-Id: <1348718135-10300-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 23, 2012 at 08:56:31PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
->   Miscellaneous features that implement hot data tracking
-> and generally make the hot data functions a bit more friendly.
-> 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> ---
->  fs/direct-io.c               |   10 ++++++++++
->  include/linux/hot_tracking.h |   11 +++++++++++
->  mm/filemap.c                 |    8 ++++++++
->  mm/page-writeback.c          |   21 +++++++++++++++++++++
->  mm/readahead.c               |    9 +++++++++
->  5 files changed, 59 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index f86c720..3773f44 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -37,6 +37,7 @@
->  #include <linux/uio.h>
->  #include <linux/atomic.h>
->  #include <linux/prefetch.h>
-> +#include "hot_tracking.h"
->  
->  /*
->   * How many user pages to map in one call to get_user_pages().  This determines
-> @@ -1297,6 +1298,15 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
->  	prefetch(bdev->bd_queue);
->  	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
->  
-> +	/* Hot data tracking */
-> +	if (TRACK_THIS_INODE(iocb->ki_filp->f_mapping->host)
-> +			&& iov_length(iov, nr_segs) > 0) {
-> +		hot_rb_update_freqs(iocb->ki_filp->f_mapping->host,
-> +				(u64)offset,
-> +				(u64)iov_length(iov, nr_segs),
-> +				rw & WRITE);
-> +	}
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-That's a bit messy. I'd prefer a static inline function that hides
-all this. e.g.
+On a mx53qsb dt-kernel the da9052-core driver fails to probe:
 
-track_hot_inode_ranges(inode, offset, length, rw)
-{
-	if (inode->i_sb->s_flags & MS_HOT_TRACKING)
-		hot_inode_freq_update(inode, offset, length, rw);
-}
+da9052 1-0048: DA9052 ADC IRQ failed ret=-22
 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 5ad5ce2..552c861 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -35,6 +35,7 @@
->  #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
->  #include <linux/pagevec.h>
->  #include <linux/timer.h>
-> +#include <linux/hot_tracking.h>
->  #include <trace/events/writeback.h>
->  
->  /*
-> @@ -1895,13 +1896,33 @@ EXPORT_SYMBOL(generic_writepages);
->  int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
->  {
->  	int ret;
-> +	pgoff_t start = 0;
-> +	u64 prev_count = 0, count = 0;
->  
->  	if (wbc->nr_to_write <= 0)
->  		return 0;
-> +
-> +	/* Hot data tracking */
-> +	if (TRACK_THIS_INODE(mapping->host)
-> +		&& wbc->range_cyclic) {
-> +		start = mapping->writeback_index << PAGE_CACHE_SHIFT;
-> +		prev_count = (u64)wbc->nr_to_write;
-> +	}
+In request_threaded_irq() the first parameter is missing the da9052->irq_base.
 
-Why only wbc->range_cyclic? This won't record things like
-synchronous writes or fsync-triggered writes, are are far more
-likely to be to hot ranges in a file...
+Fix it and avoid the error.
 
-Cheers,
+Also define 'DA9052_IRQF' for improving readability.
 
-Dave.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/mfd/da9052-core.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
+index a0a62b2..a3450d2 100644
+--- a/drivers/mfd/da9052-core.c
++++ b/drivers/mfd/da9052-core.c
+@@ -33,6 +33,7 @@
+ #define DA9052_IRQ_MASK_POS_6		0x20
+ #define DA9052_IRQ_MASK_POS_7		0x40
+ #define DA9052_IRQ_MASK_POS_8		0x80
++#define DA9052_IRQF			(IRQF_TRIGGER_LOW | IRQF_ONESHOT)
+ 
+ static bool da9052_reg_readable(struct device *dev, unsigned int reg)
+ {
+@@ -788,16 +789,15 @@ int __devinit da9052_device_init(struct da9052 *da9052, u8 chip_id)
+ 		da9052->irq_base = pdata->irq_base;
+ 
+ 	ret = regmap_add_irq_chip(da9052->regmap, da9052->chip_irq,
+-				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				  da9052->irq_base, &da9052_regmap_irq_chip,
+-				  &da9052->irq_data);
++				  DA9052_IRQF, da9052->irq_base,
++				  &da9052_regmap_irq_chip, &da9052->irq_data);
+ 	if (ret < 0)
+ 		goto regmap_err;
+ 
+ 	da9052->irq_base = regmap_irq_chip_get_base(da9052->irq_data);
+ 
+-	ret = request_threaded_irq(DA9052_IRQ_ADC_EOM, NULL, da9052_auxadc_irq,
+-				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++	ret = request_threaded_irq(da9052->irq_base + DA9052_IRQ_ADC_EOM, NULL,
++				   da9052_auxadc_irq, DA9052_IRQF,
+ 				   "adc irq", da9052);
+ 	if (ret != 0)
+ 		dev_err(da9052->dev, "DA9052 ADC IRQ failed ret=%d\n", ret);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
