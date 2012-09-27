@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab2I0PcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 11:32:10 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:42161 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754467Ab2I0PcG convert rfc822-to-8bit (ORCPT
+	id S1755444Ab2I0PfV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 11:35:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56835 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754941Ab2I0PfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 11:32:06 -0400
-X-IronPort-AV: E=Sophos;i="4.80,496,1344236400"; 
-   d="scan'208";a="694863761"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-Subject: RE: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-Thread-Topic: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-Thread-Index: AQHNdKJvypEw9t3CEUmeaLKAlM+spZefC3UA//+TOzA=
-Date: Thu, 27 Sep 2012 15:32:02 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120807134156.GP1996@amd.com>
- <20120927145217.GA18962@8bytes.org>
-In-Reply-To: <20120927145217.GA18962@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Thu, 27 Sep 2012 11:35:19 -0400
+Date: Thu, 27 Sep 2012 08:35:15 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: staging tree closed for 3.7
+Message-ID: <20120927153515.GA1555@kroah.com>
+References: <20120926175606.GA10762@kroah.com>
+ <20120926175634.GB10762@kroah.com>
+ <50641CE5.8070107@mev.co.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50641CE5.8070107@mev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Thursday, September 27, 2012 10:52 AM
-> To: Myklebust, Trond
-> Cc: Joerg Roedel; linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org;
-> torvalds@linux-foundation.org
-> Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-> 
-> On Tue, Aug 07, 2012 at 03:41:56PM +0200, Joerg Roedel wrote:
-> > starting with Linux 3.6-rc1 I experience this BUG on one of my test
-> > machines. Please let me know if you need any additional information.
+On Thu, Sep 27, 2012 at 10:31:17AM +0100, Ian Abbott wrote:
+> On 2012-09-26 18:56, Greg Kroah-Hartman wrote:
+> >On Wed, Sep 26, 2012 at 10:56:06AM -0700, Greg Kroah-Hartman wrote:
+> >>
+> >>With 3.6 about to be released, I've now closed the 3.7 staging-next tree
+> >>for new features / cleanups.  It's bug-fixes only now until 3.7-rc1 is
+> >>out.
 > >
-> > [   20.271810] ------------[ cut here ]------------
-> > [   20.276869] kernel BUG at
-> /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-> > [   20.284306] invalid opcode: 0000 [#1] SMP
-> > [   20.288806] Modules linked in: nfs4 auth_rpcgss nfs fscache lockd sunrpc
-> kvm_intel radeon kvm ttm drm_kms_helper i7core_edac drm edac_core
-> joydev hpilo psmouse hid_generic i2c_algo_bit serio_raw usbhid hid bnx2
+> >Oh, and if I've missed any patches that people have sent me already,
+> >please let me know, because I don't have them anymore.
 > 
-> I still see this BUG with 3.6-rc7. Any fix in sight?
+> I have an outstanding patch for the jr3_pci driver that was mostly
+> __iomem tagging, but also included a one-line fix for an invalid
+> iomem dereference.  Do you want me to resend the whole patch or just
+> split out the one-line fix for 3.6?
 
-Does your checked out copy of 3.6-rc7 contain commit c50669 (NFS: Clear key construction data if the idmap upcall fails)? The latter was merged in3.6-rc3, and is reported to fix the problem for the other testers.
+The one line fix for now would be great, and then the __iomem one to
+apply after that for 3.7 would be also ok.
 
-Trond
+Can you resend those?
+
+thanks,
+
+greg k-h
