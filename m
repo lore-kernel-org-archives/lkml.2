@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab2I0IMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 04:12:37 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:61385 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab2I0IM3 (ORCPT
+	id S1756302Ab2I0INO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 04:13:14 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:53422 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755955Ab2I0INL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 04:12:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120927075101.GM12592@arwen.pp.htv.fi>
-References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348731121-2515-8-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20120927075101.GM12592@arwen.pp.htv.fi>
-Date: Thu, 27 Sep 2012 13:42:28 +0530
-X-Google-Sender-Auth: GxAWtaIybns7Fl-ueA1dGTZ0KyM
-Message-ID: <CAOh2x=njC5qUADH3DGrg602HrPaUy=Nq_eRnHwB_Lz3PE=R_xg@mail.gmail.com>
-Subject: Re: [PATCHv3 7/7] MAINTAINERS: add recently created files to dw_dmac section
-From: viresh kumar <viresh.kumar@linaro.org>
-To: balbi@ti.com
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+	Thu, 27 Sep 2012 04:13:11 -0400
+Date: Thu, 27 Sep 2012 11:02:24 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: balbi@ti.com, Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
         Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        spear-devel <spear-devel@list.st.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: Re: [PATCHv3 3/7] dmaengine: dw_dmac: remove CLK dependency
+Message-ID: <20120927080223.GN12592@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1348731121-2515-4-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20120927074236.GI12592@arwen.pp.htv.fi>
+ <CAHp75VcPb2KrxYYv8F27bSszLwHi0BN5VPxmuEXmGtUPziuigQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="l3ej7W/Jb2pB3qL2"
+Content-Disposition: inline
+In-Reply-To: <CAHp75VcPb2KrxYYv8F27bSszLwHi0BN5VPxmuEXmGtUPziuigQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 1:21 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Thu, Sep 27, 2012 at 10:32:01AM +0300, Andy Shevchenko wrote:
->> Append myself to the mail entry of the section as well.
->>
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> ---
->>  MAINTAINERS |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 7dfd0eb..b87cbb1d 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -5999,10 +5999,10 @@ F:    drivers/tty/serial
->>
->>  SYNOPSYS DESIGNWARE DMAC DRIVER
->>  M:   Viresh Kumar <viresh.linux@gmail.com>
->> +M:   Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->
-> this needs to be agreed with Viresh first, I guess. Not sure if it was
-> done or not. If it was, sorry for the noise ;-)
 
-:)
+--l3ej7W/Jb2pB3qL2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-@Andy: It's not that i don't want anybody else to be a Maintainer of
-this module, but i am
-a bit confused with what is written in description of MAINTAINERS file...
+Hi,
 
-M: is not considered for Mail normally, but as Maintainer - who is
-bound to look and review
-at all the patches, Has right to Ack or Nack something (Only if he is
-on the logical side :) )
+On Thu, Sep 27, 2012 at 11:04:54AM +0300, Andy Shevchenko wrote:
+> On Thu, Sep 27, 2012 at 10:42 AM, Felipe Balbi <balbi@ti.com> wrote:
+> >> -     depends on HAVE_CLK
+> >
+> > as is, this will break compilation of any arch which doesn't set
+> > HAVE_CLK.
+> As Viresh suggested and I checked it's not.
+> He wrote nice patch that adds stubs for such case.
 
-Suppose, if there are 10-20 people from different companies, who want
-to have themselves
-in cc for patches to a specific driver/subsystem, Will all of them add
-themselves to
-MAINTAINERS file? I guess NO.
+Great, that finally reached mainline. I was waiting for that patch for a
+long time, actually :-)
 
-If you only want yourself to be in cc, then ideally after these
-patches you should be there
-without these changes.
+thanks for the note
 
-People must cc after running scripts/get_maintainers.pl and it should
-return your name too,
-if i am not incorrect.
+--=20
+balbi
 
-But if you want to be a MAINTAINER explicitly, which i believe you are
-not (looking at the commit
-log), then this change is fine.
+--l3ej7W/Jb2pB3qL2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
---
-viresh
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQZAgPAAoJEIaOsuA1yqREubIQAIE+0tcKmDsFnSlSc2mXR59A
+gJC6B2kIh/kX5U9ETC3k9R/iGCdr7PFa7rmt3gUkt0UN2hZ/AjA140IkJr7Pj1rP
+yJEDPbKra4k9FIFmAO+jU2iuSHMKCz3hurZHPWe7asa64L3MCUSarDEuiWcrFqzH
+Ws2Q7oh4XfjYw+txaKSCG+r2cLQDDBZFKLpBNFmqRhhhyoHmJgyvKl7bYacIMnaK
+3mUXh1XhPNwcwveyiJOcpCOrRRVYbI5qnaw68je8Z2XFw7sxl8b1TkaCgM9UJi0f
+qIRZjs9+t6PaOHokRi09eeLaL6wN4aDEOM3KCgkSXyBMBKOkWT+VlFAuZ5sDJqOC
+byanedzG7rPLC2xqCUlGMtdo70Ae7qaEI8mQ/nBmCSADt4njWfVgkbYply7bA9Va
+rpi+/LSCUP9+TfPLY6kjlhq5zdtKfk8H5f47bon7/NftA0ESeiCPoHih5cCXhzrY
+zs2P840tGUYib+GH01yfbFz0SNR20zLKzUN53+GkLWl9iIiM6avKoJO0Sbvym5xo
+gJVldG8j+rPN5BG7FdklJleNugZGJTDAXJ/b6idFnWC5uqQYrixwvof9suMsg5Tm
+TNhb86vHAwBHgtPsrLuhu7VdNBsPnLQBr4wYfxiMgQ4nRAS9mAUaEePeSr8MonKA
+O0UWyeQklzLt+uydVIgD
+=NU1z
+-----END PGP SIGNATURE-----
+
+--l3ej7W/Jb2pB3qL2--
