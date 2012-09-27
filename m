@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab2I0PlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 11:41:22 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37685 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591Ab2I0PlU (ORCPT
+	id S1753665Ab2I0Pm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 11:42:26 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:51079 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751420Ab2I0PmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 11:41:20 -0400
+	Thu, 27 Sep 2012 11:42:25 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18Eh984itgEV0zGqvYR+UQIpiQE2+bs+xqLBTESrZ
+	XFuXzSzrrqR8Sm
+Message-ID: <506473D8.10904@gmx.de>
+Date: Thu, 27 Sep 2012 17:42:16 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1348739292.1648.15.camel@vkoul-udesk3>
-References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
-	<1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
-	<CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
-	<CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
-	<1348739292.1648.15.camel@vkoul-udesk3>
-Date: Thu, 27 Sep 2012 21:11:19 +0530
-Message-ID: <CAG17yqRxZFsKpx+gpEGoZTbs4x7ijmqywX39=ezq2+RZkvk=TA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
-From: Inderpal Singh <inderpal.singh@linaro.org>
-To: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, boojin.kim@samsung.com,
-        patches@linaro.org, kgene.kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: dri-devel@lists.freedesktop.org
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: hot CPU with 3.6.0-rc7+ and intel graphic
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 September 2012 15:18, Vinod Koul <vinod.koul@linux.intel.com> wrote:
-> On Wed, 2012-09-26 at 12:11 +0530, Inderpal Singh wrote:
->> If we fail pl330_remove while some client is queued, the force unload
->> will fail and the
->> force unload will lose its purpose.
->> How about conditionally DMA_TERMINATE_ALL and free resources like
->> below ?
-> Why would you want to remove the driver when it is doing something
-> useful? You have to ensure driver is not doing anything.
->
-> What is point here?
->
-As mentioned by jassi,  if the pl330 module is forced unloaded while
-some client is queued, we have to manually do DMA_TERMINATE_ALL.
+Hello,
 
-If failing remove is a better option in case some client is queued, we
-can do away with DMA_TERMINATE_ALL and free_chan_resources and simply
-return a suitable error code from remove.
+I'm observing a high CPU usage at my ThinkPad T420 (i5-2540M CPU), w/
+integrated intel graphic.
 
-Kindly suggest.
+Powertop-2.1 shows that the GPU is always at 100%, although I've defined
+these settings :
+$> cat /etc/modprobe.d/i915.conf
+options i915 i915_enable_rc6=7 lvds_downclock=0
 
-Thanks,
-Inder
+Kernel 3.5.4 works fine, I don't see any differences in dmesg output.
 
-> --
-> ~Vinod
->
+
+
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
