@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab2I0Ooy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 10:44:54 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:33576 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab2I0Oow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 10:44:52 -0400
-Message-ID: <1348757203.13546.4.camel@footlong>
-Subject: Re: [PATCH 1/1] drivers/char/tpm: remove tasklet and cleanup
-From: Ashley Lai <adlai@linux.vnet.ibm.com>
-To: key@linux.vnet.ibm.com
-Cc: benh@kernel.crashing.org, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, linuxppc-dev@lists.ozlabs.org,
-        rcj@linux.vnet.ibm.com, adlai@us.ibm.com
-Date: Thu, 27 Sep 2012 09:46:43 -0500
-In-Reply-To: <20120926135513.GA8251@ennui.austin.ibm.com>
-References: <1345670263.25124.7.camel@footlong>
-	 <1347472190.27058.5.camel@footlong>
-	 <alpine.LRH.2.02.1209241225230.678@tundra.namei.org>
-	 <20120924141041.GA2741@ennui.austin.ibm.com>
-	 <20120924154821.GA16007@ennui.austin.ibm.com>
-	 <20120926135513.GA8251@ennui.austin.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12092714-5806-0000-0000-00001A05CC79
+	id S1753873Ab2I0OrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 10:47:14 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:43856 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750949Ab2I0OrM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 10:47:12 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v6] hashtable: introduce a small and naive hashtable
+Date: Thu, 27 Sep 2012 15:36:45 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B700C@saturn3.aculab.com>
+In-Reply-To: <20120927131118.GC30139@Krystal>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH v6] hashtable: introduce a small and naive hashtable
+thread-index: Ac2csZo+tmrnRMpFTrq9gU2Iqhr5qgACr4PA
+References: <1348663729-2584-1-git-send-email-levinsasha928@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B7008@saturn3.aculab.com> <1348667992.22822.50.camel@gandalf.local.home> <506310AA.2050700@gmail.com> <20120926143905.GB22699@Krystal> <1348675764.22822.56.camel@gandalf.local.home> <20120926161956.GB28648@Krystal> <AE90C24D6B3A694183C094C60CF0A2F6026B7009@saturn3.aculab.com> <50640F4E.4020305@gmail.com> <20120927131118.GC30139@Krystal>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>,
+        "Sasha Levin" <levinsasha928@gmail.com>
+Cc: "Steven Rostedt" <rostedt@goodmis.org>, <torvalds@linux-foundation.org>,
+        <tj@kernel.org>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <ebiederm@xmission.com>,
+        <neilb@suse.de>, <bfields@fieldses.org>, <ejt@redhat.com>,
+        <snitzer@redhat.com>, <edumazet@google.com>, <josh@joshtriplett.org>,
+        <rmallon@gmail.com>, <palves@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-26 at 08:55 -0500, key@linux.vnet.ibm.com wrote:
-> On Mon, Sep 24, 2012 at 10:48:21AM -0500, key@linux.vnet.ibm.com wrote:
-> > On Mon, Sep 24, 2012 at 09:10:41AM -0500, key@linux.vnet.ibm.com wrote:
-> > > On Mon, Sep 24, 2012 at 12:26:05PM +1000, James Morris wrote:
-> > > > On Wed, 12 Sep 2012, Ashley Lai wrote:
-> > > > 
-> > > > > This patch removed the tasklet and moved the wait queue into the
-> > > > > private structure.  It also cleaned up the response CRQ path.
-> > > > > 
-> > > > > Signed-off-by: Ashley Lai <adlai@us.ibm.com>
-> > > > 
-> > > > 
-> > > > Kent: any comment on this?  You should probably push this to me via your 
-> > > > tree.
-> > > 
-> > >   Oh, I thought we were waiting on Ben. This looks good to me, I'll get
-> > > this to you today.
-> > 
-> >   Ashley tells me Ben's review is in the works, so I'll send once we
-> > have it.
-> 
->   Ben - any status here?
-> 
-> Kent
+> Moreover, if your thinking is that we do not need a static inline
+> function replicated at every caller, maybe we should introduce a
+> lib/hashtable.c that implements those 2 functions.
 
-Hi Ben,
+That was my thought...
+Given their nature, I'd guess they aren't critical path.
+Probably not worth adding an entire source file though.
 
-Would you review the patch before the weekend?  If you are busy and not
-able to review the patch this week, we will pull the patch into James's
-tree next week.  I can resolve any additional comments you may have in a
-different patch.
+With regard to 'inline', when I say it, I really mean it!
+Unfortunately some people seem to just type it anyway (rather
+like 'register' used to get used) - so the compilers start
+ignoring the request.
+At least some versions of gcc will usually inline static
+functions that are only called once - but even then it can
+change its mind for almost no reason.
 
-Thanks,
---Ashley Lai
+	David
 
-> 
-> > 
-> > Kent
-> > 
-> > > 
-> > >   Kent
-> > > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
 
 
