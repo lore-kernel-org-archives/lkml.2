@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab2I0SPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 14:15:25 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:20396 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753587Ab2I0SPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 14:15:23 -0400
-X-IronPort-AV: E=Sophos;i="4.80,496,1344236400"; 
-   d="scan'208";a="694939843"
-Message-ID: <506497B9.3030601@netapp.com>
-Date: Thu, 27 Sep 2012 14:15:21 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120910 Thunderbird/15.0.1
+	id S1754364Ab2I0SQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 14:16:11 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64132 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754117Ab2I0SQJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 14:16:09 -0400
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-References: <20120807134156.GP1996@amd.com> <20120927145217.GA18962@8bytes.org> <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com> <20120927153928.GB18962@8bytes.org> <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com> <20120927175623.GG10549@amd.com>
-In-Reply-To: <20120927175623.GG10549@amd.com>
+In-Reply-To: <alpine.DEB.2.02.1209271039500.8808@asgard.lang.hm>
+References: <1348505683.11847.111.camel@twins> <1348511193.6951.44.camel@marge.simpson.net>
+ <CA+55aFxY7EPCxXqx_eKtVSOmjGKytUiAb2U-o5+=9O8nA-rYsA@mail.gmail.com>
+ <20120924192056.GB4082@liondog.tnic> <1348538258.7100.23.camel@marge.simpson.net>
+ <CA+55aFxw5yab4f=+KwB59RjRNXEhQZ==QEvQeLhEczKCTQK9wg@mail.gmail.com>
+ <1348574286.3881.40.camel@twins> <20120925131736.GA30652@x1.osrc.amd.com>
+ <20120925170058.GC30158@x1.osrc.amd.com> <CA+55aFzf=CApkYn+m5omwg+9-9i=11vj=7OMxKrCKb0qc-oBgg@mail.gmail.com>
+ <20120926163233.GA5339@x1.osrc.amd.com> <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+ <1348734104.3292.5.camel@twins> <alpine.DEB.2.02.1209270935080.5162@asgard.lang.hm>
+ <1348767498.3292.29.camel@twins> <alpine.DEB.2.02.1209271039500.8808@asgard.lang.hm>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 27 Sep 2012 11:15:47 -0700
+X-Google-Sender-Auth: hUVJPn8EMGHA6fG6fZ17l6Om9oA
+Message-ID: <CA+55aFwSapFvbRJ-mCL+vUTvJwDufVPQR7q92KNA=eWiSKo2sg@mail.gmail.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+To: david@lang.hm
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Borislav Petkov <bp@alien8.de>,
+        Mike Galbraith <efault@gmx.de>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 01:56 PM, Joerg Roedel wrote:
-> On Thu, Sep 27, 2012 at 04:16:25PM +0000, Myklebust, Trond wrote:
->>> Yes, it contains that commit. I was about to test plain v3.6-rc7 without
->>> my patches (not nfs related, of cource) on-top, but unfortunatly the
->>> disk with the root-fs died :-/
->>> I am about to set up the box again and test plain -rc7.
->>
->> Please do.
-> 
-> Okay, the box is running again and the bug does not reproduce anymore
-> with the new installation. Unfortunatly the old kernel configuration is
-> gone together with the previous version of the nfs-utils :-/ I'll try to
-> play around with the kernel config a little bit more and see if it
-> reproduces again.
+On Thu, Sep 27, 2012 at 10:45 AM,  <david@lang.hm> wrote:
+>
+> For the initial starup of a new process, finding as idle and remote a core
+> to start on (minimum sharing with existing processes) is probably the smart
+> thing to do.
 
-Double check that you're using the legacy idmapper, and not the keyring based one (/etc/request-key.conf shouldn't have the "create id_resolver * * /usr/bin/nfsidmap %k %d" line).
+Actually, no.
 
-- Bryan
+It's *exec* that should go remote. New processes (fork, vfork or
+clone) absolutely should *not* go remote at all.
 
-> 
-> 
-> 	Joerg
-> 
+vfork() should stay on the same CPU (synchronous wakeup), fork()
+should possibly go SMT (likely exec in the near future will spread it
+out), and clone should likely just stay close too.
 
+           Linus
