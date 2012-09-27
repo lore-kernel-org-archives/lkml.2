@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2I0UJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 16:09:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57577 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab2I0UJ0 (ORCPT
+	id S1754382Ab2I0UMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 16:12:14 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:65371 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab2I0UMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 16:09:26 -0400
-Date: Thu, 27 Sep 2012 13:09:21 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>, James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 3.5 0/2] seccomp and vsyscall fixes
-Message-ID: <20120927200921.GA16868@kroah.com>
-References: <cover.1342566495.git.luto@amacapital.net>
- <20120927173622.GB21025@kroah.com>
- <CALCETrUi5RrJoq9CS8mA31tiT9WPW4cc27zyjymAj5uqWqMptw@mail.gmail.com>
+	Thu, 27 Sep 2012 16:12:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUi5RrJoq9CS8mA31tiT9WPW4cc27zyjymAj5uqWqMptw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1348724705-23779-2-git-send-email-wency@cn.fujitsu.com>
+References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-2-git-send-email-wency@cn.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 27 Sep 2012 16:11:52 -0400
+X-Google-Sender-Auth: _Whb23F5iNme4-zKg5p716whSKo
+Message-ID: <CAHGf_=pdoYkKEFAxudE-A9KZMMPeVxqHw7+NNXrpX_VHVx2GCA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] memory-hotplug: add memory_block_release
+To: wency@cn.fujitsu.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        isimatu.yasuaki@jp.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 12:40:10PM -0700, Andy Lutomirski wrote:
-> [cc James Morris]
-> 
-> This has been pending since the 3.6 merge window.  Patch 2/2 barely
-> matters because it's almost impossible to detect its effect -- it's
-> more about future proofing against new architectures.  Patch 1/2 has
-> been slightly tweaked here:
-> 
-> http://lkml.kernel.org/r/%3C744e07394a02be3d3ef52c22ccedb24d9a478fe1.1343869850.git.luto@amacapital.net%3E
-> 
-> and will soon appear here (once the cache refreshes)
-> 
-> https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=shortlog;h=refs/heads/seccomp-vsyscall/patch_v2
-> 
-> I can wait for someone to pick it up or I can send a pull request from
-> my tree.  FWIW, the same patch applies cleanly to -next.
+On Thu, Sep 27, 2012 at 1:45 AM,  <wency@cn.fujitsu.com> wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>
+> When calling remove_memory_block(), the function shows following message at
+> device_release().
+>
+> Device 'memory528' does not have a release() function, it is broken and must
+> be fixed.
+>
+> remove_memory_block() calls kfree(mem). I think it shouled be called from
+> device_release(). So the patch implements memory_block_release()
 
-You might want to resend them, in patch form, to James, if he's missed
-them already.
+Why do you think so? This is terribly bad change log. it has almost
+zero information.
+We can't review it.
 
-thanks,
 
-greg k-h
+
+
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Wen Congyang <wency@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> ---
+>  drivers/base/memory.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> index 7dda4f7..da457e5 100644
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -70,6 +70,13 @@ void unregister_memory_isolate_notifier(struct notifier_block *nb)
+>  }
+>  EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+>
+> +static void release_memory_block(struct device *dev)
+> +{
+> +       struct memory_block *mem = container_of(dev, struct memory_block, dev);
+> +
+> +       kfree(mem);
+> +}
+> +
+>  /*
+>   * register_memory - Setup a sysfs device for a memory block
+>   */
+> @@ -80,6 +87,7 @@ int register_memory(struct memory_block *memory)
+>
+>         memory->dev.bus = &memory_subsys;
+>         memory->dev.id = memory->start_section_nr / sections_per_block;
+> +       memory->dev.release = release_memory_block;
+>
+>         error = device_register(&memory->dev);
+>         return error;
+> @@ -630,7 +638,6 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+>                 mem_remove_simple_file(mem, phys_device);
+>                 mem_remove_simple_file(mem, removable);
+>                 unregister_memory(mem);
+> -               kfree(mem);
+>         } else
+>                 kobject_put(&mem->dev.kobj);
+>
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
