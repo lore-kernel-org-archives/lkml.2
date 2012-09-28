@@ -1,95 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964886Ab2I1Xdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 19:33:38 -0400
-Received: from nm3.bullet.mail.sp2.yahoo.com ([98.139.91.73]:30349 "HELO
-	nm3.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759072Ab2I1XdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 19:33:23 -0400
-X-Yahoo-Newman-Id: 318041.11876.bm@omp1022.access.mail.sp2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Qbm4kpcVM1nEDmSshPNTi2WtbYEFuny6nxkAz7Vua4E06Ct
- aDRkoKfPUXPG70U8K0lcurlBRl1d2Tmj3qsbCqY3Yd9iv5nQvpE2qiU41HbM
- ilQkc9sZQib1ms6aSojPGocMD1WfIhYAQ11XOkGTEfWFnW_j7tG4qa9I3H0p
- gaMnvvrhTk.w1HI6Rbu8q_ikwZoitL2pS0HX3fbrig9R6mgHKWMnF3Unjbaf
- BW5iAyOV26GlFZDOOsnWKEl5.PVI4deDuzfQL_zdvxEjtaodTMgDL0OUrjVL
- YwasaSPQZ9D9eVEFTQPPu_9ZLuBDXklI0Emw9pF9eK5LnFZyazzqPP32aPQi
- z1AsSrQcNpNLGcavxY3z2uSE0eOO3q0pJJKjZTGFhAXr1G7AXblpxTS4sQ44
- 1KLZM.bmETliglVxzC3HCsaxTHgjAayOP0HS54ddtCV2F1cIS3om2gzXORbq
- OBx0nxUMSLl8555cb7sNpgSk1RA63MBqn6urt4h5gEpazWtMQefk-
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-From: Daniel Santos <daniel.santos@pobox.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Cc: Daniel Santos <daniel.santos@pobox.com>
-Subject: [PATCH 3/3] kernel-doc: Don't mangle whitespace in Example section
-Date: Fri, 28 Sep 2012 18:32:58 -0500
-Message-Id: <1348875178-28490-4-git-send-email-daniel.santos@pobox.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1348875178-28490-1-git-send-email-daniel.santos@pobox.com>
-References: <1348875178-28490-1-git-send-email-daniel.santos@pobox.com>
+	id S932390Ab2I1Xg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 19:36:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56292 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932231Ab2I1Xgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 19:36:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,504,1344236400"; 
+   d="scan'208";a="198565369"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-arch@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 2/3] mm, thp: implement virtual huge zero page
+Date: Sat, 29 Sep 2012 02:37:20 +0300
+Message-Id: <1348875441-19561-3-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1348875441-19561-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1348875441-19561-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A section with the name "Example" (case-insensitive) has a special
-meaning to kernel-doc.  These sections are output using mono-type fonts.
-However, leading whitespace is stripped, thus robbing a lot of meaning
-from this, as indented code examples will be mangled.
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-This patch preserves the leading whitespace for "Example" sections.
-More accurately, it preserves it for all sections, but removes it later
-if the section isn't an "Example" section.
+Virtual huge zero page is a PMD table with all entries set to zero page.
+When we get write-protect page fault to zero page in such PMD we drop
+the whole page table and allow THP (if enabled) to allocate a real
+memory instead.
 
-Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+The implementation requires HAVE_PMD_SPECAIL from an arch if it wants to
+support virtual zero page.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- scripts/kernel-doc |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+ include/linux/mm.h |    8 ++++++++
+ mm/huge_memory.c   |   38 ++++++++++++++++++++++++++++++++++++++
+ mm/memory.c        |   15 ++++++++-------
+ 3 files changed, 54 insertions(+), 7 deletions(-)
 
-diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-index 2be2078..46e7aff 100755
---- a/scripts/kernel-doc
-+++ b/scripts/kernel-doc
-@@ -296,9 +296,10 @@ my $doc_special = "\@\%\$\&";
- my $doc_start = '^/\*\*\s*$'; # Allow whitespace at end of comment start.
- my $doc_end = '\*/';
- my $doc_com = '\s*\*\s*';
-+my $doc_com_body = '\s*\* ?';
- my $doc_decl = $doc_com . '(\w+)';
- my $doc_sect = $doc_com . '([' . $doc_special . ']?[\w\s]+):(.*)';
--my $doc_content = $doc_com . '(.*)';
-+my $doc_content = $doc_com_body . '(.*)';
- my $doc_block = $doc_com . 'DOC:\s*(.*)?';
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 311be90..179a41c 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -514,6 +514,14 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
+ }
+ #endif
  
- my %constants;
-@@ -486,6 +487,9 @@ sub output_highlight {
- 	$contents =~ s/\s+$//;
-     }
-     foreach $line (split "\n", $contents) {
-+	if (! $output_preformatted) {
-+	    $line =~ s/^\s*//;
++#ifndef my_zero_pfn
++static inline unsigned long my_zero_pfn(unsigned long addr)
++{
++	extern unsigned long zero_pfn;
++	return zero_pfn;
++}
++#endif
++
+ /*
+  * Multiple processes may "see" the same page. E.g. for untouched
+  * mappings of /dev/null, all processes see the same page full of
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 57c4b93..8189fb6 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -696,6 +696,33 @@ static inline struct page *alloc_hugepage(int defrag)
+ }
+ #endif
+ 
++static void set_huge_zero_page(pgtable_t pgtable, struct vm_area_struct *vma,
++		unsigned long haddr, pmd_t *pmd)
++{
++	pmd_t _pmd;
++	int i;
++
++	pmdp_clear_flush_notify(vma, haddr, pmd);
++	/* leave pmd empty until pte is filled */
++
++	pmd_populate(vma->vm_mm, &_pmd, pgtable);
++
++	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
++		pte_t *pte, entry;
++		entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
++		entry = pte_mkspecial(entry);
++		pte = pte_offset_map(&_pmd, haddr);
++		VM_BUG_ON(!pte_none(*pte));
++		set_pte_at(vma->vm_mm, haddr, pte, entry);
++		pte_unmap(pte);
 +	}
- 	if ($line eq ""){
- 	    if (! $output_preformatted) {
- 		print $lineprefix, local_unescape($blankline);
-@@ -2344,7 +2348,7 @@ sub process_file($) {
- 		    $descr= $1;
- 		    $descr =~ s/^\s*//;
- 		    $descr =~ s/\s*$//;
--		    $descr =~ s/\s+/ /;
-+		    $descr =~ s/\s+/ /g;
- 		    $declaration_purpose = xml_escape($descr);
- 		    $in_purpose = 1;
- 		} else {
-@@ -2436,6 +2440,7 @@ sub process_file($) {
- 		    # Continued declaration purpose
- 		    chomp($declaration_purpose);
- 		    $declaration_purpose .= " " . xml_escape($1);
-+		    $declaration_purpose =~ s/\s+/ /g;
- 		} else {
- 		    $contents .= $1 . "\n";
- 		}
++	smp_wmb(); /* make pte visible before pmd */
++	pmd_populate(vma->vm_mm, pmd, pgtable);
++	_pmd = pmd_mkspecial(*pmd);
++	set_pmd_at(vma->vm_mm, haddr, pmd, _pmd);
++	vma->vm_mm->nr_ptes++;
++}
++
+ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			       unsigned long address, pmd_t *pmd,
+ 			       unsigned int flags)
+@@ -709,6 +736,17 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			return VM_FAULT_OOM;
+ 		if (unlikely(khugepaged_enter(vma)))
+ 			return VM_FAULT_OOM;
++		if (IS_ENABLED(CONFIG_HAVE_PMD_SPECIAL) &&
++				!(flags & FAULT_FLAG_WRITE)) {
++			pgtable_t pgtable;
++			pgtable = pte_alloc_one(mm, haddr);
++			if (unlikely(!pgtable))
++				goto out;
++			spin_lock(&mm->page_table_lock);
++			set_huge_zero_page(pgtable, vma, haddr, pmd);
++			spin_unlock(&mm->page_table_lock);
++			return 0;
++		}
+ 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+ 					  vma, haddr, numa_node_id(), 0);
+ 		if (unlikely(!page)) {
+diff --git a/mm/memory.c b/mm/memory.c
+index 5736170..38dfd5e 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -724,13 +724,6 @@ static inline int is_zero_pfn(unsigned long pfn)
+ }
+ #endif
+ 
+-#ifndef my_zero_pfn
+-static inline unsigned long my_zero_pfn(unsigned long addr)
+-{
+-	return zero_pfn;
+-}
+-#endif
+-
+ /*
+  * vm_normal_page -- This function gets the "struct page" associated with a pte.
+  *
+@@ -3514,6 +3507,14 @@ retry:
+ 	pmd = pmd_alloc(mm, pud, address);
+ 	if (!pmd)
+ 		return VM_FAULT_OOM;
++
++	if (pmd_special(*pmd) && flags & FAULT_FLAG_WRITE) {
++		pgtable_t pgtable = pmd_pgtable(*pmd);
++		pmd_clear(pmd);
++		pte_free(mm, pgtable);
++		mm->nr_ptes--;
++	}
++
+ 	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
+ 		if (!vma->vm_ops)
+ 			return do_huge_pmd_anonymous_page(mm, vma, address,
 -- 
-1.7.3.4
+1.7.7.6
 
