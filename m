@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946459Ab2I1Vws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:52:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032066Ab2I1UXd (ORCPT
+	id S965441Ab2I1VxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:53:10 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032060Ab2I1UXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:23:33 -0400
+	Fri, 28 Sep 2012 16:23:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 039/218] target: Fix ->data_length re-assignment bug with SCSI overflow
-Date: Fri, 28 Sep 2012 13:14:16 -0700
-Message-Id: <20120928201505.915758773@linuxfoundation.org>
+        Tyler Hicks <tyhicks@canonical.com>,
+        Colin Ian King <colin.king@canonical.com>
+Subject: [ 038/218] eCryptfs: Copy up attributes of the lower target inode after rename
+Date: Fri, 28 Sep 2012 13:14:15 -0700
+Message-Id: <20120928201505.793020436@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,71 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 4c054ba63ad47ef244cfcfa1cea38134620a5bae upstream.
+commit 8335eafc2859e1a26282bef7c3d19f3d68868b8a upstream.
 
-This patch fixes a long-standing bug with SCSI overflow handling
-where se_cmd->data_length was incorrectly being re-assigned to
-the larger CDB extracted allocation length, resulting in a number
-of fabric level errors that would end up causing a session reset
-in most cases.  So instead now:
+After calling into the lower filesystem to do a rename, the lower target
+inode's attributes were not copied up to the eCryptfs target inode. This
+resulted in the eCryptfs target inode staying around, rather than being
+evicted, because i_nlink was not updated for the eCryptfs inode. This
+also meant that eCryptfs didn't do the final iput() on the lower target
+inode so it stayed around, as well. This would result in a failure to
+free up space occupied by the target file in the rename() operation.
+Both target inodes would eventually be evicted when the eCryptfs
+filesystem was unmounted.
 
- - Only re-assign se_cmd->data_length durining UNDERFLOW (to use the
-   smaller value)
- - Use existing se_cmd->data_length for OVERFLOW (to use the smaller
-   value)
+This patch calls fsstack_copy_attr_all() after the lower filesystem
+does its ->rename() so that important inode attributes, such as i_nlink,
+are updated at the eCryptfs layer. ecryptfs_evict_inode() is now called
+and eCryptfs can drop its final reference on the lower inode.
 
-This fix has been tested with the following CDB to generate an
-SCSI overflow:
+http://launchpad.net/bugs/561129
 
-  sg_raw -r512 /dev/sdc 28 0 0 0 0 0 0 0 9 0
-
-Tested using iscsi-target, tcm_qla2xxx, loopback and tcm_vhost fabric
-ports.  Here is a bit more detail on each case:
-
- - iscsi-target: Bug with open-iscsi with overflow, sg_raw returns
-                 -3584 bytes of data.
- - tcm_qla2xxx: Working as expected, returnins 512 bytes of data
- - loopback: sg_raw returns CHECK_CONDITION, from overflow rejection
-             in transport_generic_map_mem_to_cmd()
- - tcm_vhost: Same as loopback
-
-Reported-by: Roland Dreier <roland@purestorage.com>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Boaz Harrosh <bharrosh@panasas.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Tested-by: Colin Ian King <colin.king@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/ecryptfs/inode.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -3167,15 +3167,20 @@ static int transport_generic_cmd_sequenc
- 			/* Returns CHECK_CONDITION + INVALID_CDB_FIELD */
- 			goto out_invalid_cdb_field;
- 		}
--
-+		/*
-+		 * For the overflow case keep the existing fabric provided
-+		 * ->data_length.  Otherwise for the underflow case, reset
-+		 * ->data_length to the smaller SCSI expected data transfer
-+		 * length.
-+		 */
- 		if (size > cmd->data_length) {
- 			cmd->se_cmd_flags |= SCF_OVERFLOW_BIT;
- 			cmd->residual_count = (size - cmd->data_length);
- 		} else {
- 			cmd->se_cmd_flags |= SCF_UNDERFLOW_BIT;
- 			cmd->residual_count = (cmd->data_length - size);
-+			cmd->data_length = size;
- 		}
--		cmd->data_length = size;
- 	}
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -621,6 +621,7 @@ ecryptfs_rename(struct inode *old_dir, s
+ 	struct dentry *lower_old_dir_dentry;
+ 	struct dentry *lower_new_dir_dentry;
+ 	struct dentry *trap = NULL;
++	struct inode *target_inode;
  
- 	if (cmd->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB &&
+ 	lower_old_dentry = ecryptfs_dentry_to_lower(old_dentry);
+ 	lower_new_dentry = ecryptfs_dentry_to_lower(new_dentry);
+@@ -628,6 +629,7 @@ ecryptfs_rename(struct inode *old_dir, s
+ 	dget(lower_new_dentry);
+ 	lower_old_dir_dentry = dget_parent(lower_old_dentry);
+ 	lower_new_dir_dentry = dget_parent(lower_new_dentry);
++	target_inode = new_dentry->d_inode;
+ 	trap = lock_rename(lower_old_dir_dentry, lower_new_dir_dentry);
+ 	/* source should not be ancestor of target */
+ 	if (trap == lower_old_dentry) {
+@@ -643,6 +645,9 @@ ecryptfs_rename(struct inode *old_dir, s
+ 			lower_new_dir_dentry->d_inode, lower_new_dentry);
+ 	if (rc)
+ 		goto out_lock;
++	if (target_inode)
++		fsstack_copy_attr_all(target_inode,
++				      ecryptfs_inode_to_lower(target_inode));
+ 	fsstack_copy_attr_all(new_dir, lower_new_dir_dentry->d_inode);
+ 	if (new_dir != old_dir)
+ 		fsstack_copy_attr_all(old_dir, lower_old_dir_dentry->d_inode);
 
 
