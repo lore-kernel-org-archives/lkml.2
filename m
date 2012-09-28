@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964907Ab2I1S5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:57:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964878Ab2I1S5D (ORCPT
+	id S964925Ab2I1S5R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:57:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964910Ab2I1S5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:57:03 -0400
+	Fri, 28 Sep 2012 14:57:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 076/262] mmc: atmel-mci: not busy flag has also to be used for read operations
-Date: Fri, 28 Sep 2012 11:50:05 -0700
-Message-Id: <20120928183007.041428196@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>, Andrey Danin <danindrey@mail.ru>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 068/262] sound: tegra_alc5632: remove HP detect GPIO inversion
+Date: Fri, 28 Sep 2012 11:49:57 -0700
+Message-Id: <20120928183006.129009150@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,60 +29,32 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit 077d40731edc90ee9dedf63249034c8cd5f694ce upstream.
+commit c921928661eda599d73a6a86e58bdd5aecfa18cb upstream.
 
-Even if the datasheet says that the not busy flag has to be used only
-for write operations, it's false except for version lesser than v2xx.
+Both the schematics and practical testing show that the HP detect GPIO
+is high when the headphones are plugged in. Hence, the snd_soc_jack_gpio
+should not specify to invert the signal.
 
-Not waiting on the not busy flag for read operations can cause the
-controller to hang-up during the initialization of some SD cards
-with DMA after the first CMD6 -- the next command is sent too early.
-
-Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Andrey Danin <danindrey@mail.ru>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/atmel-mci.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ sound/soc/tegra/tegra_alc5632.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -81,6 +81,7 @@ struct atmel_mci_caps {
- 	bool	has_bad_data_ordering;
- 	bool	need_reset_after_xfer;
- 	bool	need_blksz_mul_4;
-+	bool	need_notbusy_for_read_ops;
+--- a/sound/soc/tegra/tegra_alc5632.c
++++ b/sound/soc/tegra/tegra_alc5632.c
+@@ -92,7 +92,6 @@ static struct snd_soc_jack_gpio tegra_al
+ 	.name = "Headset detection",
+ 	.report = SND_JACK_HEADSET,
+ 	.debounce_time = 150,
+-	.invert = 1,
  };
  
- struct atmel_mci_dma {
-@@ -1619,7 +1620,8 @@ static void atmci_tasklet_func(unsigned
- 				__func__);
- 			atmci_set_completed(host, EVENT_XFER_COMPLETE);
- 
--			if (host->data->flags & MMC_DATA_WRITE) {
-+			if (host->caps.need_notbusy_for_read_ops ||
-+			   (host->data->flags & MMC_DATA_WRITE)) {
- 				atmci_writel(host, ATMCI_IER, ATMCI_NOTBUSY);
- 				state = STATE_WAITING_NOTBUSY;
- 			} else if (host->mrq->stop) {
-@@ -2212,6 +2214,7 @@ static void __init atmci_get_cap(struct
- 	host->caps.has_bad_data_ordering = 1;
- 	host->caps.need_reset_after_xfer = 1;
- 	host->caps.need_blksz_mul_4 = 1;
-+	host->caps.need_notbusy_for_read_ops = 0;
- 
- 	/* keep only major version number */
- 	switch (version & 0xf00) {
-@@ -2232,6 +2235,7 @@ static void __init atmci_get_cap(struct
- 	case 0x200:
- 		host->caps.has_rwproof = 1;
- 		host->caps.need_blksz_mul_4 = 0;
-+		host->caps.need_notbusy_for_read_ops = 1;
- 	case 0x100:
- 		host->caps.has_bad_data_ordering = 0;
- 		host->caps.need_reset_after_xfer = 0;
+ static const struct snd_soc_dapm_widget tegra_alc5632_dapm_widgets[] = {
 
 
