@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964898Ab2I1XVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 19:21:47 -0400
-Received: from nm17.bullet.mail.ac4.yahoo.com ([98.139.52.214]:29397 "HELO
-	nm17.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S964814Ab2I1XVp (ORCPT
+	id S964975Ab2I1XV4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 19:21:56 -0400
+Received: from nm22-vm4.bullet.mail.ne1.yahoo.com ([98.138.91.182]:41081 "HELO
+	nm22-vm4.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S964814Ab2I1XVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 19:21:45 -0400
-X-Yahoo-Newman-Id: 610553.28471.bm@omp1022.access.mail.mud.yahoo.com
+	Fri, 28 Sep 2012 19:21:52 -0400
+X-Yahoo-Newman-Id: 457260.94834.bm@omp1005.access.mail.mud.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: INx3goEVM1nujuc1LlPKfGFCaWszDqZiWyzPHJ9r_pdvwA8
- I_e29hhh9UJsdxqYWanPeyyQDCRXHt1wXr.nfczPePup1hRbJB.YB83PJ8VG
- PZZqjYGoEW4haYRDfPI16Mc_XBX0O9.bOHH85yNGUxxaZfhrpg93CIHtQjmT
- ZLduGr96dDYDa4pWLxMsF_UcAMOyiz3UTgMxiesJOW8TuqNy0R8m5ehtbw7B
- XfHxwOf.1fe4Eye6Ztz00E8dFJIUERnNJ_BKJRrx4geknj0CwgPsFwd6VeLd
- zimdgIT2rYBXMv5my1JyaeLQ4W_iA9MKcx5Z8Z4IMjG1IHKcqtcuogRvZmrC
- 3LeqO5WKE7VPaIq3jruylX0VYNHTYk1wecQ9ATegMlfWbqZ8ZrlcLN0KTv22
- 4QQwXwzuOseh.oiLCUsrLMWmxH7WZZiKqA3vK8ptzxLXwYLnLF655
+X-YMail-OSG: 3cPF7fwVM1lt5C9.3gnqpV2kolrXDZeDAzpm6jno3VZMmJe
+ d1P0V16WNBbO8bYkftcu5h8VdaquNeoJMd0H327.PN4JG0oveiNqwMsAJ0zw
+ RKH.nR_FBA9IQl6MdIrK8Sj52OYT9PqfkrYK7fhFaxnk1jAuejSYm2T0TKv5
+ iJvGcs5pNSekTZhRrIw4An8.ztfl0E6oRfIKyyft7GHv_vb641_Mkzrj3evq
+ zyncwbzuGYGIfcc8gZxw5AXztkRcCz.h6QC18cd07xcx_mtSwEeklmWy.W7Q
+ L74svyZXCvINdKM77QjX.Duwm19Bt3FmzG_vIAFKKRNLUtFj3AymgpRXl_mA
+ _Rvep9aERNiWeW6DyKDs2.xdJJyAAK3xiWDXpAkzNwKDC8dIgENmAoFFJEWj
+ XbG1NCadmxfv0GcSuoOpAwE1JBnUpRfJdUWJxr.GJdaod31q2ZgcE
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: Daniel Santos <daniel.santos@pobox.com>
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -32,9 +32,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Pavel Pisa <pisa@cmp.felk.cvut.cz>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 8/10] bug.h: Make BUILD_BUG_ON generate compile-time error
-Date: Fri, 28 Sep 2012 18:20:09 -0500
-Message-Id: <1348874411-28288-9-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH 10/10] bug.h: Add gcc 4.2+ versions of BUILD_BUG_ON_* macros
+Date: Fri, 28 Sep 2012 18:20:11 -0500
+Message-Id: <1348874411-28288-11-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
 References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
@@ -42,62 +42,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Negative sized arrays wont create a compile-time error in some cases
-starting with gcc 4.4 (e.g., inlined functions), but gcc 4.3 introduced
-the error function attribute that will.  This patch modifies
-BUILD_BUG_ON to behave like BUILD_BUG already does, using the error
-function attribute so that you don't have to build the entire kernel to
-discover that you have a problem, and then enjoy trying to track it down
-from a link-time error.
+BUILD_BUG_ON42(arg)
+BUILD_BUG_ON_CONST42(arg)
+
+Prior to gcc 4.2, the optimizer was unable to determine that many
+constant values stored in structs were indeed compile-time constants and
+optimize them out.  Sometimes, it will find an intergral value to be a
+compile-time constant, but fail to perform a bit-wise AND at
+compile-time.  These two macros provide a mechanism to perform these
+build-time checks, but not break on older compilers where we already
+know they can't be checked at compile time.
+
+For specific details, consult the doc comments for BUILD_BUG_ON_CONST.
+These macros are used in the generic rbtree code.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- include/linux/bug.h |   24 ++++++++++++++----------
- 1 files changed, 14 insertions(+), 10 deletions(-)
+ include/linux/bug.h |   36 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 36 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/bug.h b/include/linux/bug.h
-index 298a916..c70b833 100644
+index e30f600..d14c23c 100644
 --- a/include/linux/bug.h
 +++ b/include/linux/bug.h
-@@ -42,24 +42,28 @@ struct pt_regs;
-  * @condition: the condition which the compiler should know is false.
-  *
-  * If you have some code which relies on certain constants being equal, or
-- * other compile-time-evaluated condition, you should use BUILD_BUG_ON to
-+ * some other compile-time-evaluated condition, you should use BUILD_BUG_ON to
-  * detect if someone changes it.
-  *
-  * The implementation uses gcc's reluctance to create a negative array, but
-  * gcc (as of 4.4) only emits that error for obvious cases (eg. not arguments
-- * to inline functions).  So as a fallback we use the optimizer; if it can't
-- * prove the condition is false, it will cause a link error on the undefined
-- * "__build_bug_on_failed".  This error message can be harder to track down
-- * though, hence the two different methods.
-+ * to inline functions).  Luckily, in 4.3 they added the "error" function
-+ * attribute just for this type of case.  Thus, we use a negative sized array
-+ * (should always create an error pre-gcc-4.4) and then call an undefined
-+ * function with the error attribute (should always creates an error 4.3+).  If
-+ * for some reason, neither creates a compile-time error, we'll still have a
-+ * link-time error, which is harder to track down.
-  */
- #ifndef __OPTIMIZE__
- #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
- #else
--extern int __build_bug_on_failed;
--#define BUILD_BUG_ON(condition)					\
--	do {							\
--		((void)sizeof(char[1 - 2*!!(condition)]));	\
--		if (condition) __build_bug_on_failed = 1;	\
-+#define BUILD_BUG_ON(condition)						\
-+	do {								\
-+		extern void __build_bug_on_failed(void)			\
-+			__compiletime_error("BUILD_BUG_ON failed");	\
-+		((void)sizeof(char[1 - 2*!!(condition)]));		\
-+		if (condition)						\
-+			__build_bug_on_failed();			\
- 	} while(0)
+@@ -2,6 +2,7 @@
+ #define _LINUX_BUG_H
+ 
+ #include <asm/bug.h>
++#include <linux/compiler.h>
+ 
+ enum bug_trap_type {
+ 	BUG_TRAP_TYPE_NONE = 0,
+@@ -129,6 +130,41 @@ struct pt_regs;
+ #define BUILD_BUG_ON_NON_CONST(exp)
  #endif
  
++
++#if GCC_VERSION >= 40200
++/**
++ * BUILD_BUG_ON_NON_CONST42 - break compile if expression cannot be determined
++ *                            to be a compile-time constant (disabled prior to
++ *                            gcc 4.2)
++ * @exp: value to test for compile-time constness
++ *
++ * Use this macro instead of BUILD_BUG_ON_NON_CONST when testing struct
++ * members or dereferenced arrays and pointers.  Note that the version checks
++ * for this macro are not perfect.  BUILD_BUG_ON_NON_CONST42 expands to nothing
++ * prior to gcc-4.2, after which it is the same as BUILD_BUG_ON_NON_CONST.
++ * However, there are still many checks that will break with this macro (see
++ * the Gory Details section of BUILD_BUG_ON_NON_CONST for more info).
++ *
++ * See also BUILD_BUG_ON_NON_CONST()
++ */
++# define BUILD_BUG_ON_NON_CONST42(exp) BUILD_BUG_ON_NON_CONST(exp)
++
++/**
++ * BUILD_BUG_ON42 - break compile if expression cannot be determined
++ *                   (disabled prior to gcc 4.2)
++ *
++ * This gcc-version check is necessary due to breakages in testing struct
++ * members prior to gcc 4.2.
++ *
++ * See also BUILD_BUG_ON()
++ */
++# define BUILD_BUG_ON42(arg) BUILD_BUG_ON(arg)
++#else
++# define BUILD_BUG_ON_NON_CONST42(exp)
++# define BUILD_BUG_ON42(arg)
++#endif /* GCC_VERSION >= 40200 */
++
++
+ #endif	/* __CHECKER__ */
+ 
+ #ifdef CONFIG_GENERIC_BUG
 -- 
 1.7.3.4
 
