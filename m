@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032432Ab2I1U0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:26:15 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032416Ab2I1U0K (ORCPT
+	id S1032444Ab2I1U0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:26:23 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:61665 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032431Ab2I1U0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:26:10 -0400
+	Fri, 28 Sep 2012 16:26:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jonathan Cameron <jic23@cam.ac.uk>, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 087/218] hwmon: (ad7314) Add name sysfs attribute
-Date: Fri, 28 Sep 2012 13:15:04 -0700
-Message-Id: <20120928201511.573419358@linuxfoundation.org>
+        Baldvin Kovacs <baldvin.kovacs@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 089/218] cifs: fix return value in cifsConvertToUTF16
+Date: Fri, 28 Sep 2012 13:15:06 -0700
+Message-Id: <20120928201511.780518303@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,43 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 3ceefe4319636d89d4bdf40dca9471970f942e4f upstream.
+commit c73f693989d7a7d99ec66a7065295a0c93d0b127 upstream.
 
-The 'name' sysfs attribute is mandatory for hwmon devices, but was missing
-in this driver.
+This function returns the wrong value, which causes the callers to get
+the length of the resulting pathname wrong when it contains non-ASCII
+characters.
 
-Cc: Jonathan Cameron <jic23@cam.ac.uk>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+This seems to fix https://bugzilla.samba.org/show_bug.cgi?id=6767
+
+Reported-by: Baldvin Kovacs <baldvin.kovacs@gmail.com>
+Reported-and-Tested-by: Nicolas Lefebvre <nico.lefebvre@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ad7314.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/cifs/cifs_unicode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/ad7314.c
-+++ b/drivers/hwmon/ad7314.c
-@@ -94,10 +94,18 @@ static ssize_t ad7314_show_temperature(s
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -328,6 +328,6 @@ cifsConvertToUTF16(__le16 *target, const
  	}
+ 
+ ctoUTF16_out:
+-	return i;
++	return j;
  }
  
-+static ssize_t ad7314_show_name(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
-+{
-+	return sprintf(buf, "%s\n", to_spi_device(dev)->modalias);
-+}
-+
-+static DEVICE_ATTR(name, S_IRUGO, ad7314_show_name, NULL);
- static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO,
- 			  ad7314_show_temperature, NULL, 0);
- 
- static struct attribute *ad7314_attributes[] = {
-+	&dev_attr_name.attr,
- 	&sensor_dev_attr_temp1_input.dev_attr.attr,
- 	NULL,
- };
 
 
