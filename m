@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030552Ab2I1TEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:04:05 -0400
+	id S1030565Ab2I1TEM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:04:12 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030534Ab2I1TD4 (ORCPT
+	with ESMTP id S1030549Ab2I1TEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:03:56 -0400
+	Fri, 28 Sep 2012 15:04:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Jerome Glisse <jglisse@redhat.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 199/262] drm/radeon: convert radeon vfct code to use acpi_get_table_with_size
-Date: Fri, 28 Sep 2012 11:52:08 -0700
-Message-Id: <20120928183021.582315694@linuxfoundation.org>
+Subject: [ 201/262] drm/radeon: force dma32 to fix regression rs4xx,rs6xx,rs740
+Date: Fri, 28 Sep 2012 11:52:10 -0700
+Message-Id: <20120928183021.822729163@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,44 +29,35 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 7c3906d04a4587dceaa78cc1ae6b14e6454ee02a upstream.
+commit 4a2b6662c3632176b4fdf012243dd3751367bf1f upstream.
 
-Allows us to verify the table size.
+It seems some of those IGP dislike non dma32 page despite what
+documentation says. Fix regression since we allowed non dma32
+pages. It seems it only affect some revision of those IGP chips
+as we don't know which one just force dma32 for all of them.
 
+https://bugzilla.redhat.com/show_bug.cgi?id=785375
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_bios.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_device.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_bios.c
-+++ b/drivers/gpu/drm/radeon/radeon_bios.c
-@@ -554,13 +554,12 @@ static bool radeon_acpi_vfct_bios(struct
- {
- 	bool ret = false;
- 	struct acpi_table_header *hdr;
--	/* acpi_get_table_with_size is not exported :( */
--	acpi_size tbl_size = 0x7fffffff;
-+	acpi_size tbl_size;
- 	UEFI_ACPI_VFCT *vfct;
- 	GOP_VBIOS_CONTENT *vbios;
- 	VFCT_IMAGE_HEADER *vhdr;
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -774,7 +774,7 @@ int radeon_device_init(struct radeon_dev
+ 	if (rdev->flags & RADEON_IS_AGP)
+ 		rdev->need_dma32 = true;
+ 	if ((rdev->flags & RADEON_IS_PCI) &&
+-	    (rdev->family < CHIP_RS400))
++	    (rdev->family <= CHIP_RS740))
+ 		rdev->need_dma32 = true;
  
--	if (!ACPI_SUCCESS(acpi_get_table("VFCT", 1, &hdr)))
-+	if (!ACPI_SUCCESS(acpi_get_table_with_size("VFCT", 1, &hdr, &tbl_size)))
- 		return false;
- 	if (tbl_size < sizeof(UEFI_ACPI_VFCT)) {
- 		DRM_ERROR("ACPI VFCT table present but broken (too short #1)\n");
-@@ -597,7 +596,6 @@ static bool radeon_acpi_vfct_bios(struct
- 	ret = !!rdev->bios;
- 
- out_unmap:
--	/* uh, no idea what to do here... */
- 	return ret;
- }
- #else
+ 	dma_bits = rdev->need_dma32 ? 32 : 40;
 
 
