@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab2I1HNp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 03:13:45 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42222 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab2I1HNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 03:13:43 -0400
-Message-ID: <1348816410.2419.14.camel@ThinkPad-T420>
-Subject: Re: [PATCH scsi] Short the path length of scsi_cmd_to_driver()
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Fri, 28 Sep 2012 15:13:30 +0800
-In-Reply-To: <yq1a9wb8iq1.fsf@sermon.lab.mkp.net>
-References: <1348464626.2475.13.camel@ThinkPad-T420>
-	 <1348465493.2467.3.camel@dabdike>	<1348470210.2475.47.camel@ThinkPad-T420>
-	 <1348472104.2467.8.camel@dabdike> <yq13924b4uw.fsf@sermon.lab.mkp.net>
-	 <1348721055.2509.0.camel@dabdike>	<1348739495.3596.55.camel@ThinkPad-T420>
-	 <yq1a9wb8iq1.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1754477Ab2I1HOf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 03:14:35 -0400
+Received: from antcom.de ([188.40.178.216]:53530 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753330Ab2I1HOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 03:14:34 -0400
+Message-ID: <50654E57.3080201@antcom.de>
+Date: Fri, 28 Sep 2012 09:14:31 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de
+Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
+References: <1348780923-27428-1-git-send-email-stigge@antcom.de> <20120928024744.GV17667@game.jcrosoft.org>
+In-Reply-To: <20120928024744.GV17667@game.jcrosoft.org>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12092807-5140-0000-0000-00000223372B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-27 at 13:43 -0400, Martin K. Petersen wrote:
-> >>>>> "Li" == Li Zhong <zhong@linux.vnet.ibm.com> writes:
-> 
-> > @@ -845,8 +844,11 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
-> > 
-> > 	scsi_eh_restore_cmnd(scmd, &ses);
-> > 
-> >-	if (sdrv && sdrv->eh_action)
-> >-		rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
-> >+	if (scmd->request->cmd_type == REQ_TYPE_FS) {
-> >+		struct scsi_driver *sdrv = scsi_cmd_to_driver(scmd);
-> >+		if (sdrv->eh_action)
-> >+			rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
-> >+	}
-> > 
-> > 	return rtn;
-> > }
-> 
-> My only concern is whether our device lifetime rules guarantee that the
-> ULD is always attached when we service an error handling command?
+Hi!
 
-Thank you, Martin, for the review. 
+On 09/28/2012 04:47 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> +Block GPIO (optional)
+>> +---------------------
+>> +
+>> +The above described interface concentrates on handling single GPIOs.  However,
+>> +in applications where it is critical to set several GPIOs at once, this
+>> +interface doesn't work well, e.g. bit-banging protocols via GPIO lines.
+>> +Consider a GPIO controller that is connected via a slow I2C line. When
+>> +switching two or more GPIOs one after another, there can be considerable time
+>> +between those events. This is solved by an interface called Block GPIO:
+>> +
+>> +void gpio_get_block(unsigned int gpio, u8* values, size_t size);
+>> +void gpio_set_block(unsigned int gpio, u8* set, u8* clr, size_t size);
+>> +
+>> +The function gpio_get_block() detects the current state of several GPIOs at
+>> +once, practically by doing only one query at the hardware level (e.g. memory
+>> +mapped or via bus transfers like I2C). There are some limits to this interface:
+>> +A certain gpio_chip (see below) must be specified via the gpio parameter as the
+>> +first GPIO in the gpio_chip group. The Block GPIO interface only supports
+>> +simultaneous handling of GPIOs in the same gpio_chip group since different
+>> +gpio_chips typically map to different GPIO hardware blocks.
+> so basicaly you use a gpio numberthat you do not request, that is maybe
+> requested. This is broken if you want to get or set block you need to pass the
+> list of GPIO you want to control not some fancy magic
 
-I don't know much about scsi, it might take me some more time to have an
-answer to the above question. 
+Right - will add checking for the request state of the respective GPIOs.
 
-For now, if I understand correctly, maybe we could only do the
-not-consistent behaviours bug fix?  Or could we provide two versions of
-scsi_cmd_to_driver(), one with NULL checking for scsi_send_eh_cmnd(),
-one without the checking for scsi_finish_command()? 
+The list of GPIOs to handle is defined by the offset (specified GPIO)
+and bitmapped list.
 
-Thanks, Zhong
+If it looks more natural, I can change this to a list of ints specifying
+GPIOs directly.
 
+> And how you can hope to describe this via DT
+
+Haven't had planned that yet. Finally, this interface should just be
+another view on the GPIOs already requested / assigned. Or which
+additional info do you mean?
+
+Thanks for your notes!
+
+Roland
