@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030254Ab2I1TB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:01:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030226Ab2I1TBy (ORCPT
+	id S1030271Ab2I1TCH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:02:07 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50498 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030226Ab2I1TCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:01:54 -0400
+	Fri, 28 Sep 2012 15:02:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Klaus Falkner <klaus.falkner@solectrix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 161/262] USB: ohci-at91: fix PIO handling in relation with number of ports
-Date: Fri, 28 Sep 2012 11:51:30 -0700
-Message-Id: <20120928183016.976186282@linuxfoundation.org>
+        Sergei Poselenov <sposelenov@emcraft.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 163/262] rt2800usb: Added rx packet length validity check
+Date: Fri, 28 Sep 2012 11:51:32 -0700
+Message-Id: <20120928183017.237860606@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,45 +30,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Sergei Poselenov <sposelenov@emcraft.com>
 
-commit 6fffb77c8393151b0cf8cef1b9c2ba90587dd2e8 upstream.
+commit efd5d6b03bd9c9e0df646c56fb5f4f3e25e5c1ac upstream.
 
-If the number of ports present on the SoC/board is not the maximum
-and that the platform data is not filled with all data, there is
-an easy way to mess the PIO setup for this interface.
-This quick fix addresses mis-configuration in USB host platform data
-that is common in at91 boards since commit 0ee6d1e (USB: ohci-at91:
-change maximum number of ports) that did not modified the associatd
-board files.
+On our system (ARM Cortex-M3 SOC running linux-2.6.33)
+frequent crashes were observed in the rt2800usb module
+because of the invalid length of the received packet (3392,
+46920...). This patch adds the sanity check on the packet
+legth. Also, changed WARNING to ERROR in rt2x00lib_rxdone()
+so that the bad packet condition would be noticed.
 
-Reported-by: Klaus Falkner <klaus.falkner@solectrix.de>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+The fix was tested on the latest compat-wireless-3.5.1-1-snpc.
+
+Signed-off-by: Sergei Poselenov <sposelenov@emcraft.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ohci-at91.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/wireless/rt2x00/rt2800usb.c |   10 +++++++++-
+ drivers/net/wireless/rt2x00/rt2x00dev.c |    2 +-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -570,6 +570,16 @@ static int __devinit ohci_hcd_at91_drv_p
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -667,8 +667,16 @@ static void rt2800usb_fill_rxdone(struct
+ 	skb_pull(entry->skb, RXINFO_DESC_SIZE);
  
- 	if (pdata) {
- 		at91_for_each_port(i) {
-+			/*
-+			 * do not configure PIO if not in relation with
-+			 * real USB port on board
-+			 */
-+			if (i >= pdata->ports) {
-+				pdata->vbus_pin[i] = -EINVAL;
-+				pdata->overcurrent_pin[i] = -EINVAL;
-+				break;
-+			}
+ 	/*
+-	 * FIXME: we need to check for rx_pkt_len validity
++	 * Check for rx_pkt_len validity. Return if invalid, leaving
++	 * rxdesc->size zeroed out by the upper level.
+ 	 */
++	if (unlikely(rx_pkt_len == 0 ||
++			rx_pkt_len > entry->queue->data_size)) {
++		ERROR(entry->queue->rt2x00dev,
++			"Bad frame size %d, forcing to 0\n", rx_pkt_len);
++		return;
++	}
 +
- 			if (!gpio_is_valid(pdata->vbus_pin[i]))
- 				continue;
- 			gpio = pdata->vbus_pin[i];
+ 	rxd = (__le32 *)(entry->skb->data + rx_pkt_len);
+ 
+ 	/*
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -629,7 +629,7 @@ void rt2x00lib_rxdone(struct queue_entry
+ 	 */
+ 	if (unlikely(rxdesc.size == 0 ||
+ 		     rxdesc.size > entry->queue->data_size)) {
+-		WARNING(rt2x00dev, "Wrong frame size %d max %d.\n",
++		ERROR(rt2x00dev, "Wrong frame size %d max %d.\n",
+ 			rxdesc.size, entry->queue->data_size);
+ 		dev_kfree_skb(entry->skb);
+ 		goto renew_skb;
 
 
