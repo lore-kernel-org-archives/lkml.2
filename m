@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946002Ab2I1VHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:07:47 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56242 "EHLO
+	id S1032837Ab2I1VIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:08:09 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37391 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965256Ab2I1VF7 (ORCPT
+	by vger.kernel.org with ESMTP id S1423182Ab2I1VF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:05:59 -0400
-X-Sasl-enc: PmFNySFDpnAj32TXzZId6hhR7UHsa8UngmqqmkqrhMXg 1348866359
+	Fri, 28 Sep 2012 17:05:57 -0400
+X-Sasl-enc: foYuzAgz9zhQyvEmMRvoPXWhKW9pwowQDIkj/Q1cH1+H 1348866356
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [ 127/127] USB: Fix race condition when removing host controllers
-Date: Fri, 28 Sep 2012 13:35:00 -0700
-Message-Id: <20120928203100.735289631@linuxfoundation.org>
+        Yasunori Goto <y-goto@jp.fujitsu.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [ 125/127] sched: Fix ancient race in do_exit()
+Date: Fri, 28 Sep 2012 13:34:58 -0700
+Message-Id: <20120928203100.517080609@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,68 +31,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Yasunori Goto <y-goto@jp.fujitsu.com>
 
-commit 0d00dc2611abbe6ad244d50569c2ee82ce42846c upstream.
+commit b5740f4b2cb3503b436925eb2242bc3d75cd3dfe upstream.
 
-This patch (as1607) fixes a race that can occur if a USB host
-controller is removed while a process is reading the
-/sys/kernel/debug/usb/devices file.
+try_to_wake_up() has a problem which may change status from TASK_DEAD to
+TASK_RUNNING in race condition with SMI or guest environment of virtual
+machine. As a result, exited task is scheduled() again and panic occurs.
 
-The usb_device_read() routine uses the bus->root_hub pointer to
-determine whether or not the root hub is registered.  The is not a
-valid test, because the pointer is set before the root hub gets
-registered and remains set even after the root hub is unregistered and
-deallocated.  As a result, usb_device_read() or usb_device_dump() can
-access freed memory, causing an oops.
+Here is the sequence how it occurs:
 
-The patch changes the test to use the hcd->rh_registered flag, which
-does get set and cleared at the appropriate times.  It also makes sure
-to hold the usb_bus_list_lock mutex while setting the flag, so that
-usb_device_read() will become aware of new root hubs as soon as they
-are registered.
+ ----------------------------------+-----------------------------
+                                   |
+            CPU A                  |             CPU B
+ ----------------------------------+-----------------------------
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Don Zickus <dzickus@redhat.com>
+TASK A calls exit()....
+
+do_exit()
+
+  exit_mm()
+    down_read(mm->mmap_sem);
+
+    rwsem_down_failed_common()
+
+      set TASK_UNINTERRUPTIBLE
+      set waiter.task <= task A
+      list_add to sem->wait_list
+           :
+      raw_spin_unlock_irq()
+      (I/O interruption occured)
+
+                                      __rwsem_do_wake(mmap_sem)
+
+                                        list_del(&waiter->list);
+                                        waiter->task = NULL
+                                        wake_up_process(task A)
+                                          try_to_wake_up()
+                                             (task is still
+                                               TASK_UNINTERRUPTIBLE)
+                                              p->on_rq is still 1.)
+
+                                              ttwu_do_wakeup()
+                                                 (*A)
+                                                   :
+     (I/O interruption handler finished)
+
+      if (!waiter.task)
+          schedule() is not called
+          due to waiter.task is NULL.
+
+      tsk->state = TASK_RUNNING
+
+          :
+                                              check_preempt_curr();
+                                                  :
+  task->state = TASK_DEAD
+                                              (*B)
+                                        <---    set TASK_RUNNING (*C)
+
+     schedule()
+     (exit task is running again)
+     BUG_ON() is called!
+ --------------------------------------------------------
+
+The execution time between (*A) and (*B) is usually very short,
+because the interruption is disabled, and setting TASK_RUNNING at (*C)
+must be executed before setting TASK_DEAD.
+
+HOWEVER, if SMI is interrupted between (*A) and (*B),
+(*C) is able to execute AFTER setting TASK_DEAD!
+Then, exited task is scheduled again, and BUG_ON() is called....
+
+If the system works on guest system of virtual machine, the time
+between (*A) and (*B) may be also long due to scheduling of hypervisor,
+and same phenomenon can occur.
+
+By this patch, do_exit() waits for releasing task->pi_lock which is used
+in try_to_wake_up(). It guarantees the task becomes TASK_DEAD after
+waking up.
+
+Signed-off-by: Yasunori Goto <y-goto@jp.fujitsu.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20120117174031.3118.E1E9C6FF@jp.fujitsu.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/devices.c |    2 +-
- drivers/usb/core/hcd.c     |    6 ++----
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ kernel/exit.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/usb/core/devices.c
-+++ b/drivers/usb/core/devices.c
-@@ -624,7 +624,7 @@ static ssize_t usb_device_read(struct fi
- 	/* print devices for all busses */
- 	list_for_each_entry(bus, &usb_bus_list, bus_list) {
- 		/* recurse through all children of the root hub */
--		if (!bus->root_hub)
-+		if (!bus_to_hcd(bus)->rh_registered)
- 			continue;
- 		usb_lock_device(bus->root_hub);
- 		ret = usb_device_dump(&buf, &nbytes, &skip_bytes, ppos,
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -977,10 +977,7 @@ static int register_root_hub(struct usb_
- 	if (retval) {
- 		dev_err (parent_dev, "can't register root hub for %s, %d\n",
- 				dev_name(&usb_dev->dev), retval);
--	}
--	mutex_unlock(&usb_bus_list_lock);
--
--	if (retval == 0) {
-+	} else {
- 		spin_lock_irq (&hcd_root_hub_lock);
- 		hcd->rh_registered = 1;
- 		spin_unlock_irq (&hcd_root_hub_lock);
-@@ -989,6 +986,7 @@ static int register_root_hub(struct usb_
- 		if (HCD_DEAD(hcd))
- 			usb_hc_died (hcd);	/* This time clean up */
- 	}
-+	mutex_unlock(&usb_bus_list_lock);
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1049,6 +1049,22 @@ NORET_TYPE void do_exit(long code)
  
- 	return retval;
- }
+ 	preempt_disable();
+ 	exit_rcu();
++
++	/*
++	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
++	 * when the following two conditions become true.
++	 *   - There is race condition of mmap_sem (It is acquired by
++	 *     exit_mm()), and
++	 *   - SMI occurs before setting TASK_RUNINNG.
++	 *     (or hypervisor of virtual machine switches to other guest)
++	 *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
++	 *
++	 * To avoid it, we have to wait for releasing tsk->pi_lock which
++	 * is held by try_to_wake_up()
++	 */
++	smp_mb();
++	raw_spin_unlock_wait(&tsk->pi_lock);
++
+ 	/* causes final put_task_struct in finish_task_switch(). */
+ 	tsk->state = TASK_DEAD;
+ 	schedule();
 
 
