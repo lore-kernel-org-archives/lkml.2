@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab2I1Aki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 20:40:38 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45440 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754109Ab2I1Ajh (ORCPT
+	id S1754855Ab2I1Aw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 20:52:58 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:40752 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab2I1Aw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 20:39:37 -0400
-Date: Thu, 27 Sep 2012 17:36:55 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: [PATCH 00/57] power: Upgrade to ux500 battery management driver
-Message-ID: <20120928003655.GA5765@lizard>
-References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
- <20120927033806.GA22791@lizard>
- <5064CE6B.7020107@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5064CE6B.7020107@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 27 Sep 2012 20:52:56 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Ming Lei <ming.lei@canonical.com>, <stable@vger.kernel.org>
+Subject: [PATCH] driver core: fix possible missing of device probe
+Date: Fri, 28 Sep 2012 08:52:43 +0800
+Message-Id: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 04:08:43PM -0600, Mathieu Poirier wrote:
-[...]
-> I am half way through your comments - some I can handle myself, for
-> others I needed to go back to the original author for clarification.
-> Another set will follow shortly.
+Inside bus_add_driver(), one device might be added into
+the bus or probed which is triggered by deferred probe
+just after completing of driver_attach() and before
+'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)',
+so the device won't be probed by this driver.
 
-Yeah, I understand that it's mostly not your patches. All the patches
-passed my 'sanity' tests, i.e. it was all checkpatch clean, warnings and
-sparse clean, so I was quite relaxed about this series.
+This patch moves the below line
 
-But taking a closer look, I see there are some serious issues. And of
-course that the main problem with the patches is that patch descriptions
-often insufficiently (if at all) decribe the reasoning behind the changes.
+	'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)'
 
-With time it will get even worse: nobody would be able to reach the
-authors, or they will no longer remember the details.
+before driver_attach() inside bus_add_driver().
 
-So, I guess it's in everybody's interest to fix it.
+So fixes the problem since the below way can guarantee that
+no probe(dev) may be lost.
 
-Thanks,
-Anton.
+CPU0                            	CPU1
+driver_register
+	...
+	write(bus->driver_list)
+	smp_mb()
+	read(bus->device_list)
+	...
+					device_add
+						/* bus_add_device */
+						write(bus->device_list)
+						smp_mb()
+						/* bus_probe_device*/
+						read(bus->driver_list)
+
+And the smp_mb() has been implicit by UNLOCK+LOCK
+of 'klist' according to 'VARIETIES OF MEMORY BARRIER' part
+of Documentation/memory-barriers.txt.
+
+Reported-and-Tested-by: Russell King <linux@arm.linux.org.uk>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/base/bus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 181ed26..3b5bddb 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -714,12 +714,12 @@ int bus_add_driver(struct device_driver *drv)
+ 	if (error)
+ 		goto out_unregister;
+ 
++	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+ 	if (drv->bus->p->drivers_autoprobe) {
+ 		error = driver_attach(drv);
+ 		if (error)
+ 			goto out_unregister;
+ 	}
+-	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+ 	module_add_driver(drv->owner, drv);
+ 
+ 	error = driver_create_file(drv, &driver_attr_uevent);
+-- 
+1.7.9.5
+
