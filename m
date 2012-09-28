@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab2I1Efi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 00:35:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54227 "EHLO mga03.intel.com"
+	id S1753577Ab2I1Efh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 00:35:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41984 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778Ab2I1Ebz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 00:31:55 -0400
+	id S1752232Ab2I1Eb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 00:31:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,498,1344236400"; 
-   d="scan'208";a="198218541"
+   d="scan'208";a="199033678"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
         acme@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 18/31] perf, core: Add a concept of a weightened sample
-Date: Thu, 27 Sep 2012 21:31:23 -0700
-Message-Id: <1348806696-31170-19-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 31/31] perf, tools: Add browser support for transaction flags
+Date: Thu, 27 Sep 2012 21:31:36 -0700
+Message-Id: <1348806696-31170-32-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
 References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
@@ -25,105 +25,239 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-For some events it's useful to weight sample with a hardware
-provided number. This expresses how expensive the action the
-sample represent was.  This allows the profiler to scale
-the samples to be more informative to the programmer.
+Add histogram support for the transaction flags. Each flags instance becomes
+a separate histogram. Support sorting and displaying the flags in report
+and top.
 
-There is already the period which is used similarly, but it means
-something different, so I chose to not overload it. Instead
-a new sample type for WEIGHT is added.
-
-Can be used for multiple things. Initially it is used for TSX abort costs
-and profiling by memory latencies (so to make expensive load appear higher
-up in the histograms)  The concept is quite generic and can be extended
-to many other kinds of events or architectures, as long as the hardware
-provides suitable auxillary values. In principle it could be also
-used for software tracpoints.
-
-This adds the generic glue. A new optional sample format for a 64bit
-weight value.
+The patch is fairly large, but it's really mostly just plumbing to pass the
+flags around.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/perf_event.h |    9 +++++++--
- kernel/events/core.c       |    6 ++++++
- 2 files changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/builtin-annotate.c |    2 +-
+ tools/perf/builtin-diff.c     |    8 ++++--
+ tools/perf/builtin-report.c   |    4 +-
+ tools/perf/builtin-top.c      |    4 +-
+ tools/perf/util/hist.c        |    3 +-
+ tools/perf/util/hist.h        |    3 +-
+ tools/perf/util/sort.c        |   50 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h        |    2 +
+ 8 files changed, 66 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 5bc0e8b..c488ae2 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -130,8 +130,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
- 	PERF_SAMPLE_RAW				= 1U << 10,
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
-+	PERF_SAMPLE_WEIGHT			= 1U << 12,
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index c522367..a6f0ffc 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -62,7 +62,7 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 		return 0;
+ 	}
  
--	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
+-	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1);
++	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1, 0);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 04c1d21..cef8f5c 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -31,9 +31,10 @@ struct perf_diff {
+ 
+ static int hists__add_entry(struct hists *self,
+ 			    struct addr_location *al, u64 period,
+-			    u64 weight)
++			    u64 weight, u64 transaction)
+ {
+-	if (__hists__add_entry(self, al, NULL, period, weight) != NULL)
++	if (__hists__add_entry(self, al, NULL, period, weight, transaction)
++	    != NULL)
+ 		return 0;
+ 	return -ENOMEM;
+ }
+@@ -57,7 +58,8 @@ static int diff__process_sample_event(struct perf_tool *tool,
+ 	if (al.filtered || al.sym == NULL)
+ 		return 0;
+ 
+-	if (hists__add_entry(&session->hists, &al, sample->period, sample->weight)) {
++	if (hists__add_entry(&session->hists, &al, sample->period, sample->weight,
++			     sample->transaction)) {
+ 		pr_warning("problem incrementing symbol period, skipping event\n");
+ 		return -1;
+ 	}
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2c73578..b22a905 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -147,7 +147,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	}
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, parent, sample->period,
+-					sample->weight);
++				sample->weight, sample->transaction);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+@@ -596,7 +596,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+ 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
+-		   " abort, intx,  weight, global_weight"),
++		   " abort, intx,  weight, global_weight, transaction"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ee37ddc..5e44f7c 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -270,7 +270,7 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	struct hist_entry *he;
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, NULL, sample->period,
+-				sample->weight);
++				sample->weight, sample->transaction);
+ 	if (he == NULL)
+ 		return NULL;
+ 
+@@ -1230,7 +1230,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+ 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
+-		   " abort, intx, weight, global_weight"),
++		   " abort, intx, weight, global_weight, transaction"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 566badc..072b418 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -323,7 +323,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+ 				      struct symbol *sym_parent, u64 period,
+-				      u64 weight)
++				      u64 weight, u64 transaction)
+ {
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
+@@ -337,6 +337,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
+ 		.period	= period,
+ 		.parent = sym_parent,
+ 		.filtered = symbol__parent_filter(sym_parent),
++		.transaction = transaction,
+ 	};
+ 
+ 	return add_hist_entry(self, &entry, al, period, weight);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index a02d068..ab6e262 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -52,6 +52,7 @@ enum hist_column {
+ 	HISTC_SRCLINE,
+ 	HISTC_WEIGHT,
+ 	HISTC_GLOBAL_WEIGHT,
++	HISTC_TRANSACTION,
+ 	HISTC_NR_COLS, /* Last entry */
+ };
+ 
+@@ -77,7 +78,7 @@ struct hists {
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+ 				      struct symbol *parent, u64 period,
+-				      u64 weight);
++				      u64 weight, u64 transaction);
+ int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
+ int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
+ int hist_entry__snprintf(struct hist_entry *self, char *bf, size_t size,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 0fcbbcd..258174e 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -559,6 +559,55 @@ struct sort_entry sort_global_weight = {
+ 	.se_width_idx	= HISTC_GLOBAL_WEIGHT,
+ };
+ 
++static int64_t
++sort__transaction_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->transaction - right->transaction;
++}
++
++static inline char *add_str(char *p, const char *str)
++{
++	strcpy(p, str);
++	return p + strlen(str);
++}
++
++static int hist_entry__transaction_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	u64 t = self->transaction;
++	char buf[128];
++	char *p = buf;
++
++	if (t & PERF_SAMPLE_TXN_ELISION)
++		*p++ = 'E';
++	if (t & PERF_SAMPLE_TXN_TRANSACTION)
++		*p++ = 'T';
++	if (t & PERF_SAMPLE_TXN_SYNC)
++		*p++ = 'I';
++	if (t & PERF_SAMPLE_TXN_RETRY)
++		*p++ = 'R';
++	*p = 0;
++	if (t & PERF_SAMPLE_TXN_CONFLICT)
++		p = add_str(p, ":con");
++	if (t & PERF_SAMPLE_TXN_CONFLICT)
++		p = add_str(p, ":cap");
++	if (t & PERF_SAMPLE_TXN_ABORT_MASK) {
++		sprintf(p, ":%" PRIx64,
++			(t & PERF_SAMPLE_TXN_ABORT_MASK) >>
++			PERF_SAMPLE_TXN_ABORT_SHIFT);
++		p += strlen(p);
++	}
++
++	return repsep_snprintf(bf, size, "%-*s", width, buf);
++}
++
++struct sort_entry sort_transaction = {
++	.se_header	= "Transaction",
++	.se_cmp		= sort__transaction_cmp,
++	.se_snprintf	= hist_entry__transaction_snprintf,
++	.se_width_idx	= HISTC_TRANSACTION,
++};
++
+ struct sort_dimension {
+ 	const char		*name;
+ 	struct sort_entry	*entry;
+@@ -584,6 +633,7 @@ static struct sort_dimension sort_dimensions[] = {
+ 	DIM(SORT_INTX, "intx", sort_intx),
+ 	DIM(SORT_WEIGHT, "weight", sort_weight),
+ 	DIM(SORT_GLOBAL_WEIGHT, "global_weight", sort_global_weight),
++	DIM(SORT_TRANSACTION, "transaction", sort_transaction),
+ };
+ 
+ int sort_dimension__add(const char *tok)
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 8b2c5ae..1a74418 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -61,6 +61,7 @@ struct hist_entry {
+ 	struct thread		*thread;
+ 	u64			ip;
+ 	u64			weight;
++	u64			transaction;
+ 	s32			cpu;
+ 	u32			nr_events;
+ 
+@@ -100,6 +101,7 @@ enum sort_type {
+ 	SORT_INTX,
+ 	SORT_WEIGHT,
+ 	SORT_GLOBAL_WEIGHT,
++	SORT_TRANSACTION,
  };
  
  /*
-@@ -190,8 +191,9 @@ enum perf_event_read_format {
- 	PERF_FORMAT_TOTAL_TIME_RUNNING		= 1U << 1,
- 	PERF_FORMAT_ID				= 1U << 2,
- 	PERF_FORMAT_GROUP			= 1U << 3,
-+	PERF_FORMAT_WEIGHT			= 1U << 4,
- 
--	PERF_FORMAT_MAX = 1U << 4,		/* non-ABI */
-+	PERF_FORMAT_MAX = 1U << 5,		/* non-ABI */
- };
- 
- #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
-@@ -533,6 +535,7 @@ enum perf_event_type {
- 	 *	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
- 	 *	{ u32			cpu, res; } && PERF_SAMPLE_CPU
- 	 *	{ u64			period;   } && PERF_SAMPLE_PERIOD
-+	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 *
- 	 *	{ struct read_format	values;	  } && PERF_SAMPLE_READ
- 	 *
-@@ -1144,6 +1147,7 @@ struct perf_sample_data {
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
-+	u64				weight;
- };
- 
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -1154,6 +1158,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->raw  = NULL;
- 	data->br_stack = NULL;
- 	data->period	= period;
-+	data->weight = 0;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 7fee567..74e4ff4 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -949,6 +949,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_PERIOD)
- 		size += sizeof(data->period);
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		size += sizeof(data->weight);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-@@ -3957,6 +3960,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_PERIOD)
- 		perf_output_put(handle, data->period);
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		perf_output_put(handle, data->weight);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		perf_output_read(handle, event);
- 
 -- 
 1.7.7.6
 
