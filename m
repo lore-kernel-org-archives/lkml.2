@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758982Ab2I1TEt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:04:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	id S1759024Ab2I1TEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:04:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030629Ab2I1TEn (ORCPT
+	with ESMTP id S1758716Ab2I1TEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:04:43 -0400
+	Fri, 28 Sep 2012 15:04:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Richard Cochran <richardcochran@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 213/262] gianfar: fix phc index build failure
-Date: Fri, 28 Sep 2012 11:52:22 -0700
-Message-Id: <20120928183023.267960426@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 214/262] workqueue: UNBOUND -> REBIND morphing in rebind_workers() should be atomic
+Date: Fri, 28 Sep 2012 11:52:23 -0700
+Message-Id: <20120928183023.384166931@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,55 +28,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Richard Cochran <richardcochran@gmail.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 28889b7e7818342f6c254e27b9b2c68702ab867a upstream.
+commit 96e65306b81351b656835c15931d1d237b252f27 upstream.
 
-This patch fixes a build failure introduced in commit 66636287
-("gianfar: Support the get_ts_info ethtool method."). Not only was a
-global variable inconsistently named, but also it was not exported as
-it should have been.
+The compiler may compile the following code into TWO write/modify
+instructions.
 
-This fix is also needed in stable version 3.5.
+	worker->flags &= ~WORKER_UNBOUND;
+	worker->flags |= WORKER_REBIND;
 
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+so the other CPU may temporarily see worker->flags which doesn't have
+either WORKER_UNBOUND or WORKER_REBIND set and perform local wakeup
+prematurely.
+
+Fix it by using single explicit assignment via ACCESS_ONCE().
+
+Because idle workers have another WORKER_NOT_RUNNING flag, this bug
+doesn't exist for them; however, update it to use the same pattern for
+consistency.
+
+tj: Applied the change to idle workers too and updated comments and
+    patch description a bit.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/freescale/gianfar_ethtool.c |    1 +
- drivers/net/ethernet/freescale/gianfar_ptp.c     |    4 ++--
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ kernel/workqueue.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/freescale/gianfar_ethtool.c
-+++ b/drivers/net/ethernet/freescale/gianfar_ethtool.c
-@@ -1741,6 +1741,7 @@ static int gfar_get_nfc(struct net_devic
- }
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3441,14 +3441,17 @@ static int __cpuinit trustee_thread(void
  
- int gfar_phc_index = -1;
-+EXPORT_SYMBOL(gfar_phc_index);
+ 	for_each_busy_worker(worker, i, pos, gcwq) {
+ 		struct work_struct *rebind_work = &worker->rebind_work;
++		unsigned long worker_flags = worker->flags;
  
- static int gfar_get_ts_info(struct net_device *dev,
- 			    struct ethtool_ts_info *info)
---- a/drivers/net/ethernet/freescale/gianfar_ptp.c
-+++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
-@@ -515,7 +515,7 @@ static int gianfar_ptp_probe(struct plat
- 		err = PTR_ERR(etsects->clock);
- 		goto no_clock;
- 	}
--	gfar_phc_clock = ptp_clock_index(etsects->clock);
-+	gfar_phc_index = ptp_clock_index(etsects->clock);
+ 		/*
+ 		 * Rebind_work may race with future cpu hotplug
+ 		 * operations.  Use a separate flag to mark that
+-		 * rebinding is scheduled.
++		 * rebinding is scheduled.  The morphing should
++		 * be atomic.
+ 		 */
+-		worker->flags |= WORKER_REBIND;
+-		worker->flags &= ~WORKER_ROGUE;
++		worker_flags |= WORKER_REBIND;
++		worker_flags &= ~WORKER_ROGUE;
++		ACCESS_ONCE(worker->flags) = worker_flags;
  
- 	dev_set_drvdata(&dev->dev, etsects);
- 
-@@ -539,7 +539,7 @@ static int gianfar_ptp_remove(struct pla
- 	gfar_write(&etsects->regs->tmr_temask, 0);
- 	gfar_write(&etsects->regs->tmr_ctrl,   0);
- 
--	gfar_phc_clock = -1;
-+	gfar_phc_index = -1;
- 	ptp_clock_unregister(etsects->clock);
- 	iounmap(etsects->regs);
- 	release_resource(etsects->rsrc);
+ 		/* queue rebind_work, wq doesn't matter, use the default one */
+ 		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
 
 
