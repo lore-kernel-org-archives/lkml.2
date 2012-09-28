@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946259Ab2I1Vbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:31:48 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:51449 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032644Ab2I1U2J (ORCPT
+	id S1946274Ab2I1Vb5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:31:57 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35040 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946261Ab2I1Vbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:28:09 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 122/218] NFS: return error from decode_getfh in decode open
-Date: Fri, 28 Sep 2012 13:15:39 -0700
-Message-Id: <20120928201515.477230562@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.1.428.g652398a
-In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
-References: <20120928201501.208384923@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 28 Sep 2012 17:31:52 -0400
+MIME-Version: 1.0
+Date: Fri, 28 Sep 2012 14:31:52 -0700
+Message-ID: <CAOvz8aLi5siht_hvM6fsPdzhkAUdWuzSWeT1iZuYd-8UZWsNTg@mail.gmail.com>
+Subject: call_usermodehelper_exec stdout is being forwarded to most recent
+ client socket
+From: Neil Hellfeldt <neilhellfeldt@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+A while back for in house development I wanted to have a socket server
+in the kernel
+I did this by mapping the syscall's
 
-------------------
+unsigned long **sys_call_table;
 
-From: Weston Andros Adamson <dros@netapp.com>
-
-commit 01913b49cf1dc6409a07dd2a4cc6af2e77f3c410 upstream.
-
-If decode_getfh failed, nfs4_xdr_dec_open would return 0 since the last
-decode_* call must have succeeded.
-
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfs/nfs4xdr.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -6081,7 +6081,8 @@ static int nfs4_xdr_dec_open(struct rpc_
- 	status = decode_open(xdr, res);
- 	if (status)
- 		goto out;
--	if (decode_getfh(xdr, &res->fh) != 0)
-+	status = decode_getfh(xdr, &res->fh);
-+	if (status)
- 		goto out;
- 	if (decode_getfattr(xdr, res->f_attr, res->server) != 0)
- 		goto out;
+long (*_accept)(int,struct sockaddr __user*,int __user*);
+long (*_bind)(int,struct sockaddr __user*,int);
+long (*_close)(unsigned int);
+long (*_listen)(int,int);
+long (*_select)(int,fd_set __user*,fd_set __user*,fd_set
+__user*,struct timeval __user*);
+long (*_setsockopt)(int,int,int,char __user*,int);
+long (*_socket)(int,int,int);
+long (*_read)(unsigned int,const char __user*,size_t);
+long (*_write)(unsigned int,const char __user*,size_t);
+long (*_getpeername)(int,struct sockaddr __user*,int*);
 
 
+if(!(sys_call_table = aquire_sys_call_table()))
+  return -1;
+
+_socket = (void*)sys_call_table[__NR_socket];
+_setsockopt = (void*)sys_call_table[__NR_setsockopt];
+_bind   = (void*)sys_call_table[__NR_bind];
+_listen = (void*)sys_call_table[__NR_listen];
+_select = (void*)sys_call_table[__NR_select];
+_accept = (void*) sys_call_table[__NR_accept];
+_read   = (void*)sys_call_table[__NR_read];
+_getpeername = (void*)sys_call_table[__NR_getpeername];
+_write  = (void*)sys_call_table[__NR_write];
+_close  = (void*)sys_call_table[__NR_close];
+
+
+after that I create a thread.
+
+server_task = kthread_run(est210_cal_main,cal,"test_srv");
+
+int the thread I run the syscall's in this order I actually use error
+checking in the code.
+
+_ksocket = _socket(PF_INET,SOCK_STREAM,0);
+_setsockopt(_ksocket,SOL_SOCKET,SO_REUSEADDR,(char*)&yes,sizeof(int));
+_bind(_ksocket,(struct sockaddr*)&saddr,sizeof(struct sockaddr));
+_listen(_ksocket,MAXQUE);
+
+while loop true
+set_current_state(TASK_RUNNING);
+_select(t_sockets+1,&r_sockets,NULL,NULL,&twait);
+cl_socket = _accept(_ksocket,(struct sockaddr*)&cl_saddr,&cl_sinsize)) < 0);
+set_current_state(TASK_INTERRUPTIBLE);
+while loop
+
+Once I accept the incoming connect I have a parser that lets me
+configure a wireless device I am working
+
+and I wanted to save some of the data to the permanent data of the os
+so when it boots it calibrated.
+
+I decided to use  call_usermodehelper_exec
+
+I noticed something weird when I send /usr/bin/which true
+the client would receive /bin/true
+I knew I did not send this info.
+
+ the file handle created by the _accept became the stdout for all
+programs called by any of the call_usermodehelper's
+
+I know what I am doing is uncommon and I am not looking for help, I am
+just reporting something that I think should not
+happen even if what I am doing is uncommon.
+
+also it is the handle of the last _accept so if I run two scripts and
+cause the right timing the output will end up on the wrong client.
+
+I also know from other readings that there is not supposed to be a way
+to redirect the stdout with the call_usermodehelper
+
+and that is the reason why I am reporting this.
