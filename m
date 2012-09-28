@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758377Ab2I1PAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:00:00 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43736 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758260Ab2I1O77 (ORCPT
+	id S1758405Ab2I1PAX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:00:23 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:55049 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758393Ab2I1PAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:59:59 -0400
-Date: Fri, 28 Sep 2012 15:59:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org
-Subject: Re: [GIT PULL] MOP500 Audio patches due for ASoC
-Message-ID: <20120928145949.GA20786@gmail.com>
-References: <1348142956-1872-1-git-send-email-lee.jones@linaro.org>
- <20120920125618.GP17666@opensource.wolfsonmicro.com>
- <20120927150119.GD1176@gmail.com>
- <20120928123743.GE30869@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120928123743.GE30869@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Sep 2012 11:00:21 -0400
+Subject: Re: [PATCH] driver core: fix possible missing of device probe
+From: anish kumar <anish198519851985@gmail.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        stable@vger.kernel.org
+In-Reply-To: <CACVXFVPE1wwVhN=WobgZ+KfGRk2HifQ_3bhwF4mHS+Qu+bXh+g@mail.gmail.com>
+References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
+	 <CAK7N6vqS9PW85hgcA7EVzCk-TQo_ru4OcC5i0Rw-b2hvb4YoXg@mail.gmail.com>
+	 <CACVXFVMJaQRj6sUJwiyiMvyAyd2p_8g9cYFqRW2KngQPx62Y5A@mail.gmail.com>
+	 <1348842668.1480.9.camel@anish-Inspiron-N5050>
+	 <CACVXFVPE1wwVhN=WobgZ+KfGRk2HifQ_3bhwF4mHS+Qu+bXh+g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 Sep 2012 20:30:05 +0530
+Message-ID: <1348844405.1480.19.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Sep 2012, Mark Brown wrote:
-
-> On Thu, Sep 27, 2012 at 04:01:19PM +0100, Lee Jones wrote:
+On Fri, 2012-09-28 at 22:44 +0800, Ming Lei wrote:
+> On Fri, Sep 28, 2012 at 10:31 PM, anish kumar
+> <anish198519851985@gmail.com> wrote:
 > 
-> > Is there any reason why the following patches didn't make it into -next?
+> > Ming,
+> > Somehow I feel here that the problem reported by Russell is totally
+> > different from your understanding of problem.I humbly urge you to have
 > 
-> > ASoC: codecs: Enable AB8500 CODEC for Device Tree
-> > ASoC: Ux500: Enable ux500 MSP driver for Device Tree
+> I let Russell answer if it is same problem, see my last email.
 > 
-> They appear to be there, there's certainly no reason why they'd be any
-> different to the rest of the series.
+> > a look at Russell's nice explanation.
+> 
+> Sorry, how do you know I didn't look at Russell's explanation?
+Sorry but I just had a cursory glance at your explanation and looks like
+there was some argument between you and russell so thought about
+that(shamelessly not even going through the explanation put forward by
+you as I understood the problem and solution). Anyway as mentioned
+earlier I am no expert on driver core but just wanted to learn the
+wonderful driver core design.
 
-Okay, I see what's happened. When I rebased the patches I had in my local
-delta git just reapplied the commits instead of throwing them out. I can
-confirm that the patches above have been applied to -next after all.
+Hope I didn't offend you.
+> 
+> 
+> Thanks,
+> --
+> Ming Lei
 
-Thanks again,
-Lee 
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
