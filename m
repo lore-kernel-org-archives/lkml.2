@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757695Ab2I1MT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:19:28 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:45938 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab2I1MT0 (ORCPT
+	id S1757588Ab2I1MYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:24:14 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25172
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754012Ab2I1MYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:19:26 -0400
-Date: Fri, 28 Sep 2012 15:19:17 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Kevin Cruz <skate_ops@yahoo.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: iwlwifi can't connect to router after resuming from suspend.
-Message-ID: <20120928121917.GF5368@mwanda>
-References: <1348086305.81224.YahooMailNeo@web164004.mail.gq1.yahoo.com>
+	Fri, 28 Sep 2012 08:24:13 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202h1d1ah1d2ahzzz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1155h)
+X-WSS-ID: 0MB27S6-02-8L4-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/16] Interrupt remapping support for AMD IOMMU
+Date: Fri, 28 Sep 2012 14:23:50 +0200
+Message-ID: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348086305.81224.YahooMailNeo@web164004.mail.gq1.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+Hi,
 
-> Linux cyber-ubuntu 3.2.0-30-generic #48-Ubuntu SMP Fri Aug 24 16:52:48 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
+here is a new version of the remaining patches to add interrupt
+remapping support to the AMD IOMMU driver. The patches have been rebased
+to v3.6-rc7 and tested again on various machines. As with the previous
+version no issued were found with these patches too.
 
-That kernel is too old.  Can you test with a 3.5.x kernel (or even
-better would be a 3.6-rc kernel).  Those are the only ones we look
-at on lkml.
+Regards,
 
-regards,
-dan carpenter
+	Joerg
+
+Diffstat:
+
+ drivers/iommu/Kconfig           |    2 +-
+ drivers/iommu/amd_iommu.c       |  504 +++++++++++++++++++++++++++++++++++++++
+ drivers/iommu/amd_iommu_init.c  |  237 +++++++++++++++++-
+ drivers/iommu/amd_iommu_proto.h |    8 +
+ drivers/iommu/amd_iommu_types.h |   53 ++++
+ drivers/iommu/irq_remapping.c   |    5 +
+ drivers/iommu/irq_remapping.h   |    6 +
+ 7 files changed, 801 insertions(+), 14 deletions(-)
+
+
