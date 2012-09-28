@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab2I1K27 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 06:28:59 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:34009 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751294Ab2I1K25 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 06:28:57 -0400
-From: yongd <yongd@marvell.com>
-To: Chris Ball <cjb@laptop.org>, Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Daniel Drake <dsd@laptop.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Wilson Callan <wilson.callan@savantsystems.com>,
-        Ben Dooks <ben-linux@fluff.org>
-Cc: zhangfei.gao@marvell.com, kevin.liu@marvell.com, jlfu@marvell.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: 
-Date: Fri, 28 Sep 2012 18:28:30 +0800
-Message-Id: <1348828113-19668-1-git-send-email-yongd@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 28 Sep 2012 10:28:30.0243 (UTC) FILETIME=[00FC2F30:01CD9D64]
+	id S1756132Ab2I1KcG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 06:32:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751294Ab2I1KcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 06:32:04 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87ipay3cof.fsf@rustcorp.com.au>
+References: <87ipay3cof.fsf@rustcorp.com.au> <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, pjones@redhat.com,
+        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        keyrings@linux-nfs.org
+Subject: Re: [GIT PULL] Asymmetric keys and module signing
+Date: Fri, 28 Sep 2012 11:31:53 +0100
+Message-ID: <27846.1348828313@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ngd@marvell.com> # This line is ignored.
-From: yongd <yongd@marvell.com>
-Subject:[PATCH 0/3] mmc: enable card-detection polling in host driver rather than in sdhci_add_host
-In-Reply-To:
 
+Hi Rusty,
 
-Hi all,
-As checked, SDHCI_QUICK_BROKEN_CARD_DETECTION was previously introduced by Anton Vorontsov in commit
-68d1fb7e229c6f95be4fbbe3eb46b24e41184924. For a removable card (MMC_CAP_NONREMOVABLE is not set),
-if this QUICK is set, sdhci_add_host will set MMC_CAP_NEEDS_POLL to enable card-detection polling method,
-and sdhci_set_card_detection will not enable host controller card insert/remove interrupts (the host
-internal card detection method).
+I've pushed two additional patches.  The first makes the X.509 cert signature
+use the same hash algorithm as the signatures on the modules - which should
+fix the problem you're seeing, I think.  The second makes elements of the
+names use UTF8 strings, just in case someone wants to use accented characters.
 
-However, we can have some other card detection methods besides host internal card detection and polling
-methods. For example, we might use an external GPIO pin for detection. In such case, we will not set
-MMC_CAP_NONREMOVABLE since removable, and set SDHCI_QUICK_BROKEN_CARD_DETECTION since we don't use controller
-card insert/remove interrupts. But unexpectedly, sdhci_add_host will still enable polling for us. This
-is redundant.
+David
+---
 
-So, here comes the following solution.
-1st, enable card-detection polling in vendor host driver itself so that it will not rely on sdhci_add_host.
- [PATCH 1/3]: for sdhci-esdhc-imx.c
- [PATCH 2/3]: for sdhci-s3c.c
- And for other vendor host drivers(sdhci-pxav2/3.c, sdhci-pci.c, sdhci-of-esdhc.c), as checked, those who
-set SDHCI_QUICK_BROKEN_CARD_DETECTION actually do not set this for enabling polling. So no similar change is          
-needed.
+The following changes since commit 15765081423824e1ccc329264ae13f5ea87f3a85:
 
-2nd, remove MMC_CAP_NEEDS_POLL setting in sdhci_add_host, as in [PATCH 3/3].
+  MODSIGN: Sign modules during the build process (2012-09-26 10:11:06 +0100)
 
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Actually I have had some discussion with Anton, and now added more reviewers here since my proposal influences
-others. I will appreciate your review and comments. Thanks a lot:-)
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-modsign.git modsign-post-KS
+
+for you to fetch changes up to 9034de9a2c376229e2309eed7e2c871785b5890f:
+
+  MODSIGN: Use utf8 strings in signer's name in autogenerated X.509 certs (2012-09-28 11:16:57 +0100)
+
+----------------------------------------------------------------
+(from the branch description for modsign-post-KS local branch)
+
+post Kernel-Summit module signing
+----------------------------------------------------------------
+David Howells (2):
+      MODSIGN: Use the same digest for the autogen key sig as for the module sig
+      MODSIGN: Use utf8 strings in signer's name in autogenerated X.509 certs
+
+ kernel/Makefile | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
