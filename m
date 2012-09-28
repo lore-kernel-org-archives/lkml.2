@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030529Ab2I1Uoi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:44:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57655 "EHLO
+	id S1031415Ab2I1Uk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:40:56 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52866 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759465Ab2I1Uk7 (ORCPT
+	by vger.kernel.org with ESMTP id S1759489Ab2I1Ukd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:59 -0400
-X-Sasl-enc: 4PSF8TffMleuUT699FIf2bCR1O2A66LTUruOs17KpQKh 1348864858
+	Fri, 28 Sep 2012 16:40:33 -0400
+X-Sasl-enc: RPCnKa7zDN2uAHrtZ3ESWmdYErS5B8OTSk0aJ+Isnyj5 1348864827
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 023/127] workqueue: reimplement work_on_cpu() using system_wq
-Date: Fri, 28 Sep 2012 13:33:16 -0700
-Message-Id: <20120928203048.535871033@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 009/127] atm: fix info leak in getsockopt(SO_ATMPVC)
+Date: Fri, 28 Sep 2012 13:33:02 -0700
+Message-Id: <20120928203046.880328435@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -30,82 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
 
-commit ed48ece27cd3d5ee0354c32bbaec0f3e1d4715c3 upstream.
+From: Mathias Krause <minipli@googlemail.com>
 
-The existing work_on_cpu() implementation is hugely inefficient.  It
-creates a new kthread, execute that single function and then let the
-kthread die on each invocation.
+[ Upstream commit e862f1a9b7df4e8196ebec45ac62295138aa3fc2 ]
 
-Now that system_wq can handle concurrent executions, there's no
-advantage of doing this.  Reimplement work_on_cpu() using system_wq
-which makes it simpler and way more efficient.
+The ATM code fails to initialize the two padding bytes of struct
+sockaddr_atmpvc inserted for alignment. Add an explicit memset(0)
+before filling the structure to avoid the info leak.
 
-stable: While this isn't a fix in itself, it's needed to fix a
-        workqueue related bug in cpufreq/powernow-k8.  AFAICS, this
-        shouldn't break other existing users.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/workqueue.c |   25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
+ net/atm/common.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3599,18 +3599,17 @@ static int __devinit workqueue_cpu_down_
- #ifdef CONFIG_SMP
+--- a/net/atm/common.c
++++ b/net/atm/common.c
+@@ -784,6 +784,7 @@ int vcc_getsockopt(struct socket *sock,
  
- struct work_for_cpu {
--	struct completion completion;
-+	struct work_struct work;
- 	long (*fn)(void *);
- 	void *arg;
- 	long ret;
- };
- 
--static int do_work_for_cpu(void *_wfc)
-+static void work_for_cpu_fn(struct work_struct *work)
- {
--	struct work_for_cpu *wfc = _wfc;
-+	struct work_for_cpu *wfc = container_of(work, struct work_for_cpu, work);
-+
- 	wfc->ret = wfc->fn(wfc->arg);
--	complete(&wfc->completion);
--	return 0;
- }
- 
- /**
-@@ -3625,19 +3624,11 @@ static int do_work_for_cpu(void *_wfc)
-  */
- long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg)
- {
--	struct task_struct *sub_thread;
--	struct work_for_cpu wfc = {
--		.completion = COMPLETION_INITIALIZER_ONSTACK(wfc.completion),
--		.fn = fn,
--		.arg = arg,
--	};
-+	struct work_for_cpu wfc = { .fn = fn, .arg = arg };
- 
--	sub_thread = kthread_create(do_work_for_cpu, &wfc, "work_for_cpu");
--	if (IS_ERR(sub_thread))
--		return PTR_ERR(sub_thread);
--	kthread_bind(sub_thread, cpu);
--	wake_up_process(sub_thread);
--	wait_for_completion(&wfc.completion);
-+	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-+	schedule_work_on(cpu, &wfc.work);
-+	flush_work(&wfc.work);
- 	return wfc.ret;
- }
- EXPORT_SYMBOL_GPL(work_on_cpu);
+ 		if (!vcc->dev || !test_bit(ATM_VF_ADDR, &vcc->flags))
+ 			return -ENOTCONN;
++		memset(&pvc, 0, sizeof(pvc));
+ 		pvc.sap_family = AF_ATMPVC;
+ 		pvc.sap_addr.itf = vcc->dev->number;
+ 		pvc.sap_addr.vpi = vcc->vpi;
 
 
