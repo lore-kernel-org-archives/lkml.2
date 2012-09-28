@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031023Ab2I1TRd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:17:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
+	id S1031042Ab2I1TSE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:18:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759083Ab2I1TFK (ORCPT
+	with ESMTP id S1759061Ab2I1TFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:05:10 -0400
+	Fri, 28 Sep 2012 15:05:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andre Guedes <andre.guedes@openbossa.org>,
+        Yevgeniy Melnichuk <yevgeniy.melnichuk@googlemail.com>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 222/262] Bluetooth: Fix use-after-free bug in SMP
-Date: Fri, 28 Sep 2012 11:52:31 -0700
-Message-Id: <20120928183024.428830964@linuxfoundation.org>
+Subject: [ 219/262] Bluetooth: Add support for Sony Vaio T-Series
+Date: Fri, 28 Sep 2012 11:52:28 -0700
+Message-Id: <20120928183023.998068523@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,76 +31,83 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Andre Guedes <andre.guedes@openbossa.org>
+From: Yevgeniy Melnichuk <yevgeniy.melnichuk@googlemail.com>
 
-commit 61a0cfb008f57ecf7eb28ee762952fb42dc15d15 upstream.
+commit bc21fde2d549d1cb1ebef04016eb7affa43bb5c1 upstream.
 
-If SMP fails, we should always cancel security_timer delayed work.
-Otherwise, security_timer function may run after l2cap_conn object
-has been freed.
+Add Sony Vaio T-Series Bluetooth Module( 0x489:0xE036) to
+the blacklist of btusb module and add it to the ath3k module.
 
-This patch fixes the following warning reported by ODEBUG:
+output of cat /sys/kernel/debug/usb/devices
 
-WARNING: at lib/debugobjects.c:261 debug_print_object+0x7c/0x8d()
-Hardware name: Bochs
-ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x27
-Modules linked in: btusb bluetooth
-Pid: 440, comm: kworker/u:2 Not tainted 3.5.0-rc1+ #4
-Call Trace:
- [<ffffffff81174600>] ? free_obj_work+0x4a/0x7f
- [<ffffffff81023eb8>] warn_slowpath_common+0x7e/0x97
- [<ffffffff81023f65>] warn_slowpath_fmt+0x41/0x43
- [<ffffffff811746b1>] debug_print_object+0x7c/0x8d
- [<ffffffff810394f0>] ? __queue_work+0x241/0x241
- [<ffffffff81174fdd>] debug_check_no_obj_freed+0x92/0x159
- [<ffffffff810ac08e>] slab_free_hook+0x6f/0x77
- [<ffffffffa0019145>] ? l2cap_conn_del+0x148/0x157 [bluetooth]
- [<ffffffff810ae408>] kfree+0x59/0xac
- [<ffffffffa0019145>] l2cap_conn_del+0x148/0x157 [bluetooth]
- [<ffffffffa001b9a2>] l2cap_recv_frame+0xa77/0xfa4 [bluetooth]
- [<ffffffff810592f9>] ? trace_hardirqs_on_caller+0x112/0x1ad
- [<ffffffffa001c86c>] l2cap_recv_acldata+0xe2/0x264 [bluetooth]
- [<ffffffffa0002b2f>] hci_rx_work+0x235/0x33c [bluetooth]
- [<ffffffff81038dc3>] ? process_one_work+0x126/0x2fe
- [<ffffffff81038e22>] process_one_work+0x185/0x2fe
- [<ffffffff81038dc3>] ? process_one_work+0x126/0x2fe
- [<ffffffff81059f2e>] ? lock_acquired+0x1b5/0x1cf
- [<ffffffffa00028fa>] ? le_scan_work+0x11d/0x11d [bluetooth]
- [<ffffffff81036fb6>] ? spin_lock_irq+0x9/0xb
- [<ffffffff81039209>] worker_thread+0xcf/0x175
- [<ffffffff8103913a>] ? rescuer_thread+0x175/0x175
- [<ffffffff8103cfe0>] kthread+0x95/0x9d
- [<ffffffff812c5054>] kernel_threadi_helper+0x4/0x10
- [<ffffffff812c36b0>] ? retint_restore_args+0x13/0x13
- [<ffffffff8103cf4b>] ? flush_kthread_worker+0xdb/0xdb
- [<ffffffff812c5050>] ? gs_change+0x13/0x13
+T:  Bus=01 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0489 ProdID=e036 Rev= 0.02
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-This bug can be reproduced using hctool lecc or l2test tools and
-bluetoothd not running.
-
-Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
+Signed-off-by: Yevgeniy Melnichuk <yevgeniy.melnichuk@googlemail.com>
+Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/smp.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/net/bluetooth/smp.c
-+++ b/net/bluetooth/smp.c
-@@ -266,10 +266,10 @@ static void smp_failure(struct l2cap_con
- 	mgmt_auth_failed(conn->hcon->hdev, conn->dst, hcon->type,
- 			 hcon->dst_type, reason);
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -86,6 +86,7 @@ static struct usb_device_id ath3k_table[
  
--	if (test_and_clear_bit(HCI_CONN_LE_SMP_PEND, &conn->hcon->flags)) {
--		cancel_delayed_work_sync(&conn->security_timer);
-+	cancel_delayed_work_sync(&conn->security_timer);
-+
-+	if (test_and_clear_bit(HCI_CONN_LE_SMP_PEND, &conn->hcon->flags))
- 		smp_chan_destroy(conn);
--	}
- }
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C) },
++	{ USB_DEVICE(0x0489, 0xE036) },
  
- #define JUST_WORKS	0x00
+ 	{ }	/* Terminating entry */
+ };
+@@ -109,6 +110,7 @@ static struct usb_device_id ath3k_blist_
+ 
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0489, 0xE036), .driver_info = BTUSB_ATH3012 },
+ 
+ 	{ }	/* Terminating entry */
+ };
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -149,6 +149,7 @@ static struct usb_device_id blacklist_ta
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe03c), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0489, 0xe036), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Broadcom BCM2035 */
+ 	{ USB_DEVICE(0x0a5c, 0x2035), .driver_info = BTUSB_WRONG_SCO_MTU },
 
 
