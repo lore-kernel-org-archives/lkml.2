@@ -1,126 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab2I1KkH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 06:40:07 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45277 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab2I1KkE (ORCPT
+	id S1757329Ab2I1Kpo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 06:45:44 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:49364 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab2I1Kpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 06:40:04 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50657E71.4050001@jp.fujitsu.com>
-Date: Fri, 28 Sep 2012 19:39:45 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 28 Sep 2012 06:45:42 -0400
 MIME-Version: 1.0
-To: <srivatsa.bhat@linux.vnet.ibm.com>, <toshi.kani@hp.com>, <lenb@kernel.org>,
-        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] acpi : prevent cpu from becoming online
-References: <50657D92.3010106@jp.fujitsu.com>
-In-Reply-To: <50657D92.3010106@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201209280642.05747.arnd@arndb.de>
+References: <1348797458-2562-1-git-send-email-festevam@gmail.com>
+	<201209280642.05747.arnd@arndb.de>
+Date: Fri, 28 Sep 2012 07:45:42 -0300
+Message-ID: <CAOMZO5BChG==wddh6Qb0LuShoRKf3VoLppJvY43ifL6Vf1ft0w@mail.gmail.com>
+Subject: Re: [PATCH v2] mfd: da9052-core: Use regmap_irq_get_virq() and fix
+ the probe
+From: Fabio Estevam <festevam@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com, marex@denx.de,
+        ashish.jangam@kpitcummins.com, dchen@diasemi.com,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if acpi_processor_handle_eject() offlines cpu, there is a chance
-to online the cpu after that. So the patch closes the window by using
-get/put_online_cpus().
+Hi Arnd,
 
-Why does the patch change _cpu_up() logic?
+On Fri, Sep 28, 2012 at 3:42 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-The patch cares the race of hot-remove cpu and _cpu_up(). If the patch
-does not change it, there is the following race.
+> This looks good.
+>
+>> I also plan to convert the other da9052 drivers to use regmap_irq_get_virq().
+>
+> Ok, I think they have to be submitted together though, because otherwise
+> the other drivers are more broken now.
 
-hot-remove cpu                         |  _cpu_up()
-------------------------------------- ------------------------------------
-call acpi_processor_handle_eject()     |
-     call cpu_down()                   |
-     call get_online_cpus()            |
-                                       | call cpu_hotplug_begin() and stop here
-     call arch_unregister_cpu()        |
-     call acpi_unmap_lsapic()          |
-     call put_online_cpus()            |
-                                       | start and continue _cpu_up()
-     return acpi_processor_remove()    |
-continue hot-remove the cpu            |
+Yes, makes sense. Will convert the others and submit the patches altogether.
 
-So _cpu_up() can continue to itself. And hot-remove cpu can also continue
-itself. If the patch changes _cpu_up() logic, the race disappears as below:
+Do you think I should also remove the "pdata" references, ie, let the
+driver be dt-only?
 
-hot-remove cpu                         | _cpu_up()
------------------------------------------------------------------------
-call acpi_processor_handle_eject()     |
-     call cpu_down()                   |
-     call get_online_cpus()            |
-                                       | call cpu_hotplug_begin() and stop here
-     call arch_unregister_cpu()        |
-     call acpi_unmap_lsapic()          |
-          cpu's cpu_present is set     |
-          to false by set_cpu_present()|
-     call put_online_cpus()            |
-                                       | start _cpu_up()
-                                       | check cpu_present() and return -EINVAL
-     return acpi_processor_remove()    |
-continue hot-remove the cpu            |
+I do not see any users for the da9052 drivers, except for mx53qsb,
+which I added two days ago.
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Regards,
 
----
- drivers/acpi/processor_driver.c |   14 ++++++++++++++
- kernel/cpu.c                    |    8 +++++---
- 2 files changed, 19 insertions(+), 3 deletions(-)
-
-Index: linux-3.6-rc7/drivers/acpi/processor_driver.c
-===================================================================
---- linux-3.6-rc7.orig/drivers/acpi/processor_driver.c	2012-09-28 19:16:33.207858261 +0900
-+++ linux-3.6-rc7/drivers/acpi/processor_driver.c	2012-09-28 19:23:05.129858476 +0900
-@@ -857,8 +857,22 @@ static int acpi_processor_handle_eject(s
- 			return ret;
- 	}
- 
-+	get_online_cpus();
-+	/*
-+	 * The cpu might become online again at this point. So we check whether
-+	 * the cpu has been onlined or not. If the cpu became online, it means
-+	 * that someone wants to use the cpu. So acpi_processor_handle_eject()
-+	 * returns -EAGAIN.
-+	 */
-+	if (unlikely(cpu_online(pr->id))) {
-+		put_online_cpus();
-+		pr_warn("Failed to remove CPU %d, because other task "
-+			"brought the CPU back online\n", pr->id);
-+		return -EAGAIN;
-+	}
- 	arch_unregister_cpu(pr->id);
- 	acpi_unmap_lsapic(pr->id);
-+	put_online_cpus();
- 	return ret;
- }
- #else
-Index: linux-3.6-rc7/kernel/cpu.c
-===================================================================
---- linux-3.6-rc7.orig/kernel/cpu.c	2012-09-24 10:10:57.000000000 +0900
-+++ linux-3.6-rc7/kernel/cpu.c	2012-09-28 19:19:32.321858402 +0900
-@@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
- 	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
- 	struct task_struct *idle;
- 
--	if (cpu_online(cpu) || !cpu_present(cpu))
--		return -EINVAL;
--
- 	cpu_hotplug_begin();
- 
-+	if (cpu_online(cpu) || !cpu_present(cpu)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
- 	idle = idle_thread_get(cpu);
- 	if (IS_ERR(idle)) {
- 		ret = PTR_ERR(idle);
-
-
+Fabio Estevam
