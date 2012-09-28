@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965166Ab2I1S6z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:58:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965152Ab2I1S6v (ORCPT
+	id S965130Ab2I1S7C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:59:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965167Ab2I1S65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:58:51 -0400
+	Fri, 28 Sep 2012 14:58:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Karsten Keil <keil@b1-systems.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 102/262] mISDN: Fix wrong usage of flush_work_sync while holding locks
-Date: Fri, 28 Sep 2012 11:50:31 -0700
-Message-Id: <20120928183010.168233564@linuxfoundation.org>
+        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        "Luck, Tony" <tony.luck@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 104/262] mm/ia64: fix a memory block size bug
+Date: Fri, 28 Sep 2012 11:50:33 -0700
+Message-Id: <20120928183010.462627320@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,128 +31,63 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Karsten Keil <keil@b1-systems.de>
+From: Jianguo Wu <wujianguo@huawei.com>
 
-commit 4b921eda53366b319602351ff4d7256fafa4bd1b upstream.
+commit 05cf96398e1b6502f9e191291b715c7463c9d5dd upstream.
 
-It is a bad idea to hold a spinlock and call flush_work_sync.
-Move the workqueue cleanup outside the spinlock and use cancel_work_sync,
-on closing the channel this seems to be the more correct function.
-Remove the never used and constant return value of mISDN_freebchannel.
+I found following definition in include/linux/memory.h, in my IA64
+platform, SECTION_SIZE_BITS is equal to 32, and MIN_MEMORY_BLOCK_SIZE
+will be 0.
 
-Signed-off-by: Karsten Keil <keil@b1-systems.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  #define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
+
+Because MIN_MEMORY_BLOCK_SIZE is int type and length of 32bits,
+so MIN_MEMORY_BLOCK_SIZE(1 << 32) will will equal to 0.
+Actually when SECTION_SIZE_BITS >= 31, MIN_MEMORY_BLOCK_SIZE will be wrong.
+This will cause wrong system memory infomation in sysfs.
+I think it should be:
+
+  #define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
+
+And "echo offline > memory0/state" will cause following call trace:
+
+  kernel BUG at mm/memory_hotplug.c:885!
+  sh[6455]: bugcheck! 0 [1]
+  Pid: 6455, CPU 0, comm:                   sh
+  psr : 0000101008526030 ifs : 8000000000000fa4 ip  : [<a0000001008c40f0>]    Not tainted (3.6.0-rc1)
+  ip is at offline_pages+0x210/0xee0
+  Call Trace:
+    show_stack+0x80/0xa0
+    show_regs+0x640/0x920
+    die+0x190/0x2c0
+    die_if_kernel+0x50/0x80
+    ia64_bad_break+0x3d0/0x6e0
+    ia64_native_leave_kernel+0x0/0x270
+    offline_pages+0x210/0xee0
+    alloc_pages_current+0x180/0x2a0
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/isdn/hardware/mISDN/avmfritz.c  |    3 ++-
- drivers/isdn/hardware/mISDN/mISDNipac.c |    3 ++-
- drivers/isdn/hardware/mISDN/mISDNisar.c |    3 ++-
- drivers/isdn/hardware/mISDN/netjet.c    |    3 ++-
- drivers/isdn/hardware/mISDN/w6692.c     |    3 ++-
- drivers/isdn/mISDN/hwchannel.c          |    9 ++++-----
- include/linux/mISDNhw.h                 |    2 +-
- 7 files changed, 15 insertions(+), 11 deletions(-)
+ include/linux/memory.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/isdn/hardware/mISDN/avmfritz.c
-+++ b/drivers/isdn/hardware/mISDN/avmfritz.c
-@@ -857,8 +857,9 @@ avm_bctrl(struct mISDNchannel *ch, u32 c
- 	switch (cmd) {
- 	case CLOSE_CHANNEL:
- 		test_and_clear_bit(FLG_OPEN, &bch->Flags);
-+		cancel_work_sync(&bch->workq);
- 		spin_lock_irqsave(&fc->lock, flags);
--		mISDN_freebchannel(bch);
-+		mISDN_clear_bchannel(bch);
- 		modehdlc(bch, ISDN_P_NONE);
- 		spin_unlock_irqrestore(&fc->lock, flags);
- 		ch->protocol = ISDN_P_NONE;
---- a/drivers/isdn/hardware/mISDN/mISDNipac.c
-+++ b/drivers/isdn/hardware/mISDN/mISDNipac.c
-@@ -1406,8 +1406,9 @@ hscx_bctrl(struct mISDNchannel *ch, u32
- 	switch (cmd) {
- 	case CLOSE_CHANNEL:
- 		test_and_clear_bit(FLG_OPEN, &bch->Flags);
-+		cancel_work_sync(&bch->workq);
- 		spin_lock_irqsave(hx->ip->hwlock, flags);
--		mISDN_freebchannel(bch);
-+		mISDN_clear_bchannel(bch);
- 		hscx_mode(hx, ISDN_P_NONE);
- 		spin_unlock_irqrestore(hx->ip->hwlock, flags);
- 		ch->protocol = ISDN_P_NONE;
---- a/drivers/isdn/hardware/mISDN/mISDNisar.c
-+++ b/drivers/isdn/hardware/mISDN/mISDNisar.c
-@@ -1588,8 +1588,9 @@ isar_bctrl(struct mISDNchannel *ch, u32
- 	switch (cmd) {
- 	case CLOSE_CHANNEL:
- 		test_and_clear_bit(FLG_OPEN, &bch->Flags);
-+		cancel_work_sync(&bch->workq);
- 		spin_lock_irqsave(ich->is->hwlock, flags);
--		mISDN_freebchannel(bch);
-+		mISDN_clear_bchannel(bch);
- 		modeisar(ich, ISDN_P_NONE);
- 		spin_unlock_irqrestore(ich->is->hwlock, flags);
- 		ch->protocol = ISDN_P_NONE;
---- a/drivers/isdn/hardware/mISDN/netjet.c
-+++ b/drivers/isdn/hardware/mISDN/netjet.c
-@@ -812,8 +812,9 @@ nj_bctrl(struct mISDNchannel *ch, u32 cm
- 	switch (cmd) {
- 	case CLOSE_CHANNEL:
- 		test_and_clear_bit(FLG_OPEN, &bch->Flags);
-+		cancel_work_sync(&bch->workq);
- 		spin_lock_irqsave(&card->lock, flags);
--		mISDN_freebchannel(bch);
-+		mISDN_clear_bchannel(bch);
- 		mode_tiger(bc, ISDN_P_NONE);
- 		spin_unlock_irqrestore(&card->lock, flags);
- 		ch->protocol = ISDN_P_NONE;
---- a/drivers/isdn/hardware/mISDN/w6692.c
-+++ b/drivers/isdn/hardware/mISDN/w6692.c
-@@ -1054,8 +1054,9 @@ w6692_bctrl(struct mISDNchannel *ch, u32
- 	switch (cmd) {
- 	case CLOSE_CHANNEL:
- 		test_and_clear_bit(FLG_OPEN, &bch->Flags);
-+		cancel_work_sync(&bch->workq);
- 		spin_lock_irqsave(&card->lock, flags);
--		mISDN_freebchannel(bch);
-+		mISDN_clear_bchannel(bch);
- 		w6692_mode(bc, ISDN_P_NONE);
- 		spin_unlock_irqrestore(&card->lock, flags);
- 		ch->protocol = ISDN_P_NONE;
---- a/drivers/isdn/mISDN/hwchannel.c
-+++ b/drivers/isdn/mISDN/hwchannel.c
-@@ -148,17 +148,16 @@ mISDN_clear_bchannel(struct bchannel *ch
- 	ch->next_minlen = ch->init_minlen;
- 	ch->maxlen = ch->init_maxlen;
- 	ch->next_maxlen = ch->init_maxlen;
-+	skb_queue_purge(&ch->rqueue);
-+	ch->rcount = 0;
- }
- EXPORT_SYMBOL(mISDN_clear_bchannel);
+--- a/include/linux/memory.h
++++ b/include/linux/memory.h
+@@ -19,7 +19,7 @@
+ #include <linux/compiler.h>
+ #include <linux/mutex.h>
  
--int
-+void
- mISDN_freebchannel(struct bchannel *ch)
- {
-+	cancel_work_sync(&ch->workq);
- 	mISDN_clear_bchannel(ch);
--	skb_queue_purge(&ch->rqueue);
--	ch->rcount = 0;
--	flush_work_sync(&ch->workq);
--	return 0;
- }
- EXPORT_SYMBOL(mISDN_freebchannel);
+-#define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
++#define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
  
---- a/include/linux/mISDNhw.h
-+++ b/include/linux/mISDNhw.h
-@@ -183,7 +183,7 @@ extern int	mISDN_initbchannel(struct bch
- 				   unsigned short);
- extern int	mISDN_freedchannel(struct dchannel *);
- extern void	mISDN_clear_bchannel(struct bchannel *);
--extern int	mISDN_freebchannel(struct bchannel *);
-+extern void	mISDN_freebchannel(struct bchannel *);
- extern int	mISDN_ctrl_bchannel(struct bchannel *, struct mISDN_ctrl_req *);
- extern void	queue_ch_frame(struct mISDNchannel *, u_int,
- 			int, struct sk_buff *);
+ struct memory_block {
+ 	unsigned long start_section_nr;
 
 
