@@ -1,133 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758493Ab2I1PMZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:12:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46393 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758438Ab2I1PMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:12:23 -0400
-Message-ID: <5065BE44.3090903@ti.com>
-Date: Fri, 28 Sep 2012 08:12:04 -0700
-From: "Cousson, Benoit" <b-cousson@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1758495Ab2I1PO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:14:27 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58203 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758443Ab2I1POY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 11:14:24 -0400
+Date: Fri, 28 Sep 2012 17:14:18 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arun Sharma <asharma@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC/PATCHSET 00/15] perf report: Add support to accumulate hist
+ periods
+Message-ID: <20120928151407.GA14215@somewhere.redhat.com>
+References: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
+ <87pq5awvgp.fsf@sejong.aot.lge.com>
+ <20120927230138.GA10660@somewhere.redhat.com>
+ <874nmivgqk.fsf@sejong.aot.lge.com>
+ <CABPqkBQbaDdGwyOK-qcheqyTzrr505undnFae8BQGEx+r0hKyg@mail.gmail.com>
 MIME-Version: 1.0
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-CC: Rob Herring <robherring2@gmail.com>, <grant.likely@secretlab.ca>,
-        <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/5] drivers: usb: phy: add a new driver for omap usb2
- phy
-References: <1346943430-18236-1-git-send-email-kishon@ti.com> <1346943430-18236-2-git-send-email-kishon@ti.com> <50605CFB.5090402@gmail.com> <CAAe_U6+2Vxd8F_JMafm41+0SnZSrZCa_9VKRbdB200BUHw5vEQ@mail.gmail.com> <506461A0.4050103@gmail.com> <5064D7CA.1070909@ti.com> <CAAe_U6KHk1nuSBVn-4H397wzUk0cnqGe_H0D8RVqrSFYGJVMCg@mail.gmail.com>
-In-Reply-To: <CAAe_U6KHk1nuSBVn-4H397wzUk0cnqGe_H0D8RVqrSFYGJVMCg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQbaDdGwyOK-qcheqyTzrr505undnFae8BQGEx+r0hKyg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/28/2012 3:07 AM, ABRAHAM, KISHON VIJAY wrote:
-> Hi,
->
-> On Fri, Sep 28, 2012 at 4:18 AM, Cousson, Benoit <b-cousson@ti.com> wrote:
->> On 9/27/2012 7:24 AM, Rob Herring wrote:
->>>
->>> On 09/25/2012 05:06 AM, ABRAHAM, KISHON VIJAY wrote:
->>>>
->>>> Hi,
->>>>
->>>> On Mon, Sep 24, 2012 at 6:45 PM, Rob Herring <robherring2@gmail.com>
->>>> wrote:
->>>>>
->>>>> On 09/06/2012 09:57 AM, Kishon Vijay Abraham I wrote:
->>>>>>
->>>>>> All phy related programming like enabling/disabling the clocks,
->>>>>> powering
->>>>>> on/off the phy is taken care of by this driver. It is also used for OTG
->>>>>> related functionality like srp.
->>>>>>
->>>>>> This also includes device tree support for usb2 phy driver and
->>>>>> the documentation with device tree binding information is updated.
->>>>>>
->>>>>> Currently writing to control module register is taken care in this
->>>>>> driver which will be removed once the control module driver is in
->>>>>> place.
->>>>>>
->>>>>> Cc: Felipe Balbi <balbi@ti.com>
->>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>>>> ---
->>>>>>    Documentation/devicetree/bindings/usb/usb-phy.txt |   17 ++
->>>>>>    drivers/usb/phy/Kconfig                           |    9 +
->>>>>>    drivers/usb/phy/Makefile                          |    1 +
->>>>>>    drivers/usb/phy/omap-usb2.c                       |  271
->>>>>> +++++++++++++++++++++
->>>>>>    include/linux/usb/omap_usb.h                      |   46 ++++
->>>>>>    include/linux/usb/phy_companion.h                 |   34 +++
->>>>>>    6 files changed, 378 insertions(+)
->>>>>>    create mode 100644 Documentation/devicetree/bindings/usb/usb-phy.txt
->>>>>>    create mode 100644 drivers/usb/phy/omap-usb2.c
->>>>>>    create mode 100644 include/linux/usb/omap_usb.h
->>>>>>    create mode 100644 include/linux/usb/phy_companion.h
->>>>>>
->>>>>> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt
->>>>>> b/Documentation/devicetree/bindings/usb/usb-phy.txt
->>>>>> new file mode 100644
->>>>>> index 0000000..80d4148
->>>>>> --- /dev/null
->>>>>> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
->>>>>
->>>>>
->>>>> This is a very generic name...
->>>>>
->>>>>> @@ -0,0 +1,17 @@
->>>>>> +USB PHY
->>>>>> +
->>>>>> +OMAP USB2 PHY
->>>>>> +
->>>>>> +Required properties:
->>>>>> + - compatible: Should be "ti,omap-usb2"
->>>>>
->>>>>
->>>>> ...for a specific phy. However, I do think a generic binding to describe
->>>>> host ctrlr to phy connections is needed.
->>>>>
->>>>>> + - reg : Address and length of the register set for the device. Also
->>>>>> +add the address of control module dev conf register until a driver for
->>>>>> +control module is added
->>>>>
->>>>>
->>>>> The dts should describe the h/w, not what you need for the current
->>>>> driver. The 2nd reg field does not belong here.
->>>>
->>>>
->>>> Indeed. This was discussed and agreed upon as a interim solution till
->>>> we have a control module driver in place to write to the control
->>>> module register.
->>>
->>>
->>> Discussed where and agreed by who? I for one do not agree.
->>
->>
->> Yeah, what was tolerated was the addition of that address inside hwmod data,
->> but I do agree that it should not go into DTS.
->
-> So how can we handle reg writes to control module until we have a
-> control module driver. usb2 phy does not have a hwmod data for itself.
-> Do you think we should add a new hwmod data for usb2 phy and use this
-> in the usb2phy data node in the dts file?
+On Fri, Sep 28, 2012 at 09:07:57AM +0200, Stephane Eranian wrote:
+> On Fri, Sep 28, 2012 at 7:49 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> > Hi Frederic,
+> >
+> > On Fri, 28 Sep 2012 01:01:48 +0200, Frederic Weisbecker wrote:
+> >> When Arun was working on this, I asked him to explore if it could make sense to reuse
+> >> the "-b, --branch-stack"  perf report option. Because after all, this feature is doing
+> >> about the same than "-b" except it's using callchains instead of full branch tracing.
+> >> But callchains are branches. Just a limited subset of all branches taken on excecution.
+> >> So you can probably reuse some interface and even ground code there.
+> >>
+> >> What do you think?
+> >
+> > Umm.. first of all, I'm not familiar with the branch stack thing.  It's
+> > intel-specific, right?
+> >
+> The kernel API is NOT specific to Intel. It is abstracted to be portable
+> across architecture. The implementation only exists on certain Intel
+> X86 processors.
+> 
+> > Also I don't understand what exactly you want here.  What kind of
+> > interface did you say?  Can you elaborate it bit more?
+> >
+> Not clear to me either.
+> 
+> > And AFAIK branch stack can collect much more branch information than
+> > just callstacks.  Can we differentiate which is which easily?  Is there
+> > any limitation on using it?  What if callstacks are not sync'ed with
+> > branch stacks - is it possible though?
+> >
+> First of all branch stack is not a branch tracing mechanism. This is a
+> branch sampling mechanism. Not all branches are captured. Only the
+> last N consecutive branches leading to a PMU interrupt are captured
+> in each sample.
+> 
+> Yes, the branch stack mechanism as it exists on Intel processors
+> can capture more then call branches. It is HW based and provides
+> a branch type filter. Filtering capability is exposed at the API level
+> in a generic fashion. The hw filter is based on opcodes. Call branches
+> all cover call, syscall instructions. As such, the branch stack mechanism
+> cannot be used to capture callstacks to shared libraries, simply because
+> there a a non call instruction in the trampoline. To obtain a better quality
+> callstack you have instead to sample return branches. So yes, callstacks
+> are not sync'ed with branch stack even if limited to call branches.
+> 
 
-Now, I'm confused... didn't you already do that? What was the hwmod you 
-added?
+You're right. One doesn't simply sample callchains on top of branch tracing. Not easily at least.
+But that's not what we want here. We want the other way round: use callchains as branch sampling.
+And a callchain _is_ a branch sampling. Just a specialized one.
 
-Maybe it is time to write your own control module driver now.
+PERF_SAMPLE_BRANCH_STACK either records only calls, only ret, or everything, or....
+You can define the filter with "-j" option. Now callchains can be considered as the result
+of a specific "-j" filter option. It's just a high level filtering. ie: not just based on opcode
+types but on semantic post-processing. As if we applied a specific filter on a pure branch tracing
+that cancelled calls that had matching ret.
 
-Talking with Tony on that, there is no need for a common control driver, 
-it is up to each individual control driver to handle their own register 
-space. It means that you should probably just add a simple driver to 
-access these region.
+But in the end, what we have is just branches. Some branch layout that is biased, that already passed
+through a semantic wheel, still it's just _branches_.
 
-Regards,
-Benoit
+Note I'm not arguing about adding a "-j callchain" option, just trying to show you that callchains
+are not really different from other filtered source of branch sampling.
 
+
+> > But I think it'd be good if the branch stack can be changed to call
+> > stack in general.  Did you mean this?
+> >
+> That's not going to happen. The mechanism is much more generic than
+> that.
+> 
+> Quite frankly, I don't understand Frederic's motivation here. The mechanism
+> are not quite the same.
+
+So, considering that callchains are just "branches", why can't we use them as
+a branch source, just like PERF_SAMPLE_BRANCH_STACK data samples, that we
+can reuse in "perf report -b".
+
+Look at commit b50311dc2ac1c04ad19163c2359910b25e16caf6
+"perf report: Add support for taken branch sampling". It's doing (except for a few details
+like the period weight of branch samples) the same than in Namhyung patch, just with
+PERF_SAMPLE_BRANCH_STACK instead of callchains.
+
+I don't understand what justifies this duplication.
