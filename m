@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965157Ab2I1Uc1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:32:27 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964810Ab2I1Ub3 (ORCPT
+	id S1032882Ab2I1Ub1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:31:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964810Ab2I1UbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:31:29 -0400
+	Fri, 28 Sep 2012 16:31:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        CAI Qian <caiqian@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 186/218] time: Improve sanity checking of timekeeping inputs
-Date: Fri, 28 Sep 2012 13:16:43 -0700
-Message-Id: <20120928201522.870027961@linuxfoundation.org>
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 182/218] r8169: RxConfig hack for the 8168evl.
+Date: Fri, 28 Sep 2012 13:16:39 -0700
+Message-Id: <20120928201522.388058526@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -30,159 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Francois Romieu <romieu@fr.zoreil.com>
 
-commit 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b upstream.
+commit eb2dc35d99028b698cdedba4f5522bc43e576bd2 upstream.
 
-Unexpected behavior could occur if the time is set to a value large
-enough to overflow a 64bit ktime_t (which is something larger then the
-year 2262).
+The 8168evl (RTL_GIGA_MAC_VER_34) based Gigabyte GA-990FXA motherboards
+are very prone to NETDEV watchdog problems without this change. See
+https://bugzilla.kernel.org/show_bug.cgi?id=42899 for instance.
 
-Also unexpected behavior could occur if large negative offsets are
-injected via adjtimex.
+I don't know why it *works*. It's depressingly effective though.
 
-So this patch improves the sanity check timekeeping inputs by
-improving the timespec_valid() check, and then makes better use of
-timespec_valid() to make sure we don't set the time to an invalid
-negative value or one that overflows ktime_t.
+For the record:
+- the problem may go along IOMMU (AMD-Vi) errors but it really looks
+  like a red herring.
+- the patch sets the RX_MULTI_EN bit. If the 8168c doc is any guide,
+  the chipset now fetches several Rx descriptors at a time.
+- long ago the driver ignored the RX_MULTI_EN bit.
+  e542a2269f232d61270ceddd42b73a4348dee2bb changed the RxConfig
+  settings. Whatever the problem it's now labeled a regression.
+- Realtek's own driver can identify two different 8168evl devices
+  (CFG_METHOD_16 and CFG_METHOD_17) where the r8169 driver only
+  sees one. It sucks.
 
-Note: This does not protect from setting the time close to overflowing
-ktime_t and then letting natural accumulation cause the overflow.
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
-Reported-by: CAI Qian <caiqian@redhat.com>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Zhouping Liu <zliu@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1344454580-17031-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/ktime.h     |    7 -------
- include/linux/time.h      |   22 ++++++++++++++++++++--
- kernel/time/timekeeping.c |   26 ++++++++++++++++++++++++--
- 3 files changed, 44 insertions(+), 11 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -58,13 +58,6 @@ union ktime {
- 
- typedef union ktime ktime_t;		/* Kill this */
- 
--#define KTIME_MAX			((s64)~((u64)1 << 63))
--#if (BITS_PER_LONG == 64)
--# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
--#else
--# define KTIME_SEC_MAX			LONG_MAX
--#endif
--
- /*
-  * ktime_t definitions when using the 64-bit scalar representation:
-  */
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -107,11 +107,29 @@ static inline struct timespec timespec_s
- 	return ts_delta;
- }
- 
-+#define KTIME_MAX			((s64)~((u64)1 << 63))
-+#if (BITS_PER_LONG == 64)
-+# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
-+#else
-+# define KTIME_SEC_MAX			LONG_MAX
-+#endif
-+
- /*
-  * Returns true if the timespec is norm, false if denorm:
-  */
--#define timespec_valid(ts) \
--	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
-+static inline bool timespec_valid(const struct timespec *ts)
-+{
-+	/* Dates before 1970 are bogus */
-+	if (ts->tv_sec < 0)
-+		return false;
-+	/* Can't have more nanoseconds then a second */
-+	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
-+		return false;
-+	/* Disallow values that could overflow ktime_t */
-+	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
-+		return false;
-+	return true;
-+}
- 
- extern void read_persistent_clock(struct timespec *ts);
- extern void read_boot_clock(struct timespec *ts);
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -385,7 +385,7 @@ int do_settimeofday(const struct timespe
- 	struct timespec ts_delta;
- 	unsigned long flags;
- 
--	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
-+	if (!timespec_valid(tv))
- 		return -EINVAL;
- 
- 	write_seqlock_irqsave(&timekeeper.lock, flags);
-@@ -420,6 +420,8 @@ EXPORT_SYMBOL(do_settimeofday);
- int timekeeping_inject_offset(struct timespec *ts)
- {
- 	unsigned long flags;
-+	struct timespec tmp;
-+	int ret = 0;
- 
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
-@@ -428,10 +430,17 @@ int timekeeping_inject_offset(struct tim
- 
- 	timekeeping_forward_now();
- 
-+	tmp = timespec_add(timekeeper.xtime,  *ts);
-+	if (!timespec_valid(&tmp)) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
-+
- 	timekeeper.xtime = timespec_add(timekeeper.xtime, *ts);
- 	timekeeper.wall_to_monotonic =
- 				timespec_sub(timekeeper.wall_to_monotonic, *ts);
- 
-+error: /* even if we error out, we forwarded the time, so call update */
- 	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
-@@ -439,7 +448,7 @@ int timekeeping_inject_offset(struct tim
- 	/* signal hrtimers about time change */
- 	clock_was_set();
- 
--	return 0;
-+	return ret;
- }
- EXPORT_SYMBOL(timekeeping_inject_offset);
- 
-@@ -599,7 +608,20 @@ void __init timekeeping_init(void)
- 	struct timespec now, boot;
- 
- 	read_persistent_clock(&now);
-+	if (!timespec_valid(&now)) {
-+		pr_warn("WARNING: Persistent clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		now.tv_sec = 0;
-+		now.tv_nsec = 0;
-+	}
-+
- 	read_boot_clock(&boot);
-+	if (!timespec_valid(&boot)) {
-+		pr_warn("WARNING: Boot clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		boot.tv_sec = 0;
-+		boot.tv_nsec = 0;
-+	}
- 
- 	seqlock_init(&timekeeper.lock);
- 
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3737,6 +3737,7 @@ static void rtl_init_rxcfg(struct rtl816
+ 	case RTL_GIGA_MAC_VER_22:
+ 	case RTL_GIGA_MAC_VER_23:
+ 	case RTL_GIGA_MAC_VER_24:
++	case RTL_GIGA_MAC_VER_34:
+ 		RTL_W32(RxConfig, RX128_INT_EN | RX_MULTI_EN | RX_DMA_BURST);
+ 		break;
+ 	default:
 
 
