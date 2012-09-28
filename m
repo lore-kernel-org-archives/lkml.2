@@ -1,179 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab2I1M2V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:28:21 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:10510
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757681Ab2I1MYR (ORCPT
+	id S932135Ab2I1M3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:29:06 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:44874 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109Ab2I1M3B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:24:17 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzd6f1izz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1155h)
-X-WSS-ID: 0MB27S9-02-8L9-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 09/16] iommu/amd: Add IOAPIC remapping routines
-Date: Fri, 28 Sep 2012 14:23:59 +0200
-Message-ID: <1348835046-3262-10-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
-References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+	Fri, 28 Sep 2012 08:29:01 -0400
+Date: Fri, 28 Sep 2012 13:28:58 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Bryan Huntsman <bryanh@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 RESEND 2/2] ARM: local timers: add timer support
+ using IO mapped register
+Message-ID: <20120928122858.GD9472@e106331-lin.cambridge.arm.com>
+References: <1347694914-1457-1-git-send-email-rvaswani@codeaurora.org>
+ <1347694914-1457-2-git-send-email-rvaswani@codeaurora.org>
+ <5062013F.8050507@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <5062013F.8050507@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 28 Sep 2012 12:28:59.0113 (UTC) FILETIME=[D5BA3590:01CD9D74]
+X-MC-Unique: 112092813285904401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the routine to setup interrupt remapping for ioapic
-interrupts. Also add a routine to change the affinity of an
-irq and to free an irq allocation for interrupt remapping.
-The last two functions will also be used for MSI interrupts.
+On Tue, Sep 25, 2012 at 08:08:47PM +0100, Rohit Vaswani wrote:
+> Any comments ?
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/amd_iommu.c |  126 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 126 insertions(+)
+I have a few questions about the irq side of things.
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index bd277924..3df01b2 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -4000,4 +4000,130 @@ static void free_irte(u16 devid, int index)
- 	iommu_completion_wait(iommu);
- }
- 
-+static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
-+			      unsigned int destination, int vector,
-+			      struct io_apic_irq_attr *attr)
-+{
-+	struct irq_remap_table *table;
-+	struct irq_2_iommu *irte_info;
-+	struct irq_cfg *cfg;
-+	union irte irte;
-+	int ioapic_id;
-+	int index;
-+	int devid;
-+	int ret;
-+
-+	cfg = irq_get_chip_data(irq);
-+	if (!cfg)
-+		return -EINVAL;
-+
-+	irte_info = &cfg->irq_2_iommu;
-+	ioapic_id = mpc_ioapic_id(attr->ioapic);
-+	devid     = get_ioapic_devid(ioapic_id);
-+
-+	if (devid < 0)
-+		return devid;
-+
-+	table = get_irq_table(devid, true);
-+	if (table == NULL)
-+		return -ENOMEM;
-+
-+	index = attr->ioapic_pin;
-+
-+	/* Setup IRQ remapping info */
-+	irte_info->sub_handle = devid;
-+	irte_info->irte_index = index;
-+	irte_info->iommu      = (void *)cfg;
-+
-+	/* Setup IRTE for IOMMU */
-+	irte.val		= 0;
-+	irte.fields.vector      = vector;
-+	irte.fields.int_type    = apic->irq_delivery_mode;
-+	irte.fields.destination = destination;
-+	irte.fields.dm          = apic->irq_dest_mode;
-+	irte.fields.valid       = 1;
-+
-+	ret = modify_irte(devid, index, irte);
-+	if (ret)
-+		return ret;
-+
-+	/* Setup IOAPIC entry */
-+	memset(entry, 0, sizeof(*entry));
-+
-+	entry->vector        = index;
-+	entry->mask          = 0;
-+	entry->trigger       = attr->trigger;
-+	entry->polarity      = attr->polarity;
-+
-+	/*
-+	 * Mask level triggered irqs.
-+	 * Use IRQ_DELAYED_DISABLE for edge triggered irqs.
-+	 */
-+	if (attr->trigger)
-+		entry->mask = 1;
-+
-+	return 0;
-+}
-+
-+static int set_affinity(struct irq_data *data, const struct cpumask *mask,
-+			bool force)
-+{
-+	struct irq_2_iommu *irte_info;
-+	unsigned int dest, irq;
-+	struct irq_cfg *cfg;
-+	union irte irte;
-+	int err;
-+
-+	if (!config_enabled(CONFIG_SMP))
-+		return -1;
-+
-+	cfg       = data->chip_data;
-+	irq       = data->irq;
-+	irte_info = &cfg->irq_2_iommu;
-+
-+	if (!cpumask_intersects(mask, cpu_online_mask))
-+		return -EINVAL;
-+
-+	if (get_irte(irte_info->sub_handle, irte_info->irte_index, &irte))
-+		return -EBUSY;
-+
-+	if (assign_irq_vector(irq, cfg, mask))
-+		return -EBUSY;
-+
-+	err = apic->cpu_mask_to_apicid_and(cfg->domain, mask, &dest);
-+	if (err) {
-+		if (assign_irq_vector(irq, cfg, data->affinity))
-+			pr_err("AMD-Vi: Failed to recover vector for irq %d\n", irq);
-+		return err;
-+	}
-+
-+	irte.fields.vector      = cfg->vector;
-+	irte.fields.destination = dest;
-+
-+	modify_irte(irte_info->sub_handle, irte_info->irte_index, irte);
-+
-+	if (cfg->move_in_progress)
-+		send_cleanup_vector(cfg);
-+
-+	cpumask_copy(data->affinity, mask);
-+
-+	return 0;
-+}
-+
-+static int free_irq(int irq)
-+{
-+	struct irq_2_iommu *irte_info;
-+	struct irq_cfg *cfg;
-+
-+	cfg = irq_get_chip_data(irq);
-+	if (!cfg)
-+		return -EINVAL;
-+
-+	irte_info = &cfg->irq_2_iommu;
-+
-+	free_irte(irte_info->sub_handle, irte_info->irte_index);
-+
-+	return 0;
-+}
-+
- #endif
--- 
-1.7.9.5
+> > diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> > index 52478c8..8e01328 100644
+> > --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
+> > +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> > @@ -7,10 +7,13 @@ The timer is attached to a GIC to deliver its per-processor interrupts.
+> >
+> >   ** Timer node properties:
+> >
+> > -- compatible : Should at least contain "arm,armv7-timer".
+> > +- compatible : Should at least contain "arm,armv7-timer" or
+> > +  "arm,armv7-timer-mem" if using the memory mapped arch timer interface.
+> >
+> > -- interrupts : Interrupt list for secure, non-secure, virtual and
+> > -  hypervisor timers, in that order.
+> > +- interrupts : If using the cp15 interface, the interrupt list for secure,
+> > +  non-secure, virtual and hypervisor timers, in that order.
+> > +  If using the memory mapped interface, list the interrupts for each core,
+> > +  starting with core 0.
 
+I take it that core 0 means physical cpu 0 (i.e. MPIDR.Aff{2,1,0} == 0)?
+
+What privilege level are the interrupts for the memory-mapped interface?
+
+Could each core have multiple interrupts at different privilege levels?
+
+I also notice we don't seem to handle the case of systems without security
+extensions, which only have physical and virtual interrupts. If we're adding
+support for different interrupt setups, how do we handle them?
+
+> > diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
+> > index 8672a75..f79092d 100644
+> > --- a/arch/arm/kernel/arch_timer.c
+> > +++ b/arch/arm/kernel/arch_timer.c
+> > @@ -466,11 +589,166 @@ out:
+> >       return err;
+> >   }
+> >
+> > +static int __init arch_timer_mem_register(void)
+> > +{
+> > +     int err, irq, i;
+> > +
+> > +     err = arch_timer_available();
+> > +     if (err)
+> > +             goto out;
+> > +
+> > +     arch_timer_evt = alloc_percpu(struct clock_event_device *);
+> > +     if (!arch_timer_evt) {
+> > +             err = -ENOMEM;
+> > +             goto out;
+> > +     }
+> > +
+> > +     clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+> > +
+> > +     if (arch_timer_irq_percpu) {
+> > +             for (i = 0; i < arch_timer_num_irqs; i++) {
+> > +                     irq = arch_timer_mem_irqs[i];
+> > +                     err = request_percpu_irq(irq, arch_timer_handler_mem,
+> > +                                             "arch_timer", arch_timer_evt);
+> > +             }
+> > +     } else {
+> > +             for (i = 0; i < arch_timer_num_irqs; i++) {
+> > +                     irq = arch_timer_mem_irqs[i];
+> > +                     err = request_irq(irq, arch_timer_handler_mem, 0,
+> > +                                             "arch_timer",
+> > +                                             per_cpu_ptr(arch_timer_evt, i));
+
+The interrupts are listed in order of physical id in the device tree, and
+you're registering them in terms of logical cpu id. The two are not necessarily
+the same. You'll need some way of mapping from physical ids to logical ids
+somehow (e.g.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/080872.html).
+Additionally, in multi-cluster systems the set of physical ids isn't
+necessarily contiguous, so you need a way of iterating over physical ids. We
+have a similar issue with PMU interrupts in the perf backend; the two can
+probably be solved with the same mechanism.
+
+It seems odd to me that you're not setting the affinity of the interrupt. Does
+this not matter?
+
+> > +                     /* Disable irq now and it will be enabled later
+> > +                      * in arch_timer_mem_setup which is called from
+> > +                      * smp code. If we don't disable it here, then we
+> > +                      * face unbalanced irq problem in arch_timer_mem_setup.
+> > +                      * Percpu irqs don't have irq depth management,
+> > +                      * hence they dont face this problem.
+> > +                      */
+> > +                     disable_irq(irq);
+> > +             }
+> > +     }
+> > +
+> > +     if (err) {
+> > +             pr_err("arch_timer_mem: can't register interrupt %d (%d)\n",
+> > +                    irq, err);
+> > +             goto out_free;
+> > +     }
+
+This only works if the last request_irq returns an error. What if a request in
+the middle of the set of irqs fails?
+
+> > +static int __init arch_timer_mem_of_register(void)
+> > +{
+> > +     struct device_node *np;
+> > +     u32 freq;
+> > +     int i, ret, irq;
+> > +     arch_timer_num_irqs = num_possible_cpus();
+> > +
+> > +     np = of_find_matching_node(NULL, arch_timer_mem_of_match);
+> > +     if (!np) {
+> > +             pr_err("arch_timer: can't find armv7-timer-mem DT node\n");
+> > +             return -ENODEV;
+> > +     }
+> > +
+> > +     arch_timer_use_virtual = false;
+> > +
+> > +     /* Try to determine the frequency from the device tree or CNTFRQ */
+> > +     if (!of_property_read_u32(np, "clock-frequency", &freq))
+> > +             arch_timer_rate = freq;
+> > +
+> > +     for (i = 0; i < arch_timer_num_irqs; i++) {
+> > +             arch_timer_mem_irqs[i] = irq = irq_of_parse_and_map(np, i);
+> > +             if (!irq)
+> > +                     break;
+> > +     }
+> > +
+> > +     if (!irq_is_per_cpu(arch_timer_ppi[0]))
+> > +             arch_timer_irq_percpu = false;
+
+Where is irq_is_per_cpu defined? I can't find it in mainline, linux-next, or
+any of rmk's branches.
+
+Also, what if an incorrect number of SPIs is registered? It'd be nice to have
+some sort of warning to explain why timers on some cores won't work.
+
+Thanks,
+Mark.
 
