@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032076Ab2I1UXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:23:35 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46787 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032036Ab2I1UX1 (ORCPT
+	id S1032056Ab2I1UX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:23:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032037Ab2I1UXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:23:27 -0400
+	Fri, 28 Sep 2012 16:23:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Francesco Ruggeri <fruggeri@aristanetworks.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 029/218] net: ipv4: ipmr_expire_timer causes crash when removing net namespace
-Date: Fri, 28 Sep 2012 13:14:06 -0700
-Message-Id: <20120928201504.718848714@linuxfoundation.org>
+        =?UTF-8?q?=D0=BE=D0=BB=D1=8C=D0=B3=D0=B0=20=D0=BA=D1=80=D1=8B=D0=B6=D0=B0=D0=BD=D0=BE=D0=B2=D1=81=D0=BA=D0=B0=D1=8F?= 
+	<olga.kryzhanovska@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: =?UTF-8?q?=5B=20035/218=5D=20vfs=3A=20make=20O=5FPATH=20file=20descriptors=20usable=20for=20fstat=28=29?=
+Date: Fri, 28 Sep 2012 13:14:12 -0700
+Message-Id: <20120928201505.430974605@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,83 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-From: Francesco Ruggeri <fruggeri@aristanetworks.com>
+commit 55815f70147dcfa3ead5738fd56d3574e2e3c1c2 upstream.
 
-[ Upstream commit acbb219d5f53821b2d0080d047800410c0420ea1 ]
+We already use them for openat() and friends, but fstat() also wants to
+be able to use O_PATH file descriptors.  This should make it more
+directly comparable to the O_SEARCH of Solaris.
 
-When tearing down a net namespace, ipv4 mr_table structures are freed
-without first deactivating their timers. This can result in a crash in
-run_timer_softirq.
-This patch mimics the corresponding behaviour in ipv6.
-Locking and synchronization seem to be adequate.
-We are about to kfree mrt, so existing code should already make sure that
-no other references to mrt are pending or can be created by incoming traffic.
-The functions invoked here do not cause new references to mrt or other
-race conditions to be created.
-Invoking del_timer_sync guarantees that ipmr_expire_timer is inactive.
-Both ipmr_expire_process (whose completion we may have to wait in
-del_timer_sync) and mroute_clean_tables internally use mfc_unres_lock
-or other synchronizations when needed, and they both only modify mrt.
+Note that you could already do the same thing with "fstatat()" and an
+empty path, but just doing "fstat()" directly is simpler and faster, so
+there is no reason not to just allow it directly.
 
-Tested in Linux 3.4.8.
+See also commit 332a2e1244bd, which did the same thing for fchdir, for
+the same reasons.
 
-Signed-off-by: Francesco Ruggeri <fruggeri@aristanetworks.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: ольга крыжановская <olga.kryzhanovska@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- net/ipv4/ipmr.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ fs/stat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -124,6 +124,8 @@ static DEFINE_SPINLOCK(mfc_unres_lock);
- static struct kmem_cache *mrt_cachep __read_mostly;
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -57,7 +57,7 @@ EXPORT_SYMBOL(vfs_getattr);
  
- static struct mr_table *ipmr_new_table(struct net *net, u32 id);
-+static void ipmr_free_table(struct mr_table *mrt);
-+
- static int ip_mr_forward(struct net *net, struct mr_table *mrt,
- 			 struct sk_buff *skb, struct mfc_cache *cache,
- 			 int local);
-@@ -131,6 +133,7 @@ static int ipmr_cache_report(struct mr_t
- 			     struct sk_buff *pkt, vifi_t vifi, int assert);
- static int __ipmr_fill_mroute(struct mr_table *mrt, struct sk_buff *skb,
- 			      struct mfc_cache *c, struct rtmsg *rtm);
-+static void mroute_clean_tables(struct mr_table *mrt);
- static void ipmr_expire_process(unsigned long arg);
- 
- #ifdef CONFIG_IP_MROUTE_MULTIPLE_TABLES
-@@ -271,7 +274,7 @@ static void __net_exit ipmr_rules_exit(s
- 
- 	list_for_each_entry_safe(mrt, next, &net->ipv4.mr_tables, list) {
- 		list_del(&mrt->list);
--		kfree(mrt);
-+		ipmr_free_table(mrt);
- 	}
- 	fib_rules_unregister(net->ipv4.mr_rules_ops);
- }
-@@ -299,7 +302,7 @@ static int __net_init ipmr_rules_init(st
- 
- static void __net_exit ipmr_rules_exit(struct net *net)
+ int vfs_fstat(unsigned int fd, struct kstat *stat)
  {
--	kfree(net->ipv4.mrt);
-+	ipmr_free_table(net->ipv4.mrt);
- }
- #endif
+-	struct file *f = fget(fd);
++	struct file *f = fget_raw(fd);
+ 	int error = -EBADF;
  
-@@ -336,6 +339,13 @@ static struct mr_table *ipmr_new_table(s
- 	return mrt;
- }
- 
-+static void ipmr_free_table(struct mr_table *mrt)
-+{
-+	del_timer_sync(&mrt->ipmr_expire_timer);
-+	mroute_clean_tables(mrt);
-+	kfree(mrt);
-+}
-+
- /* Service routines creating virtual interfaces: DVMRP tunnels and PIMREG */
- 
- static void ipmr_del_tunnel(struct net_device *dev, struct vifctl *v)
+ 	if (f) {
 
 
