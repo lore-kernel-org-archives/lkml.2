@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032561Ab2I1U1V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:27:21 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
+	id S1032577Ab2I1U12 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:27:28 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032542Ab2I1U1P (ORCPT
+	with ESMTP id S1032557Ab2I1U1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:27:15 -0400
+	Fri, 28 Sep 2012 16:27:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mel@csn.ul.ie>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Wen Congyang <wency@cn.fujitsu.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 105/218] tracing: Dont call page_to_pfn() if page is NULL
-Date: Fri, 28 Sep 2012 13:15:22 -0700
-Message-Id: <20120928201513.639503947@linuxfoundation.org>
+        Jovi Zhang <boojovi@gmail.com>, Youquan Song <youquan.song@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, Ralf Baechle <ralf@linux-mips.org>
+Subject: [ 107/218] MIPS: mm: Add compound tail page _mapcount when mapped
+Date: Fri, 28 Sep 2012 13:15:24 -0700
+Message-Id: <20120928201513.879672397@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -30,47 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+From: Jovi Zhang <bookjovi@gmail.com>
 
-commit 85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa upstream.
+commit af89fa3986b9d034a286544ab1ed95096496a2f9 upstream.
 
-When allocating memory fails, page is NULL. page_to_pfn() will
-cause the kernel panicked if we don't use sparsemem vmemmap.
+See commit b6999b191 which did the same modification for x86's mm/gup,
 
-Link: http://lkml.kernel.org/r/505AB1FF.8020104@cn.fujitsu.com
+Quote from commit b6999b191:
+    "If compound pages are used and the page is a
+    tail page, gup_huge_pmd() increases _mapcount to record tail page are
+    mapped while gup_huge_pud does not do that."
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[ralf@linux-mips.org: fixed rejects caused by the original patch getting
+linewrapped.]
+
+Signed-off-by: Jovi Zhang <boojovi@gmail.com>
+Cc: Youquan Song <youquan.song@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Patchwork: https://patchwork.linux-mips.org/patch/4291/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/trace/events/kmem.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/mips/mm/gup.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/include/trace/events/kmem.h
-+++ b/include/trace/events/kmem.h
-@@ -214,7 +214,7 @@ TRACE_EVENT(mm_page_alloc,
- 
- 	TP_printk("page=%p pfn=%lu order=%d migratetype=%d gfp_flags=%s",
- 		__entry->page,
--		page_to_pfn(__entry->page),
-+		__entry->page ? page_to_pfn(__entry->page) : 0,
- 		__entry->order,
- 		__entry->migratetype,
- 		show_gfp_flags(__entry->gfp_flags))
-@@ -240,7 +240,7 @@ DECLARE_EVENT_CLASS(mm_page,
- 
- 	TP_printk("page=%p pfn=%lu order=%u migratetype=%d percpu_refill=%d",
- 		__entry->page,
--		page_to_pfn(__entry->page),
-+		__entry->page ? page_to_pfn(__entry->page) : 0,
- 		__entry->order,
- 		__entry->migratetype,
- 		__entry->order == 0)
+--- a/arch/mips/mm/gup.c
++++ b/arch/mips/mm/gup.c
+@@ -152,6 +152,8 @@ static int gup_huge_pud(pud_t pud, unsig
+ 	do {
+ 		VM_BUG_ON(compound_head(page) != head);
+ 		pages[*nr] = page;
++		if (PageTail(page))
++			get_huge_page_tail(page);
+ 		(*nr)++;
+ 		page++;
+ 		refs++;
 
 
