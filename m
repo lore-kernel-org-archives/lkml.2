@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031253Ab2I1TaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:30:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030245Ab2I1TB5 (ORCPT
+	id S1031273Ab2I1Tat (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:30:49 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030216Ab2I1TBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:01:57 -0400
+	Fri, 28 Sep 2012 15:01:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?=C3=89ric=20Piel?= <piel@delmic.com>
-Subject: =?UTF-8?q?=5B=20155/262=5D=20USB=3A=20ftdi-sio=3A=20add=20support=20for=20more=20Physik=20Instrumente=20devices?=
-Date: Fri, 28 Sep 2012 11:51:24 -0700
-Message-Id: <20120928183016.306680441@linuxfoundation.org>
+        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 158/262] usb: dwc3: ep0: correct cache sync issue in case of ep0_bounced
+Date: Fri, 28 Sep 2012 11:51:27 -0700
+Message-Id: <20120928183016.638373562@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,82 +28,52 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Éric Piel <piel@delmic.com>
+From: Pratyush Anand <pratyush.anand@st.com>
 
-commit dafc4f7be1a556ca3868d343c00127728b397068 upstream.
+commit 0416e494ce7dc84e2719bc9fb7daecb330476074 upstream.
 
-Commit b69cc672052540 added support for the E-861.  After acquiring a C-867, I
-realised that every Physik Instrumente's device has a different PID. They are
-listed in the Windows device driver's .inf file. So here are all PIDs for the
-current (and probably future) USB devices from Physik Instrumente.
+In case of ep0 out, if length is not aligned to maxpacket size then we use
+dwc->ep_bounce_addr for dma transfer and not request->dma. Since, we have
+alreday done memcpy from dwc->ep0_bounce to request->buf, so we do not need to
+issue cache sync function. In fact, cache sync function will bring wrong data
+in request->buf from request->dma in this scenario.
 
-Compiled, but only actually tested on the E-861 and C-867.
+So, cache sync function must not be executed in case of ep0 bounced.
 
-Signed-off-by: Éric Piel <piel@delmic.com>
+Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |   17 +++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h |   21 ++++++++++++++++++++-
- 2 files changed, 37 insertions(+), 1 deletion(-)
+ drivers/usb/dwc3/ep0.c    |    1 -
+ drivers/usb/dwc3/gadget.c |    7 +++++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -813,7 +813,24 @@ static struct usb_device_id id_table_com
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
- 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
-+	{ USB_DEVICE(FTDI_VID, PI_C865_PID) },
-+	{ USB_DEVICE(FTDI_VID, PI_C857_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C866_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C663_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C725_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E517_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C863_PID) },
- 	{ USB_DEVICE(PI_VID, PI_E861_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C867_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E609_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E709_PID) },
-+	{ USB_DEVICE(PI_VID, PI_100F_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1011_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1012_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1013_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1014_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1015_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1016_PID) },
- 	{ USB_DEVICE(KONDO_VID, KONDO_USB_SERIAL_PID) },
- 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -797,8 +797,27 @@
-  * Physik Instrumente
-  * http://www.physikinstrumente.com/en/products/
-  */
-+/* These two devices use the VID of FTDI */
-+#define PI_C865_PID	0xe0a0  /* PI C-865 Piezomotor Controller */
-+#define PI_C857_PID	0xe0a1  /* PI Encoder Trigger Box */
-+
- #define PI_VID              0x1a72  /* Vendor ID */
--#define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
-+#define PI_C866_PID	0x1000  /* PI C-866 Piezomotor Controller */
-+#define PI_C663_PID	0x1001  /* PI C-663 Mercury-Step */
-+#define PI_C725_PID	0x1002  /* PI C-725 Piezomotor Controller */
-+#define PI_E517_PID	0x1005  /* PI E-517 Digital Piezo Controller Operation Module */
-+#define PI_C863_PID	0x1007  /* PI C-863 */
-+#define PI_E861_PID	0x1008  /* PI E-861 Piezomotor Controller */
-+#define PI_C867_PID	0x1009  /* PI C-867 Piezomotor Controller */
-+#define PI_E609_PID	0x100D  /* PI E-609 Digital Piezo Controller */
-+#define PI_E709_PID	0x100E  /* PI E-709 Digital Piezo Controller */
-+#define PI_100F_PID	0x100F  /* PI Digital Piezo Controller */
-+#define PI_1011_PID	0x1011  /* PI Digital Piezo Controller */
-+#define PI_1012_PID	0x1012  /* PI Motion Controller */
-+#define PI_1013_PID	0x1013  /* PI Motion Controller */
-+#define PI_1014_PID	0x1014  /* PI Device */
-+#define PI_1015_PID	0x1015  /* PI Device */
-+#define PI_1016_PID	0x1016  /* PI Digital Servo Module */
+--- a/drivers/usb/dwc3/ep0.c
++++ b/drivers/usb/dwc3/ep0.c
+@@ -702,7 +702,6 @@ static void dwc3_ep0_complete_data(struc
+ 		transferred = min_t(u32, ur->length,
+ 				transfer_size - length);
+ 		memcpy(ur->buf, dwc->ep0_bounce, transferred);
+-		dwc->ep0_bounced = false;
+ 	} else {
+ 		transferred = ur->length - length;
+ 	}
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -238,8 +238,11 @@ void dwc3_gadget_giveback(struct dwc3_ep
+ 	if (req->request.status == -EINPROGRESS)
+ 		req->request.status = status;
  
- /*
-  * Kondo Kagaku Co.Ltd.
+-	usb_gadget_unmap_request(&dwc->gadget, &req->request,
+-			req->direction);
++	if (dwc->ep0_bounced && dep->number == 0)
++		dwc->ep0_bounced = false;
++	else
++		usb_gadget_unmap_request(&dwc->gadget, &req->request,
++				req->direction);
+ 
+ 	dev_dbg(dwc->dev, "request %p from %s completed %d/%d ===> %d\n",
+ 			req, dep->name, req->request.actual,
 
 
