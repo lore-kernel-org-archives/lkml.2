@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759579Ab2I1UlK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:41:10 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55696 "EHLO
+	id S1759613Ab2I1UlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:41:19 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38816 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031442Ab2I1Uk5 (ORCPT
+	by vger.kernel.org with ESMTP id S1759581Ab2I1UlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:57 -0400
-X-Sasl-enc: QNE/7LesDwRcqAWSZETmuGlrU9rF5Lm2aSjc1N27yVhf 1348864856
+	Fri, 28 Sep 2012 16:41:11 -0400
+X-Sasl-enc: ZZBYpt8phQX+AS+Cz6uAMke/w9apiZypEUdvxs3Dq+U9 1348864870
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 030/127] target: Fix ->data_length re-assignment bug with SCSI overflow
-Date: Fri, 28 Sep 2012 13:33:23 -0700
-Message-Id: <20120928203049.364428798@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 040/127] ahci: Add alternate identifier for the 88SE9172
+Date: Fri, 28 Sep 2012 13:33:33 -0700
+Message-Id: <20120928203050.529297267@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,71 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 4c054ba63ad47ef244cfcfa1cea38134620a5bae upstream.
+commit 17c60c6b763cb5b83b0185e7d38d01d18e55a05a upstream.
 
-This patch fixes a long-standing bug with SCSI overflow handling
-where se_cmd->data_length was incorrectly being re-assigned to
-the larger CDB extracted allocation length, resulting in a number
-of fabric level errors that would end up causing a session reset
-in most cases.  So instead now:
+This can also appear as 0x9192. Reported in bugzilla and confirmed with the
+board documentation for these boards.
 
- - Only re-assign se_cmd->data_length durining UNDERFLOW (to use the
-   smaller value)
- - Use existing se_cmd->data_length for OVERFLOW (to use the smaller
-   value)
-
-This fix has been tested with the following CDB to generate an
-SCSI overflow:
-
-  sg_raw -r512 /dev/sdc 28 0 0 0 0 0 0 0 9 0
-
-Tested using iscsi-target, tcm_qla2xxx, loopback and tcm_vhost fabric
-ports.  Here is a bit more detail on each case:
-
- - iscsi-target: Bug with open-iscsi with overflow, sg_raw returns
-                 -3584 bytes of data.
- - tcm_qla2xxx: Working as expected, returnins 512 bytes of data
- - loopback: sg_raw returns CHECK_CONDITION, from overflow rejection
-             in transport_generic_map_mem_to_cmd()
- - tcm_vhost: Same as loopback
-
-Reported-by: Roland Dreier <roland@purestorage.com>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Boaz Harrosh <bharrosh@panasas.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=42970
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/ata/ahci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -3672,15 +3672,20 @@ static int transport_generic_cmd_sequenc
- 			/* Returns CHECK_CONDITION + INVALID_CDB_FIELD */
- 			goto out_invalid_cdb_field;
- 		}
--
-+		/*
-+		 * For the overflow case keep the existing fabric provided
-+		 * ->data_length.  Otherwise for the underflow case, reset
-+		 * ->data_length to the smaller SCSI expected data transfer
-+		 * length.
-+		 */
- 		if (size > cmd->data_length) {
- 			cmd->se_cmd_flags |= SCF_OVERFLOW_BIT;
- 			cmd->residual_count = (size - cmd->data_length);
- 		} else {
- 			cmd->se_cmd_flags |= SCF_UNDERFLOW_BIT;
- 			cmd->residual_count = (cmd->data_length - size);
-+			cmd->data_length = size;
- 		}
--		cmd->data_length = size;
- 	}
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -394,6 +394,8 @@ static const struct pci_device_id ahci_p
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
+ 	{ PCI_DEVICE(0x1b4b, 0x917a),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
++	{ PCI_DEVICE(0x1b4b, 0x9192),
++	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
+ 	{ PCI_DEVICE(0x1b4b, 0x91a3),
+ 	  .driver_data = board_ahci_yes_fbs },
  
- 	transport_set_supported_SAM_opcode(cmd);
 
 
