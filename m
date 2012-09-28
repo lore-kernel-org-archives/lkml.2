@@ -1,48 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423124Ab2I1VDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:03:21 -0400
-Received: from listserv2.niif.hu ([193.225.14.155]:55052 "EHLO
-	listserv2.niif.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423097Ab2I1VC4 (ORCPT
+	id S1423134Ab2I1VDw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:03:52 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33169 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1032953Ab2I1UrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:02:56 -0400
-X-Greylist: delayed 1020 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 17:02:55 EDT
-From: Ferenc Wagner <wferi@niif.hu>
-To: netdev@vger.kernel.org
-Cc: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        wferi@niif.hu
-Subject: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM Bladecenter SoL
-Date: Fri, 28 Sep 2012 22:45:28 +0200
-Message-ID: <87txuhho5z.fsf@lant.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 28 Sep 2012 16:47:06 -0400
+X-Sasl-enc: azR25JEO27kr3OFdL0SOEQJQDYdNqJHcYbAYGaf9AV82 1348865225
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Jan Luebbe <jlu@pengutronix.de>, Anant Gole <anantgole@ti.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 063/127] can: ti_hecc: fix oops during rmmod
+Date: Fri, 28 Sep 2012 13:33:56 -0700
+Message-Id: <20120928203053.240427908@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.1.428.g652398a
+In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
+References: <20120928203045.835238916@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Upgrading the kernel on our HS20 blades resulted in their SoL (serial
-over LAN) connection being broken.  The disconnection happens when eth0
-(the interface involved in SoL) is brought up during the boot sequence.
-If I later "ip link set eth0 down", then the connection is restored, but
-"ip link set eth0 up" breaks it again on 3.2.  ethtool -a, -c, -g, -k
-and -u show no difference; ethtool -i on the 2.6.32 kernel reports:
+------------------
 
-driver: tg3
-version: 3.116
-firmware-version: 5704s-v3.38, ASFIPMIs v2.47
-bus-info: 0000:05:01.0
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-In the 3.2 kernel the driver version is 3.121.  In the output of lspci
--vv only the Interrupt line shows variability.  I'd be grateful for any
-workaround suggestion; I understand that is't not easy given the lack of
-information about the SoL implementation, but maybe somebody can guess
-what changed in the driver which could affect it this way.
--- 
-Regards,
-Feri.
+commit ab04c8bd423edb03e2148350a091836c196107fc upstream.
+
+This patch fixes an oops which occurs when unloading the driver, while the
+network interface is still up. The problem is that first the io mapping is
+teared own, then the CAN device is unregistered, resulting in accessing the
+hardware's iomem:
+
+[  172.744232] Unable to handle kernel paging request at virtual address c88b0040
+[  172.752441] pgd = c7be4000
+[  172.755645] [c88b0040] *pgd=87821811, *pte=00000000, *ppte=00000000
+[  172.762207] Internal error: Oops: 807 [#1] PREEMPT ARM
+[  172.767517] Modules linked in: ti_hecc(-) can_dev
+[  172.772430] CPU: 0    Not tainted  (3.5.0alpha-00037-g3554cc0 #126)
+[  172.778961] PC is at ti_hecc_close+0xb0/0x100 [ti_hecc]
+[  172.784423] LR is at __dev_close_many+0x90/0xc0
+[  172.789123] pc : [<bf00c768>]    lr : [<c033be58>]    psr: 60000013
+[  172.789123] sp : c5c1de68  ip : 00040081  fp : 00000000
+[  172.801025] r10: 00000001  r9 : c5c1c000  r8 : 00100100
+[  172.806457] r7 : c5d0a48c  r6 : c5d0a400  r5 : 00000000  r4 : c5d0a000
+[  172.813232] r3 : c88b0000  r2 : 00000001  r1 : c5d0a000  r0 : c5d0a000
+[  172.820037] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[  172.827423] Control: 10c5387d  Table: 87be4019  DAC: 00000015
+[  172.833404] Process rmmod (pid: 600, stack limit = 0xc5c1c2f0)
+[  172.839447] Stack: (0xc5c1de68 to 0xc5c1e000)
+[  172.843994] de60:                   bf00c6b8 c5c1dec8 c5d0a000 c5d0a000 00200200 c033be58
+[  172.852478] de80: c5c1de44 c5c1dec8 c5c1dec8 c033bf2c c5c1de90 c5c1de90 c5d0a084 c5c1de44
+[  172.860992] dea0: c5c1dec8 c033c098 c061d3dc c5d0a000 00000000 c05edf28 c05edb34 c000d724
+[  172.869476] dec0: 00000000 c033c2f8 c5d0a084 c5d0a084 00000000 c033c370 00000000 c5d0a000
+[  172.877990] dee0: c05edb00 c033c3b8 c5d0a000 bf00d3ac c05edb00 bf00d7c8 bf00d7c8 c02842dc
+[  172.886474] df00: c02842c8 c0282f90 c5c1c000 c05edb00 bf00d7c8 c0283668 bf00d7c8 00000000
+[  172.894989] df20: c0611f98 befe2f80 c000d724 c0282d10 bf00d804 00000000 00000013 c0068a8c
+[  172.903472] df40: c5c538e8 685f6974 00636365 c61571a8 c5cb9980 c61571a8 c6158a20 c00c9bc4
+[  172.911987] df60: 00000000 00000000 c5cb9980 00000000 c5cb9980 00000000 c7823680 00000006
+[  172.920471] df80: bf00d804 00000880 c5c1df8c 00000000 000d4267 befe2f80 00000001 b6d90068
+[  172.928985] dfa0: 00000081 c000d5a0 befe2f80 00000001 befe2f80 00000880 b6d90008 00000008
+[  172.937469] dfc0: befe2f80 00000001 b6d90068 00000081 00000001 00000000 befe2eac 00000000
+[  172.945983] dfe0: 00000000 befe2b18 00023ba4 b6e6addc 60000010 befe2f80 a8e00190 86d2d344
+[  172.954498] [<bf00c768>] (ti_hecc_close+0xb0/0x100 [ti_hecc]) from [<c033be58>] (__dev__registered_many+0xc0/0x2a0)
+[  172.984161] [<c033c098>] (rollback_registered_many+0xc0/0x2a0) from [<c033c2f8>] (rollback_registered+0x20/0x30)
+[  172.994750] [<c033c2f8>] (rollback_registered+0x20/0x30) from [<c033c370>] (unregister_netdevice_queue+0x68/0x98)
+[  173.005401] [<c033c370>] (unregister_netdevice_queue+0x68/0x98) from [<c033c3b8>] (unregister_netdev+0x18/0x20)
+[  173.015899] [<c033c3b8>] (unregister_netdev+0x18/0x20) from [<bf00d3ac>] (ti_hecc_remove+0x60/0x80 [ti_hecc])
+[  173.026245] [<bf00d3ac>] (ti_hecc_remove+0x60/0x80 [ti_hecc]) from [<c02842dc>] (platform_drv_remove+0x14/0x18)
+[  173.036712] [<c02842dc>] (platform_drv_remove+0x14/0x18) from [<c0282f90>] (__device_release_driver+0x7c/0xbc)
+
+Tested-by: Jan Luebbe <jlu@pengutronix.de>
+Cc: Anant Gole <anantgole@ti.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/can/ti_hecc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/can/ti_hecc.c
++++ b/drivers/net/can/ti_hecc.c
+@@ -969,12 +969,12 @@ static int __devexit ti_hecc_remove(stru
+ 	struct net_device *ndev = platform_get_drvdata(pdev);
+ 	struct ti_hecc_priv *priv = netdev_priv(ndev);
+ 
++	unregister_candev(ndev);
+ 	clk_disable(priv->clk);
+ 	clk_put(priv->clk);
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	iounmap(priv->base);
+ 	release_mem_region(res->start, resource_size(res));
+-	unregister_candev(ndev);
+ 	free_candev(ndev);
+ 	platform_set_drvdata(pdev, NULL);
+ 
+
+
