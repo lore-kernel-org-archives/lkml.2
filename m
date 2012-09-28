@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030224Ab2I1TBp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:01:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	id S1030219Ab2I1TBx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:01:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030209Ab2I1TBl (ORCPT
+	with ESMTP id S1030226Ab2I1TBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:01:41 -0400
+	Fri, 28 Sep 2012 15:01:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [ 157/262] usb: chipidea: udc: dont stall endpoint if request list is empty in isr_tr_complete_low
-Date: Fri, 28 Sep 2012 11:51:26 -0700
-Message-Id: <20120928183016.519334717@linuxfoundation.org>
+        Ruchika Kharwar <ruchika@ti.com>, Moiz Sonasath <m-sonasath@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 159/262] usb: dwc3: core: fix incorrect usage of resource pointer
+Date: Fri, 28 Sep 2012 11:51:28 -0700
+Message-Id: <20120928183016.755859225@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,56 +29,52 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Kishon Vijay Abraham I <kishon@ti.com>
 
-commit db89960e50f45274c07dc60926b5a49489b8a7a0 upstream.
+commit 066618bc350cc6035c3a0fc559a8ac02f55785a9 upstream.
 
-When attaching an imx28 or imx53 in USB gadget mode to a Windows host and
-starting a rndis connection we see this message every 4-10 seconds:
+Populate the resources for xhci afresh instead of directly using the
+*struct resource* of core. *resource* structure has parent, sibling,
+child pointers which should be filled only by resource API's. By
+directly using the *resource* pointer of core in xhci, these parent,
+sibling, child pointers are already populated even before
+*platform_device_add* causing side effects.
 
-    g_ether gadget: high speed config #2: RNDIS
-
-Analysis shows that each time this message is printed, the rndis connection is
-re-establish due to a reset because of a stalled endpoint (ep 0, dir 1). The
-endpoint is stalled because the reqeust complete bit on that endpoint is set,
-but in isr_tr_complete_low() the endpoint request list (mEp->qh.queue) is
-empty.
-
-This patch removed this check, because the code doesn't take the following
-situation into account:
-
-The loop over all endpoints in isr_tr_complete_handler() will call ep_nuke() on
-both ep0/dir0 and ep/dir1 in the first loop. Pending reqeusts will be flushed
-and completed here. There seems to be a race condition, the request is nuked,
-but the request complete bit will be set, too. The subsequent check (in
-ep0/dir1's loop cycle) for endpoint request list (mEp->qh.queue) empty will
-fail.
-
-Both other mainline chipidea drivers (mv_udc_core.c and fsl_udc_core.c) don't
-have this check.
-
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Reported-by: Ruchika Kharwar <ruchika@ti.com>
+Tested-by: Moiz Sonasath <m-sonasath@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/chipidea/udc.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/usb/dwc3/core.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -771,10 +771,7 @@ __acquires(mEp->lock)
- {
- 	struct ci13xxx_req *mReq, *mReqTemp;
- 	struct ci13xxx_ep *mEpTemp = mEp;
--	int uninitialized_var(retval);
--
--	if (list_empty(&mEp->qh.queue))
--		return -EINVAL;
-+	int retval = 0;
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -429,16 +429,21 @@ static int __devinit dwc3_probe(struct p
+ 		dev_err(dev, "missing IRQ\n");
+ 		return -ENODEV;
+ 	}
+-	dwc->xhci_resources[1] = *res;
++	dwc->xhci_resources[1].start = res->start;
++	dwc->xhci_resources[1].end = res->end;
++	dwc->xhci_resources[1].flags = res->flags;
++	dwc->xhci_resources[1].name = res->name;
  
- 	list_for_each_entry_safe(mReq, mReqTemp, &mEp->qh.queue,
- 			queue) {
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(dev, "missing memory resource\n");
+ 		return -ENODEV;
+ 	}
+-	dwc->xhci_resources[0] = *res;
++	dwc->xhci_resources[0].start = res->start;
+ 	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+ 					DWC3_XHCI_REGS_END;
++	dwc->xhci_resources[0].flags = res->flags;
++	dwc->xhci_resources[0].name = res->name;
+ 
+ 	 /*
+ 	  * Request memory region but exclude xHCI regs,
 
 
