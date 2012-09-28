@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713Ab2I1SGF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:06:05 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48748 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab2I1SGD (ORCPT
+	id S1758711Ab2I1SY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:24:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756672Ab2I1SYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:06:03 -0400
-Message-ID: <1348855547.1556.3.camel@kyv>
-Subject: Re: mtd: kernel BUG at arch/x86/mm/pat.c:279!
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, suresh.b.siddha@intel.com,
-        Andrew Morton <akpm@linux-foundation.org>, dwmw2@infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, linux-mm <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Date: Fri, 28 Sep 2012 21:05:47 +0300
-In-Reply-To: <CA+55aFyWdxD4Qb9PuPKKx_Ww_khYkWg1s-3QWVUwsTSXSUMG5w@mail.gmail.com>
-References: <1340959739.2936.28.camel@lappy>
-	 <CA+1xoqdgKV_sEWvUbuxagL9JEc39ZFa6X9-acP7j-M7wvW6qbQ@mail.gmail.com>
-	 <CA+55aFzJCLxVP+WYJM-gq=aXx5gmdgwC7=_Gr2Tooj8q+Dz4dw@mail.gmail.com>
-	 <1347057778.26695.68.camel@sbsiddha-desk.sc.intel.com>
-	 <CA+55aFwW9Q+DM2gZy7r3JQJbrbMNR6sN+jewc2CY0i1wD_X=Tw@mail.gmail.com>
-	 <1347062045.26695.82.camel@sbsiddha-desk.sc.intel.com>
-	 <CA+55aFzeKcV5hROLJE31dNi3SEs+s6o0LL=96Kh8QGHPx=aZnA@mail.gmail.com>
-	 <1347202600.5876.7.camel@sbsiddha-ivb> <505068F4.4080309@gmail.com>
-	 <50506A6C.30109@gmail.com> <50656733.3040609@gmail.com>
-	 <CA+55aFyWdxD4Qb9PuPKKx_Ww_khYkWg1s-3QWVUwsTSXSUMG5w@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-uvK0CBFgSutU0YjZ4GCa"
-X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
-Mime-Version: 1.0
+	Fri, 28 Sep 2012 14:24:55 -0400
+Message-ID: <5065EB75.8040101@linaro.org>
+Date: Fri, 28 Sep 2012 12:24:53 -0600
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: [PATCH 17/57] power: ab8500_bm: Added support for BATT_OVV
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org> <1348589574-25655-18-git-send-email-mathieu.poirier@linaro.org> <20120927033604.GH8836@lizard>
+In-Reply-To: <20120927033604.GH8836@lizard>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12-09-26 09:36 PM, Anton Vorontsov wrote:
+> On Tue, Sep 25, 2012 at 10:12:14AM -0600, mathieu.poirier@linaro.org wrote:
+>> From: Hakan Berg <hakan.berg@stericsson.com>
+>>
+>> Add support for the battery over-voltage situation
+>>
+>> Signed-off-by: Hakan Berg <hakan.berg@stericsson.com>
+>> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+>> Reviewed-by: Karl KOMIEROWSKI <karl.komierowski@stericsson.com>
+>> ---
+>>  drivers/power/ab8500_fg.c |   32 ++++++++++++++++----------------
+>>  1 files changed, 16 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+>> index c4d9307..8507254 100644
+>> --- a/drivers/power/ab8500_fg.c
+>> +++ b/drivers/power/ab8500_fg.c
+>> @@ -1842,24 +1842,26 @@ static void ab8500_fg_check_hw_failure_work(struct work_struct *work)
+>>  	 * If we have had a battery over-voltage situation,
+>>  	 * check ovv-bit to see if it should be reset.
+>>  	 */
+>> -	if (di->flags.bat_ovv) {
+>> -		ret = abx500_get_register_interruptible(di->dev,
+>> -			AB8500_CHARGER, AB8500_CH_STAT_REG,
+>> -			&reg_value);
+>> -		if (ret < 0) {
+>> -			dev_err(di->dev, "%s ab8500 read failed\n", __func__);
+>> -			return;
+>> -		}
+>> -		if ((reg_value & BATT_OVV) != BATT_OVV) {
+>> -			dev_dbg(di->dev, "Battery recovered from OVV\n");
+>> -			di->flags.bat_ovv = false;
+>> +	ret = abx500_get_register_interruptible(di->dev,
+>> +		AB8500_CHARGER, AB8500_CH_STAT_REG,
+>> +		&reg_value);
+>> +	if (ret < 0) {
+>> +		dev_err(di->dev, "%s ab8500 read failed\n", __func__);
+>> +		return;
+>> +	}
+>> +	if ((reg_value & BATT_OVV) == BATT_OVV) {
+>> +		if (!di->flags.bat_ovv) {
+>> +			dev_dbg(di->dev, "Battery OVV\n");
+>> +			di->flags.bat_ovv = true;
+>>  			power_supply_changed(&di->fg_psy);
+>> -			return;
+>>  		}
+>> -
+>>  		/* Not yet recovered from ovv, reschedule this test */
+>>  		queue_delayed_work(di->fg_wq, &di->fg_check_hw_failure_work,
+>> -				   round_jiffies(HZ));
+>> +			HZ);
+> 
+> Why this change? I.e. round_jiffies(HZ) -> HZ?
+> 
+> Yes, it seems like round_jiffies(HZ) is not needed since HZ itself is a
+> full second.. But the change itself does not belong to this patch.
 
---=-uvK0CBFgSutU0YjZ4GCa
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I agree with your point of view.  How do we fix it now ?  Do you think
+it's worth crafting a one-line patch ?
 
-On Fri, 2012-09-28 at 09:44 -0700, Linus Torvalds wrote:
-> On Fri, Sep 28, 2012 at 2:00 AM, Sasha Levin <levinsasha928@gmail.com> wr=
-ote:
-> >
-> > Is anyone planning on picking up Linus' patch? This is still not in -ne=
-xt even.
->=20
-> I was really hoping it would go through the regular channels and come
-> back to me that way, since I can't really test it, and it's bigger
-> than the trivial obvious one-liners that I'm happy to commit.
-
-Hi Linus,
-
-I am not the maintainer, but please, go ahead an push your fix. I do not
-have time to test it myself and it does not look like anyone else in the
-small mtd community does.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-uvK0CBFgSutU0YjZ4GCa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQZeb7AAoJECmIfjd9wqK0yIEQAJPMC14O9L2VXLXAX7aMJVMZ
-21CmChmzQA4K9Y4UO6O0UDnCaAwbJbjHyY5xCT7b2UIbbQijU+QWhrsPwbVjnrLH
-42rl6Q5CjNdWXQ/KiOFwNDrHYHJcyMIDcyzn2TMbFM3yCMB7+jsrd3Y6hfqbhtMb
-CBeMLx58N2go0cWa7ydcRWLYA2febnMGG0tTsCfmHus3FZGt80pa1PJZtwS/1X5s
-DEJfbRqROgaNSqOnJjjdMvBuM1EwB0TUphnewqUukqR3K6JnZHb7VcFVcPR3Mx2D
-+pX6Smg22zQKoxQ6uHyqTc+d3JMaRUX23wGM5UHv29Yo9kPCCTUaAiYiouIwH7BC
-9WQjRXu3aeyOjxfqcgjplul4SNGGALYNF0ESNgzFr5Urj/ChCF4f2F1V1Ch1KZVM
-xu47tExfPrEKEe0Omg+w7AhnKl/3aptSm3lrhiMobC6/wcGjRneaGTcsB3Yv4Yc+
-eKIyb+wxosjSinb0CtQZktmCgzndrqW1BmoM8+HFTXhPp/YVmhdkuE7tfemNRj0A
-hGYX+REE4CAtAPrqegeQYKCsYN7pBX0sANaXIV4eR6RnW/BQUxfqf0+Ehv9weHgf
-hNFK0QJ8z07TKlknyW1LgklXYoeavFpEJQd+VzqMrb3tgGwWO8ONCGIB4FRv+xNS
-5ijhFyx6m8jzy8I0cWBB
-=PzM1
------END PGP SIGNATURE-----
-
---=-uvK0CBFgSutU0YjZ4GCa--
+> 
+>> +		} else {
+>> +			dev_dbg(di->dev, "Battery recovered from OVV\n");
+>> +			di->flags.bat_ovv = false;
+>> +			power_supply_changed(&di->fg_psy);
+>>  	}
+>>  }
+>>  
+>> @@ -2039,8 +2041,6 @@ static irqreturn_t ab8500_fg_batt_ovv_handler(int irq, void *_di)
+>>  	struct ab8500_fg *di = _di;
+>>  
+>>  	dev_dbg(di->dev, "Battery OVV\n");
+>> -	di->flags.bat_ovv = true;
+>> -	power_supply_changed(&di->fg_psy);
+>>  
+>>  	/* Schedule a new HW failure check */
+>>  	queue_delayed_work(di->fg_wq, &di->fg_check_hw_failure_work, 0);
+>> -- 
+>> 1.7.5.4
 
