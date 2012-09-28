@@ -1,291 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab2I1EtH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 00:49:07 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45149 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab2I1EtE (ORCPT
+	id S1754012Ab2I1EvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 00:51:04 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:54385 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab2I1EvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 00:49:04 -0400
-Message-ID: <50652C31.1090706@gmail.com>
-Date: Fri, 28 Sep 2012 12:48:49 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 28 Sep 2012 00:51:01 -0400
 MIME-Version: 1.0
-To: wency@cn.fujitsu.com
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [RFC v9 PATCH 04/21] memory-hotplug: offline and remove memory
- when removing the memory device
-References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <1346837155-534-5-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1346837155-534-5-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Fri, 28 Sep 2012 12:51:01 +0800
+Message-ID: <CAPgLHd-cc+_6316S9NxBFXHLdjM0trf1QvPt3aXhAE9on9u9WA@mail.gmail.com>
+Subject: [PATCH] omfs: convert to use beXX_add_cpu()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: me@bobcopeland.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-karma-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 05:25 PM, wency@cn.fujitsu.com wrote:
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
-> We should offline and remove memory when removing the memory device.
-> The memory device can be removed by 2 ways:
-> 1. send eject request by SCI
-> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->
-> In the 1st case, acpi_memory_disable_device() will be called. In the 2nd
-> case, acpi_memory_device_remove() will be called. acpi_memory_device_remove()
-> will also be called when we unbind the memory device from the driver
-> acpi_memhotplug. If the type is ACPI_BUS_REMOVAL_EJECT, it means
-> that the user wants to eject the memory device, and we should offline
-> and remove memory in acpi_memory_device_remove().
->
-> The function remove_memory() is not implemeted now. It only check whether
-> all memory has been offllined now.
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->   drivers/acpi/acpi_memhotplug.c |   45 +++++++++++++++++++++++++++++++++------
->   drivers/base/memory.c          |   39 ++++++++++++++++++++++++++++++++++
->   include/linux/memory.h         |    5 ++++
->   include/linux/memory_hotplug.h |    5 ++++
->   mm/memory_hotplug.c            |   22 +++++++++++++++++++
->   5 files changed, 109 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index 7873832..9d47458 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -29,6 +29,7 @@
->   #include <linux/module.h>
->   #include <linux/init.h>
->   #include <linux/types.h>
-> +#include <linux/memory.h>
->   #include <linux/memory_hotplug.h>
->   #include <linux/slab.h>
->   #include <acpi/acpi_drivers.h>
-> @@ -310,25 +311,44 @@ static int acpi_memory_powerdown_device(struct acpi_memory_device *mem_device)
->   	return 0;
->   }
->   
-> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
-> +static int
-> +acpi_memory_device_remove_memory(struct acpi_memory_device *mem_device)
->   {
->   	int result;
->   	struct acpi_memory_info *info, *n;
-> +	int node = mem_device->nid;
->   
-> -
-> -	/*
-> -	 * Ask the VM to offline this memory range.
-> -	 * Note: Assume that this function returns zero on success
-> -	 */
->   	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->   		if (info->enabled) {
->   			result = offline_memory(info->start_addr, info->length);
->   			if (result)
->   				return result;
-> +
-> +			result = remove_memory(node, info->start_addr,
-> +					       info->length);
-> +			if (result)
-> +				return result;
->   		}
-> +
-> +		list_del(&info->list);
->   		kfree(info);
->   	}
->   
-> +	return 0;
-> +}
-> +
-> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
-> +{
-> +	int result;
-> +
-> +	/*
-> +	 * Ask the VM to offline this memory range.
-> +	 * Note: Assume that this function returns zero on success
-> +	 */
-> +	result = acpi_memory_device_remove_memory(mem_device);
-> +	if (result)
-> +		return result;
-> +
->   	/* Power-off and eject the device */
->   	result = acpi_memory_powerdown_device(mem_device);
->   	if (result) {
-> @@ -477,12 +497,23 @@ static int acpi_memory_device_add(struct acpi_device *device)
->   static int acpi_memory_device_remove(struct acpi_device *device, int type)
->   {
->   	struct acpi_memory_device *mem_device = NULL;
-> -
-> +	int result;
->   
->   	if (!device || !acpi_driver_data(device))
->   		return -EINVAL;
->   
->   	mem_device = acpi_driver_data(device);
-> +
-> +	if (type == ACPI_BUS_REMOVAL_EJECT) {
-> +		/*
-> +		 * offline and remove memory only when the memory device is
-> +		 * ejected.
-> +		 */
-> +		result = acpi_memory_device_remove_memory(mem_device);
-> +		if (result)
-> +			return result;
-> +	}
-> +
->   	kfree(mem_device);
->   
->   	return 0;
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 86c8821..038be73 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -70,6 +70,45 @@ void unregister_memory_isolate_notifier(struct notifier_block *nb)
->   }
->   EXPORT_SYMBOL(unregister_memory_isolate_notifier);
->   
-> +bool is_memblk_offline(unsigned long start, unsigned long size)
-> +{
-> +	struct memory_block *mem = NULL;
-> +	struct mem_section *section;
-> +	unsigned long start_pfn, end_pfn;
-> +	unsigned long pfn, section_nr;
-> +
-> +	start_pfn = PFN_DOWN(start);
-> +	end_pfn = PFN_UP(start + size);
-> +
-> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-> +		section_nr = pfn_to_section_nr(pfn);
-> +		if (!present_section_nr(section_nr))
-> +			continue;
-> +
-> +		section = __nr_to_section(section_nr);
-> +		/* same memblock? */
-> +		if (mem)
-> +			if ((section_nr >= mem->start_section_nr) &&
-> +			    (section_nr <= mem->end_section_nr))
-> +				continue;
-> +
-> +		mem = find_memory_block_hinted(section, mem);
-> +		if (!mem)
-> +			continue;
-> +		if (mem->state == MEM_OFFLINE)
-> +			continue;
-> +
-> +		kobject_put(&mem->dev.kobj);
-> +		return false;
-> +	}
-> +
-> +	if (mem)
-> +		kobject_put(&mem->dev.kobj);
-> +
-> +	return true;
-> +}
-> +EXPORT_SYMBOL(is_memblk_offline);
-> +
->   /*
->    * register_memory - Setup a sysfs device for a memory block
->    */
-> diff --git a/include/linux/memory.h b/include/linux/memory.h
-> index 1ac7f6e..7c66126 100644
-> --- a/include/linux/memory.h
-> +++ b/include/linux/memory.h
-> @@ -106,6 +106,10 @@ static inline int memory_isolate_notify(unsigned long val, void *v)
->   {
->   	return 0;
->   }
-> +static inline bool is_memblk_offline(unsigned long start, unsigned long size)
-> +{
-> +	return false;
-> +}
->   #else
->   extern int register_memory_notifier(struct notifier_block *nb);
->   extern void unregister_memory_notifier(struct notifier_block *nb);
-> @@ -120,6 +124,7 @@ extern int memory_isolate_notify(unsigned long val, void *v);
->   extern struct memory_block *find_memory_block_hinted(struct mem_section *,
->   							struct memory_block *);
->   extern struct memory_block *find_memory_block(struct mem_section *);
-> +extern bool is_memblk_offline(unsigned long start, unsigned long size);
->   #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
->   enum mem_add_context { BOOT, HOTPLUG };
->   #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
-> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-> index 0b040bb..fd84ea9 100644
-> --- a/include/linux/memory_hotplug.h
-> +++ b/include/linux/memory_hotplug.h
-> @@ -222,6 +222,7 @@ static inline void unlock_memory_hotplug(void) {}
->   #ifdef CONFIG_MEMORY_HOTREMOVE
->   
->   extern int is_mem_section_removable(unsigned long pfn, unsigned long nr_pages);
-> +extern int remove_memory(int nid, u64 start, u64 size);
->   
->   #else
->   static inline int is_mem_section_removable(unsigned long pfn,
-> @@ -229,6 +230,10 @@ static inline int is_mem_section_removable(unsigned long pfn,
->   {
->   	return 0;
->   }
-> +static inline int remove_memory(int nid, u64 start, u64 size)
-> +{
-> +	return -EBUSY;
-> +}
->   #endif /* CONFIG_MEMORY_HOTREMOVE */
->   
->   extern int mem_online_node(int nid);
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 6fc1908..49f7747 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1038,6 +1038,28 @@ int offline_memory(u64 start, u64 size)
->   
->   	return 0;
->   }
-> +
-> +int remove_memory(int nid, u64 start, u64 size)
-> +{
-> +	int ret = -EBUSY;
-> +	lock_memory_hotplug();
-> +	/*
-> +	 * The memory might become online by other task, even if you offine it.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-s/offine/offline
+Convert cpu_to_beXX(beXX_to_cpu(E1) + E2) to use beXX_add_cpu().
 
-> +	 * So we check whether the memory has been onlined or not.
-> +	 */
-> +	if (!is_memblk_offline(start, size)) {
-> +		pr_warn("memory removing [mem %#010llx-%#010llx] failed, "
-> +			"because the memmory range is online\n",
-> +			start, start + size);
-> +		ret = -EAGAIN;
-> +	}
-> +
-> +	unlock_memory_hotplug();
-> +	return ret;
-> +
-> +}
-> +EXPORT_SYMBOL_GPL(remove_memory);
-> +
->   #else
->   int offline_pages(unsigned long start, unsigned long size)
->   {
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ fs/omfs/file.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/fs/omfs/file.c b/fs/omfs/file.c
+index 2c6d952..77e3cb2 100644
+--- a/fs/omfs/file.c
++++ b/fs/omfs/file.c
+@@ -146,8 +146,7 @@ static int omfs_grow_extent(struct inode *inode, struct omfs_extent *oe,
+ 			be64_to_cpu(entry->e_blocks);
+ 
+ 		if (omfs_allocate_block(inode->i_sb, new_block)) {
+-			entry->e_blocks =
+-				cpu_to_be64(be64_to_cpu(entry->e_blocks) + 1);
++			be64_add_cpu(&entry->e_blocks, 1);
+ 			terminator->e_blocks = ~(cpu_to_be64(
+ 				be64_to_cpu(~terminator->e_blocks) + 1));
+ 			goto out;
+@@ -177,7 +176,7 @@ static int omfs_grow_extent(struct inode *inode, struct omfs_extent *oe,
+ 		be64_to_cpu(~terminator->e_blocks) + (u64) new_count));
+ 
+ 	/* write in new entry */
+-	oe->e_extent_count = cpu_to_be32(1 + be32_to_cpu(oe->e_extent_count));
++	be32_add_cpu(&oe->e_extent_count, 1);
+ 
+ out:
+ 	*ret_block = new_block;
+
 
