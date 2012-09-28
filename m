@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965274Ab2I1S7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:59:45 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:44036 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965261Ab2I1S7k (ORCPT
+	id S965293Ab2I1S7x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:59:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965241Ab2I1S7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:59:40 -0400
+	Fri, 28 Sep 2012 14:59:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eliad Peller <eliad@wizery.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 118/262] mac80211: clear bssid on auth/assoc failure
-Date: Fri, 28 Sep 2012 11:50:47 -0700
-Message-Id: <20120928183012.053293129@linuxfoundation.org>
+        Arend Van Spriel <arend@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 120/262] brcmfmac: Fix big endian host configuration data.
+Date: Fri, 28 Sep 2012 11:50:49 -0700
+Message-Id: <20120928183012.282898579@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,43 +30,93 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Hante Meuleman <meuleman@broadcom.com>
 
-commit 3d2abdfdf14f4d6decc2023708211e19b096f4ca upstream.
+commit e020a83d0942a5aceac35986500c9834efc8707d upstream.
 
-ifmgd->bssid wasn't cleared properly in some
-auth/assoc failure cases, causing mac80211 and
-the low-level driver to go out of sync.
+Fixes big endian host configuration parameters.
 
-Clear ifmgd->bssid on failure, and notify the driver.
-
-Signed-off-by: Eliad Peller <eliad@wizery.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reviewed-by: Arend Van Spriel <arend@broadcom.com>
+Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c |   26 +++++++++++--------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -3270,6 +3270,8 @@ int ieee80211_mgd_auth(struct ieee80211_
- 	goto out_unlock;
+--- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
+@@ -764,8 +764,11 @@ static void brcmf_c_arp_offload_set(stru
+ {
+ 	char iovbuf[32];
+ 	int retcode;
++	__le32 arp_mode_le;
  
-  err_clear:
-+	memset(ifmgd->bssid, 0, ETH_ALEN);
-+	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BSSID);
- 	ifmgd->auth_data = NULL;
-  err_free:
- 	kfree(auth_data);
-@@ -3449,6 +3451,8 @@ int ieee80211_mgd_assoc(struct ieee80211
- 	err = 0;
- 	goto out;
-  err_clear:
-+	memset(ifmgd->bssid, 0, ETH_ALEN);
-+	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BSSID);
- 	ifmgd->assoc_data = NULL;
-  err_free:
- 	kfree(assoc_data);
+-	brcmf_c_mkiovar("arp_ol", (char *)&arp_mode, 4, iovbuf, sizeof(iovbuf));
++	arp_mode_le = cpu_to_le32(arp_mode);
++	brcmf_c_mkiovar("arp_ol", (char *)&arp_mode_le, 4, iovbuf,
++			sizeof(iovbuf));
+ 	retcode = brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR,
+ 				   iovbuf, sizeof(iovbuf));
+ 	retcode = retcode >= 0 ? 0 : retcode;
+@@ -781,8 +784,11 @@ static void brcmf_c_arp_offload_enable(s
+ {
+ 	char iovbuf[32];
+ 	int retcode;
++	__le32 arp_enable_le;
+ 
+-	brcmf_c_mkiovar("arpoe", (char *)&arp_enable, 4,
++	arp_enable_le = cpu_to_le32(arp_enable);
++
++	brcmf_c_mkiovar("arpoe", (char *)&arp_enable_le, 4,
+ 			iovbuf, sizeof(iovbuf));
+ 	retcode = brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR,
+ 				   iovbuf, sizeof(iovbuf));
+@@ -802,10 +808,10 @@ int brcmf_c_preinit_dcmds(struct brcmf_p
+ 	char buf[128], *ptr;
+ 	u32 dongle_align = drvr->bus_if->align;
+ 	u32 glom = 0;
+-	u32 roaming = 1;
+-	uint bcn_timeout = 3;
+-	int scan_assoc_time = 40;
+-	int scan_unassoc_time = 40;
++	__le32 roaming_le = cpu_to_le32(1);
++	__le32 bcn_timeout_le = cpu_to_le32(3);
++	__le32 scan_assoc_time_le = cpu_to_le32(40);
++	__le32 scan_unassoc_time_le = cpu_to_le32(40);
+ 	int i;
+ 
+ 	mutex_lock(&drvr->proto_block);
+@@ -840,14 +846,14 @@ int brcmf_c_preinit_dcmds(struct brcmf_p
+ 
+ 	/* Setup timeout if Beacons are lost and roam is off to report
+ 		 link down */
+-	brcmf_c_mkiovar("bcn_timeout", (char *)&bcn_timeout, 4, iovbuf,
++	brcmf_c_mkiovar("bcn_timeout", (char *)&bcn_timeout_le, 4, iovbuf,
+ 		    sizeof(iovbuf));
+ 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR, iovbuf,
+ 				  sizeof(iovbuf));
+ 
+ 	/* Enable/Disable build-in roaming to allowed ext supplicant to take
+ 		 of romaing */
+-	brcmf_c_mkiovar("roam_off", (char *)&roaming, 4,
++	brcmf_c_mkiovar("roam_off", (char *)&roaming_le, 4,
+ 		      iovbuf, sizeof(iovbuf));
+ 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR, iovbuf,
+ 				  sizeof(iovbuf));
+@@ -859,9 +865,9 @@ int brcmf_c_preinit_dcmds(struct brcmf_p
+ 				  sizeof(iovbuf));
+ 
+ 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_SCAN_CHANNEL_TIME,
+-			 (char *)&scan_assoc_time, sizeof(scan_assoc_time));
++		 (char *)&scan_assoc_time_le, sizeof(scan_assoc_time_le));
+ 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_SCAN_UNASSOC_TIME,
+-			 (char *)&scan_unassoc_time, sizeof(scan_unassoc_time));
++		 (char *)&scan_unassoc_time_le, sizeof(scan_unassoc_time_le));
+ 
+ 	/* Set and enable ARP offload feature */
+ 	brcmf_c_arp_offload_set(drvr, BRCMF_ARPOL_MODE);
 
 
