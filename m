@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505Ab2I1ClH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 22:41:07 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43222 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756010Ab2I1ClE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756293Ab2I1ClE (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 27 Sep 2012 22:41:04 -0400
+Received: from mga14.intel.com ([143.182.124.37]:35212 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754006Ab2I1ClA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 22:41:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,498,1344236400"; 
-   d="scan'208";a="150101453"
+   d="scan'208";a="150101481"
 From: Lv Zheng <lv.zheng@intel.com>
 To: Len Brown <len.brown@intel.com>
 Cc: <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
         Lv Zheng <lv.zheng@intel.com>
-Subject: [PATCH v4 1/2] ACPI: Add early console framework for DBGP/DBG2.
-Date: Fri, 28 Sep 2012 10:40:18 +0800
-Message-Id: <f6e58d76efcbdb935b9f433c624686f7d34e0151.1348652044.git.lv.zheng@intel.com>
+Subject: [PATCH v4 2/2] ACPI: Add Intel MID SPI early console support.
+Date: Fri, 28 Sep 2012 10:40:35 +0800
+Message-Id: <387a9f8c290f142c38c10370688289844b12462a.1348652044.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1348652044.git.lv.zheng@intel.com>
 References: <cover.1347453194.git.zetalog@gmail.com> <cover.1348652044.git.lv.zheng@intel.com>
@@ -23,352 +23,620 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Microsoft Debug Port Table (DBGP or DBG2) is required for Windows SoC
-platforms.  This patch is introduced to fix the gap between Windows
-and Linux.
+DesignWare SPI UART is used as one of the debug ports on Low Power Intel
+Architecture (LPIA) platforms.  This patch is introduced to support this
+debugging console reported by ACPI DBGP/DBG2.  The original MID SPI
+early console stuff is also refined to co-exist with the new ACPI usage
+model.
 
 Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 ---
- Documentation/kernel-parameters.txt |    1 +
- arch/x86/Kconfig.debug              |   15 +++
- arch/x86/kernel/acpi/boot.c         |    1 +
- arch/x86/kernel/early_printk.c      |   13 +++
- drivers/acpi/Makefile               |    2 +
- drivers/acpi/early_printk.c         |  201 +++++++++++++++++++++++++++++++++++
- include/linux/acpi.h                |   24 +++++
- 7 files changed, 257 insertions(+)
- create mode 100644 drivers/acpi/early_printk.c
+ Documentation/kernel-parameters.txt        |    1 +
+ arch/x86/Kconfig.debug                     |   23 +++
+ arch/x86/include/asm/mrst.h                |    2 +-
+ arch/x86/kernel/early_printk.c             |   12 +-
+ arch/x86/platform/mrst/early_printk_mrst.c |  186 +----------------------
+ drivers/platform/x86/Makefile              |    2 +
+ drivers/platform/x86/early/Makefile        |    5 +
+ drivers/platform/x86/early/intel_mid_spi.c |  220 ++++++++++++++++++++++++++++
+ include/acpi/actbl2.h                      |    1 +
+ include/linux/intel_mid_early.h            |   12 ++
+ 10 files changed, 283 insertions(+), 181 deletions(-)
+ create mode 100644 drivers/platform/x86/early/Makefile
+ create mode 100644 drivers/platform/x86/early/intel_mid_spi.c
+ create mode 100644 include/linux/intel_mid_early.h
 
-Index: linux-acpi/Documentation/kernel-parameters.txt
-===================================================================
---- linux-acpi.orig/Documentation/kernel-parameters.txt	2012-09-27 22:35:07.000000000 +0800
-+++ linux-acpi/Documentation/kernel-parameters.txt	2012-09-27 22:35:44.000000000 +0800
-@@ -763,6 +763,7 @@
- 			earlyprintk=serial[,ttySn[,baudrate]]
- 			earlyprintk=ttySn[,baudrate]
- 			earlyprintk=dbgp[debugController#]
-+			earlyprintk=acpi[debugController#]
- 
- 			Append ",keep" to not disable it when the real console
- 			takes over.
 Index: linux-acpi/arch/x86/Kconfig.debug
 ===================================================================
---- linux-acpi.orig/arch/x86/Kconfig.debug	2012-09-27 22:35:07.000000000 +0800
-+++ linux-acpi/arch/x86/Kconfig.debug	2012-09-27 22:35:44.000000000 +0800
-@@ -59,6 +59,21 @@
+--- linux-acpi.orig/arch/x86/Kconfig.debug	2012-09-27 22:35:13.000000000 +0800
++++ linux-acpi/arch/x86/Kconfig.debug	2012-09-27 22:35:14.000000000 +0800
+@@ -43,9 +43,32 @@
  	  with klogd/syslogd or the X server. You should normally N here,
- 	  unless you want to debug such a crash. You need usb debug device.
+ 	  unless you want to debug such a crash.
  
-+config EARLY_PRINTK_ACPI
-+	bool "Early printk launcher via ACPI debug port tables"
-+	depends on EARLY_PRINTK && ACPI
++config EARLY_PRINTK_INTEL_MID_SPI
++	bool "Early printk for Intel MID SPI UART port"
++	depends on EARLY_PRINTK
 +	---help---
-+	  Write kernel log output directly into the debug ports described
-+	  in the ACPI tables known as DBGP and DBG2.
++	  Write kernel log output directly into the MID SPI UART debug port.
 +
-+	  To enable such debugging facilities, you need to enable this
-+	  configuration option and append the "earlyprintk=acpi" kernel
-+	  parameter through the boot loaders.  Please refer the
-+	  "Documentation/kernel-parameters.txt" for details.  Since this
-+	  is an early console launcher, you still need to enable actual
-+	  early console drivers that are suitable for your platform.
-+	  If in doubt, say "N".
++	  Intel MID platforms are using DesignWare SPI UART as its debug
++	  console.  This option does not introduce actual early console into
++	  the kernel binary, but is required by a real early console
++	  implementation (EARLY_PRINTK_INTEL_MID or EARLY_PRINTK_ACPI).
++	  You should normally N here unless you need to do kernel booting
++	  development.
 +
- config DEBUG_STACKOVERFLOW
- 	bool "Check for stack overflows"
- 	depends on DEBUG_KERNEL
-Index: linux-acpi/arch/x86/kernel/acpi/boot.c
+ config EARLY_PRINTK_INTEL_MID
+ 	bool "Early printk for Intel MID platform support"
+ 	depends on EARLY_PRINTK && X86_INTEL_MID
++	select EARLY_PRINTK_INTEL_MID_SPI
++	---help---
++	  Write kernel log output directly into the MID SPI UART debug port.
++
++	  Intel MID platforms are always equipped with SPI debug ports and
++	  USB OTG debug ports. To enable these debugging facilities, you
++	  need to pass "earlyprintk=mrst" parameter to the kernel through
++	  boot loaders.  Please see "Documentation/kernel-parameter.txt" for
++	  details.  You should normally N here unless you need to do kernel
++	  booting development.
+ 
+ config EARLY_PRINTK_DBGP
+ 	bool "Early printk via EHCI debug port"
+Index: linux-acpi/arch/x86/include/asm/mrst.h
 ===================================================================
---- linux-acpi.orig/arch/x86/kernel/acpi/boot.c	2012-09-27 22:35:07.000000000 +0800
-+++ linux-acpi/arch/x86/kernel/acpi/boot.c	2012-09-27 22:35:13.000000000 +0800
-@@ -1518,6 +1518,7 @@
- 		return;
- 	}
+--- linux-acpi.orig/arch/x86/include/asm/mrst.h	2012-09-27 22:35:05.000000000 +0800
++++ linux-acpi/arch/x86/include/asm/mrst.h	2012-09-27 22:35:41.000000000 +0800
+@@ -12,6 +12,7 @@
+ #define _ASM_X86_MRST_H
  
-+	acpi_early_console_parse();
- 	acpi_table_parse(ACPI_SIG_BOOT, acpi_parse_sbf);
+ #include <linux/sfi.h>
++#include <linux/intel_mid_early.h>
  
- 	/*
+ extern int pci_mrst_init(void);
+ extern int __init sfi_parse_mrtc(struct sfi_table_header *table);
+@@ -63,7 +64,6 @@
+ #define SFI_MTMR_MAX_NUM 8
+ #define SFI_MRTC_MAX	8
+ 
+-extern struct console early_mrst_console;
+ extern void mrst_early_console_init(void);
+ 
+ extern struct console early_hsu_console;
 Index: linux-acpi/arch/x86/kernel/early_printk.c
 ===================================================================
---- linux-acpi.orig/arch/x86/kernel/early_printk.c	2012-09-27 22:35:07.000000000 +0800
-+++ linux-acpi/arch/x86/kernel/early_printk.c	2012-09-27 22:35:44.000000000 +0800
-@@ -200,6 +200,15 @@
- 	register_console(early_console);
+--- linux-acpi.orig/arch/x86/kernel/early_printk.c	2012-09-27 22:35:13.000000000 +0800
++++ linux-acpi/arch/x86/kernel/early_printk.c	2012-09-27 22:35:42.000000000 +0800
+@@ -205,6 +205,16 @@
+ 
+ int __init acpi_early_console_setup(struct acpi_debug_port *info)
+ {
++#ifdef CONFIG_EARLY_PRINTK_INTEL_MID_SPI
++	if (info->port_type == ACPI_DBG2_SERIAL_PORT
++	    && info->port_subtype == ACPI_DBG2_INTEL_MID_SPI
++	    && info->register_count > 0) {
++		mid_spi_early_console_init((u32)(info->registers[0].address));
++		early_console_register(&mid_spi_early_console,
++				       acpi_early_console_keep());
++	}
++#endif
++
+ 	return 0;
+ }
+ #endif
+@@ -256,7 +266,7 @@
+ #ifdef CONFIG_EARLY_PRINTK_INTEL_MID
+ 		if (!strncmp(buf, "mrst", 4)) {
+ 			mrst_early_console_init();
+-			early_console_register(&early_mrst_console, keep);
++			early_console_register(&mid_spi_early_console, keep);
+ 		}
+ 
+ 		if (!strncmp(buf, "hsu", 3)) {
+Index: linux-acpi/arch/x86/platform/mrst/early_printk_mrst.c
+===================================================================
+--- linux-acpi.orig/arch/x86/platform/mrst/early_printk_mrst.c	2012-09-27 22:35:05.000000000 +0800
++++ linux-acpi/arch/x86/platform/mrst/early_printk_mrst.c	2012-09-27 22:35:14.000000000 +0800
+@@ -29,82 +29,8 @@
+ #include <asm/pgtable.h>
+ #include <asm/mrst.h>
+ 
+-#define MRST_SPI_TIMEOUT		0x200000
+ #define MRST_REGBASE_SPI0		0xff128000
+ #define MRST_REGBASE_SPI1		0xff128400
+-#define MRST_CLK_SPI0_REG		0xff11d86c
+-
+-/* Bit fields in CTRLR0 */
+-#define SPI_DFS_OFFSET			0
+-
+-#define SPI_FRF_OFFSET			4
+-#define SPI_FRF_SPI			0x0
+-#define SPI_FRF_SSP			0x1
+-#define SPI_FRF_MICROWIRE		0x2
+-#define SPI_FRF_RESV			0x3
+-
+-#define SPI_MODE_OFFSET			6
+-#define SPI_SCPH_OFFSET			6
+-#define SPI_SCOL_OFFSET			7
+-#define SPI_TMOD_OFFSET			8
+-#define	SPI_TMOD_TR			0x0		/* xmit & recv */
+-#define SPI_TMOD_TO			0x1		/* xmit only */
+-#define SPI_TMOD_RO			0x2		/* recv only */
+-#define SPI_TMOD_EPROMREAD		0x3		/* eeprom read mode */
+-
+-#define SPI_SLVOE_OFFSET		10
+-#define SPI_SRL_OFFSET			11
+-#define SPI_CFS_OFFSET			12
+-
+-/* Bit fields in SR, 7 bits */
+-#define SR_MASK				0x7f		/* cover 7 bits */
+-#define SR_BUSY				(1 << 0)
+-#define SR_TF_NOT_FULL			(1 << 1)
+-#define SR_TF_EMPT			(1 << 2)
+-#define SR_RF_NOT_EMPT			(1 << 3)
+-#define SR_RF_FULL			(1 << 4)
+-#define SR_TX_ERR			(1 << 5)
+-#define SR_DCOL				(1 << 6)
+-
+-struct dw_spi_reg {
+-	u32	ctrl0;
+-	u32	ctrl1;
+-	u32	ssienr;
+-	u32	mwcr;
+-	u32	ser;
+-	u32	baudr;
+-	u32	txfltr;
+-	u32	rxfltr;
+-	u32	txflr;
+-	u32	rxflr;
+-	u32	sr;
+-	u32	imr;
+-	u32	isr;
+-	u32	risr;
+-	u32	txoicr;
+-	u32	rxoicr;
+-	u32	rxuicr;
+-	u32	msticr;
+-	u32	icr;
+-	u32	dmacr;
+-	u32	dmatdlr;
+-	u32	dmardlr;
+-	u32	idr;
+-	u32	version;
+-
+-	/* Currently operates as 32 bits, though only the low 16 bits matter */
+-	u32	dr;
+-} __packed;
+-
+-#define dw_readl(dw, name)		__raw_readl(&(dw)->name)
+-#define dw_writel(dw, name, val)	__raw_writel((val), &(dw)->name)
+-
+-/* Default use SPI0 register for mrst, we will detect Penwell and use SPI1 */
+-static unsigned long mrst_spi_paddr = MRST_REGBASE_SPI0;
+-
+-static u32 *pclk_spi0;
+-/* Always contains an accessible address, start with 0 */
+-static struct dw_spi_reg *pspi;
+ 
+ static struct kmsg_dumper dw_dumper;
+ static int dumper_registered;
+@@ -116,77 +42,21 @@
+ 	size_t len;
+ 
+ 	/* When run to this, we'd better re-init the HW */
+-	mrst_early_console_init();
++	mid_spi_early_console_reset();
+ 
+ 	while (kmsg_dump_get_line(dumper, true, line, sizeof(line), &len))
+-		early_mrst_console.write(&early_mrst_console, line, len);
+-}
+-
+-/* Set the ratio rate to 115200, 8n1, IRQ disabled */
+-static void max3110_write_config(void)
+-{
+-	u16 config;
+-
+-	config = 0xc001;
+-	dw_writel(pspi, dr, config);
+-}
+-
+-/* Translate char to a eligible word and send to max3110 */
+-static void max3110_write_data(char c)
+-{
+-	u16 data;
+-
+-	data = 0x8000 | c;
+-	dw_writel(pspi, dr, data);
++		mid_spi_early_console.write(&mid_spi_early_console, line, len);
  }
  
-+#ifdef CONFIG_EARLY_PRINTK_ACPI
-+#include <linux/acpi.h>
-+
-+int __init acpi_early_console_setup(struct acpi_debug_port *info)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int __init setup_early_printk(char *buf)
+ void mrst_early_console_init(void)
  {
- 	int keep;
-@@ -236,6 +245,10 @@
- 		if (!strncmp(buf, "dbgp", 4) && !early_dbgp_init(buf + 4))
- 			early_console_register(&early_dbgp_console, keep);
- #endif
-+#ifdef CONFIG_EARLY_PRINTK_ACPI
-+		if (!strncmp(buf, "acpi", 4))
-+			acpi_early_console_init(buf + 4, keep);
-+#endif
- #ifdef CONFIG_HVC_XEN
- 		if (!strncmp(buf, "xen", 3))
- 			early_console_register(&xenboot_console, keep);
-Index: linux-acpi/drivers/acpi/Makefile
-===================================================================
---- linux-acpi.orig/drivers/acpi/Makefile	2012-09-27 22:35:07.000000000 +0800
-+++ linux-acpi/drivers/acpi/Makefile	2012-09-27 22:35:36.000000000 +0800
-@@ -46,6 +46,8 @@
- acpi-y				+= video_detect.o
- endif
+-	u32 ctrlr0 = 0;
+-	u32 spi0_cdiv;
+-	u32 freq; /* Freqency info only need be searched once */
+-
+-	/* Base clk is 100 MHz, the actual clk = 100M / (clk_divider + 1) */
+-	pclk_spi0 = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
+-							MRST_CLK_SPI0_REG);
+-	spi0_cdiv = ((*pclk_spi0) & 0xe00) >> 9;
+-	freq = 100000000 / (spi0_cdiv + 1);
++	/* Default use SPI0 register for mrst */
++	unsigned long spi_paddr = MRST_REGBASE_SPI0;
  
-+obj-$(CONFIG_EARLY_PRINTK_ACPI)	+= early_printk.o
++	/* Detect Penwell and use SPI1 */
+ 	if (mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL)
+-		mrst_spi_paddr = MRST_REGBASE_SPI1;
+-
+-	pspi = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
+-						mrst_spi_paddr);
+-
+-	/* Disable SPI controller */
+-	dw_writel(pspi, ssienr, 0);
+-
+-	/* Set control param, 8 bits, transmit only mode */
+-	ctrlr0 = dw_readl(pspi, ctrl0);
+-
+-	ctrlr0 &= 0xfcc0;
+-	ctrlr0 |= 0xf | (SPI_FRF_SPI << SPI_FRF_OFFSET)
+-		      | (SPI_TMOD_TO << SPI_TMOD_OFFSET);
+-	dw_writel(pspi, ctrl0, ctrlr0);
+-
+-	/*
+-	 * Change the spi0 clk to comply with 115200 bps, use 100000 to
+-	 * calculate the clk dividor to make the clock a little slower
+-	 * than real baud rate.
+-	 */
+-	dw_writel(pspi, baudr, freq/100000);
+-
+-	/* Disable all INT for early phase */
+-	dw_writel(pspi, imr, 0x0);
+-
+-	/* Set the cs to spi-uart */
+-	dw_writel(pspi, ser, 0x2);
+-
+-	/* Enable the HW, the last step for HW init */
+-	dw_writel(pspi, ssienr, 0x1);
+-
+-	/* Set the default configuration */
+-	max3110_write_config();
++		spi_paddr = MRST_REGBASE_SPI1;
++	mid_spi_early_console_init(spi_paddr);
+ 
+ 	/* Register the kmsg dumper */
+ 	if (!dumper_registered) {
+@@ -196,48 +66,6 @@
+ 	}
+ }
+ 
+-/* Slave select should be called in the read/write function */
+-static void early_mrst_spi_putc(char c)
+-{
+-	unsigned int timeout;
+-	u32 sr;
+-
+-	timeout = MRST_SPI_TIMEOUT;
+-	/* Early putc needs to make sure the TX FIFO is not full */
+-	while (--timeout) {
+-		sr = dw_readl(pspi, sr);
+-		if (!(sr & SR_TF_NOT_FULL))
+-			cpu_relax();
+-		else
+-			break;
+-	}
+-
+-	if (!timeout)
+-		pr_warning("MRST earlycon: timed out\n");
+-	else
+-		max3110_write_data(c);
+-}
+-
+-/* Early SPI only uses polling mode */
+-static void early_mrst_spi_write(struct console *con, const char *str, unsigned n)
+-{
+-	int i;
+-
+-	for (i = 0; i < n && *str; i++) {
+-		if (*str == '\n')
+-			early_mrst_spi_putc('\r');
+-		early_mrst_spi_putc(*str);
+-		str++;
+-	}
+-}
+-
+-struct console early_mrst_console = {
+-	.name =		"earlymrst",
+-	.write =	early_mrst_spi_write,
+-	.flags =	CON_PRINTBUFFER,
+-	.index =	-1,
+-};
+-
+ /*
+  * Following is the early console based on Medfield HSU (High
+  * Speed UART) device.
+Index: linux-acpi/drivers/platform/x86/Makefile
+===================================================================
+--- linux-acpi.orig/drivers/platform/x86/Makefile	2012-09-27 22:35:05.000000000 +0800
++++ linux-acpi/drivers/platform/x86/Makefile	2012-09-27 22:35:14.000000000 +0800
+@@ -50,3 +50,5 @@
+ obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
+ obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
+ obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
 +
- # These are (potentially) separate modules
- obj-$(CONFIG_ACPI_AC) 		+= ac.o
- obj-$(CONFIG_ACPI_BUTTON)	+= button.o
-Index: linux-acpi/drivers/acpi/early_printk.c
++obj-$(CONFIG_EARLY_PRINTK)	+= early/
+Index: linux-acpi/drivers/platform/x86/early/Makefile
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-acpi/drivers/acpi/early_printk.c	2012-09-27 22:35:13.000000000 +0800
-@@ -0,0 +1,201 @@
++++ linux-acpi/drivers/platform/x86/early/Makefile	2012-09-27 22:35:14.000000000 +0800
+@@ -0,0 +1,5 @@
++#
++# Makefile for linux/drivers/platform/x86/early
++# x86 Platform-Specific Early Printk Support
++#
++obj-$(CONFIG_EARLY_PRINTK_INTEL_MID_SPI)	+= intel_mid_spi.o
+Index: linux-acpi/drivers/platform/x86/early/intel_mid_spi.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-acpi/drivers/platform/x86/early/intel_mid_spi.c	2012-09-27 22:35:14.000000000 +0800
+@@ -0,0 +1,220 @@
 +/*
-+ *  acpi/early_printk.c - ACPI Boot-Time Debug Ports
++ * intel_mid_spi.c - SPI UART early consoles for Intel MID platforms
 + *
-+ *  Copyright (C) 2012 Lv Zheng <lv.zheng@intel.com>
++ * Copyright (c) 2008-2012, Intel Corporation
 + *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
 + */
 +
-+#include <linux/init.h>
++/*
++ * This file implements early console named intel_pmic.
++ * intel_pmic is based on Maxim3110 spi-uart device, it exists in
++ * Low Power Intel Architecture (LPIA) platforms.
++ */
++
++#include <linux/serial_reg.h>
++#include <linux/serial_mfd.h>
 +#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/types.h>
-+#include <linux/errno.h>
-+#include <linux/acpi.h>
-+#include <linux/bootmem.h>
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/export.h>
++#include <linux/io.h>
++#include <linux/intel_mid_early.h>
++#include <asm/fixmap.h>
 +
-+#define ACPI_EARLY_DISABLED	0x0000
-+#define ACPI_EARLY_ENABLED	0x0001
-+#define ACPI_EARLY_KEEP		0x0002
-+#define ACPI_EARLY_PORT_MSK	0xFF00
-+#define ACPI_EARLY_PORT_OFF	8
++#define DW_SPI_TIMEOUT			0x200000
++#define DW_SPI0_CLK_REG			0xff11d86c
 +
-+u16 acpi_early_flags = ACPI_EARLY_DISABLED;
++/* Bit fields in CTRLR0 */
++#define SPI_DFS_OFFSET			0
 +
-+static inline bool acpi_early_enabled(void)
++#define SPI_FRF_OFFSET			4
++#define SPI_FRF_SPI			0x0
++#define SPI_FRF_SSP			0x1
++#define SPI_FRF_MICROWIRE		0x2
++#define SPI_FRF_RESV			0x3
++
++#define SPI_MODE_OFFSET			6
++#define SPI_SCPH_OFFSET			6
++#define SPI_SCOL_OFFSET			7
++#define SPI_TMOD_OFFSET			8
++#define	SPI_TMOD_TR			0x0		/* xmit & recv */
++#define SPI_TMOD_TO			0x1		/* xmit only */
++#define SPI_TMOD_RO			0x2		/* recv only */
++#define SPI_TMOD_EPROMREAD		0x3		/* eeprom read mode */
++
++#define SPI_SLVOE_OFFSET		10
++#define SPI_SRL_OFFSET			11
++#define SPI_CFS_OFFSET			12
++
++/* Bit fields in SR, 7 bits */
++#define SR_MASK				0x7f		/* cover 7 bits */
++#define SR_BUSY				(1 << 0)
++#define SR_TF_NOT_FULL			(1 << 1)
++#define SR_TF_EMPT			(1 << 2)
++#define SR_RF_NOT_EMPT			(1 << 3)
++#define SR_RF_FULL			(1 << 4)
++#define SR_TX_ERR			(1 << 5)
++#define SR_DCOL				(1 << 6)
++
++struct dw_spi_reg {
++	u32	ctrl0;
++	u32	ctrl1;
++	u32	ssienr;
++	u32	mwcr;
++	u32	ser;
++	u32	baudr;
++	u32	txfltr;
++	u32	rxfltr;
++	u32	txflr;
++	u32	rxflr;
++	u32	sr;
++	u32	imr;
++	u32	isr;
++	u32	risr;
++	u32	txoicr;
++	u32	rxoicr;
++	u32	rxuicr;
++	u32	msticr;
++	u32	icr;
++	u32	dmacr;
++	u32	dmatdlr;
++	u32	dmardlr;
++	u32	idr;
++	u32	version;
++
++	/* Currently operates as 32 bits, though only the low 16 bits matter */
++	u32	dr;
++} __packed;
++
++#define dw_readl(dw, name)		__raw_readl(&(dw)->name)
++#define dw_writel(dw, name, val)	__raw_writel((val), &(dw)->name)
++
++static u32 *pclk_spi0;
++/* Always contains an accessible address, start with 0 */
++static struct dw_spi_reg *pspi;
++static int dw_spi_initialized;
++static u32 dw_spi_regbase;
++
++/* Translate char to a eligible word and send to max3110 */
++static void max3110_write_data(char c)
 +{
-+	return acpi_early_flags & ACPI_EARLY_ENABLED;
++	u16 data;
++
++	data = 0x8000 | c;
++	dw_writel(pspi, dr, data);
 +}
 +
-+static inline u8 acpi_early_port_index(void)
++/* Set the ratio rate to 115200, 8n1, IRQ disabled */
++static void max3110_write_config(void)
 +{
-+	return (acpi_early_flags & ACPI_EARLY_PORT_MSK) >> ACPI_EARLY_PORT_OFF;
++	u16 config;
++
++	config = 0xc001;
++	dw_writel(pspi, dr, config);
 +}
 +
-+int __init acpi_early_console_keep(void)
++int mid_spi_early_console_reset(void)
 +{
-+	return acpi_early_flags & ACPI_EARLY_KEEP ? 1 : 0;
-+}
++	u32 ctrlr0 = 0;
++	u32 spi0_cdiv;
++	u32 freq; /* Freqency info only need be searched once */
 +
-+static inline int acpi_table_parse_dbg2(acpi_early_console_handler handler)
-+{
-+	struct acpi_table_header *table_header = NULL;
-+	struct acpi_dbg2_device *entry;
-+	unsigned int count = 0;
-+	unsigned long table_end;
-+	acpi_size tbl_size;
-+	unsigned int max_entries;
-+	struct acpi_debug_port devinfo;
++	/* Base clk is 100 MHz, the actual clk = 100M / (clk_divider + 1) */
++	pclk_spi0 = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
++						      DW_SPI0_CLK_REG);
++	spi0_cdiv = ((*pclk_spi0) & 0xe00) >> 9;
++	freq = 100000000 / (spi0_cdiv + 1);
 +
-+	if (acpi_disabled)
-+		return -ENODEV;
++	pspi = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
++						 dw_spi_regbase);
 +
-+	if (!handler)
-+		return -EINVAL;
++	/* Disable SPI controller */
++	dw_writel(pspi, ssienr, 0);
 +
-+	acpi_get_table(ACPI_SIG_DBG2, 0, &table_header);
-+	if (!table_header) {
-+		pr_warn("DBG2 not present\n");
-+		return -ENODEV;
-+	}
-+	tbl_size = table_header->length;
-+	table_end = (unsigned long)table_header + table_header->length;
++	/* Set control param, 8 bits, transmit only mode */
++	ctrlr0 = dw_readl(pspi, ctrl0);
 +
-+	entry = (struct acpi_dbg2_device *)
-+	    ((unsigned long)table_header +
-+	     ((struct acpi_table_dbg2 *)table_header)->info_offset);
-+	max_entries = ((struct acpi_table_dbg2 *)table_header)->info_count;
++	ctrlr0 &= 0xfcc0;
++	ctrlr0 |= 0xf | (SPI_FRF_SPI << SPI_FRF_OFFSET)
++		      | (SPI_TMOD_TO << SPI_TMOD_OFFSET);
++	dw_writel(pspi, ctrl0, ctrlr0);
 +
-+	while (((unsigned long)entry) + sizeof(struct acpi_dbg2_device) <
-+	       table_end) {
-+		if (entry->revision != 0) {
-+			pr_warn("DBG2 revision %d not supported\n",
-+				entry->revision);
-+			count = -ENODEV;
-+			goto fail;
-+		}
-+		if (!max_entries || count++ < max_entries) {
-+			devinfo.port_index = (u8)count;
-+			devinfo.port_type = entry->port_type;
-+			devinfo.port_subtype = entry->port_subtype;
-+			devinfo.register_count = entry->register_count;
-+			devinfo.registers = (struct acpi_generic_address *)
-+			    ((unsigned long)entry + entry->base_address_offset);
-+			devinfo.namepath_length = entry->namepath_length;
-+			devinfo.namepath = (char *)
-+			    ((unsigned long)entry + entry->namepath_offset);
-+			devinfo.oem_data_length = entry->oem_data_length;
-+			devinfo.oem_data = (u8 *)
-+			    ((unsigned long)entry + entry->oem_data_offset);
++	/*
++	 * Change the spi0 clk to comply with 115200 bps, use 100000 to
++	 * calculate the clk dividor to make the clock a little slower
++	 * than real baud rate.
++	 */
++	dw_writel(pspi, baudr, freq/100000);
 +
-+			if (handler(&devinfo, table_end)) {
-+				count = -ENODEV;
-+				goto fail;
-+			}
-+		}
++	/* Disable all INT for early phase */
++	dw_writel(pspi, imr, 0x0);
 +
-+		entry = (struct acpi_dbg2_device *)
-+		    ((unsigned long)entry + entry->length);
-+	}
++	/* Set the cs to spi-uart */
++	dw_writel(pspi, ser, 0x2);
 +
-+fail:
-+	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-+	return count;
-+}
++	/* Enable the HW, the last step for HW init */
++	dw_writel(pspi, ssienr, 0x1);
 +
-+static int __init acpi_parse_early_console(struct acpi_debug_port *info,
-+					   const unsigned long end)
-+{
-+	pr_info("early: DBG2 console %d detected: %04x:%04x.\n",
-+		info->port_index, info->port_type, info->port_subtype);
-+
-+	if (acpi_early_port_index() != 0 &&
-+	    acpi_early_port_index() != info->port_index)
-+		return 0;
-+
-+	acpi_early_console_setup(info);
++	/* Set the default configuration */
++	max3110_write_config();
 +
 +	return 0;
 +}
++EXPORT_SYMBOL(mid_spi_early_console_reset);
 +
-+static int __init acpi_parse_dbgp(struct acpi_table_header *table)
++/* Slave select should be called in the read/write function */
++static void dw_early_spi_putc(char c)
 +{
-+	struct acpi_table_dbgp *dbgp;
-+	struct acpi_debug_port devinfo;
++	unsigned int timeout;
++	u32 sr;
 +
-+	if (acpi_early_port_index() != 0 &&
-+	    acpi_early_port_index() != 1)
-+		return 0;
-+
-+	dbgp = (struct acpi_table_dbgp *)table;
-+	if (!dbgp) {
-+		pr_warn("Unable to map DBGP\n");
-+		return -ENODEV;
++	timeout = DW_SPI_TIMEOUT;
++	/* Early putc needs to make sure the TX FIFO is not full */
++	while (--timeout) {
++		sr = dw_readl(pspi, sr);
++		if (!(sr & SR_TF_NOT_FULL))
++			cpu_relax();
++		else
++			break;
 +	}
 +
-+	pr_info("early: DBGP console detected: %04x.\n",
-+		dbgp->type);
-+
-+	devinfo.port_index = 1;
-+	devinfo.port_type = ACPI_DBG2_SERIAL_PORT;
-+	devinfo.port_subtype = dbgp->type;
-+	devinfo.register_count = 1;
-+	devinfo.registers = (struct acpi_generic_address *)&dbgp->debug_port;
-+	devinfo.namepath_length = 0;
-+	devinfo.namepath = NULL;
-+	devinfo.oem_data_length = 0;
-+	devinfo.oem_data = NULL;
-+
-+	acpi_parse_early_console(&devinfo, 0);
-+
-+	return 0;
++	if (!timeout)
++		pr_warn("mid-spi-early: timed out\n");
++	else
++		max3110_write_data(c);
 +}
 +
-+int __init acpi_early_console_parse(void)
++/* Early SPI only uses polling mode */
++static void dw_early_spi_write(struct console *con,
++			       const char *str, unsigned n)
 +{
-+	if (!acpi_early_enabled())
-+		return -EINVAL;
++	int i;
 +
-+	if (acpi_table_parse_dbg2(acpi_parse_early_console) == 0)
-+		acpi_table_parse(ACPI_SIG_DBGP, acpi_parse_dbgp);
-+
-+	return 0;
-+}
-+
-+int __init acpi_early_console_init(char *s, int keep)
-+{
-+	acpi_early_flags = ACPI_EARLY_ENABLED;
-+	if (keep)
-+		acpi_early_flags |= ACPI_EARLY_KEEP;
-+
-+	if (*s) {
-+		int ret;
-+		unsigned long port;
-+
-+		ret = kstrtoul(s, 10, &port);
-+		if (!ret)
-+			acpi_early_flags |= ((u8)port) << ACPI_EARLY_PORT_OFF;
++	for (i = 0; i < n && *str; i++) {
++		if (*str == '\n')
++			dw_early_spi_putc('\r');
++		dw_early_spi_putc(*str);
++		str++;
 +	}
-+
-+	pr_info("early: debug port index %d.\n", acpi_early_port_index());
-+
-+	return 0;
 +}
 +
-Index: linux-acpi/include/linux/acpi.h
-===================================================================
---- linux-acpi.orig/include/linux/acpi.h	2012-09-27 22:35:07.000000000 +0800
-+++ linux-acpi/include/linux/acpi.h	2012-09-27 22:35:41.000000000 +0800
-@@ -430,4 +430,28 @@
- #define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
- #endif
- 
-+#ifdef CONFIG_EARLY_PRINTK_ACPI
-+struct acpi_debug_port {
-+	u8 port_index;
-+	u16 port_type;
-+	u16 port_subtype;
-+	u16 register_count;
-+	struct acpi_generic_address *registers;
-+	u16 namepath_length;
-+	char *namepath;
-+	u16 oem_data_length;
-+	u8 *oem_data;
++struct console mid_spi_early_console = {
++	.name =		"earlymidspi",
++	.write =	dw_early_spi_write,
++	.flags =	CON_PRINTBUFFER,
++	.index =	-1,
 +};
 +
-+typedef int (*acpi_early_console_handler)(struct acpi_debug_port *dev,
-+					  const unsigned long end);
++void __init mid_spi_early_console_init(u32 spi_paddr)
++{
++	if (dw_spi_initialized)
++		return;
++	dw_spi_regbase = spi_paddr;
++	mid_spi_early_console_reset();
++	dw_spi_initialized = 1;
++}
 +
-+int __init acpi_early_console_keep(void);
-+int __init acpi_early_console_init(char *s, int keep);
-+int __init acpi_early_console_parse(void);
-+int __init acpi_early_console_setup(struct acpi_debug_port *info);
-+#else
-+static int acpi_early_console_parse(void) { return 0; }
-+#endif
+Index: linux-acpi/include/acpi/actbl2.h
+===================================================================
+--- linux-acpi.orig/include/acpi/actbl2.h	2012-09-27 22:35:05.000000000 +0800
++++ linux-acpi/include/acpi/actbl2.h	2012-09-27 22:35:42.000000000 +0800
+@@ -341,6 +341,7 @@
+ 
+ #define ACPI_DBG2_16550_COMPATIBLE  0x0000
+ #define ACPI_DBG2_16550_SUBSET      0x0001
++#define ACPI_DBG2_INTEL_MID_SPI     0x0002
+ 
+ #define ACPI_DBG2_1394_STANDARD     0x0000
+ 
+Index: linux-acpi/include/linux/intel_mid_early.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-acpi/include/linux/intel_mid_early.h	2012-09-27 22:35:14.000000000 +0800
+@@ -0,0 +1,12 @@
++#ifndef LINUX_INTEL_MID_EARLY_H
++#define LINUX_INTEL_MID_EARLY_H
 +
- #endif	/*_LINUX_ACPI_H*/
++#include <linux/console.h>
++
++extern struct console mid_spi_early_console;
++
++extern void mid_spi_early_console_init(u32 spi_paddr);
++extern int mid_spi_early_console_reset(void);
++
++#endif /* LINUX_INTEL_MID_EARLY_H */
++
+Index: linux-acpi/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-acpi.orig/Documentation/kernel-parameters.txt	2012-09-27 22:35:13.000000000 +0800
++++ linux-acpi/Documentation/kernel-parameters.txt	2012-09-27 22:35:14.000000000 +0800
+@@ -762,6 +762,7 @@
+ 			earlyprintk=vga
+ 			earlyprintk=serial[,ttySn[,baudrate]]
+ 			earlyprintk=ttySn[,baudrate]
++			earlyprintk=mrst
+ 			earlyprintk=dbgp[debugController#]
+ 			earlyprintk=acpi[debugController#]
+ 
