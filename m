@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab2I1Sxs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:53:48 -0400
+	id S1758619Ab2I1Sx6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:53:58 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932205Ab2I1Sxn (ORCPT
+	with ESMTP id S964773Ab2I1Sxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:53:43 -0400
+	Fri, 28 Sep 2012 14:53:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Anton Mich <lp2s1h@gmail.com>, Eric Dumazet <edumazet@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 001/262] codel: refine one condition to avoid a nul rec_inv_sqrt
-Date: Fri, 28 Sep 2012 11:48:50 -0700
-Message-Id: <20120928182958.162174904@linuxfoundation.org>
+Subject: [ 003/262] sfc: Fix maximum number of TSO segments and minimum TX queue size
+Date: Fri, 28 Sep 2012 11:48:52 -0700
+Message-Id: <20120928182958.401439991@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,55 +30,150 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit 2359a47671fc4fb0fe5e9945f76c2cb10792c0f8 ]
+[ Upstream commit 7e6d06f0de3f74ca929441add094518ae332257c ]
 
-One condition before codel_Newton_step() was not good if
-we never left the dropping state for a flow. As a result
-rec_inv_sqrt was 0, instead of the ~0 initial value.
 
-codel control law was then set to a very aggressive mode, dropping
-many packets before reaching 'target' and recovering from this problem.
+Currently an skb requiring TSO may not fit within a minimum-size TX
+queue.  The TX queue selected for the skb may stall and trigger the TX
+watchdog repeatedly (since the problem skb will be retried after the
+TX reset).  This issue is designated as CVE-2012-3412.
 
-To keep codel_vars_init() as efficient as possible, refine
-the condition to make sure rec_inv_sqrt initial value is correct
+Set the maximum number of TSO segments for our devices to 100.  This
+should make no difference to behaviour unless the actual MSS is less
+than about 700.  Increase the minimum TX queue size accordingly to
+allow for 2 worst-case skbs, so that there will definitely be space
+to add an skb after we wake a queue.
 
-Many thanks to Anton Mich for discovering the issue and suggesting
-a fix.
+To avoid invalidating existing configurations, change
+efx_ethtool_set_ringparam() to fix up values that are too small rather
+than returning -EINVAL.
 
-Reported-by: Anton Mich <lp2s1h@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/codel.h |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/sfc/efx.c     |    6 ++++++
+ drivers/net/ethernet/sfc/efx.h     |   14 ++++++++++----
+ drivers/net/ethernet/sfc/ethtool.c |   16 +++++++++++-----
+ drivers/net/ethernet/sfc/tx.c      |   19 +++++++++++++++++++
+ 4 files changed, 46 insertions(+), 9 deletions(-)
 
---- a/include/net/codel.h
-+++ b/include/net/codel.h
-@@ -305,6 +305,8 @@ static struct sk_buff *codel_dequeue(str
- 			}
- 		}
- 	} else if (drop) {
-+		u32 delta;
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -1503,6 +1503,11 @@ static int efx_probe_all(struct efx_nic
+ 		goto fail2;
+ 	}
+ 
++	BUILD_BUG_ON(EFX_DEFAULT_DMAQ_SIZE < EFX_RXQ_MIN_ENT);
++	if (WARN_ON(EFX_DEFAULT_DMAQ_SIZE < EFX_TXQ_MIN_ENT(efx))) {
++		rc = -EINVAL;
++		goto fail3;
++	}
+ 	efx->rxq_entries = efx->txq_entries = EFX_DEFAULT_DMAQ_SIZE;
+ 
+ 	rc = efx_probe_filters(efx);
+@@ -2070,6 +2075,7 @@ static int efx_register_netdev(struct ef
+ 	net_dev->irq = efx->pci_dev->irq;
+ 	net_dev->netdev_ops = &efx_netdev_ops;
+ 	SET_ETHTOOL_OPS(net_dev, &efx_ethtool_ops);
++	net_dev->gso_max_segs = EFX_TSO_MAX_SEGS;
+ 
+ 	rtnl_lock();
+ 
+--- a/drivers/net/ethernet/sfc/efx.h
++++ b/drivers/net/ethernet/sfc/efx.h
+@@ -30,6 +30,7 @@ extern netdev_tx_t
+ efx_enqueue_skb(struct efx_tx_queue *tx_queue, struct sk_buff *skb);
+ extern void efx_xmit_done(struct efx_tx_queue *tx_queue, unsigned int index);
+ extern int efx_setup_tc(struct net_device *net_dev, u8 num_tc);
++extern unsigned int efx_tx_max_skb_descs(struct efx_nic *efx);
+ 
+ /* RX */
+ extern int efx_probe_rx_queue(struct efx_rx_queue *rx_queue);
+@@ -52,10 +53,15 @@ extern void efx_schedule_slow_fill(struc
+ #define EFX_MAX_EVQ_SIZE 16384UL
+ #define EFX_MIN_EVQ_SIZE 512UL
+ 
+-/* The smallest [rt]xq_entries that the driver supports. Callers of
+- * efx_wake_queue() assume that they can subsequently send at least one
+- * skb. Falcon/A1 may require up to three descriptors per skb_frag. */
+-#define EFX_MIN_RING_SIZE (roundup_pow_of_two(2 * 3 * MAX_SKB_FRAGS))
++/* Maximum number of TCP segments we support for soft-TSO */
++#define EFX_TSO_MAX_SEGS	100
 +
- 		if (params->ecn && INET_ECN_set_ce(skb)) {
- 			stats->ecn_mark++;
- 		} else {
-@@ -320,9 +322,11 @@ static struct sk_buff *codel_dequeue(str
- 		 * assume that the drop rate that controlled the queue on the
- 		 * last cycle is a good starting point to control it now.
- 		 */
--		if (codel_time_before(now - vars->drop_next,
-+		delta = vars->count - vars->lastcount;
-+		if (delta > 1 &&
-+		    codel_time_before(now - vars->drop_next,
- 				      16 * params->interval)) {
--			vars->count = (vars->count - vars->lastcount) | 1;
-+			vars->count = delta;
- 			/* we dont care if rec_inv_sqrt approximation
- 			 * is not very precise :
- 			 * Next Newton steps will correct it quadratically.
++/* The smallest [rt]xq_entries that the driver supports.  RX minimum
++ * is a bit arbitrary.  For TX, we must have space for at least 2
++ * TSO skbs.
++ */
++#define EFX_RXQ_MIN_ENT		128U
++#define EFX_TXQ_MIN_ENT(efx)	(2 * efx_tx_max_skb_descs(efx))
+ 
+ /* Filters */
+ extern int efx_probe_filters(struct efx_nic *efx);
+--- a/drivers/net/ethernet/sfc/ethtool.c
++++ b/drivers/net/ethernet/sfc/ethtool.c
+@@ -680,21 +680,27 @@ static int efx_ethtool_set_ringparam(str
+ 				     struct ethtool_ringparam *ring)
+ {
+ 	struct efx_nic *efx = netdev_priv(net_dev);
++	u32 txq_entries;
+ 
+ 	if (ring->rx_mini_pending || ring->rx_jumbo_pending ||
+ 	    ring->rx_pending > EFX_MAX_DMAQ_SIZE ||
+ 	    ring->tx_pending > EFX_MAX_DMAQ_SIZE)
+ 		return -EINVAL;
+ 
+-	if (ring->rx_pending < EFX_MIN_RING_SIZE ||
+-	    ring->tx_pending < EFX_MIN_RING_SIZE) {
++	if (ring->rx_pending < EFX_RXQ_MIN_ENT) {
+ 		netif_err(efx, drv, efx->net_dev,
+-			  "TX and RX queues cannot be smaller than %ld\n",
+-			  EFX_MIN_RING_SIZE);
++			  "RX queues cannot be smaller than %u\n",
++			  EFX_RXQ_MIN_ENT);
+ 		return -EINVAL;
+ 	}
+ 
+-	return efx_realloc_channels(efx, ring->rx_pending, ring->tx_pending);
++	txq_entries = max(ring->tx_pending, EFX_TXQ_MIN_ENT(efx));
++	if (txq_entries != ring->tx_pending)
++		netif_warn(efx, drv, efx->net_dev,
++			   "increasing TX queue size to minimum of %u\n",
++			   txq_entries);
++
++	return efx_realloc_channels(efx, ring->rx_pending, txq_entries);
+ }
+ 
+ static int efx_ethtool_set_pauseparam(struct net_device *net_dev,
+--- a/drivers/net/ethernet/sfc/tx.c
++++ b/drivers/net/ethernet/sfc/tx.c
+@@ -119,6 +119,25 @@ efx_max_tx_len(struct efx_nic *efx, dma_
+ 	return len;
+ }
+ 
++unsigned int efx_tx_max_skb_descs(struct efx_nic *efx)
++{
++	/* Header and payload descriptor for each output segment, plus
++	 * one for every input fragment boundary within a segment
++	 */
++	unsigned int max_descs = EFX_TSO_MAX_SEGS * 2 + MAX_SKB_FRAGS;
++
++	/* Possibly one more per segment for the alignment workaround */
++	if (EFX_WORKAROUND_5391(efx))
++		max_descs += EFX_TSO_MAX_SEGS;
++
++	/* Possibly more for PCIe page boundaries within input fragments */
++	if (PAGE_SIZE > EFX_PAGE_SIZE)
++		max_descs += max_t(unsigned int, MAX_SKB_FRAGS,
++				   DIV_ROUND_UP(GSO_MAX_SIZE, EFX_PAGE_SIZE));
++
++	return max_descs;
++}
++
+ /*
+  * Add a socket buffer to a TX queue
+  *
 
 
