@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030271Ab2I1TCH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:02:07 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50498 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030226Ab2I1TCA (ORCPT
+	id S1030286Ab2I1TCN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:02:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030267Ab2I1TCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:02:00 -0400
+	Fri, 28 Sep 2012 15:02:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sergei Poselenov <sposelenov@emcraft.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 163/262] rt2800usb: Added rx packet length validity check
-Date: Fri, 28 Sep 2012 11:51:32 -0700
-Message-Id: <20120928183017.237860606@linuxfoundation.org>
+        Keng-Yu Lin <kengyu@canonical.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 165/262] Intel xhci: Only switch the switchable ports
+Date: Fri, 28 Sep 2012 11:51:34 -0700
+Message-Id: <20120928183017.471809888@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,59 +29,85 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sergei Poselenov <sposelenov@emcraft.com>
+From: Keng-Yu Lin <kengyu@canonical.com>
 
-commit efd5d6b03bd9c9e0df646c56fb5f4f3e25e5c1ac upstream.
+commit a96874a2a92feaef607ddd3137277a788cb927a6 upstream.
 
-On our system (ARM Cortex-M3 SOC running linux-2.6.33)
-frequent crashes were observed in the rt2800usb module
-because of the invalid length of the received packet (3392,
-46920...). This patch adds the sanity check on the packet
-legth. Also, changed WARNING to ERROR in rt2x00lib_rxdone()
-so that the bad packet condition would be noticed.
+With a previous patch to enable the EHCI/XHCI port switching, it switches
+all the available ports.
 
-The fix was tested on the latest compat-wireless-3.5.1-1-snpc.
+The assumption is not correct because the BIOS may expect some ports
+not switchable by the OS.
 
-Signed-off-by: Sergei Poselenov <sposelenov@emcraft.com>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+There are two more registers that contains the information of the switchable
+and non-switchable ports.
+
+This patch adds the checking code for the two register so that only the
+switchable ports are altered.
+
+This patch should be backported to kernels as old as 3.0, that contain
+commit ID 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
+EHCI/xHCI port switching."
+
+Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |   10 +++++++++-
- drivers/net/wireless/rt2x00/rt2x00dev.c |    2 +-
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/host/pci-quirks.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -667,8 +667,16 @@ static void rt2800usb_fill_rxdone(struct
- 	skb_pull(entry->skb, RXINFO_DESC_SIZE);
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -75,7 +75,9 @@
+ #define	NB_PIF0_PWRDOWN_1	0x01100013
  
- 	/*
--	 * FIXME: we need to check for rx_pkt_len validity
-+	 * Check for rx_pkt_len validity. Return if invalid, leaving
-+	 * rxdesc->size zeroed out by the upper level.
- 	 */
-+	if (unlikely(rx_pkt_len == 0 ||
-+			rx_pkt_len > entry->queue->data_size)) {
-+		ERROR(entry->queue->rt2x00dev,
-+			"Bad frame size %d, forcing to 0\n", rx_pkt_len);
-+		return;
-+	}
+ #define USB_INTEL_XUSB2PR      0xD0
++#define USB_INTEL_USB2PRM      0xD4
+ #define USB_INTEL_USB3_PSSEN   0xD8
++#define USB_INTEL_USB3PRM      0xDC
+ 
+ static struct amd_chipset_info {
+ 	struct pci_dev	*nb_dev;
+@@ -772,10 +774,18 @@ void usb_enable_xhci_ports(struct pci_de
+ 		return;
+ 	}
+ 
+-	ports_available = 0xffffffff;
++	/* Read USB3PRM, the USB 3.0 Port Routing Mask Register
++	 * Indicate the ports that can be changed from OS.
++	 */
++	pci_read_config_dword(xhci_pdev, USB_INTEL_USB3PRM,
++			&ports_available);
 +
- 	rxd = (__le32 *)(entry->skb->data + rx_pkt_len);
- 
- 	/*
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -629,7 +629,7 @@ void rt2x00lib_rxdone(struct queue_entry
++	dev_dbg(&xhci_pdev->dev, "Configurable ports to enable SuperSpeed: 0x%x\n",
++			ports_available);
++
+ 	/* Write USB3_PSSEN, the USB 3.0 Port SuperSpeed Enable
+-	 * Register, to turn on SuperSpeed terminations for all
+-	 * available ports.
++	 * Register, to turn on SuperSpeed terminations for the
++	 * switchable ports.
  	 */
- 	if (unlikely(rxdesc.size == 0 ||
- 		     rxdesc.size > entry->queue->data_size)) {
--		WARNING(rt2x00dev, "Wrong frame size %d max %d.\n",
-+		ERROR(rt2x00dev, "Wrong frame size %d max %d.\n",
- 			rxdesc.size, entry->queue->data_size);
- 		dev_kfree_skb(entry->skb);
- 		goto renew_skb;
+ 	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN,
+ 			cpu_to_le32(ports_available));
+@@ -785,7 +795,16 @@ void usb_enable_xhci_ports(struct pci_de
+ 	dev_dbg(&xhci_pdev->dev, "USB 3.0 ports that are now enabled "
+ 			"under xHCI: 0x%x\n", ports_available);
+ 
+-	ports_available = 0xffffffff;
++	/* Read XUSB2PRM, xHCI USB 2.0 Port Routing Mask Register
++	 * Indicate the USB 2.0 ports to be controlled by the xHCI host.
++	 */
++
++	pci_read_config_dword(xhci_pdev, USB_INTEL_USB2PRM,
++			&ports_available);
++
++	dev_dbg(&xhci_pdev->dev, "Configurable USB 2.0 ports to hand over to xCHI: 0x%x\n",
++			ports_available);
++
+ 	/* Write XUSB2PR, the xHC USB 2.0 Port Routing Register, to
+ 	 * switch the USB 2.0 power and data lines over to the xHCI
+ 	 * host.
 
 
