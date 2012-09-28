@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032213Ab2I1UYe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:24:34 -0400
+	id S1032258Ab2I1UYv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:24:51 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032200Ab2I1UY2 (ORCPT
+	with ESMTP id S1032232Ab2I1UYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:24:28 -0400
+	Fri, 28 Sep 2012 16:24:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: =?UTF-8?q?=5B=20056/218=5D=20USB=3A=20option=3A=20replace=20ZTE=20K5006-Z=20entry=20with=20vendor=20class=20rule?=
-Date: Fri, 28 Sep 2012 13:14:33 -0700
-Message-Id: <20120928201507.964003713@linuxfoundation.org>
+        Lin Ming <ming.m.lin@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 060/218] ACPI / PM: Fix resource_lock dead lock in acpi_power_on_device
+Date: Fri, 28 Sep 2012 13:14:37 -0700
+Message-Id: <20120928201508.432355899@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,78 +27,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Lin Ming <ming.m.lin@intel.com>
 
-commit ba9edaa468869a8cea242a411066b0f490751798 upstream.
+commit 40bf66ec9791f1452b90b82aadc3b6e6aee201f5 upstream.
 
-Fix the ZTE K5006-Z entry so that it actually matches anything
+Commit 0090def("ACPI: Add interface to register/unregister device
+to/from power resources") used resource_lock to protect the devices list
+that relies on power resource. It caused a mutex dead lock, as below
 
-  commit f1b5c997 USB: option: add ZTE K5006-Z
+    acpi_power_on ---> lock resource_lock
+      __acpi_power_on
+        acpi_power_on_device
+          acpi_power_get_inferred_state
+            acpi_power_get_list_state ---> lock resource_lock
 
-added a device specific entry assuming that the device would use
-class/subclass/proto == ff/ff/ff like other ZTE devices. It
-turns out that ZTE has started using vendor specific subclass
-and protocol codes:
+This patch adds a new mutex "devices_lock" to protect the devices list
+and calls acpi_power_on_device in acpi_power_on, instead of
+__acpi_power_on, after the resource_lock is released.
 
-T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#=  4 Spd=480  MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=19d2 ProdID=1018 Rev= 0.00
-S:  Manufacturer=ZTE,Incorporated
-S:  Product=ZTE LTE Technologies MSM
-S:  SerialNumber=MF821Vxxxxxxx
-C:* #Ifs= 5 Cfg#= 1 Atr=c0 MxPwr=500mA
-I:* If#= 0 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=86 Prot=10 Driver=(none)
-E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=02 Prot=05 Driver=(none)
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 2 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=(none)
-E:  Ad=83(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 3 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=06 Prot=00 Driver=qmi_wwan
-E:  Ad=85(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 4 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=87(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+[rjw: Changed data type of a boolean variable to bool.]
 
-We do not have any information on how ZTE intend to use these
-codes, but let us assume for now that the 3 sets matching
-serial functions in the K5006-Z always will identify a serial
-function in a ZTE device.
-
-Cc: Thomas Schäfer <tschaefer@t-online.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/acpi/power.c |   34 +++++++++++++++++++++++-----------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -886,8 +886,6 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1018, 0xff, 0xff, 0xff),
--	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1057, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1058, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1059, 0xff, 0xff, 0xff) },
-@@ -1092,6 +1090,10 @@ static const struct usb_device_id option
- 	 .driver_info = (kernel_ulong_t)&zte_ad3812_z_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2716, 0xff, 0xff, 0xff),
- 	 .driver_info = (kernel_ulong_t)&zte_mc2716_z_blacklist },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
+--- a/drivers/acpi/power.c
++++ b/drivers/acpi/power.c
+@@ -103,6 +103,7 @@ struct acpi_power_resource {
+ 
+ 	/* List of devices relying on this power resource */
+ 	struct acpi_power_resource_device *devices;
++	struct mutex devices_lock;
+ };
+ 
+ static struct list_head acpi_power_resource_list;
+@@ -221,7 +222,6 @@ static void acpi_power_on_device(struct
+ 
+ static int __acpi_power_on(struct acpi_power_resource *resource)
+ {
+-	struct acpi_power_resource_device *device_list = resource->devices;
+ 	acpi_status status = AE_OK;
+ 
+ 	status = acpi_evaluate_object(resource->device->handle, "_ON", NULL, NULL);
+@@ -234,19 +234,15 @@ static int __acpi_power_on(struct acpi_p
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Power resource [%s] turned on\n",
+ 			  resource->name));
+ 
+-	while (device_list) {
+-		acpi_power_on_device(device_list->device);
+-
+-		device_list = device_list->next;
+-	}
+-
+ 	return 0;
+ }
+ 
+ static int acpi_power_on(acpi_handle handle)
+ {
+ 	int result = 0;
++	bool resume_device = false;
+ 	struct acpi_power_resource *resource = NULL;
++	struct acpi_power_resource_device *device_list;
+ 
+ 	result = acpi_power_get_context(handle, &resource);
+ 	if (result)
+@@ -262,10 +258,25 @@ static int acpi_power_on(acpi_handle han
+ 		result = __acpi_power_on(resource);
+ 		if (result)
+ 			resource->ref_count--;
++		else
++			resume_device = true;
+ 	}
+ 
+ 	mutex_unlock(&resource->resource_lock);
+ 
++	if (!resume_device)
++		return result;
 +
- 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
- 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
- 	{ USB_DEVICE(ALINK_VENDOR_ID, DLINK_PRODUCT_DWM_652_U5) }, /* Yes, ALINK_VENDOR_ID */
++	mutex_lock(&resource->devices_lock);
++
++	device_list = resource->devices;
++	while (device_list) {
++		acpi_power_on_device(device_list->device);
++		device_list = device_list->next;
++	}
++
++	mutex_unlock(&resource->devices_lock);
++
+ 	return result;
+ }
+ 
+@@ -351,7 +362,7 @@ static void __acpi_power_resource_unregi
+ 	if (acpi_power_get_context(res_handle, &resource))
+ 		return;
+ 
+-	mutex_lock(&resource->resource_lock);
++	mutex_lock(&resource->devices_lock);
+ 	prev = NULL;
+ 	curr = resource->devices;
+ 	while (curr) {
+@@ -368,7 +379,7 @@ static void __acpi_power_resource_unregi
+ 		prev = curr;
+ 		curr = curr->next;
+ 	}
+-	mutex_unlock(&resource->resource_lock);
++	mutex_unlock(&resource->devices_lock);
+ }
+ 
+ /* Unlink dev from all power resources in _PR0 */
+@@ -409,10 +420,10 @@ static int __acpi_power_resource_registe
+ 
+ 	power_resource_device->device = powered_device;
+ 
+-	mutex_lock(&resource->resource_lock);
++	mutex_lock(&resource->devices_lock);
+ 	power_resource_device->next = resource->devices;
+ 	resource->devices = power_resource_device;
+-	mutex_unlock(&resource->resource_lock);
++	mutex_unlock(&resource->devices_lock);
+ 
+ 	return 0;
+ }
+@@ -715,6 +726,7 @@ static int acpi_power_add(struct acpi_de
+ 
+ 	resource->device = device;
+ 	mutex_init(&resource->resource_lock);
++	mutex_init(&resource->devices_lock);
+ 	strcpy(resource->name, device->pnp.bus_id);
+ 	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
+ 	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
 
 
