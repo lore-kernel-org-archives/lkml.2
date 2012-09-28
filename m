@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422874Ab2I1VZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:25:59 -0400
+	id S1033203Ab2I1V01 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:26:27 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964842Ab2I1U30 (ORCPT
+	with ESMTP id S1422741Ab2I1U3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:29:26 -0400
+	Fri, 28 Sep 2012 16:29:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 146/218] drm/radeon: avoid turning off spread spectrum for used pll
-Date: Fri, 28 Sep 2012 13:16:03 -0700
-Message-Id: <20120928201518.259999277@linuxfoundation.org>
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 143/218] PM / Runtime: Clear power.deferred_resume on success in rpm_suspend()
+Date: Fri, 28 Sep 2012 13:16:00 -0700
+Message-Id: <20120928201517.886219050@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,85 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 5efcc76c13a745f98e7b6604d6aca49761be1970 upstream.
+commit 58a34de7b1a920d287d17d2ca08bc9aaf7e6d35b upstream.
 
-If spread spectrum is enabled and in use for a given pll we
-should not turn it off as it will lead to turning off display
-for crtc that use the pll (this behavior was observed on chelsea
-edp).
+The power.deferred_resume can only be set if the runtime PM status
+of device is RPM_SUSPENDING and it should be cleared after its
+status has been changed, regardless of whether or not the runtime
+suspend has been successful.  However, it only is cleared on
+suspend failure, while it may remain set on successful suspend and
+is happily leaked to rpm_resume() executed in that case.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+That shouldn't happen, so if power.deferred_resume is set in
+rpm_suspend() after the status has been changed to RPM_SUSPENDED,
+clear it before calling rpm_resume().  Then, it doesn't need to be
+cleared before changing the status to RPM_SUSPENDING any more,
+because it's always cleared after the status has been changed to
+either RPM_SUSPENDED (on success) or RPM_ACTIVE (on failure).
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ drivers/base/power/runtime.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -444,11 +444,28 @@ union atom_enable_ss {
- static void atombios_crtc_program_ss(struct radeon_device *rdev,
- 				     int enable,
- 				     int pll_id,
-+				     int crtc_id,
- 				     struct radeon_atom_ss *ss)
- {
-+	unsigned i;
- 	int index = GetIndexIntoMasterTable(COMMAND, EnableSpreadSpectrumOnPPLL);
- 	union atom_enable_ss args;
- 
-+	if (!enable) {
-+		for (i = 0; i < 6; i++) {
-+			if (rdev->mode_info.crtcs[i] &&
-+			    rdev->mode_info.crtcs[i]->enabled &&
-+			    i != crtc_id &&
-+			    pll_id == rdev->mode_info.crtcs[i]->pll_id) {
-+				/* one other crtc is using this pll don't turn
-+				 * off spread spectrum as it might turn off
-+				 * display on active crtc
-+				 */
-+				return;
-+			}
-+		}
-+	}
-+
- 	memset(&args, 0, sizeof(args));
- 
- 	if (ASIC_IS_DCE5(rdev)) {
-@@ -1039,7 +1056,7 @@ static void atombios_crtc_set_pll(struct
- 		radeon_compute_pll_legacy(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
- 					  &ref_div, &post_div);
- 
--	atombios_crtc_program_ss(rdev, ATOM_DISABLE, radeon_crtc->pll_id, &ss);
-+	atombios_crtc_program_ss(rdev, ATOM_DISABLE, radeon_crtc->pll_id, radeon_crtc->crtc_id, &ss);
- 
- 	atombios_crtc_program_pll(crtc, radeon_crtc->crtc_id, radeon_crtc->pll_id,
- 				  encoder_mode, radeon_encoder->encoder_id, mode->clock,
-@@ -1062,7 +1079,7 @@ static void atombios_crtc_set_pll(struct
- 			ss.step = step_size;
- 		}
- 
--		atombios_crtc_program_ss(rdev, ATOM_ENABLE, radeon_crtc->pll_id, &ss);
-+		atombios_crtc_program_ss(rdev, ATOM_ENABLE, radeon_crtc->pll_id, radeon_crtc->crtc_id, &ss);
- 	}
- }
- 
-@@ -1571,11 +1588,11 @@ void radeon_atom_disp_eng_pll_init(struc
- 								   ASIC_INTERNAL_SS_ON_DCPLL,
- 								   rdev->clock.default_dispclk);
- 		if (ss_enabled)
--			atombios_crtc_program_ss(rdev, ATOM_DISABLE, ATOM_DCPLL, &ss);
-+			atombios_crtc_program_ss(rdev, ATOM_DISABLE, ATOM_DCPLL, -1, &ss);
- 		/* XXX: DCE5, make sure voltage, dispclk is high enough */
- 		atombios_crtc_set_disp_eng_pll(rdev, rdev->clock.default_dispclk);
- 		if (ss_enabled)
--			atombios_crtc_program_ss(rdev, ATOM_ENABLE, ATOM_DCPLL, &ss);
-+			atombios_crtc_program_ss(rdev, ATOM_ENABLE, ATOM_DCPLL, -1, &ss);
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -430,7 +430,6 @@ static int rpm_suspend(struct device *de
+ 		goto repeat;
  	}
  
- }
+-	dev->power.deferred_resume = false;
+ 	if (dev->power.no_callbacks)
+ 		goto no_callback;	/* Assume success. */
+ 
+@@ -506,6 +505,7 @@ static int rpm_suspend(struct device *de
+ 	wake_up_all(&dev->power.wait_queue);
+ 
+ 	if (dev->power.deferred_resume) {
++		dev->power.deferred_resume = false;
+ 		rpm_resume(dev, 0);
+ 		retval = -EAGAIN;
+ 		goto out;
 
 
