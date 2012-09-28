@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758331Ab2I1O4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:56:31 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60783 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757416Ab2I1O4a convert rfc822-to-8bit (ORCPT
+	id S1758347Ab2I1O5G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:57:06 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:38540 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758306Ab2I1O5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:56:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <5065B909.1060907@cs.tu-berlin.de>
-References: <5064790E.4000207@cs.tu-berlin.de> <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de>
- <CAPXgP11SN7cx7NW0Jv46g+KAvFPo61Ptczochzy4Ub83bjHn1Q@mail.gmail.com> <5065B909.1060907@cs.tu-berlin.de>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 28 Sep 2012 16:56:08 +0200
-Message-ID: <CAPXgP12v0aNtUnhKep3QiJwZYAp=NHebHVfS9N35V2EOSmAufg@mail.gmail.com>
-Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
-To: =?UTF-8?Q?Jan_H=2E_Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 Sep 2012 10:57:04 -0400
+Date: Fri, 28 Sep 2012 16:57:03 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 18/31] perf, core: Add a concept of a weightened sample
+Message-ID: <20120928145703.GR16230@one.firstfloor.org>
+References: <1348806696-31170-1-git-send-email-andi@firstfloor.org> <1348806696-31170-19-git-send-email-andi@firstfloor.org> <CABPqkBQPVbobTgaV97E0qvOcfWnK8jMmoyp6NEuMn2+WHZ97HQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQPVbobTgaV97E0qvOcfWnK8jMmoyp6NEuMn2+WHZ97HQ@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 4:49 PM, "Jan H. Schönherr"
-<schnhrr@cs.tu-berlin.de> wrote:
-> Am 28.09.2012 16:34, schrieb Kay Sievers:
->> On Fri, Sep 28, 2012 at 10:25 AM, Jan H. Schönherr
+> I came to the conclusion that yes we need something like a weight or cost
+> as a generic way of reporting that in some modes the period is not really
+> the right measure to evaluate the "cost" of an event.
 
->> The current behaviour has the advantage, that non-cont users will not
->> race against a cont user (which is like 99.x% of the races I expect).
->> The cont buffer is currently only used when we expect a cont user,
->> non-cont users happening in the middle of a cont-print will not flush
->> the and disturb the cont buffer.
->
-> That should be fixable by using a second set of flags, owner, and so on
-> within vprintk... I still think, that getting rid of of remotely tracking
-> the flags is worth something.
+I'm not fully sure if you're for or against it. I think
+the patch is mostly orthogonal to what you're proposing
 
-Sure, sounds fine in theory.
+My main target is the TSX abort cost, the memory latencies 
+I just added as a bonus.
 
-> (Ideally, we should also be able to correctly reassemble multiple
-> simultaneous cont users. But that it still a bit out of scope I think.)
+> 
+> I was testing my PEBS Load Latency patch this week, I came to that
+> conclusion. The way perf report sorts samples based on aggregated
+> periods per IP does not work for PEBS Load Latency (and possibly other
+> modes). The sorting needs to be based on some cost that may be distinct
+> from the period. By default, it would be the period, but for PEBS LL that
+> would be the latency of the load at a specific IP. That would more reflect
+> was is going on.
 
-Yeah, that's messy, and not really worth it, I guess. We enter per-cpu
-data and in_interrupt() territory with that, which is not really worth
-the complexity for cont printing. The one separated cont buffer works
-pretty well already.
 
-> Given that I'm able to fix the racing case, would you be in favor of
-> this approach, or should we stick to the earlier version?
+I originally folded the weight into nr_events, but in the end it turned
+out it's fairly useful to expose both explicitely as sort keys.
 
-I'm open to everything that makes sense. Let's see how it looks and we
-can decide when we have something that passes the tests.
+In some cases you want the average weight, in others the total weight
+(SUM(weight) * nr_events). I haven't tried to mess with the period
+so far.
 
-Thanks,
-Kay
+-Andi
