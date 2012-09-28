@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031447Ab2I1Uk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:40:58 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39326 "EHLO
+	id S1759579Ab2I1UlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:41:10 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55696 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759465Ab2I1Ukd (ORCPT
+	by vger.kernel.org with ESMTP id S1031442Ab2I1Uk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:33 -0400
-X-Sasl-enc: Mfaq71Dky5MsY/hGwdCx7WYBZww3KCB0NT815+fuXPvo 1348864825
+	Fri, 28 Sep 2012 16:40:57 -0400
+X-Sasl-enc: QNE/7LesDwRcqAWSZETmuGlrU9rF5Lm2aSjc1N27yVhf 1348864856
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Cong Wang <amwang@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 008/127] ipv6: addrconf: Avoid calling netdevice notifiers with RCU read-side lock
-Date: Fri, 28 Sep 2012 13:33:01 -0700
-Message-Id: <20120928203046.774851646@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 030/127] target: Fix ->data_length re-assignment bug with SCSI overflow
+Date: Fri, 28 Sep 2012 13:33:23 -0700
+Message-Id: <20120928203049.364428798@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,73 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+commit 4c054ba63ad47ef244cfcfa1cea38134620a5bae upstream.
 
-[ Upstream commit 4acd4945cd1e1f92b20d14e349c6c6a52acbd42d ]
+This patch fixes a long-standing bug with SCSI overflow handling
+where se_cmd->data_length was incorrectly being re-assigned to
+the larger CDB extracted allocation length, resulting in a number
+of fabric level errors that would end up causing a session reset
+in most cases.  So instead now:
 
-Cong Wang reports that lockdep detected suspicious RCU usage while
-enabling IPV6 forwarding:
+ - Only re-assign se_cmd->data_length durining UNDERFLOW (to use the
+   smaller value)
+ - Use existing se_cmd->data_length for OVERFLOW (to use the smaller
+   value)
 
- [ 1123.310275] ===============================
- [ 1123.442202] [ INFO: suspicious RCU usage. ]
- [ 1123.558207] 3.6.0-rc1+ #109 Not tainted
- [ 1123.665204] -------------------------------
- [ 1123.768254] include/linux/rcupdate.h:430 Illegal context switch in RCU read-side critical section!
- [ 1123.992320]
- [ 1123.992320] other info that might help us debug this:
- [ 1123.992320]
- [ 1124.307382]
- [ 1124.307382] rcu_scheduler_active = 1, debug_locks = 0
- [ 1124.522220] 2 locks held by sysctl/5710:
- [ 1124.648364]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81768498>] rtnl_trylock+0x15/0x17
- [ 1124.882211]  #1:  (rcu_read_lock){.+.+.+}, at: [<ffffffff81871df8>] rcu_lock_acquire+0x0/0x29
- [ 1125.085209]
- [ 1125.085209] stack backtrace:
- [ 1125.332213] Pid: 5710, comm: sysctl Not tainted 3.6.0-rc1+ #109
- [ 1125.441291] Call Trace:
- [ 1125.545281]  [<ffffffff8109d915>] lockdep_rcu_suspicious+0x109/0x112
- [ 1125.667212]  [<ffffffff8107c240>] rcu_preempt_sleep_check+0x45/0x47
- [ 1125.781838]  [<ffffffff8107c260>] __might_sleep+0x1e/0x19b
-[...]
- [ 1127.445223]  [<ffffffff81757ac5>] call_netdevice_notifiers+0x4a/0x4f
-[...]
- [ 1127.772188]  [<ffffffff8175e125>] dev_disable_lro+0x32/0x6b
- [ 1127.885174]  [<ffffffff81872d26>] dev_forward_change+0x30/0xcb
- [ 1128.013214]  [<ffffffff818738c4>] addrconf_forward_change+0x85/0xc5
-[...]
+This fix has been tested with the following CDB to generate an
+SCSI overflow:
 
-addrconf_forward_change() uses RCU iteration over the netdev list,
-which is unnecessary since it already holds the RTNL lock.  We also
-cannot reasonably require netdevice notifier functions not to sleep.
+  sg_raw -r512 /dev/sdc 28 0 0 0 0 0 0 0 9 0
 
-Reported-by: Cong Wang <amwang@redhat.com>
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Tested using iscsi-target, tcm_qla2xxx, loopback and tcm_vhost fabric
+ports.  Here is a bit more detail on each case:
+
+ - iscsi-target: Bug with open-iscsi with overflow, sg_raw returns
+                 -3584 bytes of data.
+ - tcm_qla2xxx: Working as expected, returnins 512 bytes of data
+ - loopback: sg_raw returns CHECK_CONDITION, from overflow rejection
+             in transport_generic_map_mem_to_cmd()
+ - tcm_vhost: Same as loopback
+
+Reported-by: Roland Dreier <roland@purestorage.com>
+Cc: Roland Dreier <roland@purestorage.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/addrconf.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -492,8 +492,7 @@ static void addrconf_forward_change(stru
- 	struct net_device *dev;
- 	struct inet6_dev *idev;
- 
--	rcu_read_lock();
--	for_each_netdev_rcu(net, dev) {
-+	for_each_netdev(net, dev) {
- 		idev = __in6_dev_get(dev);
- 		if (idev) {
- 			int changed = (!idev->cnf.forwarding) ^ (!newf);
-@@ -502,7 +501,6 @@ static void addrconf_forward_change(stru
- 				dev_forward_change(idev);
+---
+ drivers/target/target_core_transport.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -3672,15 +3672,20 @@ static int transport_generic_cmd_sequenc
+ 			/* Returns CHECK_CONDITION + INVALID_CDB_FIELD */
+ 			goto out_invalid_cdb_field;
  		}
+-
++		/*
++		 * For the overflow case keep the existing fabric provided
++		 * ->data_length.  Otherwise for the underflow case, reset
++		 * ->data_length to the smaller SCSI expected data transfer
++		 * length.
++		 */
+ 		if (size > cmd->data_length) {
+ 			cmd->se_cmd_flags |= SCF_OVERFLOW_BIT;
+ 			cmd->residual_count = (size - cmd->data_length);
+ 		} else {
+ 			cmd->se_cmd_flags |= SCF_UNDERFLOW_BIT;
+ 			cmd->residual_count = (cmd->data_length - size);
++			cmd->data_length = size;
+ 		}
+-		cmd->data_length = size;
  	}
--	rcu_read_unlock();
- }
  
- static int addrconf_fixup_forwarding(struct ctl_table *table, int *p, int old)
+ 	transport_set_supported_SAM_opcode(cmd);
 
 
