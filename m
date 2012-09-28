@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab2I1CUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 22:20:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42182 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756000Ab2I1CUB convert rfc822-to-8bit (ORCPT
+	id S1756608Ab2I1CUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 22:20:22 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42914 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab2I1CUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 22:20:01 -0400
-Subject: Re: [REGRESSION] nfsd crashing with 3.6.0-rc7 on PowerPC
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=US-ASCII
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com>
-Date: Fri, 28 Sep 2012 04:19:55 +0200
-Cc: LKML List <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-nfs@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        skinsbursky@parallels.com, bfields@redhat.com
-Content-Transfer-Encoding: 7BIT
-Message-Id: <DC545CD9-8745-47DD-B13B-3385C0EB5B27@suse.de>
-References: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de> <CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-X-Mailer: Apple Mail (2.1278)
+	Thu, 27 Sep 2012 22:20:18 -0400
+From: GeneralTouch <aroundight77@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>, yxhma <yxhma@163.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xianhan Yu <aroundight77@gmail.com>
+Subject: [PATCH 1/1] hid:Fix problem on GeneralTouch multi-touchscreen
+Date: Fri, 28 Sep 2012 10:18:59 +0800
+Message-Id: <1348798739-2950-1-git-send-email-aroundight77@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Xianhan Yu <aroundight77@gmail.com>
 
-On 28.09.2012, at 04:04, Linus Torvalds wrote:
+Fix the touch-up no response problem on GeneralTouch twofingers touchscreen and modify the driver for new GeneralTouch PWT touchscreen.
 
-> On Thu, Sep 27, 2012 at 6:55 PM, Alexander Graf <agraf@suse.de> wrote:
->> 
->> Below are OOPS excerpts from different rc's I tried. All of them crashed - all the way up to current Linus' master branch. I haven't cross-checked, but I don't remember any such behavior from pre-3.6 releases.
-> 
-> Since you seem to be able to reproduce it easily (and apparently
-> reliably), any chance you could just bisect it?
-> 
-> Since I assume v3.5 is fine, and apparently -rc1 is already busted, a simple
-> 
->   git bisect start
->   git bisect good v3.5
->   git bisect bad v3.6-rc1
-> 
-> will get you started on your adventure..
+Signed-off-by: Xianhan Yu <aroundight77@gmail.com>
+---
+ drivers/hid/hid-ids.h        |    1 +
+ drivers/hid/hid-multitouch.c |   20 ++++++++++++++++++--
+ 2 files changed, 19 insertions(+), 2 deletions(-)
 
-Heh, will give it a try :). The thing really does look quite bisectable.
-
-
-It might take a few hours though - the machine isn't exactly fast by today's standards and it's getting late here. But I'll keep you updated.
-
-Alex
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 1dcb76f..a6d5890 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -305,6 +305,7 @@
+ 
+ #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
+ #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
+ 
+ #define USB_VENDOR_ID_GLAB		0x06c2
+ #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 59c8b5c..7aece16 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -115,6 +115,8 @@ struct mt_device {
+ #define MT_CLS_EGALAX_SERIAL			0x0104
+ #define MT_CLS_TOPSEED				0x0105
+ #define MT_CLS_PANASONIC			0x0106
++#define MT_CLS_GENERALTOUCH_TWOFINGERS		0x0107
++#define MT_CLS_GENERALTOUCH_PWT_TENFINGERS	0x0108
+ 
+ #define MT_DEFAULT_MAXCONTACT	10
+ 
+@@ -215,7 +217,18 @@ static struct mt_class mt_classes[] = {
+ 	{ .name = MT_CLS_PANASONIC,
+ 		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
+ 		.maxcontacts = 4 },
+-
++	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
++		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
++			MT_QUIRK_VALID_IS_INRANGE |
++			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
++		.maxcontacts = 2
++	},
++	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
++			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
++		.maxcontacts = 10
++	},
++
+ 	{ }
+ };
+ 
+@@ -893,9 +906,12 @@ static const struct hid_device_id mt_devices[] = {
+ 			USB_DEVICE_ID_ELO_TS2515) },
+ 
+ 	/* GeneralTouch panel */
+-	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
++	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+ 			USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
+ 
+ 	/* Gametel game controller */
+ 	{ .driver_data = MT_CLS_DEFAULT,
+-- 
+1.7.9.5
 
