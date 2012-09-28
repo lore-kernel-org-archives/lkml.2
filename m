@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab2I1Oca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:32:30 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37258 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757673Ab2I1Oc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:32:29 -0400
-Message-ID: <5065B42F.5010007@parallels.com>
-Date: Fri, 28 Sep 2012 18:29:03 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1758185Ab2I1Oer (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:34:47 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60503 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757329Ab2I1Oeq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 10:34:46 -0400
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] make GFP_NOTRACK flag unconditional
-References: <1348826194-21781-1-git-send-email-glommer@parallels.com> <0000013a0d475174-343e3b17-6755-42c1-9dae-a9287ad7d403-000000@email.amazonses.com>
-In-Reply-To: <0000013a0d475174-343e3b17-6755-42c1-9dae-a9287ad7d403-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de>
+References: <5064790E.4000207@cs.tu-berlin.de> <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de>
+From: Kay Sievers <kay@vrfy.org>
+Date: Fri, 28 Sep 2012 16:34:24 +0200
+Message-ID: <CAPXgP11SN7cx7NW0Jv46g+KAvFPo61Ptczochzy4Ub83bjHn1Q@mail.gmail.com>
+Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
+To: =?UTF-8?Q?Jan_H=2E_Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 06:28 PM, Christoph Lameter wrote:
-> On Fri, 28 Sep 2012, Glauber Costa wrote:
-> 
->> There was a general sentiment in a recent discussion (See
->> https://lkml.org/lkml/2012/9/18/258) that the __GFP flags should be
->> defined unconditionally. Currently, the only offender is GFP_NOTRACK,
->> which is conditional to KMEMCHECK.
+On Fri, Sep 28, 2012 at 10:25 AM, Jan H. Schönherr
+<schnhrr@cs.tu-berlin.de> wrote:
+
+>> If really, really everything passes through vprintk_emit()
+>> then we could keep all info about the previous message
+>> there and definitely decide whether the current message continues
+>> the previous one.
 >>
->> This simple patch makes it unconditional.
-> 
-> __GFP_NOTRACK is only used in context where CONFIG_KMEMCHECK is defined?
-> 
-> If that is not the case then you need to define GFP_NOTRACK and substitute
-> it where necessary.
-> 
+>> Then, we wouldn't need to track the previous flags everywhere.
+>
+> Here is a patch that does just that.
+>
+> Seems to work. And it makes the code easier to understand.
+> A more detailed description is below.
 
-The flag is passed around extensively, but I was imagining the whole
-point of that is that having the flag itself is harmless, and will be
-ignored by the page allocator ?
+> -       if (!(lflags & LOG_NEWLINE)) {
+> -               /*
+> -                * Flush the conflicting buffer. An earlier newline was missing,
+> -                * or another task also prints continuation lines.
+> -                */
+> -               if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
+> -                       cont_flush(LOG_NEWLINE);
+> +       cont_add(facility, level, lflags, dict, dictlen, text, text_len);
 
+That fails the racing task test, and a cont user that was nicely
+merged before is now all in separate records.
 
+It seems, unconditionally using the cont buffer like in your patch,
+for all incoming messages just makes the entire cont merge buffer
+dance useless when it comes to races.
+
+The current behaviour has the advantage, that non-cont users will not
+race against a cont user (which is like 99.x% of the races I expect).
+The cont buffer is currently only used when we expect a cont user,
+non-cont users happening in the middle of a cont-print will not flush
+the and disturb the cont buffer.
+
+Thanks,
+Kay
