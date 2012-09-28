@@ -1,106 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154Ab2I1IKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 04:10:48 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:59576 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757092Ab2I1IKe (ORCPT
+	id S1757179Ab2I1ILJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 04:11:09 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:32851 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756974Ab2I1IKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 04:10:34 -0400
-X-AuditID: b753bd60-932c5ba0000047ca-bd-50655b77f0c2
-X-AuditID: b753bd60-932c5ba0000047ca-bd-50655b77f0c2
-Message-ID: <50655B8E.4060403@hitachi.com>
-Date: Fri, 28 Sep 2012 17:10:54 +0900
-From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 28 Sep 2012 04:10:55 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <alan@lxorguk.ukuu.org.uk>
+Cc: Arun Murthy <arun.murthy@stericsson.com>
+Subject: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
+Date: Fri, 28 Sep 2012 13:35:01 +0530
+Message-ID: <1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.4.3
+In-Reply-To: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
+References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        yrl.pp-manager.tt@hitachi.com, avi@redhat.com, mtosatti@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Subject: Re: Re: [RFC v2 PATCH 04/21] x86: Avoid RCU warnings on slave
- CPUs
-References: <20120906112718.13320.8231.stgit@kvmdev> <20120906112739.13320.53090.stgit@kvmdev> <20120920173419.GH2449@linux.vnet.ibm.com>
-In-Reply-To: <20120920173419.GH2449@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Adds Modem Access Framework, which allows for registering platform specific
+modem access mechanisms. The framework also exposes APIs for client drivers
+for getting and releasing access to modem, regardless of the underlying
+platform specific access mechanism.
 
-Thank you for your comments, and sorry for my late reply.
+Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+---
+ drivers/Kconfig                  |    2 +
+ drivers/Makefile                 |    1 +
+ drivers/modem_shm/Kconfig        |    9 ++
+ drivers/modem_shm/Makefile       |    1 +
+ drivers/modem_shm/modem_access.c |  161 ++++++++++++++++++++++++++++++++++++++
+ include/linux/modem_shm/modem.h  |   54 +++++++++++++
+ 6 files changed, 228 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/modem_shm/Kconfig
+ create mode 100644 drivers/modem_shm/Makefile
+ create mode 100644 drivers/modem_shm/modem_access.c
+ create mode 100644 include/linux/modem_shm/modem.h
 
-On 2012/09/21 2:34, Paul E. McKenney wrote:
-
-> On Thu, Sep 06, 2012 at 08:27:40PM +0900, Tomoki Sekiyama wrote:
->> Initialize rcu related variables to avoid warnings about RCU usage while
->> slave CPUs is running specified functions. Also notify RCU subsystem before
->> the slave CPU is entered into idle state.
-> 
-> Hello, Tomoki,
-> 
-> A few questions and comments interspersed below.
->> <snip>
->> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
->> index e8cfe377..45dfc1d 100644
->> --- a/arch/x86/kernel/smpboot.c
->> +++ b/arch/x86/kernel/smpboot.c
->> @@ -382,6 +382,8 @@ notrace static void __cpuinit start_slave_cpu(void *unused)
->>  		f = per_cpu(slave_cpu_func, cpu);
->>  		per_cpu(slave_cpu_func, cpu).func = NULL;
->>
->> +		rcu_note_context_switch(cpu);
->> +
-> 
-> Why not use rcu_idle_enter() and rcu_idle_exit()?  These would tell
-> RCU to ignore the slave CPU for the duration of its idle period.
-> The way you have it, if a slave CPU stayed idle for too long, you
-> would get RCU CPU stall warnings, and possibly system hangs as well. 
-
-That's true, rcu_idle_enter() and rcu_idle_exit() should be used when
-the slave cpu is idle. Thanks.
-
-> Or is this being called from some task that is not the idle task?
-> If so, you instead want the new rcu_user_enter() and rcu_user_exit()
-> that are hopefully on their way into 3.7.  Or maybe better, use a real
-> idle task, so that idle_task(smp_processor_id()) returns true and RCU
-> stops complaining.  ;-)
->
-> Note that CPUs that RCU believes to be idle are not permitted to contain
-> RCU read-side critical sections, which in turn means no entering the
-> scheduler, no sleeping, and so on.  There is an RCU_NONIDLE() macro
-> to tell RCU to pay attention to the CPU only for the duration of the
-> statement passed to RCU_NONIDLE, and there are also an _rcuidle variant
-> of the tracing statement to allow tracing from idle. 
-
-This was for KVM is called as `func', which contains RCU read-side critical
-sections, and rcu_virt_note_context_switch() (that is
-rcu_note_context_switch(cpu)) before entering guest.
-Maybe it should be replaced by rcu_user_enter() and rcu_user_exit() in the
-future.
-
->> --- a/kernel/rcutree.c
->> +++ b/kernel/rcutree.c
->> @@ -2589,6 +2589,9 @@ static int __cpuinit rcu_cpu_notify(struc tnotifier_block *self,
->>  	switch (action) {
->>  	case CPU_UP_PREPARE:
->>  	case CPU_UP_PREPARE_FROZEN:
->> +#ifdef CONFIG_SLAVE_CPU
->> +	case CPU_SLAVE_UP_PREPARE:
->> +#endif
-> 
-> Why do you need #ifdef here?  Why not define CPU_SLAVE_UP_PREPARE
-> unconditionally?  Then if CONFIG_SLAVE_CPU=n, rcu_cpu_notify() would
-> never be invoked with CPU_SLAVE_UP_PREPARE, so no problems. 
-
-Agreed. That will make the code simpler.
-
-Thank you again,
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index ece958d..dc7c14a 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -152,4 +152,6 @@ source "drivers/vme/Kconfig"
+ 
+ source "drivers/pwm/Kconfig"
+ 
++source "drivers/modem_shm/Kconfig"
++
+ endmenu
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 5b42184..902dfec 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -139,3 +139,4 @@ obj-$(CONFIG_EXTCON)		+= extcon/
+ obj-$(CONFIG_MEMORY)		+= memory/
+ obj-$(CONFIG_IIO)		+= iio/
+ obj-$(CONFIG_VME_BUS)		+= vme/
++obj-$(CONFIG_MODEM_SHM)		+= modem_shm/
+diff --git a/drivers/modem_shm/Kconfig b/drivers/modem_shm/Kconfig
+new file mode 100644
+index 0000000..f4b7e54
+--- /dev/null
++++ b/drivers/modem_shm/Kconfig
+@@ -0,0 +1,9 @@
++config MODEM_SHM
++        bool "Modem Access Framework"
++        default n
++        help
++         Add support for Modem Access Framework. It allows different
++	 platform specific drivers to register modem access mechanisms
++	 and allows transparent access to modem to the client drivers.
++
++	 If unsure, say N.
+diff --git a/drivers/modem_shm/Makefile b/drivers/modem_shm/Makefile
+new file mode 100644
+index 0000000..b77bcc0
+--- /dev/null
++++ b/drivers/modem_shm/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_MODEM_SHM)		:= modem_access.o
+diff --git a/drivers/modem_shm/modem_access.c b/drivers/modem_shm/modem_access.c
+new file mode 100644
+index 0000000..540234d
+--- /dev/null
++++ b/drivers/modem_shm/modem_access.c
+@@ -0,0 +1,161 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2011
++ *
++ * License Terms: GNU General Public License v2
++ * Author: Kumar Sanghvi
++ *	Arun Murthy <arun.murthy@stericsson.com>
++ *
++ * Heavily adapted from Regulator framework.
++ * Provides mechanisms for registering platform specific access
++ * mechanisms for modem.
++ * Also, exposes APIs for gettng/releasing the access and even
++ * query the access status, and the modem usage status.
++ */
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/printk.h>
++#include <linux/modem_shm/modem.h>
++
++static struct class *modem_class;
++
++static int __modem_is_requested(struct device *dev, void *data)
++{
++	struct modem_desc *mdesc = (struct modem_desc *)data;
++
++	if (!mdesc->mclients) {
++		printk(KERN_ERR "modem_access: modem description is NULL\n");
++		return 0;
++	}
++	return atomic_read(&mdesc->mclients->cnt);
++}
++
++int modem_is_requested(struct modem_desc *mdesc)
++{
++	return class_for_each_device(modem_class, NULL, (void *)mdesc, __modem_is_requested);
++}
++
++int modem_release(struct modem_desc *mdesc)
++{
++	if (!mdesc->release)
++		return -EFAULT;
++
++	if (modem_is_requested(mdesc)) {
++		atomic_dec(&mdesc->mclients->cnt);
++		if (atomic_read(&mdesc->use_cnt) == 1) {
++			mdesc->release(mdesc);
++			atomic_dec(&mdesc->use_cnt);
++		}
++	} else
++		printk(KERN_WARNING
++			"modem_shm: client %s has not requested modem to release\n",
++			mdesc->mclients->name);
++	return 0;
++}
++
++int modem_request(struct modem_desc *mdesc)
++{
++	if (!mdesc->request)
++		return -EFAULT;
++
++	if (atomic_read(&mdesc->mclients->cnt) == 0) {
++		mdesc->request(mdesc);
++		atomic_inc(&mdesc->mclients->cnt);
++		atomic_inc(&mdesc->use_cnt);
++		if (atomic_read(&mdesc->use_cnt) > mdesc->no_clients) {
++			dev_warn(mdesc->dev,
++					"modem_shm: mismatch in the modem count\n");
++		}
++	} else
++		dev_warn(mdesc->dev,
++				"modem_shm: client '%s' has already requested modem\n",
++				dev_name(mdesc->mclients->dev));
++	return 0;
++}
++
++int modem_put(struct modem_desc *mdesc)
++{
++	if (atomic_read(&mdesc->cli_cnt)) {
++		atomic_dec(&mdesc->cli_cnt);
++		kfree(mdesc->mclients);
++		return 0;
++	} else {
++		dev_err(mdesc->dev, "mismatch in the no of clients\n");
++		return -EFAULT;
++	}
++}
++
++static int modem_match_device_by_name(struct device *dev, void *data)
++{
++	const char *name = data;
++	struct modem_desc *mdesc = dev_get_drvdata(dev);
++
++	return strcmp(mdesc->name, name) == 0;
++}
++
++struct modem_desc *modem_get(struct device *pdev, const char *name)
++{
++	struct clients *mcli;
++	struct modem_desc *mdesc = NULL;
++	struct device *dev = class_find_device(modem_class, NULL, (void *)name,
++			modem_match_device_by_name);
++	mdesc = dev ? dev_get_drvdata(dev): NULL;
++	if (mdesc) {
++		if (atomic_read(&mdesc->cli_cnt) >= mdesc->no_clients) {
++			dev_err(pdev, "already %d clients have requested\n",
++					mdesc->no_clients);
++			return NULL;
++		}
++		mcli = kzalloc(sizeof(struct clients), GFP_KERNEL);
++		if (!mcli) {
++			dev_err(pdev, "uanable to allocate memory\n");
++			return NULL;
++		}
++		mdesc->mclients = mcli;
++		mdesc->mclients->dev = pdev;
++		atomic_inc(&mdesc->cli_cnt);
++		atomic_set(&mdesc->mclients->cnt, 0);
++	}
++	return mdesc;
++}
++
++int modem_register(struct device *parent, struct modem_desc *mdesc)
++{
++	mdesc->dev = device_create(modem_class, parent, 0, mdesc, "%s", mdesc->name);
++	if (IS_ERR(mdesc->dev)) {
++		dev_err(parent, "failed to create device\n");
++		return PTR_ERR(mdesc->dev);
++	}
++
++	atomic_set(&mdesc->use_cnt, 0);
++	atomic_set(&mdesc->cli_cnt, 0);
++	return 0;
++}
++
++int modem_unregister(struct modem_desc *mdesc)
++{
++	device_unregister(mdesc->dev);
++	return 0;
++}
++
++static int modem_init(void)
++{
++	modem_class = class_create(THIS_MODULE, "modem_access");
++	if (IS_ERR(modem_class)) {
++		printk(KERN_ERR "modem_access: unable to create class\n");
++		return PTR_ERR(modem_class);
++	}
++
++	if (modem_class == NULL || IS_ERR(modem_class))
++		printk(KERN_ERR "modem_access: MODEM ERR0R");
++
++	return 0;
++}
++
++static void modem_exit(void)
++{
++	class_destroy(modem_class);
++}
++
++arch_initcall(modem_init);
++module_exit(modem_exit);
+diff --git a/include/linux/modem_shm/modem.h b/include/linux/modem_shm/modem.h
+new file mode 100644
+index 0000000..0addf48
+--- /dev/null
++++ b/include/linux/modem_shm/modem.h
+@@ -0,0 +1,54 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2011
++ *
++ * License Terms: GNU General Public License v2
++ * Author: Kumar Sanghvi
++ *	Arun Murthy <arun.murthy@stericsson.com>
++ *
++ * Heavily adapted from Regulator framework
++ */
++#ifndef __MODEM_H__
++#define __MODEM_H__
++
++#include <linux/device.h>
++
++struct clients {
++	struct device *dev;
++	const char *name;
++	atomic_t cnt;
++};
++
++struct modem_desc {
++	int (*request)(struct modem_desc *);
++	void (*release)(struct modem_desc *);
++	int (*is_requested)(struct modem_desc *);
++	struct clients *mclients;
++	struct device *dev;
++	char *name;
++	u8 no_clients;
++	atomic_t use_cnt;
++	atomic_t cli_cnt;
++};
++
++#ifdef CONFIG_MODEM_SHM
++int modem_register(struct device *parent, struct modem_desc *mdesc);
++int modem_unregister(struct modem_desc *mdesc);
++struct modem_desc *modem_get(struct device *dev, const char *name);
++int modem_put(struct modem_desc *mdesc);
++int modem_release(struct modem_desc *mdesc);
++int modem_is_requested(struct modem_desc *mdesc);
++int modem_request(struct modem_desc *mdesc);
++
++
++#else
++int modem_register(struct device *parent, struct modem_desc *mdesc)
++{
++	return NULL;
++}
++
++static inline int modem_unregister(struct modem_desc *mdesc)
++{
++	return NULL;
++}
++#endif
++#endif /* __MODEM_H__ */
 -- 
-Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
+1.7.4.3
 
