@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031336Ab2I1Tcu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:32:50 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33429 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030925Ab2I1TcW (ORCPT
+	id S932351Ab2I1TdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:33:12 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965459Ab2I1TBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:32:22 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [RFC PATCH 2/2] kbuild: introduce cmd_dtc_cpp
-Date: Fri, 28 Sep 2012 13:32:11 -0600
-Message-Id: <1348860731-20868-3-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1348860731-20868-1-git-send-email-swarren@wwwdotorg.org>
-References: <1348860731-20868-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Fri, 28 Sep 2012 15:01:19 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Marius Tolzmann <tolzmann@molgen.mpg.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 150/262] NFS: Fix a problem with the legacy binary mount code
+Date: Fri, 28 Sep 2012 11:51:19 -0700
+Message-Id: <20120928183015.753427960@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
+References: <20120928182957.993484211@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-cmd_dtc_cpp runs the C pre-processor on the input .dts file before
-passing it to dtc for final compilation. This allows used of #define
-within the .dts file.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-Introduce a new rule for %.dtsp -> %.dtb, which uses cmd_dtc_cpp. A new
-file extension is introduced for this purpose, since use of the pre-
-processor must be optional; any property or node name that starts with
-"#" must be escaped to prevent the pre-processor attempting to interpret
-it as a directive. For this reason, skeleton.dtsi-cpp is introduced for
-*.dts-cpp to include.
+------------------
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 872ece86ea5c367aa92f44689c2d01a1c767aeb3 upstream.
+
+Apparently, am-utils is still using the legacy binary mountdata interface,
+and is having trouble parsing /proc/mounts due to the 'port=' field being
+incorrectly set.
+
+The following patch should fix up the regression.
+
+Reported-by: Marius Tolzmann <tolzmann@molgen.mpg.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/arm/boot/dts/skeleton.dtsip |   13 +++++++++++++
- scripts/Makefile.lib             |    6 ++++++
- 2 files changed, 19 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/skeleton.dtsip
+ fs/nfs/super.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/boot/dts/skeleton.dtsip b/arch/arm/boot/dts/skeleton.dtsip
-new file mode 100644
-index 0000000..8bf6729
---- /dev/null
-+++ b/arch/arm/boot/dts/skeleton.dtsip
-@@ -0,0 +1,13 @@
-+/*
-+ * Skeleton device tree; the bare minimum needed to boot; just include and
-+ * add a compatible value.  The bootloader will typically populate the memory
-+ * node.
-+ */
-+
-+/ {
-+	\#address-cells = <1>;
-+	\#size-cells = <1>;
-+	chosen { };
-+	aliases { };
-+	memory { device_type = "memory"; reg = <0 0>; };
-+};
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 425578e..9dd81c0 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -269,6 +269,12 @@ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile
- $(obj)/%.dtb: $(src)/dts/%.dts FORCE
- 	$(call if_changed_dep,dtc)
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -1918,6 +1918,7 @@ static int nfs23_validate_mount_data(voi
  
-+quiet_cmd_dtc_cpp = DTC+CPP $@
-+cmd_dtc_cpp = $(CC) -E -Wp,-MD,$(depfile) -xc $< | $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -
-+
-+$(obj)/%.dtb: $(src)/dts/%.dtsp FORCE
-+	$(call if_changed_dep,dtc_cpp)
-+
- # Bzip2
- # ---------------------------------------------------------------------------
+ 		memcpy(sap, &data->addr, sizeof(data->addr));
+ 		args->nfs_server.addrlen = sizeof(data->addr);
++		args->nfs_server.port = ntohs(data->addr.sin_port);
+ 		if (!nfs_verify_server_address(sap))
+ 			goto out_no_address;
  
--- 
-1.7.0.4
+@@ -2651,6 +2652,7 @@ static int nfs4_validate_mount_data(void
+ 			return -EFAULT;
+ 		if (!nfs_verify_server_address(sap))
+ 			goto out_no_address;
++		args->nfs_server.port = ntohs(((struct sockaddr_in *)sap)->sin_port);
+ 
+ 		if (data->auth_flavourlen) {
+ 			if (data->auth_flavourlen > 1)
+
 
