@@ -1,115 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab2I1Bfa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:35:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58962 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab2I1Bf2 (ORCPT
+	id S1756195Ab2I1Bko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:40:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63465 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755085Ab2I1Bkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:35:28 -0400
-Date: Fri, 28 Sep 2012 11:35:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20120928113516.165a26a1fc6974931d2425c2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__28_Sep_2012_11_35_16_+1000_STtnfsH1kxyAkPH5"
+	Thu, 27 Sep 2012 21:40:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <5064EE3F.3080606@jp.fujitsu.com>
+References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com>
+ <1348724705-23779-2-git-send-email-wency@cn.fujitsu.com> <CAEkdkmVW5wwG4_cy0yHFNVmk2bzAqzo2adRsMn1yHOW9Ex98_g@mail.gmail.com>
+ <5064EE3F.3080606@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 27 Sep 2012 21:35:01 -0400
+X-Google-Sender-Auth: 8KfN5nv7GPWRiuvCks3uyYppT8M
+Message-ID: <CAHGf_=pDn852sRadnXQMWx3rOTxGLy7876pxk1Ww4oJtkBAZbQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] memory-hotplug: add memory_block_release
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Ni zhan Chen <nizhan.chen@gmail.com>, wency@cn.fujitsu.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__28_Sep_2012_11_35_16_+1000_STtnfsH1kxyAkPH5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 27, 2012 at 8:24 PM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
+> Hi Chen,
+>
+>
+> 2012/09/27 19:20, Ni zhan Chen wrote:
+>>
+>> Hi Congyang,
+>>
+>> 2012/9/27 <wency@cn.fujitsu.com>
+>>
+>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>
+>>> When calling remove_memory_block(), the function shows following message
+>>> at
+>>> device_release().
+>>>
+>>> Device 'memory528' does not have a release() function, it is broken and
+>>> must
+>>> be fixed.
+>>>
+>>
+>> What's the difference between the patch and original implemetation?
+>
+>
+> The implementation is for removing a memory_block. So the purpose is
+> same as original one. But original code is bad manner. kobject_cleanup()
+> is called by remove_memory_block() at last. But release function for
+> releasing memory_block is not registered. As a result, the kernel message
+> is shown. IMHO, memory_block should be release by the releae function.
 
-Hi all,
+but your patch introduced use after free bug, if i understand correctly.
+See unregister_memory() function. After your patch, kobject_put() call
+release_memory_block() and kfree(). and then device_unregister() will
+touch freed memory.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/l2tp/l2tp_netlink.c between commit 7f8436a1269e ("l2tp: fix return
-value check") from the net tree and commit 15e473046cb6 ("netlink: Rename
-pid to portid to avoid confusion") from the net-next tree.
+static void
+unregister_memory(struct memory_block *memory)
+{
+	BUG_ON(memory->dev.bus != &memory_subsys);
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc net/l2tp/l2tp_netlink.c
-index 6f93635,6ec3f67..0000000
---- a/net/l2tp/l2tp_netlink.c
-+++ b/net/l2tp/l2tp_netlink.c
-@@@ -78,10 -78,10 +78,10 @@@ static int l2tp_nl_cmd_noop(struct sk_b
-  		goto out;
-  	}
- =20
-- 	hdr =3D genlmsg_put(msg, info->snd_pid, info->snd_seq,
-+ 	hdr =3D genlmsg_put(msg, info->snd_portid, info->snd_seq,
-  			  &l2tp_nl_family, 0, L2TP_CMD_NOOP);
- -	if (IS_ERR(hdr)) {
- -		ret =3D PTR_ERR(hdr);
- +	if (!hdr) {
- +		ret =3D -EMSGSIZE;
-  		goto err_out;
-  	}
- =20
-@@@ -248,10 -248,10 +248,10 @@@ static int l2tp_nl_tunnel_send(struct s
-  	struct l2tp_stats stats;
-  	unsigned int start;
- =20
-- 	hdr =3D genlmsg_put(skb, pid, seq, &l2tp_nl_family, flags,
-+ 	hdr =3D genlmsg_put(skb, portid, seq, &l2tp_nl_family, flags,
-  			  L2TP_CMD_TUNNEL_GET);
- -	if (IS_ERR(hdr))
- -		return PTR_ERR(hdr);
- +	if (!hdr)
- +		return -EMSGSIZE;
- =20
-  	if (nla_put_u8(skb, L2TP_ATTR_PROTO_VERSION, tunnel->version) ||
-  	    nla_put_u32(skb, L2TP_ATTR_CONN_ID, tunnel->tunnel_id) ||
-@@@ -616,9 -616,9 +616,9 @@@ static int l2tp_nl_session_send(struct=20
- =20
-  	sk =3D tunnel->sock;
- =20
-- 	hdr =3D genlmsg_put(skb, pid, seq, &l2tp_nl_family, flags, L2TP_CMD_SESS=
-ION_GET);
-+ 	hdr =3D genlmsg_put(skb, portid, seq, &l2tp_nl_family, flags, L2TP_CMD_S=
-ESSION_GET);
- -	if (IS_ERR(hdr))
- -		return PTR_ERR(hdr);
- +	if (!hdr)
- +		return -EMSGSIZE;
- =20
-  	if (nla_put_u32(skb, L2TP_ATTR_CONN_ID, tunnel->tunnel_id) ||
-  	    nla_put_u32(skb, L2TP_ATTR_SESSION_ID, session->session_id) ||
-
---Signature=_Fri__28_Sep_2012_11_35_16_+1000_STtnfsH1kxyAkPH5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQZP7UAAoJEECxmPOUX5FEMWcP/iwmWma/VHeQ8bSIvvcDxDNN
-7P0na1YpU/aHDFhLjaHWs75I1ILhJSF2KiU0p+d9/rpUh/i3KTqDUAALLqSnLC4B
-ntvy24NA+zQ2nMEPyH/v7glzwihBEV+7u5yDsjq1LmPqvO9lMM0nESn6xkSG71SB
-3X8GYpTXlWI4YuIcRpxPYVQ41fJTLB7iOvzmcuhLU+cqBLUUWpl3c9ofmuBfqcop
-tZuTUWL1ydqbIQlGfGlO66O7CD0Uxc/jL//BJNwDS1nj6j62sX7hU/Sbbwkc0Vny
-XfOE97tTtwj9a88B1CbwqcISkvGkHx4tp/9ueVEft7eVGdorxaqo6OuRp3LWMGs5
-7QHKnAzQWucr5Hd2OgnBJGDcrb8uySxMrPOrhw0uerBQG7Lt8l0S+yCszJ0OsfNn
-TuDpVw2C58fjyu/AuqK+YtEC9bOV/CthyYIvt1B50RhOUEQHDYiSX2kPliwLBjBT
-a7BcGadjF5T4Xk9jMVx4bOdZjTANnNIE3tHbiTSfqaO5KkDzMn/tZH3m8pWHJCB7
-iYe/gTcWELYnvj/hgGDSvg9rUYX+kfIHQ6ocVC6lsVpubZxa4fDxNzZYYPH5NBP6
-QIrBvk96jxAW/bSD0urcOkEZqYLIvC5TLDHRcwzCMPYs+0Q5aLmu55xUJxJiYFCT
-Ku6LYdRBpttCuVxfGkiR
-=c8Ps
------END PGP SIGNATURE-----
-
---Signature=_Fri__28_Sep_2012_11_35_16_+1000_STtnfsH1kxyAkPH5--
+	/* drop the ref. we got in remove_memory_block() */
+	kobject_put(&memory->dev.kobj);
+	device_unregister(&memory->dev);
+}
