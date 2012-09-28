@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab2I1Oer (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:34:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60503 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757329Ab2I1Oeq convert rfc822-to-8bit (ORCPT
+	id S1758224Ab2I1Ofn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:35:43 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:14123 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757329Ab2I1Ofm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:34:46 -0400
+	Fri, 28 Sep 2012 10:35:42 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VPS-6(zz98dI103dK1432Izz1202h1d1ah1d2ahzz8275bh15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MB2DVB-01-6R2-02
+X-M-MSG: 
+Date: Fri, 28 Sep 2012 16:35:36 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/16] iommu/amd: Keep track of HPET and IOAPIC device ids
+Message-ID: <20120928143536.GE4009@amd.com>
+References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+ <1348835046-3262-2-git-send-email-joerg.roedel@amd.com>
+ <20120928140833.GB7483@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de>
-References: <5064790E.4000207@cs.tu-berlin.de> <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 28 Sep 2012 16:34:24 +0200
-Message-ID: <CAPXgP11SN7cx7NW0Jv46g+KAvFPo61Ptczochzy4Ub83bjHn1Q@mail.gmail.com>
-Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
-To: =?UTF-8?Q?Jan_H=2E_Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120928140833.GB7483@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 10:25 AM, Jan H. Schönherr
-<schnhrr@cs.tu-berlin.de> wrote:
+On Fri, Sep 28, 2012 at 10:08:34AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Sep 28, 2012 at 02:23:51PM +0200, Joerg Roedel wrote:
+> > +	if (type != 1 && type != 2)
+> > +		return -EINVAL;
+> 
+> Should this be perhaps an enum? or #define?
 
->> If really, really everything passes through vprintk_emit()
->> then we could keep all info about the previous message
->> there and definitely decide whether the current message continues
->> the previous one.
->>
->> Then, we wouldn't need to track the previous flags everywhere.
->
-> Here is a patch that does just that.
->
-> Seems to work. And it makes the code easier to understand.
-> A more detailed description is below.
+Yup, that'll be better. I change it.
 
-> -       if (!(lflags & LOG_NEWLINE)) {
-> -               /*
-> -                * Flush the conflicting buffer. An earlier newline was missing,
-> -                * or another task also prints continuation lines.
-> -                */
-> -               if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
-> -                       cont_flush(LOG_NEWLINE);
-> +       cont_add(facility, level, lflags, dict, dictlen, text, text_len);
+> Reviwed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-That fails the racing task test, and a cont user that was nicely
-merged before is now all in separate records.
+Thanks!
 
-It seems, unconditionally using the cont buffer like in your patch,
-for all incoming messages just makes the entire cont merge buffer
-dance useless when it comes to races.
 
-The current behaviour has the advantage, that non-cont users will not
-race against a cont user (which is like 99.x% of the races I expect).
-The cont buffer is currently only used when we expect a cont user,
-non-cont users happening in the middle of a cont-print will not flush
-the and disturb the cont buffer.
+	Joerg
 
-Thanks,
-Kay
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
