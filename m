@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965409Ab2I1TKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:10:04 -0400
+	id S1030876Ab2I1TKd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:10:33 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030782Ab2I1TGl (ORCPT
+	with ESMTP id S1030765Ab2I1TGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:06:41 -0400
+	Fri, 28 Sep 2012 15:06:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Colin Cross <ccross@google.com>
-Subject: [ 251/262] kthread_worker: reimplement flush_kthread_work() to allow freeing the work item being executed
-Date: Fri, 28 Sep 2012 11:53:00 -0700
-Message-Id: <20120928183028.096630580@linuxfoundation.org>
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 249/262] NFSd: set nfsd_serv to NULL after service destruction
+Date: Fri, 28 Sep 2012 11:52:58 -0700
+Message-Id: <20120928183027.866053213@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,152 +29,82 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 46f3d976213452350f9d10b0c2780c2681f7075b upstream.
+commit 57c8b13e3cd0f94944c9691ce7f58e5fcef8a12d upstream.
 
-kthread_worker provides minimalistic workqueue-like interface for
-users which need a dedicated worker thread (e.g. for realtime
-priority).  It has basic queue, flush_work, flush_worker operations
-which mostly match the workqueue counterparts; however, due to the way
-flush_work() is implemented, it has a noticeable difference of not
-allowing work items to be freed while being executed.
+In nfsd_destroy():
 
-While the current users of kthread_worker are okay with the current
-behavior, the restriction does impede some valid use cases.  Also,
-removing this difference isn't difficult and actually makes the code
-easier to understand.
+	if (destroy)
+		svc_shutdown_net(nfsd_serv, net);
+	svc_destroy(nfsd_server);
 
-This patch reimplements flush_kthread_work() such that it uses a
-flush_work item instead of queue/done sequence numbers.
+svc_shutdown_net(nfsd_serv, net) calls nfsd_last_thread(), which sets
+nfsd_serv to NULL, causing a NULL dereference on the following line.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Colin Cross <ccross@google.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/kthread.h |    8 +------
- kernel/kthread.c        |   52 ++++++++++++++++++++++++++----------------------
- 2 files changed, 31 insertions(+), 29 deletions(-)
+ fs/nfsd/nfsd.h   |    2 ++
+ fs/nfsd/nfssvc.c |   10 +++++-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
---- a/include/linux/kthread.h
-+++ b/include/linux/kthread.h
-@@ -49,8 +49,6 @@ extern int tsk_fork_get_node(struct task
-  * can be queued and flushed using queue/flush_kthread_work()
-  * respectively.  Queued kthread_works are processed by a kthread
-  * running kthread_worker_fn().
-- *
-- * A kthread_work can't be freed while it is executing.
-  */
- struct kthread_work;
- typedef void (*kthread_work_func_t)(struct kthread_work *work);
-@@ -59,15 +57,14 @@ struct kthread_worker {
- 	spinlock_t		lock;
- 	struct list_head	work_list;
- 	struct task_struct	*task;
-+	struct kthread_work	*current_work;
- };
- 
- struct kthread_work {
- 	struct list_head	node;
- 	kthread_work_func_t	func;
- 	wait_queue_head_t	done;
--	atomic_t		flushing;
--	int			queue_seq;
--	int			done_seq;
-+	struct kthread_worker	*worker;
- };
- 
- #define KTHREAD_WORKER_INIT(worker)	{				\
-@@ -79,7 +76,6 @@ struct kthread_work {
- 	.node = LIST_HEAD_INIT((work).node),				\
- 	.func = (fn),							\
- 	.done = __WAIT_QUEUE_HEAD_INITIALIZER((work).done),		\
--	.flushing = ATOMIC_INIT(0),					\
- 	}
- 
- #define DEFINE_KTHREAD_WORKER(worker)					\
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -360,16 +360,12 @@ repeat:
- 					struct kthread_work, node);
- 		list_del_init(&work->node);
- 	}
-+	worker->current_work = work;
- 	spin_unlock_irq(&worker->lock);
- 
- 	if (work) {
- 		__set_current_state(TASK_RUNNING);
- 		work->func(work);
--		smp_wmb();	/* wmb worker-b0 paired with flush-b1 */
--		work->done_seq = work->queue_seq;
--		smp_mb();	/* mb worker-b1 paired with flush-b0 */
--		if (atomic_read(&work->flushing))
--			wake_up_all(&work->done);
- 	} else if (!freezing(current))
- 		schedule();
- 
-@@ -386,7 +382,7 @@ static void insert_kthread_work(struct k
- 	lockdep_assert_held(&worker->lock);
- 
- 	list_add_tail(&work->node, pos);
--	work->queue_seq++;
-+	work->worker = worker;
- 	if (likely(worker->task))
- 		wake_up_process(worker->task);
+--- a/fs/nfsd/nfsd.h
++++ b/fs/nfsd/nfsd.h
+@@ -80,6 +80,8 @@ static inline void nfsd_destroy(struct n
+ 	if (destroy)
+ 		svc_shutdown_net(nfsd_serv, net);
+ 	svc_destroy(nfsd_serv);
++	if (destroy)
++		nfsd_serv = NULL;
  }
-@@ -436,25 +432,35 @@ static void kthread_flush_work_fn(struct
-  */
- void flush_kthread_work(struct kthread_work *work)
+ 
+ #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -254,8 +254,6 @@ static void nfsd_shutdown(void)
+ 
+ static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
  {
--	int seq = work->queue_seq;
-+	struct kthread_flush_work fwork = {
-+		KTHREAD_WORK_INIT(fwork.work, kthread_flush_work_fn),
-+		COMPLETION_INITIALIZER_ONSTACK(fwork.done),
-+	};
-+	struct kthread_worker *worker;
-+	bool noop = false;
-+
-+retry:
-+	worker = work->worker;
-+	if (!worker)
-+		return;
-+
-+	spin_lock_irq(&worker->lock);
-+	if (work->worker != worker) {
-+		spin_unlock_irq(&worker->lock);
-+		goto retry;
-+	}
-+
-+	if (!list_empty(&work->node))
-+		insert_kthread_work(worker, &fwork.work, work->node.next);
-+	else if (worker->current_work == work)
-+		insert_kthread_work(worker, &fwork.work, worker->work_list.next);
-+	else
-+		noop = true;
+-	/* When last nfsd thread exits we need to do some clean-up */
+-	nfsd_serv = NULL;
+ 	nfsd_shutdown();
  
--	atomic_inc(&work->flushing);
-+	spin_unlock_irq(&worker->lock);
+ 	svc_rpcb_cleanup(serv, net);
+@@ -332,6 +330,7 @@ static int nfsd_get_default_max_blksize(
+ int nfsd_create_serv(void)
+ {
+ 	int error;
++	struct net *net = current->nsproxy->net_ns;
  
--	/*
--	 * mb flush-b0 paired with worker-b1, to make sure either
--	 * worker sees the above increment or we see done_seq update.
--	 */
--	smp_mb__after_atomic_inc();
--
--	/* A - B <= 0 tests whether B is in front of A regardless of overflow */
--	wait_event(work->done, seq - work->done_seq <= 0);
--	atomic_dec(&work->flushing);
--
--	/*
--	 * rmb flush-b1 paired with worker-b0, to make sure our caller
--	 * sees every change made by work->func().
--	 */
--	smp_mb__after_atomic_dec();
-+	if (!noop)
-+		wait_for_completion(&fwork.done);
- }
- EXPORT_SYMBOL_GPL(flush_kthread_work);
+ 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
+ 	if (nfsd_serv) {
+@@ -346,7 +345,7 @@ int nfsd_create_serv(void)
+ 	if (nfsd_serv == NULL)
+ 		return -ENOMEM;
  
+-	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
++	error = svc_bind(nfsd_serv, net);
+ 	if (error < 0) {
+ 		svc_destroy(nfsd_serv);
+ 		return error;
+@@ -557,12 +556,13 @@ nfsd(void *vrqstp)
+ 	nfsdstats.th_cnt --;
+ 
+ out:
+-	if (rqstp->rq_server->sv_nrthreads == 1)
+-		svc_shutdown_net(rqstp->rq_server, &init_net);
++	rqstp->rq_server = NULL;
+ 
+ 	/* Release the thread */
+ 	svc_exit_thread(rqstp);
+ 
++	nfsd_destroy(&init_net);
++
+ 	/* Release module */
+ 	mutex_unlock(&nfsd_mutex);
+ 	module_put_and_exit(0);
 
 
