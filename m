@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422762Ab2I1U3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:29:42 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422757Ab2I1U3f (ORCPT
+	id S1422793Ab2I1U3y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:29:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032762Ab2I1U3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:29:35 -0400
+	Fri, 28 Sep 2012 16:29:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Subject: [ 149/218] drm/radeon: implement ACPI VFCT vbios fetch (v3)
-Date: Fri, 28 Sep 2012 13:16:06 -0700
-Message-Id: <20120928201518.600731557@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Alex Ferrando <alferpal@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 151/218] drm/i915: extract connector update from intel_ddc_get_modes() for reuse
+Date: Fri, 28 Sep 2012 13:16:08 -0700
+Message-Id: <20120928201518.833457316@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,109 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Lamparter <equinox@diac24.net>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 268ba0a99f89a84dc5eb312470896113d0709c74 upstream.
+commit 4eab81366465aedcfd26de960c595bc03599c09f upstream.
 
-This is required for pure UEFI systems.  The vbios is stored
-in ACPI rather than at the legacy vga location.
+Refactor the connector update part of intel_ddc_get_modes() into a separate
+intel_connector_update_modes() function for reuse. No functional changes.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=26891
-
-V2: fix #ifdefs as per Greg's comments
-V3: fix it harder
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=45881
+Tested-by: Alex Ferrando <alferpal@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_bios.c |   60 +++++++++++++++++++++++++++++++++++
- 1 file changed, 60 insertions(+)
+ drivers/gpu/drm/i915/intel_drv.h   |    2 ++
+ drivers/gpu/drm/i915/intel_modes.c |   31 ++++++++++++++++++++++---------
+ 2 files changed, 24 insertions(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_bios.c
-+++ b/drivers/gpu/drm/radeon/radeon_bios.c
-@@ -32,6 +32,7 @@
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -288,6 +288,8 @@ struct intel_fbc_work {
+ 	int interval;
+ };
  
- #include <linux/vga_switcheroo.h>
- #include <linux/slab.h>
-+#include <linux/acpi.h>
- /*
-  * BIOS.
-  */
-@@ -548,6 +549,63 @@ static bool radeon_read_disabled_bios(st
- 		return legacy_read_disabled_bios(rdev);
++int intel_connector_update_modes(struct drm_connector *connector,
++				struct edid *edid);
+ int intel_ddc_get_modes(struct drm_connector *c, struct i2c_adapter *adapter);
+ extern bool intel_ddc_probe(struct intel_encoder *intel_encoder, int ddc_bus);
+ 
+--- a/drivers/gpu/drm/i915/intel_modes.c
++++ b/drivers/gpu/drm/i915/intel_modes.c
+@@ -60,6 +60,25 @@ bool intel_ddc_probe(struct intel_encode
  }
  
-+#ifdef CONFIG_ACPI
-+static bool radeon_acpi_vfct_bios(struct radeon_device *rdev)
+ /**
++ * intel_connector_update_modes - update connector from edid
++ * @connector: DRM connector device to use
++ * @edid: previously read EDID information
++ */
++int intel_connector_update_modes(struct drm_connector *connector,
++				struct edid *edid)
 +{
-+	bool ret = false;
-+	struct acpi_table_header *hdr;
-+	/* acpi_get_table_with_size is not exported :( */
-+	acpi_size tbl_size = 0x7fffffff;
-+	UEFI_ACPI_VFCT *vfct;
-+	GOP_VBIOS_CONTENT *vbios;
-+	VFCT_IMAGE_HEADER *vhdr;
++	int ret;
 +
-+	if (!ACPI_SUCCESS(acpi_get_table("VFCT", 1, &hdr)))
-+		return false;
-+	if (tbl_size < sizeof(UEFI_ACPI_VFCT)) {
-+		DRM_ERROR("ACPI VFCT table present but broken (too short #1)\n");
-+		goto out_unmap;
-+	}
++	drm_mode_connector_update_edid_property(connector, edid);
++	ret = drm_add_edid_modes(connector, edid);
++	drm_edid_to_eld(connector, edid);
++	connector->display_info.raw_edid = NULL;
++	kfree(edid);
 +
-+	vfct = (UEFI_ACPI_VFCT *)hdr;
-+	if (vfct->VBIOSImageOffset + sizeof(VFCT_IMAGE_HEADER) > tbl_size) {
-+		DRM_ERROR("ACPI VFCT table present but broken (too short #2)\n");
-+		goto out_unmap;
-+	}
-+
-+	vbios = (GOP_VBIOS_CONTENT *)((char *)hdr + vfct->VBIOSImageOffset);
-+	vhdr = &vbios->VbiosHeader;
-+	DRM_INFO("ACPI VFCT contains a BIOS for %02x:%02x.%d %04x:%04x, size %d\n",
-+			vhdr->PCIBus, vhdr->PCIDevice, vhdr->PCIFunction,
-+			vhdr->VendorID, vhdr->DeviceID, vhdr->ImageLength);
-+
-+	if (vhdr->PCIBus != rdev->pdev->bus->number ||
-+	    vhdr->PCIDevice != PCI_SLOT(rdev->pdev->devfn) ||
-+	    vhdr->PCIFunction != PCI_FUNC(rdev->pdev->devfn) ||
-+	    vhdr->VendorID != rdev->pdev->vendor ||
-+	    vhdr->DeviceID != rdev->pdev->device) {
-+		DRM_INFO("ACPI VFCT table is not for this card\n");
-+		goto out_unmap;
-+	};
-+
-+	if (vfct->VBIOSImageOffset + sizeof(VFCT_IMAGE_HEADER) + vhdr->ImageLength > tbl_size) {
-+		DRM_ERROR("ACPI VFCT image truncated\n");
-+		goto out_unmap;
-+	}
-+
-+	rdev->bios = kmemdup(&vbios->VbiosContent, vhdr->ImageLength, GFP_KERNEL);
-+	ret = !!rdev->bios;
-+
-+out_unmap:
-+	/* uh, no idea what to do here... */
 +	return ret;
 +}
-+#else
-+static inline bool radeon_acpi_vfct_bios(struct radeon_device *rdev)
-+{
-+	return false;
-+}
-+#endif
- 
- bool radeon_get_bios(struct radeon_device *rdev)
++
++/**
+  * intel_ddc_get_modes - get modelist from monitor
+  * @connector: DRM connector device to use
+  * @adapter: i2c adapter
+@@ -70,18 +89,12 @@ int intel_ddc_get_modes(struct drm_conne
+ 			struct i2c_adapter *adapter)
  {
-@@ -556,6 +614,8 @@ bool radeon_get_bios(struct radeon_devic
+ 	struct edid *edid;
+-	int ret = 0;
  
- 	r = radeon_atrm_get_bios(rdev);
- 	if (r == false)
-+		r = radeon_acpi_vfct_bios(rdev);
-+	if (r == false)
- 		r = igp_read_bios_from_vram(rdev);
- 	if (r == false)
- 		r = radeon_read_bios(rdev);
+ 	edid = drm_get_edid(connector, adapter);
+-	if (edid) {
+-		drm_mode_connector_update_edid_property(connector, edid);
+-		ret = drm_add_edid_modes(connector, edid);
+-		drm_edid_to_eld(connector, edid);
+-		connector->display_info.raw_edid = NULL;
+-		kfree(edid);
+-	}
++	if (!edid)
++		return 0;
+ 
+-	return ret;
++	return intel_connector_update_modes(connector, edid);
+ }
+ 
+ static const struct drm_prop_enum_list force_audio_names[] = {
 
 
