@@ -1,168 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab2I1DcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 23:32:15 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:52805 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756797Ab2I1Dbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 23:31:32 -0400
-Date: Thu, 27 Sep 2012 23:31:21 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dmitry Monakhov <dmonakhov@openvz.org>,
-        stable@vger.kernel.org
-Subject: [PATCH v2] ext4: fix potential deadlock in ext4_nonda_switch()
-Message-ID: <20120928033121.GA13352@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Hugh Dickins <hughd@google.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Christoph Hellwig <hch@infradead.org>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Dmitry Monakhov <dmonakhov@openvz.org>, stable@vger.kernel.org
-References: <alpine.LSU.2.00.1209271334560.2226@eggly.anvils>
- <20120927212708.GA10044@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120927212708.GA10044@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1756601Ab2I1DeL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 23:34:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50783 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755352Ab2I1DeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 23:34:09 -0400
+Date: Fri, 28 Sep 2012 13:33:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: linux-next: manual merge of the tip tree with the rr tree
+Message-Id: <20120928133341.5697fbecc1674b2143101f52@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__28_Sep_2012_13_33_41_+1000_tjy2c38w=8GLtZRr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've found a much simpler way of fixing this, by using
-down_read_trylock().  In the very unlikely case where s_umount is
-contended, we can just skip kicking the writeback thread.
+--Signature=_Fri__28_Sep_2012_13_33_41_+1000_tjy2c38w=8GLtZRr
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	      	       	    	    	- Ted
+Hi all,
 
->From 51ad3407a91ab090d1772b63329bd3b7f2210eb0 Mon Sep 17 00:00:00 2001
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Thu, 27 Sep 2012 23:12:48 -0400
-Subject: [PATCH v2] ext4: fix potential deadlock in ext4_nonda_switch()
+Today's linux-next merge of the tip tree got a conflict in arch/Kconfig
+between commit 9a9d5786a5e7 ("Make most arch asm/module.h files use
+asm-generic/module.h") from the rr tree and commits fdf9c356502a
+("cputime: Make finegrained irqtime accounting generally available") and
+2b1d5024e17b ("rcu: Settle config for userspace extended quiescent
+state") from the tip tree.
 
-In ext4_nonda_switch(), if the file system is getting full we used to
-call writeback_inodes_sb_if_idle().  The problem is that we can be
-holding i_mutex already, and this causes a potential deadlock when
-writeback_inodes_sb_if_idle() when it tries to take s_umount.  (See
-lockdep output below).
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-As it turns out we don't need need to hold s_umount; the fact that we
-are in the middle of the write(2) system call will keep the superblock
-pinned.  Unfortunately writeback_inodes_sb() checks to make sure
-s_umount is taken, and the VFS uses a different mechanism for making
-sure the file system doesn't get unmounted out from under us.  The
-simplest way of dealing with this is to just simply grab s_umount
-using a trylock, and skip kicking the writeback flusher thread in the
-very unlikely case that we can't take a read lock on s_umount without
-blocking.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Also, we now check the cirteria for kicking the writeback thread
-before we decide to whether to fall back to non-delayed writeback, so
-if there are any outstanding delayed allocation writes, we try to get
-them resolved as soon as possible.
+diff --cc arch/Kconfig
+index 3450115,a62965d..0000000
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@@ -281,23 -294,23 +294,42 @@@ config SECCOMP_FILTE
+ =20
+  	  See Documentation/prctl/seccomp_filter.txt for details.
+ =20
+ +config HAVE_MOD_ARCH_SPECIFIC
+ +	bool
+ +	help
+ +	  The arch uses struct mod_arch_specific to store data.  Many arches
+ +	  just need a simple module loader without arch specific data - those
+ +	  should not enable this.
+ +
+ +config MODULES_USE_ELF_RELA
+ +	bool
+ +	help
+ +	  Modules only use ELF RELA relocations.  Modules with ELF REL
+ +	  relocations will give an error.
+ +
+ +config MODULES_USE_ELF_REL
+ +	bool
+ +	help
+ +	  Modules only use ELF REL relocations.  Modules with ELF RELA
+ +	  relocations will give an error.
+ +
++ config HAVE_RCU_USER_QS
++ 	bool
++ 	help
++ 	  Provide kernel entry/exit hooks necessary for userspace
++ 	  RCU extended quiescent state. Syscalls need to be wrapped inside
++ 	  rcu_user_exit()-rcu_user_enter() through the slow path using
++ 	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
++ 	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
++ 	  preemption or signal handling on irq exit still need to be protected.
++=20
++ config HAVE_VIRT_CPU_ACCOUNTING
++ 	bool
++=20
++ config HAVE_IRQ_TIME_ACCOUNTING
++ 	bool
++ 	help
++ 	  Archs need to ensure they use a high enough resolution clock to
++ 	  support irq time accounting and then call enable_sched_clock_irqtime().
++=20
+  source "kernel/gcov/Kconfig"
 
-   [ INFO: possible circular locking dependency detected ]
-   3.6.0-rc1-00042-gce894ca #367 Not tainted
-   -------------------------------------------------------
-   dd/8298 is trying to acquire lock:
-    (&type->s_umount_key#18){++++..}, at: [<c02277d4>] writeback_inodes_sb_if_idle+0x28/0x46
+--Signature=_Fri__28_Sep_2012_13_33_41_+1000_tjy2c38w=8GLtZRr
+Content-Type: application/pgp-signature
 
-   but task is already holding lock:
-    (&sb->s_type->i_mutex_key#8){+.+...}, at: [<c01ddcce>] generic_file_aio_write+0x5f/0xd3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-   which lock already depends on the new lock.
+iQIcBAEBCAAGBQJQZRqVAAoJEECxmPOUX5FEWOQP/3O5F7yVqjKKKEEGdMU/Q6Fr
+Fe9WJm07yw7OvgldY4ELJ1C656iE7jE+hC45mh9fttVGVNULeBJfetHyrAon89oh
+ZXSMEgwUFRn5T02DUMFYLeKRN3rPkleADai7UUR9opsNViAUKtdqO626n3Z7L6Wh
+GxmNpy1H8jJpc1YND0S8KLNMCeAt7FPhaZYpjUckWqCsufVT0Xv3aA3GGX+w0IlD
+setJhcFDhPIFNRMJSIrnrUdE5aKs8e7SGVGMHdd2DRwuYxn/eS8Xb49m5NnzshIa
+cgaYzpSq2k6hptG2jUd9Uo3VsdquPVJMJY5zILH9u6oqiuW7e91svZtvyESMMCdq
+ca0O7F5PXoyq++QT3W18/oDTN3sgWE/Mwj4ol2jFASZsAgS8OJkw33CgBXFNIE0i
+pC2t6FsgBk7CC9whh1NvJguFVv0VJzMUMEembOT9lPAApFgK/XwPrF5bM+ZaXqzQ
+Q8UaQgcATqGSY7FI6ySCc7M82b6Pau+K6ae+O9gacOcfHPVqzknXvkMhofMQoa0Q
+uYLLzKTAeUXGLIGTW9VHe4h/txHBbHuvac7FCFX8fznv10FcUpU6j9wf2w4NSvyH
+ZkVCeIoYjoUUbpLun4GI7Kk6RdP5apBYa6Y1vKEFMU5Qgz3Z5OveFoPA7jz2LwhX
+V4u183nhYNkpf3BjaU2w
+=Wmq7
+-----END PGP SIGNATURE-----
 
-   2 locks held by dd/8298:
-    #0:  (sb_writers#2){.+.+.+}, at: [<c01ddcc5>] generic_file_aio_write+0x56/0xd3
-    #1:  (&sb->s_type->i_mutex_key#8){+.+...}, at: [<c01ddcce>] generic_file_aio_write+0x5f/0xd3
-
-   stack backtrace:
-   Pid: 8298, comm: dd Not tainted 3.6.0-rc1-00042-gce894ca #367
-   Call Trace:
-    [<c015b79c>] ? console_unlock+0x345/0x372
-    [<c06d62a1>] print_circular_bug+0x190/0x19d
-    [<c019906c>] __lock_acquire+0x86d/0xb6c
-    [<c01999db>] ? mark_held_locks+0x5c/0x7b
-    [<c0199724>] lock_acquire+0x66/0xb9
-    [<c02277d4>] ? writeback_inodes_sb_if_idle+0x28/0x46
-    [<c06db935>] down_read+0x28/0x58
-    [<c02277d4>] ? writeback_inodes_sb_if_idle+0x28/0x46
-    [<c02277d4>] writeback_inodes_sb_if_idle+0x28/0x46
-    [<c026f3b2>] ext4_nonda_switch+0xe1/0xf4
-    [<c0271ece>] ext4_da_write_begin+0x27/0x193
-    [<c01dcdb0>] generic_file_buffered_write+0xc8/0x1bb
-    [<c01ddc47>] __generic_file_aio_write+0x1dd/0x205
-    [<c01ddce7>] generic_file_aio_write+0x78/0xd3
-    [<c026d336>] ext4_file_write+0x480/0x4a6
-    [<c0198c1d>] ? __lock_acquire+0x41e/0xb6c
-    [<c0180944>] ? sched_clock_cpu+0x11a/0x13e
-    [<c01967e9>] ? trace_hardirqs_off+0xb/0xd
-    [<c018099f>] ? local_clock+0x37/0x4e
-    [<c0209f2c>] do_sync_write+0x67/0x9d
-    [<c0209ec5>] ? wait_on_retry_sync_kiocb+0x44/0x44
-    [<c020a7b9>] vfs_write+0x7b/0xe6
-    [<c020a9a6>] sys_write+0x3b/0x64
-    [<c06dd4bd>] syscall_call+0x7/0xb
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: stable@vger.kernel.org
----
- fs/ext4/inode.c   | 17 ++++++++++-------
- fs/fs-writeback.c |  1 +
- 2 files changed, 11 insertions(+), 7 deletions(-)
-
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 0a9a89e..4ea396f 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2437,6 +2437,16 @@ static int ext4_nonda_switch(struct super_block *sb)
- 	free_blocks  = EXT4_C2B(sbi,
- 		percpu_counter_read_positive(&sbi->s_freeclusters_counter));
- 	dirty_blocks = percpu_counter_read_positive(&sbi->s_dirtyclusters_counter);
-+	/*
-+	 * Start pushing delalloc when 1/2 of free blocks are dirty.
-+	 */
-+	if (dirty_blocks && (free_blocks < 2 * dirty_blocks) &&
-+	    !writeback_in_progress(sb->s_bdi) &&
-+	    down_read_trylock(&sb->s_umount)) {
-+		writeback_inodes_sb(sb, WB_REASON_FS_FREE_SPACE);
-+		up_read(&sb->s_umount);
-+	}
-+
- 	if (2 * free_blocks < 3 * dirty_blocks ||
- 		free_blocks < (dirty_blocks + EXT4_FREECLUSTERS_WATERMARK)) {
- 		/*
-@@ -2445,13 +2455,6 @@ static int ext4_nonda_switch(struct super_block *sb)
- 		 */
- 		return 1;
- 	}
--	/*
--	 * Even if we don't switch but are nearing capacity,
--	 * start pushing delalloc when 1/2 of free blocks are dirty.
--	 */
--	if (free_blocks < 2 * dirty_blocks)
--		writeback_inodes_sb_if_idle(sb, WB_REASON_FS_FREE_SPACE);
--
- 	return 0;
- }
- 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index be3efc4..5602d73 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -63,6 +63,7 @@ int writeback_in_progress(struct backing_dev_info *bdi)
- {
- 	return test_bit(BDI_writeback_running, &bdi->state);
- }
-+EXPORT_SYMBOL(writeback_in_progress);
- 
- static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
- {
--- 
-1.7.12.rc0.22.gcdd159b
-
+--Signature=_Fri__28_Sep_2012_13_33_41_+1000_tjy2c38w=8GLtZRr--
