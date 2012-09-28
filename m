@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031669Ab2I1Trf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:47:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
+	id S1031671Ab2I1Tr6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:47:58 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965142Ab2I1S6s (ORCPT
+	with ESMTP id S965126Ab2I1S6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:58:48 -0400
+	Fri, 28 Sep 2012 14:58:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 101/262] gma500: Fix regression on Oaktrail devices
-Date: Fri, 28 Sep 2012 11:50:30 -0700
-Message-Id: <20120928183010.024854077@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
+Subject: [ 099/262] hwmon: (ina2xx) Fix word size register read and write operations
+Date: Fri, 28 Sep 2012 11:50:28 -0700
+Message-Id: <20120928183009.744543109@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,40 +28,90 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 26df641eac05abe1a3276eea441359b4d1120816 upstream.
+commit 080b98e9ab30734bda2f1b8b33cd55a4c4ef406a upstream.
 
-The register map patches didn't set one value for the GMA600 which
-means the Fujitsu Q550 dies on boot with the GMA500 driver enabled.
+The driver uses be16_to_cpu and cpu_to_be16 to convert data in SMBus word
+operations from chip to host byte order. However, the data passed from and to
+the SMBus word API functions is in host byte order, not in chip byte order.
+Conversion should therefore use swab16 instead of be16 to change the byte order.
 
-Add the map entry so we don't read from the device MMIO + 0 by mistake.
+Replace driver internal word conversion functions with SMBus API functions to
+solve the problem.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/gma500/oaktrail_device.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hwmon/ina2xx.c |   30 +++++++++---------------------
+ 1 file changed, 9 insertions(+), 21 deletions(-)
 
---- a/drivers/gpu/drm/gma500/oaktrail_device.c
-+++ b/drivers/gpu/drm/gma500/oaktrail_device.c
-@@ -476,6 +476,7 @@ static const struct psb_offset oaktrail_
- 		.pos = DSPAPOS,
- 		.surf = DSPASURF,
- 		.addr = MRST_DSPABASE,
-+		.base = MRST_DSPABASE,
- 		.status = PIPEASTAT,
- 		.linoff = DSPALINOFF,
- 		.tileoff = DSPATILEOFF,
-@@ -499,6 +500,7 @@ static const struct psb_offset oaktrail_
- 		.pos = DSPBPOS,
- 		.surf = DSPBSURF,
- 		.addr = DSPBBASE,
-+		.base = DSPBBASE,
- 		.status = PIPEBSTAT,
- 		.linoff = DSPBLINOFF,
- 		.tileoff = DSPBTILEOFF,
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -69,22 +69,6 @@ struct ina2xx_data {
+ 	u16 regs[INA2XX_MAX_REGISTERS];
+ };
+ 
+-int ina2xx_read_word(struct i2c_client *client, int reg)
+-{
+-	int val = i2c_smbus_read_word_data(client, reg);
+-	if (unlikely(val < 0)) {
+-		dev_dbg(&client->dev,
+-			"Failed to read register: %d\n", reg);
+-		return val;
+-	}
+-	return be16_to_cpu(val);
+-}
+-
+-void ina2xx_write_word(struct i2c_client *client, int reg, int data)
+-{
+-	i2c_smbus_write_word_data(client, reg, cpu_to_be16(data));
+-}
+-
+ static struct ina2xx_data *ina2xx_update_device(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+@@ -102,7 +86,7 @@ static struct ina2xx_data *ina2xx_update
+ 
+ 		/* Read all registers */
+ 		for (i = 0; i < data->registers; i++) {
+-			int rv = ina2xx_read_word(client, i);
++			int rv = i2c_smbus_read_word_swapped(client, i);
+ 			if (rv < 0) {
+ 				ret = ERR_PTR(rv);
+ 				goto abort;
+@@ -279,22 +263,26 @@ static int ina2xx_probe(struct i2c_clien
+ 	switch (data->kind) {
+ 	case ina219:
+ 		/* device configuration */
+-		ina2xx_write_word(client, INA2XX_CONFIG, INA219_CONFIG_DEFAULT);
++		i2c_smbus_write_word_swapped(client, INA2XX_CONFIG,
++					     INA219_CONFIG_DEFAULT);
+ 
+ 		/* set current LSB to 1mA, shunt is in uOhms */
+ 		/* (equation 13 in datasheet) */
+-		ina2xx_write_word(client, INA2XX_CALIBRATION, 40960000 / shunt);
++		i2c_smbus_write_word_swapped(client, INA2XX_CALIBRATION,
++					     40960000 / shunt);
+ 		dev_info(&client->dev,
+ 			 "power monitor INA219 (Rshunt = %li uOhm)\n", shunt);
+ 		data->registers = INA219_REGISTERS;
+ 		break;
+ 	case ina226:
+ 		/* device configuration */
+-		ina2xx_write_word(client, INA2XX_CONFIG, INA226_CONFIG_DEFAULT);
++		i2c_smbus_write_word_swapped(client, INA2XX_CONFIG,
++					     INA226_CONFIG_DEFAULT);
+ 
+ 		/* set current LSB to 1mA, shunt is in uOhms */
+ 		/* (equation 1 in datasheet)*/
+-		ina2xx_write_word(client, INA2XX_CALIBRATION, 5120000 / shunt);
++		i2c_smbus_write_word_swapped(client, INA2XX_CALIBRATION,
++					     5120000 / shunt);
+ 		dev_info(&client->dev,
+ 			 "power monitor INA226 (Rshunt = %li uOhm)\n", shunt);
+ 		data->registers = INA226_REGISTERS;
 
 
