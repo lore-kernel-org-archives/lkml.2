@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161026Ab2I1Vry (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:47:54 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48962 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032248Ab2I1UYr (ORCPT
+	id S1032942Ab2I1VsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:48:22 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032236Ab2I1UYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:24:47 -0400
+	Fri, 28 Sep 2012 16:24:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 062/218] mmc: mxs-mmc: fix deadlock in SDIO IRQ case
-Date: Fri, 28 Sep 2012 13:14:39 -0700
-Message-Id: <20120928201508.655711066@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [ 053/218] staging: vt6656: [BUG] - Failed connection, incorrect endian.
+Date: Fri, 28 Sep 2012 13:14:30 -0700
+Message-Id: <20120928201507.601131601@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,93 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 1af36b2a993dddfa3d6860ec4879c9e8abc9b976 upstream.
+commit aa209eef3ce8419ff2926c2fa944dfbfb5afbacb upstream.
 
-Release the lock before mmc_signal_sdio_irq is called by mxs_mmc_irq_handler.
+Hi,
 
-Backtrace:
-[   79.660000] =============================================
-[   79.660000] [ INFO: possible recursive locking detected ]
-[   79.660000] 3.4.0-00009-g3e96082-dirty #11 Not tainted
-[   79.660000] ---------------------------------------------
-[   79.660000] swapper/0 is trying to acquire lock:
-[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026ea3c>] mxs_mmc_enable_sdio_irq+0x18/0xd4
-[   79.660000]
-[   79.660000] but task is already holding lock:
-[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
-[   79.660000]
-[   79.660000] other info that might help us debug this:
-[   79.660000]  Possible unsafe locking scenario:
-[   79.660000]
-[   79.660000]        CPU0
-[   79.660000]        ----
-[   79.660000]   lock(&(&host->lock)->rlock#2);
-[   79.660000]   lock(&(&host->lock)->rlock#2);
-[   79.660000]
-[   79.660000]  *** DEADLOCK ***
-[   79.660000]
-[   79.660000]  May be due to missing lock nesting notation
-[   79.660000]
-[   79.660000] 1 lock held by swapper/0:
-[   79.660000]  #0:  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
-[   79.660000]
-[   79.660000] stack backtrace:
-[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c005f9c0>] (__lock_acquire+0x1948/0x1d48)
-[   79.660000] [<c005f9c0>] (__lock_acquire+0x1948/0x1d48) from [<c005fea0>] (lock_acquire+0xe0/0xf8)
-[   79.660000] [<c005fea0>] (lock_acquire+0xe0/0xf8) from [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58)
-[   79.660000] [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
-[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
-[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
-[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
-[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
-[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
-[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
-[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
-[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
-[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
-[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
-[   79.660000] BUG: spinlock lockup on CPU#0, swapper/0
-[   79.660000]  lock: c398cb2c, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
-[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144)
-[   79.660000] [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144) from [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58)
-[   79.660000] [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
-[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
-[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
-[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
-[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
-[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
-[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
-[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
-[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
-[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
-[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
+This patch fixes a bug with driver failing to negotiate a connection.
 
-Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+The bug was traced to commit
+203e4615ee9d9fa8d3506b9d0ef30095e4d5bc90
+staging: vt6656: removed custom definitions of Ethernet packet types
+
+In that patch, definitions in include/linux/if_ether.h replaced ones
+in tether.h which had both big and little endian definitions.
+
+include/linux/if_ether.h only refers to big endian values, cpu_to_be16
+should be used for the correct endian architectures.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/mxs-mmc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/vt6656/dpc.c  |    2 +-
+ drivers/staging/vt6656/rxtx.c |   38 +++++++++++++++++++-------------------
+ 2 files changed, 20 insertions(+), 20 deletions(-)
 
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -280,11 +280,11 @@ static irqreturn_t mxs_mmc_irq_handler(i
- 	writel(stat & MXS_MMC_IRQ_BITS,
- 	       host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
+--- a/drivers/staging/vt6656/dpc.c
++++ b/drivers/staging/vt6656/dpc.c
+@@ -200,7 +200,7 @@ s_vProcessRxMACHeader (
+     } else if (!compare_ether_addr(pbyRxBuffer, &pDevice->abySNAP_RFC1042[0])) {
+         cbHeaderSize += 6;
+         pwType = (PWORD) (pbyRxBufferAddr + cbHeaderSize);
+-	if ((*pwType == cpu_to_le16(ETH_P_IPX)) ||
++	if ((*pwType == cpu_to_be16(ETH_P_IPX)) ||
+ 	    (*pwType == cpu_to_le16(0xF380))) {
+ 		cbHeaderSize -= 8;
+             pwType = (PWORD) (pbyRxBufferAddr + cbHeaderSize);
+--- a/drivers/staging/vt6656/rxtx.c
++++ b/drivers/staging/vt6656/rxtx.c
+@@ -1701,7 +1701,7 @@ s_bPacketToWirelessUsb(
+     // 802.1H
+     if (ntohs(psEthHeader->wType) > ETH_DATA_LEN) {
+ 	if (pDevice->dwDiagRefCount == 0) {
+-		if ((psEthHeader->wType == cpu_to_le16(ETH_P_IPX)) ||
++		if ((psEthHeader->wType == cpu_to_be16(ETH_P_IPX)) ||
+ 		    (psEthHeader->wType == cpu_to_le16(0xF380))) {
+ 			memcpy((PBYTE) (pbyPayloadHead),
+ 			       abySNAP_Bridgetunnel, 6);
+@@ -2840,10 +2840,10 @@ int nsDMA_tx_packet(PSDevice pDevice, un
+     Packet_Type = skb->data[ETH_HLEN+1];
+     Descriptor_type = skb->data[ETH_HLEN+1+1+2];
+     Key_info = (skb->data[ETH_HLEN+1+1+2+1] << 8)|(skb->data[ETH_HLEN+1+1+2+2]);
+-    if (pDevice->sTxEthHeader.wType == cpu_to_le16(ETH_P_PAE)) {
+-	/* 802.1x OR eapol-key challenge frame transfer */
+-	if (((Protocol_Version == 1) || (Protocol_Version == 2)) &&
+-		(Packet_Type == 3)) {
++	if (pDevice->sTxEthHeader.wType == cpu_to_be16(ETH_P_PAE)) {
++		/* 802.1x OR eapol-key challenge frame transfer */
++		if (((Protocol_Version == 1) || (Protocol_Version == 2)) &&
++			(Packet_Type == 3)) {
+                         bTxeapol_key = TRUE;
+                        if(!(Key_info & BIT3) &&  //WPA or RSN group-key challenge
+ 			   (Key_info & BIT8) && (Key_info & BIT9)) {    //send 2/2 key
+@@ -2989,19 +2989,19 @@ int nsDMA_tx_packet(PSDevice pDevice, un
+         }
+     }
  
-+	spin_unlock(&host->lock);
-+
- 	if ((stat & BM_SSP_CTRL1_SDIO_IRQ) && (stat & BM_SSP_CTRL1_SDIO_IRQ_EN))
- 		mmc_signal_sdio_irq(host->mmc);
+-    if (pDevice->sTxEthHeader.wType == cpu_to_le16(ETH_P_PAE)) {
+-        if (pDevice->byBBType != BB_TYPE_11A) {
+-            pDevice->wCurrentRate = RATE_1M;
+-            pDevice->byACKRate = RATE_1M;
+-            pDevice->byTopCCKBasicRate = RATE_1M;
+-            pDevice->byTopOFDMBasicRate = RATE_6M;
+-        } else {
+-            pDevice->wCurrentRate = RATE_6M;
+-            pDevice->byACKRate = RATE_6M;
+-            pDevice->byTopCCKBasicRate = RATE_1M;
+-            pDevice->byTopOFDMBasicRate = RATE_6M;
+-        }
+-    }
++	if (pDevice->sTxEthHeader.wType == cpu_to_be16(ETH_P_PAE)) {
++		if (pDevice->byBBType != BB_TYPE_11A) {
++			pDevice->wCurrentRate = RATE_1M;
++			pDevice->byACKRate = RATE_1M;
++			pDevice->byTopCCKBasicRate = RATE_1M;
++			pDevice->byTopOFDMBasicRate = RATE_6M;
++		} else {
++			pDevice->wCurrentRate = RATE_6M;
++			pDevice->byACKRate = RATE_6M;
++			pDevice->byTopCCKBasicRate = RATE_1M;
++			pDevice->byTopOFDMBasicRate = RATE_6M;
++		}
++	}
  
--	spin_unlock(&host->lock);
--
- 	if (stat & BM_SSP_CTRL1_RESP_TIMEOUT_IRQ)
- 		cmd->error = -ETIMEDOUT;
- 	else if (stat & BM_SSP_CTRL1_RESP_ERR_IRQ)
+     DBG_PRT(MSG_LEVEL_DEBUG,
+ 	    KERN_INFO "dma_tx: pDevice->wCurrentRate = %d\n",
+@@ -3017,7 +3017,7 @@ int nsDMA_tx_packet(PSDevice pDevice, un
+ 
+     if (bNeedEncryption == TRUE) {
+         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"ntohs Pkt Type=%04x\n", ntohs(pDevice->sTxEthHeader.wType));
+-	if ((pDevice->sTxEthHeader.wType) == cpu_to_le16(ETH_P_PAE)) {
++	if ((pDevice->sTxEthHeader.wType) == cpu_to_be16(ETH_P_PAE)) {
+ 		bNeedEncryption = FALSE;
+             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Pkt Type=%04x\n", (pDevice->sTxEthHeader.wType));
+             if ((pMgmt->eCurrMode == WMAC_MODE_ESS_STA) && (pMgmt->eCurrState == WMAC_STATE_ASSOC)) {
 
 
