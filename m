@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758580Ab2I1PhJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:37:09 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:38611 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758473Ab2I1PhH (ORCPT
+	id S1758586Ab2I1Phi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:37:38 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:43997 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758473Ab2I1Phg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:37:07 -0400
-Date: Fri, 28 Sep 2012 17:37:06 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, eranian@google.com, acme@redhat.com,
-        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 04/31] perf, core: Add generic intx/intx_checkpointed counter modifiers
-Message-ID: <20120928153706.GV16230@one.firstfloor.org>
-References: <1348806696-31170-1-git-send-email-andi@firstfloor.org> <1348806696-31170-5-git-send-email-andi@firstfloor.org> <1348822920.3292.60.camel@twins> <20120928145324.GQ16230@one.firstfloor.org> <1348845807.3292.88.camel@twins>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348845807.3292.88.camel@twins>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 28 Sep 2012 11:37:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120928142924.GA22101@opensource.wolfsonmicro.com>
+References: <1348797458-2562-1-git-send-email-festevam@gmail.com>
+	<20120928104944.GB30869@opensource.wolfsonmicro.com>
+	<5065B534.7040602@freescale.com>
+	<20120928142924.GA22101@opensource.wolfsonmicro.com>
+Date: Fri, 28 Sep 2012 12:37:35 -0300
+Message-ID: <CAOMZO5DgOjs06BJZWsEay-jP5pjzMNTZTZnvAvzAd-JD9kqs1g@mail.gmail.com>
+Subject: Re: [PATCH v2] mfd: da9052-core: Use regmap_irq_get_virq() and fix
+ the probe
+From: Fabio Estevam <festevam@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>, sameo@linux.intel.com,
+        Marek Vasut <marex@denx.de>, ashish.jangam@kpitcummins.com,
+        dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 05:23:27PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-09-28 at 16:53 +0200, Andi Kleen wrote:
-> > 
-> > Also as a selfish reason I would prefer something that is short 
-> > to type. The qualifiers are quite common in scripts that do
-> > measurements here. So I would prefer to keep :t and :c as user
-> > interface.  But the internal implementation can be adjusted 
-> > of course. 
-> 
-> But since its so very specific to HSW consuming such limited resources
+On Fri, Sep 28, 2012 at 11:29 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-We still have quite a few letters in the Latin alphabet :)
+> No, this doesn't support linear domains, if you're going to do this it'd
+> be better to just leave it as irq_base though as discussed that's not
+> ideal.  When I've done these conversions I've just done the virq
+> conversion at every use.
 
-I assume any CPU with TSX will have something like that. PMU is model 
-specific, but it's obviously something that is needed. So I wouldn't 
-really call it HSW specific. Something like this will be likely
-in many Intel CPUs going forward. 
+Ok, so if I understand you correctly you suggest that Samuel applies
+the v1 of the patch:
+https://lkml.org/lkml/2012/9/26/551
 
-Also I don't know for sure but it wouldn't surprise me if the other
-CPUs with transactions (BG etc.) have something similar.
+Please confirm.
 
-> 
-> Maybe we can allow some configuration on the userspace side that would
-> allow each individual user to be lazy and create shortcuts or aliasses
-> of some sort ?
+Regards,
 
-That would likely be a logistical nightmare. You could never send
-a measurement script to someone else.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Fabio Estevam
