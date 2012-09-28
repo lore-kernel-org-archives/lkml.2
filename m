@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758969Ab2I1XVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 19:21:06 -0400
-Received: from nm3-vm0.bullet.mail.sp2.yahoo.com ([98.139.90.230]:41895 "HELO
-	nm3-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758913Ab2I1XU7 (ORCPT
+	id S932319Ab2I1XXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 19:23:17 -0400
+Received: from nm23-vm0.bullet.mail.bf1.yahoo.com ([98.139.212.191]:40881 "HELO
+	nm23-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758874Ab2I1XU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 19:20:59 -0400
-X-Yahoo-Newman-Id: 742122.28587.bm@omp1022.access.mail.mud.yahoo.com
+	Fri, 28 Sep 2012 19:20:58 -0400
+X-Yahoo-Newman-Id: 277694.39372.bm@omp1020.access.mail.mud.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 0IWi0CEVM1mPMmVjyQKmJ0x0qVTwbR0ZmSO7TL3cENVg.uy
- BiO0mD2hMiA6h_iPZvWMWGUZ64hvFS0tonPstQu_G5FM_ufk4RLffoC3oRcU
- GITpPSHZOVi9onDX4wO2.tLtEh4_jvDwCjlnrmhlmTpJA3.JcfXVc3unB20N
- EqBcEzXsMCqt2xoEbaxdU7gTWzDAC00IV9URElNdqBck80dKiw3liWdAUq20
- ISSwRdlls8JIPOVARG7VkXyjJuqI.3VSXn.9TVYc8kf2lXrS8FyHQDSetyCG
- D4DzBAl.o4WpRGvOqdnKr0E.Q16I6oMjTsUlk1E3b1G2B5K7npvRn2ofoGEK
- VkzrF75ItyqJ8mcowat0Xue5qnH1pZLr0ClrXMec2v3HDTwU5dQGs5pDlazf
- B_k.OgefiE3F7cU2PgSm__MnTeX8qGfTSOt8qGDN6eEKnvUybOmIP
+X-YMail-OSG: 9ZJLYgUVM1kFGqKSue4JAXUMH.vEnA0zYkOmEKw_6dmhRr6
+ ybKjBz.hTY5IDqV_2raV1r9CRVS5UlQaRqkL_JiEwP6yJacx0dZQiWFVStPy
+ GFM82LRRViEzcSedh6R_LdBXk_Ld5SFiGspurVmL7kaqcqg6SRq_7gp1IUo9
+ xrhgkhYWL2sdMwr4L6oyunNZYQgW8OJ9piLvvGYMKETTh_rzkrgGypB0tIEI
+ F5UvFJMV0KJSho7SFGJvrJy86bSvl1IbUTi2KmlX6G3C0xbikKgHbzopxEgH
+ DE2DJr0fg4FZNtakykhL0rF.gwX9ddgYmqY6MLlmnqmvidvXYu8EDc070o8z
+ si3x5KQNo8pAh9dMec7awsQoHNz66BQIDvVwoH_R7eliOxGvIYcqBBbLOCPj
+ pxKnbnoiRrDXZfdQxOxGhFPKKm55q2wK6v..w7RW6MRAjQoU6UH1f2.dDZmH
+ v2Sk2v6lY5v3ZfaFv6oNsd0FqpQRsGzYFsfUjp1bc2PLl.vLnJLDjiOfrKJQ
+ b0uOnkiDC8t5c.Lph0YfO8wTUfqbN7INrp5juzpDqcg--
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: Daniel Santos <daniel.santos@pobox.com>
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -32,9 +34,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Pavel Pisa <pisa@cmp.felk.cvut.cz>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 4/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
-Date: Fri, 28 Sep 2012 18:20:05 -0500
-Message-Id: <1348874411-28288-5-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH 3/10] compiler-gcc.h: Add gcc-recommended GCC_VERSION macro
+Date: Fri, 28 Sep 2012 18:20:04 -0500
+Message-Id: <1348874411-28288-4-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
 References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
@@ -42,99 +44,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using GCC_VERSION reduces complexity, is easier to read and is GCC's
-recommended mechanism for doing version checks. (Just don't ask me why
-they didn't define it in the first place.)  This also makes it easy to
-merge compiler-gcc{3,4}.h should somebody want to.
+Throughout compiler*.h, many version checks are made.  These can be
+simplified by using the macro that gcc's documentation recommends.
+However, my primary reason for adding this is that I need bug-check
+macros that are enabled at certain gcc versions and it's cleaner to use
+this macro than the tradition method:
+
+if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ => 2)
+
+If you add patch level, it gets this ugly:
+
+if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 2 || \
+   __GNUC_MINOR__ == 2 __GNUC_PATCHLEVEL__ >= 1))
+
+As opposed to:
+
+if GCC_VERSION >= 40201
+
+While having separate headers for gcc 3 & 4 eliminates some of this
+verbosity, they can still be cleaned up by this.
+
+See also:
+http://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- include/linux/compiler-gcc3.h |    8 ++++----
- include/linux/compiler-gcc4.h |   14 +++++++-------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ include/linux/compiler-gcc.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/compiler-gcc3.h b/include/linux/compiler-gcc3.h
-index 37d4124..7d89feb 100644
---- a/include/linux/compiler-gcc3.h
-+++ b/include/linux/compiler-gcc3.h
-@@ -2,22 +2,22 @@
- #error "Please don't include <linux/compiler-gcc3.h> directly, include <linux/compiler.h> instead."
- #endif
- 
--#if __GNUC_MINOR__ < 2
-+#if GCC_VERSION < 30200
- # error Sorry, your compiler is too old - please upgrade it.
- #endif
- 
--#if __GNUC_MINOR__ >= 3
-+#if GCC_VERSION >= 30300
- # define __used			__attribute__((__used__))
- #else
- # define __used			__attribute__((__unused__))
- #endif
- 
--#if __GNUC_MINOR__ >= 4
-+#if GCC_VERSION >= 30400
- #define __must_check		__attribute__((warn_unused_result))
- #endif
- 
- #ifdef CONFIG_GCOV_KERNEL
--# if __GNUC_MINOR__ < 4
-+# if GCC_VERSION < 30400
- #   error "GCOV profiling support for gcc versions below 3.4 not included"
- # endif /* __GNUC_MINOR__ */
- #endif /* CONFIG_GCOV_KERNEL */
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 4506d65..b44307d 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -4,7 +4,7 @@
- 
- /* GCC 4.1.[01] miscompiles __weak */
- #ifdef __KERNEL__
--# if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
-+# if GCC_VERSION >= 40100 &&  GCC_VERSION <= 40101
- //#  error Your version of gcc miscompiles the __weak directive
- # endif
- #endif
-@@ -13,11 +13,11 @@
- #define __must_check 		__attribute__((warn_unused_result))
- #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
- 
--#if __GNUC_MINOR__ > 0
-+#if GCC_VERSION >= 40102
- # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
- #endif
- 
--#if __GNUC_MINOR__ >= 3
-+#if GCC_VERSION >= 40300
- /* Mark functions as cold. gcc will assume any path leading to a call
-    to them will be unlikely.  This means a lot of manual unlikely()s
-    are unnecessary now for any paths leading to the usual suspects
-@@ -39,9 +39,9 @@
- # define __compiletime_warning(message) __attribute__((warning(message)))
- # define __compiletime_error(message) __attribute__((error(message)))
- #endif /* __CHECKER__ */
--#endif /* __GNUC_MINOR__ >= 3 */
-+#endif /* GCC_VERSION >= 40300 */
- 
--#if __GNUC_MINOR__ >= 5
-+#if GCC_VERSION >= 40500
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 6a6d7ae..24545cd 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -5,6 +5,9 @@
  /*
-  * Mark a position in code as unreachable.  This can be used to
-  * suppress control flow warnings after asm blocks that transfer
-@@ -56,9 +56,9 @@
- /* Mark a function definition as prohibited from being cloned. */
- #define __noclone	__attribute__((__noclone__))
- 
--#endif /* __GNUC_MINOR__ >= 5 */
-+#endif /* GCC_VERSION >= 40500 */
- 
--#if __GNUC_MINOR__ >= 6
-+#if GCC_VERSION >= 40600
- /*
-  * Tell the optimizer that something else uses this function or variable.
+  * Common definitions for all gcc versions go here.
   */
++#define GCC_VERSION (__GNUC__ * 10000 \
++		   + __GNUC_MINOR__ * 100 \
++		   + __GNUC_PATCHLEVEL__)
+ 
+ 
+ /* Optimization barrier */
 -- 
 1.7.3.4
 
