@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759709Ab2I1Unh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:43:37 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33208 "EHLO
+	id S1422822Ab2I1Unz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:43:55 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41696 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759563Ab2I1UlE (ORCPT
+	by vger.kernel.org with ESMTP id S1759489Ab2I1UlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:41:04 -0400
-X-Sasl-enc: SPAkguuJZX1kBaB3YxLxVtwiyzWyIL+Yb8QXz9l5cSF3 1348864863
+	Fri, 28 Sep 2012 16:41:01 -0400
+X-Sasl-enc: Z9ttznVfvMIbFJajRF/WCCx8MJk7ejQoOJgV9iXFgWaP 1348864859
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 035/127] staging: comedi: das08: Correct AO output for das08jr-16-ao
-Date: Fri, 28 Sep 2012 13:33:28 -0700
-Message-Id: <20120928203049.954229486@linuxfoundation.org>
+        Christopher Brannon <chris@the-brannons.com>
+Subject: [ 032/127] Staging: speakup: fix an improperly-declared variable.
+Date: Fri, 28 Sep 2012 13:33:25 -0700
+Message-Id: <20120928203049.603260307@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -27,31 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Christopher Brannon <chris@the-brannons.com>
 
-commit 61ed59ed09e6ad2b8395178ea5ad5f653bba08e3 upstream.
+commit 4ea418b8b2fa8a70d0fcc8231b65e67b3a72984b upstream.
 
-Don't zero out bits 15..12 of the data value in `das08jr_ao_winsn()` as
-that knobbles the upper three-quarters of the output range for the
-'das08jr-16-ao' board.
+A local static variable was declared as a pointer to a string
+constant.  We're assigning to the underlying memory, so it
+needs to be an array instead.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Christopher Brannon <chris@the-brannons.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/das08.c |    2 +-
+ drivers/staging/speakup/main.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/drivers/das08.c
-+++ b/drivers/staging/comedi/drivers/das08.c
-@@ -655,7 +655,7 @@ static int das08jr_ao_winsn(struct comed
- 	int chan;
+--- a/drivers/staging/speakup/main.c
++++ b/drivers/staging/speakup/main.c
+@@ -1855,7 +1855,7 @@ static void speakup_bits(struct vc_data
  
- 	lsb = data[0] & 0xff;
--	msb = (data[0] >> 8) & 0xf;
-+	msb = (data[0] >> 8) & 0xff;
- 
- 	chan = CR_CHAN(insn->chanspec);
- 
+ static int handle_goto(struct vc_data *vc, u_char type, u_char ch, u_short key)
+ {
+-	static u_char *goto_buf = "\0\0\0\0\0\0";
++	static u_char goto_buf[8];
+ 	static int num;
+ 	int maxlen, go_pos;
+ 	char *cp;
 
 
