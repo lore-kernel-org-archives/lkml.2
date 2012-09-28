@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab2I1IrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 04:47:17 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:59579 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751235Ab2I1IrO (ORCPT
+	id S1757282Ab2I1IsG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 04:48:06 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42949 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754595Ab2I1IsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 04:47:14 -0400
-Message-ID: <50656459.70309@ti.com>
-Date: Fri, 28 Sep 2012 11:48:25 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
+	Fri, 28 Sep 2012 04:48:01 -0400
+Date: Fri, 28 Sep 2012 09:46:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] driver core: fix possible missing of device probe
+Message-ID: <20120928084652.GC7916@n2100.arm.linux.org.uk>
+References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: CMA broken in next-20120926
-References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de> <20120927151159.4427fc8f.akpm@linux-foundation.org> <20120928054330.GA27594@bbox> <20120928083722.GM3429@suse.de>
-In-Reply-To: <20120928083722.GM3429@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Sep 28, 2012 at 08:52:43AM +0800, Ming Lei wrote:
+> Inside bus_add_driver(), one device might be added into
+> the bus or probed which is triggered by deferred probe
+> just after completing of driver_attach() and before
+> 'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)',
+> so the device won't be probed by this driver.
+> 
+> This patch moves the below line
+> 
+> 	'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)'
+> 
+> before driver_attach() inside bus_add_driver().
+> 
+> So fixes the problem since the below way can guarantee that
+> no probe(dev) may be lost.
+> 
+> CPU0                            	CPU1
+> driver_register
+> 	...
+> 	write(bus->driver_list)
+> 	smp_mb()
+> 	read(bus->device_list)
+> 	...
+> 					device_add
+> 						/* bus_add_device */
+> 						write(bus->device_list)
+> 						smp_mb()
+> 						/* bus_probe_device*/
+> 						read(bus->driver_list)
+> 
+> And the smp_mb() has been implicit by UNLOCK+LOCK
+> of 'klist' according to 'VARIETIES OF MEMORY BARRIER' part
+> of Documentation/memory-barriers.txt.
+> 
+> Reported-and-Tested-by: Russell King <linux@arm.linux.org.uk>
 
-On 09/28/2012 11:37 AM, Mel Gorman wrote:
->> I hope this patch fixes the bug. If this patch fixes the problem
->> but has some problem about description or someone has better idea,
->> feel free to modify and resend to akpm, Please.
->>
-> 
-> A full revert is overkill. Can the following patch be tested as a
-> potential replacement please?
-> 
-> ---8<---
-> mm: compaction: Iron out isolate_freepages_block() and isolate_freepages_range() -fix1
-> 
-> CMA is reported to be broken in next-20120926. Minchan Kim pointed out
-> that this was due to nr_scanned != total_isolated in the case of CMA
-> because PageBuddy pages are one scan but many isolations in CMA. This
-> patch should address the problem.
-> 
-> This patch is a fix for
-> mm-compaction-acquire-the-zone-lock-as-late-as-possible-fix-2.patch
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-
-linux-next + this patch alone also works for me.
-
-Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-
-> ---
->  mm/compaction.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 8250b69..d6e260a 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -282,6 +282,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->  {
->  	int nr_scanned = 0, total_isolated = 0;
->  	struct page *cursor, *valid_page = NULL;
-> +	unsigned long nr_strict_required = end_pfn - blockpfn;
->  	unsigned long flags;
->  	bool locked = false;
->  
-> @@ -343,10 +344,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->  
->  	/*
->  	 * If strict isolation is requested by CMA then check that all the
-> -	 * pages scanned were isolated. If there were any failures, 0 is
-> +	 * pages requested were isolated. If there were any failures, 0 is
->  	 * returned and CMA will fail.
->  	 */
-> -	if (strict && nr_scanned != total_isolated)
-> +	if (strict && nr_strict_required != total_isolated)
->  		total_isolated = 0;
->  
->  	if (locked)
-> 
-
-
--- 
-Péter
+Please use rmk+kernel@arm.linux.org.uk here, thanks.
