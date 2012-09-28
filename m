@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031919Ab2I1U5y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:57:54 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36626 "EHLO
+	id S1032001Ab2I1U6K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:58:10 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37259 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031541Ab2I1UsD (ORCPT
+	by vger.kernel.org with ESMTP id S1422960Ab2I1UsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:03 -0400
-X-Sasl-enc: E5Mo4K1+lOaz9G1ERxMdM3fawtp06bmF4Uv052m0dP/U 1348865282
+	Fri, 28 Sep 2012 16:48:02 -0400
+X-Sasl-enc: +NCSM+PmxgcX8GeOZYWCAqx7y/PoLPcSs/XDJP1U2LKz 1348865281
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?=C3=89ric=20Piel?= <piel@delmic.com>
-Subject: =?UTF-8?q?=5B=20076/127=5D=20USB=3A=20ftdi-sio=3A=20add=20support=20for=20more=20Physik=20Instrumente=20devices?=
-Date: Fri, 28 Sep 2012 13:34:09 -0700
-Message-Id: <20120928203054.775348119@linuxfoundation.org>
+        =?UTF-8?q?Florian=20W=C3=B6hrl?= <fw@woehrl.biz>,
+        Xiaofan Chen <xiaofanc@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Bruno Thomsen <bruno.thomsen@gmail.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: =?UTF-8?q?=5B=20075/127=5D=20USB=3A=20ftdi=5Fsio=3A=20do=20not=20claim=20CDC=20ACM=20function?=
+Date: Fri, 28 Sep 2012 13:34:08 -0700
+Message-Id: <20120928203054.657960488@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -30,82 +33,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Éric Piel <piel@delmic.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit dafc4f7be1a556ca3868d343c00127728b397068 upstream.
+commit f08dea734844aa42ec57c229b0b73b3d7d21f810 upstream.
 
-Commit b69cc672052540 added support for the E-861.  After acquiring a C-867, I
-realised that every Physik Instrumente's device has a different PID. They are
-listed in the Windows device driver's .inf file. So here are all PIDs for the
-current (and probably future) USB devices from Physik Instrumente.
+The Microchip vid:pid 04d8:000a is used for their CDC ACM
+demo firmware application.  This is a device with a single
+function conforming to the CDC ACM specification and with
+the intention of demonstrating CDC ACM class firmware and
+driver interaction.  The demo is used on a number of
+development boards, and may also be used unmodified by
+vendors using Microchip hardware.
 
-Compiled, but only actually tested on the E-861 and C-867.
+Some vendors have re-used this vid:pid for other types of
+firmware, emulating FTDI chips. Attempting to continue to
+support such devices without breaking class based
+applications that by matching on interface
+class/subclass/proto being ff/ff/00.  I have no information
+about the actual device or interface descriptors, but this
+will at least make the proper CDC ACM devices work again.
+Anyone having details of the offending device's descriptors
+should update this entry with the details.
 
-Signed-off-by: Éric Piel <piel@delmic.com>
+Reported-by: Florian Wöhrl <fw@woehrl.biz>
+Reported-by: Xiaofan Chen <xiaofanc@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Bruno Thomsen <bruno.thomsen@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |   17 +++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h |   21 ++++++++++++++++++++-
- 2 files changed, 37 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    4 +++-
+ drivers/usb/serial/ftdi_sio_ids.h |    5 ++++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
 --- a/drivers/usb/serial/ftdi_sio.c
 +++ b/drivers/usb/serial/ftdi_sio.c
-@@ -811,7 +811,24 @@ static struct usb_device_id id_table_com
+@@ -803,7 +803,9 @@ static struct usb_device_id id_table_com
  		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
- 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
-+	{ USB_DEVICE(FTDI_VID, PI_C865_PID) },
-+	{ USB_DEVICE(FTDI_VID, PI_C857_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C866_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C663_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C725_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E517_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C863_PID) },
- 	{ USB_DEVICE(PI_VID, PI_E861_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C867_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E609_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E709_PID) },
-+	{ USB_DEVICE(PI_VID, PI_100F_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1011_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1012_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1013_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1014_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1015_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1016_PID) },
- 	{ USB_DEVICE(KONDO_VID, KONDO_USB_SERIAL_PID) },
- 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
+ 	{ USB_DEVICE(ADI_VID, ADI_GNICEPLUS_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+-	{ USB_DEVICE(MICROCHIP_VID, MICROCHIP_USB_BOARD_PID) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MICROCHIP_VID, MICROCHIP_USB_BOARD_PID,
++					USB_CLASS_VENDOR_SPEC,
++					USB_SUBCLASS_VENDOR_SPEC, 0x00) },
+ 	{ USB_DEVICE(JETI_VID, JETI_SPC1201_PID) },
+ 	{ USB_DEVICE(MARVELL_VID, MARVELL_SHEEVAPLUG_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
 --- a/drivers/usb/serial/ftdi_sio_ids.h
 +++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -797,8 +797,27 @@
-  * Physik Instrumente
-  * http://www.physikinstrumente.com/en/products/
-  */
-+/* These two devices use the VID of FTDI */
-+#define PI_C865_PID	0xe0a0  /* PI C-865 Piezomotor Controller */
-+#define PI_C857_PID	0xe0a1  /* PI Encoder Trigger Box */
-+
- #define PI_VID              0x1a72  /* Vendor ID */
--#define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
-+#define PI_C866_PID	0x1000  /* PI C-866 Piezomotor Controller */
-+#define PI_C663_PID	0x1001  /* PI C-663 Mercury-Step */
-+#define PI_C725_PID	0x1002  /* PI C-725 Piezomotor Controller */
-+#define PI_E517_PID	0x1005  /* PI E-517 Digital Piezo Controller Operation Module */
-+#define PI_C863_PID	0x1007  /* PI C-863 */
-+#define PI_E861_PID	0x1008  /* PI E-861 Piezomotor Controller */
-+#define PI_C867_PID	0x1009  /* PI C-867 Piezomotor Controller */
-+#define PI_E609_PID	0x100D  /* PI E-609 Digital Piezo Controller */
-+#define PI_E709_PID	0x100E  /* PI E-709 Digital Piezo Controller */
-+#define PI_100F_PID	0x100F  /* PI Digital Piezo Controller */
-+#define PI_1011_PID	0x1011  /* PI Digital Piezo Controller */
-+#define PI_1012_PID	0x1012  /* PI Motion Controller */
-+#define PI_1013_PID	0x1013  /* PI Motion Controller */
-+#define PI_1014_PID	0x1014  /* PI Device */
-+#define PI_1015_PID	0x1015  /* PI Device */
-+#define PI_1016_PID	0x1016  /* PI Digital Servo Module */
- 
+@@ -542,7 +542,10 @@
  /*
-  * Kondo Kagaku Co.Ltd.
+  * Microchip Technology, Inc.
+  *
+- * MICROCHIP_VID (0x04D8) and MICROCHIP_USB_BOARD_PID (0x000A) are also used by:
++ * MICROCHIP_VID (0x04D8) and MICROCHIP_USB_BOARD_PID (0x000A) are
++ * used by single function CDC ACM class based firmware demo
++ * applications.  The VID/PID has also been used in firmware
++ * emulating FTDI serial chips by:
+  * Hornby Elite - Digital Command Control Console
+  * http://www.hornby.com/hornby-dcc/controllers/
+  */
 
 
