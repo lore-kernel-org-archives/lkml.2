@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031555Ab2I1Tm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:42:58 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965163Ab2I1S7h (ORCPT
+	id S1031563Ab2I1TnW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:43:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965238Ab2I1S7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:59:37 -0400
+	Fri, 28 Sep 2012 14:59:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Santiago Leon <santil@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 117/262] ibmveth: Fix alignment of rx queue bug
-Date: Fri, 28 Sep 2012 11:50:46 -0700
-Message-Id: <20120928183011.945374516@linuxfoundation.org>
+        Jan Beulich <jbeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 107/262] xen/boot: Disable BIOS SMP MP table search.
+Date: Fri, 28 Sep 2012 11:50:36 -0700
+Message-Id: <20120928183010.840372407@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,86 +29,89 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Santiago Leon <santil@linux.vnet.ibm.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit d90c92fee89ccd75ef2646f3bde0b4c0450666c3 upstream.
+commit bd49940a35ec7d488ae63bd625639893b3385b97 upstream.
 
-This patch fixes a bug found by Nish Aravamudan
-(https://lkml.org/lkml/2012/5/15/220) where the driver is not following
-the spec (it is not aligning the rx buffer on a 16-byte boundary) and the
-hypervisor aborts the registration, making the device unusable.
+As the initial domain we are able to search/map certain regions
+of memory to harvest configuration data. For all low-level we
+use ACPI tables - for interrupts we use exclusively ACPI _PRT
+(so DSDT) and MADT for INT_SRC_OVR.
 
-The fix follows BenH's recommendation (https://lkml.org/lkml/2012/7/20/461)
-to replace the kmalloc+map for a single call to dma_alloc_coherent()
-because that function always aligns to a 16-byte boundary.
+The SMP MP table is not used at all. As a matter of fact we do
+not even support machines that only have SMP MP but no ACPI tables.
 
-The stable trees will run into this bug whenever the rx buffer kmalloc call
-returns something not aligned on a 16-byte boundary.
+Lets follow how Moorestown does it and just disable searching
+for BIOS SMP tables.
 
-Signed-off-by: Santiago Leon <santil@linux.vnet.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This also fixes an issue on HP Proliant BL680c G5 and DL380 G6:
+
+9f->100 for 1:1 PTE
+Freeing 9f-100 pfn range: 97 pages freed
+1-1 mapping on 9f->100
+.. snip..
+e820: BIOS-provided physical RAM map:
+Xen: [mem 0x0000000000000000-0x000000000009efff] usable
+Xen: [mem 0x000000000009f400-0x00000000000fffff] reserved
+Xen: [mem 0x0000000000100000-0x00000000cfd1dfff] usable
+.. snip..
+Scan for SMP in [mem 0x00000000-0x000003ff]
+Scan for SMP in [mem 0x0009fc00-0x0009ffff]
+Scan for SMP in [mem 0x000f0000-0x000fffff]
+found SMP MP-table at [mem 0x000f4fa0-0x000f4faf] mapped at [ffff8800000f4fa0]
+(XEN) mm.c:908:d0 Error getting mfn 100 (pfn 5555555555555555) from L1 entry 0000000000100461 for l1e_owner=0, pg_owner=0
+(XEN) mm.c:4995:d0 ptwr_emulate: could not get_page_from_l1e()
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff81ac07e2>] xen_set_pte_init+0x66/0x71
+. snip..
+Pid: 0, comm: swapper Not tainted 3.6.0-rc6upstream-00188-gb6fb969-dirty #2 HP ProLiant BL680c G5
+.. snip..
+Call Trace:
+ [<ffffffff81ad31c6>] __early_ioremap+0x18a/0x248
+ [<ffffffff81624731>] ? printk+0x48/0x4a
+ [<ffffffff81ad32ac>] early_ioremap+0x13/0x15
+ [<ffffffff81acc140>] get_mpc_size+0x2f/0x67
+ [<ffffffff81acc284>] smp_scan_config+0x10c/0x136
+ [<ffffffff81acc2e4>] default_find_smp_config+0x36/0x5a
+ [<ffffffff81ac3085>] setup_arch+0x5b3/0xb5b
+ [<ffffffff81624731>] ? printk+0x48/0x4a
+ [<ffffffff81abca7f>] start_kernel+0x90/0x390
+ [<ffffffff81abc356>] x86_64_start_reservations+0x131/0x136
+ [<ffffffff81abfa83>] xen_start_kernel+0x65f/0x661
+(XEN) Domain 0 crashed: 'noreboot' set - not rebooting.
+
+which is that ioremap would end up mapping 0xff using _PAGE_IOMAP
+(which is what early_ioremap sticks as a flag) - which meant
+we would get MFN 0xFF (pte ff461, which is OK), and then it would
+also map 0x100 (b/c ioremap tries to get page aligned request, and
+it was trying to map 0xf4fa0 + PAGE_SIZE - so it mapped the next page)
+as _PAGE_IOMAP. Since 0x100 is actually a RAM page, and the _PAGE_IOMAP
+bypasses the P2M lookup we would happily set the PTE to 1000461.
+Xen would deny the request since we do not have access to the
+Machine Frame Number (MFN) of 0x100. The P2M[0x100] is for example
+0x80140.
+
+Fixes-Oracle-Bugzilla: https://bugzilla.oracle.com/bugzilla/show_bug.cgi?id=13665
+Acked-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ibm/ibmveth.c |   26 +++++++++-----------------
- 1 file changed, 9 insertions(+), 17 deletions(-)
+ arch/x86/xen/enlighten.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -472,14 +472,9 @@ static void ibmveth_cleanup(struct ibmve
- 	}
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1422,6 +1422,10 @@ asmlinkage void __init xen_start_kernel(
+ 		pci_request_acs();
  
- 	if (adapter->rx_queue.queue_addr != NULL) {
--		if (!dma_mapping_error(dev, adapter->rx_queue.queue_dma)) {
--			dma_unmap_single(dev,
--					adapter->rx_queue.queue_dma,
--					adapter->rx_queue.queue_len,
--					DMA_BIDIRECTIONAL);
--			adapter->rx_queue.queue_dma = DMA_ERROR_CODE;
--		}
--		kfree(adapter->rx_queue.queue_addr);
-+		dma_free_coherent(dev, adapter->rx_queue.queue_len,
-+				  adapter->rx_queue.queue_addr,
-+				  adapter->rx_queue.queue_dma);
- 		adapter->rx_queue.queue_addr = NULL;
- 	}
- 
-@@ -556,10 +551,13 @@ static int ibmveth_open(struct net_devic
- 		goto err_out;
- 	}
- 
-+	dev = &adapter->vdev->dev;
+ 		xen_acpi_sleep_register();
 +
- 	adapter->rx_queue.queue_len = sizeof(struct ibmveth_rx_q_entry) *
- 						rxq_entries;
--	adapter->rx_queue.queue_addr = kmalloc(adapter->rx_queue.queue_len,
--						GFP_KERNEL);
-+	adapter->rx_queue.queue_addr =
-+	    dma_alloc_coherent(dev, adapter->rx_queue.queue_len,
-+			       &adapter->rx_queue.queue_dma, GFP_KERNEL);
- 
- 	if (!adapter->rx_queue.queue_addr) {
- 		netdev_err(netdev, "unable to allocate rx queue pages\n");
-@@ -567,19 +565,13 @@ static int ibmveth_open(struct net_devic
- 		goto err_out;
++		/* Avoid searching for BIOS MP tables */
++		x86_init.mpparse.find_smp_config = x86_init_noop;
++		x86_init.mpparse.get_smp_config = x86_init_uint_noop;
  	}
- 
--	dev = &adapter->vdev->dev;
--
- 	adapter->buffer_list_dma = dma_map_single(dev,
- 			adapter->buffer_list_addr, 4096, DMA_BIDIRECTIONAL);
- 	adapter->filter_list_dma = dma_map_single(dev,
- 			adapter->filter_list_addr, 4096, DMA_BIDIRECTIONAL);
--	adapter->rx_queue.queue_dma = dma_map_single(dev,
--			adapter->rx_queue.queue_addr,
--			adapter->rx_queue.queue_len, DMA_BIDIRECTIONAL);
- 
- 	if ((dma_mapping_error(dev, adapter->buffer_list_dma)) ||
--	    (dma_mapping_error(dev, adapter->filter_list_dma)) ||
--	    (dma_mapping_error(dev, adapter->rx_queue.queue_dma))) {
-+	    (dma_mapping_error(dev, adapter->filter_list_dma))) {
- 		netdev_err(netdev, "unable to map filter or buffer list "
- 			   "pages\n");
- 		rc = -ENOMEM;
+ #ifdef CONFIG_PCI
+ 	/* PCI BIOS service won't work from a PV guest. */
 
 
