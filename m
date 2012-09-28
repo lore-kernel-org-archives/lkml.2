@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033045Ab2I1VRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:17:47 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45498 "EHLO
+	id S1033054Ab2I1VSE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:18:04 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36063 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759320Ab2I1Uii (ORCPT
+	by vger.kernel.org with ESMTP id S1759314Ab2I1Uig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:38:38 -0400
-X-Sasl-enc: Mq+lT17NBCowCOZ3wINR3h75Z9YEzJ8HxZLb1Zv7IG/u 1348864717
+	Fri, 28 Sep 2012 16:38:36 -0400
+X-Sasl-enc: kPU9z2GPh2jsgjxiLXb3d3RIlKimqoMc7Fp6jE0tla/j 1348864716
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Andy Walls <awalls@md.metrocast.net>,
-        Colin Cross <ccross@google.com>
-Subject: [ 208/218] kthread_worker: reorganize to prepare for flush_kthread_work() reimplementation
-Date: Fri, 28 Sep 2012 13:17:05 -0700
-Message-Id: <20120928201525.471387964@linuxfoundation.org>
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 207/218] NFSd: set nfsd_serv to NULL after service destruction
+Date: Fri, 28 Sep 2012 13:17:04 -0700
+Message-Id: <20120928201525.356771157@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,100 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 9a2e03d8ed518a61154f18d83d6466628e519f94 upstream.
+commit 57c8b13e3cd0f94944c9691ce7f58e5fcef8a12d upstream.
 
-Make the following two non-functional changes.
+In nfsd_destroy():
 
-* Separate out insert_kthread_work() from queue_kthread_work().
+	if (destroy)
+		svc_shutdown_net(nfsd_serv, net);
+	svc_destroy(nfsd_server);
 
-* Relocate struct kthread_flush_work and kthread_flush_work_fn()
-  definitions above flush_kthread_work().
+svc_shutdown_net(nfsd_serv, net) calls nfsd_last_thread(), which sets
+nfsd_serv to NULL, causing a NULL dereference on the following line.
 
-v2: Added lockdep_assert_held() in insert_kthread_work() as suggested
-    by Andy Walls.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Andy Walls <awalls@md.metrocast.net>
-Cc: Colin Cross <ccross@google.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/kthread.c |   42 ++++++++++++++++++++++++++----------------
- 1 file changed, 26 insertions(+), 16 deletions(-)
+ fs/nfsd/nfsd.h   |    2 ++
+ fs/nfsd/nfssvc.c |   10 +++++-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -378,6 +378,19 @@ repeat:
+--- a/fs/nfsd/nfsd.h
++++ b/fs/nfsd/nfsd.h
+@@ -80,6 +80,8 @@ static inline void nfsd_destroy(struct n
+ 	if (destroy)
+ 		svc_shutdown_net(nfsd_serv, net);
+ 	svc_destroy(nfsd_serv);
++	if (destroy)
++		nfsd_serv = NULL;
  }
- EXPORT_SYMBOL_GPL(kthread_worker_fn);
  
-+/* insert @work before @pos in @worker */
-+static void insert_kthread_work(struct kthread_worker *worker,
-+			       struct kthread_work *work,
-+			       struct list_head *pos)
-+{
-+	lockdep_assert_held(&worker->lock);
-+
-+	list_add_tail(&work->node, pos);
-+	work->queue_seq++;
-+	if (likely(worker->task))
-+		wake_up_process(worker->task);
-+}
-+
- /**
-  * queue_kthread_work - queue a kthread_work
-  * @worker: target kthread_worker
-@@ -395,10 +408,7 @@ bool queue_kthread_work(struct kthread_w
+ #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -254,8 +254,6 @@ static void nfsd_shutdown(void)
  
- 	spin_lock_irqsave(&worker->lock, flags);
- 	if (list_empty(&work->node)) {
--		list_add_tail(&work->node, &worker->work_list);
--		work->queue_seq++;
--		if (likely(worker->task))
--			wake_up_process(worker->task);
-+		insert_kthread_work(worker, work, &worker->work_list);
- 		ret = true;
- 	}
- 	spin_unlock_irqrestore(&worker->lock, flags);
-@@ -406,6 +416,18 @@ bool queue_kthread_work(struct kthread_w
- }
- EXPORT_SYMBOL_GPL(queue_kthread_work);
+ static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
+ {
+-	/* When last nfsd thread exits we need to do some clean-up */
+-	nfsd_serv = NULL;
+ 	nfsd_shutdown();
  
-+struct kthread_flush_work {
-+	struct kthread_work	work;
-+	struct completion	done;
-+};
-+
-+static void kthread_flush_work_fn(struct kthread_work *work)
-+{
-+	struct kthread_flush_work *fwork =
-+		container_of(work, struct kthread_flush_work, work);
-+	complete(&fwork->done);
-+}
-+
- /**
-  * flush_kthread_work - flush a kthread_work
-  * @work: work to flush
-@@ -436,18 +458,6 @@ void flush_kthread_work(struct kthread_w
- }
- EXPORT_SYMBOL_GPL(flush_kthread_work);
+ 	svc_rpcb_cleanup(serv, net);
+@@ -332,6 +330,7 @@ static int nfsd_get_default_max_blksize(
+ int nfsd_create_serv(void)
+ {
+ 	int error;
++	struct net *net = current->nsproxy->net_ns;
  
--struct kthread_flush_work {
--	struct kthread_work	work;
--	struct completion	done;
--};
--
--static void kthread_flush_work_fn(struct kthread_work *work)
--{
--	struct kthread_flush_work *fwork =
--		container_of(work, struct kthread_flush_work, work);
--	complete(&fwork->done);
--}
--
- /**
-  * flush_kthread_worker - flush all current works on a kthread_worker
-  * @worker: worker to flush
+ 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
+ 	if (nfsd_serv) {
+@@ -346,7 +345,7 @@ int nfsd_create_serv(void)
+ 	if (nfsd_serv == NULL)
+ 		return -ENOMEM;
+ 
+-	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
++	error = svc_bind(nfsd_serv, net);
+ 	if (error < 0) {
+ 		svc_destroy(nfsd_serv);
+ 		return error;
+@@ -557,12 +556,13 @@ nfsd(void *vrqstp)
+ 	nfsdstats.th_cnt --;
+ 
+ out:
+-	if (rqstp->rq_server->sv_nrthreads == 1)
+-		svc_shutdown_net(rqstp->rq_server, &init_net);
++	rqstp->rq_server = NULL;
+ 
+ 	/* Release the thread */
+ 	svc_exit_thread(rqstp);
+ 
++	nfsd_destroy(&init_net);
++
+ 	/* Release module */
+ 	mutex_unlock(&nfsd_mutex);
+ 	module_put_and_exit(0);
 
 
