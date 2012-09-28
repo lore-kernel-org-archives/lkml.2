@@ -1,44 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab2I1Mjp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:39:45 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:43127 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab2I1Mjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:39:44 -0400
-Date: Fri, 28 Sep 2012 14:39:40 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: linux-next: manual merge of the tip tree with the rr tree
-Message-ID: <20120928123931.GA12843@somewhere.redhat.com>
-References: <20120928133341.5697fbecc1674b2143101f52@canb.auug.org.au>
+	id S1757878Ab2I1Mnn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:43:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33524 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757708Ab2I1Mnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 08:43:41 -0400
+Date: Fri, 28 Sep 2012 13:43:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: CMA broken in next-20120926
+Message-ID: <20120928124332.GC29125@suse.de>
+References: <20120927151159.4427fc8f.akpm@linux-foundation.org>
+ <20120928054330.GA27594@bbox>
+ <20120928083722.GM3429@suse.de>
+ <50656459.70309@ti.com>
+ <20120928102728.GN3429@suse.de>
+ <20120928103207.GA22811@avionic-0098.mockup.avionic-design.de>
+ <20120928103815.GA15219@avionic-0098.mockup.avionic-design.de>
+ <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
+ <20120928110712.GB29125@suse.de>
+ <20120928113924.GA25342@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20120928133341.5697fbecc1674b2143101f52@canb.auug.org.au>
+In-Reply-To: <20120928113924.GA25342@avionic-0098.mockup.avionic-design.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 01:33:41PM +1000, Stephen Rothwell wrote:
-> Hi all,
+On Fri, Sep 28, 2012 at 01:39:24PM +0200, Thierry Reding wrote:
+> On Fri, Sep 28, 2012 at 12:07:12PM +0100, Mel Gorman wrote:
+> > On Fri, Sep 28, 2012 at 12:51:13PM +0200, Thierry Reding wrote:
+> > > On Fri, Sep 28, 2012 at 12:38:15PM +0200, Thierry Reding wrote:
+> > > > On Fri, Sep 28, 2012 at 12:32:07PM +0200, Thierry Reding wrote:
+> > > > > On Fri, Sep 28, 2012 at 11:27:28AM +0100, Mel Gorman wrote:
+> > > > > > On Fri, Sep 28, 2012 at 11:48:25AM +0300, Peter Ujfalusi wrote:
+> > > > > > > Hi,
+> > > > > > > 
+> > > > > > > On 09/28/2012 11:37 AM, Mel Gorman wrote:
+> > > > > > > >> I hope this patch fixes the bug. If this patch fixes the problem
+> > > > > > > >> but has some problem about description or someone has better idea,
+> > > > > > > >> feel free to modify and resend to akpm, Please.
+> > > > > > > >>
+> > > > > > > > 
+> > > > > > > > A full revert is overkill. Can the following patch be tested as a
+> > > > > > > > potential replacement please?
+> > > > > > > > 
+> > > > > > > > ---8<---
+> > > > > > > > mm: compaction: Iron out isolate_freepages_block() and isolate_freepages_range() -fix1
+> > > > > > > > 
+> > > > > > > > CMA is reported to be broken in next-20120926. Minchan Kim pointed out
+> > > > > > > > that this was due to nr_scanned != total_isolated in the case of CMA
+> > > > > > > > because PageBuddy pages are one scan but many isolations in CMA. This
+> > > > > > > > patch should address the problem.
+> > > > > > > > 
+> > > > > > > > This patch is a fix for
+> > > > > > > > mm-compaction-acquire-the-zone-lock-as-late-as-possible-fix-2.patch
+> > > > > > > > 
+> > > > > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > > > > > 
+> > > > > > > linux-next + this patch alone also works for me.
+> > > > > > > 
+> > > > > > > Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> > > > > > 
+> > > > > > Thanks Peter. I expect it also works for Thierry as I expect you were
+> > > > > > suffering the same problem but obviously confirmation of that would be nice.
+> > > > > 
+> > > > > I've been running a few tests and indeed this solves the obvious problem
+> > > > > that the coherent pool cannot be created at boot (which in turn caused
+> > > > > the ethernet adapter to fail on Tegra).
+> > > > > 
+> > > > > However I've been working on the Tegra DRM driver, which uses CMA to
+> > > > > allocate large chunks of framebuffer memory and these are now failing.
+> > > > > I'll need to check if Minchan's patch solves that problem as well.
+> > > > 
+> > > > Indeed, with Minchan's patch the DRM can allocate the framebuffer
+> > > > without a problem. Something else must be wrong then.
+> > > 
+> > > However, depending on the size of the allocation it also happens with
+> > > Minchan's patch. What I see is this:
+> > > 
+> > > [   60.736729] alloc_contig_range test_pages_isolated(1e900, 1f0e9) failed
+> > > [   60.743572] alloc_contig_range test_pages_isolated(1ea00, 1f1e9) failed
+> > > [   60.750424] alloc_contig_range test_pages_isolated(1ea00, 1f2e9) failed
+> > > [   60.757239] alloc_contig_range test_pages_isolated(1ec00, 1f3e9) failed
+> > > [   60.764066] alloc_contig_range test_pages_isolated(1ec00, 1f4e9) failed
+> > > [   60.770893] alloc_contig_range test_pages_isolated(1ec00, 1f5e9) failed
+> > > [   60.777698] alloc_contig_range test_pages_isolated(1ec00, 1f6e9) failed
+> > > [   60.784526] alloc_contig_range test_pages_isolated(1f000, 1f7e9) failed
+> > > [   60.791148] drm tegra: Failed to alloc buffer: 8294400
+> > > 
+> > > I'm pretty sure this did work before next-20120926.
+> > > 
+> > 
+> > Can you double check this please?
+> > 
+> > This is a separate bug but may be related to the same series. However, CMA should
+> > be ignoring the "skip" hints and because it's sync compaction it should
+> > not be exiting due to lock contention. Maybe Marek will spot it.
 > 
-> Today's linux-next merge of the tip tree got a conflict in arch/Kconfig
-> between commit 9a9d5786a5e7 ("Make most arch asm/module.h files use
-> asm-generic/module.h") from the rr tree and commits fdf9c356502a
-> ("cputime: Make finegrained irqtime accounting generally available") and
-> 2b1d5024e17b ("rcu: Settle config for userspace extended quiescent
-> state") from the tip tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> I've written a small test module that tries to allocate growing blocks
+> of contiguous memory and it seems like with your patch this always fails
+> at 8 MiB.
 
-Looks good. Thanks.
+You earlier said it also happens with Minchan's but your statment here
+is less clear. Does Minchan's also fail on the 8MiB boundary? Second,
+did the test module work with next-20120926?
+
+> Given the default size for CMA allocations is 16 MiB I thought
+> I should try increasing that but it doesn't make a difference. The
+> allocation still fails at 8 MiB.
+> Maybe that'll give another clue.
+> 
+
+It narrows down the possibilities at least.
+
+> > Failing that, would you be in a position to bisect between v3.6-rc6 and
+> > current next to try pin-point exactly which patch introduced this
+> > problem please?
+> 
+> I can possibly do that but probably not before sometime later next week
+> unfortunately. But I'll see if I can find some time to double-check that
+> some older linux-next version works and that my memory isn't failing me.
+> 
+
+That would be very much appreciated because it narrows down the
+possibilties. I don't have anything in place that allows me to test CMA
+so the more information I can get the better.
+
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
