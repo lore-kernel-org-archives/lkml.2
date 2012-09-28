@@ -1,104 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758352Ab2I1QLq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 12:11:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48743 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757430Ab2I1QLp convert rfc822-to-8bit (ORCPT
+	id S1758370Ab2I1QMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 12:12:30 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22348 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757695Ab2I1QM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 12:11:45 -0400
-From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "Chemparathy, Cyril" <cyril@ti.com>
-Subject: [REMINDER: PATCH 1/1] spi:clk: preparation for switch to common
- clock framework
-Thread-Topic: [REMINDER: PATCH 1/1] spi:clk: preparation for switch to
- common clock framework
-Thread-Index: AQHNnZPsuZlcp9ZbkEmJplylLLmX1g==
-Date: Fri, 28 Sep 2012 16:11:32 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B7041EF690@DFLE12.ent.ti.com>
-References: <1347900122-25101-1-git-send-email-m-karicheri2@ti.com>
- <1347900122-25101-2-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1347900122-25101-2-git-send-email-m-karicheri2@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 Sep 2012 12:12:29 -0400
+Date: Fri, 28 Sep 2012 12:21:35 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: andrew.cooper3@citrix.com, jbeulich@suse.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH 05/11] x86/xen: Register resources required by kexec-tools
+Message-ID: <20120928162132.GC16262@localhost.localdomain>
+References: <1348769198-29580-1-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-2-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-3-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-4-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-5-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-6-git-send-email-daniel.kiper@oracle.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348769198-29580-6-git-send-email-daniel.kiper@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> -----Original Message-----
->> From: Karicheri, Muralidharan
->> Sent: Monday, September 17, 2012 12:42 PM
->> To: spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org; davinci-linux-
->> open-source@linux.davincidsp.com; grant.likely@secretlab.ca; linux-arm-
->> kernel@lists.infradead.org
->> Cc: Chemparathy, Cyril; Karicheri, Muralidharan
->> Subject: [PATCH 1/1] spi:clk: preparation for switch to common clock framework
->> 
->> As a first step towards migrating davinci platforms to use common clock
->> framework, replace all instances of clk_enable() with clk_prepare_enable()
->> and clk_disable() with clk_disable_unprepare(). Until the platform is
->> switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
->> adds a might_sleep() call and would work without any issues.
->> 
->> This will make it easy later to switch to common clk based implementation
->> of clk driver from DaVinci specific driver.
->> 
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> Reviewed-by: Mike Turquette <mturquette@linaro.org>
->> 
->> diff --git a/drivers/spi/spi-davinci.c b/drivers/spi/spi-davinci.c
->> index c1ec52d..3f54f9e 100644
->> --- a/drivers/spi/spi-davinci.c
->> +++ b/drivers/spi/spi-davinci.c
->> @@ -843,7 +843,7 @@ static int __devinit davinci_spi_probe(struct platform_device
->> *pdev)
->>  		ret = -ENODEV;
->>  		goto put_master;
->>  	}
->> -	clk_enable(dspi->clk);
->> +	clk_prepare_enable(dspi->clk);
->> 
->>  	master->bus_num = pdev->id;
->>  	master->num_chipselect = pdata->num_chipselect;
->> @@ -927,7 +927,7 @@ free_dma:
->>  	dma_release_channel(dspi->dma_rx);
->>  	dma_release_channel(dspi->dma_tx);
->>  free_clk:
->> -	clk_disable(dspi->clk);
->> +	clk_disable_unprepare(dspi->clk);
->>  	clk_put(dspi->clk);
->>  put_master:
->>  	spi_master_put(master);
->> @@ -963,7 +963,7 @@ static int __devexit davinci_spi_remove(struct platform_device
->> *pdev)
->> 
->>  	spi_bitbang_stop(&dspi->bitbang);
->> 
->> -	clk_disable(dspi->clk);
->> +	clk_disable_unprepare(dspi->clk);
->>  	clk_put(dspi->clk);
->>  	spi_master_put(master);
->>  	free_irq(dspi->irq, dspi);
->> --
->> 1.7.9.5
+On Thu, Sep 27, 2012 at 08:06:32PM +0200, Daniel Kiper wrote:
+> Register resources required by kexec-tools.
+> 
+> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> ---
+>  arch/x86/xen/kexec.c |  150 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 150 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/xen/kexec.c
+> 
+> diff --git a/arch/x86/xen/kexec.c b/arch/x86/xen/kexec.c
+> new file mode 100644
+> index 0000000..eb0108b
+> --- /dev/null
+> +++ b/arch/x86/xen/kexec.c
+> @@ -0,0 +1,150 @@
+> +/*
+> + * Copyright (c) 2011 Daniel Kiper
+> + * Copyright (c) 2012 Daniel Kiper, Oracle Corporation
+> + *
+> + * kexec/kdump implementation for Xen was written by Daniel Kiper.
+> + * Initial work on it was sponsored by Google under Google Summer
+> + * of Code 2011 program and Citrix. Konrad Rzeszutek Wilk from Oracle
+> + * was the mentor for this project.
+> + *
+> + * Some ideas are taken from:
+> + *   - native kexec/kdump implementation,
+> + *   - kexec/kdump implementation for Xen Linux Kernel Ver. 2.6.18,
+> + *   - PV-GRUB.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/errno.h>
+> +#include <linux/init.h>
+> +#include <linux/ioport.h>
+> +#include <linux/kernel.h>
+> +#include <linux/kexec.h>
+> +#include <linux/slab.h>
+> +#include <linux/string.h>
+> +
+> +#include <xen/interface/platform.h>
+> +#include <xen/interface/xen.h>
+> +#include <xen/xen.h>
+> +
+> +#include <asm/xen/hypercall.h>
+> +
+> +unsigned long xen_vmcoreinfo_maddr = 0;
+> +unsigned long xen_vmcoreinfo_max_size = 0;
+> +
+> +static int __init xen_init_kexec_resources(void)
+> +{
+> +	int rc;
+> +	static struct resource xen_hypervisor_res = {
+> +		.name = "Hypervisor code and data",
+> +		.flags = IORESOURCE_BUSY | IORESOURCE_MEM
+> +	};
+> +	struct resource *cpu_res;
+> +	struct xen_kexec_range xkr;
+> +	struct xen_platform_op cpuinfo_op;
+> +	uint32_t cpus, i;
+> +
+> +	if (!xen_initial_domain())
+> +		return 0;
+> +
+> +	if (strstr(boot_command_line, "crashkernel="))
+> +		pr_info("kexec: Ignoring crashkernel option. "
 
-Could you please review and apply this patch to linux-next?
+pr_warn?
 
-Murali Karicheri
-Software Design Engineer
+> +			"It should be passed to Xen hypervisor.\n");
+> +
+> +	/* Register Crash kernel resource. */
+> +	xkr.range = KEXEC_RANGE_MA_CRASH;
+> +	rc = HYPERVISOR_kexec_op(KEXEC_CMD_kexec_get_range, &xkr);
+> +
+> +	if (rc) {
+> +		pr_info("kexec: %s: HYPERVISOR_kexec_op(KEXEC_RANGE_MA_CRASH)"
+> +			": %i\n", __func__, rc);
 
+Perhaps pr_warn?
+> +		return rc;
+> +	}
+> +
+> +	if (!xkr.size)
+> +		return 0;
+> +
+> +	crashk_res.start = xkr.start;
+> +	crashk_res.end = xkr.start + xkr.size - 1;
+> +	insert_resource(&iomem_resource, &crashk_res);
+> +
+> +	/* Register Hypervisor code and data resource. */
+> +	xkr.range = KEXEC_RANGE_MA_XEN;
+> +	rc = HYPERVISOR_kexec_op(KEXEC_CMD_kexec_get_range, &xkr);
+> +
+> +	if (rc) {
+> +		pr_info("kexec: %s: HYPERVISOR_kexec_op(KEXEC_RANGE_MA_XEN)"
+
+pr_warn
+> +			": %i\n", __func__, rc);
+> +		return rc;
+> +	}
+> +
+> +	xen_hypervisor_res.start = xkr.start;
+> +	xen_hypervisor_res.end = xkr.start + xkr.size - 1;
+> +	insert_resource(&iomem_resource, &xen_hypervisor_res);
+> +
+> +	/* Determine maximum number of physical CPUs. */
+> +	cpuinfo_op.cmd = XENPF_get_cpuinfo;
+> +	cpuinfo_op.u.pcpu_info.xen_cpuid = 0;
+> +	rc = HYPERVISOR_dom0_op(&cpuinfo_op);
+> +
+> +	if (rc) {
+> +		pr_info("kexec: %s: HYPERVISOR_dom0_op(): %i\n", __func__, rc);
+
+pr_warn.
+> +		return rc;
+> +	}
+> +
+> +	cpus = cpuinfo_op.u.pcpu_info.max_present + 1;
+
+Do we care about the hotplug CPUs?
+> +
+> +	/* Register CPUs Crash note resources. */
+> +	cpu_res = kcalloc(cpus, sizeof(struct resource), GFP_KERNEL);
+> +
+> +	if (!cpu_res) {
+> +		pr_info("kexec: %s: kcalloc(): %i\n", __func__, -ENOMEM);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	for (i = 0; i < cpus; ++i) {
+
+Any specific reason for using '++i' instead of 'i++' ?
+
+> +		xkr.range = KEXEC_RANGE_MA_CPU;
+> +		xkr.nr = i;
+> +		rc = HYPERVISOR_kexec_op(KEXEC_CMD_kexec_get_range, &xkr);
+> +
+> +		if (rc) {
+> +			pr_info("kexec: %s: cpu: %u: HYPERVISOR_kexec_op"
+> +				"(KEXEC_RANGE_MA_XEN): %i\n", __func__, i, rc);
+> +			continue;
+> +		}
+> +
+> +		cpu_res->name = "Crash note";
+> +		cpu_res->start = xkr.start;
+> +		cpu_res->end = xkr.start + xkr.size - 1;
+> +		cpu_res->flags = IORESOURCE_BUSY | IORESOURCE_MEM;
+> +		insert_resource(&iomem_resource, cpu_res++);
+> +	}
+> +
+> +	/* Get vmcoreinfo address and maximum allowed size. */
+> +	xkr.range = KEXEC_RANGE_MA_VMCOREINFO;
+> +	rc = HYPERVISOR_kexec_op(KEXEC_CMD_kexec_get_range, &xkr);
+> +
+> +	if (rc) {
+> +		pr_info("kexec: %s: HYPERVISOR_kexec_op(KEXEC_RANGE_MA_VMCOREINFO)"
+> +			": %i\n", __func__, rc);
+> +		return rc;
+> +	}
+> +
+> +	xen_vmcoreinfo_maddr = xkr.start;
+> +	xen_vmcoreinfo_max_size = xkr.size;
+> +
+> +	return 0;
+> +}
+> +
+> +core_initcall(xen_init_kexec_resources);
+> -- 
+> 1.5.6.5
