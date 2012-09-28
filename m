@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946019Ab2I1VK4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:10:56 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41696 "EHLO
+	id S1759526Ab2I1Ukn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:40:43 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57769 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759537Ab2I1Ukq (ORCPT
+	by vger.kernel.org with ESMTP id S1759487Ab2I1UkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:46 -0400
-X-Sasl-enc: +xniLLxykiAs6di12BUY//NbcEvJmcnqefGgTj1uJAsz 1348864845
+	Fri, 28 Sep 2012 16:40:23 -0400
+X-Sasl-enc: cJOURMIrO2VUGE0sZfZAk9NLlOcsbBwi8zyV9tMXV1xd 1348864822
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dmitry Kozlov <xeb@mail.ru>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 021/127] l2tp: avoid to use synchronize_rcu in tunnel free function
-Date: Fri, 28 Sep 2012 13:33:14 -0700
-Message-Id: <20120928203048.310145288@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 005/127] isdnloop: fix and simplify isdnloop_init()
+Date: Fri, 28 Sep 2012 13:32:58 -0700
+Message-Id: <20120928203046.434542003@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,45 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "xeb@mail.ru" <xeb@mail.ru>
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-[ Upstream commit 99469c32f79a32d8481f87be0d3c66dad286f4ec ]
+[ Upstream commit 77f00f6324cb97cf1df6f9c4aaeea6ada23abdb2 ]
 
-Avoid to use synchronize_rcu in l2tp_tunnel_free because context may be
-atomic.
+Fix a buffer overflow bug by removing the revision and printk.
 
-Signed-off-by: Dmitry Kozlov <xeb@mail.ru>
+[   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7
+[   22.097508] isdnloop: (loop0) virtual card added
+[   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
+[   22.174400]
+[   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
+[   22.624071] Call Trace:
+[   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
+[   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
+[   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
+[   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
+[   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
+[   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
+
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/l2tp/l2tp_core.c |    3 +--
- net/l2tp/l2tp_core.h |    1 +
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/isdn/isdnloop/isdnloop.c |   12 ------------
+ 1 file changed, 12 deletions(-)
 
---- a/net/l2tp/l2tp_core.c
-+++ b/net/l2tp/l2tp_core.c
-@@ -1252,11 +1252,10 @@ static void l2tp_tunnel_free(struct l2tp
- 	/* Remove from tunnel list */
- 	spin_lock_bh(&pn->l2tp_tunnel_list_lock);
- 	list_del_rcu(&tunnel->list);
-+	kfree_rcu(tunnel, rcu);
- 	spin_unlock_bh(&pn->l2tp_tunnel_list_lock);
--	synchronize_rcu();
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -16,7 +16,6 @@
+ #include <linux/sched.h>
+ #include "isdnloop.h"
  
- 	atomic_dec(&l2tp_tunnel_count);
--	kfree(tunnel);
- }
+-static char *revision = "$Revision: 1.11.6.7 $";
+ static char *isdnloop_id = "loop0";
  
- /* Create a socket for the tunnel, if one isn't set up by
---- a/net/l2tp/l2tp_core.h
-+++ b/net/l2tp/l2tp_core.h
-@@ -157,6 +157,7 @@ struct l2tp_tunnel_cfg {
+ MODULE_DESCRIPTION("ISDN4Linux: Pseudo Driver that simulates an ISDN card");
+@@ -1494,17 +1493,6 @@ isdnloop_addcard(char *id1)
+ static int __init
+ isdnloop_init(void)
+ {
+-	char *p;
+-	char rev[10];
+-
+-	if ((p = strchr(revision, ':'))) {
+-		strcpy(rev, p + 1);
+-		p = strchr(rev, '$');
+-		*p = 0;
+-	} else
+-		strcpy(rev, " ??? ");
+-	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev%s\n", rev);
+-
+ 	if (isdnloop_id)
+ 		return (isdnloop_addcard(isdnloop_id));
  
- struct l2tp_tunnel {
- 	int			magic;		/* Should be L2TP_TUNNEL_MAGIC */
-+	struct rcu_head rcu;
- 	rwlock_t		hlist_lock;	/* protect session_hlist */
- 	struct hlist_head	session_hlist[L2TP_HASH_SIZE];
- 						/* hashed list of sessions,
 
 
