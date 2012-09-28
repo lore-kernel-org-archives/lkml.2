@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031451Ab2I1TiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:38:00 -0400
+	id S1031469Ab2I1TiZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:38:25 -0400
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:38829 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031402Ab2I1Th4 (ORCPT
+	with ESMTP id S1031425Ab2I1Thy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:37:56 -0400
+	Fri, 28 Sep 2012 15:37:54 -0400
 From: Matt Porter <mporter@ti.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "Hans J. Koch" <hjk@hansjkoch.de>, Benoit Cousson <b-cousson@ti.com>,
@@ -17,9 +17,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux DaVinci Kernel List 
 	<davinci-linux-open-source@linux.davincidsp.com>
-Subject: [PATCH v2 7/7] ARM: dts: AM33xx PRUSS support
-Date: Fri, 28 Sep 2012 15:37:52 -0400
-Message-Id: <1348861072-14507-8-git-send-email-mporter@ti.com>
+Subject: [PATCH v2 6/7] ARM: omap: add DT support for deasserting hardware reset lines
+Date: Fri, 28 Sep 2012 15:37:51 -0400
+Message-Id: <1348861072-14507-7-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348861072-14507-1-git-send-email-mporter@ti.com>
 References: <1348861072-14507-1-git-send-email-mporter@ti.com>
@@ -27,47 +27,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a pruss node and an example of use on Beaglebone.
+This optional binding extension allows specification of a hwmod
+and associate hardware reset line which should be deasserted for
+the device to be functional.
+
+The implementation works for reference as to the problem that
+exists for utilizing uio_pruss on AM33xx but is suboptimal. The
+problem is that this deassertion occurs before clocks are enabled
+and we are warned that the hard reset failed. Ideally the list of
+rst lines requested to be deasserted would be cached and used within
+the hwmod enable sequencing (instead of it just returning if any
+hardware reset line is asserted).
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- arch/arm/boot/dts/am335x-bone.dts |    4 ++++
- arch/arm/boot/dts/am33xx.dtsi     |   11 +++++++++++
- 2 files changed, 15 insertions(+)
+ .../devicetree/bindings/arm/omap/omap.txt          |    2 ++
+ arch/arm/plat-omap/omap_device.c                   |   25 ++++++++++++++++++--
+ 2 files changed, 25 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-index c634f87..9e070c2 100644
---- a/arch/arm/boot/dts/am335x-bone.dts
-+++ b/arch/arm/boot/dts/am335x-bone.dts
-@@ -78,3 +78,7 @@
- 		};
- 	};
- };
+diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
+index d0051a7..3133a4b 100644
+--- a/Documentation/devicetree/bindings/arm/omap/omap.txt
++++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
+@@ -21,6 +21,8 @@ Required properties:
+ Optional properties:
+ - ti,no_idle_on_suspend: When present, it prevents the PM to idle the module
+   during suspend.
++- ti,deassert-hard-reset: list of hwmod and hardware reset line name pairs
++  (ascii strings) to be deasserted upon device instantiation.
+ 
+ 
+ Example:
+diff --git a/arch/arm/plat-omap/omap_device.c b/arch/arm/plat-omap/omap_device.c
+index d5f617c..d1ae68c 100644
+--- a/arch/arm/plat-omap/omap_device.c
++++ b/arch/arm/plat-omap/omap_device.c
+@@ -330,8 +330,8 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+ 	struct omap_device *od;
+ 	struct omap_hwmod *oh;
+ 	struct device_node *node = pdev->dev.of_node;
+-	const char *oh_name;
+-	int oh_cnt, i, ret = 0;
++	const char *oh_name, *rst_name;
++	int oh_cnt, dstr_cnt, i, ret = 0;
+ 
+ 	oh_cnt = of_property_count_strings(node, "ti,hwmods");
+ 	if (!oh_cnt || IS_ERR_VALUE(oh_cnt)) {
+@@ -376,6 +376,27 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+ 	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
+ 		omap_device_disable_idle_on_suspend(pdev);
+ 
++	dstr_cnt =
++		of_property_count_strings(node, "ti,deassert-hard-reset");
++	if (dstr_cnt > 0) {
++		for (i = 0; i < dstr_cnt; i += 2) {
++			of_property_read_string_index(
++				node, "ti,deassert-hard-reset", i,
++				&oh_name);
++			of_property_read_string_index(
++				node, "ti,deassert-hard-reset", i+1,
++				&rst_name);
++			oh = omap_hwmod_lookup(oh_name);
++			if (!oh) {
++				dev_warn(&pdev->dev,
++				"Cannot parse deassert property for '%s'\n",
++				oh_name);
++				break;
++			}
++			omap_hwmod_deassert_hardreset(oh, rst_name);
++		}
++	}
 +
-+&pruss {
-+	status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index bb31bff..399feb3 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -210,5 +210,16 @@
- 			interrupt-parent = <&intc>;
- 			interrupts = <91>;
- 		};
-+
-+		pruss: pruss@4a300000 {
-+			compatible = "ti,pruss-v2";
-+			ti,hwmods = "pruss";
-+			ti,deassert-hard-reset = "pruss", "pruss";
-+			reg = <0x4a300000 0x080000>;
-+			ti,pintc-offset = <0x20000>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <20 21 22 23 24 25 26 27>;
-+			status = "disabled";
-+		};
- 	};
- };
+ 	pdev->dev.pm_domain = &omap_device_pm_domain;
+ 
+ odbfd_exit1:
 -- 
 1.7.9.5
 
