@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423019Ab2I1UsU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:48:20 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49162 "EHLO
+	id S1945917Ab2I1Usd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:48:33 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38070 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422969Ab2I1UsQ (ORCPT
+	by vger.kernel.org with ESMTP id S1423034Ab2I1UsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:16 -0400
-X-Sasl-enc: lZsh5G97YklG1FNYRrRPjTGSOp05H5T2JEmilruYus/X 1348865295
+	Fri, 28 Sep 2012 16:48:24 -0400
+X-Sasl-enc: psWtX3wcr9nImiadpNk9rV3SJHZ7Vyx1u5AvjHJYjf7v 1348865303
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        James Nute <newten82@gmail.com>, Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 085/127] drivers/rtc/rtc-rs5c348.c: fix hour decoding in 12-hour mode
-Date: Fri, 28 Sep 2012 13:34:18 -0700
-Message-Id: <20120928203055.869308417@linuxfoundation.org>
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [ 091/127] asus-laptop: HRWS/HWRS typo
+Date: Fri, 28 Sep 2012 13:34:24 -0700
+Message-Id: <20120928203056.590596615@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,53 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+From: Corentin Chary <corentin.chary@gmail.com>
 
-commit 7dbfb315b2aaef0a115765946bf3026d074c33a7 upstream.
+commit 8871e99f89b7d7b1ea99de550eea2a56273f42ab upstream.
 
-Correct the offset by subtracting 20 from tm_hour before taking the
-modulo 12.
-
-[ "Why 20?" I hear you ask. Or at least I did.
-
-  Here's the reason why: RS5C348_BIT_PM is 32, and is - stupidly -
-  included in the RS5C348_HOURS_MASK define.  So it's really subtracting
-  out that bit to get "hour+12".  But then because it does things modulo
-  12, it needs to add the 12 in again afterwards anyway.
-
-  This code is confused.  It would be much clearer if RS5C348_HOURS_MASK
-  just didn't include the RS5C348_BIT_PM bit at all, then it wouldn't
-  need to do the silly subtract either.
-
-  Whatever. It's all just math, the end result is the same.   - Linus ]
-
-Reported-by: James Nute <newten82@gmail.com>
-Tested-by: James Nute <newten82@gmail.com>
-Signed-off-by: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=24222
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-rs5c348.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/platform/x86/asus-laptop.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/rtc/rtc-rs5c348.c
-+++ b/drivers/rtc/rtc-rs5c348.c
-@@ -121,9 +121,12 @@ rs5c348_rtc_read_time(struct device *dev
- 	tm->tm_min = bcd2bin(rxbuf[RS5C348_REG_MINS] & RS5C348_MINS_MASK);
- 	tm->tm_hour = bcd2bin(rxbuf[RS5C348_REG_HOURS] & RS5C348_HOURS_MASK);
- 	if (!pdata->rtc_24h) {
--		tm->tm_hour %= 12;
--		if (rxbuf[RS5C348_REG_HOURS] & RS5C348_BIT_PM)
-+		if (rxbuf[RS5C348_REG_HOURS] & RS5C348_BIT_PM) {
-+			tm->tm_hour -= 20;
-+			tm->tm_hour %= 12;
- 			tm->tm_hour += 12;
-+		} else
-+			tm->tm_hour %= 12;
- 	}
- 	tm->tm_wday = bcd2bin(rxbuf[RS5C348_REG_WDAY] & RS5C348_WDAY_MASK);
- 	tm->tm_mday = bcd2bin(rxbuf[RS5C348_REG_DAY] & RS5C348_DAY_MASK);
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -646,9 +646,9 @@ static ssize_t show_infos(struct device
+ 	 * The significance of others is yet to be found.
+ 	 * If we don't find the method, we assume the device are present.
+ 	 */
+-	rv = acpi_evaluate_integer(asus->handle, "HRWS", NULL, &temp);
++	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
+ 	if (!ACPI_FAILURE(rv))
+-		len += sprintf(page + len, "HRWS value         : %#x\n",
++		len += sprintf(page + len, "HWRS value         : %#x\n",
+ 			       (uint) temp);
+ 	/*
+ 	 * Another value for userspace: the ASYM method returns 0x02 for
+@@ -1340,9 +1340,9 @@ static int asus_laptop_get_info(struct a
+ 	 * The significance of others is yet to be found.
+ 	 */
+ 	status =
+-	    acpi_evaluate_integer(asus->handle, "HRWS", NULL, &hwrs_result);
++	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
+ 	if (!ACPI_FAILURE(status))
+-		pr_notice("  HRWS returned %x", (int)hwrs_result);
++		pr_notice("  HWRS returned %x", (int)hwrs_result);
+ 
+ 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
+ 		asus->have_rsts = true;
 
 
