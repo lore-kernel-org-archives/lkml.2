@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758617Ab2I1Qsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 12:48:45 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:56451 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757484Ab2I1Qso convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 12:48:44 -0400
+	id S1758411Ab2I1QzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 12:55:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43126 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757365Ab2I1QzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 12:55:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,502,1344236400"; 
+   d="scan'208";a="199430315"
+Date: Fri, 28 Sep 2012 12:55:11 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
+Subject: [GIT PULL] Fixes for the NVMe driver
+Message-ID: <20120928165511.GB4244@linux.intel.com>
 MIME-Version: 1.0
-Date: Fri, 28 Sep 2012 13:48:43 -0300
-Message-ID: <CAH0vN5+eo70t-R_jy7YGrjU8Fpx=yJQNrNgt=hGnCQL0wyp8xQ@mail.gmail.com>
-Subject: Error when doing build of media modules: WARNING: "snd_tea575x_init"
- [drivers/media/radio/radio-shark.ko] undefined!
-From: Marcos Souza <marcos.souza.org@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just giving a proper subject
+
+Hi Linus,
+
+Now that actual hardware has been released (don't have any yet myself),
+people are starting to want some of these fixes merged.  Could I trouble
+you to pull?
 
 
----------- Forwarded message ----------
-From: Marcos Souza <marcos.souza.org@gmail.com>
-Date: 2012/9/28
-Subject: Build
-To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+The following changes since commit df3481399042200792822b6243e36a95a557b57e:
 
+  NVMe: Set number of queues correctly (2012-01-11 09:22:24 -0500)
 
-Hi media guys,
+are available in the git repository at:
 
-After try to build the media drivers with some radios enabled, I got this error:
+  git://git.infradead.org/users/willy/linux-nvme.git master
 
-marcos@tux:/mnt/dados/gitroot/linux$ make M=drivers/media
-  Building modules, stage 2.
-  MODPOST 21 modules
-WARNING: "snd_tea575x_init" [drivers/media/radio/radio-shark.ko] undefined!
-WARNING: "snd_tea575x_exit" [drivers/media/radio/radio-shark.ko] undefined!
-WARNING: "snd_tea575x_init" [drivers/media/radio/radio-maxiradio.ko] undefined!
-WARNING: "snd_tea575x_exit" [drivers/media/radio/radio-maxiradio.ko] undefined!
+for you to fetch changes up to a09115b23e2002bb35b7bfd337683f00875671ec:
 
-I saw that there is a EXPORT_SYMBOL of these functions in the file
-sound/i2c/other/tea575x-tuner.c
+  NVMe: Cancel outstanding IOs on queue deletion (2012-08-07 15:56:23 -0400)
 
-But, I don't know how to find this...
+----------------------------------------------------------------
+Dan Carpenter (1):
+      NVMe: handle allocation failure in nvme_map_user_pages()
 
-Can someone show me how can I fix this?
+Keith Busch (7):
+      NVMe: Set request queue logical block size
+      NVMe: Fix nvme module init when nvme_major is set
+      NVMe: replace nvme_ns with nvme_dev for user admin
+      NVMe: use namespace id for nvme_get_features
+      NVMe: Set block queue max sectors
+      NVMe: Do not set IO queue depth beyond device max
+      NVMe: Fix uninitialized iod compiler warning
 
-Thanks since now!
+Matthew Wilcox (3):
+      NVMe: Fix whitespace damage in nvme_init
+      NVMe: Free admin queue memory on initialisation failure
+      NVMe: Cancel outstanding IOs on queue deletion
 
---
-Att,
+Quoc-Son Anh (1):
+      NVMe: Use ida for nvme device instance
 
-Marcos Paulo de Souza
-Acadêmico de Ciencia da Computação - FURB - SC
-Github: https://github.com/marcosps/
-"Uma vida sem desafios é uma vida sem razão"
-"A life without challenges, is a non reason life"
-
-
--- 
-Att,
-
-Marcos Paulo de Souza
-Acadêmico de Ciencia da Computação - FURB - SC
-Github: https://github.com/marcosps/
-"Uma vida sem desafios é uma vida sem razão"
-"A life without challenges, is a non reason life"
+ drivers/block/nvme.c |  153 +++++++++++++++++++++++++++++++++-----------------
+ include/linux/nvme.h |    2 +
+ 2 files changed, 105 insertions(+), 50 deletions(-)
