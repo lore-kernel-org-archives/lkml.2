@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab2I1Uus (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:50:48 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35060 "EHLO
+	id S1758744Ab2I1UvK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:51:10 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58633 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161027Ab2I1Uss (ORCPT
+	by vger.kernel.org with ESMTP id S1161023Ab2I1Usq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:48 -0400
-X-Sasl-enc: S2f3+lQ523YfJCrOcYJgo5Q0BrTJEt9MIDN/QRuBw4f4 1348865327
+	Fri, 28 Sep 2012 16:48:46 -0400
+X-Sasl-enc: ezqJu2qKi6WsvB/VNAlOX0Aw5nDH6AucztjalIrH/+Kg 1348865326
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Eric Dumazet <eric.dumazet@gmail.com>,
         David Miller <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
         Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 108/127] drop_monitor: Make updating data->skb smp safe
-Date: Fri, 28 Sep 2012 13:34:41 -0700
-Message-Id: <20120928203058.504518566@linuxfoundation.org>
+Subject: [ 107/127] drop_monitor: fix sleeping in invalid context warning
+Date: Fri, 28 Sep 2012 13:34:40 -0700
+Message-Id: <20120928203058.401858003@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -32,13 +32,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 3885ca785a3618593226687ced84f3f336dc3860 upstream.
+commit cde2e9a651b76d8db36ae94cd0febc82b637e5dd upstream.
 
-Eric Dumazet pointed out to me that the drop_monitor protocol has some holes in
-its smp protections.  Specifically, its possible to replace data->skb while its
-being written.  This patch corrects that by making data->skb an rcu protected
-variable.  That will prevent it from being overwritten while a tracepoint is
-modifying it.
+Eric Dumazet pointed out this warning in the drop_monitor protocol to me:
+
+[   38.352571] BUG: sleeping function called from invalid context at kernel/mutex.c:85
+[   38.352576] in_atomic(): 1, irqs_disabled(): 0, pid: 4415, name: dropwatch
+[   38.352580] Pid: 4415, comm: dropwatch Not tainted 3.4.0-rc2+ #71
+[   38.352582] Call Trace:
+[   38.352592]  [<ffffffff8153aaf0>] ? trace_napi_poll_hit+0xd0/0xd0
+[   38.352599]  [<ffffffff81063f2a>] __might_sleep+0xca/0xf0
+[   38.352606]  [<ffffffff81655b16>] mutex_lock+0x26/0x50
+[   38.352610]  [<ffffffff8153aaf0>] ? trace_napi_poll_hit+0xd0/0xd0
+[   38.352616]  [<ffffffff810b72d9>] tracepoint_probe_register+0x29/0x90
+[   38.352621]  [<ffffffff8153a585>] set_all_monitor_traces+0x105/0x170
+[   38.352625]  [<ffffffff8153a8ca>] net_dm_cmd_trace+0x2a/0x40
+[   38.352630]  [<ffffffff8154a81a>] genl_rcv_msg+0x21a/0x2b0
+[   38.352636]  [<ffffffff810f8029>] ? zone_statistics+0x99/0xc0
+[   38.352640]  [<ffffffff8154a600>] ? genl_rcv+0x30/0x30
+[   38.352645]  [<ffffffff8154a059>] netlink_rcv_skb+0xa9/0xd0
+[   38.352649]  [<ffffffff8154a5f0>] genl_rcv+0x20/0x30
+[   38.352653]  [<ffffffff81549a7e>] netlink_unicast+0x1ae/0x1f0
+[   38.352658]  [<ffffffff81549d76>] netlink_sendmsg+0x2b6/0x310
+[   38.352663]  [<ffffffff8150824f>] sock_sendmsg+0x10f/0x130
+[   38.352668]  [<ffffffff8150abe0>] ? move_addr_to_kernel+0x60/0xb0
+[   38.352673]  [<ffffffff81515f04>] ? verify_iovec+0x64/0xe0
+[   38.352677]  [<ffffffff81509c46>] __sys_sendmsg+0x386/0x390
+[   38.352682]  [<ffffffff810ffaf9>] ? handle_mm_fault+0x139/0x210
+[   38.352687]  [<ffffffff8165b5bc>] ? do_page_fault+0x1ec/0x4f0
+[   38.352693]  [<ffffffff8106ba4d>] ? set_next_entity+0x9d/0xb0
+[   38.352699]  [<ffffffff81310b49>] ? tty_ldisc_deref+0x9/0x10
+[   38.352703]  [<ffffffff8106d363>] ? pick_next_task_fair+0x63/0x140
+[   38.352708]  [<ffffffff8150b8d4>] sys_sendmsg+0x44/0x80
+[   38.352713]  [<ffffffff8165f8e2>] system_call_fastpath+0x16/0x1b
+
+It stems from holding a spinlock (trace_state_lock) while attempting to register
+or unregister tracepoint hooks, making in_atomic() true in this context, leading
+to the warning when the tracepoint calls might_sleep() while its taking a mutex.
+Since we only use the trace_state_lock to prevent trace protocol state races, as
+well as hardware stat list updates on an rcu write side, we can just convert the
+spinlock to a mutex to avoid this problem.
 
 Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
 Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
@@ -49,167 +82,62 @@ Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/core/drop_monitor.c |   70 +++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 54 insertions(+), 16 deletions(-)
+ net/core/drop_monitor.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
 --- a/net/core/drop_monitor.c
 +++ b/net/core/drop_monitor.c
-@@ -46,7 +46,7 @@ static DEFINE_MUTEX(trace_state_mutex);
+@@ -42,7 +42,7 @@ static void send_dm_alert(struct work_st
+  * netlink alerts
+  */
+ static int trace_state = TRACE_OFF;
+-static DEFINE_SPINLOCK(trace_state_lock);
++static DEFINE_MUTEX(trace_state_mutex);
  
  struct per_cpu_dm_data {
  	struct work_struct dm_alert_work;
--	struct sk_buff *skb;
-+	struct sk_buff __rcu *skb;
- 	atomic_t dm_hit_count;
- 	struct timer_list send_timer;
- };
-@@ -73,35 +73,58 @@ static int dm_hit_limit = 64;
- static int dm_delay = 1;
- static unsigned long dm_hw_check_delta = 2*HZ;
- static LIST_HEAD(hw_stats_list);
-+static int initialized = 0;
+@@ -213,7 +213,7 @@ static int set_all_monitor_traces(int st
+ 	struct dm_hw_stat_delta *new_stat = NULL;
+ 	struct dm_hw_stat_delta *temp;
  
- static void reset_per_cpu_data(struct per_cpu_dm_data *data)
- {
- 	size_t al;
- 	struct net_dm_alert_msg *msg;
- 	struct nlattr *nla;
-+	struct sk_buff *skb;
-+	struct sk_buff *oskb = rcu_dereference_protected(data->skb, 1);
+-	spin_lock(&trace_state_lock);
++	mutex_lock(&trace_state_mutex);
  
- 	al = sizeof(struct net_dm_alert_msg);
- 	al += dm_hit_limit * sizeof(struct net_dm_drop_point);
- 	al += sizeof(struct nlattr);
+ 	if (state == trace_state) {
+ 		rc = -EAGAIN;
+@@ -252,7 +252,7 @@ static int set_all_monitor_traces(int st
+ 		rc = -EINPROGRESS;
  
--	data->skb = genlmsg_new(al, GFP_KERNEL);
--	genlmsg_put(data->skb, 0, 0, &net_drop_monitor_family,
--			0, NET_DM_CMD_ALERT);
--	nla = nla_reserve(data->skb, NLA_UNSPEC, sizeof(struct net_dm_alert_msg));
--	msg = nla_data(nla);
--	memset(msg, 0, al);
--	atomic_set(&data->dm_hit_count, dm_hit_limit);
-+	skb = genlmsg_new(al, GFP_KERNEL);
-+
-+	if (skb) {
-+		genlmsg_put(skb, 0, 0, &net_drop_monitor_family,
-+				0, NET_DM_CMD_ALERT);
-+		nla = nla_reserve(skb, NLA_UNSPEC,
-+				  sizeof(struct net_dm_alert_msg));
-+		msg = nla_data(nla);
-+		memset(msg, 0, al);
-+	} else if (initialized)
-+		schedule_work_on(smp_processor_id(), &data->dm_alert_work);
-+
-+	/*
-+	 * Don't need to lock this, since we are guaranteed to only
-+	 * run this on a single cpu at a time.
-+	 * Note also that we only update data->skb if the old and new skb
-+	 * pointers don't match.  This ensures that we don't continually call
-+	 * synchornize_rcu if we repeatedly fail to alloc a new netlink message.
-+	 */
-+	if (skb != oskb) {
-+		rcu_assign_pointer(data->skb, skb);
-+
-+		synchronize_rcu();
-+
-+		atomic_set(&data->dm_hit_count, dm_hit_limit);
-+	}
-+
+ out_unlock:
+-	spin_unlock(&trace_state_lock);
++	mutex_unlock(&trace_state_mutex);
+ 
+ 	return rc;
  }
+@@ -295,12 +295,12 @@ static int dropmon_net_event(struct noti
  
- static void send_dm_alert(struct work_struct *unused)
- {
- 	struct sk_buff *skb;
--	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
-+	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
- 
- 	/*
- 	 * Grab the skb we're about to send
- 	 */
--	skb = data->skb;
-+	skb = rcu_dereference_protected(data->skb, 1);
- 
- 	/*
- 	 * Replace it with a new one
-@@ -111,8 +134,10 @@ static void send_dm_alert(struct work_st
- 	/*
- 	 * Ship it!
- 	 */
--	genlmsg_multicast(skb, 0, NET_DM_GRP_ALERT, GFP_KERNEL);
-+	if (skb)
-+		genlmsg_multicast(skb, 0, NET_DM_GRP_ALERT, GFP_KERNEL);
- 
-+	put_cpu_var(dm_cpu_data);
- }
- 
- /*
-@@ -123,9 +148,11 @@ static void send_dm_alert(struct work_st
-  */
- static void sched_send_work(unsigned long unused)
- {
--	struct per_cpu_dm_data *data =  &__get_cpu_var(dm_cpu_data);
-+	struct per_cpu_dm_data *data =  &get_cpu_var(dm_cpu_data);
-+
-+	schedule_work_on(smp_processor_id(), &data->dm_alert_work);
- 
--	schedule_work(&data->dm_alert_work);
-+	put_cpu_var(dm_cpu_data);
- }
- 
- static void trace_drop_common(struct sk_buff *skb, void *location)
-@@ -134,9 +161,16 @@ static void trace_drop_common(struct sk_
- 	struct nlmsghdr *nlh;
- 	struct nlattr *nla;
- 	int i;
--	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
-+	struct sk_buff *dskb;
-+	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
- 
- 
-+	rcu_read_lock();
-+	dskb = rcu_dereference(data->skb);
-+
-+	if (!dskb)
-+		goto out;
-+
- 	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
- 		/*
- 		 * we're already at zero, discard this hit
-@@ -144,7 +178,7 @@ static void trace_drop_common(struct sk_
- 		goto out;
+ 		new_stat->dev = dev;
+ 		new_stat->last_rx = jiffies;
+-		spin_lock(&trace_state_lock);
++		mutex_lock(&trace_state_mutex);
+ 		list_add_rcu(&new_stat->list, &hw_stats_list);
+-		spin_unlock(&trace_state_lock);
++		mutex_unlock(&trace_state_mutex);
+ 		break;
+ 	case NETDEV_UNREGISTER:
+-		spin_lock(&trace_state_lock);
++		mutex_lock(&trace_state_mutex);
+ 		list_for_each_entry_safe(new_stat, tmp, &hw_stats_list, list) {
+ 			if (new_stat->dev == dev) {
+ 				new_stat->dev = NULL;
+@@ -311,7 +311,7 @@ static int dropmon_net_event(struct noti
+ 				}
+ 			}
+ 		}
+-		spin_unlock(&trace_state_lock);
++		mutex_unlock(&trace_state_mutex);
+ 		break;
  	}
- 
--	nlh = (struct nlmsghdr *)data->skb->data;
-+	nlh = (struct nlmsghdr *)dskb->data;
- 	nla = genlmsg_data(nlmsg_data(nlh));
- 	msg = nla_data(nla);
- 	for (i = 0; i < msg->entries; i++) {
-@@ -157,7 +191,7 @@ static void trace_drop_common(struct sk_
- 	/*
- 	 * We need to create a new entry
- 	 */
--	__nla_reserve_nohdr(data->skb, sizeof(struct net_dm_drop_point));
-+	__nla_reserve_nohdr(dskb, sizeof(struct net_dm_drop_point));
- 	nla->nla_len += NLA_ALIGN(sizeof(struct net_dm_drop_point));
- 	memcpy(msg->points[msg->entries].pc, &location, sizeof(void *));
- 	msg->points[msg->entries].count = 1;
-@@ -169,6 +203,8 @@ static void trace_drop_common(struct sk_
- 	}
- 
  out:
-+	rcu_read_unlock();
-+	put_cpu_var(dm_cpu_data);
- 	return;
- }
- 
-@@ -374,6 +410,8 @@ static int __init init_net_drop_monitor(
- 		data->send_timer.function = sched_send_work;
- 	}
- 
-+	initialized = 1;
-+
- 	goto out;
- 
- out_unreg:
 
 
