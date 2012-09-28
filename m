@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031819Ab2I1Uq2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:46:28 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38111 "EHLO
+	id S1031876Ab2I1Uqs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:46:48 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57655 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759552Ab2I1Uku (ORCPT
+	by vger.kernel.org with ESMTP id S1759487Ab2I1Ukr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:50 -0400
-X-Sasl-enc: m7tGUaxwSXRHiSzpVkN/DahLm6RhPRFQLE0gLazi+10h 1348864849
+	Fri, 28 Sep 2012 16:40:47 -0400
+X-Sasl-enc: uKf5gGkDTW0GSDKq1QCWufj1ySo1OG5nYcxLrBkCtluo 1348864846
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 025/127] cciss: fix handling of protocol error
-Date: Fri, 28 Sep 2012 13:33:18 -0700
-Message-Id: <20120928203048.770774813@linuxfoundation.org>
+        Francesco Ruggeri <fruggeri@aristanetworks.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 022/127] net: ipv4: ipmr_expire_timer causes crash when removing net namespace
+Date: Fri, 28 Sep 2012 13:33:15 -0700
+Message-Id: <20120928203048.408086356@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,35 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 2453f5f992717251cfadab6184fbb3ec2f2e8b40 upstream.
+From: Francesco Ruggeri <fruggeri@aristanetworks.com>
 
-If a command completes with a status of CMD_PROTOCOL_ERR, this
-information should be conveyed to the SCSI mid layer, not dropped
-on the floor.  Unlike a similar bug in the hpsa driver, this bug
-only affects tape drives and CD and DVD ROM drives in the cciss
-driver, and to induce it, you have to disconnect (or damage) a
-cable, so it is not a very likely scenario (which would explain
-why the bug has gone undetected for the last 10 years.)
+[ Upstream commit acbb219d5f53821b2d0080d047800410c0420ea1 ]
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+When tearing down a net namespace, ipv4 mr_table structures are freed
+without first deactivating their timers. This can result in a crash in
+run_timer_softirq.
+This patch mimics the corresponding behaviour in ipv6.
+Locking and synchronization seem to be adequate.
+We are about to kfree mrt, so existing code should already make sure that
+no other references to mrt are pending or can be created by incoming traffic.
+The functions invoked here do not cause new references to mrt or other
+race conditions to be created.
+Invoking del_timer_sync guarantees that ipmr_expire_timer is inactive.
+Both ipmr_expire_process (whose completion we may have to wait in
+del_timer_sync) and mroute_clean_tables internally use mfc_unres_lock
+or other synchronizations when needed, and they both only modify mrt.
+
+Tested in Linux 3.4.8.
+
+Signed-off-by: Francesco Ruggeri <fruggeri@aristanetworks.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/block/cciss_scsi.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/ipmr.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/block/cciss_scsi.c
-+++ b/drivers/block/cciss_scsi.c
-@@ -795,6 +795,7 @@ static void complete_scsi_command(Comman
- 				}
- 			break;
- 			case CMD_PROTOCOL_ERR:
-+				cmd->result = DID_ERROR << 16;
- 				dev_warn(&h->pdev->dev,
- 					"%p has protocol error\n", c);
-                         break;
+--- a/net/ipv4/ipmr.c
++++ b/net/ipv4/ipmr.c
+@@ -124,6 +124,8 @@ static DEFINE_SPINLOCK(mfc_unres_lock);
+ static struct kmem_cache *mrt_cachep __read_mostly;
+ 
+ static struct mr_table *ipmr_new_table(struct net *net, u32 id);
++static void ipmr_free_table(struct mr_table *mrt);
++
+ static int ip_mr_forward(struct net *net, struct mr_table *mrt,
+ 			 struct sk_buff *skb, struct mfc_cache *cache,
+ 			 int local);
+@@ -131,6 +133,7 @@ static int ipmr_cache_report(struct mr_t
+ 			     struct sk_buff *pkt, vifi_t vifi, int assert);
+ static int __ipmr_fill_mroute(struct mr_table *mrt, struct sk_buff *skb,
+ 			      struct mfc_cache *c, struct rtmsg *rtm);
++static void mroute_clean_tables(struct mr_table *mrt);
+ static void ipmr_expire_process(unsigned long arg);
+ 
+ #ifdef CONFIG_IP_MROUTE_MULTIPLE_TABLES
+@@ -271,7 +274,7 @@ static void __net_exit ipmr_rules_exit(s
+ 
+ 	list_for_each_entry_safe(mrt, next, &net->ipv4.mr_tables, list) {
+ 		list_del(&mrt->list);
+-		kfree(mrt);
++		ipmr_free_table(mrt);
+ 	}
+ 	fib_rules_unregister(net->ipv4.mr_rules_ops);
+ }
+@@ -299,7 +302,7 @@ static int __net_init ipmr_rules_init(st
+ 
+ static void __net_exit ipmr_rules_exit(struct net *net)
+ {
+-	kfree(net->ipv4.mrt);
++	ipmr_free_table(net->ipv4.mrt);
+ }
+ #endif
+ 
+@@ -336,6 +339,13 @@ static struct mr_table *ipmr_new_table(s
+ 	return mrt;
+ }
+ 
++static void ipmr_free_table(struct mr_table *mrt)
++{
++	del_timer_sync(&mrt->ipmr_expire_timer);
++	mroute_clean_tables(mrt);
++	kfree(mrt);
++}
++
+ /* Service routines creating virtual interfaces: DVMRP tunnels and PIMREG */
+ 
+ static void ipmr_del_tunnel(struct net_device *dev, struct vifctl *v)
 
 
