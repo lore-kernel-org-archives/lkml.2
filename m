@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031847Ab2I1Uqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:46:46 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57333 "EHLO
+	id S1946019Ab2I1VK4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:10:56 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41696 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759550Ab2I1Ukt (ORCPT
+	by vger.kernel.org with ESMTP id S1759537Ab2I1Ukq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:49 -0400
-X-Sasl-enc: 332D/UtAbyvo5d38Xf+Os4vqLyZnNI7mQwa9nzzJHTTy 1348864848
+	Fri, 28 Sep 2012 16:40:46 -0400
+X-Sasl-enc: +xniLLxykiAs6di12BUY//NbcEvJmcnqefGgTj1uJAsz 1348864845
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Duncan <1i5t5.duncan@cox.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: [ 024/127] cpufreq/powernow-k8: workqueue user shouldnt migrate the kworker to another CPU
-Date: Fri, 28 Sep 2012 13:33:17 -0700
-Message-Id: <20120928203048.664485908@linuxfoundation.org>
+        Dmitry Kozlov <xeb@mail.ru>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 021/127] l2tp: avoid to use synchronize_rcu in tunnel free function
+Date: Fri, 28 Sep 2012 13:33:14 -0700
+Message-Id: <20120928203048.310145288@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,170 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
 
-commit 6889125b8b4e09c5e53e6ecab3433bed1ce198c9 upstream.
+From: "xeb@mail.ru" <xeb@mail.ru>
 
-powernowk8_target() runs off a per-cpu work item and if the
-cpufreq_policy->cpu is different from the current one, it migrates the
-kworker to the target CPU by manipulating current->cpus_allowed.  The
-function migrates the kworker back to the original CPU but this is
-still broken.  Workqueue concurrency management requires the kworkers
-to stay on the same CPU and powernowk8_target() ends up triggerring
-BUG_ON(rq != this_rq()) in try_to_wake_up_local() if it contends on
-fidvid_mutex and sleeps.
+[ Upstream commit 99469c32f79a32d8481f87be0d3c66dad286f4ec ]
 
-It is unclear why this bug is being reported now.  Duncan says it
-appeared to be a regression of 3.6-rc1 and couldn't reproduce it on
-3.5.  Bisection seemed to point to 63d95a91 "workqueue: use @pool
-instead of @gcwq or @cpu where applicable" which is an non-functional
-change.  Given that the reproduce case sometimes took upto days to
-trigger, it's easy to be misled while bisecting.  Maybe something made
-contention on fidvid_mutex more likely?  I don't know.
+Avoid to use synchronize_rcu in l2tp_tunnel_free because context may be
+atomic.
 
-This patch fixes the bug by using work_on_cpu() instead if @pol->cpu
-isn't the same as the current one.  The code assumes that
-cpufreq_policy->cpu is kept online by the caller, which Rafael tells
-me is the case.
-
-stable: ed48ece27c ("workqueue: reimplement work_on_cpu() using
-        system_wq") should be applied before this; otherwise, the
-        behavior could be horrible.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Duncan <1i5t5.duncan@cox.net>
-Tested-by: Duncan <1i5t5.duncan@cox.net>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47301
+Signed-off-by: Dmitry Kozlov <xeb@mail.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/cpufreq/powernow-k8.c |   65 ++++++++++++++++++++++--------------------
- 1 file changed, 35 insertions(+), 30 deletions(-)
+ net/l2tp/l2tp_core.c |    3 +--
+ net/l2tp/l2tp_core.h |    1 +
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -32,7 +32,6 @@
- #include <linux/slab.h>
- #include <linux/string.h>
- #include <linux/cpumask.h>
--#include <linux/sched.h>	/* for current / set_cpus_allowed() */
- #include <linux/io.h>
- #include <linux/delay.h>
+--- a/net/l2tp/l2tp_core.c
++++ b/net/l2tp/l2tp_core.c
+@@ -1252,11 +1252,10 @@ static void l2tp_tunnel_free(struct l2tp
+ 	/* Remove from tunnel list */
+ 	spin_lock_bh(&pn->l2tp_tunnel_list_lock);
+ 	list_del_rcu(&tunnel->list);
++	kfree_rcu(tunnel, rcu);
+ 	spin_unlock_bh(&pn->l2tp_tunnel_list_lock);
+-	synchronize_rcu();
  
-@@ -1132,16 +1131,23 @@ static int transition_frequency_pstate(s
- 	return res;
+ 	atomic_dec(&l2tp_tunnel_count);
+-	kfree(tunnel);
  }
  
--/* Driver entry point to switch to the target frequency */
--static int powernowk8_target(struct cpufreq_policy *pol,
--		unsigned targfreq, unsigned relation)
--{
--	cpumask_var_t oldmask;
-+struct powernowk8_target_arg {
-+	struct cpufreq_policy		*pol;
-+	unsigned			targfreq;
-+	unsigned			relation;
-+};
-+
-+static long powernowk8_target_fn(void *arg)
-+{
-+	struct powernowk8_target_arg *pta = arg;
-+	struct cpufreq_policy *pol = pta->pol;
-+	unsigned targfreq = pta->targfreq;
-+	unsigned relation = pta->relation;
- 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
- 	u32 checkfid;
- 	u32 checkvid;
- 	unsigned int newstate;
--	int ret = -EIO;
-+	int ret;
+ /* Create a socket for the tunnel, if one isn't set up by
+--- a/net/l2tp/l2tp_core.h
++++ b/net/l2tp/l2tp_core.h
+@@ -157,6 +157,7 @@ struct l2tp_tunnel_cfg {
  
- 	if (!data)
- 		return -EINVAL;
-@@ -1149,29 +1155,16 @@ static int powernowk8_target(struct cpuf
- 	checkfid = data->currfid;
- 	checkvid = data->currvid;
- 
--	/* only run on specific CPU from here on. */
--	/* This is poor form: use a workqueue or smp_call_function_single */
--	if (!alloc_cpumask_var(&oldmask, GFP_KERNEL))
--		return -ENOMEM;
--
--	cpumask_copy(oldmask, tsk_cpus_allowed(current));
--	set_cpus_allowed_ptr(current, cpumask_of(pol->cpu));
--
--	if (smp_processor_id() != pol->cpu) {
--		printk(KERN_ERR PFX "limiting to cpu %u failed\n", pol->cpu);
--		goto err_out;
--	}
--
- 	if (pending_bit_stuck()) {
- 		printk(KERN_ERR PFX "failing targ, change pending bit set\n");
--		goto err_out;
-+		return -EIO;
- 	}
- 
- 	pr_debug("targ: cpu %d, %d kHz, min %d, max %d, relation %d\n",
- 		pol->cpu, targfreq, pol->min, pol->max, relation);
- 
- 	if (query_current_values_with_pending_wait(data))
--		goto err_out;
-+		return -EIO;
- 
- 	if (cpu_family != CPU_HW_PSTATE) {
- 		pr_debug("targ: curr fid 0x%x, vid 0x%x\n",
-@@ -1189,7 +1182,7 @@ static int powernowk8_target(struct cpuf
- 
- 	if (cpufreq_frequency_table_target(pol, data->powernow_table,
- 				targfreq, relation, &newstate))
--		goto err_out;
-+		return -EIO;
- 
- 	mutex_lock(&fidvid_mutex);
- 
-@@ -1202,9 +1195,8 @@ static int powernowk8_target(struct cpuf
- 		ret = transition_frequency_fidvid(data, newstate);
- 	if (ret) {
- 		printk(KERN_ERR PFX "transition frequency failed\n");
--		ret = 1;
- 		mutex_unlock(&fidvid_mutex);
--		goto err_out;
-+		return 1;
- 	}
- 	mutex_unlock(&fidvid_mutex);
- 
-@@ -1213,12 +1205,25 @@ static int powernowk8_target(struct cpuf
- 				data->powernow_table[newstate].index);
- 	else
- 		pol->cur = find_khz_freq_from_fid(data->currfid);
--	ret = 0;
- 
--err_out:
--	set_cpus_allowed_ptr(current, oldmask);
--	free_cpumask_var(oldmask);
--	return ret;
-+	return 0;
-+}
-+
-+/* Driver entry point to switch to the target frequency */
-+static int powernowk8_target(struct cpufreq_policy *pol,
-+		unsigned targfreq, unsigned relation)
-+{
-+	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
-+					     .relation = relation };
-+
-+	/*
-+	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
-+	 * that we're bound to the current CPU and pol->cpu stays online.
-+	 */
-+	if (smp_processor_id() == pol->cpu)
-+		return powernowk8_target_fn(&pta);
-+	else
-+		return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
- }
- 
- /* Driver entry point to verify the policy and range of frequencies */
+ struct l2tp_tunnel {
+ 	int			magic;		/* Should be L2TP_TUNNEL_MAGIC */
++	struct rcu_head rcu;
+ 	rwlock_t		hlist_lock;	/* protect session_hlist */
+ 	struct hlist_head	session_hlist[L2TP_HASH_SIZE];
+ 						/* hashed list of sessions,
 
 
