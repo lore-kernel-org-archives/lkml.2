@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab2I1G5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 02:57:23 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:36964 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab2I1G5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 02:57:21 -0400
-Date: Fri, 28 Sep 2012 09:56:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: trivial@vger.kernel.org, perex@perex.cz, tiwai@suse.de,
-        rusty@rustcorp.com.au, paul.gortmaker@windriver.com,
-        eblennerhassett@audioscience.com, superquad.vortex2@gmail.com,
-        den@openvz.org, kozerkov@parallels.com, axel.lin@gmail.com,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] sound: Remove unnecessary semicolon
-Message-ID: <20120928065647.GM4587@mwanda>
-References: <1348746198-26375-1-git-send-email-peter.senna@gmail.com>
+	id S1751345Ab2I1G5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 02:57:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29501 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751873Ab2I1G5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 02:57:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,499,1344236400"; 
+   d="scan'208";a="227611126"
+Message-ID: <50654A62.5090003@linux.intel.com>
+Date: Fri, 28 Sep 2012 14:57:38 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120306 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348746198-26375-1-git-send-email-peter.senna@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, tshimizu818@gmail.com,
+        linux-kernel@vger.kernel.org, haicheng.lee@gmail.com
+Subject: Re: [PATCH 1/2] Fix build error caused by broken PCH_PTP module dependency.
+References: <5060F97F.3040809@linux.intel.com>	<20120927.180942.969924012897168294.davem@davemloft.net>	<506546A7.7030500@linux.intel.com> <20120928.024621.1635385815700269914.davem@davemloft.net>
+In-Reply-To: <20120928.024621.1635385815700269914.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 01:43:18PM +0200, Peter Senna Tschudin wrote:
-> Remove unnecessary semicolon
-> 
-> And:
-> sound/drivers/vx/vx_pcm.c: Convert spaces into tab
-> 
-> Found by http://coccinelle.lip6.fr/
-> 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> ---
+On 09/28/2012 02:46 PM, David Miller wrote:
+> From: Haicheng Li<haicheng.li@linux.intel.com>
+> Date: Fri, 28 Sep 2012 14:41:43 +0800
+>
+>> On 09/28/2012 06:09 AM, David Miller wrote:
+>>> Look at how other people submit patches, do any other patch
+>>> submissions
+>>> look like your's having all of this metadata in the message body:
+>> I'm sorry for it.
+>>
+>>> As for this specific patch:
+>>>
+>>>> -	depends on PTP_1588_CLOCK_PCH
+>>>> +	depends on PTP_1588_CLOCK_PCH = PCH_GBE
+>>>
+>>> This is not the correct way to ensure that the module'ness of one
+>>> config option meets the module'ness requirements of another.
+>>> The correct way is to say something like "&&   (PCH_GBE || PCH_GBE=n)"
+>>
+>> This case is a little bit tricky than usual, with PCH_PTP selected,
+>> the valid config would be either "PTP_1588_CLOCK_PCH=PCH_GBE=m" or
+>> "PTP_1588_CLOCK_PCH=PCH_GBE=y", and PTP_1588_CLOCK_PCH depends on
+>> PCH_GBE.
+>
+> And a simple "&&  PCH_GBE" should accomplish this, no?
+No sir. it's actually same with the original Kconfig (by a if PCH_GBE"), it 
+just failed with this config:
 
-Next time, could you put a little comment here under the --- line
-about what changed between v1 and v2?
+         CONFIG_PCH_GBE=y
+         CONFIG_PCH_PTP=y
+         CONFIG_PTP_1588_CLOCK=m
 
-regards,
-dan carpenter
-
+-haicheng
