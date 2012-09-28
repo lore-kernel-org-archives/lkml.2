@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758347Ab2I1O5G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:57:06 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:38540 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758306Ab2I1O5E (ORCPT
+	id S1758367Ab2I1O5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:57:13 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:31412 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758350Ab2I1O5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:57:04 -0400
-Date: Fri, 28 Sep 2012 16:57:03 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 18/31] perf, core: Add a concept of a weightened sample
-Message-ID: <20120928145703.GR16230@one.firstfloor.org>
-References: <1348806696-31170-1-git-send-email-andi@firstfloor.org> <1348806696-31170-19-git-send-email-andi@firstfloor.org> <CABPqkBQPVbobTgaV97E0qvOcfWnK8jMmoyp6NEuMn2+WHZ97HQ@mail.gmail.com>
-Mime-Version: 1.0
+	Fri, 28 Sep 2012 10:57:10 -0400
+Date: Fri, 28 Sep 2012 11:00:10 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/16] iommu/amd: Split device table initialization into
+ irq and dma part
+Message-ID: <20120928150009.GI7483@localhost.localdomain>
+References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+ <1348835046-3262-6-git-send-email-joerg.roedel@amd.com>
+ <20120928141752.GD7483@localhost.localdomain>
+ <20120928142555.GC4009@amd.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBQPVbobTgaV97E0qvOcfWnK8jMmoyp6NEuMn2+WHZ97HQ@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20120928142555.GC4009@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I came to the conclusion that yes we need something like a weight or cost
-> as a generic way of reporting that in some modes the period is not really
-> the right measure to evaluate the "cost" of an event.
-
-I'm not fully sure if you're for or against it. I think
-the patch is mostly orthogonal to what you're proposing
-
-My main target is the TSX abort cost, the memory latencies 
-I just added as a bonus.
-
+On Fri, Sep 28, 2012 at 04:25:55PM +0200, Joerg Roedel wrote:
+> On Fri, Sep 28, 2012 at 10:17:53AM -0400, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Sep 28, 2012 at 02:23:55PM +0200, Joerg Roedel wrote:
+> > > When the IOMMU is enabled very early (as with irq-remapping)
+> > > some devices are still in BIOS hand. When dma is blocked
+> > > early this can cause lots of IO_PAGE_FAULTs. So delay the
+> > > DMA initialization and do it right before the dma_ops are
+> > > initialized.
+> > > To be secure, block all interrupts by default when irq-remapping is
+> > 
+> > What are you trying to be secure against?
 > 
-> I was testing my PEBS Load Latency patch this week, I came to that
-> conclusion. The way perf report sorts samples based on aggregated
-> periods per IP does not work for PEBS Load Latency (and possibly other
-> modes). The sorting needs to be based on some cost that may be distinct
-> from the period. By default, it would be the period, but for PEBS LL that
-> would be the latency of the load at a specific IP. That would more reflect
-> was is going on.
+> Against attacks of faked MSI msgs that could DoS the system. MSI
+> messages are only specific DMA transactions in the end and a guest with
+> a device assigned has control over its DMA engine and can thus send
+> arbitrary interrupt requests to the host. There is a whole paper about
+> such attacks. I can't find right now, but I send you  a link when I find
+> it.
 
-
-I originally folded the weight into nr_events, but in the end it turned
-out it's fairly useful to expose both explicitely as sort keys.
-
-In some cases you want the average weight, in others the total weight
-(SUM(weight) * nr_events). I haven't tried to mess with the period
-so far.
-
--Andi
+I think I know which one you are talking about - that is the Joanna's
+Rutkowski/Rafal Wojtczuk paper. Could you include a bit about it
+in the description or at least the title in the git commit pls?
