@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032616Ab2I1U1t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:27:49 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:51449 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032599Ab2I1U1n (ORCPT
+	id S1422698Ab2I1U1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:27:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032619Ab2I1U1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:27:43 -0400
+	Fri, 28 Sep 2012 16:27:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 114/218] DMA: PL330: Check the pointer returned by kzalloc
-Date: Fri, 28 Sep 2012 13:15:31 -0700
-Message-Id: <20120928201514.599733596@linuxfoundation.org>
+Subject: [ 116/218] dmaengine: at_hdmac: check that each sg data length is non-null
+Date: Fri, 28 Sep 2012 13:15:33 -0700
+Message-Id: <20120928201514.804713228@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,35 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Kamat <sachin.kamat@linaro.org>
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-commit 61c6e7531d3b66b33187b8cdd700fd8ab93ffd62 upstream.
+commit c456797681db814f4f5b36909e8e94047bf53d9c upstream.
 
-kzalloc could return NULL. Hence add a check to avoid
-NULL pointer dereference.
+Avoid the construction of a malformed DMA request sent to
+the DMA controller.
+Log message is for debug only because this condition is unlikely to
+append and may only trigger at driver development time.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/pl330.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/dma/at_hdmac.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2937,6 +2937,11 @@ pl330_probe(struct amba_device *adev, co
- 		num_chan = max_t(int, pi->pcfg.num_peri, pi->pcfg.num_chan);
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -691,6 +691,11 @@ atc_prep_slave_sg(struct dma_chan *chan,
  
- 	pdmac->peripherals = kzalloc(num_chan * sizeof(*pch), GFP_KERNEL);
-+	if (!pdmac->peripherals) {
-+		ret = -ENOMEM;
-+		dev_err(&adev->dev, "unable to allocate pdmac->peripherals\n");
-+		goto probe_err5;
-+	}
+ 			mem = sg_dma_address(sg);
+ 			len = sg_dma_len(sg);
++			if (unlikely(!len)) {
++				dev_dbg(chan2dev(chan),
++					"prep_slave_sg: sg(%d) data length is zero\n", i);
++				goto err;
++			}
+ 			mem_width = 2;
+ 			if (unlikely(mem & 3 || len & 3))
+ 				mem_width = 0;
+@@ -726,6 +731,11 @@ atc_prep_slave_sg(struct dma_chan *chan,
  
- 	for (i = 0; i < num_chan; i++) {
- 		pch = &pdmac->peripherals[i];
+ 			mem = sg_dma_address(sg);
+ 			len = sg_dma_len(sg);
++			if (unlikely(!len)) {
++				dev_dbg(chan2dev(chan),
++					"prep_slave_sg: sg(%d) data length is zero\n", i);
++				goto err;
++			}
+ 			mem_width = 2;
+ 			if (unlikely(mem & 3 || len & 3))
+ 				mem_width = 0;
+@@ -759,6 +769,7 @@ atc_prep_slave_sg(struct dma_chan *chan,
+ 
+ err_desc_get:
+ 	dev_err(chan2dev(chan), "not enough descriptors available\n");
++err:
+ 	atc_desc_put(atchan, first);
+ 	return NULL;
+ }
 
 
