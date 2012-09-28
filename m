@@ -1,47 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900Ab2I1H42 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 03:56:28 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:60932 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756347Ab2I1H41 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 28 Sep 2012 03:56:27 -0400
-Message-Id: <50657462020000780009E64A@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 28 Sep 2012 08:56:50 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Daniel Kiper" <daniel.kiper@oracle.com>
-Cc: <andrew.cooper3@citrix.com>, "xen-devel" <xen-devel@lists.xen.org>,
-        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/11] x86/kexec: Add extra pointers to transition
- page table PGD, PUD, PMD and PTE
-References: <1348769198-29580-1-git-send-email-daniel.kiper@oracle.com>
- <1348769198-29580-2-git-send-email-daniel.kiper@oracle.com>
- <1348769198-29580-3-git-send-email-daniel.kiper@oracle.com>
-In-Reply-To: <1348769198-29580-3-git-send-email-daniel.kiper@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1756909Ab2I1H4q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 03:56:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50463 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755208Ab2I1H4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 03:56:44 -0400
+Date: Fri, 28 Sep 2012 08:56:28 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: Re: CMA broken in next-20120926
+Message-ID: <20120928075628.GJ3429@suse.de>
+References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
+ <20120927151159.4427fc8f.akpm@linux-foundation.org>
+ <20120928054330.GA27594@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <20120928054330.GA27594@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.09.12 at 20:06, Daniel Kiper <daniel.kiper@oracle.com> wrote:
-> Some implementations (e.g. Xen PVOPS) could not use part of identity page 
-> table
-> to construct transition page table. It means that they require separate 
-> PUDs,
-> PMDs and PTEs for virtual and physical (identity) mapping. To satisfy that
-> requirement add extra pointer to PGD, PUD, PMD and PTE and align existing 
-> code.
+On Fri, Sep 28, 2012 at 02:43:30PM +0900, Minchan Kim wrote:
+> On Thu, Sep 27, 2012 at 03:11:59PM -0700, Andrew Morton wrote:
+> > On Thu, 27 Sep 2012 13:29:11 +0200
+> > Thierry Reding <thierry.reding@avionic-design.de> wrote:
+> > 
+> > > Hi Marek,
+> > > 
+> > > any idea why CMA might be broken in next-20120926. I see that there
+> > > haven't been any major changes to CMA itself, but there's been quite a
+> > > bit of restructuring of various memory allocation bits lately. I wasn't
+> > > able to track the problem down, though.
+> > > 
+> > > What I see is this during boot (with CMA_DEBUG enabled):
+> > > 
+> > > [    0.266904] cma: dma_alloc_from_contiguous(cma db474f80, count 64, align 6)
+> > > [    0.284469] cma: dma_alloc_from_contiguous(): memory range at c09d7000 is busy, retrying
+> > > [    0.293648] cma: dma_alloc_from_contiguous(): memory range at c09d7800 is busy, retrying
+> > > ...
+> > > [    2.648619] DMA: failed to allocate 256 KiB pool for atomic coherent allocation
+> > > ...
+> > > [    4.196193] WARNING: at /home/thierry.reding/src/kernel/linux-ipmp.git/arch/arm/mm/dma-mapping.c:485 __alloc_from_pool+0xdc/0x110()
+> > > [    4.207988] coherent pool not initialised!
+> > > 
+> > > So the pool isn't getting initialized properly because CMA can't get at
+> > > the memory. Do you have any hints as to what might be going on? If it's
+> > > any help, I started seeing this with next-20120926 and it is in today's
+> > > next as well.
+> > > 
+> > 
+> > Bart and Minchan have made recent changes to CMA.  Let us cc them.
+> 
+> Hi all,
+> 
+> I have no time now so I look over the problem during short time
+> so I mighte be wrong. Even I should leave the office soon and
+> Korea will have long vacation from now on so I will be off by next week.
+> So it's hard to reach on me.
+> 
+> I hope this patch fixes the bug. If this patch fixes the problem
+> but has some problem about description or someone has better idea,
+> feel free to modify and resend to akpm, Please.
+> 
+> Thierry, Could you test below patch?
+> 
+> From 24a547855fa2bd4212a779cc73997837148310b3 Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Fri, 28 Sep 2012 14:28:32 +0900
+> Subject: [PATCH] revert mm: compaction: iron out isolate_freepages_block()
+>  and isolate_freepages_range()
+> 
+> [1] made bug on CMA.
+> The nr_scanned should be never equal to total_isolated for successful CMA.
+> This patch reverts part of the patch.
+> 
 
-I'm puzzled by this - why would you need to reintroduce what had
-been dropped a long time ago, when the forward ported kernels
-don't need it? Xen itself doesn't need the extra entries, their
-presence is purely a requirement of the specific kernel
-implementation afaict.
+Why should nr_scanned never be equal to total_isolated for CMA?
 
-Jan
+Reverting the patch reintroduces Andrew's complaint that this function
+was "straggly" and getting a bit out of control so I'd much prefer to
+understand why this situation is not true and fix that.
 
+-- 
+Mel Gorman
+SUSE Labs
