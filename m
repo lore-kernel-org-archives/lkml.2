@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032889Ab2I1VNG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:13:06 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39326 "EHLO
+	id S1032919Ab2I1VNh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:13:37 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34544 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759501Ab2I1Ukh (ORCPT
+	by vger.kernel.org with ESMTP id S1759494Ab2I1Ukf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:37 -0400
-X-Sasl-enc: iMOF7RzMtpCyGY7TwTQQnvdQmCUfa0ab5Ks2OG5APD55 1348864836
+	Fri, 28 Sep 2012 16:40:35 -0400
+X-Sasl-enc: 5YF6/MV5O83tgT6pMbRCn639QGmi7m67F9X2bhCp7w8c 1348864832
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Mathias Krause <minipli@googlemail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 016/127] llc: fix info leak via getsockname()
-Date: Fri, 28 Sep 2012 13:33:09 -0700
-Message-Id: <20120928203047.693181036@linuxfoundation.org>
+Subject: [ 013/127] Bluetooth: RFCOMM - Fix info leak in ioctl(RFCOMMGETDEVLIST)
+Date: Fri, 28 Sep 2012 13:33:06 -0700
+Message-Id: <20120928203047.350636367@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -32,43 +34,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 3592aaeb80290bda0f2cf0b5456c97bfc638b192 ]
+[ Upstream commit f9432c5ec8b1e9a09b9b0e5569e3c73db8de432a ]
 
-The LLC code wrongly returns 0, i.e. "success", when the socket is
-zapped. Together with the uninitialized uaddrlen pointer argument from
-sys_getsockname this leads to an arbitrary memory leak of up to 128
-bytes kernel stack via the getsockname() syscall.
+The RFCOMM code fails to initialize the two padding bytes of struct
+rfcomm_dev_list_req inserted for alignment before copying it to
+userland. Additionally there are two padding bytes in each instance of
+struct rfcomm_dev_info. The ioctl() that for disclosures two bytes plus
+dev_num times two bytes uninitialized kernel heap memory.
 
-Return an error instead when the socket is zapped to prevent the info
-leak. Also remove the unnecessary memset(0). We don't directly write to
-the memory pointed by uaddr but memcpy() a local structure at the end of
-the function that is properly initialized.
+Allocate the memory using kzalloc() to fix this issue.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/llc/af_llc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/bluetooth/rfcomm/tty.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -966,14 +966,13 @@ static int llc_ui_getname(struct socket
- 	struct sockaddr_llc sllc;
- 	struct sock *sk = sock->sk;
- 	struct llc_sock *llc = llc_sk(sk);
--	int rc = 0;
-+	int rc = -EBADF;
+--- a/net/bluetooth/rfcomm/tty.c
++++ b/net/bluetooth/rfcomm/tty.c
+@@ -471,7 +471,7 @@ static int rfcomm_get_dev_list(void __us
  
- 	memset(&sllc, 0, sizeof(sllc));
- 	lock_sock(sk);
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		goto out;
- 	*uaddrlen = sizeof(sllc);
--	memset(uaddr, 0, *uaddrlen);
- 	if (peer) {
- 		rc = -ENOTCONN;
- 		if (sk->sk_state != TCP_ESTABLISHED)
+ 	size = sizeof(*dl) + dev_num * sizeof(*di);
+ 
+-	dl = kmalloc(size, GFP_KERNEL);
++	dl = kzalloc(size, GFP_KERNEL);
+ 	if (!dl)
+ 		return -ENOMEM;
+ 
 
 
