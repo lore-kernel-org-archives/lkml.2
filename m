@@ -1,140 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab2I1GEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 02:04:40 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:54814 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab2I1GEi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 02:04:38 -0400
-Message-ID: <50653DE7.70702@gmail.com>
-Date: Fri, 28 Sep 2012 14:04:23 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1756108Ab2I1GHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 02:07:25 -0400
+Received: from ozlabs.org ([203.10.76.45]:43788 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753327Ab2I1GHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 02:07:17 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: David Howells <dhowells@redhat.com>
+Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, pjones@redhat.com,
+        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        keyrings@linux-nfs.org
+Subject: [PATCH 1/2] modsign: don't use bashism in sh scripts.
+In-Reply-To: <16088.1348736905@warthog.procyon.org.uk>
+References: <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Fri, 28 Sep 2012 15:28:23 +0930
+Message-ID: <87obkq3czk.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, wency@cn.fujitsu.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/4] memory-hotplug: add memory_block_release
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-2-git-send-email-wency@cn.fujitsu.com> <CAEkdkmVW5wwG4_cy0yHFNVmk2bzAqzo2adRsMn1yHOW9Ex98_g@mail.gmail.com> <5064EE3F.3080606@jp.fujitsu.com> <CAHGf_=pDn852sRadnXQMWx3rOTxGLy7876pxk1Ww4oJtkBAZbQ@mail.gmail.com> <50651D65.5080400@jp.fujitsu.com>
-In-Reply-To: <50651D65.5080400@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 11:45 AM, Yasuaki Ishimatsu wrote:
-> Hi Kosaki-san,
->
-> 2012/09/28 10:35, KOSAKI Motohiro wrote:
->> On Thu, Sep 27, 2012 at 8:24 PM, Yasuaki Ishimatsu
->> <isimatu.yasuaki@jp.fujitsu.com> wrote:
->>> Hi Chen,
->>>
->>>
->>> 2012/09/27 19:20, Ni zhan Chen wrote:
->>>>
->>>> Hi Congyang,
->>>>
->>>> 2012/9/27 <wency@cn.fujitsu.com>
->>>>
->>>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>>>
->>>>> When calling remove_memory_block(), the function shows following 
->>>>> message
->>>>> at
->>>>> device_release().
->>>>>
->>>>> Device 'memory528' does not have a release() function, it is 
->>>>> broken and
->>>>> must
->>>>> be fixed.
->>>>>
->>>>
->>>> What's the difference between the patch and original implemetation?
->>>
->>>
->>> The implementation is for removing a memory_block. So the purpose is
->>> same as original one. But original code is bad manner. 
->>> kobject_cleanup()
->>> is called by remove_memory_block() at last. But release function for
->>> releasing memory_block is not registered. As a result, the kernel 
->>> message
->>> is shown. IMHO, memory_block should be release by the releae function.
->>
->> but your patch introduced use after free bug, if i understand correctly.
->> See unregister_memory() function. After your patch, kobject_put() call
->> release_memory_block() and kfree(). and then device_unregister() will
->> touch freed memory.
->
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-this patch is similiar to [RFC v9 PATCH 10/21] memory-hotplug: add 
-memory_block_release, they handle the same issue, can these two patches 
-be fold to one?
-
-> It is not correct. The kobject_put() is prepared against 
-> find_memory_block()
-> in remove_memory_block() since kobject->kref is incremented in it.
-> So release_memory_block() is called by device_unregister() correctly 
-> as follows:
->
-> [ 1014.589008] Pid: 126, comm: kworker/0:2 Not tainted 
-> 3.6.0-rc3-enable-memory-hotremove-and-root-bridge #3
-> [ 1014.702437] Call Trace:
-> [ 1014.731684]  [<ffffffff8144d096>] release_memory_block+0x16/0x30
-> [ 1014.803581]  [<ffffffff81438587>] device_release+0x27/0xa0
-> [ 1014.869312]  [<ffffffff8133e962>] kobject_cleanup+0x82/0x1b0
-> [ 1014.937062]  [<ffffffff8133ea9d>] kobject_release+0xd/0x10
-> [ 1015.002718]  [<ffffffff8133e7ec>] kobject_put+0x2c/0x60
-> [ 1015.065271]  [<ffffffff81438107>] put_device+0x17/0x20
-> [ 1015.126794]  [<ffffffff8143918a>] device_unregister+0x2a/0x60
-> [ 1015.195578]  [<ffffffff8144d55b>] remove_memory_block+0xbb/0xf0
-> [ 1015.266434]  [<ffffffff8144d5af>] unregister_memory_section+0x1f/0x30
-> [ 1015.343532]  [<ffffffff811c0a58>] __remove_section+0x68/0x110
-> [ 1015.412318]  [<ffffffff811c0be7>] __remove_pages+0xe7/0x120
-> [ 1015.479021]  [<ffffffff81653d8c>] arch_remove_memory+0x2c/0x80
-> [ 1015.548845]  [<ffffffff8165497b>] remove_memory+0x6b/0xd0
-> [ 1015.613474]  [<ffffffff813d946c>] 
-> acpi_memory_device_remove_memory+0x48/0x73
-> [ 1015.697834]  [<ffffffff813d94c2>] acpi_memory_device_remove+0x2b/0x44
-> [ 1015.774922]  [<ffffffff813a61e4>] acpi_device_remove+0x90/0xb2
-> [ 1015.844796]  [<ffffffff8143c2fc>] __device_release_driver+0x7c/0xf0
-> [ 1015.919814]  [<ffffffff8143c47f>] device_release_driver+0x2f/0x50
-> [ 1015.992753]  [<ffffffff813a70dc>] acpi_bus_remove+0x32/0x6d
-> [ 1016.059462]  [<ffffffff813a71a8>] acpi_bus_trim+0x91/0x102
-> [ 1016.125128]  [<ffffffff813a72a1>] 
-> acpi_bus_hot_remove_device+0x88/0x16b
-> [ 1016.204295]  [<ffffffff813a2e57>] acpi_os_execute_deferred+0x27/0x34
-> [ 1016.280350]  [<ffffffff81090599>] process_one_work+0x219/0x680
-> [ 1016.350173]  [<ffffffff81090538>] ? process_one_work+0x1b8/0x680
-> [ 1016.422072]  [<ffffffff813a2e30>] ? 
-> acpi_os_wait_events_complete+0x23/0x23
-> [ 1016.504357]  [<ffffffff810923ce>] worker_thread+0x12e/0x320
-> [ 1016.571064]  [<ffffffff810922a0>] ? manage_workers+0x110/0x110
-> [ 1016.640886]  [<ffffffff810983a6>] kthread+0xc6/0xd0
-> [ 1016.699290]  [<ffffffff8167b144>] kernel_thread_helper+0x4/0x10
-> [ 1016.770149]  [<ffffffff81670bb0>] ? retint_restore_args+0x13/0x13
-> [ 1016.843165]  [<ffffffff810982e0>] ? __init_kthread_worker+0x70/0x70
-> [ 1016.918200]  [<ffffffff8167b140>] ? gs_change+0x13/0x13
->
-> Thanks,
-> Yasuaki Ishimatsu
->
->>
->> static void
->> unregister_memory(struct memory_block *memory)
->> {
->>     BUG_ON(memory->dev.bus != &memory_subsys);
->>
->>     /* drop the ref. we got in remove_memory_block() */
->>     kobject_put(&memory->dev.kobj);
->>     device_unregister(&memory->dev);
->> }
->>
->
->
->
-
+diff --git a/scripts/sign-file b/scripts/sign-file
+index 1a472bb..e58e34e 100644
+--- a/scripts/sign-file
++++ b/scripts/sign-file
+@@ -10,7 +10,7 @@ scripts=`dirname $0`
+ CONFIG_MODULE_SIG_SHA512=y
+ if [ -r .config ]
+ then
+-    source ./.config
++    . ./.config
+ fi
+ 
+ key="$1"
