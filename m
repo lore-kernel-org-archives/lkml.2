@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033153Ab2I1VVF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:21:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
+	id S1033165Ab2I1VV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:21:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964993Ab2I1Ua1 (ORCPT
+	with ESMTP id S964989Ab2I1UaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:30:27 -0400
+	Fri, 28 Sep 2012 16:30:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 158/218] drm/radeon: convert radeon vfct code to use acpi_get_table_with_size
-Date: Fri, 28 Sep 2012 13:16:15 -0700
-Message-Id: <20120928201519.668847102@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 165/218] workqueue: UNBOUND -> REBIND morphing in rebind_workers() should be atomic
+Date: Fri, 28 Sep 2012 13:16:22 -0700
+Message-Id: <20120928201520.467902828@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -26,44 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 7c3906d04a4587dceaa78cc1ae6b14e6454ee02a upstream.
+commit 96e65306b81351b656835c15931d1d237b252f27 upstream.
 
-Allows us to verify the table size.
+The compiler may compile the following code into TWO write/modify
+instructions.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+	worker->flags &= ~WORKER_UNBOUND;
+	worker->flags |= WORKER_REBIND;
+
+so the other CPU may temporarily see worker->flags which doesn't have
+either WORKER_UNBOUND or WORKER_REBIND set and perform local wakeup
+prematurely.
+
+Fix it by using single explicit assignment via ACCESS_ONCE().
+
+Because idle workers have another WORKER_NOT_RUNNING flag, this bug
+doesn't exist for them; however, update it to use the same pattern for
+consistency.
+
+tj: Applied the change to idle workers too and updated comments and
+    patch description a bit.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_bios.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ kernel/workqueue.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_bios.c
-+++ b/drivers/gpu/drm/radeon/radeon_bios.c
-@@ -554,13 +554,12 @@ static bool radeon_acpi_vfct_bios(struct
- {
- 	bool ret = false;
- 	struct acpi_table_header *hdr;
--	/* acpi_get_table_with_size is not exported :( */
--	acpi_size tbl_size = 0x7fffffff;
-+	acpi_size tbl_size;
- 	UEFI_ACPI_VFCT *vfct;
- 	GOP_VBIOS_CONTENT *vbios;
- 	VFCT_IMAGE_HEADER *vhdr;
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3433,14 +3433,17 @@ static int __cpuinit trustee_thread(void
  
--	if (!ACPI_SUCCESS(acpi_get_table("VFCT", 1, &hdr)))
-+	if (!ACPI_SUCCESS(acpi_get_table_with_size("VFCT", 1, &hdr, &tbl_size)))
- 		return false;
- 	if (tbl_size < sizeof(UEFI_ACPI_VFCT)) {
- 		DRM_ERROR("ACPI VFCT table present but broken (too short #1)\n");
-@@ -597,7 +596,6 @@ static bool radeon_acpi_vfct_bios(struct
- 	ret = !!rdev->bios;
+ 	for_each_busy_worker(worker, i, pos, gcwq) {
+ 		struct work_struct *rebind_work = &worker->rebind_work;
++		unsigned long worker_flags = worker->flags;
  
- out_unmap:
--	/* uh, no idea what to do here... */
- 	return ret;
- }
- #else
+ 		/*
+ 		 * Rebind_work may race with future cpu hotplug
+ 		 * operations.  Use a separate flag to mark that
+-		 * rebinding is scheduled.
++		 * rebinding is scheduled.  The morphing should
++		 * be atomic.
+ 		 */
+-		worker->flags |= WORKER_REBIND;
+-		worker->flags &= ~WORKER_ROGUE;
++		worker_flags |= WORKER_REBIND;
++		worker_flags &= ~WORKER_ROGUE;
++		ACCESS_ONCE(worker->flags) = worker_flags;
+ 
+ 		/* queue rebind_work, wq doesn't matter, use the default one */
+ 		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
 
 
