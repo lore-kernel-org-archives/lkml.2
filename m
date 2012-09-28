@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030907Ab2I1TKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:10:48 -0400
-Received: from 8bytes.org ([85.214.48.195]:46688 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030675Ab2I1TKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:10:46 -0400
-Date: Fri, 28 Sep 2012 21:10:42 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU Fixes for v3.6-rc7
-Message-ID: <20120928191041.GA3965@8bytes.org>
+	id S1030745Ab2I1TG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:06:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030703Ab2I1TGT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 15:06:19 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: =?UTF-8?q?=5B=20244/262=5D=20net=3A=20qmi=5Fwwan=3A=20add=20ZTE=20MF821D?=
+Date: Fri, 28 Sep 2012 11:52:53 -0700
+Message-Id: <20120928183027.228872277@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
+References: <20120928182957.993484211@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Sep 28 21:10:43 2012
-X-DSPAM-Confidence: 0.9988
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5065f63322972392168013
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Greg KH <gregkh@linuxfoundation.org>
 
-The following changes since commit 979570e02981d4a8fc20b3cc8fd651856c98ee9d:
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-  Linux 3.6-rc7 (2012-09-23 18:10:57 -0700)
+------------------
 
-are available in the git repository at:
+From: Bjørn Mork <bjorn@mork.no>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-fixes-v3.6-rc7
+commit db8dacf953a70274172236957a4b97d4fdb376f0 upstream.
 
-for you to fetch changes up to 0774e392555a128cff7a94929b9ce957927fef49:
+Sold by O2 (telefonica germany) under the name "LTE4G"
 
-  iommu/amd: Fix wrong assumption in iommu-group specific code (2012-09-28 16:14:44 +0200)
+Tested-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-----------------------------------------------------------------
-IOMMU fixes for Linux v3.6-rc7
+---
+ drivers/net/usb/qmi_wwan.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Two small patches:
-
-	* One patch to fix the function declarations for
-	  !CONFIG_IOMMU_API. This is causing build errors
-	  in linux-next and should be fixed for v3.6.
-
-	* Another patch to fix an IOMMU group related NULL pointer
-	  dereference.
-
-----------------------------------------------------------------
-Alex Williamson (1):
-      iommu: static inline iommu group stub functions
-
-Joerg Roedel (1):
-      iommu/amd: Fix wrong assumption in iommu-group specific code
-
- drivers/iommu/amd_iommu.c |    6 ++++--
- include/linux/iommu.h     |   42 ++++++++++++++++++++++++------------------
- 2 files changed, 28 insertions(+), 20 deletions(-)
-
-Please pull.
-
-Regards,
-
-	Joerg
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -453,6 +453,15 @@ static const struct usb_device_id produc
+ 		.bInterfaceProtocol = 0xff,
+ 		.driver_info        = (unsigned long)&qmi_wwan_force_int4,
+ 	},
++	{	/* ZTE MF821D */
++		.match_flags        = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
++		.idVendor           = 0x19d2,
++		.idProduct          = 0x0326,
++		.bInterfaceClass    = 0xff,
++		.bInterfaceSubClass = 0xff,
++		.bInterfaceProtocol = 0xff,
++		.driver_info        = (unsigned long)&qmi_wwan_force_int4,
++	},
+ 	{	/* ZTE (Vodafone) K3520-Z */
+ 		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
+ 		.idVendor           = 0x19d2,
 
 
