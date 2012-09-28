@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946436Ab2I1VvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:51:12 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030198Ab2I1UYC (ORCPT
+	id S1945990Ab2I1Vvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:51:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032094Ab2I1UXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:24:02 -0400
+	Fri, 28 Sep 2012 16:23:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Daniel J Blueman <daniel@quora.org>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 048/218] ALSA: hda - Fix Oops at codec reset/reconfig
-Date: Fri, 28 Sep 2012 13:14:25 -0700
-Message-Id: <20120928201507.006527182@linuxfoundation.org>
+        "Dae S. Kim" <dae@velatum.com>
+Subject: [ 044/218] Staging: Android alarm: IOCTL command encoding fix
+Date: Fri, 28 Sep 2012 13:14:21 -0700
+Message-Id: <20120928201506.526781717@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -26,45 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "Dae S. Kim" <dae@velatum.com>
 
-commit 07dc59f0988cb54fd87bd373b3b27eb2401dd811 upstream.
+commit 6bd4a5d96c08dc2380f8053b1bd4f879f55cd3c9 upstream.
 
-snd_hda_codec_reset() calls restore_pincfgs() where the codec is
-powered up again, which eventually tries to resume and initialize via
-the callbacks of the codec.  However, it's the place just after codec
-free callback, thus no codec callbacks should be called after that.
-On a codec like CS4206, it results in Oops due to the access in init
-callback.
+Fixed a bug. Data was being written to user space using an IOCTL
+command encoded with _IOC_WRITE access mode.
 
-This patch fixes the issue by clearing the codec callbacks properly
-after freeing codec.
-
-Reported-by: Daniel J Blueman <daniel@quora.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dae S. Kim <dae@velatum.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_codec.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/android/android_alarm.h |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -2279,6 +2279,7 @@ int snd_hda_codec_reset(struct hda_codec
- 	}
- 	if (codec->patch_ops.free)
- 		codec->patch_ops.free(codec);
-+	memset(&codec->patch_ops, 0, sizeof(codec->patch_ops));
- 	snd_hda_jack_tbl_clear(codec);
- 	codec->proc_widget_hook = NULL;
- 	codec->spec = NULL;
-@@ -2292,7 +2293,6 @@ int snd_hda_codec_reset(struct hda_codec
- 	codec->num_pcms = 0;
- 	codec->pcm_info = NULL;
- 	codec->preset = NULL;
--	memset(&codec->patch_ops, 0, sizeof(codec->patch_ops));
- 	codec->slave_dig_outs = NULL;
- 	codec->spdif_status_reset = 0;
- 	module_put(codec->owner);
+--- a/drivers/staging/android/android_alarm.h
++++ b/drivers/staging/android/android_alarm.h
+@@ -110,10 +110,12 @@ enum android_alarm_return_flags {
+ #define ANDROID_ALARM_WAIT                  _IO('a', 1)
+ 
+ #define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
++#define ALARM_IOR(c, type, size)            _IOR('a', (c) | ((type) << 4), size)
++
+ /* Set alarm */
+ #define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
+ #define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
+-#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
++#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOR(4, type, struct timespec)
+ #define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
+ #define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
+ #define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
 
 
