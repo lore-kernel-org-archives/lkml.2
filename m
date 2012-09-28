@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946234Ab2I1V3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:29:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032681Ab2I1U2b (ORCPT
+	id S1946246Ab2I1VaM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:30:12 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51449 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032656Ab2I1U22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:28:31 -0400
+	Fri, 28 Sep 2012 16:28:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Klaus Falkner <klaus.falkner@solectrix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 129/218] USB: ohci-at91: fix PIO handling in relation with number of ports
-Date: Fri, 28 Sep 2012 13:15:46 -0700
-Message-Id: <20120928201516.280263091@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Oliver Neukum <oliver@neukum.org>
+Subject: =?UTF-8?q?=5B=20128/218=5D=20USB=3A=20cdc-wdm=3A=20fix=20wdm=5Ffind=5Fdevice*=20return=20value?=
+Date: Fri, 28 Sep 2012 13:15:45 -0700
+Message-Id: <20120928201516.157323029@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,45 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 6fffb77c8393151b0cf8cef1b9c2ba90587dd2e8 upstream.
+commit 6a44886899ef8cc396e230e492e6a56a883889f3 upstream.
 
-If the number of ports present on the SoC/board is not the maximum
-and that the platform data is not filled with all data, there is
-an easy way to mess the PIO setup for this interface.
-This quick fix addresses mis-configuration in USB host platform data
-that is common in at91 boards since commit 0ee6d1e (USB: ohci-at91:
-change maximum number of ports) that did not modified the associatd
-board files.
+A logic error made the wdm_find_device* functions
+return a bogus pointer into static data instead of
+the intended NULL no matching device was found.
 
-Reported-by: Klaus Falkner <klaus.falkner@solectrix.de>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Cc: Oliver Neukum <oliver@neukum.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ohci-at91.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/usb/class/cdc-wdm.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -569,6 +569,16 @@ static int __devinit ohci_hcd_at91_drv_p
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -134,12 +134,14 @@ static struct usb_driver wdm_driver;
+ /* return intfdata if we own the interface, else look up intf in the list */
+ static struct wdm_device *wdm_find_device(struct usb_interface *intf)
+ {
+-	struct wdm_device *desc = NULL;
++	struct wdm_device *desc;
  
- 	if (pdata) {
- 		at91_for_each_port(i) {
-+			/*
-+			 * do not configure PIO if not in relation with
-+			 * real USB port on board
-+			 */
-+			if (i >= pdata->ports) {
-+				pdata->vbus_pin[i] = -EINVAL;
-+				pdata->overcurrent_pin[i] = -EINVAL;
-+				break;
-+			}
-+
- 			if (!gpio_is_valid(pdata->vbus_pin[i]))
- 				continue;
- 			gpio = pdata->vbus_pin[i];
+ 	spin_lock(&wdm_device_list_lock);
+ 	list_for_each_entry(desc, &wdm_device_list, device_list)
+ 		if (desc->intf == intf)
+-			break;
++			goto found;
++	desc = NULL;
++found:
+ 	spin_unlock(&wdm_device_list_lock);
+ 
+ 	return desc;
+@@ -147,12 +149,14 @@ static struct wdm_device *wdm_find_devic
+ 
+ static struct wdm_device *wdm_find_device_by_minor(int minor)
+ {
+-	struct wdm_device *desc = NULL;
++	struct wdm_device *desc;
+ 
+ 	spin_lock(&wdm_device_list_lock);
+ 	list_for_each_entry(desc, &wdm_device_list, device_list)
+ 		if (desc->intf->minor == minor)
+-			break;
++			goto found;
++	desc = NULL;
++found:
+ 	spin_unlock(&wdm_device_list_lock);
+ 
+ 	return desc;
 
 
