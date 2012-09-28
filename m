@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032395Ab2I1UZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:25:59 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031750Ab2I1UZy (ORCPT
+	id S1032414Ab2I1U0J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:26:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032397Ab2I1U0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:25:54 -0400
+	Fri, 28 Sep 2012 16:26:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xishi Qiu <qiuxishi@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Mel Gorman <mgorman@suse.de>, "Luck, Tony" <tony.luck@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 082/218] memory hotplug: fix section info double registration bug
-Date: Fri, 28 Sep 2012 13:14:59 -0700
-Message-Id: <20120928201510.966871186@linuxfoundation.org>
+        Andre Przywara <andre.przywara@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 084/218] xen/boot: Disable NUMA for PV guests.
+Date: Fri, 28 Sep 2012 13:15:01 -0700
+Message-Id: <20120928201511.220196615@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -30,77 +27,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: qiuxishi <qiuxishi@gmail.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit f14851af0ebb32745c6c5a2e400aa0549f9d20df upstream.
+commit 8d54db795dfb1049d45dc34f0dddbc5347ec5642 upstream.
 
-There may be a bug when registering section info.  For example, on my
-Itanium platform, the pfn range of node0 includes the other nodes, so
-other nodes' section info will be double registered, and memmap's page
-count will equal to 3.
+The hypervisor is in charge of allocating the proper "NUMA" memory
+and dealing with the CPU scheduler to keep them bound to the proper
+NUMA node. The PV guests (and PVHVM) have no inkling of where they
+run and do not need to know that right now. In the future we will
+need to inject NUMA configuration data (if a guest spans two or more
+NUMA nodes) so that the kernel can make the right choices. But those
+patches are not yet present.
 
-  node0: start_pfn=0x100,    spanned_pfn=0x20fb00, present_pfn=0x7f8a3, => 0x000100-0x20fc00
-  node1: start_pfn=0x80000,  spanned_pfn=0x80000,  present_pfn=0x80000, => 0x080000-0x100000
-  node2: start_pfn=0x100000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x100000-0x180000
-  node3: start_pfn=0x180000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x180000-0x200000
+In the meantime, disable the NUMA capability in the PV guest, which
+also fixes a bootup issue. Andre says:
 
-  free_all_bootmem_node()
-	register_page_bootmem_info_node()
-		register_page_bootmem_info_section()
+"we see Dom0 crashes due to the kernel detecting the NUMA topology not
+by ACPI, but directly from the northbridge (CONFIG_AMD_NUMA).
 
-When hot remove memory, we can't free the memmap's page because
-page_count() is 2 after put_page_bootmem().
+This will detect the actual NUMA config of the physical machine, but
+will crash about the mismatch with Dom0's virtual memory. Variation of
+the theme: Dom0 sees what it's not supposed to see.
 
-  sparse_remove_one_section()
-	free_section_usemap()
-		free_map_bootmem()
-			put_page_bootmem()
+This happens with the said config option enabled and on a machine where
+this scanning is still enabled (K8 and Fam10h, not Bulldozer class)
 
-[akpm@linux-foundation.org: add code comment]
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+We have this dump then:
+NUMA: Warning: node ids are out of bound, from=-1 to=-1 distance=10
+Scanning NUMA topology in Northbridge 24
+Number of physical nodes 4
+Node 0 MemBase 0000000000000000 Limit 0000000040000000
+Node 1 MemBase 0000000040000000 Limit 0000000138000000
+Node 2 MemBase 0000000138000000 Limit 00000001f8000000
+Node 3 MemBase 00000001f8000000 Limit 0000000238000000
+Initmem setup node 0 0000000000000000-0000000040000000
+  NODE_DATA [000000003ffd9000 - 000000003fffffff]
+Initmem setup node 1 0000000040000000-0000000138000000
+  NODE_DATA [0000000137fd9000 - 0000000137ffffff]
+Initmem setup node 2 0000000138000000-00000001f8000000
+  NODE_DATA [00000001f095e000 - 00000001f0984fff]
+Initmem setup node 3 00000001f8000000-0000000238000000
+Cannot find 159744 bytes in node 3
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
+Pid: 0, comm: swapper Not tainted 3.3.6 #1 AMD Dinar/Dinar
+RIP: e030:[<ffffffff81d220e6>]  [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
+.. snip..
+  [<ffffffff81d23024>] sparse_early_usemaps_alloc_node+0x64/0x178
+  [<ffffffff81d23348>] sparse_init+0xe4/0x25a
+  [<ffffffff81d16840>] paging_init+0x13/0x22
+  [<ffffffff81d07fbb>] setup_arch+0x9c6/0xa9b
+  [<ffffffff81683954>] ? printk+0x3c/0x3e
+  [<ffffffff81d01a38>] start_kernel+0xe5/0x468
+  [<ffffffff81d012cf>] x86_64_start_reservations+0xba/0xc1
+  [<ffffffff81007153>] ? xen_setup_runstate_info+0x2c/0x36
+  [<ffffffff81d050ee>] xen_start_kernel+0x565/0x56c
+"
+
+so we just disable NUMA scanning by setting numa_off=1.
+
+Reported-and-Tested-by: Andre Przywara <andre.przywara@amd.com>
+Acked-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory_hotplug.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ arch/x86/xen/setup.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -127,9 +127,6 @@ static void register_page_bootmem_info_s
- 	struct mem_section *ms;
- 	struct page *page, *memmap;
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -17,6 +17,7 @@
+ #include <asm/e820.h>
+ #include <asm/setup.h>
+ #include <asm/acpi.h>
++#include <asm/numa.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
  
--	if (!pfn_valid(start_pfn))
--		return;
--
- 	section_nr = pfn_to_section_nr(start_pfn);
- 	ms = __nr_to_section(section_nr);
- 
-@@ -188,9 +185,16 @@ void register_page_bootmem_info_node(str
- 	end_pfn = pfn + pgdat->node_spanned_pages;
- 
- 	/* register_section info */
--	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION)
--		register_page_bootmem_info_section(pfn);
--
-+	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		/*
-+		 * Some platforms can assign the same pfn to multiple nodes - on
-+		 * node0 as well as nodeN.  To avoid registering a pfn against
-+		 * multiple nodes we check that this pfn does not already
-+		 * reside in some other node.
-+		 */
-+		if (pfn_valid(pfn) && (pfn_to_nid(pfn) == node))
-+			register_page_bootmem_info_section(pfn);
-+	}
+@@ -431,4 +432,7 @@ void __init xen_arch_setup(void)
+ 	disable_cpufreq();
+ 	WARN_ON(set_pm_idle_to_default());
+ 	fiddle_vdso();
++#ifdef CONFIG_NUMA
++	numa_off = 1;
++#endif
  }
- #endif /* !CONFIG_SPARSEMEM_VMEMMAP */
- 
 
 
