@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031711Ab2I1UW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:22:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
+	id S1946023Ab2I1V6F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:58:05 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031234Ab2I1UWT (ORCPT
+	with ESMTP id S1031675Ab2I1UW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:22:19 -0400
+	Fri, 28 Sep 2012 16:22:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 016/218] Bluetooth: RFCOMM - Fix info leak via getsockname()
-Date: Fri, 28 Sep 2012 13:13:53 -0700
-Message-Id: <20120928201503.148882259@linuxfoundation.org>
+Subject: [ 018/218] llc: fix info leak via getsockname()
+Date: Fri, 28 Sep 2012 13:13:55 -0700
+Message-Id: <20120928201503.404775823@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -33,32 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 9344a972961d1a6d2c04d9008b13617bcb6ec2ef ]
+[ Upstream commit 3592aaeb80290bda0f2cf0b5456c97bfc638b192 ]
 
-The RFCOMM code fails to initialize the trailing padding byte of struct
-sockaddr_rc added for alignment. It that for leaks one byte kernel stack
-via the getsockname() syscall. Add an explicit memset(0) before filling
-the structure to avoid the info leak.
+The LLC code wrongly returns 0, i.e. "success", when the socket is
+zapped. Together with the uninitialized uaddrlen pointer argument from
+sys_getsockname this leads to an arbitrary memory leak of up to 128
+bytes kernel stack via the getsockname() syscall.
+
+Return an error instead when the socket is zapped to prevent the info
+leak. Also remove the unnecessary memset(0). We don't directly write to
+the memory pointed by uaddr but memcpy() a local structure at the end of
+the function that is properly initialized.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bluetooth/rfcomm/sock.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/llc/af_llc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -546,6 +546,7 @@ static int rfcomm_sock_getname(struct so
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -971,14 +971,13 @@ static int llc_ui_getname(struct socket
+ 	struct sockaddr_llc sllc;
+ 	struct sock *sk = sock->sk;
+ 	struct llc_sock *llc = llc_sk(sk);
+-	int rc = 0;
++	int rc = -EBADF;
  
- 	BT_DBG("sock %p, sk %p", sock, sk);
- 
-+	memset(sa, 0, sizeof(*sa));
- 	sa->rc_family  = AF_BLUETOOTH;
- 	sa->rc_channel = rfcomm_pi(sk)->channel;
- 	if (peer)
+ 	memset(&sllc, 0, sizeof(sllc));
+ 	lock_sock(sk);
+ 	if (sock_flag(sk, SOCK_ZAPPED))
+ 		goto out;
+ 	*uaddrlen = sizeof(sllc);
+-	memset(uaddr, 0, *uaddrlen);
+ 	if (peer) {
+ 		rc = -ENOTCONN;
+ 		if (sk->sk_state != TCP_ESTABLISHED)
 
 
