@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299Ab2I1Uia (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:38:30 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52233 "EHLO
+	id S1759351Ab2I1Uis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:38:48 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56516 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759258Ab2I1UiU (ORCPT
+	by vger.kernel.org with ESMTP id S1759309Ab2I1Uif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:38:20 -0400
-X-Sasl-enc: niTmbXKiv4qHW1uM5Ki1AcYd4XnKHvSqh7eVrXb5Mt4e 1348864699
+	Fri, 28 Sep 2012 16:38:35 -0400
+X-Sasl-enc: 2Mp0TD2+QC1+p5+XUXuYaVr7ryBR7cdqlRQ6Vnc17PHt 1348864714
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Darren Hart <dvhart@linux.intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 195/218] pch_uart: Add eg20t_port lock field, avoid recursive spinlocks
-Date: Fri, 28 Sep 2012 13:16:52 -0700
-Message-Id: <20120928201523.962374900@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: =?UTF-8?q?=5B=20198/218=5D=20net=3A=20qmi=5Fwwan=3A=20Add=20Sierra=20Wireless=20device=20IDs?=
+Date: Fri, 28 Sep 2012 13:16:55 -0700
+Message-Id: <20120928201524.271304049@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,173 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 2588aba002d14e938c2f56d299ecf3e7ce1302a5 upstream.
+commit 5e071b5d1aa6928f8d695c15f52a949d70b8d7fb upstream.
 
-pch_uart_interrupt() takes priv->port.lock which leads to two recursive
-spinlock calls if low_latency==1 or CONFIG_PREEMPT_RT_FULL=y (one
-otherwise):
+Some additional Gobi3K IDs found in the BSD/GPL licensed
+out-of-tree GobiNet driver from Sierra Wireless.
 
-pch_uart_interrupt
-  spin_lock_irqsave(priv->port.lock, flags)
-  case PCH_UART_IID_RDR_TO (data ready)
-  handle_rx_to
-    push_rx
-      tty_port_tty_get
-        spin_lock_irqsave(&port->lock, flags) <--- already hold this lock
-        ...
-      tty_flip_buffer_push
-        ...
-        flush_to_ldisc
-          spin_lock_irqsave(&tty->buf.lock)
-            spin_lock_irqsave(&tty->buf.lock)
-            disc->ops->receive_buf(tty, char_buf)
-              n_tty_receive_buf
-                tty->ops->flush_chars()
-                uart_flush_chars
-                  uart_start
-                    spin_lock_irqsave(&port->lock) <--- already hold this lock
-
-Avoid this by using a dedicated lock to protect the eg20t_port structure
-and IO access to its membase. This is more consistent with the 8250
-driver.  Ensure priv->lock is always take prior to priv->port.lock when
-taken at the same time.
-
-V2: Remove inadvertent whitespace change.
-V3: Account for oops_in_progress for the private lock in
-    pch_console_write().
-
-Note: Like the 8250 driver, if a printk is introduced anywhere inside
-      the pch_console_write() critical section, the kernel will hang
-      on a recursive spinlock on the private lock. The oops case is
-      handled by using a trylock in the oops_in_progress case.
-
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Feng Tang <feng.tang@intel.com>
-CC: Alexander Stein <alexander.stein@systec-electronic.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/pch_uart.c |   38 ++++++++++++++++++++++++++------------
- 1 file changed, 26 insertions(+), 12 deletions(-)
+ drivers/net/usb/qmi_wwan.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -252,6 +252,9 @@ struct eg20t_port {
- 	dma_addr_t			rx_buf_dma;
- 
- 	struct dentry	*debugfs;
-+
-+	/* protect the eg20t_port private structure and io access to membase */
-+	spinlock_t lock;
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -548,6 +548,8 @@ static const struct usb_device_id produc
+ 	{QMI_GOBI_DEVICE(0x16d8, 0x8002)},	/* CMDTech Gobi 2000 Modem device (VU922) */
+ 	{QMI_GOBI_DEVICE(0x05c6, 0x9205)},	/* Gobi 2000 Modem device */
+ 	{QMI_GOBI_DEVICE(0x1199, 0x9013)},	/* Sierra Wireless Gobi 3000 Modem device (MC8355) */
++	{QMI_GOBI_DEVICE(0x1199, 0x9015)},	/* Sierra Wireless Gobi 3000 Modem device */
++	{QMI_GOBI_DEVICE(0x1199, 0x9019)},	/* Sierra Wireless Gobi 3000 Modem device */
+ 	{ }					/* END */
  };
- 
- /**
-@@ -1058,7 +1061,7 @@ static irqreturn_t pch_uart_interrupt(in
- 	unsigned int iid;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&priv->port.lock, flags);
-+	spin_lock_irqsave(&priv->lock, flags);
- 	handled = 0;
- 	while ((iid = pch_uart_hal_get_iid(priv)) > 1) {
- 		switch (iid) {
-@@ -1111,7 +1114,7 @@ static irqreturn_t pch_uart_interrupt(in
- 			priv->int_dis_flag = 0;
- 	}
- 
--	spin_unlock_irqrestore(&priv->port.lock, flags);
-+	spin_unlock_irqrestore(&priv->lock, flags);
- 	return IRQ_RETVAL(handled);
- }
- 
-@@ -1223,9 +1226,9 @@ static void pch_uart_break_ctl(struct ua
- 	unsigned long flags;
- 
- 	priv = container_of(port, struct eg20t_port, port);
--	spin_lock_irqsave(&port->lock, flags);
-+	spin_lock_irqsave(&priv->lock, flags);
- 	pch_uart_hal_set_break(priv, ctl);
--	spin_unlock_irqrestore(&port->lock, flags);
-+	spin_unlock_irqrestore(&priv->lock, flags);
- }
- 
- /* Grab any interrupt resources and initialise any low level driver state. */
-@@ -1375,7 +1378,8 @@ static void pch_uart_set_termios(struct
- 
- 	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk / 16);
- 
--	spin_lock_irqsave(&port->lock, flags);
-+	spin_lock_irqsave(&priv->lock, flags);
-+	spin_lock(&port->lock);
- 
- 	uart_update_timeout(port, termios->c_cflag, baud);
- 	rtn = pch_uart_hal_set_line(priv, baud, parity, bits, stb);
-@@ -1388,7 +1392,8 @@ static void pch_uart_set_termios(struct
- 		tty_termios_encode_baud_rate(termios, baud, baud);
- 
- out:
--	spin_unlock_irqrestore(&port->lock, flags);
-+	spin_unlock(&port->lock);
-+	spin_unlock_irqrestore(&priv->lock, flags);
- }
- 
- static const char *pch_uart_type(struct uart_port *port)
-@@ -1538,8 +1543,9 @@ pch_console_write(struct console *co, co
- {
- 	struct eg20t_port *priv;
- 	unsigned long flags;
-+	int priv_locked = 1;
-+	int port_locked = 1;
- 	u8 ier;
--	int locked = 1;
- 
- 	priv = pch_uart_ports[co->index];
- 
-@@ -1547,12 +1553,16 @@ pch_console_write(struct console *co, co
- 
- 	local_irq_save(flags);
- 	if (priv->port.sysrq) {
--		/* serial8250_handle_port() already took the lock */
--		locked = 0;
-+		spin_lock(&priv->lock);
-+		/* serial8250_handle_port() already took the port lock */
-+		port_locked = 0;
- 	} else if (oops_in_progress) {
--		locked = spin_trylock(&priv->port.lock);
--	} else
-+		priv_locked = spin_trylock(&priv->lock);
-+		port_locked = spin_trylock(&priv->port.lock);
-+	} else {
-+		spin_lock(&priv->lock);
- 		spin_lock(&priv->port.lock);
-+	}
- 
- 	/*
- 	 *	First save the IER then disable the interrupts
-@@ -1570,8 +1580,10 @@ pch_console_write(struct console *co, co
- 	wait_for_xmitr(priv, BOTH_EMPTY);
- 	iowrite8(ier, priv->membase + UART_IER);
- 
--	if (locked)
-+	if (port_locked)
- 		spin_unlock(&priv->port.lock);
-+	if (priv_locked)
-+		spin_unlock(&priv->lock);
- 	local_irq_restore(flags);
- }
- 
-@@ -1669,6 +1681,8 @@ static struct eg20t_port *pch_uart_init_
- 	pci_enable_msi(pdev);
- 	pci_set_master(pdev);
- 
-+	spin_lock_init(&priv->lock);
-+
- 	iobase = pci_resource_start(pdev, 0);
- 	mapbase = pci_resource_start(pdev, 1);
- 	priv->mapbase = mapbase;
+ MODULE_DEVICE_TABLE(usb, products);
 
 
