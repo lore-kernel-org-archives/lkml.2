@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250Ab2I1Ncb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 09:32:31 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:40051 "EHLO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758200Ab2I1Nc2 (ORCPT
+	id S1758154Ab2I1Neh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 09:34:37 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:4974 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757247Ab2I1Nef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 09:32:28 -0400
+	Fri, 28 Sep 2012 09:34:35 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MB2B1F-02-CC4-02
+X-M-MSG: 
+Date: Fri, 28 Sep 2012 15:34:24 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Bryan Schumaker <bjschuma@netapp.com>
+CC: Joerg Roedel <joro@8bytes.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+Message-ID: <20120928133424.GA4009@amd.com>
+References: <20120807134156.GP1996@amd.com>
+ <20120927145217.GA18962@8bytes.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
+ <20120927153928.GB18962@8bytes.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
+ <20120927175623.GG10549@amd.com>
+ <506497B9.3030601@netapp.com>
+ <20120928121733.GD18962@8bytes.org>
+ <5065A456.4070007@netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <20120928130240.GN31006@arwen.pp.htv.fi>
-References: <1348836795-4783-1-git-send-email-kishon@ti.com>
-	<1348836795-4783-7-git-send-email-kishon@ti.com>
-	<20120928130240.GN31006@arwen.pp.htv.fi>
-Date: Fri, 28 Sep 2012 19:02:26 +0530
-Message-ID: <CAAe_U6Lu-bKXEA7ZUHMiS3R+e6eZ+NEg3VTT+RmepqwqyYYmOA@mail.gmail.com>
-Subject: Re: [PATCH 6/6] usb: dwc3: core: add dt support for dwc3 core
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: balbi@ti.com
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5065A456.4070007@netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Sep 28, 2012 at 09:21:26AM -0400, Bryan Schumaker wrote:
+> On 09/28/2012 08:17 AM, Joerg Roedel wrote:
 
-On Fri, Sep 28, 2012 at 6:32 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Fri, Sep 28, 2012 at 06:23:15PM +0530, Kishon Vijay Abraham I wrote:
->> Added dwc3 support for dwc3 core and update the documentation with
->> device tree binding information.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>  Documentation/devicetree/bindings/usb/dwc3.txt |   24 ++++++++++++++++++++++++
->>  drivers/usb/dwc3/core.c                        |   14 ++++++++++++--
->>  2 files changed, 36 insertions(+), 2 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/usb/dwc3.txt
->>
->> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
->> new file mode 100644
->> index 0000000..87d5eeb
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
->> @@ -0,0 +1,24 @@
->> +SYNOPSIS DWC3 CORE
->> +
->> +DWC3- USB3 CONTROLLER
->> +
->> +Required properties:
->> + - compatible: Should be "synopsis,dwc3"
->
-> "synopsys" and I think:
->
-> - compatible: Must be "synopsys,dwc3" reads a bit better.
+> Maybe it's mounting over v3 now?  Can you retry using "vers=4" in your mount options?
 
-Will re-post this patch.
+Tried that, mounting fails with 'No such file or directory'.
 
-Thanks
-Kishon
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
