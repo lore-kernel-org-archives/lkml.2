@@ -1,71 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946344Ab2I1VjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:39:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62202 "EHLO
+	id S1946320Ab2I1Vi5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:38:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:59993 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423353Ab2I1VgW (ORCPT
+	with ESMTP id S1423355Ab2I1VgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Sep 2012 17:36:22 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 04/12] video: exynos: warnings in exynos_dp_core.c
-Date: Fri, 28 Sep 2012 23:36:09 +0200
-Message-Id: <1348868177-21205-5-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 07/12] staging/iio/lis3l02dq: fix building without irq_to_gpio
+Date: Fri, 28 Sep 2012 23:36:12 +0200
+Message-Id: <1348868177-21205-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1348868177-21205-1-git-send-email-arnd@arndb.de>
 References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:MT4x+27R6KkRRROhu3FFpGKrgwf3rtalsumOCvB0XZs
- aswBExNttxnA1Hcr+oV1jNSbsAne8zhYIOO/om4ICbe+Iir8bS
- LrFgUVP9bbx3QcvVsth2UXgpmTorNT3LJicBgMHiOrgkhN5BnW
- oOBukqKPFZUT+2SsByjKVY4LbwxViewyuCQ3R8qetjrLScPz9I
- NFD0zmqxkImK8kwbrKjyd2S8T0sRm+hiwhGwi1Bo/isXeyryWJ
- 7IRL7dPVQUxKuyFEbD3JcZ9wVaETOX3WoaxhmvfQwWwMicHOkA
- WmlfAugDCSt+VAsSgzeLi9bzWEy7ASY+Lqa14nB8ELqNvPvvGd
- azM5L5S2uE70qvBkD3t4XUTeRd2uTfy5TARQuSy1KSZ5eVQ3qa
- 3otOPIVeNvXOg==
+X-Provags-ID: V02:K0:C76e+5/7KkLhmDCy42xx+CCBr6jhJyc2PSAu04CdD+e
+ SzOjikNKjeKGezwsnfWctcq9Erb+u91Y3fOQlW2LPdOiltX7XX
+ EMvdPDsKWf5YuJ5AyYT9UylPLnV6JNK1GvxWgNIg31F4XvnDCu
+ yjvIECys2pP4ZOeHS96tDLZbMPCODoAxIW0ZoduIGw9lnQJQ7S
+ aywmInVq3PHdJp/28ixNEj8yHGU5nvVM42+a+tU1zo234rWa/f
+ iTcMBj+4iWpiY/ZrE1Zb5SsMdXuG+MMxOJwre5lNy/nC5O6nHi
+ ZrMNh2xCW2loxORajJyRbm1Iq51a/iJmNmq4fDFp9Egg26GAJT
+ 9YDTBt5QYweIbjX5QxanBzLJJY3+M0qR7iHgBpecApdA1MqMyx
+ msuu3AcHAml/w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Something is wrong with the exynos_dp_core logic, and gcc
-emits a warning about this. An array is declared in
-exynos_dp_process_equalizer_training with length '2',
-and exynos_dp_channel_eq_ok tries to access the third
-element of it.
+The driver has not been building for some time after the
+irq_to_gpio function has been removed from the kernel.
 
-This patch is certainly not correct, but hopefully helps
-highlight the actual problem. The problem apparently was
-introduced by d5c0eed01 "video: exynos_dp: adjust voltage
-swing and pre-emphasis during Link Training".
+The only board in the upstream kernel that provides
+this device is the "Stargate 2", which is also maintained
+by Jonathan Cameron. Rather than working around the problem
+by adding new platform data for this driver, this patch
+uses the of_gpio framework to get to the gpio number.
 
-This is what we get in exynos_defconfig:
-drivers/video/exynos/exynos_dp_core.c: In function 'exynos_dp_process_equalizer_training':
-drivers/video/exynos/exynos_dp_core.c:341:13: warning: array subscript is above array bounds [-Warray-bounds]
+However, the stargate2 code does not (yet) use DT based
+probing, so it is still broken, but at least building
+allyesconfig works again.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Jonathan Cameron <jic23@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/video/exynos/exynos_dp_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/iio/accel/lis3l02dq.h      |    1 +
+ drivers/staging/iio/accel/lis3l02dq_core.c |   10 ++++++----
+ drivers/staging/iio/accel/lis3l02dq_ring.c |    2 +-
+ 3 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
-index cdc1398..358b595 100644
---- a/drivers/video/exynos/exynos_dp_core.c
-+++ b/drivers/video/exynos/exynos_dp_core.c
-@@ -542,7 +542,7 @@ reduce_link_rate:
+diff --git a/drivers/staging/iio/accel/lis3l02dq.h b/drivers/staging/iio/accel/lis3l02dq.h
+index f9bcd41..2bac722 100644
+--- a/drivers/staging/iio/accel/lis3l02dq.h
++++ b/drivers/staging/iio/accel/lis3l02dq.h
+@@ -158,6 +158,7 @@ struct lis3l02dq_state {
+ 	struct spi_device		*us;
+ 	struct iio_trigger		*trig;
+ 	struct mutex			buf_lock;
++	int				gpio;
+ 	bool				trigger_on;
  
- static int exynos_dp_process_equalizer_training(struct exynos_dp_device *dp)
- {
--	u8 link_status[2];
-+	u8 link_status[3];
- 	u8 link_align[3];
- 	int lane;
- 	int lane_count;
+ 	u8	tx[LIS3L02DQ_MAX_RX] ____cacheline_aligned;
+diff --git a/drivers/staging/iio/accel/lis3l02dq_core.c b/drivers/staging/iio/accel/lis3l02dq_core.c
+index 21b0469..d13c7e9 100644
+--- a/drivers/staging/iio/accel/lis3l02dq_core.c
++++ b/drivers/staging/iio/accel/lis3l02dq_core.c
+@@ -15,6 +15,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
++#include <linux/of_gpio.h>
+ #include <linux/mutex.h>
+ #include <linux/device.h>
+ #include <linux/kernel.h>
+@@ -690,6 +691,7 @@ static int __devinit lis3l02dq_probe(struct spi_device *spi)
+ 	spi_set_drvdata(spi, indio_dev);
+ 
+ 	st->us = spi;
++	st->gpio = of_get_gpio(spi->dev.of_node, 0);
+ 	mutex_init(&st->buf_lock);
+ 	indio_dev->name = spi->dev.driver->name;
+ 	indio_dev->dev.parent = &spi->dev;
+@@ -711,7 +713,7 @@ static int __devinit lis3l02dq_probe(struct spi_device *spi)
+ 		goto error_unreg_buffer_funcs;
+ 	}
+ 
+-	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)) > 0) {
++	if (spi->irq) {
+ 		ret = request_threaded_irq(st->us->irq,
+ 					   &lis3l02dq_th,
+ 					   &lis3l02dq_event_handler,
+@@ -738,10 +740,10 @@ static int __devinit lis3l02dq_probe(struct spi_device *spi)
+ 	return 0;
+ 
+ error_remove_trigger:
+-	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)))
++	if (spi->irq)
+ 		lis3l02dq_remove_trigger(indio_dev);
+ error_free_interrupt:
+-	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)) > 0)
++	if (spi->irq)
+ 		free_irq(st->us->irq, indio_dev);
+ error_uninitialize_buffer:
+ 	iio_buffer_unregister(indio_dev);
+@@ -790,7 +792,7 @@ static int __devexit lis3l02dq_remove(struct spi_device *spi)
+ 	lis3l02dq_disable_all_events(indio_dev);
+ 	lis3l02dq_stop_device(indio_dev);
+ 
+-	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)) > 0)
++	if (spi->irq)
+ 		free_irq(st->us->irq, indio_dev);
+ 
+ 	lis3l02dq_remove_trigger(indio_dev);
+diff --git a/drivers/staging/iio/accel/lis3l02dq_ring.c b/drivers/staging/iio/accel/lis3l02dq_ring.c
+index fa4190d..13c0b4b 100644
+--- a/drivers/staging/iio/accel/lis3l02dq_ring.c
++++ b/drivers/staging/iio/accel/lis3l02dq_ring.c
+@@ -263,7 +263,7 @@ static int lis3l02dq_trig_try_reen(struct iio_trigger *trig)
+ 	/* If gpio still high (or high again)
+ 	 * In theory possible we will need to do this several times */
+ 	for (i = 0; i < 5; i++)
+-		if (gpio_get_value(irq_to_gpio(st->us->irq)))
++		if (gpio_get_value(st->gpio))
+ 			lis3l02dq_read_all(indio_dev, NULL);
+ 		else
+ 			break;
 -- 
 1.7.10
 
