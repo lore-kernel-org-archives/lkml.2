@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965123Ab2I1S6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:58:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965092Ab2I1S60 (ORCPT
+	id S965137Ab2I1S6p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:58:45 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:63190 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965120Ab2I1S6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:58:26 -0400
+	Fri, 28 Sep 2012 14:58:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paul Clements <paul.clements@steeleye.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 094/262] nbd: clear waiting_queue on shutdown
-Date: Fri, 28 Sep 2012 11:50:23 -0700
-Message-Id: <20120928183009.187578255@linuxfoundation.org>
+        Keerthy <j-keerthy@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 098/262] hwmon: (twl4030-madc-hwmon) Initialize uninitialized structure elements
+Date: Fri, 28 Sep 2012 11:50:27 -0700
+Message-Id: <20120928183009.616791878@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,56 +29,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Paul Clements <paul.clements@steeleye.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit fded4e090c60100d709318896c79816d68d5b47d upstream.
+commit 73d7c119255615a26070f9d6cdb722a166a29015 upstream.
 
-Fix a serious but uncommon bug in nbd which occurs when there is heavy
-I/O going to the nbd device while, at the same time, a failure (server,
-network) or manual disconnect of the nbd connection occurs.
+twl4030_madc_conversion uses do_avg and type structure elements of
+twl4030_madc_request. Initialize structure to avoid random operation.
 
-There is a small window between the time that the nbd_thread is stopped
-and the socket is shutdown where requests can continue to be queued to
-nbd's internal waiting_queue.  When this happens, those requests are
-never completed or freed.
+Fix for: Coverity CID 200794 Uninitialized scalar variable.
 
-The fix is to clear the waiting_queue on shutdown of the nbd device, in
-the same way that the nbd request queue (queue_head) is already being
-cleared.
-
-Signed-off-by: Paul Clements <paul.clements@steeleye.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Keerthy <j-keerthy@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/nbd.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/hwmon/twl4030-madc-hwmon.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -445,6 +445,14 @@ static void nbd_clear_que(struct nbd_dev
- 		req->errors++;
- 		nbd_end_request(req);
- 	}
-+
-+	while (!list_empty(&nbd->waiting_queue)) {
-+		req = list_entry(nbd->waiting_queue.next, struct request,
-+				 queuelist);
-+		list_del_init(&req->queuelist);
-+		req->errors++;
-+		nbd_end_request(req);
-+	}
- }
+--- a/drivers/hwmon/twl4030-madc-hwmon.c
++++ b/drivers/hwmon/twl4030-madc-hwmon.c
+@@ -44,12 +44,13 @@ static ssize_t madc_read(struct device *
+ 			 struct device_attribute *devattr, char *buf)
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+-	struct twl4030_madc_request req;
++	struct twl4030_madc_request req = {
++		.channels = 1 << attr->index,
++		.method = TWL4030_MADC_SW2,
++		.type = TWL4030_MADC_WAIT,
++	};
+ 	long val;
  
- 
-@@ -594,6 +602,7 @@ static int __nbd_ioctl(struct block_devi
- 		nbd->file = NULL;
- 		nbd_clear_que(nbd);
- 		BUG_ON(!list_empty(&nbd->queue_head));
-+		BUG_ON(!list_empty(&nbd->waiting_queue));
- 		if (file)
- 			fput(file);
- 		return 0;
+-	req.channels = (1 << attr->index);
+-	req.method = TWL4030_MADC_SW2;
+-	req.func_cb = NULL;
+ 	val = twl4030_madc_conversion(&req);
+ 	if (val < 0)
+ 		return val;
 
 
