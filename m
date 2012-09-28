@@ -1,51 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab2I1KDq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 06:03:46 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47410 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757309Ab2I1KDp (ORCPT
+	id S1757474Ab2I1KHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 06:07:42 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:39724 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757416Ab2I1KHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 06:03:45 -0400
-Date: Fri, 28 Sep 2012 11:08:29 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Joerg Roedel <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: BUG_ON/panic proliferation.
-Message-ID: <20120928110829.5ab03cfe@pyramind.ukuu.org.uk>
-In-Reply-To: <5064F4E2.6010301@gmail.com>
-References: <20120807134156.GP1996@amd.com>
-	<20120927145217.GA18962@8bytes.org>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
-	<20120927153928.GB18962@8bytes.org>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
-	<CA+55aFx5CtDDpXTunJDtkDQWPX7sY0hYMRyekuPErC+s5yXpWw@mail.gmail.com>
-	<20120927173057.GA13142@redhat.com>
-	<5064F4E2.6010301@gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Sep 2012 06:07:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <5064D7CA.1070909@ti.com>
+References: <1346943430-18236-1-git-send-email-kishon@ti.com>
+	<1346943430-18236-2-git-send-email-kishon@ti.com>
+	<50605CFB.5090402@gmail.com>
+	<CAAe_U6+2Vxd8F_JMafm41+0SnZSrZCa_9VKRbdB200BUHw5vEQ@mail.gmail.com>
+	<506461A0.4050103@gmail.com>
+	<5064D7CA.1070909@ti.com>
+Date: Fri, 28 Sep 2012 15:37:37 +0530
+Message-ID: <CAAe_U6KHk1nuSBVn-4H397wzUk0cnqGe_H0D8RVqrSFYGJVMCg@mail.gmail.com>
+Subject: Re: [PATCH 1/5] drivers: usb: phy: add a new driver for omap usb2 phy
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Rob Herring <robherring2@gmail.com>, grant.likely@secretlab.ca,
+        rob@landley.net, tony@atomide.com, linux@arm.linux.org.uk,
+        balbi@ti.com, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Remove panic calls from drivers/tty/pty.c
->     
-> There is no need to panic the system if the allocation/registration of
-> the pty drivers fails. Instead return an error and fail the module load.
->     
-> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+Hi,
 
-NAK
+On Fri, Sep 28, 2012 at 4:18 AM, Cousson, Benoit <b-cousson@ti.com> wrote:
+> On 9/27/2012 7:24 AM, Rob Herring wrote:
+>>
+>> On 09/25/2012 05:06 AM, ABRAHAM, KISHON VIJAY wrote:
+>>>
+>>> Hi,
+>>>
+>>> On Mon, Sep 24, 2012 at 6:45 PM, Rob Herring <robherring2@gmail.com>
+>>> wrote:
+>>>>
+>>>> On 09/06/2012 09:57 AM, Kishon Vijay Abraham I wrote:
+>>>>>
+>>>>> All phy related programming like enabling/disabling the clocks,
+>>>>> powering
+>>>>> on/off the phy is taken care of by this driver. It is also used for OTG
+>>>>> related functionality like srp.
+>>>>>
+>>>>> This also includes device tree support for usb2 phy driver and
+>>>>> the documentation with device tree binding information is updated.
+>>>>>
+>>>>> Currently writing to control module register is taken care in this
+>>>>> driver which will be removed once the control module driver is in
+>>>>> place.
+>>>>>
+>>>>> Cc: Felipe Balbi <balbi@ti.com>
+>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>> ---
+>>>>>   Documentation/devicetree/bindings/usb/usb-phy.txt |   17 ++
+>>>>>   drivers/usb/phy/Kconfig                           |    9 +
+>>>>>   drivers/usb/phy/Makefile                          |    1 +
+>>>>>   drivers/usb/phy/omap-usb2.c                       |  271
+>>>>> +++++++++++++++++++++
+>>>>>   include/linux/usb/omap_usb.h                      |   46 ++++
+>>>>>   include/linux/usb/phy_companion.h                 |   34 +++
+>>>>>   6 files changed, 378 insertions(+)
+>>>>>   create mode 100644 Documentation/devicetree/bindings/usb/usb-phy.txt
+>>>>>   create mode 100644 drivers/usb/phy/omap-usb2.c
+>>>>>   create mode 100644 include/linux/usb/omap_usb.h
+>>>>>   create mode 100644 include/linux/usb/phy_companion.h
+>>>>>
+>>>>> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt
+>>>>> b/Documentation/devicetree/bindings/usb/usb-phy.txt
+>>>>> new file mode 100644
+>>>>> index 0000000..80d4148
+>>>>> --- /dev/null
+>>>>> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
+>>>>
+>>>>
+>>>> This is a very generic name...
+>>>>
+>>>>> @@ -0,0 +1,17 @@
+>>>>> +USB PHY
+>>>>> +
+>>>>> +OMAP USB2 PHY
+>>>>> +
+>>>>> +Required properties:
+>>>>> + - compatible: Should be "ti,omap-usb2"
+>>>>
+>>>>
+>>>> ...for a specific phy. However, I do think a generic binding to describe
+>>>> host ctrlr to phy connections is needed.
+>>>>
+>>>>> + - reg : Address and length of the register set for the device. Also
+>>>>> +add the address of control module dev conf register until a driver for
+>>>>> +control module is added
+>>>>
+>>>>
+>>>> The dts should describe the h/w, not what you need for the current
+>>>> driver. The 2nd reg field does not belong here.
+>>>
+>>>
+>>> Indeed. This was discussed and agreed upon as a interim solution till
+>>> we have a control module driver in place to write to the control
+>>> module register.
+>>
+>>
+>> Discussed where and agreed by who? I for one do not agree.
+>
+>
+> Yeah, what was tolerated was the addition of that address inside hwmod data,
+> but I do agree that it should not go into DTS.
 
-this is pointless complexity
+So how can we handle reg writes to control module until we have a
+control module driver. usb2 phy does not have a hwmod data for itself.
+Do you think we should add a new hwmod data for usb2 phy and use this
+in the usb2phy data node in the dts file?
 
-This is early boot up code. If it fails we ran out of memory before even
-the base drivers got running. It's already game over.
-
+Thanks
+Kishon
