@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab2I1CEz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 22:04:55 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:63149 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756194Ab2I1CEy (ORCPT
+	id S1755840Ab2I1CQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 22:16:11 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1421 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754952Ab2I1CQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 22:04:54 -0400
+	Thu, 27 Sep 2012 22:16:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 27 Sep 2012 19:15:59 -0700
+From: Alex Courbot <acourbot@nvidia.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arun Murthy <arun.murthy@stericsson.com>,
+        Matthew Garrett <mjg@redhat.com>, Robert Morell <rmorell@nvidia.com>,
+        Dilan Lee <dilee@nvidia.com>, Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH] pwm-backlight: Take over maintenance
+Date: Fri, 28 Sep 2012 11:18:06 +0900
+Message-ID: <1608992.fV4uusRRUm@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.1 (Linux/3.5.3-1-ARCH; KDE/4.9.1; x86_64; ; )
+In-Reply-To: <1348138235-3625-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1348138235-3625-1-git-send-email-thierry.reding@avionic-design.de>
 MIME-Version: 1.0
-In-Reply-To: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de>
-References: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 27 Sep 2012 19:04:32 -0700
-X-Google-Sender-Auth: g8xmEg9Sy7vYm1Sr2Q6nxHydn40
-Message-ID: <CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com>
-Subject: Re: [REGRESSION] nfsd crashing with 3.6.0-rc7 on PowerPC
-To: Alexander Graf <agraf@suse.de>
-Cc: LKML List <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-nfs@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        skinsbursky@parallels.com, bfields@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 6:55 PM, Alexander Graf <agraf@suse.de> wrote:
->
-> Below are OOPS excerpts from different rc's I tried. All of them crashed - all the way up to current Linus' master branch. I haven't cross-checked, but I don't remember any such behavior from pre-3.6 releases.
+On Thursday 20 September 2012 18:50:35 Thierry Reding wrote:
+> Since the pwm-backlight driver is lacking a proper maintainer and is the
+> heaviest user of the PWM framework I'm taking over maintenance.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Arun Murthy <arun.murthy@stericsson.com>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Robert Morell <rmorell@nvidia.com>
+> Cc: Dilan Lee <dilee@nvidia.com>
+> Cc: Axel Lin <axel.lin@gmail.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Alexandre Courbot <acourbot@nvidia.com>
+> Cc: Sachin Kamat <sachin.kamat@linaro.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> Andrew: As previously discussed this patch makes me the new maintainer
+> for the pwm-backlight driver. I contacted Richard Purdie and requested
+> his Acked-by for this because he's the backlight subsystem maintainer.
+> Unfortunately he hasn't answered yet. Looking at the commit log, every
+> commit in the last 2+ years has gone through your tree, which seems to
+> be reason enough for me to take over this driver but I still wanted to
+> get an Acked-by at least from you so that this doesn't look like
+> hijacking. I've also Cc'ed a couple of people that have done work on
+> the driver in the past to give them a chance to object or send their
+> Acked-by.
 
-Since you seem to be able to reproduce it easily (and apparently
-reliably), any chance you could just bisect it?
+Probably too late, but:
 
-Since I assume v3.5 is fine, and apparently -rc1 is already busted, a simple
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 
-   git bisect start
-   git bisect good v3.5
-   git bisect bad v3.6-rc1
-
-will get you started on your adventure..
-
-          Linus
+> 
+> Obviously I will take this patch through my tree so this is not a
+> request to include it in your tree.
+> 
+>  MAINTAINERS | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 61ad79e..a6f023e 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -5543,6 +5543,8 @@ F:	Documentation/devicetree/bindings/pwm/
+>  F:	include/linux/pwm.h
+>  F:	include/linux/of_pwm.h
+>  F:	drivers/pwm/
+> +F:	drivers/video/backlight/pwm_bl.c
+> +F:	include/linux/pwm_backlight.h
+> 
+>  PXA2xx/PXA3xx SUPPORT
+>  M:	Eric Miao <eric.y.miao@gmail.com>
