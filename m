@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031938Ab2I1Vkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:40:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032469Ab2I1U0d (ORCPT
+	id S1423352Ab2I1VlU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:41:20 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032431Ab2I1U00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:26:33 -0400
+	Fri, 28 Sep 2012 16:26:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paul Thomas <pthomas8589@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 086/218] hwmon: (ads7871) Add name sysfs attribute
-Date: Fri, 28 Sep 2012 13:15:03 -0700
-Message-Id: <20120928201511.457736542@linuxfoundation.org>
+        Eliad Peller <eliad@wizery.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 092/218] mac80211: clear bssid on auth/assoc failure
+Date: Fri, 28 Sep 2012 13:15:09 -0700
+Message-Id: <20120928201512.111060377@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,54 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Eliad Peller <eliad@wizery.com>
 
-commit 4e21f4eaa49f78d3e977e316514c941053871c76 upstream.
+commit 3d2abdfdf14f4d6decc2023708211e19b096f4ca upstream.
 
-The 'name' sysfs attribute is mandatory for hwmon devices, but was missing
-in this driver.
+ifmgd->bssid wasn't cleared properly in some
+auth/assoc failure cases, causing mac80211 and
+the low-level driver to go out of sync.
 
-Cc: Paul Thomas <pthomas8589@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Paul Thomas <pthomas8589@gmail.com>
+Clear ifmgd->bssid on failure, and notify the driver.
+
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ads7871.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ net/mac80211/mlme.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/hwmon/ads7871.c
-+++ b/drivers/hwmon/ads7871.c
-@@ -139,6 +139,12 @@ static ssize_t show_voltage(struct devic
- 	}
- }
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -3232,6 +3232,8 @@ int ieee80211_mgd_auth(struct ieee80211_
+ 	goto out_unlock;
  
-+static ssize_t ads7871_show_name(struct device *dev,
-+				 struct device_attribute *devattr, char *buf)
-+{
-+	return sprintf(buf, "%s\n", to_spi_device(dev)->modalias);
-+}
-+
- static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, show_voltage, NULL, 0);
- static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, show_voltage, NULL, 1);
- static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, show_voltage, NULL, 2);
-@@ -148,6 +154,8 @@ static SENSOR_DEVICE_ATTR(in5_input, S_I
- static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, show_voltage, NULL, 6);
- static SENSOR_DEVICE_ATTR(in7_input, S_IRUGO, show_voltage, NULL, 7);
- 
-+static DEVICE_ATTR(name, S_IRUGO, ads7871_show_name, NULL);
-+
- static struct attribute *ads7871_attributes[] = {
- 	&sensor_dev_attr_in0_input.dev_attr.attr,
- 	&sensor_dev_attr_in1_input.dev_attr.attr,
-@@ -157,6 +165,7 @@ static struct attribute *ads7871_attribu
- 	&sensor_dev_attr_in5_input.dev_attr.attr,
- 	&sensor_dev_attr_in6_input.dev_attr.attr,
- 	&sensor_dev_attr_in7_input.dev_attr.attr,
-+	&dev_attr_name.attr,
- 	NULL
- };
- 
+  err_clear:
++	memset(ifmgd->bssid, 0, ETH_ALEN);
++	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BSSID);
+ 	ifmgd->auth_data = NULL;
+  err_free:
+ 	kfree(auth_data);
+@@ -3410,6 +3412,8 @@ int ieee80211_mgd_assoc(struct ieee80211
+ 	err = 0;
+ 	goto out;
+  err_clear:
++	memset(ifmgd->bssid, 0, ETH_ALEN);
++	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BSSID);
+ 	ifmgd->assoc_data = NULL;
+  err_free:
+ 	kfree(assoc_data);
 
 
