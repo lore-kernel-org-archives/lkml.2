@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab2I1T6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:58:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297Ab2I1S4R (ORCPT
+	id S1030944Ab2I1T7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:59:15 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:63190 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932269Ab2I1S4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:56:17 -0400
+	Fri, 28 Sep 2012 14:56:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [ 052/262] ARM: clk-imx35: Fix SSI clock registration
-Date: Fri, 28 Sep 2012 11:49:41 -0700
-Message-Id: <20120928183004.063567827@linuxfoundation.org>
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Paul Walmsley <paul@pwsan.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [ 050/262] ARM: OMAP: timer: obey the !CONFIG_OMAP_32K_TIMER
+Date: Fri, 28 Sep 2012 11:49:39 -0700
+Message-Id: <20120928183003.823027297@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,43 +31,48 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Igor Grinberg <grinberg@compulab.co.il>
 
-commit 48540058612786d365602f3324ed97f9071092de upstream.
+commit 45caae74d238ef6583e9402cb8c550cc0b0f7dbd upstream.
 
-SSI block has two types of clock:
+Currently, omap2_sync32k_clocksource_init() function initializes the 32K
+timer as the system clock source regardless of the CONFIG_OMAP_32K_TIMER
+setting.
+Fix this by providing a default implementation for
+!CONFIG_OMAP_32K_TIMER case.
 
-ipg: bus clock, the clock needed for accessing registers.
-per: peripheral clock, the clock needed for generating the bit rate.
-
-Currently SSI driver only supports slave mode and only need to handle
-the ipg clock, because the peripheral clock comes from the master codec.
-
-Only register the ipg clock and do not register the peripheral clock for ssi.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Tested-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Reviewed-by: Paul Walmsley <paul@pwsan.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/clk-imx35.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ arch/arm/mach-omap2/timer.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/arm/mach-imx/clk-imx35.c
-+++ b/arch/arm/mach-imx/clk-imx35.c
-@@ -230,10 +230,8 @@ int __init mx35_clocks_init()
- 	clk_register_clkdev(clk[ipu_gate], NULL, "mx3_sdc_fb");
- 	clk_register_clkdev(clk[owire_gate], NULL, "mxc_w1");
- 	clk_register_clkdev(clk[sdma_gate], NULL, "imx35-sdma");
--	clk_register_clkdev(clk[ipg], "ipg", "imx-ssi.0");
--	clk_register_clkdev(clk[ssi1_div_post], "per", "imx-ssi.0");
--	clk_register_clkdev(clk[ipg], "ipg", "imx-ssi.1");
--	clk_register_clkdev(clk[ssi2_div_post], "per", "imx-ssi.1");
-+	clk_register_clkdev(clk[ssi1_gate], NULL, "imx-ssi.0");
-+	clk_register_clkdev(clk[ssi2_gate], NULL, "imx-ssi.1");
- 	/* i.mx35 has the i.mx21 type uart */
- 	clk_register_clkdev(clk[uart1_gate], "per", "imx21-uart.0");
- 	clk_register_clkdev(clk[ipg], "ipg", "imx21-uart.0");
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -263,6 +263,7 @@ static u32 notrace dmtimer_read_sched_cl
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OMAP_32K_TIMER
+ /* Setup free-running counter for clocksource */
+ static int __init omap2_sync32k_clocksource_init(void)
+ {
+@@ -302,6 +303,12 @@ static int __init omap2_sync32k_clocksou
+ 
+ 	return ret;
+ }
++#else
++static inline int omap2_sync32k_clocksource_init(void)
++{
++	return -ENODEV;
++}
++#endif
+ 
+ static void __init omap2_gptimer_clocksource_init(int gptimer_id,
+ 						const char *fck_source)
 
 
