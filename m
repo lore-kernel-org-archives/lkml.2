@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab2I1GJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 02:09:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33087 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab2I1GJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 02:09:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,499,1344236400"; 
-   d="scan'208";a="198240799"
-Message-ID: <50653EFB.2080600@intel.com>
-Date: Fri, 28 Sep 2012 14:08:59 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1755400Ab2I1GKY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 02:10:24 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58677 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab2I1GKW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 02:10:22 -0400
+X-AuditID: 9c93016f-b7b1eae000000815-e8-50653f4c677f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 06/14] perf tool: Add hpp interface to enable/disable hpp column
+References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+	<1348744175-11115-7-git-send-email-jolsa@redhat.com>
+Date: Fri, 28 Sep 2012 15:02:11 +0900
+In-Reply-To: <1348744175-11115-7-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Thu, 27 Sep 2012 13:09:27 +0200")
+Message-ID: <87vceyu1lo.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86: Distinguish TLB shootdown interrupts from other
- functions call interrupts
-References: <50611D82.4010702@intel.com> <20120926021128.22212.20440.stgit@hpxw> <5063F9FD.8050002@intel.com> <50653A7A.1020806@zytor.com>
-In-Reply-To: <50653A7A.1020806@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 01:49 PM, H. Peter Anvin wrote:
+On Thu, 27 Sep 2012 13:09:27 +0200, Jiri Olsa wrote:
+> Adding perf_hpp__column_enable function to enable/disable hists
+> column and removing diff command specific stuff 'need_pair and
+> show_displacement' from hpp code.
+>
+> The diff command now enables/disables columns separately according
+> to the user arguments. This will be helpful in future patches where
+> more columns are added into diff output.
 
-> On 09/27/2012 12:02 AM, Alex Shi wrote:
->>
->> Peter:
->>
->> Maybe the patch doesn't looks perfect for this issue.
->> So I am wondering if the following patch is better, if we don't care
->> the irq_tlb
->> was counted again in irq_call?
->>
-> 
-> Tomoki-san's patch looked sane to me, I should just apply it.
-> 
->     -hpa
-> 
+This is what I wanted to do. :)
 
-
-Glad to see this! :)
-
--- 
-Thanks
-    Alex
+Thanks,
+Namhyung
