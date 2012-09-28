@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032206Ab2I1Vlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:41:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
+	id S1032411Ab2I1Vl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:41:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032434Ab2I1U0U (ORCPT
+	with ESMTP id S1032423Ab2I1U0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:26:20 -0400
+	Fri, 28 Sep 2012 16:26:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 090/218] vmwgfx: add dumb ioctl support
-Date: Fri, 28 Sep 2012 13:15:07 -0700
-Message-Id: <20120928201511.886377235@linuxfoundation.org>
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 088/218] HID: Fix logitech-dj: missing Unifying device issue
+Date: Fri, 28 Sep 2012 13:15:05 -0700
+Message-Id: <20120928201511.682582903@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -26,133 +27,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Nestor Lopez Casado <nlopezcasad@logitech.com>
 
-commit 5e1782d224c79b26ab7d5c31e3f87657000714fb upstream.
+commit 596264082f10dd4a567c43d4526b2f54ac5520bc upstream.
 
-Testing and works with the -modesetting driver,
+This patch fixes an issue introduced after commit 4ea5454203d991ec
+("HID: Fix race condition between driver core and ll-driver").
 
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+After that commit, hid-core discards any incoming packet that arrives while
+hid driver's probe function is being executed.
+
+This broke the enumeration process of hid-logitech-dj, that must receive
+control packets in-band with the mouse and keyboard packets. Discarding mouse
+or keyboard data at the very begining is usually fine, but it is not the case
+for control packets.
+
+This patch forces a re-enumeration of the paired devices when a packet arrives
+that comes from an unknown device.
+
+Based on a patch originally written by Benjamin Tissoires.
+
+Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c      |    5 ++
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.h      |   10 ++++
- drivers/gpu/drm/vmwgfx/vmwgfx_resource.c |   73 +++++++++++++++++++++++++++++++
- 3 files changed, 88 insertions(+)
+ drivers/hid/hid-logitech-dj.c |   41 +++++++++++++++++++++++++++++++++++++++++
+ drivers/hid/hid-logitech-dj.h |    1 +
+ 2 files changed, 42 insertions(+)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@ -1159,6 +1159,11 @@ static struct drm_driver driver = {
- 	.open = vmw_driver_open,
- 	.preclose = vmw_preclose,
- 	.postclose = vmw_postclose,
-+
-+	.dumb_create = vmw_dumb_create,
-+	.dumb_map_offset = vmw_dumb_map_offset,
-+	.dumb_destroy = vmw_dumb_destroy,
-+
- 	.fops = &vmwgfx_driver_fops,
- 	.name = VMWGFX_DRIVER_NAME,
- 	.desc = VMWGFX_DRIVER_DESC,
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
-@@ -645,6 +645,16 @@ int vmw_kms_readback(struct vmw_private
- int vmw_kms_update_layout_ioctl(struct drm_device *dev, void *data,
- 				struct drm_file *file_priv);
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -185,6 +185,7 @@ static struct hid_ll_driver logi_dj_ll_d
+ static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
+ 					size_t count,
+ 					unsigned char report_type);
++static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev);
  
-+int vmw_dumb_create(struct drm_file *file_priv,
-+		    struct drm_device *dev,
-+		    struct drm_mode_create_dumb *args);
-+
-+int vmw_dumb_map_offset(struct drm_file *file_priv,
-+			struct drm_device *dev, uint32_t handle,
-+			uint64_t *offset);
-+int vmw_dumb_destroy(struct drm_file *file_priv,
-+		     struct drm_device *dev,
-+		     uint32_t handle);
- /**
-  * Overlay control - vmwgfx_overlay.c
-  */
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-@@ -1917,3 +1917,76 @@ err_ref:
- 	vmw_resource_unreference(&res);
- 	return ret;
- }
-+
-+
-+int vmw_dumb_create(struct drm_file *file_priv,
-+		    struct drm_device *dev,
-+		    struct drm_mode_create_dumb *args)
-+{
-+	struct vmw_private *dev_priv = vmw_priv(dev);
-+	struct vmw_master *vmaster = vmw_master(file_priv->master);
-+	struct vmw_user_dma_buffer *vmw_user_bo;
-+	struct ttm_buffer_object *tmp;
-+	int ret;
-+
-+	args->pitch = args->width * ((args->bpp + 7) / 8);
-+	args->size = args->pitch * args->height;
-+
-+	vmw_user_bo = kzalloc(sizeof(*vmw_user_bo), GFP_KERNEL);
-+	if (vmw_user_bo == NULL)
-+		return -ENOMEM;
-+
-+	ret = ttm_read_lock(&vmaster->lock, true);
-+	if (ret != 0) {
-+		kfree(vmw_user_bo);
-+		return ret;
+ static void logi_dj_recv_destroy_djhid_device(struct dj_receiver_dev *djrcv_dev,
+ 						struct dj_report *dj_report)
+@@ -225,6 +226,7 @@ static void logi_dj_recv_add_djhid_devic
+ 	if (dj_report->report_params[DEVICE_PAIRED_PARAM_SPFUNCTION] &
+ 	    SPFUNCTION_DEVICE_LIST_EMPTY) {
+ 		dbg_hid("%s: device list is empty\n", __func__);
++		djrcv_dev->querying_devices = false;
+ 		return;
+ 	}
+ 
+@@ -235,6 +237,12 @@ static void logi_dj_recv_add_djhid_devic
+ 		return;
+ 	}
+ 
++	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
++		/* The device is already known. No need to reallocate it. */
++		dbg_hid("%s: device is already known\n", __func__);
++		return;
 +	}
 +
-+	ret = vmw_dmabuf_init(dev_priv, &vmw_user_bo->dma, args->size,
-+			      &vmw_vram_sys_placement, true,
-+			      &vmw_user_dmabuf_destroy);
-+	if (ret != 0)
-+		goto out_no_dmabuf;
+ 	dj_hiddev = hid_allocate_device();
+ 	if (IS_ERR(dj_hiddev)) {
+ 		dev_err(&djrcv_hdev->dev, "%s: hid_allocate_device failed\n",
+@@ -298,6 +306,7 @@ static void delayedwork_callback(struct
+ 	struct dj_report dj_report;
+ 	unsigned long flags;
+ 	int count;
++	int retval;
+ 
+ 	dbg_hid("%s\n", __func__);
+ 
+@@ -330,6 +339,25 @@ static void delayedwork_callback(struct
+ 		logi_dj_recv_destroy_djhid_device(djrcv_dev, &dj_report);
+ 		break;
+ 	default:
++	/* A normal report (i. e. not belonging to a pair/unpair notification)
++	 * arriving here, means that the report arrived but we did not have a
++	 * paired dj_device associated to the report's device_index, this
++	 * means that the original "device paired" notification corresponding
++	 * to this dj_device never arrived to this driver. The reason is that
++	 * hid-core discards all packets coming from a device while probe() is
++	 * executing. */
++	if (!djrcv_dev->paired_dj_devices[dj_report.device_index]) {
++		/* ok, we don't know the device, just re-ask the
++		 * receiver for the list of connected devices. */
++		retval = logi_dj_recv_query_paired_devices(djrcv_dev);
++		if (!retval) {
++			/* everything went fine, so just leave */
++			break;
++		}
++		dev_err(&djrcv_dev->hdev->dev,
++			"%s:logi_dj_recv_query_paired_devices "
++			"error:%d\n", __func__, retval);
++		}
+ 		dbg_hid("%s: unexpected report type\n", __func__);
+ 	}
+ }
+@@ -360,6 +388,12 @@ static void logi_dj_recv_forward_null_re
+ 	if (!djdev) {
+ 		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
+ 			" is NULL, index %d\n", dj_report->device_index);
++		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
 +
-+	tmp = ttm_bo_reference(&vmw_user_bo->dma.base);
-+	ret = ttm_base_object_init(vmw_fpriv(file_priv)->tfile,
-+				   &vmw_user_bo->base,
-+				   false,
-+				   ttm_buffer_type,
-+				   &vmw_user_dmabuf_release, NULL);
-+	if (unlikely(ret != 0))
-+		goto out_no_base_object;
++		if (schedule_work(&djrcv_dev->work) == 0) {
++			dbg_hid("%s: did not schedule the work item, was already "
++			"queued\n", __func__);
++		}
+ 		return;
+ 	}
+ 
+@@ -390,6 +424,12 @@ static void logi_dj_recv_forward_report(
+ 	if (dj_device == NULL) {
+ 		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
+ 			" is NULL, index %d\n", dj_report->device_index);
++		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
 +
-+	args->handle = vmw_user_bo->base.hash.key;
++		if (schedule_work(&djrcv_dev->work) == 0) {
++			dbg_hid("%s: did not schedule the work item, was already "
++			"queued\n", __func__);
++		}
+ 		return;
+ 	}
+ 
+@@ -437,6 +477,7 @@ static int logi_dj_recv_query_paired_dev
+ 	return logi_dj_recv_send_report(djrcv_dev, &dj_report);
+ }
+ 
 +
-+out_no_base_object:
-+	ttm_bo_unref(&tmp);
-+out_no_dmabuf:
-+	ttm_read_unlock(&vmaster->lock);
-+	return ret;
-+}
-+
-+int vmw_dumb_map_offset(struct drm_file *file_priv,
-+			struct drm_device *dev, uint32_t handle,
-+			uint64_t *offset)
-+{
-+	struct ttm_object_file *tfile = vmw_fpriv(file_priv)->tfile;
-+	struct vmw_dma_buffer *out_buf;
-+	int ret;
-+
-+	ret = vmw_user_dmabuf_lookup(tfile, handle, &out_buf);
-+	if (ret != 0)
-+		return -EINVAL;
-+
-+	*offset = out_buf->base.addr_space_offset;
-+	vmw_dmabuf_unreference(&out_buf);
-+	return 0;
-+}
-+
-+int vmw_dumb_destroy(struct drm_file *file_priv,
-+		     struct drm_device *dev,
-+		     uint32_t handle)
-+{
-+	return ttm_ref_object_base_unref(vmw_fpriv(file_priv)->tfile,
-+					 handle, TTM_REF_USAGE);
-+}
+ static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
+ 					  unsigned timeout)
+ {
+--- a/drivers/hid/hid-logitech-dj.h
++++ b/drivers/hid/hid-logitech-dj.h
+@@ -101,6 +101,7 @@ struct dj_receiver_dev {
+ 	struct work_struct work;
+ 	struct kfifo notif_fifo;
+ 	spinlock_t lock;
++	bool querying_devices;
+ };
+ 
+ struct dj_device {
 
 
