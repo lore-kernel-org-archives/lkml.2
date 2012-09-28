@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759550Ab2I1UwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:52:01 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45906 "EHLO
+	id S1759723Ab2I1UwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:52:21 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58009 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1945936Ab2I1Usk (ORCPT
+	by vger.kernel.org with ESMTP id S1945930Ab2I1Usi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:40 -0400
-X-Sasl-enc: 5US7jk3UnrUzFA9/OU67NLAyT3qHwaHLX9a+18th5KFo 1348865319
+	Fri, 28 Sep 2012 16:48:38 -0400
+X-Sasl-enc: i6q4j3SYTddkwpvNcVRafhrrZ7WVSwPYs0e0ism5pElH 1348865317
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [ 094/127] md: make sure metadata is updated when spares are activated or removed.
-Date: Fri, 28 Sep 2012 13:34:27 -0700
-Message-Id: <20120928203056.912250649@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Williams <dan.j.williams@gmail.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [ 101/127] Fix a dead loop in async_synchronize_full()
+Date: Fri, 28 Sep 2012 13:34:34 -0700
+Message-Id: <20120928203057.718553449@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -27,76 +32,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Li Zhong <zhong@linux.vnet.ibm.com>
 
-commit 6dafab6b1383e912cd252fa809570b484eb6e0dc upstream.
+[Fixed upstream by commits 2955b47d2c1983998a8c5915cb96884e67f7cb53 and
+a4683487f90bfe3049686fc5c566bdc1ad03ace6 from Dan Williams, but they are much
+more intrusive than this tiny fix, according to Andrew - gregkh]
 
-It isn't always necessary to update the metadata when spares are
-removed as the presence-or-not of a spare isn't really important to
-the integrity of an array.
-Also activating a spare doesn't always require updating the metadata
-as the update on 'recovery-completed' is usually sufficient.
+This patch tries to fix a dead loop in  async_synchronize_full(), which
+could be seen when preemption is disabled on a single cpu machine. 
 
-However the introduction of 'replacement' devices have made these
-transitions sometimes more important.  For example the 'Replacement'
-flag isn't cleared until the original device is removed, so we need
-to ensure a metadata update after that 'spare' is removed.
+void async_synchronize_full(void)
+{
+        do {
+                async_synchronize_cookie(next_cookie);
+        } while (!list_empty(&async_running) || !
+list_empty(&async_pending));
+}
 
-So set MD_CHANGE_DEVS whenever a spare is activated or removed, to
-complement the current situation where it is set when a spare is added
-or a device is failed (or a number of other less common situations).
+async_synchronize_cookie() calls async_synchronize_cookie_domain() with
+&async_running as the default domain to synchronize. 
 
-This is suitable for -stable as out-of-data metadata could lead
-to data corruption.
-This is only relevant for 3.3 and later 9when 'replacement' as
-introduced.
+However, there might be some works in the async_pending list from other
+domains. On a single cpu system, without preemption, there is no chance
+for the other works to finish, so async_synchronize_full() enters a dead
+loop. 
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+It seems async_synchronize_full() wants to synchronize all entries in
+all running lists(domains), so maybe we could just check the entry_count
+to know whether all works are finished. 
+
+Currently, async_synchronize_cookie_domain() expects a non-NULL running
+list ( if NULL, there would be NULL pointer dereference ), so maybe a
+NULL pointer could be used as an indication for the functions to
+synchronize all works in all domains. 
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Christian Kujau <lists@nerdbynature.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Williams <dan.j.williams@gmail.com>
+Cc: Christian Kujau <lists@nerdbynature.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/md/md.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ kernel/async.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7096,6 +7096,7 @@ static int remove_and_add_spares(mddev_t
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -87,6 +87,13 @@ static async_cookie_t  __lowest_in_progr
  {
- 	mdk_rdev_t *rdev;
- 	int spares = 0;
-+	int removed = 0;
+ 	struct async_entry *entry;
  
- 	mddev->curr_resync_completed = 0;
- 
-@@ -7111,6 +7112,7 @@ static int remove_and_add_spares(mddev_t
- 				sprintf(nm,"rd%d", rdev->raid_disk);
- 				sysfs_remove_link(&mddev->kobj, nm);
- 				rdev->raid_disk = -1;
-+				removed = 1;
- 			}
- 		}
- 
-@@ -7139,6 +7141,8 @@ static int remove_and_add_spares(mddev_t
- 			}
- 		}
- 	}
-+	if (removed)
-+		set_bit(MD_CHANGE_DEVS, &mddev->flags);
- 	return spares;
++	if (!running) { /* just check the entry count */
++		if (atomic_read(&entry_count))
++			return 0; /* smaller than any cookie */
++		else
++			return next_cookie;
++	}
++
+ 	if (!list_empty(running)) {
+ 		entry = list_first_entry(running,
+ 			struct async_entry, list);
+@@ -236,9 +243,7 @@ EXPORT_SYMBOL_GPL(async_schedule_domain)
+  */
+ void async_synchronize_full(void)
+ {
+-	do {
+-		async_synchronize_cookie(next_cookie);
+-	} while (!list_empty(&async_running) || !list_empty(&async_pending));
++	async_synchronize_cookie_domain(next_cookie, NULL);
  }
+ EXPORT_SYMBOL_GPL(async_synchronize_full);
  
-@@ -7152,9 +7156,11 @@ static void reap_sync_thread(mddev_t *md
- 	    !test_bit(MD_RECOVERY_REQUESTED, &mddev->recovery)) {
- 		/* success...*/
- 		/* activate any spares */
--		if (mddev->pers->spare_active(mddev))
-+		if (mddev->pers->spare_active(mddev)) {
- 			sysfs_notify(&mddev->kobj, NULL,
- 				     "degraded");
-+			set_bit(MD_CHANGE_DEVS, &mddev->flags);
-+		}
- 	}
- 	if (test_bit(MD_RECOVERY_RESHAPE, &mddev->recovery) &&
- 	    mddev->pers->finish_reshape)
+@@ -258,7 +263,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full
+ /**
+  * async_synchronize_cookie_domain - synchronize asynchronous function calls within a certain domain with cookie checkpointing
+  * @cookie: async_cookie_t to use as checkpoint
+- * @running: running list to synchronize on
++ * @running: running list to synchronize on, NULL indicates all lists
+  *
+  * This function waits until all asynchronous function calls for the
+  * synchronization domain specified by the running list @list submitted
 
 
