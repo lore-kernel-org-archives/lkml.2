@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030914Ab2I1TLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:11:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030747Ab2I1TG2 (ORCPT
+	id S1030730Ab2I1TGY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:06:24 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54594 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030685Ab2I1TGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:06:28 -0400
+	Fri, 28 Sep 2012 15:06:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        "Cho, Yu-Chen" <acho@suse.com>
-Subject: [ 247/262] irq_remap: disable IRQ remapping if any IOAPIC lacks an IOMMU
-Date: Fri, 28 Sep 2012 11:52:56 -0700
-Message-Id: <20120928183027.632835572@linuxfoundation.org>
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Elimar Riesebieter <riesebie@lxtec.de>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel@daenzer.net>
+Subject: =?UTF-8?q?=5B=20242/262=5D=20sound/aoa=3A=20Adapt=20to=20new=20i2c=20probing=20scheme?=
+Date: Fri, 28 Sep 2012 11:52:51 -0700
+Message-Id: <20120928183026.997827720@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,69 +34,248 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-commit 32ab31e01e2def6f48294d872d9bb42573aae00f upstream.
+commit 26b0d14106954ae46d2f4f7eec3481828a210f7d upstream.
 
-The ACPI tables in the Macbook Air 5,1 define a single IOAPIC with id 2,
-but the only remapping unit described in the DMAR table matches id 0.
-Interrupt remapping fails as a result, and the kernel panics with the
-message "timer doesn't work through Interrupt-remapped IO-APIC."
+The i2c-powermac driver now creates the i2c devices properly
+from the device-tree, including workarounds for broken or
+missing device-tree bits, so let's just use the normal probe
+methods and get rid of the hand made device creation code.
 
-To fix this, check each IOAPIC for a corresponding IOMMU. If an IOMMU is
-not found, do not allow IRQ remapping to be enabled.
-
-v2: Move check to parse_ioapics_under_ir(), raise log level to KERN_ERR,
-    and add FW_BUG to the log message
-v3: Skip check if IOMMU doesn't support interrupt remapping and remove
-    existing check that the IOMMU count equals the IOAPIC count
-
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Acked-by: Cho, Yu-Chen <acho@suse.com>
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Elimar Riesebieter <riesebie@lxtec.de>
+Cc: Michel Dänzer <michel@daenzer.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel_irq_remapping.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ sound/aoa/codecs/onyx.c |   75 +--------------------------------------------
+ sound/aoa/codecs/tas.c  |   80 +-----------------------------------------------
+ 2 files changed, 6 insertions(+), 149 deletions(-)
 
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -736,6 +736,7 @@ int __init parse_ioapics_under_ir(void)
- {
- 	struct dmar_drhd_unit *drhd;
- 	int ir_supported = 0;
-+	int ioapic_idx;
- 
- 	for_each_drhd_unit(drhd) {
- 		struct intel_iommu *iommu = drhd->iommu;
-@@ -748,13 +749,20 @@ int __init parse_ioapics_under_ir(void)
- 		}
- 	}
- 
--	if (ir_supported && ir_ioapic_num != nr_ioapics) {
--		printk(KERN_WARNING
--		       "Not all IO-APIC's listed under remapping hardware\n");
--		return -1;
-+	if (!ir_supported)
-+		return 0;
-+
-+	for (ioapic_idx = 0; ioapic_idx < nr_ioapics; ioapic_idx++) {
-+		int ioapic_id = mpc_ioapic_id(ioapic_idx);
-+		if (!map_ioapic_to_ir(ioapic_id)) {
-+			pr_err(FW_BUG "ioapic %d has no mapping iommu, "
-+			       "interrupt remapping will be disabled\n",
-+			       ioapic_id);
-+			return -1;
-+		}
- 	}
- 
--	return ir_supported;
-+	return 1;
+--- a/sound/aoa/codecs/onyx.c
++++ b/sound/aoa/codecs/onyx.c
+@@ -997,45 +997,10 @@ static void onyx_exit_codec(struct aoa_c
+ 	onyx->codec.soundbus_dev->detach_codec(onyx->codec.soundbus_dev, onyx);
  }
  
- int __init ir_dev_scope_init(void)
+-static int onyx_create(struct i2c_adapter *adapter,
+-		       struct device_node *node,
+-		       int addr)
+-{
+-	struct i2c_board_info info;
+-	struct i2c_client *client;
+-
+-	memset(&info, 0, sizeof(struct i2c_board_info));
+-	strlcpy(info.type, "aoa_codec_onyx", I2C_NAME_SIZE);
+-	info.addr = addr;
+-	info.platform_data = node;
+-	client = i2c_new_device(adapter, &info);
+-	if (!client)
+-		return -ENODEV;
+-
+-	/*
+-	 * We know the driver is already loaded, so the device should be
+-	 * already bound. If not it means binding failed, which suggests
+-	 * the device doesn't really exist and should be deleted.
+-	 * Ideally this would be replaced by better checks _before_
+-	 * instantiating the device.
+-	 */
+-	if (!client->driver) {
+-		i2c_unregister_device(client);
+-		return -ENODEV;
+-	}
+-
+-	/*
+-	 * Let i2c-core delete that device on driver removal.
+-	 * This is safe because i2c-core holds the core_lock mutex for us.
+-	 */
+-	list_add_tail(&client->detected, &client->driver->clients);
+-	return 0;
+-}
+-
+ static int onyx_i2c_probe(struct i2c_client *client,
+ 			  const struct i2c_device_id *id)
+ {
+-	struct device_node *node = client->dev.platform_data;
++	struct device_node *node = client->dev.of_node;
+ 	struct onyx *onyx;
+ 	u8 dummy;
+ 
+@@ -1071,40 +1036,6 @@ static int onyx_i2c_probe(struct i2c_cli
+ 	return -ENODEV;
+ }
+ 
+-static int onyx_i2c_attach(struct i2c_adapter *adapter)
+-{
+-	struct device_node *busnode, *dev = NULL;
+-	struct pmac_i2c_bus *bus;
+-
+-	bus = pmac_i2c_adapter_to_bus(adapter);
+-	if (bus == NULL)
+-		return -ENODEV;
+-	busnode = pmac_i2c_get_bus_node(bus);
+-
+-	while ((dev = of_get_next_child(busnode, dev)) != NULL) {
+-		if (of_device_is_compatible(dev, "pcm3052")) {
+-			const u32 *addr;
+-			printk(KERN_DEBUG PFX "found pcm3052\n");
+-			addr = of_get_property(dev, "reg", NULL);
+-			if (!addr)
+-				return -ENODEV;
+-			return onyx_create(adapter, dev, (*addr)>>1);
+-		}
+-	}
+-
+-	/* if that didn't work, try desperate mode for older
+-	 * machines that have stuff missing from the device tree */
+-
+-	if (!of_device_is_compatible(busnode, "k2-i2c"))
+-		return -ENODEV;
+-
+-	printk(KERN_DEBUG PFX "found k2-i2c, checking if onyx chip is on it\n");
+-	/* probe both possible addresses for the onyx chip */
+-	if (onyx_create(adapter, NULL, 0x46) == 0)
+-		return 0;
+-	return onyx_create(adapter, NULL, 0x47);
+-}
+-
+ static int onyx_i2c_remove(struct i2c_client *client)
+ {
+ 	struct onyx *onyx = i2c_get_clientdata(client);
+@@ -1117,16 +1048,16 @@ static int onyx_i2c_remove(struct i2c_cl
+ }
+ 
+ static const struct i2c_device_id onyx_i2c_id[] = {
+-	{ "aoa_codec_onyx", 0 },
++	{ "MAC,pcm3052", 0 },
+ 	{ }
+ };
++MODULE_DEVICE_TABLE(i2c,onyx_i2c_id);
+ 
+ static struct i2c_driver onyx_driver = {
+ 	.driver = {
+ 		.name = "aoa_codec_onyx",
+ 		.owner = THIS_MODULE,
+ 	},
+-	.attach_adapter = onyx_i2c_attach,
+ 	.probe = onyx_i2c_probe,
+ 	.remove = onyx_i2c_remove,
+ 	.id_table = onyx_i2c_id,
+--- a/sound/aoa/codecs/tas.c
++++ b/sound/aoa/codecs/tas.c
+@@ -883,43 +883,10 @@ static void tas_exit_codec(struct aoa_co
+ }
+ 
+ 
+-static int tas_create(struct i2c_adapter *adapter,
+-		       struct device_node *node,
+-		       int addr)
+-{
+-	struct i2c_board_info info;
+-	struct i2c_client *client;
+-
+-	memset(&info, 0, sizeof(struct i2c_board_info));
+-	strlcpy(info.type, "aoa_codec_tas", I2C_NAME_SIZE);
+-	info.addr = addr;
+-	info.platform_data = node;
+-
+-	client = i2c_new_device(adapter, &info);
+-	if (!client)
+-		return -ENODEV;
+-	/*
+-	 * We know the driver is already loaded, so the device should be
+-	 * already bound. If not it means binding failed, and then there
+-	 * is no point in keeping the device instantiated.
+-	 */
+-	if (!client->driver) {
+-		i2c_unregister_device(client);
+-		return -ENODEV;
+-	}
+-
+-	/*
+-	 * Let i2c-core delete that device on driver removal.
+-	 * This is safe because i2c-core holds the core_lock mutex for us.
+-	 */
+-	list_add_tail(&client->detected, &client->driver->clients);
+-	return 0;
+-}
+-
+ static int tas_i2c_probe(struct i2c_client *client,
+ 			 const struct i2c_device_id *id)
+ {
+-	struct device_node *node = client->dev.platform_data;
++	struct device_node *node = client->dev.of_node;
+ 	struct tas *tas;
+ 
+ 	tas = kzalloc(sizeof(struct tas), GFP_KERNEL);
+@@ -953,47 +920,6 @@ static int tas_i2c_probe(struct i2c_clie
+ 	return -EINVAL;
+ }
+ 
+-static int tas_i2c_attach(struct i2c_adapter *adapter)
+-{
+-	struct device_node *busnode, *dev = NULL;
+-	struct pmac_i2c_bus *bus;
+-
+-	bus = pmac_i2c_adapter_to_bus(adapter);
+-	if (bus == NULL)
+-		return -ENODEV;
+-	busnode = pmac_i2c_get_bus_node(bus);
+-
+-	while ((dev = of_get_next_child(busnode, dev)) != NULL) {
+-		if (of_device_is_compatible(dev, "tas3004")) {
+-			const u32 *addr;
+-			printk(KERN_DEBUG PFX "found tas3004\n");
+-			addr = of_get_property(dev, "reg", NULL);
+-			if (!addr)
+-				continue;
+-			return tas_create(adapter, dev, ((*addr) >> 1) & 0x7f);
+-		}
+-		/* older machines have no 'codec' node with a 'compatible'
+-		 * property that says 'tas3004', they just have a 'deq'
+-		 * node without any such property... */
+-		if (strcmp(dev->name, "deq") == 0) {
+-			const u32 *_addr;
+-			u32 addr;
+-			printk(KERN_DEBUG PFX "found 'deq' node\n");
+-			_addr = of_get_property(dev, "i2c-address", NULL);
+-			if (!_addr)
+-				continue;
+-			addr = ((*_addr) >> 1) & 0x7f;
+-			/* now, if the address doesn't match any of the two
+-			 * that a tas3004 can have, we cannot handle this.
+-			 * I doubt it ever happens but hey. */
+-			if (addr != 0x34 && addr != 0x35)
+-				continue;
+-			return tas_create(adapter, dev, addr);
+-		}
+-	}
+-	return -ENODEV;
+-}
+-
+ static int tas_i2c_remove(struct i2c_client *client)
+ {
+ 	struct tas *tas = i2c_get_clientdata(client);
+@@ -1011,16 +937,16 @@ static int tas_i2c_remove(struct i2c_cli
+ }
+ 
+ static const struct i2c_device_id tas_i2c_id[] = {
+-	{ "aoa_codec_tas", 0 },
++	{ "MAC,tas3004", 0 },
+ 	{ }
+ };
++MODULE_DEVICE_TABLE(i2c,tas_i2c_id);
+ 
+ static struct i2c_driver tas_driver = {
+ 	.driver = {
+ 		.name = "aoa_codec_tas",
+ 		.owner = THIS_MODULE,
+ 	},
+-	.attach_adapter = tas_i2c_attach,
+ 	.probe = tas_i2c_probe,
+ 	.remove = tas_i2c_remove,
+ 	.id_table = tas_i2c_id,
 
 
