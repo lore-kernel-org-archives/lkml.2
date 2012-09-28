@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964968Ab2I1S5h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:57:37 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964956Ab2I1S5b (ORCPT
+	id S964984Ab2I1S5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:57:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964956Ab2I1S5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:57:31 -0400
+	Fri, 28 Sep 2012 14:57:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 075/262] mmc: sdhci-esdhc: break out early if clock is 0
-Date: Fri, 28 Sep 2012 11:50:04 -0700
-Message-Id: <20120928183006.885952217@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Fengguang Wu <fengguang.wu@intel.com>,
+        Michael Cree <mcree@orcon.net.nz>, Matt Turner <mattst88@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 087/262] Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
+Date: Fri, 28 Sep 2012 11:50:16 -0700
+Message-Id: <20120928183008.411558031@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,43 +30,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 74f330bceaa7b88d06062e1cac3d519a3dfc041e upstream.
+commit 67a806d9499353fabd5b5ff07337f3aa88a1c3ba upstream.
 
-Since commit 30832ab56 ("mmc: sdhci: Always pass clock request value
-zero to set_clock host op") was merged, esdhc_set_clock starts hitting
-"if (clock == 0)" where ESDHC_SYSTEM_CONTROL has been operated.  This
-causes SDHCI card-detection function being broken.  Fix the regression
-by moving "if (clock == 0)" above ESDHC_SYSTEM_CONTROL operation.
+The following build error occurred during an alpha build:
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+  net/core/sock.c:274:36: error: initializer element is not constant
+
+Dave Anglin says:
+> Here is the line in sock.i:
+>
+> struct static_key memalloc_socks = ((struct static_key) { .enabled =
+> ((atomic_t) { (0) }) });
+
+The above line contains two compound literals.  It also uses a designated
+initializer to initialize the field enabled.  A compound literal is not a
+constant expression.
+
+The location of the above statement isn't fully clear, but if a compound
+literal occurs outside the body of a function, the initializer list must
+consist of constant expressions.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Acked-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci-esdhc.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/alpha/include/asm/atomic.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/mmc/host/sdhci-esdhc.h
-+++ b/drivers/mmc/host/sdhci-esdhc.h
-@@ -48,14 +48,14 @@ static inline void esdhc_set_clock(struc
- 	int div = 1;
- 	u32 temp;
+--- a/arch/alpha/include/asm/atomic.h
++++ b/arch/alpha/include/asm/atomic.h
+@@ -14,8 +14,8 @@
+  */
  
-+	if (clock == 0)
-+		goto out;
-+
- 	temp = sdhci_readl(host, ESDHC_SYSTEM_CONTROL);
- 	temp &= ~(ESDHC_CLOCK_IPGEN | ESDHC_CLOCK_HCKEN | ESDHC_CLOCK_PEREN
- 		| ESDHC_CLOCK_MASK);
- 	sdhci_writel(host, temp, ESDHC_SYSTEM_CONTROL);
  
--	if (clock == 0)
--		goto out;
--
- 	while (host->max_clk / pre_div / 16 > clock && pre_div < 256)
- 		pre_div *= 2;
+-#define ATOMIC_INIT(i)		( (atomic_t) { (i) } )
+-#define ATOMIC64_INIT(i)	( (atomic64_t) { (i) } )
++#define ATOMIC_INIT(i)		{ (i) }
++#define ATOMIC64_INIT(i)	{ (i) }
  
+ #define atomic_read(v)		(*(volatile int *)&(v)->counter)
+ #define atomic64_read(v)	(*(volatile long *)&(v)->counter)
 
 
