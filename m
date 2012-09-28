@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757772Ab2I1Me4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:34:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30334 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757247Ab2I1Mez (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:34:55 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=23BW25jA_k4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=e7Wcmqxzby8A:10 a=D19gQVrFAAAA:8 a=OZg6xzbuTLz_ULNRFtkA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1348835692.22822.97.camel@gandalf.local.home>
-Subject: Re: [PATCH -tip  0/3] Move kprobes files under the kprobes directory
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Date: Fri, 28 Sep 2012 08:34:52 -0400
-In-Reply-To: <20120928081509.3560.8860.stgit@ltc138.sdl.hitachi.co.jp>
-References: <20120928081509.3560.8860.stgit@ltc138.sdl.hitachi.co.jp>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1757873Ab2I1MfJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:35:09 -0400
+Received: from antcom.de ([188.40.178.216]:37103 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757810Ab2I1MfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 08:35:06 -0400
+Message-ID: <50659978.8010003@antcom.de>
+Date: Fri, 28 Sep 2012 14:35:04 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, Bill Gatliff <bgat@billgatliff.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
+References: <1348780923-27428-1-git-send-email-stigge@antcom.de> <CACRpkdZ+1ffsMDRZXYb5RRndoXstj_QHvHOpeikRY0bas72dKQ@mail.gmail.com> <50657356.4010801@antcom.de> <CACRpkdbEgBqSdZmebw+PBMo9G_Y24mgz17=dp11VrbKf5fKyDQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbEgBqSdZmebw+PBMo9G_Y24mgz17=dp11VrbKf5fKyDQ@mail.gmail.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-28 at 17:15 +0900, Masami Hiramatsu wrote:
-> Hi,
+Hi,
+
+On 09/28/2012 01:34 PM, Linus Walleij wrote:
+>> Or some kind of new character device node?
 > 
-> Here are a series of patches to split ftrace-based kprobe part
-> from arch/x86/kernel/kprobes.c and to move kprobes related
-> files under arch/x86/kernel/kprobes/, according to Ingo's
-> suggestion.
-> https://lkml.org/lkml/2012/9/20/122
+> Yes, I don't know if we should create /dev/gpioN or /dev/pinctrlN for
+> this, and add GPIO functions to pinctrl (while wrapping it in the
+> gpiolib to aid migration) the latter would encourage users of the
+> new ABI to switch to writing pinctrl drivers.
+
+Will have a look at this.
+
+>> Otherwise, I need to think about leaving out the sysfs for this purpose.
 > 
+> Do you really need it?
 
-Hi Masami,
+In more that half of the cases, I needed userspace access. So I'm quite
+interested in it.
 
-Thanks for sending this. As it is getting very close to the merge
-window, do you feel that his is good enough to push for 3.7, or do you
-think we should hold off till 3.8, and let it brew a while?
+Thanks for your notes.
 
--- Steve
-
-
+Roland
