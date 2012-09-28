@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab2I1DoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 23:44:14 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:28214 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756534Ab2I1DoM (ORCPT
+	id S1756499Ab2I1Dpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 23:45:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64566 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755676Ab2I1Dpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 23:44:12 -0400
-Message-ID: <50651CF5.5030903@oracle.com>
-Date: Fri, 28 Sep 2012 11:43:49 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 27 Sep 2012 23:45:44 -0400
+Date: Thu, 27 Sep 2012 20:42:50 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: mathieu.poirier@linaro.org
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: [PATCH 02/57] power: ab8500_bm: Don't clear the CCMuxOffset bit
+Message-ID: <20120928034250.GQ5040@lizard>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-3-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        levinsasha928@gmail.com, Feng Jin <joe.jin@oracle.com>,
-        dan.carpenter@oracle.com
-Subject: Re: [PATCH -v2] mm: frontswap: fix a wrong if condition in frontswap_shrink
-References: <505C27FE.5080205@oracle.com> <1348745730.1512.19.camel@x61.thuisdomein>
-In-Reply-To: <1348745730.1512.19.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1348589574-25655-3-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 25, 2012 at 10:11:59AM -0600, mathieu.poirier@linaro.org wrote:
+> From: Kalle Komierowski <karl.komierowski@stericsson.com>
+> 
+> The CCMuxOffset bit is not kept set, this will force the columb counter
+> of the AB8500 to use the measure offset calibration.
+> This should increase the accuracy of the fuel gauge.
+> 
+> Signed-off-by: Kalle Komierowski <karl.komierowski@stericsson.com>
+> Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+> ---
+>  drivers/power/ab8500_fg.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+> index bf02225..af792a8 100644
+> --- a/drivers/power/ab8500_fg.c
+> +++ b/drivers/power/ab8500_fg.c
+> @@ -485,8 +485,9 @@ static int ab8500_fg_coulomb_counter(struct ab8500_fg *di, bool enable)
+>  		di->flags.fg_enabled = true;
+>  	} else {
+>  		/* Clear any pending read requests */
+> -		ret = abx500_set_register_interruptible(di->dev,
+> -			AB8500_GAS_GAUGE, AB8500_GASG_CC_CTRL_REG, 0);
+> +		ret = abx500_mask_and_set_register_interruptible(di->dev,
+> +			AB8500_GAS_GAUGE, AB8500_GASG_CC_CTRL_REG,
+> +			(RESET_ACCU | READ_REQ), 0);
+>  		if (ret)
+>  			goto cc_err;
+>  
+> @@ -1404,8 +1405,7 @@ static void ab8500_fg_algorithm_discharging(struct ab8500_fg *di)
+>  		sleep_time = di->bat->fg_params->init_timer;
+>  
+>  		/* Discard the first [x] seconds */
+> -		if (di->init_cnt >
+> -			di->bat->fg_params->init_discard_time) {
+> +		if (di->init_cnt > di->bat->fg_params->init_discard_time) {
 
+This change is OK, but it's cosmetic, and desires its own patch (you can
+combine all cosmetic changes, which does not change the logic, into one
+patch).
 
-On 2012-09-27 19:35, Paul Bolle wrote:
-> On Fri, 2012-09-21 at 16:40 +0800, Zhenzhong Duan wrote:
->>
->> @@ -275,7 +280,7 @@ static int __frontswap_shrink(unsigned long target_pages,
->>   	if (total_pages<= target_pages) {
->>   		/* Nothing to do */
->>   		*pages_to_unuse = 0;
->
-> I think setting pages_to_unuse to zero here is not needed. It is
-> initiated to zero in frontswap_shrink() and hasn't been touched since.
-> See my patch at https://lkml.org/lkml/2012/9/27/250.
-Yes, it's unneeded. But I didn't see warning as you said in above link 
-when run 'make V=1 mm/frontswap.o'.
->> -		return 0;
->> +		return 1;
->>   	}
->>   	total_pages_to_unuse = total_pages - target_pages;
->>   	return __frontswap_unuse_pages(total_pages_to_unuse, pages_to_unuse, type);
->> @@ -302,7 +307,7 @@ void frontswap_shrink(unsigned long target_pages)
->>   	spin_lock(&swap_lock);
->>   	ret = __frontswap_shrink(target_pages,&pages_to_unuse,&type);
->>   	spin_unlock(&swap_lock);
->> -	if (ret == 0&&  pages_to_unuse)
->> +	if (ret == 0)
->>   		try_to_unuse(type, true, pages_to_unuse);
->>   	return;
->>   }
->
-> Are you sure pages_to_unuse won't be zero here? I've stared quite a bit
-> at __frontswap_unuse_pages() and it's not obvious pages_to_unuse (there
-> also called unused) will never be zero when that function returns zero.
-pages_to_unuse==0 means all pages need to be unused.
-
-zduan
-
+>  			ab8500_fg_calc_cap_discharge_voltage(di, true);
+>  
+>  			ab8500_fg_check_capacity_limits(di, true);
+> -- 
+> 1.7.5.4
