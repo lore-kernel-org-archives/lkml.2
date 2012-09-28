@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239Ab2I1ON6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:13:58 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:41382 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756714Ab2I1ON4 (ORCPT
+	id S1758269Ab2I1OOR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:14:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33339 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758209Ab2I1ON5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:13:56 -0400
-X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 10:13:54 EDT
-Date: Fri, 28 Sep 2012 14:12:54 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: David Rientjes <rientjes@google.com>
-cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
-In-Reply-To: <alpine.DEB.2.00.1209271552350.13360@chino.kir.corp.google.com>
-Message-ID: <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com>
-References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com> <5062C029.308@parallels.com>
- <alpine.DEB.2.00.1209261813300.7072@chino.kir.corp.google.com> <5063F94C.4090600@parallels.com> <alpine.DEB.2.00.1209271552350.13360@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	Fri, 28 Sep 2012 10:13:57 -0400
+Message-ID: <1348841585.3292.76.camel@twins>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+From: Peter Zijlstra <peterz@infradead.org>
+To: habanero@linux.vnet.ibm.com
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Date: Fri, 28 Sep 2012 16:13:05 +0200
+In-Reply-To: <1348832438.5551.5.camel@oc6622382223.ibm.com>
+References: <20120921115942.27611.67488.sendpatchset@codeblue>
+	 <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com>
+	 <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com>
+	 <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com>
+	 <5061B437.8070300@linux.vnet.ibm.com> <5064101A.5070902@redhat.com>
+	 <50643745.6010202@linux.vnet.ibm.com> <506440AF.9080202@redhat.com>
+	 <506537C7.9070909@linux.vnet.ibm.com>
+	 <1348832438.5551.5.camel@oc6622382223.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Sep 2012, David Rientjes wrote:
+On Fri, 2012-09-28 at 06:40 -0500, Andrew Theurer wrote:
+> It will be interesting to see how this behaves with a very high lock
+> activity in a guest.  Once the scheduler defers preemption, is it for
+> a
+> fixed amount of time, or does it know to cut the deferral short as
+> soon
+> as the lock depth is reduced [by x]? 
 
-> On Thu, 27 Sep 2012, Glauber Costa wrote:
->
-> > But I still don't see the big reason for your objection. If other
-> > allocator start using those bits, they would not be passed to
-> > kmem_cache_alloc anyway, right? So what would be the big problem in
-> > masking them out before it?
-> >
->
-> A slab allocator implementation may allow for additional bits that are
-> currently not used or used for internal purposes by the current set of
-> slab allocators to be passed in the unsigned long to kmem_cache_create()
-> that would be a no-op on other allocators.  It's implementation defined,
-> so this masking should be done in the implementation, i.e.
-> __kmem_cache_create().
+Since the locks live in a guest/userspace, we don't even know they're
+held at all, let alone when state changes.
 
-Ok we can do that in the future. There is nothing in this patch that
-prevents that from happening. It would affect the memcg implementation
-because they can no longer simply grab the flags and pass them in for
-creating another slab.
+Also, afaik PLE simply exits the guest whenever you do a busy-wait,
+there's no guarantee its due to a lock at all, we could be waiting for a
+'virtual' hardware resource or whatnot.
 
-> For context, as many people who attended the kernel summit and LinuxCon
-> are aware, a new slab allocator is going to be proposed soon that actually
-> uses additional bits that aren't defined for all slab allocators.  My
-> opinion is that leaving unused bits and reserved bits to the
-> implementation is the best software engineering practice.
 
-Could you please come out with the new allocator and post some patchsets?
-
-We can extend the number of flags reserved if necessary but we really need
-to see the source for that.
