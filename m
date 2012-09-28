@@ -1,105 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab2I1M4Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:56:16 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:51438 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756148Ab2I1M4L (ORCPT
+	id S1757721Ab2I1M7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:59:38 -0400
+Received: from 6.mo5.mail-out.ovh.net ([178.32.119.138]:57115 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756148Ab2I1M7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:56:11 -0400
+	Fri, 28 Sep 2012 08:59:36 -0400
+X-Greylist: delayed 6600 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 08:59:35 EDT
+Date: Fri, 28 Sep 2012 12:28:22 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
+Message-ID: <20120928102822.GY17667@game.jcrosoft.org>
+References: <1348780923-27428-1-git-send-email-stigge@antcom.de>
+ <20120928024744.GV17667@game.jcrosoft.org>
+ <50654E57.3080201@antcom.de>
+ <20120928075145.GW17667@game.jcrosoft.org>
+ <50656522.1050900@antcom.de>
+ <20120928090848.GX17667@game.jcrosoft.org>
 MIME-Version: 1.0
-In-Reply-To: <201209281452.22871.hverkuil@xs4all.nl>
-References: <1344429020-27616-1-git-send-email-prabhakar.lad@ti.com>
- <1344429020-27616-2-git-send-email-prabhakar.lad@ti.com> <CA+V-a8tPQsc4-gS7jDCNy5PmsbTafoER9aXeL39_45Tk=0MjSw@mail.gmail.com>
- <201209281452.22871.hverkuil@xs4all.nl>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 28 Sep 2012 18:25:50 +0530
-Message-ID: <CA+V-a8vVLyrDdR4NMMq17orb-dvFwsjT_2GeRygqcW-bYZnsjw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] dm644x: replace the obsolete preset API by the
- timings API.
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Kevin Hilman <khilman@ti.com>, LMML <linux-media@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hansverk@cisco.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>, Sekhar Nori <nsekhar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120928090848.GX17667@game.jcrosoft.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 8959911459570821981
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On 11:08 Fri 28 Sep     , Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 10:51 Fri 28 Sep     , Roland Stigge wrote:
+> > Hi!
+> > 
+> > On 09/28/2012 09:51 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > >> Right - will add checking for the request state of the respective GPIOs.
+> > >>
+> > >> The list of GPIOs to handle is defined by the offset (specified GPIO)
+> > >> and bitmapped list.
+> > >>
+> > >> If it looks more natural, I can change this to a list of ints specifying
+> > >> GPIOs directly.
+> > > you pass the correctly information to the gpiolib
+> > > 
+> > > as if you do not request the gpio the gpiolib will auto request the gpios
+> > > so you api will be 
+> > > int gpio_get_block(unsigned int *gpios, u8* values, size_t size);
+> > > 
+> > > return an error
+> > > 
+> > > int gpio_set_block(unsigned int *gpios, u8* set, size_t size);
+> > > 
+> > > so you do not care about the banks you work on the gpiolib framework will call
+> > > each gpio_chip seperatly. If the set_block get_block is not availlable the
+> > > gpiolib could fallback to get/set
+> > > 
+> > > inside of the gpiolib that you call each bank with a bitmapped list is correct
+> > > but not in the public gpiolib API
+> > 
+> > Good idea! Talking about the public API (your above gpio_set_block()):
+> > *gpios is a list of GPIOs, but set is still bitmapped (mapped onto the
+> > list specified in *gpios)? To prevent confusion about what the size
+> > argument means (number of gpios in *gpios _or_ number of bytes in the
+> > bitmap *set) - wouldn't it be clearer to have a "bool *set" and "bool
+> > *values" list?
+> public API list of gpio as example
+> 
+> gpios = {1, 33, 34, 55};
+> set = {1, 0, 0 ,1};
+> 
+> gpio_set_blocks(gpios, set, 4);
+> 
+> private you do just provide the array related to the gpio_chip
+> lets assume 4 bank with 32 gpio each
+> 
+> gpio0 = {1};
+> set0 = {1};
+> 
+> gpio1 = {33, 34};
+here should be
 
-On Fri, Sep 28, 2012 at 6:22 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> Hi Prabhakar!
->
-> On Fri September 28 2012 14:44:59 Prabhakar Lad wrote:
->> Hi Kevin,
->>
->> On Wed, Aug 8, 2012 at 6:00 PM, Prabhakar Lad <prabhakar.lad@ti.com> wrote:
->> > From: Hans Verkuil <hans.verkuil@cisco.com>
->> >
->> > Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
->> > Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> > Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->> > ---
->> >  arch/arm/mach-davinci/board-dm644x-evm.c   |   15 ++--
->> >  arch/arm/mach-davinci/dm644x.c             |   17 +---
->> >  drivers/media/video/davinci/vpbe.c         |  110 ++++++++++++----------------
->> >  drivers/media/video/davinci/vpbe_display.c |   60 +++++++--------
->> >  drivers/media/video/davinci/vpbe_venc.c    |   25 +++---
->> >  include/media/davinci/vpbe.h               |   14 ++--
->> >  include/media/davinci/vpbe_types.h         |    8 +--
->> >  include/media/davinci/vpbe_venc.h          |    2 +-
->> >  8 files changed, 111 insertions(+), 140 deletions(-)
->> >
->> Can you ACK this patch? Since this patch needs to go from Mauro's tree
->> due to changes in media drivers folder structure.
->>
->> Regards,
->> --Prabhakar Lad
->>
->
-> ...
->
->> > -static int vpbe_s_dv_preset(struct vpbe_device *vpbe_dev,
->> > -                    struct v4l2_dv_preset *dv_preset)
->> > +static int vpbe_s_dv_timings(struct vpbe_device *vpbe_dev,
->> > +                    struct v4l2_dv_timings *dv_timings)
->> >  {
->> >         struct vpbe_config *cfg = vpbe_dev->cfg;
->> >         int out_index = vpbe_dev->current_out_index;
->> > +       struct vpbe_output *output = &cfg->outputs[out_index];
->> >         int sd_index = vpbe_dev->current_sd_index;
->> > -       int ret;
->> > +       int ret, i;
->> >
->> >
->> >         if (!(cfg->outputs[out_index].output.capabilities &
->> > -           V4L2_OUT_CAP_PRESETS))
->> > +           V4L2_OUT_CAP_CUSTOM_TIMINGS))
->
-> Can you make a follow-up patch that renames V4L2_IN/OUT_CAP_CUSTOM_TIMINGS to
-> V4L2_IN/OUT_CAP_DV_TIMINGS? The old name for this define is deprecated, so it
-> would be nice to fix this in this driver as well.
->
-> The code that adds the new define names went in just two days ago, so as far
-> as I am concerned there is no need to modify the patch again. A follow-up
-> patch is sufficient.
->
-Ok, I'll create a follow up patch.
+pin0 = {1};
+set0 = {1};
 
-Regards,
---Prabhakar
+pin1 = {1, 2, 23};
+set1 = {0, 0, 1};
 
-> Regards,
->
->         Hans
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+set_blocks(gpio_chip0, pin0, set0, 1);
+set_blocks(gpio_chip1, pin1, set1, 3);
+
+You may need to add a prepare to do not do the conversion between array and
+gpio_chip array as I guess you will work on gpio block with multiple time
+acces
+
+Best Regards,
+J.
