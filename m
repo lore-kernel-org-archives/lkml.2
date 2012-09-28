@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965495Ab2I1TWq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:22:46 -0400
+	id S965511Ab2I1TXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:23:09 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030538Ab2I1TEB (ORCPT
+	with ESMTP id S1030455Ab2I1TDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:04:01 -0400
+	Fri, 28 Sep 2012 15:03:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
-Subject: =?UTF-8?q?=5B=20200/262=5D=20drm/radeon=3A=20dont=20disable=20plls=20that=20are=20in=20use=20by=20other=20crtcs?=
-Date: Fri, 28 Sep 2012 11:52:09 -0700
-Message-Id: <20120928183021.704790093@linuxfoundation.org>
+        Anhua Xu <anhua.xu@intel.com>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Schroeder <sec@dschroeder.info>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 198/262] drm/i915: fix wrong order of parameters in port checking functions
+Date: Fri, 28 Sep 2012 11:52:07 -0700
+Message-Id: <20120928183021.465404270@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,52 +30,84 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: "Xu, Anhua" <anhua.xu@intel.com>
 
-commit 4e58591c8961b3e31709313f75819f2eec06e322 upstream.
+commit b70ad586162609141f0aa9eb34790f31a8954f89 upstream.
 
-Some plls are shared for DP.
+Wrong order of parameters passed-in when calling hdmi/adpa
+/lvds_pipe_enabled(), 2nd and 3rd parameters are reversed.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+This bug was indroduced by
+
+commit 1519b9956eb4b4180fa3f47c73341463cdcfaa37
+Author: Keith Packard <keithp@keithp.com>
+Date:   Sat Aug 6 10:35:34 2011 -0700
+
+    drm/i915: Fix PCH port pipe select in CPT disable paths
+
+The reachable tag for this commit is v3.1-rc1-3-g1519b99
+
+Signed-off-by: Anhua Xu <anhua.xu@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44876
+Tested-by: Daniel Schroeder <sec@dschroeder.info>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -1668,9 +1668,22 @@ static void atombios_crtc_disable(struct
- 	struct drm_device *dev = crtc->dev;
- 	struct radeon_device *rdev = dev->dev_private;
- 	struct radeon_atom_ss ss;
-+	int i;
- 
- 	atombios_crtc_dpms(crtc, DRM_MODE_DPMS_OFF);
- 
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		if (rdev->mode_info.crtcs[i] &&
-+		    rdev->mode_info.crtcs[i]->enabled &&
-+		    i != radeon_crtc->crtc_id &&
-+		    radeon_crtc->pll_id == rdev->mode_info.crtcs[i]->pll_id) {
-+			/* one other crtc is using this pll don't turn
-+			 * off the pll
-+			 */
-+			goto done;
-+		}
-+	}
-+
- 	switch (radeon_crtc->pll_id) {
- 	case ATOM_PPLL1:
- 	case ATOM_PPLL2:
-@@ -1687,6 +1700,7 @@ static void atombios_crtc_disable(struct
- 	default:
- 		break;
- 	}
-+done:
- 	radeon_crtc->pll_id = -1;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -1238,7 +1238,7 @@ static void assert_pch_hdmi_disabled(str
+ 				     enum pipe pipe, int reg)
+ {
+ 	u32 val = I915_READ(reg);
+-	WARN(hdmi_pipe_enabled(dev_priv, val, pipe),
++	WARN(hdmi_pipe_enabled(dev_priv, pipe, val),
+ 	     "PCH HDMI (0x%08x) enabled on transcoder %c, should be disabled\n",
+ 	     reg, pipe_name(pipe));
  }
+@@ -1255,13 +1255,13 @@ static void assert_pch_ports_disabled(st
  
+ 	reg = PCH_ADPA;
+ 	val = I915_READ(reg);
+-	WARN(adpa_pipe_enabled(dev_priv, val, pipe),
++	WARN(adpa_pipe_enabled(dev_priv, pipe, val),
+ 	     "PCH VGA enabled on transcoder %c, should be disabled\n",
+ 	     pipe_name(pipe));
+ 
+ 	reg = PCH_LVDS;
+ 	val = I915_READ(reg);
+-	WARN(lvds_pipe_enabled(dev_priv, val, pipe),
++	WARN(lvds_pipe_enabled(dev_priv, pipe, val),
+ 	     "PCH LVDS enabled on transcoder %c, should be disabled\n",
+ 	     pipe_name(pipe));
+ 
+@@ -1723,7 +1723,7 @@ static void disable_pch_hdmi(struct drm_
+ 			     enum pipe pipe, int reg)
+ {
+ 	u32 val = I915_READ(reg);
+-	if (hdmi_pipe_enabled(dev_priv, val, pipe)) {
++	if (hdmi_pipe_enabled(dev_priv, pipe, val)) {
+ 		DRM_DEBUG_KMS("Disabling pch HDMI %x on pipe %d\n",
+ 			      reg, pipe);
+ 		I915_WRITE(reg, val & ~PORT_ENABLE);
+@@ -1745,12 +1745,12 @@ static void intel_disable_pch_ports(stru
+ 
+ 	reg = PCH_ADPA;
+ 	val = I915_READ(reg);
+-	if (adpa_pipe_enabled(dev_priv, val, pipe))
++	if (adpa_pipe_enabled(dev_priv, pipe, val))
+ 		I915_WRITE(reg, val & ~ADPA_DAC_ENABLE);
+ 
+ 	reg = PCH_LVDS;
+ 	val = I915_READ(reg);
+-	if (lvds_pipe_enabled(dev_priv, val, pipe)) {
++	if (lvds_pipe_enabled(dev_priv, pipe, val)) {
+ 		DRM_DEBUG_KMS("disable lvds on pipe %d val 0x%08x\n", pipe, val);
+ 		I915_WRITE(reg, val & ~LVDS_PORT_EN);
+ 		POSTING_READ(reg);
 
 
