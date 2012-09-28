@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab2I1Uj5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:39:57 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40118 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759436Ab2I1Ujy (ORCPT
+	id S1759467Ab2I1UkI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:40:08 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51255 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759436Ab2I1Uj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:39:54 -0400
-X-Sasl-enc: UljK9abG3JcwdJW5zFbVFdWV8iSZPtPH8aWxMYBn+T1T 1348864793
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Roland Stigge <stigge@antcom.de>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 214/218] gpio-lpc32xx: Fix value handling of gpio_direction_output()
-Date: Fri, 28 Sep 2012 13:17:11 -0700
-Message-Id: <20120928201526.144516693@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.1.428.g652398a
-In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
-References: <20120928201501.208384923@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 28 Sep 2012 16:39:59 -0400
+Date: Fri, 28 Sep 2012 13:39:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
+In-Reply-To: <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com>
+Message-ID: <alpine.DEB.2.00.1209281336380.21335@chino.kir.corp.google.com>
+References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com> <5062C029.308@parallels.com>
+ <alpine.DEB.2.00.1209261813300.7072@chino.kir.corp.google.com> <5063F94C.4090600@parallels.com> <alpine.DEB.2.00.1209271552350.13360@chino.kir.corp.google.com> <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 28 Sep 2012, Christoph Lameter wrote:
 
-------------------
+> > For context, as many people who attended the kernel summit and LinuxCon
+> > are aware, a new slab allocator is going to be proposed soon that actually
+> > uses additional bits that aren't defined for all slab allocators.  My
+> > opinion is that leaving unused bits and reserved bits to the
+> > implementation is the best software engineering practice.
+> 
+> Could you please come out with the new allocator and post some patchsets?
+> 
+> We can extend the number of flags reserved if necessary but we really need
+> to see the source for that.
+> 
 
-From: Roland Stigge <stigge@antcom.de>
+The first prototype, SLAM XP1, will be posted in October.  I'd simply like 
+to avoid reverting this patch down the road and having all of us 
+reconsider the topic again when clear alternatives exist that, in my 
+opinion, make the code cleaner.
 
-commit b1268d3737c6316016026245eef276eda6b0a621 upstream.
-
-For GPIOs of gpio-lpc32xx, gpio_direction_output() ignores the value argument
-(initial value of output). This patch fixes this by setting the level
-accordingly.
-
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpio/gpio-lpc32xx.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
---- a/drivers/gpio/gpio-lpc32xx.c
-+++ b/drivers/gpio/gpio-lpc32xx.c
-@@ -304,6 +304,7 @@ static int lpc32xx_gpio_dir_output_p012(
- {
- 	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
- 
-+	__set_gpio_level_p012(group, pin, value);
- 	__set_gpio_dir_p012(group, pin, 0);
- 
- 	return 0;
-@@ -314,6 +315,7 @@ static int lpc32xx_gpio_dir_output_p3(st
- {
- 	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
- 
-+	__set_gpio_level_p3(group, pin, value);
- 	__set_gpio_dir_p3(group, pin, 0);
- 
- 	return 0;
-@@ -322,6 +324,9 @@ static int lpc32xx_gpio_dir_output_p3(st
- static int lpc32xx_gpio_dir_out_always(struct gpio_chip *chip, unsigned pin,
- 	int value)
- {
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+
-+	__set_gpo_level_p3(group, pin, value);
- 	return 0;
- }
- 
-
-
+ [ There _was_ a field for internal flags for mm/slab.c, called "dflags", 
+   before I removed it because it was unused; I'm regretting that now 
+   because it would have been very easy to use it for this purpose. ]
