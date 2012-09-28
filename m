@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759135Ab2I1VYc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:24:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964838Ab2I1U3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:29:38 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 142/218] PM / Runtime: Fix rpm_resume() return value for power.no_callbacks set
-Date: Fri, 28 Sep 2012 13:15:59 -0700
-Message-Id: <20120928201517.784759676@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.1.428.g652398a
-In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
+	id S1759089Ab2I1VYa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:24:30 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:10342 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964963Ab2I1U3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 16:29:39 -0400
+X-IronPort-AV: E=Sophos;i="4.80,503,1344236400"; 
+   d="scan'208";a="695358889"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Dick Streefland <dick.streefland@altium.nl>
+Subject: Re: [ 070/218] SUNRPC: Fix a UDP transport regression
+Thread-Topic: [ 070/218] SUNRPC: Fix a UDP transport regression
+Thread-Index: AQHNnbddGh1NIDpKcE2ye9YPNHTip5egqeAA
+Date: Fri, 28 Sep 2012 20:29:37 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FF45E6@SACEXCMBX04-PRD.hq.netapp.com>
 References: <20120928201501.208384923@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	 <20120928201509.596735923@linuxfoundation.org>
+In-Reply-To: <20120928201509.596735923@linuxfoundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <8D2424631D554846BC82688B647E92DD@tahoe.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8SLOlJ9017016
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2012-09-28 at 13:14 -0700, Greg Kroah-Hartman wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> 
+> commit f39c1bfb5a03e2d255451bff05be0d7255298fa4 upstream.
+> 
+> Commit 43cedbf0e8dfb9c5610eb7985d5f21263e313802 (SUNRPC: Ensure that
+> we grab the XPRT_LOCK before calling xprt_alloc_slot) is causing
+> hangs in the case of NFS over UDP mounts.
 
-------------------
+Ditto with this. Please hold this patch until the 1 line fix mentioned
+previously has been merged upstream (at which point I will resend the
+patch through stable@vger.kernel.org).
 
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+Thanks!
+  Trond
 
-commit 7f321c26c04807834fef4c524d2b21573423fc74 upstream.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-For devices whose power.no_callbacks flag is set, rpm_resume()
-should return 1 if the device's parent is already active, so that
-the callers of pm_runtime_get() don't think that they have to wait
-for the device to resume (asynchronously) in that case (the core
-won't queue up an asynchronous resume in that case, so there's
-nothing to wait for anyway).
-
-Modify the code accordingly (and make sure that an idle notification
-will be queued up on success, even if 1 is to be returned).
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/base/power/runtime.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -652,6 +652,7 @@ static int rpm_resume(struct device *dev
- 		    || dev->parent->power.runtime_status == RPM_ACTIVE) {
- 			atomic_inc(&dev->parent->power.child_count);
- 			spin_unlock(&dev->parent->power.lock);
-+			retval = 1;
- 			goto no_callback;	/* Assume success. */
- 		}
- 		spin_unlock(&dev->parent->power.lock);
-@@ -735,7 +736,7 @@ static int rpm_resume(struct device *dev
- 	}
- 	wake_up_all(&dev->power.wait_queue);
- 
--	if (!retval)
-+	if (retval >= 0)
- 		rpm_idle(dev, RPM_ASYNC);
- 
-  out:
-
-
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
