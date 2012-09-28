@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031964Ab2I1UWl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:22:41 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37576 "EHLO
+	id S1031979Ab2I1UWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:22:47 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:46787 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031950Ab2I1UWc (ORCPT
+	with ESMTP id S1031966Ab2I1UWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:22:32 -0400
+	Fri, 28 Sep 2012 16:22:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
+        Eric Dumazet <edumazet@google.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        Florian Weimer <fweimer@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 020/218] ipvs: fix info leak in getsockopt(IP_VS_SO_GET_TIMEOUT)
-Date: Fri, 28 Sep 2012 13:13:57 -0700
-Message-Id: <20120928201503.658743929@linuxfoundation.org>
+Subject: [ 023/218] af_netlink: force credentials passing [CVE-2012-3520]
+Date: Fri, 28 Sep 2012 13:14:00 -0700
+Message-Id: <20120928201504.023567724@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -30,35 +31,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 2d8a041b7bfe1097af21441cb77d6af95f4f4680 ]
+[ Upstream commit e0e3cea46d31d23dc40df0a49a7a2c04fe8edfea ]
 
-If at least one of CONFIG_IP_VS_PROTO_TCP or CONFIG_IP_VS_PROTO_UDP is
-not set, __ip_vs_get_timeouts() does not fully initialize the structure
-that gets copied to userland and that for leaks up to 12 bytes of kernel
-stack. Add an explicit memset(0) before passing the structure to
-__ip_vs_get_timeouts() to avoid the info leak.
+Pablo Neira Ayuso discovered that avahi and
+potentially NetworkManager accept spoofed Netlink messages because of a
+kernel bug.  The kernel passes all-zero SCM_CREDENTIALS ancillary data
+to the receiver if the sender did not provide such data, instead of not
+including any such data at all or including the correct data from the
+peer (as it is the case with AF_UNIX).
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Wensong Zhang <wensong@linux-vs.org>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Julian Anastasov <ja@ssi.bg>
+This bug was introduced in commit 16e572626961
+(af_unix: dont send SCM_CREDENTIALS by default)
+
+This patch forces passing credentials for netlink, as
+before the regression.
+
+Another fix would be to not add SCM_CREDENTIALS in
+netlink messages if not provided by the sender, but it
+might break some programs.
+
+With help from Florian Weimer & Petr Matousek
+
+This issue is designated as CVE-2012-3520
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Florian Weimer <fweimer@redhat.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netfilter/ipvs/ip_vs_ctl.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/scm.h        |    4 +++-
+ net/netlink/af_netlink.c |    2 +-
+ net/unix/af_unix.c       |    4 ++--
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -2713,6 +2713,7 @@ do_ip_vs_get_ctl(struct sock *sk, int cm
- 	{
- 		struct ip_vs_timeout_user t;
+--- a/include/net/scm.h
++++ b/include/net/scm.h
+@@ -71,9 +71,11 @@ static __inline__ void scm_destroy(struc
+ }
  
-+		memset(&t, 0, sizeof(t));
- 		__ip_vs_get_timeouts(net, &t);
- 		if (copy_to_user(user, &t, sizeof(t)) != 0)
- 			ret = -EFAULT;
+ static __inline__ int scm_send(struct socket *sock, struct msghdr *msg,
+-			       struct scm_cookie *scm)
++			       struct scm_cookie *scm, bool forcecreds)
+ {
+ 	memset(scm, 0, sizeof(*scm));
++	if (forcecreds)
++		scm_set_cred(scm, task_tgid(current), current_cred());
+ 	unix_get_peersec_dgram(sock, scm);
+ 	if (msg->msg_controllen <= 0)
+ 		return 0;
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1329,7 +1329,7 @@ static int netlink_sendmsg(struct kiocb
+ 	if (NULL == siocb->scm)
+ 		siocb->scm = &scm;
+ 
+-	err = scm_send(sock, msg, siocb->scm);
++	err = scm_send(sock, msg, siocb->scm, true);
+ 	if (err < 0)
+ 		return err;
+ 
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1446,7 +1446,7 @@ static int unix_dgram_sendmsg(struct kio
+ 	if (NULL == siocb->scm)
+ 		siocb->scm = &tmp_scm;
+ 	wait_for_unix_gc();
+-	err = scm_send(sock, msg, siocb->scm);
++	err = scm_send(sock, msg, siocb->scm, false);
+ 	if (err < 0)
+ 		return err;
+ 
+@@ -1607,7 +1607,7 @@ static int unix_stream_sendmsg(struct ki
+ 	if (NULL == siocb->scm)
+ 		siocb->scm = &tmp_scm;
+ 	wait_for_unix_gc();
+-	err = scm_send(sock, msg, siocb->scm);
++	err = scm_send(sock, msg, siocb->scm, false);
+ 	if (err < 0)
+ 		return err;
+ 
 
 
