@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032567Ab2I1VBV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:01:21 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59167 "EHLO
+	id S1423075Ab2I1VB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:01:26 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46797 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1033004Ab2I1Urq (ORCPT
+	by vger.kernel.org with ESMTP id S1422896Ab2I1Urm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:47:46 -0400
-X-Sasl-enc: YbpDkiUwszp6w5boU944Bd0WmjTn/MSYKw8cIdGq2XI/ 1348865265
+	Fri, 28 Sep 2012 16:47:42 -0400
+X-Sasl-enc: vdygpYz7CWLyqpdsPvlDpiSvoK6mBB12Njy017aS3zrj 1348865261
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paul Thomas <pthomas8589@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 052/127] hwmon: (ads7871) Add name sysfs attribute
-Date: Fri, 28 Sep 2012 13:33:45 -0700
-Message-Id: <20120928203051.894511720@linuxfoundation.org>
+        Xishi Qiu <qiuxishi@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Mel Gorman <mgorman@suse.de>, "Luck, Tony" <tony.luck@intel.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 049/127] memory hotplug: fix section info double registration bug
+Date: Fri, 28 Sep 2012 13:33:42 -0700
+Message-Id: <20120928203051.570890727@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,54 +31,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: qiuxishi <qiuxishi@gmail.com>
 
-commit 4e21f4eaa49f78d3e977e316514c941053871c76 upstream.
+commit f14851af0ebb32745c6c5a2e400aa0549f9d20df upstream.
 
-The 'name' sysfs attribute is mandatory for hwmon devices, but was missing
-in this driver.
+There may be a bug when registering section info.  For example, on my
+Itanium platform, the pfn range of node0 includes the other nodes, so
+other nodes' section info will be double registered, and memmap's page
+count will equal to 3.
 
-Cc: Paul Thomas <pthomas8589@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Paul Thomas <pthomas8589@gmail.com>
+  node0: start_pfn=0x100,    spanned_pfn=0x20fb00, present_pfn=0x7f8a3, => 0x000100-0x20fc00
+  node1: start_pfn=0x80000,  spanned_pfn=0x80000,  present_pfn=0x80000, => 0x080000-0x100000
+  node2: start_pfn=0x100000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x100000-0x180000
+  node3: start_pfn=0x180000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x180000-0x200000
+
+  free_all_bootmem_node()
+	register_page_bootmem_info_node()
+		register_page_bootmem_info_section()
+
+When hot remove memory, we can't free the memmap's page because
+page_count() is 2 after put_page_bootmem().
+
+  sparse_remove_one_section()
+	free_section_usemap()
+		free_map_bootmem()
+			put_page_bootmem()
+
+[akpm@linux-foundation.org: add code comment]
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: "Luck, Tony" <tony.luck@intel.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ads7871.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ mm/memory_hotplug.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/hwmon/ads7871.c
-+++ b/drivers/hwmon/ads7871.c
-@@ -133,6 +133,12 @@ static ssize_t show_voltage(struct devic
- 	}
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -116,9 +116,6 @@ static void register_page_bootmem_info_s
+ 	struct mem_section *ms;
+ 	struct page *page, *memmap;
+ 
+-	if (!pfn_valid(start_pfn))
+-		return;
+-
+ 	section_nr = pfn_to_section_nr(start_pfn);
+ 	ms = __nr_to_section(section_nr);
+ 
+@@ -177,9 +174,16 @@ void register_page_bootmem_info_node(str
+ 	end_pfn = pfn + pgdat->node_spanned_pages;
+ 
+ 	/* register_section info */
+-	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION)
+-		register_page_bootmem_info_section(pfn);
+-
++	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
++		/*
++		 * Some platforms can assign the same pfn to multiple nodes - on
++		 * node0 as well as nodeN.  To avoid registering a pfn against
++		 * multiple nodes we check that this pfn does not already
++		 * reside in some other node.
++		 */
++		if (pfn_valid(pfn) && (pfn_to_nid(pfn) == node))
++			register_page_bootmem_info_section(pfn);
++	}
  }
- 
-+static ssize_t ads7871_show_name(struct device *dev,
-+				 struct device_attribute *devattr, char *buf)
-+{
-+	return sprintf(buf, "%s\n", to_spi_device(dev)->modalias);
-+}
-+
- static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, show_voltage, NULL, 0);
- static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, show_voltage, NULL, 1);
- static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, show_voltage, NULL, 2);
-@@ -142,6 +148,8 @@ static SENSOR_DEVICE_ATTR(in5_input, S_I
- static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, show_voltage, NULL, 6);
- static SENSOR_DEVICE_ATTR(in7_input, S_IRUGO, show_voltage, NULL, 7);
- 
-+static DEVICE_ATTR(name, S_IRUGO, ads7871_show_name, NULL);
-+
- static struct attribute *ads7871_attributes[] = {
- 	&sensor_dev_attr_in0_input.dev_attr.attr,
- 	&sensor_dev_attr_in1_input.dev_attr.attr,
-@@ -151,6 +159,7 @@ static struct attribute *ads7871_attribu
- 	&sensor_dev_attr_in5_input.dev_attr.attr,
- 	&sensor_dev_attr_in6_input.dev_attr.attr,
- 	&sensor_dev_attr_in7_input.dev_attr.attr,
-+	&dev_attr_name.attr,
- 	NULL
- };
+ #endif /* !CONFIG_SPARSEMEM_VMEMMAP */
  
 
 
