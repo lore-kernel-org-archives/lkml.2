@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030593Ab2I1TEY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:04:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	id S1030596Ab2I1TE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:04:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030566Ab2I1TER (ORCPT
+	with ESMTP id S1030578Ab2I1TEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:04:17 -0400
+	Fri, 28 Sep 2012 15:04:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 205/262] drm/i915: set the right gen3 flip_done mode also at resume
-Date: Fri, 28 Sep 2012 11:52:14 -0700
-Message-Id: <20120928183022.337702677@linuxfoundation.org>
+Subject: [ 206/262] drm/i915: enable lvds pin pairs before dpll on gen2
+Date: Fri, 28 Sep 2012 11:52:15 -0700
+Message-Id: <20120928183022.447803441@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -31,46 +31,53 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 974a3b0f9f05b748fe11f1afc31efc32aa5160cb upstream.
+commit 5b5896e4e1f353ef3dbc4e4e9ee44d53ccf105d7 upstream.
 
-Currently we've only frobbed this bit at irq_init time, but did
-not restore it at resume time. Move it to the gen3 clock gating
-function to fix this.
+Otherwise things migt not work too well.
 
-Notice while reading through code.
+Breakage introduced in
 
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+commit eb1cbe4848b01f9f073064377875bc7d71eb401b
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Wed Mar 28 23:12:16 2012 +0200
+
+    drm/i915: split PLL update code out of i9xx_crtc_mode_set
+
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |    3 ---
- drivers/gpu/drm/i915/intel_pm.c |    3 +++
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -2626,9 +2626,6 @@ void intel_irq_init(struct drm_device *d
- 			dev->driver->irq_handler = i8xx_irq_handler;
- 			dev->driver->irq_uninstall = i8xx_irq_uninstall;
- 		} else if (INTEL_INFO(dev)->gen == 3) {
--			/* IIR "flip pending" means done if this bit is set */
--			I915_WRITE(ECOSKPD, _MASKED_BIT_DISABLE(ECO_FLIP_DONE));
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3926,12 +3926,6 @@ static void i8xx_update_pll(struct drm_c
+ 	POSTING_READ(DPLL(pipe));
+ 	udelay(150);
+ 
+-	I915_WRITE(DPLL(pipe), dpll);
 -
- 			dev->driver->irq_preinstall = i915_irq_preinstall;
- 			dev->driver->irq_postinstall = i915_irq_postinstall;
- 			dev->driver->irq_uninstall = i915_irq_uninstall;
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -3528,6 +3528,9 @@ static void gen3_init_clock_gating(struc
+-	/* Wait for the clocks to stabilize. */
+-	POSTING_READ(DPLL(pipe));
+-	udelay(150);
+-
+ 	/* The LVDS pin pair needs to be on before the DPLLs are enabled.
+ 	 * This is an exception to the general rule that mode_set doesn't turn
+ 	 * things on.
+@@ -3939,6 +3933,12 @@ static void i8xx_update_pll(struct drm_c
+ 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_LVDS))
+ 		intel_update_lvds(crtc, clock, adjusted_mode);
  
- 	if (IS_PINEVIEW(dev))
- 		I915_WRITE(ECOSKPD, _MASKED_BIT_ENABLE(ECO_GATING_CX_ONLY));
++	I915_WRITE(DPLL(pipe), dpll);
 +
-+	/* IIR "flip pending" means done if this bit is set */
-+	I915_WRITE(ECOSKPD, _MASKED_BIT_DISABLE(ECO_FLIP_DONE));
- }
- 
- static void i85x_init_clock_gating(struct drm_device *dev)
++	/* Wait for the clocks to stabilize. */
++	POSTING_READ(DPLL(pipe));
++	udelay(150);
++
+ 	/* The pixel multiplier can only be updated once the
+ 	 * DPLL is enabled and the clocks are stable.
+ 	 *
 
 
