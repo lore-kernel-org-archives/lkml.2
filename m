@@ -1,156 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759363Ab2I1UjF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:39:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39825 "EHLO
+	id S1759379Ab2I1UjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:39:22 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43951 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759334Ab2I1Uim (ORCPT
+	by vger.kernel.org with ESMTP id S1759354Ab2I1UjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:38:42 -0400
-X-Sasl-enc: uxnbzb6YYBzJiT7LsQw5PMHHW3jsluQLA+fpiVg+Xrk4 1348864721
+	Fri, 28 Sep 2012 16:39:03 -0400
+X-Sasl-enc: L+A4Rb7T4+4AGyafF4pH9UJbzCzVoyr7c2jqrNeTNMB/ 1348864742
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Joachim Eastwood <joachim.eastwood@jotron.com>
-Subject: [ 211/218] USB: ohci-at91: fix null pointer in ohci_hcd_at91_overcurrent_irq
-Date: Fri, 28 Sep 2012 13:17:08 -0700
-Message-Id: <20120928201525.798488336@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 001/127] net: Allow driver to limit number of GSO segments per skb
+Date: Fri, 28 Sep 2012 13:32:54 -0700
+Message-Id: <20120928203046.010983852@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
-In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
-References: <20120928201501.208384923@linuxfoundation.org>
+In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
+References: <20120928203045.835238916@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Joachim Eastwood <manabian@gmail.com>
 
-commit 01bb6501779ed0b6dc6c55be34b49eaa6306fdd8 upstream.
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-Fixes the following NULL pointer dereference:
-[    7.740000] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-[    7.810000] Unable to handle kernel NULL pointer dereference at virtual address 00000028
-[    7.810000] pgd = c3a38000
-[    7.810000] [00000028] *pgd=23a8c831, *pte=00000000, *ppte=00000000
-[    7.810000] Internal error: Oops: 17 [#1] PREEMPT ARM
-[    7.810000] Modules linked in: ohci_hcd(+) regmap_i2c snd_pcm usbcore snd_page_alloc at91_cf snd_timer pcmcia_rsrc snd soundcore gpio_keys regmap_spi pcmcia_core usb_common nls_base
-[    7.810000] CPU: 0    Not tainted  (3.6.0-rc6-mpa+ #264)
-[    7.810000] PC is at __gpio_to_irq+0x18/0x40
-[    7.810000] LR is at ohci_hcd_at91_overcurrent_irq+0x24/0xb4 [ohci_hcd]
-[    7.810000] pc : [<c01392d4>]    lr : [<bf08f694>]    psr: 40000093
-[    7.810000] sp : c3a11c40  ip : c3a11c50  fp : c3a11c4c
-[    7.810000] r10: 00000000  r9 : c02dcd6e  r8 : fefff400
-[    7.810000] r7 : 00000000  r6 : c02cc928  r5 : 00000030  r4 : c02dd168
-[    7.810000] r3 : c02e7350  r2 : ffffffea  r1 : c02cc928  r0 : 00000000
-[    7.810000] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[    7.810000] Control: c000717f  Table: 23a38000  DAC: 00000015
-[    7.810000] Process modprobe (pid: 285, stack limit = 0xc3a10270)
-[    7.810000] Stack: (0xc3a11c40 to 0xc3a12000)
-[    7.810000] 1c40: c3a11c6c c3a11c50 bf08f694 c01392cc c3a11c84 c2c38b00 c3806900 00000030
-[    7.810000] 1c60: c3a11ca4 c3a11c70 c0051264 bf08f680 c3a11cac c3a11c80 c003e764 c3806900
-[    7.810000] 1c80: c2c38b00 c02cb05c c02cb000 fefff400 c3806930 c3a11cf4 c3a11cbc c3a11ca8
-[    7.810000] 1ca0: c005142c c005123c c3806900 c3805a00 c3a11cd4 c3a11cc0 c0053f24 c00513e4
-[    7.810000] 1cc0: c3a11cf4 00000030 c3a11cec c3a11cd8 c005120c c0053e88 00000000 00000000
-[    7.810000] 1ce0: c3a11d1c c3a11cf0 c00124d0 c00511e0 01400000 00000001 00000012 00000000
-[    7.810000] 1d00: ffffffff c3a11d94 00000030 00000000 c3a11d34 c3a11d20 c005120c c0012438
-[    7.810000] 1d20: c001dac4 00000012 c3a11d4c c3a11d38 c0009b08 c00511e0 c00523fc 60000013
-[    7.810000] 1d40: c3a11d5c c3a11d50 c0008510 c0009ab4 c3a11ddc c3a11d60 c0008eb4 c00084f0
-[    7.810000] 1d60: 00000000 00000030 00000000 00000080 60000013 bf08f670 c3806900 c2c38b00
-[    7.810000] 1d80: 00000030 c3806930 00000000 c3a11ddc c3a11d88 c3a11da8 c0054190 c00523fc
-[    7.810000] 1da0: 60000013 ffffffff c3a11dec c3a11db8 00000000 c2c38b00 bf08f670 c3806900
-[    7.810000] 1dc0: 00000000 00000080 c02cc928 00000030 c3a11e0c c3a11de0 c0052764 c00520d8
-[    7.810000] 1de0: c3a11dfc 00000000 00000000 00000002 bf090f61 00000004 c02cc930 c02cc928
-[    7.810000] 1e00: c3a11e4c c3a11e10 bf090978 c005269c bf090f61 c02cc928 bf093000 c02dd170
-[    7.810000] 1e20: c3a11e3c c02cc930 c02cc930 bf0911d0 bf0911d0 bf093000 c3a10000 00000000
-[    7.810000] 1e40: c3a11e5c c3a11e50 c0155b7c bf090808 c3a11e7c c3a11e60 c0154690 c0155b6c
-[    7.810000] 1e60: c02cc930 c02cc964 bf0911d0 c3a11ea0 c3a11e9c c3a11e80 c015484c c01545e8
-[    7.810000] 1e80: 00000000 00000000 c01547e4 bf0911d0 c3a11ec4 c3a11ea0 c0152e58 c01547f4
-[    7.810000] 1ea0: c381b88c c384ab10 c2c10540 bf0911d0 00000000 c02d7518 c3a11ed4 c3a11ec8
-[    7.810000] 1ec0: c01544c0 c0152e0c c3a11efc c3a11ed8 c01536cc c01544b0 bf091075 c3a11ee8
-[    7.810000] 1ee0: bf049af0 bf09120c bf0911d0 00000000 c3a11f1c c3a11f00 c0154e9c c0153628
-[    7.810000] 1f00: bf049af0 bf09120c 000ae190 00000000 c3a11f2c c3a11f20 c0155f58 c0154e04
-[    7.810000] 1f20: c3a11f44 c3a11f30 bf093054 c0155f1c 00000000 00006a4f c3a11f7c c3a11f48
-[    7.810000] 1f40: c0008638 bf093010 bf09120c 000ae190 00000000 c00093c4 00006a4f bf09120c
-[    7.810000] 1f60: 000ae190 00000000 c00093c4 00000000 c3a11fa4 c3a11f80 c004fdc4 c000859c
-[    7.810000] 1f80: c3a11fa4 000ae190 00006a4f 00016eb8 000ad018 00000080 00000000 c3a11fa8
-[    7.810000] 1fa0: c0009260 c004fd58 00006a4f 00016eb8 000ae190 00006a4f 000ae100 00000000
-[    7.810000] 1fc0: 00006a4f 00016eb8 000ad018 00000080 000adba0 000ad208 00000000 000ad3d8
-[    7.810000] 1fe0: beaf7ae8 beaf7ad8 000172b8 b6e4e940 20000010 000ae190 00000000 00000000
-[    7.810000] Backtrace:
-[    7.810000] [<c01392bc>] (__gpio_to_irq+0x0/0x40) from [<bf08f694>] (ohci_hcd_at91_overcurrent_irq+0x24/0xb4 [ohci_hcd])
-[    7.810000] [<bf08f670>] (ohci_hcd_at91_overcurrent_irq+0x0/0xb4 [ohci_hcd]) from [<c0051264>] (handle_irq_event_percpu+0x38/0x1a8)
-[    7.810000]  r6:00000030 r5:c3806900 r4:c2c38b00
-[    7.810000] [<c005122c>] (handle_irq_event_percpu+0x0/0x1a8) from [<c005142c>] (handle_irq_event+0x58/0x7c)
-[    7.810000] [<c00513d4>] (handle_irq_event+0x0/0x7c) from [<c0053f24>] (handle_simple_irq+0xac/0xd8)
-[    7.810000]  r5:c3805a00 r4:c3806900
-[    7.810000] [<c0053e78>] (handle_simple_irq+0x0/0xd8) from [<c005120c>] (generic_handle_irq+0x3c/0x48)
-[    7.810000]  r4:00000030
-[    7.810000] [<c00511d0>] (generic_handle_irq+0x0/0x48) from [<c00124d0>] (gpio_irq_handler+0xa8/0xfc)
-[    7.810000]  r4:00000000
-[    7.810000] [<c0012428>] (gpio_irq_handler+0x0/0xfc) from [<c005120c>] (generic_handle_irq+0x3c/0x48)
-[    7.810000] [<c00511d0>] (generic_handle_irq+0x0/0x48) from [<c0009b08>] (handle_IRQ+0x64/0x88)
-[    7.810000]  r4:00000012
-[    7.810000] [<c0009aa4>] (handle_IRQ+0x0/0x88) from [<c0008510>] (at91_aic_handle_irq+0x30/0x38)
-[    7.810000]  r5:60000013 r4:c00523fc
-[    7.810000] [<c00084e0>] (at91_aic_handle_irq+0x0/0x38) from [<c0008eb4>] (__irq_svc+0x34/0x60)
-[    7.810000] Exception stack(0xc3a11d60 to 0xc3a11da8)
-[    7.810000] 1d60: 00000000 00000030 00000000 00000080 60000013 bf08f670 c3806900 c2c38b00
-[    7.810000] 1d80: 00000030 c3806930 00000000 c3a11ddc c3a11d88 c3a11da8 c0054190 c00523fc
-[    7.810000] 1da0: 60000013 ffffffff
-[    7.810000] [<c00520c8>] (__setup_irq+0x0/0x458) from [<c0052764>] (request_threaded_irq+0xd8/0x134)
-[    7.810000] [<c005268c>] (request_threaded_irq+0x0/0x134) from [<bf090978>] (ohci_hcd_at91_drv_probe+0x180/0x41c [ohci_hcd])
-[    7.810000] [<bf0907f8>] (ohci_hcd_at91_drv_probe+0x0/0x41c [ohci_hcd]) from [<c0155b7c>] (platform_drv_probe+0x20/0x24)
-[    7.810000] [<c0155b5c>] (platform_drv_probe+0x0/0x24) from [<c0154690>] (driver_probe_device+0xb8/0x20c)
-[    7.810000] [<c01545d8>] (driver_probe_device+0x0/0x20c) from [<c015484c>] (__driver_attach+0x68/0x88)
-[    7.810000]  r7:c3a11ea0 r6:bf0911d0 r5:c02cc964 r4:c02cc930
-[    7.810000] [<c01547e4>] (__driver_attach+0x0/0x88) from [<c0152e58>] (bus_for_each_dev+0x5c/0x9c)
-[    7.810000]  r6:bf0911d0 r5:c01547e4 r4:00000000
-[    7.810000] [<c0152dfc>] (bus_for_each_dev+0x0/0x9c) from [<c01544c0>] (driver_attach+0x20/0x28)
-[    7.810000]  r7:c02d7518 r6:00000000 r5:bf0911d0 r4:c2c10540
-[    7.810000] [<c01544a0>] (driver_attach+0x0/0x28) from [<c01536cc>] (bus_add_driver+0xb4/0x22c)
-[    7.810000] [<c0153618>] (bus_add_driver+0x0/0x22c) from [<c0154e9c>] (driver_register+0xa8/0x144)
-[    7.810000]  r7:00000000 r6:bf0911d0 r5:bf09120c r4:bf049af0
-[    7.810000] [<c0154df4>] (driver_register+0x0/0x144) from [<c0155f58>] (platform_driver_register+0x4c/0x60)
-[    7.810000]  r7:00000000 r6:000ae190 r5:bf09120c r4:bf049af0
-[    7.810000] [<c0155f0c>] (platform_driver_register+0x0/0x60) from [<bf093054>] (ohci_hcd_mod_init+0x54/0x8c [ohci_hcd])
-[    7.810000] [<bf093000>] (ohci_hcd_mod_init+0x0/0x8c [ohci_hcd]) from [<c0008638>] (do_one_initcall+0xac/0x174)
-[    7.810000]  r4:00006a4f
-[    7.810000] [<c000858c>] (do_one_initcall+0x0/0x174) from [<c004fdc4>] (sys_init_module+0x7c/0x1a0)
-[    7.810000] [<c004fd48>] (sys_init_module+0x0/0x1a0) from [<c0009260>] (ret_fast_syscall+0x0/0x2c)
-[    7.810000]  r7:00000080 r6:000ad018 r5:00016eb8 r4:00006a4f
-[    7.810000] Code: e24cb004 e59f3028 e1a02000 e7930180 (e5903028)
-[    7.810000] ---[ end trace 85aa37ed128143b5 ]---
-[    7.810000] Kernel panic - not syncing: Fatal exception in interrupt
+[ Upstream commit 30b678d844af3305cda5953467005cebb5d7b687 ]
 
-Commit 6fffb77c (USB: ohci-at91: fix PIO handling in relation with number of
-ports) started setting unused pins to EINVAL. But this exposed a bug in the
-ohci_hcd_at91_overcurrent_irq function where the gpio was used without being
-checked to see if it is valid.
+A peer (or local user) may cause TCP to use a nominal MSS of as little
+as 88 (actual MSS of 76 with timestamps).  Given that we have a
+sufficiently prodigious local sender and the peer ACKs quickly enough,
+it is nevertheless possible to grow the window for such a connection
+to the point that we will try to send just under 64K at once.  This
+results in a single skb that expands to 861 segments.
 
-This patches fixed the issue by adding the gpio valid check.
+In some drivers with TSO support, such an skb will require hundreds of
+DMA descriptors; a substantial fraction of a TX ring or even more than
+a full ring.  The TX queue selected for the skb may stall and trigger
+the TX watchdog repeatedly (since the problem skb will be retried
+after the TX reset).  This particularly affects sfc, for which the
+issue is designated as CVE-2012-3412.
 
-Signed-off-by: Joachim Eastwood <joachim.eastwood@jotron.com>
+Therefore:
+1. Add the field net_device::gso_max_segs holding the device-specific
+   limit.
+2. In netif_skb_features(), if the number of segments is too high then
+   mask out GSO features to force fall back to software GSO.
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/host/ohci-at91.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/netdevice.h |    2 ++
+ net/core/dev.c            |    4 ++++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -466,7 +466,8 @@ static irqreturn_t ohci_hcd_at91_overcur
- 	/* From the GPIO notifying the over-current situation, find
- 	 * out the corresponding port */
- 	at91_for_each_port(port) {
--		if (gpio_to_irq(pdata->overcurrent_pin[port]) == irq) {
-+		if (gpio_is_valid(pdata->overcurrent_pin[port]) &&
-+				gpio_to_irq(pdata->overcurrent_pin[port]) == irq) {
- 			gpio = pdata->overcurrent_pin[port];
- 			break;
- 		}
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1329,6 +1329,8 @@ struct net_device {
+ 	/* for setting kernel sock attribute on TCP connection setup */
+ #define GSO_MAX_SIZE		65536
+ 	unsigned int		gso_max_size;
++#define GSO_MAX_SEGS		65535
++	u16			gso_max_segs;
+ 
+ #ifdef CONFIG_DCB
+ 	/* Data Center Bridging netlink ops */
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2050,6 +2050,9 @@ u32 netif_skb_features(struct sk_buff *s
+ 	__be16 protocol = skb->protocol;
+ 	u32 features = skb->dev->features;
+ 
++	if (skb_shinfo(skb)->gso_segs > skb->dev->gso_max_segs)
++		features &= ~NETIF_F_GSO_MASK;
++
+ 	if (protocol == htons(ETH_P_8021Q)) {
+ 		struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
+ 		protocol = veh->h_vlan_encapsulated_proto;
+@@ -5870,6 +5873,7 @@ struct net_device *alloc_netdev_mqs(int
+ 	dev_net_set(dev, &init_net);
+ 
+ 	dev->gso_max_size = GSO_MAX_SIZE;
++	dev->gso_max_segs = GSO_MAX_SEGS;
+ 
+ 	INIT_LIST_HEAD(&dev->ethtool_ntuple_list.list);
+ 	dev->ethtool_ntuple_list.count = 0;
 
 
