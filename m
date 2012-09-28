@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759625Ab2I1Ulg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:41:36 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44529 "EHLO
+	id S1759599Ab2I1UlQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:41:16 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33208 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759602Ab2I1UlR (ORCPT
+	by vger.kernel.org with ESMTP id S1759577Ab2I1UlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:41:17 -0400
-X-Sasl-enc: sl+I0m+LImr8gLzCocc8gk47OtT/zratPxHivtKsCw36 1348864876
+	Fri, 28 Sep 2012 16:41:10 -0400
+X-Sasl-enc: 3cWkynRM5plQF+0Ot/VegAkdaG0pDiBb5N0n6fFAIn5M 1348864869
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Haifeng Li <omycle@gmail.com>, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>, KyongHo Cho <pullip.cho@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 044/127] mm/page_alloc: fix the page address of higher pages buddy calculation
-Date: Fri, 28 Sep 2012 13:33:37 -0700
-Message-Id: <20120928203051.007987136@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 039/127] mmc: sdhci-esdhc: break out early if clock is 0
+Date: Fri, 28 Sep 2012 13:33:32 -0700
+Message-Id: <20120928203050.422131042@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -32,46 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Haifeng <omycle@gmail.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 0ba8f2d59304dfe69b59c034de723ad80f7ab9ac upstream.
+commit 74f330bceaa7b88d06062e1cac3d519a3dfc041e upstream.
 
-The heuristic method for buddy has been introduced since commit
-43506fad21ca ("mm/page_alloc.c: simplify calculation of combined index
-of adjacent buddy lists").  But the page address of higher page's buddy
-was wrongly calculated, which will lead page_is_buddy to fail for ever.
-IOW, the heuristic method would be disabled with the wrong page address
-of higher page's buddy.
+Since commit 30832ab56 ("mmc: sdhci: Always pass clock request value
+zero to set_clock host op") was merged, esdhc_set_clock starts hitting
+"if (clock == 0)" where ESDHC_SYSTEM_CONTROL has been operated.  This
+causes SDHCI card-detection function being broken.  Fix the regression
+by moving "if (clock == 0)" above ESDHC_SYSTEM_CONTROL operation.
 
-Calculating the page address of higher page's buddy should be based
-higher_page with the offset between index of higher page and index of
-higher page's buddy.
-
-Signed-off-by: Haifeng Li <omycle@gmail.com>
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: KyongHo Cho <pullip.cho@samsung.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/host/sdhci-esdhc.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -540,7 +540,7 @@ static inline void __free_one_page(struc
- 		combined_idx = buddy_idx & page_idx;
- 		higher_page = page + (combined_idx - page_idx);
- 		buddy_idx = __find_buddy_index(combined_idx, order + 1);
--		higher_buddy = page + (buddy_idx - combined_idx);
-+		higher_buddy = higher_page + (buddy_idx - combined_idx);
- 		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
- 			list_add_tail(&page->lru,
- 				&zone->free_area[order].free_list[migratetype]);
+--- a/drivers/mmc/host/sdhci-esdhc.h
++++ b/drivers/mmc/host/sdhci-esdhc.h
+@@ -48,14 +48,14 @@ static inline void esdhc_set_clock(struc
+ 	int div = 1;
+ 	u32 temp;
+ 
++	if (clock == 0)
++		goto out;
++
+ 	temp = sdhci_readl(host, ESDHC_SYSTEM_CONTROL);
+ 	temp &= ~(ESDHC_CLOCK_IPGEN | ESDHC_CLOCK_HCKEN | ESDHC_CLOCK_PEREN
+ 		| ESDHC_CLOCK_MASK);
+ 	sdhci_writel(host, temp, ESDHC_SYSTEM_CONTROL);
+ 
+-	if (clock == 0)
+-		goto out;
+-
+ 	while (host->max_clk / pre_div / 16 > clock && pre_div < 256)
+ 		pre_div *= 2;
+ 
 
 
