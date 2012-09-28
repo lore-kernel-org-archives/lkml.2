@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422956Ab2I1UsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:48:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54936 "EHLO
+	id S1032344Ab2I1U7E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:59:04 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49586 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031541Ab2I1Uru (ORCPT
+	by vger.kernel.org with ESMTP id S1422943Ab2I1Ur7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:47:50 -0400
-X-Sasl-enc: T4e3EA13DGB6L/jnO0ohBuIG8aIkNUBRMczZCDXtMVDs 1348865269
+	Fri, 28 Sep 2012 16:47:59 -0400
+X-Sasl-enc: 70k7IKxDc5qzg3uL3YsEo3mkAReTmSCFaS8aoj1LY4DH 1348865278
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 067/127] dmaengine: at_hdmac: check that each sg data length is non-null
-Date: Fri, 28 Sep 2012 13:34:00 -0700
-Message-Id: <20120928203053.746085704@linuxfoundation.org>
+        Pavankumar Kondeti <pkondeti@codeaurora.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 073/127] EHCI: Update qTD next pointer in QH overlay region during unlink
+Date: Fri, 28 Sep 2012 13:34:06 -0700
+Message-Id: <20120928203054.421141164@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,56 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Pavankumar Kondeti <pkondeti@codeaurora.org>
 
-commit c456797681db814f4f5b36909e8e94047bf53d9c upstream.
+commit 3d037774b42ed677f699b1dce7d548d55f4e4c2b upstream.
 
-Avoid the construction of a malformed DMA request sent to
-the DMA controller.
-Log message is for debug only because this condition is unlikely to
-append and may only trigger at driver development time.
+There is a possibility of QH overlay region having reference to a stale
+qTD pointer during unlink.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+Consider an endpoint having two pending qTD before unlink process begins.
+The endpoint's QH queue looks like this.
+
+qTD1 --> qTD2 --> Dummy
+
+To unlink qTD2, QH is removed from asynchronous list and Asynchronous
+Advance Doorbell is programmed.  The qTD1's next qTD pointer is set to
+qTD2'2 next qTD pointer and qTD2 is retired upon controller's doorbell
+interrupt.  If QH's current qTD pointer points to qTD1, transfer overlay
+region still have reference to qTD2. But qtD2 is just unlinked and freed.
+This may cause EHCI system error.  Fix this by updating qTD next pointer
+in QH overlay region with the qTD next pointer of the current qTD.
+
+Signed-off-by: Pavankumar Kondeti <pkondeti@codeaurora.org>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/at_hdmac.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/usb/host/ehci-q.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -702,6 +702,11 @@ atc_prep_slave_sg(struct dma_chan *chan,
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -130,9 +130,17 @@ qh_refresh (struct ehci_hcd *ehci, struc
+ 	else {
+ 		qtd = list_entry (qh->qtd_list.next,
+ 				struct ehci_qtd, qtd_list);
+-		/* first qtd may already be partially processed */
+-		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current)
++		/*
++		 * first qtd may already be partially processed.
++		 * If we come here during unlink, the QH overlay region
++		 * might have reference to the just unlinked qtd. The
++		 * qtd is updated in qh_completions(). Update the QH
++		 * overlay here.
++		 */
++		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current) {
++			qh->hw->hw_qtd_next = qtd->hw_next;
+ 			qtd = NULL;
++		}
+ 	}
  
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
-+			if (unlikely(!len)) {
-+				dev_dbg(chan2dev(chan),
-+					"prep_slave_sg: sg(%d) data length is zero\n", i);
-+				goto err;
-+			}
- 			mem_width = 2;
- 			if (unlikely(mem & 3 || len & 3))
- 				mem_width = 0;
-@@ -736,6 +741,11 @@ atc_prep_slave_sg(struct dma_chan *chan,
- 
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
-+			if (unlikely(!len)) {
-+				dev_dbg(chan2dev(chan),
-+					"prep_slave_sg: sg(%d) data length is zero\n", i);
-+				goto err;
-+			}
- 			mem_width = 2;
- 			if (unlikely(mem & 3 || len & 3))
- 				mem_width = 0;
-@@ -769,6 +779,7 @@ atc_prep_slave_sg(struct dma_chan *chan,
- 
- err_desc_get:
- 	dev_err(chan2dev(chan), "not enough descriptors available\n");
-+err:
- 	atc_desc_put(atchan, first);
- 	return NULL;
- }
+ 	if (qtd)
 
 
