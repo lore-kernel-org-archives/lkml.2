@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423012Ab2I1Vff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:35:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031295Ab2I1U1E (ORCPT
+	id S1032546Ab2I1Vfv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:35:51 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964921Ab2I1U1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:27:04 -0400
+	Fri, 28 Sep 2012 16:27:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Arend Van Spriel <arend@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 094/218] brcmfmac: Fix big endian host configuration data.
-Date: Fri, 28 Sep 2012 13:15:11 -0700
-Message-Id: <20120928201512.338365064@linuxfoundation.org>
+        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 101/218] Bluetooth: Fix not removing power_off delayed work
+Date: Fri, 28 Sep 2012 13:15:18 -0700
+Message-Id: <20120928201513.149605492@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,93 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hante Meuleman <meuleman@broadcom.com>
+From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
 
-commit e020a83d0942a5aceac35986500c9834efc8707d upstream.
+commit 78c04c0bf52360dc2f7185e99c8e9aa05d73ae5a upstream.
 
-Fixes big endian host configuration parameters.
+For example, when a usb reset is received (I could reproduce it
+running something very similar to this[1] in a loop) it could be
+that the device is unregistered while the power_off delayed work
+is still scheduled to run.
 
-Reviewed-by: Arend Van Spriel <arend@broadcom.com>
-Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Backtrace:
+
+WARNING: at lib/debugobjects.c:261 debug_print_object+0x7c/0x8d()
+Hardware name: To Be Filled By O.E.M.
+ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x26
+Modules linked in: nouveau mxm_wmi btusb wmi bluetooth ttm coretemp drm_kms_helper
+Pid: 2114, comm: usb-reset Not tainted 3.5.0bt-next #2
+Call Trace:
+ [<ffffffff8124cc00>] ? free_obj_work+0x57/0x91
+ [<ffffffff81058f88>] warn_slowpath_common+0x7e/0x97
+ [<ffffffff81059035>] warn_slowpath_fmt+0x41/0x43
+ [<ffffffff8124ccb6>] debug_print_object+0x7c/0x8d
+ [<ffffffff8106e3ec>] ? __queue_work+0x259/0x259
+ [<ffffffff8124d63e>] ? debug_check_no_obj_freed+0x6f/0x1b5
+ [<ffffffff8124d667>] debug_check_no_obj_freed+0x98/0x1b5
+ [<ffffffffa00aa031>] ? bt_host_release+0x10/0x1e [bluetooth]
+ [<ffffffff810fc035>] kfree+0x90/0xe6
+ [<ffffffffa00aa031>] bt_host_release+0x10/0x1e [bluetooth]
+ [<ffffffff812ec2f9>] device_release+0x4a/0x7e
+ [<ffffffff8123ef57>] kobject_release+0x11d/0x154
+ [<ffffffff8123ed98>] kobject_put+0x4a/0x4f
+ [<ffffffff812ec0d9>] put_device+0x12/0x14
+ [<ffffffffa009472b>] hci_free_dev+0x22/0x26 [bluetooth]
+ [<ffffffffa0280dd0>] btusb_disconnect+0x96/0x9f [btusb]
+ [<ffffffff813581b4>] usb_unbind_interface+0x57/0x106
+ [<ffffffff812ef988>] __device_release_driver+0x83/0xd6
+ [<ffffffff812ef9fb>] device_release_driver+0x20/0x2d
+ [<ffffffff813582a7>] usb_driver_release_interface+0x44/0x7b
+ [<ffffffff81358795>] usb_forced_unbind_intf+0x45/0x4e
+ [<ffffffff8134f959>] usb_reset_device+0xa6/0x12e
+ [<ffffffff8135df86>] usbdev_do_ioctl+0x319/0xe20
+ [<ffffffff81203244>] ? avc_has_perm_flags+0xc9/0x12e
+ [<ffffffff812031a0>] ? avc_has_perm_flags+0x25/0x12e
+ [<ffffffff81050101>] ? do_page_fault+0x31e/0x3a1
+ [<ffffffff8135eaa6>] usbdev_ioctl+0x9/0xd
+ [<ffffffff811126b1>] vfs_ioctl+0x21/0x34
+ [<ffffffff81112f7b>] do_vfs_ioctl+0x408/0x44b
+ [<ffffffff81208d45>] ? file_has_perm+0x76/0x81
+ [<ffffffff8111300f>] sys_ioctl+0x51/0x76
+ [<ffffffff8158db22>] system_call_fastpath+0x16/0x1b
+
+[1] http://cpansearch.perl.org/src/DPAVLIN/Biblio-RFID-0.03/examples/usbreset.c
+
+Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c |   26 +++++++++++--------
- 1 file changed, 16 insertions(+), 10 deletions(-)
+ net/bluetooth/hci_core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
-@@ -764,8 +764,11 @@ static void brcmf_c_arp_offload_set(stru
- {
- 	char iovbuf[32];
- 	int retcode;
-+	__le32 arp_mode_le;
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -750,6 +750,8 @@ static int hci_dev_do_close(struct hci_d
  
--	brcmf_c_mkiovar("arp_ol", (char *)&arp_mode, 4, iovbuf, sizeof(iovbuf));
-+	arp_mode_le = cpu_to_le32(arp_mode);
-+	brcmf_c_mkiovar("arp_ol", (char *)&arp_mode_le, 4, iovbuf,
-+			sizeof(iovbuf));
- 	retcode = brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR,
- 				   iovbuf, sizeof(iovbuf));
- 	retcode = retcode >= 0 ? 0 : retcode;
-@@ -781,8 +784,11 @@ static void brcmf_c_arp_offload_enable(s
- {
- 	char iovbuf[32];
- 	int retcode;
-+	__le32 arp_enable_le;
+ 	cancel_work_sync(&hdev->le_scan);
  
--	brcmf_c_mkiovar("arpoe", (char *)&arp_enable, 4,
-+	arp_enable_le = cpu_to_le32(arp_enable);
++	cancel_delayed_work(&hdev->power_off);
 +
-+	brcmf_c_mkiovar("arpoe", (char *)&arp_enable_le, 4,
- 			iovbuf, sizeof(iovbuf));
- 	retcode = brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR,
- 				   iovbuf, sizeof(iovbuf));
-@@ -803,10 +809,10 @@ int brcmf_c_preinit_dcmds(struct brcmf_p
- 	char buf[128], *ptr;
- 	u32 dongle_align = drvr->bus_if->align;
- 	u32 glom = 0;
--	u32 roaming = 1;
--	uint bcn_timeout = 3;
--	int scan_assoc_time = 40;
--	int scan_unassoc_time = 40;
-+	__le32 roaming_le = cpu_to_le32(1);
-+	__le32 bcn_timeout_le = cpu_to_le32(3);
-+	__le32 scan_assoc_time_le = cpu_to_le32(40);
-+	__le32 scan_unassoc_time_le = cpu_to_le32(40);
- 	int i;
+ 	hci_req_cancel(hdev, ENODEV);
+ 	hci_req_lock(hdev);
  
- 	mutex_lock(&drvr->proto_block);
-@@ -841,14 +847,14 @@ int brcmf_c_preinit_dcmds(struct brcmf_p
- 
- 	/* Setup timeout if Beacons are lost and roam is off to report
- 		 link down */
--	brcmf_c_mkiovar("bcn_timeout", (char *)&bcn_timeout, 4, iovbuf,
-+	brcmf_c_mkiovar("bcn_timeout", (char *)&bcn_timeout_le, 4, iovbuf,
- 		    sizeof(iovbuf));
- 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR, iovbuf,
- 				  sizeof(iovbuf));
- 
- 	/* Enable/Disable build-in roaming to allowed ext supplicant to take
- 		 of romaing */
--	brcmf_c_mkiovar("roam_off", (char *)&roaming, 4,
-+	brcmf_c_mkiovar("roam_off", (char *)&roaming_le, 4,
- 		      iovbuf, sizeof(iovbuf));
- 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR, iovbuf,
- 				  sizeof(iovbuf));
-@@ -863,9 +869,9 @@ int brcmf_c_preinit_dcmds(struct brcmf_p
- 				  sizeof(iovbuf));
- 
- 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_SCAN_CHANNEL_TIME,
--			 (char *)&scan_assoc_time, sizeof(scan_assoc_time));
-+		 (char *)&scan_assoc_time_le, sizeof(scan_assoc_time_le));
- 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_SCAN_UNASSOC_TIME,
--			 (char *)&scan_unassoc_time, sizeof(scan_unassoc_time));
-+		 (char *)&scan_unassoc_time_le, sizeof(scan_unassoc_time_le));
- 
- 	/* Set and enable ARP offload feature */
- 	brcmf_c_arp_offload_set(drvr, BRCMF_ARPOL_MODE);
 
 
