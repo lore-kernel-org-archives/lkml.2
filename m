@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031387Ab2I1Tgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:36:44 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50498 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965347Ab2I1TAd (ORCPT
+	id S1031390Ab2I1ThJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:37:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965302Ab2I1TAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:00:33 -0400
+	Fri, 28 Sep 2012 15:00:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jovi Zhang <boojovi@gmail.com>, Youquan Song <youquan.song@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Ralf Baechle <ralf@linux-mips.org>
-Subject: [ 135/262] MIPS: mm: Add compound tail page _mapcount when mapped
-Date: Fri, 28 Sep 2012 11:51:04 -0700
-Message-Id: <20120928183013.966553627@linuxfoundation.org>
+        Nicolas Pitre <nico@fluxnic.net>, Will Deacon <will.deacon@arm.com>,
+        Matthew Leach <matthew.leach@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 132/262] ARM: 7532/1: decompressor: reset SCTLR.TRE for VMSA ARMv7 cores
+Date: Fri, 28 Sep 2012 11:51:01 -0700
+Message-Id: <20120928183013.612790207@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,41 +30,35 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jovi Zhang <bookjovi@gmail.com>
+From: Matthew Leach <matthew.leach@arm.com>
 
-commit af89fa3986b9d034a286544ab1ed95096496a2f9 upstream.
+commit e1e5b7e4251c7538ca08c2c5545b0c2fbd8a6635 upstream.
 
-See commit b6999b191 which did the same modification for x86's mm/gup,
+This patch zeroes the SCTLR.TRE bit prior to setting the mapping as
+cacheable for ARMv7 cores in the decompressor, ensuring that the
+memory region attributes are obtained from the C and B bits, not from
+the page tables.
 
-Quote from commit b6999b191:
-    "If compound pages are used and the page is a
-    tail page, gup_huge_pmd() increases _mapcount to record tail page are
-    mapped while gup_huge_pud does not do that."
-
-[ralf@linux-mips.org: fixed rejects caused by the original patch getting
-linewrapped.]
-
-Signed-off-by: Jovi Zhang <boojovi@gmail.com>
-Cc: Youquan Song <youquan.song@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Patchwork: https://patchwork.linux-mips.org/patch/4291/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+Reviewed-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Matthew Leach <matthew.leach@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/mm/gup.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/boot/compressed/head.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/mips/mm/gup.c
-+++ b/arch/mips/mm/gup.c
-@@ -152,6 +152,8 @@ static int gup_huge_pud(pud_t pud, unsig
- 	do {
- 		VM_BUG_ON(compound_head(page) != head);
- 		pages[*nr] = page;
-+		if (PageTail(page))
-+			get_huge_page_tail(page);
- 		(*nr)++;
- 		page++;
- 		refs++;
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -653,6 +653,7 @@ __armv7_mmu_cache_on:
+ 		mcrne	p15, 0, r0, c8, c7, 0	@ flush I,D TLBs
+ #endif
+ 		mrc	p15, 0, r0, c1, c0, 0	@ read control reg
++		bic	r0, r0, #1 << 28	@ clear SCTLR.TRE
+ 		orr	r0, r0, #0x5000		@ I-cache enable, RR cache replacement
+ 		orr	r0, r0, #0x003c		@ write buffer
+ #ifdef CONFIG_MMU
 
 
