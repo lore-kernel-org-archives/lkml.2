@@ -1,115 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab2I1Ku0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 06:50:26 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64001 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756909Ab2I1KuY (ORCPT
+	id S1757519Ab2I1Kv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 06:51:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56983 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757271Ab2I1Kv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 06:50:24 -0400
+	Fri, 28 Sep 2012 06:51:27 -0400
+Date: Fri, 28 Sep 2012 12:51:13 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: CMA broken in next-20120926
+Message-ID: <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
+References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
+ <20120927151159.4427fc8f.akpm@linux-foundation.org>
+ <20120928054330.GA27594@bbox>
+ <20120928083722.GM3429@suse.de>
+ <50656459.70309@ti.com>
+ <20120928102728.GN3429@suse.de>
+ <20120928103207.GA22811@avionic-0098.mockup.avionic-design.de>
+ <20120928103815.GA15219@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-In-Reply-To: <20120928084626.GB7916@n2100.arm.linux.org.uk>
-References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
-	<CAK7N6vqS9PW85hgcA7EVzCk-TQo_ru4OcC5i0Rw-b2hvb4YoXg@mail.gmail.com>
-	<20120928084626.GB7916@n2100.arm.linux.org.uk>
-Date: Fri, 28 Sep 2012 16:20:23 +0530
-Message-ID: <CAK7N6vrV0gWdyr79-kO4z0fnWf38N-picC5WrNy9DAVU9ZP+Pg@mail.gmail.com>
-Subject: Re: [PATCH] driver core: fix possible missing of device probe
-From: anish singh <anish198519851985@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
+Content-Disposition: inline
+In-Reply-To: <20120928103815.GA15219@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:bkS0CaZGl5UT7asMDb7TSHKB03ZMG0TYZgQrnNA85W3
+ QI1txWtJNoEOLSRxOWLo3uqHd+72HzypvQ2RfBg3/a4j/8zwG8
+ wZyUr30aloOojtOmXGI2U4yra/XdNRj/74O0ZIr94eSPgJE4jk
+ G/W/18DuxaXtdkZeUw9WsEHhdyMUZHXw5eT/kR/1hghOXvY3sm
+ /1ZE5Kty7pAS1vZkcncP1BBvO5+Lq1C7EfaIgbZmT8+vcSbeXY
+ d6d5DF+L6FhP+PeNiASjTKUJZ5rc6VqIgJk9n+SRzwtjGunFWm
+ QPETDlAT+csPQKDauoNmcl7edtHzQj5UacT3+HJqd3uaM2wEOT
+ prmRBcppLxSB5C210qB1Zd1PfFv+UJVUTHIiMkUbO9scESrZWQ
+ hGjcQaoJ2NuZ66p+tXF0idhfVmCdSs13SW6CkFpblIybADO/Js
+ PNIVJ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 2:16 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Sep 28, 2012 at 09:01:13AM +0530, anish singh wrote:
->> Hello Ming,
->> Though I am not an expert in this driver core area but
->> I have been following this fix.So have some queries below:
->>
->> On Fri, Sep 28, 2012 at 6:22 AM, Ming Lei <ming.lei@canonical.com> wrote:
->> > Inside bus_add_driver(), one device might be added into
->> should it not be "driver might be added into"?
->> > the bus or probed which is triggered by deferred probe
->> > just after completing of driver_attach() and before
->> > 'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)',
->> > so the device won't be probed by this driver.
->> So the corresponding device will not be probed.
->> >
->> > This patch moves the below line
->> >
->> >         'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)'
->> >
->> > before driver_attach() inside bus_add_driver().
->> >
->> > So fixes the problem since the below way can guarantee that
->> > no probe(dev) may be lost.
->> >
->> As I understand CPU0 is just calling bus_add_driver and driver_attach
->> is called and after that it was pre-empted and cpu1 came into picture.
->> Deferred probe started running on cpu1 and it didn't find the driver present
->> int the knode_bus and unloaded the driver(why it unloaded is already
->> explained by russell in his first post).
->> Hope my understanding is correct.
->> > CPU0                                    CPU1
->> > driver_register
->> >         ...
->> >         write(bus->driver_list)
->> >         smp_mb()
->> >         read(bus->device_list)
->> >         ...
->> >                                         device_add
->> >                                                 /* bus_add_device */
->> >                                                 write(bus->device_list)
->> >                                                 smp_mb()
->> >                                                 /* bus_probe_device*/
->> >                                                 read(bus->driver_list)
->
-> Actually, this description is rubbish.  It's not about the SMP barriers,
-> or read/write device/driver lists, or about two CPUs (my test setup only
-> has one CPU.)
->
-> It's about threads, and the relative timing of those threads through
-> the driver model code.  All in all, what with the error path issue, and
-> now the blatently wrong description, I'm not gaining much confidence in
-> Ming Lei.
->
-> The below is actually what's happening, according to my analysis - and
-> you'll notice that the device list has absolutely nothing to do with it:
->
-> Thread 0                        Thread 1                        Thread 2
-> driver_attach()
->  bus_for_each_dev()
->   __driver_attach(, devA)
->    driver_probe_device(, devA)
->     really_probe(devA, )
->      driver_deferred_probe_add(devA)
->                                 driver_attach()
->                                  bus_for_each_dev()
->                                   __driver_attach(, devA)
->                                    driver_probe_device(, devB)
->                                     really_probe(devB, )
->                                      driver_bound(devB)
->                                       driver_deferred_probe_trigger()
->                                                                 deferred_probe_work_func()
->                                                                  bus_probe_device(devA)
->                                                                   device_attach(devA)
->                                                                    bus_for_each_drv()
->                                                                     __device_attach(, devA)
->                                                                      *fails to find driver*
->                                                                      *devA dropped from
->                                                                       deferred probe list*
-> klist_add_tail(klist_drivers)
->
-> The reason this fix works is because the order in thread 0 means that
-> when thread 2 comes to re-probe the device, it does find the driver,
-> and if the resources that the driver needs are still not found (and it
-> again returns -EPROBE_DEFER) the device will be placed back on the
-> deferred probe list.
-Explanation of this problem can't be better than this.Thanks Russell.
-I was totally confused by the explanation put forward by Ming.
+
+--T4sUOijqQbZv57TR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Sep 28, 2012 at 12:38:15PM +0200, Thierry Reding wrote:
+> On Fri, Sep 28, 2012 at 12:32:07PM +0200, Thierry Reding wrote:
+> > On Fri, Sep 28, 2012 at 11:27:28AM +0100, Mel Gorman wrote:
+> > > On Fri, Sep 28, 2012 at 11:48:25AM +0300, Peter Ujfalusi wrote:
+> > > > Hi,
+> > > >=20
+> > > > On 09/28/2012 11:37 AM, Mel Gorman wrote:
+> > > > >> I hope this patch fixes the bug. If this patch fixes the problem
+> > > > >> but has some problem about description or someone has better ide=
+a,
+> > > > >> feel free to modify and resend to akpm, Please.
+> > > > >>
+> > > > >=20
+> > > > > A full revert is overkill. Can the following patch be tested as a
+> > > > > potential replacement please?
+> > > > >=20
+> > > > > ---8<---
+> > > > > mm: compaction: Iron out isolate_freepages_block() and isolate_fr=
+eepages_range() -fix1
+> > > > >=20
+> > > > > CMA is reported to be broken in next-20120926. Minchan Kim pointe=
+d out
+> > > > > that this was due to nr_scanned !=3D total_isolated in the case o=
+f CMA
+> > > > > because PageBuddy pages are one scan but many isolations in CMA. =
+This
+> > > > > patch should address the problem.
+> > > > >=20
+> > > > > This patch is a fix for
+> > > > > mm-compaction-acquire-the-zone-lock-as-late-as-possible-fix-2.pat=
+ch
+> > > > >=20
+> > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > >=20
+> > > > linux-next + this patch alone also works for me.
+> > > >=20
+> > > > Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> > >=20
+> > > Thanks Peter. I expect it also works for Thierry as I expect you were
+> > > suffering the same problem but obviously confirmation of that would b=
+e nice.
+> >=20
+> > I've been running a few tests and indeed this solves the obvious problem
+> > that the coherent pool cannot be created at boot (which in turn caused
+> > the ethernet adapter to fail on Tegra).
+> >=20
+> > However I've been working on the Tegra DRM driver, which uses CMA to
+> > allocate large chunks of framebuffer memory and these are now failing.
+> > I'll need to check if Minchan's patch solves that problem as well.
+>=20
+> Indeed, with Minchan's patch the DRM can allocate the framebuffer
+> without a problem. Something else must be wrong then.
+
+However, depending on the size of the allocation it also happens with
+Minchan's patch. What I see is this:
+
+[   60.736729] alloc_contig_range test_pages_isolated(1e900, 1f0e9) failed
+[   60.743572] alloc_contig_range test_pages_isolated(1ea00, 1f1e9) failed
+[   60.750424] alloc_contig_range test_pages_isolated(1ea00, 1f2e9) failed
+[   60.757239] alloc_contig_range test_pages_isolated(1ec00, 1f3e9) failed
+[   60.764066] alloc_contig_range test_pages_isolated(1ec00, 1f4e9) failed
+[   60.770893] alloc_contig_range test_pages_isolated(1ec00, 1f5e9) failed
+[   60.777698] alloc_contig_range test_pages_isolated(1ec00, 1f6e9) failed
+[   60.784526] alloc_contig_range test_pages_isolated(1f000, 1f7e9) failed
+[   60.791148] drm tegra: Failed to alloc buffer: 8294400
+
+I'm pretty sure this did work before next-20120926.
+
+Thierry
+
+--T4sUOijqQbZv57TR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQZYEhAAoJEN0jrNd/PrOhkioP/idDx/MA9xrd9IkshuS06B7c
+3mW7ZrZmHdVxQjTGzINoqwyh/rzvGBEATB+DMG2BHTfaASHWzDrVflutLeHB9z2C
+bqF0tBO2ori8IXmCl3QMYwEzFfSn5afv9lD4sPwzsHVWFQslhtgeFXuPAvNONiCc
+4G4OixoEMRQ1SqHKn4aJPrhLxV8/yBg6vnmZgqFJNRrKibYGi1uq1ktPEO3KSC40
+nKykMb+U9ZQJkTK3JlTkrevLjypozxFrr/IFVihufDPzHKN/ynTdnXDxROmFlXri
+grHFPvY+7oQcwDTompJblVcyKg27wXLlmkXYiw4MuM+ENLRhsiwV3gZUu2KRckQS
+NhLSI6jDdOgO2Ax+zgV/glakeOtnmDWSMNqZYChZT2aOpRxUzFmdheRiaUEdUpCJ
+T+5TbpSER2zKlkjSGgWbAt6xmoLYDOaBAAg40jNyfYsL0fg5k2dSsya20skEpVTz
+DgNWo9e4TDkDaSZkkzVYoXYX0+fZL/1+bKIwfoi/QrX2wzRHKqwYk+Cl/c1t18Nz
+L0/4eimBxPyVnd19QzykSaejvQesOg3HBcmzHijoRxoQvTUDNIoxazvrlz76T5SA
+qdPSvev47NoZ1vlPd8PdVns8TcmeuEuk0apDIIzBzCsLwiNuMfE/1r1zXvwjwPSc
+8IYrDaDk9arP2GjIgLaG
+=PCVb
+-----END PGP SIGNATURE-----
+
+--T4sUOijqQbZv57TR--
