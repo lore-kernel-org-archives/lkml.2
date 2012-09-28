@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030968Ab2I1TOy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:14:54 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35065 "EHLO
+	id S1030975Ab2I1TPR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:15:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759190Ab2I1TFo (ORCPT
+	with ESMTP id S1759171Ab2I1TFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:05:44 -0400
+	Fri, 28 Sep 2012 15:05:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Douglas Bagnall <douglas@paradise.net.nz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [ 233/262] media: Avoid sysfs oops when an rc_devs raw device is absent
-Date: Fri, 28 Sep 2012 11:52:42 -0700
-Message-Id: <20120928183025.808730472@linuxfoundation.org>
+        John Stultz <john.stultz@linaro.org>,
+        Prarit Bhargava <prarit@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 231/262] time: Avoid making adjustments if we havent accumulated anything
+Date: Fri, 28 Sep 2012 11:52:40 -0700
+Message-Id: <20120928183025.545731554@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,51 +30,40 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Douglas Bagnall <douglas@paradise.net.nz>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 720bb6436ff30fccad05cf5bdf961ea5b1f5686d upstream.
+commit bf2ac312195155511a0f79325515cbb61929898a upstream.
 
-For some reason, when the lirc daemon learns that a usb remote control
-has been unplugged, it wants to read the sysfs attributes of the
-disappearing device. This is useful for uncovering transient
-inconsistencies, but less so for keeping the system running when such
-inconsistencies exist.
+If update_wall_time() is called and the current offset isn't large
+enough to accumulate, avoid re-calling timekeeping_adjust which may
+change the clock freq and can cause 1ns inconsistencies with
+CLOCK_REALTIME_COARSE/CLOCK_MONOTONIC_COARSE.
 
-Under some circumstances (like every time I unplug my dvb stick from
-my laptop), lirc catches an rc_dev whose raw event handler has been
-removed (presumably by ir_raw_event_unregister), and proceeds to
-interrogate the raw protocols supported by the NULL pointer.
-
-This patch avoids the NULL dereference, and ignores the issue of how
-this state of affairs came about in the first place.
-
-Version 2 incorporates changes recommended by Mauro Carvalho Chehab
-(-ENODEV instead of -EINVAL, and a signed-off-by).
-
-Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1345595449-34965-5-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/rc/rc-main.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/time/timekeeping.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -775,10 +775,11 @@ static ssize_t show_protocols(struct dev
- 	if (dev->driver_type == RC_DRIVER_SCANCODE) {
- 		enabled = dev->rc_map.rc_type;
- 		allowed = dev->allowed_protos;
--	} else {
-+	} else if (dev->raw) {
- 		enabled = dev->raw->enabled_protocols;
- 		allowed = ir_raw_get_allowed_protocols();
--	}
-+	} else
-+		return -ENODEV;
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1055,6 +1055,10 @@ static void update_wall_time(void)
+ #else
+ 	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
+ #endif
++	/* Check if there's really nothing to do */
++	if (offset < timekeeper.cycle_interval)
++		goto out;
++
+ 	timekeeper.xtime_nsec = (s64)timekeeper.xtime.tv_nsec <<
+ 						timekeeper.shift;
  
- 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
- 		   (long long)allowed,
 
 
