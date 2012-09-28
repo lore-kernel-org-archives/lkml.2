@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965285Ab2I1VGF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:06:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34589 "EHLO
+	id S1945993Ab2I1VHR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:07:17 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55281 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423167Ab2I1VFu (ORCPT
+	by vger.kernel.org with ESMTP id S965267Ab2I1VGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:05:50 -0400
-X-Sasl-enc: oO3prqFhrq6yAC23cKLXZUfTGOLtnwweiLZ0TyGX20HR 1348866349
+	Fri, 28 Sep 2012 17:06:01 -0400
+X-Sasl-enc: aIhJ7Cu6RR1Y0TIUnH4uGooAFplWPqUnDOMGGVty2QjE 1348866360
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Douglas Bagnall <douglas@paradise.net.nz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [ 114/127] media: Avoid sysfs oops when an rc_devs raw device is absent
-Date: Fri, 28 Sep 2012 13:34:47 -0700
-Message-Id: <20120928203059.251984627@linuxfoundation.org>
+        Andi Kleen <ak@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        Thomas Renninger <trenn@suse.de>
+Subject: [ 126/127] MCE: Fix vm86 handling for 32bit mce handler
+Date: Fri, 28 Sep 2012 13:34:59 -0700
+Message-Id: <20120928203100.634426528@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,51 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Bagnall <douglas@paradise.net.nz>
+From: Andi Kleen <andi@firstfloor.org>
 
-commit 720bb6436ff30fccad05cf5bdf961ea5b1f5686d upstream.
+commit a129a7c84582629741e5fa6f40026efcd7a65bd4 upstream.
 
-For some reason, when the lirc daemon learns that a usb remote control
-has been unplugged, it wants to read the sysfs attributes of the
-disappearing device. This is useful for uncovering transient
-inconsistencies, but less so for keeping the system running when such
-inconsistencies exist.
+When running on 32bit the mce handler could misinterpret
+vm86 mode as ring 0. This can affect whether it does recovery
+or not; it was possible to panic when recovery was actually
+possible.
 
-Under some circumstances (like every time I unplug my dvb stick from
-my laptop), lirc catches an rc_dev whose raw event handler has been
-removed (presumably by ir_raw_event_unregister), and proceeds to
-interrogate the raw protocols supported by the NULL pointer.
+Fix this by always forcing vm86 to look like ring 3.
 
-This patch avoids the NULL dereference, and ignores the issue of how
-this state of affairs came about in the first place.
+[ Backport to 3.0 notes:
+Things changed there slightly:
+   - move mce_get_rip() up. It fills up m->cs and m->ip values which
+     are evaluated in mce_severity(). Therefore move it up right before
+     the mce_severity call. This seem to be another bug in 3.0?
+   - Place the backport (fix m->cs in V86 case) to where m->cs gets
+     filled which is mce_get_rip() in 3.0
+]
 
-Version 2 incorporates changes recommended by Mauro Carvalho Chehab
-(-ENODEV instead of -EINVAL, and a signed-off-by).
-
-Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+Reviewed-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/rc/rc-main.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -772,10 +772,11 @@ static ssize_t show_protocols(struct dev
- 	if (dev->driver_type == RC_DRIVER_SCANCODE) {
- 		enabled = dev->rc_map.rc_type;
- 		allowed = dev->allowed_protos;
--	} else {
-+	} else if (dev->raw) {
- 		enabled = dev->raw->enabled_protocols;
- 		allowed = ir_raw_get_allowed_protocols();
--	}
-+	} else
-+		return -ENODEV;
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -451,6 +451,13 @@ static inline void mce_get_rip(struct mc
+ 	if (regs && (m->mcgstatus & (MCG_STATUS_RIPV|MCG_STATUS_EIPV))) {
+ 		m->ip = regs->ip;
+ 		m->cs = regs->cs;
++		/*
++		 * When in VM86 mode make the cs look like ring 3
++		 * always. This is a lie, but it's better than passing
++		 * the additional vm86 bit around everywhere.
++		 */
++		if (v8086_mode(regs))
++			m->cs |= 3;
+ 	} else {
+ 		m->ip = 0;
+ 		m->cs = 0;
+@@ -988,6 +995,7 @@ void do_machine_check(struct pt_regs *re
+ 		 */
+ 		add_taint(TAINT_MACHINE_CHECK);
  
- 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
- 		   (long long)allowed,
++		mce_get_rip(&m, regs);
+ 		severity = mce_severity(&m, tolerant, NULL);
+ 
+ 		/*
+@@ -1026,7 +1034,6 @@ void do_machine_check(struct pt_regs *re
+ 		if (severity == MCE_AO_SEVERITY && mce_usable_address(&m))
+ 			mce_ring_add(m.addr >> PAGE_SHIFT);
+ 
+-		mce_get_rip(&m, regs);
+ 		mce_log(&m);
+ 
+ 		if (severity > worst) {
 
 
