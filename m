@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161067Ab2I1UtK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:49:10 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44212 "EHLO
+	id S1031904Ab2I1Utq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:49:46 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37125 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1945951Ab2I1Usz (ORCPT
+	by vger.kernel.org with ESMTP id S1945959Ab2I1UtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:55 -0400
-X-Sasl-enc: qJEgWNEWEKiimjgTNFX9PULTKikdprHT+IFSSXMNN1zn 1348865335
+	Fri, 28 Sep 2012 16:49:01 -0400
+X-Sasl-enc: hlTkKNVuu9B9W+CiXLnbgm5YipsSQpJMMZjavPTSsTP6 1348865340
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 116/127] pch_uart: Fix rx error interrupt setting issue
-Date: Fri, 28 Sep 2012 13:34:49 -0700
-Message-Id: <20120928203059.482595350@linuxfoundation.org>
+        Al Cooper <acooper@gmail.com>, Arindam Nath <arindam.nath@amd.com>,
+        Philip Rakity <prakity@marvell.com>,
+        Girish K S <girish.shivananjappa@linaro.org>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 120/127] mmc: Prevent 1.8V switch for SD hosts that dont support UHS modes.
+Date: Fri, 28 Sep 2012 13:34:53 -0700
+Message-Id: <20120928203059.932060482@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,81 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+From: Al Cooper <acooper@gmail.com>
 
-commit 9539dfb7ac1c84522fe1f79bb7dac2990f3de44a upstream.
+commit 4188bba0e9e7ba58d231b528df495666f2742b74 upstream.
 
-Rx Error interrupt(E.G. parity error) is not enabled.
-So, when parity error occurs, error interrupt is not occurred.
-As a result, the received data is not dropped.
+The driver should not try to switch to 1.8V when the SD 3.0 host
+controller does not have any UHS capabilities bits set (SDR50, DDR50
+or SDR104). See page 72 of "SD Specifications Part A2 SD Host
+Controller Simplified Specification Version 3.00" under
+"1.8V Signaling Enable". Instead of setting SDR12 and SDR25 in the host
+capabilities data structure for all V3.0 host controllers, only set them
+if SDR104, SDR50 or DDR50 is set in the host capabilities register. This
+will prevent the switch to 1.8V later.
 
-This patch adds enable/disable rx error interrupt code.
-
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Al Cooper <acooper@gmail.com>
+Acked-by: Arindam Nath <arindam.nath@amd.com>
+Acked-by: Philip Rakity <prakity@marvell.com>
+Acked-by: Girish K S <girish.shivananjappa@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/pch_uart.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ drivers/mmc/host/sdhci.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -658,7 +658,8 @@ static void pch_dma_rx_complete(void *ar
- 		tty_flip_buffer_push(tty);
- 	tty_kref_put(tty);
- 	async_tx_ack(priv->desc_rx);
--	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT);
-+	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT |
-+					    PCH_UART_HAL_RX_ERR_INT);
- }
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2515,8 +2515,9 @@ int sdhci_add_host(struct sdhci_host *ho
+ 	    mmc_card_is_removable(mmc))
+ 		mmc->caps |= MMC_CAP_NEEDS_POLL;
  
- static void pch_dma_tx_complete(void *arg)
-@@ -713,7 +714,8 @@ static int handle_rx_to(struct eg20t_por
- 	int rx_size;
- 	int ret;
- 	if (!priv->start_rx) {
--		pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT);
-+		pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT |
-+						     PCH_UART_HAL_RX_ERR_INT);
- 		return 0;
- 	}
- 	buf = &priv->rxbuf;
-@@ -975,11 +977,13 @@ static irqreturn_t pch_uart_interrupt(in
- 		case PCH_UART_IID_RDR:	/* Received Data Ready */
- 			if (priv->use_dma) {
- 				pch_uart_hal_disable_interrupt(priv,
--							PCH_UART_HAL_RX_INT);
-+						PCH_UART_HAL_RX_INT |
-+						PCH_UART_HAL_RX_ERR_INT);
- 				ret = dma_handle_rx(priv);
- 				if (!ret)
- 					pch_uart_hal_enable_interrupt(priv,
--							PCH_UART_HAL_RX_INT);
-+						PCH_UART_HAL_RX_INT |
-+						PCH_UART_HAL_RX_ERR_INT);
- 			} else {
- 				ret = handle_rx(priv);
- 			}
-@@ -1105,7 +1109,8 @@ static void pch_uart_stop_rx(struct uart
- 	struct eg20t_port *priv;
- 	priv = container_of(port, struct eg20t_port, port);
- 	priv->start_rx = 0;
--	pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT);
-+	pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT |
-+					     PCH_UART_HAL_RX_ERR_INT);
- 	priv->int_dis_flag = 1;
- }
+-	/* UHS-I mode(s) supported by the host controller. */
+-	if (host->version >= SDHCI_SPEC_300)
++	/* Any UHS-I mode in caps implies SDR12 and SDR25 support. */
++	if (caps[1] & (SDHCI_SUPPORT_SDR104 | SDHCI_SUPPORT_SDR50 |
++		       SDHCI_SUPPORT_DDR50))
+ 		mmc->caps |= MMC_CAP_UHS_SDR12 | MMC_CAP_UHS_SDR25;
  
-@@ -1199,7 +1204,8 @@ static int pch_uart_startup(struct uart_
- 		pch_request_dma(port);
- 
- 	priv->start_rx = 1;
--	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT);
-+	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT |
-+					    PCH_UART_HAL_RX_ERR_INT);
- 	uart_update_timeout(port, CS8, default_baud);
- 
- 	return 0;
+ 	/* SDR104 supports also implies SDR50 support */
 
 
