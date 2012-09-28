@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759024Ab2I1TEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:04:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	id S1759048Ab2I1TE4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:04:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758716Ab2I1TEq (ORCPT
+	with ESMTP id S1759026Ab2I1TEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:04:46 -0400
+	Fri, 28 Sep 2012 15:04:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 214/262] workqueue: UNBOUND -> REBIND morphing in rebind_workers() should be atomic
-Date: Fri, 28 Sep 2012 11:52:23 -0700
-Message-Id: <20120928183023.384166931@linuxfoundation.org>
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
+        Jason Gerecke <killertofu@gmail.com>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [ 216/262] Input: wacom - rearrange type enum
+Date: Fri, 28 Sep 2012 11:52:25 -0700
+Message-Id: <20120928183023.633398304@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,59 +29,95 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Ping Cheng <pinglinux@gmail.com>
 
-commit 96e65306b81351b656835c15931d1d237b252f27 upstream.
+commit ea2e60244573a9204c8cee9b4fb181106784c617 upstream.
 
-The compiler may compile the following code into TWO write/modify
-instructions.
+So we can simplify a few type related if statements
 
-	worker->flags &= ~WORKER_UNBOUND;
-	worker->flags |= WORKER_REBIND;
+Also fixes https://bugzilla.kernel.org/show_bug.cgi?id=46821
 
-so the other CPU may temporarily see worker->flags which doesn't have
-either WORKER_UNBOUND or WORKER_REBIND set and perform local wakeup
-prematurely.
-
-Fix it by using single explicit assignment via ACCESS_ONCE().
-
-Because idle workers have another WORKER_NOT_RUNNING flag, this bug
-doesn't exist for them; however, update it to use the same pattern for
-consistency.
-
-tj: Applied the change to idle workers too and updated comments and
-    patch description a bit.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Ping Cheng <pingc@wacom.com>
+Acked-by: Chris Bagwell <chris@cnpbagwell.com>
+Reviewed-by: Jason Gerecke <killertofu@gmail.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/input/tablet/wacom_sys.c |   10 +++-------
+ drivers/input/tablet/wacom_wac.c |    6 ++----
+ drivers/input/tablet/wacom_wac.h |    6 +++---
+ 3 files changed, 8 insertions(+), 14 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3441,14 +3441,17 @@ static int __cpuinit trustee_thread(void
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -445,8 +445,7 @@ static int wacom_query_tablet_data(struc
+ 	/* ask to report Wacom data */
+ 	if (features->device_type == BTN_TOOL_FINGER) {
+ 		/* if it is an MT Tablet PC touch */
+-		if (features->type == TABLETPC2FG ||
+-		    features->type == MTSCREEN) {
++		if (features->type > TABLETPC) {
+ 			do {
+ 				rep_data[0] = 3;
+ 				rep_data[1] = 4;
+@@ -465,7 +464,7 @@ static int wacom_query_tablet_data(struc
+ 			} while ((error < 0 || rep_data[1] != 4) &&
+ 				 limit++ < WAC_MSG_RETRIES);
+ 		}
+-	} else if (features->type != TABLETPC &&
++	} else if (features->type <= BAMBOO_PT &&
+ 		   features->type != WIRELESS &&
+ 		   features->device_type == BTN_TOOL_PEN) {
+ 		do {
+@@ -515,10 +514,7 @@ static int wacom_retrieve_hid_descriptor
+ 	}
  
- 	for_each_busy_worker(worker, i, pos, gcwq) {
- 		struct work_struct *rebind_work = &worker->rebind_work;
-+		unsigned long worker_flags = worker->flags;
+ 	/* only devices that support touch need to retrieve the info */
+-	if (features->type != TABLETPC &&
+-	    features->type != TABLETPC2FG &&
+-	    features->type != BAMBOO_PT &&
+-	    features->type != MTSCREEN) {
++	if (features->type < BAMBOO_PT) {
+ 		goto out;
+ 	}
  
- 		/*
- 		 * Rebind_work may race with future cpu hotplug
- 		 * operations.  Use a separate flag to mark that
--		 * rebinding is scheduled.
-+		 * rebinding is scheduled.  The morphing should
-+		 * be atomic.
- 		 */
--		worker->flags |= WORKER_REBIND;
--		worker->flags &= ~WORKER_ROGUE;
-+		worker_flags |= WORKER_REBIND;
-+		worker_flags &= ~WORKER_ROGUE;
-+		ACCESS_ONCE(worker->flags) = worker_flags;
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -1324,10 +1324,8 @@ void wacom_setup_device_quirks(struct wa
+ 	}
  
- 		/* queue rebind_work, wq doesn't matter, use the default one */
- 		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
+ 	/* these device have multiple inputs */
+-	if (features->type == TABLETPC || features->type == TABLETPC2FG ||
+-	    features->type == BAMBOO_PT || features->type == WIRELESS ||
+-	    (features->type >= INTUOS5S && features->type <= INTUOS5L) ||
+-	    features->type == MTSCREEN)
++	if (features->type >= WIRELESS ||
++	    (features->type >= INTUOS5S && features->type <= INTUOS5L))
+ 		features->quirks |= WACOM_QUIRK_MULTI_INPUT;
+ 
+ 	/* quirk for bamboo touch with 2 low res touches */
+--- a/drivers/input/tablet/wacom_wac.h
++++ b/drivers/input/tablet/wacom_wac.h
+@@ -62,8 +62,6 @@ enum {
+ 	PTU,
+ 	PL,
+ 	DTU,
+-	BAMBOO_PT,
+-	WIRELESS,
+ 	INTUOS,
+ 	INTUOS3S,
+ 	INTUOS3,
+@@ -80,7 +78,9 @@ enum {
+ 	CINTIQ,
+ 	WACOM_BEE,
+ 	WACOM_MO,
+-	TABLETPC,
++	WIRELESS,
++	BAMBOO_PT,
++	TABLETPC,   /* add new TPC below */
+ 	TABLETPC2FG,
+ 	MTSCREEN,
+ 	MAX_TYPE
 
 
