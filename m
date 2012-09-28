@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965031Ab2I1S6B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:58:01 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964972Ab2I1S54 (ORCPT
+	id S965048Ab2I1S6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:58:09 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:63190 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964956Ab2I1S6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:57:56 -0400
+	Fri, 28 Sep 2012 14:58:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Mario Isidoro <Mario.Isidoro@tecmic.pt>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 082/262] usb: gadget: at91udc: dont overwrite driver data
-Date: Fri, 28 Sep 2012 11:50:11 -0700
-Message-Id: <20120928183007.844576331@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 084/262] ahci: Add alternate identifier for the 88SE9172
+Date: Fri, 28 Sep 2012 11:50:13 -0700
+Message-Id: <20120928183008.101630170@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -31,43 +28,32 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 8b7dda554cf61e87523dee412eaf598f8646bd79 upstream.
+commit 17c60c6b763cb5b83b0185e7d38d01d18e55a05a upstream.
 
-The driver was converted to the new start/stop interface in f3d8bf34c2
-("usb: gadget: at91_udc: convert to new style start/stop interface").
-I overlooked that the driver is overwritting the private data which is
-used by the composite framework. The udc driver doesn't read it, it is
-only written here.
+This can also appear as 0x9192. Reported in bugzilla and confirmed with the
+board documentation for these boards.
 
-Tested-by: Fabio Porcedda <fabio.porcedda@gmail.com>
-Tested-by: Mario Isidoro <Mario.Isidoro@tecmic.pt>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=42970
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/at91_udc.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/ata/ahci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/gadget/at91_udc.c
-+++ b/drivers/usb/gadget/at91_udc.c
-@@ -1634,7 +1634,6 @@ static int at91_start(struct usb_gadget
- 	udc = container_of(gadget, struct at91_udc, gadget);
- 	udc->driver = driver;
- 	udc->gadget.dev.driver = &driver->driver;
--	dev_set_drvdata(&udc->gadget.dev, &driver->driver);
- 	udc->enabled = 1;
- 	udc->selfpowered = 1;
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -396,6 +396,8 @@ static const struct pci_device_id ahci_p
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
+ 	{ PCI_DEVICE(0x1b4b, 0x917a),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
++	{ PCI_DEVICE(0x1b4b, 0x9192),
++	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
+ 	{ PCI_DEVICE(0x1b4b, 0x91a3),
+ 	  .driver_data = board_ahci_yes_fbs },
  
-@@ -1655,7 +1654,6 @@ static int at91_stop(struct usb_gadget *
- 	spin_unlock_irqrestore(&udc->lock, flags);
- 
- 	udc->gadget.dev.driver = NULL;
--	dev_set_drvdata(&udc->gadget.dev, NULL);
- 	udc->driver = NULL;
- 
- 	DBG("unbound from %s\n", driver->driver.name);
 
 
