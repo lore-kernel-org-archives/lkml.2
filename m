@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423191Ab2I1VF7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:05:59 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57624 "EHLO
+	id S1946002Ab2I1VHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:07:47 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56242 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423173Ab2I1VFv (ORCPT
+	by vger.kernel.org with ESMTP id S965256Ab2I1VF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:05:51 -0400
-X-Sasl-enc: RA485BOUwCpvIgcVcKxU8pWVvfeKRZ4jlAkN/9OQh+kh 1348866350
+	Fri, 28 Sep 2012 17:05:59 -0400
+X-Sasl-enc: PmFNySFDpnAj32TXzZId6hhR7UHsa8UngmqqmkqrhMXg 1348866359
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Boot <bootc@bootc.net>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        Nix <nix@esperi.org.uk>, Jeff Pieper <jeffrey.e.pieper@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Subject: [ 121/127] e1000e: Disable ASPM L1 on 82574
-Date: Fri, 28 Sep 2012 13:34:54 -0700
-Message-Id: <20120928203100.063568215@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [ 127/127] USB: Fix race condition when removing host controllers
+Date: Fri, 28 Sep 2012 13:35:00 -0700
+Message-Id: <20120928203100.735289631@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -31,38 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Boot <bootc@bootc.net>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit d4a4206ebbaf48b55803a7eb34e330530d83a889 upstream.
+commit 0d00dc2611abbe6ad244d50569c2ee82ce42846c upstream.
 
-ASPM on the 82574 causes trouble. Currently the driver disables L0s for
-this NIC but only disables L1 if the MTU is >1500. This patch simply
-causes L1 to be disabled regardless of the MTU setting.
+This patch (as1607) fixes a race that can occur if a USB host
+controller is removed while a process is reading the
+/sys/kernel/debug/usb/devices file.
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
-Cc: Nix <nix@esperi.org.uk>
-Link: https://lkml.org/lkml/2012/3/19/362
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+The usb_device_read() routine uses the bus->root_hub pointer to
+determine whether or not the root hub is registered.  The is not a
+valid test, because the pointer is set before the root hub gets
+registered and remains set even after the root hub is unregistered and
+deallocated.  As a result, usb_device_read() or usb_device_dump() can
+access freed memory, causing an oops.
+
+The patch changes the test to use the hcd->rh_registered flag, which
+does get set and cleared at the appropriate times.  It also makes sure
+to hold the usb_bus_list_lock mutex while setting the flag, so that
+usb_device_read() will become aware of new root hubs as soon as they
+are registered.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Don Zickus <dzickus@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/e1000e/82571.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/core/devices.c |    2 +-
+ drivers/usb/core/hcd.c     |    6 ++----
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
---- a/drivers/net/e1000e/82571.c
-+++ b/drivers/net/e1000e/82571.c
-@@ -2088,7 +2088,8 @@ struct e1000_info e1000_82574_info = {
- 				  | FLAG_HAS_AMT
- 				  | FLAG_HAS_CTRLEXT_ON_LOAD,
- 	.flags2			  = FLAG2_CHECK_PHY_HANG
--				  | FLAG2_DISABLE_ASPM_L0S,
-+				  | FLAG2_DISABLE_ASPM_L0S
-+				  | FLAG2_DISABLE_ASPM_L1,
- 	.pba			= 32,
- 	.max_hw_frame_size	= DEFAULT_JUMBO,
- 	.get_variants		= e1000_get_variants_82571,
+--- a/drivers/usb/core/devices.c
++++ b/drivers/usb/core/devices.c
+@@ -624,7 +624,7 @@ static ssize_t usb_device_read(struct fi
+ 	/* print devices for all busses */
+ 	list_for_each_entry(bus, &usb_bus_list, bus_list) {
+ 		/* recurse through all children of the root hub */
+-		if (!bus->root_hub)
++		if (!bus_to_hcd(bus)->rh_registered)
+ 			continue;
+ 		usb_lock_device(bus->root_hub);
+ 		ret = usb_device_dump(&buf, &nbytes, &skip_bytes, ppos,
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -977,10 +977,7 @@ static int register_root_hub(struct usb_
+ 	if (retval) {
+ 		dev_err (parent_dev, "can't register root hub for %s, %d\n",
+ 				dev_name(&usb_dev->dev), retval);
+-	}
+-	mutex_unlock(&usb_bus_list_lock);
+-
+-	if (retval == 0) {
++	} else {
+ 		spin_lock_irq (&hcd_root_hub_lock);
+ 		hcd->rh_registered = 1;
+ 		spin_unlock_irq (&hcd_root_hub_lock);
+@@ -989,6 +986,7 @@ static int register_root_hub(struct usb_
+ 		if (HCD_DEAD(hcd))
+ 			usb_hc_died (hcd);	/* This time clean up */
+ 	}
++	mutex_unlock(&usb_bus_list_lock);
+ 
+ 	return retval;
+ }
 
 
