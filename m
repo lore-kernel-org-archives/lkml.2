@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945949Ab2I1Usm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:48:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47033 "EHLO
+	id S1161031Ab2I1Ust (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:48:49 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52818 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423034Ab2I1Use (ORCPT
+	by vger.kernel.org with ESMTP id S1945951Ab2I1Usm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:34 -0400
-X-Sasl-enc: xadQxNgeTYahCUZ5QDIx5aTKZAdqMjGIkH2giVIAfQVI 1348865313
+	Fri, 28 Sep 2012 16:48:42 -0400
+X-Sasl-enc: E+3k/l5SYzuZrCtCgal9XVogXLVA3baRiPxNSxKXQmGz 1348865321
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        John Hommel <john.hommel@hp.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 098/127] Bluetooth: Use USB_VENDOR_AND_INTERFACE() for Broadcom devices
-Date: Fri, 28 Sep 2012 13:34:31 -0700
-Message-Id: <20120928203057.369878972@linuxfoundation.org>
+        Thomas Renninger <trenn@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 104/127] cpufreq / ACPI: Fix not loading acpi-cpufreq driver regression
+Date: Fri, 28 Sep 2012 13:34:37 -0700
+Message-Id: <20120928203058.033886713@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,44 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+From: Thomas Renninger <trenn@suse.de>
 
-commit 92c385f46b30f4954e9dd2d2005c12d233b479ea upstream.
+commit c4686c71a9183f76e3ef59098da5c098748672f6 upstream.
 
-Many Broadcom devices has a vendor specific devices class, with this rule
-we match all existent and future controllers with this behavior.
+Commit d640113fe80e45ebd4a5b420b introduced a regression on SMP
+systems where the processor core with ACPI id zero is disabled
+(typically should be the case because of hyperthreading).
+The regression got spread through stable kernels.
+On 3.0.X it got introduced via 3.0.18.
 
-We also remove old rules to that matches product id for Broadcom devices.
+Such platforms may be rare, but do exist.
+Look out for a disabled processor with acpi_id 0 in dmesg:
+ACPI: LAPIC (acpi_id[0x00] lapic_id[0x10] disabled)
 
-Tested-by: John Hommel <john.hommel@hp.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+This problem has been observed on a:
+HP Proliant BL280c G6 blade
+
+This patch restricts the introduced workaround to platforms
+with nr_cpu_ids <= 1.
+
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/acpi/processor_core.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -102,16 +102,14 @@ static struct usb_device_id btusb_table[
- 
- 	/* Broadcom BCM20702A0 */
- 	{ USB_DEVICE(0x0489, 0xe042) },
--	{ USB_DEVICE(0x0a5c, 0x21e3) },
--	{ USB_DEVICE(0x0a5c, 0x21e6) },
--	{ USB_DEVICE(0x0a5c, 0x21e8) },
--	{ USB_DEVICE(0x0a5c, 0x21f3) },
--	{ USB_DEVICE(0x0a5c, 0x21f4) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
- 
- 	/* Foxconn - Hon Hai */
- 	{ USB_DEVICE(0x0489, 0xe033) },
- 
-+	/*Broadcom devices with vendor specific id */
-+	{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) },
-+
- 	{ }	/* Terminating entry */
- };
- 
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -188,10 +188,12 @@ int acpi_get_cpuid(acpi_handle handle, i
+ 		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
+ 		 * }
+ 		 *
+-		 * Ignores apic_id and always return 0 for CPU0's handle.
++		 * Ignores apic_id and always returns 0 for the processor
++		 * handle with acpi id 0 if nr_cpu_ids is 1.
++		 * This should be the case if SMP tables are not found.
+ 		 * Return -1 for other CPU's handle.
+ 		 */
+-		if (acpi_id == 0)
++		if (nr_cpu_ids <= 1 && acpi_id == 0)
+ 			return acpi_id;
+ 		else
+ 			return apic_id;
 
 
