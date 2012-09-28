@@ -1,156 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab2I1JGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 05:06:42 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63761 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756967Ab2I1JGk (ORCPT
+	id S1757082Ab2I1JLT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 05:11:19 -0400
+Received: from 7.mo3.mail-out.ovh.net ([46.105.57.200]:36560 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751140Ab2I1JLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 05:06:40 -0400
+	Fri, 28 Sep 2012 05:11:18 -0400
+X-Greylist: delayed 4221 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 05:11:17 EDT
+Date: Fri, 28 Sep 2012 11:08:48 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
+Message-ID: <20120928090848.GX17667@game.jcrosoft.org>
+References: <1348780923-27428-1-git-send-email-stigge@antcom.de>
+ <20120928024744.GV17667@game.jcrosoft.org>
+ <50654E57.3080201@antcom.de>
+ <20120928075145.GW17667@game.jcrosoft.org>
+ <50656522.1050900@antcom.de>
 MIME-Version: 1.0
-In-Reply-To: <1348806696-31170-19-git-send-email-andi@firstfloor.org>
-References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
-	<1348806696-31170-19-git-send-email-andi@firstfloor.org>
-Date: Fri, 28 Sep 2012 11:06:38 +0200
-Message-ID: <CABPqkBQPVbobTgaV97E0qvOcfWnK8jMmoyp6NEuMn2+WHZ97HQ@mail.gmail.com>
-Subject: Re: [PATCH 18/31] perf, core: Add a concept of a weightened sample
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50656522.1050900@antcom.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 7616431396034947933
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 6:31 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> For some events it's useful to weight sample with a hardware
-> provided number. This expresses how expensive the action the
-> sample represent was.  This allows the profiler to scale
-> the samples to be more informative to the programmer.
->
-> There is already the period which is used similarly, but it means
-> something different, so I chose to not overload it. Instead
-> a new sample type for WEIGHT is added.
->
-> Can be used for multiple things. Initially it is used for TSX abort costs
-> and profiling by memory latencies (so to make expensive load appear higher
-> up in the histograms)  The concept is quite generic and can be extended
-> to many other kinds of events or architectures, as long as the hardware
-> provides suitable auxillary values. In principle it could be also
-> used for software tracpoints.
->
-> This adds the generic glue. A new optional sample format for a 64bit
-> weight value.
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+On 10:51 Fri 28 Sep     , Roland Stigge wrote:
+> Hi!
+> 
+> On 09/28/2012 09:51 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >> Right - will add checking for the request state of the respective GPIOs.
+> >>
+> >> The list of GPIOs to handle is defined by the offset (specified GPIO)
+> >> and bitmapped list.
+> >>
+> >> If it looks more natural, I can change this to a list of ints specifying
+> >> GPIOs directly.
+> > you pass the correctly information to the gpiolib
+> > 
+> > as if you do not request the gpio the gpiolib will auto request the gpios
+> > so you api will be 
+> > int gpio_get_block(unsigned int *gpios, u8* values, size_t size);
+> > 
+> > return an error
+> > 
+> > int gpio_set_block(unsigned int *gpios, u8* set, size_t size);
+> > 
+> > so you do not care about the banks you work on the gpiolib framework will call
+> > each gpio_chip seperatly. If the set_block get_block is not availlable the
+> > gpiolib could fallback to get/set
+> > 
+> > inside of the gpiolib that you call each bank with a bitmapped list is correct
+> > but not in the public gpiolib API
+> 
+> Good idea! Talking about the public API (your above gpio_set_block()):
+> *gpios is a list of GPIOs, but set is still bitmapped (mapped onto the
+> list specified in *gpios)? To prevent confusion about what the size
+> argument means (number of gpios in *gpios _or_ number of bytes in the
+> bitmap *set) - wouldn't it be clearer to have a "bool *set" and "bool
+> *values" list?
+public API list of gpio as example
 
-I came to the conclusion that yes we need something like a weight or cost
-as a generic way of reporting that in some modes the period is not really
-the right measure to evaluate the "cost" of an event.
+gpios = {1, 33, 34, 55};
+set = {1, 0, 0 ,1};
 
-I was testing my PEBS Load Latency patch this week, I came to that
-conclusion. The way perf report sorts samples based on aggregated
-periods per IP does not work for PEBS Load Latency (and possibly other
-modes). The sorting needs to be based on some cost that may be distinct
-from the period. By default, it would be the period, but for PEBS LL that
-would be the latency of the load at a specific IP. That would more reflect
-was is going on.
+gpio_set_blocks(gpios, set, 4);
 
-I modified my PEBS-LL patchset to  export a PERF_SAMPLE_COST
-value instead of PERF_SAMPLE_LATENCY which is more specific. The
-idea is similar to your WEIGHT here. By default it would be equal to the
-period, except for some modes. Or it could be equal to 1 by default. It
-would then be aggregated by IP by perf report as : he->period += period * cost.
+private you do just provide the array related to the gpio_chip
+lets assume 4 bank with 32 gpio each
 
-At the perf report level, the changes needed are rather limited.
+gpio0 = {1};
+set0 = {1};
 
-Will post my PEBS-LL patchset on Monday.
+gpio1 = {33, 34};
+set1 = {0, 0};
 
-> ---
->  include/linux/perf_event.h |    9 +++++++--
->  kernel/events/core.c       |    6 ++++++
->  2 files changed, 13 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 5bc0e8b..c488ae2 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -130,8 +130,9 @@ enum perf_event_sample_format {
->         PERF_SAMPLE_STREAM_ID                   = 1U << 9,
->         PERF_SAMPLE_RAW                         = 1U << 10,
->         PERF_SAMPLE_BRANCH_STACK                = 1U << 11,
-> +       PERF_SAMPLE_WEIGHT                      = 1U << 12,
->
-> -       PERF_SAMPLE_MAX = 1U << 12,             /* non-ABI */
-> +       PERF_SAMPLE_MAX = 1U << 13,             /* non-ABI */
->  };
->
->  /*
-> @@ -190,8 +191,9 @@ enum perf_event_read_format {
->         PERF_FORMAT_TOTAL_TIME_RUNNING          = 1U << 1,
->         PERF_FORMAT_ID                          = 1U << 2,
->         PERF_FORMAT_GROUP                       = 1U << 3,
-> +       PERF_FORMAT_WEIGHT                      = 1U << 4,
->
-> -       PERF_FORMAT_MAX = 1U << 4,              /* non-ABI */
-> +       PERF_FORMAT_MAX = 1U << 5,              /* non-ABI */
->  };
->
->  #define PERF_ATTR_SIZE_VER0    64      /* sizeof first published struct */
-> @@ -533,6 +535,7 @@ enum perf_event_type {
->          *      { u64                   stream_id;} && PERF_SAMPLE_STREAM_ID
->          *      { u32                   cpu, res; } && PERF_SAMPLE_CPU
->          *      { u64                   period;   } && PERF_SAMPLE_PERIOD
-> +        *      { u64                   weight;   } && PERF_SAMPLE_WEIGHT
->          *
->          *      { struct read_format    values;   } && PERF_SAMPLE_READ
->          *
-> @@ -1144,6 +1147,7 @@ struct perf_sample_data {
->         struct perf_callchain_entry     *callchain;
->         struct perf_raw_record          *raw;
->         struct perf_branch_stack        *br_stack;
-> +       u64                             weight;
->  };
->
->  static inline void perf_sample_data_init(struct perf_sample_data *data,
-> @@ -1154,6 +1158,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
->         data->raw  = NULL;
->         data->br_stack = NULL;
->         data->period    = period;
-> +       data->weight = 0;
->  }
->
->  extern void perf_output_sample(struct perf_output_handle *handle,
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 7fee567..74e4ff4 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -949,6 +949,9 @@ static void perf_event__header_size(struct perf_event *event)
->         if (sample_type & PERF_SAMPLE_PERIOD)
->                 size += sizeof(data->period);
->
-> +       if (sample_type & PERF_SAMPLE_WEIGHT)
-> +               size += sizeof(data->weight);
-> +
->         if (sample_type & PERF_SAMPLE_READ)
->                 size += event->read_size;
->
-> @@ -3957,6 +3960,9 @@ void perf_output_sample(struct perf_output_handle *handle,
->         if (sample_type & PERF_SAMPLE_PERIOD)
->                 perf_output_put(handle, data->period);
->
-> +       if (sample_type & PERF_SAMPLE_WEIGHT)
-> +               perf_output_put(handle, data->weight);
-> +
->         if (sample_type & PERF_SAMPLE_READ)
->                 perf_output_read(handle, event);
->
-> --
-> 1.7.7.6
->
+gpio2 = {55};
+set2 = {1};
+
+set_blocks(gpio_chip0, gpio0, set0, 1);
+set_blocks(gpio_chip1, gpio1, set1, 2);
+set_blocks(gpio_chip2, gpio2, set2, 1);
+
+Best Regards,
+J.
