@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964943Ab2I1XVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 19:21:54 -0400
-Received: from nm27.bullet.mail.bf1.yahoo.com ([98.139.212.186]:30356 "HELO
-	nm27.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S964854Ab2I1XVr (ORCPT
+	id S964794Ab2I1XVo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 19:21:44 -0400
+Received: from nm20-vm1.bullet.mail.ne1.yahoo.com ([98.138.91.21]:38303 "HELO
+	nm20-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759127Ab2I1XVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 19:21:47 -0400
-X-Yahoo-Newman-Id: 692892.51209.bm@omp1027.access.mail.mud.yahoo.com
+	Fri, 28 Sep 2012 19:21:41 -0400
+X-Yahoo-Newman-Id: 861029.56631.bm@omp1025.access.mail.mud.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Cd6D82QVM1k_abjSrMsazAATiuwBgFOHX0zB9NdBTAyw7Sg
- p9V_zqmcv.YFj.p_zdrx_jAv4hOLXusYMHL.umjH4VSI_vNGMydbDlqwGmGc
- CAnktHU4R_j1rs3YyTw3pSlYUZYtboHtJgYV6R6GKLpl3nt4WBlAQsv5QeR8
- JpFJ8FFzXZ7UVhRBVOX2cFE8BnPC284gERbmBSQib6T.dL6GEazyQwnwn6XJ
- obqWfs5Jn0qzH.aJO0nLjCaHJH1aXDH8zVGDxzfwpz9PAVL_QYtICXSK3TTe
- cW18MSxfkIXQIl_ybvVHwtr55dgBL23UZfAc8fHljhB1kARy1RZobwNXqBMk
- xHpc3IvD9t39xVbWt.geTZH.cJJfx4G40WaQ3pnRLT31qXGyGQlRR0riCWUr
- XckcuOKhmNBFnRnpiTeLXwLoCbopXbvVrxOUeqqYnBLnKxZ4qsH4n
+X-YMail-OSG: GH0GOEUVM1k7Zp2eCzm94lg1V.cTJcX1Ac5Njjwr7gqp6Uj
+ zcSu4eZH4.1nuicyfeHTYtQQBf4GBJSqz_IsWoJALu6aMo6f0UTwh.fB1JvX
+ 3rxBytkKfmHD2gG1niveczrkYgrxpicGuwSnraXEOfDRB3hTtLTZSkjxzoFU
+ FuZIEG0RYnpiOw1rd3HMOd1xCV6YL1OBuKr8WFa9ohDlDdlLc4q8gM4hBn5i
+ VHTl7Bp1kFpmdciIUayYJ_D4HuTfRDEay3hngKw8SKiwFjdy5dViju1cqCxE
+ qoEXNfar4.Ucyy6_m6nUAGycnGY7Zti4OI.sxR2ZFPyiyMcZ1B76M8Xrkw6q
+ o3VtI39VCRRysRoxSH7deGqu_A196YGua2L4uQuUD808zbC349HyR4qlOMfb
+ wBPQn8CL72NrTNiwc_POxoqUo5KzQJ56SWxMBAm8sNi0f_s9iUK..Mhlr_3a
+ PLtxEl1IZVf9hWAGPeMv.6sP1GiPCdpsU3dXlHIXh7c7vEGnRPMGsTIsxhR3
+ A4nnIAfjKEXbKv6hETLEzNvA4MjTlidT7w_b6
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: Daniel Santos <daniel.santos@pobox.com>
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -32,9 +34,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Pavel Pisa <pisa@cmp.felk.cvut.cz>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 9/10] bug.h: Add BUILD_BUG_ON_NON_CONST macro
-Date: Fri, 28 Sep 2012 18:20:10 -0500
-Message-Id: <1348874411-28288-10-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH 7/10] compiler{,-gcc4}.h: Introduce __flatten function attribute
+Date: Fri, 28 Sep 2012 18:20:08 -0500
+Message-Id: <1348874411-28288-8-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
 References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
@@ -42,87 +44,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A very common use of __builtin_constant_p is to make sure that a certain
-value is a compile time constant and generate a build-time error if it
-is not.  However, __builtin_constant_p is broken in a variety of ways in
-various situations (on various versions of gcc) and never returns one in
-an unoptimized build. This macro provide a mechanism to perform these
-build-time checks, but not break unoptimized builds (or modules being
-build with -O0), of which there probably aren't many people that care
-anyway.
+For gcc 4.1 & later, expands to __attribute__((flatten)) which forces
+the compiler to inline everything it can into the function.  This is
+useful in combination with noinline when you want to control the depth
+of inlining, or create a single function where inline expansions will
+occur. (see
+http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html#index-g_t_0040code_007bflatten_007d-function-attribute-2512)
 
-This patch documents all of the relevant quirks I could find in the
-"Gory Details" section of the doc-comments.  For almost all cases,
-BUILD_BUG_ON_NON_CONST() should never fail on a primitive, non-pointer
-type variable declared const.  A subsequent patch provides a separate
-macro for performing tests which are known to be broken in older
-compilers (pretty much, using __builtin_constant_p on arrays, pointers &
-structs as well as testing those values).
+Normally, it's best to leave this type of thing up to the compiler.
+However, the generic rbtree code uses inline functions just to be able
+to inject compile-time constant data that specifies how the caller wants
+the function to behave (via struct rb_relationship).  This data can be
+thought of as the template parameters of a C++ templatized function.
+Since some of these functions, once expanded, become quite large, gcc
+sometimes decides not to perform some important inlining, in one case,
+even generating a few bytes more code by not doing so. (Note: I have not
+eliminated the possibility that this was an optimization bug, but the
+flatten attribute fixes it in either case.)
+
+Combining __flatten and noinline insures that important optimizations
+occur in these cases and that the inline expansion occurs in exactly one
+place, thus not leading to unnecissary bloat. However, it also can
+eliminate some opportunities for optimization should gcc otherwise
+decide the function its self is a good candidate for inlining.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- include/linux/bug.h |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 48 insertions(+), 0 deletions(-)
+ include/linux/compiler-gcc4.h |    7 ++++++-
+ include/linux/compiler.h      |    4 ++++
+ 2 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/bug.h b/include/linux/bug.h
-index c70b833..e30f600 100644
---- a/include/linux/bug.h
-+++ b/include/linux/bug.h
-@@ -81,6 +81,54 @@ struct pt_regs;
- 		__build_bug_failed();				\
- 	} while (0)
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index ad610f2..5a0897e 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -15,7 +15,12 @@
  
-+/**
-+ * BUILD_BUG_ON_NON_CONST - break compile if expression cannot be determined
-+ *                          to be a compile-time constant.
-+ * @exp: value to test for compile-time constness
-+ *
-+ * __builtin_constant_p() is a work in progress and is broken in various ways
-+ * on various versions of gcc and optimization levels. It can fail, even when
-+ * gcc otherwise determines that the expression is compile-time constant when
-+ * performing actual optimizations and thus, compile out the value anyway. Do
-+ * not use this macro for struct members or dereferenced pointers and arrays,
-+ * as these are broken in many versions of gcc -- use BUILD_BUG_ON_NON_CONST42
-+ * or another gcc-version-checked macro instead.
-+ *
-+ * As long as you are passing a variable declared const (and not modified),
-+ * this macro should never fail (except for floats).  For information on gcc's
-+ * behavior in other cases, see below.
-+ *
-+ * Gory Details:
-+ *
-+ * Normal primitive variables
-+ * - global non-static non-const values are never compile-time constants (but
-+ *   you should already know that)
-+ * - all const values (global/local, non/static) should never fail this test
-+ *   (3.4+) with one exception (below)
-+ * - floats (which we wont use anyway) are broken in various ways until 4.2
-+ *   (-O1 broken until 4.4)
-+ * - local static non-const broken until 4.2 (-O1 broken until 4.3)
-+ * - local non-static non-const broken until 4.0
-+ *
-+ * Dereferencing pointers & arrays
-+ * - all static const derefs broken until 4.4 (except arrays at -O2 or better,
-+ *   which are fixed in 4.2)
-+ * - global non-static const pointer derefs always fail (<=4.7)
-+ * - local non-static const derefs broken until 4.3, except for array derefs
-+ *   to a zero value, which works from 4.0+
-+ * - local static non-const pointers always fail (<=4.7)
-+ * - local static non-const arrays broken until 4.4
-+ * - local non-static non-const arrays broken until 4.0 (unless zero deref,
-+ *   works in 3.4+)
+ #if GCC_VERSION >= 40102
+ # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+-#endif
 +
-+ */
-+#ifdef __OPTIMIZE__
-+#define BUILD_BUG_ON_NON_CONST(exp) \
-+	BUILD_BUG_ON(!__builtin_constant_p(exp))
-+#else
-+#define BUILD_BUG_ON_NON_CONST(exp)
++/* flatten introduced in 4.1, but broken in 4.6.0 (gcc bug #48731)*/
++# if GCC_VERSION != 40600
++#  define __flatten __attribute__((flatten))
++# endif
++#endif /* GCC_VERSION >= 40102 */
+ 
+ #if GCC_VERSION >= 40300
+ /* Mark functions as cold. gcc will assume any path leading to a call
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index fd455aa..268aeb6 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -244,6 +244,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #define __always_inline inline
+ #endif
+ 
++#ifndef __flatten
++#define __flatten
 +#endif
 +
- #endif	/* __CHECKER__ */
+ #endif /* __KERNEL__ */
  
- #ifdef CONFIG_GENERIC_BUG
+ /*
 -- 
 1.7.3.4
 
