@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759123Ab2I1XdZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 19:33:25 -0400
-Received: from nm10.bullet.mail.sp2.yahoo.com ([98.139.91.80]:39969 "HELO
-	nm10.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758911Ab2I1XdU (ORCPT
+	id S964886Ab2I1Xdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 19:33:38 -0400
+Received: from nm3.bullet.mail.sp2.yahoo.com ([98.139.91.73]:30349 "HELO
+	nm3.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759072Ab2I1XdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 19:33:20 -0400
-X-Yahoo-Newman-Id: 744554.52075.bm@omp1027.access.mail.sp2.yahoo.com
+	Fri, 28 Sep 2012 19:33:23 -0400
+X-Yahoo-Newman-Id: 318041.11876.bm@omp1022.access.mail.sp2.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: GWAgvJ4VM1nGfcOASgjikK9fuNmzGSi3.Ja_wgtcNIfTyJd
- 6WSVw.yVU1_1noet.5V1MnJAFoNH10RwHpEMU3IfDQmEXO3DHtVJ5WnBu3hr
- p1V04wd2Y6nfhy9d1sl30LJWUQMbAogISCmP.rhRtxIfK1Pe3n9QoqEQbqWs
- Yuld0HdoyUXd77OKJIx.thx6aIcsLR4Xr3Y.K4etfRxF.rXF.SWgNZ4GIdAZ
- ZUsN_4AyPAe8Nw2fbytdDdorLYbSdTkFCV4ojqMqdPdkHnd8q1HMZriK2edM
- DThdtGZVMt1teYPl.Z.UMvLLhKpo8iklSVG4C1FtILo_fmtO4xOUGIYLBJcy
- BRXfJkK69gGf7z5yn1Y.pe4aD7orG1QwqDffKfg8xIctdrZj21HHcLvgMEle
- dgByCLZ1LnGgV.6m5HSOzqoCoC7Or1f8mXdhWjkwaDzdewxEyRStJ
+X-YMail-OSG: Qbm4kpcVM1nEDmSshPNTi2WtbYEFuny6nxkAz7Vua4E06Ct
+ aDRkoKfPUXPG70U8K0lcurlBRl1d2Tmj3qsbCqY3Yd9iv5nQvpE2qiU41HbM
+ ilQkc9sZQib1ms6aSojPGocMD1WfIhYAQ11XOkGTEfWFnW_j7tG4qa9I3H0p
+ gaMnvvrhTk.w1HI6Rbu8q_ikwZoitL2pS0HX3fbrig9R6mgHKWMnF3Unjbaf
+ BW5iAyOV26GlFZDOOsnWKEl5.PVI4deDuzfQL_zdvxEjtaodTMgDL0OUrjVL
+ YwasaSPQZ9D9eVEFTQPPu_9ZLuBDXklI0Emw9pF9eK5LnFZyazzqPP32aPQi
+ z1AsSrQcNpNLGcavxY3z2uSE0eOO3q0pJJKjZTGFhAXr1G7AXblpxTS4sQ44
+ 1KLZM.bmETliglVxzC3HCsaxTHgjAayOP0HS54ddtCV2F1cIS3om2gzXORbq
+ OBx0nxUMSLl8555cb7sNpgSk1RA63MBqn6urt4h5gEpazWtMQefk-
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: Daniel Santos <daniel.santos@pobox.com>
 To: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
         Randy Dunlap <rdunlap@xenotime.net>
 Cc: Daniel Santos <daniel.santos@pobox.com>
-Subject: [PATCH 2/3] kernel-doc: bugfix - empty line in Example section
-Date: Fri, 28 Sep 2012 18:32:57 -0500
-Message-Id: <1348875178-28490-3-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH 3/3] kernel-doc: Don't mangle whitespace in Example section
+Date: Fri, 28 Sep 2012 18:32:58 -0500
+Message-Id: <1348875178-28490-4-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1348875178-28490-1-git-send-email-daniel.santos@pobox.com>
 References: <1348875178-28490-1-git-send-email-daniel.santos@pobox.com>
@@ -32,96 +33,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you have a section named "Example" that contains an empty line,
-attempting to generate htmldocs give you the error:
+A section with the name "Example" (case-insensitive) has a special
+meaning to kernel-doc.  These sections are output using mono-type fonts.
+However, leading whitespace is stripped, thus robbing a lot of meaning
+from this, as indented code examples will be mangled.
 
-/path/Documentation/DocBook/kernel-api.xml:3455: parser error : Opening and ending tag mismatch: programlisting line 3449 and para
-   </para><para>
-          ^
-/path/Documentation/DocBook/kernel-api.xml:3473: parser error : Opening and ending tag mismatch: para line 3467 and programlisting
-</programlisting></informalexample>
-                 ^
-/path/Documentation/DocBook/kernel-api.xml:3678: parser error : Opening and ending tag mismatch: programlisting line 3672 and para
-   </para><para>
-          ^
-/path/Documentation/DocBook/kernel-api.xml:3701: parser error : Opening and ending tag mismatch: para line 3690 and programlisting
-</programlisting></informalexample>
-                 ^
-unable to parse
-/path/Documentation/DocBook/kernel-api.xml
-
-Essentially, the script attempts to close a <programlisting> with a
-closing tag for a <para> block.  This patch corrects the problem by
-simply not outputting anything extra when we're dumping pre-formatted
-text, since the empty line will be rendered correctly anyway.
+This patch preserves the leading whitespace for "Example" sections.
+More accurately, it preserves it for all sections, but removes it later
+if the section isn't an "Example" section.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- scripts/kernel-doc |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+ scripts/kernel-doc |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-index e6bc9db..2be2078 100755
+index 2be2078..46e7aff 100755
 --- a/scripts/kernel-doc
 +++ b/scripts/kernel-doc
-@@ -245,6 +245,7 @@ my $dohighlight = "";
+@@ -296,9 +296,10 @@ my $doc_special = "\@\%\$\&";
+ my $doc_start = '^/\*\*\s*$'; # Allow whitespace at end of comment start.
+ my $doc_end = '\*/';
+ my $doc_com = '\s*\*\s*';
++my $doc_com_body = '\s*\* ?';
+ my $doc_decl = $doc_com . '(\w+)';
+ my $doc_sect = $doc_com . '([' . $doc_special . ']?[\w\s]+):(.*)';
+-my $doc_content = $doc_com . '(.*)';
++my $doc_content = $doc_com_body . '(.*)';
+ my $doc_block = $doc_com . 'DOC:\s*(.*)?';
  
- my $verbose = 0;
- my $output_mode = "man";
-+my $output_preformatted = 0;
- my $no_doc_sections = 0;
- my %highlights = %highlights_man;
- my $blankline = $blankline_man;
-@@ -486,7 +487,9 @@ sub output_highlight {
+ my %constants;
+@@ -486,6 +487,9 @@ sub output_highlight {
+ 	$contents =~ s/\s+$//;
      }
      foreach $line (split "\n", $contents) {
++	if (! $output_preformatted) {
++	    $line =~ s/^\s*//;
++	}
  	if ($line eq ""){
--	    print $lineprefix, local_unescape($blankline);
-+	    if (! $output_preformatted) {
-+		print $lineprefix, local_unescape($blankline);
-+	    }
- 	} else {
- 	    $line =~ s/\\\\\\/\&/g;
- 	    if ($output_mode eq "man" && substr($line, 0, 1) eq ".") {
-@@ -902,10 +905,12 @@ sub output_section_xml(%) {
- 	print "<title>$section</title>\n";
- 	if ($section =~ m/EXAMPLE/i) {
- 	    print "<informalexample><programlisting>\n";
-+	    $output_preformatted = 1;
- 	} else {
- 	    print "<para>\n";
- 	}
- 	output_highlight($args{'sections'}{$section});
-+	$output_preformatted = 0;
- 	if ($section =~ m/EXAMPLE/i) {
- 	    print "</programlisting></informalexample>\n";
- 	} else {
-@@ -1208,10 +1213,12 @@ sub output_blockhead_xml(%) {
- 	}
- 	if ($section =~ m/EXAMPLE/i) {
- 	    print "<example><para>\n";
-+	    $output_preformatted = 1;
- 	} else {
- 	    print "<para>\n";
- 	}
- 	output_highlight($args{'sections'}{$section});
-+	$output_preformatted = 0;
- 	if ($section =~ m/EXAMPLE/i) {
- 	    print "</para></example>\n";
- 	} else {
-@@ -1287,10 +1294,12 @@ sub output_function_gnome {
- 	print "<simplesect>\n <title>$section</title>\n";
- 	if ($section =~ m/EXAMPLE/i) {
- 	    print "<example><programlisting>\n";
-+	    $output_preformatted = 1;
- 	} else {
- 	}
- 	print "<para>\n";
- 	output_highlight($args{'sections'}{$section});
-+	$output_preformatted = 0;
- 	print "</para>\n";
- 	if ($section =~ m/EXAMPLE/i) {
- 	    print "</programlisting></example>\n";
+ 	    if (! $output_preformatted) {
+ 		print $lineprefix, local_unescape($blankline);
+@@ -2344,7 +2348,7 @@ sub process_file($) {
+ 		    $descr= $1;
+ 		    $descr =~ s/^\s*//;
+ 		    $descr =~ s/\s*$//;
+-		    $descr =~ s/\s+/ /;
++		    $descr =~ s/\s+/ /g;
+ 		    $declaration_purpose = xml_escape($descr);
+ 		    $in_purpose = 1;
+ 		} else {
+@@ -2436,6 +2440,7 @@ sub process_file($) {
+ 		    # Continued declaration purpose
+ 		    chomp($declaration_purpose);
+ 		    $declaration_purpose .= " " . xml_escape($1);
++		    $declaration_purpose =~ s/\s+/ /g;
+ 		} else {
+ 		    $contents .= $1 . "\n";
+ 		}
 -- 
 1.7.3.4
 
