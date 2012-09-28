@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759233Ab2I1UhJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:37:09 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54687 "EHLO
+	id S1759239Ab2I1Uhm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:37:42 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60349 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759179Ab2I1Ugu (ORCPT
+	by vger.kernel.org with ESMTP id S1759191Ab2I1Ugr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:36:50 -0400
-X-Sasl-enc: J/wDUQz18V/aarYmxXHuumP7FpKOLiFkUX1L8YqYOZok 1348864609
+	Fri, 28 Sep 2012 16:36:47 -0400
+X-Sasl-enc: Q2AH/ZKRRDRpCYndoIODPXHbWhgoatP2AZjg/mOstsKC 1348864606
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Timur Tabi <timur@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: [ 194/218] powerpc/85xx: p1022ds: fix DIU/LBC switching with NAND enabled
-Date: Fri, 28 Sep 2012 13:16:51 -0700
-Message-Id: <20120928201523.840342489@linuxfoundation.org>
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 192/218] pch_uart: Fix parity setting issue
+Date: Fri, 28 Sep 2012 13:16:49 -0700
+Message-Id: <20120928201523.602231920@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,106 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timur Tabi <timur@freescale.com>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit 896c01cb4bb3cfc2c0ea9873fa7a9f8bd0a7c8d8 upstream.
+commit 38bd2a1ac736901d1cf4971c78ef952ba92ef78b upstream.
 
-In order for indirect mode on the PIXIS to work properly, both chip selects
-need to be set to GPCM mode, otherwise writes to the chip select base
-addresses will not actually post to the local bus -- they'll go to the
-NAND controller instead.  Therefore, we need to set BR0 and BR1 to GPCM
-mode before switching to indirect mode.
+Parity Setting value is reverse.
+E.G. In case of setting ODD parity, EVEN value is set.
+This patch inverts "if" condition.
 
-Signed-off-by: Timur Tabi <timur@freescale.com>
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/85xx/p1022_ds.c |   64 +++++++++++++++++++++++++++++++--
- 1 file changed, 62 insertions(+), 2 deletions(-)
+ drivers/tty/serial/pch_uart.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/platforms/85xx/p1022_ds.c
-+++ b/arch/powerpc/platforms/85xx/p1022_ds.c
-@@ -208,6 +208,7 @@ static void p1022ds_set_monitor_port(enu
- 	u8 __iomem *lbc_lcs0_ba = NULL;
- 	u8 __iomem *lbc_lcs1_ba = NULL;
- 	phys_addr_t cs0_addr, cs1_addr;
-+	u32 br0, or0, br1, or1;
- 	const __be32 *iprop;
- 	unsigned int num_laws;
- 	u8 b;
-@@ -256,11 +257,70 @@ static void p1022ds_set_monitor_port(enu
- 	}
- 	num_laws = be32_to_cpup(iprop);
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1357,7 +1357,7 @@ static void pch_uart_set_termios(struct
+ 		stb = PCH_UART_HAL_STB1;
  
--	cs0_addr = lbc_br_to_phys(ecm, num_laws, in_be32(&lbc->bank[0].br));
--	cs1_addr = lbc_br_to_phys(ecm, num_laws, in_be32(&lbc->bank[1].br));
-+	/*
-+	 * Indirect mode requires both BR0 and BR1 to be set to "GPCM",
-+	 * otherwise writes to these addresses won't actually appear on the
-+	 * local bus, and so the PIXIS won't see them.
-+	 *
-+	 * In FCM mode, writes go to the NAND controller, which does not pass
-+	 * them to the localbus directly.  So we force BR0 and BR1 into GPCM
-+	 * mode, since we don't care about what's behind the localbus any
-+	 * more.
-+	 */
-+	br0 = in_be32(&lbc->bank[0].br);
-+	br1 = in_be32(&lbc->bank[1].br);
-+	or0 = in_be32(&lbc->bank[0].or);
-+	or1 = in_be32(&lbc->bank[1].or);
-+
-+	/* Make sure CS0 and CS1 are programmed */
-+	if (!(br0 & BR_V) || !(br1 & BR_V)) {
-+		pr_err("p1022ds: CS0 and/or CS1 is not programmed\n");
-+		goto exit;
-+	}
-+
-+	/*
-+	 * Use the existing BRx/ORx values if it's already GPCM. Otherwise,
-+	 * force the values to simple 32KB GPCM windows with the most
-+	 * conservative timing.
-+	 */
-+	if ((br0 & BR_MSEL) != BR_MS_GPCM) {
-+		br0 = (br0 & BR_BA) | BR_V;
-+		or0 = 0xFFFF8000 | 0xFF7;
-+		out_be32(&lbc->bank[0].br, br0);
-+		out_be32(&lbc->bank[0].or, or0);
-+	}
-+	if ((br1 & BR_MSEL) != BR_MS_GPCM) {
-+		br1 = (br1 & BR_BA) | BR_V;
-+		or1 = 0xFFFF8000 | 0xFF7;
-+		out_be32(&lbc->bank[1].br, br1);
-+		out_be32(&lbc->bank[1].or, or1);
-+	}
-+
-+	cs0_addr = lbc_br_to_phys(ecm, num_laws, br0);
-+	if (!cs0_addr) {
-+		pr_err("p1022ds: could not determine physical address for CS0"
-+		       " (BR0=%08x)\n", br0);
-+		goto exit;
-+	}
-+	cs1_addr = lbc_br_to_phys(ecm, num_laws, br1);
-+	if (!cs0_addr) {
-+		pr_err("p1022ds: could not determine physical address for CS1"
-+		       " (BR1=%08x)\n", br1);
-+		goto exit;
-+	}
- 
- 	lbc_lcs0_ba = ioremap(cs0_addr, 1);
-+	if (!lbc_lcs0_ba) {
-+		pr_err("p1022ds: could not ioremap CS0 address %llx\n",
-+		       (unsigned long long)cs0_addr);
-+		goto exit;
-+	}
- 	lbc_lcs1_ba = ioremap(cs1_addr, 1);
-+	if (!lbc_lcs1_ba) {
-+		pr_err("p1022ds: could not ioremap CS1 address %llx\n",
-+		       (unsigned long long)cs1_addr);
-+		goto exit;
-+	}
- 
- 	/* Make sure we're in indirect mode first. */
- 	if ((in_be32(&guts->pmuxcr) & PMUXCR_ELBCDIU_MASK) !=
+ 	if (termios->c_cflag & PARENB) {
+-		if (!(termios->c_cflag & PARODD))
++		if (termios->c_cflag & PARODD)
+ 			parity = PCH_UART_HAL_PARITY_ODD;
+ 		else
+ 			parity = PCH_UART_HAL_PARITY_EVEN;
 
 
