@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422681Ab2I1UAn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:00:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	id S1758998Ab2I1Szv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:55:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759000Ab2I1Szw (ORCPT
+	with ESMTP id S1758976Ab2I1Szq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:55:52 -0400
+	Fri, 28 Sep 2012 14:55:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 044/262] ARM: 7496/1: hw_breakpoint: dont rely on dfsr to show watchpoint access type
-Date: Fri, 28 Sep 2012 11:49:33 -0700
-Message-Id: <20120928183003.172779624@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 042/262] target: Fix ->data_length re-assignment bug with SCSI overflow
+Date: Fri, 28 Sep 2012 11:49:31 -0700
+Message-Id: <20120928183002.950232269@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,107 +30,71 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit bf8801145c01ab600f8df66e8c879ac642fa5846 upstream.
+commit 4c054ba63ad47ef244cfcfa1cea38134620a5bae upstream.
 
->From ARM debug architecture v7.1 onwards, a watchpoint exception causes
-the DFAR to be updated with the faulting data address. However, DFSR.WnR
-takes an UNKNOWN value and therefore cannot be used in general to
-determine the access type that triggered the watchpoint.
+This patch fixes a long-standing bug with SCSI overflow handling
+where se_cmd->data_length was incorrectly being re-assigned to
+the larger CDB extracted allocation length, resulting in a number
+of fabric level errors that would end up causing a session reset
+in most cases.  So instead now:
 
-This patch forbids watchpoints without an overflow handler from
-specifying a specific access type (load/store). Those with overflow
-handlers must be able to handle false positives potentially triggered by
-a watchpoint of a different access type on the same address. For
-SIGTRAP-based handlers (i.e. ptrace), this should have no impact.
+ - Only re-assign se_cmd->data_length durining UNDERFLOW (to use the
+   smaller value)
+ - Use existing se_cmd->data_length for OVERFLOW (to use the smaller
+   value)
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This fix has been tested with the following CDB to generate an
+SCSI overflow:
+
+  sg_raw -r512 /dev/sdc 28 0 0 0 0 0 0 0 9 0
+
+Tested using iscsi-target, tcm_qla2xxx, loopback and tcm_vhost fabric
+ports.  Here is a bit more detail on each case:
+
+ - iscsi-target: Bug with open-iscsi with overflow, sg_raw returns
+                 -3584 bytes of data.
+ - tcm_qla2xxx: Working as expected, returnins 512 bytes of data
+ - loopback: sg_raw returns CHECK_CONDITION, from overflow rejection
+             in transport_generic_map_mem_to_cmd()
+ - tcm_vhost: Same as loopback
+
+Reported-by: Roland Dreier <roland@purestorage.com>
+Cc: Roland Dreier <roland@purestorage.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/hw_breakpoint.c |   55 +++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 15 deletions(-)
+ drivers/target/target_core_transport.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -159,6 +159,12 @@ static int debug_arch_supported(void)
- 		arch >= ARM_DEBUG_ARCH_V7_1;
- }
- 
-+/* Can we determine the watchpoint access type from the fsr? */
-+static int debug_exception_updates_fsr(void)
-+{
-+	return 0;
-+}
-+
- /* Determine number of WRP registers available. */
- static int get_num_wrp_resources(void)
- {
-@@ -619,18 +625,35 @@ int arch_validate_hwbkpt_settings(struct
- 	info->address &= ~alignment_mask;
- 	info->ctrl.len <<= offset;
- 
--	/*
--	 * Currently we rely on an overflow handler to take
--	 * care of single-stepping the breakpoint when it fires.
--	 * In the case of userspace breakpoints on a core with V7 debug,
--	 * we can use the mismatch feature as a poor-man's hardware
--	 * single-step, but this only works for per-task breakpoints.
--	 */
--	if (!bp->overflow_handler && (arch_check_bp_in_kernelspace(bp) ||
--	    !core_has_mismatch_brps() || !bp->hw.bp_target)) {
--		pr_warning("overflow handler required but none found\n");
--		ret = -EINVAL;
-+	if (!bp->overflow_handler) {
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -3000,15 +3000,20 @@ static int transport_generic_cmd_sequenc
+ 			/* Returns CHECK_CONDITION + INVALID_CDB_FIELD */
+ 			goto out_invalid_cdb_field;
+ 		}
+-
 +		/*
-+		 * Mismatch breakpoints are required for single-stepping
-+		 * breakpoints.
++		 * For the overflow case keep the existing fabric provided
++		 * ->data_length.  Otherwise for the underflow case, reset
++		 * ->data_length to the smaller SCSI expected data transfer
++		 * length.
 +		 */
-+		if (!core_has_mismatch_brps())
-+			return -EINVAL;
-+
-+		/* We don't allow mismatch breakpoints in kernel space. */
-+		if (arch_check_bp_in_kernelspace(bp))
-+			return -EPERM;
-+
-+		/*
-+		 * Per-cpu breakpoints are not supported by our stepping
-+		 * mechanism.
-+		 */
-+		if (!bp->hw.bp_target)
-+			return -EINVAL;
-+
-+		/*
-+		 * We only support specific access types if the fsr
-+		 * reports them.
-+		 */
-+		if (!debug_exception_updates_fsr() &&
-+		    (info->ctrl.type == ARM_BREAKPOINT_LOAD ||
-+		     info->ctrl.type == ARM_BREAKPOINT_STORE))
-+			return -EINVAL;
+ 		if (size > cmd->data_length) {
+ 			cmd->se_cmd_flags |= SCF_OVERFLOW_BIT;
+ 			cmd->residual_count = (size - cmd->data_length);
+ 		} else {
+ 			cmd->se_cmd_flags |= SCF_UNDERFLOW_BIT;
+ 			cmd->residual_count = (cmd->data_length - size);
++			cmd->data_length = size;
+ 		}
+-		cmd->data_length = size;
  	}
-+
- out:
- 	return ret;
- }
-@@ -706,10 +729,12 @@ static void watchpoint_handler(unsigned
- 				goto unlock;
  
- 			/* Check that the access type matches. */
--			access = (fsr & ARM_FSR_ACCESS_MASK) ? HW_BREAKPOINT_W :
--				 HW_BREAKPOINT_R;
--			if (!(access & hw_breakpoint_type(wp)))
--				goto unlock;
-+			if (debug_exception_updates_fsr()) {
-+				access = (fsr & ARM_FSR_ACCESS_MASK) ?
-+					  HW_BREAKPOINT_W : HW_BREAKPOINT_R;
-+				if (!(access & hw_breakpoint_type(wp)))
-+					goto unlock;
-+			}
- 
- 			/* We have a winner. */
- 			info->trigger = addr;
+ 	if (cmd->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB) {
 
 
