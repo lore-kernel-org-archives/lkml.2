@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965108Ab2I1S6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:58:34 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:35428 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965095Ab2I1S63 (ORCPT
+	id S965123Ab2I1S6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:58:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965092Ab2I1S60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:58:29 -0400
+	Fri, 28 Sep 2012 14:58:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dylan Reid <dgreid@chromium.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 095/262] ASoC: samsung dma - Dont indicate support for pause/resume.
-Date: Fri, 28 Sep 2012 11:50:24 -0700
-Message-Id: <20120928183009.290008641@linuxfoundation.org>
+        Paul Clements <paul.clements@steeleye.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 094/262] nbd: clear waiting_queue on shutdown
+Date: Fri, 28 Sep 2012 11:50:23 -0700
+Message-Id: <20120928183009.187578255@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,64 +30,56 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dylan Reid <dgreid@chromium.org>
+From: Paul Clements <paul.clements@steeleye.com>
 
-commit 57b2d68863f281737d8596cb3d76d89d9cc54fd8 upstream.
+commit fded4e090c60100d709318896c79816d68d5b47d upstream.
 
-The pause and resume operations indicate that the stream can be
-un-paused/resumed from the exact location they were paused/suspended.
-This is not true for this driver, the pause and suspend triggers share
-the same code path with stop, they flush all pending DMA transfers.
-This drops all pending samples.  The pause_release/resume triggers are
-the same as start, except that prepare won't be called beforehand,
-nothing will be enqueued to the DMA engine and nothing will happen (no
-audio).  Removing the pause flag will let apps know that it isn't
-supported.  Removing the resume flag will cause user space to call
-prepare and start instead of resume, so audio will continue playing when
-the system wakes up.
+Fix a serious but uncommon bug in nbd which occurs when there is heavy
+I/O going to the nbd device while, at the same time, a failure (server,
+network) or manual disconnect of the nbd connection occurs.
 
-Before removing the pause and resume flags, I tested this on an exynos
-5250, using 'aplay -i'. Pause/un-pause leads to silence followed by a
-write error.  Suspend/resume testing led to the same result.  Removing
-the two flags fixes suspend/resume (since snd_pcm_prepare is called
-again). And leads to a proper reporting of pause not supported.
+There is a small window between the time that the nbd_thread is stopped
+and the socket is shutdown where requests can continue to be queued to
+nbd's internal waiting_queue.  When this happens, those requests are
+never completed or freed.
 
-Signed-off-by: Dylan Reid <dgreid@chromium.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+The fix is to clear the waiting_queue on shutdown of the nbd device, in
+the same way that the nbd request queue (queue_head) is already being
+cleared.
+
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/samsung/dma.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ drivers/block/nbd.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/sound/soc/samsung/dma.c
-+++ b/sound/soc/samsung/dma.c
-@@ -34,9 +34,7 @@ static const struct snd_pcm_hardware dma
- 	.info			= SNDRV_PCM_INFO_INTERLEAVED |
- 				    SNDRV_PCM_INFO_BLOCK_TRANSFER |
- 				    SNDRV_PCM_INFO_MMAP |
--				    SNDRV_PCM_INFO_MMAP_VALID |
--				    SNDRV_PCM_INFO_PAUSE |
--				    SNDRV_PCM_INFO_RESUME,
-+				    SNDRV_PCM_INFO_MMAP_VALID,
- 	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
- 				    SNDRV_PCM_FMTBIT_U16_LE |
- 				    SNDRV_PCM_FMTBIT_U8 |
-@@ -246,15 +244,11 @@ static int dma_trigger(struct snd_pcm_su
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -445,6 +445,14 @@ static void nbd_clear_que(struct nbd_dev
+ 		req->errors++;
+ 		nbd_end_request(req);
+ 	}
++
++	while (!list_empty(&nbd->waiting_queue)) {
++		req = list_entry(nbd->waiting_queue.next, struct request,
++				 queuelist);
++		list_del_init(&req->queuelist);
++		req->errors++;
++		nbd_end_request(req);
++	}
+ }
  
- 	switch (cmd) {
- 	case SNDRV_PCM_TRIGGER_START:
--	case SNDRV_PCM_TRIGGER_RESUME:
--	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
- 		prtd->state |= ST_RUNNING;
- 		prtd->params->ops->trigger(prtd->params->ch);
- 		break;
  
- 	case SNDRV_PCM_TRIGGER_STOP:
--	case SNDRV_PCM_TRIGGER_SUSPEND:
--	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
- 		prtd->state &= ~ST_RUNNING;
- 		prtd->params->ops->stop(prtd->params->ch);
- 		break;
+@@ -594,6 +602,7 @@ static int __nbd_ioctl(struct block_devi
+ 		nbd->file = NULL;
+ 		nbd_clear_que(nbd);
+ 		BUG_ON(!list_empty(&nbd->queue_head));
++		BUG_ON(!list_empty(&nbd->waiting_queue));
+ 		if (file)
+ 			fput(file);
+ 		return 0;
 
 
