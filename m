@@ -1,156 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab2I1E5u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 00:57:50 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39417 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab2I1E5r (ORCPT
+	id S1751555Ab2I1FMN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 01:12:13 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54013 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab2I1FML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 00:57:47 -0400
+	Fri, 28 Sep 2012 01:12:11 -0400
 MIME-Version: 1.0
-Date: Fri, 28 Sep 2012 12:57:46 +0800
-Message-ID: <CAPgLHd8C3BSWdBJUCx=Goah_RaP9zHkCqNkX0z4g1pcRq8=EWQ@mail.gmail.com>
-Subject: [PATCH] hpfs: convert to use leXX_add_cpu()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: mikulas@artax.karlin.mff.cuni.cz
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+In-Reply-To: <1348798739-2950-1-git-send-email-aroundight77@gmail.com>
+References: <1348798739-2950-1-git-send-email-aroundight77@gmail.com>
+Date: Fri, 28 Sep 2012 07:12:09 +0200
+Message-ID: <CAN+gG=G6V_O5W6DCuByAmymeLSvyOtDbsaHTZOqbNgNKu+m6cQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] hid:Fix problem on GeneralTouch multi-touchscreen
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: GeneralTouch <aroundight77@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, yxhma <yxhma@163.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Fri, Sep 28, 2012 at 4:18 AM, GeneralTouch <aroundight77@gmail.com> wrote:
+> From: Xianhan Yu <aroundight77@gmail.com>
+>
+> Fix the touch-up no response problem on GeneralTouch twofingers touchscreen and modify the driver for new GeneralTouch PWT touchscreen.
+>
+> Signed-off-by: Xianhan Yu <aroundight77@gmail.com>
 
-Convert cpu_to_leXX(leXX_to_cpu(E1) + E2) to use leXX_add_cpu().
+Hi,
 
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
+Thank you for re-submitting the patch. It's cleaner now.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- fs/hpfs/dnode.c | 30 +++++++++++++++---------------
- fs/hpfs/anode.c | 6 +++---
- 2 files changed, 18 insertions(+), 18 deletions(-)
+I have a few questions, but generally speaking, the patch is good in
+its current form.
 
-diff --git a/fs/hpfs/dnode.c b/fs/hpfs/dnode.c
-index 3228c52..153f442 100644
---- a/fs/hpfs/dnode.c
-+++ b/fs/hpfs/dnode.c
-@@ -145,10 +145,10 @@ static void set_last_pointer(struct super_block *s, struct dnode *d, dnode_secno
- 		}
- 	}
- 	if (ptr) {
--		d->first_free = cpu_to_le32(le32_to_cpu(d->first_free) + 4);
-+		le32_add_cpu(&d->first_free, 4);
- 		if (le32_to_cpu(d->first_free) > 2048) {
- 			hpfs_error(s, "set_last_pointer: too long dnode %08x", le32_to_cpu(d->self));
--			d->first_free = cpu_to_le32(le32_to_cpu(d->first_free) - 4);
-+			le32_add_cpu(&d->first_free, -4);
- 			return;
- 		}
- 		de->length = cpu_to_le16(36);
-@@ -184,7 +184,7 @@ struct hpfs_dirent *hpfs_add_de(struct super_block *s, struct dnode *d,
- 	de->not_8x3 = hpfs_is_name_long(name, namelen);
- 	de->namelen = namelen;
- 	memcpy(de->name, name, namelen);
--	d->first_free = cpu_to_le32(le32_to_cpu(d->first_free) + d_size);
-+	le32_add_cpu(&d->first_free, d_size);
- 	return de;
- }
- 
-@@ -314,7 +314,7 @@ static int hpfs_add_to_dnode(struct inode *i, dnode_secno dno,
- 	set_last_pointer(i->i_sb, ad, de->down ? de_down_pointer(de) : 0);
- 	de = de_next_de(de);
- 	memmove((char *)nd + 20, de, le32_to_cpu(nd->first_free) + (char *)nd - (char *)de);
--	nd->first_free = cpu_to_le32(le32_to_cpu(nd->first_free) - ((char *)de - (char *)nd - 20));
-+	le32_add_cpu(&nd->first_free, -((char *)de - (char *)nd - 20));
- 	memcpy(d, nd, le32_to_cpu(nd->first_free));
- 	for_all_poss(i, hpfs_pos_del, (loff_t)dno << 4, pos);
- 	fix_up_ptrs(i->i_sb, ad);
-@@ -474,8 +474,8 @@ static secno move_to_top(struct inode *i, dnode_secno from, dnode_secno to)
- 			hpfs_brelse4(&qbh);
- 			return 0;
- 		}
--		dnode->first_free = cpu_to_le32(le32_to_cpu(dnode->first_free) - 4);
--		de->length = cpu_to_le16(le16_to_cpu(de->length) - 4);
-+		le32_add_cpu(&dnode->first_free, -4);
-+		le16_add_cpu(&de->length, -4);
- 		de->down = 0;
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		dno = up;
-@@ -570,8 +570,8 @@ static void delete_empty_dnode(struct inode *i, dnode_secno dno)
- 		for_all_poss(i, hpfs_pos_subst, ((loff_t)dno << 4) | 1, ((loff_t)up << 4) | p);
- 		if (!down) {
- 			de->down = 0;
--			de->length = cpu_to_le16(le16_to_cpu(de->length) - 4);
--			dnode->first_free = cpu_to_le32(le32_to_cpu(dnode->first_free) - 4);
-+			le16_add_cpu(&de->length, -4);
-+			le32_add_cpu(&dnode->first_free, -4);
- 			memmove(de_next_de(de), (char *)de_next_de(de) + 4,
- 				(char *)dnode + le32_to_cpu(dnode->first_free) - (char *)de_next_de(de));
- 		} else {
-@@ -647,14 +647,14 @@ static void delete_empty_dnode(struct inode *i, dnode_secno dno)
- 					printk("HPFS: warning: unbalanced dnode tree, see hpfs.txt 4 more info\n");
- 					printk("HPFS: warning: goin'on\n");
- 				}
--				del->length = cpu_to_le16(le16_to_cpu(del->length) + 4);
-+				le16_add_cpu(&del->length, 4);
- 				del->down = 1;
--				d1->first_free = cpu_to_le32(le32_to_cpu(d1->first_free) + 4);
-+				le32_add_cpu(&d1->first_free, 4);
- 			}
- 			if (dlp && !down) {
--				del->length = cpu_to_le16(le16_to_cpu(del->length) - 4);
-+				le16_add_cpu(&del->length, -4);
- 				del->down = 0;
--				d1->first_free = cpu_to_le32(le32_to_cpu(d1->first_free) - 4);
-+				le32_add_cpu(&d1->first_free, -4);
- 			} else if (down)
- 				*(__le32 *) ((void *) del + le16_to_cpu(del->length) - 4) = cpu_to_le32(down);
- 		} else goto endm;
-@@ -668,9 +668,9 @@ static void delete_empty_dnode(struct inode *i, dnode_secno dno)
- 		memcpy(de_cp, de_prev, le16_to_cpu(de_prev->length));
- 		hpfs_delete_de(i->i_sb, dnode, de_prev);
- 		if (!de_prev->down) {
--			de_prev->length = cpu_to_le16(le16_to_cpu(de_prev->length) + 4);
-+			le16_add_cpu(&de_prev->length, 4);
- 			de_prev->down = 1;
--			dnode->first_free = cpu_to_le32(le32_to_cpu(dnode->first_free) + 4);
-+			le32_add_cpu(&dnode->first_free, 4);
- 		}
- 		*(__le32 *) ((void *) de_prev + le16_to_cpu(de_prev->length) - 4) = cpu_to_le32(ndown);
- 		hpfs_mark_4buffers_dirty(&qbh);
-
-diff --git a/fs/hpfs/anode.c b/fs/hpfs/anode.c
-index 4bae4a4..2d5b254 100644
---- a/fs/hpfs/anode.c
-+++ b/fs/hpfs/anode.c
-@@ -102,7 +102,7 @@ secno hpfs_add_sector_to_btree(struct super_block *s, secno node, int fnod, unsi
- 			return -1;
- 		}
- 		if (hpfs_alloc_if_possible(s, se = le32_to_cpu(btree->u.external[n].disk_secno) + le32_to_cpu(btree->u.external[n].length))) {
--			btree->u.external[n].length = cpu_to_le32(le32_to_cpu(btree->u.external[n].length) + 1);
-+			le32_add_cpu(&btree->u.external[n].length, 1);
- 			mark_buffer_dirty(bh);
- 			brelse(bh);
- 			return se;
-@@ -153,7 +153,7 @@ secno hpfs_add_sector_to_btree(struct super_block *s, secno node, int fnod, unsi
- 		btree = &anode->btree;
- 	}
- 	btree->n_free_nodes--; n = btree->n_used_nodes++;
--	btree->first_free = cpu_to_le16(le16_to_cpu(btree->first_free) + 12);
-+	le16_add_cpu(&btree->first_free, 12);
- 	btree->u.external[n].disk_secno = cpu_to_le32(se);
- 	btree->u.external[n].file_secno = cpu_to_le32(fs);
- 	btree->u.external[n].length = cpu_to_le32(1);
-@@ -174,7 +174,7 @@ secno hpfs_add_sector_to_btree(struct super_block *s, secno node, int fnod, unsi
- 		}
- 		if (btree->n_free_nodes) {
- 			btree->n_free_nodes--; n = btree->n_used_nodes++;
--			btree->first_free = cpu_to_le16(le16_to_cpu(btree->first_free) + 8);
-+			le16_add_cpu(&btree->first_free, 8);
- 			btree->u.internal[n].file_secno = cpu_to_le32(-1);
- 			btree->u.internal[n].down = cpu_to_le32(na);
- 			btree->u.internal[n-1].file_secno = cpu_to_le32(fs);
+Jiri: I know that I have not been as reactive as I used to, but I'm
+ending my contract in my current lab now, and I've been pretty busy.
+Please don't put me in the grave, I'm still the maintainer of
+hid-multitouch.... ;-)
 
 
+> ---
+>  drivers/hid/hid-ids.h        |    1 +
+>  drivers/hid/hid-multitouch.c |   20 ++++++++++++++++++--
+>  2 files changed, 19 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 1dcb76f..a6d5890 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -305,6 +305,7 @@
+>
+>  #define USB_VENDOR_ID_GENERAL_TOUCH    0x0dfc
+>  #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
+> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
+>
+>  #define USB_VENDOR_ID_GLAB             0x06c2
+>  #define USB_DEVICE_ID_4_PHIDGETSERVO_30        0x0038
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 59c8b5c..7aece16 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -115,6 +115,8 @@ struct mt_device {
+>  #define MT_CLS_EGALAX_SERIAL                   0x0104
+>  #define MT_CLS_TOPSEED                         0x0105
+>  #define MT_CLS_PANASONIC                       0x0106
+> +#define MT_CLS_GENERALTOUCH_TWOFINGERS         0x0107
+> +#define MT_CLS_GENERALTOUCH_PWT_TENFINGERS     0x0108
+>
+>  #define MT_DEFAULT_MAXCONTACT  10
+>
+> @@ -215,7 +217,18 @@ static struct mt_class mt_classes[] = {
+>         { .name = MT_CLS_PANASONIC,
+>                 .quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
+>                 .maxcontacts = 4 },
+> -
+> +       { .name = MT_CLS_GENERALTOUCH_TWOFINGERS,
+> +               .quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
+> +                       MT_QUIRK_VALID_IS_INRANGE |
+> +                       MT_QUIRK_SLOT_IS_CONTACTNUMBER,
+> +               .maxcontacts = 2
+> +       },
+
+At first, I was a little bit surprised because
+MT_QUIRK_NOT_SEEN_MEANS_UP and MT_QUIRK_VALID_IS_INRANGE were not
+supposed to be used together. Anyway, if it's smoothly working with
+your device, then I'm not against: the code shows that they won't
+interfere.
+
+> +       { .name = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+
+This is more worrying me. Apparently the 0x0100 device is win8
+compliant. Does'nt it work out of the box with MT_CLS_DEFAULT?
+
+> +               .quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
+> +                       MT_QUIRK_SLOT_IS_CONTACTNUMBER,
+> +               .maxcontacts = 10
+
+Do you really need to set the contact number of your device? Doing so
+will force you to create a new class if you have a device with a
+different maximum contact count.
+
+I'm asking because I'd rather not having this field set on most of the MT_CLS_*.
+However, if it's needed, (because you need to set it into the
+associated feature), them I will be fine with it. But I would
+appreciate to get the report descriptor of this particular device.
+
+So, if you judge that those two device-specific classes are absolutely
+needed (after all, you have the device in your hands), you have my
+reviewed-by:
+Reviewed-by Benjamin Tissoires <benjamin.tissoires@gmail.com>
+
+Thanks,
+Benjamin
+
+
+> +       },
+> +
+>         { }
+>  };
+>
+> @@ -893,9 +906,12 @@ static const struct hid_device_id mt_devices[] = {
+>                         USB_DEVICE_ID_ELO_TS2515) },
+>
+>         /* GeneralTouch panel */
+> -       { .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
+> +       { .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
+>                 MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+>                         USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
+> +       { .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+> +               MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+> +                       USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
+>
+>         /* Gametel game controller */
+>         { .driver_data = MT_CLS_DEFAULT,
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
