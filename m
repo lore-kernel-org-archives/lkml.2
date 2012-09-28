@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033257Ab2I1Vap (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:30:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032657Ab2I1U2W (ORCPT
+	id S1033271Ab2I1VbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:31:07 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51449 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422717Ab2I1U2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:28:22 -0400
+	Fri, 28 Sep 2012 16:28:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo Van Doorn <ivdoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 118/218] rt2x00: Fix word size of rt2500usb MAC_CSR19 register.
-Date: Fri, 28 Sep 2012 13:15:35 -0700
-Message-Id: <20120928201515.021251968@linuxfoundation.org>
+        Horst Schirmeier <horst@schirmeier.com>
+Subject: [ 124/218] USB: ftdi_sio: PID for NZR SEM 16+ USB
+Date: Fri, 28 Sep 2012 13:15:41 -0700
+Message-Id: <20120928201515.717136602@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,57 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gertjan van Wingerde <gwingerde@gmail.com>
+From: Horst Schirmeier <horst@schirmeier.com>
 
-commit 6ced58a5dbb94dbfbea1b33ca3c56d1e929cd548 upstream.
+commit 26a538b9ea2a3ee10dafc0068f0560dfd7b7ba37 upstream.
 
-The register is 16 bits wide, not 32.
+This adds the USB PID for the NZR SEM 16+ USB energy monitor device
+<http://www.nzr.de>.  It works perfectly with the GPL software on
+<http://schou.dk/linux/sparometer/>.
 
-Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Acked-by: Ivo Van Doorn <ivdoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Horst Schirmeier <horst@schirmeier.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2500usb.c |    2 +-
- drivers/net/wireless/rt2x00/rt2500usb.h |   16 ++++++++--------
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    3 +++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2500usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2500usb.c
-@@ -283,7 +283,7 @@ static int rt2500usb_rfkill_poll(struct
- 	u16 reg;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -704,6 +704,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PCDJ_DAC2_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_NZR_SEM_USB_PID) },
+ 	{ USB_DEVICE(ICOM_VID, ICOM_ID_1_PID) },
+ 	{ USB_DEVICE(ICOM_VID, ICOM_OPC_U_UC_PID) },
+ 	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2C1_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -75,6 +75,9 @@
+ #define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
+ #define FTDI_OPENDCC_GBM_PID	0xBFDC
  
- 	rt2500usb_register_read(rt2x00dev, MAC_CSR19, &reg);
--	return rt2x00_get_field32(reg, MAC_CSR19_BIT7);
-+	return rt2x00_get_field16(reg, MAC_CSR19_BIT7);
- }
- 
- #ifdef CONFIG_RT2X00_LIB_LEDS
---- a/drivers/net/wireless/rt2x00/rt2500usb.h
-+++ b/drivers/net/wireless/rt2x00/rt2500usb.h
-@@ -189,14 +189,14 @@
-  * MAC_CSR19: GPIO control register.
-  */
- #define MAC_CSR19			0x0426
--#define MAC_CSR19_BIT0			FIELD32(0x0001)
--#define MAC_CSR19_BIT1			FIELD32(0x0002)
--#define MAC_CSR19_BIT2			FIELD32(0x0004)
--#define MAC_CSR19_BIT3			FIELD32(0x0008)
--#define MAC_CSR19_BIT4			FIELD32(0x0010)
--#define MAC_CSR19_BIT5			FIELD32(0x0020)
--#define MAC_CSR19_BIT6			FIELD32(0x0040)
--#define MAC_CSR19_BIT7			FIELD32(0x0080)
-+#define MAC_CSR19_BIT0			FIELD16(0x0001)
-+#define MAC_CSR19_BIT1			FIELD16(0x0002)
-+#define MAC_CSR19_BIT2			FIELD16(0x0004)
-+#define MAC_CSR19_BIT3			FIELD16(0x0008)
-+#define MAC_CSR19_BIT4			FIELD16(0x0010)
-+#define MAC_CSR19_BIT5			FIELD16(0x0020)
-+#define MAC_CSR19_BIT6			FIELD16(0x0040)
-+#define MAC_CSR19_BIT7			FIELD16(0x0080)
- 
++/* NZR SEM 16+ USB (http://www.nzr.de) */
++#define FTDI_NZR_SEM_USB_PID	0xC1E0	/* NZR SEM-LOG16+ */
++
  /*
-  * MAC_CSR20: LED control register.
+  * RR-CirKits LocoBuffer USB (http://www.rr-cirkits.com)
+  */
 
 
