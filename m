@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758520Ab2I1PTd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:19:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34529 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758386Ab2I1PTc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:19:32 -0400
-Message-ID: <1348845559.3292.84.camel@twins>
-Subject: Re: [PATCH 04/31] perf, core: Add generic intx/intx_checkpointed
- counter modifiers
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, eranian@google.com,
-        acme@redhat.com, Andi Kleen <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Date: Fri, 28 Sep 2012 17:19:19 +0200
-In-Reply-To: <20120928145324.GQ16230@one.firstfloor.org>
-References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
-	 <1348806696-31170-5-git-send-email-andi@firstfloor.org>
-	 <1348822920.3292.60.camel@twins>
-	 <20120928145324.GQ16230@one.firstfloor.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1758553Ab2I1PTm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:19:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49397 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758532Ab2I1PTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 11:19:39 -0400
+Date: Fri, 28 Sep 2012 11:19:29 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+In-Reply-To: <20120928163029.19d304240b796e2c7a7d633b@canb.auug.org.au>
+Message-ID: <Pine.LNX.4.64.1209281117580.21946@file.rdu.redhat.com>
+References: <20120928163029.19d304240b796e2c7a7d633b@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-28 at 16:53 +0200, Andi Kleen wrote:
-> If I moved this into sysfs this would imply that the perf stat -T 
-> code would become Haswell specific. As far as I understand normally
-> you guys don't want things like that. Would everyone be ok with
-> having specific code there? 
 
-Have a look at /sys/bus/event_source/devices/cpu/format/*, that's
-already very hardware specific.
 
-What I suggested is something like:
+On Fri, 28 Sep 2012, Stephen Rothwell wrote:
 
-PMU_FORMAT_ATTR(intx, "config:32");
-PMU_FORMAT_ATTR(intx_cp "config:33");
+> Hi Andrew,
+> 
+> After merging the akpm tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> fs/block_dev.c: In function 'set_blocksize':
+> fs/block_dev.c:135:2: error: implicit declaration of function 'prio_tree_empty' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit b87570f5d349 ("Fix a crash when block device is read and
+> block size is changed at the same time") from the block tree interacting
+> with commit "prio_tree: remove" from the akpm tree.
+> 
+> I added the following merge fix patch for today.
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 28 Sep 2012 16:21:10 +1000
+> Subject: [PATCH] prio_tree: fix fs/block_dev.c for removal of prio_tree
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  fs/block_dev.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/block_dev.c b/fs/block_dev.c
+> index 246a81e..165b01f 100644
+> --- a/fs/block_dev.c
+> +++ b/fs/block_dev.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/namei.h>
+>  #include <linux/log2.h>
+>  #include <linux/cleancache.h>
+> +#include <linux/rbtree.h>
+>  #include <asm/uaccess.h>
+>  #include "internal.h"
+>  
+> @@ -132,7 +133,7 @@ int set_blocksize(struct block_device *bdev, int size)
+>  	/* Check that the block device is not memory mapped */
+>  	mapping = bdev->bd_inode->i_mapping;
+>  	mutex_lock(&mapping->i_mmap_mutex);
+> -	if (!prio_tree_empty(&mapping->i_mmap) ||
+> +	if (!RB_EMPTY_ROOT(&mapping->i_mmap) ||
+>  	    !list_empty(&mapping->i_mmap_nonlinear)) {
+>  		mutex_unlock(&mapping->i_mmap_mutex);
+>  		percpu_up_write(&bdev->bd_block_size_semaphore);
+> -- 
+> 1.7.10.280.gaa39
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-For the HSW+ cpus. That should be enough for userspace to create such
-events.
+... or replace it with
+
+if (mapping_mapped(&mapping)) { ...
+
+Mikulas
