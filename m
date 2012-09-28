@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758300Ab2I1Ox0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:53:26 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:38531 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757973Ab2I1OxZ (ORCPT
+	id S1758326Ab2I1Oyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:54:37 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:4603 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758188Ab2I1Oyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:53:25 -0400
-Date: Fri, 28 Sep 2012 16:53:24 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, eranian@google.com, acme@redhat.com,
-        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 04/31] perf, core: Add generic intx/intx_checkpointed counter modifiers
-Message-ID: <20120928145324.GQ16230@one.firstfloor.org>
-References: <1348806696-31170-1-git-send-email-andi@firstfloor.org> <1348806696-31170-5-git-send-email-andi@firstfloor.org> <1348822920.3292.60.camel@twins>
+	Fri, 28 Sep 2012 10:54:36 -0400
+Message-ID: <1348844071.1553.14.camel@x61.thuisdomein>
+Subject: Re: [PATCH -v2] mm: frontswap: fix a wrong if condition in
+ frontswap_shrink
+From: Paul Bolle <pebolle@tiscali.nl>
+To: zhenzhong.duan@oracle.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        levinsasha928@gmail.com, Feng Jin <joe.jin@oracle.com>,
+        dan.carpenter@oracle.com
+Date: Fri, 28 Sep 2012 16:54:31 +0200
+In-Reply-To: <50651CF5.5030903@oracle.com>
+References: <505C27FE.5080205@oracle.com>
+	 <1348745730.1512.19.camel@x61.thuisdomein> <50651CF5.5030903@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348822920.3292.60.camel@twins>
-User-Agent: Mutt/1.4.2.2i
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Sep 2012 14:54:31.0576 (UTC) FILETIME=[2AAE5180:01CD9D89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 11:02:00AM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-09-27 at 21:31 -0700, Andi Kleen wrote:
-> > +                               intx           :  1, /* count inside transaction */
-> > +                               intx_checkpointed :  1, /* checkpointed in transaction */ 
-> 
-> I really hate those names.. what are they called in transactional memory
-> literature?
+On Fri, 2012-09-28 at 11:43 +0800, Zhenzhong Duan wrote:
+> On 2012-09-27 19:35, Paul Bolle wrote:
+> > I think setting pages_to_unuse to zero here is not needed. It is
+> > initiated to zero in frontswap_shrink() and hasn't been touched since.
+> > See my patch at https://lkml.org/lkml/2012/9/27/250.
+> Yes, it's unneeded. But I didn't see warning as you said in above link 
+> when run 'make V=1 mm/frontswap.o'.
 
-Don't know of any other names. The papers I looked at normally don't
-bother with PMUs.
+Not even before applying your patch? Anyhow, after applying your patch
+the warnings gone here too.
 
-At some point I had intx_cp, would that be better?
+> >> -		return 0;
+> >> +		return 1;
+> >>   	}
+> >>   	total_pages_to_unuse = total_pages - target_pages;
+> >>   	return __frontswap_unuse_pages(total_pages_to_unuse, pages_to_unuse, type);
+> >> @@ -302,7 +307,7 @@ void frontswap_shrink(unsigned long target_pages)
+> >>   	spin_lock(&swap_lock);
+> >>   	ret = __frontswap_shrink(target_pages,&pages_to_unuse,&type);
+> >>   	spin_unlock(&swap_lock);
+> >> -	if (ret == 0&&  pages_to_unuse)
+> >> +	if (ret == 0)
+> >>   		try_to_unuse(type, true, pages_to_unuse);
+> >>   	return;
+> >>   }
+> >
+> > Are you sure pages_to_unuse won't be zero here? I've stared quite a bit
+> > at __frontswap_unuse_pages() and it's not obvious pages_to_unuse (there
+> > also called unused) will never be zero when that function returns zero.
+> pages_to_unuse==0 means all pages need to be unused.
 
-> Also do we really need this? Using the event format stuff we could
-> equally well do:
-> 
-> {cpu/cycles/, cpu/cycles,intx/, cpu/cycles,intx_checkpointed/}
-> 
-> No need to push those bits through perf_event_attr::flags when you can
-> stuff then through perf_event_attr::config, esp. for very hardware
-> specific features.
+Ah, now I see. I was focusing on changing the code as little as possible
+and didn't realize that you actually wanted to change behavior here.
+Looking at it again this change makes sense (though I hardly understand
+frontswap, so I can't properly evaluate it). Anyhow, as I said, your
+patch also does what I care about - silence a warning - so we might as
+well forget about my patch.
+ 
+Thanks,
 
-I can't use config, because the qualifiers are valid for events that
-already use config (like offcore). 
 
-So would need a new field. In fact that is what I did, I reused some
-unused bits.
+Paul Bolle
 
-If I moved this into sysfs this would imply that the perf stat -T 
-code would become Haswell specific. As far as I understand normally
-you guys don't want things like that. Would everyone be ok with
-having specific code there?
-
-The perf stat -T equations output is fairly important -- it's normally
-the first thing to look at for TSX -- so I would like to keep it.
-
-Also as a selfish reason I would prefer something that is short 
-to type. The qualifiers are quite common in scripts that do
-measurements here. So I would prefer to keep :t and :c as user
-interface.  But the internal implementation can be adjusted 
-of course.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
