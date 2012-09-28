@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758892Ab2I1VNb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:13:31 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47767 "EHLO
+	id S1758939Ab2I1VOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:14:45 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46187 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759496Ab2I1Ukg (ORCPT
+	by vger.kernel.org with ESMTP id S1759491Ab2I1Uke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:36 -0400
-X-Sasl-enc: eTXynn8HzA/XxXk40u+knDDYWLuRVXRjMY7zs4ZI81CD 1348864835
+	Fri, 28 Sep 2012 16:40:34 -0400
+X-Sasl-enc: wydq7hG93rsHW8/dd3/LrbbquOK5LoKfiPZ2O5Mxura5 1348864829
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
+        Mathias Krause <minipli@googlemail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 007/127] af_packet: remove BUG statement in tpacket_destruct_skb
-Date: Fri, 28 Sep 2012 13:33:00 -0700
-Message-Id: <20120928203046.661778701@linuxfoundation.org>
+Subject: [ 011/127] Bluetooth: HCI - Fix info leak in getsockopt(HCI_FILTER)
+Date: Fri, 28 Sep 2012 13:33:04 -0700
+Message-Id: <20120928203047.144376484@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,48 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "danborkmann@iogearbox.net" <danborkmann@iogearbox.net>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 7f5c3e3a80e6654cf48dfba7cf94f88c6b505467 ]
+[ Upstream commit e15ca9a0ef9a86f0477530b0f44a725d67f889ee ]
 
-Here's a quote of the comment about the BUG macro from asm-generic/bug.h:
+The HCI code fails to initialize the two padding bytes of struct
+hci_ufilter before copying it to userland -- that for leaking two
+bytes kernel stack. Add an explicit memset(0) before filling the
+structure to avoid the info leak.
 
- Don't use BUG() or BUG_ON() unless there's really no way out; one
- example might be detecting data structure corruption in the middle
- of an operation that can't be backed out of.  If the (sub)system
- can somehow continue operating, perhaps with reduced functionality,
- it's probably not BUG-worthy.
-
- If you're tempted to BUG(), think again:  is completely giving up
- really the *only* solution?  There are usually better options, where
- users don't need to reboot ASAP and can mostly shut down cleanly.
-
-In our case, the status flag of a ring buffer slot is managed from both sides,
-the kernel space and the user space. This means that even though the kernel
-side might work as expected, the user space screws up and changes this flag
-right between the send(2) is triggered when the flag is changed to
-TP_STATUS_SENDING and a given skb is destructed after some time. Then, this
-will hit the BUG macro. As David suggested, the best solution is to simply
-remove this statement since it cannot be used for kernel side internal
-consistency checks. I've tested it and the system still behaves /stable/ in
-this case, so in accordance with the above comment, we should rather remove it.
-
-Signed-off-by: Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/bluetooth/hci_sock.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -866,7 +866,6 @@ static void tpacket_destruct_skb(struct
+--- a/net/bluetooth/hci_sock.c
++++ b/net/bluetooth/hci_sock.c
+@@ -644,6 +644,7 @@ static int hci_sock_setsockopt(struct so
+ 		{
+ 			struct hci_filter *f = &hci_pi(sk)->filter;
  
- 	if (likely(po->tx_ring.pg_vec)) {
- 		ph = skb_shinfo(skb)->destructor_arg;
--		BUG_ON(__packet_get_status(po, ph) != TP_STATUS_SENDING);
- 		BUG_ON(atomic_read(&po->tx_ring.pending) == 0);
- 		atomic_dec(&po->tx_ring.pending);
- 		__packet_set_status(po, ph, TP_STATUS_AVAILABLE);
++			memset(&uf, 0, sizeof(uf));
+ 			uf.type_mask = f->type_mask;
+ 			uf.opcode    = f->opcode;
+ 			uf.event_mask[0] = *((u32 *) f->event_mask + 0);
 
 
