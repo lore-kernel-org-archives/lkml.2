@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032995Ab2I1Voq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:44:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
+	id S1032322Ab2I1UZU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:25:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964900Ab2I1UZa (ORCPT
+	with ESMTP id S1031742Ab2I1UZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:25:30 -0400
+	Fri, 28 Sep 2012 16:25:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dylan Reid <dgreid@chromium.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 075/218] ASoC: samsung dma - Dont indicate support for pause/resume.
-Date: Fri, 28 Sep 2012 13:14:52 -0700
-Message-Id: <20120928201510.168889376@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Fengguang Wu <fengguang.wu@intel.com>,
+        Michael Cree <mcree@orcon.net.nz>, Matt Turner <mattst88@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 068/218] Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
+Date: Fri, 28 Sep 2012 13:14:45 -0700
+Message-Id: <20120928201509.332966277@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,64 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dylan Reid <dgreid@chromium.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 57b2d68863f281737d8596cb3d76d89d9cc54fd8 upstream.
+commit 67a806d9499353fabd5b5ff07337f3aa88a1c3ba upstream.
 
-The pause and resume operations indicate that the stream can be
-un-paused/resumed from the exact location they were paused/suspended.
-This is not true for this driver, the pause and suspend triggers share
-the same code path with stop, they flush all pending DMA transfers.
-This drops all pending samples.  The pause_release/resume triggers are
-the same as start, except that prepare won't be called beforehand,
-nothing will be enqueued to the DMA engine and nothing will happen (no
-audio).  Removing the pause flag will let apps know that it isn't
-supported.  Removing the resume flag will cause user space to call
-prepare and start instead of resume, so audio will continue playing when
-the system wakes up.
+The following build error occurred during an alpha build:
 
-Before removing the pause and resume flags, I tested this on an exynos
-5250, using 'aplay -i'. Pause/un-pause leads to silence followed by a
-write error.  Suspend/resume testing led to the same result.  Removing
-the two flags fixes suspend/resume (since snd_pcm_prepare is called
-again). And leads to a proper reporting of pause not supported.
+  net/core/sock.c:274:36: error: initializer element is not constant
 
-Signed-off-by: Dylan Reid <dgreid@chromium.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Dave Anglin says:
+> Here is the line in sock.i:
+>
+> struct static_key memalloc_socks = ((struct static_key) { .enabled =
+> ((atomic_t) { (0) }) });
+
+The above line contains two compound literals.  It also uses a designated
+initializer to initialize the field enabled.  A compound literal is not a
+constant expression.
+
+The location of the above statement isn't fully clear, but if a compound
+literal occurs outside the body of a function, the initializer list must
+consist of constant expressions.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Acked-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/samsung/dma.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ arch/alpha/include/asm/atomic.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/soc/samsung/dma.c
-+++ b/sound/soc/samsung/dma.c
-@@ -34,9 +34,7 @@ static const struct snd_pcm_hardware dma
- 	.info			= SNDRV_PCM_INFO_INTERLEAVED |
- 				    SNDRV_PCM_INFO_BLOCK_TRANSFER |
- 				    SNDRV_PCM_INFO_MMAP |
--				    SNDRV_PCM_INFO_MMAP_VALID |
--				    SNDRV_PCM_INFO_PAUSE |
--				    SNDRV_PCM_INFO_RESUME,
-+				    SNDRV_PCM_INFO_MMAP_VALID,
- 	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
- 				    SNDRV_PCM_FMTBIT_U16_LE |
- 				    SNDRV_PCM_FMTBIT_U8 |
-@@ -246,15 +244,11 @@ static int dma_trigger(struct snd_pcm_su
+--- a/arch/alpha/include/asm/atomic.h
++++ b/arch/alpha/include/asm/atomic.h
+@@ -14,8 +14,8 @@
+  */
  
- 	switch (cmd) {
- 	case SNDRV_PCM_TRIGGER_START:
--	case SNDRV_PCM_TRIGGER_RESUME:
--	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
- 		prtd->state |= ST_RUNNING;
- 		prtd->params->ops->trigger(prtd->params->ch);
- 		break;
  
- 	case SNDRV_PCM_TRIGGER_STOP:
--	case SNDRV_PCM_TRIGGER_SUSPEND:
--	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
- 		prtd->state &= ~ST_RUNNING;
- 		prtd->params->ops->stop(prtd->params->ch);
- 		break;
+-#define ATOMIC_INIT(i)		( (atomic_t) { (i) } )
+-#define ATOMIC64_INIT(i)	( (atomic64_t) { (i) } )
++#define ATOMIC_INIT(i)		{ (i) }
++#define ATOMIC64_INIT(i)	{ (i) }
+ 
+ #define atomic_read(v)		(*(volatile int *)&(v)->counter)
+ #define atomic64_read(v)	(*(volatile long *)&(v)->counter)
 
 
