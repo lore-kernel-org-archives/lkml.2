@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030780Ab2I1TGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:06:38 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030685Ab2I1TGb (ORCPT
+	id S1030814Ab2I1TGx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:06:53 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54594 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030800Ab2I1TGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:06:31 -0400
+	Fri, 28 Sep 2012 15:06:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 248/262] NFSd: introduce nfsd_destroy() helper
-Date: Fri, 28 Sep 2012 11:52:57 -0700
-Message-Id: <20120928183027.747888179@linuxfoundation.org>
+        Richard Ems <richard.ems@cape-horn-eng.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 243/262] NFS: Fix Oopses in nfs_lookup_revalidate and nfs4_lookup_revalidate
+Date: Fri, 28 Sep 2012 11:52:52 -0700
+Message-Id: <20120928183027.108406252@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,98 +29,86 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 19f7e2ca44dfc3c1b3f499fc46801f98d403500f upstream.
+[Fixed upstream as part of 0b728e1911c, but that's a much larger patch,
+this is only the nfs portion backported as needed.]
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Fix the following Oops in 3.5.1:
+
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+ IP: [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+ PGD 337c63067 PUD 0
+ Oops: 0000 [#1] SMP
+ CPU 5
+ Modules linked in: nfs fscache nfsd lockd nfs_acl auth_rpcgss sunrpc af_packet binfmt_misc cpufreq_conservative cpufreq_userspace cpufreq_powersave dm_mod acpi_cpufreq mperf coretemp gpio_ich kvm_intel joydev kvm ioatdma hid_generic igb lpc_ich i7core_edac edac_core ptp serio_raw dca pcspkr i2c_i801 mfd_core sg pps_core usbhid crc32c_intel microcode button autofs4 uhci_hcd ttm drm_kms_helper drm i2c_algo_bit sysimgblt sysfillrect syscopyarea ehci_hcd usbcore usb_common scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh edd fan ata_piix thermal processor thermal_sys
+
+ Pid: 30431, comm: java Not tainted 3.5.1-2-default #1 Supermicro X8DTT/X8DTT
+ RIP: 0010:[<ffffffffa03789cd>]  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+ RSP: 0018:ffff8801b418bd38  EFLAGS: 00010292
+ RAX: 00000000fffffff6 RBX: ffff88032016d800 RCX: 0000000000000020
+ RDX: ffffffff00000000 RSI: 0000000000000000 RDI: ffff8801824a7b00
+ RBP: ffff8801b418bdf8 R08: 7fffff0034323030 R09: fffffffff04c03ed
+ R10: ffff8801824a7b00 R11: 0000000000000002 R12: ffff8801824a7b00
+ R13: ffff8801824a7b00 R14: 0000000000000000 R15: ffff8803201725d0
+ FS:  00002b53a46cb700(0000) GS:ffff88033fc20000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000000038 CR3: 000000020a426000 CR4: 00000000000007e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process java (pid: 30431, threadinfo ffff8801b418a000, task ffff8801b5d20600)
+ Stack:
+  ffff8801b418be44 ffff88032016d800 ffff8801b418bdf8 0000000000000000
+  ffff8801824a7b00 ffff8801b418bdd7 ffff8803201725d0 ffffffff8116a9c0
+  ffff8801b5c38dc0 0000000000000007 ffff88032016d800 0000000000000000
+ Call Trace:
+  [<ffffffff8116a9c0>] lookup_dcache+0x80/0xe0
+  [<ffffffff8116aa43>] __lookup_hash+0x23/0x90
+  [<ffffffff8116b4a5>] lookup_one_len+0xc5/0x100
+  [<ffffffffa03869a3>] nfs_sillyrename+0xe3/0x210 [nfs]
+  [<ffffffff8116cadf>] vfs_unlink.part.25+0x7f/0xe0
+  [<ffffffff8116f22c>] do_unlinkat+0x1ac/0x1d0
+  [<ffffffff815717b9>] system_call_fastpath+0x16/0x1b
+  [<00002b5348b5f527>] 0x2b5348b5f526
+ Code: ec 38 b8 f6 ff ff ff 4c 89 64 24 18 4c 89 74 24 28 49 89 fc 48 89 5c 24 08 48 89 6c 24 10 49 89 f6 4c 89 6c 24 20 4c 89 7c 24 30 <f6> 46 38 40 0f 85 d1 00 00 00 e8 c4 c4 df e0 48 8b 58 30 49 89
+ RIP  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+  RSP <ffff8801b418bd38>
+ CR2: 0000000000000038
+ ---[ end trace 845113ed191985dd ]---
+
+This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
+calling down to the dentry revalidation code with a NULL pointer
+to struct nameidata.
+
+It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
+to ->d_revalidate())
+
+Reported-by: Richard Ems <richard.ems@cape-horn-eng.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfsd/nfsctl.c |    8 ++------
- fs/nfsd/nfsd.h   |    9 +++++++++
- fs/nfsd/nfssvc.c |   14 +++-----------
- 3 files changed, 14 insertions(+), 17 deletions(-)
+ fs/nfs/dir.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -673,9 +673,7 @@ static ssize_t __write_ports_addfd(char
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1123,7 +1123,7 @@ static int nfs_lookup_revalidate(struct
+ 	struct nfs_fattr *fattr = NULL;
+ 	int error;
  
- 	err = svc_addsock(nfsd_serv, fd, buf, SIMPLE_TRANSACTION_LIMIT);
- 	if (err < 0) {
--		if (nfsd_serv->sv_nrthreads == 1)
--			svc_shutdown_net(nfsd_serv, net);
--		svc_destroy(nfsd_serv);
-+		nfsd_destroy(net);
- 		return err;
- 	}
+-	if (nd->flags & LOOKUP_RCU)
++	if (nd && (nd->flags & LOOKUP_RCU))
+ 		return -ECHILD;
  
-@@ -744,9 +742,7 @@ out_close:
- 		svc_xprt_put(xprt);
- 	}
- out_err:
--	if (nfsd_serv->sv_nrthreads == 1)
--		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);
-+	nfsd_destroy(net);
- 	return err;
- }
+ 	parent = dget_parent(dentry);
+@@ -1526,7 +1526,7 @@ static int nfs4_lookup_revalidate(struct
+ 	struct inode *dir;
+ 	int openflags, ret = 0;
  
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -73,6 +73,15 @@ int		nfsd_nrpools(void);
- int		nfsd_get_nrthreads(int n, int *);
- int		nfsd_set_nrthreads(int n, int *);
+-	if (nd->flags & LOOKUP_RCU)
++	if (nd && (nd->flags & LOOKUP_RCU))
+ 		return -ECHILD;
  
-+static inline void nfsd_destroy(struct net *net)
-+{
-+	int destroy = (nfsd_serv->sv_nrthreads == 1);
-+
-+	if (destroy)
-+		svc_shutdown_net(nfsd_serv, net);
-+	svc_destroy(nfsd_serv);
-+}
-+
- #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
- #ifdef CONFIG_NFSD_V2_ACL
- extern struct svc_version nfsd_acl_version2;
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -427,11 +427,7 @@ int nfsd_set_nrthreads(int n, int *nthre
- 		if (err)
- 			break;
- 	}
--
--	if (nfsd_serv->sv_nrthreads == 1)
--		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);
--
-+	nfsd_destroy(net);
- 	return err;
- }
- 
-@@ -478,9 +474,7 @@ out_shutdown:
- 	if (error < 0 && !nfsd_up_before)
- 		nfsd_shutdown();
- out_destroy:
--	if (nfsd_serv->sv_nrthreads == 1)
--		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);		/* Release server */
-+	nfsd_destroy(net);		/* Release server */
- out:
- 	mutex_unlock(&nfsd_mutex);
- 	return error;
-@@ -682,9 +676,7 @@ int nfsd_pool_stats_release(struct inode
- 
- 	mutex_lock(&nfsd_mutex);
- 	/* this function really, really should have been called svc_put() */
--	if (nfsd_serv->sv_nrthreads == 1)
--		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);
-+	nfsd_destroy(net);
- 	mutex_unlock(&nfsd_mutex);
- 	return ret;
- }
+ 	inode = dentry->d_inode;
 
 
