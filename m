@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946117Ab2I1VNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:13:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56918 "EHLO
+	id S1758892Ab2I1VNb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:13:31 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47767 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759495Ab2I1Ukg (ORCPT
+	by vger.kernel.org with ESMTP id S1759496Ab2I1Ukg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Sep 2012 16:40:36 -0400
-X-Sasl-enc: jtHJzNQS6/v/KFID+iDqx5VxBlEX9cA51jtOY8ri5EI+ 1348864834
+X-Sasl-enc: eTXynn8HzA/XxXk40u+knDDYWLuRVXRjMY7zs4ZI81CD 1348864835
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
+        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 014/127] Bluetooth: RFCOMM - Fix info leak via getsockname()
-Date: Fri, 28 Sep 2012 13:33:07 -0700
-Message-Id: <20120928203047.455182258@linuxfoundation.org>
+Subject: [ 007/127] af_packet: remove BUG statement in tpacket_destruct_skb
+Date: Fri, 28 Sep 2012 13:33:00 -0700
+Message-Id: <20120928203046.661778701@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -32,34 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: "danborkmann@iogearbox.net" <danborkmann@iogearbox.net>
 
-[ Upstream commit 9344a972961d1a6d2c04d9008b13617bcb6ec2ef ]
+[ Upstream commit 7f5c3e3a80e6654cf48dfba7cf94f88c6b505467 ]
 
-The RFCOMM code fails to initialize the trailing padding byte of struct
-sockaddr_rc added for alignment. It that for leaks one byte kernel stack
-via the getsockname() syscall. Add an explicit memset(0) before filling
-the structure to avoid the info leak.
+Here's a quote of the comment about the BUG macro from asm-generic/bug.h:
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
+ Don't use BUG() or BUG_ON() unless there's really no way out; one
+ example might be detecting data structure corruption in the middle
+ of an operation that can't be backed out of.  If the (sub)system
+ can somehow continue operating, perhaps with reduced functionality,
+ it's probably not BUG-worthy.
+
+ If you're tempted to BUG(), think again:  is completely giving up
+ really the *only* solution?  There are usually better options, where
+ users don't need to reboot ASAP and can mostly shut down cleanly.
+
+In our case, the status flag of a ring buffer slot is managed from both sides,
+the kernel space and the user space. This means that even though the kernel
+side might work as expected, the user space screws up and changes this flag
+right between the send(2) is triggered when the flag is changed to
+TP_STATUS_SENDING and a given skb is destructed after some time. Then, this
+will hit the BUG macro. As David suggested, the best solution is to simply
+remove this statement since it cannot be used for kernel side internal
+consistency checks. I've tested it and the system still behaves /stable/ in
+this case, so in accordance with the above comment, we should rather remove it.
+
+Signed-off-by: Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bluetooth/rfcomm/sock.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/packet/af_packet.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -544,6 +544,7 @@ static int rfcomm_sock_getname(struct so
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -866,7 +866,6 @@ static void tpacket_destruct_skb(struct
  
- 	BT_DBG("sock %p, sk %p", sock, sk);
- 
-+	memset(sa, 0, sizeof(*sa));
- 	sa->rc_family  = AF_BLUETOOTH;
- 	sa->rc_channel = rfcomm_pi(sk)->channel;
- 	if (peer)
+ 	if (likely(po->tx_ring.pg_vec)) {
+ 		ph = skb_shinfo(skb)->destructor_arg;
+-		BUG_ON(__packet_get_status(po, ph) != TP_STATUS_SENDING);
+ 		BUG_ON(atomic_read(&po->tx_ring.pending) == 0);
+ 		atomic_dec(&po->tx_ring.pending);
+ 		__packet_set_status(po, ph, TP_STATUS_AVAILABLE);
 
 
