@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161053Ab2I1UtF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:49:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53008 "EHLO
+	id S1161082Ab2I1UtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:49:13 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42192 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1945944Ab2I1Usy (ORCPT
+	by vger.kernel.org with ESMTP id S1945953Ab2I1Us5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:54 -0400
-X-Sasl-enc: t222iXmhA60QtDrnkxLHaVVVtPgPSKJsXIbaCNhANcjJ 1348865333
+	Fri, 28 Sep 2012 16:48:57 -0400
+X-Sasl-enc: 407pb+0NH6hLdkRlpqEyPOAP1qO6JfKsc35thQ1gyG9k 1348865336
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        dcb314@hotmail.com, Alan Cox <alan@linux.intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [ 115/127] pch_uart: Fix missing break for 16 byte fifo
-Date: Fri, 28 Sep 2012 13:34:48 -0700
-Message-Id: <20120928203059.374756445@linuxfoundation.org>
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 117/127] pch_uart: Fix parity setting issue
+Date: Fri, 28 Sep 2012 13:34:50 -0700
+Message-Id: <20120928203059.591918913@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,31 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit 9bc03743fff0770dc5a5324ba92e67cc377f16ca upstream.
+commit 38bd2a1ac736901d1cf4971c78ef952ba92ef78b upstream.
 
-Otherwise we fall back to the wrong value.
+Parity Setting value is reverse.
+E.G. In case of setting ODD parity, EVEN value is set.
+This patch inverts "if" condition.
 
-Reported-by: <dcb314@hotmail.com>
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44091
-Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/pch_uart.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/tty/serial/pch_uart.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/drivers/tty/serial/pch_uart.c
 +++ b/drivers/tty/serial/pch_uart.c
-@@ -1161,6 +1161,7 @@ static int pch_uart_startup(struct uart_
- 		break;
- 	case 16:
- 		fifo_size = PCH_UART_HAL_FIFO16;
-+		break;
- 	case 1:
- 	default:
- 		fifo_size = PCH_UART_HAL_FIFO_DIS;
+@@ -1263,7 +1263,7 @@ static void pch_uart_set_termios(struct
+ 		stb = PCH_UART_HAL_STB1;
+ 
+ 	if (termios->c_cflag & PARENB) {
+-		if (!(termios->c_cflag & PARODD))
++		if (termios->c_cflag & PARODD)
+ 			parity = PCH_UART_HAL_PARITY_ODD;
+ 		else
+ 			parity = PCH_UART_HAL_PARITY_EVEN;
 
 
