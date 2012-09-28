@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423088Ab2I1VCO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:02:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33965 "EHLO
+	id S932302Ab2I1VCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:02:39 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35844 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422893Ab2I1Urk (ORCPT
+	by vger.kernel.org with ESMTP id S1032997Ab2I1Uri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:47:40 -0400
-X-Sasl-enc: pZa0+7HSVDvjDKGWWhKToHHXkSBWzNuCZQaC7cFbOdRd 1348865260
+	Fri, 28 Sep 2012 16:47:38 -0400
+X-Sasl-enc: 7R3muxjLgDrnDNUxipnLZ0E33JGPw0E3qh7aJAXPqHaq 1348865257
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "Luck, Tony" <tony.luck@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 048/127] mm/ia64: fix a memory block size bug
-Date: Fri, 28 Sep 2012 13:33:41 -0700
-Message-Id: <20120928203051.466516159@linuxfoundation.org>
+        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 038/127] mmc: mxs-mmc: fix deadlock in SDIO IRQ case
+Date: Fri, 28 Sep 2012 13:33:31 -0700
+Message-Id: <20120928203050.289347162@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -30,63 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
 
-commit 05cf96398e1b6502f9e191291b715c7463c9d5dd upstream.
+commit 1af36b2a993dddfa3d6860ec4879c9e8abc9b976 upstream.
 
-I found following definition in include/linux/memory.h, in my IA64
-platform, SECTION_SIZE_BITS is equal to 32, and MIN_MEMORY_BLOCK_SIZE
-will be 0.
+Release the lock before mmc_signal_sdio_irq is called by mxs_mmc_irq_handler.
 
-  #define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
+Backtrace:
+[   79.660000] =============================================
+[   79.660000] [ INFO: possible recursive locking detected ]
+[   79.660000] 3.4.0-00009-g3e96082-dirty #11 Not tainted
+[   79.660000] ---------------------------------------------
+[   79.660000] swapper/0 is trying to acquire lock:
+[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026ea3c>] mxs_mmc_enable_sdio_irq+0x18/0xd4
+[   79.660000]
+[   79.660000] but task is already holding lock:
+[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
+[   79.660000]
+[   79.660000] other info that might help us debug this:
+[   79.660000]  Possible unsafe locking scenario:
+[   79.660000]
+[   79.660000]        CPU0
+[   79.660000]        ----
+[   79.660000]   lock(&(&host->lock)->rlock#2);
+[   79.660000]   lock(&(&host->lock)->rlock#2);
+[   79.660000]
+[   79.660000]  *** DEADLOCK ***
+[   79.660000]
+[   79.660000]  May be due to missing lock nesting notation
+[   79.660000]
+[   79.660000] 1 lock held by swapper/0:
+[   79.660000]  #0:  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
+[   79.660000]
+[   79.660000] stack backtrace:
+[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c005f9c0>] (__lock_acquire+0x1948/0x1d48)
+[   79.660000] [<c005f9c0>] (__lock_acquire+0x1948/0x1d48) from [<c005fea0>] (lock_acquire+0xe0/0xf8)
+[   79.660000] [<c005fea0>] (lock_acquire+0xe0/0xf8) from [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58)
+[   79.660000] [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
+[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
+[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
+[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
+[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
+[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
+[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
+[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
+[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
+[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
+[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
+[   79.660000] BUG: spinlock lockup on CPU#0, swapper/0
+[   79.660000]  lock: c398cb2c, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
+[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144)
+[   79.660000] [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144) from [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58)
+[   79.660000] [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
+[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
+[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
+[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
+[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
+[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
+[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
+[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
+[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
+[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
+[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
 
-Because MIN_MEMORY_BLOCK_SIZE is int type and length of 32bits,
-so MIN_MEMORY_BLOCK_SIZE(1 << 32) will will equal to 0.
-Actually when SECTION_SIZE_BITS >= 31, MIN_MEMORY_BLOCK_SIZE will be wrong.
-This will cause wrong system memory infomation in sysfs.
-I think it should be:
-
-  #define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
-
-And "echo offline > memory0/state" will cause following call trace:
-
-  kernel BUG at mm/memory_hotplug.c:885!
-  sh[6455]: bugcheck! 0 [1]
-  Pid: 6455, CPU 0, comm:                   sh
-  psr : 0000101008526030 ifs : 8000000000000fa4 ip  : [<a0000001008c40f0>]    Not tainted (3.6.0-rc1)
-  ip is at offline_pages+0x210/0xee0
-  Call Trace:
-    show_stack+0x80/0xa0
-    show_regs+0x640/0x920
-    die+0x190/0x2c0
-    die_if_kernel+0x50/0x80
-    ia64_bad_break+0x3d0/0x6e0
-    ia64_native_leave_kernel+0x0/0x270
-    offline_pages+0x210/0xee0
-    alloc_pages_current+0x180/0x2a0
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/memory.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/host/mxs-mmc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/linux/memory.h
-+++ b/include/linux/memory.h
-@@ -20,7 +20,7 @@
- #include <linux/compiler.h>
- #include <linux/mutex.h>
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -278,11 +278,11 @@ static irqreturn_t mxs_mmc_irq_handler(i
+ 	writel(stat & MXS_MMC_IRQ_BITS,
+ 	       host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
  
--#define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
-+#define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
++	spin_unlock(&host->lock);
++
+ 	if ((stat & BM_SSP_CTRL1_SDIO_IRQ) && (stat & BM_SSP_CTRL1_SDIO_IRQ_EN))
+ 		mmc_signal_sdio_irq(host->mmc);
  
- struct memory_block {
- 	unsigned long start_section_nr;
+-	spin_unlock(&host->lock);
+-
+ 	if (stat & BM_SSP_CTRL1_RESP_TIMEOUT_IRQ)
+ 		cmd->error = -ETIMEDOUT;
+ 	else if (stat & BM_SSP_CTRL1_RESP_ERR_IRQ)
 
 
