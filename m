@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031029Ab2I1UTh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:19:37 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41159 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030308Ab2I1UTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:19:34 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 001/218] net: Allow driver to limit number of GSO segments per skb
-Date: Fri, 28 Sep 2012 13:13:38 -0700
-Message-Id: <20120928201501.395054856@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.1.428.g652398a
-In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
-References: <20120928201501.208384923@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1031031Ab2I1UVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:21:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52684 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030221Ab2I1UVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 16:21:34 -0400
+Date: Fri, 28 Sep 2012 22:21:22 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Input and HID updates for 3.7
+In-Reply-To: <20120928173539.GB6356@core.coreip.homeip.net>
+Message-ID: <alpine.LNX.2.00.1209282218350.17437@pobox.suse.cz>
+References: <20120919185605.GA778@polaris.bitmath.org> <alpine.LNX.2.00.1209192351120.22959@pobox.suse.cz> <20120928173539.GB6356@core.coreip.homeip.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 28 Sep 2012, Dmitry Torokhov wrote:
 
-------------------
+> > > Please pull this tree to receive Input and HID updates for 3.7. The
+> > > tree contains input core changes, Acked by Dmitry, which substantially
+> > > reduces the irqsoff latency for all input devices. It also contains MT
+> > > changes which allows further memory reduction, speedup and hardware
+> > > support in the HID Multitouch driver. Lastly, you get the conversion
+> > > of the bcm5974 driver to MT-B, which due to the mixed dependency of
+> > > the tree fits better here than anywhere else.
+> > > 
+> > > Thanks,
+> > > Henrik
+> > > 
+> > > The following changes since commit 4cbe5a555fa58a79b6ecbb6c531b8bab0650778d:
+> > > 
+> > >   Linux 3.6-rc4 (2012-09-01 10:39:58 -0700)
+> > > 
+> > > are available in the git repository at:
+> > > 
+> > >   git://github.com/rydberg/linux.git for-next
+> > 
+> > Pulled. Thanks Henrik, thanks Dmitry.
+> 
+> Hmm, it looks like the work on making evdev using dynamic device numbers
+> will clash with Henrik's changes. I think I will also pull this into my
+> tree and then git should be able to resolve it all properly in -next.
 
+That should work. Alternatively you can pull 'from-henrik' branch from my 
+tree in case Henrik has already ditched/rebased his tree.
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+And when merging to Linus shouldn't really matter, git should handle that 
+as well nicely.
 
-[ Upstream commit 30b678d844af3305cda5953467005cebb5d7b687 ]
-
-A peer (or local user) may cause TCP to use a nominal MSS of as little
-as 88 (actual MSS of 76 with timestamps).  Given that we have a
-sufficiently prodigious local sender and the peer ACKs quickly enough,
-it is nevertheless possible to grow the window for such a connection
-to the point that we will try to send just under 64K at once.  This
-results in a single skb that expands to 861 segments.
-
-In some drivers with TSO support, such an skb will require hundreds of
-DMA descriptors; a substantial fraction of a TX ring or even more than
-a full ring.  The TX queue selected for the skb may stall and trigger
-the TX watchdog repeatedly (since the problem skb will be retried
-after the TX reset).  This particularly affects sfc, for which the
-issue is designated as CVE-2012-3412.
-
-Therefore:
-1. Add the field net_device::gso_max_segs holding the device-specific
-   limit.
-2. In netif_skb_features(), if the number of segments is too high then
-   mask out GSO features to force fall back to software GSO.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/netdevice.h |    2 ++
- net/core/dev.c            |    4 ++++
- 2 files changed, 6 insertions(+)
-
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1279,6 +1279,8 @@ struct net_device {
- 	/* for setting kernel sock attribute on TCP connection setup */
- #define GSO_MAX_SIZE		65536
- 	unsigned int		gso_max_size;
-+#define GSO_MAX_SEGS		65535
-+	u16			gso_max_segs;
- 
- #ifdef CONFIG_DCB
- 	/* Data Center Bridging netlink ops */
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2121,6 +2121,9 @@ netdev_features_t netif_skb_features(str
- 	__be16 protocol = skb->protocol;
- 	netdev_features_t features = skb->dev->features;
- 
-+	if (skb_shinfo(skb)->gso_segs > skb->dev->gso_max_segs)
-+		features &= ~NETIF_F_GSO_MASK;
-+
- 	if (protocol == htons(ETH_P_8021Q)) {
- 		struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
- 		protocol = veh->h_vlan_encapsulated_proto;
-@@ -5909,6 +5912,7 @@ struct net_device *alloc_netdev_mqs(int
- 	dev_net_set(dev, &init_net);
- 
- 	dev->gso_max_size = GSO_MAX_SIZE;
-+	dev->gso_max_segs = GSO_MAX_SEGS;
- 
- 	INIT_LIST_HEAD(&dev->napi_list);
- 	INIT_LIST_HEAD(&dev->unreg_list);
-
-
+-- 
+Jiri Kosina
+SUSE Labs
