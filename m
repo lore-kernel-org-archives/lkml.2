@@ -1,159 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab2I1NZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 09:25:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35663 "EHLO mx2.suse.de"
+	id S1757854Ab2I1N2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 09:28:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:61057 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753287Ab2I1NZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 09:25:24 -0400
-Date: Fri, 28 Sep 2012 14:25:12 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] CMA: migrate mlocked page
-Message-ID: <20120928132512.GF29125@suse.de>
-References: <1348641165-29108-1-git-send-email-minchan@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1348641165-29108-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754505Ab2I1N2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 09:28:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,502,1344236400"; 
+   d="scan'208";a="198359564"
+Message-ID: <1348838843.4922.5.camel@yhuang-mobile.sh.intel.com>
+Subject: Re: Why hold device_lock when calling callback in pci_walk_bus?
+From: Huang Ying <ying.huang@intel.com>
+To: "Zhang, Yanmin" <yanmin.zhang@intel.com>
+Cc: "bhelgaas@google.com" <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>
+Date: Fri, 28 Sep 2012 21:27:23 +0800
+In-Reply-To: <144086DDB7BB6D429C79280EB1C804D414B1F6@SHSMSX101.ccr.corp.intel.com>
+References: <1348820118.4530.41.camel@yhuang-mobile.sh.intel.com>
+	 <144086DDB7BB6D429C79280EB1C804D414B1F6@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 03:32:45PM +0900, Minchan Kim wrote:
-> Now CMA can't migrate mlocked page so it ends up fail to allocate
-> contiguous memory space. It's not good for CMA.
-> This patch makes mlocked page be migrated out.
-> Of course, it can affect realtime processes but in CMA usecase,
-> contiguos memory allocation failing is far worse than access latency
-> to an mlcoked page being vairable while CMA is running.
-> If someone want to make the system realtime, he shouldn't enable
-> CMA because stall happens in random time.
+Hi, Yanmin,
+
+Thanks for your explain.
+
+On Fri, 2012-09-28 at 02:29 -0600, Zhang, Yanmin wrote:
+> Some error handling functions call pci_walk_bus. For example, pci-e aer. Here we lock the device, so the driver wouldn't detach from the device, as the cb might call driver's callback function.
+
+Still has two question.
+
+1. Is it a good practice to hold device_lock when calling driver
+callback to prevent driver be unbind?
+
+2. Is it a good idea to let callback of pci_walk_bus to acquire
+device_lock when necessary.  Because pci_walk_bus may be used by driver
+callback too.
+
+Best Regards,
+Huang Ying
+
+> -----Original Message-----
+> From: Huang, Ying 
+> Sent: Friday, September 28, 2012 4:15 PM
+> To: bhelgaas@google.com
+> Cc: Greg Kroah-Hartman; Zhang, Yanmin; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; rjw@sisk.pl
+> Subject: Why hold device_lock when calling callback in pci_walk_bus?
 > 
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-
-Mindlessly petty nit below.
-
-> ---
->  include/linux/mmzone.h |    2 ++
->  mm/compaction.c        |    8 ++++++--
->  mm/internal.h          |    2 +-
->  mm/page_alloc.c        |    2 +-
->  mm/vmscan.c            |    4 ++--
->  5 files changed, 12 insertions(+), 6 deletions(-)
+> Hi, All,
 > 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 10aa549..2c9348a 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -218,6 +218,8 @@ struct lruvec {
->  #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x2)
->  /* Isolate for asynchronous migration */
->  #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x4)
-> +/* Isolate unevictable pages */
-> +#define ISOLATE_UNEVICTABLE	((__force isolate_mode_t)0x8)
->  
->  /* LRU Isolation modes. */
->  typedef unsigned __bitwise__ isolate_mode_t;
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 5037399..891637d 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -445,6 +445,7 @@ static bool too_many_isolated(struct zone *zone)
->   * @cc:		Compaction control structure.
->   * @low_pfn:	The first PFN of the range.
->   * @end_pfn:	The one-past-the-last PFN of the range.
-> + * @unevictable: true if it allows to isolate unevictable pages
->   *
->   * Isolate all pages that can be migrated from the range specified by
->   * [low_pfn, end_pfn).  Returns zero if there is a fatal signal
-> @@ -460,7 +461,7 @@ static bool too_many_isolated(struct zone *zone)
->   */
->  unsigned long
->  isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> -			   unsigned long low_pfn, unsigned long end_pfn)
-> +		unsigned long low_pfn, unsigned long end_pfn, bool unevictable)
->  {
->  	unsigned long last_pageblock_nr = 0, pageblock_nr;
->  	unsigned long nr_scanned = 0, nr_isolated = 0;
-> @@ -585,6 +586,9 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  		if (!cc->sync)
->  			mode |= ISOLATE_ASYNC_MIGRATE;
->  
-> +		if (unevictable)
-> +			mode |= ISOLATE_UNEVICTABLE;
-> +
->  		lruvec = mem_cgroup_page_lruvec(page, zone);
->  
->  		/* Try isolate the page */
-> @@ -790,7 +794,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  	}
->  
->  	/* Perform the isolation */
-> -	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn);
-> +	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
->  	if (!low_pfn || cc->contended)
->  		return ISOLATE_ABORT;
->  
-> diff --git a/mm/internal.h b/mm/internal.h
-> index d1e84fd..9d5d276 100644
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -138,7 +138,7 @@ unsigned long
->  isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn);
->  unsigned long
->  isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> -			   unsigned long low_pfn, unsigned long end_pfn);
-> +	unsigned long low_pfn, unsigned long end_pfn, bool unevictable);
->  
->  #endif
->  
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 1a69094..296bea9 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5694,7 +5694,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
->  		if (list_empty(&cc.migratepages)) {
->  			cc.nr_migratepages = 0;
->  			pfn = isolate_migratepages_range(cc.zone, &cc,
-> -							 pfn, end);
-> +							 pfn, end, true);
->  			if (!pfn) {
->  				ret = -EINTR;
->  				break;
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index b5e45f4..1df51f4 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1009,8 +1009,8 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode)
->  	if (!PageLRU(page))
->  		return ret;
->  
-> -	/* Do not give back unevictable pages for compaction */
-> -	if (PageUnevictable(page))
-> +	/* Compaction can't handle unevictable pages but CMA can do */
-> +	if (PageUnevictable(page) && !(mode & ISOLATE_UNEVICTABLE))
->  		return ret;
+> If my understanding were correct, device_lock is used to provide mutual exclusion between device probe/remove/suspend/resume etc.  Why hold device_lock when calling callback in pci_walk_bus.
+> 
+> This is introduced by the following commit.
+> 
+> commit d71374dafbba7ec3f67371d3b7e9f6310a588808
+> Author: Zhang Yanmin <yanmin.zhang@intel.com>
+> Date:   Fri Jun 2 12:35:43 2006 +0800
+> 
+>     [PATCH] PCI: fix race with pci_walk_bus and pci_destroy_dev
+>     
+>     pci_walk_bus has a race with pci_destroy_dev. When cb is called
+>     in pci_walk_bus, pci_destroy_dev might unlink the dev pointed by next.
+>     Later on in the next loop, pointer next becomes NULL and cause
+>     kernel panic.
+>     
+>     Below patch against 2.6.17-rc4 fixes it by changing pci_bus_lock (spin_lock)
+>     to pci_bus_sem (rw_semaphore).
+>     
+>     Signed-off-by: Zhang Yanmin <yanmin.zhang@intel.com>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> Corresponding email thread is: https://lkml.org/lkml/2006/5/26/38
+> 
+> But from the commit and email thread, I can not find why we need to do that.
+> 
+> I ask this question because I want to use pci_walk_bus in a function (in pci runtime resume path) which may be called with device_lock held.
+> 
+> Can anyone help me on that?
+> 
+> Best Regards,
+> Huang Ying
+> 
+> 
 
-"can't" implies that it is technically incapable of it. "should not"
-would be better than "cannot". Do not republish the patch for just this
-reason :)
 
-Otherwise I think it's ok as migration should correctly handle mlocked
-pages and preserve the bits in mlock_migrate_page().
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
--- 
-Mel Gorman
-SUSE Labs
