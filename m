@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab2I1NDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 09:03:16 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:52411 "EHLO
+	id S1758162Ab2I1ND3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 09:03:29 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:52454 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757430Ab2I1NDK (ORCPT
+	with ESMTP id S1757430Ab2I1NDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 09:03:10 -0400
-X-Greylist: delayed 1237 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 09:03:09 EDT
-Subject: [PATCH 5/5] reservation: Add lockdep annotation and selftests
+	Fri, 28 Sep 2012 09:03:23 -0400
+Subject: [PATCH 2/5] fence: dma-buf cross-device synchronization (v9)
 To: jakob@vmware.com, thellstrom@vmware.com, dri-devel@lists.freedesktop.org,
         linaro-mm-sig@lists.linaro.org, sumit.semwal@linaro.org,
         linux-media@vger.kernel.org
 From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: linux-kernel@vger.kernel.org
-Date: Fri, 28 Sep 2012 14:43:21 +0200
-Message-ID: <20120928124321.14366.35302.stgit@patser.local>
+Date: Fri, 28 Sep 2012 14:42:24 +0200
+Message-ID: <20120928124224.14366.27842.stgit@patser.local>
 In-Reply-To: <20120928124148.14366.21063.stgit@patser.local>
 References: <20120928124148.14366.21063.stgit@patser.local>
 User-Agent: StGit/0.15
@@ -26,616 +25,725 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A fence can be attached to a buffer which is being filled or consumed
+by hw, to allow userspace to pass the buffer without waiting to another
+device.  For example, userspace can call page_flip ioctl to display the
+next frame of graphics after kicking the GPU but while the GPU is still
+rendering.  The display device sharing the buffer with the GPU would
+attach a callback to get notified when the GPU's rendering-complete IRQ
+fires, to update the scan-out address of the display, without having to
+wake up userspace.
+
+A fence is transient, one-shot deal.  It is allocated and attached
+to one or more dma-buf's.  When the one that attached it is done, with
+the pending operation, it can signal the fence:
+  + fence_signal()
+
+To have a rough approximation whether a fence is fired, call:
+  + fence_is_signaled()
+
+The dma-buf-mgr handles tracking, and waiting on, the fences associated
+with a dma-buf.
+
+The one pending on the fence can add an async callback:
+  + fence_add_callback()
+
+The callback can optionally be cancelled with:
+  + fence_remove_callback()
+
+To wait synchronously, optionally with a timeout:
+  + fence_wait()
+  + fence_wait_timeout()
+
+A default software-only implementation is provided, which can be used
+by drivers attaching a fence to a buffer when they have no other means
+for hw sync.  But a memory backed fence is also envisioned, because it
+is common that GPU's can write to, or poll on some memory location for
+synchronization.  For example:
+
+  fence = custom_get_fence(...);
+  if ((seqno_fence = to_seqno_fence(fence)) != NULL) {
+    dma_buf *fence_buf = fence->sync_buf;
+    get_dma_buf(fence_buf);
+
+    ... tell the hw the memory location to wait ...
+    custom_wait_on(fence_buf, fence->seqno_ofs, fence->seqno);
+  } else {
+    /* fall-back to sw sync * /
+    fence_add_callback(fence, my_cb);
+  }
+
+On SoC platforms, if some other hw mechanism is provided for synchronizing
+between IP blocks, it could be supported as an alternate implementation
+with it's own fence ops in a similar way.
+
+To facilitate other non-sw implementations, the enable_signaling callback
+can be used to keep track if a device not supporting hw sync is waiting
+on the fence, and in this case should arrange to call fence_signal()
+at some point after the condition has changed, to notify other devices
+waiting on the fence.  If there are no sw waiters, this can be skipped to
+avoid waking the CPU unnecessarily. The handler of the enable_signaling
+op should take a refcount until the fence is signaled, then release its ref.
+
+The intention is to provide a userspace interface (presumably via eventfd)
+later, to be used in conjunction with dma-buf's mmap support for sw access
+to buffers (or for userspace apps that would prefer to do their own
+synchronization).
+
+v1: Original
+v2: After discussion w/ danvet and mlankhorst on #dri-devel, we decided
+    that dma-fence didn't need to care about the sw->hw signaling path
+    (it can be handled same as sw->sw case), and therefore the fence->ops
+    can be simplified and more handled in the core.  So remove the signal,
+    add_callback, cancel_callback, and wait ops, and replace with a simple
+    enable_signaling() op which can be used to inform a fence supporting
+    hw->hw signaling that one or more devices which do not support hw
+    signaling are waiting (and therefore it should enable an irq or do
+    whatever is necessary in order that the CPU is notified when the
+    fence is passed).
+v3: Fix locking fail in attach_fence() and get_fence()
+v4: Remove tie-in w/ dma-buf..  after discussion w/ danvet and mlankorst
+    we decided that we need to be able to attach one fence to N dma-buf's,
+    so using the list_head in dma-fence struct would be problematic.
+v5: [ Maarten Lankhorst ] Updated for dma-bikeshed-fence and dma-buf-manager.
+v6: [ Maarten Lankhorst ] I removed dma_fence_cancel_callback and some comments
+    about checking if fence fired or not. This is broken by design.
+    waitqueue_active during destruction is now fatal, since the signaller
+    should be holding a reference in enable_signalling until it signalled
+    the fence. Pass the original dma_fence_cb along, and call __remove_wait
+    in the dma_fence_callback handler, so that no cleanup needs to be
+    performed.
+v7: [ Maarten Lankhorst ] Set cb->func and only enable sw signaling if
+    fence wasn't signaled yet, for example for hardware fences that may
+    choose to signal blindly.
+v8: [ Maarten Lankhorst ] Tons of tiny fixes, moved __dma_fence_init to
+    header and fixed include mess. dma-fence.h now includes dma-buf.h
+    All members are now initialized, so kmalloc can be used for
+    allocating a dma-fence. More documentation added.
+v9: Change compiler bitfields to flags, change return type of
+    enable_signaling to bool. Rework dma_fence_wait. Added
+    dma_fence_is_signaled and dma_fence_wait_timeout.
+    s/dma// and change exports to non GPL. Added fence_is_signaled and
+    fence_enable_sw_signaling calls, add ability to override default
+    wait operation.
+
 Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-
 ---
+ Documentation/DocBook/device-drivers.tmpl |    2 
+ drivers/base/Makefile                     |    2 
+ drivers/base/fence.c                      |  337 +++++++++++++++++++++++++++++
+ include/linux/fence.h                     |  234 ++++++++++++++++++++
+ 4 files changed, 574 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/base/fence.c
+ create mode 100644 include/linux/fence.h
 
-The self-tests will fail if the commit "lockdep: Check if nested
-lock is actually held" from linux tip core/locking is not applied.
----
- drivers/base/reservation.c  |   46 +++++-
- include/linux/reservation.h |   29 +++-
- lib/Kconfig.debug           |    1 
- lib/locking-selftest.c      |  353 +++++++++++++++++++++++++++++++++++++++++--
- 4 files changed, 403 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/base/reservation.c b/drivers/base/reservation.c
-index 93e2d9f..b8d4f4d 100644
---- a/drivers/base/reservation.c
-+++ b/drivers/base/reservation.c
-@@ -41,6 +41,18 @@
- atomic64_t reservation_counter = ATOMIC64_INIT(1);
- EXPORT_SYMBOL(reservation_counter);
- 
-+const char reservation_object_name[] = "reservation_object";
-+EXPORT_SYMBOL(reservation_object_name);
+diff --git a/Documentation/DocBook/device-drivers.tmpl b/Documentation/DocBook/device-drivers.tmpl
+index 7514dbf..6f53fc0 100644
+--- a/Documentation/DocBook/device-drivers.tmpl
++++ b/Documentation/DocBook/device-drivers.tmpl
+@@ -126,6 +126,8 @@ X!Edrivers/base/interface.c
+      </sect1>
+      <sect1><title>Device Drivers DMA Management</title>
+ !Edrivers/base/dma-buf.c
++!Edrivers/base/fence.c
++!Iinclude/linux/fence.h
+ !Edrivers/base/dma-coherent.c
+ !Edrivers/base/dma-mapping.c
+      </sect1>
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index 5aa2d70..0026563 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -10,7 +10,7 @@ obj-$(CONFIG_CMA) += dma-contiguous.o
+ obj-y			+= power/
+ obj-$(CONFIG_HAS_DMA)	+= dma-mapping.o
+ obj-$(CONFIG_HAVE_GENERIC_DMA_COHERENT) += dma-coherent.o
+-obj-$(CONFIG_DMA_SHARED_BUFFER) += dma-buf.o
++obj-$(CONFIG_DMA_SHARED_BUFFER) += dma-buf.o fence.o
+ obj-$(CONFIG_ISA)	+= isa.o
+ obj-$(CONFIG_FW_LOADER)	+= firmware_class.o
+ obj-$(CONFIG_NUMA)	+= node.o
+diff --git a/drivers/base/fence.c b/drivers/base/fence.c
+new file mode 100644
+index 0000000..b90a09e
+--- /dev/null
++++ b/drivers/base/fence.c
+@@ -0,0 +1,337 @@
++/*
++ * Fence mechanism for dma-buf and to allow for asynchronous dma access
++ *
++ * Copyright (C) 2012 Canonical Ltd
++ * Copyright (C) 2012 Texas Instruments
++ *
++ * Authors:
++ * Rob Clark <rob.clark@linaro.org>
++ * Maarten Lankhorst <maarten.lankhorst@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
 +
-+const char reservation_ticket_name[] = "reservation_ticket";
-+EXPORT_SYMBOL(reservation_ticket_name);
++#include <linux/slab.h>
++#include <linux/export.h>
++#include <linux/fence.h>
 +
-+struct lock_class_key reservation_object_class;
-+EXPORT_SYMBOL(reservation_object_class);
++static int __fence_signal(struct fence *fence)
++{
++	if (fence->flags & FENCE_FLAG_SIGNALED)
++		return -EINVAL;
 +
-+struct lock_class_key reservation_ticket_class;
-+EXPORT_SYMBOL(reservation_ticket_class);
++	fence->flags |= FENCE_FLAG_SIGNALED;
++	__wake_up_locked_key(&fence->event_queue, TASK_NORMAL,
++			     &fence->event_queue);
++	return 0;
++}
 +
- int
- object_reserve(struct reservation_object *obj, bool intr, bool no_wait,
- 	       reservation_ticket_t *ticket)
-@@ -49,6 +61,10 @@ object_reserve(struct reservation_object *obj, bool intr, bool no_wait,
- 	u64 sequence = ticket ? ticket->seqno : 1;
- 	u64 oldseq;
- 
-+	if (!no_wait)
-+		mutex_acquire_nest(&obj->dep_map, 0, 0,
-+				   ticket ? &ticket->dep_map : NULL, _RET_IP_);
++/**
++ * fence_signal - signal completion of a fence
++ * @fence: the fence to signal
++ *
++ * Signal completion for software callbacks on a fence, this will unblock
++ * fence_wait() calls and run all the callbacks added with
++ * fence_add_callback(). Can be called multiple times, but since a fence
++ * can only go from unsignaled to signaled state, it will only be effective
++ * the first time.
++ */
++int fence_signal(struct fence *fence)
++{
++	unsigned long flags;
++	int ret;
 +
- 	while (unlikely(oldseq = atomic64_cmpxchg(&obj->reserved, 0, sequence))) {
- 
- 		/**
-@@ -58,14 +74,18 @@ object_reserve(struct reservation_object *obj, bool intr, bool no_wait,
- 			/**
- 			 * We've already reserved this one.
- 			 */
--			if (unlikely(sequence == oldseq))
--				return -EDEADLK;
-+			if (unlikely(sequence == oldseq)) {
-+				ret = -EDEADLK;
-+				goto fail;
-+			}
- 			/**
- 			 * Already reserved by a thread that will not back
- 			 * off for us. We need to back off.
- 			 */
--			if (unlikely(sequence - oldseq < (1ULL << 63)))
--				return -EAGAIN;
-+			if (unlikely(sequence - oldseq < (1ULL << 63))) {
-+				ret = -EAGAIN;
-+				goto fail;
-+			}
- 		}
- 
- 		if (no_wait)
-@@ -74,9 +94,12 @@ object_reserve(struct reservation_object *obj, bool intr, bool no_wait,
- 		ret = object_wait_unreserved(obj, intr);
- 
- 		if (unlikely(ret))
--			return ret;
-+			goto fail;
- 	}
- 
-+	if (no_wait)
-+		mutex_acquire(&obj->dep_map, 0, 1, _RET_IP_);
++	if (WARN_ON(!fence))
++		return -EINVAL;
 +
- 	/**
- 	 * Wake up waiters that may need to recheck for deadlock,
- 	 * if we decreased the sequence number.
-@@ -84,6 +107,11 @@ object_reserve(struct reservation_object *obj, bool intr, bool no_wait,
- 	wake_up_all(&obj->event_queue);
- 
- 	return 0;
++	spin_lock_irqsave(&fence->event_queue.lock, flags);
++	ret = __fence_signal(fence);
++	spin_unlock_irqrestore(&fence->event_queue.lock, flags);
 +
-+fail:
-+	if (!no_wait)
-+		mutex_release(&obj->dep_map, 1, _RET_IP_);
 +	return ret;
- }
- EXPORT_SYMBOL(object_reserve);
- 
-@@ -105,6 +133,14 @@ void
- object_unreserve(struct reservation_object *obj,
- 		 reservation_ticket_t *ticket)
- {
-+	mutex_release(&obj->dep_map, 1, _RET_IP_);
++}
++EXPORT_SYMBOL(fence_signal);
 +
-+	if (!object_is_reserved(obj)) {
-+#ifndef CONFIG_DEBUG_LOCKING_API_SELFTESTS
-+		WARN_ON(1);
-+#endif
++static void release_fence(struct kref *kref)
++{
++	struct fence *fence =
++			container_of(kref, struct fence, refcount);
++
++	BUG_ON(waitqueue_active(&fence->event_queue));
++
++	if (fence->ops->release)
++		fence->ops->release(fence);
++
++	kfree(fence);
++}
++
++/**
++ * fence_put - decreases refcount of the fence
++ * @fence:	[in]	fence to reduce refcount of
++ */
++void fence_put(struct fence *fence)
++{
++	if (WARN_ON(!fence))
 +		return;
++	kref_put(&fence->refcount, release_fence);
++}
++EXPORT_SYMBOL(fence_put);
++
++/**
++ * fence_get - increases refcount of the fence
++ * @fence:	[in]	fence to increase refcount of
++ */
++void fence_get(struct fence *fence)
++{
++	if (WARN_ON(!fence))
++		return;
++	kref_get(&fence->refcount);
++}
++EXPORT_SYMBOL(fence_get);
++
++static int
++__fence_wake_func(wait_queue_t *wait, unsigned mode, int flags, void *key)
++{
++	struct fence_cb *cb =
++			container_of(wait, struct fence_cb, base);
++
++	__remove_wait_queue(key, wait);
++	return cb->func(cb, wait->private);
++}
++
++/**
++ * fence_enable_sw_signaling - enable signaling on fence
++ * @fence:	[in]	the fence to enable
++ *
++ * this will request for sw signaling to be enabled, to make the fence
++ * complete as soon as possible
++ */
++void fence_enable_sw_signaling(struct fence *fence)
++{
++	unsigned long flags;
++	spin_lock_irqsave(&fence->event_queue.lock, flags);
++
++	if (!(fence->flags & (FENCE_FLAG_SIGNALED |
++			      FENCE_FLAG_NEED_SW_SIGNAL))) {
++		fence->flags |= FENCE_FLAG_NEED_SW_SIGNAL;
++
++		spin_unlock_irqrestore(&fence->event_queue.lock, flags);
++
++		if (!fence->ops->enable_signaling(fence))
++			fence_signal(fence);
++	} else
++		spin_unlock_irqrestore(&fence->event_queue.lock, flags);
++}
++EXPORT_SYMBOL(fence_enable_sw_signaling);
++
++/**
++ * fence_add_callback - add a callback to be called when the fence
++ * is signaled
++ * @fence:	[in]	the fence to wait on
++ * @cb:		[in]	the callback to register
++ * @func:	[in]	the function to call
++ * @priv:	[in]	the argument to pass to function
++ *
++ * cb will be initialized by fence_add_callback, no initialization
++ * by the caller is required. Any number of callbacks can be registered
++ * to a fence, but a callback can only be registered to one fence at a time.
++ *
++ * Note that the callback can be called from an atomic context.  If
++ * fence is already signaled, this function will return -ENOENT (and
++ * *not* call the callback)
++ *
++ * Add a software callback to the fence. Same restrictions apply to
++ * refcount as it does to fence_wait, however the caller doesn't need to
++ * keep a refcount to fence afterwards: when software access is enabled,
++ * the creator of the fence is required to keep the fence alive until
++ * after it signals with fence_signal. The callback itself can be called
++ * from irq context.
++ *
++ */
++int fence_add_callback(struct fence *fence, struct fence_cb *cb,
++		       fence_func_t func, void *priv)
++{
++	unsigned long flags;
++	int ret;
++
++	if (WARN_ON(!fence || !func))
++		return -EINVAL;
++
++	spin_lock_irqsave(&fence->event_queue.lock, flags);
++
++	if (!(fence->flags & (FENCE_FLAG_SIGNALED |
++			      FENCE_FLAG_NEED_SW_SIGNAL))) {
++		bool enabled;
++
++		fence->flags |= FENCE_FLAG_NEED_SW_SIGNAL;
++
++		/* Drop lock here, else there might be lock inversion when
++		 * enable_signaling takes a lock that's held when
++		 * fence_signal is called.
++		 */
++		spin_unlock_irqrestore(&fence->event_queue.lock, flags);
++		enabled = fence->ops->enable_signaling(fence);
++		spin_lock_irqsave(&fence->event_queue.lock, flags);
++
++		if (!enabled)
++			__fence_signal(fence);
 +	}
- 	smp_mb();
- 	atomic64_set(&obj->reserved, 0);
- 	wake_up_all(&obj->event_queue);
-diff --git a/include/linux/reservation.h b/include/linux/reservation.h
-index 93280af..6fa0cdb 100644
---- a/include/linux/reservation.h
-+++ b/include/linux/reservation.h
-@@ -44,6 +44,10 @@
- #include <linux/fence.h>
- 
- extern atomic64_t reservation_counter;
-+extern const char reservation_object_name[];
-+extern struct lock_class_key reservation_object_class;
-+extern const char reservation_ticket_name[];
-+extern struct lock_class_key reservation_ticket_class;
- 
- struct reservation_object {
- 	wait_queue_head_t event_queue;
-@@ -53,10 +57,17 @@ struct reservation_object {
- 	u32 fence_shared_count;
- 	struct fence *fence_excl;
- 	struct fence *fence_shared[BUF_MAX_SHARED_FENCE];
 +
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	struct lockdep_map dep_map;
-+#endif
- };
- 
- typedef struct reservation_ticket {
- 	u64 seqno;
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	struct lockdep_map dep_map;
-+#endif
- } reservation_ticket_t;
- 
- /**
-@@ -73,11 +84,13 @@ struct reservation_entry {
- 	unsigned long obj_shared;
- };
- 
--
- static inline void
- __reservation_object_init(struct reservation_object *obj)
- {
- 	init_waitqueue_head(&obj->event_queue);
++	if (fence->flags & FENCE_FLAG_SIGNALED)
++		ret = -ENOENT;
++	else {
++		ret = 0;
 +
-+	lockdep_init_map(&obj->dep_map, reservation_object_name,
-+			 &reservation_object_class, 0);
- }
- 
- static inline void
-@@ -110,6 +123,16 @@ reservation_object_fini(struct reservation_object *obj)
- static inline void
- reservation_ticket_init(struct reservation_ticket *t)
- {
-+#ifdef CONFIG_LOCKDEP
-+	/*
-+	 * Make sure we are not reinitializing a held ticket:
++		cb->base.flags = 0;
++		cb->base.func = __fence_wake_func;
++		cb->base.private = priv;
++		cb->fence = fence;
++		cb->func = func;
++		__add_wait_queue(&fence->event_queue, &cb->base);
++	}
++	spin_unlock_irqrestore(&fence->event_queue.lock, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(fence_add_callback);
++
++/**
++ * fence_remove_callback - remove a callback from the signaling list
++ * @fence:	[in]	the fence to wait on
++ * @cb:		[in]	the callback to remove
++ *
++ * Remove a previously queued callback from the fence. This function returns
++ * true is the callback is succesfully removed, or false if the fence has
++ * already been signaled.
++ *
++ * *WARNING*:
++ * Cancelling a callback should only be done if you really know what you're
++ * doing, since deadlocks and race conditions could occur all too easily. For
++ * this reason, it should only ever be done on hardware lockup recovery,
++ * with a reference held to the fence.
++ */
++bool
++fence_remove_callback(struct fence *fence, struct fence_cb *cb)
++{
++	unsigned long flags;
++	bool ret;
++
++	spin_lock_irqsave(&fence->event_queue.lock, flags);
++
++	ret = !(fence->flags & FENCE_FLAG_SIGNALED);
++	if (ret)
++		__remove_wait_queue(&fence->event_queue, &cb->base);
++	spin_unlock_irqrestore(&fence->event_queue.lock, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(fence_remove_callback);
++
++/**
++ * fence_default_wait - default sleep until the fence gets signaled
++ * or until timeout elapses
++ * @fence:	[in]	the fence to wait on
++ * @intr:	[in]	if true, do an interruptible wait
++ * @timeout:	[in]	timeout value in jiffies, or MAX_SCHEDULE_TIMEOUT
++ *
++ * Returns -ERESTARTSYS if interrupted, 0 if the wait timed out, or the
++ * remaining timeout in jiffies on success.
++ */
++long
++fence_default_wait(struct fence *fence, bool intr, signed long timeout)
++{
++	DECLARE_WAITQUEUE(wait, current);
++	unsigned long flags;
++	long ret = timeout;
++
++	spin_lock_irqsave(&fence->event_queue.lock, flags);
++
++	if (!(fence->flags & FENCE_FLAG_SIGNALED)) {
++		bool enable = false;
++
++		if (intr && signal_pending(current)) {
++			ret = -ERESTARTSYS;
++			goto out;
++		}
++
++		if (!(fence->flags & FENCE_FLAG_NEED_SW_SIGNAL)) {
++			fence->flags |= FENCE_FLAG_NEED_SW_SIGNAL;
++			enable = true;
++		}
++
++		__add_wait_queue(&fence->event_queue, &wait);
++		while (!(fence->flags & FENCE_FLAG_SIGNALED) && ret > 0) {
++			if (intr)
++				set_current_state(TASK_INTERRUPTIBLE);
++			else
++				set_current_state(TASK_UNINTERRUPTIBLE);
++			spin_unlock_irqrestore(&fence->event_queue.lock,
++					       flags);
++
++			if (enable) {
++				if (!fence->ops->enable_signaling(fence))
++					fence_signal(fence);
++				enable = false;
++			}
++
++			ret = schedule_timeout(ret);
++
++			spin_lock_irqsave(&fence->event_queue.lock, flags);
++			if (ret > 0 && intr && signal_pending(current))
++				ret = -ERESTARTSYS;
++		}
++		__remove_wait_queue(&fence->event_queue, &wait);
++		__set_current_state(TASK_RUNNING);
++	}
++out:
++	spin_unlock_irqrestore(&fence->event_queue.lock, flags);
++	return ret;
++}
++EXPORT_SYMBOL(fence_default_wait);
++
++static bool sw_enable_signaling(struct fence *fence)
++{
++	/* fence_create sets needs_sw_signal,
++	 * so this should never be called
 +	 */
-+
-+	debug_check_no_locks_freed((void *)t, sizeof(*t));
-+#endif
-+	lockdep_init_map(&t->dep_map, reservation_ticket_name,
-+			 &reservation_ticket_class, 0);
-+	mutex_acquire(&t->dep_map, 0, 0, _RET_IP_);
- 	do {
- 		t->seqno = atomic64_inc_return(&reservation_counter);
- 	} while (unlikely(t->seqno < 2));
-@@ -125,7 +148,9 @@ reservation_ticket_init(struct reservation_ticket *t)
-  */
- static inline void
- reservation_ticket_fini(struct reservation_ticket *t)
--{ }
-+{
-+	mutex_release(&t->dep_map, 1, _RET_IP_);
-+}
- 
- /**
-  * reservation_entry_init - initialize and append a reservation_entry
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 2403a63..3211730 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -700,6 +700,7 @@ config DEBUG_ATOMIC_SLEEP
- config DEBUG_LOCKING_API_SELFTESTS
- 	bool "Locking API boot-time self-tests"
- 	depends on DEBUG_KERNEL
-+	select CONFIG_DMA_SHARED_BUFFER
- 	help
- 	  Say Y here if you want the kernel to run a short self-test during
- 	  bootup. The self-test checks whether common types of locking bugs
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index 7aae0f2..fc4a45b 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -20,6 +20,7 @@
- #include <linux/interrupt.h>
- #include <linux/debug_locks.h>
- #include <linux/irqflags.h>
-+#include <linux/reservation.h>
- 
- /*
-  * Change this to 1 if you want to see the failure printouts:
-@@ -42,6 +43,7 @@ __setup("debug_locks_verbose=", setup_debug_locks_verbose);
- #define LOCKTYPE_RWLOCK	0x2
- #define LOCKTYPE_MUTEX	0x4
- #define LOCKTYPE_RWSEM	0x8
-+#define LOCKTYPE_RESERVATION 0x10
- 
- /*
-  * Normal standalone locks, for the circular and irq-context
-@@ -920,11 +922,17 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
- static void reset_locks(void)
- {
- 	local_irq_disable();
-+	lockdep_free_key_range(&reservation_object_class, 1);
-+	lockdep_free_key_range(&reservation_ticket_class, 1);
-+
- 	I1(A); I1(B); I1(C); I1(D);
- 	I1(X1); I1(X2); I1(Y1); I1(Y2); I1(Z1); I1(Z2);
- 	lockdep_reset();
- 	I2(A); I2(B); I2(C); I2(D);
- 	init_shared_classes();
-+
-+	memset(&reservation_object_class, 0, sizeof reservation_object_class);
-+	memset(&reservation_ticket_class, 0, sizeof reservation_ticket_class);
- 	local_irq_enable();
- }
- 
-@@ -938,7 +946,6 @@ static int unexpected_testcase_failures;
- static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
- {
- 	unsigned long saved_preempt_count = preempt_count();
--	int expected_failure = 0;
- 
- 	WARN_ON(irqs_disabled());
- 
-@@ -946,26 +953,16 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
- 	/*
- 	 * Filter out expected failures:
- 	 */
-+	if (debug_locks != expected) {
- #ifndef CONFIG_PROVE_LOCKING
--	if ((lockclass_mask & LOCKTYPE_SPIN) && debug_locks != expected)
--		expected_failure = 1;
--	if ((lockclass_mask & LOCKTYPE_RWLOCK) && debug_locks != expected)
--		expected_failure = 1;
--	if ((lockclass_mask & LOCKTYPE_MUTEX) && debug_locks != expected)
--		expected_failure = 1;
--	if ((lockclass_mask & LOCKTYPE_RWSEM) && debug_locks != expected)
--		expected_failure = 1;
-+		expected_testcase_failures++;
-+		printk("failed|");
-+#else
-+		unexpected_testcase_failures++;
-+		printk("FAILED|");
-+
-+		dump_stack();
- #endif
--	if (debug_locks != expected) {
--		if (expected_failure) {
--			expected_testcase_failures++;
--			printk("failed|");
--		} else {
--			unexpected_testcase_failures++;
--
--			printk("FAILED|");
--			dump_stack();
--		}
- 	} else {
- 		testcase_successes++;
- 		printk("  ok  |");
-@@ -1108,6 +1105,322 @@ static inline void print_testname(const char *testname)
- 	DO_TESTCASE_6IRW(desc, name, 312);			\
- 	DO_TESTCASE_6IRW(desc, name, 321);
- 
-+static void reservation_test_fail_reserve(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o;
-+
-+	reservation_object_init(&o);
-+	reservation_ticket_init(&t);
-+	t.seqno++;
-+
-+	object_reserve(&o, false, false, &t);
-+	/* No lockdep test, pure API */
-+	WARN_ON(object_reserve(&o, false, true, &t) != -EDEADLK);
-+	t.seqno--;
-+	WARN_ON(object_reserve(&o, false, true, &t) != -EBUSY);
-+	t.seqno += 2;
-+	WARN_ON(object_reserve(&o, false, true, &t) != -EAGAIN);
-+	object_unreserve(&o, NULL);
-+
-+	reservation_ticket_fini(&t);
++	WARN_ON_ONCE(1);
++	return true;
 +}
 +
-+static void reservation_test_two_tickets(void)
++static const struct fence_ops sw_fence_ops = {
++	.enable_signaling = sw_enable_signaling,
++};
++
++/**
++ * fence_create - create a simple sw-only fence
++ * @priv:	[in]	the value to use for the priv member
++ *
++ * This fence only supports signaling from/to CPU.  Other implementations
++ * of fence can be used to support hardware to hardware signaling, if
++ * supported by the hardware, and use the fence_helper_* functions for
++ * compatibility with other devices that only support sw signaling.
++ */
++struct fence *fence_create(void *priv)
 +{
-+	struct reservation_ticket t, t2;
++	struct fence *fence;
 +
-+	reservation_ticket_init(&t);
-+	reservation_ticket_init(&t2);
++	fence = kmalloc(sizeof(struct fence), GFP_KERNEL);
++	if (!fence)
++		return NULL;
 +
-+	reservation_ticket_fini(&t2);
-+	reservation_ticket_fini(&t);
++	__fence_init(fence, &sw_fence_ops, priv);
++	fence->flags |= FENCE_FLAG_NEED_SW_SIGNAL;
++
++	return fence;
++}
++EXPORT_SYMBOL(fence_create);
+diff --git a/include/linux/fence.h b/include/linux/fence.h
+new file mode 100644
+index 0000000..623af026
+--- /dev/null
++++ b/include/linux/fence.h
+@@ -0,0 +1,234 @@
++/*
++ * Fence mechanism for dma-buf to allow for asynchronous dma access
++ *
++ * Copyright (C) 2012 Canonical Ltd
++ * Copyright (C) 2012 Texas Instruments
++ *
++ * Authors:
++ * Rob Clark <rob.clark@linaro.org>
++ * Maarten Lankhorst <maarten.lankhorst@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef __FENCE_H__
++#define __FENCE_H__
++
++#include <linux/err.h>
++#include <linux/wait.h>
++#include <linux/list.h>
++#include <linux/bitops.h>
++#include <linux/kref.h>
++#include <linux/sched.h>
++
++struct fence;
++struct fence_ops;
++struct fence_cb;
++
++/**
++ * struct fence - software synchronization primitive
++ * @refcount: refcount for this fence
++ * @ops: fence_ops associated with this fence
++ * @event_queue: event queue used for signaling fence
++ * @priv: fence specific private data
++ * @flags: A mask of FENCE_FLAG_* defined below
++ *
++ * FENCE_FLAG_NEED_SW_SIGNAL - enable_signaling has been called
++ * FENCE_FLAG_SIGNALED - fence is already signaled
++ */
++struct fence {
++	struct kref refcount;
++	const struct fence_ops *ops;
++	wait_queue_head_t event_queue;
++	void *priv;
++	unsigned long flags;
++};
++#define FENCE_FLAG_SIGNALED BIT(0)
++#define FENCE_FLAG_NEED_SW_SIGNAL BIT(1)
++
++typedef int (*fence_func_t)(struct fence_cb *cb, void *priv);
++
++/**
++ * struct fence_cb - callback for fence_add_callback
++ * @base: wait_queue_t added to event_queue
++ * @func: fence_func_t to call
++ * @fence: fence this fence_cb was used on
++ *
++ * This struct will be initialized by fence_add_callback, additional
++ * data can be passed along by embedding fence_cb in another struct.
++ */
++struct fence_cb {
++	wait_queue_t base;
++	fence_func_t func;
++	struct fence *fence;
++};
++
++/**
++ * struct fence_ops - operations implemented for fence
++ * @enable_signaling: enable software signaling of fence
++ * @signaled: [optional] peek whether the fence is signaled
++ * @release: [optional] called on destruction of fence
++ *
++ * Notes on enable_signaling:
++ * For fence implementations that have the capability for hw->hw
++ * signaling, they can implement this op to enable the necessary
++ * irqs, or insert commands into cmdstream, etc.  This is called
++ * in the first wait() or add_callback() path to let the fence
++ * implementation know that there is another driver waiting on
++ * the signal (ie. hw->sw case).
++ *
++ * This function can be called called from atomic context, but not
++ * from irq context, so normal spinlocks can be used.
++ *
++ * A return value of false indicates the fence already passed,
++ * or some failure occured that made it impossible to enable
++ * signaling. True indicates succesful enabling.
++ *
++ * Calling fence_signal before enable_signaling is called allows
++ * for a tiny race window in which enable_signaling is called during,
++ * before, or after fence_signal. To fight this, it is recommended
++ * that before enable_signaling returns true an extra reference is
++ * taken on the fence, to be released when the fence is signaled.
++ * This will mean fence_signal will still be called twice, but
++ * the second time will be a noop since it was already signaled.
++ *
++ * Notes on release:
++ * Can be NULL, this function allows additional commands to run on
++ * destruction of the fence. Can be called from irq context.
++ */
++
++struct fence_ops {
++	bool (*enable_signaling)(struct fence *fence);
++	bool (*signaled)(struct fence *fence);
++	long (*wait)(struct fence *fence, bool intr, signed long);
++	void (*release)(struct fence *fence);
++};
++
++struct fence *fence_create(void *priv);
++
++/**
++ * __fence_init - Initialize a custom fence.
++ * @fence:	[in]	the fence to initialize
++ * @ops:	[in]	the fence_ops for operations on this fence
++ * @priv:	[in]	the value to use for the priv member
++ *
++ * Initializes an allocated fence, the caller doesn't have to keep its
++ * refcount after committing with this fence, but it will need to hold a
++ * refcount again if fence_ops.enable_signaling gets called. This can
++ * be used for other implementing other types of fence.
++ */
++static inline void
++__fence_init(struct fence *fence, const struct fence_ops *ops, void *priv)
++{
++	WARN_ON(!ops || !ops->enable_signaling || !ops->wait);
++
++	kref_init(&fence->refcount);
++	fence->ops = ops;
++	fence->priv = priv;
++	fence->flags = 0UL;
++	init_waitqueue_head(&fence->event_queue);
 +}
 +
-+static void reservation_test_ticket_unreserve_twice(void)
-+{
-+	struct reservation_ticket t;
++void fence_get(struct fence *fence);
++void fence_put(struct fence *fence);
 +
-+	reservation_ticket_init(&t);
-+	reservation_ticket_fini(&t);
-+	reservation_ticket_fini(&t);
++int fence_signal(struct fence *fence);
++long fence_default_wait(struct fence *fence, bool intr, signed long);
++int fence_add_callback(struct fence *fence, struct fence_cb *cb,
++		       fence_func_t func, void *priv);
++bool fence_remove_callback(struct fence *fence, struct fence_cb *cb);
++void fence_enable_sw_signaling(struct fence *fence);
++
++/**
++ * fence_is_signaled - Return an indication if the fence is signaled yet.
++ * @fence:	[in]	the fence to check
++ *
++ * Returns true if the fence was already signaled, false if not. Since this
++ * function doesn't enable signaling, it is not guaranteed to ever return true
++ * If fence_add_callback, fence_wait or fence_enable_sw_signaling
++ * haven't been called before.
++ *
++ * It's recommended for seqno fences to call fence_signal when the
++ * operation is complete, it makes it possible to prevent issues from
++ * wraparound between time of issue and time of use by checking the return
++ * value of this function before calling hardware-specific wait instructions.
++ */
++static inline bool
++fence_is_signaled(struct fence *fence)
++{
++	rmb();
++
++	if (fence->flags & FENCE_FLAG_SIGNALED)
++		return true;
++
++	if (fence->ops->signaled && fence->ops->signaled(fence)) {
++		fence_signal(fence);
++		return true;
++	}
++
++	return false;
 +}
 +
-+static void reservation_test_object_unreserve_twice(void)
++/**
++ * fence_wait_timeout - sleep until the fence gets signaled
++ * or until timeout elapses
++ * @fence:	[in]	the fence to wait on
++ * @intr:	[in]	if true, do an interruptible wait
++ * @timeout:	[in]	timeout value in jiffies, or MAX_SCHEDULE_TIMEOUT
++ *
++ * Returns -ERESTARTSYS if interrupted, 0 if the wait timed out, or the
++ * remaining timeout in jiffies on success. Other error values may be
++ * returned on custom implementations.
++ *
++ * Performs a synchronous wait on this fence. It is assumed the caller
++ * directly or indirectly (buf-mgr between reservation and committing)
++ * holds a reference to the fence, otherwise the fence might be
++ * freed before return, resulting in undefined behavior.
++ */
++static inline long
++fence_wait_timeout(struct fence *fence, bool intr, signed long timeout)
 +{
-+	struct reservation_object o;
++	if (WARN_ON(timeout < 0))
++		return -EINVAL;
 +
-+	reservation_object_init(&o);
-+	object_reserve(&o, false, false, NULL);
-+	object_unreserve(&o, NULL);
-+	object_unreserve(&o, NULL);
++	return fence->ops->wait(fence, intr, timeout);
 +}
 +
-+static void reservation_test_fence_nest_unreserved(void)
++/**
++ * fence_wait - sleep until the fence gets signaled
++ * @fence:	[in]	the fence to wait on
++ * @intr:	[in]	if true, do an interruptible wait
++ *
++ * This function will return -ERESTARTSYS if interrupted by a signal,
++ * or 0 if the fence was signaled. Other error values may be
++ * returned on custom implementations.
++ *
++ * Performs a synchronous wait on this fence. It is assumed the caller
++ * directly or indirectly (buf-mgr between reservation and committing)
++ * holds a reference to the fence, otherwise the fence might be
++ * freed before return, resulting in undefined behavior.
++ */
++static inline long fence_wait(struct fence *fence, bool intr)
 +{
-+	struct reservation_object o;
++	long ret;
 +
-+	reservation_object_init(&o);
++	/* Since fence_wait_timeout cannot timeout with
++	 * MAX_SCHEDULE_TIMEOUT, only valid return values are
++	 * -ERESTARTSYS and MAX_SCHEDULE_TIMEOUT.
++	 */
++	ret = fence_wait_timeout(fence, intr, MAX_SCHEDULE_TIMEOUT);
 +
-+	spin_lock_nest_lock(&lock_A, &o);
-+	spin_unlock(&lock_A);
++	return ret < 0 ? ret : 0;
 +}
 +
-+static void reservation_test_ticket_block(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+	reservation_ticket_init(&t);
-+
-+	object_reserve(&o, false, false, &t);
-+	object_reserve(&o2, false, false, NULL);
-+	object_unreserve(&o2, NULL);
-+	object_unreserve(&o, &t);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_ticket_try(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+	reservation_ticket_init(&t);
-+
-+	object_reserve(&o, false, false, &t);
-+	object_reserve(&o2, false, true, NULL);
-+	object_unreserve(&o2, NULL);
-+	object_unreserve(&o, &t);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_ticket_ticket(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+	reservation_ticket_init(&t);
-+
-+	object_reserve(&o, false, false, &t);
-+	object_reserve(&o2, false, false, &t);
-+	object_unreserve(&o2, &t);
-+	object_unreserve(&o, &t);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_try_block(void)
-+{
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	object_reserve(&o, false, true, NULL);
-+	object_reserve(&o2, false, false, NULL);
-+	object_unreserve(&o2, NULL);
-+	object_unreserve(&o, NULL);
-+}
-+
-+static void reservation_test_try_try(void)
-+{
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	object_reserve(&o, false, true, NULL);
-+	object_reserve(&o2, false, true, NULL);
-+	object_unreserve(&o2, NULL);
-+	object_unreserve(&o, NULL);
-+}
-+
-+static void reservation_test_try_ticket(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	object_reserve(&o, false, true, NULL);
-+	reservation_ticket_init(&t);
-+
-+	object_reserve(&o2, false, false, &t);
-+	object_unreserve(&o2, &t);
-+	object_unreserve(&o, NULL);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_block_block(void)
-+{
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	object_reserve(&o, false, false, NULL);
-+	object_reserve(&o2, false, false, NULL);
-+	object_unreserve(&o2, NULL);
-+	object_unreserve(&o, NULL);
-+}
-+
-+static void reservation_test_block_try(void)
-+{
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	object_reserve(&o, false, false, NULL);
-+	object_reserve(&o2, false, true, NULL);
-+	object_unreserve(&o2, NULL);
-+	object_unreserve(&o, NULL);
-+}
-+
-+static void reservation_test_block_ticket(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	object_reserve(&o, false, false, NULL);
-+	reservation_ticket_init(&t);
-+
-+	object_reserve(&o2, false, false, &t);
-+	object_unreserve(&o2, &t);
-+	object_unreserve(&o, NULL);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_fence_block(void)
-+{
-+	struct reservation_object o;
-+
-+	reservation_object_init(&o);
-+	spin_lock(&lock_A);
-+	spin_unlock(&lock_A);
-+
-+	object_reserve(&o, false, false, NULL);
-+	spin_lock(&lock_A);
-+	spin_unlock(&lock_A);
-+	object_unreserve(&o, NULL);
-+
-+	spin_lock(&lock_A);
-+	object_reserve(&o, false, false, NULL);
-+	object_unreserve(&o, NULL);
-+	spin_unlock(&lock_A);
-+}
-+
-+static void reservation_test_fence_try(void)
-+{
-+	struct reservation_object o;
-+
-+	reservation_object_init(&o);
-+	spin_lock(&lock_A);
-+	spin_unlock(&lock_A);
-+
-+	object_reserve(&o, false, true, NULL);
-+	spin_lock(&lock_A);
-+	spin_unlock(&lock_A);
-+	object_unreserve(&o, NULL);
-+
-+	spin_lock(&lock_A);
-+	object_reserve(&o, false, true, NULL);
-+	object_unreserve(&o, NULL);
-+	spin_unlock(&lock_A);
-+}
-+
-+static void reservation_test_fence_ticket(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o;
-+
-+	reservation_object_init(&o);
-+	spin_lock(&lock_A);
-+	spin_unlock(&lock_A);
-+
-+	reservation_ticket_init(&t);
-+
-+	object_reserve(&o, false, false, &t);
-+	spin_lock(&lock_A);
-+	spin_unlock(&lock_A);
-+	object_unreserve(&o, &t);
-+
-+	spin_lock(&lock_A);
-+	object_reserve(&o, false, false, &t);
-+	object_unreserve(&o, &t);
-+	spin_unlock(&lock_A);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_tests(void)
-+{
-+	printk("  --------------------------------------------------------------------------\n");
-+	printk("  | Reservation tests |\n");
-+	printk("  ---------------------\n");
-+
-+	print_testname("reservation api failures");
-+	dotest(reservation_test_fail_reserve, SUCCESS, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("reserving two tickets");
-+	dotest(reservation_test_two_tickets, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("unreserve ticket twice");
-+	dotest(reservation_test_ticket_unreserve_twice, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("unreserve object twice");
-+	dotest(reservation_test_object_unreserve_twice, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("spinlock nest unreserved");
-+	dotest(reservation_test_fence_nest_unreserved, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	printk("  -----------------------------------------------------\n");
-+	printk("                                 |block | try  |ticket|\n");
-+	printk("  -----------------------------------------------------\n");
-+
-+	print_testname("ticket");
-+	dotest(reservation_test_ticket_block, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_ticket_try, SUCCESS, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_ticket_ticket, SUCCESS, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("try");
-+	dotest(reservation_test_try_block, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_try_try, SUCCESS, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_try_ticket, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("block");
-+	dotest(reservation_test_block_block, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_block_try, SUCCESS, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_block_ticket, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("spinlock");
-+	dotest(reservation_test_fence_block, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_fence_try, SUCCESS, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_fence_ticket, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+}
- 
- void locking_selftest(void)
- {
-@@ -1188,6 +1501,8 @@ void locking_selftest(void)
- 	DO_TESTCASE_6x2("irq read-recursion", irq_read_recursion);
- //	DO_TESTCASE_6x2B("irq read-recursion #2", irq_read_recursion2);
- 
-+	reservation_tests();
-+
- 	if (unexpected_testcase_failures) {
- 		printk("-----------------------------------------------------------------\n");
- 		debug_locks = 0;
++#endif /* __FENCE_H__ */
 
