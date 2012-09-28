@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422848Ab2I1Uoz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:44:55 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41696 "EHLO
+	id S1422879Ab2I1Upc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:45:32 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57655 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031378Ab2I1Uk4 (ORCPT
+	by vger.kernel.org with ESMTP id S1031093Ab2I1Ukx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:56 -0400
-X-Sasl-enc: EIm9h5BXBrqi596XLZ1I02ALaf5p1CQPwZsr2/2lQcrH 1348864855
+	Fri, 28 Sep 2012 16:40:53 -0400
+X-Sasl-enc: XpEQAW4id3od3qh1OMqf2JXhGgTzbEo2G/yiYZpYh4m/ 1348864852
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Colin Ian King <colin.king@canonical.com>
-Subject: [ 029/127] eCryptfs: Copy up attributes of the lower target inode after rename
-Date: Fri, 28 Sep 2012 13:33:22 -0700
-Message-Id: <20120928203049.232410101@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 027/127] vfs: dcache: use DCACHE_DENTRY_KILLED instead of DCACHE_DISCONNECTED in d_kill()
+Date: Fri, 28 Sep 2012 13:33:20 -0700
+Message-Id: <20120928203048.998483503@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,62 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 8335eafc2859e1a26282bef7c3d19f3d68868b8a upstream.
+commit b161dfa6937ae46d50adce8a7c6b12233e96e7bd upstream.
 
-After calling into the lower filesystem to do a rename, the lower target
-inode's attributes were not copied up to the eCryptfs target inode. This
-resulted in the eCryptfs target inode staying around, rather than being
-evicted, because i_nlink was not updated for the eCryptfs inode. This
-also meant that eCryptfs didn't do the final iput() on the lower target
-inode so it stayed around, as well. This would result in a failure to
-free up space occupied by the target file in the rename() operation.
-Both target inodes would eventually be evicted when the eCryptfs
-filesystem was unmounted.
+IBM reported a soft lockup after applying the fix for the rename_lock
+deadlock.  Commit c83ce989cb5f ("VFS: Fix the nfs sillyrename regression
+in kernel 2.6.38") was found to be the culprit.
 
-This patch calls fsstack_copy_attr_all() after the lower filesystem
-does its ->rename() so that important inode attributes, such as i_nlink,
-are updated at the eCryptfs layer. ecryptfs_evict_inode() is now called
-and eCryptfs can drop its final reference on the lower inode.
+The nfs sillyrename fix used DCACHE_DISCONNECTED to indicate that the
+dentry was killed.  This flag can be set on non-killed dentries too,
+which results in infinite retries when trying to traverse the dentry
+tree.
 
-http://launchpad.net/bugs/561129
+This patch introduces a separate flag: DCACHE_DENTRY_KILLED, which is
+only set in d_kill() and makes try_to_ascend() test only this flag.
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Tested-by: Colin Ian King <colin.king@canonical.com>
+IBM reported successful test results with this patch.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/inode.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/dcache.c            |    4 ++--
+ include/linux/dcache.h |    2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -653,6 +653,7 @@ ecryptfs_rename(struct inode *old_dir, s
- 	struct dentry *lower_old_dir_dentry;
- 	struct dentry *lower_new_dir_dentry;
- 	struct dentry *trap = NULL;
-+	struct inode *target_inode;
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -290,7 +290,7 @@ static struct dentry *d_kill(struct dent
+ 	 * Inform try_to_ascend() that we are no longer attached to the
+ 	 * dentry tree
+ 	 */
+-	dentry->d_flags |= DCACHE_DISCONNECTED;
++	dentry->d_flags |= DCACHE_DENTRY_KILLED;
+ 	if (parent)
+ 		spin_unlock(&parent->d_lock);
+ 	dentry_iput(dentry);
+@@ -1015,7 +1015,7 @@ static struct dentry *try_to_ascend(stru
+ 	 * or deletion
+ 	 */
+ 	if (new != old->d_parent ||
+-		 (old->d_flags & DCACHE_DISCONNECTED) ||
++		 (old->d_flags & DCACHE_DENTRY_KILLED) ||
+ 		 (!locked && read_seqretry(&rename_lock, seq))) {
+ 		spin_unlock(&new->d_lock);
+ 		new = NULL;
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -220,6 +220,8 @@ struct dentry_operations {
+ #define DCACHE_MANAGED_DENTRY \
+ 	(DCACHE_MOUNTED|DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT)
  
- 	lower_old_dentry = ecryptfs_dentry_to_lower(old_dentry);
- 	lower_new_dentry = ecryptfs_dentry_to_lower(new_dentry);
-@@ -660,6 +661,7 @@ ecryptfs_rename(struct inode *old_dir, s
- 	dget(lower_new_dentry);
- 	lower_old_dir_dentry = dget_parent(lower_old_dentry);
- 	lower_new_dir_dentry = dget_parent(lower_new_dentry);
-+	target_inode = new_dentry->d_inode;
- 	trap = lock_rename(lower_old_dir_dentry, lower_new_dir_dentry);
- 	/* source should not be ancestor of target */
- 	if (trap == lower_old_dentry) {
-@@ -675,6 +677,9 @@ ecryptfs_rename(struct inode *old_dir, s
- 			lower_new_dir_dentry->d_inode, lower_new_dentry);
- 	if (rc)
- 		goto out_lock;
-+	if (target_inode)
-+		fsstack_copy_attr_all(target_inode,
-+				      ecryptfs_inode_to_lower(target_inode));
- 	fsstack_copy_attr_all(new_dir, lower_new_dir_dentry->d_inode);
- 	if (new_dir != old_dir)
- 		fsstack_copy_attr_all(old_dir, lower_old_dir_dentry->d_inode);
++#define DCACHE_DENTRY_KILLED	0x100000
++
+ extern seqlock_t rename_lock;
+ 
+ static inline int dname_external(struct dentry *dentry)
 
 
