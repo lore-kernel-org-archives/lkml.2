@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030814Ab2I1TGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:06:53 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54594 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030800Ab2I1TGr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1030798Ab2I1TGr (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 28 Sep 2012 15:06:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030774Ab2I1TGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 15:06:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Richard Ems <richard.ems@cape-horn-eng.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 243/262] NFS: Fix Oopses in nfs_lookup_revalidate and nfs4_lookup_revalidate
-Date: Fri, 28 Sep 2012 11:52:52 -0700
-Message-Id: <20120928183027.108406252@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Andy Walls <awalls@md.metrocast.net>,
+        Colin Cross <ccross@google.com>
+Subject: [ 250/262] kthread_worker: reorganize to prepare for flush_kthread_work() reimplementation
+Date: Fri, 28 Sep 2012 11:52:59 -0700
+Message-Id: <20120928183027.974451588@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,86 +29,100 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Tejun Heo <tj@kernel.org>
 
-[Fixed upstream as part of 0b728e1911c, but that's a much larger patch,
-this is only the nfs portion backported as needed.]
+commit 9a2e03d8ed518a61154f18d83d6466628e519f94 upstream.
 
-Fix the following Oops in 3.5.1:
+Make the following two non-functional changes.
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
- IP: [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
- PGD 337c63067 PUD 0
- Oops: 0000 [#1] SMP
- CPU 5
- Modules linked in: nfs fscache nfsd lockd nfs_acl auth_rpcgss sunrpc af_packet binfmt_misc cpufreq_conservative cpufreq_userspace cpufreq_powersave dm_mod acpi_cpufreq mperf coretemp gpio_ich kvm_intel joydev kvm ioatdma hid_generic igb lpc_ich i7core_edac edac_core ptp serio_raw dca pcspkr i2c_i801 mfd_core sg pps_core usbhid crc32c_intel microcode button autofs4 uhci_hcd ttm drm_kms_helper drm i2c_algo_bit sysimgblt sysfillrect syscopyarea ehci_hcd usbcore usb_common scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh edd fan ata_piix thermal processor thermal_sys
+* Separate out insert_kthread_work() from queue_kthread_work().
 
- Pid: 30431, comm: java Not tainted 3.5.1-2-default #1 Supermicro X8DTT/X8DTT
- RIP: 0010:[<ffffffffa03789cd>]  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
- RSP: 0018:ffff8801b418bd38  EFLAGS: 00010292
- RAX: 00000000fffffff6 RBX: ffff88032016d800 RCX: 0000000000000020
- RDX: ffffffff00000000 RSI: 0000000000000000 RDI: ffff8801824a7b00
- RBP: ffff8801b418bdf8 R08: 7fffff0034323030 R09: fffffffff04c03ed
- R10: ffff8801824a7b00 R11: 0000000000000002 R12: ffff8801824a7b00
- R13: ffff8801824a7b00 R14: 0000000000000000 R15: ffff8803201725d0
- FS:  00002b53a46cb700(0000) GS:ffff88033fc20000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 0000000000000038 CR3: 000000020a426000 CR4: 00000000000007e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process java (pid: 30431, threadinfo ffff8801b418a000, task ffff8801b5d20600)
- Stack:
-  ffff8801b418be44 ffff88032016d800 ffff8801b418bdf8 0000000000000000
-  ffff8801824a7b00 ffff8801b418bdd7 ffff8803201725d0 ffffffff8116a9c0
-  ffff8801b5c38dc0 0000000000000007 ffff88032016d800 0000000000000000
- Call Trace:
-  [<ffffffff8116a9c0>] lookup_dcache+0x80/0xe0
-  [<ffffffff8116aa43>] __lookup_hash+0x23/0x90
-  [<ffffffff8116b4a5>] lookup_one_len+0xc5/0x100
-  [<ffffffffa03869a3>] nfs_sillyrename+0xe3/0x210 [nfs]
-  [<ffffffff8116cadf>] vfs_unlink.part.25+0x7f/0xe0
-  [<ffffffff8116f22c>] do_unlinkat+0x1ac/0x1d0
-  [<ffffffff815717b9>] system_call_fastpath+0x16/0x1b
-  [<00002b5348b5f527>] 0x2b5348b5f526
- Code: ec 38 b8 f6 ff ff ff 4c 89 64 24 18 4c 89 74 24 28 49 89 fc 48 89 5c 24 08 48 89 6c 24 10 49 89 f6 4c 89 6c 24 20 4c 89 7c 24 30 <f6> 46 38 40 0f 85 d1 00 00 00 e8 c4 c4 df e0 48 8b 58 30 49 89
- RIP  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
-  RSP <ffff8801b418bd38>
- CR2: 0000000000000038
- ---[ end trace 845113ed191985dd ]---
+* Relocate struct kthread_flush_work and kthread_flush_work_fn()
+  definitions above flush_kthread_work().
 
-This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
-calling down to the dentry revalidation code with a NULL pointer
-to struct nameidata.
+v2: Added lockdep_assert_held() in insert_kthread_work() as suggested
+    by Andy Walls.
 
-It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
-to ->d_revalidate())
-
-Reported-by: Richard Ems <richard.ems@cape-horn-eng.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Andy Walls <awalls@md.metrocast.net>
+Cc: Colin Cross <ccross@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfs/dir.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1123,7 +1123,7 @@ static int nfs_lookup_revalidate(struct
- 	struct nfs_fattr *fattr = NULL;
- 	int error;
+---
+ kernel/kthread.c |   42 ++++++++++++++++++++++++++----------------
+ 1 file changed, 26 insertions(+), 16 deletions(-)
+
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -378,6 +378,19 @@ repeat:
+ }
+ EXPORT_SYMBOL_GPL(kthread_worker_fn);
  
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd && (nd->flags & LOOKUP_RCU))
- 		return -ECHILD;
++/* insert @work before @pos in @worker */
++static void insert_kthread_work(struct kthread_worker *worker,
++			       struct kthread_work *work,
++			       struct list_head *pos)
++{
++	lockdep_assert_held(&worker->lock);
++
++	list_add_tail(&work->node, pos);
++	work->queue_seq++;
++	if (likely(worker->task))
++		wake_up_process(worker->task);
++}
++
+ /**
+  * queue_kthread_work - queue a kthread_work
+  * @worker: target kthread_worker
+@@ -395,10 +408,7 @@ bool queue_kthread_work(struct kthread_w
  
- 	parent = dget_parent(dentry);
-@@ -1526,7 +1526,7 @@ static int nfs4_lookup_revalidate(struct
- 	struct inode *dir;
- 	int openflags, ret = 0;
+ 	spin_lock_irqsave(&worker->lock, flags);
+ 	if (list_empty(&work->node)) {
+-		list_add_tail(&work->node, &worker->work_list);
+-		work->queue_seq++;
+-		if (likely(worker->task))
+-			wake_up_process(worker->task);
++		insert_kthread_work(worker, work, &worker->work_list);
+ 		ret = true;
+ 	}
+ 	spin_unlock_irqrestore(&worker->lock, flags);
+@@ -406,6 +416,18 @@ bool queue_kthread_work(struct kthread_w
+ }
+ EXPORT_SYMBOL_GPL(queue_kthread_work);
  
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd && (nd->flags & LOOKUP_RCU))
- 		return -ECHILD;
++struct kthread_flush_work {
++	struct kthread_work	work;
++	struct completion	done;
++};
++
++static void kthread_flush_work_fn(struct kthread_work *work)
++{
++	struct kthread_flush_work *fwork =
++		container_of(work, struct kthread_flush_work, work);
++	complete(&fwork->done);
++}
++
+ /**
+  * flush_kthread_work - flush a kthread_work
+  * @work: work to flush
+@@ -436,18 +458,6 @@ void flush_kthread_work(struct kthread_w
+ }
+ EXPORT_SYMBOL_GPL(flush_kthread_work);
  
- 	inode = dentry->d_inode;
+-struct kthread_flush_work {
+-	struct kthread_work	work;
+-	struct completion	done;
+-};
+-
+-static void kthread_flush_work_fn(struct kthread_work *work)
+-{
+-	struct kthread_flush_work *fwork =
+-		container_of(work, struct kthread_flush_work, work);
+-	complete(&fwork->done);
+-}
+-
+ /**
+  * flush_kthread_worker - flush all current works on a kthread_worker
+  * @worker: worker to flush
 
 
