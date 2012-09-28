@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab2I1JLT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 05:11:19 -0400
-Received: from 7.mo3.mail-out.ovh.net ([46.105.57.200]:36560 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751140Ab2I1JLS (ORCPT
+	id S1757161Ab2I1JOm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 05:14:42 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62748 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab2I1JOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 05:11:18 -0400
-X-Greylist: delayed 4221 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 05:11:17 EDT
-Date: Fri, 28 Sep 2012 11:08:48 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
-Message-ID: <20120928090848.GX17667@game.jcrosoft.org>
-References: <1348780923-27428-1-git-send-email-stigge@antcom.de>
- <20120928024744.GV17667@game.jcrosoft.org>
- <50654E57.3080201@antcom.de>
- <20120928075145.GW17667@game.jcrosoft.org>
- <50656522.1050900@antcom.de>
+	Fri, 28 Sep 2012 05:14:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50656522.1050900@antcom.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 7616431396034947933
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+In-Reply-To: <1348780923-27428-1-git-send-email-stigge@antcom.de>
+References: <1348780923-27428-1-git-send-email-stigge@antcom.de>
+Date: Fri, 28 Sep 2012 11:14:39 +0200
+Message-ID: <CACRpkdZ+1ffsMDRZXYb5RRndoXstj_QHvHOpeikRY0bas72dKQ@mail.gmail.com>
+Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Roland Stigge <stigge@antcom.de>, Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de,
+        Bill Gatliff <bgat@billgatliff.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:51 Fri 28 Sep     , Roland Stigge wrote:
-> Hi!
-> 
-> On 09/28/2012 09:51 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >> Right - will add checking for the request state of the respective GPIOs.
-> >>
-> >> The list of GPIOs to handle is defined by the offset (specified GPIO)
-> >> and bitmapped list.
-> >>
-> >> If it looks more natural, I can change this to a list of ints specifying
-> >> GPIOs directly.
-> > you pass the correctly information to the gpiolib
-> > 
-> > as if you do not request the gpio the gpiolib will auto request the gpios
-> > so you api will be 
-> > int gpio_get_block(unsigned int *gpios, u8* values, size_t size);
-> > 
-> > return an error
-> > 
-> > int gpio_set_block(unsigned int *gpios, u8* set, size_t size);
-> > 
-> > so you do not care about the banks you work on the gpiolib framework will call
-> > each gpio_chip seperatly. If the set_block get_block is not availlable the
-> > gpiolib could fallback to get/set
-> > 
-> > inside of the gpiolib that you call each bank with a bitmapped list is correct
-> > but not in the public gpiolib API
-> 
-> Good idea! Talking about the public API (your above gpio_set_block()):
-> *gpios is a list of GPIOs, but set is still bitmapped (mapped onto the
-> list specified in *gpios)? To prevent confusion about what the size
-> argument means (number of gpios in *gpios _or_ number of bytes in the
-> bitmap *set) - wouldn't it be clearer to have a "bool *set" and "bool
-> *values" list?
-public API list of gpio as example
+On Thu, Sep 27, 2012 at 11:22 PM, Roland Stigge <stigge@antcom.de> wrote:
 
-gpios = {1, 33, 34, 55};
-set = {1, 0, 0 ,1};
+Grant really need to look at this patch too...
 
-gpio_set_blocks(gpios, set, 4);
+> The recurring task of providing simultaneous access to GPIO lines (especially
+> for bit banging protocols) needs an appropriate API.
+>
+> This patch adds a kernel internal "Block GPIO" API that enables simultaneous
+> access to several GPIOs in the same gpio_chip (bit mapped). Further, it adds a
+> sysfs interface (/sys/class/gpio/gpiochipXX/block).
 
-private you do just provide the array related to the gpio_chip
-lets assume 4 bank with 32 gpio each
+I've had others talk about the need for this in the past, I think it may have
+been Bill Gatliff who brought it up.
 
-gpio0 = {1};
-set0 = {1};
+I'm pretty sure it's a need for the industry so we really need something
+like this, thanks for working on it Roland.
 
-gpio1 = {33, 34};
-set1 = {0, 0};
+>  Documentation/gpio.txt     |   52 +++++++++++++++++++
+>  drivers/gpio/gpiolib.c     |  121 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/asm-generic/gpio.h |    7 ++
+>  include/linux/gpio.h       |   24 ++++++++
+>  4 files changed, 204 insertions(+)
 
-gpio2 = {55};
-set2 = {1};
+You probably want to patch Documentation/ABI/testing/sysfs-gpio as well.
 
-set_blocks(gpio_chip0, gpio0, set0, 1);
-set_blocks(gpio_chip1, gpio1, set1, 2);
-set_blocks(gpio_chip2, gpio2, set2, 1);
+> @@ -686,6 +731,13 @@ read-only attributes:
+>
+>         "ngpio" ... how many GPIOs this manges (N to N + ngpio - 1)
+>
+> +       "block" ... get/set Block GPIO:
+> +                   * reads: space separated list of GPIO inputs of this chip that
+> +                     are set to 1, e.g. "83 85 87 99"
+> +                   * write: space separated list of GPIO outputs of this chip
+> +                     that are to be set or cleared, e.g. "80 -83 -85" (prefix
+> +                     "-" clears)
 
-Best Regards,
-J.
+This sort of breaks the sysfs convention of one value per file,
+does it not?
+
+It's not like I have some better idea, just we need to think about
+other possible solutions.
+
+The GPIO sysfs interface is not universally liked. What are the
+typical applications you have for this? Industrial control by
+bit-banging userspace processes?
+
+I've heard about people doing that kind of things and running
+these processes as real-time scheduled and then running e.g.
+factory lines and other scary stuff through the GPIO sysfs ...
+
+J-C:s comments are valid as well, will not repeat them.
+
+Yours,
+Linus Walleij
