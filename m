@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031352Ab2I1TeU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:34:20 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965424Ab2I1TBD (ORCPT
+	id S1031365Ab2I1Tei (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:34:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965384Ab2I1TA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:01:03 -0400
+	Fri, 28 Sep 2012 15:00:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
         Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 145/262] dmaengine: at_hdmac: check that each sg data length is non-null
-Date: Fri, 28 Sep 2012 11:51:14 -0700
-Message-Id: <20120928183015.173051946@linuxfoundation.org>
+Subject: [ 143/262] DMA: PL330: Check the pointer returned by kzalloc
+Date: Fri, 28 Sep 2012 11:51:12 -0700
+Message-Id: <20120928183014.951635373@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,56 +30,35 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Sachin Kamat <sachin.kamat@linaro.org>
 
-commit c456797681db814f4f5b36909e8e94047bf53d9c upstream.
+commit 61c6e7531d3b66b33187b8cdd700fd8ab93ffd62 upstream.
 
-Avoid the construction of a malformed DMA request sent to
-the DMA controller.
-Log message is for debug only because this condition is unlikely to
-append and may only trigger at driver development time.
+kzalloc could return NULL. Hence add a check to avoid
+NULL pointer dereference.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
 Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/at_hdmac.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/dma/pl330.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -690,6 +690,11 @@ atc_prep_slave_sg(struct dma_chan *chan,
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2930,6 +2930,11 @@ pl330_probe(struct amba_device *adev, co
+ 		num_chan = max_t(int, pi->pcfg.num_peri, pi->pcfg.num_chan);
  
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
-+			if (unlikely(!len)) {
-+				dev_dbg(chan2dev(chan),
-+					"prep_slave_sg: sg(%d) data length is zero\n", i);
-+				goto err;
-+			}
- 			mem_width = 2;
- 			if (unlikely(mem & 3 || len & 3))
- 				mem_width = 0;
-@@ -725,6 +730,11 @@ atc_prep_slave_sg(struct dma_chan *chan,
+ 	pdmac->peripherals = kzalloc(num_chan * sizeof(*pch), GFP_KERNEL);
++	if (!pdmac->peripherals) {
++		ret = -ENOMEM;
++		dev_err(&adev->dev, "unable to allocate pdmac->peripherals\n");
++		goto probe_err5;
++	}
  
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
-+			if (unlikely(!len)) {
-+				dev_dbg(chan2dev(chan),
-+					"prep_slave_sg: sg(%d) data length is zero\n", i);
-+				goto err;
-+			}
- 			mem_width = 2;
- 			if (unlikely(mem & 3 || len & 3))
- 				mem_width = 0;
-@@ -758,6 +768,7 @@ atc_prep_slave_sg(struct dma_chan *chan,
- 
- err_desc_get:
- 	dev_err(chan2dev(chan), "not enough descriptors available\n");
-+err:
- 	atc_desc_put(atchan, first);
- 	return NULL;
- }
+ 	for (i = 0; i < num_chan; i++) {
+ 		pch = &pdmac->peripherals[i];
 
 
