@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423307Ab2I1V2P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:28:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964881Ab2I1U27 (ORCPT
+	id S1033218Ab2I1V2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:28:32 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964865Ab2I1U2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:28:59 -0400
+	Fri, 28 Sep 2012 16:28:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Moiz Sonasath <m-sonasath@ti.com>, Ruchika Kharwar <ruchika@ti.com>,
-        Felipe Balbi <balbi@ti.com>,
+        Matthew Garrett <mjg@redhat.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 138/218] usb: host: xhci: fix compilation error for non-PCI based stacks
-Date: Fri, 28 Sep 2012 13:15:55 -0700
-Message-Id: <20120928201517.326925492@linuxfoundation.org>
+Subject: [ 136/218] xhci: Make handover code more robust
+Date: Fri, 28 Sep 2012 13:15:53 -0700
+Message-Id: <20120928201517.084860519@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,44 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Moiz Sonasath <m-sonasath@ti.com>
+From: Matthew Garrett <mjg@redhat.com>
 
-commit 296365781903226a3fb8758901eaeec09d2798e4 upstream.
+commit e955a1cd086de4d165ae0f4c7be7289d84b63bdc upstream.
 
-For non PCI-based stacks, this function call
-usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
-made from xhci_shutdown is not applicable.
+My test platform (Intel DX79SI) boots reliably under BIOS, but frequently
+crashes when booting via UEFI. I finally tracked this down to the xhci
+handoff code. It seems that reads from the device occasionally just return
+0xff, resulting in xhci_find_next_cap_offset generating a value that's
+larger than the resource region. We then oops when attempting to read the
+value. Sanity checking that value lets us avoid the crash.
 
-Ideally, we wouldn't have any PCI-specific code on
-a generic driver such as the xHCI stack, but it looks
-like we should just stub usb_disable_xhci_ports() out
-for non-PCI devices.
+I've no idea what's causing the underlying problem, and xhci still doesn't
+actually *work* even with this, but the machine at least boots which will
+probably make further debugging easier.
 
-[ balbi@ti.com: slight improvement to commit log ]
+This should be backported to kernels as old as 2.6.31, that contain the
+commit 66d4eadd8d067269ea8fead1a50fe87c2979a80d "USB: xhci: BIOS handoff
+and HW initialization."
 
-This patch should be backported to kernels as old as 3.0, since the
-commit it fixes (e95829f474f0db3a4d940cae1423783edd966027 "xhci: Switch
-PPT ports to EHCI on shutdown.") was marked for stable.
-
-Signed-off-by: Moiz Sonasath<m-sonasath@ti.com>
-Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/pci-quirks.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.h
-+++ b/drivers/usb/host/pci-quirks.h
-@@ -15,6 +15,7 @@ void usb_disable_xhci_ports(struct pci_d
- static inline void usb_amd_quirk_pll_disable(void) {}
- static inline void usb_amd_quirk_pll_enable(void) {}
- static inline void usb_amd_dev_put(void) {}
-+static inline void usb_disable_xhci_ports(struct pci_dev *xhci_pdev) {}
- #endif  /* CONFIG_PCI */
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -841,12 +841,12 @@ static void __devinit quirk_usb_handoff_
+ 	void __iomem *op_reg_base;
+ 	u32 val;
+ 	int timeout;
++	int len = pci_resource_len(pdev, 0);
  
- #endif  /*  __LINUX_USB_PCI_QUIRKS_H  */
+ 	if (!mmio_resource_enabled(pdev, 0))
+ 		return;
+ 
+-	base = ioremap_nocache(pci_resource_start(pdev, 0),
+-				pci_resource_len(pdev, 0));
++	base = ioremap_nocache(pci_resource_start(pdev, 0), len);
+ 	if (base == NULL)
+ 		return;
+ 
+@@ -856,9 +856,17 @@ static void __devinit quirk_usb_handoff_
+ 	 */
+ 	ext_cap_offset = xhci_find_next_cap_offset(base, XHCI_HCC_PARAMS_OFFSET);
+ 	do {
++		if ((ext_cap_offset + sizeof(val)) > len) {
++			/* We're reading garbage from the controller */
++			dev_warn(&pdev->dev,
++				 "xHCI controller failing to respond");
++			return;
++		}
++
+ 		if (!ext_cap_offset)
+ 			/* We've reached the end of the extended capabilities */
+ 			goto hc_init;
++
+ 		val = readl(base + ext_cap_offset);
+ 		if (XHCI_EXT_CAPS_ID(val) == XHCI_EXT_CAPS_LEGACY)
+ 			break;
 
 
