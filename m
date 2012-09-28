@@ -1,63 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab2I1Ngs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 09:36:48 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36336 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714Ab2I1Ngq (ORCPT
+	id S1757882Ab2I1Nmo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 09:42:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55959 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756148Ab2I1Nmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 09:36:46 -0400
-Date: Fri, 28 Sep 2012 15:36:43 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: rcu: eqs related warnings in linux-next
-Message-ID: <20120928133633.GC12843@somewhere.redhat.com>
-References: <50659D37.2020206@gmail.com>
+	Fri, 28 Sep 2012 09:42:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50659D37.2020206@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120928084626.GB7916@n2100.arm.linux.org.uk>
+References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
+	<CAK7N6vqS9PW85hgcA7EVzCk-TQo_ru4OcC5i0Rw-b2hvb4YoXg@mail.gmail.com>
+	<20120928084626.GB7916@n2100.arm.linux.org.uk>
+Date: Fri, 28 Sep 2012 21:42:40 +0800
+Message-ID: <CACVXFVOOVvf4xOABnv1FqPOMH6_XwFcH-ZTfBDojQrZJyypT+A@mail.gmail.com>
+Subject: Re: [PATCH] driver core: fix possible missing of device probe
+From: Ming Lei <ming.lei@canonical.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: anish singh <anish198519851985@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 02:51:03PM +0200, Sasha Levin wrote:
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest with the latest linux-next kernel, I've stumbled on the following during boot:
-> 
-> [  199.224369] WARNING: at kernel/rcutree.c:513 rcu_eqs_exit_common+0x4a/0x3a0()
-> [  199.225307] Pid: 1, comm: init Tainted: G        W    3.6.0-rc7-next-20120928-sasha-00001-g8b2d05d-dirty #13
-> [  199.226611] Call Trace:
-> [  199.226951]  [<ffffffff811c8d1a>] ? rcu_eqs_exit_common+0x4a/0x3a0
-> [  199.227773]  [<ffffffff81108e36>] warn_slowpath_common+0x86/0xb0
-> [  199.228572]  [<ffffffff81108f25>] warn_slowpath_null+0x15/0x20
-> [  199.229348]  [<ffffffff811c8d1a>] rcu_eqs_exit_common+0x4a/0x3a0
-> [  199.230037]  [<ffffffff8117f267>] ? __lock_acquire+0x1c37/0x1ca0
-> [  199.230037]  [<ffffffff811c936c>] rcu_eqs_exit+0x9c/0xb0
-> [  199.230037]  [<ffffffff811c940c>] rcu_user_exit+0x8c/0xf0
-> [  199.230037]  [<ffffffff810a98bb>] do_page_fault+0x1b/0x40
-> [  199.230037]  [<ffffffff810a2a90>] do_async_page_fault+0x30/0xa0
-> [  199.230037]  [<ffffffff83a3eea8>] async_page_fault+0x28/0x30
-> [  199.230037]  [<ffffffff819f357b>] ? debug_object_activate+0x6b/0x1b0
-> [  199.230037]  [<ffffffff819f3586>] ? debug_object_activate+0x76/0x1b0
-> [  199.230037]  [<ffffffff8111af13>] ? lock_timer_base.isra.19+0x33/0x70
-> [  199.230037]  [<ffffffff8111d45f>] mod_timer_pinned+0x9f/0x260
-> [  199.230037]  [<ffffffff811c5ff4>] rcu_eqs_enter_common+0x894/0x970
-> [  199.230037]  [<ffffffff839dc2ac>] ? init_post+0x75/0xc8
-> [  199.230037]  [<ffffffff85abfed5>] ? kernel_init+0x1e1/0x1e1
-> [  199.230037]  [<ffffffff811c63df>] rcu_eqs_enter+0xaf/0xc0
-> [  199.230037]  [<ffffffff811c64c5>] rcu_user_enter+0xd5/0x140
-> [  199.230037]  [<ffffffff8107d0fd>] syscall_trace_leave+0xfd/0x150
-> [  199.230037]  [<ffffffff83a3f7af>] int_check_syscall_exit_work+0x34/0x3d
-> [  199.230037] ---[ end trace a582c3a264d5bd1a ]---
+On Fri, Sep 28, 2012 at 4:46 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+>
+> Actually, this description is rubbish.  It's not about the SMP barriers,
+> or read/write device/driver lists, or about two CPUs (my test setup only
+> has one CPU.)
 
-Ok, we can't decently protect against any kind of exception messing up everything
-in the middle of RCU APIs anyway. The only solution is to find out what cause this
-page fault in mod_timer_pinned() and work around that.
+Could you point out in detail what is wrong with my description?
 
-Anybody, an idea?
+Looks the description has been posted for about 12 days...
+
+>
+> It's about threads, and the relative timing of those threads through
+
+I do not mention threads case in one CPU because the context in
+which device_add runs will always see the driver added into
+bus's driver list after applying the patch in this situation. And it
+is obvious under UP case.
+
+But in SMP case, it is not so obvious like UP, driver_register and
+device_add will be run in two individual CPU,  so memory barrier
+plays a role in making device_add see the new added driver in
+the situation described in the commit log, and avoid the problem.
+
+> the driver model code.  All in all, what with the error path issue, and
+> now the blatently wrong description, I'm not gaining much confidence in
+> Ming Lei.
+>
+> The below is actually what's happening, according to my analysis - and
+> you'll notice that the device list has absolutely nothing to do with it:
+
+I don't think your analysis is complete for the two reasons:
+
+      - the problem isn't only triggered by deferred probe, and can be triggered
+        by device_add too
+      - your analysis doesn't cover SMP case
+
+In fact, it is just a race between driver_register and device_add or
+bus_probe_device, and should be nothing to do with deferred probe.
+
+See my posted description again:
+
+          Inside bus_add_driver(), one device might be added into
+          the bus or probed which is triggered by deferred probe
+          just after completing of driver_attach() and before
+          'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)',
+          so the device won't be probed by this driver.
+
+>
+> Thread 0                        Thread 1                        Thread 2
+> driver_attach()
+>  bus_for_each_dev()
+>   __driver_attach(, devA)
+>    driver_probe_device(, devA)
+>     really_probe(devA, )
+>      driver_deferred_probe_add(devA)
+>                                 driver_attach()
+>                                  bus_for_each_dev()
+>                                   __driver_attach(, devA)
+>                                    driver_probe_device(, devB)
+>                                     really_probe(devB, )
+>                                      driver_bound(devB)
+>                                       driver_deferred_probe_trigger()
+>                                                                 deferred_probe_work_func()
+>                                                                  bus_probe_device(devA)
+>                                                                   device_attach(devA)
+>                                                                    bus_for_each_drv()
+>                                                                     __device_attach(, devA)
+>                                                                      *fails to find driver*
+>                                                                      *devA dropped from
+>                                                                       deferred probe list*
+> klist_add_tail(klist_drivers)
+
+Didn't my description cover the description above? ( bus_probe_device is
+called between driver_attach and klist_add_tail)
+
+Also it is only one of the two situations addressed by the patch.
+
+>
+> The reason this fix works is because the order in thread 0 means that
+> when thread 2 comes to re-probe the device, it does find the driver,
+
+You mean the driver_attach on same driver can happen at the same time?
+If so, it is simply wrong.
+
+> and if the resources that the driver needs are still not found (and it
+> again returns -EPROBE_DEFER) the device will be placed back on the
+> deferred probe list.
+
+Thanks,
+--
+Ming Lei
