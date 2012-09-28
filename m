@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032258Ab2I1UYv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:24:51 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
+	id S1032271Ab2I1UY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:24:56 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032232Ab2I1UYl (ORCPT
+	with ESMTP id S1032256Ab2I1UYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:24:41 -0400
+	Fri, 28 Sep 2012 16:24:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lin Ming <ming.m.lin@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 060/218] ACPI / PM: Fix resource_lock dead lock in acpi_power_on_device
-Date: Fri, 28 Sep 2012 13:14:37 -0700
-Message-Id: <20120928201508.432355899@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 063/218] mmc: sdhci-esdhc: break out early if clock is 0
+Date: Fri, 28 Sep 2012 13:14:40 -0700
+Message-Id: <20120928201508.766141129@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,139 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lin Ming <ming.m.lin@intel.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 40bf66ec9791f1452b90b82aadc3b6e6aee201f5 upstream.
+commit 74f330bceaa7b88d06062e1cac3d519a3dfc041e upstream.
 
-Commit 0090def("ACPI: Add interface to register/unregister device
-to/from power resources") used resource_lock to protect the devices list
-that relies on power resource. It caused a mutex dead lock, as below
+Since commit 30832ab56 ("mmc: sdhci: Always pass clock request value
+zero to set_clock host op") was merged, esdhc_set_clock starts hitting
+"if (clock == 0)" where ESDHC_SYSTEM_CONTROL has been operated.  This
+causes SDHCI card-detection function being broken.  Fix the regression
+by moving "if (clock == 0)" above ESDHC_SYSTEM_CONTROL operation.
 
-    acpi_power_on ---> lock resource_lock
-      __acpi_power_on
-        acpi_power_on_device
-          acpi_power_get_inferred_state
-            acpi_power_get_list_state ---> lock resource_lock
-
-This patch adds a new mutex "devices_lock" to protect the devices list
-and calls acpi_power_on_device in acpi_power_on, instead of
-__acpi_power_on, after the resource_lock is released.
-
-[rjw: Changed data type of a boolean variable to bool.]
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/power.c |   34 +++++++++++++++++++++++-----------
- 1 file changed, 23 insertions(+), 11 deletions(-)
+ drivers/mmc/host/sdhci-esdhc.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/power.c
-+++ b/drivers/acpi/power.c
-@@ -103,6 +103,7 @@ struct acpi_power_resource {
+--- a/drivers/mmc/host/sdhci-esdhc.h
++++ b/drivers/mmc/host/sdhci-esdhc.h
+@@ -48,14 +48,14 @@ static inline void esdhc_set_clock(struc
+ 	int div = 1;
+ 	u32 temp;
  
- 	/* List of devices relying on this power resource */
- 	struct acpi_power_resource_device *devices;
-+	struct mutex devices_lock;
- };
++	if (clock == 0)
++		goto out;
++
+ 	temp = sdhci_readl(host, ESDHC_SYSTEM_CONTROL);
+ 	temp &= ~(ESDHC_CLOCK_IPGEN | ESDHC_CLOCK_HCKEN | ESDHC_CLOCK_PEREN
+ 		| ESDHC_CLOCK_MASK);
+ 	sdhci_writel(host, temp, ESDHC_SYSTEM_CONTROL);
  
- static struct list_head acpi_power_resource_list;
-@@ -221,7 +222,6 @@ static void acpi_power_on_device(struct
- 
- static int __acpi_power_on(struct acpi_power_resource *resource)
- {
--	struct acpi_power_resource_device *device_list = resource->devices;
- 	acpi_status status = AE_OK;
- 
- 	status = acpi_evaluate_object(resource->device->handle, "_ON", NULL, NULL);
-@@ -234,19 +234,15 @@ static int __acpi_power_on(struct acpi_p
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Power resource [%s] turned on\n",
- 			  resource->name));
- 
--	while (device_list) {
--		acpi_power_on_device(device_list->device);
+-	if (clock == 0)
+-		goto out;
 -
--		device_list = device_list->next;
--	}
--
- 	return 0;
- }
+ 	while (host->max_clk / pre_div / 16 > clock && pre_div < 256)
+ 		pre_div *= 2;
  
- static int acpi_power_on(acpi_handle handle)
- {
- 	int result = 0;
-+	bool resume_device = false;
- 	struct acpi_power_resource *resource = NULL;
-+	struct acpi_power_resource_device *device_list;
- 
- 	result = acpi_power_get_context(handle, &resource);
- 	if (result)
-@@ -262,10 +258,25 @@ static int acpi_power_on(acpi_handle han
- 		result = __acpi_power_on(resource);
- 		if (result)
- 			resource->ref_count--;
-+		else
-+			resume_device = true;
- 	}
- 
- 	mutex_unlock(&resource->resource_lock);
- 
-+	if (!resume_device)
-+		return result;
-+
-+	mutex_lock(&resource->devices_lock);
-+
-+	device_list = resource->devices;
-+	while (device_list) {
-+		acpi_power_on_device(device_list->device);
-+		device_list = device_list->next;
-+	}
-+
-+	mutex_unlock(&resource->devices_lock);
-+
- 	return result;
- }
- 
-@@ -351,7 +362,7 @@ static void __acpi_power_resource_unregi
- 	if (acpi_power_get_context(res_handle, &resource))
- 		return;
- 
--	mutex_lock(&resource->resource_lock);
-+	mutex_lock(&resource->devices_lock);
- 	prev = NULL;
- 	curr = resource->devices;
- 	while (curr) {
-@@ -368,7 +379,7 @@ static void __acpi_power_resource_unregi
- 		prev = curr;
- 		curr = curr->next;
- 	}
--	mutex_unlock(&resource->resource_lock);
-+	mutex_unlock(&resource->devices_lock);
- }
- 
- /* Unlink dev from all power resources in _PR0 */
-@@ -409,10 +420,10 @@ static int __acpi_power_resource_registe
- 
- 	power_resource_device->device = powered_device;
- 
--	mutex_lock(&resource->resource_lock);
-+	mutex_lock(&resource->devices_lock);
- 	power_resource_device->next = resource->devices;
- 	resource->devices = power_resource_device;
--	mutex_unlock(&resource->resource_lock);
-+	mutex_unlock(&resource->devices_lock);
- 
- 	return 0;
- }
-@@ -715,6 +726,7 @@ static int acpi_power_add(struct acpi_de
- 
- 	resource->device = device;
- 	mutex_init(&resource->resource_lock);
-+	mutex_init(&resource->devices_lock);
- 	strcpy(resource->name, device->pnp.bus_id);
- 	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
- 	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
 
 
