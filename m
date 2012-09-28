@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033184Ab2I1VX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:23:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031305Ab2I1U37 (ORCPT
+	id S1422779Ab2I1U3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:29:51 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:56440 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032764Ab2I1U3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:29:59 -0400
+	Fri, 28 Sep 2012 16:29:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Anhua Xu <anhua.xu@intel.com>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Schroeder <sec@dschroeder.info>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 157/218] drm/i915: fix wrong order of parameters in port checking functions
-Date: Fri, 28 Sep 2012 13:16:14 -0700
-Message-Id: <20120928201519.545137024@linuxfoundation.org>
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [ 152/218] asus-laptop: HRWS/HWRS typo
+Date: Fri, 28 Sep 2012 13:16:09 -0700
+Message-Id: <20120928201518.958516776@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,84 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Xu, Anhua" <anhua.xu@intel.com>
+From: Corentin Chary <corentin.chary@gmail.com>
 
-commit b70ad586162609141f0aa9eb34790f31a8954f89 upstream.
+commit 8871e99f89b7d7b1ea99de550eea2a56273f42ab upstream.
 
-Wrong order of parameters passed-in when calling hdmi/adpa
-/lvds_pipe_enabled(), 2nd and 3rd parameters are reversed.
-
-This bug was indroduced by
-
-commit 1519b9956eb4b4180fa3f47c73341463cdcfaa37
-Author: Keith Packard <keithp@keithp.com>
-Date:   Sat Aug 6 10:35:34 2011 -0700
-
-    drm/i915: Fix PCH port pipe select in CPT disable paths
-
-The reachable tag for this commit is v3.1-rc1-3-g1519b99
-
-Signed-off-by: Anhua Xu <anhua.xu@intel.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44876
-Tested-by: Daniel Schroeder <sec@dschroeder.info>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=24222
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/platform/x86/asus-laptop.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -1099,7 +1099,7 @@ static void assert_pch_hdmi_disabled(str
- 				     enum pipe pipe, int reg)
- {
- 	u32 val = I915_READ(reg);
--	WARN(hdmi_pipe_enabled(dev_priv, val, pipe),
-+	WARN(hdmi_pipe_enabled(dev_priv, pipe, val),
- 	     "PCH HDMI (0x%08x) enabled on transcoder %c, should be disabled\n",
- 	     reg, pipe_name(pipe));
- }
-@@ -1116,13 +1116,13 @@ static void assert_pch_ports_disabled(st
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -863,9 +863,9 @@ static ssize_t show_infos(struct device
+ 	 * The significance of others is yet to be found.
+ 	 * If we don't find the method, we assume the device are present.
+ 	 */
+-	rv = acpi_evaluate_integer(asus->handle, "HRWS", NULL, &temp);
++	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
+ 	if (!ACPI_FAILURE(rv))
+-		len += sprintf(page + len, "HRWS value         : %#x\n",
++		len += sprintf(page + len, "HWRS value         : %#x\n",
+ 			       (uint) temp);
+ 	/*
+ 	 * Another value for userspace: the ASYM method returns 0x02 for
+@@ -1751,9 +1751,9 @@ static int asus_laptop_get_info(struct a
+ 	 * The significance of others is yet to be found.
+ 	 */
+ 	status =
+-	    acpi_evaluate_integer(asus->handle, "HRWS", NULL, &hwrs_result);
++	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
+ 	if (!ACPI_FAILURE(status))
+-		pr_notice("  HRWS returned %x", (int)hwrs_result);
++		pr_notice("  HWRS returned %x", (int)hwrs_result);
  
- 	reg = PCH_ADPA;
- 	val = I915_READ(reg);
--	WARN(adpa_pipe_enabled(dev_priv, val, pipe),
-+	WARN(adpa_pipe_enabled(dev_priv, pipe, val),
- 	     "PCH VGA enabled on transcoder %c, should be disabled\n",
- 	     pipe_name(pipe));
- 
- 	reg = PCH_LVDS;
- 	val = I915_READ(reg);
--	WARN(lvds_pipe_enabled(dev_priv, val, pipe),
-+	WARN(lvds_pipe_enabled(dev_priv, pipe, val),
- 	     "PCH LVDS enabled on transcoder %c, should be disabled\n",
- 	     pipe_name(pipe));
- 
-@@ -1487,7 +1487,7 @@ static void disable_pch_hdmi(struct drm_
- 			     enum pipe pipe, int reg)
- {
- 	u32 val = I915_READ(reg);
--	if (hdmi_pipe_enabled(dev_priv, val, pipe)) {
-+	if (hdmi_pipe_enabled(dev_priv, pipe, val)) {
- 		DRM_DEBUG_KMS("Disabling pch HDMI %x on pipe %d\n",
- 			      reg, pipe);
- 		I915_WRITE(reg, val & ~PORT_ENABLE);
-@@ -1509,12 +1509,12 @@ static void intel_disable_pch_ports(stru
- 
- 	reg = PCH_ADPA;
- 	val = I915_READ(reg);
--	if (adpa_pipe_enabled(dev_priv, val, pipe))
-+	if (adpa_pipe_enabled(dev_priv, pipe, val))
- 		I915_WRITE(reg, val & ~ADPA_DAC_ENABLE);
- 
- 	reg = PCH_LVDS;
- 	val = I915_READ(reg);
--	if (lvds_pipe_enabled(dev_priv, val, pipe)) {
-+	if (lvds_pipe_enabled(dev_priv, pipe, val)) {
- 		DRM_DEBUG_KMS("disable lvds on pipe %d val 0x%08x\n", pipe, val);
- 		I915_WRITE(reg, val & ~LVDS_PORT_EN);
- 		POSTING_READ(reg);
+ 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
+ 		asus->have_rsts = true;
 
 
