@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032303Ab2I1UZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:25:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032274Ab2I1UZD (ORCPT
+	id S1032334Ab2I1UZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:25:25 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48962 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032305Ab2I1UZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:25:03 -0400
+	Fri, 28 Sep 2012 16:25:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: =?UTF-8?q?=5B=20067/218=5D=20kobject=3A=20fix=20oops=20with=20=22input0=3A=20bad=20kobj=5Fuevent=5Fenv=20content=20in=20show=5Fuevent=28=29=22?=
-Date: Fri, 28 Sep 2012 13:14:44 -0700
-Message-Id: <20120928201509.209422485@linuxfoundation.org>
+        Dick Streefland <dick.streefland@altium.nl>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 070/218] SUNRPC: Fix a UDP transport regression
+Date: Fri, 28 Sep 2012 13:14:47 -0700
+Message-Id: <20120928201509.596735923@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,75 +27,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 60e233a56609fd963c59e99bd75c663d63fa91b6 upstream.
+commit f39c1bfb5a03e2d255451bff05be0d7255298fa4 upstream.
 
-Fengguang Wu <fengguang.wu@intel.com> writes:
+Commit 43cedbf0e8dfb9c5610eb7985d5f21263e313802 (SUNRPC: Ensure that
+we grab the XPRT_LOCK before calling xprt_alloc_slot) is causing
+hangs in the case of NFS over UDP mounts.
 
-> After the __devinit* removal series, I can still get kernel panic in
-> show_uevent(). So there are more sources of bug..
->
-> Debug patch:
->
-> @@ -343,8 +343,11 @@ static ssize_t show_uevent(struct device
->                 goto out;
->
->         /* copy keys to file */
-> -       for (i = 0; i < env->envp_idx; i++)
-> +       dev_err(dev, "uevent %d env[%d]: %s/.../%s\n", env->buflen, env->envp_idx, top_kobj->name, dev->kobj.name);
-> +       for (i = 0; i < env->envp_idx; i++) {
-> +               printk(KERN_ERR "uevent %d env[%d]: %s\n", (int)count, i, env->envp[i]);
->                 count += sprintf(&buf[count], "%s\n", env->envp[i]);
-> +       }
->
-> Oops message, the env[] is again not properly initilized:
->
-> [   44.068623] input input0: uevent 61 env[805306368]: input0/.../input0
-> [   44.069552] uevent 0 env[0]: (null)
+Since neither the UDP or the RDMA transport mechanism use dynamic slot
+allocation, we can skip grabbing the socket lock for those transports.
+Add a new rpc_xprt_op to allow switching between the TCP and UDP/RDMA
+case.
 
-This is a completely different CONFIG_HOTPLUG problem, only
-demonstrating another reason why CONFIG_HOTPLUG should go away.  I had a
-hard time trying to disable it anyway ;-)
+Note that the NFSv4.1 back channel assigns the slot directly
+through rpc_run_bc_task, so we can ignore that case.
 
-The problem this time is lots of code assuming that a call to
-add_uevent_var() will guarantee that env->buflen > 0.  This is not true
-if CONFIG_HOTPLUG is unset.  So things like this end up overwriting
-env->envp_idx because the array index is -1:
-
-	if (add_uevent_var(env, "MODALIAS="))
-		return -ENOMEM;
-        len = input_print_modalias(&env->buf[env->buflen - 1],
-				   sizeof(env->buf) - env->buflen,
-				   dev, 0);
-
-Don't know what the best action is, given that there seem to be a *lot*
-of this around the kernel.  This patch "fixes" the problem for me, but I
-don't know if it can be considered an appropriate fix.
-
-[ It is the correct fix for now, for 3.7 forcing CONFIG_HOTPLUG to
-always be on is the longterm fix, but it's too late for 3.6 and older
-kernels to resolve this that way - gregkh ]
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Dick Streefland <dick.streefland@altium.nl>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/kobject.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/sunrpc/xprt.h     |    3 +++
+ net/sunrpc/xprt.c               |   34 ++++++++++++++++++++--------------
+ net/sunrpc/xprtrdma/transport.c |    1 +
+ net/sunrpc/xprtsock.c           |    3 +++
+ 4 files changed, 27 insertions(+), 14 deletions(-)
 
---- a/include/linux/kobject.h
-+++ b/include/linux/kobject.h
-@@ -224,7 +224,7 @@ static inline int kobject_uevent_env(str
+--- a/include/linux/sunrpc/xprt.h
++++ b/include/linux/sunrpc/xprt.h
+@@ -114,6 +114,7 @@ struct rpc_xprt_ops {
+ 	void		(*set_buffer_size)(struct rpc_xprt *xprt, size_t sndsize, size_t rcvsize);
+ 	int		(*reserve_xprt)(struct rpc_xprt *xprt, struct rpc_task *task);
+ 	void		(*release_xprt)(struct rpc_xprt *xprt, struct rpc_task *task);
++	void		(*alloc_slot)(struct rpc_xprt *xprt, struct rpc_task *task);
+ 	void		(*rpcbind)(struct rpc_task *task);
+ 	void		(*set_port)(struct rpc_xprt *xprt, unsigned short port);
+ 	void		(*connect)(struct rpc_task *task);
+@@ -279,6 +280,8 @@ void			xprt_connect(struct rpc_task *tas
+ void			xprt_reserve(struct rpc_task *task);
+ int			xprt_reserve_xprt(struct rpc_xprt *xprt, struct rpc_task *task);
+ int			xprt_reserve_xprt_cong(struct rpc_xprt *xprt, struct rpc_task *task);
++void			xprt_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task);
++void			xprt_lock_and_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task);
+ int			xprt_prepare_transmit(struct rpc_task *task);
+ void			xprt_transmit(struct rpc_task *task);
+ void			xprt_end_transmit(struct rpc_task *task);
+--- a/net/sunrpc/xprt.c
++++ b/net/sunrpc/xprt.c
+@@ -969,11 +969,11 @@ static bool xprt_dynamic_free_slot(struc
+ 	return false;
+ }
  
- static inline __printf(2, 3)
- int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
--{ return 0; }
-+{ return -ENOMEM; }
+-static void xprt_alloc_slot(struct rpc_task *task)
++void xprt_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task)
+ {
+-	struct rpc_xprt	*xprt = task->tk_xprt;
+ 	struct rpc_rqst *req;
  
- static inline int kobject_action_type(const char *buf, size_t count,
- 				      enum kobject_action *type)
++	spin_lock(&xprt->reserve_lock);
+ 	if (!list_empty(&xprt->free)) {
+ 		req = list_entry(xprt->free.next, struct rpc_rqst, rq_list);
+ 		list_del(&req->rq_list);
+@@ -994,12 +994,29 @@ static void xprt_alloc_slot(struct rpc_t
+ 	default:
+ 		task->tk_status = -EAGAIN;
+ 	}
++	spin_unlock(&xprt->reserve_lock);
+ 	return;
+ out_init_req:
+ 	task->tk_status = 0;
+ 	task->tk_rqstp = req;
+ 	xprt_request_init(task, xprt);
++	spin_unlock(&xprt->reserve_lock);
++}
++EXPORT_SYMBOL_GPL(xprt_alloc_slot);
++
++void xprt_lock_and_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task)
++{
++	/* Note: grabbing the xprt_lock_write() ensures that we throttle
++	 * new slot allocation if the transport is congested (i.e. when
++	 * reconnecting a stream transport or when out of socket write
++	 * buffer space).
++	 */
++	if (xprt_lock_write(xprt, task)) {
++		xprt_alloc_slot(xprt, task);
++		xprt_release_write(xprt, task);
++	}
+ }
++EXPORT_SYMBOL_GPL(xprt_lock_and_alloc_slot);
+ 
+ static void xprt_free_slot(struct rpc_xprt *xprt, struct rpc_rqst *req)
+ {
+@@ -1083,20 +1100,9 @@ void xprt_reserve(struct rpc_task *task)
+ 	if (task->tk_rqstp != NULL)
+ 		return;
+ 
+-	/* Note: grabbing the xprt_lock_write() here is not strictly needed,
+-	 * but ensures that we throttle new slot allocation if the transport
+-	 * is congested (e.g. if reconnecting or if we're out of socket
+-	 * write buffer space).
+-	 */
+ 	task->tk_timeout = 0;
+ 	task->tk_status = -EAGAIN;
+-	if (!xprt_lock_write(xprt, task))
+-		return;
+-
+-	spin_lock(&xprt->reserve_lock);
+-	xprt_alloc_slot(task);
+-	spin_unlock(&xprt->reserve_lock);
+-	xprt_release_write(xprt, task);
++	xprt->ops->alloc_slot(xprt, task);
+ }
+ 
+ static inline __be32 xprt_alloc_xid(struct rpc_xprt *xprt)
+--- a/net/sunrpc/xprtrdma/transport.c
++++ b/net/sunrpc/xprtrdma/transport.c
+@@ -713,6 +713,7 @@ static void xprt_rdma_print_stats(struct
+ static struct rpc_xprt_ops xprt_rdma_procs = {
+ 	.reserve_xprt		= xprt_rdma_reserve_xprt,
+ 	.release_xprt		= xprt_release_xprt_cong, /* sunrpc/xprt.c */
++	.alloc_slot		= xprt_alloc_slot,
+ 	.release_request	= xprt_release_rqst_cong,       /* ditto */
+ 	.set_retrans_timeout	= xprt_set_retrans_timeout_def, /* ditto */
+ 	.rpcbind		= rpcb_getport_async,	/* sunrpc/rpcb_clnt.c */
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -2433,6 +2433,7 @@ static void bc_destroy(struct rpc_xprt *
+ static struct rpc_xprt_ops xs_local_ops = {
+ 	.reserve_xprt		= xprt_reserve_xprt,
+ 	.release_xprt		= xs_tcp_release_xprt,
++	.alloc_slot		= xprt_alloc_slot,
+ 	.rpcbind		= xs_local_rpcbind,
+ 	.set_port		= xs_local_set_port,
+ 	.connect		= xs_connect,
+@@ -2449,6 +2450,7 @@ static struct rpc_xprt_ops xs_udp_ops =
+ 	.set_buffer_size	= xs_udp_set_buffer_size,
+ 	.reserve_xprt		= xprt_reserve_xprt_cong,
+ 	.release_xprt		= xprt_release_xprt_cong,
++	.alloc_slot		= xprt_alloc_slot,
+ 	.rpcbind		= rpcb_getport_async,
+ 	.set_port		= xs_set_port,
+ 	.connect		= xs_connect,
+@@ -2466,6 +2468,7 @@ static struct rpc_xprt_ops xs_udp_ops =
+ static struct rpc_xprt_ops xs_tcp_ops = {
+ 	.reserve_xprt		= xprt_reserve_xprt,
+ 	.release_xprt		= xs_tcp_release_xprt,
++	.alloc_slot		= xprt_lock_and_alloc_slot,
+ 	.rpcbind		= rpcb_getport_async,
+ 	.set_port		= xs_set_port,
+ 	.connect		= xs_connect,
 
 
