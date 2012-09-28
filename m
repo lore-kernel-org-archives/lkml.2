@@ -1,135 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab2I1Bkw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:40:52 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:34518 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab2I1Bkt (ORCPT
+	id S1756274Ab2I1BmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:42:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35614 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086Ab2I1BmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:40:49 -0400
-From: Josh Taylor <joshua.taylor0@gmail.com>
-To: tglx@linutronix.de, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Josh Taylor <joshua.taylor0@gmail.com>
-Subject: [PATCH 2/2] Kernel: cpu: Fixed style issues
-Date: Thu, 27 Sep 2012 21:40:24 -0400
-Message-Id: <1348796424-32426-1-git-send-email-joshua.taylor0@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 27 Sep 2012 21:42:05 -0400
+Date: Thu, 27 Sep 2012 18:41:43 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-684304887f5093a69343cd909f01c5b3ba914852@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, trenn@suse.de, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, trenn@suse.de,
+        hpa@linux.intel.com
+In-Reply-To: <1348661941-71287-2-git-send-email-trenn@suse.de>
+References: <1348661941-71287-2-git-send-email-trenn@suse.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/acpi] lib: Add early cpio decoder
+Git-Commit-ID: 684304887f5093a69343cd909f01c5b3ba914852
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 27 Sep 2012 18:41:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrected 'pr_err' and 'pr_warn' issues
+Commit-ID:  684304887f5093a69343cd909f01c5b3ba914852
+Gitweb:     http://git.kernel.org/tip/684304887f5093a69343cd909f01c5b3ba914852
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Wed, 26 Sep 2012 14:18:56 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 27 Sep 2012 15:00:13 -0700
 
-Signed-off-by: Josh Taylor <joshua.taylor0@gmail.com>
+lib: Add early cpio decoder
+
+Add a simple cpio decoder without library dependencies for the purpose
+of extracting components from the initramfs blob for early kernel
+uses.  Intended consumers so far are microcode and ACPI override.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1348661941-71287-2-git-send-email-trenn@suse.de
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- kernel/cpu.c |   28 +++++++++++++---------------
- 1 file changed, 13 insertions(+), 15 deletions(-)
+ include/linux/earlycpio.h |   17 +++++
+ lib/Makefile              |    2 +-
+ lib/earlycpio.c           |  145 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 163 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 14d3258..0c09ae1 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -225,7 +225,7 @@ static inline void check_for_tasks(int cpu)
- 	for_each_process(p) {
- 		if (task_cpu(p) == cpu && p->state == TASK_RUNNING &&
- 		    (p->utime || p->stime))
--			printk(KERN_WARNING "Task %s (pid = %d) is on cpu %d "
-+			pr_warn("Task %s (pid = %d) is on cpu %d "
- 				"(state = %ld, flags = %x)\n",
- 				p->comm, task_pid_nr(p), cpu,
- 				p->state, p->flags);
-@@ -276,8 +276,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 	if (err) {
- 		nr_calls--;
- 		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
--		printk("%s: attempt to take down CPU %u failed\n",
--				__func__, cpu);
-+		pr_err("%s: attempt to take down CPU %u failed\n",
-+			__func__, cpu);
- 		goto out_release;
- 	}
+diff --git a/include/linux/earlycpio.h b/include/linux/earlycpio.h
+new file mode 100644
+index 0000000..111f46d
+--- /dev/null
++++ b/include/linux/earlycpio.h
+@@ -0,0 +1,17 @@
++#ifndef _LINUX_EARLYCPIO_H
++#define _LINUX_EARLYCPIO_H
++
++#include <linux/types.h>
++
++#define MAX_CPIO_FILE_NAME 18
++
++struct cpio_data {
++	void *data;
++	size_t size;
++	char name[MAX_CPIO_FILE_NAME];
++};
++
++struct cpio_data find_cpio_data(const char *path, void *data, size_t len,
++				long *offset);
++
++#endif /* _LINUX_EARLYCPIO_H */
+diff --git a/lib/Makefile b/lib/Makefile
+index 42d283e..0924041 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o
++	 is_single_threaded.o plist.o decompress.o earlycpio.o
  
-@@ -357,7 +357,7 @@ static int __cpuinit _cpu_up(unsigned int cpu, int tasks_frozen)
- 	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
- 	if (ret) {
- 		nr_calls--;
--		printk(KERN_WARNING "%s: attempt to bring up CPU %u failed\n",
-+		pr_warn("%s: attempt to bring up CPU %u failed\n",
- 				__func__, cpu);
- 		goto out_notify;
- 	}
-@@ -390,10 +390,10 @@ int __cpuinit cpu_up(unsigned int cpu)
- #endif
- 
- 	if (!cpu_possible(cpu)) {
--		printk(KERN_ERR "can't online cpu %d because it is not "
-+		pr_err("can't online cpu %d because it is not "
- 			"configured as may-hotadd at boot time\n", cpu);
- #if defined(CONFIG_IA64)
--		printk(KERN_ERR "please check additional_cpus= boot "
-+		pr_err("please check additional_cpus= boot "
- 				"parameter\n");
- #endif
- 		return -EINVAL;
-@@ -409,8 +409,7 @@ int __cpuinit cpu_up(unsigned int cpu)
- 
- 	pgdat = NODE_DATA(nid);
- 	if (!pgdat) {
--		printk(KERN_ERR
--			"Can't online cpu %d due to NULL pgdat\n", cpu);
-+		pr_err("Can't online cpu %d due to NULL pgdat\n", cpu);
- 		return -ENOMEM;
- 	}
- 
-@@ -460,7 +459,7 @@ int disable_nonboot_cpus(void)
- 	cpumask_clear(frozen_cpus);
- 	arch_disable_nonboot_cpus_begin();
- 
--	printk("Disabling non-boot CPUs ...\n");
-+	pr_warn("Disabling non-boot CPUs ...\n");
- 	for_each_online_cpu(cpu) {
- 		if (cpu == first_cpu)
- 			continue;
-@@ -468,8 +467,7 @@ int disable_nonboot_cpus(void)
- 		if (!error)
- 			cpumask_set_cpu(cpu, frozen_cpus);
- 		else {
--			printk(KERN_ERR "Error taking CPU%d down: %d\n",
--				cpu, error);
-+			pr_err("Error taking CPU%d down: %d\n",	cpu, error);
- 			break;
- 		}
- 	}
-@@ -481,7 +479,7 @@ int disable_nonboot_cpus(void)
- 		/* Make sure the CPUs won't be enabled by someone else */
- 		cpu_hotplug_disabled = 1;
- 	} else {
--		printk(KERN_ERR "Non-boot CPUs are not disabled\n");
-+		pr_err("Non-boot CPUs are not disabled\n");
- 	}
- 	cpu_maps_update_done();
- 	return error;
-@@ -505,17 +503,17 @@ void __ref enable_nonboot_cpus(void)
- 	if (cpumask_empty(frozen_cpus))
- 		goto out;
- 
--	printk(KERN_INFO "Enabling non-boot CPUs ...\n");
-+	pr_warn("Enabling non-boot CPUs ...\n");
- 
- 	arch_enable_nonboot_cpus_begin();
- 
- 	for_each_cpu(cpu, frozen_cpus) {
- 		error = _cpu_up(cpu, 1);
- 		if (!error) {
--			printk(KERN_INFO "CPU%d is up\n", cpu);
-+			pr_info("CPU%d is up\n", cpu);
- 			continue;
- 		}
--		printk(KERN_WARNING "Error taking CPU%d up: %d\n", cpu, error);
-+		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
- 	}
- 
- 	arch_enable_nonboot_cpus_end();
--- 
-1.7.9.5
-
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/earlycpio.c b/lib/earlycpio.c
+new file mode 100644
+index 0000000..8078ef4
+--- /dev/null
++++ b/lib/earlycpio.c
+@@ -0,0 +1,145 @@
++/* ----------------------------------------------------------------------- *
++ *
++ *   Copyright 2012 Intel Corporation; author H. Peter Anvin
++ *
++ *   This file is part of the Linux kernel, and is made available
++ *   under the terms of the GNU General Public License version 2, as
++ *   published by the Free Software Foundation.
++ *
++ *   This program is distributed in the hope it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *   General Public License for more details.
++ *
++ * ----------------------------------------------------------------------- */
++
++/*
++ * earlycpio.c
++ *
++ * Find a specific cpio member; must precede any compressed content.
++ * This is used to locate data items in the initramfs used by the
++ * kernel itself during early boot (before the main initramfs is
++ * decompressed.)  It is the responsibility of the initramfs creator
++ * to ensure that these items are uncompressed at the head of the
++ * blob.  Depending on the boot loader or package tool that may be a
++ * separate file or part of the same file.
++ */
++
++#include <linux/earlycpio.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++
++enum cpio_fields {
++	C_MAGIC,
++	C_INO,
++	C_MODE,
++	C_UID,
++	C_GID,
++	C_NLINK,
++	C_MTIME,
++	C_FILESIZE,
++	C_MAJ,
++	C_MIN,
++	C_RMAJ,
++	C_RMIN,
++	C_NAMESIZE,
++	C_CHKSUM,
++	C_NFIELDS
++};
++
++/**
++ * cpio_data find_cpio_data - Search for files in an uncompressed cpio
++ * @path:   The directory to search for, including a slash at the end
++ * @data:   Pointer to the the cpio archive or a header inside
++ * @len:    Remaining length of the cpio based on data pointer
++ * @offset: When a matching file is found, this is the offset to the
++ *          beginning of the cpio. It can be used to iterate through
++ *          the cpio to find all files inside of a directory path
++ *
++ * @return: struct cpio_data containing the address, length and
++ *          filename (with the directory path cut off) of the found file.
++ *          If you search for a filename and not for files in a directory,
++ *          pass the absolute path of the filename in the cpio and make sure
++ *          the match returned an empty filename string.
++ */
++
++struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
++					  size_t len,  long *offset)
++{
++	const size_t cpio_header_len = 8*C_NFIELDS - 2;
++	struct cpio_data cd = { NULL, 0, "" };
++	const char *p, *dptr, *nptr;
++	unsigned int ch[C_NFIELDS], *chp, v;
++	unsigned char c, x;
++	size_t mypathsize = strlen(path);
++	int i, j;
++
++	p = data;
++
++	while (len > cpio_header_len) {
++		if (!*p) {
++			/* All cpio headers need to be 4-byte aligned */
++			p += 4;
++			len -= 4;
++			continue;
++		}
++
++		j = 6;		/* The magic field is only 6 characters */
++		chp = ch;
++		for (i = C_NFIELDS; i; i--) {
++			v = 0;
++			while (j--) {
++				v <<= 4;
++				c = *p++;
++
++				x = c - '0';
++				if (x < 10) {
++					v += x;
++					continue;
++				}
++
++				x = (c | 0x20) - 'a';
++				if (x < 6) {
++					v += x + 10;
++					continue;
++				}
++
++				goto quit; /* Invalid hexadecimal */
++			}
++			*chp++ = v;
++			j = 8;	/* All other fields are 8 characters */
++		}
++
++		if ((ch[C_MAGIC] - 0x070701) > 1)
++			goto quit; /* Invalid magic */
++
++		len -= cpio_header_len;
++
++		dptr = PTR_ALIGN(p + ch[C_NAMESIZE], 4);
++		nptr = PTR_ALIGN(dptr + ch[C_FILESIZE], 4);
++
++		if (nptr > p + len || dptr < p || nptr < dptr)
++			goto quit; /* Buffer overrun */
++
++		if ((ch[C_MODE] & 0170000) == 0100000 &&
++		    ch[C_NAMESIZE] >= mypathsize &&
++		    !memcmp(p, path, mypathsize)) {
++			*offset = (long)nptr - (long)data;
++			if (ch[C_NAMESIZE] - mypathsize >= MAX_CPIO_FILE_NAME) {
++				pr_warn(
++				"File %s exceeding MAX_CPIO_FILE_NAME [%d]\n",
++				p, MAX_CPIO_FILE_NAME);
++			}
++			strlcpy(cd.name, p + mypathsize, MAX_CPIO_FILE_NAME);
++
++			cd.data = (void *)dptr;
++			cd.size = ch[C_FILESIZE];
++			return cd; /* Found it! */
++		}
++		len -= (nptr - p);
++		p = nptr;
++	}
++
++quit:
++	return cd;
++}
