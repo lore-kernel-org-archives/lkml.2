@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031681Ab2I1TtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:49:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
+	id S1031692Ab2I1Ttq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:49:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965079Ab2I1S6X (ORCPT
+	with ESMTP id S965024Ab2I1S6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:58:23 -0400
+	Fri, 28 Sep 2012 14:58:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Robin Hill <robin@robinhill.me.uk>,
-        John Drescher <drescherjm@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: [ 093/262] md/raid5: fix calculate of degraded when a replacement becomes active.
-Date: Fri, 28 Sep 2012 11:50:22 -0700
-Message-Id: <20120928183009.088123561@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [ 092/262] md: make sure metadata is updated when spares are activated or removed.
+Date: Fri, 28 Sep 2012 11:50:21 -0700
+Message-Id: <20120928183008.960380710@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -31,49 +30,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: NeilBrown <neilb@suse.de>
 
-commit e5c86471f933608db5d43679f84cb4346c32033e upstream.
+commit 6dafab6b1383e912cd252fa809570b484eb6e0dc upstream.
 
-When a replacement device becomes active, we mark the device that it
-replaces as 'faulty' so that it can subsequently get removed.
-However 'calc_degraded' only pays attention to the primary device, not
-the replacement, so the array appears to become degraded, which is
-wrong.
+It isn't always necessary to update the metadata when spares are
+removed as the presence-or-not of a spare isn't really important to
+the integrity of an array.
+Also activating a spare doesn't always require updating the metadata
+as the update on 'recovery-completed' is usually sufficient.
 
-So teach 'calc_degraded' to consider any replacement if a primary
-device is faulty.
+However the introduction of 'replacement' devices have made these
+transitions sometimes more important.  For example the 'Replacement'
+flag isn't cleared until the original device is removed, so we need
+to ensure a metadata update after that 'spare' is removed.
 
-This is suitable for -stable as an incorrect 'degraded' value can
-confuse md and could lead to data corruption.
-This is only relevant for 3.3 and later.
+So set MD_CHANGE_DEVS whenever a spare is activated or removed, to
+complement the current situation where it is set when a spare is added
+or a device is failed (or a number of other less common situations).
 
-Reported-by: Robin Hill <robin@robinhill.me.uk>
-Reported-by: John Drescher <drescherjm@gmail.com>
+This is suitable for -stable as out-of-data metadata could lead
+to data corruption.
+This is only relevant for 3.3 and later 9when 'replacement' as
+introduced.
+
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/md/md.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -380,6 +380,8 @@ static int calc_degraded(struct r5conf *
- 	degraded = 0;
- 	for (i = 0; i < conf->previous_raid_disks; i++) {
- 		struct md_rdev *rdev = rcu_dereference(conf->disks[i].rdev);
-+		if (rdev && test_bit(Faulty, &rdev->flags))
-+			rdev = rcu_dereference(conf->disks[i].replacement);
- 		if (!rdev || test_bit(Faulty, &rdev->flags))
- 			degraded++;
- 		else if (test_bit(In_sync, &rdev->flags))
-@@ -404,6 +406,8 @@ static int calc_degraded(struct r5conf *
- 	degraded2 = 0;
- 	for (i = 0; i < conf->raid_disks; i++) {
- 		struct md_rdev *rdev = rcu_dereference(conf->disks[i].rdev);
-+		if (rdev && test_bit(Faulty, &rdev->flags))
-+			rdev = rcu_dereference(conf->disks[i].replacement);
- 		if (!rdev || test_bit(Faulty, &rdev->flags))
- 			degraded2++;
- 		else if (test_bit(In_sync, &rdev->flags))
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7672,6 +7672,8 @@ static int remove_and_add_spares(struct
+ 			}
+ 		}
+ 	}
++	if (removed)
++		set_bit(MD_CHANGE_DEVS, &mddev->flags);
+ 	return spares;
+ }
+ 
+@@ -7685,9 +7687,11 @@ static void reap_sync_thread(struct mdde
+ 	    !test_bit(MD_RECOVERY_REQUESTED, &mddev->recovery)) {
+ 		/* success...*/
+ 		/* activate any spares */
+-		if (mddev->pers->spare_active(mddev))
++		if (mddev->pers->spare_active(mddev)) {
+ 			sysfs_notify(&mddev->kobj, NULL,
+ 				     "degraded");
++			set_bit(MD_CHANGE_DEVS, &mddev->flags);
++		}
+ 	}
+ 	if (test_bit(MD_RECOVERY_RESHAPE, &mddev->recovery) &&
+ 	    mddev->pers->finish_reshape)
 
 
