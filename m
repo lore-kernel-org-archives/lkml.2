@@ -1,84 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158Ab2I1N6k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 09:58:40 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:13340
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756714Ab2I1N6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 09:58:38 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz8275bh15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
-X-WSS-ID: 0MB2C5F-02-3OL-02
-X-M-MSG: 
-Date: Fri, 28 Sep 2012 15:58:24 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Florian Dazinger <florian@dazinger.net>,
-        iommu <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: 3.6-rc7 boot crash + bisection
-Message-ID: <20120928135824.GB4009@amd.com>
-References: <20120924210348.5f50677b@brain.lan>
- <1348597970.28860.114.camel@bling.home>
- <20120925205420.0a07dea2@brain.lan>
- <1348602226.28860.132.camel@bling.home>
- <20120926132050.GB10549@amd.com>
- <1348670159.28860.183.camel@bling.home>
- <20120926151044.GE10549@amd.com>
- <1348676470.28860.197.camel@bling.home>
- <1348689013.28860.220.camel@bling.home>
- <1348697043.28860.235.camel@bling.home>
+	id S1758021Ab2I1OHP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:07:15 -0400
+Received: from smtp1.goneo.de ([212.90.139.80]:51083 "EHLO smtp1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756714Ab2I1OHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 10:07:13 -0400
+X-Greylist: delayed 491 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 10:07:13 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -2.898
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] mfd: viperboard driver added
+Date: Fri, 28 Sep 2012 15:59:07 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>, linux-kernel@vger.kernel.org
+References: <1346072918-3982-1-git-send-email-larsi@wh2.tu-dresden.de> <86c9848e77fa42b6c48ba0703ebf637f@atlantis.wh2.tu-dresden.de> <20120925085559.GL28670@sortiz-mobl>
+In-Reply-To: <20120925085559.GL28670@sortiz-mobl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1348697043.28860.235.camel@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209281559.08017.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 04:04:03PM -0600, Alex Williamson wrote:
+Hi Samuel,
 
-> Here's a lockdep clean version of it:
+Am Dienstag, 25. September 2012, 10:55:59 schrieb Samuel Ortiz:
+> Hi Lars,
 > 
-> amd_iommu: Handle aliases not backed by devices
+> On Mon, Sep 24, 2012 at 06:46:19PM +0200, Lars Poeschel wrote:
+> > Hi Samuel,
+> > 
+> > Thanks for your review.
+> > 
+> > Am 19.09.2012 17:29, schrieb Samuel Ortiz:
+> > >Hi Lars,
+> > >
+> > >On Mon, Aug 27, 2012 at 03:08:38PM +0200, larsi@wh2.tu-dresden.de
+> > >
+> > >wrote:
+> > >>From: Lars Poeschel <poeschel@lemonage.de>
+> > >>
+> > >>First version of the driver for Nano River Tech's
+> > >>viperboard added.
+> > >>It supports i2c, adc, gpio a and gpio b. spi and pwm on
+> > >>the first gpio a pins is not supported yet.
+> > >>
+> > >>Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+> > >>---
+> > >>
+> > >> drivers/mfd/Kconfig      |   17 +
+> > >> drivers/mfd/Makefile     |    1 +
+> > >> drivers/mfd/viperboard.c | 1084
+> > >>
+> > >>++++++++++++++++++++++++++++++++++++++++++++++
+> > >>
+> > >> 3 files changed, 1102 insertions(+)
+> > >> create mode 100644 drivers/mfd/viperboard.c
+> > >
+> > >So the MFD driver contains a GPIO one, and an i2c bus driver.
+> > >You should really split this code into at least 3 pieces: 1 for
+> > >the GPIO
+> > >(drivers/gpio), another one for your i2c bus algorithm
+> > >(drivers/i2c/busses)
+> > >and a last one for the actual MFD driver. Your Kconfig entries
+> > >will define the
+> > >dependencies between them.
+> > >Then you can define your SoC subdevices as MFD cells and use the
+> > >MFD APIs to
+> > >add them as platform devices.
+> > 
+> > I am not really sure, but maybe you got mislead by the term
+> > "viperboard". It is NOT an embedded evaluation board or starterkit.
+> > It is an USB to SPI, I2C, GPIO and ADC interface. You can get a
+> > quick overview here: http://nanorivertech.com/viperboard.html
+> > The I2C, GPIO or ADC parts of this driver will never be part of a
+> > "platform device" in terms of the linux kernel definining the
+> > configuration of different embedded evaluation boards (a platform).
 > 
-> Aliases sometimes don't have a struct pci_dev backing them.  This breaks
-> our attempt to figure out the topology and device quirks that may effect
-> IOMMU grouping.  When this happens, allocate an IOMMU group on the
-> dev_data for the alias and make use of it for all devices referencing
-> this alias.
-
-Yes, this is the real fix. But it is too big for v3.6 at this time, so
-I'll would take this for 3.7 and use my small fix for 3.6.
-
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
+> Well, that's something none of us know for sure :)
+> We've seen various IPs re-used across several devices in the past, which is
+> why we're keen on separating the various drivers.
+> Also, from an architectural point of view, it makes more sense and is
+> cleaner imho.
 > 
-> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-> index b64502d..4eacb17 100644
-> --- a/drivers/iommu/amd_iommu.c
-> +++ b/drivers/iommu/amd_iommu.c
-> @@ -71,6 +71,7 @@ static DEFINE_SPINLOCK(iommu_pd_list_lock);
->  /* List of all available dev_data structures */
->  static LIST_HEAD(dev_data_list);
->  static DEFINE_SPINLOCK(dev_data_list_lock);
-> +static DEFINE_MUTEX(dev_data_iommu_group_lock);
+> > Do you still think I should split up the different parts into their
+> > respective subsystems in the kernel and have one "core" combining
+> > those parts in MFD ?
+> 
+> Yes, I do.
+> 
+> > If so, I will do this. As there would be multiple different
+> > maintainers involved, against which branch has my patch to be ?
+> 
+> Most of your sub devices (GPIO, I2C, ADC) will be depending on the MFD one
+> (as in Kconfig dependency), so it's safe to send each driver to the
+> specific sub system maintainer and expect him/her to take it. We usually
+> figure that out once the patchset is ready for upstream inclusion.
+> 
+> > Should I simply CC the patch to all involved maintainers ?
+> 
+> It's better yes. Even though a maintainer typically cares about 1 or 2
+> patches out of the whole patchset, they usually prefer to be able to get
+> the whole picture and understand where you want to go with this
+> submission.
 
-I think this lock is not necessary. The iommu_init_device routine does
-not run multiple times in parallel for the same device. So we should be
-safe on that side.
+I have done it, and it works! :-) And it looks indeed much cleaner now. But I 
+have on problem left:
+I can not rmmod the "core" module. I get an kernel oops stacktrace origination 
+from mfd_remove_devices_fn. I think the problem is as follows:
+Since my viperboard is an usb device, I write a struct usb_driver, that's 
+probe function is called with struct usb_interface containing the struct 
+device that I pass as parent device to mfd_add_devices.
+During disconnect function I pass the same parent device to mfd_remove_devices 
+for removal of mfd_cells. In mfd_remove_devices_fn the pointer is then 
+containter_of 'd to struct platform_device and to struct usb_interface (struct 
+usb_interface is not containing a mfd_cell pointer either), which then 
+obviously accesses wrong memory in platform_device_unregister.
+I am a bit confused now. Is the mfd_cell mechanism only working with 
+platform_devices ?
+What should I do ?
+I think I have to options:
+1. Extending mfd-core to have functions to work with usb_interface and add an 
+mfd_cell to it.
+2. Constructing some dummy platform_device in my core driver and passing this 
+to mfd_add_devices and mfd_remove_devices to satisfy them. But this seems a 
+bit ugly to me.
 
+Or am I doing something completly wrong ?
 
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Thanks for your help,
+Lars
