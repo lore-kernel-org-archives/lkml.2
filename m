@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030627Ab2I1TEm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:04:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	id S1758982Ab2I1TEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:04:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030487Ab2I1TEg (ORCPT
+	with ESMTP id S1030629Ab2I1TEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:04:36 -0400
+	Fri, 28 Sep 2012 15:04:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 211/262] iwlwifi: protect SRAM debugfs
-Date: Fri, 28 Sep 2012 11:52:20 -0700
-Message-Id: <20120928183023.012399143@linuxfoundation.org>
+        Richard Cochran <richardcochran@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 213/262] gianfar: fix phc index build failure
+Date: Fri, 28 Sep 2012 11:52:22 -0700
+Message-Id: <20120928183023.267960426@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,33 +29,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit 4fc79db178f0a0ede479b4713e00df2d106028b3 upstream.
+commit 28889b7e7818342f6c254e27b9b2c68702ab867a upstream.
 
-If the device is not started, we can't read its
-SRAM and attempting to do so will cause issues.
-Protect the debugfs read.
+This patch fixes a build failure introduced in commit 66636287
+("gianfar: Support the get_ts_info ethtool method."). Not only was a
+global variable inconsistently named, but also it was not exported as
+it should have been.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This fix is also needed in stable version 3.5.
+
+Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-debugfs.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/ethernet/freescale/gianfar_ethtool.c |    1 +
+ drivers/net/ethernet/freescale/gianfar_ptp.c     |    4 ++--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-@@ -128,6 +128,9 @@ static ssize_t iwl_dbgfs_sram_read(struc
- 	const struct fw_img *img;
- 	size_t bufsz;
+--- a/drivers/net/ethernet/freescale/gianfar_ethtool.c
++++ b/drivers/net/ethernet/freescale/gianfar_ethtool.c
+@@ -1741,6 +1741,7 @@ static int gfar_get_nfc(struct net_devic
+ }
  
-+	if (!iwl_is_ready_rf(priv))
-+		return -EAGAIN;
-+
- 	/* default is to dump the entire data segment */
- 	if (!priv->dbgfs_sram_offset && !priv->dbgfs_sram_len) {
- 		priv->dbgfs_sram_offset = 0x800000;
+ int gfar_phc_index = -1;
++EXPORT_SYMBOL(gfar_phc_index);
+ 
+ static int gfar_get_ts_info(struct net_device *dev,
+ 			    struct ethtool_ts_info *info)
+--- a/drivers/net/ethernet/freescale/gianfar_ptp.c
++++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
+@@ -515,7 +515,7 @@ static int gianfar_ptp_probe(struct plat
+ 		err = PTR_ERR(etsects->clock);
+ 		goto no_clock;
+ 	}
+-	gfar_phc_clock = ptp_clock_index(etsects->clock);
++	gfar_phc_index = ptp_clock_index(etsects->clock);
+ 
+ 	dev_set_drvdata(&dev->dev, etsects);
+ 
+@@ -539,7 +539,7 @@ static int gianfar_ptp_remove(struct pla
+ 	gfar_write(&etsects->regs->tmr_temask, 0);
+ 	gfar_write(&etsects->regs->tmr_ctrl,   0);
+ 
+-	gfar_phc_clock = -1;
++	gfar_phc_index = -1;
+ 	ptp_clock_unregister(etsects->clock);
+ 	iounmap(etsects->regs);
+ 	release_resource(etsects->rsrc);
 
 
