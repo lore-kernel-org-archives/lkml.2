@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965303Ab2I1Vwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:52:33 -0400
+	id S1946459Ab2I1Vws (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:52:48 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031732Ab2I1UXk (ORCPT
+	with ESMTP id S1032066Ab2I1UXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:23:40 -0400
+	Fri, 28 Sep 2012 16:23:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Brown <davidb@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 041/218] ARM: 7513/1: Make sure dtc is built before running it
-Date: Fri, 28 Sep 2012 13:14:18 -0700
-Message-Id: <20120928201506.155168271@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 039/218] target: Fix ->data_length re-assignment bug with SCSI overflow
+Date: Fri, 28 Sep 2012 13:14:16 -0700
+Message-Id: <20120928201505.915758773@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,35 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Brown <davidb@codeaurora.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 70b0476a2394de4f4e32e0b67288d80ff71ca963 upstream.
+commit 4c054ba63ad47ef244cfcfa1cea38134620a5bae upstream.
 
-'make dtbs' in a clean tree will try running the dtc before actually
-building it.  Make these rules depend upon the scripts to build it.
+This patch fixes a long-standing bug with SCSI overflow handling
+where se_cmd->data_length was incorrectly being re-assigned to
+the larger CDB extracted allocation length, resulting in a number
+of fabric level errors that would end up causing a session reset
+in most cases.  So instead now:
 
-Signed-off-by: David Brown <davidb@codeaurora.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+ - Only re-assign se_cmd->data_length durining UNDERFLOW (to use the
+   smaller value)
+ - Use existing se_cmd->data_length for OVERFLOW (to use the smaller
+   value)
+
+This fix has been tested with the following CDB to generate an
+SCSI overflow:
+
+  sg_raw -r512 /dev/sdc 28 0 0 0 0 0 0 0 9 0
+
+Tested using iscsi-target, tcm_qla2xxx, loopback and tcm_vhost fabric
+ports.  Here is a bit more detail on each case:
+
+ - iscsi-target: Bug with open-iscsi with overflow, sg_raw returns
+                 -3584 bytes of data.
+ - tcm_qla2xxx: Working as expected, returnins 512 bytes of data
+ - loopback: sg_raw returns CHECK_CONDITION, from overflow rejection
+             in transport_generic_map_mem_to_cmd()
+ - tcm_vhost: Same as loopback
+
+Reported-by: Roland Dreier <roland@purestorage.com>
+Cc: Roland Dreier <roland@purestorage.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/Makefile |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/target/target_core_transport.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -283,10 +283,10 @@ zImage Image xipImage bootpImage uImage:
- zinstall uinstall install: vmlinux
- 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $@
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -3167,15 +3167,20 @@ static int transport_generic_cmd_sequenc
+ 			/* Returns CHECK_CONDITION + INVALID_CDB_FIELD */
+ 			goto out_invalid_cdb_field;
+ 		}
+-
++		/*
++		 * For the overflow case keep the existing fabric provided
++		 * ->data_length.  Otherwise for the underflow case, reset
++		 * ->data_length to the smaller SCSI expected data transfer
++		 * length.
++		 */
+ 		if (size > cmd->data_length) {
+ 			cmd->se_cmd_flags |= SCF_OVERFLOW_BIT;
+ 			cmd->residual_count = (size - cmd->data_length);
+ 		} else {
+ 			cmd->se_cmd_flags |= SCF_UNDERFLOW_BIT;
+ 			cmd->residual_count = (cmd->data_length - size);
++			cmd->data_length = size;
+ 		}
+-		cmd->data_length = size;
+ 	}
  
--%.dtb:
-+%.dtb: scripts
- 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
- 
--dtbs:
-+dtbs: scripts
- 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
- 
- # We use MRPROPER_FILES and CLEAN_FILES now
+ 	if (cmd->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB &&
 
 
