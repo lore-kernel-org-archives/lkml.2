@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032496Ab2I1U0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:26:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031326Ab2I1U0g (ORCPT
+	id S1032480Ab2I1U0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:26:35 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032464Ab2I1U0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:26:36 -0400
+	Fri, 28 Sep 2012 16:26:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Alex Iannicelli <alex.iannicelli@emulex.com>,
-        James Smart <james.smart@emulex.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, Mike Pagano <mpagano@gentoo.org>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 095/218] SCSI: lpfc: fix problems with -Werror
-Date: Fri, 28 Sep 2012 13:15:12 -0700
-Message-Id: <20120928201512.451907181@linuxfoundation.org>
+        Hante Meuleman <meuleman@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 093/218] brcmfmac: fix big endian bug in i-scan.
+Date: Fri, 28 Sep 2012 13:15:10 -0700
+Message-Id: <20120928201512.221612969@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -30,40 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <jbottomley@parallels.com>
+From: Hante Meuleman <meuleman@broadcom.com>
 
-commit 4bdd03e61b7a5c4c6bc2b25d46fcd491788fdfb3 upstream.
+commit ed205b361956c96e0d8c09a8c9135a6a79cd9541 upstream.
 
-Commit d38bd3aef ("Add -Werror compilation flag") is causing build breakage
-with random gcc incarnations.  These look like gcc problems, but we shouldn't
-break the build because of a bad gcc.  Fix this by adding a make flag
+ssid len is 32 bit and needs endian conversion for big endian systems.
 
-WARNINGS_BECOME_ERRORS=1
-
-which is the same as aic7xxx uses so ordinarily the build doesn't use -Werror
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Alex Iannicelli <alex.iannicelli@emulex.com>
-Cc: James Smart <james.smart@emulex.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Mike Pagano <mpagano@gentoo.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/lpfc/Makefile |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/lpfc/Makefile
-+++ b/drivers/scsi/lpfc/Makefile
-@@ -22,7 +22,9 @@
- ccflags-$(GCOV) := -fprofile-arcs -ftest-coverage
- ccflags-$(GCOV) += -O0
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -500,8 +500,10 @@ static void wl_iscan_prep(struct brcmf_s
+ 	params_le->active_time = cpu_to_le32(-1);
+ 	params_le->passive_time = cpu_to_le32(-1);
+ 	params_le->home_time = cpu_to_le32(-1);
+-	if (ssid && ssid->SSID_len)
+-		memcpy(&params_le->ssid_le, ssid, sizeof(struct brcmf_ssid));
++	if (ssid && ssid->SSID_len) {
++		params_le->ssid_le.SSID_len = cpu_to_le32(ssid->SSID_len);
++		memcpy(&params_le->ssid_le.SSID, ssid->SSID, ssid->SSID_len);
++	}
+ }
  
-+ifdef WARNINGS_BECOME_ERRORS
- ccflags-y += -Werror
-+endif
- 
- obj-$(CONFIG_SCSI_LPFC) := lpfc.o
- 
+ static s32
 
 
