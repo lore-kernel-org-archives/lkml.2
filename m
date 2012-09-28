@@ -1,178 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab2I1FkP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 01:40:15 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63450 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab2I1FkM (ORCPT
+	id S1752005Ab2I1FmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 01:42:09 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:51270 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab2I1FmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 01:40:12 -0400
-X-AuditID: 9c93016f-b7b1eae000000815-c7-5065383a8180
-Date: Fri, 28 Sep 2012 14:43:30 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, Mel Gorman <mgorman@suse.de>
-Subject: Re: CMA broken in next-20120926
-Message-ID: <20120928054330.GA27594@bbox>
-References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
- <20120927151159.4427fc8f.akpm@linux-foundation.org>
+	Fri, 28 Sep 2012 01:42:06 -0400
+Message-ID: <506537C7.9070909@linux.vnet.ibm.com>
+Date: Fri, 28 Sep 2012 11:08:15 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120927151159.4427fc8f.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com> <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com> <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com> <5061B437.8070300@linux.vnet.ibm.com> <5064101A.5070902@redhat.com> <50643745.6010202@linux.vnet.ibm.com> <506440AF.9080202@redhat.com>
+In-Reply-To: <506440AF.9080202@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092805-3864-0000-0000-000004D3A1B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 03:11:59PM -0700, Andrew Morton wrote:
-> On Thu, 27 Sep 2012 13:29:11 +0200
-> Thierry Reding <thierry.reding@avionic-design.de> wrote:
-> 
-> > Hi Marek,
-> > 
-> > any idea why CMA might be broken in next-20120926. I see that there
-> > haven't been any major changes to CMA itself, but there's been quite a
-> > bit of restructuring of various memory allocation bits lately. I wasn't
-> > able to track the problem down, though.
-> > 
-> > What I see is this during boot (with CMA_DEBUG enabled):
-> > 
-> > [    0.266904] cma: dma_alloc_from_contiguous(cma db474f80, count 64, align 6)
-> > [    0.284469] cma: dma_alloc_from_contiguous(): memory range at c09d7000 is busy, retrying
-> > [    0.293648] cma: dma_alloc_from_contiguous(): memory range at c09d7800 is busy, retrying
-> > ...
-> > [    2.648619] DMA: failed to allocate 256 KiB pool for atomic coherent allocation
-> > ...
-> > [    4.196193] WARNING: at /home/thierry.reding/src/kernel/linux-ipmp.git/arch/arm/mm/dma-mapping.c:485 __alloc_from_pool+0xdc/0x110()
-> > [    4.207988] coherent pool not initialised!
-> > 
-> > So the pool isn't getting initialized properly because CMA can't get at
-> > the memory. Do you have any hints as to what might be going on? If it's
-> > any help, I started seeing this with next-20120926 and it is in today's
-> > next as well.
-> > 
-> 
-> Bart and Minchan have made recent changes to CMA.  Let us cc them.
+On 09/27/2012 05:33 PM, Avi Kivity wrote:
+> On 09/27/2012 01:23 PM, Raghavendra K T wrote:
+>>>
+>>> This gives us a good case for tracking preemption on a per-vm basis.  As
+>>> long as we aren't preempted, we can keep the PLE window high, and also
+>>> return immediately from the handler without looking for candidates.
+>>
+>> 1) So do you think, deferring preemption patch ( Vatsa was mentioning
+>> long back)  is also another thing worth trying, so we reduce the chance
+>> of LHP.
+>
+> Yes, we have to keep it in mind.  It will be useful for fine grained
+> locks, not so much so coarse locks or IPIs.
+>
 
-Hi all,
+Agree.
 
-I have no time now so I look over the problem during short time
-so I mighte be wrong. Even I should leave the office soon and
-Korea will have long vacation from now on so I will be off by next week.
-So it's hard to reach on me.
+> I would still of course prefer a PLE solution, but if we can't get it to
+> work we can consider preemption deferral.
+>
 
-I hope this patch fixes the bug. If this patch fixes the problem
-but has some problem about description or someone has better idea,
-feel free to modify and resend to akpm, Please.
+Okay.
 
-Thierry, Could you test below patch?
+>>
+>> IIRC, with defer preemption :
+>> we will have hook in spinlock/unlock path to measure depth of lock held,
+>> and shared with host scheduler (may be via MSRs now).
+>> Host scheduler 'prefers' not to preempt lock holding vcpu. (or rather
+>> give say one chance.
+>
+> A downside is that we have to do that even when undercommitted.
+>
+> Also there may be a lot of false positives (deferred preemptions even
+> when there is no contention).
 
->From 24a547855fa2bd4212a779cc73997837148310b3 Mon Sep 17 00:00:00 2001
-From: Minchan Kim <minchan@kernel.org>
-Date: Fri, 28 Sep 2012 14:28:32 +0900
-Subject: [PATCH] revert mm: compaction: iron out isolate_freepages_block()
- and isolate_freepages_range()
+Yes. That is a worry.
 
-[1] made bug on CMA.
-The nr_scanned should be never equal to total_isolated for successful CMA.
-This patch reverts part of the patch.
+>
+>>
+>> 2) looking at the result (comparing A & C) , I do feel we have
+>> significant in iterating over vcpus (when compared to even vmexit)
+>> so We still would need undercommit fix sugested by PeterZ (improving by
+>> 140%). ?
+>
+> Looking only at the current runqueue?  My worry is that it misses a lot
+> of cases.  Maybe try the current runqueue first and then others.
+>
+> Or were you referring to something else?
 
-[1] mm: compaction: iron out isolate_freepages_block() and isolate_freepages_range()
+No. I was referring to the same thing.
 
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+However. I had tried following also (which works well to check 
+undercommited scenario). But thinking to use only for yielding in case
+of overcommit (yield in overcommit suggested by Rik) and keep 
+undercommit patch as suggested by PeterZ
+
+[ patch is not in proper diff I suppose ].
+
+Will test them.
+
+Peter, Can I post your patch with your from/sob.. in V2?
+Please let me know..
+
 ---
- mm/compaction.c |   29 ++++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 5037399..7721197 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -269,13 +269,14 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 		int isolated, i;
- 		struct page *page = cursor;
- 
--		nr_scanned++;
- 		if (!pfn_valid_within(blockpfn))
--			continue;
-+			goto strict_check;
-+		nr_scanned++;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 28f00bc..9ed3759 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1620,6 +1620,21 @@ bool kvm_vcpu_eligible_for_directed_yield(struct 
+kvm_vcpu *vcpu)
+  	return eligible;
+  }
+  #endif
 +
- 		if (!valid_page)
- 			valid_page = page;
- 		if (!PageBuddy(page))
--			continue;
-+			goto strict_check;
- 
- 		/*
- 		 * The zone lock must be held to isolate freepages.
-@@ -296,12 +297,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 
- 		/* Recheck this is a buddy page under lock */
- 		if (!PageBuddy(page))
--			continue;
-+			goto strict_check;
- 
- 		/* Found a free page, break it into order-0 pages */
- 		isolated = split_free_page(page);
- 		if (!isolated && strict)
--			break;
-+			goto strict_check;
- 		total_isolated += isolated;
- 		for (i = 0; i < isolated; i++) {
- 			list_add(&page->lru, freelist);
-@@ -313,18 +314,20 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 			blockpfn += isolated - 1;
- 			cursor += isolated - 1;
- 		}
++bool kvm_overcommitted()
++{
++	unsigned long load;
 +
-+		continue;
++	load = avenrun[0] + FIXED_1/200;
++	load = load >> FSHIFT;
++	load = (load << 7) / num_online_cpus();
 +
-+strict_check:
-+		/* Abort isolation if the caller requested strict isolation */
-+		if (strict) {
-+			total_isolated = 0;
-+			goto out;
-+		}
- 	}
- 
- 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
- 
--	/*
--	 * If strict isolation is requested by CMA then check that all the
--	 * pages scanned were isolated. If there were any failures, 0 is
--	 * returned and CMA will fail.
--	 */
--	if (strict && nr_scanned != total_isolated)
--		total_isolated = 0;
--
-+out:
- 	if (locked)
- 		spin_unlock_irqrestore(&cc->zone->lock, flags);
- 
--- 
-1.7.9.5
++	if (load > 128)
++		return true;
++
++	return false;
++}
++
+  void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+  {
+  	struct kvm *kvm = me->kvm;
+@@ -1629,6 +1644,9 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+  	int pass;
+  	int i;
 
++	if (!kvm_overcommitted())
++		return;
++
+  	kvm_vcpu_set_in_spin_loop(me, true);
+  	/*
+  	 * We boost the priority of a VCPU that is runnable but not
 
-
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
