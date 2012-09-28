@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965076Ab2I1S6X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:58:23 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965042Ab2I1S6I (ORCPT
+	id S1031681Ab2I1TtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:49:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965079Ab2I1S6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:58:08 -0400
+	Fri, 28 Sep 2012 14:58:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Baron <jbaron@redhat.com>
-Subject: [ 086/262] dyndbg: fix for SOH in logging messages
-Date: Fri, 28 Sep 2012 11:50:15 -0700
-Message-Id: <20120928183008.304394317@linuxfoundation.org>
+        Robin Hill <robin@robinhill.me.uk>,
+        John Drescher <drescherjm@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [ 093/262] md/raid5: fix calculate of degraded when a replacement becomes active.
+Date: Fri, 28 Sep 2012 11:50:22 -0700
+Message-Id: <20120928183009.088123561@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -32,38 +29,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
+From: NeilBrown <neilb@suse.de>
 
-commit ebdc82899ec5ed35af1c79ed6a4eeda69dad9b90 upstream.
+commit e5c86471f933608db5d43679f84cb4346c32033e upstream.
 
-commit af7f2158fde was done against master, and clashed with structured
-logging's change of KERN_LEVEL to SOH.
+When a replacement device becomes active, we mark the device that it
+replaces as 'faulty' so that it can subsequently get removed.
+However 'calc_degraded' only pays attention to the primary device, not
+the replacement, so the array appears to become degraded, which is
+wrong.
 
-Bisected and fixed by Markus Trippelsdorf.
+So teach 'calc_degraded' to consider any replacement if a primary
+device is faulty.
 
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jason Baron <jbaron@redhat.com>
+This is suitable for -stable as an incorrect 'degraded' value can
+confuse md and could lead to data corruption.
+This is only relevant for 3.3 and later.
+
+Reported-by: Robin Hill <robin@robinhill.me.uk>
+Reported-by: John Drescher <drescherjm@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1895,8 +1895,8 @@ int __dev_printk(const char *level, cons
- 				    "DEVICE=+%s:%s", subsys, dev_name(dev));
- 	}
- skip:
--	if (level[3])
--		level_extra = &level[3]; /* skip past "<L>" */
-+	if (level[2])
-+		level_extra = &level[2]; /* skip past KERN_SOH "L" */
- 
- 	return printk_emit(0, level[1] - '0',
- 			   dictlen ? dict : NULL, dictlen,
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -380,6 +380,8 @@ static int calc_degraded(struct r5conf *
+ 	degraded = 0;
+ 	for (i = 0; i < conf->previous_raid_disks; i++) {
+ 		struct md_rdev *rdev = rcu_dereference(conf->disks[i].rdev);
++		if (rdev && test_bit(Faulty, &rdev->flags))
++			rdev = rcu_dereference(conf->disks[i].replacement);
+ 		if (!rdev || test_bit(Faulty, &rdev->flags))
+ 			degraded++;
+ 		else if (test_bit(In_sync, &rdev->flags))
+@@ -404,6 +406,8 @@ static int calc_degraded(struct r5conf *
+ 	degraded2 = 0;
+ 	for (i = 0; i < conf->raid_disks; i++) {
+ 		struct md_rdev *rdev = rcu_dereference(conf->disks[i].rdev);
++		if (rdev && test_bit(Faulty, &rdev->flags))
++			rdev = rcu_dereference(conf->disks[i].replacement);
+ 		if (!rdev || test_bit(Faulty, &rdev->flags))
+ 			degraded2++;
+ 		else if (test_bit(In_sync, &rdev->flags))
 
 
