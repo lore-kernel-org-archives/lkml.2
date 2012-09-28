@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945934Ab2I1Usi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:48:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55373 "EHLO
+	id S1759752Ab2I1Uwl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:52:41 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54216 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1945916Ab2I1Usd (ORCPT
+	by vger.kernel.org with ESMTP id S1945926Ab2I1Ush (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:33 -0400
-X-Sasl-enc: nUOu4g0rr84YWJD4rahvkb4Us82Sm/Z4QDGBg+WGmxmZ 1348865312
+	Fri, 28 Sep 2012 16:48:37 -0400
+X-Sasl-enc: dVL5e3OMmrZwgK/Z8MPlGERLKNjbhpOg2ZRV+MXjMdG9 1348865316
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Manoj Iyer <manoj.iyer@canonical.com>,
-        Chris Gagnon <chris.gagnon@canonical.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 097/127] Bluetooth: btusb: Add vendor specific ID (0a5c:21f4) BCM20702A0
-Date: Fri, 28 Sep 2012 13:34:30 -0700
-Message-Id: <20120928203057.248693526@linuxfoundation.org>
+        Mark Rustad <mark.d.rustad@intel.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 100/127] net: Statically initialize init_net.dev_base_head
+Date: Fri, 28 Sep 2012 13:34:33 -0700
+Message-Id: <20120928203057.607614395@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,56 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
 
-commit 61c964ba1748e984cb232b431582815899bf10fe upstream.
+commit 734b65417b24d6eea3e3d7457e1f11493890ee1d upstream.
 
-Patch adds support for BCM20702A0 device id (0a5c:21f4).
+This change eliminates an initialization-order hazard most
+recently seen when netprio_cgroup is built into the kernel.
 
-usb-devices after patch was applied:
-T: Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 2 Spd=12 MxCh= 0
-D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-P: Vendor=0a5c ProdID=21f4 Rev=01.12
-S: Manufacturer=Broadcom Corp
-S: Product=BCM20702A0
-S: SerialNumber=E4D53DF154D6
-C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+With thanks to Eric Dumazet for catching a bug.
 
-usb-devices before patch was applied:
-T: Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 2 Spd=12 MxCh= 0
-D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-P: Vendor=0a5c ProdID=21f4 Rev=01.12
-S: Manufacturer=Broadcom Corp
-S: Product=BCM20702A0
-S: SerialNumber=E4D53DF154D6
-C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Tested-by: Chris Gagnon <chris.gagnon@canonical.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/core/dev.c           |    3 ++-
+ net/core/net_namespace.c |    4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -106,6 +106,7 @@ static struct usb_device_id btusb_table[
- 	{ USB_DEVICE(0x0a5c, 0x21e6) },
- 	{ USB_DEVICE(0x0a5c, 0x21e8) },
- 	{ USB_DEVICE(0x0a5c, 0x21f3) },
-+	{ USB_DEVICE(0x0a5c, 0x21f4) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6260,7 +6260,8 @@ static struct hlist_head *netdev_create_
+ /* Initialize per network namespace state */
+ static int __net_init netdev_init(struct net *net)
+ {
+-	INIT_LIST_HEAD(&net->dev_base_head);
++	if (net != &init_net)
++		INIT_LIST_HEAD(&net->dev_base_head);
  
- 	/* Foxconn - Hon Hai */
+ 	net->dev_name_head = netdev_create_hash();
+ 	if (net->dev_name_head == NULL)
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -24,7 +24,9 @@ static DEFINE_MUTEX(net_mutex);
+ LIST_HEAD(net_namespace_list);
+ EXPORT_SYMBOL_GPL(net_namespace_list);
+ 
+-struct net init_net;
++struct net init_net = {
++	.dev_base_head = LIST_HEAD_INIT(init_net.dev_base_head),
++};
+ EXPORT_SYMBOL(init_net);
+ 
+ #define INITIAL_NET_GEN_PTRS	13 /* +1 for len +2 for rcu_head */
 
 
