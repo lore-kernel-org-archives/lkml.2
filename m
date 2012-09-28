@@ -1,148 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030948Ab2I1TNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:13:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49738 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030769Ab2I1TMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:12:46 -0400
-Subject: [PATCH] kbuild: Fix gcc -x syntax
-From: Jean Delvare <jdelvare@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Bernhard Walle <bernhard@bwalle.de>,
-        Michal Marek <mmarek@suse.cz>, Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Fri, 28 Sep 2012 21:12:16 +0200
-Message-ID: <1348859536.22956.4.camel@amber.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1030804Ab2I1TNm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:13:42 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54594 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030650Ab2I1TF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 15:05:57 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Timur Tabi <timur@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: [ 237/262] powerpc/85xx: p1022ds: disable the NAND flash node if video is enabled
+Date: Fri, 28 Sep 2012 11:52:46 -0700
+Message-Id: <20120928183026.354225821@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
+References: <20120928182957.993484211@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The correct syntax for gcc -x is "gcc -x assembler", not
-"gcc -xassembler". Even though the latter happens to work, the former
-is what is documented in the manual page and thus what gcc wrappers
-such as icecream do expect.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-This isn't a cosmetic change. The missing space prevents icecream from
-recognizing compilation tasks it can't handle, leading to silent kernel
-miscompilations.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-Besides me, credits go to Richard Guenther and Dirk Mueller for
-investigating the miscompilation issue and tracking it down to this
-incorrect -x parameter syntax.
+------------------
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: stable@vger.kernel.org
-Cc: Bernhard Walle <bernhard@bwalle.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Ralf Baechle <ralf@linux-mips.org>
+From: Timur Tabi <timur@freescale.com>
+
+commit 6269f2584a359766f53005c676daff8aee60cbed upstream.
+
+The Freescale P1022 has a unique pin muxing "feature" where the DIU video
+controller's video signals are muxed with 24 of the local bus address signals.
+When the DIU is enabled, the bulk of the local bus is disabled, preventing
+access to memory-mapped devices like NAND flash and the pixis FPGA.
+
+Therefore, if the DIU is going to be enabled, then memory-mapped devices on
+the localbus, like NAND flash, need to be disabled.
+
+This patch is similar to "powerpc/85xx: p1022ds: disable the NOR flash node
+if video is enabled", except that it disables the NAND flash node instead.
+This PIXIS node needs to remain enabled because it is used by platform code
+to switch into indirect mode.
+
+Signed-off-by: Timur Tabi <timur@freescale.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
 ---
- arch/mips/Makefile            |    2 +-
- arch/mips/kernel/Makefile     |    2 +-
- arch/x86/Makefile             |    2 +-
- scripts/Kbuild.include        |   12 ++++++------
- tools/power/cpupower/Makefile |    2 +-
- 5 files changed, 10 insertions(+), 10 deletions(-)
+ arch/powerpc/platforms/85xx/p1022_ds.c |   38 +++++++++++++++++++++++++--------
+ 1 file changed, 29 insertions(+), 9 deletions(-)
 
---- linux-3.6-rc7.orig/arch/mips/Makefile	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.6-rc7/arch/mips/Makefile	2012-09-28 20:26:57.426173426 +0200
-@@ -225,7 +225,7 @@ KBUILD_CPPFLAGS += -DDATAOFFSET=$(if $(d
- LDFLAGS			+= -m $(ld-emul)
+--- a/arch/powerpc/platforms/85xx/p1022_ds.c
++++ b/arch/powerpc/platforms/85xx/p1022_ds.c
+@@ -435,6 +435,8 @@ static void __init disable_one_node(stru
+ 		prom_update_property(np, new, old);
+ 	else
+ 		prom_add_property(np, new);
++
++	pr_info("p1022ds: disabling %s node\n", np->full_name);
+ }
  
- ifdef CONFIG_MIPS
--CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -xc /dev/null | \
-+CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -x c /dev/null | \
- 	egrep -vw '__GNUC_(|MINOR_|PATCHLEVEL_)_' | \
- 	sed -e "s/^\#define /-D'/" -e "s/ /'='/" -e "s/$$/'/")
- ifdef CONFIG_64BIT
---- linux-3.6-rc7.orig/arch/mips/kernel/Makefile	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.6-rc7/arch/mips/kernel/Makefile	2012-09-28 20:27:02.099174587 +0200
-@@ -104,7 +104,7 @@ obj-$(CONFIG_MIPS_MACHINE)	+= mips_machi
+ /* TRUE if there is a "video=fslfb" command-line parameter. */
+@@ -499,28 +501,46 @@ static void __init p1022_ds_setup_arch(v
+ 	diu_ops.valid_monitor_port	= p1022ds_valid_monitor_port;
  
- obj-$(CONFIG_OF)		+= prom.o
+ 	/*
+-	 * Disable the NOR flash node if there is video=fslfb... command-line
+-	 * parameter.  When the DIU is active, NOR flash is unavailable, so we
+-	 * have to disable the node before the MTD driver loads.
++	 * Disable the NOR and NAND flash nodes if there is video=fslfb...
++	 * command-line parameter.  When the DIU is active, the localbus is
++	 * unavailable, so we have to disable these nodes before the MTD
++	 * driver loads.
+ 	 */
+ 	if (fslfb) {
+ 		struct device_node *np =
+ 			of_find_compatible_node(NULL, NULL, "fsl,p1022-elbc");
  
--CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
-+CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -x c /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
+ 		if (np) {
+-			np = of_find_compatible_node(np, NULL, "cfi-flash");
+-			if (np) {
++			struct device_node *np2;
++
++			of_node_get(np);
++			np2 = of_find_compatible_node(np, NULL, "cfi-flash");
++			if (np2) {
+ 				static struct property nor_status = {
+ 					.name = "status",
+ 					.value = "disabled",
+ 					.length = sizeof("disabled"),
+ 				};
  
- obj-$(CONFIG_HAVE_STD_PC_SERIAL_PORT)	+= 8250-platform.o
+-				pr_info("p1022ds: disabling %s node",
+-					np->full_name);
+-				disable_one_node(np, &nor_status);
+-				of_node_put(np);
++				disable_one_node(np2, &nor_status);
++				of_node_put(np2);
++			}
++
++			of_node_get(np);
++			np2 = of_find_compatible_node(np, NULL,
++						      "fsl,elbc-fcm-nand");
++			if (np2) {
++				static struct property nand_status = {
++					.name = "status",
++					.value = "disabled",
++					.length = sizeof("disabled"),
++				};
++
++				disable_one_node(np2, &nand_status);
++				of_node_put(np2);
+ 			}
++
++			of_node_put(np);
+ 		}
  
---- linux-3.6-rc7.orig/arch/x86/Makefile	2012-09-24 09:31:59.000000000 +0200
-+++ linux-3.6-rc7/arch/x86/Makefile	2012-09-28 20:26:52.039172190 +0200
-@@ -92,7 +92,7 @@ endif
- ifdef CONFIG_X86_X32
- 	x32_ld_ok := $(call try-run,\
- 			/bin/echo -e '1: .quad 1b' | \
--			$(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" - && \
-+			$(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" - && \
- 			$(OBJCOPY) -O elf32-x86-64 "$$TMP" "$$TMPO" && \
- 			$(LD) -m elf32_x86_64 "$$TMPO" -o "$$TMP",y,n)
-         ifeq ($(x32_ld_ok),y)
---- linux-3.6-rc7.orig/scripts/Kbuild.include	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.6-rc7/scripts/Kbuild.include	2012-09-28 20:27:25.556178734 +0200
-@@ -98,24 +98,24 @@ try-run = $(shell set -e;		\
- # Usage: cflags-y += $(call as-option,-Wa$(comma)-isa=foo,)
- 
- as-option = $(call try-run,\
--	$(CC) $(KBUILD_CFLAGS) $(1) -c -xassembler /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) $(KBUILD_CFLAGS) $(1) -c -x assembler /dev/null -o "$$TMP",$(1),$(2))
- 
- # as-instr
- # Usage: cflags-y += $(call as-instr,instr,option1,option2)
- 
- as-instr = $(call try-run,\
--	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
-+	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" -,$(2),$(3))
- 
- # cc-option
- # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
- 
- cc-option = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",$(1),$(2))
- 
- # cc-option-yn
- # Usage: flag := $(call cc-option-yn,-march=winchip-c6)
- cc-option-yn = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",y,n)
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",y,n)
- 
- # cc-option-align
- # Prefix align with either -falign or -malign
-@@ -125,7 +125,7 @@ cc-option-align = $(subst -functions=0,,
- # cc-disable-warning
- # Usage: cflags-y += $(call cc-disable-warning,unused-but-set-variable)
- cc-disable-warning = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -xc /dev/null -o "$$TMP",-Wno-$(strip $(1)))
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -x c /dev/null -o "$$TMP",-Wno-$(strip $(1)))
- 
- # cc-version
- # Usage gcc-ver := $(call cc-version)
-@@ -143,7 +143,7 @@ cc-ifversion = $(shell [ $(call cc-versi
- # cc-ldoption
- # Usage: ldflags += $(call cc-ldoption, -Wl$(comma)--hash-style=both)
- cc-ldoption = $(call try-run,\
--	$(CC) $(1) -nostdlib -xc /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) $(1) -nostdlib -x c /dev/null -o "$$TMP",$(1),$(2))
- 
- # ld-option
- # Usage: LDFLAGS += $(call ld-option, -X)
---- linux-3.6-rc7.orig/tools/power/cpupower/Makefile	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.6-rc7/tools/power/cpupower/Makefile	2012-09-28 20:26:45.218170854 +0200
-@@ -111,7 +111,7 @@ GMO_FILES = ${shell for HLANG in ${LANGU
- export CROSS CC AR STRIP RANLIB CFLAGS LDFLAGS LIB_OBJS
- 
- # check if compiler option is supported
--cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
-+cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -x c /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
- 
- # use '-Os' optimization if available, else use -O2
- OPTIMIZATION := $(call cc-supports,-Os,-O2)
+ 	}
 
--- 
-Jean Delvare
-Suse L3
 
