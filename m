@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032305Ab2I1UZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:25:33 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031287Ab2I1UZ1 (ORCPT
+	id S1032353Ab2I1UZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:25:41 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48962 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032337Ab2I1UZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:25:27 -0400
+	Fri, 28 Sep 2012 16:25:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paul Clements <paul.clements@steeleye.com>,
+        Haifeng Li <omycle@gmail.com>, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, KyongHo Cho <pullip.cho@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 074/218] nbd: clear waiting_queue on shutdown
-Date: Fri, 28 Sep 2012 13:14:51 -0700
-Message-Id: <20120928201510.074306311@linuxfoundation.org>
+Subject: [ 076/218] mm/page_alloc: fix the page address of higher pages buddy calculation
+Date: Fri, 28 Sep 2012 13:14:53 -0700
+Message-Id: <20120928201510.291909574@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,56 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Clements <paul.clements@steeleye.com>
+From: Li Haifeng <omycle@gmail.com>
 
-commit fded4e090c60100d709318896c79816d68d5b47d upstream.
+commit 0ba8f2d59304dfe69b59c034de723ad80f7ab9ac upstream.
 
-Fix a serious but uncommon bug in nbd which occurs when there is heavy
-I/O going to the nbd device while, at the same time, a failure (server,
-network) or manual disconnect of the nbd connection occurs.
+The heuristic method for buddy has been introduced since commit
+43506fad21ca ("mm/page_alloc.c: simplify calculation of combined index
+of adjacent buddy lists").  But the page address of higher page's buddy
+was wrongly calculated, which will lead page_is_buddy to fail for ever.
+IOW, the heuristic method would be disabled with the wrong page address
+of higher page's buddy.
 
-There is a small window between the time that the nbd_thread is stopped
-and the socket is shutdown where requests can continue to be queued to
-nbd's internal waiting_queue.  When this happens, those requests are
-never completed or freed.
+Calculating the page address of higher page's buddy should be based
+higher_page with the offset between index of higher page and index of
+higher page's buddy.
 
-The fix is to clear the waiting_queue on shutdown of the nbd device, in
-the same way that the nbd request queue (queue_head) is already being
-cleared.
-
-Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+Signed-off-by: Haifeng Li <omycle@gmail.com>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KyongHo Cho <pullip.cho@samsung.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/nbd.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -445,6 +445,14 @@ static void nbd_clear_que(struct nbd_dev
- 		req->errors++;
- 		nbd_end_request(req);
- 	}
-+
-+	while (!list_empty(&nbd->waiting_queue)) {
-+		req = list_entry(nbd->waiting_queue.next, struct request,
-+				 queuelist);
-+		list_del_init(&req->queuelist);
-+		req->errors++;
-+		nbd_end_request(req);
-+	}
- }
- 
- 
-@@ -594,6 +602,7 @@ static int __nbd_ioctl(struct block_devi
- 		nbd->file = NULL;
- 		nbd_clear_que(nbd);
- 		BUG_ON(!list_empty(&nbd->queue_head));
-+		BUG_ON(!list_empty(&nbd->waiting_queue));
- 		if (file)
- 			fput(file);
- 		return 0;
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -579,7 +579,7 @@ static inline void __free_one_page(struc
+ 		combined_idx = buddy_idx & page_idx;
+ 		higher_page = page + (combined_idx - page_idx);
+ 		buddy_idx = __find_buddy_index(combined_idx, order + 1);
+-		higher_buddy = page + (buddy_idx - combined_idx);
++		higher_buddy = higher_page + (buddy_idx - combined_idx);
+ 		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+ 			list_add_tail(&page->lru,
+ 				&zone->free_area[order].free_list[migratetype]);
 
 
