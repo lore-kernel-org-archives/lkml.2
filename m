@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422920Ab2I1Urr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:47:47 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39039 "EHLO
+	id S1031540Ab2I1Urx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:47:53 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59154 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031541Ab2I1Urn (ORCPT
+	by vger.kernel.org with ESMTP id S1422919Ab2I1Urs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:47:43 -0400
-X-Sasl-enc: WLtACYremDrVT1FaovhLV2PIvKXjpY99DabC3qpApzbV 1348865262
+	Fri, 28 Sep 2012 16:47:48 -0400
+X-Sasl-enc: 6VJ1hvRqhi+/xfMYvdHkxY7O7tTXaO5w45EOFG1twMpP 1348865267
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <andre.przywara@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 050/127] xen/boot: Disable NUMA for PV guests.
-Date: Fri, 28 Sep 2012 13:33:43 -0700
-Message-Id: <20120928203051.694478841@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 065/127] cfg80211: fix possible circular lock on reg_regdb_search()
+Date: Fri, 28 Sep 2012 13:33:58 -0700
+Message-Id: <20120928203053.488649945@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,91 +30,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-commit 8d54db795dfb1049d45dc34f0dddbc5347ec5642 upstream.
+commit a85d0d7f3460b1a123b78e7f7e39bf72c37dfb78 upstream.
 
-The hypervisor is in charge of allocating the proper "NUMA" memory
-and dealing with the CPU scheduler to keep them bound to the proper
-NUMA node. The PV guests (and PVHVM) have no inkling of where they
-run and do not need to know that right now. In the future we will
-need to inject NUMA configuration data (if a guest spans two or more
-NUMA nodes) so that the kernel can make the right choices. But those
-patches are not yet present.
+When call_crda() is called we kick off a witch hunt search
+for the same regulatory domain on our internal regulatory
+database and that work gets kicked off on a workqueue, this
+is done while the cfg80211_mutex is held. If that workqueue
+kicks off it will first lock reg_regdb_search_mutex and
+later cfg80211_mutex but to ensure two CPUs will not contend
+against cfg80211_mutex the right thing to do is to have the
+reg_regdb_search() wait until the cfg80211_mutex is let go.
 
-In the meantime, disable the NUMA capability in the PV guest, which
-also fixes a bootup issue. Andre says:
+The lockdep report is pasted below.
 
-"we see Dom0 crashes due to the kernel detecting the NUMA topology not
-by ACPI, but directly from the northbridge (CONFIG_AMD_NUMA).
+cfg80211: Calling CRDA to update world regulatory domain
 
-This will detect the actual NUMA config of the physical machine, but
-will crash about the mismatch with Dom0's virtual memory. Variation of
-the theme: Dom0 sees what it's not supposed to see.
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.3.8 #3 Tainted: G           O
+-------------------------------------------------------
+kworker/0:1/235 is trying to acquire lock:
+ (cfg80211_mutex){+.+...}, at: [<816468a4>] set_regdom+0x78c/0x808 [cfg80211]
 
-This happens with the said config option enabled and on a machine where
-this scanning is still enabled (K8 and Fam10h, not Bulldozer class)
+but task is already holding lock:
+ (reg_regdb_search_mutex){+.+...}, at: [<81646828>] set_regdom+0x710/0x808 [cfg80211]
 
-We have this dump then:
-NUMA: Warning: node ids are out of bound, from=-1 to=-1 distance=10
-Scanning NUMA topology in Northbridge 24
-Number of physical nodes 4
-Node 0 MemBase 0000000000000000 Limit 0000000040000000
-Node 1 MemBase 0000000040000000 Limit 0000000138000000
-Node 2 MemBase 0000000138000000 Limit 00000001f8000000
-Node 3 MemBase 00000001f8000000 Limit 0000000238000000
-Initmem setup node 0 0000000000000000-0000000040000000
-  NODE_DATA [000000003ffd9000 - 000000003fffffff]
-Initmem setup node 1 0000000040000000-0000000138000000
-  NODE_DATA [0000000137fd9000 - 0000000137ffffff]
-Initmem setup node 2 0000000138000000-00000001f8000000
-  NODE_DATA [00000001f095e000 - 00000001f0984fff]
-Initmem setup node 3 00000001f8000000-0000000238000000
-Cannot find 159744 bytes in node 3
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
-Pid: 0, comm: swapper Not tainted 3.3.6 #1 AMD Dinar/Dinar
-RIP: e030:[<ffffffff81d220e6>]  [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
-.. snip..
-  [<ffffffff81d23024>] sparse_early_usemaps_alloc_node+0x64/0x178
-  [<ffffffff81d23348>] sparse_init+0xe4/0x25a
-  [<ffffffff81d16840>] paging_init+0x13/0x22
-  [<ffffffff81d07fbb>] setup_arch+0x9c6/0xa9b
-  [<ffffffff81683954>] ? printk+0x3c/0x3e
-  [<ffffffff81d01a38>] start_kernel+0xe5/0x468
-  [<ffffffff81d012cf>] x86_64_start_reservations+0xba/0xc1
-  [<ffffffff81007153>] ? xen_setup_runstate_info+0x2c/0x36
-  [<ffffffff81d050ee>] xen_start_kernel+0x565/0x56c
-"
+which lock already depends on the new lock.
 
-so we just disable NUMA scanning by setting numa_off=1.
+the existing dependency chain (in reverse order) is:
 
-Reported-and-Tested-by: Andre Przywara <andre.przywara@amd.com>
-Acked-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+-> #2 (reg_regdb_search_mutex){+.+...}:
+       [<800a8384>] lock_acquire+0x60/0x88
+       [<802950a8>] mutex_lock_nested+0x54/0x31c
+       [<81645778>] is_world_regdom+0x9f8/0xc74 [cfg80211]
+
+-> #1 (reg_mutex#2){+.+...}:
+       [<800a8384>] lock_acquire+0x60/0x88
+       [<802950a8>] mutex_lock_nested+0x54/0x31c
+       [<8164539c>] is_world_regdom+0x61c/0xc74 [cfg80211]
+
+-> #0 (cfg80211_mutex){+.+...}:
+       [<800a77b8>] __lock_acquire+0x10d4/0x17bc
+       [<800a8384>] lock_acquire+0x60/0x88
+       [<802950a8>] mutex_lock_nested+0x54/0x31c
+       [<816468a4>] set_regdom+0x78c/0x808 [cfg80211]
+
+other info that might help us debug this:
+
+Chain exists of:
+  cfg80211_mutex --> reg_mutex#2 --> reg_regdb_search_mutex
+
+ Possible unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(reg_regdb_search_mutex);
+                               lock(reg_mutex#2);
+                               lock(reg_regdb_search_mutex);
+  lock(cfg80211_mutex);
+
+ *** DEADLOCK ***
+
+3 locks held by kworker/0:1/235:
+ #0:  (events){.+.+..}, at: [<80089a00>] process_one_work+0x230/0x460
+ #1:  (reg_regdb_work){+.+...}, at: [<80089a00>] process_one_work+0x230/0x460
+ #2:  (reg_regdb_search_mutex){+.+...}, at: [<81646828>] set_regdom+0x710/0x808 [cfg80211]
+
+stack backtrace:
+Call Trace:
+[<80290fd4>] dump_stack+0x8/0x34
+[<80291bc4>] print_circular_bug+0x2ac/0x2d8
+[<800a77b8>] __lock_acquire+0x10d4/0x17bc
+[<800a8384>] lock_acquire+0x60/0x88
+[<802950a8>] mutex_lock_nested+0x54/0x31c
+[<816468a4>] set_regdom+0x78c/0x808 [cfg80211]
+
+Reported-by: Felix Fietkau <nbd@openwrt.org>
+Tested-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/setup.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/wireless/reg.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -15,6 +15,7 @@
- #include <asm/e820.h>
- #include <asm/setup.h>
- #include <asm/acpi.h>
-+#include <asm/numa.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -331,6 +331,9 @@ static void reg_regdb_search(struct work
+ 	struct reg_regdb_search_request *request;
+ 	const struct ieee80211_regdomain *curdom, *regdom;
+ 	int i, r;
++	bool set_reg = false;
++
++	mutex_lock(&cfg80211_mutex);
  
-@@ -463,4 +464,7 @@ void __init xen_arch_setup(void)
- 	boot_option_idle_override = IDLE_HALT;
- 
- 	fiddle_vdso();
-+#ifdef CONFIG_NUMA
-+	numa_off = 1;
-+#endif
+ 	mutex_lock(&reg_regdb_search_mutex);
+ 	while (!list_empty(&reg_regdb_search_list)) {
+@@ -346,9 +349,7 @@ static void reg_regdb_search(struct work
+ 				r = reg_copy_regd(&regdom, curdom);
+ 				if (r)
+ 					break;
+-				mutex_lock(&cfg80211_mutex);
+-				set_regdom(regdom);
+-				mutex_unlock(&cfg80211_mutex);
++				set_reg = true;
+ 				break;
+ 			}
+ 		}
+@@ -356,6 +357,11 @@ static void reg_regdb_search(struct work
+ 		kfree(request);
+ 	}
+ 	mutex_unlock(&reg_regdb_search_mutex);
++
++	if (set_reg)
++		set_regdom(regdom);
++
++	mutex_unlock(&cfg80211_mutex);
  }
+ 
+ static DECLARE_WORK(reg_regdb_work, reg_regdb_search);
 
 
