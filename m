@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab2I1BI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:08:26 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57101 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab2I1BIZ (ORCPT
+	id S1755482Ab2I1BKp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:10:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65165 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab2I1BKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:08:25 -0400
-Date: Thu, 27 Sep 2012 18:05:43 -0700
+	Thu, 27 Sep 2012 21:10:44 -0400
+Date: Thu, 27 Sep 2012 18:08:00 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: mathieu.poirier@linaro.org
 Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: [PATCH 44/57] power: ab8500: remove unecesary define flag
-Message-ID: <20120928010543.GC5040@lizard>
+Subject: Re: [PATCH 45/57] power: ab8500: defer btemp filtering while init
+Message-ID: <20120928010759.GD5040@lizard>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
- <1348589574-25655-45-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-46-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1348589574-25655-45-git-send-email-mathieu.poirier@linaro.org>
+In-Reply-To: <1348589574-25655-46-git-send-email-mathieu.poirier@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 10:12:41AM -0600, mathieu.poirier@linaro.org wrote:
-> From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+On Tue, Sep 25, 2012 at 10:12:42AM -0600, mathieu.poirier@linaro.org wrote:
+> From: Rupesh Kumar <rupesh.kumar@stericsson.com>
 > 
-> Remove flag that serve no purpose from source code, Kconfig
-> and Makefile.
+> Due to btemp filtering enabled during init, temp values
+> reported to charge algorithm driver started from 0.
+> As a result,charge algorithm was going into wrong
+> state and charging was stopped.
+> This patch defers btemp filtering till init is done.
 > 
-> Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+> Signed-off-by: Rupesh Kumar <rupesh.kumar@stericsson.com>
 > Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> Reviewed-by: Hakan BERG <hakan.berg@stericsson.com>
-> Reviewed-by: Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
+> Reviewed-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
+> Reviewed-by: Martin SJOBLOM <martin.w.sjoblom@stericsson.com>
+> Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
 > ---
->  drivers/power/Kconfig          |    7 -------
->  drivers/power/ab8500_charger.c |    2 +-
->  2 files changed, 1 insertions(+), 8 deletions(-)
+>  drivers/power/ab8500_btemp.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-> index c1892f3..f7c13ae 100644
-> --- a/drivers/power/Kconfig
-> +++ b/drivers/power/Kconfig
-> @@ -303,13 +303,6 @@ config AB8500_BM
->  	depends on AB8500_CORE && AB8500_GPADC
->  	help
->  	  Say Y to include support for AB8500 battery management.
-> -
-> -config AB8500_BATTERY_THERM_ON_BATCTRL
-> -	bool "Thermistor connected on BATCTRL ADC"
-> -	depends on AB8500_BM
-> -	help
-> -	  Say Y to enable battery temperature measurements using
-> -	  thermistor connected on BATCTRL ADC.
-
-OK...
-
->  endif # POWER_SUPPLY
+> diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+> index b24835f..1f33122 100644
+> --- a/drivers/power/ab8500_btemp.c
+> +++ b/drivers/power/ab8500_btemp.c
+> @@ -613,7 +613,6 @@ static void ab8500_btemp_periodic_work(struct work_struct *work)
+>  		struct ab8500_btemp, btemp_periodic_work.work);
 >  
->  source "drivers/power/avs/Kconfig"
-> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-> index 9449a33..d90fe9f 100644
-> --- a/drivers/power/ab8500_charger.c
-> +++ b/drivers/power/ab8500_charger.c
-> @@ -3369,7 +3369,7 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
->  	flush_scheduled_work();
->  	if (di->usb_chg.enabled)
->  		power_supply_unregister(&di->usb_chg.psy);
-> -	if (di->ac_chg.enabled)
-> +	if (di->ac_chg.enabled && !di->ac_chg.external)
+>  	if (!di->initialized) {
+> -		di->initialized = true;
+>  		/* Identify the battery */
+>  		if (ab8500_btemp_id(di) < 0)
+>  			dev_warn(di->dev, "failed to identify the battery\n");
+> @@ -626,8 +625,9 @@ static void ab8500_btemp_periodic_work(struct work_struct *work)
+>  	 * same temperature. Else only allow 1 degree change from previous
+>  	 * reported value in the direction of the new measurement.
+>  	 */
+> -	if (bat_temp == di->prev_bat_temp || !di->initialized) {
+> -		if (di->bat_temp != di->prev_bat_temp || !di->initialized) {
+> +	if ((bat_temp == di->prev_bat_temp) || !di->initialized) {
+> +		if ((di->bat_temp != di->prev_bat_temp) || !di->initialized) {
 
-But the patch descriptions says that the patch is removing some flags, but
-it adds something unrelated.
+This change is stray, and adds completely unneeded parenthesis.
 
-If anything, this should be two separate patches.
-
->  		power_supply_unregister(&di->ac_chg.psy);
->  
->  	platform_set_drvdata(pdev, NULL);
+> +			di->initialized = true;
+>  			di->bat_temp = bat_temp;
+>  			power_supply_changed(&di->btemp_psy);
+>  		}
 > -- 
 > 1.7.5.4
