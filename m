@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030429Ab2I1TDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:03:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030396Ab2I1TDE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1030409Ab2I1TDE (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 28 Sep 2012 15:03:04 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030396Ab2I1TC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 15:02:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Jerome Glisse <jglisse@redhat.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 183/262] drm/radeon: fence virtual address and free it once idle v4
-Date: Fri, 28 Sep 2012 11:51:52 -0700
-Message-Id: <20120928183019.674555795@linuxfoundation.org>
+Subject: [ 181/262] drm/radeon: avoid turning off spread spectrum for used pll
+Date: Fri, 28 Sep 2012 11:51:50 -0700
+Message-Id: <20120928183019.451737426@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -31,205 +31,83 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Jerome Glisse <jglisse@redhat.com>
 
-commit e43b5ec05afdc232be25aa481315035c1888d389 upstream.
+commit 5efcc76c13a745f98e7b6604d6aca49761be1970 upstream.
 
-Virtual address need to be fenced to know when we can safely remove it.
-This patch also properly clear the pagetable. Previously it was
-serouisly broken.
-
-Kernel 3.5/3.4 need a similar patch but adapted for difference in mutex locking.
-
-v2: For to update pagetable when unbinding bo (don't bailout if
-    bo_va->valid is true).
-v3: Add kernel 3.5/3.4 comment.
-v4: Fix compilation warnings.
+If spread spectrum is enabled and in use for a given pll we
+should not turn it off as it will lead to turning off display
+for crtc that use the pll (this behavior was observed on chelsea
+edp).
 
 Signed-off-by: Jerome Glisse <jglisse@redhat.com>
 Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon.h        |    1 +
- drivers/gpu/drm/radeon/radeon_cs.c     |   30 +++++++++++++++++++++++++++---
- drivers/gpu/drm/radeon/radeon_gart.c   |   24 ++++++++++++++++++++++--
- drivers/gpu/drm/radeon/radeon_gem.c    |   13 ++-----------
- drivers/gpu/drm/radeon/radeon_object.c |    6 +-----
- 5 files changed, 53 insertions(+), 21 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |   25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -323,6 +323,7 @@ struct radeon_bo_va {
- 	uint64_t			soffset;
- 	uint64_t			eoffset;
- 	uint32_t			flags;
-+	struct radeon_fence		*fence;
- 	bool				valid;
- };
- 
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -294,6 +294,28 @@ int radeon_cs_parser_init(struct radeon_
- 	return 0;
- }
- 
-+static void radeon_bo_vm_fence_va(struct radeon_cs_parser *parser,
-+				  struct radeon_fence *fence)
-+{
-+	struct radeon_fpriv *fpriv = parser->filp->driver_priv;
-+	struct radeon_vm *vm = &fpriv->vm;
-+	struct radeon_bo_list *lobj;
-+
-+	if (parser->chunk_ib_idx == -1)
-+		return;
-+	if ((parser->cs_flags & RADEON_CS_USE_VM) == 0)
-+		return;
-+
-+	list_for_each_entry(lobj, &parser->validated, tv.head) {
-+		struct radeon_bo_va *bo_va;
-+		struct radeon_bo *rbo = lobj->bo;
-+
-+		bo_va = radeon_bo_va(rbo, vm);
-+		radeon_fence_unref(&bo_va->fence);
-+		bo_va->fence = radeon_fence_ref(fence);
-+	}
-+}
-+
- /**
-  * cs_parser_fini() - clean parser states
-  * @parser:	parser structure holding parsing context.
-@@ -306,11 +328,14 @@ static void radeon_cs_parser_fini(struct
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -444,11 +444,28 @@ union atom_enable_ss {
+ static void atombios_crtc_program_ss(struct radeon_device *rdev,
+ 				     int enable,
+ 				     int pll_id,
++				     int crtc_id,
+ 				     struct radeon_atom_ss *ss)
  {
- 	unsigned i;
++	unsigned i;
+ 	int index = GetIndexIntoMasterTable(COMMAND, EnableSpreadSpectrumOnPPLL);
+ 	union atom_enable_ss args;
  
--	if (!error)
-+	if (!error) {
-+		/* fence all bo va before ttm_eu_fence_buffer_objects so bo are still reserved */
-+		radeon_bo_vm_fence_va(parser, parser->ib.fence);
- 		ttm_eu_fence_buffer_objects(&parser->validated,
- 					    parser->ib.fence);
--	else
-+	} else {
- 		ttm_eu_backoff_reservation(&parser->validated);
-+	}
- 
- 	if (parser->relocs != NULL) {
- 		for (i = 0; i < parser->nrelocs; i++) {
-@@ -407,7 +432,6 @@ static int radeon_cs_ib_vm_chunk(struct
- 
- 	if (parser->chunk_ib_idx == -1)
- 		return 0;
--
- 	if ((parser->cs_flags & RADEON_CS_USE_VM) == 0)
- 		return 0;
- 
---- a/drivers/gpu/drm/radeon/radeon_gart.c
-+++ b/drivers/gpu/drm/radeon/radeon_gart.c
-@@ -564,7 +564,7 @@ int radeon_vm_bo_update_pte(struct radeo
- 		return -EINVAL;
- 	}
- 
--	if (bo_va->valid)
-+	if (bo_va->valid && mem)
- 		return 0;
- 
- 	ngpu_pages = radeon_bo_ngpu_pages(bo);
-@@ -597,11 +597,27 @@ int radeon_vm_bo_rmv(struct radeon_devic
- 		     struct radeon_bo *bo)
- {
- 	struct radeon_bo_va *bo_va;
-+	int r;
- 
- 	bo_va = radeon_bo_va(bo, vm);
- 	if (bo_va == NULL)
- 		return 0;
- 
-+	/* wait for va use to end */
-+	while (bo_va->fence) {
-+		r = radeon_fence_wait(bo_va->fence, false);
-+		if (r) {
-+			DRM_ERROR("error while waiting for fence: %d\n", r);
++	if (!enable) {
++		for (i = 0; i < 6; i++) {
++			if (rdev->mode_info.crtcs[i] &&
++			    rdev->mode_info.crtcs[i]->enabled &&
++			    i != crtc_id &&
++			    pll_id == rdev->mode_info.crtcs[i]->pll_id) {
++				/* one other crtc is using this pll don't turn
++				 * off spread spectrum as it might turn off
++				 * display on active crtc
++				 */
++				return;
++			}
 +		}
-+		if (r == -EDEADLK) {
-+			r = radeon_gpu_reset(rdev);
-+			if (!r)
-+				continue;
-+		}
-+		break;
 +	}
-+	radeon_fence_unref(&bo_va->fence);
 +
- 	radeon_mutex_lock(&rdev->cs_mutex);
- 	mutex_lock(&vm->mutex);
- 	radeon_vm_bo_update_pte(rdev, vm, bo, NULL);
-@@ -661,12 +677,15 @@ void radeon_vm_fini(struct radeon_device
- 	radeon_vm_unbind_locked(rdev, vm);
- 	radeon_mutex_unlock(&rdev->cs_mutex);
+ 	memset(&args, 0, sizeof(args));
  
--	/* remove all bo */
-+	/* remove all bo at this point non are busy any more because unbind
-+	 * waited for the last vm fence to signal
-+	 */
- 	r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
- 	if (!r) {
- 		bo_va = radeon_bo_va(rdev->ring_tmp_bo.bo, vm);
- 		list_del_init(&bo_va->bo_list);
- 		list_del_init(&bo_va->vm_list);
-+		radeon_fence_unref(&bo_va->fence);
- 		radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
- 		kfree(bo_va);
- 	}
-@@ -678,6 +697,7 @@ void radeon_vm_fini(struct radeon_device
- 		r = radeon_bo_reserve(bo_va->bo, false);
- 		if (!r) {
- 			list_del_init(&bo_va->bo_list);
-+			radeon_fence_unref(&bo_va->fence);
- 			radeon_bo_unreserve(bo_va->bo);
- 			kfree(bo_va);
+ 	if (ASIC_IS_DCE5(rdev)) {
+@@ -1036,7 +1053,7 @@ static void atombios_crtc_set_pll(struct
+ 		radeon_compute_pll_legacy(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
+ 					  &ref_div, &post_div);
+ 
+-	atombios_crtc_program_ss(rdev, ATOM_DISABLE, radeon_crtc->pll_id, &ss);
++	atombios_crtc_program_ss(rdev, ATOM_DISABLE, radeon_crtc->pll_id, radeon_crtc->crtc_id, &ss);
+ 
+ 	atombios_crtc_program_pll(crtc, radeon_crtc->crtc_id, radeon_crtc->pll_id,
+ 				  encoder_mode, radeon_encoder->encoder_id, mode->clock,
+@@ -1059,7 +1076,7 @@ static void atombios_crtc_set_pll(struct
+ 			ss.step = step_size;
  		}
---- a/drivers/gpu/drm/radeon/radeon_gem.c
-+++ b/drivers/gpu/drm/radeon/radeon_gem.c
-@@ -134,25 +134,16 @@ void radeon_gem_object_close(struct drm_
- 	struct radeon_device *rdev = rbo->rdev;
- 	struct radeon_fpriv *fpriv = file_priv->driver_priv;
- 	struct radeon_vm *vm = &fpriv->vm;
--	struct radeon_bo_va *bo_va, *tmp;
  
- 	if (rdev->family < CHIP_CAYMAN) {
- 		return;
- 	}
- 
- 	if (radeon_bo_reserve(rbo, false)) {
-+		dev_err(rdev->dev, "leaking bo va because we fail to reserve bo\n");
- 		return;
- 	}
--	list_for_each_entry_safe(bo_va, tmp, &rbo->va, bo_list) {
--		if (bo_va->vm == vm) {
--			/* remove from this vm address space */
--			mutex_lock(&vm->mutex);
--			list_del(&bo_va->vm_list);
--			mutex_unlock(&vm->mutex);
--			list_del(&bo_va->bo_list);
--			kfree(bo_va);
--		}
--	}
-+	radeon_vm_bo_rmv(rdev, vm, rbo);
- 	radeon_bo_unreserve(rbo);
- }
- 
---- a/drivers/gpu/drm/radeon/radeon_object.c
-+++ b/drivers/gpu/drm/radeon/radeon_object.c
-@@ -52,11 +52,7 @@ void radeon_bo_clear_va(struct radeon_bo
- 
- 	list_for_each_entry_safe(bo_va, tmp, &bo->va, bo_list) {
- 		/* remove from all vm address space */
--		mutex_lock(&bo_va->vm->mutex);
--		list_del(&bo_va->vm_list);
--		mutex_unlock(&bo_va->vm->mutex);
--		list_del(&bo_va->bo_list);
--		kfree(bo_va);
-+		radeon_vm_bo_rmv(bo->rdev, bo_va->vm, bo);
+-		atombios_crtc_program_ss(rdev, ATOM_ENABLE, radeon_crtc->pll_id, &ss);
++		atombios_crtc_program_ss(rdev, ATOM_ENABLE, radeon_crtc->pll_id, radeon_crtc->crtc_id, &ss);
  	}
  }
  
+@@ -1576,11 +1593,11 @@ void radeon_atom_disp_eng_pll_init(struc
+ 								   ASIC_INTERNAL_SS_ON_DCPLL,
+ 								   rdev->clock.default_dispclk);
+ 		if (ss_enabled)
+-			atombios_crtc_program_ss(rdev, ATOM_DISABLE, ATOM_DCPLL, &ss);
++			atombios_crtc_program_ss(rdev, ATOM_DISABLE, ATOM_DCPLL, -1, &ss);
+ 		/* XXX: DCE5, make sure voltage, dispclk is high enough */
+ 		atombios_crtc_set_disp_eng_pll(rdev, rdev->clock.default_dispclk);
+ 		if (ss_enabled)
+-			atombios_crtc_program_ss(rdev, ATOM_ENABLE, ATOM_DCPLL, &ss);
++			atombios_crtc_program_ss(rdev, ATOM_ENABLE, ATOM_DCPLL, -1, &ss);
+ 	}
+ 
+ }
 
 
