@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031116Ab2I1TWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:22:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030558Ab2I1TEL (ORCPT
+	id S965346Ab2I1TWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:22:30 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030383Ab2I1TEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:04:11 -0400
+	Fri, 28 Sep 2012 15:04:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <deathsimple@vodafone.de>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: =?UTF-8?q?=5B=20203/262=5D=20drm/radeon=3A=20make=2064bit=20fences=20more=20robust=20v3?=
-Date: Fri, 28 Sep 2012 11:52:12 -0700
-Message-Id: <20120928183022.069383134@linuxfoundation.org>
+        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 194/262] drm: Check for invalid cursor flags
+Date: Fri, 28 Sep 2012 11:52:03 -0700
+Message-Id: <20120928183020.987492930@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,70 +28,43 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Christian König <deathsimple@vodafone.de>
+From: Jakob Bornecrantz <jakob@vmware.com>
 
-commit f492c171a38d77fc13a8998a0721f2da50835224 upstream.
+commit 7c4eaca4162d0b5ad4fb39f974d7ffd71b9daa09 upstream.
 
-Only increase the higher 32bits if we really detect a wrap around.
-
-v2: instead of increasing the higher 32bits just use the higher
-    32bits from the last emitted fence.
-v3: also use last emitted fence value as upper limit.
-
-The intention of this patch is to make fences as robust as
-they where before introducing 64bit fences. This is
-necessary because on older systems it looks like the fence
-value gets corrupted on initialization.
-
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=51344
-
-Should also fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=54129
-https://bugs.freedesktop.org/show_bug.cgi?id=54662
-https://bugzilla.redhat.com/show_bug.cgi?id=846505
-https://bugzilla.redhat.com/show_bug.cgi?id=845639
-
-3.5 needs a separate patch due to changes in the
-fence code.  Will send that out separately.
-
-Signed-off-by: Christian König <deathsimple@vodafone.de>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/gpu/drm/radeon/radeon_fence.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/drm_crtc.c |    2 +-
+ include/drm/drm_mode.h     |    5 +++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_fence.c
-+++ b/drivers/gpu/drm/radeon/radeon_fence.c
-@@ -75,7 +75,7 @@ int radeon_fence_emit(struct radeon_devi
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -1981,7 +1981,7 @@ int drm_mode_cursor_ioctl(struct drm_dev
+ 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+ 		return -EINVAL;
  
- void radeon_fence_process(struct radeon_device *rdev, int ring)
- {
--	uint64_t seq, last_seq;
-+	uint64_t seq, last_seq, last_emitted;
- 	unsigned count_loop = 0;
- 	bool wake = false;
+-	if (!req->flags)
++	if (!req->flags || (~DRM_MODE_CURSOR_FLAGS & req->flags))
+ 		return -EINVAL;
  
-@@ -102,13 +102,15 @@ void radeon_fence_process(struct radeon_
- 	 */
- 	last_seq = atomic64_read(&rdev->fence_drv[ring].last_seq);
- 	do {
-+		last_emitted = rdev->fence_drv[ring].seq;
- 		seq = radeon_fence_read(rdev, ring);
- 		seq |= last_seq & 0xffffffff00000000LL;
- 		if (seq < last_seq) {
--			seq += 0x100000000LL;
-+			seq &= 0xffffffff;
-+			seq |= last_emitted & 0xffffffff00000000LL;
- 		}
+ 	mutex_lock(&dev->mode_config.mutex);
+--- a/include/drm/drm_mode.h
++++ b/include/drm/drm_mode.h
+@@ -359,8 +359,9 @@ struct drm_mode_mode_cmd {
+ 	struct drm_mode_modeinfo mode;
+ };
  
--		if (seq == last_seq) {
-+		if (seq <= last_seq || seq > last_emitted) {
- 			break;
- 		}
- 		/* If we loop over we don't want to return without
+-#define DRM_MODE_CURSOR_BO	(1<<0)
+-#define DRM_MODE_CURSOR_MOVE	(1<<1)
++#define DRM_MODE_CURSOR_BO	0x01
++#define DRM_MODE_CURSOR_MOVE	0x02
++#define DRM_MODE_CURSOR_FLAGS	0x03
+ 
+ /*
+  * depending on the value in flags different members are used.
 
 
