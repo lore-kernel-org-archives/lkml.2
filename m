@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab2I1LfP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 07:35:15 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:41460 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab2I1LfM (ORCPT
+	id S1757610Ab2I1Lfg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 07:35:36 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:65203 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757452Ab2I1Lfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 07:35:12 -0400
+	Fri, 28 Sep 2012 07:35:34 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH v2] mfd: da9052-core:  Use regmap_irq_get_virq() and fix the probe
+Date: Fri, 28 Sep 2012 11:35:15 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Fabio Estevam <festevam@gmail.com>, sameo@linux.intel.com, marex@denx.de,
+        ashish.jangam@kpitcummins.com, dchen@diasemi.com,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+References: <1348797458-2562-1-git-send-email-festevam@gmail.com> <201209280642.05747.arnd@arndb.de> <20120928105212.GC30869@opensource.wolfsonmicro.com>
+In-Reply-To: <20120928105212.GC30869@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <1348822920.3292.60.camel@twins>
-References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
-	<1348806696-31170-5-git-send-email-andi@firstfloor.org>
-	<1348822920.3292.60.camel@twins>
-Date: Fri, 28 Sep 2012 13:35:12 +0200
-Message-ID: <CABPqkBSpdJ2GaGC2zQYFC6Jre-fnZBiXbX3VBfwA4GCQf7+Lww@mail.gmail.com>
-Subject: Re: [PATCH 04/31] perf, core: Add generic intx/intx_checkpointed
- counter modifiers
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209281135.16201.arnd@arndb.de>
+X-Provags-ID: V02:K0:gDMPn/iNMorEXycECRcpIlTvQ7DGPJecK0cCT3A7cjS
+ KptnHQkKf5+jWQlMcWcN1rvQL0nrS8O50uWxsVXxzXuj6X2esg
+ COcN+KiauCF0tW7MLDh7Zoiri69zB9ASWnyNtrH9vrBA5t4b/e
+ hAtfThfrlmT/PRHPFINChd17i4flUCfB+JiNgE4ihIyN522LJ0
+ hio9B75xEUybUmia5if/n3Kx/kom+LzxBEFDkKBwvtHYM9zBdg
+ ralRmYY1Gn77A7lRhS9OU0Klmv1tI9VVZ0YeXsuQ5xzXF+mEfn
+ v6hUv3IQTHPs96qI2WaHPChUwD41bTh2FzjOLW82APqKL6JWwM
+ 5tBeXAurTdc+waOQydi8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 11:02 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2012-09-27 at 21:31 -0700, Andi Kleen wrote:
->> +                               intx           :  1, /* count inside transaction */
->> +                               intx_checkpointed :  1, /* checkpointed in transaction */
->
-> I really hate those names.. what are they called in transactional memory
-> literature?
->
-> Also do we really need this? Using the event format stuff we could
-> equally well do:
->
-> {cpu/cycles/, cpu/cycles,intx/, cpu/cycles,intx_checkpointed/}
->
-> No need to push those bits through perf_event_attr::flags when you can
-> stuff then through perf_event_attr::config, esp. for very hardware
-> specific features.
+On Friday 28 September 2012, Mark Brown wrote:
+> On Fri, Sep 28, 2012 at 06:42:05AM +0000, Arnd Bergmann wrote:
+> > On Friday 28 September 2012, Fabio Estevam wrote:
+> 
+> > > I also plan to convert the other da9052 drivers to use regmap_irq_get_virq().
+> 
+> > Ok, I think they have to be submitted together though, because otherwise
+> > the other drivers are more broken now.
+> 
+> Given that the drivers don't currently load I'm not sure it's worth the
+> effort of arranging to get them all merged through one tree, probably
+> easier to get as many fixes as possible merged as fast as possible.
 
-Make sense to promote them if they exist on other arch. If not, then
-for now, they
-should be in sysfs. Doing this does not preclude future promotions if
-there is more
-architectures supporting the exact same meaning.
+Agreed. I didn't know the driver still had problems of this scale.
+
+	Arnd
