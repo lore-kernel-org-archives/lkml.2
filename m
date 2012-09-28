@@ -1,142 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab2I1GPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 02:15:11 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64652 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab2I1GPJ (ORCPT
+	id S1756095Ab2I1GPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 02:15:18 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:32989 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755484Ab2I1GPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 02:15:09 -0400
-Message-ID: <50654061.1060801@gmail.com>
-Date: Fri, 28 Sep 2012 14:14:57 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, wency@cn.fujitsu.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/4] memory-hotplug: add memory_block_release
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-2-git-send-email-wency@cn.fujitsu.com> <CAEkdkmVW5wwG4_cy0yHFNVmk2bzAqzo2adRsMn1yHOW9Ex98_g@mail.gmail.com> <5064EE3F.3080606@jp.fujitsu.com> <CAHGf_=pDn852sRadnXQMWx3rOTxGLy7876pxk1Ww4oJtkBAZbQ@mail.gmail.com> <50651D65.5080400@jp.fujitsu.com>
-In-Reply-To: <50651D65.5080400@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Sep 2012 02:15:12 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 02:15:11 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AowIAEc+ZVB5LPfb/2dsb2JhbABFi1+yLYEJgiABLS8jGBhqAzSIBLhZjh+DIAOmFIJ5
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, axboe@kernel.dk
+Subject: [PATCH] loop: Make explicit loop device destruction lazy
+Date: Fri, 28 Sep 2012 16:09:53 +1000
+Message-Id: <1348812593-21344-1-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 11:45 AM, Yasuaki Ishimatsu wrote:
-> Hi Kosaki-san,
->
-> 2012/09/28 10:35, KOSAKI Motohiro wrote:
->> On Thu, Sep 27, 2012 at 8:24 PM, Yasuaki Ishimatsu
->> <isimatu.yasuaki@jp.fujitsu.com> wrote:
->>> Hi Chen,
->>>
->>>
->>> 2012/09/27 19:20, Ni zhan Chen wrote:
->>>>
->>>> Hi Congyang,
->>>>
->>>> 2012/9/27 <wency@cn.fujitsu.com>
->>>>
->>>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>>>
->>>>> When calling remove_memory_block(), the function shows following 
->>>>> message
->>>>> at
->>>>> device_release().
->>>>>
->>>>> Device 'memory528' does not have a release() function, it is 
->>>>> broken and
->>>>> must
->>>>> be fixed.
->>>>>
->>>>
->>>> What's the difference between the patch and original implemetation?
->>>
->>>
->>> The implementation is for removing a memory_block. So the purpose is
->>> same as original one. But original code is bad manner. 
->>> kobject_cleanup()
->>> is called by remove_memory_block() at last. But release function for
->>> releasing memory_block is not registered. As a result, the kernel 
->>> message
->>> is shown. IMHO, memory_block should be release by the releae function.
->>
->> but your patch introduced use after free bug, if i understand correctly.
->> See unregister_memory() function. After your patch, kobject_put() call
->> release_memory_block() and kfree(). and then device_unregister() will
->> touch freed memory.
->
-> It is not correct. The kobject_put() is prepared against 
-> find_memory_block()
-> in remove_memory_block() since kobject->kref is incremented in it.
-> So release_memory_block() is called by device_unregister() correctly 
-> as follows:
+From: Dave Chinner <dchinner@redhat.com>
 
-Another issue is memory hotplug which is not associated to this patch 
-report to you:
-IIUC, function register_mem_sect_under_node should be renamed to 
-register_mem_block_under_node,
-since this function is register memory block instead of memory section.
+xfstests has always had random failures of tests due to loop devices
+failing to be torn down and hence leaving filesytems that cannot be
+unmounted. This causes test runs to immediately stop.
 
->
-> [ 1014.589008] Pid: 126, comm: kworker/0:2 Not tainted 
-> 3.6.0-rc3-enable-memory-hotremove-and-root-bridge #3
-> [ 1014.702437] Call Trace:
-> [ 1014.731684]  [<ffffffff8144d096>] release_memory_block+0x16/0x30
-> [ 1014.803581]  [<ffffffff81438587>] device_release+0x27/0xa0
-> [ 1014.869312]  [<ffffffff8133e962>] kobject_cleanup+0x82/0x1b0
-> [ 1014.937062]  [<ffffffff8133ea9d>] kobject_release+0xd/0x10
-> [ 1015.002718]  [<ffffffff8133e7ec>] kobject_put+0x2c/0x60
-> [ 1015.065271]  [<ffffffff81438107>] put_device+0x17/0x20
-> [ 1015.126794]  [<ffffffff8143918a>] device_unregister+0x2a/0x60
-> [ 1015.195578]  [<ffffffff8144d55b>] remove_memory_block+0xbb/0xf0
-> [ 1015.266434]  [<ffffffff8144d5af>] unregister_memory_section+0x1f/0x30
-> [ 1015.343532]  [<ffffffff811c0a58>] __remove_section+0x68/0x110
-> [ 1015.412318]  [<ffffffff811c0be7>] __remove_pages+0xe7/0x120
-> [ 1015.479021]  [<ffffffff81653d8c>] arch_remove_memory+0x2c/0x80
-> [ 1015.548845]  [<ffffffff8165497b>] remove_memory+0x6b/0xd0
-> [ 1015.613474]  [<ffffffff813d946c>] 
-> acpi_memory_device_remove_memory+0x48/0x73
-> [ 1015.697834]  [<ffffffff813d94c2>] acpi_memory_device_remove+0x2b/0x44
-> [ 1015.774922]  [<ffffffff813a61e4>] acpi_device_remove+0x90/0xb2
-> [ 1015.844796]  [<ffffffff8143c2fc>] __device_release_driver+0x7c/0xf0
-> [ 1015.919814]  [<ffffffff8143c47f>] device_release_driver+0x2f/0x50
-> [ 1015.992753]  [<ffffffff813a70dc>] acpi_bus_remove+0x32/0x6d
-> [ 1016.059462]  [<ffffffff813a71a8>] acpi_bus_trim+0x91/0x102
-> [ 1016.125128]  [<ffffffff813a72a1>] 
-> acpi_bus_hot_remove_device+0x88/0x16b
-> [ 1016.204295]  [<ffffffff813a2e57>] acpi_os_execute_deferred+0x27/0x34
-> [ 1016.280350]  [<ffffffff81090599>] process_one_work+0x219/0x680
-> [ 1016.350173]  [<ffffffff81090538>] ? process_one_work+0x1b8/0x680
-> [ 1016.422072]  [<ffffffff813a2e30>] ? 
-> acpi_os_wait_events_complete+0x23/0x23
-> [ 1016.504357]  [<ffffffff810923ce>] worker_thread+0x12e/0x320
-> [ 1016.571064]  [<ffffffff810922a0>] ? manage_workers+0x110/0x110
-> [ 1016.640886]  [<ffffffff810983a6>] kthread+0xc6/0xd0
-> [ 1016.699290]  [<ffffffff8167b144>] kernel_thread_helper+0x4/0x10
-> [ 1016.770149]  [<ffffffff81670bb0>] ? retint_restore_args+0x13/0x13
-> [ 1016.843165]  [<ffffffff810982e0>] ? __init_kthread_worker+0x70/0x70
-> [ 1016.918200]  [<ffffffff8167b140>] ? gs_change+0x13/0x13
->
-> Thanks,
-> Yasuaki Ishimatsu
->
->>
->> static void
->> unregister_memory(struct memory_block *memory)
->> {
->>     BUG_ON(memory->dev.bus != &memory_subsys);
->>
->>     /* drop the ref. we got in remove_memory_block() */
->>     kobject_put(&memory->dev.kobj);
->>     device_unregister(&memory->dev);
->> }
->>
->
->
->
+Over the past 6 or 7 years we've added hacks like explicit unmount
+-d commands for loop mounts, losetup -d after unmount -d fails, etc,
+but still the problems persist.  Recently, the frequency of loop
+related failures increased again to the point that xfstests 259 will
+reliably fail with a stray loop device that was not torn down.
+
+That is despite the fact the test is above as simple as it gets -
+loop 5 or 6 times running mkfs.xfs with different paramters:
+
+        lofile=$(losetup -f)
+        losetup $lofile "$testfile"
+        "$MKFS_XFS_PROG" -b size=512 $lofile >/dev/null || echo "mkfs failed!"
+        sync
+        losetup -d $lofile
+
+And losteup -d $lofile is failing with EBUSY on 1-3 of these loops
+every time the test is run.
+
+Turns out that blkid is running simultaneously with losetup -d, and
+so it sees an elevated reference count and returns EBUSY.  But why
+is blkid running? It's obvious, isn't it? udev has decided to try
+and find out what is on the block device as a result of a creation
+notification. And it is racing with mkfs, so might still be scanning
+the device when mkfs finishes and we try to tear it down.
+
+So, make losetup -d force autoremove behaviour. That is, when the
+last reference goes away, tear down the device. xfstests wants it
+*gone*, not causing random teardown failures when we know that all
+the operations the tests have specifically run on the device have
+completed and are no longer referencing the loop device.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ drivers/block/loop.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 3bba655..187b573 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -976,8 +976,21 @@ static int loop_clr_fd(struct loop_device *lo)
+ 	if (lo->lo_state != Lo_bound)
+ 		return -ENXIO;
+ 
+-	if (lo->lo_refcnt > 1)	/* we needed one fd for the ioctl */
+-		return -EBUSY;
++	/*
++	 * If we've explicitly asked to tear down the loop device,
++	 * and it has an elevated reference count, set it for auto-teardown when
++	 * the last reference goes away. This stops $!~#$@ udev from
++	 * preventing teardown because it decided that it needs to run blkid on
++	 * the loopback device whenever they appear. xfstests is notorious for
++	 * failing tests because blkid via udev races with a losetup
++	 * <dev>/do something like mkfs/losetup -d <dev> causing the losetup -d
++	 * command to fail with EBUSY.
++	 */
++	if (lo->lo_refcnt > 1) {
++		lo->lo_flags |= LO_FLAGS_AUTOCLEAR;
++		mutex_unlock(&lo->lo_ctl_mutex);
++		return 0;
++	}
+ 
+ 	if (filp == NULL)
+ 		return -EINVAL;
+-- 
+1.7.10
 
