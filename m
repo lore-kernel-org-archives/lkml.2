@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965526Ab2I1TXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:23:33 -0400
+	id S1030721Ab2I1TYB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:24:01 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030499Ab2I1TDn (ORCPT
+	with ESMTP id S1030479Ab2I1TDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:03:43 -0400
+	Fri, 28 Sep 2012 15:03:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 195/262] drm/nvc0/copy: check PUNITS to determine which copy engines are disabled
-Date: Fri, 28 Sep 2012 11:52:04 -0700
-Message-Id: <20120928183021.096229133@linuxfoundation.org>
+        AceLan Kao <acelan.kao@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Tim Gardner <tim.gardner@canonical.com>
+Subject: [ 193/262] asus-nb-wmi: add some video toggle keys
+Date: Fri, 28 Sep 2012 11:52:02 -0700
+Message-Id: <20120928183020.867318326@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,39 +30,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit 14f0458a41e033dee31ba605137419385c03fc78 upstream.
+commit 3766054fff4af1b58a1440a284907887f4d2e8be upstream.
 
-On some Fermi chipsets (NVCE particularly) PCOPY1 doesn't exist.  And if
-what I've seen on Kepler is true of Fermi too, chipsets of the same type
-can have different PCOPY units available.
+There are some new video switch keys that used by newer machines.
+0xA0 - SDSP HDMI only
+0xA1 - SDSP LCD + HDMI
+0xA2 - SDSP CRT + HDMI
+0xA3 - SDSP TV + HDMI
+But in Linux, there is no suitable userspace application to handle this,
+so, mapping them all to KEY_SWITCHVIDEOMODE.
 
-This should fix a v3.5 regression reported by a number of people effecting
-suspend/resume on NVC8/NVCE chipsets.
-
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_state.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/platform/x86/asus-nb-wmi.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/nouveau_state.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_state.c
-@@ -737,9 +737,11 @@ nouveau_card_init(struct drm_device *dev
- 			}
- 			break;
- 		case NV_C0:
--			nvc0_copy_create(dev, 1);
-+			if (!(nv_rd32(dev, 0x022500) & 0x00000200))
-+				nvc0_copy_create(dev, 1);
- 		case NV_D0:
--			nvc0_copy_create(dev, 0);
-+			if (!(nv_rd32(dev, 0x022500) & 0x00000100))
-+				nvc0_copy_create(dev, 0);
- 			break;
- 		default:
- 			break;
+--- a/drivers/platform/x86/asus-nb-wmi.c
++++ b/drivers/platform/x86/asus-nb-wmi.c
+@@ -94,6 +94,10 @@ static const struct key_entry asus_nb_wm
+ 	{ KE_KEY, 0x8A, { KEY_PROG1 } },
+ 	{ KE_KEY, 0x95, { KEY_MEDIA } },
+ 	{ KE_KEY, 0x99, { KEY_PHONE } },
++	{ KE_KEY, 0xA0, { KEY_SWITCHVIDEOMODE } }, /* SDSP HDMI only */
++	{ KE_KEY, 0xA1, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + HDMI */
++	{ KE_KEY, 0xA2, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + HDMI */
++	{ KE_KEY, 0xA3, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV + HDMI */
+ 	{ KE_KEY, 0xb5, { KEY_CALC } },
+ 	{ KE_KEY, 0xc4, { KEY_KBDILLUMUP } },
+ 	{ KE_KEY, 0xc5, { KEY_KBDILLUMDOWN } },
 
 
