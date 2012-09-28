@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405Ab2I1PAX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:00:23 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55049 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758393Ab2I1PAV (ORCPT
+	id S1758397Ab2I1PBl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:01:41 -0400
+Received: from mail-tx2.bigfish.com ([65.55.88.10]:55522 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758357Ab2I1PBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:00:21 -0400
-Subject: Re: [PATCH] driver core: fix possible missing of device probe
-From: anish kumar <anish198519851985@gmail.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        stable@vger.kernel.org
-In-Reply-To: <CACVXFVPE1wwVhN=WobgZ+KfGRk2HifQ_3bhwF4mHS+Qu+bXh+g@mail.gmail.com>
-References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
-	 <CAK7N6vqS9PW85hgcA7EVzCk-TQo_ru4OcC5i0Rw-b2hvb4YoXg@mail.gmail.com>
-	 <CACVXFVMJaQRj6sUJwiyiMvyAyd2p_8g9cYFqRW2KngQPx62Y5A@mail.gmail.com>
-	 <1348842668.1480.9.camel@anish-Inspiron-N5050>
-	 <CACVXFVPE1wwVhN=WobgZ+KfGRk2HifQ_3bhwF4mHS+Qu+bXh+g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Sep 2012 20:30:05 +0530
-Message-ID: <1348844405.1480.19.camel@anish-Inspiron-N5050>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Sep 2012 11:01:39 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Id6f1izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MB2F2J-02-8O0-02
+X-M-MSG: 
+Date: Fri, 28 Sep 2012 17:01:34 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/16] iommu/amd: Add routines to manage irq remapping
+ tables
+Message-ID: <20120928150134.GH4009@amd.com>
+References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+ <1348835046-3262-9-git-send-email-joerg.roedel@amd.com>
+ <20120928144011.GF7483@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120928144011.GF7483@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-28 at 22:44 +0800, Ming Lei wrote:
-> On Fri, Sep 28, 2012 at 10:31 PM, anish kumar
-> <anish198519851985@gmail.com> wrote:
+On Fri, Sep 28, 2012 at 10:40:13AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Sep 28, 2012 at 02:23:58PM +0200, Joerg Roedel wrote:
+> > +			irte_info             = &cfg->irq_2_iommu;
+> > +			irte_info->sub_handle = devid;
+> > +			irte_info->irte_index = index;
 > 
-> > Ming,
-> > Somehow I feel here that the problem reported by Russell is totally
-> > different from your understanding of problem.I humbly urge you to have
-> 
-> I let Russell answer if it is same problem, see my last email.
-> 
-> > a look at Russell's nice explanation.
-> 
-> Sorry, how do you know I didn't look at Russell's explanation?
-Sorry but I just had a cursory glance at your explanation and looks like
-there was some argument between you and russell so thought about
-that(shamelessly not even going through the explanation put forward by
-you as I understood the problem and solution). Anyway as mentioned
-earlier I am no expert on driver core but just wanted to learn the
-wonderful driver core design.
+> Should the irte_info also contain the count information to know how
+> whether the table->table[index] (which would be IRTE_ALLOCATED at
+> this point) is owned by correct irte_info ?
 
-Hope I didn't offend you.
-> 
-> 
-> Thanks,
-> --
-> Ming Lei
+No, because the irte_info used here is only for the first index. For the
+following indexes up to index+count-1 other irte_info structs are used.
+This is necessary because of the way MSI-X interrupts are set up with
+interrupt remapping.
 
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
