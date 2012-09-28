@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965236Ab2I1V1E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:27:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422726Ab2I1U3I (ORCPT
+	id S1423264Ab2I1V10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:27:26 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:56440 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032744Ab2I1U3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:29:08 -0400
+	Fri, 28 Sep 2012 16:29:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        James Nute <newten82@gmail.com>, Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 141/218] drivers/rtc/rtc-rs5c348.c: fix hour decoding in 12-hour mode
-Date: Fri, 28 Sep 2012 13:15:58 -0700
-Message-Id: <20120928201517.658803117@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Chris Mason <chris.mason@fusionio.com>, Ingo Molnar <mingo@elte.hu>,
+        Nicolas Pitre <nico@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 140/218] mutex: Place lock in contended state after fastpath_lock failure
+Date: Fri, 28 Sep 2012 13:15:57 -0700
+Message-Id: <20120928201517.553441423@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,53 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 7dbfb315b2aaef0a115765946bf3026d074c33a7 upstream.
+commit 0bce9c46bf3b15f485d82d7e81dabed6ebcc24b1 upstream.
 
-Correct the offset by subtracting 20 from tm_hour before taking the
-modulo 12.
+ARM recently moved to asm-generic/mutex-xchg.h for its mutex
+implementation after the previous implementation was found to be missing
+some crucial memory barriers. However, this has revealed some problems
+running hackbench on SMP platforms due to the way in which the
+MUTEX_SPIN_ON_OWNER code operates.
 
-[ "Why 20?" I hear you ask. Or at least I did.
+The symptoms are that a bunch of hackbench tasks are left waiting on an
+unlocked mutex and therefore never get woken up to claim it. This boils
+down to the following sequence of events:
 
-  Here's the reason why: RS5C348_BIT_PM is 32, and is - stupidly -
-  included in the RS5C348_HOURS_MASK define.  So it's really subtracting
-  out that bit to get "hour+12".  But then because it does things modulo
-  12, it needs to add the 12 in again afterwards anyway.
+        Task A        Task B        Task C        Lock value
+0                                                     1
+1       lock()                                        0
+2                     lock()                          0
+3                     spin(A)                         0
+4       unlock()                                      1
+5                                   lock()            0
+6                     cmpxchg(1,0)                    0
+7                     contended()                    -1
+8       lock()                                        0
+9       spin(C)                                       0
+10                                  unlock()          1
+11      cmpxchg(1,0)                                  0
+12      unlock()                                      1
 
-  This code is confused.  It would be much clearer if RS5C348_HOURS_MASK
-  just didn't include the RS5C348_BIT_PM bit at all, then it wouldn't
-  need to do the silly subtract either.
+At this point, the lock is unlocked, but Task B is in an uninterruptible
+sleep with nobody to wake it up.
 
-  Whatever. It's all just math, the end result is the same.   - Linus ]
+This patch fixes the problem by ensuring we put the lock into the
+contended state if we fail to acquire it on the fastpath, ensuring that
+any blocked waiters are woken up when the mutex is released.
 
-Reported-by: James Nute <newten82@gmail.com>
-Tested-by: James Nute <newten82@gmail.com>
-Signed-off-by: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Chris Mason <chris.mason@fusionio.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-6e9lrw2avczr0617fzl5vqb8@git.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-rs5c348.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ include/asm-generic/mutex-xchg.h |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/rtc/rtc-rs5c348.c
-+++ b/drivers/rtc/rtc-rs5c348.c
-@@ -122,9 +122,12 @@ rs5c348_rtc_read_time(struct device *dev
- 	tm->tm_min = bcd2bin(rxbuf[RS5C348_REG_MINS] & RS5C348_MINS_MASK);
- 	tm->tm_hour = bcd2bin(rxbuf[RS5C348_REG_HOURS] & RS5C348_HOURS_MASK);
- 	if (!pdata->rtc_24h) {
--		tm->tm_hour %= 12;
--		if (rxbuf[RS5C348_REG_HOURS] & RS5C348_BIT_PM)
-+		if (rxbuf[RS5C348_REG_HOURS] & RS5C348_BIT_PM) {
-+			tm->tm_hour -= 20;
-+			tm->tm_hour %= 12;
- 			tm->tm_hour += 12;
-+		} else
-+			tm->tm_hour %= 12;
- 	}
- 	tm->tm_wday = bcd2bin(rxbuf[RS5C348_REG_WDAY] & RS5C348_WDAY_MASK);
- 	tm->tm_mday = bcd2bin(rxbuf[RS5C348_REG_DAY] & RS5C348_DAY_MASK);
+--- a/include/asm-generic/mutex-xchg.h
++++ b/include/asm-generic/mutex-xchg.h
+@@ -26,7 +26,13 @@ static inline void
+ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_xchg(count, 0) != 1))
+-		fail_fn(count);
++		/*
++		 * We failed to acquire the lock, so mark it contended
++		 * to ensure that any waiting tasks are woken up by the
++		 * unlock slow path.
++		 */
++		if (likely(atomic_xchg(count, -1) != 1))
++			fail_fn(count);
+ }
+ 
+ /**
+@@ -43,7 +49,8 @@ static inline int
+ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_xchg(count, 0) != 1))
+-		return fail_fn(count);
++		if (likely(atomic_xchg(count, -1) != 1))
++			return fail_fn(count);
+ 	return 0;
+ }
+ 
 
 
