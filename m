@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030756Ab2I1TlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:41:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	id S1031521Ab2I1Tlg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:41:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932205Ab2I1TAE (ORCPT
+	with ESMTP id S932323Ab2I1S77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:00:04 -0400
+	Fri, 28 Sep 2012 14:59:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 126/262] Bluetooth: mgmt: Fix enabling SSP while powered off
-Date: Fri, 28 Sep 2012 11:50:55 -0700
-Message-Id: <20120928183012.933217395@linuxfoundation.org>
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 124/262] SCSI: hpsa: fix handling of protocol error
+Date: Fri, 28 Sep 2012 11:50:53 -0700
+Message-Id: <20120928183012.704081317@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,43 +29,45 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 3d1cbdd6aefff711bcf389fdabc4af9bc22e8201 upstream.
+commit 256d0eaac87da1e993190846064f339f4c7a63f5 upstream.
 
-When new BT USB adapter is plugged in it's configured while still being powered
-off (HCI_AUTO_OFF flag is set), thus Set SSP will only set dev_flags but won't
-write changes to controller. As a result remote devices won't use Secure Simple
-Pairing with our device due to SSP Host Support flag disabled in extended
-features and may also reject SSP attempt from our side (with possible fallback
-to legacy pairing).
+If a command status of CMD_PROTOCOL_ERR is received, this
+information should be conveyed to the SCSI mid layer, not
+dropped on the floor.  CMD_PROTOCOL_ERR may be received
+from the Smart Array for any commands destined for an external
+RAID controller such as a P2000, or commands destined for tape
+drives or CD/DVD-ROM drives, if for instance a cable is
+disconnected.  This mostly affects multipath configurations, as
+disconnecting a cable on a non-multipath configuration is not
+going to do anything good regardless of whether CMD_PROTOCOL_ERR
+is handled correctly or not.  Not handling CMD_PROTOCOL_ERR
+correctly in a multipath configaration involving external RAID
+controllers may cause data corruption, so this is quite a serious
+bug.  This bug should not normally cause a problem for direct
+attached disk storage.
 
-This patch ensures HCI Write Simple Pairing Mode is sent when Set Powered is
-called to power on controller and clear HCI_AUTO_OFF flag.
-
-Signed-off-by: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
-Acked-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/mgmt.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/scsi/hpsa.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -2879,6 +2879,12 @@ int mgmt_powered(struct hci_dev *hdev, u
- 		if (scan)
- 			hci_send_cmd(hdev, HCI_OP_WRITE_SCAN_ENABLE, 1, &scan);
- 
-+		if (test_bit(HCI_SSP_ENABLED, &hdev->dev_flags)) {
-+			u8 ssp = 1;
-+
-+			hci_send_cmd(hdev, HCI_OP_WRITE_SSP_MODE, 1, &ssp);
-+		}
-+
- 		update_class(hdev);
- 		update_name(hdev, hdev->dev_name);
- 		update_eir(hdev);
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -1315,8 +1315,9 @@ static void complete_scsi_command(struct
+ 	}
+ 		break;
+ 	case CMD_PROTOCOL_ERR:
++		cmd->result = DID_ERROR << 16;
+ 		dev_warn(&h->pdev->dev, "cp %p has "
+-			"protocol error \n", cp);
++			"protocol error\n", cp);
+ 		break;
+ 	case CMD_HARDWARE_ERR:
+ 		cmd->result = DID_ERROR << 16;
 
 
