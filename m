@@ -1,110 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758280Ab2I1OOl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:14:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56129 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757240Ab2I1OOj (ORCPT
+	id S1758302Ab2I1OOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:14:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43199 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758259Ab2I1OOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:14:39 -0400
-Message-ID: <5065B0C9.7040209@canonical.com>
-Date: Fri, 28 Sep 2012 16:14:33 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 28 Sep 2012 10:14:49 -0400
+Date: Fri, 28 Sep 2012 15:13:38 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: anish singh <anish198519851985@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] driver core: fix possible missing of device probe
+Message-ID: <20120928141338.GI7916@n2100.arm.linux.org.uk>
+References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com> <CAK7N6vqS9PW85hgcA7EVzCk-TQo_ru4OcC5i0Rw-b2hvb4YoXg@mail.gmail.com> <20120928084626.GB7916@n2100.arm.linux.org.uk> <CACVXFVOOVvf4xOABnv1FqPOMH6_XwFcH-ZTfBDojQrZJyypT+A@mail.gmail.com> <20120928135459.GH7916@n2100.arm.linux.org.uk> <CACVXFVPs-TSoep3T_Pn3PgNEKWYSCiRNSnNOD66TcERUQJmmeA@mail.gmail.com>
 MIME-Version: 1.0
-To: jakob@vmware.com, thellstrom@vmware.com, dri-devel@lists.freedesktop.org,
-        sumit.semwal@linaro.org
-CC: linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] dma-buf: remove fallback for !CONFIG_DMA_SHARED_BUFFER
-References: <20120928124148.14366.21063.stgit@patser.local>
-In-Reply-To: <20120928124148.14366.21063.stgit@patser.local>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVPs-TSoep3T_Pn3PgNEKWYSCiRNSnNOD66TcERUQJmmeA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Fri, Sep 28, 2012 at 10:07:22PM +0800, Ming Lei wrote:
+> On Fri, Sep 28, 2012 at 9:55 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> >> I do not mention threads case in one CPU because the context in
+> >> which device_add runs will always see the driver added into
+> >
+> > There you go again.  Look at my _much_ better description of the problem
+> > and you'll notice that device_add has nothing to do with this.
+> 
+> OK, I explain it again:
+> 
+> CPU0						CPU1
+> 
+> driver_register
+> 	...
+> 	bus_add_driver
+> 		driver_attach
+> 						device_add(devb)
+> 
+> 		klist_add_tail(klist_drivers)
+> 
+> When device_add(devb) is run just after completion of driver_attach
+> and before klist_add_tail(klist_drivers), the 'devb' can't be probed
+> in device_add because the driver hasn't been added into bus,
+> and it wasn't be probed in driver_attach because driver_attach didn't
+> see the device in the bus.
+> 
+> So the 'devb' will be missed to be probed in the bus, won't it?
 
-Op 28-09-12 14:41, Maarten Lankhorst schreef:
-> Documentation says that code requiring dma-buf should add it to
-> select, so inline fallbacks are not going to be used. A link error
-> will make it obvious what went wrong, instead of silently doing
-> nothing at runtime.
->
-  
+Wait a moment.  You're describing a *totally* *different* problem to
+the problem I reported.  I say - for the third time - that in the
+problem I reported, device_add() has NOTHING TO DO WITH IT.
 
+In your previous mail, you complained that my description did not
+cover another case.  I throw that back at you and say to you that
+_your_ description does _not_ cover my case, but refers to a
+_different_ problem which happens to be fixed by the _same_ fix.
 
-The whole patch series is in my tree, I use stg so things might
-move around, do not use for merging currently:
-
-http://cgit.freedesktop.org/~mlankhorst/linux/log/?h=v10-wip
-
-It contains everything in here plus the patches for ttm to make
-it work, I use a old snapshot of drm-next + merge of nouveau as
-base. Description of what the parts do:
-
-Series to fix small api issues when moving over:
-
-drm/ttm: Remove cpu_writers related code
-drm/ttm: Add ttm_bo_is_reserved function
-drm/radeon: Use ttm_bo_is_reserved
-drm/vmwgfx: use ttm_bo_is_reserved
-
-drm/vmwgfx: remove use of fence_obj_args
-drm/ttm: remove sync_obj_arg
-drm/ttm: remove sync_obj_arg from ttm_bo_move_accel_cleanup
-drm/ttm: remove sync_arg entirely
-
-drm/nouveau: unpin buffers before releasing to prevent lockdep warnings
-drm/nouveau: add reservation to nouveau_bo_vma_del
-drm/nouveau: add reservation to nouveau_gem_ioctl_cpu_prep
-
-Hey great, now we only have one user left for fence waiting before reserving,
-lets fix that and remove fence lock:
-ttm_bo_cleanup_refs_or_queue and ttm_bo_cleanup_refs have to reserve before
-waiting, lets do it in the squash commit so we don't have to throw lock order
-around everywhere:
-
-drm/ttm: remove fence_lock
-
--- Up to this point should be mergeable now
-
-Then we start working on lru_lock removal slightly, this means the lru
-list no longer is empty but can contain only reserved buffers:
-
-drm/ttm: do not check if list is empty in ttm_bo_force_list_clean
-drm/ttm: move reservations for ttm_bo_cleanup_refs
-
--- Still mergeable up to this point, just fixes
-
-Patch series from this email:
-dma-buf: remove fallback for !CONFIG_DMA_SHARED_BUFFER
-fence: dma-buf cross-device synchronization (v9)
-seqno-fence: Hardware dma-buf implementation of fencing (v3)
-reservation: cross-device reservation support
-reservation: Add lockdep annotation and selftests
-
-Now hook it up to drm/ttm in a few steps:
-usage around reservations:
-drm/ttm: make ttm reservation calls behave like reservation calls
-drm/ttm: use dma_reservation api
-dma-buf: use reservations
-drm/ttm: allow drivers to pass custom dma_reservation_objects for a bo
-
-then kill off the lru lock around reservation:
-drm/ttm: remove lru_lock around ttm_bo_reserve
-drm/ttm: simplify ttm_eu_*
-
-The lru_lock removal patch removes the lock around lru_lock around the
-reservation, this will break the assumption that items on the lru list
-and swap list can always be reserved, and this gets patched up too.
-Is there any part in ttm you disagree with? I believe that this 
-is all mergeable, the lru_lock removal patch could be moved to before
-the reservation parts, this might make merging easier, but I don't
-think there is any ttm part of the series that are wrong on a conceptual
-level.
-
-~Maarten
-
+To attach my "reported-by" to a problem description which is not
+the problem that I reported is bad practice, and actually creates
+a lie.  If you wish to keep your problem description, then you must
+remove my Reported-by, because the problem you refer to in your
+description is not _my_ problem.
