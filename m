@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759440Ab2I1Ujy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:39:54 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51950 "EHLO
+	id S1759453Ab2I1Uj5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:39:57 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40118 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759404Ab2I1Ujr (ORCPT
+	by vger.kernel.org with ESMTP id S1759436Ab2I1Ujy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:39:47 -0400
-X-Sasl-enc: l662T888Xybx6oc+IVkqevVck2cJpBmFMlbHLnA4Qnjx 1348864786
+	Fri, 28 Sep 2012 16:39:54 -0400
+X-Sasl-enc: UljK9abG3JcwdJW5zFbVFdWV8iSZPtPH8aWxMYBn+T1T 1348864793
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 206/218] NFSd: introduce nfsd_destroy() helper
-Date: Fri, 28 Sep 2012 13:17:03 -0700
-Message-Id: <20120928201525.229154147@linuxfoundation.org>
+        Roland Stigge <stigge@antcom.de>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 214/218] gpio-lpc32xx: Fix value handling of gpio_direction_output()
+Date: Fri, 28 Sep 2012 13:17:11 -0700
+Message-Id: <20120928201526.144516693@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,98 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Roland Stigge <stigge@antcom.de>
 
-commit 19f7e2ca44dfc3c1b3f499fc46801f98d403500f upstream.
+commit b1268d3737c6316016026245eef276eda6b0a621 upstream.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+For GPIOs of gpio-lpc32xx, gpio_direction_output() ignores the value argument
+(initial value of output). This patch fixes this by setting the level
+accordingly.
+
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfsctl.c |    8 ++------
- fs/nfsd/nfsd.h   |    9 +++++++++
- fs/nfsd/nfssvc.c |   14 +++-----------
- 3 files changed, 14 insertions(+), 17 deletions(-)
+ drivers/gpio/gpio-lpc32xx.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -663,9 +663,7 @@ static ssize_t __write_ports_addfd(char
+--- a/drivers/gpio/gpio-lpc32xx.c
++++ b/drivers/gpio/gpio-lpc32xx.c
+@@ -304,6 +304,7 @@ static int lpc32xx_gpio_dir_output_p012(
+ {
+ 	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
  
- 	err = svc_addsock(nfsd_serv, fd, buf, SIMPLE_TRANSACTION_LIMIT);
- 	if (err < 0) {
--		if (nfsd_serv->sv_nrthreads == 1)
--			svc_shutdown_net(nfsd_serv, net);
--		svc_destroy(nfsd_serv);
-+		nfsd_destroy(net);
- 		return err;
- 	}
++	__set_gpio_level_p012(group, pin, value);
+ 	__set_gpio_dir_p012(group, pin, 0);
  
-@@ -734,9 +732,7 @@ out_close:
- 		svc_xprt_put(xprt);
- 	}
- out_err:
--	if (nfsd_serv->sv_nrthreads == 1)
--		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);
-+	nfsd_destroy(net);
- 	return err;
- }
+ 	return 0;
+@@ -314,6 +315,7 @@ static int lpc32xx_gpio_dir_output_p3(st
+ {
+ 	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
  
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -73,6 +73,15 @@ int		nfsd_nrpools(void);
- int		nfsd_get_nrthreads(int n, int *);
- int		nfsd_set_nrthreads(int n, int *);
++	__set_gpio_level_p3(group, pin, value);
+ 	__set_gpio_dir_p3(group, pin, 0);
  
-+static inline void nfsd_destroy(struct net *net)
-+{
-+	int destroy = (nfsd_serv->sv_nrthreads == 1);
+ 	return 0;
+@@ -322,6 +324,9 @@ static int lpc32xx_gpio_dir_output_p3(st
+ static int lpc32xx_gpio_dir_out_always(struct gpio_chip *chip, unsigned pin,
+ 	int value)
+ {
++	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
 +
-+	if (destroy)
-+		svc_shutdown_net(nfsd_serv, net);
-+	svc_destroy(nfsd_serv);
-+}
-+
- #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
- #ifdef CONFIG_NFSD_V2_ACL
- extern struct svc_version nfsd_acl_version2;
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -427,11 +427,7 @@ int nfsd_set_nrthreads(int n, int *nthre
- 		if (err)
- 			break;
- 	}
--
--	if (nfsd_serv->sv_nrthreads == 1)
--		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);
--
-+	nfsd_destroy(net);
- 	return err;
++	__set_gpo_level_p3(group, pin, value);
+ 	return 0;
  }
  
-@@ -478,9 +474,7 @@ out_shutdown:
- 	if (error < 0 && !nfsd_up_before)
- 		nfsd_shutdown();
- out_destroy:
--	if (nfsd_serv->sv_nrthreads == 1)
--		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);		/* Release server */
-+	nfsd_destroy(net);		/* Release server */
- out:
- 	mutex_unlock(&nfsd_mutex);
- 	return error;
-@@ -682,9 +676,7 @@ int nfsd_pool_stats_release(struct inode
- 
- 	mutex_lock(&nfsd_mutex);
- 	/* this function really, really should have been called svc_put() */
--	if (nfsd_serv->sv_nrthreads == 1)
--		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);
-+	nfsd_destroy(net);
- 	mutex_unlock(&nfsd_mutex);
- 	return ret;
- }
 
 
