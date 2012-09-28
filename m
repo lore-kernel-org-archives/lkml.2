@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032334Ab2I1UZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:25:25 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48962 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032305Ab2I1UZM (ORCPT
+	id S1032305Ab2I1UZd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:25:33 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031287Ab2I1UZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:25:12 -0400
+	Fri, 28 Sep 2012 16:25:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dick Streefland <dick.streefland@altium.nl>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 070/218] SUNRPC: Fix a UDP transport regression
-Date: Fri, 28 Sep 2012 13:14:47 -0700
-Message-Id: <20120928201509.596735923@linuxfoundation.org>
+        Paul Clements <paul.clements@steeleye.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 074/218] nbd: clear waiting_queue on shutdown
+Date: Fri, 28 Sep 2012 13:14:51 -0700
+Message-Id: <20120928201510.074306311@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,155 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Paul Clements <paul.clements@steeleye.com>
 
-commit f39c1bfb5a03e2d255451bff05be0d7255298fa4 upstream.
+commit fded4e090c60100d709318896c79816d68d5b47d upstream.
 
-Commit 43cedbf0e8dfb9c5610eb7985d5f21263e313802 (SUNRPC: Ensure that
-we grab the XPRT_LOCK before calling xprt_alloc_slot) is causing
-hangs in the case of NFS over UDP mounts.
+Fix a serious but uncommon bug in nbd which occurs when there is heavy
+I/O going to the nbd device while, at the same time, a failure (server,
+network) or manual disconnect of the nbd connection occurs.
 
-Since neither the UDP or the RDMA transport mechanism use dynamic slot
-allocation, we can skip grabbing the socket lock for those transports.
-Add a new rpc_xprt_op to allow switching between the TCP and UDP/RDMA
-case.
+There is a small window between the time that the nbd_thread is stopped
+and the socket is shutdown where requests can continue to be queued to
+nbd's internal waiting_queue.  When this happens, those requests are
+never completed or freed.
 
-Note that the NFSv4.1 back channel assigns the slot directly
-through rpc_run_bc_task, so we can ignore that case.
+The fix is to clear the waiting_queue on shutdown of the nbd device, in
+the same way that the nbd request queue (queue_head) is already being
+cleared.
 
-Reported-by: Dick Streefland <dick.streefland@altium.nl>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/sunrpc/xprt.h     |    3 +++
- net/sunrpc/xprt.c               |   34 ++++++++++++++++++++--------------
- net/sunrpc/xprtrdma/transport.c |    1 +
- net/sunrpc/xprtsock.c           |    3 +++
- 4 files changed, 27 insertions(+), 14 deletions(-)
+ drivers/block/nbd.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/include/linux/sunrpc/xprt.h
-+++ b/include/linux/sunrpc/xprt.h
-@@ -114,6 +114,7 @@ struct rpc_xprt_ops {
- 	void		(*set_buffer_size)(struct rpc_xprt *xprt, size_t sndsize, size_t rcvsize);
- 	int		(*reserve_xprt)(struct rpc_xprt *xprt, struct rpc_task *task);
- 	void		(*release_xprt)(struct rpc_xprt *xprt, struct rpc_task *task);
-+	void		(*alloc_slot)(struct rpc_xprt *xprt, struct rpc_task *task);
- 	void		(*rpcbind)(struct rpc_task *task);
- 	void		(*set_port)(struct rpc_xprt *xprt, unsigned short port);
- 	void		(*connect)(struct rpc_task *task);
-@@ -279,6 +280,8 @@ void			xprt_connect(struct rpc_task *tas
- void			xprt_reserve(struct rpc_task *task);
- int			xprt_reserve_xprt(struct rpc_xprt *xprt, struct rpc_task *task);
- int			xprt_reserve_xprt_cong(struct rpc_xprt *xprt, struct rpc_task *task);
-+void			xprt_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task);
-+void			xprt_lock_and_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task);
- int			xprt_prepare_transmit(struct rpc_task *task);
- void			xprt_transmit(struct rpc_task *task);
- void			xprt_end_transmit(struct rpc_task *task);
---- a/net/sunrpc/xprt.c
-+++ b/net/sunrpc/xprt.c
-@@ -969,11 +969,11 @@ static bool xprt_dynamic_free_slot(struc
- 	return false;
- }
- 
--static void xprt_alloc_slot(struct rpc_task *task)
-+void xprt_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task)
- {
--	struct rpc_xprt	*xprt = task->tk_xprt;
- 	struct rpc_rqst *req;
- 
-+	spin_lock(&xprt->reserve_lock);
- 	if (!list_empty(&xprt->free)) {
- 		req = list_entry(xprt->free.next, struct rpc_rqst, rq_list);
- 		list_del(&req->rq_list);
-@@ -994,12 +994,29 @@ static void xprt_alloc_slot(struct rpc_t
- 	default:
- 		task->tk_status = -EAGAIN;
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -445,6 +445,14 @@ static void nbd_clear_que(struct nbd_dev
+ 		req->errors++;
+ 		nbd_end_request(req);
  	}
-+	spin_unlock(&xprt->reserve_lock);
- 	return;
- out_init_req:
- 	task->tk_status = 0;
- 	task->tk_rqstp = req;
- 	xprt_request_init(task, xprt);
-+	spin_unlock(&xprt->reserve_lock);
-+}
-+EXPORT_SYMBOL_GPL(xprt_alloc_slot);
 +
-+void xprt_lock_and_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task)
-+{
-+	/* Note: grabbing the xprt_lock_write() ensures that we throttle
-+	 * new slot allocation if the transport is congested (i.e. when
-+	 * reconnecting a stream transport or when out of socket write
-+	 * buffer space).
-+	 */
-+	if (xprt_lock_write(xprt, task)) {
-+		xprt_alloc_slot(xprt, task);
-+		xprt_release_write(xprt, task);
++	while (!list_empty(&nbd->waiting_queue)) {
++		req = list_entry(nbd->waiting_queue.next, struct request,
++				 queuelist);
++		list_del_init(&req->queuelist);
++		req->errors++;
++		nbd_end_request(req);
 +	}
  }
-+EXPORT_SYMBOL_GPL(xprt_lock_and_alloc_slot);
  
- static void xprt_free_slot(struct rpc_xprt *xprt, struct rpc_rqst *req)
- {
-@@ -1083,20 +1100,9 @@ void xprt_reserve(struct rpc_task *task)
- 	if (task->tk_rqstp != NULL)
- 		return;
  
--	/* Note: grabbing the xprt_lock_write() here is not strictly needed,
--	 * but ensures that we throttle new slot allocation if the transport
--	 * is congested (e.g. if reconnecting or if we're out of socket
--	 * write buffer space).
--	 */
- 	task->tk_timeout = 0;
- 	task->tk_status = -EAGAIN;
--	if (!xprt_lock_write(xprt, task))
--		return;
--
--	spin_lock(&xprt->reserve_lock);
--	xprt_alloc_slot(task);
--	spin_unlock(&xprt->reserve_lock);
--	xprt_release_write(xprt, task);
-+	xprt->ops->alloc_slot(xprt, task);
- }
- 
- static inline __be32 xprt_alloc_xid(struct rpc_xprt *xprt)
---- a/net/sunrpc/xprtrdma/transport.c
-+++ b/net/sunrpc/xprtrdma/transport.c
-@@ -713,6 +713,7 @@ static void xprt_rdma_print_stats(struct
- static struct rpc_xprt_ops xprt_rdma_procs = {
- 	.reserve_xprt		= xprt_rdma_reserve_xprt,
- 	.release_xprt		= xprt_release_xprt_cong, /* sunrpc/xprt.c */
-+	.alloc_slot		= xprt_alloc_slot,
- 	.release_request	= xprt_release_rqst_cong,       /* ditto */
- 	.set_retrans_timeout	= xprt_set_retrans_timeout_def, /* ditto */
- 	.rpcbind		= rpcb_getport_async,	/* sunrpc/rpcb_clnt.c */
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -2433,6 +2433,7 @@ static void bc_destroy(struct rpc_xprt *
- static struct rpc_xprt_ops xs_local_ops = {
- 	.reserve_xprt		= xprt_reserve_xprt,
- 	.release_xprt		= xs_tcp_release_xprt,
-+	.alloc_slot		= xprt_alloc_slot,
- 	.rpcbind		= xs_local_rpcbind,
- 	.set_port		= xs_local_set_port,
- 	.connect		= xs_connect,
-@@ -2449,6 +2450,7 @@ static struct rpc_xprt_ops xs_udp_ops =
- 	.set_buffer_size	= xs_udp_set_buffer_size,
- 	.reserve_xprt		= xprt_reserve_xprt_cong,
- 	.release_xprt		= xprt_release_xprt_cong,
-+	.alloc_slot		= xprt_alloc_slot,
- 	.rpcbind		= rpcb_getport_async,
- 	.set_port		= xs_set_port,
- 	.connect		= xs_connect,
-@@ -2466,6 +2468,7 @@ static struct rpc_xprt_ops xs_udp_ops =
- static struct rpc_xprt_ops xs_tcp_ops = {
- 	.reserve_xprt		= xprt_reserve_xprt,
- 	.release_xprt		= xs_tcp_release_xprt,
-+	.alloc_slot		= xprt_lock_and_alloc_slot,
- 	.rpcbind		= rpcb_getport_async,
- 	.set_port		= xs_set_port,
- 	.connect		= xs_connect,
+@@ -594,6 +602,7 @@ static int __nbd_ioctl(struct block_devi
+ 		nbd->file = NULL;
+ 		nbd_clear_que(nbd);
+ 		BUG_ON(!list_empty(&nbd->queue_head));
++		BUG_ON(!list_empty(&nbd->waiting_queue));
+ 		if (file)
+ 			fput(file);
+ 		return 0;
 
 
