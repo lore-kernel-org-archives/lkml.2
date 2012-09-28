@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032096Ab2I1U6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:58:12 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58739 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422954Ab2I1UsA (ORCPT
+	id S1032262Ab2I1U6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:58:35 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64877 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032139Ab2I1U63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:00 -0400
-X-Sasl-enc: LJmevmpIkGYNgSemljj0T2suc8aiu6rIKBl14HVbfvYG 1348865279
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Horst Schirmeier <horst@schirmeier.com>
-Subject: [ 074/127] USB: ftdi_sio: PID for NZR SEM 16+ USB
-Date: Fri, 28 Sep 2012 13:34:07 -0700
-Message-Id: <20120928203054.547106677@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.1.428.g652398a
-In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
-References: <20120928203045.835238916@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 28 Sep 2012 16:58:29 -0400
+MIME-Version: 1.0
+Date: Fri, 28 Sep 2012 15:58:26 -0500
+Message-ID: <CAOQSsQMY70nvzFT=rx0yqUXhm=fZWBi+ke-QuZj6uynfZmTLDw@mail.gmail.com>
+Subject: Slow copy_to_user performance after kernel upgrade
+From: Thad Phetteplace <tdphette@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+I am debugging an issue with copy_to_user performance on recent linux
+kernels.  I've noticed a 4X slowdown in copy speed when I move from
+kernel 2.6.18 to more recent kernels on the same hardware.  I've
+tested so far on 2.6.32 and on various 3.x kernels.  I noticed that
+assembly code implementation of copy_to_user has changed, so as a
+sanity check I ported the 2.6.18 version over to 2.6.32 but saw the
+same slowdown when using it.  This is the hardware I am using:
 
-------------------
+Dell PowerEdge R710
+BIOS version 6.3.0
+Intel(R) Xeon(R) CPU x5650 @ 2.67GHz
+72GB RAM (ECC DDR3 800MHz)
 
-From: Horst Schirmeier <horst@schirmeier.com>
+I am running the x86_64 version of course.  I see the issue when I do
+a copy_to_user from a dedicated block of memory located above the 4GB
+boundary into normal user space mem.  The boot parameter mem=65G is
+passed to the kernel to carve off the dedicated block of memory that
+is used as a DMA accessible buffer for a specialized network card.
+That is the buffer we do the copy_to_user from.  I should also mention
+we have been testing this on CentOS 4.8, 6.2, and 6.3, though I've
+replaced their stock kernels with ones straight from kernel.org, so I
+don't know that the linux distro is really relevant.
 
-commit 26a538b9ea2a3ee10dafc0068f0560dfd7b7ba37 upstream.
+I've browsed the kernel mailing list looking for clues and have even
+been looking at CPU/hardware specific errata, but so far I can see no
+logical reason why the 2.6.32+ kernels should be performing so much
+worse than the 2.6.18.  Does anyone have any suggestions on areas to
+dig into besides the copy_to_user implementation itself?  Maybe
+somewhere specific in the MMU code?  Any suggestions would be
+appreciated.  Please copy me directly on replies if you don't mind.
 
-This adds the USB PID for the NZR SEM 16+ USB energy monitor device
-<http://www.nzr.de>.  It works perfectly with the GPL software on
-<http://schou.dk/linux/sparometer/>.
+Thanks,
 
-Signed-off-by: Horst Schirmeier <horst@schirmeier.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    3 +++
- 2 files changed, 4 insertions(+)
-
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -702,6 +702,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_PCDJ_DAC2_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_NZR_SEM_USB_PID) },
- 	{ USB_DEVICE(ICOM_VID, ICOM_ID_1_PID) },
- 	{ USB_DEVICE(ICOM_VID, ICOM_OPC_U_UC_PID) },
- 	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2C1_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -75,6 +75,9 @@
- #define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
- #define FTDI_OPENDCC_GBM_PID	0xBFDC
- 
-+/* NZR SEM 16+ USB (http://www.nzr.de) */
-+#define FTDI_NZR_SEM_USB_PID	0xC1E0	/* NZR SEM-LOG16+ */
-+
- /*
-  * RR-CirKits LocoBuffer USB (http://www.rr-cirkits.com)
-  */
-
-
+Thad Phetteplace
