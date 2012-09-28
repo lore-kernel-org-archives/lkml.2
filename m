@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032428Ab2I1U7X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:59:23 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:57078 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964962Ab2I1U7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:59:20 -0400
-Message-ID: <1348865957.14262.46.camel@joe-AO722>
-Subject: Re: Probable false positive in checkpatch
-From: Joe Perches <joe@perches.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Date: Fri, 28 Sep 2012 13:59:17 -0700
-In-Reply-To: <Pine.LNX.4.44L0.1209281546480.1164-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1209281546480.1164-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1422939Ab2I1Ur5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:47:57 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34582 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422924Ab2I1Urt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 16:47:49 -0400
+X-Sasl-enc: RmSBTqynpNvzSutlaqZP04gWC7emLAMb+4e9iE/TFlpG 1348865268
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Subject: [ 066/127] dmaengine: at_hdmac: fix comment in atc_prep_slave_sg()
+Date: Fri, 28 Sep 2012 13:33:59 -0700
+Message-Id: <20120928203053.627620232@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.1.428.g652398a
+In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
+References: <20120928203045.835238916@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-28 at 15:50 -0400, Alan Stern wrote:
-> Here's what I just got from checkpatch:
-> 
-> ERROR: space prohibited after that '-' (ctx:BxW)
-> #22: FILE: drivers/usb/host/ehci-sched.c:1419:
-> +                       start += (next - start + period - 1) & (- period);
->                                                                 ^
-> This seems unlikely to be a real style violation.  Or if it is, maybe 
-> it shouldn't be.  After all, "(0 - period)" would be okay.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-2c: I think the recommendation is proper and correct.
+------------------
 
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+commit c618a9be0e8c0f36baee2560860a0118a428fb26 upstream.
+
+s/dma_memcpy/slave_sg/ and it is sg length that we are
+talking about.
+
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/dma/at_hdmac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -674,7 +674,7 @@ atc_prep_slave_sg(struct dma_chan *chan,
+ 			flags);
+ 
+ 	if (unlikely(!atslave || !sg_len)) {
+-		dev_dbg(chan2dev(chan), "prep_dma_memcpy: length is zero!\n");
++		dev_dbg(chan2dev(chan), "prep_slave_sg: sg length is zero!\n");
+ 		return NULL;
+ 	}
+ 
 
 
