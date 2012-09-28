@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab2I1L1D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 07:27:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26295 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757026Ab2I1L07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 07:26:59 -0400
-Date: Fri, 28 Sep 2012 13:26:45 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Petr Holasek <pholasek@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v4] KSM: numa awareness sysfs knob
-Message-ID: <20120928112645.GX19474@redhat.com>
-References: <1348448166-1995-1-git-send-email-pholasek@redhat.com>
+	id S1757269Ab2I1Lae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 07:30:34 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:50675 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab2I1Lad (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 07:30:33 -0400
+Date: Fri, 28 Sep 2012 14:30:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: jyli@marvell.com
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [bug report] [SCSI] mvumi: GFP_KERNEL under spin lock
+Message-ID: <20120928113022.GW13767@mwanda>
+References: <20120814145926.GA29090@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1348448166-1995-1-git-send-email-pholasek@redhat.com>
+In-Reply-To: <20120814145926.GA29090@elgon.mountain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Whatever happened with this?  You could just change the GFP_KERNEL
+to GFP_ATOMIC.
 
-On Mon, Sep 24, 2012 at 02:56:06AM +0200, Petr Holasek wrote:
-> +static struct rb_root root_unstable_tree[MAX_NUMNODES] = { RB_ROOT, };
+regards,
+dan carpenter
 
-not initializing is better so we don't waste .data and it goes in the
-.bss, initializing only the first entry is useless anyway, that's
-getting initialized later (maybe safer to initialize it once more in
-some init routine too along with the below one for a peace of mind,
-not at the first scan instance).
-
-> +static struct rb_root root_stable_tree[MAX_NUMNODES] = { RB_ROOT, };
-
-uninitialized root_stable_tree [1..]
-
-> @@ -1300,7 +1341,8 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
->  		 */
->  		lru_add_drain_all();
->  
-> -		root_unstable_tree = RB_ROOT;
-> +		for (i = 0; i < MAX_NUMNODES; i++)
-> +			root_unstable_tree[i] = RB_ROOT;
-
-s/MAX_NUMNODES/nr_node_ids/
-
-> @@ -1758,7 +1800,12 @@ void ksm_migrate_page(struct page *newpage, struct page *oldpage)
->  	stable_node = page_stable_node(newpage);
->  	if (stable_node) {
->  		VM_BUG_ON(stable_node->kpfn != page_to_pfn(oldpage));
-> -		stable_node->kpfn = page_to_pfn(newpage);
-> +
-> +		if (ksm_merge_across_nodes ||
-> +				page_to_nid(oldpage) == page_to_nid(newpage))
-> +			stable_node->kpfn = page_to_pfn(newpage);
-> +		else
-> +			remove_node_from_stable_tree(stable_node);
->  	}
->  }
-
-This will result in memory corruption because the ksm page still
-points to the stable_node that has been freed (that is copied by the
-migrate code when the newpage->mapping = oldpage->mapping).
-
-What should happen is that the ksm page of src_node is merged with
-the pre-existing ksm page in the dst_node of the migration. That's the
-complex case, the easy case is if there's no pre-existing page and
-that just requires an insert of the stable node in a different rbtree
-I think (without actual pagetable mangling).
-
-It may be simpler to break cow across migrate and require the ksm
-scanner to re-merge it however.
-
-Basically the above would remove the ability to rmap the ksm page
-(i.e. rmap crashes on a dangling pointer), but we need rmap to be
-functional at all times on all ksm pages.
-
-Hugh what's your views on this ksm_migrate_page NUMA aware that is
-giving trouble? What would you prefer? Merge two ksm pages together
-(something that has never happened before), break_cow (so we don't
-have to merge two ksm pages together in the first place and we
-fallback in the regular paths) etc...
-
-All the rest looks very good, great work Petr!
-
-Thanks,
-Andrea
+On Tue, Aug 14, 2012 at 05:59:27PM +0300, Dan Carpenter wrote:
+> Hello Jianyun Li,
+> 
+> The patch f0c568a478f0: "[SCSI] mvumi: Add Marvell UMI driver" from 
+> May 11, 2011, leads to the following warning:
+> drivers/scsi/mvumi.c:121 mvumi_alloc_mem_resource()
+> 	 error: scheduling with locks held: 'spin_lock:host_lock'
+> 
+> The problem is that we do a couple GPF_KERNEL allocations in
+> mvumi_alloc_mem_resource() and this static analysis program sees a path
+> where that function is called with spin_locks held.
+> 
+> mvumi_isr_handler() <- takes a spin lock
+> -> mvumi_handshake()
+>    -> mvumi_init_data()
+>       -> mvumi_alloc_mem_resource() <- GFP_KERNEL
+> 
+> The IRQ handler does print a warning before calling mvumi_handshake()
+> so it seems like this path doesn't get exercised very much.
+> 
+> regards,
+> dan carpenter
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
