@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab2I1INv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 04:13:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28793 "EHLO mx1.redhat.com"
+	id S1751879Ab2I1IQb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 04:16:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:57668 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756974Ab2I1INQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 04:13:16 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <87r4pm3d4q.fsf@rustcorp.com.au>
-References: <87r4pm3d4q.fsf@rustcorp.com.au> <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, pjones@redhat.com,
-        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        keyrings@linux-nfs.org
-Subject: Re: [GIT PULL] Asymmetric keys and module signing
-Date: Fri, 28 Sep 2012 09:13:09 +0100
-Message-ID: <27465.1348819989@warthog.procyon.org.uk>
+	id S1750900Ab2I1IQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 04:16:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,501,1344236400"; 
+   d="scan'208";a="227644923"
+Message-ID: <1348820118.4530.41.camel@yhuang-mobile.sh.intel.com>
+Subject: Why hold device_lock when calling callback in pci_walk_bus?
+From: Huang Ying <ying.huang@intel.com>
+To: bhelgaas@google.com
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, yanmin.zhang@intel.com,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl
+Date: Fri, 28 Sep 2012 16:15:18 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> wrote:
+Hi, All,
 
-> warning: (MODULE_SIG) selects ASYMMETRIC_KEY_TYPE which has unmet direct dependencies (CRYPTO && KEYS)
-> 
-> Ah, I see:
-> 
-> +	select CONFIG_KEYS
-> +	select CONFIG_CRYPTO
-> 
-> I fixed this commit, rather than go around again.
+If my understanding were correct, device_lock is used to provide mutual
+exclusion between device probe/remove/suspend/resume etc.  Why hold
+device_lock when calling callback in pci_walk_bus.
 
-Thanks.
+This is introduced by the following commit.
 
-select is irritatingly broken in that regard.
+commit d71374dafbba7ec3f67371d3b7e9f6310a588808
+Author: Zhang Yanmin <yanmin.zhang@intel.com>
+Date:   Fri Jun 2 12:35:43 2006 +0800
 
-David
+    [PATCH] PCI: fix race with pci_walk_bus and pci_destroy_dev
+    
+    pci_walk_bus has a race with pci_destroy_dev. When cb is called
+    in pci_walk_bus, pci_destroy_dev might unlink the dev pointed by next.
+    Later on in the next loop, pointer next becomes NULL and cause
+    kernel panic.
+    
+    Below patch against 2.6.17-rc4 fixes it by changing pci_bus_lock (spin_lock)
+    to pci_bus_sem (rw_semaphore).
+    
+    Signed-off-by: Zhang Yanmin <yanmin.zhang@intel.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+Corresponding email thread is: https://lkml.org/lkml/2006/5/26/38
+
+But from the commit and email thread, I can not find why we need to do
+that.
+
+I ask this question because I want to use pci_walk_bus in a function (in
+pci runtime resume path) which may be called with device_lock held.
+
+Can anyone help me on that?
+
+Best Regards,
+Huang Ying
+
+
