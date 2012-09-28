@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422759Ab2I1U3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:29:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
+	id S1422762Ab2I1U3m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:29:42 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032750Ab2I1U3T (ORCPT
+	with ESMTP id S1422757Ab2I1U3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:29:19 -0400
+	Fri, 28 Sep 2012 16:29:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 144/218] drivers/misc/sgi-xp/xpc_uv.c: SGI XPC fails to load when cpu 0 is out of IRQ resources
-Date: Fri, 28 Sep 2012 13:16:01 -0700
-Message-Id: <20120928201518.011895409@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Subject: [ 149/218] drm/radeon: implement ACPI VFCT vbios fetch (v3)
+Date: Fri, 28 Sep 2012 13:16:06 -0700
+Message-Id: <20120928201518.600731557@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,167 +27,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: David Lamparter <equinox@diac24.net>
 
-commit 7838f994b4fceff24c343f4e26a6cf4393869579 upstream.
+commit 268ba0a99f89a84dc5eb312470896113d0709c74 upstream.
 
-On many of our larger systems, CPU 0 has had all of its IRQ resources
-consumed before XPC loads.  Worst cases on machines with multiple 10
-GigE cards and multiple IB cards have depleted the entire first socket
-of IRQs.
+This is required for pure UEFI systems.  The vbios is stored
+in ACPI rather than at the legacy vga location.
 
-This patch makes selecting the node upon which IRQs are allocated (as
-well as all the other GRU Message Queue structures) specifiable as a
-module load param and has a default behavior of searching all nodes/cpus
-for an available resources.
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=26891
 
-[akpm@linux-foundation.org: fix build: include cpu.h and module.h]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+V2: fix #ifdefs as per Greg's comments
+V3: fix it harder
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Jerome Glisse <jglisse@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/sgi-xp/xpc_uv.c |   84 +++++++++++++++++++++++++++++++++----------
- 1 file changed, 65 insertions(+), 19 deletions(-)
+ drivers/gpu/drm/radeon/radeon_bios.c |   60 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
 
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -18,6 +18,8 @@
- #include <linux/interrupt.h>
- #include <linux/delay.h>
- #include <linux/device.h>
-+#include <linux/cpu.h>
-+#include <linux/module.h>
- #include <linux/err.h>
+--- a/drivers/gpu/drm/radeon/radeon_bios.c
++++ b/drivers/gpu/drm/radeon/radeon_bios.c
+@@ -32,6 +32,7 @@
+ 
+ #include <linux/vga_switcheroo.h>
  #include <linux/slab.h>
- #include <asm/uv/uv_hub.h>
-@@ -59,6 +61,8 @@ static struct xpc_heartbeat_uv *xpc_hear
- 					 XPC_NOTIFY_MSG_SIZE_UV)
- #define XPC_NOTIFY_IRQ_NAME		"xpc_notify"
++#include <linux/acpi.h>
+ /*
+  * BIOS.
+  */
+@@ -548,6 +549,63 @@ static bool radeon_read_disabled_bios(st
+ 		return legacy_read_disabled_bios(rdev);
+ }
  
-+static int xpc_mq_node = -1;
-+
- static struct xpc_gru_mq_uv *xpc_activate_mq_uv;
- static struct xpc_gru_mq_uv *xpc_notify_mq_uv;
- 
-@@ -109,11 +113,8 @@ xpc_get_gru_mq_irq_uv(struct xpc_gru_mq_
- #if defined CONFIG_X86_64
- 	mq->irq = uv_setup_irq(irq_name, cpu, mq->mmr_blade, mq->mmr_offset,
- 			UV_AFFINITY_CPU);
--	if (mq->irq < 0) {
--		dev_err(xpc_part, "uv_setup_irq() returned error=%d\n",
--			-mq->irq);
-+	if (mq->irq < 0)
- 		return mq->irq;
--	}
- 
- 	mq->mmr_value = uv_read_global_mmr64(mmr_pnode, mq->mmr_offset);
- 
-@@ -238,8 +239,9 @@ xpc_create_gru_mq_uv(unsigned int mq_siz
- 	mq->mmr_blade = uv_cpu_to_blade_id(cpu);
- 
- 	nid = cpu_to_node(cpu);
--	page = alloc_pages_exact_node(nid, GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
--				pg_order);
-+	page = alloc_pages_exact_node(nid,
-+				      GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
-+				      pg_order);
- 	if (page == NULL) {
- 		dev_err(xpc_part, "xpc_create_gru_mq_uv() failed to alloc %d "
- 			"bytes of memory on nid=%d for GRU mq\n", mq_size, nid);
-@@ -1731,9 +1733,50 @@ static struct xpc_arch_operations xpc_ar
- 	.notify_senders_of_disconnect = xpc_notify_senders_of_disconnect_uv,
- };
- 
-+static int
-+xpc_init_mq_node(int nid)
++#ifdef CONFIG_ACPI
++static bool radeon_acpi_vfct_bios(struct radeon_device *rdev)
 +{
-+	int cpu;
++	bool ret = false;
++	struct acpi_table_header *hdr;
++	/* acpi_get_table_with_size is not exported :( */
++	acpi_size tbl_size = 0x7fffffff;
++	UEFI_ACPI_VFCT *vfct;
++	GOP_VBIOS_CONTENT *vbios;
++	VFCT_IMAGE_HEADER *vhdr;
 +
-+	get_online_cpus();
-+
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_activate_mq_uv =
-+			xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, nid,
-+					     XPC_ACTIVATE_IRQ_NAME,
-+					     xpc_handle_activate_IRQ_uv);
-+		if (!IS_ERR(xpc_activate_mq_uv))
-+			break;
-+	}
-+	if (IS_ERR(xpc_activate_mq_uv)) {
-+		put_online_cpus();
-+		return PTR_ERR(xpc_activate_mq_uv);
++	if (!ACPI_SUCCESS(acpi_get_table("VFCT", 1, &hdr)))
++		return false;
++	if (tbl_size < sizeof(UEFI_ACPI_VFCT)) {
++		DRM_ERROR("ACPI VFCT table present but broken (too short #1)\n");
++		goto out_unmap;
 +	}
 +
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_notify_mq_uv =
-+			xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, nid,
-+					     XPC_NOTIFY_IRQ_NAME,
-+					     xpc_handle_notify_IRQ_uv);
-+		if (!IS_ERR(xpc_notify_mq_uv))
-+			break;
-+	}
-+	if (IS_ERR(xpc_notify_mq_uv)) {
-+		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
-+		put_online_cpus();
-+		return PTR_ERR(xpc_notify_mq_uv);
++	vfct = (UEFI_ACPI_VFCT *)hdr;
++	if (vfct->VBIOSImageOffset + sizeof(VFCT_IMAGE_HEADER) > tbl_size) {
++		DRM_ERROR("ACPI VFCT table present but broken (too short #2)\n");
++		goto out_unmap;
 +	}
 +
-+	put_online_cpus();
-+	return 0;
-+}
++	vbios = (GOP_VBIOS_CONTENT *)((char *)hdr + vfct->VBIOSImageOffset);
++	vhdr = &vbios->VbiosHeader;
++	DRM_INFO("ACPI VFCT contains a BIOS for %02x:%02x.%d %04x:%04x, size %d\n",
++			vhdr->PCIBus, vhdr->PCIDevice, vhdr->PCIFunction,
++			vhdr->VendorID, vhdr->DeviceID, vhdr->ImageLength);
 +
- int
- xpc_init_uv(void)
- {
-+	int nid;
-+	int ret = 0;
++	if (vhdr->PCIBus != rdev->pdev->bus->number ||
++	    vhdr->PCIDevice != PCI_SLOT(rdev->pdev->devfn) ||
++	    vhdr->PCIFunction != PCI_FUNC(rdev->pdev->devfn) ||
++	    vhdr->VendorID != rdev->pdev->vendor ||
++	    vhdr->DeviceID != rdev->pdev->device) {
++		DRM_INFO("ACPI VFCT table is not for this card\n");
++		goto out_unmap;
++	};
 +
- 	xpc_arch_ops = xpc_arch_ops_uv;
- 
- 	if (sizeof(struct xpc_notify_mq_msghdr_uv) > XPC_MSG_HDR_MAX_SIZE) {
-@@ -1742,21 +1785,21 @@ xpc_init_uv(void)
- 		return -E2BIG;
- 	}
- 
--	xpc_activate_mq_uv = xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, 0,
--						  XPC_ACTIVATE_IRQ_NAME,
--						  xpc_handle_activate_IRQ_uv);
--	if (IS_ERR(xpc_activate_mq_uv))
--		return PTR_ERR(xpc_activate_mq_uv);
-+	if (xpc_mq_node < 0)
-+		for_each_online_node(nid) {
-+			ret = xpc_init_mq_node(nid);
- 
--	xpc_notify_mq_uv = xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, 0,
--						XPC_NOTIFY_IRQ_NAME,
--						xpc_handle_notify_IRQ_uv);
--	if (IS_ERR(xpc_notify_mq_uv)) {
--		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
--		return PTR_ERR(xpc_notify_mq_uv);
--	}
-+			if (!ret)
-+				break;
-+		}
-+	else
-+		ret = xpc_init_mq_node(xpc_mq_node);
- 
--	return 0;
-+	if (ret < 0)
-+		dev_err(xpc_part, "xpc_init_mq_node() returned error=%d\n",
-+			-ret);
++	if (vfct->VBIOSImageOffset + sizeof(VFCT_IMAGE_HEADER) + vhdr->ImageLength > tbl_size) {
++		DRM_ERROR("ACPI VFCT image truncated\n");
++		goto out_unmap;
++	}
 +
++	rdev->bios = kmemdup(&vbios->VbiosContent, vhdr->ImageLength, GFP_KERNEL);
++	ret = !!rdev->bios;
++
++out_unmap:
++	/* uh, no idea what to do here... */
 +	return ret;
- }
++}
++#else
++static inline bool radeon_acpi_vfct_bios(struct radeon_device *rdev)
++{
++	return false;
++}
++#endif
  
- void
-@@ -1765,3 +1808,6 @@ xpc_exit_uv(void)
- 	xpc_destroy_gru_mq_uv(xpc_notify_mq_uv);
- 	xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
- }
-+
-+module_param(xpc_mq_node, int, 0);
-+MODULE_PARM_DESC(xpc_mq_node, "Node number on which to allocate message queues.");
+ bool radeon_get_bios(struct radeon_device *rdev)
+ {
+@@ -556,6 +614,8 @@ bool radeon_get_bios(struct radeon_devic
+ 
+ 	r = radeon_atrm_get_bios(rdev);
+ 	if (r == false)
++		r = radeon_acpi_vfct_bios(rdev);
++	if (r == false)
+ 		r = igp_read_bios_from_vram(rdev);
+ 	if (r == false)
+ 		r = radeon_read_bios(rdev);
 
 
