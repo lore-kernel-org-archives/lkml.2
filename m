@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab2I1VCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:02:39 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35844 "EHLO
+	id S1032963Ab2I1UrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:47:08 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44563 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1032997Ab2I1Uri (ORCPT
+	by vger.kernel.org with ESMTP id S1032948Ab2I1UrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:47:38 -0400
-X-Sasl-enc: 7R3muxjLgDrnDNUxipnLZ0E33JGPw0E3qh7aJAXPqHaq 1348865257
+	Fri, 28 Sep 2012 16:47:03 -0400
+X-Sasl-enc: NzysEVly4argT2CFvxOhneLYVZvMuNPok3PskJhN19g1 1348865223
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 038/127] mmc: mxs-mmc: fix deadlock in SDIO IRQ case
-Date: Fri, 28 Sep 2012 13:33:31 -0700
-Message-Id: <20120928203050.289347162@linuxfoundation.org>
+        Anisse Astier <anisse@astier.eu>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [ 061/127] Input: i8042 - disable mux on Toshiba C850D
+Date: Fri, 28 Sep 2012 13:33:54 -0700
+Message-Id: <20120928203052.981003096@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,93 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+From: Anisse Astier <anisse@astier.eu>
 
-commit 1af36b2a993dddfa3d6860ec4879c9e8abc9b976 upstream.
+commit 8669cf6793bb38307a30fb6b9565ddc8840ebd3f upstream.
 
-Release the lock before mmc_signal_sdio_irq is called by mxs_mmc_irq_handler.
+On Toshiba Satellite C850D, the touchpad and the keyboard might randomly
+not work at boot. Preventing MUX mode activation solves this issue.
 
-Backtrace:
-[   79.660000] =============================================
-[   79.660000] [ INFO: possible recursive locking detected ]
-[   79.660000] 3.4.0-00009-g3e96082-dirty #11 Not tainted
-[   79.660000] ---------------------------------------------
-[   79.660000] swapper/0 is trying to acquire lock:
-[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026ea3c>] mxs_mmc_enable_sdio_irq+0x18/0xd4
-[   79.660000]
-[   79.660000] but task is already holding lock:
-[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
-[   79.660000]
-[   79.660000] other info that might help us debug this:
-[   79.660000]  Possible unsafe locking scenario:
-[   79.660000]
-[   79.660000]        CPU0
-[   79.660000]        ----
-[   79.660000]   lock(&(&host->lock)->rlock#2);
-[   79.660000]   lock(&(&host->lock)->rlock#2);
-[   79.660000]
-[   79.660000]  *** DEADLOCK ***
-[   79.660000]
-[   79.660000]  May be due to missing lock nesting notation
-[   79.660000]
-[   79.660000] 1 lock held by swapper/0:
-[   79.660000]  #0:  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
-[   79.660000]
-[   79.660000] stack backtrace:
-[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c005f9c0>] (__lock_acquire+0x1948/0x1d48)
-[   79.660000] [<c005f9c0>] (__lock_acquire+0x1948/0x1d48) from [<c005fea0>] (lock_acquire+0xe0/0xf8)
-[   79.660000] [<c005fea0>] (lock_acquire+0xe0/0xf8) from [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58)
-[   79.660000] [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
-[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
-[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
-[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
-[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
-[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
-[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
-[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
-[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
-[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
-[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
-[   79.660000] BUG: spinlock lockup on CPU#0, swapper/0
-[   79.660000]  lock: c398cb2c, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
-[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144)
-[   79.660000] [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144) from [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58)
-[   79.660000] [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
-[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
-[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
-[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
-[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
-[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
-[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
-[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
-[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
-[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
-[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
-
-Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Anisse Astier <anisse@astier.eu>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/mxs-mmc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -278,11 +278,11 @@ static irqreturn_t mxs_mmc_irq_handler(i
- 	writel(stat & MXS_MMC_IRQ_BITS,
- 	       host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
- 
-+	spin_unlock(&host->lock);
-+
- 	if ((stat & BM_SSP_CTRL1_SDIO_IRQ) && (stat & BM_SSP_CTRL1_SDIO_IRQ_EN))
- 		mmc_signal_sdio_irq(host->mmc);
- 
--	spin_unlock(&host->lock);
--
- 	if (stat & BM_SSP_CTRL1_RESP_TIMEOUT_IRQ)
- 		cmd->error = -ETIMEDOUT;
- 	else if (stat & BM_SSP_CTRL1_RESP_ERR_IRQ)
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -335,6 +335,12 @@ static const struct dmi_system_id __init
+ 	},
+ 	{
+ 		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "SATELLITE C850D"),
++		},
++	},
++	{
++		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "ALIENWARE"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Sentia"),
+ 		},
 
 
