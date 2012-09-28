@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759816Ab2I1UxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:53:20 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42663 "EHLO
+	id S1759850Ab2I1Uxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:53:37 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43100 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423048Ab2I1Usc (ORCPT
+	by vger.kernel.org with ESMTP id S1423043Ab2I1Usa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:32 -0400
-X-Sasl-enc: d5dNVjasEEuBCBvSGKuxqmQDdYsjvPeQ26ev+5vG0miA 1348865310
+	Fri, 28 Sep 2012 16:48:30 -0400
+X-Sasl-enc: Us1Lf02p8CLvFjMuAvQ9nO1y91KLiumeeiQG+6uSkbym 1348865309
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 096/127] x86: Fix boot on Twinhead H12Y
-Date: Fri, 28 Sep 2012 13:34:29 -0700
-Message-Id: <20120928203057.128381650@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 095/127] workqueue: UNBOUND -> REBIND morphing in rebind_workers() should be atomic
+Date: Fri, 28 Sep 2012 13:34:28 -0700
+Message-Id: <20120928203057.033915276@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -27,52 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 80b3e557371205566a71e569fbfcce5b11f92dbe upstream.
+commit 96e65306b81351b656835c15931d1d237b252f27 upstream.
 
-Despite lots of investigation into why this is needed we don't
-know or have an elegant cure. The only answer found on this
-laptop is to mark a problem region as used so that Linux doesn't
-put anything there.
+The compiler may compile the following code into TWO write/modify
+instructions.
 
-Currently all the users add reserve= command lines and anyone
-not knowing this needs to find the magic page that documents it.
-Automate it instead.
+	worker->flags &= ~WORKER_UNBOUND;
+	worker->flags |= WORKER_REBIND;
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Tested-and-bugfixed-by: Arne Fitzenreiter <arne@fitzenreiter.de>
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=10231
-Link: http://lkml.kernel.org/r/20120515174347.5109.94551.stgit@bluebook
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+so the other CPU may temporarily see worker->flags which doesn't have
+either WORKER_UNBOUND or WORKER_REBIND set and perform local wakeup
+prematurely.
+
+Fix it by using single explicit assignment via ACCESS_ONCE().
+
+Because idle workers have another WORKER_NOT_RUNNING flag, this bug
+doesn't exist for them; however, update it to use the same pattern for
+consistency.
+
+tj: Applied the change to idle workers too and updated comments and
+    patch description a bit.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/pci/fixup.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ kernel/workqueue.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -521,3 +521,20 @@ static void sb600_disable_hpet_bar(struc
- 	}
- }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
-+
-+/*
-+ * Twinhead H12Y needs us to block out a region otherwise we map devices
-+ * there and any access kills the box.
-+ *
-+ *   See: https://bugzilla.kernel.org/show_bug.cgi?id=10231
-+ *
-+ * Match off the LPC and svid/sdid (older kernels lose the bridge subvendor)
-+ */
-+static void __devinit twinhead_reserve_killing_zone(struct pci_dev *dev)
-+{
-+        if (dev->subsystem_vendor == 0x14FF && dev->subsystem_device == 0xA003) {
-+                pr_info("Reserving memory on Twinhead H12Y\n");
-+                request_mem_region(0xFFB00000, 0x100000, "twinhead");
-+        }
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x27B9, twinhead_reserve_killing_zone);
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3412,14 +3412,17 @@ static int __cpuinit trustee_thread(void
+ 
+ 	for_each_busy_worker(worker, i, pos, gcwq) {
+ 		struct work_struct *rebind_work = &worker->rebind_work;
++		unsigned long worker_flags = worker->flags;
+ 
+ 		/*
+ 		 * Rebind_work may race with future cpu hotplug
+ 		 * operations.  Use a separate flag to mark that
+-		 * rebinding is scheduled.
++		 * rebinding is scheduled.  The morphing should
++		 * be atomic.
+ 		 */
+-		worker->flags |= WORKER_REBIND;
+-		worker->flags &= ~WORKER_ROGUE;
++		worker_flags |= WORKER_REBIND;
++		worker_flags &= ~WORKER_ROGUE;
++		ACCESS_ONCE(worker->flags) = worker_flags;
+ 
+ 		/* queue rebind_work, wq doesn't matter, use the default one */
+ 		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
 
 
