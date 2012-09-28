@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab2I1NbJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 09:31:09 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:51583 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757240Ab2I1NbG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 09:31:06 -0400
+	id S1758179Ab2I1Nbh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 09:31:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36059 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757332Ab2I1Nbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 09:31:35 -0400
+Date: Fri, 28 Sep 2012 14:31:21 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [RFC/PATCH] zcache2 on PPC64 (Was: [RFC] mm: add support for
+ zsmalloc and zcache)
+Message-ID: <20120928133121.GH29125@suse.de>
+References: <30a570e8-8157-47e1-867a-4960a7c1173d@default>
 MIME-Version: 1.0
-In-Reply-To: <20120928125758.GK31006@arwen.pp.htv.fi>
-References: <1348836795-4783-1-git-send-email-kishon@ti.com>
-	<1348836795-4783-2-git-send-email-kishon@ti.com>
-	<20120928125758.GK31006@arwen.pp.htv.fi>
-Date: Fri, 28 Sep 2012 19:01:04 +0530
-Message-ID: <CAAe_U6JX8nqhZU-m+0Cfh1-xEkZhXNf2ecYcg_JX9mx5fv1b3A@mail.gmail.com>
-Subject: Re: [PATCH 1/6] usb: dwc3-omap: use of_platform API to create dwc3
- core pdev
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: balbi@ti.com
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <30a570e8-8157-47e1-867a-4960a7c1173d@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Sep 25, 2012 at 04:31:01PM -0700, Dan Magenheimer wrote:
+> Attached patch applies to staging-next and I _think_ should
+> fix the reported problem where zbud in zcache2 does not
+> work on a PPC64 with PAGE_SIZE!=12.  I do not have a machine
+> to test this so testing by others would be appreciated.
+> 
 
-On Fri, Sep 28, 2012 at 6:27 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Fri, Sep 28, 2012 at 06:23:10PM +0530, Kishon Vijay Abraham I wrote:
->> Used of_platform_populate() to populate dwc3 core platform_device
->> from device tree data. Since now the allocation of unique device id is
->> handled be of_*, removed the call to dwc3_get_device_id.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->
-> I think it's best if you split the use of device_for_each_child() from
-> this patch. So first do the device_for_each_child() part, then later use
-> of_platform_populate().
+Seth, can you verify?
 
-I think it's better to have it both together as of_platform_populate
-will create the device and the device_for_each_child() part will
-delete it on error conditions and during driver removal.
-In this patch the first device_for_each_child() comes in error
-condition and it is not needed if we have not created the device using
-of_platform_populate.
-
-Thanks
-Kishon
+-- 
+Mel Gorman
+SUSE Labs
