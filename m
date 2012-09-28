@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422779Ab2I1U3v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:29:51 -0400
+	id S1422816Ab2I1VXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:23:46 -0400
 Received: from mail-da0-f46.google.com ([209.85.210.46]:56440 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032764Ab2I1U3o (ORCPT
+	with ESMTP id S1422775Ab2I1U3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:29:44 -0400
+	Fri, 28 Sep 2012 16:29:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [ 152/218] asus-laptop: HRWS/HWRS typo
-Date: Fri, 28 Sep 2012 13:16:09 -0700
-Message-Id: <20120928201518.958516776@linuxfoundation.org>
+        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 154/218] drm: Check for invalid cursor flags
+Date: Fri, 28 Sep 2012 13:16:11 -0700
+Message-Id: <20120928201519.203050447@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,44 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corentin Chary <corentin.chary@gmail.com>
+From: Jakob Bornecrantz <jakob@vmware.com>
 
-commit 8871e99f89b7d7b1ea99de550eea2a56273f42ab upstream.
+commit 7c4eaca4162d0b5ad4fb39f974d7ffd71b9daa09 upstream.
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=24222
-Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/asus-laptop.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/drm_crtc.c |    2 +-
+ include/drm/drm_mode.h     |    5 +++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/platform/x86/asus-laptop.c
-+++ b/drivers/platform/x86/asus-laptop.c
-@@ -863,9 +863,9 @@ static ssize_t show_infos(struct device
- 	 * The significance of others is yet to be found.
- 	 * If we don't find the method, we assume the device are present.
- 	 */
--	rv = acpi_evaluate_integer(asus->handle, "HRWS", NULL, &temp);
-+	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
- 	if (!ACPI_FAILURE(rv))
--		len += sprintf(page + len, "HRWS value         : %#x\n",
-+		len += sprintf(page + len, "HWRS value         : %#x\n",
- 			       (uint) temp);
- 	/*
- 	 * Another value for userspace: the ASYM method returns 0x02 for
-@@ -1751,9 +1751,9 @@ static int asus_laptop_get_info(struct a
- 	 * The significance of others is yet to be found.
- 	 */
- 	status =
--	    acpi_evaluate_integer(asus->handle, "HRWS", NULL, &hwrs_result);
-+	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
- 	if (!ACPI_FAILURE(status))
--		pr_notice("  HRWS returned %x", (int)hwrs_result);
-+		pr_notice("  HWRS returned %x", (int)hwrs_result);
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -1981,7 +1981,7 @@ int drm_mode_cursor_ioctl(struct drm_dev
+ 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+ 		return -EINVAL;
  
- 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
- 		asus->have_rsts = true;
+-	if (!req->flags)
++	if (!req->flags || (~DRM_MODE_CURSOR_FLAGS & req->flags))
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&dev->mode_config.mutex);
+--- a/include/drm/drm_mode.h
++++ b/include/drm/drm_mode.h
+@@ -343,8 +343,9 @@ struct drm_mode_mode_cmd {
+ 	struct drm_mode_modeinfo mode;
+ };
+ 
+-#define DRM_MODE_CURSOR_BO	(1<<0)
+-#define DRM_MODE_CURSOR_MOVE	(1<<1)
++#define DRM_MODE_CURSOR_BO	0x01
++#define DRM_MODE_CURSOR_MOVE	0x02
++#define DRM_MODE_CURSOR_FLAGS	0x03
+ 
+ /*
+  * depending on the value in flags different members are used.
 
 
