@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032043Ab2I1UXV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:23:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032029Ab2I1UXL (ORCPT
+	id S1032076Ab2I1UXf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:23:35 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:46787 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032036Ab2I1UX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:23:11 -0400
+	Fri, 28 Sep 2012 16:23:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 032/218] workqueue: reimplement work_on_cpu() using system_wq
-Date: Fri, 28 Sep 2012 13:14:09 -0700
-Message-Id: <20120928201505.045078402@linuxfoundation.org>
+        Francesco Ruggeri <fruggeri@aristanetworks.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 029/218] net: ipv4: ipmr_expire_timer causes crash when removing net namespace
+Date: Fri, 28 Sep 2012 13:14:06 -0700
+Message-Id: <20120928201504.718848714@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -29,82 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
 
-commit ed48ece27cd3d5ee0354c32bbaec0f3e1d4715c3 upstream.
+From: Francesco Ruggeri <fruggeri@aristanetworks.com>
 
-The existing work_on_cpu() implementation is hugely inefficient.  It
-creates a new kthread, execute that single function and then let the
-kthread die on each invocation.
+[ Upstream commit acbb219d5f53821b2d0080d047800410c0420ea1 ]
 
-Now that system_wq can handle concurrent executions, there's no
-advantage of doing this.  Reimplement work_on_cpu() using system_wq
-which makes it simpler and way more efficient.
+When tearing down a net namespace, ipv4 mr_table structures are freed
+without first deactivating their timers. This can result in a crash in
+run_timer_softirq.
+This patch mimics the corresponding behaviour in ipv6.
+Locking and synchronization seem to be adequate.
+We are about to kfree mrt, so existing code should already make sure that
+no other references to mrt are pending or can be created by incoming traffic.
+The functions invoked here do not cause new references to mrt or other
+race conditions to be created.
+Invoking del_timer_sync guarantees that ipmr_expire_timer is inactive.
+Both ipmr_expire_process (whose completion we may have to wait in
+del_timer_sync) and mroute_clean_tables internally use mfc_unres_lock
+or other synchronizations when needed, and they both only modify mrt.
 
-stable: While this isn't a fix in itself, it's needed to fix a
-        workqueue related bug in cpufreq/powernow-k8.  AFAICS, this
-        shouldn't break other existing users.
+Tested in Linux 3.4.8.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Francesco Ruggeri <fruggeri@aristanetworks.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- kernel/workqueue.c |   25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
+ net/ipv4/ipmr.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3620,18 +3620,17 @@ static int __devinit workqueue_cpu_down_
- #ifdef CONFIG_SMP
+--- a/net/ipv4/ipmr.c
++++ b/net/ipv4/ipmr.c
+@@ -124,6 +124,8 @@ static DEFINE_SPINLOCK(mfc_unres_lock);
+ static struct kmem_cache *mrt_cachep __read_mostly;
  
- struct work_for_cpu {
--	struct completion completion;
-+	struct work_struct work;
- 	long (*fn)(void *);
- 	void *arg;
- 	long ret;
- };
- 
--static int do_work_for_cpu(void *_wfc)
-+static void work_for_cpu_fn(struct work_struct *work)
- {
--	struct work_for_cpu *wfc = _wfc;
-+	struct work_for_cpu *wfc = container_of(work, struct work_for_cpu, work);
+ static struct mr_table *ipmr_new_table(struct net *net, u32 id);
++static void ipmr_free_table(struct mr_table *mrt);
 +
- 	wfc->ret = wfc->fn(wfc->arg);
--	complete(&wfc->completion);
--	return 0;
- }
+ static int ip_mr_forward(struct net *net, struct mr_table *mrt,
+ 			 struct sk_buff *skb, struct mfc_cache *cache,
+ 			 int local);
+@@ -131,6 +133,7 @@ static int ipmr_cache_report(struct mr_t
+ 			     struct sk_buff *pkt, vifi_t vifi, int assert);
+ static int __ipmr_fill_mroute(struct mr_table *mrt, struct sk_buff *skb,
+ 			      struct mfc_cache *c, struct rtmsg *rtm);
++static void mroute_clean_tables(struct mr_table *mrt);
+ static void ipmr_expire_process(unsigned long arg);
  
- /**
-@@ -3646,19 +3645,11 @@ static int do_work_for_cpu(void *_wfc)
-  */
- long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg)
+ #ifdef CONFIG_IP_MROUTE_MULTIPLE_TABLES
+@@ -271,7 +274,7 @@ static void __net_exit ipmr_rules_exit(s
+ 
+ 	list_for_each_entry_safe(mrt, next, &net->ipv4.mr_tables, list) {
+ 		list_del(&mrt->list);
+-		kfree(mrt);
++		ipmr_free_table(mrt);
+ 	}
+ 	fib_rules_unregister(net->ipv4.mr_rules_ops);
+ }
+@@ -299,7 +302,7 @@ static int __net_init ipmr_rules_init(st
+ 
+ static void __net_exit ipmr_rules_exit(struct net *net)
  {
--	struct task_struct *sub_thread;
--	struct work_for_cpu wfc = {
--		.completion = COMPLETION_INITIALIZER_ONSTACK(wfc.completion),
--		.fn = fn,
--		.arg = arg,
--	};
-+	struct work_for_cpu wfc = { .fn = fn, .arg = arg };
- 
--	sub_thread = kthread_create(do_work_for_cpu, &wfc, "work_for_cpu");
--	if (IS_ERR(sub_thread))
--		return PTR_ERR(sub_thread);
--	kthread_bind(sub_thread, cpu);
--	wake_up_process(sub_thread);
--	wait_for_completion(&wfc.completion);
-+	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-+	schedule_work_on(cpu, &wfc.work);
-+	flush_work(&wfc.work);
- 	return wfc.ret;
+-	kfree(net->ipv4.mrt);
++	ipmr_free_table(net->ipv4.mrt);
  }
- EXPORT_SYMBOL_GPL(work_on_cpu);
+ #endif
+ 
+@@ -336,6 +339,13 @@ static struct mr_table *ipmr_new_table(s
+ 	return mrt;
+ }
+ 
++static void ipmr_free_table(struct mr_table *mrt)
++{
++	del_timer_sync(&mrt->ipmr_expire_timer);
++	mroute_clean_tables(mrt);
++	kfree(mrt);
++}
++
+ /* Service routines creating virtual interfaces: DVMRP tunnels and PIMREG */
+ 
+ static void ipmr_del_tunnel(struct net_device *dev, struct vifctl *v)
 
 
