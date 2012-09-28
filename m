@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab2I1Aa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 20:30:59 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49523 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab2I1Aa5 (ORCPT
+	id S1754628Ab2I1AeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 20:34:00 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51923 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab2I1Ad7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 20:30:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGhQ9VzJtx3MJF1wdJd8hv7Hp4T0YJK=vNbJWGj_W7X+mLy-xQ@mail.gmail.com>
-References: <20120818145856.GP18957@n2100.arm.linux.org.uk>
-	<CACVXFVPahbFVEP4p2Z9-TvjQ52tUCMuDeLx0X6GP5t0h5gEV8g@mail.gmail.com>
-	<20120916082510.GN12245@n2100.arm.linux.org.uk>
-	<CACVXFVOZ=4HFAy38q_8ZUjOPffcv_mMTi7KCdh3HcX=MCLw5SQ@mail.gmail.com>
-	<20120926200833.GA14340@kroah.com>
-	<20120926202321.GD30938@n2100.arm.linux.org.uk>
-	<CACVXFVPnpQ6yHiDaoo_CPG7oSEq+ZzxpmTgQv55-tRRyaavDfA@mail.gmail.com>
-	<20120927135809.GE14358@n2100.arm.linux.org.uk>
-	<20120927140300.GF14358@n2100.arm.linux.org.uk>
-	<CAGhQ9VzJtx3MJF1wdJd8hv7Hp4T0YJK=vNbJWGj_W7X+mLy-xQ@mail.gmail.com>
-Date: Fri, 28 Sep 2012 08:30:55 +0800
-Message-ID: <CACVXFVO5hChrEqK=mS1i7R0hbCfg6SZfuBkB7j+zKf3xj-JGRg@mail.gmail.com>
-Subject: Re: [BUG] Deferred probing in driver model is racy, resulting in lost probes
-From: Ming Lei <tom.leiming@gmail.com>
-To: Joachim Eastwood <manabian@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Sep 2012 20:33:59 -0400
+Message-ID: <1348792430.11539.2.camel@phoenix>
+Subject: [PATCH] extcon: adc-jack: Add missing MODULE_LICENSE
+From: Axel Lin <axel.lin@ingics.com>
+To: linux-kernel@vger.kernel.org
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        anish kumar <anish.singh@samsung.com>
+Date: Fri, 28 Sep 2012 08:33:50 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 1:22 AM, Joachim  Eastwood <manabian@gmail.com> wrote:
+This driver can be built as a module, add MODULE_LICENSE for it.
+For completeness, also adds MODULE_AUTHOR and MODULE_DESCRIPTION.
 
->
-> I am also having problems with ASoC modules and deferred probing. This
-> patch seems to improve the a lot situation, though. Now it work most
-> of the time, but occasionally I get the warning below.
->
-> Not sure if this is directly related to the issue Russell have been
-> seeing. Guess it can be races in the Atmel ASoC drivers as well(?).
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/extcon/extcon-adc-jack.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-Looks the driver involved is out of tree since mpa1600_audio_probe
-can't be found in -next or linux tree.
-
-Also your problem should be related the driver and probably caused
-by calling atmel_ssc_set_audio more than one time.
-
-Thanks,
+diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
+index 2cc6bec..e87196f 100644
+--- a/drivers/extcon/extcon-adc-jack.c
++++ b/drivers/extcon/extcon-adc-jack.c
+@@ -14,6 +14,7 @@
+  *
+  */
+ 
++#include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/device.h>
+ #include <linux/platform_device.h>
+@@ -195,3 +196,7 @@ static struct platform_driver adc_jack_driver = {
+ };
+ 
+ module_platform_driver(adc_jack_driver);
++
++MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
++MODULE_DESCRIPTION("ADC Jack extcon driver");
++MODULE_LICENSE("GPL v2");
 -- 
-Ming Lei
+1.7.9.5
+
+
+
