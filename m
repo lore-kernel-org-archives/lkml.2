@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727Ab2I1SyK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:54:10 -0400
+	id S1758772Ab2I1Sy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:54:26 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758685Ab2I1SyG (ORCPT
+	with ESMTP id S1758741Ab2I1SyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:54:06 -0400
+	Fri, 28 Sep 2012 14:54:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Mathias Krause <minipli@googlemail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 008/262] net/core: Fix potential memory leak in dev_set_alias()
-Date: Fri, 28 Sep 2012 11:48:57 -0700
-Message-Id: <20120928182958.954871631@linuxfoundation.org>
+Subject: [ 013/262] Bluetooth: HCI - Fix info leak in getsockopt(HCI_FILTER)
+Date: Fri, 28 Sep 2012 11:49:02 -0700
+Message-Id: <20120928182959.536695108@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,44 +33,34 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 7364e445f62825758fa61195d237a5b8ecdd06ec ]
+[ Upstream commit e15ca9a0ef9a86f0477530b0f44a725d67f889ee ]
 
-Do not leak memory by updating pointer with potentially NULL realloc return value.
+The HCI code fails to initialize the two padding bytes of struct
+hci_ufilter before copying it to userland -- that for leaking two
+bytes kernel stack. Add an explicit memset(0) before filling the
+structure to avoid the info leak.
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/bluetooth/hci_sock.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1055,6 +1055,8 @@ rollback:
-  */
- int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
- {
-+	char *new_ifalias;
-+
- 	ASSERT_RTNL();
+--- a/net/bluetooth/hci_sock.c
++++ b/net/bluetooth/hci_sock.c
+@@ -1016,6 +1016,7 @@ static int hci_sock_getsockopt(struct so
+ 		{
+ 			struct hci_filter *f = &hci_pi(sk)->filter;
  
- 	if (len >= IFALIASZ)
-@@ -1068,9 +1070,10 @@ int dev_set_alias(struct net_device *dev
- 		return 0;
- 	}
- 
--	dev->ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
--	if (!dev->ifalias)
-+	new_ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
-+	if (!new_ifalias)
- 		return -ENOMEM;
-+	dev->ifalias = new_ifalias;
- 
- 	strlcpy(dev->ifalias, alias, len+1);
- 	return len;
++			memset(&uf, 0, sizeof(uf));
+ 			uf.type_mask = f->type_mask;
+ 			uf.opcode    = f->opcode;
+ 			uf.event_mask[0] = *((u32 *) f->event_mask + 0);
 
 
