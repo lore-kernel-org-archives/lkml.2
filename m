@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab2I1Jz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 05:55:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39024 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924Ab2I1Jz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 05:55:57 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5065740A.2000502@jp.fujitsu.com>
-Date: Fri, 28 Sep 2012 18:55:22 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: <wency@cn.fujitsu.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <rientjes@google.com>,
-        <liuj97@gmail.com>, <len.brown@intel.com>, <benh@kernel.crashing.org>,
-        <paulus@samba.org>, <minchan.kim@gmail.com>,
-        <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] memory-hotplug: add node_device_release
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-3-git-send-email-wency@cn.fujitsu.com> <CAHGf_=rLMsmAxR5hrDVXjkHAxmupVrmtqE3iq2qu=O9Prp4nSg@mail.gmail.com> <5064EA5A.3080905@jp.fujitsu.com> <CAHGf_=qbBGjTL9oBHz7AM8BAosbzvn_WAGdAzJ8np-nDPN_KFQ@mail.gmail.com> <5064FDCA.1020504@jp.fujitsu.com> <CAHGf_=r+oz0GS137e81EySbN-3KVmQisF8sySiCUYUas1RZLtQ@mail.gmail.com>
-In-Reply-To: <CAHGf_=r+oz0GS137e81EySbN-3KVmQisF8sySiCUYUas1RZLtQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757095Ab2I1KAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 06:00:11 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:9035 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751138Ab2I1KAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 06:00:09 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>,
+        Glauber Costa <glommer@parallels.com>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH] make GFP_NOTRACK flag unconditional
+Date: Fri, 28 Sep 2012 13:56:34 +0400
+Message-Id: <1348826194-21781-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kosaki-san,
+There was a general sentiment in a recent discussion (See
+https://lkml.org/lkml/2012/9/18/258) that the __GFP flags should be
+defined unconditionally. Currently, the only offender is GFP_NOTRACK,
+which is conditional to KMEMCHECK.
 
-2012/09/28 10:37, KOSAKI Motohiro wrote:
->>> Moreover, your explanation is still insufficient. Even if
->>> node_device_release() is empty function, we can get rid of the
->>> warning.
->>
->>
->> I don't understand it. How can we get rid of the warning?
->
-> See cpu_device_release() for example.
+This simple patch makes it unconditional.
 
-If we implement a function like cpu_device_release(), the warning
-disappears. But the comment says in the function "Never copy this way...".
-So I think it is illegal way.
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ include/linux/gfp.h | 4 ----
+ 1 file changed, 4 deletions(-)
 
->
->
->
->>> Why do we need this node_device_release() implementation?
->>
->> I think that this is a manner of releasing object related kobject.
->
-> No.  Usually we never call memset() from release callback.
->
-
-What we want to release is a part of array, not a pointer.
-Therefore, there is only this way instead of kfree().
-
-Thanks,
-Yasuaki Ishimatsu
-
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index f9bc873..02c1c97 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -30,11 +30,7 @@ struct vm_area_struct;
+ #define ___GFP_HARDWALL		0x20000u
+ #define ___GFP_THISNODE		0x40000u
+ #define ___GFP_RECLAIMABLE	0x80000u
+-#ifdef CONFIG_KMEMCHECK
+ #define ___GFP_NOTRACK		0x200000u
+-#else
+-#define ___GFP_NOTRACK		0
+-#endif
+ #define ___GFP_OTHER_NODE	0x800000u
+ #define ___GFP_WRITE		0x1000000u
+ 
+-- 
+1.7.11.4
 
