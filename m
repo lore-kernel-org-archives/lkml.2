@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033126Ab2I1VT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:19:56 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52036 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759267Ab2I1UiY (ORCPT
+	id S1033147Ab2I1VUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:20:35 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:32344 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1031424Ab2I1VUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:38:24 -0400
-X-Sasl-enc: gZMoO2X/79IYogmRWFMPigeCm3pDolPRJsdYAuxrA1ma 1348864703
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        dcb314@hotmail.com, Alan Cox <alan@linux.intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [ 190/218] pch_uart: Fix missing break for 16 byte fifo
-Date: Fri, 28 Sep 2012 13:16:47 -0700
-Message-Id: <20120928201523.344433158@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.1.428.g652398a
-In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
-References: <20120928201501.208384923@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 28 Sep 2012 17:20:31 -0400
+Date: Fri, 28 Sep 2012 21:20:30 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: David Rientjes <rientjes@google.com>
+cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
+In-Reply-To: <alpine.DEB.2.00.1209281336380.21335@chino.kir.corp.google.com>
+Message-ID: <0000013a0ec088ee-69089a7c-125f-4e80-9881-e66ab96ab59d-000000@email.amazonses.com>
+References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com> <5062C029.308@parallels.com>
+ <alpine.DEB.2.00.1209261813300.7072@chino.kir.corp.google.com> <5063F94C.4090600@parallels.com> <alpine.DEB.2.00.1209271552350.13360@chino.kir.corp.google.com> <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com>
+ <alpine.DEB.2.00.1209281336380.21335@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 28 Sep 2012, David Rientjes wrote:
 
-------------------
+> The first prototype, SLAM XP1, will be posted in October.  I'd simply like
+> to avoid reverting this patch down the road and having all of us
+> reconsider the topic again when clear alternatives exist that, in my
+> opinion, make the code cleaner.
 
-From: Alan Cox <alan@linux.intel.com>
+If you want to make changes to the kernel then you need to justify that at
+the time when we can consider your patches and the approach taken.
 
-commit 9bc03743fff0770dc5a5324ba92e67cc377f16ca upstream.
 
-Otherwise we fall back to the wrong value.
-
-Reported-by: <dcb314@hotmail.com>
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44091
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/tty/serial/pch_uart.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -1255,6 +1255,7 @@ static int pch_uart_startup(struct uart_
- 		break;
- 	case 16:
- 		fifo_size = PCH_UART_HAL_FIFO16;
-+		break;
- 	case 1:
- 	default:
- 		fifo_size = PCH_UART_HAL_FIFO_DIS;
 
 
