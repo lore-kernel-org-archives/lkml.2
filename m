@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161046Ab2I1Usw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:48:52 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37780 "EHLO
+	id S1161053Ab2I1UtF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:49:05 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53008 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1945944Ab2I1Usl (ORCPT
+	by vger.kernel.org with ESMTP id S1945944Ab2I1Usy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:41 -0400
-X-Sasl-enc: Zl8aTBejT57LYPhp9q3BW+VC2vP+1ZRMiu+ikLMbLbNX 1348865320
+	Fri, 28 Sep 2012 16:48:54 -0400
+X-Sasl-enc: t222iXmhA60QtDrnkxLHaVVVtPgPSKJsXIbaCNhANcjJ 1348865333
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Daniel J Blueman <daniel@quora.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 103/127] libata: Prevent interface errors with Seagate FreeAgent GoFlex
-Date: Fri, 28 Sep 2012 13:34:36 -0700
-Message-Id: <20120928203057.927584460@linuxfoundation.org>
+        dcb314@hotmail.com, Alan Cox <alan@linux.intel.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [ 115/127] pch_uart: Fix missing break for 16 byte fifo
+Date: Fri, 28 Sep 2012 13:34:48 -0700
+Message-Id: <20120928203059.374756445@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -27,36 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel J Blueman <daniel@quora.org>
+From: Alan Cox <alan@linux.intel.com>
 
-commit c531077f40abc9f2129c4c83a30b3f8d6ce1c0e7 upstream.
+commit 9bc03743fff0770dc5a5324ba92e67cc377f16ca upstream.
 
-When using my Seagate FreeAgent GoFlex eSATAp external disk enclosure,
-interface errors are always seen until 1.5Gbps is negotiated [1]. This
-occurs using any disk in the enclosure, and when the disk is connected
-directly with a generic passive eSATAp cable, we see stable 3Gbps
-operation as expected.
+Otherwise we fall back to the wrong value.
 
-Blacklist 3Gbps mode to avoid dataloss and the ~30s delay bus reset
-and renegotiation incurs.
-
-Signed-off-by: Daniel J Blueman <daniel@quora.org>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Reported-by: <dcb314@hotmail.com>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44091
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    1 +
+ drivers/tty/serial/pch_uart.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4138,6 +4138,7 @@ static const struct ata_blacklist_entry
- 
- 	/* Devices which aren't very happy with higher link speeds */
- 	{ "WD My Book",			NULL,	ATA_HORKAGE_1_5_GBPS, },
-+	{ "Seagate FreeAgent GoFlex",	NULL,	ATA_HORKAGE_1_5_GBPS, },
- 
- 	/*
- 	 * Devices which choke on SETXFER.  Applies only if both the
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1161,6 +1161,7 @@ static int pch_uart_startup(struct uart_
+ 		break;
+ 	case 16:
+ 		fifo_size = PCH_UART_HAL_FIFO16;
++		break;
+ 	case 1:
+ 	default:
+ 		fifo_size = PCH_UART_HAL_FIFO_DIS;
 
 
