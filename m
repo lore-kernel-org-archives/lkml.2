@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab2I1LHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 07:07:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58021 "EHLO mx2.suse.de"
+	id S1757302Ab2I1L1D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 07:27:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26295 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365Ab2I1LHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 07:07:18 -0400
-Date: Fri, 28 Sep 2012 12:07:12 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: CMA broken in next-20120926
-Message-ID: <20120928110712.GB29125@suse.de>
-References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
- <20120927151159.4427fc8f.akpm@linux-foundation.org>
- <20120928054330.GA27594@bbox>
- <20120928083722.GM3429@suse.de>
- <50656459.70309@ti.com>
- <20120928102728.GN3429@suse.de>
- <20120928103207.GA22811@avionic-0098.mockup.avionic-design.de>
- <20120928103815.GA15219@avionic-0098.mockup.avionic-design.de>
- <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
+	id S1757026Ab2I1L07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 07:26:59 -0400
+Date: Fri, 28 Sep 2012 13:26:45 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH v4] KSM: numa awareness sysfs knob
+Message-ID: <20120928112645.GX19474@redhat.com>
+References: <1348448166-1995-1-git-send-email-pholasek@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1348448166-1995-1-git-send-email-pholasek@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 12:51:13PM +0200, Thierry Reding wrote:
-> On Fri, Sep 28, 2012 at 12:38:15PM +0200, Thierry Reding wrote:
-> > On Fri, Sep 28, 2012 at 12:32:07PM +0200, Thierry Reding wrote:
-> > > On Fri, Sep 28, 2012 at 11:27:28AM +0100, Mel Gorman wrote:
-> > > > On Fri, Sep 28, 2012 at 11:48:25AM +0300, Peter Ujfalusi wrote:
-> > > > > Hi,
-> > > > > 
-> > > > > On 09/28/2012 11:37 AM, Mel Gorman wrote:
-> > > > > >> I hope this patch fixes the bug. If this patch fixes the problem
-> > > > > >> but has some problem about description or someone has better idea,
-> > > > > >> feel free to modify and resend to akpm, Please.
-> > > > > >>
-> > > > > > 
-> > > > > > A full revert is overkill. Can the following patch be tested as a
-> > > > > > potential replacement please?
-> > > > > > 
-> > > > > > ---8<---
-> > > > > > mm: compaction: Iron out isolate_freepages_block() and isolate_freepages_range() -fix1
-> > > > > > 
-> > > > > > CMA is reported to be broken in next-20120926. Minchan Kim pointed out
-> > > > > > that this was due to nr_scanned != total_isolated in the case of CMA
-> > > > > > because PageBuddy pages are one scan but many isolations in CMA. This
-> > > > > > patch should address the problem.
-> > > > > > 
-> > > > > > This patch is a fix for
-> > > > > > mm-compaction-acquire-the-zone-lock-as-late-as-possible-fix-2.patch
-> > > > > > 
-> > > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > > > 
-> > > > > linux-next + this patch alone also works for me.
-> > > > > 
-> > > > > Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> > > > 
-> > > > Thanks Peter. I expect it also works for Thierry as I expect you were
-> > > > suffering the same problem but obviously confirmation of that would be nice.
-> > > 
-> > > I've been running a few tests and indeed this solves the obvious problem
-> > > that the coherent pool cannot be created at boot (which in turn caused
-> > > the ethernet adapter to fail on Tegra).
-> > > 
-> > > However I've been working on the Tegra DRM driver, which uses CMA to
-> > > allocate large chunks of framebuffer memory and these are now failing.
-> > > I'll need to check if Minchan's patch solves that problem as well.
-> > 
-> > Indeed, with Minchan's patch the DRM can allocate the framebuffer
-> > without a problem. Something else must be wrong then.
-> 
-> However, depending on the size of the allocation it also happens with
-> Minchan's patch. What I see is this:
-> 
-> [   60.736729] alloc_contig_range test_pages_isolated(1e900, 1f0e9) failed
-> [   60.743572] alloc_contig_range test_pages_isolated(1ea00, 1f1e9) failed
-> [   60.750424] alloc_contig_range test_pages_isolated(1ea00, 1f2e9) failed
-> [   60.757239] alloc_contig_range test_pages_isolated(1ec00, 1f3e9) failed
-> [   60.764066] alloc_contig_range test_pages_isolated(1ec00, 1f4e9) failed
-> [   60.770893] alloc_contig_range test_pages_isolated(1ec00, 1f5e9) failed
-> [   60.777698] alloc_contig_range test_pages_isolated(1ec00, 1f6e9) failed
-> [   60.784526] alloc_contig_range test_pages_isolated(1f000, 1f7e9) failed
-> [   60.791148] drm tegra: Failed to alloc buffer: 8294400
-> 
-> I'm pretty sure this did work before next-20120926.
-> 
+Hi everyone,
 
-Can you double check this please?
+On Mon, Sep 24, 2012 at 02:56:06AM +0200, Petr Holasek wrote:
+> +static struct rb_root root_unstable_tree[MAX_NUMNODES] = { RB_ROOT, };
 
-This is a separate bug but may be related to the same series. However, CMA should
-be ignoring the "skip" hints and because it's sync compaction it should
-not be exiting due to lock contention. Maybe Marek will spot it.
+not initializing is better so we don't waste .data and it goes in the
+.bss, initializing only the first entry is useless anyway, that's
+getting initialized later (maybe safer to initialize it once more in
+some init routine too along with the below one for a peace of mind,
+not at the first scan instance).
 
-Failing that, would you be in a position to bisect between v3.6-rc6 and
-current next to try pin-point exactly which patch introduced this
-problem please?
+> +static struct rb_root root_stable_tree[MAX_NUMNODES] = { RB_ROOT, };
 
--- 
-Mel Gorman
-SUSE Labs
+uninitialized root_stable_tree [1..]
+
+> @@ -1300,7 +1341,8 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
+>  		 */
+>  		lru_add_drain_all();
+>  
+> -		root_unstable_tree = RB_ROOT;
+> +		for (i = 0; i < MAX_NUMNODES; i++)
+> +			root_unstable_tree[i] = RB_ROOT;
+
+s/MAX_NUMNODES/nr_node_ids/
+
+> @@ -1758,7 +1800,12 @@ void ksm_migrate_page(struct page *newpage, struct page *oldpage)
+>  	stable_node = page_stable_node(newpage);
+>  	if (stable_node) {
+>  		VM_BUG_ON(stable_node->kpfn != page_to_pfn(oldpage));
+> -		stable_node->kpfn = page_to_pfn(newpage);
+> +
+> +		if (ksm_merge_across_nodes ||
+> +				page_to_nid(oldpage) == page_to_nid(newpage))
+> +			stable_node->kpfn = page_to_pfn(newpage);
+> +		else
+> +			remove_node_from_stable_tree(stable_node);
+>  	}
+>  }
+
+This will result in memory corruption because the ksm page still
+points to the stable_node that has been freed (that is copied by the
+migrate code when the newpage->mapping = oldpage->mapping).
+
+What should happen is that the ksm page of src_node is merged with
+the pre-existing ksm page in the dst_node of the migration. That's the
+complex case, the easy case is if there's no pre-existing page and
+that just requires an insert of the stable node in a different rbtree
+I think (without actual pagetable mangling).
+
+It may be simpler to break cow across migrate and require the ksm
+scanner to re-merge it however.
+
+Basically the above would remove the ability to rmap the ksm page
+(i.e. rmap crashes on a dangling pointer), but we need rmap to be
+functional at all times on all ksm pages.
+
+Hugh what's your views on this ksm_migrate_page NUMA aware that is
+giving trouble? What would you prefer? Merge two ksm pages together
+(something that has never happened before), break_cow (so we don't
+have to merge two ksm pages together in the first place and we
+fallback in the regular paths) etc...
+
+All the rest looks very good, great work Petr!
+
+Thanks,
+Andrea
