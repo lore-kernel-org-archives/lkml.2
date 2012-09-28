@@ -1,36 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab2I1KtE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 06:49:04 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40965 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab2I1KtD (ORCPT
+	id S1757430Ab2I1Kts (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 06:49:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52120 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754747Ab2I1Ktr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 06:49:03 -0400
+	Fri, 28 Sep 2012 06:49:47 -0400
+Date: Fri, 28 Sep 2012 11:49:44 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: sameo@linux.intel.com, marex@denx.de, ashish.jangam@kpitcummins.com,
+        dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v2] mfd: da9052-core:  Use regmap_irq_get_virq() and fix
+ the probe
+Message-ID: <20120928104944.GB30869@opensource.wolfsonmicro.com>
+References: <1348797458-2562-1-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
-From: Shantanu Gupta <shans95g@gmail.com>
-Date: Fri, 28 Sep 2012 16:18:41 +0530
-Message-ID: <CAPDArR+9Kd+Rzgxj9FgQR0NCayZskXkq4bg3U-GRpCKFP5uC+Q@mail.gmail.com>
-Subject: xchg in fastpath for mutex unlock [mutex-xchg.h]
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348797458-2562-1-git-send-email-festevam@gmail.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Sep 27, 2012 at 10:57:38PM -0300, Fabio Estevam wrote:
 
-I am currently studying mutex(es) and was referring to linux sources
-for it's implementation. However I noticed one shortcoming, in
-"/include/asm-generic/mutex-xchg.h" of the master branch inside
-__mutex_fastpath_trylock, Why doesn't the kernel use a cmpxchg instead
-of dirtying the value with xchg ?
+> -	da9052->irq_base = regmap_irq_chip_get_base(da9052->irq_data);
+> +	da9052->irq = regmap_irq_get_virq(da9052->irq_data, DA9052_IRQ_ADC_EOM);
+>  
+> -	ret = request_threaded_irq(DA9052_IRQ_ADC_EOM, NULL, da9052_auxadc_irq,
+> +	if (da9052->irq < 0) {
+> +		ret = da9052->irq;
+> +		dev_err(da9052->dev, "regmap_irq_get_virq failed: %d\n", ret);
+> +		goto regmap_err;
+> +	}
+> +
+> +	ret = request_threaded_irq(da9052->irq, NULL, da9052_auxadc_irq,
 
-(The only thing that came to my mind was that x86_x64 implementation
-mentioned that all x86_x64 cpu(s) have cmpxchg leading me to
-assumption that certain archs can have xchg but not cmpxchg, so is it
-this way just to work with architectures without a cmpxchg but with
-xchg ?)
+This will fix the problem but the usage of da9052->irq here is very odd,
+normally that'd be the primary IRQ for the device but this is actually
+just the interrupt for the ADC.
 
-Thanks,
-Rick
+Otherwise
+
+Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
