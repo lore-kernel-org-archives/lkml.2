@@ -1,66 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758521Ab2I1PKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:10:53 -0400
-Received: from fieldses.org ([174.143.236.118]:50479 "EHLO fieldses.org"
+	id S1758493Ab2I1PMZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:12:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46393 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758501Ab2I1PKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:10:51 -0400
-Date: Fri, 28 Sep 2012 11:10:43 -0400
-To: Alexander Graf <agraf@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML List <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-nfs@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        skinsbursky@parallels.com, bfields@redhat.com
-Subject: Re: [REGRESSION] nfsd crashing with 3.6.0-rc7 on PowerPC
-Message-ID: <20120928151043.GA19102@fieldses.org>
-References: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de>
- <CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com>
- <DC545CD9-8745-47DD-B13B-3385C0EB5B27@suse.de>
+	id S1758438Ab2I1PMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 11:12:23 -0400
+Message-ID: <5065BE44.3090903@ti.com>
+Date: Fri, 28 Sep 2012 08:12:04 -0700
+From: "Cousson, Benoit" <b-cousson@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DC545CD9-8745-47DD-B13B-3385C0EB5B27@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+CC: Rob Herring <robherring2@gmail.com>, <grant.likely@secretlab.ca>,
+        <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/5] drivers: usb: phy: add a new driver for omap usb2
+ phy
+References: <1346943430-18236-1-git-send-email-kishon@ti.com> <1346943430-18236-2-git-send-email-kishon@ti.com> <50605CFB.5090402@gmail.com> <CAAe_U6+2Vxd8F_JMafm41+0SnZSrZCa_9VKRbdB200BUHw5vEQ@mail.gmail.com> <506461A0.4050103@gmail.com> <5064D7CA.1070909@ti.com> <CAAe_U6KHk1nuSBVn-4H397wzUk0cnqGe_H0D8RVqrSFYGJVMCg@mail.gmail.com>
+In-Reply-To: <CAAe_U6KHk1nuSBVn-4H397wzUk0cnqGe_H0D8RVqrSFYGJVMCg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 04:19:55AM +0200, Alexander Graf wrote:
-> 
-> On 28.09.2012, at 04:04, Linus Torvalds wrote:
-> 
-> > On Thu, Sep 27, 2012 at 6:55 PM, Alexander Graf <agraf@suse.de> wrote:
-> >> 
-> >> Below are OOPS excerpts from different rc's I tried. All of them crashed - all the way up to current Linus' master branch. I haven't cross-checked, but I don't remember any such behavior from pre-3.6 releases.
-> > 
-> > Since you seem to be able to reproduce it easily (and apparently
-> > reliably), any chance you could just bisect it?
-> > 
-> > Since I assume v3.5 is fine, and apparently -rc1 is already busted, a simple
-> > 
-> >   git bisect start
-> >   git bisect good v3.5
-> >   git bisect bad v3.6-rc1
-> > 
-> > will get you started on your adventure..
-> 
-> Heh, will give it a try :). The thing really does look quite bisectable.
-> 
-> 
-> It might take a few hours though - the machine isn't exactly fast by today's standards and it's getting late here. But I'll keep you updated.
+On 9/28/2012 3:07 AM, ABRAHAM, KISHON VIJAY wrote:
+> Hi,
+>
+> On Fri, Sep 28, 2012 at 4:18 AM, Cousson, Benoit <b-cousson@ti.com> wrote:
+>> On 9/27/2012 7:24 AM, Rob Herring wrote:
+>>>
+>>> On 09/25/2012 05:06 AM, ABRAHAM, KISHON VIJAY wrote:
+>>>>
+>>>> Hi,
+>>>>
+>>>> On Mon, Sep 24, 2012 at 6:45 PM, Rob Herring <robherring2@gmail.com>
+>>>> wrote:
+>>>>>
+>>>>> On 09/06/2012 09:57 AM, Kishon Vijay Abraham I wrote:
+>>>>>>
+>>>>>> All phy related programming like enabling/disabling the clocks,
+>>>>>> powering
+>>>>>> on/off the phy is taken care of by this driver. It is also used for OTG
+>>>>>> related functionality like srp.
+>>>>>>
+>>>>>> This also includes device tree support for usb2 phy driver and
+>>>>>> the documentation with device tree binding information is updated.
+>>>>>>
+>>>>>> Currently writing to control module register is taken care in this
+>>>>>> driver which will be removed once the control module driver is in
+>>>>>> place.
+>>>>>>
+>>>>>> Cc: Felipe Balbi <balbi@ti.com>
+>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>>> ---
+>>>>>>    Documentation/devicetree/bindings/usb/usb-phy.txt |   17 ++
+>>>>>>    drivers/usb/phy/Kconfig                           |    9 +
+>>>>>>    drivers/usb/phy/Makefile                          |    1 +
+>>>>>>    drivers/usb/phy/omap-usb2.c                       |  271
+>>>>>> +++++++++++++++++++++
+>>>>>>    include/linux/usb/omap_usb.h                      |   46 ++++
+>>>>>>    include/linux/usb/phy_companion.h                 |   34 +++
+>>>>>>    6 files changed, 378 insertions(+)
+>>>>>>    create mode 100644 Documentation/devicetree/bindings/usb/usb-phy.txt
+>>>>>>    create mode 100644 drivers/usb/phy/omap-usb2.c
+>>>>>>    create mode 100644 include/linux/usb/omap_usb.h
+>>>>>>    create mode 100644 include/linux/usb/phy_companion.h
+>>>>>>
+>>>>>> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt
+>>>>>> b/Documentation/devicetree/bindings/usb/usb-phy.txt
+>>>>>> new file mode 100644
+>>>>>> index 0000000..80d4148
+>>>>>> --- /dev/null
+>>>>>> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
+>>>>>
+>>>>>
+>>>>> This is a very generic name...
+>>>>>
+>>>>>> @@ -0,0 +1,17 @@
+>>>>>> +USB PHY
+>>>>>> +
+>>>>>> +OMAP USB2 PHY
+>>>>>> +
+>>>>>> +Required properties:
+>>>>>> + - compatible: Should be "ti,omap-usb2"
+>>>>>
+>>>>>
+>>>>> ...for a specific phy. However, I do think a generic binding to describe
+>>>>> host ctrlr to phy connections is needed.
+>>>>>
+>>>>>> + - reg : Address and length of the register set for the device. Also
+>>>>>> +add the address of control module dev conf register until a driver for
+>>>>>> +control module is added
+>>>>>
+>>>>>
+>>>>> The dts should describe the h/w, not what you need for the current
+>>>>> driver. The 2nd reg field does not belong here.
+>>>>
+>>>>
+>>>> Indeed. This was discussed and agreed upon as a interim solution till
+>>>> we have a control module driver in place to write to the control
+>>>> module register.
+>>>
+>>>
+>>> Discussed where and agreed by who? I for one do not agree.
+>>
+>>
+>> Yeah, what was tolerated was the addition of that address inside hwmod data,
+>> but I do agree that it should not go into DTS.
+>
+> So how can we handle reg writes to control module until we have a
+> control module driver. usb2 phy does not have a hwmod data for itself.
+> Do you think we should add a new hwmod data for usb2 phy and use this
+> in the usb2phy data node in the dts file?
 
-I doubt it's anything special about that workload, but just for kicks I
-tried a "git clone -ls" (cloning my linux tree to another directory on
-the same nfs filesystem), with server on 3.6.0-rc7, and didn't see
-anything interesting (just an xfs lockdep warning that looks like this
-one jlayton already reported:
-http://oss.sgi.com/archives/xfs/2012-09/msg00088.html
-)
+Now, I'm confused... didn't you already do that? What was the hwmod you 
+added?
 
-Any (even partial) bisection results would certainly be useful, thanks.
+Maybe it is time to write your own control module driver now.
 
---b.
+Talking with Tony on that, there is no need for a common control driver, 
+it is up to each individual control driver to handle their own register 
+space. It means that you should probably just add a simple driver to 
+access these region.
+
+Regards,
+Benoit
+
