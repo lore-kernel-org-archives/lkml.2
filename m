@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965346Ab2I1TWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:22:30 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030383Ab2I1TEI (ORCPT
+	id S965495Ab2I1TWq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:22:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030538Ab2I1TEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:04:08 -0400
+	Fri, 28 Sep 2012 15:04:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 194/262] drm: Check for invalid cursor flags
-Date: Fri, 28 Sep 2012 11:52:03 -0700
-Message-Id: <20120928183020.987492930@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+Subject: =?UTF-8?q?=5B=20200/262=5D=20drm/radeon=3A=20dont=20disable=20plls=20that=20are=20in=20use=20by=20other=20crtcs?=
+Date: Fri, 28 Sep 2012 11:52:09 -0700
+Message-Id: <20120928183021.704790093@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,43 +32,52 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jakob Bornecrantz <jakob@vmware.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 7c4eaca4162d0b5ad4fb39f974d7ffd71b9daa09 upstream.
+commit 4e58591c8961b3e31709313f75819f2eec06e322 upstream.
 
-Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Some plls are shared for DP.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_crtc.c |    2 +-
- include/drm/drm_mode.h     |    5 +++--
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -1981,7 +1981,7 @@ int drm_mode_cursor_ioctl(struct drm_dev
- 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
- 		return -EINVAL;
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1668,9 +1668,22 @@ static void atombios_crtc_disable(struct
+ 	struct drm_device *dev = crtc->dev;
+ 	struct radeon_device *rdev = dev->dev_private;
+ 	struct radeon_atom_ss ss;
++	int i;
  
--	if (!req->flags)
-+	if (!req->flags || (~DRM_MODE_CURSOR_FLAGS & req->flags))
- 		return -EINVAL;
+ 	atombios_crtc_dpms(crtc, DRM_MODE_DPMS_OFF);
  
- 	mutex_lock(&dev->mode_config.mutex);
---- a/include/drm/drm_mode.h
-+++ b/include/drm/drm_mode.h
-@@ -359,8 +359,9 @@ struct drm_mode_mode_cmd {
- 	struct drm_mode_modeinfo mode;
- };
++	for (i = 0; i < rdev->num_crtc; i++) {
++		if (rdev->mode_info.crtcs[i] &&
++		    rdev->mode_info.crtcs[i]->enabled &&
++		    i != radeon_crtc->crtc_id &&
++		    radeon_crtc->pll_id == rdev->mode_info.crtcs[i]->pll_id) {
++			/* one other crtc is using this pll don't turn
++			 * off the pll
++			 */
++			goto done;
++		}
++	}
++
+ 	switch (radeon_crtc->pll_id) {
+ 	case ATOM_PPLL1:
+ 	case ATOM_PPLL2:
+@@ -1687,6 +1700,7 @@ static void atombios_crtc_disable(struct
+ 	default:
+ 		break;
+ 	}
++done:
+ 	radeon_crtc->pll_id = -1;
+ }
  
--#define DRM_MODE_CURSOR_BO	(1<<0)
--#define DRM_MODE_CURSOR_MOVE	(1<<1)
-+#define DRM_MODE_CURSOR_BO	0x01
-+#define DRM_MODE_CURSOR_MOVE	0x02
-+#define DRM_MODE_CURSOR_FLAGS	0x03
- 
- /*
-  * depending on the value in flags different members are used.
 
 
