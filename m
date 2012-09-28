@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030959Ab2I1TUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:20:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030600Ab2I1TEd (ORCPT
+	id S1031091Ab2I1TU7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:20:59 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35065 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758746Ab2I1TE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:04:33 -0400
+	Fri, 28 Sep 2012 15:04:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 202/262] drm/radeon: fix dig encoder selection on DCE61
-Date: Fri, 28 Sep 2012 11:52:11 -0700
-Message-Id: <20120928183021.942116128@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 208/262] drm/i915: Reduce a pin-leak BUG into a WARN
+Date: Fri, 28 Sep 2012 11:52:17 -0700
+Message-Id: <20120928183022.681377051@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,61 +29,35 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 41fa54377057ab38bc3e08ebb46168a7daf2e63b upstream.
+commit 7e81a42e341a4f15d76624b7c02ffb21b085b56f upstream.
 
-Was using the DCE41 code which was wrong. Fixes
-blank displays on a number of Trinity systems.
+Pin-leaks persist and we get the perennial bug reports of machine
+lockups to the BUG_ON(pin_count==MAX). If we instead loudly report that
+the object cannot be pinned at that time it should prevent the driver from
+locking up, and hopefully restore a semblance of working whilst still
+leaving us a OOPS to debug.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |   31 ++++++++++++++++++++++++-----
- 1 file changed, 26 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1769,13 +1769,34 @@ static int radeon_atom_pick_dig_encoder(
- 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(encoder->crtc);
- 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
- 	struct drm_encoder *test_encoder;
--	struct radeon_encoder_atom_dig *dig;
-+	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
- 	uint32_t dig_enc_in_use = 0;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3044,7 +3044,8 @@ i915_gem_object_pin(struct drm_i915_gem_
+ {
+ 	int ret;
  
--	/* DCE4/5 */
--	if (ASIC_IS_DCE4(rdev)) {
--		dig = radeon_encoder->enc_priv;
--		if (ASIC_IS_DCE41(rdev)) {
-+	if (ASIC_IS_DCE6(rdev)) {
-+		/* DCE6 */
-+		switch (radeon_encoder->encoder_id) {
-+		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
-+			if (dig->linkb)
-+				return 1;
-+			else
-+				return 0;
-+			break;
-+		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-+			if (dig->linkb)
-+				return 3;
-+			else
-+				return 2;
-+			break;
-+		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
-+			if (dig->linkb)
-+				return 5;
-+			else
-+				return 4;
-+			break;
-+		}
-+	} else if (ASIC_IS_DCE4(rdev)) {
-+		/* DCE4/5 */
-+		if (ASIC_IS_DCE41(rdev) && !ASIC_IS_DCE61(rdev)) {
- 			/* ontario follows DCE4 */
- 			if (rdev->family == CHIP_PALM) {
- 				if (dig->linkb)
+-	BUG_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT);
++	if (WARN_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT))
++		return -EBUSY;
+ 
+ 	if (obj->gtt_space != NULL) {
+ 		if ((alignment && obj->gtt_offset & (alignment - 1)) ||
 
 
