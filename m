@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423075Ab2I1VB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:01:26 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46797 "EHLO
+	id S1423063Ab2I1VBY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:01:24 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38117 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422896Ab2I1Urm (ORCPT
+	by vger.kernel.org with ESMTP id S1033003Ab2I1Urp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:47:42 -0400
-X-Sasl-enc: vdygpYz7CWLyqpdsPvlDpiSvoK6mBB12Njy017aS3zrj 1348865261
+	Fri, 28 Sep 2012 16:47:45 -0400
+X-Sasl-enc: AatBdttNrAw5M8lOHwWSLDqkRZ2meQM1EnDXaedHb1bP 1348865264
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xishi Qiu <qiuxishi@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Mel Gorman <mgorman@suse.de>, "Luck, Tony" <tony.luck@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 049/127] memory hotplug: fix section info double registration bug
-Date: Fri, 28 Sep 2012 13:33:42 -0700
-Message-Id: <20120928203051.570890727@linuxfoundation.org>
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andreas Hartmann <andihartmann@01019freenet.de>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 051/127] hwmon: (fam15h_power) Tweak runavg_range on resume
+Date: Fri, 28 Sep 2012 13:33:44 -0700
+Message-Id: <20120928203051.801839209@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -31,77 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: qiuxishi <qiuxishi@gmail.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit f14851af0ebb32745c6c5a2e400aa0549f9d20df upstream.
+commit 5f0ecb907deb1e6f28071ee3bd568903b9da1be4 upstream.
 
-There may be a bug when registering section info.  For example, on my
-Itanium platform, the pfn range of node0 includes the other nodes, so
-other nodes' section info will be double registered, and memmap's page
-count will equal to 3.
+The quirk introduced with commit
+00250ec90963b7ef6678438888f3244985ecde14 (hwmon: fam15h_power: fix
+bogus values with current BIOSes) is not only required during driver
+load but also when system resumes from suspend. The BIOS might set the
+previously recommended (but unsuitable) initilization value for the
+running average range register during resume.
 
-  node0: start_pfn=0x100,    spanned_pfn=0x20fb00, present_pfn=0x7f8a3, => 0x000100-0x20fc00
-  node1: start_pfn=0x80000,  spanned_pfn=0x80000,  present_pfn=0x80000, => 0x080000-0x100000
-  node2: start_pfn=0x100000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x100000-0x180000
-  node3: start_pfn=0x180000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x180000-0x200000
-
-  free_all_bootmem_node()
-	register_page_bootmem_info_node()
-		register_page_bootmem_info_section()
-
-When hot remove memory, we can't free the memmap's page because
-page_count() is 2 after put_page_bootmem().
-
-  sparse_remove_one_section()
-	free_section_usemap()
-		free_map_bootmem()
-			put_page_bootmem()
-
-[akpm@linux-foundation.org: add code comment]
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory_hotplug.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/hwmon/fam15h_power.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -116,9 +116,6 @@ static void register_page_bootmem_info_s
- 	struct mem_section *ms;
- 	struct page *page, *memmap;
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -128,12 +128,12 @@ static bool __devinit fam15h_power_is_in
+  * counter saturations resulting in bogus power readings.
+  * We correct this value ourselves to cope with older BIOSes.
+  */
+-static DEFINE_PCI_DEVICE_TABLE(affected_device) = {
++static const struct pci_device_id affected_device[] = {
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
+ 	{ 0 }
+ };
  
--	if (!pfn_valid(start_pfn))
--		return;
--
- 	section_nr = pfn_to_section_nr(start_pfn);
- 	ms = __nr_to_section(section_nr);
+-static void __devinit tweak_runavg_range(struct pci_dev *pdev)
++static void tweak_runavg_range(struct pci_dev *pdev)
+ {
+ 	u32 val;
  
-@@ -177,9 +174,16 @@ void register_page_bootmem_info_node(str
- 	end_pfn = pfn + pgdat->node_spanned_pages;
- 
- 	/* register_section info */
--	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION)
--		register_page_bootmem_info_section(pfn);
--
-+	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		/*
-+		 * Some platforms can assign the same pfn to multiple nodes - on
-+		 * node0 as well as nodeN.  To avoid registering a pfn against
-+		 * multiple nodes we check that this pfn does not already
-+		 * reside in some other node.
-+		 */
-+		if (pfn_valid(pfn) && (pfn_to_nid(pfn) == node))
-+			register_page_bootmem_info_section(pfn);
-+	}
+@@ -157,6 +157,16 @@ static void __devinit tweak_runavg_range
+ 		REG_TDP_RUNNING_AVERAGE, val);
  }
- #endif /* !CONFIG_SPARSEMEM_VMEMMAP */
  
++#ifdef CONFIG_PM
++static int fam15h_power_resume(struct pci_dev *pdev)
++{
++	tweak_runavg_range(pdev);
++	return 0;
++}
++#else
++#define fam15h_power_resume NULL
++#endif
++
+ static void __devinit fam15h_power_init_data(struct pci_dev *f4,
+ 					     struct fam15h_power_data *data)
+ {
+@@ -255,6 +265,7 @@ static struct pci_driver fam15h_power_dr
+ 	.id_table = fam15h_power_id_table,
+ 	.probe = fam15h_power_probe,
+ 	.remove = __devexit_p(fam15h_power_remove),
++	.resume = fam15h_power_resume,
+ };
+ 
+ static int __init fam15h_power_init(void)
 
 
