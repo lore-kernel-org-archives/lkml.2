@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab2I1Lh5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 07:37:57 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:34641 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753844Ab2I1Lhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 07:37:55 -0400
-Message-ID: <50658B3B.9020303@parallels.com>
-Date: Fri, 28 Sep 2012 15:34:19 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1757455Ab2I1LjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 07:39:15 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60268 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844Ab2I1LjO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 07:39:14 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-7-git-send-email-glommer@parallels.com> <20120926155108.GE15801@dhcp22.suse.cz> <5064392D.5040707@parallels.com> <20120927134432.GE29104@dhcp22.suse.cz>
-In-Reply-To: <20120927134432.GE29104@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1348824980.3292.68.camel@twins>
+References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
+	<1348806696-31170-27-git-send-email-andi@firstfloor.org>
+	<1348824980.3292.68.camel@twins>
+Date: Fri, 28 Sep 2012 13:39:10 +0200
+Message-ID: <CABPqkBQxjag+fjRa7D2xyc0iKKRHg64gYCTqJ=UPXFW_wkGNkg@mail.gmail.com>
+Subject: Re: [PATCH 26/31] perf, x86: Support for printing PMU state on
+ spurious PMIs
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 05:44 PM, Michal Hocko wrote:
->> > the reference count aquired by mem_cgroup_get will still prevent the
->> > memcg from going away, no?
-> Yes but you are outside of the rcu now and we usually do css_get before
-> we rcu_unlock. mem_cgroup_get just makes sure the group doesn't get
-> deallocated but it could be gone before you call it. Or I am just
-> confused - these 2 levels of ref counting is really not nice.
-> 
-> Anyway, I have just noticed that __mem_cgroup_try_charge does
-> VM_BUG_ON(css_is_removed(&memcg->css)) on a given memcg so you should
-> keep css ref count up as well.
-> 
+On Fri, Sep 28, 2012 at 11:36 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2012-09-27 at 21:31 -0700, Andi Kleen wrote:
+>
+>> +static bool print_spurious_pmi __read_mostly;
+>> +module_param(print_spurious_pmi, bool, 0644);
+>
+> Shouldn't this be a per-pmu sysfs attr?
 
-IIRC, css_get will prevent the cgroup directory from being removed.
-Because some allocations are expected to outlive the cgroup, we
-specifically don't want that.
+agreed.
