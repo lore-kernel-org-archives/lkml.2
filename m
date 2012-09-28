@@ -1,87 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab2I1BbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:31:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:32817 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab2I1BbQ (ORCPT
+	id S1755546Ab2I1BdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:33:12 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:55084 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952Ab2I1BdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:31:16 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5064FDCA.1020504@jp.fujitsu.com>
-Date: Fri, 28 Sep 2012 10:30:50 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Thu, 27 Sep 2012 21:33:10 -0400
+Date: Thu, 27 Sep 2012 18:32:33 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: David Rientjes <rientjes@google.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, stable@vger.kernel.org
+Subject: Re: [patch] mm, thp: fix mlock statistics
+In-Reply-To: <alpine.DEB.2.00.1209261929270.8567@chino.kir.corp.google.com>
+Message-ID: <alpine.LSU.2.00.1209271814340.2107@eggly.anvils>
+References: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com> <alpine.LSU.2.00.1209192021270.28543@eggly.anvils> <alpine.DEB.2.00.1209261821380.7745@chino.kir.corp.google.com> <alpine.DEB.2.00.1209261929270.8567@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: <wency@cn.fujitsu.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <rientjes@google.com>,
-        <liuj97@gmail.com>, <len.brown@intel.com>, <benh@kernel.crashing.org>,
-        <paulus@samba.org>, <minchan.kim@gmail.com>,
-        <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] memory-hotplug: add node_device_release
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-3-git-send-email-wency@cn.fujitsu.com> <CAHGf_=rLMsmAxR5hrDVXjkHAxmupVrmtqE3iq2qu=O9Prp4nSg@mail.gmail.com> <5064EA5A.3080905@jp.fujitsu.com> <CAHGf_=qbBGjTL9oBHz7AM8BAosbzvn_WAGdAzJ8np-nDPN_KFQ@mail.gmail.com>
-In-Reply-To: <CAHGf_=qbBGjTL9oBHz7AM8BAosbzvn_WAGdAzJ8np-nDPN_KFQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kosaki-san,
+On Wed, 26 Sep 2012, David Rientjes wrote:
 
-2012/09/28 10:13, KOSAKI Motohiro wrote:
-> On Thu, Sep 27, 2012 at 8:07 PM, Yasuaki Ishimatsu
-> <isimatu.yasuaki@jp.fujitsu.com> wrote:
->> Hi Kosaki-san,
->>
->>
->> 2012/09/28 5:13, KOSAKI Motohiro wrote:
->>>
->>> On Thu, Sep 27, 2012 at 1:45 AM,  <wency@cn.fujitsu.com> wrote:
->>>>
->>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>>
->>>> When calling unregister_node(), the function shows following message at
->>>> device_release().
->>>
->>>
->>> This description doesn't have the "following message".
->>>
->>>
->>
->>>> Device 'node2' does not have a release() function, it is broken and must
->>>> be
->>>> fixed.
->>
->>
->> This is the messages. The message is shown by kobject_cleanup(), when
->> calling
->> unregister_node().
->
-> If so, you should quote the message. and don't mix it with your
-> subject. Moreover
-> your patch title is too silly. "add node_device_release() function" is
-> a way. you should
-> describe the effect of the patch. e.g. suppress "Device 'nodeXX' does
-> not have a release() function" warning.
+> NR_MLOCK is only accounted in single page units: there's no logic to
+> handle transparent hugepages.  This patch checks the appropriate number
+> of pages to adjust the statistics by so that the correct amount of memory
+> is reflected.
+> 
+> Currently:
+> 
+> 		$ grep Mlocked /proc/meminfo
+> 		Mlocked:           19636 kB
+> 
+> 	#define MAP_SIZE	(4 << 30)	/* 4GB */
+> 
+> 	void *ptr = mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE,
+> 			 MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+> 	mlock(ptr, MAP_SIZE);
+> 
+> 		$ grep Mlocked /proc/meminfo
+> 		Mlocked:           29844 kB
+> 
+> 	munlock(ptr, MAP_SIZE);
+> 
+> 		$ grep Mlocked /proc/meminfo
+> 		Mlocked:           19636 kB
+> 
+> And with this patch:
+> 
+> 		$ grep Mlock /proc/meminfo
+> 		Mlocked:           19636 kB
+> 
+> 	mlock(ptr, MAP_SIZE);
+> 
+> 		$ grep Mlock /proc/meminfo
+> 		Mlocked:         4213664 kB
+> 
+> 	munlock(ptr, MAP_SIZE);
+> 
+> 		$ grep Mlock /proc/meminfo
+> 		Mlocked:           19636 kB
+> 
+> Reported-by: Hugh Dickens <hughd@google.com>
 
-What you say is correct. We should update subject and changelog.
+I do prefer         Dickins :)
 
->
-> Moreover, your explanation is still insufficient. Even if
-> node_device_release() is empty function, we can get rid of the
-> warning.
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-I don't understand it. How can we get rid of the warning?
+Acked-by: Hugh Dickins <hughd@google.com>
 
-> Why do we need this node_device_release() implementation?
+Yes, this now seems to be working nicely, thanks.
 
-I think that this is a manner of releasing object related kobject.
+I would have preferred you to omit the free_page_mlock() part, since
+that sets me wondering about what flags might be set to mean what at
+that point; but since it should never get there anyway, and we'll be
+removing it entirely from v3.7, never mind.  (In doing that, I shall
+need to consider whether clear_page_mlock() then needs hpage_nr_pages,
+but your patch below is perfectly correct to omit it.)
 
-Thanks,
-Yasuaki Ishimatsu
+If I understand aright, in another (thp: avoid VM_BUG_ON) thread,
+Linus remarks that he's noticed this and your matching Unevictable
+patch (that I had thought too late for v3.6), and is hoping for Acks
+so that he can put them into v3.6 after all.
 
+So despite my earlier reluctance, please take this as an Ack on that
+one too (I was testing them together): it'll be odd if one of them goes
+to stable and the other not, but we can sort that out with GregKH later.
 
+Hugh
 
-
+> ---
+>  mm/internal.h   |    3 ++-
+>  mm/mlock.c      |    6 ++++--
+>  mm/page_alloc.c |    2 +-
+>  3 files changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/internal.h b/mm/internal.h
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -180,7 +180,8 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
+>  		return 0;
+>  
+>  	if (!TestSetPageMlocked(page)) {
+> -		inc_zone_page_state(page, NR_MLOCK);
+> +		mod_zone_page_state(page_zone(page), NR_MLOCK,
+> +				    hpage_nr_pages(page));
+>  		count_vm_event(UNEVICTABLE_PGMLOCKED);
+>  	}
+>  	return 1;
+> diff --git a/mm/mlock.c b/mm/mlock.c
+> --- a/mm/mlock.c
+> +++ b/mm/mlock.c
+> @@ -81,7 +81,8 @@ void mlock_vma_page(struct page *page)
+>  	BUG_ON(!PageLocked(page));
+>  
+>  	if (!TestSetPageMlocked(page)) {
+> -		inc_zone_page_state(page, NR_MLOCK);
+> +		mod_zone_page_state(page_zone(page), NR_MLOCK,
+> +				    hpage_nr_pages(page));
+>  		count_vm_event(UNEVICTABLE_PGMLOCKED);
+>  		if (!isolate_lru_page(page))
+>  			putback_lru_page(page);
+> @@ -108,7 +109,8 @@ void munlock_vma_page(struct page *page)
+>  	BUG_ON(!PageLocked(page));
+>  
+>  	if (TestClearPageMlocked(page)) {
+> -		dec_zone_page_state(page, NR_MLOCK);
+> +		mod_zone_page_state(page_zone(page), NR_MLOCK,
+> +				    -hpage_nr_pages(page));
+>  		if (!isolate_lru_page(page)) {
+>  			int ret = SWAP_AGAIN;
+>  
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -604,7 +604,7 @@ out:
+>   */
+>  static inline void free_page_mlock(struct page *page)
+>  {
+> -	__dec_zone_page_state(page, NR_MLOCK);
+> +	__mod_zone_page_state(page_zone(page), NR_MLOCK, -hpage_nr_pages(page));
+>  	__count_vm_event(UNEVICTABLE_MLOCKFREED);
+>  }
+>  
+> 
