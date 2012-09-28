@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030998Ab2I1TQU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:16:20 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35065 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759152Ab2I1TFc (ORCPT
+	id S1031006Ab2I1TQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:16:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759126Ab2I1TFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:05:32 -0400
+	Fri, 28 Sep 2012 15:05:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jarod Wilson <jarod@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [ 229/262] media: lirc_sir: make device registration work
-Date: Fri, 28 Sep 2012 11:52:38 -0700
-Message-Id: <20120928183025.244824174@linuxfoundation.org>
+        Weiping Pan <wpan@redhat.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 226/262] rds: set correct msg_namelen
+Date: Fri, 28 Sep 2012 11:52:35 -0700
+Message-Id: <20120928183024.916255348@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,129 +28,220 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jarod Wilson <jarod@redhat.com>
+From: Weiping Pan <wpan@redhat.com>
 
-commit 4b71ca6bce8fab3d08c61bf330e781f957934ae1 upstream.
+commit 06b6a1cf6e776426766298d055bb3991957d90a7 upstream.
 
-For one, the driver device pointer needs to be filled in, or the lirc core
-will refuse to load the driver. And we really need to wire up all the
-platform_device bits. This has been tested via the lirc sourceforge tree
-and verified to work, been sitting there for months, finally getting
-around to sending it. :\
+Jay Fenlason (fenlason@redhat.com) found a bug,
+that recvfrom() on an RDS socket can return the contents of random kernel
+memory to userspace if it was called with a address length larger than
+sizeof(struct sockaddr_in).
+rds_recvmsg() also fails to set the addr_len paramater properly before
+returning, but that's just a bug.
+There are also a number of cases wher recvfrom() can return an entirely bogus
+address. Anything in rds_recvmsg() that returns a non-negative value but does
+not go through the "sin = (struct sockaddr_in *)msg->msg_name;" code path
+at the end of the while(1) loop will return up to 128 bytes of kernel memory
+to userspace.
 
-Signed-off-by: Jarod Wilson <jarod@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Josh Boyer <jwboyer@redhat.com>
+And I write two test programs to reproduce this bug, you will see that in
+rds_server, fromAddr will be overwritten and the following sock_fd will be
+destroyed.
+Yes, it is the programmer's fault to set msg_namelen incorrectly, but it is
+better to make the kernel copy the real length of address to user space in
+such case.
+
+How to run the test programs ?
+I test them on 32bit x86 system, 3.5.0-rc7.
+
+1 compile
+gcc -o rds_client rds_client.c
+gcc -o rds_server rds_server.c
+
+2 run ./rds_server on one console
+
+3 run ./rds_client on another console
+
+4 you will see something like:
+server is waiting to receive data...
+old socket fd=3
+server received data from client:data from client
+msg.msg_namelen=32
+new socket fd=-1067277685
+sendmsg()
+: Bad file descriptor
+
+/***************** rds_client.c ********************/
+
+int main(void)
+{
+	int sock_fd;
+	struct sockaddr_in serverAddr;
+	struct sockaddr_in toAddr;
+	char recvBuffer[128] = "data from client";
+	struct msghdr msg;
+	struct iovec iov;
+
+	sock_fd = socket(AF_RDS, SOCK_SEQPACKET, 0);
+	if (sock_fd < 0) {
+		perror("create socket error\n");
+		exit(1);
+	}
+
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	serverAddr.sin_port = htons(4001);
+
+	if (bind(sock_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+		perror("bind() error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	memset(&toAddr, 0, sizeof(toAddr));
+	toAddr.sin_family = AF_INET;
+	toAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	toAddr.sin_port = htons(4000);
+	msg.msg_name = &toAddr;
+	msg.msg_namelen = sizeof(toAddr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = recvBuffer;
+	msg.msg_iov->iov_len = strlen(recvBuffer) + 1;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+
+	if (sendmsg(sock_fd, &msg, 0) == -1) {
+		perror("sendto() error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	printf("client send data:%s\n", recvBuffer);
+
+	memset(recvBuffer, '\0', 128);
+
+	msg.msg_name = &toAddr;
+	msg.msg_namelen = sizeof(toAddr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = recvBuffer;
+	msg.msg_iov->iov_len = 128;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+	if (recvmsg(sock_fd, &msg, 0) == -1) {
+		perror("recvmsg() error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	printf("receive data from server:%s\n", recvBuffer);
+
+	close(sock_fd);
+
+	return 0;
+}
+
+/***************** rds_server.c ********************/
+
+int main(void)
+{
+	struct sockaddr_in fromAddr;
+	int sock_fd;
+	struct sockaddr_in serverAddr;
+	unsigned int addrLen;
+	char recvBuffer[128];
+	struct msghdr msg;
+	struct iovec iov;
+
+	sock_fd = socket(AF_RDS, SOCK_SEQPACKET, 0);
+	if(sock_fd < 0) {
+		perror("create socket error\n");
+		exit(0);
+	}
+
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	serverAddr.sin_port = htons(4000);
+	if (bind(sock_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+		perror("bind error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	printf("server is waiting to receive data...\n");
+	msg.msg_name = &fromAddr;
+
+	/*
+	 * I add 16 to sizeof(fromAddr), ie 32,
+	 * and pay attention to the definition of fromAddr,
+	 * recvmsg() will overwrite sock_fd,
+	 * since kernel will copy 32 bytes to userspace.
+	 *
+	 * If you just use sizeof(fromAddr), it works fine.
+	 * */
+	msg.msg_namelen = sizeof(fromAddr) + 16;
+	/* msg.msg_namelen = sizeof(fromAddr); */
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = recvBuffer;
+	msg.msg_iov->iov_len = 128;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+
+	while (1) {
+		printf("old socket fd=%d\n", sock_fd);
+		if (recvmsg(sock_fd, &msg, 0) == -1) {
+			perror("recvmsg() error\n");
+			close(sock_fd);
+			exit(1);
+		}
+		printf("server received data from client:%s\n", recvBuffer);
+		printf("msg.msg_namelen=%d\n", msg.msg_namelen);
+		printf("new socket fd=%d\n", sock_fd);
+		strcat(recvBuffer, "--data from server");
+		if (sendmsg(sock_fd, &msg, 0) == -1) {
+			perror("sendmsg()\n");
+			close(sock_fd);
+			exit(1);
+		}
+	}
+
+	close(sock_fd);
+	return 0;
+}
+
+Signed-off-by: Weiping Pan <wpan@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/media/lirc/lirc_sir.c |   60 ++++++++++++++++++++++++++++++++--
- 1 file changed, 58 insertions(+), 2 deletions(-)
+ net/rds/recv.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/staging/media/lirc/lirc_sir.c
-+++ b/drivers/staging/media/lirc/lirc_sir.c
-@@ -52,6 +52,7 @@
- #include <linux/io.h>
- #include <asm/irq.h>
- #include <linux/fcntl.h>
-+#include <linux/platform_device.h>
- #ifdef LIRC_ON_SA1100
- #include <asm/hardware.h>
- #ifdef CONFIG_SA1100_COLLIE
-@@ -487,9 +488,11 @@ static struct lirc_driver driver = {
- 	.owner		= THIS_MODULE,
- };
+--- a/net/rds/recv.c
++++ b/net/rds/recv.c
+@@ -410,6 +410,8 @@ int rds_recvmsg(struct kiocb *iocb, stru
  
-+static struct platform_device *lirc_sir_dev;
+ 	rdsdebug("size %zu flags 0x%x timeo %ld\n", size, msg_flags, timeo);
  
- static int init_chrdev(void)
- {
-+	driver.dev = &lirc_sir_dev->dev;
- 	driver.minor = lirc_register_driver(&driver);
- 	if (driver.minor < 0) {
- 		printk(KERN_ERR LIRC_DRIVER_NAME ": init_chrdev() failed.\n");
-@@ -1215,20 +1218,71 @@ static int init_lirc_sir(void)
- 	return 0;
- }
++	msg->msg_namelen = 0;
++
+ 	if (msg_flags & MSG_OOB)
+ 		goto out;
  
-+static int __devinit lirc_sir_probe(struct platform_device *dev)
-+{
-+	return 0;
-+}
-+
-+static int __devexit lirc_sir_remove(struct platform_device *dev)
-+{
-+	return 0;
-+}
-+
-+static struct platform_driver lirc_sir_driver = {
-+	.probe		= lirc_sir_probe,
-+	.remove		= __devexit_p(lirc_sir_remove),
-+	.driver		= {
-+		.name	= "lirc_sir",
-+		.owner	= THIS_MODULE,
-+	},
-+};
- 
- static int __init lirc_sir_init(void)
- {
- 	int retval;
- 
-+	retval = platform_driver_register(&lirc_sir_driver);
-+	if (retval) {
-+		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform driver register "
-+		       "failed!\n");
-+		return -ENODEV;
-+	}
-+
-+	lirc_sir_dev = platform_device_alloc("lirc_dev", 0);
-+	if (!lirc_sir_dev) {
-+		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device alloc "
-+		       "failed!\n");
-+		retval = -ENOMEM;
-+		goto pdev_alloc_fail;
-+	}
-+
-+	retval = platform_device_add(lirc_sir_dev);
-+	if (retval) {
-+		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device add "
-+		       "failed!\n");
-+		retval = -ENODEV;
-+		goto pdev_add_fail;
-+	}
-+
- 	retval = init_chrdev();
- 	if (retval < 0)
--		return retval;
-+		goto fail;
-+
- 	retval = init_lirc_sir();
- 	if (retval) {
- 		drop_chrdev();
--		return retval;
-+		goto fail;
+@@ -485,6 +487,7 @@ int rds_recvmsg(struct kiocb *iocb, stru
+ 			sin->sin_port = inc->i_hdr.h_sport;
+ 			sin->sin_addr.s_addr = inc->i_saddr;
+ 			memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
++			msg->msg_namelen = sizeof(*sin);
+ 		}
+ 		break;
  	}
-+
- 	return 0;
-+
-+fail:
-+	platform_device_del(lirc_sir_dev);
-+pdev_add_fail:
-+	platform_device_put(lirc_sir_dev);
-+pdev_alloc_fail:
-+	platform_driver_unregister(&lirc_sir_driver);
-+	return retval;
- }
- 
- static void __exit lirc_sir_exit(void)
-@@ -1236,6 +1290,8 @@ static void __exit lirc_sir_exit(void)
- 	drop_hardware();
- 	drop_chrdev();
- 	drop_port();
-+	platform_device_unregister(lirc_sir_dev);
-+	platform_driver_unregister(&lirc_sir_driver);
- 	printk(KERN_INFO LIRC_DRIVER_NAME ": Uninstalled.\n");
- }
- 
 
 
