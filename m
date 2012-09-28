@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab2I1Ms0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:48:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753399Ab2I1MsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:48:25 -0400
-Date: Fri, 28 Sep 2012 18:18:10 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: sjur.brandeland@stericsson.com
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        sjurbren@stericsson.com, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCHv6 0/3] virtio_console: Add rproc_serial device
-Message-ID: <20120928124810.GB25916@amit.redhat.com>
-References: <1348580837-10919-1-git-send-email-sjur.brandeland@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	id S1757648Ab2I1MtD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:49:03 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:3807 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751561Ab2I1MtB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 08:49:01 -0400
+Message-ID: <1348836538.3626.21.camel@x61.thuisdomein>
+Subject: [PATCH] IB/lmx4: silence GCC warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 28 Sep 2012 14:48:58 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1348580837-10919-1-git-send-email-sjur.brandeland@stericsson.com>
+X-OriginalArrivalTime: 28 Sep 2012 12:48:59.0432 (UTC) FILETIME=[A12C5A80:01CD9D77]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 25 Sep 2012 [15:47:14], sjur.brandeland@stericsson.com wrote:
-> From: Sjur Br�ndeland <sjur.brandeland@stericsson.com>
-> 
-> I thought rebasing rproc_serial to linux-next was going to be trivial.
-> But when starting the merge I realized that I had to refactor the
-> the patches from  Masami Hiramatsu. The splice support has the same issue
-> as I faced, with different type of buffers in the out_vq.
-> So I ended up refactoring the splice functionality. The code
-> size got smaller so hopefully this a step in the right direction.
-> 
-> This refactoring also make introduction of rproc_serial cleaner.
-> 
-> As requested I also added a patch for not initializing buffers.
-> 
-> I have tested the VIRTIO_CONSOLE device by looping large amount of data
-> through character device and tty, with lockdep and slub-debug on.
-> This looks stable for me. I've also done a simple test of splice.
+Building qp.o (part of the "Mellanox ConnectX HCA support" driver)
+triggers this GCC warning:
+    drivers/infiniband/hw/mlx4/qp.c: In function ‘mlx4_ib_post_send’:
+    drivers/infiniband/hw/mlx4/qp.c:1828:30: warning: ‘vlan’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+    drivers/infiniband/hw/mlx4/qp.c:1718:6: note: ‘vlan’ was declared here
 
-Thanks; I just passed these patches through my testsuite and things
-are working fine.  I'll review them in some time.
+Looking at the code it is clear 'vlan' is only set and used if 'is_eth'
+is non-zero. But there's no harm in initializing 'vlan' to 0 (which
+matches ib_get_cached_gid()'s default return) to silence GCC.
 
-		Amit
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) I noticed this warning while building v3.6-rc7 on current Fedora 17,
+using Fedora's default config.
+
+1) Compile tested only. I tested against v3.6-rc7, with commit
+a41262bb5721f2b708ee8b23f67be2f2e16a2fab ("IB/mlx4: SR-IOV IB context
+objects and proxy/tunnel SQP") from linux-next cherry-picked, to take
+into account a trivial context change in linux-next.
+
+ drivers/infiniband/hw/mlx4/qp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/infiniband/hw/mlx4/qp.c b/drivers/infiniband/hw/mlx4/qp.c
+index a862251..71fdda6 100644
+--- a/drivers/infiniband/hw/mlx4/qp.c
++++ b/drivers/infiniband/hw/mlx4/qp.c
+@@ -1715,7 +1715,7 @@ static int build_mlx_header(struct mlx4_ib_sqp *sqp, struct ib_send_wr *wr,
+ 	int is_eth;
+ 	int is_vlan = 0;
+ 	int is_grh;
+-	u16 vlan;
++	u16 vlan = 0;
+ 	int err = 0;
+ 
+ 	send_size = 0;
+-- 
+1.7.11.4
+
