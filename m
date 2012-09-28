@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031768Ab2I1Tz3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:55:29 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63190 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964883Ab2I1S5A (ORCPT
+	id S965065Ab2I1T4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:56:04 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964864Ab2I1S4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:57:00 -0400
+	Fri, 28 Sep 2012 14:56:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Adam Williamson <awilliam@redhat.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 058/262] ALSA: hda - Workaround for silent output on VAIO Z with ALC889
-Date: Fri, 28 Sep 2012 11:49:47 -0700
-Message-Id: <20120928183004.724249909@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 064/262] staging: comedi: das08: Correct AO output for das08jr-16-ao
+Date: Fri, 28 Sep 2012 11:49:53 -0700
+Message-Id: <20120928183005.549073053@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,114 +28,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit e427c2375646789ecd0ccaef1a1e41458559ab2d upstream.
+commit 61ed59ed09e6ad2b8395178ea5ad5f653bba08e3 upstream.
 
-On recent kernels, Realtek codec parser tries to optimize the routing
-aggressively and take the headphone output as primary at first.  This
-caused a regression on VAIO Z with ALC889, the silent output from the
-speaker.
+Don't zero out bits 15..12 of the data value in `das08jr_ao_winsn()` as
+that knobbles the upper three-quarters of the output range for the
+'das08jr-16-ao' board.
 
-The problem seems that the speaker pin must be connected to the first
-DAC (0x02) on this machine by some reason although the codec itself
-advertises the flexible routing with any DACs.
-
-This patch adds a fix-up for choosing the speaker pin as the primary
-so that the right DAC is assigned on this device.
-
-Reported-and-tested-by: Adam Williamson <awilliam@redhat.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
 
 ---
- Documentation/sound/alsa/HD-Audio-Models.txt |    1 +
- sound/pci/hda/patch_realtek.c                |   22 +++++++++++++++++++++-
- 2 files changed, 22 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/das08.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/Documentation/sound/alsa/HD-Audio-Models.txt
-+++ b/Documentation/sound/alsa/HD-Audio-Models.txt
-@@ -47,6 +47,7 @@ ALC882/883/885/888/889
-   acer-aspire-4930g	Acer Aspire 4930G/5930G/6530G/6930G/7730G
-   acer-aspire-8930g	Acer Aspire 8330G/6935G
-   acer-aspire		Acer Aspire others
-+  no-primary-hp		VAIO Z workaround (for fixed speaker DAC)
+--- a/drivers/staging/comedi/drivers/das08.c
++++ b/drivers/staging/comedi/drivers/das08.c
+@@ -678,7 +678,7 @@ static int das08jr_ao_winsn(struct comed
+ 	int chan;
  
- ALC861/660
- ==========
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -201,6 +201,7 @@ struct alc_spec {
- 	unsigned int vol_in_capsrc:1; /* use capsrc volume (ADC has no vol) */
- 	unsigned int parse_flags; /* passed to snd_hda_parse_pin_defcfg() */
- 	unsigned int shared_mic_hp:1; /* HP/Mic-in sharing */
-+	unsigned int no_primary_hp:1; /* Don't prefer HP pins to speaker pins */
+ 	lsb = data[0] & 0xff;
+-	msb = (data[0] >> 8) & 0xf;
++	msb = (data[0] >> 8) & 0xff;
  
- 	/* auto-mute control */
- 	int automute_mode;
-@@ -4182,7 +4183,8 @@ static int alc_parse_auto_config(struct
- 		return 0; /* can't find valid BIOS pin config */
- 	}
- 
--	if (cfg->line_out_type == AUTO_PIN_SPEAKER_OUT &&
-+	if (!spec->no_primary_hp &&
-+	    cfg->line_out_type == AUTO_PIN_SPEAKER_OUT &&
- 	    cfg->line_outs <= cfg->hp_outs) {
- 		/* use HP as primary out */
- 		cfg->speaker_outs = cfg->line_outs;
-@@ -4909,6 +4911,7 @@ enum {
- 	ALC889_FIXUP_DAC_ROUTE,
- 	ALC889_FIXUP_MBP_VREF,
- 	ALC889_FIXUP_IMAC91_VREF,
-+	ALC882_FIXUP_NO_PRIMARY_HP,
- };
- 
- static void alc889_fixup_coef(struct hda_codec *codec,
-@@ -5030,6 +5033,17 @@ static void alc889_fixup_imac91_vref(str
- 	spec->keep_vref_in_automute = 1;
- }
- 
-+/* Don't take HP output as primary
-+ * strangely, the speaker output doesn't work on VAIO Z through DAC 0x05
-+ */
-+static void alc882_fixup_no_primary_hp(struct hda_codec *codec,
-+				       const struct alc_fixup *fix, int action)
-+{
-+	struct alc_spec *spec = codec->spec;
-+	if (action == ALC_FIXUP_ACT_PRE_PROBE)
-+		spec->no_primary_hp = 1;
-+}
-+
- static const struct alc_fixup alc882_fixups[] = {
- 	[ALC882_FIXUP_ABIT_AW9D_MAX] = {
- 		.type = ALC_FIXUP_PINS,
-@@ -5212,6 +5226,10 @@ static const struct alc_fixup alc882_fix
- 		.chained = true,
- 		.chain_id = ALC882_FIXUP_GPIO1,
- 	},
-+	[ALC882_FIXUP_NO_PRIMARY_HP] = {
-+		.type = ALC_FIXUP_FUNC,
-+		.v.func = alc882_fixup_no_primary_hp,
-+	},
- };
- 
- static const struct snd_pci_quirk alc882_fixup_tbl[] = {
-@@ -5246,6 +5264,7 @@ static const struct snd_pci_quirk alc882
- 	SND_PCI_QUIRK(0x1043, 0x1971, "Asus W2JC", ALC882_FIXUP_ASUS_W2JC),
- 	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
- 	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
-+	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
- 
- 	/* All Apple entries are in codec SSIDs */
- 	SND_PCI_QUIRK(0x106b, 0x00a0, "MacBookPro 3,1", ALC889_FIXUP_MBP_VREF),
-@@ -5286,6 +5305,7 @@ static const struct alc_model_fixup alc8
- 	{.id = ALC882_FIXUP_ACER_ASPIRE_4930G, .name = "acer-aspire-4930g"},
- 	{.id = ALC882_FIXUP_ACER_ASPIRE_8930G, .name = "acer-aspire-8930g"},
- 	{.id = ALC883_FIXUP_ACER_EAPD, .name = "acer-aspire"},
-+	{.id = ALC882_FIXUP_NO_PRIMARY_HP, .name = "no-primary-hp"},
- 	{}
- };
+ 	chan = CR_CHAN(insn->chanspec);
  
 
 
