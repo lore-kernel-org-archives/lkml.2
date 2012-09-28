@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946192Ab2I1VQf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:16:35 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:40122 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946178Ab2I1VQb (ORCPT
+	id S1946206Ab2I1VQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:16:51 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36326 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758895Ab2I1Ujp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:16:31 -0400
-Date: Fri, 28 Sep 2012 17:16:28 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Chris Mason <chris.mason@fusionio.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [ 173/262] mutex: Place lock in contended state after fastpath_lock
- failure
-In-Reply-To: <20120928210541.GC25749@kroah.com>
-Message-ID: <alpine.LFD.2.02.1209281715110.6667@xanadu.home>
-References: <20120928182957.993484211@linuxfoundation.org> <20120928183018.432178544@linuxfoundation.org> <alpine.LFD.2.02.1209281522360.6667@xanadu.home> <20120928210541.GC25749@kroah.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 28 Sep 2012 16:39:45 -0400
+X-Sasl-enc: G+fOIKHbYHVAQ991dNy/5xy+GYIDJ0bybCdMrxGh+f5i 1348864784
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 213/218] ASoC: wm2000: Correct register size
+Date: Fri, 28 Sep 2012 13:17:10 -0700
+Message-Id: <20120928201526.038861242@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.1.428.g652398a
+In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
+References: <20120928201501.208384923@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Sep 2012, Greg Kroah-Hartman wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> On Fri, Sep 28, 2012 at 03:26:40PM -0400, Nicolas Pitre wrote:
-> > On Fri, 28 Sep 2012, Greg Kroah-Hartman wrote:
-> > 
-> > > From: Greg KH <gregkh@linuxfoundation.org>
-> > > 
-> > > 3.5-stable review patch.  If anyone has any objections, please let me know.
-> > > 
-> > > ------------------
-> > > 
-> > > From: Will Deacon <will.deacon@arm.com>
-> > > 
-> > > commit 0bce9c46bf3b15f485d82d7e81dabed6ebcc24b1 upstream.
-> > 
-> > Now that you've queued this one, could you pick up a76d7bd96d as well 
-> > please?
-> 
-> Sure, for just 3.5.y or any other stable trees?
+------------------
 
-Any other stable tree where commit 0bce9c46bf has also been merged.
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+commit d0e12f3ff3472cbd8f52d3c0e6ee07a841787c40 upstream.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/soc/codecs/wm2000.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/sound/soc/codecs/wm2000.c
++++ b/sound/soc/codecs/wm2000.c
+@@ -692,7 +692,7 @@ static int wm2000_resume(struct snd_soc_
+ #endif
+ 
+ static const struct regmap_config wm2000_regmap = {
+-	.reg_bits = 8,
++	.reg_bits = 16,
+ 	.val_bits = 8,
+ };
+ 
 
 
-Nicolas
