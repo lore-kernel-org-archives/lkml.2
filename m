@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423257Ab2I1VKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:10:04 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60898 "EHLO
+	id S1031847Ab2I1Uqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:46:46 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57333 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965194Ab2I1VFq (ORCPT
+	by vger.kernel.org with ESMTP id S1759550Ab2I1Ukt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:05:46 -0400
-X-Sasl-enc: KnDOrOjnAMvMgo1LwP/p6/oy74ml6Z2we6i7FAa1Jkor 1348866345
+	Fri, 28 Sep 2012 16:40:49 -0400
+X-Sasl-enc: 332D/UtAbyvo5d38Xf+Os4vqLyZnNI7mQwa9nzzJHTTy 1348864848
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        CAI Qian <caiqian@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 111/127] time: Improve sanity checking of timekeeping inputs
-Date: Fri, 28 Sep 2012 13:34:44 -0700
-Message-Id: <20120928203058.891797937@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Duncan <1i5t5.duncan@cox.net>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: [ 024/127] cpufreq/powernow-k8: workqueue user shouldnt migrate the kworker to another CPU
+Date: Fri, 28 Sep 2012 13:33:17 -0700
+Message-Id: <20120928203048.664485908@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -31,158 +29,170 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b upstream
+commit 6889125b8b4e09c5e53e6ecab3433bed1ce198c9 upstream.
 
-Unexpected behavior could occur if the time is set to a value large
-enough to overflow a 64bit ktime_t (which is something larger then the
-year 2262).
+powernowk8_target() runs off a per-cpu work item and if the
+cpufreq_policy->cpu is different from the current one, it migrates the
+kworker to the target CPU by manipulating current->cpus_allowed.  The
+function migrates the kworker back to the original CPU but this is
+still broken.  Workqueue concurrency management requires the kworkers
+to stay on the same CPU and powernowk8_target() ends up triggerring
+BUG_ON(rq != this_rq()) in try_to_wake_up_local() if it contends on
+fidvid_mutex and sleeps.
 
-Also unexpected behavior could occur if large negative offsets are
-injected via adjtimex.
+It is unclear why this bug is being reported now.  Duncan says it
+appeared to be a regression of 3.6-rc1 and couldn't reproduce it on
+3.5.  Bisection seemed to point to 63d95a91 "workqueue: use @pool
+instead of @gcwq or @cpu where applicable" which is an non-functional
+change.  Given that the reproduce case sometimes took upto days to
+trigger, it's easy to be misled while bisecting.  Maybe something made
+contention on fidvid_mutex more likely?  I don't know.
 
-So this patch improves the sanity check timekeeping inputs by
-improving the timespec_valid() check, and then makes better use of
-timespec_valid() to make sure we don't set the time to an invalid
-negative value or one that overflows ktime_t.
+This patch fixes the bug by using work_on_cpu() instead if @pol->cpu
+isn't the same as the current one.  The code assumes that
+cpufreq_policy->cpu is kept online by the caller, which Rafael tells
+me is the case.
 
-Note: This does not protect from setting the time close to overflowing
-ktime_t and then letting natural accumulation cause the overflow.
+stable: ed48ece27c ("workqueue: reimplement work_on_cpu() using
+        system_wq") should be applied before this; otherwise, the
+        behavior could be horrible.
 
-Reported-by: CAI Qian <caiqian@redhat.com>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Zhouping Liu <zliu@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1344454580-17031-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Duncan <1i5t5.duncan@cox.net>
+Tested-by: Duncan <1i5t5.duncan@cox.net>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47301
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/ktime.h     |    7 -------
- include/linux/time.h      |   22 ++++++++++++++++++++--
- kernel/time/timekeeping.c |   26 ++++++++++++++++++++++++--
- 3 files changed, 44 insertions(+), 11 deletions(-)
 
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -58,13 +58,6 @@ union ktime {
+---
+ drivers/cpufreq/powernow-k8.c |   65 ++++++++++++++++++++++--------------------
+ 1 file changed, 35 insertions(+), 30 deletions(-)
+
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -32,7 +32,6 @@
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/cpumask.h>
+-#include <linux/sched.h>	/* for current / set_cpus_allowed() */
+ #include <linux/io.h>
+ #include <linux/delay.h>
  
- typedef union ktime ktime_t;		/* Kill this */
- 
--#define KTIME_MAX			((s64)~((u64)1 << 63))
--#if (BITS_PER_LONG == 64)
--# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
--#else
--# define KTIME_SEC_MAX			LONG_MAX
--#endif
--
- /*
-  * ktime_t definitions when using the 64-bit scalar representation:
-  */
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -107,11 +107,29 @@ static inline struct timespec timespec_s
- 	return ts_delta;
+@@ -1132,16 +1131,23 @@ static int transition_frequency_pstate(s
+ 	return res;
  }
  
-+#define KTIME_MAX			((s64)~((u64)1 << 63))
-+#if (BITS_PER_LONG == 64)
-+# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
-+#else
-+# define KTIME_SEC_MAX			LONG_MAX
-+#endif
+-/* Driver entry point to switch to the target frequency */
+-static int powernowk8_target(struct cpufreq_policy *pol,
+-		unsigned targfreq, unsigned relation)
+-{
+-	cpumask_var_t oldmask;
++struct powernowk8_target_arg {
++	struct cpufreq_policy		*pol;
++	unsigned			targfreq;
++	unsigned			relation;
++};
 +
- /*
-  * Returns true if the timespec is norm, false if denorm:
-  */
--#define timespec_valid(ts) \
--	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
-+static inline bool timespec_valid(const struct timespec *ts)
++static long powernowk8_target_fn(void *arg)
 +{
-+	/* Dates before 1970 are bogus */
-+	if (ts->tv_sec < 0)
-+		return false;
-+	/* Can't have more nanoseconds then a second */
-+	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
-+		return false;
-+	/* Disallow values that could overflow ktime_t */
-+	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
-+		return false;
-+	return true;
++	struct powernowk8_target_arg *pta = arg;
++	struct cpufreq_policy *pol = pta->pol;
++	unsigned targfreq = pta->targfreq;
++	unsigned relation = pta->relation;
+ 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
+ 	u32 checkfid;
+ 	u32 checkvid;
+ 	unsigned int newstate;
+-	int ret = -EIO;
++	int ret;
+ 
+ 	if (!data)
+ 		return -EINVAL;
+@@ -1149,29 +1155,16 @@ static int powernowk8_target(struct cpuf
+ 	checkfid = data->currfid;
+ 	checkvid = data->currvid;
+ 
+-	/* only run on specific CPU from here on. */
+-	/* This is poor form: use a workqueue or smp_call_function_single */
+-	if (!alloc_cpumask_var(&oldmask, GFP_KERNEL))
+-		return -ENOMEM;
+-
+-	cpumask_copy(oldmask, tsk_cpus_allowed(current));
+-	set_cpus_allowed_ptr(current, cpumask_of(pol->cpu));
+-
+-	if (smp_processor_id() != pol->cpu) {
+-		printk(KERN_ERR PFX "limiting to cpu %u failed\n", pol->cpu);
+-		goto err_out;
+-	}
+-
+ 	if (pending_bit_stuck()) {
+ 		printk(KERN_ERR PFX "failing targ, change pending bit set\n");
+-		goto err_out;
++		return -EIO;
+ 	}
+ 
+ 	pr_debug("targ: cpu %d, %d kHz, min %d, max %d, relation %d\n",
+ 		pol->cpu, targfreq, pol->min, pol->max, relation);
+ 
+ 	if (query_current_values_with_pending_wait(data))
+-		goto err_out;
++		return -EIO;
+ 
+ 	if (cpu_family != CPU_HW_PSTATE) {
+ 		pr_debug("targ: curr fid 0x%x, vid 0x%x\n",
+@@ -1189,7 +1182,7 @@ static int powernowk8_target(struct cpuf
+ 
+ 	if (cpufreq_frequency_table_target(pol, data->powernow_table,
+ 				targfreq, relation, &newstate))
+-		goto err_out;
++		return -EIO;
+ 
+ 	mutex_lock(&fidvid_mutex);
+ 
+@@ -1202,9 +1195,8 @@ static int powernowk8_target(struct cpuf
+ 		ret = transition_frequency_fidvid(data, newstate);
+ 	if (ret) {
+ 		printk(KERN_ERR PFX "transition frequency failed\n");
+-		ret = 1;
+ 		mutex_unlock(&fidvid_mutex);
+-		goto err_out;
++		return 1;
+ 	}
+ 	mutex_unlock(&fidvid_mutex);
+ 
+@@ -1213,12 +1205,25 @@ static int powernowk8_target(struct cpuf
+ 				data->powernow_table[newstate].index);
+ 	else
+ 		pol->cur = find_khz_freq_from_fid(data->currfid);
+-	ret = 0;
+ 
+-err_out:
+-	set_cpus_allowed_ptr(current, oldmask);
+-	free_cpumask_var(oldmask);
+-	return ret;
++	return 0;
 +}
- 
- extern void read_persistent_clock(struct timespec *ts);
- extern void read_boot_clock(struct timespec *ts);
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -382,7 +382,7 @@ int do_settimeofday(const struct timespe
- 	struct timespec ts_delta;
- 	unsigned long flags;
- 
--	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
-+	if (!timespec_valid(tv))
- 		return -EINVAL;
- 
- 	write_seqlock_irqsave(&xtime_lock, flags);
-@@ -417,6 +417,8 @@ EXPORT_SYMBOL(do_settimeofday);
- int timekeeping_inject_offset(struct timespec *ts)
- {
- 	unsigned long flags;
-+	struct timespec tmp;
-+	int ret = 0;
- 
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
-@@ -425,9 +427,16 @@ int timekeeping_inject_offset(struct tim
- 
- 	timekeeping_forward_now();
- 
-+	tmp = timespec_add(xtime,  *ts);
-+	if (!timespec_valid(&tmp)) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
 +
- 	xtime = timespec_add(xtime, *ts);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
- 
-+error: /* even if we error out, we forwarded the time, so call update */
- 	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
-@@ -435,7 +444,7 @@ int timekeeping_inject_offset(struct tim
- 	/* signal hrtimers about time change */
- 	clock_was_set();
- 
--	return 0;
-+	return ret;
++/* Driver entry point to switch to the target frequency */
++static int powernowk8_target(struct cpufreq_policy *pol,
++		unsigned targfreq, unsigned relation)
++{
++	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
++					     .relation = relation };
++
++	/*
++	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
++	 * that we're bound to the current CPU and pol->cpu stays online.
++	 */
++	if (smp_processor_id() == pol->cpu)
++		return powernowk8_target_fn(&pta);
++	else
++		return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
  }
- EXPORT_SYMBOL(timekeeping_inject_offset);
  
-@@ -582,7 +591,20 @@ void __init timekeeping_init(void)
- 	struct timespec now, boot;
- 
- 	read_persistent_clock(&now);
-+	if (!timespec_valid(&now)) {
-+		pr_warn("WARNING: Persistent clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		now.tv_sec = 0;
-+		now.tv_nsec = 0;
-+	}
-+
- 	read_boot_clock(&boot);
-+	if (!timespec_valid(&boot)) {
-+		pr_warn("WARNING: Boot clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		boot.tv_sec = 0;
-+		boot.tv_nsec = 0;
-+	}
- 
- 	write_seqlock_irqsave(&xtime_lock, flags);
- 
+ /* Driver entry point to verify the policy and range of frequencies */
 
 
