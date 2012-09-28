@@ -1,74 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758546Ab2I1PfH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:35:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42107 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758456Ab2I1PfE convert rfc822-to-8bit (ORCPT
+	id S1758551Ab2I1Pgf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:36:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34729 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758458Ab2I1Pge convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:35:04 -0400
-Subject: Re: [REGRESSION] nfsd crashing with 3.6.0-rc7 on PowerPC
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20120928151043.GA19102@fieldses.org>
-Date: Fri, 28 Sep 2012 17:34:50 +0200
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML List <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-nfs@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        skinsbursky@parallels.com, bfields@redhat.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3EC6FEEF-33B0-4B8B-83E6-64A5E50AB731@suse.de>
-References: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de> <CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com> <DC545CD9-8745-47DD-B13B-3385C0EB5B27@suse.de> <20120928151043.GA19102@fieldses.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-X-Mailer: Apple Mail (2.1278)
+	Fri, 28 Sep 2012 11:36:34 -0400
+Message-ID: <1348846580.3292.90.camel@twins>
+Subject: Re: [PATCH 04/31] perf, core: Add generic intx/intx_checkpointed
+ counter modifiers
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, eranian@google.com,
+        acme@redhat.com, Andi Kleen <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Date: Fri, 28 Sep 2012 17:36:20 +0200
+In-Reply-To: <20120928152911.GU16230@one.firstfloor.org>
+References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
+	 <1348806696-31170-5-git-send-email-andi@firstfloor.org>
+	 <1348822920.3292.60.camel@twins>
+	 <20120928145324.GQ16230@one.firstfloor.org>
+	 <1348845559.3292.84.camel@twins>
+	 <20120928152911.GU16230@one.firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 28.09.2012, at 17:10, J. Bruce Fields wrote:
-
-> On Fri, Sep 28, 2012 at 04:19:55AM +0200, Alexander Graf wrote:
->> 
->> On 28.09.2012, at 04:04, Linus Torvalds wrote:
->> 
->>> On Thu, Sep 27, 2012 at 6:55 PM, Alexander Graf <agraf@suse.de> wrote:
->>>> 
->>>> Below are OOPS excerpts from different rc's I tried. All of them crashed - all the way up to current Linus' master branch. I haven't cross-checked, but I don't remember any such behavior from pre-3.6 releases.
->>> 
->>> Since you seem to be able to reproduce it easily (and apparently
->>> reliably), any chance you could just bisect it?
->>> 
->>> Since I assume v3.5 is fine, and apparently -rc1 is already busted, a simple
->>> 
->>>  git bisect start
->>>  git bisect good v3.5
->>>  git bisect bad v3.6-rc1
->>> 
->>> will get you started on your adventure..
->> 
->> Heh, will give it a try :). The thing really does look quite bisectable.
->> 
->> 
->> It might take a few hours though - the machine isn't exactly fast by today's standards and it's getting late here. But I'll keep you updated.
+On Fri, 2012-09-28 at 17:29 +0200, Andi Kleen wrote:
+> Still would need new fields, but I presume that could be fit in.
 > 
-> I doubt it's anything special about that workload, but just for kicks I
-> tried a "git clone -ls" (cloning my linux tree to another directory on
-> the same nfs filesystem), with server on 3.6.0-rc7, and didn't see
-> anything interesting (just an xfs lockdep warning that looks like this
-> one jlayton already reported:
-> http://oss.sgi.com/archives/xfs/2012-09/msg00088.html
-> )
-> 
-> Any (even partial) bisection results would certainly be useful, thanks.
-
-Yeah, still trying. Running the same workload in a PPC VM didn't show any badness. Then I tried again to bisect on the machine it broken on, and that commit failed even more badly on me than the previous ones, destroying my local git tree.
-
-Trying to narrow down now in a slightly more contained environment :).
-
-
-Alex
-
+Very much so, for all except the P4 PMU the first config is directly
+mapped to the perfctl msr.
