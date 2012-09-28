@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab2I1JwZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 05:52:25 -0400
-Received: from antcom.de ([188.40.178.216]:40950 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753858Ab2I1JwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 05:52:24 -0400
-Message-ID: <50657356.4010801@antcom.de>
-Date: Fri, 28 Sep 2012 11:52:22 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1756942Ab2I1Jz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 05:55:58 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39024 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754924Ab2I1Jz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 05:55:57 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5065740A.2000502@jp.fujitsu.com>
+Date: Fri, 28 Sep 2012 18:55:22 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, Bill Gatliff <bgat@billgatliff.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
-References: <1348780923-27428-1-git-send-email-stigge@antcom.de> <CACRpkdZ+1ffsMDRZXYb5RRndoXstj_QHvHOpeikRY0bas72dKQ@mail.gmail.com>
-In-Reply-To: <CACRpkdZ+1ffsMDRZXYb5RRndoXstj_QHvHOpeikRY0bas72dKQ@mail.gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: <wency@cn.fujitsu.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <rientjes@google.com>,
+        <liuj97@gmail.com>, <len.brown@intel.com>, <benh@kernel.crashing.org>,
+        <paulus@samba.org>, <minchan.kim@gmail.com>,
+        <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] memory-hotplug: add node_device_release
+References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-3-git-send-email-wency@cn.fujitsu.com> <CAHGf_=rLMsmAxR5hrDVXjkHAxmupVrmtqE3iq2qu=O9Prp4nSg@mail.gmail.com> <5064EA5A.3080905@jp.fujitsu.com> <CAHGf_=qbBGjTL9oBHz7AM8BAosbzvn_WAGdAzJ8np-nDPN_KFQ@mail.gmail.com> <5064FDCA.1020504@jp.fujitsu.com> <CAHGf_=r+oz0GS137e81EySbN-3KVmQisF8sySiCUYUas1RZLtQ@mail.gmail.com>
+In-Reply-To: <CAHGf_=r+oz0GS137e81EySbN-3KVmQisF8sySiCUYUas1RZLtQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 11:14 AM, Linus Walleij wrote:
->> @@ -686,6 +731,13 @@ read-only attributes:
+Hi Kosaki-san,
+
+2012/09/28 10:37, KOSAKI Motohiro wrote:
+>>> Moreover, your explanation is still insufficient. Even if
+>>> node_device_release() is empty function, we can get rid of the
+>>> warning.
 >>
->>         "ngpio" ... how many GPIOs this manges (N to N + ngpio - 1)
 >>
->> +       "block" ... get/set Block GPIO:
->> +                   * reads: space separated list of GPIO inputs of this chip that
->> +                     are set to 1, e.g. "83 85 87 99"
->> +                   * write: space separated list of GPIO outputs of this chip
->> +                     that are to be set or cleared, e.g. "80 -83 -85" (prefix
->> +                     "-" clears)
-> 
-> This sort of breaks the sysfs convention of one value per file,
-> does it not?
-> 
-> It's not like I have some better idea, just we need to think about
-> other possible solutions.
-> 
-> The GPIO sysfs interface is not universally liked. What are the
-> typical applications you have for this? Industrial control by
-> bit-banging userspace processes?
+>> I don't understand it. How can we get rid of the warning?
+>
+> See cpu_device_release() for example.
 
-Yes, I had several projects in the past with the need of setting groups
-of GPIOs at once (typically, 8 bit busses via GPIO lines), so needed to
-provide some hacks. Don't want to do this over and over again. :-)
+If we implement a function like cpu_device_release(), the warning
+disappears. But the comment says in the function "Never copy this way...".
+So I think it is illegal way.
 
-Bit-banging in kernel and userspace.
+>
+>
+>
+>>> Why do we need this node_device_release() implementation?
+>>
+>> I think that this is a manner of releasing object related kobject.
+>
+> No.  Usually we never call memset() from release callback.
+>
 
-It's hard to do the one-value-per-file right for a several-gpios-at-once
-goal. :-) I originally had a one-value solution: A bit map, continuously
-hex coded, like in the original kernel API idea (e.g. 0x000F0A0010).
-Wasn't sure because it encodes GPIO numbers in a weird way.
+What we want to release is a part of array, not a pointer.
+Therefore, there is only this way instead of kfree().
 
-Strictly formally: Isn't a comma-separated list of a GPIO block (e.g.
-"80,81,85") a singe value in a sense? :-) Or other possibilities? Maybe
-some node in /proc? Or some kind of new character device node?
+Thanks,
+Yasuaki Ishimatsu
 
-Otherwise, I need to think about leaving out the sysfs for this purpose.
 
-Thanks in advance,
-
-Roland
