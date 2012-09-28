@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759613Ab2I1UlT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:41:19 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38816 "EHLO
+	id S1759625Ab2I1Ulg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:41:36 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44529 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759581Ab2I1UlL (ORCPT
+	by vger.kernel.org with ESMTP id S1759602Ab2I1UlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:41:11 -0400
-X-Sasl-enc: ZZBYpt8phQX+AS+Cz6uAMke/w9apiZypEUdvxs3Dq+U9 1348864870
+	Fri, 28 Sep 2012 16:41:17 -0400
+X-Sasl-enc: sl+I0m+LImr8gLzCocc8gk47OtT/zratPxHivtKsCw36 1348864876
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 040/127] ahci: Add alternate identifier for the 88SE9172
-Date: Fri, 28 Sep 2012 13:33:33 -0700
-Message-Id: <20120928203050.529297267@linuxfoundation.org>
+        Haifeng Li <omycle@gmail.com>, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, KyongHo Cho <pullip.cho@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 044/127] mm/page_alloc: fix the page address of higher pages buddy calculation
+Date: Fri, 28 Sep 2012 13:33:37 -0700
+Message-Id: <20120928203051.007987136@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -27,32 +32,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Li Haifeng <omycle@gmail.com>
 
-commit 17c60c6b763cb5b83b0185e7d38d01d18e55a05a upstream.
+commit 0ba8f2d59304dfe69b59c034de723ad80f7ab9ac upstream.
 
-This can also appear as 0x9192. Reported in bugzilla and confirmed with the
-board documentation for these boards.
+The heuristic method for buddy has been introduced since commit
+43506fad21ca ("mm/page_alloc.c: simplify calculation of combined index
+of adjacent buddy lists").  But the page address of higher page's buddy
+was wrongly calculated, which will lead page_is_buddy to fail for ever.
+IOW, the heuristic method would be disabled with the wrong page address
+of higher page's buddy.
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=42970
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Calculating the page address of higher page's buddy should be based
+higher_page with the offset between index of higher page and index of
+higher page's buddy.
+
+Signed-off-by: Haifeng Li <omycle@gmail.com>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KyongHo Cho <pullip.cho@samsung.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -394,6 +394,8 @@ static const struct pci_device_id ahci_p
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
- 	{ PCI_DEVICE(0x1b4b, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
-+	{ PCI_DEVICE(0x1b4b, 0x9192),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
- 	{ PCI_DEVICE(0x1b4b, 0x91a3),
- 	  .driver_data = board_ahci_yes_fbs },
- 
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -540,7 +540,7 @@ static inline void __free_one_page(struc
+ 		combined_idx = buddy_idx & page_idx;
+ 		higher_page = page + (combined_idx - page_idx);
+ 		buddy_idx = __find_buddy_index(combined_idx, order + 1);
+-		higher_buddy = page + (buddy_idx - combined_idx);
++		higher_buddy = higher_page + (buddy_idx - combined_idx);
+ 		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+ 			list_add_tail(&page->lru,
+ 				&zone->free_area[order].free_list[migratetype]);
 
 
