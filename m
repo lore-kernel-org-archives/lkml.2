@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965137Ab2I1S6p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:58:45 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63190 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965120Ab2I1S6j (ORCPT
+	id S965150Ab2I1S6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:58:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965120Ab2I1S6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:58:39 -0400
+	Fri, 28 Sep 2012 14:58:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Keerthy <j-keerthy@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 098/262] hwmon: (twl4030-madc-hwmon) Initialize uninitialized structure elements
-Date: Fri, 28 Sep 2012 11:50:27 -0700
-Message-Id: <20120928183009.616791878@linuxfoundation.org>
+        Charles Wang <muming.wq@taobao.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 100/262] sched: Add missing call to calc_load_exit_idle()
+Date: Fri, 28 Sep 2012 11:50:29 -0700
+Message-Id: <20120928183009.878573430@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,44 +30,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Charles Wang <muming.wq@taobao.com>
 
-commit 73d7c119255615a26070f9d6cdb722a166a29015 upstream.
+commit 749c8814f08f12baa4a9c2812a7c6ede7d69507d upstream.
 
-twl4030_madc_conversion uses do_avg and type structure elements of
-twl4030_madc_request. Initialize structure to avoid random operation.
+Azat Khuzhin reported high loadavg in Linux v3.6
 
-Fix for: Coverity CID 200794 Uninitialized scalar variable.
+After checking the upstream scheduler code, I found Peter's commit:
 
-Cc: Keerthy <j-keerthy@ti.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Keerthy <j-keerthy@ti.com>
+  5167e8d5417b sched/nohz: Rewrite and fix load-avg computation -- again
+
+not fully applied, missing the call to calc_load_exit_idle().
+
+After that idle exit in sampling window will always be calculated
+to non-idle, and the load will be higher than normal.
+
+This patch adds the missing call to calc_load_exit_idle().
+
+Signed-off-by: Charles Wang <muming.wq@taobao.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1345449754-27130-1-git-send-email-muming.wq@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/twl4030-madc-hwmon.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ kernel/time/tick-sched.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hwmon/twl4030-madc-hwmon.c
-+++ b/drivers/hwmon/twl4030-madc-hwmon.c
-@@ -44,12 +44,13 @@ static ssize_t madc_read(struct device *
- 			 struct device_attribute *devattr, char *buf)
- {
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
--	struct twl4030_madc_request req;
-+	struct twl4030_madc_request req = {
-+		.channels = 1 << attr->index,
-+		.method = TWL4030_MADC_SW2,
-+		.type = TWL4030_MADC_WAIT,
-+	};
- 	long val;
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -145,6 +145,7 @@ static void tick_nohz_update_jiffies(kti
+ 	tick_do_update_jiffies64(now);
+ 	local_irq_restore(flags);
  
--	req.channels = (1 << attr->index);
--	req.method = TWL4030_MADC_SW2;
--	req.func_cb = NULL;
- 	val = twl4030_madc_conversion(&req);
- 	if (val < 0)
- 		return val;
++	calc_load_exit_idle();
+ 	touch_softlockup_watchdog();
+ }
+ 
 
 
