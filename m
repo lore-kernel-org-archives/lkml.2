@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965419Ab2I1TA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:00:58 -0400
+	id S965435Ab2I1TBG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:01:06 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965387Ab2I1TAr (ORCPT
+	with ESMTP id S965421Ab2I1TBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:00:47 -0400
+	Fri, 28 Sep 2012 15:01:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 140/262] can: janz-ican3: fix support for older hardware revisions
-Date: Fri, 28 Sep 2012 11:51:09 -0700
-Message-Id: <20120928183014.548111546@linuxfoundation.org>
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Subject: [ 144/262] dmaengine: at_hdmac: fix comment in atc_prep_slave_sg()
+Date: Fri, 28 Sep 2012 11:51:13 -0700
+Message-Id: <20120928183015.064877004@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,41 +29,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-commit e21093ef6fb4cbecdf926102286dbe280ae965db upstream.
+commit c618a9be0e8c0f36baee2560860a0118a428fb26 upstream.
 
-The Revision 1.0 Janz CMOD-IO Carrier Board does not have support for
-the reset registers. To support older hardware, the code is changed to
-use the hardware reset register on the Janz VMOD-ICAN3 hardware itself.
+s/dma_memcpy/slave_sg/ and it is sg length that we are
+talking about.
 
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/janz-ican3.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/dma/at_hdmac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/can/janz-ican3.c
-+++ b/drivers/net/can/janz-ican3.c
-@@ -1250,7 +1250,6 @@ static irqreturn_t ican3_irq(int irq, vo
-  */
- static int ican3_reset_module(struct ican3_dev *mod)
- {
--	u8 val = 1 << mod->num;
- 	unsigned long start;
- 	u8 runold, runnew;
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -662,7 +662,7 @@ atc_prep_slave_sg(struct dma_chan *chan,
+ 			flags);
  
-@@ -1264,8 +1263,7 @@ static int ican3_reset_module(struct ica
- 	runold = ioread8(mod->dpm + TARGET_RUNNING);
+ 	if (unlikely(!atslave || !sg_len)) {
+-		dev_dbg(chan2dev(chan), "prep_dma_memcpy: length is zero!\n");
++		dev_dbg(chan2dev(chan), "prep_slave_sg: sg length is zero!\n");
+ 		return NULL;
+ 	}
  
- 	/* reset the module */
--	iowrite8(val, &mod->ctrl->reset_assert);
--	iowrite8(val, &mod->ctrl->reset_deassert);
-+	iowrite8(0x00, &mod->dpmctrl->hwreset);
- 
- 	/* wait until the module has finished resetting and is running */
- 	start = jiffies;
 
 
