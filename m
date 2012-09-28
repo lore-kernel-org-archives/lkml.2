@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031375Ab2I1Tfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:35:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	id S1031384Ab2I1Tf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:35:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965376Ab2I1TAp (ORCPT
+	with ESMTP id S965361Ab2I1TAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:00:45 -0400
+	Fri, 28 Sep 2012 15:00:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Arnd Bergmann <arnd@arndb.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [ 131/262] ARM: imx: armadillo5x0: Fix illegal register access
-Date: Fri, 28 Sep 2012 11:51:00 -0700
-Message-Id: <20120928183013.496925998@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Anisse Astier <anisse@astier.eu>,
+        Li Chaoming <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 137/262] rtlwifi: rtl8192ce: Log message that B_CUT device may not work
+Date: Fri, 28 Sep 2012 11:51:06 -0700
+Message-Id: <20120928183014.176727732@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,39 +31,77 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 35495173e1df621dff0e9a244accbe32cd28a98f upstream.
+commit 022e1d0680c7b4366017393417b8758be5abcee8 upstream.
 
-Since commit eb92044eb (ARM i.MX3: Make ccm base address a variable )
-it is necessary to pass the CCM register base as a variable.
+There are a number of problems that occur for the latest version
+of the Realtek RTL8188CE device with the in-kernel driver. These
+include selection of the wrong firmware, and system lockup. A full
+fix is known, but is too invasive for inclusion in stable. This patch
+fixes the problem with loading the wrong firmware, and logs a message
+that the device may not work for kernels 3.6 and older.
 
-Fix the CCM register access in mach-armadillo5x0 by passing mx3_ccm_base and
-avoid illegal accesses.
-
-Also applies to v3.5
-
-Reported-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Anisse Astier <anisse@astier.eu>
+Cc: Li Chaoming <chaoming_li@realsil.com.cn>
+Tested-by: Anisse Astier <anisse@astier.eu>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/mach-armadillo5x0.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/rtl8192ce/def.h |    1 +
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c  |   12 ++++++++++--
+ drivers/net/wireless/rtlwifi/rtl8192ce/sw.c  |    6 ++++--
+ 3 files changed, 15 insertions(+), 4 deletions(-)
 
---- a/arch/arm/mach-imx/mach-armadillo5x0.c
-+++ b/arch/arm/mach-imx/mach-armadillo5x0.c
-@@ -526,7 +526,8 @@ static void __init armadillo5x0_init(voi
- 	imx31_add_mxc_nand(&armadillo5x0_nand_board_info);
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/def.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/def.h
+@@ -117,6 +117,7 @@
  
- 	/* set NAND page size to 2k if not configured via boot mode pins */
--	__raw_writel(__raw_readl(MXC_CCM_RCSR) | (1 << 30), MXC_CCM_RCSR);
-+	__raw_writel(__raw_readl(mx3_ccm_base + MXC_CCM_RCSR) |
-+					(1 << 30), mx3_ccm_base + MXC_CCM_RCSR);
+ #define CHIP_VER_B			BIT(4)
+ #define CHIP_92C_BITMASK		BIT(0)
++#define CHIP_UNKNOWN			BIT(7)
+ #define CHIP_92C_1T2R			0x03
+ #define CHIP_92C			0x01
+ #define CHIP_88C			0x00
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -995,8 +995,16 @@ static enum version_8192c _rtl92ce_read_
+ 		version = (value32 & TYPE_ID) ? VERSION_A_CHIP_92C :
+ 			   VERSION_A_CHIP_88C;
+ 	} else {
+-		version = (value32 & TYPE_ID) ? VERSION_B_CHIP_92C :
+-			   VERSION_B_CHIP_88C;
++		version = (enum version_8192c) (CHIP_VER_B |
++				((value32 & TYPE_ID) ? CHIP_92C_BITMASK : 0) |
++				((value32 & VENDOR_ID) ? CHIP_VENDOR_UMC : 0));
++		if ((!IS_CHIP_VENDOR_UMC(version)) && (value32 &
++		     CHIP_VER_RTL_MASK)) {
++			version = (enum version_8192c)(version |
++				   ((((value32 & CHIP_VER_RTL_MASK) == BIT(12))
++				   ? CHIP_VENDOR_UMC_B_CUT : CHIP_UNKNOWN) |
++				   CHIP_VENDOR_UMC));
++		}
+ 	}
  
- 	/* RTC */
- 	/* Get RTC IRQ and register the chip */
+ 	switch (version) {
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
+@@ -162,10 +162,12 @@ int rtl92c_init_sw_vars(struct ieee80211
+ 
+ 	/* request fw */
+ 	if (IS_VENDOR_UMC_A_CUT(rtlhal->version) &&
+-	    !IS_92C_SERIAL(rtlhal->version))
++	    !IS_92C_SERIAL(rtlhal->version)) {
+ 		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cfwU.bin";
+-	else if (IS_81xxC_VENDOR_UMC_B_CUT(rtlhal->version))
++	} else if (IS_81xxC_VENDOR_UMC_B_CUT(rtlhal->version)) {
+ 		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cfwU_B.bin";
++		pr_info("****** This B_CUT device may not work with kernels 3.6 and earlier\n");
++	}
+ 
+ 	rtlpriv->max_fw_size = 0x4000;
+ 	pr_info("Using firmware %s\n", rtlpriv->cfg->fw_name);
 
 
