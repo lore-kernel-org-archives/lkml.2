@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422996Ab2I1VfL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:35:11 -0400
+	id S1423012Ab2I1Vff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:35:35 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964889Ab2I1U1L (ORCPT
+	with ESMTP id S1031295Ab2I1U1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:27:11 -0400
+	Fri, 28 Sep 2012 16:27:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicolas Pitre <nico@fluxnic.net>, Will Deacon <will.deacon@arm.com>,
-        Matthew Leach <matthew.leach@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 104/218] ARM: 7532/1: decompressor: reset SCTLR.TRE for VMSA ARMv7 cores
-Date: Fri, 28 Sep 2012 13:15:21 -0700
-Message-Id: <20120928201513.510658553@linuxfoundation.org>
+        Arend Van Spriel <arend@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 094/218] brcmfmac: Fix big endian host configuration data.
+Date: Fri, 28 Sep 2012 13:15:11 -0700
+Message-Id: <20120928201512.338365064@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,35 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Leach <matthew.leach@arm.com>
+From: Hante Meuleman <meuleman@broadcom.com>
 
-commit e1e5b7e4251c7538ca08c2c5545b0c2fbd8a6635 upstream.
+commit e020a83d0942a5aceac35986500c9834efc8707d upstream.
 
-This patch zeroes the SCTLR.TRE bit prior to setting the mapping as
-cacheable for ARMv7 cores in the decompressor, ensuring that the
-memory region attributes are obtained from the C and B bits, not from
-the page tables.
+Fixes big endian host configuration parameters.
 
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Reviewed-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Matthew Leach <matthew.leach@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reviewed-by: Arend Van Spriel <arend@broadcom.com>
+Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/compressed/head.S |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c |   26 +++++++++++--------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
 
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -648,6 +648,7 @@ __armv7_mmu_cache_on:
- 		mcrne	p15, 0, r0, c8, c7, 0	@ flush I,D TLBs
- #endif
- 		mrc	p15, 0, r0, c1, c0, 0	@ read control reg
-+		bic	r0, r0, #1 << 28	@ clear SCTLR.TRE
- 		orr	r0, r0, #0x5000		@ I-cache enable, RR cache replacement
- 		orr	r0, r0, #0x003c		@ write buffer
- #ifdef CONFIG_MMU
+--- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
+@@ -764,8 +764,11 @@ static void brcmf_c_arp_offload_set(stru
+ {
+ 	char iovbuf[32];
+ 	int retcode;
++	__le32 arp_mode_le;
+ 
+-	brcmf_c_mkiovar("arp_ol", (char *)&arp_mode, 4, iovbuf, sizeof(iovbuf));
++	arp_mode_le = cpu_to_le32(arp_mode);
++	brcmf_c_mkiovar("arp_ol", (char *)&arp_mode_le, 4, iovbuf,
++			sizeof(iovbuf));
+ 	retcode = brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR,
+ 				   iovbuf, sizeof(iovbuf));
+ 	retcode = retcode >= 0 ? 0 : retcode;
+@@ -781,8 +784,11 @@ static void brcmf_c_arp_offload_enable(s
+ {
+ 	char iovbuf[32];
+ 	int retcode;
++	__le32 arp_enable_le;
+ 
+-	brcmf_c_mkiovar("arpoe", (char *)&arp_enable, 4,
++	arp_enable_le = cpu_to_le32(arp_enable);
++
++	brcmf_c_mkiovar("arpoe", (char *)&arp_enable_le, 4,
+ 			iovbuf, sizeof(iovbuf));
+ 	retcode = brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR,
+ 				   iovbuf, sizeof(iovbuf));
+@@ -803,10 +809,10 @@ int brcmf_c_preinit_dcmds(struct brcmf_p
+ 	char buf[128], *ptr;
+ 	u32 dongle_align = drvr->bus_if->align;
+ 	u32 glom = 0;
+-	u32 roaming = 1;
+-	uint bcn_timeout = 3;
+-	int scan_assoc_time = 40;
+-	int scan_unassoc_time = 40;
++	__le32 roaming_le = cpu_to_le32(1);
++	__le32 bcn_timeout_le = cpu_to_le32(3);
++	__le32 scan_assoc_time_le = cpu_to_le32(40);
++	__le32 scan_unassoc_time_le = cpu_to_le32(40);
+ 	int i;
+ 
+ 	mutex_lock(&drvr->proto_block);
+@@ -841,14 +847,14 @@ int brcmf_c_preinit_dcmds(struct brcmf_p
+ 
+ 	/* Setup timeout if Beacons are lost and roam is off to report
+ 		 link down */
+-	brcmf_c_mkiovar("bcn_timeout", (char *)&bcn_timeout, 4, iovbuf,
++	brcmf_c_mkiovar("bcn_timeout", (char *)&bcn_timeout_le, 4, iovbuf,
+ 		    sizeof(iovbuf));
+ 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR, iovbuf,
+ 				  sizeof(iovbuf));
+ 
+ 	/* Enable/Disable build-in roaming to allowed ext supplicant to take
+ 		 of romaing */
+-	brcmf_c_mkiovar("roam_off", (char *)&roaming, 4,
++	brcmf_c_mkiovar("roam_off", (char *)&roaming_le, 4,
+ 		      iovbuf, sizeof(iovbuf));
+ 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_VAR, iovbuf,
+ 				  sizeof(iovbuf));
+@@ -863,9 +869,9 @@ int brcmf_c_preinit_dcmds(struct brcmf_p
+ 				  sizeof(iovbuf));
+ 
+ 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_SCAN_CHANNEL_TIME,
+-			 (char *)&scan_assoc_time, sizeof(scan_assoc_time));
++		 (char *)&scan_assoc_time_le, sizeof(scan_assoc_time_le));
+ 	brcmf_proto_cdc_set_dcmd(drvr, 0, BRCMF_C_SET_SCAN_UNASSOC_TIME,
+-			 (char *)&scan_unassoc_time, sizeof(scan_unassoc_time));
++		 (char *)&scan_unassoc_time_le, sizeof(scan_unassoc_time_le));
+ 
+ 	/* Set and enable ARP offload feature */
+ 	brcmf_c_arp_offload_set(drvr, BRCMF_ARPOL_MODE);
 
 
