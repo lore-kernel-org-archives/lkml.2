@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861Ab2I1MZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:25:43 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:50264
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757797Ab2I1MYV (ORCPT
+	id S1757890Ab2I1MZy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:25:54 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30677 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757865Ab2I1MZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:24:21 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1155h)
-X-WSS-ID: 0MB27SC-01-LL3-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 16/16] iommu/amd: Report irq remapping through IOMMU-API
-Date: Fri, 28 Sep 2012 14:24:06 +0200
-Message-ID: <1348835046-3262-17-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
-References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+	Fri, 28 Sep 2012 08:25:52 -0400
+Date: Fri, 28 Sep 2012 15:25:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: smani@micron.com
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: re: mtip32xx:Added appropriate timeout value for secure erase
+Message-ID: <20120928122531.GA9260@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Report the availability of irq remapping through the
-IOMMU-API to allow KVM device passthrough again without
-additional module parameter overrides.
+Hello Selvan Mani,
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/amd_iommu.c |    2 ++
- 1 file changed, 2 insertions(+)
+The patch 75e152877069: "mtip32xx:Added appropriate timeout value for 
+secure erase" from Sep 27, 2012, leads to the following warning:
+drivers/block/mtip32xx/mtip32xx.c:2222 exec_drive_taskfile()
+	 error: potential NULL dereference 'outbuf'.
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 6fe4ad7..3f616f6 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3353,6 +3353,8 @@ static int amd_iommu_domain_has_cap(struct iommu_domain *domain,
- 	switch (cap) {
- 	case IOMMU_CAP_CACHE_COHERENCY:
- 		return 1;
-+	case IOMMU_CAP_INTR_REMAP:
-+		return irq_remapping_enabled;
- 	}
- 
- 	return 0;
--- 
-1.7.9.5
+  2220          /* check for erase mode support during secure erase.*/
+  2221          if ((fis.command == ATA_CMD_SEC_ERASE_UNIT)
+  2222                                          && (outbuf[0] & MTIP_SEC_ERASE_MODE)) {
+                                                    ^^^^^^
+Smatch complains that if taskout is zero this is a NULL dereference.
+Obviously that's not normal, but it looks like it might be possible.
 
+  2223                  erasemode = 1;
+  2224          }
+
+regards,
+dan carpenter
 
