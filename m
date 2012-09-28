@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031639Ab2I1TqD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:46:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	id S1031648Ab2I1Tq1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:46:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965185Ab2I1S7H (ORCPT
+	with ESMTP id S965173Ab2I1S7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:59:07 -0400
+	Fri, 28 Sep 2012 14:59:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kevin Hilman <khilman@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Steve Sakoman <steve@sakoman.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Xishi Qiu <qiuxishi@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Mel Gorman <mgorman@suse.de>, "Luck, Tony" <tony.luck@intel.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 097/262] drivers/rtc/rtc-twl.c: ensure all interrupts are disabled during probe
-Date: Fri, 28 Sep 2012 11:50:26 -0700
-Message-Id: <20120928183009.495251100@linuxfoundation.org>
+Subject: [ 105/262] memory hotplug: fix section info double registration bug
+Date: Fri, 28 Sep 2012 11:50:34 -0700
+Message-Id: <20120928183010.597928070@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -33,54 +32,77 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Kevin Hilman <khilman@ti.com>
+From: qiuxishi <qiuxishi@gmail.com>
 
-commit 8dcebaa9a0ae8a0487f4342f3d56d2cb1c980860 upstream.
+commit f14851af0ebb32745c6c5a2e400aa0549f9d20df upstream.
 
-On some platforms, bootloaders are known to do some interesting RTC
-programming.  Without going into the obscurities as to why this may be
-the case, suffice it to say the the driver should not make any
-assumptions about the state of the RTC when the driver loads.  In
-particular, the driver probe should be sure that all interrupts are
-disabled until otherwise programmed.
+There may be a bug when registering section info.  For example, on my
+Itanium platform, the pfn range of node0 includes the other nodes, so
+other nodes' section info will be double registered, and memmap's page
+count will equal to 3.
 
-This was discovered when finding bursty I2C traffic every second on
-Overo platforms.  This I2C overhead was keeping the SoC from hitting
-deep power states.  The cause was found to be the RTC firing every
-second on the I2C-connected TWL PMIC.
+  node0: start_pfn=0x100,    spanned_pfn=0x20fb00, present_pfn=0x7f8a3, => 0x000100-0x20fc00
+  node1: start_pfn=0x80000,  spanned_pfn=0x80000,  present_pfn=0x80000, => 0x080000-0x100000
+  node2: start_pfn=0x100000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x100000-0x180000
+  node3: start_pfn=0x180000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x180000-0x200000
 
-Special thanks to Felipe Balbi for suggesting to look for a rogue driver
-as the source of the I2C traffic rather than the I2C driver itself.
+  free_all_bootmem_node()
+	register_page_bootmem_info_node()
+		register_page_bootmem_info_section()
 
-Special thanks to Steve Sakoman for helping track down the source of the
-continuous RTC interrups on the Overo boards.
+When hot remove memory, we can't free the memmap's page because
+page_count() is 2 after put_page_bootmem().
 
-Signed-off-by: Kevin Hilman <khilman@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Tested-by: Steve Sakoman <steve@sakoman.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Tested-by: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+  sparse_remove_one_section()
+	free_section_usemap()
+		free_map_bootmem()
+			put_page_bootmem()
+
+[akpm@linux-foundation.org: add code comment]
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: "Luck, Tony" <tony.luck@intel.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-twl.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ mm/memory_hotplug.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/rtc/rtc-twl.c
-+++ b/drivers/rtc/rtc-twl.c
-@@ -495,6 +495,11 @@ static int __devinit twl_rtc_probe(struc
- 	if (ret < 0)
- 		goto out1;
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -126,9 +126,6 @@ static void register_page_bootmem_info_s
+ 	struct mem_section *ms;
+ 	struct page *page, *memmap;
  
-+	/* ensure interrupts are disabled, bootloaders can be strange */
-+	ret = twl_rtc_write_u8(0, REG_RTC_INTERRUPTS_REG);
-+	if (ret < 0)
-+		dev_warn(&pdev->dev, "unable to disable interrupt\n");
-+
- 	/* init cached IRQ enable bits */
- 	ret = twl_rtc_read_u8(&rtc_irq_bits, REG_RTC_INTERRUPTS_REG);
- 	if (ret < 0)
+-	if (!pfn_valid(start_pfn))
+-		return;
+-
+ 	section_nr = pfn_to_section_nr(start_pfn);
+ 	ms = __nr_to_section(section_nr);
+ 
+@@ -187,9 +184,16 @@ void register_page_bootmem_info_node(str
+ 	end_pfn = pfn + pgdat->node_spanned_pages;
+ 
+ 	/* register_section info */
+-	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION)
+-		register_page_bootmem_info_section(pfn);
+-
++	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
++		/*
++		 * Some platforms can assign the same pfn to multiple nodes - on
++		 * node0 as well as nodeN.  To avoid registering a pfn against
++		 * multiple nodes we check that this pfn does not already
++		 * reside in some other node.
++		 */
++		if (pfn_valid(pfn) && (pfn_to_nid(pfn) == node))
++			register_page_bootmem_info_section(pfn);
++	}
+ }
+ #endif /* !CONFIG_SPARSEMEM_VMEMMAP */
+ 
 
 
