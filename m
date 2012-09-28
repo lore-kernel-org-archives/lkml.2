@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030282Ab2I1XtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 19:49:13 -0400
-Received: from nm1.bullet.mail.bf1.yahoo.com ([98.139.212.160]:46285 "HELO
-	nm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S964855Ab2I1XtI (ORCPT
+	id S965132Ab2I1XtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 19:49:21 -0400
+Received: from nm3-vm0.bullet.mail.bf1.yahoo.com ([98.139.212.154]:37631 "HELO
+	nm3-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S964916Ab2I1XtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 19:49:08 -0400
-X-Yahoo-Newman-Id: 103267.40552.bm@smtp101.sbc.mail.bf1.yahoo.com
+	Fri, 28 Sep 2012 19:49:12 -0400
+X-Yahoo-Newman-Id: 385396.40552.bm@smtp101.sbc.mail.bf1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 6dIN2rMVM1mWuwvprrvh2Myf5YwLL_rlTYlCRRAfp8AmR3y
- zW..thTPQU.Dhko1ockuIXkXxJEnyOyp2Ey.uzV6rkkBXMfNr02YpLySavOR
- 1znAoqcGHTRvN8njoVq6ksHXRLWqX0YCPA459tsEweDcVIWM68ZIR8ugRAFS
- v07wSfV_WwclGoo.NnAjI.09ujDbNhSRsKxDaoaa31ufKNMQFAyBWSje4VOH
- xWIMF1e5R_KMtln9pHfvyM3a7o31NTaaC_ZWyDGjJtl2AcVzRTFmX9b_WqqN
- MprbjUp.MsGsI6T6ajGyUAU.q_yzFxJaaw5LWzGnBkoHi94k6g_jzsxdvU9H
- BZbYPOww0oFUHzelBOcZZR6gC0jXsYiBzrsr5fBoljomJmPYVETHPSPYnXIv
- gLQFeCzI2cf4hGy2fgyAzVe_wwoILICXJ86ZUi06zGQoUdh9NnXSpgg--
+X-YMail-OSG: pQPYukcVM1nII1gGTzRYPO32qL4QEASaN0CtgI62mquBiKD
+ l8N2DKRBaPhwsHJ1rVAVvdXGcAp1Tq79cN7TRVkGU5z1rAEKYhJ8VzlE7xJI
+ nvrM0FhguBCUFJva_eqqKhnNuKAUHhR.dujO2YqDh2OoH2LwMBuCo_dkTAFs
+ Qjkpi6E7S7aKR6P9IA0kvs9BEySmA3NZL9lfHQX04fCQJU7aAIRigriaFAUj
+ .3dc8JCAkNQ1POoK4ioSR6IQ3Q9.2d9gXpcH_1yMQ68phNA8_mW9UnQWJYit
+ nv31eFsV3xrz7ZgBFpgwfYKWUfTW8noZrrhD9824V.63UYg.qoY3ffxjuIBN
+ cK2LFbs7weGiYwFfZJW0q411d5Xw3LkpIAMKEQ1fGTqnwInt2.jKe9uGfJeD
+ 9PqRwxQnzQAIjs8EiZHqnYyGyzNxNjXQX1hCqeplXMNF5N9CDeBc9mQ--
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: Daniel Santos <daniel.santos@pobox.com>
 To: LKML <linux-kernel@vger.kernel.org>, Akinobu Mita <akinobu.mita@gmail.com>,
@@ -32,9 +32,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Akinobu Mita <akinobu.mita@gmail.com>,
         Pavel Pisa <pisa@cmp.felk.cvut.cz>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Rik van Riel <riel@redhat.com>, Rob Landley <rob@landley.net>
-Subject: [PATCH v6 6/10] selftest: Add generic tree self-test common code.
-Date: Fri, 28 Sep 2012 18:48:42 -0500
-Message-Id: <1348876126-28792-1-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v6 7/10] selftest: Add userspace test program.
+Date: Fri, 28 Sep 2012 18:48:43 -0500
+Message-Id: <1348876126-28792-2-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1348875625-28669-1-git-send-email-daniel.santos@pobox.com>
 References: <1348875625-28669-1-git-send-email-daniel.santos@pobox.com>
@@ -42,34 +42,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Self-test code for both performance and correctness testing. The files
-tools/testing/selftests/grbtree/common.{h,c} contain code for use in
-both the user- and kernel-space test program/module and depends upon a
-few functions being made available by said.
+Userspace test program using code from common.{c,h}.  Userspace
+compliation is accomplished by ovreriding a few kernel headers in the
+overrides directory.  This is an invasive hack (involving many internals
+of kernel headers) that is expected to require fairly frequent
+maintainence as kernel headers change.
 
-The purpose of these tests is to verify correctness across compilers and
-document the performance difference between the generic and hand-coded
-red-black tree implementations on various compilers, which is identified
-as critical for determining feasibility of adding this this tree
-implementation to the kernel, as older compilers optimize the generic
-code more poorly than its hand-coded counterpart.
+The program grbtest can be run with -h option for help and outputs both
+a human-readable format as well as a delimited text for more extensive
+processing.
+
+The exact behavior of the grbtest program depends upon the following
+pre-processor variables, which the Makefile expects to be -Defined in a
+CONFIG variable. Each variable should be assigned a value of 1 or 0, as
+documented in common.h. If CONFIG is not set, a default is assigned in
+the Makefile.
+
+GRBTEST_KEY_TYPE
+GRBTEST_PAYLOAD
+GRBTEST_BUILD_GENERIC
+GRBTEST_USE_LEFTMOST
+GRBTEST_USE_RIGHTMOST
+GRBTEST_USE_COUNT
+GRBTEST_UNIQUE_KEYS
+GRBTEST_INSERT_REPLACES
+
+Generation of the resultant executable is also dependent upon the below
+.config values.
+
+DEBUG_GRBTREE
+DEBUG_GRBTREE_VALIDATE
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- tools/testing/selftests/grbtree/common.c |  892 ++++++++++++++++++++++++++++++
- tools/testing/selftests/grbtree/common.h |  293 ++++++++++
- 2 files changed, 1185 insertions(+), 0 deletions(-)
- create mode 100644 tools/testing/selftests/grbtree/common.c
- create mode 100644 tools/testing/selftests/grbtree/common.h
+ tools/testing/selftests/grbtree/user/Makefile      |   68 +++
+ tools/testing/selftests/grbtree/user/facilities.c  |   58 ++
+ tools/testing/selftests/grbtree/user/main.c        |  621 ++++++++++++++++++++
+ .../grbtree/user/overrides/linux/export.h          |   31 +
+ .../grbtree/user/overrides/linux/kernel.h          |   83 +++
+ 5 files changed, 861 insertions(+), 0 deletions(-)
+ create mode 100644 tools/testing/selftests/grbtree/user/Makefile
+ create mode 100644 tools/testing/selftests/grbtree/user/facilities.c
+ create mode 100644 tools/testing/selftests/grbtree/user/main.c
+ create mode 100644 tools/testing/selftests/grbtree/user/overrides/linux/export.h
+ create mode 100644 tools/testing/selftests/grbtree/user/overrides/linux/kernel.h
 
-diff --git a/tools/testing/selftests/grbtree/common.c b/tools/testing/selftests/grbtree/common.c
+diff --git a/tools/testing/selftests/grbtree/user/Makefile b/tools/testing/selftests/grbtree/user/Makefile
 new file mode 100644
-index 0000000..f5383be
+index 0000000..14380c2
 --- /dev/null
-+++ b/tools/testing/selftests/grbtree/common.c
-@@ -0,0 +1,892 @@
-+/* common.c - generic red-black tree test functions for use in both kernel and
-+ * user space.
++++ b/tools/testing/selftests/grbtree/user/Makefile
+@@ -0,0 +1,68 @@
++# Default configuration (used if CONFIG not supplied)
++# See common.h for docs
++CONFIG ?= -DGRBTEST_KEY_TYPE=u32	\
++	  -DGRBTEST_PAYLOAD=0		\
++	  -DGRBTEST_BUILD_GENERIC=0	\
++	  -DGRBTEST_USE_LEFTMOST=1	\
++	  -DGRBTEST_USE_RIGHTMOST=1	\
++	  -DGRBTEST_USE_COUNT=1		\
++	  -DGRBTEST_UNIQUE_KEYS=1	\
++	  -DGRBTEST_INSERT_REPLACES=1
++
++ifeq ($(KERNELRELEASE),)
++    # Assume the source tree is where the running kernel was built
++    # You should set KERNELDIR in the environment if it's elsewhere
++    KERNELDIR ?= /lib/modules/$(shell uname -r)/build
++endif
++
++PWD := $(shell pwd)
++
++# The below KERNEL_ARCH works on x86_64, but hasn't been tested elsewhere
++# (e.g., x86 32-bit, ARM, etc.)
++KERNEL_ARCH	 = $(shell uname -m | sed 's/x86_64/x86/')
++
++# Kernel include directories
++KERNEL_INCLUDES	 = -I$(KERNELDIR)/include \
++		   -I$(KERNELDIR)/arch/$(KERNEL_ARCH)/include
++CPPFLAGS	+= -DGRBTEST_USERLAND=1 -D__KERNEL__ -I$(PWD)/.. \
++		   -I$(PWD)/overrides $(KERNEL_INCLUDES) $(CONFIG)
++WARN_FLAGS	 = -Wall -Wundef -Wstrict-prototypes -Wno-unused-variable \
++		   -Werror-implicit-function-declaration -Wno-trigraphs \
++		   -Wno-format-security -Wno-unused-variable
++# on gcc 4.3.6 and prior, we get some warnings for __rb_erase_color declared
++# inline after being called, so remove -Werror for now
++
++# Standard CFLAGS if not already set
++CFLAGS		?= -O2 -pipe
++# FIXME: breaks glibc
++#CFLAGS		+= -mno-see
++# TODO: Can get tese from KBUILD_CFLAGS in arch/<arch>/Makefile?
++#CFLAGS		+= -march=native -mno-mmx -mno-sse2 -mno-3dnow -mno-avx
++CFLAGS		+= $(WARN_FLAGS) -fno-strict-aliasing -fno-common \
++		   -fno-delete-null-pointer-checks
++CC		?= gcc
++CPPFLAGS	+= -DGRBTEST_CFLAGS="$(CFLAGS)" -DGRBTEST_CONFIG="$(CONFIG)" \
++		   -DGRBTEST_CC="$(CC)" \
++		   -DGRBTEST_ARCH="$(KERNEL_ARCH)" \
++		   -DGRBTEST_ARCH_FLAGS="-march=k8 -m64" \
++		   -DGRBTEST_PROCESSOR="$(shell uname -p)" \
++
++all: grbtest
++
++OBJ_FILES = main.o rbtree.o common.o facilities.o
++HEADER_FILES = $(KERNELDIR)/include/linux/rbtree.h ../common.h
++
++rbtree.c:
++	ln -s $(KERNELDIR)/lib/rbtree.c $(PWD)/rbtree.c
++
++common.c:
++	ln -s ../common.c common.c
++
++rbtree.o: rbtree.c $(KERNELDIR)/include/linux/rbtree.h
++
++grbtest: $(OBJ_FILES) $(HEADER_FILES)
++	$(CC) $(CFLAGS) $(OBJ_FILES) -o grbtest
++
++clean:
++	rm -f grbtest *.o rbtree.c common.c
++
+diff --git a/tools/testing/selftests/grbtree/user/facilities.c b/tools/testing/selftests/grbtree/user/facilities.c
+new file mode 100644
+index 0000000..63c29aa
+--- /dev/null
++++ b/tools/testing/selftests/grbtree/user/facilities.c
+@@ -0,0 +1,58 @@
++/* facilities.c - userspace facilities used by common.c/h
 + * Copyright (C) 2012  Daniel Santos <daniel.santos@pobox.com>
 + *
 + * This program is free software; you can redistribute it and/or
@@ -87,707 +185,501 @@ index 0000000..f5383be
 + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 + */
 +
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include <sys/time.h>
 +#include "common.h"
 +
-+#define _CONCAT2(a, b) a ## b
-+#define _CONCAT(a, b) _CONCAT2(a, b)
++long run_test(unsigned int count);
 +
++static struct timezone tz;
 +
-+const char *grbtest_type_desc[GRBTEST_TYPE_COUNT] = {
-+	"insertion performance",
-+	"insertion & deletion performance",
-+	"insertion validation"
-+};
-+
-+#if GRBTEST_BUILD_GENERIC
-+/****************************************************************************
-+ * Generic Implementation
-+ */
-+
-+#define __GRBTEST_FLAGS						\
-+	((GRBTEST_UNIQUE_KEYS ? RB_UNIQUE_KEYS : 0) |		\
-+	 (GRBTEST_INSERT_REPLACES ? RB_INSERT_REPLACES : 0))
-+
-+
-+
-+static inline long compare_s8(const s8 *a, const s8 *b) {return *a - *b;}
-+static inline long greater_s8(const s8 *a, const s8 *b) {return *a > *b;}
-+
-+static inline long compare_u8(const u8 *a, const u8 *b) {return (long)*a - (long)*b;}
-+static inline long greater_u8(const u8 *a, const u8 *b) {return *a > *b;}
-+
-+static inline long compare_s16(const s16 *a, const s16 *b) {return *a - *b;}
-+static inline long greater_s16(const s16 *a, const s16 *b) {return *a > *b;}
-+
-+static inline long compare_u16(const u16 *a, const u16 *b) {return (long)*a - (long)*b;}
-+static inline long greater_u16(const u16 *a, const u16 *b) {return *a > *b;}
-+
-+static inline long compare_s32(const s32 *a, const s32 *b) {return *a - *b;}
-+static inline long greater_s32(const s32 *a, const s32 *b) {return *a > *b;}
-+
-+static inline long compare_u32(const u32 *a, const u32 *b) {return (long)*a - (long)*b;}
-+static inline long greater_u32(const u32 *a, const u32 *b) {return *a > *b;}
-+
-+static inline long compare_s64(const s64 *a, const s64 *b) {return *a - *b;}
-+static inline long greater_s64(const s64 *a, const s64 *b) {return *a > *b;}
-+
-+static inline long compare_u64(const u64 *a, const u64 *b) {return *a - *b;}
-+static inline long greater_u64(const u64 *a, const u64 *b) {return *a > *b;}
-+
-+
-+RB_DEFINE_INTERFACE(
-+	mytree,
-+	struct container, tree,
-+#if GRBTEST_USE_LEFTMOST
-+	leftmost
-+#endif
-+	,
-+#if GRBTEST_USE_RIGHTMOST
-+	rightmost
-+#endif
-+	,
-+#if GRBTEST_USE_COUNT
-+	count
-+#endif
-+	,
-+	struct object, node, key,
-+	__GRBTEST_FLAGS, _CONCAT(compare_, GRBTEST_KEY_TYPE),
-+#if GRBTEST_UNIQUE_KEYS
-+	_CONCAT(compare_, GRBTEST_KEY_TYPE),
-+#else
-+	_CONCAT(greater_, GRBTEST_KEY_TYPE),
-+#endif
-+	static __flatten inline,	/* find */
-+	static __flatten inline,	/* insert */
-+	static __flatten inline,	/* find_near */
-+	static __flatten inline);	/* insert_near */
-+
-+
-+#else /* GRBTEST_BUILD_GENERIC */
-+
-+/****************************************************************************
-+ * Hand-coded Implementation
-+ *
-+ * This section implements the find, insert & remove functions as one would do
-+ * so were they hand-coding it, except that we use pre-processor to include (or
-+ * omit) the various features & rules.
-+ *
-+ * In order to account for compilers that may fail to optimize out a simple
-+ * if(0) or if(1) construct, we'll make sure that such extra code is not
-+ * generated by using these ugly pre-processor #ifs in this "hand-coded"
-+ * section.  This makes the code prety ugly, but is percieved as necessary by
-+ * the author for correctness. TODO: Is this overkill?
-+ */
-+
-+static __always_inline struct object *mytree_find(struct container *cont, GRBTEST_KEY_TYPE *key)
++void facilities_init(void)
 +{
-+	struct rb_node *node = cont->tree.rb_node;
-+
-+	while (node) {
-+		struct object *obj = container_of(node, struct object, node);
-+		if (*key > obj->key) {
-+			node = node->rb_right;
-+		} else if (*key < obj->key) {
-+			node = node->rb_left;
-+		} else
-+			return obj;
-+	}
-+
-+	return 0;
-+}
-+
-+static __always_inline struct object *mytree_insert(struct container *cont,
-+					   struct object *obj)
-+{
-+	struct rb_root *root   = &cont->tree;
-+	struct rb_node **p     = &root->rb_node;
-+	struct rb_node *parent = NULL;
-+	GRBTEST_KEY_TYPE key   = obj->key;
-+#if GRBTEST_UNIQUE_KEYS
-+	struct rb_node *found;
-+#endif
-+#if GRBTEST_USE_LEFTMOST
-+	int leftmost           = 1;
-+#endif
-+#if GRBTEST_USE_RIGHTMOST
-+	int rightmost          = 1;
-+#endif
-+
-+	while (*p) {
-+		parent = *p;
-+		GRBTEST_KEY_TYPE cur_key = container_of(*p, struct object, node)->key;
-+
-+		if (key < cur_key) {
-+			p = &(*p)->rb_left;
-+#if GRBTEST_USE_RIGHTMOST
-+			rightmost = 0;
-+#endif
-+/* if not using/enforcing unique keys, the below test is superflorous */
-+#if GRBTEST_UNIQUE_KEYS
-+		} else if (key > cur_key) {
-+#else
-+		} else {
-+#endif /* GRBTEST_UNIQUE_KEYS */
-+			p = &(*p)->rb_right;
-+#if GRBTEST_USE_LEFTMOST
-+			leftmost = 0;
-+#endif
-+		}
-+/* again, if not using unique keys, the if/else is completed above, and we
-+ * never exit the loop until we find a leaf
-+ */
-+#if GRBTEST_UNIQUE_KEYS
-+		  else
-+			break;
-+#endif
-+	}
-+
-+
-+#if GRBTEST_USE_LEFTMOST
-+	if (leftmost)
-+		cont->leftmost = *p;
-+#endif
-+
-+#if GRBTEST_USE_RIGHTMOST
-+	if (rightmost)
-+		cont->rightmost = *p;
-+#endif
-+
-+#if GRBTEST_UNIQUE_KEYS
-+	found = *p;
-+	if (found) {
-+#if GRBTEST_INSERT_REPLACES
-+		rb_replace_node(found, &obj->node, root);
-+#endif
-+
-+		return container_of(found, struct object, node);
-+	} else
-+#endif /* GRBTEST_UNIQUE_KEYS */
-+	{
-+		rb_link_node(&obj->node, parent, p);
-+		rb_insert_color(&obj->node, root);
-+	}
-+
-+#if GRBTEST_USE_COUNT
-+	++cont->count;
-+#endif
-+
-+	return NULL;
-+}
-+
-+static __always_inline void mytree_remove(struct container *cont, struct object *obj)
-+{
-+	struct rb_node *node = &obj->node;
-+
-+#if GRBTEST_USE_LEFTMOST
-+	if (cont->leftmost == node)
-+		cont->leftmost = rb_next(node);
-+#endif
-+
-+#if GRBTEST_USE_RIGHTMOST
-+	if (cont->rightmost == node)
-+		cont->rightmost = rb_prev(node);
-+#endif
-+
-+	rb_erase(node, &cont->tree);
-+
-+#if GRBTEST_USE_COUNT
-+	--cont->count;
-+#endif
-+}
-+
-+
-+#endif /* GRBTEST_BUILD_GENERIC */
-+
-+
-+
-+/****************************************************************************
-+ * Test functions
-+ */
-+
-+#define VALIDATE_PARAM(fmt, param, test)			\
-+do {								\
-+	if (unlikely(!(test))) {				\
-+		print_err(#param " invalid: %" #fmt " (" #test ")\n", \
-+				param);				\
-+		return -EINVAL;					\
-+	}							\
-+} while(0)
-+
-+long grbtest_init(struct grbtest_config *config)
-+{
-+	long i;
-+	void *rnd_state;
-+
-+	VALIDATE_PARAM(u, config->pool_count, config->pool_count);
-+	VALIDATE_PARAM(u, config->object_count, config->object_count);
-+
-+	config->seed = config->in_seed;
-+	rnd_state = rand_init(&config->seed);
-+	if (!rnd_state) {
-+		print_err("failed to init random number generator\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* if already initialized, cleanup and start over */
-+	if(objects.pools) {
-+		grbtest_cleanup();
-+	}
-+
-+	objects.pools        = malloc(sizeof(struct object *) *
-+			       config->pool_count);
-+	objects.pool_count   = config->pool_count;
-+	objects.object_count = config->object_count;
-+	objects.pool_size    = sizeof(struct object) * config->object_count;
-+
-+	if (0) {
-+	print_err("allocating %u pools of %u objects (%lu bytes) each for a "
-+		  "total of %lu bytes of memory.\n",
-+		  config->pool_count, config->object_count,
-+		  (unsigned long)objects.pool_size,
-+		  (unsigned long)(config->pool_count * objects.pool_size));
-+	}
-+
-+	for (i = 0; i != config->pool_count; ++i) {
-+		objects.pools[i] = mem_alloc(objects.pool_size);
-+		if (unlikely(!objects.pools[i])) {
-+			print_err("out of memory, you probably did something "
-+				  "stupid...\n");
-+			objects.pool_count = i;
-+			grbtest_cleanup();
-+			return -ENOMEM;
-+		}
-+	}
-+
-+	/* initialize objects in all pools */
-+	for (i = 0; i < config->pool_count; ++i) {
-+		struct object *p = objects.pools[i];
-+		struct object *end = &p[objects.object_count];
-+
-+		if (!i) {
-+			/* pool zero gets random keys */
-+			for (; p != end; ++p)
-+				init_object(p, rand() & config->key_mask);
-+		} else {
-+			/* remaining pools copy keys from pool zero */
-+			const struct object *p0 = objects.pools[0];
-+			for (; p != end; ++p, ++p0)
-+				init_object(p, p0->key);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+void grbtest_cleanup()
-+{
-+	BUG_ON(!objects.pools);
-+
-+	while (objects.pool_count--)
-+		mem_free(objects.pools[objects.pool_count]);
-+	mem_free(objects.pools);
++	tz.tz_minuteswest = 0;
++	tz.tz_dsttime = 0;
 +
 +	memset(&objects, 0, sizeof(objects));
-+	objects.pools	     = NULL;
-+	objects.pool_count   = 0;
-+	objects.object_count = 0;
-+	objects.pool_size    = 0;
 +}
 +
-+long reset_objects(unsigned int pool_count) {
-+	unsigned i;
-+
-+	VALIDATE_PARAM(u, pool_count, pool_count <= objects.pool_count);
-+
-+	for (i = 0; i < pool_count; ++i) {
-+		struct object *p = objects.pools[i];
-+		struct object *end = &p[objects.object_count];
-+
-+		for (; p != end; ++p) {
-+			grbtest_init_node(&p->node);
-+		}
-+	}
-+
-+	return 0;
++u64 getCurTicks(void) {
++	struct timeval now;
++	gettimeofday(&now, &tz);
++	return 1000000LL * now.tv_sec + now.tv_usec;
 +}
 +
-+long grbtest_run_test(
-+		struct grbtest_config *config,
-+		struct grbtest_result *result,
-+		struct container *cont)
++/* We aren't actually allocating anything here, unlike the kernelspace version
++ * but a null pointer means error, so we'll return one instead.
++ */
++void *rand_init(u64 *seed)
 +{
-+	grbtest_init_results(config, result);
++	BUG_ON(!seed);
 +
-+	switch (config->test) {
-+		case GRBTEST_TYPE_INSERTION:
-+			return grbtest_perftest(config, result, cont, 0);
++	if (!*seed)
++		*seed = getCurTicks();
 +
-+		case GRBTEST_TYPE_INSERTION_DELETION:
-+			return grbtest_perftest(config, result, cont, 1);
++	/* reduce to 32 bits */
++	*seed = (*seed & 0xffffffff) ^ (*seed >> 32);
++	srand(*seed & 0xffffffff);
 +
-+		case GRBTEST_TYPE_VALIDATE_INSERTIONS:
-+			return grbtest_validate_insertion(config, result, cont);
-+
-+		default:
-+			print_err("Invalid test specified");
-+			return -1;
-+	}
++	return (void*)1;
 +}
-+
-+/* flatten needed for gcc 4.3.x, that otherwise fails to inline mytree_insert */
-+__flatten
-+long grbtest_perftest(
-+		struct grbtest_config *config,
-+		struct grbtest_result *result,
-+		struct container *cont,
-+		int do_deletes)
-+{
-+	u64 start_time, end_time;
-+	struct object *p, *start, *evicted;
-+	const struct object *end;
-+	unsigned i;
-+	unsigned pool = 0;
-+
-+	VALIDATE_PARAM(u, pool, pool < objects.pool_count);
-+	VALIDATE_PARAM(u, config->object_count, config->object_count
-+		<= objects.object_count);
-+
-+	start = objects.pools[pool];
-+	end = &objects.pools[pool][config->object_count];
-+
-+	if (!do_deletes) {
-+		/* profile insertions with cheap container purge */
-+
-+		start_time = getCurTicks();
-+		for (i = 0; i < config->reps; ++i) {
-+			init_container(cont);
-+
-+			for (p = start; p != end; ++p) {
-+				if (mytree_insert(cont, p))
-+					++result->evictions;
-+			}
-+		}
-+
-+		result->insertion_time += (u64)(getCurTicks() - start_time);
-+		result->insertions += config->reps * config->object_count;
-+	} else {
-+		/* profile insertions & deletions */
-+
-+		for (i = 0; i < config->reps; ++i) {
-+			init_container(cont);
-+
-+			/* populate tree */
-+			start_time = getCurTicks();
-+			for (p = start; p != end; ++p) {
-+				if ((evicted = mytree_insert(cont, p))) {
-+					evicted->node.__rb_parent_color =
-+						(unsigned long)&evicted->node;
-+					++result->evictions;
-+				}
-+			}
-+
-+			end_time = getCurTicks();
-+			result->insertion_time += (u64)(end_time - start_time);
-+
-+			/* remove items from tree */
-+			start_time = end_time;
-+			for (p = start; p != end; ++p) {
-+				if (p->node.__rb_parent_color !=
-+						(unsigned long)&p->node) {
-+					mytree_remove(cont, p);
-+					++result->deletions;
-+				}
-+			}
-+
-+			end_time = getCurTicks();
-+			result->deletion_time += (u64)(end_time - start_time);
-+
-+			/* tree should now be empty */
-+			BUG_ON(cont->tree.rb_node != NULL);
-+		}
-+		result->insertions = config->reps * config->object_count;
-+	}
-+
-+	return 0;
-+}
-+
-+
-+long grbtest_validate_insertion(
-+		struct grbtest_config *config,
-+		struct grbtest_result *result,
-+		struct container *cont)
-+{
-+	struct object *p, *near;
-+	struct object *start = objects.pools[0];
-+	const struct object *end;
-+	u64 start_time;
-+	unsigned num_nodes;
-+	unsigned pool = 0;
-+
-+	VALIDATE_PARAM(u, config->object_count, config->object_count
-+		<= objects.object_count);
-+	VALIDATE_PARAM(u, pool, pool < objects.pool_count);
-+	/* currently ignored, pass zero for now */
-+	VALIDATE_PARAM(u, config->reps, !config->reps);
-+
-+	start_time = getCurTicks();
-+	for (num_nodes = 1; num_nodes <= config->object_count; ++num_nodes) {
-+		end = &start[num_nodes];
-+		init_container(cont);
-+		reset_objects(1);
-+
-+		for (p = start; p != end; ++p) {
-+			struct object *evicted = mytree_insert(cont, p);
-+
-+#if 0
-+			if (evicted && (mytree_rel.flags & RB_UNIQUE_KEYS)
-+				    && (mytree_rel.flags & RB_INSERT_REPLACES)) {
-+#endif
-+			if (evicted && GRBTEST_INSERT_REPLACES) {
-+				++result->evictions;
-+				grbtest_init_node(&evicted->node);
-+			}
-+		}
-+
-+		/* make sure we can find them */
-+		for (p = start; p != end; ++p) {
-+			struct object *found = mytree_find(cont, &p->key);
-+
-+			/* if the object is inserted, it should be there */
-+			if (is_inserted(p)) {
-+				BUG_ON(found != p);
-+			/* otherwise, it was evicted and shouldn't be there */
-+			} else {
-+#if GRBTEST_BUILD_GENERIC
-+				BUG_ON(!(mytree_rel.flags & RB_UNIQUE_KEYS));
-+#else
-+				BUG_ON(!GRBTEST_UNIQUE_KEYS);
-+#endif
-+				BUG_ON(found == p);
-+			}
-+		}
-+
-+		/* make sure we can find_near them */
-+		for (near = start; near != end; ++near) {
-+
-+			/* we wont use a non-inserted object for a near search */
-+			if (!is_inserted(near)) {
-+#if GRBTEST_BUILD_GENERIC
-+				BUG_ON(!(mytree_rel.flags & RB_UNIQUE_KEYS));
-+#else
-+				BUG_ON(!GRBTEST_UNIQUE_KEYS);
-+#endif
-+				continue;
-+			}
-+
-+/* we're not doing find_near on hand-coded stuff */
-+#if GRBTEST_BUILD_GENERIC
-+			for (p = start; p != end; ++p) {
-+				struct object *found =
-+					mytree_find_near(near, &p->key);
-+
-+				if (is_inserted(p)) {
-+					BUG_ON(found != p);
-+				} else {
-+					BUG_ON(!(mytree_rel.flags & RB_UNIQUE_KEYS));
-+					BUG_ON(found == p);
-+				}
-+			}
-+#endif /* GRBTEST_BUILD_GENERIC */
-+		}
-+
-+		/* walk the tree and verify order using compare function */
-+		for (near = start; near != end; ++near) {
-+			// count objects
-+			// count inserted objects using start -> end and make sure they match
-+			// verify count field
-+
-+		}
-+
-+		/* now we'll delete them and make sure they are removed */
-+		for (near = start; near != end; ++near) {
-+
-+		}
-+
-+	}
-+	result->insertion_time += (u64)(getCurTicks() - start_time);
-+
-+	return 0;
-+}
-+
-+
-+/****************************************************************************
-+ * Test result functions
+diff --git a/tools/testing/selftests/grbtree/user/main.c b/tools/testing/selftests/grbtree/user/main.c
+new file mode 100644
+index 0000000..89132b8
+--- /dev/null
++++ b/tools/testing/selftests/grbtree/user/main.c
+@@ -0,0 +1,621 @@
++/* main.c - userspace generic red-black tree test program.
++ * Copyright (C) 2012  Daniel Santos <daniel.santos@pobox.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 + */
 +
-+void grbtest_init_results(const struct grbtest_config *config,
-+			  struct grbtest_result *result)
-+{
-+	memset(result, 0, sizeof(*result));
-+	result->node_size   = sizeof(struct rb_node);
-+	result->object_size = sizeof(struct object);
-+	result->pool_size   = sizeof(struct object) * config->object_count;
-+}
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include <sys/time.h>
++#include <getopt.h>
++#include <libgen.h>
 +
-+void grbtest_print_result_header(const struct grbtest_config *config)
-+{
-+	const char *d = config->delimiter;
-+	/* compile-time config */
-+	print_msg("compiler%s",		d);
-+	print_msg("key_type%s",		d);
-+	print_msg("payload%s",		d);
-+	print_msg("userland%s",		d);
-+	print_msg("use_generic%s",	d);
-+	print_msg("use_leftmost%s",	d);
-+	print_msg("use_rightmost%s",	d);
-+	print_msg("use_count%s",	d);
-+	print_msg("unique_keys%s",	d);
-+	print_msg("insert_replaces%s",	d);
-+	print_msg("debug%s",		d);
-+	print_msg("debug_validate%s",	d);
-+	print_msg("arch%s",		d);
-+	print_msg("arch_flags%s",	d);
-+	print_msg("processor%s",	d);
-+	print_msg("cc%s",		d);
-+	print_msg("cflags%s",		d);
++#include "common.h"
 +
-+	/* run-time config */
-+	print_msg("test%s",		d);
-+	print_msg("in_seed%s",		d);
-+	print_msg("seed%s",		d);
-+	print_msg("key_mask%s",		d);
-+	print_msg("object_count%s",	d);
-+	print_msg("pool_count%s",	d);
-+	print_msg("reps%s",		d);
-+	/* fields human_readable, delimiter, text_enclosure
-+	 * and print_header omited */
++long run_test(unsigned int count);
 +
-+	/* result */
-+	print_msg("node_size%s",	d);
-+	print_msg("object_size%s",	d);
-+	print_msg("pool_size%s",	d);
-+	print_msg("insertions%s",	d);
-+	print_msg("insertion_time%s",	d);
-+	print_msg("evictions%s",	d);
-+	print_msg("deletions%s",	d);
-+	print_msg("deletion_time\n");
-+}
++struct timezone tz;
++struct object_pools objects;
 +
-+void grbtest_print_result_row(const struct grbtest_config *config,
-+			      const struct grbtest_result *result)
-+{
-+	const char *d = config->delimiter;
-+	const char *q = config->text_enclosure;
++#define BAIL_ON_ERR(var, expr)			\
++do {						\
++	var = (expr);				\
++	if(IS_ERR_VALUE(var)) return var;	\
++} while(0)
 +
-+	/* FIXME: Will formating u64 as "%llu" wont be correct on all
-+	 * architectures?
-+	 */
-+	/* compile-time config */
-+	print_msg("%s" GRBTEST_COMPILER "%s%s",			q, q, d);
-+	print_msg("%s" __stringify(GRBTEST_KEY_TYPE) "%s%s",	q, q, d);
-+	print_msg(__stringify(GRBTEST_PAYLOAD) "%s",		d);
-+	print_msg(__stringify(GRBTEST_USERLAND) "%s",		d);
-+	print_msg(__stringify(GRBTEST_BUILD_GENERIC) "%s",	d);
-+	print_msg(__stringify(GRBTEST_USE_LEFTMOST) "%s",	d);
-+	print_msg(__stringify(GRBTEST_USE_RIGHTMOST) "%s",	d);
-+	print_msg(__stringify(GRBTEST_USE_COUNT) "%s",		d);
-+	print_msg(__stringify(GRBTEST_UNIQUE_KEYS) "%s",	d);
-+	print_msg(__stringify(GRBTEST_INSERT_REPLACES) "%s",	d);
-+	print_msg(__stringify(config_enabled(CONFIG_DEBUG_GRBTREE)) "%s",		d);
-+	print_msg(__stringify(config_enabled(CONFIG_DEBUG_GRBTREE_VALIDATE)) "%s",	d);
-+	print_msg("%s" __stringify(GRBTEST_ARCH) "%s%s",	q, q, d);
-+	print_msg("%s" __stringify(GRBTEST_ARCH_FLAGS) "%s%s",	q, q, d);
-+	print_msg("%s" __stringify(GRBTEST_PROCESSOR) "%s%s",	q, q, d);
-+	print_msg("%s" __stringify(GRBTEST_CC) "%s%s",		q, q, d);
-+	print_msg("%s" __stringify(GRBTEST_CFLAGS) "%s%s",	q, q, d);
++int process_args(struct grbtest_config *config, int argc, char *argv[]);
++void show_usage(void);
++void init_basename(void);
++void print_human_summary(const struct grbtest_config *config);
++void print_human_result(const struct grbtest_result *result);
 +
-+	/* run-time config */
-+	print_msg("%u%s",	config->test, d);
-+	print_msg("%llu%s",	(unsigned long long)config->in_seed, d);
-+	print_msg("%llu%s",	(unsigned long long)config->seed, d);
-+	print_msg("%u%s",	config->key_mask, d);
-+	print_msg("%u%s",	config->object_count, d);
-+	print_msg("%u%s",	config->pool_count, d);
-+	print_msg("%u%s",	config->reps, d);
++const char *argv0  = NULL;
 +
-+	/* result */
-+	print_msg("%u%s",	result->node_size, d);
-+	print_msg("%u%s",	result->object_size, d);
-+	print_msg("%u%s",	result->pool_size, d);
-+	print_msg("%llu%s",	(unsigned long long)result->insertions, d);
-+	print_msg("%llu%s",	(unsigned long long)result->insertion_time, d);
-+	print_msg("%llu%s",	(unsigned long long)result->evictions, d);
-+	print_msg("%llu%s",	(unsigned long long)result->deletions, d);
-+	print_msg("%llu\n",	(unsigned long long)result->deletion_time);
-+}
++int main(int argc, char *argv[]) {
++	long		      ret;
++	struct grbtest_config config;
++	struct grbtest_result result;
++	struct container      cont;
++	char		     *argv0_copy = strdup(argv[0]);
++	argv0				 = basename(argv0_copy);
 +
-+#if 0
++	if (process_args(&config, argc, argv)) {
++		fprintf(stderr, "\n");
++		show_usage();
++		free(argv0_copy);
++		return -1;
++	}
 +
-+int retrieve_from_empty_container()
-+{
++	facilities_init();
++	init_container(&cont);
++	grbtest_init_results(&config, &result);
++
++	BAIL_ON_ERR(ret, grbtest_init(&config));
++
++	if (config.human_readable)
++		print_human_summary(&config);
++	else if (config.print_header)
++		grbtest_print_result_header(&config);
++
++	grbtest_run_test(&config, &result, &cont);
++
++	if (config.human_readable)
++		print_human_result(&result);
++	else
++		grbtest_print_result_row(&config, &result);
++
++	grbtest_cleanup();
++	free(config.delimiter);
++	free(config.text_enclosure);
++	free(argv0_copy);
++
 +	return 0;
 +}
-+Requirements for Generic Red-Black Tree tests
 +
-+Correctness testing
-+Input parameters
-+max_nodes - maximum number of nodes to use for tests
++void print_human_summary(const struct grbtest_config *config)
++{
++	unsigned long long in_seed = (unsigned long long)config->in_seed;
++	unsigned long long seed = (unsigned long long)config->seed;
 +
-+Create an array of max_nodes objects and initialize their keys to random values.
-+Start from a tree with zero objects and perform lookups of non-existant objects (which should all return NULL).
++	print_msg("Build Configuration\n%s\n", grbtest_config());
 +
-+int num_nodes;
-+int i;
++	print_msg(
++		"Execution Parameters\n"
++		"test            %u (%s)\n"
++		"in_seed         %llu (0x%llx)\n"
++		"seed            %llu (0x%llx)\n"
++		"key_mask        %u (0x%x)\n"
++		"count           %u (0x%x)\n"
++		"pool_count      %u\n"
++		"reps            %u (0x%x)\n"
++		"human_readable  %u\n"
++		"delimiter       %s\n"
++		"text_enclosure  %s\n"
++		"print_header    %u\n"
++		"\n",
++		config->test, grbtest_type_desc[config->test],
++		in_seed, in_seed,
++		seed, seed,
++		config->key_mask, config->key_mask,
++		config->object_count, config->object_count,
++		config->pool_count,
++		config->reps, config->reps,
++		config->human_readable,
++		config->delimiter,
++		config->text_enclosure,
++		config->print_header);
 +
-+/* correctness tests */
-+for (int num_nodes = 0; i < max_nodes; ++num_nodes) {
-+	// clear tree
-+	for (i = 0; i < num_nodes; ++ i) {
-+		// insert nodes
-+	}
-+	// insert a node with an existing key and verify outcome
-+	for (i = 0; i < num_nodes; ++i) {
-+		// find object i and verify outcome
-+		for (j = 0; j < num_nodes; ++j) {
-+			// perform find_near starting at i, looking for j
-+			// and verify outcome
-+		}
-+		// delete object i & verify
-+		// re-insert object i & verify
-+	}
-+	for (i = 0; i < num_nodes; ++i) {
-+		// delete node i
-+		// search for node i and make sure we get nothing
-+		// search for next node and make sure we get one
-+	}
-+	// verify that tree is empty
-+
-+	// insert node zero
-+	for (i = 1; i < num_nodes; ++ i) {
-+		// insert_near, using previous node as start
-+	}
-+	// verify tree
-+
-+	// repeat find tests above
++	print_msg("Running test...");
 +}
 +
-+/* performance tests */
-+int reps;  /* number of times to repeat a test */
-+for (int num_nodes = 0; i < max_nodes; ++num_nodes) {
-+	for (rep = 0; rep < reps; ++rep) {
-+		// clear tree
-+		// get start time
-+		for (i = 0; i < num_nodes; ++ i) {
-+			// insert nodes
++void print_human_result(const struct grbtest_result *result)
++{
++	print_msg("completed!\n\n");
++	print_msg(
++		"Test Results\n"
++		"node_size        %u\n"
++		"object_size      %u\n"
++		"pool_size        %u\n"
++		"insertions       %llu\n"
++		"insertion_time   %llu\n"
++		"evictions        %llu\n"
++		"deletions        %llu\n"
++		"deletion_time    %llu\n",
++		result->node_size,
++		result->object_size,
++		result->pool_size,
++		(unsigned long long)result->insertions,
++		(unsigned long long)result->insertion_time,
++		(unsigned long long)result->evictions,
++		(unsigned long long)result->deletions,
++		(unsigned long long)result->deletion_time);
++
++}
++
++/**
++ * Determine base by prefix and offset to number. Uses standard rules
++ * (expressed in regex below):
++ * 0[xX][0-9a-fA-F]+ denotes a hexidecimal number
++ * 0[0-7]+           denotes an octal number
++ * (0|[1-9][0-9]*)   denotes a decimal number
++ */
++int get_param_base_and_start(const char **str)
++{
++	assert(*str);
++
++	/* Parse an "0x", "0X" or "0" -prefixed string, but not the string
++	 * "0" (which will be treated as base ten). */
++	if (**str == '0' && *(*str + 1)) {
++		++*str;
++		if (**str == 'x' || **str == 'X') {
++			++*str;
++			return 16;
++		} else {
++			return 8;
 +		}
-+		// get end time & add
++	} else {
++		return 10;
 +	}
 +}
-+// insertion test
-+// insert near test (separate data for each size, for each node distance)
-+// insert replace test
-+// find test
-+// find_near test (again, for each size, for each node distance)
++
++/**
++ * @returns zero on success, non-zero if the string didn't represent a clean
++ *          number
++ *
++ * FIXME: wont be correct for u32 on platforms where sizeof(int) == 2
++ */
++int get_uint_param(const char *str, unsigned int *dest)
++{
++	const char *start = str;
++	char *endptr;
++	int base = get_param_base_and_start(&start);
++
++	*dest = strtoul(start, &endptr, base);
++	if (*endptr) {
++		fprintf(stderr, "bad number: %s\n", str);
++		exit (1);
++	}
++
++	return *endptr;
++}
++
++/**
++ * @returns zero on success, non-zero if the string didn't represent a clean
++ *          number
++ * FIXME: assumes u64 is unsigned long long
++ */
++int get_u64_param(const char *str, u64 *dest)
++{
++	char *endptr;
++	int base = get_param_base_and_start(&str);
++
++	*dest = strtoull(str, &endptr, base);
++	if (*endptr) {
++		fprintf(stderr, "bad number: %s\n", str);
++		exit (1);
++	}
++
++	return *endptr;
++}
++
++void show_usage()
++{
++	fprintf(stderr,
++"Usage: %s [options]\n"
++"Options:\n"
++"  -h,     --help    Show this help\n"
++"  -t=NUM, --test    The test to run\n"
++"                    0 Performance: Insert\n"
++"                    1 Performance: Insert & Delete\n"
++"                    2 Validation\n"
++"  -s=NUM, --seed    Seed for random key generation (zero to use current\n"
++"                    time)\n"
++"  -m=NUM, --keymask Bitmask for keys (key range)\n"
++"  -c=NUM, --count   Number of objects to use\n"
++"  -r=NUM, --reps    Number of times to repeat test(s)\n"
++"  -p=NUM, --pools   Number of pools of objects to use\n"
++"  -u,     --human   Output in human-readable form\n"
++"  -d=STR, --delim   Use the string STR to delimit fields\n"
++"  -H,     --header  Output a row header\n"
++"\n"
++"Fields:\n"
++"  compiler        the compiler used\n"
++"  use_generic     value of GRBTEST_BUILD_GENERIC\n"
++"  use_leftmost    value of GRBTEST_USE_LEFTMOST\n"
++"  use_rightmost   value of GRBTEST_USE_RIGHTMOST\n"
++"  use_count       value of GRBTEST_USE_COUNT\n"
++"  unique_keys     value of GRBTEST_UNIQUE_KEYS\n"
++"  insert_replaces value of GRBTEST_INSERT_REPLACES\n"
++"  debug           if CONFIG_DEBUG_RBTREE is enabled (.config)\n"
++"  debug_validate  if CONFIG_DEBUG_RBTREE_VALIDATE is enabled (.config)\n"
++"  test            \n"
++"  in_seed         input seed\n"
++"  seed            result seed (differs if supplied seed is zero)\n"
++"  key_mask        \n"
++"  object_count    number of objects used for test\n"
++"  pool_count      \n"
++"  reps            number of times test is repeated\n"
++"  node_size       sizeof(struct rb_node)\n"
++"  object_size     sizeof(struct object)\n"
++"  pool_size       \n"
++"  time            time in microseconds\n"
++"  insertions      number of insertions\n"
++"  deletions       number of deletions\n"
++"  evictions       number of evictions (Always zero if GRBTEST_UNIQUE_KEYS\n"
++"                  is not set. If GRBTEST_UNIQUE_KEYS is set, but\n"
++"                  GRBTEST_INSERT_REPLACES is not, this is the number of\n"
++"                  objects not inserted because a duplicate key already\n"
++"                  existed in the tree.)\n"
++"\n"
++"Example:\n"
++"%s -s 1 --reps 0x8000 --count 0x800 --keymask 0xfff\n"
++"\n",
++		argv0, argv0);
++}
++
++int process_args(struct grbtest_config *config, int argc, char *argv[])
++{
++	int c;
++
++	memset(config, 0, sizeof(*config));
++	config->test		= 0;
++	config->in_seed		= 0;
++	config->seed		= 0;
++	config->key_mask	= 0xff;
++	config->object_count	= 0x100;
++	config->pool_count	= 1;
++	config->reps		= 1;
++	config->human_readable	= 0;
++	config->delimiter	= strdup(",");
++	config->text_enclosure	= strdup("'");
++	config->print_header	= 0;
++
++	while (1) {
++		static struct option long_options[] = {
++			{"help",    no_argument,       0, 'h'},
++			{"test",    required_argument, 0, 't'},
++			{"seed",    required_argument, 0, 's'},
++			{"keymask", required_argument, 0, 'm'},
++			{"count",   required_argument, 0, 'c'},
++			{"reps",    required_argument, 0, 'r'},
++			{"pools",   required_argument, 0, 'p'},
++			{"human",   no_argument,       0, 'u'},
++			{"delim",   required_argument, 0, 'd'},
++			{"quote",   required_argument, 0, 'q'},
++			{"header",  no_argument,       0, 'H'},
++			{0,         0,                 0, 0}
++		};
++
++		/* getopt_long stores the option index here. */
++		int option_index = 0;
++		c = getopt_long(argc, argv, "ht:s:c:r:p:m:ud:q:H", long_options, &option_index);
++
++		/* Detect the end of the options. */
++		if (c == -1)
++		break;
++
++		switch (c) {
++		case 'h': show_usage();			exit(1);
++		case 't': get_uint_param(optarg, &config->test);	break;
++		case 's': get_u64_param(optarg, &config->in_seed);	break;
++		case 'm': get_uint_param(optarg, &config->key_mask);	break;
++		case 'c': get_uint_param(optarg, &config->object_count);break;
++		case 'r': get_uint_param(optarg, &config->reps);	break;
++		case 'p': get_uint_param(optarg, &config->pool_count);	break;
++		case 'u': config->human_readable = 1;			break;
++		case 'd': free(config->delimiter);
++			  config->delimiter = strdup(optarg);		break;
++		case 'q': free(config->text_enclosure);
++			  config->text_enclosure = strdup(optarg);	break;
++		case 'H': config->print_header = 1;			break;
++		default : return -1;
++		}
++	}
++
++	if (optind < argc) {
++		fprintf(stderr, "Invalid argument: %s\n", argv[optind]);
++		return -1;
++	}
++
++	if (config->test >= GRBTEST_TYPE_COUNT) {
++		fprintf(stderr, "Invalid test specified.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++
++
++#if 0
++/****************************************************************************
++ * rbtree & container-related functions
++ */
++
++static __always_inline long compare_long(const long *a, const long *b) {
++	return *a - *b;
++}
++
++static __always_inline long compare_u32(const u32 *a, const u32 *b) {
++	return (long)*a - (long)*b;
++}
++
++static inline void init_container(struct container *cunt) {
++	cunt->tree = RB_ROOT;
++	cunt->count = 0;
++}
++
++/****************************************************************************
++ * rb_relationship definition
++ */
++RB_DEFINE_INTERFACE(
++	mytree,
++	struct container, tree, leftmost, rightmost, count,
++	struct object, node, id,
++	RB_UNIQUE_KEYS | RB_INSERT_REPLACES, compare_u32, ,
++	,
++	static __flatten noinline,
++	static __flatten,
++	static __flatten __maybe_unused);
++
++void dumpNode(struct rb_node *node) {
++	fprintf(stderr, "rb_parent_color = 0x%lu (parent = 0x%p, color = %d)\n",
++		node->rb_parent_color, rb_parent(node), (int)rb_color(node));
++	fprintf(stderr, "rb_right        = %p\n", node->rb_right);
++	fprintf(stderr, "rb_left         = %p\n", node->rb_left);
++}
++
++void printObj(struct object *obj) {
++
++}
++
++struct obj_display {
++	struct object *o;
++	char text[64];
++};
++
++void populateDisp(struct rb_node *node, struct obj_display *disp_arr, unsigned *index, unsigned target_depth) {
++	struct rb_node *left = NULL;
++	struct rb_node *right = NULL;
++
++	if (target_depth == 0) {
++		struct obj_display *disp = &disp_arr[*index];
++
++		if (node) {
++			struct object *obj = rb_entry(node, struct object, node);
++			disp->o = obj;
++			snprintf(disp->text, sizeof(disp->text),
++				"%p=%02d", obj, obj->id);
++		} else {
++			disp->o = 0;
++			snprintf(disp->text, sizeof(disp->text),
++				"empty      ");
++		}
++		++(*index);
++	}
++
++	if (target_depth > 0) {
++		if (node) {
++			left = node->rb_left;
++			right = node->rb_right;
++		}
++		populateDisp(left, disp_arr, index, target_depth - 1);
++		populateDisp(right, disp_arr, index, target_depth - 1);
++	}
++}
++
++void dumpTree(struct rb_root *root, size_t obj_count) {
++	int max_depth = 5;
++	int max_nodes = 1 << max_depth;
++	unsigned index = 0u;
++	int i;
++	size_t item_text_size;
++	struct obj_display *disp = (struct obj_display *)malloc(max_nodes * sizeof(struct obj_display));
++
++	for (i = 0; i < max_depth; ++i) {
++		populateDisp(root->rb_node, disp, &index, i);
++	}
++	item_text_size = strlen(disp[0].text);
++
++	for (i = 0; i < max_nodes; ++i) {
++		if (i == 1 || i == 3 || i == 7 || i == 15 || i == 31) {
++			int bity;
++			fprintf(stderr, "\n");
++			for (bity = i + 1; !(bity & 32); bity <<= 1) {
++				const char spaces[257] = {[0 ... 255] = ' ', [256] = 0};
++				fprintf(stderr, "%s", &spaces[256 - item_text_size]);
++			}
++
++		} else {
++			fprintf(stderr, "  ");
++		}
++		fprintf(stderr, "%s", disp[i].text);
++	}
++	fprintf(stderr, "\n");
++
++}
 +
 +__attribute__((flatten))
 +long run_test(unsigned int count) {
@@ -810,7 +702,7 @@ index 0000000..f5383be
 +		return -1;
 +	}
 +
-+	print_err("allocating two pools of %u objects each\n", count);
++	fprintf(stderr, "allocating two pools of %u objects each\n", count);
 +
 +	cont.tree      = RB_ROOT;
 +	cont.count     = 0;
@@ -960,14 +852,13 @@ index 0000000..f5383be
 +	return 0;
 +}
 +#endif
-diff --git a/tools/testing/selftests/grbtree/common.h b/tools/testing/selftests/grbtree/common.h
+diff --git a/tools/testing/selftests/grbtree/user/overrides/linux/export.h b/tools/testing/selftests/grbtree/user/overrides/linux/export.h
 new file mode 100644
-index 0000000..8a23dcc
+index 0000000..911be60
 --- /dev/null
-+++ b/tools/testing/selftests/grbtree/common.h
-@@ -0,0 +1,293 @@
-+/* common.h - generic red-black tree test functions for use in both kernel and
-+ * user space.
++++ b/tools/testing/selftests/grbtree/user/overrides/linux/export.h
+@@ -0,0 +1,31 @@
++/* export.h userspace override hack
 + * Copyright (C) 2012  Daniel Santos <daniel.santos@pobox.com>
 + *
 + * This program is free software; you can redistribute it and/or
@@ -983,282 +874,110 @@ index 0000000..8a23dcc
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * This file is an override hack for the file normally found at
++ * include/linux/export.h in the kernel tree.
 + */
++
++#ifndef _LINUX_EXPORT_H
++#define _LINUX_EXPORT_H
++
++#define EXPORT_SYMBOL(sym)
++#define EXPORT_SYMBOL_GPL(sym)
++#define EXPORT_SYMBOL_GPL_FUTURE(sym)
++#define EXPORT_UNUSED_SYMBOL(sym)
++#define EXPORT_UNUSED_SYMBOL_GPL(sym)
++
++#endif /* _LINUX_EXPORT_H */
+diff --git a/tools/testing/selftests/grbtree/user/overrides/linux/kernel.h b/tools/testing/selftests/grbtree/user/overrides/linux/kernel.h
+new file mode 100644
+index 0000000..d696e78
+--- /dev/null
++++ b/tools/testing/selftests/grbtree/user/overrides/linux/kernel.h
+@@ -0,0 +1,83 @@
++/* kernel.h userspace override hack
++ * Copyright (C) 2012  Daniel Santos <daniel.santos@pobox.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * This file is an override hack for the file normally found at
++ * include/linux/kernel.h in the kernel tree (not /usr) to allow you to compile
++ * some portions of the Linux kernel code in user-space and is expected to
++ * break fairly often as the internals of the kernel tree change.  It's
++ * designed for use with GNU libc and is generally not expected to work
++ * elsewhere as-is.
++ */
++
++#ifndef _LINUX_KERNEL_H
++#define _LINUX_KERNEL_H
++
++/* avoid warning: __always_inline defined in both /usr/include/sys/cdefs.h as
++ * well as linux/compiler.h.  So we include cdefs.h now, #undef it and let
++ * linux/compiler.h redefine it.
++ */
++#include <sys/cdefs.h>
++#if defined(__always_inline) && !defined(__LINUX_COMPILER_H)
++# undef __always_inline
++#endif
++#if defined(__attribute_const__) && !defined(__LINUX_COMPILER_H)
++# undef __attribute_const__
++#endif
++#include <linux/compiler.h>
++
++#include <assert.h>
++#include <stdint.h>
++#include <stdlib.h>
++#include <stdio.h>
++#include <errno.h>
++#include <string.h>
++#include <sys/types.h>
++#include <linux/err.h>
++#include <linux/bug.h>
++
++#ifndef __GNU_LIBRARY__
++# warning This file is a hack written to compile with the GNU C Library and \
++	  is not generally expected to work elsewhere.
++#endif
++
++/* glibc-backed versions of BUG{,_ON} */
++#undef BUG
++#undef BUG_ON
++#define BUG()		assert(0)
++#define BUG_ON(arg)	assert(!(arg))
 +
 +/**
-+ * The following preprocessor variables should be defined to either 1 or 0 when
-+ * compiling common.{c,h}
++ * container_of - cast a member of a structure out to the containing structure
++ * @ptr:	the pointer to the member.
++ * @type:	the type of the container struct this is embedded in.
++ * @member:	the name of the member within the struct.
 + *
-+ * GRBTEST_KEY_TYPE		FIXME: doc me
-+ * GRBTEST_PAYLOAD		FIXME: doc me
-+ * GRBTEST_USERLAND		If non-zero, compile for userspace, kernelspace
-+ * 				otherwise.
-+ * GRBTEST_BUILD_GENERIC	If non-zero, use generic implementation,
-+ * 				otherwise, use hand-coded implementation.
-+ * GRBTEST_USE_LEFTMOST		Maintain a pointer to the leftmost (smallest)
-+ * 				in all insert & delete operations.
-+ * GRBTEST_USE_RIGHTMOST	Same as above, except for rightmost (greatest)
-+ * 				value
-+ * GRBTEST_USE_COUNT		Maintain a count of objects in tree
-+ * GRBTEST_UNIQUE_KEYS		If non-zero, tree contains only unique keys.
-+ * GRBTEST_INSERT_REPLACES	Valid only if GRBTEST_UNIQUE_KEYS is non-zero.
-+ * 				If non-zero, insert function will replace any
-+ * 				existing object with the same key.
-+ *
-+ * The following preprocessor variables are generated automatically, either by the Makefile, the kernel's .config or in this header:
-+ *
-+ * GRBTEST_COMPILER
-+ * CONFIG_DEBUG_RBTREE
-+ * CONFIG_DEBUG_RBTREE_VALIDATE
-+ * GRBTEST_CFLAGS
-+ * GRBTEST_CC
 + */
-+#ifndef _GRBTESTCOMMON_H
-+#define _GRBTESTCOMMON_H
++#define container_of(ptr, type, member) ({			\
++	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
++	(type *)( (char *)__mptr - offsetof(type,member) );})
 +
-+#include <linux/rbtree.h>
-+#include <linux/stringify.h>
++typedef int8_t   s8;
++typedef uint8_t  u8;
++typedef int16_t  s16;
++typedef uint16_t u16;
++typedef int32_t  s32;
++typedef uint32_t u32;
++typedef int64_t  s64;
++typedef uint64_t u64;
 +
-+#ifndef GRBTEST_KEY_TYPE
-+# error GRBTEST_KEY_TYPE not defined
-+#endif
-+#ifndef GRBTEST_PAYLOAD
-+# error GRBTEST_PAYLOAD not defined
-+#endif
-+#ifndef GRBTEST_USERLAND
-+# error GRBTEST_USERLAND not defined
-+#endif
-+#ifndef GRBTEST_BUILD_GENERIC
-+# error GRBTEST_BUILD_GENERIC not defined
-+#endif
-+#ifndef GRBTEST_USE_LEFTMOST
-+# error GRBTEST_USE_LEFTMOST not defined
-+#endif
-+#ifndef GRBTEST_USE_RIGHTMOST
-+# error GRBTEST_USE_RIGHTMOST not defined
-+#endif
-+#ifndef GRBTEST_USE_COUNT
-+# error GRBTEST_USE_COUNT not defined
-+#endif
-+#ifndef GRBTEST_UNIQUE_KEYS
-+# error GRBTEST_UNIQUE_KEYS not defined
-+#endif
-+#ifndef GRBTEST_INSERT_REPLACES
-+# error GRBTEST_INSERT_REPLACES not defined
-+#endif
-+
-+#if 0
-+#ifndef GRBTEST_COL_DELIMITER_STR
-+# define GRBTEST_COL_DELIMITER_STR ","
-+#endif
-+#ifndef GRBTEST_ROW_DELIMITER_STR
-+# define GRBTEST_ROW_DELIMITER_STR "\n"
-+#endif
-+#ifndef GRBTEST_OPEN_QUOTE_STR
-+# define GRBTEST_OPEN_QUOTE_STR ""
-+#endif
-+#ifndef GRBTEST_CLOSE_QUOTE_STR
-+# define GRBTEST_CLOSE_QUOTE_STR ""
-+#endif
-+#endif
-+
-+#ifdef __GNUC__
-+# define GCC_VERSION_STR			\
-+		__stringify(__GNUC__) "."	\
-+		__stringify(__GNUC_MINOR__) "."	\
-+		__stringify(__GNUC_PATCHLEVEL__)
-+# ifdef __INTEL_COMPILER
-+#  define GRBTEST_COMPILER "intel "		\
-+		__stringify(__INTEL_COMPILER)	\
-+		" (gcc-" GCC_VERSION_STR ")"
-+# else
-+#  define GRBTEST_COMPILER "gcc-" GCC_VERSION_STR
-+# endif
-+#else
-+/* NOTE: Add support for other compilers here */
-+# define GRBTEST_COMPILER "non-gcc"
-+#endif
-+
-+
-+/**
-+ * grbtest_config - Returns a string describing the build configuration.
-+ */
-+static inline const char *grbtest_config(void)
-+{
-+	return
-+		"compiler        " GRBTEST_COMPILER "\n"
-+#if GRBTEST_BUILD_GENERIC
-+		"type            generic\n"
-+#else
-+		"type            hand-coded\n"
-+#endif
-+		"key type        " __stringify(GRBTEST_KEY_TYPE) "\n"
-+		"payload         char[" __stringify(GRBTEST_PAYLOAD) "]\n"
-+		"use leftmost    " __stringify(GRBTEST_USE_LEFTMOST) "\n"
-+		"use rightmost   " __stringify(GRBTEST_USE_RIGHTMOST) "\n"
-+		"use count       " __stringify(GRBTEST_USE_COUNT) "\n"
-+		"unique keys     " __stringify(GRBTEST_UNIQUE_KEYS) "\n"
-+		"insert replaces " __stringify(GRBTEST_INSERT_REPLACES) "\n"
-+		__stringify(config_enabled(CONFIG_DEBUG_GRBTREE)) "\n"
-+		"DEBUG_RBTREE_VALIDATE "
-+		__stringify(config_enabled(CONFIG_DEBUG_GRBTREE_VALIDATE)) "\n"
-+		"CFLAGS          " __stringify(GRBTEST_CFLAGS) "\n"
-+		"CC              " __stringify(GRBTEST_CC) "\n";
-+}
-+
-+/* Functions provided by {module,user}/facilities.c for common.c */
-+
-+extern void facilities_init(void);
-+extern u64 getCurTicks(void);
-+extern void *rand_init(u64 *seed);
-+
-+//typedef unsigned int uint;
-+
-+
-+#if GRBTEST_USERLAND
-+#   define print_msg(...)	printf(__VA_ARGS__)
-+#   define print_err(...)	fprintf(stderr, __VA_ARGS__)
-+
-+static inline void *mem_alloc(size_t size)	{return malloc(size);}
-+static inline void mem_free(void *ptr)		{return free(ptr);}
-+static inline u32 rand_get(void *state) 	{return rand();}
-+static inline void rand_free(void *state)	{}
-+
-+#else /* GRBTEST_USERLAND */
-+
-+#    define print_msg(...) printk("grbtest: " __VA_ARGS__)
-+#    define print_err(...) printk(KERN_ALERT "grbtest: " __VA_ARGS__)
-+
-+static inline void *mem_alloc(size_t size) {return kzalloc(size, GFP_KERNEL);}
-+static inline void mem_free(void *ptr)	   {return kfree(ptr);}
-+static inline u32 rand_get(struct rnd_state *state) {return prandom32(state);}
-+static inline void rand_free(struct rnd_state *state) {kzfree(state);}
-+
-+#endif
-+
-+/****************************************************************************
-+ * Structures
-+ */
-+
-+struct object {
-+	struct rb_node	node;
-+	GRBTEST_KEY_TYPE key;
-+	unsigned char	payload[GRBTEST_PAYLOAD];
-+};
-+
-+struct container {
-+	struct rb_root	tree;
-+	unsigned int	count;
-+	struct rb_node	*leftmost;
-+	struct rb_node	*rightmost;
-+	unsigned int	pool_in_use;
-+};
-+
-+struct object_pools {
-+	struct object	**pools;
-+	unsigned int	pool_count;	/**< number of pools */
-+	unsigned int	object_count;	/**< num objects in each pool */
-+	size_t		pool_size;	/**< size of each pool in bytes */
-+};
-+
-+enum grbtest_type {
-+	GRBTEST_TYPE_INSERTION,
-+	GRBTEST_TYPE_INSERTION_DELETION,
-+	GRBTEST_TYPE_VALIDATE_INSERTIONS,
-+	GRBTEST_TYPE_COUNT
-+};
-+
-+extern const char *grbtest_type_desc[GRBTEST_TYPE_COUNT];
-+
-+struct grbtest_config {
-+	enum grbtest_type test;
-+	u64		  in_seed;
-+	u64		  seed;
-+	u32		  key_mask;
-+	unsigned	  object_count;
-+	unsigned	  pool_count;
-+	unsigned	  reps;
-+	int		  human_readable;
-+	char		 *delimiter;
-+	char		 *text_enclosure;
-+	int		  print_header;
-+};
-+
-+struct grbtest_result {
-+	unsigned	node_size;
-+	unsigned	object_size;
-+	unsigned	pool_size;
-+	u64		insertions;
-+	u64		insertion_time;
-+	u64		evictions;
-+	u64		deletions;
-+	u64		deletion_time;
-+};
-+
-+/****************************************************************************
-+ * Global data
-+ */
-+
-+extern struct object_pools objects;
-+
-+
-+static void inline init_container(struct container *cont)
-+{
-+	cont->tree	= RB_ROOT;
-+	cont->count	= 0;
-+	cont->leftmost	= 0;
-+	cont->rightmost	= 0;
-+}
-+
-+static inline void grbtest_init_node(struct rb_node *node)
-+{
-+	node->__rb_parent_color = (unsigned long)node;
-+	node->rb_right = NULL;
-+	node->rb_left = NULL;
-+}
-+
-+static inline int grbtest_node_is_clear(const struct rb_node *node)
-+{
-+	return (node->__rb_parent_color == (unsigned long)node)
-+	       && (node->rb_right == NULL)
-+	       && (node->rb_left == NULL);
-+}
-+
-+static inline void init_object(struct object *obj, GRBTEST_KEY_TYPE key)
-+{
-+	grbtest_init_node(&obj->node);
-+	obj->key = key;
-+}
-+
-+static int inline is_inserted(struct object *obj)
-+{
-+	return rb_parent(&obj->node) != &obj->node;
-+}
-+
-+/* exported by common.c */
-+extern long grbtest_init(struct grbtest_config *config);
-+extern void grbtest_cleanup(void);
-+extern long grbtest_run_test(
-+		struct grbtest_config *config,
-+		struct grbtest_result *result,
-+		struct container *cont);
-+extern long grbtest_perftest(
-+		struct grbtest_config *config,
-+		struct grbtest_result *result,
-+		struct container *cont,
-+		int do_deletes);
-+extern long grbtest_validate_insertion(
-+		struct grbtest_config *config,
-+		struct grbtest_result *result,
-+		struct container *cont);
-+
-+extern void grbtest_init_results(const struct grbtest_config *config,
-+				 struct grbtest_result *result);
-+extern void grbtest_print_result_header(const struct grbtest_config *config);
-+extern void grbtest_print_result_row(const struct grbtest_config *config,
-+				     const struct grbtest_result *result);
-+
-+#endif /* _GRBTESTCOMMON_H */
++#endif /* _LINUX_KERNEL_H */
 -- 
 1.7.3.4
 
