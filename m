@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab2I1OJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:09:34 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49508 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714Ab2I1OJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:09:33 -0400
-Date: Fri, 28 Sep 2012 10:08:34 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/16] iommu/amd: Keep track of HPET and IOAPIC device ids
-Message-ID: <20120928140833.GB7483@localhost.localdomain>
-References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
- <1348835046-3262-2-git-send-email-joerg.roedel@amd.com>
+	id S1758195Ab2I1OL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:11:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4717 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756714Ab2I1OL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 10:11:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,502,1344236400"; 
+   d="scan'208";a="199368210"
+Date: Fri, 28 Sep 2012 17:13:47 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@lists.linux-foundation.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Len, Brown" <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [RFC PATCH 1/6] Introduce acpi_match_device_id().
+Message-ID: <20120928141347.GC15548@intel.com>
+References: <1348817910.10877.321.camel@rui.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1348835046-3262-2-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1348817910.10877.321.camel@rui.sh.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 02:23:51PM +0200, Joerg Roedel wrote:
-> The IVRS ACPI table provides information about the IOAPICs
-> and the HPETs available in the system and which PCI device
-> ID they use in transactions. Save that information for later
-> usage in interrupt remapping.
+On Fri, Sep 28, 2012 at 03:38:30PM +0800, Zhang Rui wrote:
+> >From 72df5d1f51fb27a4ba7f70a3b07df759d32b8288 Mon Sep 17 00:00:00 2001
+> From: Zhang Rui <rui.zhang@intel.com>
+> Date: Thu, 27 Sep 2012 15:11:55 +0800
+> Subject: [RFC PATCH 1/6] Introduce acpi_match_device_id().
 > 
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> This API is used to check if a device id string is compatible
+> with an ACPI device,
+> either PNP id exported via _HID or compatible ids exported
+> via _CID control method.
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 > ---
->  drivers/iommu/amd_iommu.c       |    3 ++
->  drivers/iommu/amd_iommu_init.c  |   65 +++++++++++++++++++++++++++++++++++++--
->  drivers/iommu/amd_iommu_types.h |   34 ++++++++++++++++++++
->  3 files changed, 100 insertions(+), 2 deletions(-)
+>  drivers/acpi/scan.c     |   22 ++++++++++++++++++++++
+>  include/acpi/acpi_bus.h |    6 ++++++
+>  2 files changed, 28 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-> index b64502d..6f51483 100644
-> --- a/drivers/iommu/amd_iommu.c
-> +++ b/drivers/iommu/amd_iommu.c
-> @@ -72,6 +72,9 @@ static DEFINE_SPINLOCK(iommu_pd_list_lock);
->  static LIST_HEAD(dev_data_list);
->  static DEFINE_SPINLOCK(dev_data_list_lock);
->  
-> +LIST_HEAD(ioapic_map);
-> +LIST_HEAD(hpet_map);
-> +
->  /*
->   * Domain for untranslated devices - only allocated
->   * if iommu=pt passed on kernel cmd line.
-> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-> index 18a89b7..a9f3948 100644
-> --- a/drivers/iommu/amd_iommu_init.c
-> +++ b/drivers/iommu/amd_iommu_init.c
-> @@ -55,6 +55,7 @@
->  #define IVHD_DEV_ALIAS_RANGE            0x43
->  #define IVHD_DEV_EXT_SELECT             0x46
->  #define IVHD_DEV_EXT_SELECT_RANGE       0x47
-> +#define IVHD_DEV_SPECIAL		0x48
->  
->  #define IVHD_FLAG_HT_TUN_EN_MASK        0x01
->  #define IVHD_FLAG_PASSPW_EN_MASK        0x02
-> @@ -690,6 +691,31 @@ static void __init set_dev_entry_from_acpi(struct amd_iommu *iommu,
->  	set_iommu_for_device(iommu, devid);
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index d1ecca2..936a7c9 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -312,6 +312,28 @@ int acpi_match_device_ids(struct acpi_device *device,
 >  }
+>  EXPORT_SYMBOL(acpi_match_device_ids);
 >  
-> +static int add_special_device(u8 type, u8 id, u16 devid)
+> +int acpi_match_device_id(const struct device *dev, const char *id)
+
+Would be good idea to implement this in terms of of_match_device() so that
+it returns pointer to the matched id. This way drivers can get the
+->driver_data pretty easily if needed.
+
 > +{
-> +	struct devid_map *entry;
-> +	struct list_head *list;
-> +
-> +	if (type != 1 && type != 2)
-> +		return -EINVAL;
+> +	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
 
-Should this be perhaps an enum? or #define?
+If the device is not bound to an ACPI handle this will return NULL. And I
+don't see you doing that in this series meaning that..
+
+> +	struct acpi_device *device;
+> +	struct acpi_hardware_id *hwid;
+> +	acpi_status status;
+> +
+> +	if (!handle || !id)
+> +		return -ENODEV;
+
+..you always return -ENODEV here, right?
 
 > +
-> +	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-> +	if (!entry)
-> +		return -ENOMEM;
+> +	status = acpi_bus_get_device(handle, &device);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENODEV;
 > +
-> +	entry->id    = id;
-> +	entry->devid = devid;
+> +	list_for_each_entry(hwid, &device->pnp.ids, list)
+> +		if (!strcmp(id, hwid->id))
+> +			return 0;
 > +
-> +	if (type == 1)
-> +		list = &ioapic_map;
-> +	else
-> +		list = &hpet_map;
-> +
-> +	list_add_tail(&entry->list, list);
-> +
-> +	return 0;
+> +	return -ENODEV;
 > +}
-> +
-
-Reviwed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> +EXPORT_SYMBOL(acpi_match_device_id);
