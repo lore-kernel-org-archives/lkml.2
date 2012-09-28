@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab2I1O1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:27:46 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53785 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932117Ab2I1O1o (ORCPT
+	id S1758016Ab2I1O2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:28:32 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:57870 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757673Ab2I1O2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:27:44 -0400
-Date: Fri, 28 Sep 2012 10:27:43 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Dan Carpenter <dan.carpenter@oracle.com>
-cc: Gabor Takacs <gbrtakacs@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: PROBLEM: kernel 3.6.rc6 bug report (usb 3.0 external hard drive
- problem)
-In-Reply-To: <20120928141639.GH5368@mwanda>
-Message-ID: <Pine.LNX.4.44L0.1209281026470.1518-100000@iolanthe.rowland.org>
+	Fri, 28 Sep 2012 10:28:30 -0400
+Date: Fri, 28 Sep 2012 14:28:29 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] make GFP_NOTRACK flag unconditional
+In-Reply-To: <1348826194-21781-1-git-send-email-glommer@parallels.com>
+Message-ID: <0000013a0d475174-343e3b17-6755-42c1-9dae-a9287ad7d403-000000@email.amazonses.com>
+References: <1348826194-21781-1-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Sep 2012, Dan Carpenter wrote:
+On Fri, 28 Sep 2012, Glauber Costa wrote:
 
-> I've filed a bug for this.
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=48061
-> 
-> Probably the other information which would be useful is the output
-> from lsusb.  Anyway, I've added the USB list to the CC.
-> 
-> regards,
-> dan carpenter
-> 
-> On Sun, Sep 23, 2012 at 05:33:44PM +0200, Gabor Takacs wrote:
-> > Bug report for kernel version 3.6.rc6
-> > 
-> > Content of message:
-> > 
-> > - One-line description
-> > - Full description
-> > - Keywords
-> > - CPU info
-> > - Modules info
-> > - Kernel version
-> > - Loaded driver and hardware information
-> > - PCI information
-> > - SCSI information
-> > 
-> > One-line description: Western Digital My Passport USB 3.0 hard drive not
-> > handled by kernel
-> > 
-> > Full description: under 3.6.rc6 kernel on an Asus Zenbook Prime UX21A,
-> > when plugging in my
-> > Western Digital My Passport USB 3.0 hard drive, the system does not
-> > mount it. It worked with
-> > previous (3.4.x) kernels.
+> There was a general sentiment in a recent discussion (See
+> https://lkml.org/lkml/2012/9/18/258) that the __GFP flags should be
+> defined unconditionally. Currently, the only offender is GFP_NOTRACK,
+> which is conditional to KMEMCHECK.
+>
+> This simple patch makes it unconditional.
 
-If this failure is reliable then git bisection would be a good way to 
-pin down the source of the problem.
+__GFP_NOTRACK is only used in context where CONFIG_KMEMCHECK is defined?
 
-Alan Stern
+If that is not the case then you need to define GFP_NOTRACK and substitute
+it where necessary.
 
