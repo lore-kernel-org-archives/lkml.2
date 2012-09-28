@@ -1,156 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab2I1BdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:33:12 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55084 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab2I1BdK (ORCPT
+	id S1756010Ab2I1Bfa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:35:30 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58962 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543Ab2I1Bf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:33:10 -0400
-Date: Thu, 27 Sep 2012 18:32:33 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: David Rientjes <rientjes@google.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org
-Subject: Re: [patch] mm, thp: fix mlock statistics
-In-Reply-To: <alpine.DEB.2.00.1209261929270.8567@chino.kir.corp.google.com>
-Message-ID: <alpine.LSU.2.00.1209271814340.2107@eggly.anvils>
-References: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com> <alpine.LSU.2.00.1209192021270.28543@eggly.anvils> <alpine.DEB.2.00.1209261821380.7745@chino.kir.corp.google.com> <alpine.DEB.2.00.1209261929270.8567@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 27 Sep 2012 21:35:28 -0400
+Date: Fri, 28 Sep 2012 11:35:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120928113516.165a26a1fc6974931d2425c2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__28_Sep_2012_11_35_16_+1000_STtnfsH1kxyAkPH5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Sep 2012, David Rientjes wrote:
+--Signature=_Fri__28_Sep_2012_11_35_16_+1000_STtnfsH1kxyAkPH5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> NR_MLOCK is only accounted in single page units: there's no logic to
-> handle transparent hugepages.  This patch checks the appropriate number
-> of pages to adjust the statistics by so that the correct amount of memory
-> is reflected.
-> 
-> Currently:
-> 
-> 		$ grep Mlocked /proc/meminfo
-> 		Mlocked:           19636 kB
-> 
-> 	#define MAP_SIZE	(4 << 30)	/* 4GB */
-> 
-> 	void *ptr = mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE,
-> 			 MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-> 	mlock(ptr, MAP_SIZE);
-> 
-> 		$ grep Mlocked /proc/meminfo
-> 		Mlocked:           29844 kB
-> 
-> 	munlock(ptr, MAP_SIZE);
-> 
-> 		$ grep Mlocked /proc/meminfo
-> 		Mlocked:           19636 kB
-> 
-> And with this patch:
-> 
-> 		$ grep Mlock /proc/meminfo
-> 		Mlocked:           19636 kB
-> 
-> 	mlock(ptr, MAP_SIZE);
-> 
-> 		$ grep Mlock /proc/meminfo
-> 		Mlocked:         4213664 kB
-> 
-> 	munlock(ptr, MAP_SIZE);
-> 
-> 		$ grep Mlock /proc/meminfo
-> 		Mlocked:           19636 kB
-> 
-> Reported-by: Hugh Dickens <hughd@google.com>
+Hi all,
 
-I do prefer         Dickins :)
+Today's linux-next merge of the net-next tree got a conflict in
+net/l2tp/l2tp_netlink.c between commit 7f8436a1269e ("l2tp: fix return
+value check") from the net tree and commit 15e473046cb6 ("netlink: Rename
+pid to portid to avoid confusion") from the net-next tree.
 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Acked-by: Hugh Dickins <hughd@google.com>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Yes, this now seems to be working nicely, thanks.
+diff --cc net/l2tp/l2tp_netlink.c
+index 6f93635,6ec3f67..0000000
+--- a/net/l2tp/l2tp_netlink.c
++++ b/net/l2tp/l2tp_netlink.c
+@@@ -78,10 -78,10 +78,10 @@@ static int l2tp_nl_cmd_noop(struct sk_b
+  		goto out;
+  	}
+ =20
+- 	hdr =3D genlmsg_put(msg, info->snd_pid, info->snd_seq,
++ 	hdr =3D genlmsg_put(msg, info->snd_portid, info->snd_seq,
+  			  &l2tp_nl_family, 0, L2TP_CMD_NOOP);
+ -	if (IS_ERR(hdr)) {
+ -		ret =3D PTR_ERR(hdr);
+ +	if (!hdr) {
+ +		ret =3D -EMSGSIZE;
+  		goto err_out;
+  	}
+ =20
+@@@ -248,10 -248,10 +248,10 @@@ static int l2tp_nl_tunnel_send(struct s
+  	struct l2tp_stats stats;
+  	unsigned int start;
+ =20
+- 	hdr =3D genlmsg_put(skb, pid, seq, &l2tp_nl_family, flags,
++ 	hdr =3D genlmsg_put(skb, portid, seq, &l2tp_nl_family, flags,
+  			  L2TP_CMD_TUNNEL_GET);
+ -	if (IS_ERR(hdr))
+ -		return PTR_ERR(hdr);
+ +	if (!hdr)
+ +		return -EMSGSIZE;
+ =20
+  	if (nla_put_u8(skb, L2TP_ATTR_PROTO_VERSION, tunnel->version) ||
+  	    nla_put_u32(skb, L2TP_ATTR_CONN_ID, tunnel->tunnel_id) ||
+@@@ -616,9 -616,9 +616,9 @@@ static int l2tp_nl_session_send(struct=20
+ =20
+  	sk =3D tunnel->sock;
+ =20
+- 	hdr =3D genlmsg_put(skb, pid, seq, &l2tp_nl_family, flags, L2TP_CMD_SESS=
+ION_GET);
++ 	hdr =3D genlmsg_put(skb, portid, seq, &l2tp_nl_family, flags, L2TP_CMD_S=
+ESSION_GET);
+ -	if (IS_ERR(hdr))
+ -		return PTR_ERR(hdr);
+ +	if (!hdr)
+ +		return -EMSGSIZE;
+ =20
+  	if (nla_put_u32(skb, L2TP_ATTR_CONN_ID, tunnel->tunnel_id) ||
+  	    nla_put_u32(skb, L2TP_ATTR_SESSION_ID, session->session_id) ||
 
-I would have preferred you to omit the free_page_mlock() part, since
-that sets me wondering about what flags might be set to mean what at
-that point; but since it should never get there anyway, and we'll be
-removing it entirely from v3.7, never mind.  (In doing that, I shall
-need to consider whether clear_page_mlock() then needs hpage_nr_pages,
-but your patch below is perfectly correct to omit it.)
+--Signature=_Fri__28_Sep_2012_11_35_16_+1000_STtnfsH1kxyAkPH5
+Content-Type: application/pgp-signature
 
-If I understand aright, in another (thp: avoid VM_BUG_ON) thread,
-Linus remarks that he's noticed this and your matching Unevictable
-patch (that I had thought too late for v3.6), and is hoping for Acks
-so that he can put them into v3.6 after all.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-So despite my earlier reluctance, please take this as an Ack on that
-one too (I was testing them together): it'll be odd if one of them goes
-to stable and the other not, but we can sort that out with GregKH later.
+iQIcBAEBCAAGBQJQZP7UAAoJEECxmPOUX5FEMWcP/iwmWma/VHeQ8bSIvvcDxDNN
+7P0na1YpU/aHDFhLjaHWs75I1ILhJSF2KiU0p+d9/rpUh/i3KTqDUAALLqSnLC4B
+ntvy24NA+zQ2nMEPyH/v7glzwihBEV+7u5yDsjq1LmPqvO9lMM0nESn6xkSG71SB
+3X8GYpTXlWI4YuIcRpxPYVQ41fJTLB7iOvzmcuhLU+cqBLUUWpl3c9ofmuBfqcop
+tZuTUWL1ydqbIQlGfGlO66O7CD0Uxc/jL//BJNwDS1nj6j62sX7hU/Sbbwkc0Vny
+XfOE97tTtwj9a88B1CbwqcISkvGkHx4tp/9ueVEft7eVGdorxaqo6OuRp3LWMGs5
+7QHKnAzQWucr5Hd2OgnBJGDcrb8uySxMrPOrhw0uerBQG7Lt8l0S+yCszJ0OsfNn
+TuDpVw2C58fjyu/AuqK+YtEC9bOV/CthyYIvt1B50RhOUEQHDYiSX2kPliwLBjBT
+a7BcGadjF5T4Xk9jMVx4bOdZjTANnNIE3tHbiTSfqaO5KkDzMn/tZH3m8pWHJCB7
+iYe/gTcWELYnvj/hgGDSvg9rUYX+kfIHQ6ocVC6lsVpubZxa4fDxNzZYYPH5NBP6
+QIrBvk96jxAW/bSD0urcOkEZqYLIvC5TLDHRcwzCMPYs+0Q5aLmu55xUJxJiYFCT
+Ku6LYdRBpttCuVxfGkiR
+=c8Ps
+-----END PGP SIGNATURE-----
 
-Hugh
-
-> ---
->  mm/internal.h   |    3 ++-
->  mm/mlock.c      |    6 ++++--
->  mm/page_alloc.c |    2 +-
->  3 files changed, 7 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/internal.h b/mm/internal.h
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -180,7 +180,8 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
->  		return 0;
->  
->  	if (!TestSetPageMlocked(page)) {
-> -		inc_zone_page_state(page, NR_MLOCK);
-> +		mod_zone_page_state(page_zone(page), NR_MLOCK,
-> +				    hpage_nr_pages(page));
->  		count_vm_event(UNEVICTABLE_PGMLOCKED);
->  	}
->  	return 1;
-> diff --git a/mm/mlock.c b/mm/mlock.c
-> --- a/mm/mlock.c
-> +++ b/mm/mlock.c
-> @@ -81,7 +81,8 @@ void mlock_vma_page(struct page *page)
->  	BUG_ON(!PageLocked(page));
->  
->  	if (!TestSetPageMlocked(page)) {
-> -		inc_zone_page_state(page, NR_MLOCK);
-> +		mod_zone_page_state(page_zone(page), NR_MLOCK,
-> +				    hpage_nr_pages(page));
->  		count_vm_event(UNEVICTABLE_PGMLOCKED);
->  		if (!isolate_lru_page(page))
->  			putback_lru_page(page);
-> @@ -108,7 +109,8 @@ void munlock_vma_page(struct page *page)
->  	BUG_ON(!PageLocked(page));
->  
->  	if (TestClearPageMlocked(page)) {
-> -		dec_zone_page_state(page, NR_MLOCK);
-> +		mod_zone_page_state(page_zone(page), NR_MLOCK,
-> +				    -hpage_nr_pages(page));
->  		if (!isolate_lru_page(page)) {
->  			int ret = SWAP_AGAIN;
->  
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -604,7 +604,7 @@ out:
->   */
->  static inline void free_page_mlock(struct page *page)
->  {
-> -	__dec_zone_page_state(page, NR_MLOCK);
-> +	__mod_zone_page_state(page_zone(page), NR_MLOCK, -hpage_nr_pages(page));
->  	__count_vm_event(UNEVICTABLE_MLOCKFREED);
->  }
->  
-> 
+--Signature=_Fri__28_Sep_2012_11_35_16_+1000_STtnfsH1kxyAkPH5--
