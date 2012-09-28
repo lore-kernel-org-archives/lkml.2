@@ -1,133 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758630Ab2I1QhG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 12:37:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39794 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758608Ab2I1QhB (ORCPT
+	id S1758643Ab2I1Qhs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 12:37:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42052 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758616Ab2I1Qhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 12:37:01 -0400
+	Fri, 28 Sep 2012 12:37:46 -0400
+Date: Fri, 28 Sep 2012 09:37:20 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-9ec60972a38011ad8a5676f4cd5e51ac508c36b6@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, asharma@fb.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, asharma@fb.com
+In-Reply-To: <1348645663-25303-2-git-send-email-namhyung@kernel.org>
+References: <1348645663-25303-2-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf hists:
+  Add missing period_* fields when collapsing a hist entry
+Git-Commit-ID: 9ec60972a38011ad8a5676f4cd5e51ac508c36b6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120928151407.GA14215@somewhere.redhat.com>
-References: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
-	<87pq5awvgp.fsf@sejong.aot.lge.com>
-	<20120927230138.GA10660@somewhere.redhat.com>
-	<874nmivgqk.fsf@sejong.aot.lge.com>
-	<CABPqkBQbaDdGwyOK-qcheqyTzrr505undnFae8BQGEx+r0hKyg@mail.gmail.com>
-	<20120928151407.GA14215@somewhere.redhat.com>
-Date: Fri, 28 Sep 2012 18:36:59 +0200
-Message-ID: <CABPqkBQMRRw=sc1+DQ2gbHgT7zGD4qhGQKkArsre5VwgtNPGAA@mail.gmail.com>
-Subject: Re: [RFC/PATCHSET 00/15] perf report: Add support to accumulate hist periods
-From: Stephane Eranian <eranian@google.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arun Sharma <asharma@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 28 Sep 2012 09:37:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 5:14 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Fri, Sep 28, 2012 at 09:07:57AM +0200, Stephane Eranian wrote:
->> On Fri, Sep 28, 2012 at 7:49 AM, Namhyung Kim <namhyung@kernel.org> wrote:
->> > Hi Frederic,
->> >
->> > On Fri, 28 Sep 2012 01:01:48 +0200, Frederic Weisbecker wrote:
->> >> When Arun was working on this, I asked him to explore if it could make sense to reuse
->> >> the "-b, --branch-stack"  perf report option. Because after all, this feature is doing
->> >> about the same than "-b" except it's using callchains instead of full branch tracing.
->> >> But callchains are branches. Just a limited subset of all branches taken on excecution.
->> >> So you can probably reuse some interface and even ground code there.
->> >>
->> >> What do you think?
->> >
->> > Umm.. first of all, I'm not familiar with the branch stack thing.  It's
->> > intel-specific, right?
->> >
->> The kernel API is NOT specific to Intel. It is abstracted to be portable
->> across architecture. The implementation only exists on certain Intel
->> X86 processors.
->>
->> > Also I don't understand what exactly you want here.  What kind of
->> > interface did you say?  Can you elaborate it bit more?
->> >
->> Not clear to me either.
->>
->> > And AFAIK branch stack can collect much more branch information than
->> > just callstacks.  Can we differentiate which is which easily?  Is there
->> > any limitation on using it?  What if callstacks are not sync'ed with
->> > branch stacks - is it possible though?
->> >
->> First of all branch stack is not a branch tracing mechanism. This is a
->> branch sampling mechanism. Not all branches are captured. Only the
->> last N consecutive branches leading to a PMU interrupt are captured
->> in each sample.
->>
->> Yes, the branch stack mechanism as it exists on Intel processors
->> can capture more then call branches. It is HW based and provides
->> a branch type filter. Filtering capability is exposed at the API level
->> in a generic fashion. The hw filter is based on opcodes. Call branches
->> all cover call, syscall instructions. As such, the branch stack mechanism
->> cannot be used to capture callstacks to shared libraries, simply because
->> there a a non call instruction in the trampoline. To obtain a better quality
->> callstack you have instead to sample return branches. So yes, callstacks
->> are not sync'ed with branch stack even if limited to call branches.
->>
->
-> You're right. One doesn't simply sample callchains on top of branch tracing. Not easily at least.
-> But that's not what we want here. We want the other way round: use callchains as branch sampling.
-> And a callchain _is_ a branch sampling. Just a specialized one.
->
-> PERF_SAMPLE_BRANCH_STACK either records only calls, only ret, or everything, or....
-> You can define the filter with "-j" option. Now callchains can be considered as the result
-> of a specific "-j" filter option. It's just a high level filtering. ie: not just based on opcode
-> types but on semantic post-processing. As if we applied a specific filter on a pure branch tracing
-> that cancelled calls that had matching ret.
->
-A callstack mode will be added to PERF_SAMPLE_BRANCH_STACK geneirc
-filter because this becomes
-available in HW starting with Haswell (see Vol3b August 2012, section
-17.8). This will still be a statistical
-approach and not a complete callstack trace (only the last 16 calls).
+Commit-ID:  9ec60972a38011ad8a5676f4cd5e51ac508c36b6
+Gitweb:     http://git.kernel.org/tip/9ec60972a38011ad8a5676f4cd5e51ac508c36b6
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 26 Sep 2012 16:47:28 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 26 Sep 2012 20:44:11 -0300
 
-So yes, you could piggyback your callstack on top of that. You could
-return the full trace with the existing
-perf_branch_entry data structure. You'd have to fill in the prediction
-flags as N/A.
+perf hists: Add missing period_* fields when collapsing a hist entry
 
-But now with Haswell, one would have to decide whether to use the 'SW
-callstack' or the 'HW callstack'.
-It all depends on the quality of the data returned by HW callstack.
+So that the perf report won't lost the cpu utilization information.
 
+For example, if there're two process that have same name.
 
-> But in the end, what we have is just branches. Some branch layout that is biased, that already passed
-> through a semantic wheel, still it's just _branches_.
->
-> Note I'm not arguing about adding a "-j callchain" option, just trying to show you that callchains
-> are not really different from other filtered source of branch sampling.
->
->
->> > But I think it'd be good if the branch stack can be changed to call
->> > stack in general.  Did you mean this?
->> >
->> That's not going to happen. The mechanism is much more generic than
->> that.
->>
->> Quite frankly, I don't understand Frederic's motivation here. The mechanism
->> are not quite the same.
->
-> So, considering that callchains are just "branches", why can't we use them as
-> a branch source, just like PERF_SAMPLE_BRANCH_STACK data samples, that we
-> can reuse in "perf report -b".
->
-> Look at commit b50311dc2ac1c04ad19163c2359910b25e16caf6
-> "perf report: Add support for taken branch sampling". It's doing (except for a few details
-> like the period weight of branch samples) the same than in Namhyung patch, just with
-> PERF_SAMPLE_BRANCH_STACK instead of callchains.
->
-> I don't understand what justifies this duplication.
+  $ perf report --stdio --showcpuutilization -s pid
+  [SNIP]
+  #   Overhead       sys        us  Command:  Pid
+  #   ........  ........  ........  .............
+  #
+        55.12%     0.01%    55.10%  noploop:28781
+        44.88%     0.06%    44.83%  noploop:28782
+
+Before:
+  $ perf report --stdio --showcpuutilization -s comm
+  [SNIP]
+  #   Overhead       sys        us
+  #   ........  ........  ........
+  #
+       100.00%     0.06%    44.83%
+
+After:
+  $ perf report --stdio --showcpuutilization -s comm
+  [SNIP]
+  #   Overhead       sys        us
+  #   ........  ........  ........
+  #
+       100.00%     0.07%    99.93%
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1348645663-25303-2-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/hist.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 6ec5398..236bc9d 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -410,8 +410,13 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
+ 		cmp = hist_entry__collapse(iter, he);
+ 
+ 		if (!cmp) {
+-			iter->period += he->period;
+-			iter->nr_events += he->nr_events;
++			iter->period		+= he->period;
++			iter->period_sys	+= he->period_sys;
++			iter->period_us		+= he->period_us;
++			iter->period_guest_sys	+= he->period_guest_sys;
++			iter->period_guest_us	+= he->period_guest_us;
++			iter->nr_events		+= he->nr_events;
++
+ 			if (symbol_conf.use_callchain) {
+ 				callchain_cursor_reset(&callchain_cursor);
+ 				callchain_merge(&callchain_cursor,
