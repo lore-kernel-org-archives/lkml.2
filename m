@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab2I1BNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:13:38 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:52607 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755386Ab2I1BNg (ORCPT
+	id S1755840Ab2I1BOj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:14:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46544 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab2I1BOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:13:36 -0400
+	Thu, 27 Sep 2012 21:14:38 -0400
+Date: Thu, 27 Sep 2012 18:11:57 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: mathieu.poirier@linaro.org
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: [PATCH 47/57] power: Harmonising platform data
+ declaration/handling
+Message-ID: <20120928011156.GE5040@lizard>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-48-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <5064EA5A.3080905@jp.fujitsu.com>
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com>
- <1348724705-23779-3-git-send-email-wency@cn.fujitsu.com> <CAHGf_=rLMsmAxR5hrDVXjkHAxmupVrmtqE3iq2qu=O9Prp4nSg@mail.gmail.com>
- <5064EA5A.3080905@jp.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 27 Sep 2012 21:13:13 -0400
-X-Google-Sender-Auth: PWVi_rdlYyyY08qmRTTNHQqVl7Q
-Message-ID: <CAHGf_=qbBGjTL9oBHz7AM8BAosbzvn_WAGdAzJ8np-nDPN_KFQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] memory-hotplug: add node_device_release
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: wency@cn.fujitsu.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1348589574-25655-48-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 8:07 PM, Yasuaki Ishimatsu
-<isimatu.yasuaki@jp.fujitsu.com> wrote:
-> Hi Kosaki-san,
->
->
-> 2012/09/28 5:13, KOSAKI Motohiro wrote:
->>
->> On Thu, Sep 27, 2012 at 1:45 AM,  <wency@cn.fujitsu.com> wrote:
->>>
->>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>
->>> When calling unregister_node(), the function shows following message at
->>> device_release().
->>
->>
->> This description doesn't have the "following message".
->>
->>
->
->>> Device 'node2' does not have a release() function, it is broken and must
->>> be
->>> fixed.
->
->
-> This is the messages. The message is shown by kobject_cleanup(), when
-> calling
-> unregister_node().
+On Tue, Sep 25, 2012 at 10:12:44AM -0600, mathieu.poirier@linaro.org wrote:
+> From: "Mathieu J. Poirier" <mathieu.poirier@linaro.org>
+> 
+> Making platform data declaration and handling similar accross all
+> ab8500_xyc.c battery management files.  Also adding gards against
+> NULL platform data.
+> 
+> Signed-off-by: Philippe Langlais <philippe.langlais@stericsson.com>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> ---
+>  drivers/power/ab8500_btemp.c    |   17 +++++++++--------
+>  drivers/power/ab8500_charger.c  |   18 +++++++++---------
+>  drivers/power/ab8500_fg.c       |   17 +++++++++--------
+>  drivers/power/abx500_chargalg.c |   25 ++++++++++++++++++++-----
+>  4 files changed, 47 insertions(+), 30 deletions(-)
+> 
+> diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+> index 1f33122..cf4b653 100644
+> --- a/drivers/power/ab8500_btemp.c
+> +++ b/drivers/power/ab8500_btemp.c
+> @@ -1028,10 +1028,10 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+>  {
+>  	int irq, i, ret = 0;
+>  	u8 val;
+> -	struct ab8500_platform_data *plat_data;
+> -	struct ab8500_btemp *di;
+> +	struct ab8500_platform_data *plat;
+>  
+> -	di = kzalloc(sizeof(*di), GFP_KERNEL);
 
-If so, you should quote the message. and don't mix it with your
-subject. Moreover
-your patch title is too silly. "add node_device_release() function" is
-a way. you should
-describe the effect of the patch. e.g. suppress "Device 'nodeXX' does
-not have a release() function" warning.
+While at it, you could remove the unneeded empty line.
 
-Moreover, your explanation is still insufficient. Even if
-node_device_release() is empty function, we can get rid of the
-warning. Why do we need this node_device_release()
-implementation?
+> +	struct ab8500_btemp *di =
+> +		kzalloc(sizeof(struct ab8500_btemp), GFP_KERNEL);
+
+And here you need the empty line.
+
+>  	if (!di)
+>  		return -ENOMEM;
+>  
