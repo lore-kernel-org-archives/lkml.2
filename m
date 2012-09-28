@@ -1,710 +1,849 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757836Ab2I1MpX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:45:23 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42167 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab2I1MpV (ORCPT
+	id S1757925Ab2I1Mpd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:45:33 -0400
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:34656 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757882Ab2I1Mp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:45:21 -0400
+	Fri, 28 Sep 2012 08:45:28 -0400
+X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 08:45:28 EDT
+From: <Vineet.Gupta1@synopsys.com>
+To: <alan@linux.intel.com>, <gregkh@linuxfoundation.org>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Vineet Gupta" <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH] serial/arc-uart: Add new driver
+Date: Fri, 28 Sep 2012 18:05:52 +0530
+Message-ID: <1348835752-28426-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-In-Reply-To: <1344429020-27616-2-git-send-email-prabhakar.lad@ti.com>
-References: <1344429020-27616-1-git-send-email-prabhakar.lad@ti.com> <1344429020-27616-2-git-send-email-prabhakar.lad@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 28 Sep 2012 18:14:59 +0530
-Message-ID: <CA+V-a8tPQsc4-gS7jDCNy5PmsbTafoER9aXeL39_45Tk=0MjSw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] dm644x: replace the obsolete preset API by the
- timings API.
-To: Kevin Hilman <khilman@ti.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hansverk@cisco.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>, Sekhar Nori <nsekhar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+From: Vineet Gupta <vgupta@synopsys.com>
 
-On Wed, Aug 8, 2012 at 6:00 PM, Prabhakar Lad <prabhakar.lad@ti.com> wrote:
-> From: Hans Verkuil <hans.verkuil@cisco.com>
->
-> Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> ---
->  arch/arm/mach-davinci/board-dm644x-evm.c   |   15 ++--
->  arch/arm/mach-davinci/dm644x.c             |   17 +---
->  drivers/media/video/davinci/vpbe.c         |  110 ++++++++++++----------------
->  drivers/media/video/davinci/vpbe_display.c |   60 +++++++--------
->  drivers/media/video/davinci/vpbe_venc.c    |   25 +++---
->  include/media/davinci/vpbe.h               |   14 ++--
->  include/media/davinci/vpbe_types.h         |    8 +--
->  include/media/davinci/vpbe_venc.h          |    2 +-
->  8 files changed, 111 insertions(+), 140 deletions(-)
->
-Can you ACK this patch? Since this patch needs to go from Mauro's tree
-due to changes in media drivers folder structure.
+Driver for non-standard on-chip UART, instantiated in the ARC (Synopsys)
+FPGA Boards such as ARCAngel4/ML50x
 
-Regards,
---Prabhakar Lad
+This is based off of current Linus tree, build tested for x86.
 
-> diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
-> index d34ed55..3baf56d 100644
-> --- a/arch/arm/mach-davinci/board-dm644x-evm.c
-> +++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-> @@ -23,6 +23,7 @@
->  #include <linux/phy.h>
->  #include <linux/clk.h>
->  #include <linux/videodev2.h>
-> +#include <linux/v4l2-dv-timings.h>
->  #include <linux/export.h>
->
->  #include <media/tvp514x.h>
-> @@ -620,7 +621,7 @@ static struct vpbe_enc_mode_info dm644xevm_enc_std_timing[] = {
->         {
->                 .name           = "ntsc",
->                 .timings_type   = VPBE_ENC_STD,
-> -               .timings        = {V4L2_STD_525_60},
-> +               .std_id         = V4L2_STD_525_60,
->                 .interlaced     = 1,
->                 .xres           = 720,
->                 .yres           = 480,
-> @@ -632,7 +633,7 @@ static struct vpbe_enc_mode_info dm644xevm_enc_std_timing[] = {
->         {
->                 .name           = "pal",
->                 .timings_type   = VPBE_ENC_STD,
-> -               .timings        = {V4L2_STD_625_50},
-> +               .std_id         = V4L2_STD_625_50,
->                 .interlaced     = 1,
->                 .xres           = 720,
->                 .yres           = 576,
-> @@ -647,8 +648,8 @@ static struct vpbe_enc_mode_info dm644xevm_enc_std_timing[] = {
->  static struct vpbe_enc_mode_info dm644xevm_enc_preset_timing[] = {
->         {
->                 .name           = "480p59_94",
-> -               .timings_type   = VPBE_ENC_DV_PRESET,
-> -               .timings        = {V4L2_DV_480P59_94},
-> +               .timings_type   = VPBE_ENC_CUSTOM_TIMINGS,
-> +               .dv_timings     = V4L2_DV_BT_CEA_720X480P59_94,
->                 .interlaced     = 0,
->                 .xres           = 720,
->                 .yres           = 480,
-> @@ -659,8 +660,8 @@ static struct vpbe_enc_mode_info dm644xevm_enc_preset_timing[] = {
->         },
->         {
->                 .name           = "576p50",
-> -               .timings_type   = VPBE_ENC_DV_PRESET,
-> -               .timings        = {V4L2_DV_576P50},
-> +               .timings_type   = VPBE_ENC_CUSTOM_TIMINGS,
-> +               .dv_timings     = V4L2_DV_BT_CEA_720X576P50,
->                 .interlaced     = 0,
->                 .xres           = 720,
->                 .yres           = 576,
-> @@ -698,7 +699,7 @@ static struct vpbe_output dm644xevm_vpbe_outputs[] = {
->                         .index          = 1,
->                         .name           = "Component",
->                         .type           = V4L2_OUTPUT_TYPE_ANALOG,
-> -                       .capabilities   = V4L2_OUT_CAP_PRESETS,
-> +                       .capabilities   = V4L2_OUT_CAP_CUSTOM_TIMINGS,
->                 },
->                 .subdev_name    = VPBE_VENC_SUBDEV_NAME,
->                 .default_mode   = "480p59_94",
-> diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
-> index c8b8666..79d2880 100644
-> --- a/arch/arm/mach-davinci/dm644x.c
-> +++ b/arch/arm/mach-davinci/dm644x.c
-> @@ -701,7 +701,7 @@ static struct resource dm644x_venc_resources[] = {
->  #define DM644X_VPSS_DACCLKEN                  BIT(4)
->
->  static int dm644x_venc_setup_clock(enum vpbe_enc_timings_type type,
-> -                                  unsigned int mode)
-> +                                  unsigned int pclock)
->  {
->         int ret = 0;
->         u32 v = DM644X_VPSS_VENCLKEN;
-> @@ -711,27 +711,18 @@ static int dm644x_venc_setup_clock(enum vpbe_enc_timings_type type,
->                 v |= DM644X_VPSS_DACCLKEN;
->                 writel(v, DAVINCI_SYSMOD_VIRT(SYSMOD_VPSS_CLKCTL));
->                 break;
-> -       case VPBE_ENC_DV_PRESET:
-> -               switch (mode) {
-> -               case V4L2_DV_480P59_94:
-> -               case V4L2_DV_576P50:
-> +       case VPBE_ENC_CUSTOM_TIMINGS:
-> +               if (pclock <= 27000000) {
->                         v |= DM644X_VPSS_MUXSEL_PLL2_MODE |
->                              DM644X_VPSS_DACCLKEN;
->                         writel(v, DAVINCI_SYSMOD_VIRT(SYSMOD_VPSS_CLKCTL));
-> -                       break;
-> -               case V4L2_DV_720P60:
-> -               case V4L2_DV_1080I60:
-> -               case V4L2_DV_1080P30:
-> +               } else {
->                         /*
->                          * For HD, use external clock source since
->                          * HD requires higher clock rate
->                          */
->                         v |= DM644X_VPSS_MUXSEL_VPBECLK_MODE;
->                         writel(v, DAVINCI_SYSMOD_VIRT(SYSMOD_VPSS_CLKCTL));
-> -                       break;
-> -               default:
-> -                       ret = -EINVAL;
-> -                       break;
->                 }
->                 break;
->         default:
-> diff --git a/drivers/media/video/davinci/vpbe.c b/drivers/media/video/davinci/vpbe.c
-> index c4a82a1..bc27b2a 100644
-> --- a/drivers/media/video/davinci/vpbe.c
-> +++ b/drivers/media/video/davinci/vpbe.c
-> @@ -174,26 +174,6 @@ static int vpbe_get_current_mode_info(struct vpbe_device *vpbe_dev,
->         return 0;
->  }
->
-> -static int vpbe_get_dv_preset_info(struct vpbe_device *vpbe_dev,
-> -                                  unsigned int dv_preset)
-> -{
-> -       struct vpbe_config *cfg = vpbe_dev->cfg;
-> -       struct vpbe_enc_mode_info var;
-> -       int curr_output = vpbe_dev->current_out_index;
-> -       int i;
-> -
-> -       for (i = 0; i < vpbe_dev->cfg->outputs[curr_output].num_modes; i++) {
-> -               var = cfg->outputs[curr_output].modes[i];
-> -               if ((var.timings_type & VPBE_ENC_DV_PRESET) &&
-> -                 (var.timings.dv_preset == dv_preset)) {
-> -                       vpbe_dev->current_timings = var;
-> -                       return 0;
-> -               }
-> -       }
-> -
-> -       return -EINVAL;
-> -}
-> -
->  /* Get std by std id */
->  static int vpbe_get_std_info(struct vpbe_device *vpbe_dev,
->                              v4l2_std_id std_id)
-> @@ -206,7 +186,7 @@ static int vpbe_get_std_info(struct vpbe_device *vpbe_dev,
->         for (i = 0; i < vpbe_dev->cfg->outputs[curr_output].num_modes; i++) {
->                 var = cfg->outputs[curr_output].modes[i];
->                 if ((var.timings_type & VPBE_ENC_STD) &&
-> -                 (var.timings.std_id & std_id)) {
-> +                 (var.std_id & std_id)) {
->                         vpbe_dev->current_timings = var;
->                         return 0;
->                 }
-> @@ -344,38 +324,42 @@ static unsigned int vpbe_get_output(struct vpbe_device *vpbe_dev)
->  }
->
->  /**
-> - * vpbe_s_dv_preset - Set the given preset timings in the encoder
-> + * vpbe_s_dv_timings - Set the given preset timings in the encoder
->   *
-> - * Sets the preset if supported by the current encoder. Return the status.
-> + * Sets the timings if supported by the current encoder. Return the status.
->   * 0 - success & -EINVAL on error
->   */
-> -static int vpbe_s_dv_preset(struct vpbe_device *vpbe_dev,
-> -                    struct v4l2_dv_preset *dv_preset)
-> +static int vpbe_s_dv_timings(struct vpbe_device *vpbe_dev,
-> +                    struct v4l2_dv_timings *dv_timings)
->  {
->         struct vpbe_config *cfg = vpbe_dev->cfg;
->         int out_index = vpbe_dev->current_out_index;
-> +       struct vpbe_output *output = &cfg->outputs[out_index];
->         int sd_index = vpbe_dev->current_sd_index;
-> -       int ret;
-> +       int ret, i;
->
->
->         if (!(cfg->outputs[out_index].output.capabilities &
-> -           V4L2_OUT_CAP_PRESETS))
-> +           V4L2_OUT_CAP_CUSTOM_TIMINGS))
->                 return -EINVAL;
->
-> -       ret = vpbe_get_dv_preset_info(vpbe_dev, dv_preset->preset);
-> -
-> -       if (ret)
-> -               return ret;
-> -
-> +       for (i = 0; i < output->num_modes; i++) {
-> +               if (output->modes[i].timings_type == VPBE_ENC_CUSTOM_TIMINGS &&
-> +                   !memcmp(&output->modes[i].dv_timings,
-> +                               dv_timings, sizeof(*dv_timings)))
-> +                       break;
-> +       }
-> +       if (i >= output->num_modes)
-> +               return -EINVAL;
-> +       vpbe_dev->current_timings = output->modes[i];
->         mutex_lock(&vpbe_dev->lock);
->
-> -
->         ret = v4l2_subdev_call(vpbe_dev->encoders[sd_index], video,
-> -                                       s_dv_preset, dv_preset);
-> +                                       s_dv_timings, dv_timings);
->         if (!ret && (vpbe_dev->amp != NULL)) {
->                 /* Call amplifier subdevice */
->                 ret = v4l2_subdev_call(vpbe_dev->amp, video,
-> -                               s_dv_preset, dv_preset);
-> +                               s_dv_timings, dv_timings);
->         }
->         /* set the lcd controller output for the given mode */
->         if (!ret) {
-> @@ -392,17 +376,17 @@ static int vpbe_s_dv_preset(struct vpbe_device *vpbe_dev,
->  }
->
->  /**
-> - * vpbe_g_dv_preset - Get the preset in the current encoder
-> + * vpbe_g_dv_timings - Get the timings in the current encoder
->   *
-> - * Get the preset in the current encoder. Return the status. 0 - success
-> + * Get the timings in the current encoder. Return the status. 0 - success
->   * -EINVAL on error
->   */
-> -static int vpbe_g_dv_preset(struct vpbe_device *vpbe_dev,
-> -                    struct v4l2_dv_preset *dv_preset)
-> +static int vpbe_g_dv_timings(struct vpbe_device *vpbe_dev,
-> +                    struct v4l2_dv_timings *dv_timings)
->  {
->         if (vpbe_dev->current_timings.timings_type &
-> -         VPBE_ENC_DV_PRESET) {
-> -               dv_preset->preset = vpbe_dev->current_timings.timings.dv_preset;
-> +         VPBE_ENC_CUSTOM_TIMINGS) {
-> +               *dv_timings = vpbe_dev->current_timings.dv_timings;
->                 return 0;
->         }
->
-> @@ -410,13 +394,13 @@ static int vpbe_g_dv_preset(struct vpbe_device *vpbe_dev,
->  }
->
->  /**
-> - * vpbe_enum_dv_presets - Enumerate the dv presets in the current encoder
-> + * vpbe_enum_dv_timings - Enumerate the dv timings in the current encoder
->   *
-> - * Get the preset in the current encoder. Return the status. 0 - success
-> + * Get the timings in the current encoder. Return the status. 0 - success
->   * -EINVAL on error
->   */
-> -static int vpbe_enum_dv_presets(struct vpbe_device *vpbe_dev,
-> -                        struct v4l2_dv_enum_preset *preset_info)
-> +static int vpbe_enum_dv_timings(struct vpbe_device *vpbe_dev,
-> +                        struct v4l2_enum_dv_timings *timings)
->  {
->         struct vpbe_config *cfg = vpbe_dev->cfg;
->         int out_index = vpbe_dev->current_out_index;
-> @@ -424,12 +408,12 @@ static int vpbe_enum_dv_presets(struct vpbe_device *vpbe_dev,
->         int j = 0;
->         int i;
->
-> -       if (!(output->output.capabilities & V4L2_OUT_CAP_PRESETS))
-> +       if (!(output->output.capabilities & V4L2_OUT_CAP_CUSTOM_TIMINGS))
->                 return -EINVAL;
->
->         for (i = 0; i < output->num_modes; i++) {
-> -               if (output->modes[i].timings_type == VPBE_ENC_DV_PRESET) {
-> -                       if (j == preset_info->index)
-> +               if (output->modes[i].timings_type == VPBE_ENC_CUSTOM_TIMINGS) {
-> +                       if (j == timings->index)
->                                 break;
->                         j++;
->                 }
-> @@ -437,9 +421,8 @@ static int vpbe_enum_dv_presets(struct vpbe_device *vpbe_dev,
->
->         if (i == output->num_modes)
->                 return -EINVAL;
-> -
-> -       return v4l_fill_dv_preset_info(output->modes[i].timings.dv_preset,
-> -                                       preset_info);
-> +       timings->timings = output->modes[i].dv_timings;
-> +       return 0;
->  }
->
->  /**
-> @@ -489,10 +472,10 @@ static int vpbe_s_std(struct vpbe_device *vpbe_dev, v4l2_std_id *std_id)
->   */
->  static int vpbe_g_std(struct vpbe_device *vpbe_dev, v4l2_std_id *std_id)
->  {
-> -       struct vpbe_enc_mode_info cur_timings = vpbe_dev->current_timings;
-> +       struct vpbe_enc_mode_info *cur_timings = &vpbe_dev->current_timings;
->
-> -       if (cur_timings.timings_type & VPBE_ENC_STD) {
-> -               *std_id = cur_timings.timings.std_id;
-> +       if (cur_timings->timings_type & VPBE_ENC_STD) {
-> +               *std_id = cur_timings->std_id;
->                 return 0;
->         }
->
-> @@ -511,7 +494,7 @@ static int vpbe_set_mode(struct vpbe_device *vpbe_dev,
->  {
->         struct vpbe_enc_mode_info *preset_mode = NULL;
->         struct vpbe_config *cfg = vpbe_dev->cfg;
-> -       struct v4l2_dv_preset dv_preset;
-> +       struct v4l2_dv_timings dv_timings;
->         struct osd_state *osd_device;
->         int out_index = vpbe_dev->current_out_index;
->         int ret = 0;
-> @@ -530,11 +513,12 @@ static int vpbe_set_mode(struct vpbe_device *vpbe_dev,
->                          */
->                         if (preset_mode->timings_type & VPBE_ENC_STD)
->                                 return vpbe_s_std(vpbe_dev,
-> -                                                &preset_mode->timings.std_id);
-> -                       if (preset_mode->timings_type & VPBE_ENC_DV_PRESET) {
-> -                               dv_preset.preset =
-> -                                       preset_mode->timings.dv_preset;
-> -                               return vpbe_s_dv_preset(vpbe_dev, &dv_preset);
-> +                                                &preset_mode->std_id);
-> +                       if (preset_mode->timings_type &
-> +                                               VPBE_ENC_CUSTOM_TIMINGS) {
-> +                               dv_timings =
-> +                                       preset_mode->dv_timings;
-> +                               return vpbe_s_dv_timings(vpbe_dev, &dv_timings);
->                         }
->                 }
->         }
-> @@ -810,9 +794,9 @@ static struct vpbe_device_ops vpbe_dev_ops = {
->         .enum_outputs = vpbe_enum_outputs,
->         .set_output = vpbe_set_output,
->         .get_output = vpbe_get_output,
-> -       .s_dv_preset = vpbe_s_dv_preset,
-> -       .g_dv_preset = vpbe_g_dv_preset,
-> -       .enum_dv_presets = vpbe_enum_dv_presets,
-> +       .s_dv_timings = vpbe_s_dv_timings,
-> +       .g_dv_timings = vpbe_g_dv_timings,
-> +       .enum_dv_timings = vpbe_enum_dv_timings,
->         .s_std = vpbe_s_std,
->         .g_std = vpbe_g_std,
->         .initialize = vpbe_initialize,
-> diff --git a/drivers/media/video/davinci/vpbe_display.c b/drivers/media/video/davinci/vpbe_display.c
-> index 6fe7034..2fbf3bc 100644
-> --- a/drivers/media/video/davinci/vpbe_display.c
-> +++ b/drivers/media/video/davinci/vpbe_display.c
-> @@ -393,7 +393,7 @@ vpbe_disp_calculate_scale_factor(struct vpbe_display *disp_dev,
->         int h_scale;
->         int v_scale;
->
-> -       v4l2_std_id standard_id = vpbe_dev->current_timings.timings.std_id;
-> +       v4l2_std_id standard_id = vpbe_dev->current_timings.std_id;
->
->         /*
->          * Application initially set the image format. Current display
-> @@ -943,7 +943,7 @@ static int vpbe_display_g_std(struct file *file, void *priv,
->
->         /* Get the standard from the current encoder */
->         if (vpbe_dev->current_timings.timings_type & VPBE_ENC_STD) {
-> -               *std_id = vpbe_dev->current_timings.timings.std_id;
-> +               *std_id = vpbe_dev->current_timings.std_id;
->                 return 0;
->         }
->
-> @@ -1029,29 +1029,29 @@ static int vpbe_display_g_output(struct file *file, void *priv,
->  }
->
->  /**
-> - * vpbe_display_enum_dv_presets - Enumerate the dv presets
-> + * vpbe_display_enum_dv_timings - Enumerate the dv timings
->   *
-> - * enum the preset in the current encoder. Return the status. 0 - success
-> + * enum the timings in the current encoder. Return the status. 0 - success
->   * -EINVAL on error
->   */
->  static int
-> -vpbe_display_enum_dv_presets(struct file *file, void *priv,
-> -                       struct v4l2_dv_enum_preset *preset)
-> +vpbe_display_enum_dv_timings(struct file *file, void *priv,
-> +                       struct v4l2_enum_dv_timings *timings)
->  {
->         struct vpbe_fh *fh = priv;
->         struct vpbe_device *vpbe_dev = fh->disp_dev->vpbe_dev;
->         int ret;
->
-> -       v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev, "VIDIOC_ENUM_DV_PRESETS\n");
-> +       v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev, "VIDIOC_ENUM_DV_TIMINGS\n");
->
->         /* Enumerate outputs */
-> -       if (NULL == vpbe_dev->ops.enum_dv_presets)
-> +       if (NULL == vpbe_dev->ops.enum_dv_timings)
->                 return -EINVAL;
->
-> -       ret = vpbe_dev->ops.enum_dv_presets(vpbe_dev, preset);
-> +       ret = vpbe_dev->ops.enum_dv_timings(vpbe_dev, timings);
->         if (ret) {
->                 v4l2_err(&vpbe_dev->v4l2_dev,
-> -                       "Failed to enumerate dv presets info\n");
-> +                       "Failed to enumerate dv timings info\n");
->                 return -EINVAL;
->         }
->
-> @@ -1059,21 +1059,21 @@ vpbe_display_enum_dv_presets(struct file *file, void *priv,
->  }
->
->  /**
-> - * vpbe_display_s_dv_preset - Set the dv presets
-> + * vpbe_display_s_dv_timings - Set the dv timings
->   *
-> - * Set the preset in the current encoder. Return the status. 0 - success
-> + * Set the timings in the current encoder. Return the status. 0 - success
->   * -EINVAL on error
->   */
->  static int
-> -vpbe_display_s_dv_preset(struct file *file, void *priv,
-> -                               struct v4l2_dv_preset *preset)
-> +vpbe_display_s_dv_timings(struct file *file, void *priv,
-> +                               struct v4l2_dv_timings *timings)
->  {
->         struct vpbe_fh *fh = priv;
->         struct vpbe_layer *layer = fh->layer;
->         struct vpbe_device *vpbe_dev = fh->disp_dev->vpbe_dev;
->         int ret;
->
-> -       v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev, "VIDIOC_S_DV_PRESETS\n");
-> +       v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev, "VIDIOC_S_DV_TIMINGS\n");
->
->
->         /* If streaming is started, return error */
-> @@ -1083,13 +1083,13 @@ vpbe_display_s_dv_preset(struct file *file, void *priv,
->         }
->
->         /* Set the given standard in the encoder */
-> -       if (!vpbe_dev->ops.s_dv_preset)
-> +       if (!vpbe_dev->ops.s_dv_timings)
->                 return -EINVAL;
->
-> -       ret = vpbe_dev->ops.s_dv_preset(vpbe_dev, preset);
-> +       ret = vpbe_dev->ops.s_dv_timings(vpbe_dev, timings);
->         if (ret) {
->                 v4l2_err(&vpbe_dev->v4l2_dev,
-> -                       "Failed to set the dv presets info\n");
-> +                       "Failed to set the dv timings info\n");
->                 return -EINVAL;
->         }
->         /* set the current norm to zero to be consistent. If STD is used
-> @@ -1101,26 +1101,25 @@ vpbe_display_s_dv_preset(struct file *file, void *priv,
->  }
->
->  /**
-> - * vpbe_display_g_dv_preset - Set the dv presets
-> + * vpbe_display_g_dv_timings - Set the dv timings
->   *
-> - * Get the preset in the current encoder. Return the status. 0 - success
-> + * Get the timings in the current encoder. Return the status. 0 - success
->   * -EINVAL on error
->   */
->  static int
-> -vpbe_display_g_dv_preset(struct file *file, void *priv,
-> -                               struct v4l2_dv_preset *dv_preset)
-> +vpbe_display_g_dv_timings(struct file *file, void *priv,
-> +                               struct v4l2_dv_timings *dv_timings)
->  {
->         struct vpbe_fh *fh = priv;
->         struct vpbe_device *vpbe_dev = fh->disp_dev->vpbe_dev;
->
-> -       v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev, "VIDIOC_G_DV_PRESETS\n");
-> +       v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev, "VIDIOC_G_DV_TIMINGS\n");
->
->         /* Get the given standard in the encoder */
->
->         if (vpbe_dev->current_timings.timings_type &
-> -                               VPBE_ENC_DV_PRESET) {
-> -               dv_preset->preset =
-> -                       vpbe_dev->current_timings.timings.dv_preset;
-> +                               VPBE_ENC_CUSTOM_TIMINGS) {
-> +               *dv_timings = vpbe_dev->current_timings.dv_timings;
->         } else {
->                 return -EINVAL;
->         }
-> @@ -1560,9 +1559,9 @@ static const struct v4l2_ioctl_ops vpbe_ioctl_ops = {
->         .vidioc_enum_output      = vpbe_display_enum_output,
->         .vidioc_s_output         = vpbe_display_s_output,
->         .vidioc_g_output         = vpbe_display_g_output,
-> -       .vidioc_s_dv_preset      = vpbe_display_s_dv_preset,
-> -       .vidioc_g_dv_preset      = vpbe_display_g_dv_preset,
-> -       .vidioc_enum_dv_presets  = vpbe_display_enum_dv_presets,
-> +       .vidioc_s_dv_timings     = vpbe_display_s_dv_timings,
-> +       .vidioc_g_dv_timings     = vpbe_display_g_dv_timings,
-> +       .vidioc_enum_dv_timings  = vpbe_display_enum_dv_timings,
->  #ifdef CONFIG_VIDEO_ADV_DEBUG
->         .vidioc_g_register       = vpbe_display_g_register,
->         .vidioc_s_register       = vpbe_display_s_register,
-> @@ -1630,8 +1629,7 @@ static __devinit int init_vpbe_layer(int i, struct vpbe_display *disp_dev,
->                         VPBE_ENC_STD) {
->                 vbd->tvnorms = (V4L2_STD_525_60 | V4L2_STD_625_50);
->                 vbd->current_norm =
-> -                       disp_dev->vpbe_dev->
-> -                       current_timings.timings.std_id;
-> +                       disp_dev->vpbe_dev->current_timings.std_id;
->         } else
->                 vbd->current_norm = 0;
->
-> diff --git a/drivers/media/video/davinci/vpbe_venc.c b/drivers/media/video/davinci/vpbe_venc.c
-> index b21ecc8..86d47c3 100644
-> --- a/drivers/media/video/davinci/vpbe_venc.c
-> +++ b/drivers/media/video/davinci/vpbe_venc.c
-> @@ -298,7 +298,7 @@ static int venc_set_480p59_94(struct v4l2_subdev *sd)
->                 return -EINVAL;
->
->         /* Setup clock at VPSS & VENC for SD */
-> -       if (pdata->setup_clock(VPBE_ENC_DV_PRESET, V4L2_DV_480P59_94) < 0)
-> +       if (pdata->setup_clock(VPBE_ENC_CUSTOM_TIMINGS, 27000000) < 0)
->                 return -EINVAL;
->
->         venc_enabledigitaloutput(sd, 0);
-> @@ -345,7 +345,7 @@ static int venc_set_576p50(struct v4l2_subdev *sd)
->           (pdata->venc_type != VPBE_VERSION_2))
->                 return -EINVAL;
->         /* Setup clock at VPSS & VENC for SD */
-> -       if (pdata->setup_clock(VPBE_ENC_DV_PRESET, V4L2_DV_576P50) < 0)
-> +       if (pdata->setup_clock(VPBE_ENC_CUSTOM_TIMINGS, 27000000) < 0)
->                 return -EINVAL;
->
->         venc_enabledigitaloutput(sd, 0);
-> @@ -385,7 +385,7 @@ static int venc_set_720p60_internal(struct v4l2_subdev *sd)
->         struct venc_state *venc = to_state(sd);
->         struct venc_platform_data *pdata = venc->pdata;
->
-> -       if (pdata->setup_clock(VPBE_ENC_DV_PRESET, V4L2_DV_720P60) < 0)
-> +       if (pdata->setup_clock(VPBE_ENC_CUSTOM_TIMINGS, 74250000) < 0)
->                 return -EINVAL;
->
->         venc_enabledigitaloutput(sd, 0);
-> @@ -413,7 +413,7 @@ static int venc_set_1080i30_internal(struct v4l2_subdev *sd)
->         struct venc_state *venc = to_state(sd);
->         struct venc_platform_data *pdata = venc->pdata;
->
-> -       if (pdata->setup_clock(VPBE_ENC_DV_PRESET, V4L2_DV_1080P30) < 0)
-> +       if (pdata->setup_clock(VPBE_ENC_CUSTOM_TIMINGS, 74250000) < 0)
->                 return -EINVAL;
->
->         venc_enabledigitaloutput(sd, 0);
-> @@ -446,26 +446,27 @@ static int venc_s_std_output(struct v4l2_subdev *sd, v4l2_std_id norm)
->         return -EINVAL;
->  }
->
-> -static int venc_s_dv_preset(struct v4l2_subdev *sd,
-> -                           struct v4l2_dv_preset *dv_preset)
-> +static int venc_s_dv_timings(struct v4l2_subdev *sd,
-> +                           struct v4l2_dv_timings *dv_timings)
->  {
->         struct venc_state *venc = to_state(sd);
-> +       u32 height = dv_timings->bt.height;
->         int ret;
->
-> -       v4l2_dbg(debug, 1, sd, "venc_s_dv_preset\n");
-> +       v4l2_dbg(debug, 1, sd, "venc_s_dv_timings\n");
->
-> -       if (dv_preset->preset == V4L2_DV_576P50)
-> +       if (height == 576)
->                 return venc_set_576p50(sd);
-> -       else if (dv_preset->preset == V4L2_DV_480P59_94)
-> +       else if (height == 480)
->                 return venc_set_480p59_94(sd);
-> -       else if ((dv_preset->preset == V4L2_DV_720P60) &&
-> +       else if ((height == 720) &&
->                         (venc->pdata->venc_type == VPBE_VERSION_2)) {
->                 /* TBD setup internal 720p mode here */
->                 ret = venc_set_720p60_internal(sd);
->                 /* for DM365 VPBE, there is DAC inside */
->                 vdaccfg_write(sd, VDAC_CONFIG_HD_V2);
->                 return ret;
-> -       } else if ((dv_preset->preset == V4L2_DV_1080I30) &&
-> +       } else if ((height == 1080) &&
->                 (venc->pdata->venc_type == VPBE_VERSION_2)) {
->                 /* TBD setup internal 1080i mode here */
->                 ret = venc_set_1080i30_internal(sd);
-> @@ -518,7 +519,7 @@ static const struct v4l2_subdev_core_ops venc_core_ops = {
->  static const struct v4l2_subdev_video_ops venc_video_ops = {
->         .s_routing = venc_s_routing,
->         .s_std_output = venc_s_std_output,
-> -       .s_dv_preset = venc_s_dv_preset,
-> +       .s_dv_timings = venc_s_dv_timings,
->  };
->
->  static const struct v4l2_subdev_ops venc_ops = {
-> diff --git a/include/media/davinci/vpbe.h b/include/media/davinci/vpbe.h
-> index 8bc1b3c..a7ca488 100644
-> --- a/include/media/davinci/vpbe.h
-> +++ b/include/media/davinci/vpbe.h
-> @@ -35,7 +35,7 @@ struct osd_config_info {
->  struct vpbe_output {
->         struct v4l2_output output;
->         /*
-> -        * If output capabilities include dv_preset, list supported presets
-> +        * If output capabilities include dv_timings, list supported timings
->          * below
->          */
->         char *subdev_name;
-> @@ -120,16 +120,16 @@ struct vpbe_device_ops {
->         unsigned int (*get_output)(struct vpbe_device *vpbe_dev);
->
->         /* Set DV preset at current output */
-> -       int (*s_dv_preset)(struct vpbe_device *vpbe_dev,
-> -                          struct v4l2_dv_preset *dv_preset);
-> +       int (*s_dv_timings)(struct vpbe_device *vpbe_dev,
-> +                          struct v4l2_dv_timings *dv_timings);
->
->         /* Get DV presets supported at the output */
-> -       int (*g_dv_preset)(struct vpbe_device *vpbe_dev,
-> -                          struct v4l2_dv_preset *dv_preset);
-> +       int (*g_dv_timings)(struct vpbe_device *vpbe_dev,
-> +                          struct v4l2_dv_timings *dv_timings);
->
->         /* Enumerate the DV Presets supported at the output */
-> -       int (*enum_dv_presets)(struct vpbe_device *vpbe_dev,
-> -                              struct v4l2_dv_enum_preset *preset_info);
-> +       int (*enum_dv_timings)(struct vpbe_device *vpbe_dev,
-> +                              struct v4l2_enum_dv_timings *timings_info);
->
->         /* Set std at the output */
->         int (*s_std)(struct vpbe_device *vpbe_dev, v4l2_std_id *std_id);
-> diff --git a/include/media/davinci/vpbe_types.h b/include/media/davinci/vpbe_types.h
-> index 727f551..9b85396 100644
-> --- a/include/media/davinci/vpbe_types.h
-> +++ b/include/media/davinci/vpbe_types.h
-> @@ -32,11 +32,6 @@ enum vpbe_enc_timings_type {
->         VPBE_ENC_TIMINGS_INVALID = 0x8,
->  };
->
-> -union vpbe_timings {
-> -       v4l2_std_id std_id;
-> -       unsigned int dv_preset;
-> -};
-> -
->  /*
->   * struct vpbe_enc_mode_info
->   * @name: ptr to name string of the standard, "NTSC", "PAL" etc
-> @@ -73,7 +68,8 @@ union vpbe_timings {
->  struct vpbe_enc_mode_info {
->         unsigned char *name;
->         enum vpbe_enc_timings_type timings_type;
-> -       union vpbe_timings timings;
-> +       v4l2_std_id std_id;
-> +       struct v4l2_dv_timings dv_timings;
->         unsigned int interlaced;
->         unsigned int xres;
->         unsigned int yres;
-> diff --git a/include/media/davinci/vpbe_venc.h b/include/media/davinci/vpbe_venc.h
-> index 6b57334..cc78c2e 100644
-> --- a/include/media/davinci/vpbe_venc.h
-> +++ b/include/media/davinci/vpbe_venc.h
-> @@ -32,7 +32,7 @@ struct venc_platform_data {
->         int (*setup_pinmux)(enum v4l2_mbus_pixelcode if_type,
->                             int field);
->         int (*setup_clock)(enum vpbe_enc_timings_type type,
-> -                          unsigned int mode);
-> +                          unsigned int pixclock);
->         int (*setup_if_config)(enum v4l2_mbus_pixelcode pixcode);
->         /* Number of LCD outputs supported */
->         int num_lcd_outputs;
-> --
-> 1.7.0.4
->
-> _______________________________________________
-> Davinci-linux-open-source mailing list
-> Davinci-linux-open-source@linux.davincidsp.com
-> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+---
+ drivers/tty/serial/Kconfig    |   25 ++
+ drivers/tty/serial/Makefile   |    1 +
+ drivers/tty/serial/arc_uart.c |  742 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/serial_core.h   |    3 +
+ 4 files changed, 771 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/tty/serial/arc_uart.c
+
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 4720b4b..af4bd69 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1360,4 +1360,29 @@ config SERIAL_EFM32_UART_CONSOLE
+ 	depends on SERIAL_EFM32_UART=y
+ 	select SERIAL_CORE_CONSOLE
+ 
++config SERIAL_ARC
++	bool "ARC UART driver support"
++	select SERIAL_CORE
++	default y
++	help
++	  Driver for on-chip UART for ARC(Synopsys) for the legacy
++	  FPGA Boards (ML50x/ARCAngel4)
++
++config SERIAL_ARC_CONSOLE
++	bool
++	select SERIAL_CORE_CONSOLE
++	depends on SERIAL_ARC=y
++	default y
++	help
++	  Enable system Console on ARC UART
++
++config SERIAL_ARC_NR_PORTS
++	int 'Number of ports'
++	range 1 3
++	default 1
++	depends on SERIAL_ARC
++	help
++	  Set this to the number of serial ports you want the driver
++	  to support.
++
+ endmenu
+diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+index 7257c5d..2b70b5f 100644
+--- a/drivers/tty/serial/Makefile
++++ b/drivers/tty/serial/Makefile
+@@ -79,3 +79,4 @@ obj-$(CONFIG_SERIAL_XILINX_PS_UART) += xilinx_uartps.o
+ obj-$(CONFIG_SERIAL_SIRFSOC) += sirfsoc_uart.o
+ obj-$(CONFIG_SERIAL_AR933X)   += ar933x_uart.o
+ obj-$(CONFIG_SERIAL_EFM32_UART) += efm32-uart.o
++obj-$(CONFIG_SERIAL_ARC)	+= arc_uart.o
+diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
+new file mode 100644
+index 0000000..4f2e57b
+--- /dev/null
++++ b/drivers/tty/serial/arc_uart.c
+@@ -0,0 +1,742 @@
++/*
++ * ARC On-Chip(fpga) UART Driver
++ *
++ * Copyright (C) 2010-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * vineetg: July 10th 2012
++ *  -Decoupled the driver from arch/arc
++ *    +Using platform_get_resource() for irq/membase (thx to bfin_uart.c)
++ *    +Using early_platform_xxx() for early console (thx to mach-shmobile/xxx)
++ *
++ * Vineetg: Aug 21st 2010
++ *  -Is uart_tx_stopped() not done in tty write path as it has already been
++ *   taken care of, in serial core
++ *
++ * Vineetg: Aug 18th 2010
++ *  -New Serial Core based ARC UART driver
++ *  -Derived largely from blackfin driver albiet with some major tweaks
++ *
++ * TODO:
++ *  -check if sysreq works
++ */
++
++#if defined(CONFIG_SERIAL_ARC_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
++#define SUPPORT_SYSRQ
++#endif
++
++#include <linux/module.h>
++#include <linux/serial.h>
++#include <linux/console.h>
++#include <linux/sysrq.h>
++#include <linux/platform_device.h>
++#include <linux/tty.h>
++#include <linux/tty_flip.h>
++#include <linux/serial_core.h>
++#include <linux/io.h>
++
++/*************************************
++ * ARC UART Hardware Specs
++ ************************************/
++#define ARC_UART_TX_FIFO_SIZE  1
++
++/*
++ * UART Register set (this is not a Standards Compliant IP)
++ * Also each reg is Word aligned, but only 8 bits wide
++ */
++#define R_ID0	0
++#define R_ID1	1
++#define R_ID2	2
++#define R_ID3	3
++#define R_DATA	4
++#define R_STS	5
++#define R_BAUDL	6
++#define R_BAUDH	7
++
++/* Bits for UART Status Reg (R/W) */
++#define RXIENB  0x04	/* Receive Interrupt Enable */
++#define TXIENB  0x40	/* Transmit Interrupt Enable */
++
++#define RXEMPTY 0x20	/* Receive FIFO Empty: No char receivede */
++#define TXEMPTY 0x80	/* Transmit FIFO Empty, thus char can be written into */
++
++#define RXFULL  0x08	/* Receive FIFO full */
++#define RXFULL1 0x10	/* Receive FIFO has space for 1 char (tot space=4) */
++
++#define RXFERR  0x01	/* Frame Error: Stop Bit not detected */
++#define RXOERR  0x02	/* OverFlow Err: Char recv but RXFULL still set */
++
++/* Uart bit fiddling helpers: lowest level */
++#define RBASE(uart, reg)      ((unsigned int *)uart->port.membase + reg)
++#define UART_REG_SET(u, r, v) writeb((v), RBASE(u, r))
++#define UART_REG_GET(u, r)    readb(RBASE(u, r))
++
++#define UART_REG_OR(u, r, v)  UART_REG_SET(u, r, UART_REG_GET(u, r) | (v))
++#define UART_REG_CLR(u, r, v) UART_REG_SET(u, r, UART_REG_GET(u, r) & ~(v))
++
++/* Uart bit fiddling helpers: API level */
++#define UART_SET_DATA(uart, val)   UART_REG_SET(uart, R_DATA, val)
++#define UART_GET_DATA(uart)        UART_REG_GET(uart, R_DATA)
++
++#define UART_SET_BAUDH(uart, val)  UART_REG_SET(uart, R_BAUDH, val)
++#define UART_SET_BAUDL(uart, val)  UART_REG_SET(uart, R_BAUDL, val)
++
++#define UART_CLR_STATUS(uart, val) UART_REG_CLR(uart, R_STS, val)
++#define UART_GET_STATUS(uart)      UART_REG_GET(uart, R_STS)
++
++#define UART_ALL_IRQ_DISABLE(uart) UART_REG_CLR(uart, R_STS, RXIENB|TXIENB)
++#define UART_RX_IRQ_DISABLE(uart)  UART_REG_CLR(uart, R_STS, RXIENB)
++#define UART_TX_IRQ_DISABLE(uart)  UART_REG_CLR(uart, R_STS, TXIENB)
++
++#define UART_ALL_IRQ_ENABLE(uart)  UART_REG_OR(uart, R_STS, RXIENB|TXIENB)
++#define UART_RX_IRQ_ENABLE(uart)   UART_REG_OR(uart, R_STS, RXIENB)
++#define UART_TX_IRQ_ENABLE(uart)   UART_REG_OR(uart, R_STS, TXIENB)
++
++#define ARC_SERIAL_DEV_NAME	"ttyS"
++
++/* ttySxx per Documentation/devices.txt */
++#define ARC_SERIAL_MAJOR	4
++#define ARC_SERIAL_MINOR	64
++
++struct arc_uart_port {
++	struct uart_port port;
++	unsigned long baud;
++};
++
++static struct arc_uart_port arc_uart_ports[CONFIG_SERIAL_ARC_NR_PORTS];
++
++#ifdef CONFIG_SERIAL_ARC_CONSOLE
++static struct console arc_serial_console;
++#define ARC_SERIAL_CONSOLE	(&arc_serial_console)
++#else
++#define ARC_SERIAL_CONSOLE	NULL
++#endif
++
++int __attribute__((weak)) running_on_iss;
++
++#define DRIVER_NAME	"arc-uart"
++
++static struct uart_driver arc_uart_driver = {
++	.owner		= THIS_MODULE,
++	.driver_name	= DRIVER_NAME,
++	.dev_name	= ARC_SERIAL_DEV_NAME,
++	.major		= ARC_SERIAL_MAJOR,
++	.minor		= ARC_SERIAL_MINOR,
++	.nr		= CONFIG_SERIAL_ARC_NR_PORTS,
++	.cons		= ARC_SERIAL_CONSOLE,
++};
++
++static void arc_serial_stop_rx(struct uart_port *port)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++
++	UART_RX_IRQ_DISABLE(uart);
++}
++
++static void arc_serial_stop_tx(struct uart_port *port)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++
++	while (!(UART_GET_STATUS(uart) & TXEMPTY))
++		cpu_relax();
++
++	UART_TX_IRQ_DISABLE(uart);
++}
++
++/*
++ * Return TIOCSER_TEMT when transmitter is not busy.
++ */
++static unsigned int arc_serial_tx_empty(struct uart_port *port)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++	unsigned int stat;
++
++	stat = UART_GET_STATUS(uart);
++	if (stat & TXEMPTY)
++		return TIOCSER_TEMT;
++	else
++		return 0;
++
++}
++
++/*
++ * Driver internal routine, used by both tty(serial core) as well as tx-isr
++ *  -Called under spinlock in either cases
++ *  -also tty->stopped / tty->hw_stopped has already been checked
++ *     = by uart_start( ) before calling us
++ *     = tx_ist checks that too before calling
++ */
++static void arc_serial_tx_chars(struct arc_uart_port *uart)
++{
++	struct circ_buf *xmit = &uart->port.state->xmit;
++	int sent = 0;
++	unsigned char ch;
++
++	if (unlikely(uart->port.x_char)) {
++		UART_SET_DATA(uart, uart->port.x_char);
++		uart->port.icount.tx++;
++		uart->port.x_char = 0;
++		sent = 1;
++	} else if (xmit->tail != xmit->head) {	/* TODO: uart_circ_empty */
++		ch = xmit->buf[xmit->tail];
++		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
++		uart->port.icount.tx++;
++		while (!(UART_GET_STATUS(uart) & TXEMPTY))
++			cpu_relax();
++		UART_SET_DATA(uart, ch);
++		sent = 1;
++	}
++
++	/*
++	 * If num chars in xmit buffer are too few, ask tty layer for more.
++	 * By Hard ISR to schedule processing in software interrupt part
++	 */
++	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
++		uart_write_wakeup(&uart->port);
++
++	/*if (uart_circ_chars_pending(xmit)) */
++	if (sent)
++		UART_TX_IRQ_ENABLE(uart);
++
++}
++
++/*
++ * port is locked and interrupts are disabled
++ * uart_start( ) calls us under the port spinlock irqsave
++ */
++static void arc_serial_start_tx(struct uart_port *port)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++
++	arc_serial_tx_chars(uart);
++}
++
++static void arc_serial_rx_chars(struct arc_uart_port *uart)
++{
++	struct tty_struct *tty = NULL;
++	unsigned int status, ch, flg = 0;
++
++	tty = uart->port.state->port.tty;
++
++	/*
++	 * UART has 4 deep RX-FIFO. Driver's recongnition of this fact
++	 * is very subtle. Here's how ...
++	 * Upon getting a RX-Intr, such that RX-EMPTY=0, meaning data available,
++	 * driver reads the DATA Reg and keeps doing that in a loop, until
++	 * RX-EMPTY=1. Multiple chars being avail, with a single Interrupt,
++	 * before RX-EMPTY=0, implies some sort of buffering going on in the
++	 * controller, which is indeed the Rx-FIFO.
++	 */
++	while (!((status = UART_GET_STATUS(uart)) & RXEMPTY)) {
++
++		ch = UART_GET_DATA(uart);
++		uart->port.icount.rx++;
++
++		if (unlikely(status & (RXOERR | RXFERR))) {
++			if (status & RXOERR) {
++				uart->port.icount.overrun++;
++				flg = TTY_OVERRUN;
++				UART_CLR_STATUS(uart, RXOERR);
++			}
++
++			if (status & RXFERR) {
++				uart->port.icount.frame++;
++				flg = TTY_FRAME;
++				UART_CLR_STATUS(uart, RXFERR);
++			}
++		} else
++			flg = TTY_NORMAL;
++
++		if (unlikely(uart_handle_sysrq_char(&uart->port, ch)))
++			goto done;
++
++		uart_insert_char(&uart->port, status, RXOERR, ch, flg);
++
++done:
++		tty_flip_buffer_push(tty);
++	}
++}
++
++/*
++ * A note on the Interrupt handling state machine of this driver
++ *
++ * kernel printk writes funnel thru the console driver framework and in order
++ * to keep things simple as well as efficient, it writes to UART in polled
++ * mode, in one shot, and exits.
++ *
++ * OTOH, Userland output (via tty layer), uses interrupt based writes as there
++ * can be undeterministic delay between char writes.
++ *
++ * Thus Rx-interrupts are always enabled, while tx-interrupts are by default
++ * disabled.
++ *
++ * When tty has some data to send out, serial core calls driver's start_tx
++ * which
++ *   -checks-if-tty-buffer-has-char-to-send
++ *   -writes-data-to-uart
++ *   -enable-tx-intr
++ *
++ * Once data bits are pushed out, controller raises the Tx-room-avail-Interrupt.
++ * The first thing Tx ISR does is disable further Tx interrupts (as this could
++ * be the last char to send, before settling down into the quiet polled mode).
++ * It then calls the exact routine used by tty layer write to send out any
++ * more char in tty buffer. In case of sending, it re-enables Tx-intr. In case
++ * of no data, it remains disabled.
++ * This is how the transmit state machine is dynamically switched on/off
++ */
++
++static irqreturn_t arc_serial_isr(int irq, void *dev_id)
++{
++	struct arc_uart_port *uart = dev_id;
++	unsigned int status;
++
++	status = UART_GET_STATUS(uart);
++
++	/*
++	 * Single IRQ for both Rx (data available) Tx (room available) Interrupt
++	 * notifications from the UART Controller.
++	 * To demultiplex between the two, we check the relevant bits
++	 */
++	if ((status & RXIENB) && !(status & RXEMPTY)) {
++
++		/* already in ISR, no need of xx_irqsave */
++		spin_lock(&uart->port.lock);
++		arc_serial_rx_chars(uart);
++		spin_unlock(&uart->port.lock);
++	}
++
++	if ((status & TXIENB) && (status & TXEMPTY)) {
++
++		/* Unconditionally disable further Tx-Interrupts.
++		 * will be enabled by tx_chars() if needed.
++		 */
++		UART_TX_IRQ_DISABLE(uart);
++
++		spin_lock(&uart->port.lock);
++
++		if (!uart_tx_stopped(&uart->port))
++			arc_serial_tx_chars(uart);
++
++		spin_unlock(&uart->port.lock);
++	}
++
++	return IRQ_HANDLED;
++}
++
++static unsigned int arc_serial_get_mctrl(struct uart_port *port)
++{
++	/*
++	 * Pretend we have a Modem status reg and following bits are
++	 *  always set, to satify the serial core state machine
++	 *  (DSR) Data Set Ready
++	 *  (CTS) Clear To Send
++	 *  (CAR) Carrier Detect
++	 */
++	return TIOCM_CTS | TIOCM_DSR | TIOCM_CAR;
++}
++
++static void arc_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
++{
++	/* MCR not present */
++}
++
++/* Enable Modem Status Interrupts */
++
++static void arc_serial_enable_ms(struct uart_port *port)
++{
++	/* MSR not present */
++}
++
++static void arc_serial_break_ctl(struct uart_port *port, int break_state)
++{
++	/* ARC UART doesn't support sendind Break signal */
++}
++
++static int arc_serial_startup(struct uart_port *port)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++
++	/* Before we hook up the ISR, Disable all UART Interrupts */
++	UART_ALL_IRQ_DISABLE(uart);
++
++	if (request_irq(uart->port.irq, arc_serial_isr, 0, "arc uart rx-tx",
++			uart)) {
++		pr_warn("Unable to attach ARC UART interrupt\n");
++		return -EBUSY;
++	}
++
++	UART_RX_IRQ_ENABLE(uart); /* Only Rx IRQ enabled to begin with */
++
++	return 0;
++}
++
++/* This is not really needed */
++static void arc_serial_shutdown(struct uart_port *port)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++	free_irq(uart->port.irq, uart);
++}
++
++static void arc_serial_set_ldisc(struct uart_port *port, int ld)
++{
++	/* this might need implementing for the touch driver */
++}
++
++static void
++arc_serial_set_termios(struct uart_port *port, struct ktermios *termios,
++		       struct ktermios *old)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++	unsigned int baud, uartl, uarth, hw_val;
++	unsigned long flags;
++
++	/*
++	 * Use the generic handler so that any specially encoded baud rates
++	 * such as SPD_xx flags or "%B0" can be handled
++	 * Max Baud I suppose will not be more than current 115K * 4
++	 * Formula for ARC UART is: hw-val = ((CLK/(BAUD*4)) -1)
++	 * spread over two 8-bit registers
++	 */
++	baud = uart_get_baud_rate(port, termios, old, 0, 460800);
++
++	hw_val = port->uartclk / (uart->baud * 4) - 1;
++	uartl = hw_val & 0xFF;
++	uarth = (hw_val >> 8) & 0xFF;
++
++	/*
++	 * ISS UART emulation has a subtle bug:
++	 * A existing value of Baudh = 0 is used as a indication to startup
++	 * it's internal state machine.
++	 * Thus if baudh is set to 0, 2 times, it chokes.
++	 * This happens with BAUD=115200 and the formaula above
++	 * Until that is fixed, when running on ISS, we will set baudh to !0
++	 */
++	if (running_on_iss)
++		uarth = 1;
++
++	spin_lock_irqsave(&port->lock, flags);
++
++	UART_ALL_IRQ_DISABLE(uart);
++
++	UART_SET_BAUDL(uart, uartl);
++	UART_SET_BAUDH(uart, uarth);
++
++	UART_RX_IRQ_ENABLE(uart);
++
++	/* Port speed changed, update the per-port timeout. */
++	uart_update_timeout(port, termios->c_cflag, baud);
++
++	spin_unlock_irqrestore(&port->lock, flags);
++}
++
++static const char *arc_serial_type(struct uart_port *port)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++
++	return uart->port.type == PORT_ARC ? DRIVER_NAME : NULL;
++}
++
++/*
++ * Release the memory region(s) being used by 'port'.
++ */
++static void arc_serial_release_port(struct uart_port *port)
++{
++}
++
++/*
++ * Request the memory region(s) being used by 'port'.
++ */
++static int arc_serial_request_port(struct uart_port *port)
++{
++	return 0;
++}
++
++/*
++ * Verify the new serial_struct (for TIOCSSERIAL).
++ */
++static int
++arc_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
++{
++	return 0;
++}
++
++/*
++ * Configure/autoconfigure the port.
++ */
++static void arc_serial_config_port(struct uart_port *port, int flags)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++
++	if (flags & UART_CONFIG_TYPE &&
++	    arc_serial_request_port(&uart->port) == 0)
++		uart->port.type = PORT_ARC;
++}
++
++static void arc_serial_poll_putchar(struct uart_port *port, unsigned char chr)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++
++	while (!(UART_GET_STATUS(uart) & TXEMPTY))
++		cpu_relax();
++
++	UART_SET_DATA(uart, chr);
++}
++
++#ifdef CONFIG_CONSOLE_POLL
++static int arc_serial_poll_getchar(struct uart_port *port)
++{
++	struct arc_uart_port *uart = (struct arc_uart_port *)port;
++	unsigned char chr;
++
++	while (!(UART_GET_STATUS(uart) & RXEMPTY))
++		cpu_relax();
++
++	chr = UART_GET_DATA(uart);
++	return chr;
++}
++#endif
++
++static struct uart_ops arc_serial_pops = {
++	.tx_empty	= arc_serial_tx_empty,
++	.set_mctrl	= arc_serial_set_mctrl,
++	.get_mctrl	= arc_serial_get_mctrl,
++	.stop_tx	= arc_serial_stop_tx,
++	.start_tx	= arc_serial_start_tx,
++	.stop_rx	= arc_serial_stop_rx,
++	.enable_ms	= arc_serial_enable_ms,
++	.break_ctl	= arc_serial_break_ctl,
++	.startup	= arc_serial_startup,
++	.shutdown	= arc_serial_shutdown,
++	.set_termios	= arc_serial_set_termios,
++	.set_ldisc	= arc_serial_set_ldisc,
++	.type		= arc_serial_type,
++	.release_port	= arc_serial_release_port,
++	.request_port	= arc_serial_request_port,
++	.config_port	= arc_serial_config_port,
++	.verify_port	= arc_serial_verify_port,
++#ifdef CONFIG_CONSOLE_POLL
++	.poll_put_char = arc_serial_poll_putchar,
++	.poll_get_char = arc_serial_poll_getchar,
++#endif
++};
++
++static int __devinit
++arc_uart_init_one(struct platform_device *pdev, struct arc_uart_port *uart)
++{
++	struct resource *res, *res2;
++	unsigned long *plat_data;
++
++	if (pdev->id < 0 || pdev->id >= CONFIG_SERIAL_ARC_NR_PORTS) {
++		dev_err(&pdev->dev, "Wrong uart platform device id.\n");
++		return -ENOENT;
++	}
++
++	plat_data = ((unsigned long *)(pdev->dev.platform_data));
++	uart->baud = plat_data[0];
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
++
++	res2 = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!res2)
++		return -ENODEV;
++
++	uart->port.mapbase = res->start;
++	uart->port.membase = ioremap_nocache(res->start, resource_size(res));
++	if (!uart->port.membase)
++		/* No point of pr_err since UART itself is hosed here */
++		return -ENXIO;
++
++	uart->port.irq = res2->start;
++	uart->port.dev = &pdev->dev;
++	uart->port.iotype = UPIO_MEM;
++	uart->port.flags = UPF_BOOT_AUTOCONF;
++	uart->port.line = pdev->id;
++	uart->port.ops = &arc_serial_pops;
++
++	uart->port.uartclk = plat_data[1];
++	uart->port.fifosize = ARC_UART_TX_FIFO_SIZE;
++
++	/*
++	 * uart_insert_char( ) uses it in decideding whether to ignore a
++	 * char or not. Explicitly setting it here, removes the subtelty
++	 */
++	uart->port.ignore_status_mask = 0;
++
++
++	return 0;
++}
++
++#ifdef CONFIG_SERIAL_ARC_CONSOLE
++
++static int __devinit arc_serial_console_setup(struct console *co, char *options)
++{
++	struct uart_port *port;
++	int baud = 115200;
++	int bits = 8;
++	int parity = 'n';
++	int flow = 'n';
++
++	if (co->index < 0 || co->index >= CONFIG_SERIAL_ARC_NR_PORTS)
++		return -ENODEV;
++
++	/*
++	 * The uart port backing the console (e.g. ttyS1) might not have been
++	 * init yet. If so, defer the console setup to after the port.
++	 */
++	port = &arc_uart_ports[co->index].port;
++	if (!port->membase)
++		return -ENODEV;
++
++	if (options)
++		uart_parse_options(options, &baud, &parity, &bits, &flow);
++
++	/*
++	 * Serial core will call port->ops->set_termios( )
++	 * which will set the baud reg
++	 */
++	return uart_set_options(port, co, baud, parity, bits, flow);
++}
++
++static void arc_serial_console_putchar(struct uart_port *port, int ch)
++{
++	arc_serial_poll_putchar(port, (unsigned char)ch);
++}
++
++/*
++ * Interrupts are disabled on entering
++ */
++static void arc_serial_console_write(struct console *co, const char *s,
++				     unsigned int count)
++{
++	struct uart_port *port = &arc_uart_ports[co->index].port;
++	unsigned long flags;
++
++	spin_lock_irqsave(&port->lock, flags);
++	uart_console_write(port, s, count, arc_serial_console_putchar);
++	spin_unlock_irqrestore(&port->lock, flags);
++}
++
++static struct console arc_serial_console = {
++	.name	= ARC_SERIAL_DEV_NAME,
++	.write	= arc_serial_console_write,
++	.device	= uart_console_device,
++	.setup	= arc_serial_console_setup,
++	.flags	= CON_PRINTBUFFER,
++	.index	= -1,
++	.data	= &arc_uart_driver
++};
++
++static __init void early_serial_write(struct console *con, const char *s,
++					unsigned int n)
++{
++	struct uart_port *port = &arc_uart_ports[con->index].port;
++	unsigned int i;
++
++	for (i = 0; i < n; i++, s++) {
++		if (*s == '\n')
++			arc_serial_poll_putchar(port, '\r');
++		arc_serial_poll_putchar(port, *s);
++	}
++}
++
++static struct __initdata console arc_early_serial_console = {
++	.name = "early_ARCuart",
++	.write = early_serial_write,
++	.flags = CON_PRINTBUFFER | CON_BOOT,
++	.index = -1
++};
++
++static int __devinit arc_serial_probe_earlyprintk(struct platform_device *pdev)
++{
++	arc_early_serial_console.index = pdev->id;
++
++	arc_uart_init_one(pdev, &arc_uart_ports[pdev->id]);
++
++	arc_serial_console_setup(&arc_early_serial_console, NULL);
++
++	register_console(&arc_early_serial_console);
++	return 0;
++}
++#endif
++
++
++static int __devinit arc_serial_probe(struct platform_device *pdev)
++{
++	struct arc_uart_port *uart;
++	int rc;
++
++	if (is_early_platform_device(pdev))
++		return arc_serial_probe_earlyprintk(pdev);
++
++	uart = &arc_uart_ports[pdev->id];
++	rc = arc_uart_init_one(pdev, uart);
++	if (rc)
++		return rc;
++
++	return uart_add_one_port(&arc_uart_driver, &uart->port);
++}
++
++static int __devexit arc_serial_remove(struct platform_device *pdev)
++{
++	/* This will never be called */
++	return 0;
++}
++
++static struct platform_driver arc_platform_driver = {
++	.probe = arc_serial_probe,
++	.remove = __devexit_p(arc_serial_remove),
++	.driver = {
++		.name = DRIVER_NAME,
++		.owner = THIS_MODULE,
++	 },
++};
++
++#ifdef CONFIG_SERIAL_ARC_CONSOLE
++/*
++ * Register an early platform driver of "earlyprintk" class.
++ * ARCH platform code installs the driver and probes the early devices
++ * The installation could rely on user specifying earlyprintk=xyx in cmd line
++ * or it could be done independently, for all "earlyprintk" class drivers.
++ * [see arch/arc/plat-arcfpga/platform.c]
++ */
++early_platform_init("earlyprintk", &arc_platform_driver);
++
++#endif  /* CONFIG_SERIAL_ARC_CONSOLE */
++
++static int __init arc_serial_init(void)
++{
++	int ret;
++
++	pr_info("Serial: ARC serial driver: platform register\n");
++
++	ret = uart_register_driver(&arc_uart_driver);
++	if (ret)
++		return ret;
++
++	ret = platform_driver_register(&arc_platform_driver);
++	if (ret) {
++		pr_debug("uart register failed\n");
++		uart_unregister_driver(&arc_uart_driver);
++	}
++
++	return ret;
++}
++
++static void __exit arc_serial_exit(void)
++{
++	platform_driver_unregister(&arc_platform_driver);
++	uart_unregister_driver(&arc_uart_driver);
++}
++
++module_init(arc_serial_init);
++module_exit(arc_serial_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("plat-arcfpga/uart");
++MODULE_AUTHOR("Vineet Gupta");
++MODULE_DESCRIPTION("ARC(Synopsys) On-Chip(fpga) serial driver");
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 0253c20..706a042 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -214,6 +214,9 @@
+ /* Energy Micro efm32 SoC */
+ #define PORT_EFMUART   100
+ 
++/* ARC (Synopsys) on-chip UART */
++#define PORT_ARC       101
++
+ #ifdef __KERNEL__
+ 
+ #include <linux/compiler.h>
+-- 
+1.7.4.1
+
