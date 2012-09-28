@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758509Ab2I1PRJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:17:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56544 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758364Ab2I1PRG (ORCPT
+	id S1758520Ab2I1PTd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:19:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34529 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758386Ab2I1PTc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:17:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120928150520.GK7916@n2100.arm.linux.org.uk>
-References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
-	<CAK7N6vqS9PW85hgcA7EVzCk-TQo_ru4OcC5i0Rw-b2hvb4YoXg@mail.gmail.com>
-	<CACVXFVMJaQRj6sUJwiyiMvyAyd2p_8g9cYFqRW2KngQPx62Y5A@mail.gmail.com>
-	<1348842668.1480.9.camel@anish-Inspiron-N5050>
-	<CACVXFVPE1wwVhN=WobgZ+KfGRk2HifQ_3bhwF4mHS+Qu+bXh+g@mail.gmail.com>
-	<20120928150520.GK7916@n2100.arm.linux.org.uk>
-Date: Fri, 28 Sep 2012 23:17:04 +0800
-Message-ID: <CACVXFVNrfvUg_=pNZvgicf62Ms6rBcFPKXdyb0K5RrjCxs2XNg@mail.gmail.com>
-Subject: Re: [PATCH] driver core: fix possible missing of device probe
-From: Ming Lei <ming.lei@canonical.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: anish kumar <anish198519851985@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 28 Sep 2012 11:19:32 -0400
+Message-ID: <1348845559.3292.84.camel@twins>
+Subject: Re: [PATCH 04/31] perf, core: Add generic intx/intx_checkpointed
+ counter modifiers
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, eranian@google.com,
+        acme@redhat.com, Andi Kleen <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Date: Fri, 28 Sep 2012 17:19:19 +0200
+In-Reply-To: <20120928145324.GQ16230@one.firstfloor.org>
+References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
+	 <1348806696-31170-5-git-send-email-andi@firstfloor.org>
+	 <1348822920.3292.60.camel@twins>
+	 <20120928145324.GQ16230@one.firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 11:05 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Sep 28, 2012 at 10:44:13PM +0800, Ming Lei wrote:
->> On Fri, Sep 28, 2012 at 10:31 PM, anish kumar
->> <anish198519851985@gmail.com> wrote:
->>
->> > Ming,
->> > Somehow I feel here that the problem reported by Russell is totally
->> > different from your understanding of problem.I humbly urge you to have
->>
->> I let Russell answer if it is same problem, see my last email.
->
-> I'm tired of this thread.  It's really not worth spending any more time
-> on this crap.  You can't see the problem, and it seems you're unwilling
-> to listen to the feedback that's being given to you.
+On Fri, 2012-09-28 at 16:53 +0200, Andi Kleen wrote:
+> If I moved this into sysfs this would imply that the perf stat -T 
+> code would become Haswell specific. As far as I understand normally
+> you guys don't want things like that. Would everyone be ok with
+> having specific code there? 
 
-Looks you did not reply my previous question, right? And you just said
-it is wrong, and not mention what is wrong about my description.
+Have a look at /sys/bus/event_source/devices/cpu/format/*, that's
+already very hardware specific.
 
-          > Could you point out in detail what is wrong with my description?
+What I suggested is something like:
 
-OK, I understand that you think what my patch addressed is not same with
-the problem you reported, so I will remove the reported-by.
+PMU_FORMAT_ATTR(intx, "config:32");
+PMU_FORMAT_ATTR(intx_cp "config:33");
 
-
-Thanks,
---
-Ming Lei
+For the HSW+ cpus. That should be enough for userspace to create such
+events.
