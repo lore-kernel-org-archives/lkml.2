@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab2I1Hhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 03:37:32 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:56985 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab2I1HhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 03:37:11 -0400
-Date: Fri, 28 Sep 2012 15:36:55 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: NeilBrown <neilb@suse.de>, Shaohua Li <shli@fusionio.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: makes bio_split support bio without data
-Message-ID: <20120928073655.GA24681@kernel.org>
-References: <20120924145639.3b65fd8b@notabene.brown>
- <5061A8EA.6040702@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5061A8EA.6040702@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755124Ab2I1HhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 03:37:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45640 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753833Ab2I1HhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 03:37:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,499,1344236400"; 
+   d="scan'208";a="228021189"
+Message-ID: <1348817863.10877.320.camel@rui.sh.intel.com>
+Subject: [RFC PATCH 0/6] ACPI: ACPI 5.0 device enumeration proposal
+From: Zhang Rui <rui.zhang@intel.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-pm <linux-pm@lists.linux-foundation.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Len, Brown" <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Date: Fri, 28 Sep 2012 15:37:43 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 02:51:54PM +0200, Jens Axboe wrote:
-> On 09/24/2012 06:56 AM, NeilBrown wrote:
-> > 
-> > Hi Jens,
-> >  this patch has been sitting in my -next tree for a little while and I was
-> >  hoping for it to go in for the next merge window.
-> >  It simply allows bio_split() to be used on bios without a payload, such as
-> >  'discard'.
-> >  Are you happy with it going in though my 'md' tree, or would you rather take
-> >  it though your 'block' tree?
-> 
-> It should go through my tree, especially since we've got conflicts with
-> other changes. In other words, your patch does not apply to for-3.7/core
-> as-is...
-> 
-> Shaohua, could you resend an updated variant?
-Here is the one applied to for-3.7/core
+Hi, all,
 
+I'm working on ACPI device enumeration support recently, and here is the
+proposal I made to enumerate devices via ACPI namespace.
 
-Subject: block: makes bio_split support bio without data
+the main idea is that, for Serial Buses like I2C and SPI, we enumerate
+the controller as a platform device, and then enumerate the slaves via
+i2c/spi_register_board_info. And then, when the controller is really
+probed and enabled in the platform driver, the SPI/I2C bus code will
+enumerate I2C/SPI slaves automatically.
+And for the other devices, we will enumerate all of them as platform
+devices, which is not covered in this patch set yet.
 
-discard bio hasn't data attached. We hit a BUG_ON with such bio. This makes
-bio_split works for such bio.
+Patch 1 & 2 Introduce ACPI style device match method in platform_match.
+this is because an ACPI device may have multiple hardware ID (_HID) and
+Compatible IDs, aka, _CID, but in platform device code, only pdev->name
+is used to match the driver id_table currently.
+Patch 3 introduces a new API acpi_get_generic_resources().
+this API is used to convert ACPI style resources to the generic struct
+resource.
+Patch 4 changes i2c_register_board_info from __init to __devinit.
+This is needed because I want to enumerate the slave devices in ACPI I2C
+control Driver, which supports hotplug in theory.
+Patch 5 introduces the ACPI I2C controller enumeration drive.
+it enumerate the ACPI I2C controller to a platform device and then
+enumerate the I2C slaves as I2C_board_info.
+Patch 6 is an example driver for an ACPI enuemrated I2C controller.
 
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- fs/bio.c |   28 +++++++++++++++-------------
- 1 file changed, 15 insertions(+), 13 deletions(-)
+Note that this is just prototype patch set, which just passes build
+test. Because I'd like to get your ideas about this before going on.
+any comments are welcome.
 
-Index: linux/fs/bio.c
-===================================================================
---- linux.orig/fs/bio.c	2012-09-28 15:09:38.000000000 +0800
-+++ linux/fs/bio.c	2012-09-28 15:25:38.955252846 +0800
-@@ -1475,7 +1475,7 @@ struct bio_pair *bio_split(struct bio *b
- 	trace_block_split(bdev_get_queue(bi->bi_bdev), bi,
- 				bi->bi_sector + first_sectors);
- 
--	BUG_ON(bi->bi_vcnt != 1);
-+	BUG_ON(bi->bi_vcnt != 1 && bi->bi_vcnt != 0);
- 	BUG_ON(bi->bi_idx != 0);
- 	atomic_set(&bp->cnt, 3);
- 	bp->error = 0;
-@@ -1485,20 +1485,22 @@ struct bio_pair *bio_split(struct bio *b
- 	bp->bio2.bi_size -= first_sectors << 9;
- 	bp->bio1.bi_size = first_sectors << 9;
- 
--	bp->bv1 = bi->bi_io_vec[0];
--	bp->bv2 = bi->bi_io_vec[0];
-+	if (bi->bi_vcnt != 0) {
-+		bp->bv1 = bi->bi_io_vec[0];
-+		bp->bv2 = bi->bi_io_vec[0];
-+
-+		if (bio_is_rw(bi)) {
-+			bp->bv2.bv_offset += first_sectors << 9;
-+			bp->bv2.bv_len -= first_sectors << 9;
-+			bp->bv1.bv_len = first_sectors << 9;
-+		}
- 
--	if (bio_is_rw(bi)) {
--		bp->bv2.bv_offset += first_sectors << 9;
--		bp->bv2.bv_len -= first_sectors << 9;
--		bp->bv1.bv_len = first_sectors << 9;
--	}
--
--	bp->bio1.bi_io_vec = &bp->bv1;
--	bp->bio2.bi_io_vec = &bp->bv2;
-+		bp->bio1.bi_io_vec = &bp->bv1;
-+		bp->bio2.bi_io_vec = &bp->bv2;
- 
--	bp->bio1.bi_max_vecs = 1;
--	bp->bio2.bi_max_vecs = 1;
-+		bp->bio1.bi_max_vecs = 1;
-+		bp->bio2.bi_max_vecs = 1;
-+	}
- 
- 	bp->bio1.bi_end_io = bio_pair_end_1;
- 	bp->bio2.bi_end_io = bio_pair_end_2;
+thanks,
+rui
+
