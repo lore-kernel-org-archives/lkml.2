@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031301Ab2I1TcM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:32:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965468Ab2I1TBZ (ORCPT
+	id S1031330Ab2I1TcZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:32:25 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38552 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030620Ab2I1TcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:01:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Pavankumar Kondeti <pkondeti@codeaurora.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 152/262] EHCI: Update qTD next pointer in QH overlay region during unlink
-Date: Fri, 28 Sep 2012 11:51:21 -0700
-Message-Id: <20120928183015.963945099@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
-References: <20120928182957.993484211@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 28 Sep 2012 15:32:19 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [RFC PATCH 0/2] dtc: enable use of pre-processor
+Date: Fri, 28 Sep 2012 13:32:09 -0600
+Message-Id: <1348860731-20868-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+From: Stephen Warren <swarren@nvidia.com>
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+This series adds some build rules to run cpp on *.dtsp prior to
+invoking dtc, and converts Tegra to the new rule as an example. What do
+people think?
 
-------------------
+I assume that you've applied the dtc patches I sent yesterday. They
+aren't in this series. See:
 
-From: Pavankumar Kondeti <pkondeti@codeaurora.org>
+https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-September/020182.html
+https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-September/020183.html
+https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-September/020181.html
+https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-September/020387.html
 
-commit 3d037774b42ed677f699b1dce7d548d55f4e4c2b upstream.
+Note: those patches are against upstream dtc. If you wish to test this
+series, apply the dtc patches to upstream dtc, build it, and copy the
+resultant dtc binary over the top of scripts/dtc/dtc.
 
-There is a possibility of QH overlay region having reference to a stale
-qTD pointer during unlink.
+I'll post a patch to update the in-kernel dtc to the upstream dtc as
+soon as one final dtc patch has been applied, and this series will then
+depend on that patch.
 
-Consider an endpoint having two pending qTD before unlink process begins.
-The endpoint's QH queue looks like this.
+Stephen Warren (2):
+  kbuild: centralize .dts->.dtb rule
+  kbuild: introduce cmd_dtc_cpp
 
-qTD1 --> qTD2 --> Dummy
-
-To unlink qTD2, QH is removed from asynchronous list and Asynchronous
-Advance Doorbell is programmed.  The qTD1's next qTD pointer is set to
-qTD2'2 next qTD pointer and qTD2 is retired upon controller's doorbell
-interrupt.  If QH's current qTD pointer points to qTD1, transfer overlay
-region still have reference to qTD2. But qtD2 is just unlinked and freed.
-This may cause EHCI system error.  Fix this by updating qTD next pointer
-in QH overlay region with the qTD next pointer of the current qTD.
-
-Signed-off-by: Pavankumar Kondeti <pkondeti@codeaurora.org>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/ehci-q.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -128,9 +128,17 @@ qh_refresh (struct ehci_hcd *ehci, struc
- 	else {
- 		qtd = list_entry (qh->qtd_list.next,
- 				struct ehci_qtd, qtd_list);
--		/* first qtd may already be partially processed */
--		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current)
-+		/*
-+		 * first qtd may already be partially processed.
-+		 * If we come here during unlink, the QH overlay region
-+		 * might have reference to the just unlinked qtd. The
-+		 * qtd is updated in qh_completions(). Update the QH
-+		 * overlay here.
-+		 */
-+		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current) {
-+			qh->hw->hw_qtd_next = qtd->hw_next;
- 			qtd = NULL;
-+		}
- 	}
- 
- 	if (qtd)
-
+ arch/arm/boot/Makefile           |    4 ----
+ arch/arm/boot/dts/skeleton.dtsip |   13 +++++++++++++
+ arch/c6x/boot/Makefile           |    3 ---
+ arch/openrisc/boot/Makefile      |    3 ---
+ arch/powerpc/boot/Makefile       |    4 ----
+ scripts/Makefile.lib             |    9 +++++++++
+ 6 files changed, 22 insertions(+), 14 deletions(-)
+ create mode 100644 arch/arm/boot/dts/skeleton.dtsip
 
