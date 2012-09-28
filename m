@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031628Ab2I1Tpp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:45:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	id S1031639Ab2I1TqD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:46:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965190Ab2I1S7J (ORCPT
+	with ESMTP id S965185Ab2I1S7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:59:09 -0400
+	Fri, 28 Sep 2012 14:59:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <andre.przywara@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 108/262] xen/boot: Disable NUMA for PV guests.
-Date: Fri, 28 Sep 2012 11:50:37 -0700
-Message-Id: <20120928183010.961189317@linuxfoundation.org>
+        Kevin Hilman <khilman@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Steve Sakoman <steve@sakoman.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 097/262] drivers/rtc/rtc-twl.c: ensure all interrupts are disabled during probe
+Date: Fri, 28 Sep 2012 11:50:26 -0700
+Message-Id: <20120928183009.495251100@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,91 +33,54 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Kevin Hilman <khilman@ti.com>
 
-commit 8d54db795dfb1049d45dc34f0dddbc5347ec5642 upstream.
+commit 8dcebaa9a0ae8a0487f4342f3d56d2cb1c980860 upstream.
 
-The hypervisor is in charge of allocating the proper "NUMA" memory
-and dealing with the CPU scheduler to keep them bound to the proper
-NUMA node. The PV guests (and PVHVM) have no inkling of where they
-run and do not need to know that right now. In the future we will
-need to inject NUMA configuration data (if a guest spans two or more
-NUMA nodes) so that the kernel can make the right choices. But those
-patches are not yet present.
+On some platforms, bootloaders are known to do some interesting RTC
+programming.  Without going into the obscurities as to why this may be
+the case, suffice it to say the the driver should not make any
+assumptions about the state of the RTC when the driver loads.  In
+particular, the driver probe should be sure that all interrupts are
+disabled until otherwise programmed.
 
-In the meantime, disable the NUMA capability in the PV guest, which
-also fixes a bootup issue. Andre says:
+This was discovered when finding bursty I2C traffic every second on
+Overo platforms.  This I2C overhead was keeping the SoC from hitting
+deep power states.  The cause was found to be the RTC firing every
+second on the I2C-connected TWL PMIC.
 
-"we see Dom0 crashes due to the kernel detecting the NUMA topology not
-by ACPI, but directly from the northbridge (CONFIG_AMD_NUMA).
+Special thanks to Felipe Balbi for suggesting to look for a rogue driver
+as the source of the I2C traffic rather than the I2C driver itself.
 
-This will detect the actual NUMA config of the physical machine, but
-will crash about the mismatch with Dom0's virtual memory. Variation of
-the theme: Dom0 sees what it's not supposed to see.
+Special thanks to Steve Sakoman for helping track down the source of the
+continuous RTC interrups on the Overo boards.
 
-This happens with the said config option enabled and on a machine where
-this scanning is still enabled (K8 and Fam10h, not Bulldozer class)
-
-We have this dump then:
-NUMA: Warning: node ids are out of bound, from=-1 to=-1 distance=10
-Scanning NUMA topology in Northbridge 24
-Number of physical nodes 4
-Node 0 MemBase 0000000000000000 Limit 0000000040000000
-Node 1 MemBase 0000000040000000 Limit 0000000138000000
-Node 2 MemBase 0000000138000000 Limit 00000001f8000000
-Node 3 MemBase 00000001f8000000 Limit 0000000238000000
-Initmem setup node 0 0000000000000000-0000000040000000
-  NODE_DATA [000000003ffd9000 - 000000003fffffff]
-Initmem setup node 1 0000000040000000-0000000138000000
-  NODE_DATA [0000000137fd9000 - 0000000137ffffff]
-Initmem setup node 2 0000000138000000-00000001f8000000
-  NODE_DATA [00000001f095e000 - 00000001f0984fff]
-Initmem setup node 3 00000001f8000000-0000000238000000
-Cannot find 159744 bytes in node 3
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
-Pid: 0, comm: swapper Not tainted 3.3.6 #1 AMD Dinar/Dinar
-RIP: e030:[<ffffffff81d220e6>]  [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
-.. snip..
-  [<ffffffff81d23024>] sparse_early_usemaps_alloc_node+0x64/0x178
-  [<ffffffff81d23348>] sparse_init+0xe4/0x25a
-  [<ffffffff81d16840>] paging_init+0x13/0x22
-  [<ffffffff81d07fbb>] setup_arch+0x9c6/0xa9b
-  [<ffffffff81683954>] ? printk+0x3c/0x3e
-  [<ffffffff81d01a38>] start_kernel+0xe5/0x468
-  [<ffffffff81d012cf>] x86_64_start_reservations+0xba/0xc1
-  [<ffffffff81007153>] ? xen_setup_runstate_info+0x2c/0x36
-  [<ffffffff81d050ee>] xen_start_kernel+0x565/0x56c
-"
-
-so we just disable NUMA scanning by setting numa_off=1.
-
-Reported-and-Tested-by: Andre Przywara <andre.przywara@amd.com>
-Acked-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Kevin Hilman <khilman@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Tested-by: Steve Sakoman <steve@sakoman.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Tested-by: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/setup.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/rtc/rtc-twl.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -17,6 +17,7 @@
- #include <asm/e820.h>
- #include <asm/setup.h>
- #include <asm/acpi.h>
-+#include <asm/numa.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -495,6 +495,11 @@ static int __devinit twl_rtc_probe(struc
+ 	if (ret < 0)
+ 		goto out1;
  
-@@ -549,4 +550,7 @@ void __init xen_arch_setup(void)
- 	disable_cpufreq();
- 	WARN_ON(set_pm_idle_to_default());
- 	fiddle_vdso();
-+#ifdef CONFIG_NUMA
-+	numa_off = 1;
-+#endif
- }
++	/* ensure interrupts are disabled, bootloaders can be strange */
++	ret = twl_rtc_write_u8(0, REG_RTC_INTERRUPTS_REG);
++	if (ret < 0)
++		dev_warn(&pdev->dev, "unable to disable interrupt\n");
++
+ 	/* init cached IRQ enable bits */
+ 	ret = twl_rtc_read_u8(&rtc_irq_bits, REG_RTC_INTERRUPTS_REG);
+ 	if (ret < 0)
 
 
