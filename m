@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031608Ab2I1Tof (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:44:35 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51046 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031003Ab2I1To3 (ORCPT
+	id S1031618Ab2I1Too (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:44:44 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63128 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031598Ab2I1Toe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:44:29 -0400
-Message-ID: <5065FE29.5080302@gmail.com>
-Date: Fri, 28 Sep 2012 21:44:41 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
+	Fri, 28 Sep 2012 15:44:34 -0400
+Date: Fri, 28 Sep 2012 12:41:52 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: [PATCH 52/57] power: abx500_chargalg: Use hrtimer
+Message-ID: <20120928194152.GA29115@lizard>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-53-git-send-email-mathieu.poirier@linaro.org>
+ <20120928024747.GK5040@lizard>
+ <5065ED8F.7030403@linaro.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Artem Bityutskiy <dedekind1@gmail.com>, suresh.b.siddha@intel.com,
-        Andrew Morton <akpm@linux-foundation.org>, dwmw2@infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, linux-mm <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: mtd: kernel BUG at arch/x86/mm/pat.c:279!
-References: <1340959739.2936.28.camel@lappy> <CA+1xoqdgKV_sEWvUbuxagL9JEc39ZFa6X9-acP7j-M7wvW6qbQ@mail.gmail.com> <CA+55aFzJCLxVP+WYJM-gq=aXx5gmdgwC7=_Gr2Tooj8q+Dz4dw@mail.gmail.com> <1347057778.26695.68.camel@sbsiddha-desk.sc.intel.com> <CA+55aFwW9Q+DM2gZy7r3JQJbrbMNR6sN+jewc2CY0i1wD_X=Tw@mail.gmail.com> <1347062045.26695.82.camel@sbsiddha-desk.sc.intel.com> <CA+55aFzeKcV5hROLJE31dNi3SEs+s6o0LL=96Kh8QGHPx=aZnA@mail.gmail.com> <1347202600.5876.7.camel@sbsiddha-ivb> <505068F4.4080309@gmail.com> <50506A6C.30109@gmail.com> <50656733.3040609@gmail.com> <CA+55aFyWdxD4Qb9PuPKKx_Ww_khYkWg1s-3QWVUwsTSXSUMG5w@mail.gmail.com> <1348855547.1556.3.camel@kyv> <CA+55aFwDWcQv9DBCQhMrcK-zx75qBN11iQhq5dxt+orosmeXbg@mail.gmail.com>
-In-Reply-To: <CA+55aFwDWcQv9DBCQhMrcK-zx75qBN11iQhq5dxt+orosmeXbg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5065ED8F.7030403@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 09:13 PM, Linus Torvalds wrote:
-> On Fri, Sep 28, 2012 at 11:05 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
->>
->> I am not the maintainer, but please, go ahead an push your fix. I do not
->> have time to test it myself and it does not look like anyone else in the
->> small mtd community does.
+On Fri, Sep 28, 2012 at 12:33:51PM -0600, Mathieu Poirier wrote:
+[...]
+> >> @@ -413,11 +428,10 @@ static void abx500_chargalg_start_safety_timer(struct abx500_chargalg *di)
+> >>  	}
+> >>  
+> >>  	di->events.safety_timer_expired = false;
+> >> -	di->safety_timer.expires = timer_expiration;
+> >> -	if (!timer_pending(&di->safety_timer))
+> >> -		add_timer(&di->safety_timer);
+> >> -	else
+> >> -		mod_timer(&di->safety_timer, timer_expiration);
+> >> +	hrtimer_set_expires_range(&di->safety_timer,
+> >> +		ktime_set(timer_expiration * ONE_HOUR_IN_SECONDS, 0),
+> >> +		ktime_set(FIVE_MINUTES_IN_SECONDS, 0));
+> >> +	hrtimer_start_expires(&di->safety_timer, HRTIMER_MODE_REL);
+> > 
+> > OK, now we're chaning from timers to hrtimers, and their behaviour
+> > might be different. I guess in this case you should check whether
+> > old value 'before' new value, and if so, do nothing.
 > 
-> Grr. I told people that patch wasn't tested. I hadn't even *compiled*
-> it. It has a typo ("inlint" instead of "inline" - so close).
-> 
-> Sasha said he had tested it, but nobody even mentioned this thing. Now
-> I'm nervous. I had committed it in my tree and was just about to push
-> it out when I decided that I should at least compile it despite the
-> "tested-by".
-> 
-> Hmm? Now I really *really* want to know that it's been tested on
-> actual hardware too. Sasha, what patch did you actually test? Did you
-> just fix the "inlint" thing, or was there something else entirely?
+> Would you mind being more descriptive - I'm affraid that I don't
+> understand your suggestion.
 
-I've just fixed the inlint thing since it was pretty trivial, I didn't bother commenting on it since I figured it would turn into
-an actual patch from someone who could test it on actual hardware first.
+I was partly referencing to my answer here
+http://lkml.org/lkml/2012/9/27/678
 
-Note that I've tested it on a KVM guest, and not on real hardware - so I'm not sure how much of a test that is.
+There I was suggesting how to make abx500_chargalg_check_safety_timer()
+simpler, but since in this patch you switching code to hrtimers, the logic
+have to change too.
 
+So, to put it even simpler, in this patch you don't even need to check for
+time values, in abx500_chargalg_start_safety_timer(), you can just write
+
+	if (hrtimer_active(&di->safety_timer))
+		return;
+
+	dev_dbg(di->dev, "starting safety timer\n");
+
+	hrtimer_set_expires_range(&di->safety_timer,
+		ktime_set(timer_expiration * ONE_HOUR_IN_SECONDS, 0),
+		ktime_set(FIVE_MINUTES_IN_SECONDS, 0));
+	hrtimer_start_expires(&di->safety_timer, HRTIMER_MODE_REL);
+
+And you don't have to check for hrtimer_active() anywhere else...
+
+[...]
+> >> @@ -910,11 +918,11 @@ static void abx500_chargalg_check_safety_timer(struct abx500_chargalg *di)
+> >>  	 * and charging will be stopped to protect the battery.
+> >>  	 */
+> >>  	if (di->batt_data.percent == 100 &&
+> >> -		!timer_pending(&di->safety_timer)) {
+> >> +		!hrtimer_active(&di->safety_timer)) {
+> >>  		abx500_chargalg_start_safety_timer(di);
+> >>  		dev_dbg(di->dev, "start safety timer\n");
+> >>  	} else if (di->batt_data.percent != 100 &&
+> >> -		timer_pending(&di->safety_timer)) {
+> >> +		hrtimer_active(&di->safety_timer)) {
+> >>  		abx500_chargalg_stop_safety_timer(di);
+> >>  		dev_dbg(di->dev, "stop safety timer\n");
+> >>  	}
+
+..so with the above suggestion, this code will turn into just
+
+	if (di->batt_data.percent < 100) {
+		abx500_chargalg_stop_safety_timer(di);
+		return;
+	}
+	abx500_chargalg_start_safety_timer(di);
 
 Thanks,
-Sasha
-
+Anton.
