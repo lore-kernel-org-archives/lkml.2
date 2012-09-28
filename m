@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033194Ab2I1VZH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:25:07 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422743Ab2I1U3c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1422746Ab2I1U3c (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 28 Sep 2012 16:29:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032757Ab2I1U3X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 16:29:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 148/218] drm/radeon: split ATRM support out from the ATPX handler (v3)
-Date: Fri, 28 Sep 2012 13:16:05 -0700
-Message-Id: <20120928201518.465527620@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>, Josh Boyer <jwboyer@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 145/218] fbcon: fix race condition between console lock and cursor timer (v1.1)
+Date: Fri, 28 Sep 2012 13:16:02 -0700
+Message-Id: <20120928201518.139294738@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -26,245 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit c61e2775873f603148e8e998a938721b7d222d24 upstream.
+commit d8636a2717bb3da2a7ce2154bf08de90bb8c87b0 upstream.
 
-There are systems that use ATRM, but not ATPX.
+So we've had a fair few reports of fbcon handover breakage between
+efi/vesafb and i915 surface recently, so I dedicated a couple of
+days to finding the problem.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=41265
+Essentially the last thing we saw was the conflicting framebuffer
+message and that was all.
 
-V2: fix #ifdefs as per Greg's comments
-V3: fix it harder
+So after much tracing with direct netconsole writes (printks
+under console_lock not so useful), I think I found the race.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Thread A (driver load)    Thread B (timer thread)
+  unbind_con_driver ->              |
+  bind_con_driver ->                |
+  vc->vc_sw->con_deinit ->          |
+  fbcon_deinit ->                   |
+  console_lock()                    |
+      |                             |
+      |                       fbcon_flashcursor timer fires
+      |                       console_lock() <- blocked for A
+      |
+      |
+fbcon_del_cursor_timer ->
+  del_timer_sync
+  (BOOM)
+
+Of course because all of this is under the console lock,
+we never see anything, also since we also just unbound the active
+console guess what we never see anything.
+
+Hopefully this fixes the problem for anyone seeing vesafb->kms
+driver handoff.
+
+v1.1: add comment suggestion from Alan.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Acked-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Tested-by: Josh Boyer <jwboyer@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon.h              |   15 -----
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |   56 ------------------
- drivers/gpu/drm/radeon/radeon_bios.c         |   80 +++++++++++++++++++++++++--
- 3 files changed, 77 insertions(+), 74 deletions(-)
+ drivers/video/console/fbcon.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -138,21 +138,6 @@ struct radeon_device;
- /*
-  * BIOS.
-  */
--#define ATRM_BIOS_PAGE 4096
--
--#if defined(CONFIG_VGA_SWITCHEROO)
--bool radeon_atrm_supported(struct pci_dev *pdev);
--int radeon_atrm_get_bios_chunk(uint8_t *bios, int offset, int len);
--#else
--static inline bool radeon_atrm_supported(struct pci_dev *pdev)
--{
--	return false;
--}
--
--static inline int radeon_atrm_get_bios_chunk(uint8_t *bios, int offset, int len){
--	return -EINVAL;
--}
--#endif
- bool radeon_get_bios(struct radeon_device *rdev);
- 
- 
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -30,57 +30,8 @@ static struct radeon_atpx_priv {
- 	/* handle for device - and atpx */
- 	acpi_handle dhandle;
- 	acpi_handle atpx_handle;
--	acpi_handle atrm_handle;
- } radeon_atpx_priv;
- 
--/* retrieve the ROM in 4k blocks */
--static int radeon_atrm_call(acpi_handle atrm_handle, uint8_t *bios,
--			    int offset, int len)
--{
--	acpi_status status;
--	union acpi_object atrm_arg_elements[2], *obj;
--	struct acpi_object_list atrm_arg;
--	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL};
--
--	atrm_arg.count = 2;
--	atrm_arg.pointer = &atrm_arg_elements[0];
--
--	atrm_arg_elements[0].type = ACPI_TYPE_INTEGER;
--	atrm_arg_elements[0].integer.value = offset;
--
--	atrm_arg_elements[1].type = ACPI_TYPE_INTEGER;
--	atrm_arg_elements[1].integer.value = len;
--
--	status = acpi_evaluate_object(atrm_handle, NULL, &atrm_arg, &buffer);
--	if (ACPI_FAILURE(status)) {
--		printk("failed to evaluate ATRM got %s\n", acpi_format_exception(status));
--		return -ENODEV;
--	}
--
--	obj = (union acpi_object *)buffer.pointer;
--	memcpy(bios+offset, obj->buffer.pointer, obj->buffer.length);
--	len = obj->buffer.length;
--	kfree(buffer.pointer);
--	return len;
--}
--
--bool radeon_atrm_supported(struct pci_dev *pdev)
--{
--	/* get the discrete ROM only via ATRM */
--	if (!radeon_atpx_priv.atpx_detected)
--		return false;
--
--	if (radeon_atpx_priv.dhandle == DEVICE_ACPI_HANDLE(&pdev->dev))
--		return false;
--	return true;
--}
--
--
--int radeon_atrm_get_bios_chunk(uint8_t *bios, int offset, int len)
--{
--	return radeon_atrm_call(radeon_atpx_priv.atrm_handle, bios, offset, len);
--}
--
- static int radeon_atpx_get_version(acpi_handle handle)
- {
- 	acpi_status status;
-@@ -198,7 +149,7 @@ static int radeon_atpx_power_state(enum
- 
- static bool radeon_atpx_pci_probe_handle(struct pci_dev *pdev)
- {
--	acpi_handle dhandle, atpx_handle, atrm_handle;
-+	acpi_handle dhandle, atpx_handle;
- 	acpi_status status;
- 
- 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
-@@ -209,13 +160,8 @@ static bool radeon_atpx_pci_probe_handle
- 	if (ACPI_FAILURE(status))
- 		return false;
- 
--	status = acpi_get_handle(dhandle, "ATRM", &atrm_handle);
--	if (ACPI_FAILURE(status))
--		return false;
--
- 	radeon_atpx_priv.dhandle = dhandle;
- 	radeon_atpx_priv.atpx_handle = atpx_handle;
--	radeon_atpx_priv.atrm_handle = atrm_handle;
- 	return true;
- }
- 
---- a/drivers/gpu/drm/radeon/radeon_bios.c
-+++ b/drivers/gpu/drm/radeon/radeon_bios.c
-@@ -98,16 +98,81 @@ static bool radeon_read_bios(struct rade
- 	return true;
- }
- 
-+#ifdef CONFIG_ACPI
- /* ATRM is used to get the BIOS on the discrete cards in
-  * dual-gpu systems.
-  */
-+/* retrieve the ROM in 4k blocks */
-+#define ATRM_BIOS_PAGE 4096
-+/**
-+ * radeon_atrm_call - fetch a chunk of the vbios
-+ *
-+ * @atrm_handle: acpi ATRM handle
-+ * @bios: vbios image pointer
-+ * @offset: offset of vbios image data to fetch
-+ * @len: length of vbios image data to fetch
-+ *
-+ * Executes ATRM to fetch a chunk of the discrete
-+ * vbios image on PX systems (all asics).
-+ * Returns the length of the buffer fetched.
-+ */
-+static int radeon_atrm_call(acpi_handle atrm_handle, uint8_t *bios,
-+			    int offset, int len)
-+{
-+	acpi_status status;
-+	union acpi_object atrm_arg_elements[2], *obj;
-+	struct acpi_object_list atrm_arg;
-+	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL};
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -372,8 +372,15 @@ static void fb_flashcursor(struct work_s
+ 	struct vc_data *vc = NULL;
+ 	int c;
+ 	int mode;
++	int ret;
 +
-+	atrm_arg.count = 2;
-+	atrm_arg.pointer = &atrm_arg_elements[0];
-+
-+	atrm_arg_elements[0].type = ACPI_TYPE_INTEGER;
-+	atrm_arg_elements[0].integer.value = offset;
-+
-+	atrm_arg_elements[1].type = ACPI_TYPE_INTEGER;
-+	atrm_arg_elements[1].integer.value = len;
-+
-+	status = acpi_evaluate_object(atrm_handle, NULL, &atrm_arg, &buffer);
-+	if (ACPI_FAILURE(status)) {
-+		printk("failed to evaluate ATRM got %s\n", acpi_format_exception(status));
-+		return -ENODEV;
-+	}
-+
-+	obj = (union acpi_object *)buffer.pointer;
-+	memcpy(bios+offset, obj->buffer.pointer, obj->buffer.length);
-+	len = obj->buffer.length;
-+	kfree(buffer.pointer);
-+	return len;
-+}
-+
- static bool radeon_atrm_get_bios(struct radeon_device *rdev)
- {
- 	int ret;
- 	int size = 256 * 1024;
- 	int i;
-+	struct pci_dev *pdev = NULL;
-+	acpi_handle dhandle, atrm_handle;
-+	acpi_status status;
-+	bool found = false;
++	/* FIXME: we should sort out the unbind locking instead */
++	/* instead we just fail to flash the cursor if we can't get
++	 * the lock instead of blocking fbcon deinit */
++	ret = console_trylock();
++	if (ret == 0)
++		return;
  
--	if (!radeon_atrm_supported(rdev->pdev))
-+	/* ATRM is for the discrete card only */
-+	if (rdev->flags & RADEON_IS_IGP)
-+		return false;
-+
-+	while ((pdev = pci_get_class(PCI_CLASS_DISPLAY_VGA << 8, pdev)) != NULL) {
-+		dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
-+		if (!dhandle)
-+			continue;
-+
-+		status = acpi_get_handle(dhandle, "ATRM", &atrm_handle);
-+		if (!ACPI_FAILURE(status)) {
-+			found = true;
-+			break;
-+		}
-+	}
-+
-+	if (!found)
- 		return false;
+-	console_lock();
+ 	if (ops && ops->currcon != -1)
+ 		vc = vc_cons[ops->currcon].d;
  
- 	rdev->bios = kmalloc(size, GFP_KERNEL);
-@@ -117,9 +182,10 @@ static bool radeon_atrm_get_bios(struct
- 	}
- 
- 	for (i = 0; i < size / ATRM_BIOS_PAGE; i++) {
--		ret = radeon_atrm_get_bios_chunk(rdev->bios,
--						 (i * ATRM_BIOS_PAGE),
--						 ATRM_BIOS_PAGE);
-+		ret = radeon_atrm_call(atrm_handle,
-+				       rdev->bios,
-+				       (i * ATRM_BIOS_PAGE),
-+				       ATRM_BIOS_PAGE);
- 		if (ret < ATRM_BIOS_PAGE)
- 			break;
- 	}
-@@ -130,6 +196,12 @@ static bool radeon_atrm_get_bios(struct
- 	}
- 	return true;
- }
-+#else
-+static inline bool radeon_atrm_get_bios(struct radeon_device *rdev)
-+{
-+	return false;
-+}
-+#endif
- 
- static bool ni_read_disabled_bios(struct radeon_device *rdev)
- {
 
 
