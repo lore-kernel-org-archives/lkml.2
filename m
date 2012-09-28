@@ -1,134 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423391Ab2I1Vgd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:36:33 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59627 "EHLO
+	id S1423405Ab2I1Vgk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:36:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54885 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423367Ab2I1Vg0 (ORCPT
+	with ESMTP id S1423392Ab2I1Vge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:36:26 -0400
+	Fri, 28 Sep 2012 17:36:34 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Chris Ball <cjb@laptop.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Will Newton <will.newton@imgtec.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-mmc@vger.kernel.org
-Subject: [PATCH 03/12] mmc: dw_mmc: fix building exynos driver as a module
-Date: Fri, 28 Sep 2012 23:36:08 +0200
-Message-Id: <1348868177-21205-4-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 10/12] gpio: pcf857x: select IRQ_DOMAIN
+Date: Fri, 28 Sep 2012 23:36:15 +0200
+Message-Id: <1348868177-21205-11-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1348868177-21205-1-git-send-email-arnd@arndb.de>
 References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:uttyTGatBxP0MdqdwpytIug6c1eWOwSme4tHlF6NqbU
- sTj/Z+8u4d3f900C6H8ytBs9DbYa1C4UzV3A/T5TEwvuXDmGdT
- A8/ilcWO2CgIMl19umag9ye4b4g4n5SejtxTgOvBAk2a0IJpqV
- IqpR+NbNDTEF1BOdmSZQ8vSa3p8GQStHRz2Zr/l4tYgkg81rOv
- 6C6xys0NmaOSGgga7IyNv60AsSSazyX/lDRgIvpHcYZB0aFMEY
- OFx+rq7ZmiPeYXUiuGpPM9lnkg6pDPhbk2bClDNaAxzTAzmdE1
- vr5AEaaaILUMoy77MuFaTFriNR00ozPiSXO6vrLySqu9E6VX4u
- l+poRbVvGCrBNHJ3Edb4h4aPp7m62/VZjZyYb8XSMzngeMTZMB
- VnyNKORy/EPuw==
+X-Provags-ID: V02:K0:0AFnaFh9R4869fcsUTqmDbprJF8gSeixhmWYyYSsQ17
+ xRU55GeYZzjQl/IJSA5I87wlCO2WFjqKphdSGe8v/rvDo4HuOy
+ 4YBMGCvHCxLu/Nh65fg00h1fk0xBdBTFH0KVsE/Ugc4TxA5Vgk
+ SKJTVKzTt/OSeeffO81X7KdrM6eNzlw9hNfbPgzWc6aN7n7+ZR
+ QcdX2m8n2C1rwnA0T8+ewAQb438lHl8eojYhPY0btEAuAaqVUT
+ MQXEiEFD8pbHR0TVqklF9IjQGycLL6ajLMIVfvtLyd2z7bC7HF
+ YhGe1NdIt1usI2qpOw0wZ03QXquFfNMe9G/UCovHYG0FxqqZEn
+ cvJio5j5oPQBs1i1pg2seWlzwj47p+tbtHqYz+Ae5Kuyu4qV+U
+ GZoY/Ilw7XGYQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MODULE_DEVICE_TABLE() entry in the dw_mmc_exynos driver
-points to the wrong symbol which results in a link error
-when building as a loadable module.
+Patch 6e20a0a4 "gpio: pcf857x: enable gpio_to_irq() support"
+added IRQ domain support to the pcf857x driver, but some configurations
+(e.g. davinci_all_defconfig) don't already enable CONFIG_IRQ_DOMAIN.
 
-Further, we get a warning about the driver_data being
-marked constant, which requires annotating a few pointers
-as const.
+Always selecting it from the Kconfig in this case is what other
+such drivers do as well, and avoids these build errors:
+
+Without this patch, building davinci_all_defconfig results in:
+
+drivers/gpio/gpio-pcf857x.c: In function 'pcf857x_to_irq':
+drivers/gpio/gpio-pcf857x.c:167:2: error: implicit declaration of function 'irq_create_mapping'
+drivers/gpio/gpio-pcf857x.c: In function 'pcf857x_irq_demux_work':
+drivers/gpio/gpio-pcf857x.c:183:3: error: implicit declaration of function 'irq_find_mapping'
+drivers/gpio/gpio-pcf857x.c: In function 'pcf857x_irq_domain_cleanup':
+drivers/gpio/gpio-pcf857x.c:218:3: error: implicit declaration of function 'irq_domain_remove'
+drivers/gpio/gpio-pcf857x.c: In function 'pcf857x_irq_domain_init':
+drivers/gpio/gpio-pcf857x.c:230:2: error: implicit declaration of function 'irq_domain_add_linear'
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Will Newton <will.newton@imgtec.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-mmc@vger.kernel.org
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mmc/host/dw_mmc-exynos.c |    4 ++--
- drivers/mmc/host/dw_mmc-pltfm.c  |    2 +-
- drivers/mmc/host/dw_mmc-pltfm.h  |    2 +-
- drivers/mmc/host/dw_mmc.c        |    2 +-
- include/linux/mmc/dw_mmc.h       |    2 +-
- 5 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpio/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
-index 660bbc5..32109a6 100644
---- a/drivers/mmc/host/dw_mmc-exynos.c
-+++ b/drivers/mmc/host/dw_mmc-exynos.c
-@@ -223,11 +223,11 @@ static const struct of_device_id dw_mci_exynos_match[] = {
- 			.data = (void *)&exynos5250_drv_data, },
- 	{},
- };
--MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
-+MODULE_DEVICE_TABLE(of, dw_mci_exynos_match);
- 
- int dw_mci_exynos_probe(struct platform_device *pdev)
- {
--	struct dw_mci_drv_data *drv_data;
-+	const struct dw_mci_drv_data *drv_data;
- 	const struct of_device_id *match;
- 
- 	match = of_match_node(dw_mci_exynos_match, pdev->dev.of_node);
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index c960ca7..5e33156 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.c
-+++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -24,7 +24,7 @@
- #include "dw_mmc.h"
- 
- int dw_mci_pltfm_register(struct platform_device *pdev,
--				struct dw_mci_drv_data *drv_data)
-+				const struct dw_mci_drv_data *drv_data)
- {
- 	struct dw_mci *host;
- 	struct resource	*regs;
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.h b/drivers/mmc/host/dw_mmc-pltfm.h
-index 301f245..2ac37b8 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.h
-+++ b/drivers/mmc/host/dw_mmc-pltfm.h
-@@ -13,7 +13,7 @@
- #define _DW_MMC_PLTFM_H_
- 
- extern int dw_mci_pltfm_register(struct platform_device *pdev,
--				struct dw_mci_drv_data *drv_data);
-+				const struct dw_mci_drv_data *drv_data);
- extern int __devexit dw_mci_pltfm_remove(struct platform_device *pdev);
- extern const struct dev_pm_ops dw_mci_pltfm_pmops;
- 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index a23af77..026cf92 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1973,7 +1973,7 @@ static void dw_mci_init_dma(struct dw_mci *host)
- 	/* Determine which DMA interface to use */
- #ifdef CONFIG_MMC_DW_IDMAC
- 	host->dma_ops = &dw_mci_idmac_ops;
--	dev_info(&host->dev, "Using internal DMA controller.\n");
-+	dev_info(host->dev, "Using internal DMA controller.\n");
- #endif
- 
- 	if (!host->dma_ops)
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index 7c6a113..0f62c8c 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -162,7 +162,7 @@ struct dw_mci {
- 	u16			data_offset;
- 	struct device		*dev;
- 	struct dw_mci_board	*pdata;
--	struct dw_mci_drv_data	*drv_data;
-+	const struct dw_mci_drv_data	*drv_data;
- 	void			*priv;
- 	struct clk		*biu_clk;
- 	struct clk		*ciu_clk;
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 0c05532..d055cee 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -336,6 +336,7 @@ config GPIO_PCA953X_IRQ
+ config GPIO_PCF857X
+ 	tristate "PCF857x, PCA{85,96}7x, and MAX732[89] I2C GPIO expanders"
+ 	depends on I2C
++	select IRQ_DOMAIN
+ 	help
+ 	  Say yes here to provide access to most "quasi-bidirectional" I2C
+ 	  GPIO expanders used for additional digital outputs or inputs.
 -- 
 1.7.10
 
