@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032740Ab2I1U3C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:29:02 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
+	id S1422738Ab2I1U3M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:29:12 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032718Ab2I1U24 (ORCPT
+	with ESMTP id S1032741Ab2I1U3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:28:56 -0400
+	Fri, 28 Sep 2012 16:29:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Manoj Iyer <manoj.iyer@canonical.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 137/218] xhci: Recognize USB 3.0 devices as superspeed at powerup
-Date: Fri, 28 Sep 2012 13:15:54 -0700
-Message-Id: <20120928201517.217299740@linuxfoundation.org>
+        Xinyu Chen <xinyu.chen@freescale.com>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 139/218] tty: serial: imx: console write routing is unsafe on SMP
+Date: Fri, 28 Sep 2012 13:15:56 -0700
+Message-Id: <20120928201517.428456299@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,42 +29,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: Xinyu Chen <xinyu.chen@freescale.com>
 
-commit 29d214576f936db627ff62afb9ef438eea18bcd2 upstream.
+commit 9ec1882df244c4ee1baa692676fef5e8b0f5487d upstream.
 
-On Intel Panther Point chipset USB 3.0 devices show up as
-high-speed devices on powerup, but after an s3 cycle they are
-correctly recognized as SuperSpeed. At powerup switch the port
-to xHCI so that USB 3.0 devices are correctly recognized.
+The console feature's write routing is unsafe on SMP with
+the startup/shutdown call.
 
-BugLink: http://bugs.launchpad.net/bugs/1000424
+There could be several consumers of the console
+* the kernel printk
+* the init process using /dev/kmsg to call printk to show log
+* shell, which open /dev/console and write with sys_write()
 
-This patch should be backported to kernels as old as 3.0, that contain
-commit ID 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
-EHCI/xHCI port switching."
+The shell goes into the normal uart open/write routing,
+but the other two go into the console operations.
+The open routing calls imx serial startup, which will write USR1/2
+register without any lock and critical with imx_console_write call.
 
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Add a spin_lock for startup/shutdown/console_write routing.
+
+This patch is a port from Freescale's Android kernel.
+
+Signed-off-by: Xinyu Chen <xinyu.chen@freescale.com>
+Tested-by: Dirk Behme <dirk.behme@de.bosch.com>
+CC: Sascha Hauer <s.hauer@pengutronix.de>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/tty/serial/imx.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -897,9 +897,10 @@ static void __devinit quirk_usb_handoff_
- 	/* Disable any BIOS SMIs and clear all SMI events*/
- 	writel(val, base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -756,6 +756,7 @@ static int imx_startup(struct uart_port
+ 		}
+ 	}
  
-+hc_init:
- 	if (usb_is_intel_switchable_xhci(pdev))
- 		usb_enable_xhci_ports(pdev);
--hc_init:
++	spin_lock_irqsave(&sport->port.lock, flags);
+ 	/*
+ 	 * Finally, clear and enable interrupts
+ 	 */
+@@ -809,7 +810,6 @@ static int imx_startup(struct uart_port
+ 	/*
+ 	 * Enable modem status interrupts
+ 	 */
+-	spin_lock_irqsave(&sport->port.lock,flags);
+ 	imx_enable_ms(&sport->port);
+ 	spin_unlock_irqrestore(&sport->port.lock,flags);
+ 
+@@ -839,10 +839,13 @@ static void imx_shutdown(struct uart_por
+ {
+ 	struct imx_port *sport = (struct imx_port *)port;
+ 	unsigned long temp;
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&sport->port.lock, flags);
+ 	temp = readl(sport->port.membase + UCR2);
+ 	temp &= ~(UCR2_TXEN);
+ 	writel(temp, sport->port.membase + UCR2);
++	spin_unlock_irqrestore(&sport->port.lock, flags);
+ 
+ 	if (USE_IRDA(sport)) {
+ 		struct imxuart_platform_data *pdata;
+@@ -871,12 +874,14 @@ static void imx_shutdown(struct uart_por
+ 	 * Disable all interrupts, port and break condition.
+ 	 */
+ 
++	spin_lock_irqsave(&sport->port.lock, flags);
+ 	temp = readl(sport->port.membase + UCR1);
+ 	temp &= ~(UCR1_TXMPTYEN | UCR1_RRDYEN | UCR1_RTSDEN | UCR1_UARTEN);
+ 	if (USE_IRDA(sport))
+ 		temp &= ~(UCR1_IREN);
+ 
+ 	writel(temp, sport->port.membase + UCR1);
++	spin_unlock_irqrestore(&sport->port.lock, flags);
+ }
+ 
+ static void
+@@ -1219,6 +1224,9 @@ imx_console_write(struct console *co, co
+ 	struct imx_port *sport = imx_ports[co->index];
+ 	struct imx_port_ucrs old_ucr;
+ 	unsigned int ucr1;
++	unsigned long flags;
 +
- 	op_reg_base = base + XHCI_HC_LENGTH(readl(base));
++	spin_lock_irqsave(&sport->port.lock, flags);
  
- 	/* Wait for the host controller to be ready before writing any
+ 	/*
+ 	 *	First, save UCR1/2/3 and then disable interrupts
+@@ -1244,6 +1252,8 @@ imx_console_write(struct console *co, co
+ 	while (!(readl(sport->port.membase + USR2) & USR2_TXDC));
+ 
+ 	imx_port_ucrs_restore(&sport->port, &old_ucr);
++
++	spin_unlock_irqrestore(&sport->port.lock, flags);
+ }
+ 
+ /*
 
 
