@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab2I1MNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:13:13 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:32881 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab2I1MNL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:13:11 -0400
+	id S1756763Ab2I1MRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:17:39 -0400
+Received: from 8bytes.org ([85.214.48.195]:45967 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259Ab2I1MRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 08:17:37 -0400
+Date: Fri, 28 Sep 2012 14:17:33 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Bryan Schumaker <bjschuma@netapp.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+Message-ID: <20120928121733.GD18962@8bytes.org>
+References: <20120807134156.GP1996@amd.com>
+ <20120927145217.GA18962@8bytes.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com>
+ <20120927153928.GB18962@8bytes.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com>
+ <20120927175623.GG10549@amd.com>
+ <506497B9.3030601@netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <20120928065647.GM4587@mwanda>
-References: <1348746198-26375-1-git-send-email-peter.senna@gmail.com>
-	<20120928065647.GM4587@mwanda>
-Date: Fri, 28 Sep 2012 14:13:10 +0200
-Message-ID: <CA+MoWDoZ8nPjcOfKpKT7P6An-Q--pvR_0kH8=XoP36Y9-0JcuQ@mail.gmail.com>
-Subject: Re: [PATCH v2] sound: Remove unnecessary semicolon
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: trivial@vger.kernel.org, perex@perex.cz, tiwai@suse.de,
-        rusty@rustcorp.com.au, paul.gortmaker@windriver.com,
-        eblennerhassett@audioscience.com, superquad.vortex2@gmail.com,
-        den@openvz.org, kozerkov@parallels.com, axel.lin@gmail.com,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <506497B9.3030601@netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Sep 28 14:17:34 2012
+X-DSPAM-Confidence: 0.9987
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5065955e22979202750175
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Next time, could you put a little comment here under the --- line
-> about what changed between v1 and v2?
+On Thu, Sep 27, 2012 at 02:15:21PM -0400, Bryan Schumaker wrote:
 
-Sorry for that. I've sent newer version following your suggestion.
+> Double check that you're using the legacy idmapper, and not the
+> keyring based one (/etc/request-key.conf shouldn't have the "create
+> id_resolver * * /usr/bin/nfsidmap %k %d" line).
 
-Thanks.
+That should only be relevant for NFSv4, no? I am using v3 only (without
+explicitly setting the version as mount option).
+
+Anyway, I had no luck on reproducing the failure again after
+re-installation of the box, either with of with-out my patches on-top. I
+tried a few different config settings for NFS too, but the BUG didn't
+trigger again :-/
 
 
+	Joerg
 
--- 
-Peter
+
