@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269Ab2I1OoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:44:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56332 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757721Ab2I1OoP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:44:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1348842668.1480.9.camel@anish-Inspiron-N5050>
-References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
-	<CAK7N6vqS9PW85hgcA7EVzCk-TQo_ru4OcC5i0Rw-b2hvb4YoXg@mail.gmail.com>
-	<CACVXFVMJaQRj6sUJwiyiMvyAyd2p_8g9cYFqRW2KngQPx62Y5A@mail.gmail.com>
-	<1348842668.1480.9.camel@anish-Inspiron-N5050>
-Date: Fri, 28 Sep 2012 22:44:13 +0800
-Message-ID: <CACVXFVPE1wwVhN=WobgZ+KfGRk2HifQ_3bhwF4mHS+Qu+bXh+g@mail.gmail.com>
-Subject: Re: [PATCH] driver core: fix possible missing of device probe
-From: Ming Lei <ming.lei@canonical.com>
-To: anish kumar <anish198519851985@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758275Ab2I1Ooy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:44:54 -0400
+Received: from www.eclis.ch ([217.162.2.166]:60096 "EHLO mail.eclis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757768Ab2I1Oox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 10:44:53 -0400
+X-Greylist: delayed 1721 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 10:44:53 EDT
+From: jc@eclis.ch
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
+Date: Fri, 28 Sep 2012 16:16:04 +0200
+Message-Id: <1348841764-26873-1-git-send-email-jc@eclis.ch>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 10:31 PM, anish kumar
-<anish198519851985@gmail.com> wrote:
+From: Jean-Christian de Rivaz <jc@eclis.ch>
 
-> Ming,
-> Somehow I feel here that the problem reported by Russell is totally
-> different from your understanding of problem.I humbly urge you to have
+This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
+and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
 
-I let Russell answer if it is same problem, see my last email.
+Reference:
+http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
 
-> a look at Russell's nice explanation.
+Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
+---
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Sorry, how do you know I didn't look at Russell's explanation?
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index f763ed7..e8007b8 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1551,6 +1551,9 @@ static const struct usb_device_id acm_ids[] = {
+ 					   Maybe we should define a new
+ 					   quirk for this. */
+ 	},
++	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
++	.driver_info = NO_UNION_NORMAL,
++	},
+ 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
+ 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
+ 	},
+-- 
+1.7.2.5
 
-
-Thanks,
---
-Ming Lei
