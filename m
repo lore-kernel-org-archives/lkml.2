@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab2I1CZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 22:25:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35969 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754952Ab2I1CZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 22:25:32 -0400
-Message-ID: <50650A7E.90807@zytor.com>
-Date: Thu, 27 Sep 2012 19:25:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756152Ab2I1C2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 22:28:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47418 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab2I1C2k convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 22:28:40 -0400
 MIME-Version: 1.0
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [PATCH v4] trace,x86: add x86 irq vector tracepoints
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41385F33C@USINDEM103.corp.hds.com> <50612729.2080307@zytor.com> <A5ED84D3BB3A384992CBB9C77DEDA4D41386426D@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41386426D@USINDEM103.corp.hds.com>
-X-Enigmail-Version: 1.4.3
+In-Reply-To: <506474D0.9020406@cs.tu-berlin.de>
+References: <1348682325-8402-1-git-send-email-schnhrr@cs.tu-berlin.de>
+ <20120926211526.GA30261@kroah.com> <506382B0.8040908@cs.tu-berlin.de>
+ <CAPXgP11xwBDSZ9q9thzbXd5xZW_jeq-OW96hSoXFbXQBjQWbqw@mail.gmail.com> <506474D0.9020406@cs.tu-berlin.de>
+From: Kay Sievers <kay@vrfy.org>
+Date: Fri, 28 Sep 2012 04:28:18 +0200
+Message-ID: <CAPXgP1255L5ok7Fw-sBwdxkEQ1sixLp403BGq-tPwCw+oVCiDQ@mail.gmail.com>
+Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
+To: =?UTF-8?Q?Jan_H=2E_Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 03:33 PM, Seiji Aguchi wrote:
-> Hi,
-> 
->> ... except the cost can be reduced to zero *AND* be made into a more general mechanism by simply hooking the IDT.
-> 
-> Thank you for giving me the comment.
-> In my understanding,  we can introduce a more general mechanism by sandwiching an existing handler between tracepoints.
-> The pseudo code is like this:
-> 
-> @@ -17,7 +18,7 @@ static void default_threshold_interrupt(void)
->  
->  void (*mce_threshold_vector)(void) = default_threshold_interrupt;
->  
-> -asmlinkage void smp_threshold_interrupt(void)
-> +static void do_smp_threshold_interrupt(void)
->  {
->  	irq_enter();
->  	exit_idle();
-> @@ -27,3 +28,10 @@ asmlinkage void smp_threshold_interrupt(void)
->  	/* Ack only at the end to avoid potential reentry */
->  	ack_APIC_irq();
->  }
-> +
-> +asmlinkage void smp_threshold_interrupt(void) {
-> +	trace_arch_irq_vector_entry(THRESHOLD_APIC_VECTOR);
-> +	do_smp_threshold_interrupt();
-> +	trace_arch_irq_vector_exit(THRESHOLD_APIC_VECTOR);
-> +}
-> 
-> If I misunderstand something, please let me know.
-> 
+On Thu, Sep 27, 2012 at 5:46 PM, "Jan H. Schönherr"
+<schnhrr@cs.tu-berlin.de> wrote:
+> Am 27.09.2012 15:39, schrieb Kay Sievers:
 
-Quite.
+>> It is a flag that we have not been able to merge a continuation line
+>> in the buffer, because we had a race with another thread, or the
+>> console lock was taken for a long time and we couldn't use the merge
+>> buffer.
+>
+> But it is also set, if we don't know yet, whether there is going to
+> be a continuation (printk.c, line 1583):
+>
+>         log_store(facility, level, lflags | LOG_CONT, 0,
+>                   dict, dictlen, text, text_len);
+>
+> This confuses devkmsg_read() and msg_print_text() later on.
 
-These functions are being invoked from the IDT, which is an indirect
-pointer structure.  When not being traced, there is absolutely no reason
-why it should go through a thunk with tracepoints.
+Yeah, I can see that here too. Tested your patch and seems to behave
+well with a bunch of other tests I still have available. Looks good
+and worth to try:
+  Tested-By: Kay Sievers <kay@vrfy.org>
 
-	-hpa
-
-
-
+Thanks,
+Kay
