@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423112Ab2I1Vtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:49:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031278Ab2I1UYP (ORCPT
+	id S1423138Ab2I1VuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:50:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031281Ab2I1UYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:24:15 -0400
+	Fri, 28 Sep 2012 16:24:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [ 052/218] staging: zcache: fix cleancache race condition with shrinker
-Date: Fri, 28 Sep 2012 13:14:29 -0700
-Message-Id: <20120928201507.497596923@linuxfoundation.org>
+        Adam Williamson <awilliam@redhat.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 050/218] ALSA: hda - Workaround for silent output on VAIO Z with ALC889
+Date: Fri, 28 Sep 2012 13:14:27 -0700
+Message-Id: <20120928201507.245998439@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,70 +26,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 6d7d9798ad5c97ee4e911dd070dc12dc5ae55bd0 upstream.
+commit e427c2375646789ecd0ccaef1a1e41458559ab2d upstream.
 
-This patch fixes a race condition that results in memory
-corruption when using cleancache.
+On recent kernels, Realtek codec parser tries to optimize the routing
+aggressively and take the headphone output as primary at first.  This
+caused a regression on VAIO Z with ALC889, the silent output from the
+speaker.
 
-The race exists between the zcache shrinker handler,
-shrink_zcache_memory() and cleancache_get_page().
+The problem seems that the speaker pin must be connected to the first
+DAC (0x02) on this machine by some reason although the codec itself
+advertises the flexible routing with any DACs.
 
-In most cases, the shrinker will both evict a zbpg
-from its buddy list and flush it from tmem before a
-cleancache_get_page() occurs on that page. A subsequent
-cleancache_get_page() will fail in the tmem layer.
+This patch adds a fix-up for choosing the speaker pin as the primary
+so that the right DAC is assigned on this device.
 
-In the rare case that two occur together and the
-cleancache_get_page() path gets through the tmem
-layer before the shrinker path can flush tmem,
-zbud_decompress() does a check to see if the zbpg is a
-"zombie", i.e. not on a buddy list, which means the shrinker
-is in the process of reclaiming it. If the zbpg is a zombie,
-zbud_decompress() returns -EINVAL.
-
-However, this return code is being ignored by the caller,
-zcache_pampd_get_data_and_free(), which results in the
-caller of cleancache_get_page() thinking that the page has
-been properly retrieved when it has not.
-
-This patch modifies zcache_pampd_get_data_and_free() to
-convey the failure up the stack so that the caller of
-cleancache_get_page() knows the page retrieval failed.
-
-This needs to be applied to stable trees as well.
-zcache-main.c was named zcache.c before v3.1, so
-I'm not sure how you want to handle trees earlier
-than that.
-
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+Reported-and-tested-by: Adam Williamson <awilliam@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
 
 ---
- drivers/staging/zcache/zcache-main.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ Documentation/sound/alsa/HD-Audio-Models.txt |    1 +
+ sound/pci/hda/patch_realtek.c                |   22 +++++++++++++++++++++-
+ 2 files changed, 22 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1259,13 +1259,12 @@ static int zcache_pampd_get_data_and_fre
- 					void *pampd, struct tmem_pool *pool,
- 					struct tmem_oid *oid, uint32_t index)
- {
--	int ret = 0;
--
- 	BUG_ON(!is_ephemeral(pool));
--	zbud_decompress((struct page *)(data), pampd);
-+	if (zbud_decompress((struct page *)(data), pampd) < 0)
-+		return -EINVAL;
- 	zbud_free_and_delist((struct zbud_hdr *)pampd);
- 	atomic_dec(&zcache_curr_eph_pampd_count);
--	return ret;
-+	return 0;
+--- a/Documentation/sound/alsa/HD-Audio-Models.txt
++++ b/Documentation/sound/alsa/HD-Audio-Models.txt
+@@ -47,6 +47,7 @@ ALC882/883/885/888/889
+   acer-aspire-4930g	Acer Aspire 4930G/5930G/6530G/6930G/7730G
+   acer-aspire-8930g	Acer Aspire 8330G/6935G
+   acer-aspire		Acer Aspire others
++  no-primary-hp		VAIO Z workaround (for fixed speaker DAC)
+ 
+ ALC861/660
+ ==========
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -188,6 +188,7 @@ struct alc_spec {
+ 	unsigned int vol_in_capsrc:1; /* use capsrc volume (ADC has no vol) */
+ 	unsigned int parse_flags; /* passed to snd_hda_parse_pin_defcfg() */
+ 	unsigned int shared_mic_hp:1; /* HP/Mic-in sharing */
++	unsigned int no_primary_hp:1; /* Don't prefer HP pins to speaker pins */
+ 
+ 	/* auto-mute control */
+ 	int automute_mode;
+@@ -4365,7 +4366,8 @@ static int alc_parse_auto_config(struct
+ 		return 0; /* can't find valid BIOS pin config */
+ 	}
+ 
+-	if (cfg->line_out_type == AUTO_PIN_SPEAKER_OUT &&
++	if (!spec->no_primary_hp &&
++	    cfg->line_out_type == AUTO_PIN_SPEAKER_OUT &&
+ 	    cfg->line_outs <= cfg->hp_outs) {
+ 		/* use HP as primary out */
+ 		cfg->speaker_outs = cfg->line_outs;
+@@ -5076,6 +5078,7 @@ enum {
+ 	ALC889_FIXUP_DAC_ROUTE,
+ 	ALC889_FIXUP_MBP_VREF,
+ 	ALC889_FIXUP_IMAC91_VREF,
++	ALC882_FIXUP_NO_PRIMARY_HP,
+ };
+ 
+ static void alc889_fixup_coef(struct hda_codec *codec,
+@@ -5199,6 +5202,17 @@ static void alc889_fixup_imac91_vref(str
+ 	spec->keep_vref_in_automute = 1;
  }
  
- /*
++/* Don't take HP output as primary
++ * strangely, the speaker output doesn't work on VAIO Z through DAC 0x05
++ */
++static void alc882_fixup_no_primary_hp(struct hda_codec *codec,
++				       const struct alc_fixup *fix, int action)
++{
++	struct alc_spec *spec = codec->spec;
++	if (action == ALC_FIXUP_ACT_PRE_PROBE)
++		spec->no_primary_hp = 1;
++}
++
+ static const struct alc_fixup alc882_fixups[] = {
+ 	[ALC882_FIXUP_ABIT_AW9D_MAX] = {
+ 		.type = ALC_FIXUP_PINS,
+@@ -5381,6 +5395,10 @@ static const struct alc_fixup alc882_fix
+ 		.chained = true,
+ 		.chain_id = ALC882_FIXUP_GPIO1,
+ 	},
++	[ALC882_FIXUP_NO_PRIMARY_HP] = {
++		.type = ALC_FIXUP_FUNC,
++		.v.func = alc882_fixup_no_primary_hp,
++	},
+ };
+ 
+ static const struct snd_pci_quirk alc882_fixup_tbl[] = {
+@@ -5415,6 +5433,7 @@ static const struct snd_pci_quirk alc882
+ 	SND_PCI_QUIRK(0x1043, 0x1971, "Asus W2JC", ALC882_FIXUP_ASUS_W2JC),
+ 	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
+ 	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
++	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
+ 
+ 	/* All Apple entries are in codec SSIDs */
+ 	SND_PCI_QUIRK(0x106b, 0x00a0, "MacBookPro 3,1", ALC889_FIXUP_MBP_VREF),
+@@ -5455,6 +5474,7 @@ static const struct alc_model_fixup alc8
+ 	{.id = ALC882_FIXUP_ACER_ASPIRE_4930G, .name = "acer-aspire-4930g"},
+ 	{.id = ALC882_FIXUP_ACER_ASPIRE_8930G, .name = "acer-aspire-8930g"},
+ 	{.id = ALC883_FIXUP_ACER_EAPD, .name = "acer-aspire"},
++	{.id = ALC882_FIXUP_NO_PRIMARY_HP, .name = "no-primary-hp"},
+ 	{}
+ };
+ 
 
 
