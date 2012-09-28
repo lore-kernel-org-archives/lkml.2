@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032893Ab2I1Ubc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:31:32 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36926 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965071Ab2I1UbW (ORCPT
+	id S965121Ab2I1Ubj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:31:39 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:56440 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032890Ab2I1Ubc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:31:22 -0400
+	Fri, 28 Sep 2012 16:31:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 184/218] mm: sparse: fix usemap allocation above node descriptor section
-Date: Fri, 28 Sep 2012 13:16:41 -0700
-Message-Id: <20120928201522.617288689@linuxfoundation.org>
+        John Stultz <john.stultz@linaro.org>,
+        Prarit Bhargava <prarit@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 187/218] time: Avoid making adjustments if we havent accumulated anything
+Date: Fri, 28 Sep 2012 13:16:44 -0700
+Message-Id: <20120928201522.985255719@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,58 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 99ab7b19440a72ebdf225f99b20f8ef40decee86 upstream.
+commit bf2ac312195155511a0f79325515cbb61929898a upstream.
 
-After commit f5bf18fa22f8 ("bootmem/sparsemem: remove limit constraint
-in alloc_bootmem_section"), usemap allocations may easily be placed
-outside the optimal section that holds the node descriptor, even if
-there is space available in that section.  This results in unnecessary
-hotplug dependencies that need to have the node unplugged before the
-section holding the usemap.
+If update_wall_time() is called and the current offset isn't large
+enough to accumulate, avoid re-calling timekeeping_adjust which may
+change the clock freq and can cause 1ns inconsistencies with
+CLOCK_REALTIME_COARSE/CLOCK_MONOTONIC_COARSE.
 
-The reason is that the bootmem allocator doesn't guarantee a linear
-search starting from the passed allocation goal but may start out at a
-much higher address absent an upper limit.
-
-Fix this by trying the allocation with the limit at the section end,
-then retry without if that fails.  This keeps the fix from f5bf18fa22f8
-of not panicking if the allocation does not fit in the section, but
-still makes sure to try to stay within the section at first.
-
-[rewritten massively by Johannes to apply to 3.4]
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1345595449-34965-5-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- mm/bootmem.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ kernel/time/timekeeping.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -766,13 +766,17 @@ void * __init alloc_bootmem_section(unsi
- 				    unsigned long section_nr)
- {
- 	bootmem_data_t *bdata;
--	unsigned long pfn, goal;
-+	unsigned long pfn, goal, limit;
- 
- 	pfn = section_nr_to_pfn(section_nr);
- 	goal = pfn << PAGE_SHIFT;
-+	limit = section_nr_to_pfn(section_nr + 1) << PAGE_SHIFT;
- 	bdata = &bootmem_node_data[early_pfn_to_nid(pfn)];
- 
--	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, 0);
-+	if (goal + size > limit)
-+		limit = 0;
-+
-+	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, limit);
- }
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1057,9 +1057,12 @@ static void update_wall_time(void)
+ #else
+ 	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
  #endif
- 
++	/* Check if there's really nothing to do */
++	if (offset < timekeeper.cycle_interval)
++		goto out;
++
+ 	timekeeper.xtime_nsec = (s64)timekeeper.xtime.tv_nsec <<
+ 						timekeeper.shift;
+-
+ 	/*
+ 	 * With NO_HZ we may have to accumulate many cycle_intervals
+ 	 * (think "ticks") worth of time at once. To do this efficiently,
 
 
