@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab2I1J2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 05:28:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57274 "EHLO
+	id S1757361Ab2I1JeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 05:34:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57371 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab2I1J2b convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751294Ab2I1JeD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 05:28:31 -0400
-Message-ID: <1348824500.3292.66.camel@twins>
-Subject: Re: [PATCH 01/31] perf, x86: Add PEBSv2 record support
+	Fri, 28 Sep 2012 05:34:03 -0400
+Message-ID: <1348824831.3292.67.camel@twins>
+Subject: Re: [PATCH 22/31] perf, core: Define generic hardware transaction
+ events
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Fri, 28 Sep 2012 11:28:20 +0200
-In-Reply-To: <CABPqkBS1Crg7yHbzrvF7S2YUjrPZNSYRpE7tuax+OcEu4xrHMA@mail.gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, eranian@google.com,
+        acme@redhat.com, Andi Kleen <ak@linux.intel.com>
+Date: Fri, 28 Sep 2012 11:33:51 +0200
+In-Reply-To: <1348806696-31170-23-git-send-email-andi@firstfloor.org>
 References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
-	 <1348806696-31170-2-git-send-email-andi@firstfloor.org>
-	 <1348821784.3292.50.camel@twins>
-	 <CABPqkBS1Crg7yHbzrvF7S2YUjrPZNSYRpE7tuax+OcEu4xrHMA@mail.gmail.com>
+	 <1348806696-31170-23-git-send-email-andi@firstfloor.org>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -28,25 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-28 at 10:54 +0200, Stephane Eranian wrote:
-> On Fri, Sep 28, 2012 at 10:43 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Thu, 2012-09-27 at 21:31 -0700, Andi Kleen wrote:
-> >> +               if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
-> >
-> > Shouldn't that be: && x86_pmu.intel_cap.pebs_trap, like most other sites
-> > instead? Or didn't they flip the trap capability on Haswell?
+On Thu, 2012-09-27 at 21:31 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> On Haswell, you get the event_ip which points to the sampled
-> instruction, i.e., the off-by-one
-> error can be avoided by using that value instead of pebs.rip. The nice
-> side effect is that you
-> free the LBR and minimize the overhead (no fixups). Therfore the LBR
-> filter can have any
-> setting when combined with PEBS, thus we do not need to check for
-> compatibility nor force
-> any setting for the LBR filter.
+> For tuning and debugging hardware transactional memory it is very
+> important to have hardware counter support.
+> 
+> This patch adds a simple and hopefully generic set of hardware events
+> for transactional memory and lock elision.
+> 
+> It is based on the TSX PMU support because I don't have any
+> information on other CPU's HTM support.
+> 
+> There are start, commit and abort events for transactions and
+> for lock elision.
+> 
+> The abort events are qualified by a generic abort reason that should
+> be roughly applicable to a wide range of memory transaction systems:
+> 
+> capacity for the buffering capacity
+> conflict for a dynamic conflict between CPUs
+> all      for all aborts. On TSX this can be precisely sampled.
+> 
+> We need to split the events into general transaction events and lock
+> elision events. Architecturs with HTM but no lock elision would only
+> use the first set.
+> 
+> Implementation for Haswell in a followon patch.
 
-Yes I got that, but what good is that trap capability flag if they don't
-use it? Them adding a second u64 to the format to report it seems to
-suggest their trap capability is pointless, but nowhere has this been
-explained.
+I would much prefer sysfs events over yet another weird event class
+here. That also solves the problem of not knowing wtf other cpus might
+or might not do.
