@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032466Ab2I1U0a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:26:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
+	id S1032496Ab2I1U0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:26:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032450Ab2I1U0X (ORCPT
+	with ESMTP id S1031326Ab2I1U0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:26:23 -0400
+	Fri, 28 Sep 2012 16:26:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Santiago Leon <santil@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 091/218] ibmveth: Fix alignment of rx queue bug
-Date: Fri, 28 Sep 2012 13:15:08 -0700
-Message-Id: <20120928201511.988981681@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        James Smart <james.smart@emulex.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Mike Pagano <mpagano@gentoo.org>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 095/218] SCSI: lpfc: fix problems with -Werror
+Date: Fri, 28 Sep 2012 13:15:12 -0700
+Message-Id: <20120928201512.451907181@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,86 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Santiago Leon <santil@linux.vnet.ibm.com>
+From: James Bottomley <jbottomley@parallels.com>
 
-commit d90c92fee89ccd75ef2646f3bde0b4c0450666c3 upstream.
+commit 4bdd03e61b7a5c4c6bc2b25d46fcd491788fdfb3 upstream.
 
-This patch fixes a bug found by Nish Aravamudan
-(https://lkml.org/lkml/2012/5/15/220) where the driver is not following
-the spec (it is not aligning the rx buffer on a 16-byte boundary) and the
-hypervisor aborts the registration, making the device unusable.
+Commit d38bd3aef ("Add -Werror compilation flag") is causing build breakage
+with random gcc incarnations.  These look like gcc problems, but we shouldn't
+break the build because of a bad gcc.  Fix this by adding a make flag
 
-The fix follows BenH's recommendation (https://lkml.org/lkml/2012/7/20/461)
-to replace the kmalloc+map for a single call to dma_alloc_coherent()
-because that function always aligns to a 16-byte boundary.
+WARNINGS_BECOME_ERRORS=1
 
-The stable trees will run into this bug whenever the rx buffer kmalloc call
-returns something not aligned on a 16-byte boundary.
+which is the same as aic7xxx uses so ordinarily the build doesn't use -Werror
 
-Signed-off-by: Santiago Leon <santil@linux.vnet.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Alex Iannicelli <alex.iannicelli@emulex.com>
+Cc: James Smart <james.smart@emulex.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Mike Pagano <mpagano@gentoo.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
 ---
- drivers/net/ethernet/ibm/ibmveth.c |   26 +++++++++-----------------
- 1 file changed, 9 insertions(+), 17 deletions(-)
+ drivers/scsi/lpfc/Makefile |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -472,14 +472,9 @@ static void ibmveth_cleanup(struct ibmve
- 	}
+--- a/drivers/scsi/lpfc/Makefile
++++ b/drivers/scsi/lpfc/Makefile
+@@ -22,7 +22,9 @@
+ ccflags-$(GCOV) := -fprofile-arcs -ftest-coverage
+ ccflags-$(GCOV) += -O0
  
- 	if (adapter->rx_queue.queue_addr != NULL) {
--		if (!dma_mapping_error(dev, adapter->rx_queue.queue_dma)) {
--			dma_unmap_single(dev,
--					adapter->rx_queue.queue_dma,
--					adapter->rx_queue.queue_len,
--					DMA_BIDIRECTIONAL);
--			adapter->rx_queue.queue_dma = DMA_ERROR_CODE;
--		}
--		kfree(adapter->rx_queue.queue_addr);
-+		dma_free_coherent(dev, adapter->rx_queue.queue_len,
-+				  adapter->rx_queue.queue_addr,
-+				  adapter->rx_queue.queue_dma);
- 		adapter->rx_queue.queue_addr = NULL;
- 	}
++ifdef WARNINGS_BECOME_ERRORS
+ ccflags-y += -Werror
++endif
  
-@@ -556,10 +551,13 @@ static int ibmveth_open(struct net_devic
- 		goto err_out;
- 	}
+ obj-$(CONFIG_SCSI_LPFC) := lpfc.o
  
-+	dev = &adapter->vdev->dev;
-+
- 	adapter->rx_queue.queue_len = sizeof(struct ibmveth_rx_q_entry) *
- 						rxq_entries;
--	adapter->rx_queue.queue_addr = kmalloc(adapter->rx_queue.queue_len,
--						GFP_KERNEL);
-+	adapter->rx_queue.queue_addr =
-+	    dma_alloc_coherent(dev, adapter->rx_queue.queue_len,
-+			       &adapter->rx_queue.queue_dma, GFP_KERNEL);
- 
- 	if (!adapter->rx_queue.queue_addr) {
- 		netdev_err(netdev, "unable to allocate rx queue pages\n");
-@@ -567,19 +565,13 @@ static int ibmveth_open(struct net_devic
- 		goto err_out;
- 	}
- 
--	dev = &adapter->vdev->dev;
--
- 	adapter->buffer_list_dma = dma_map_single(dev,
- 			adapter->buffer_list_addr, 4096, DMA_BIDIRECTIONAL);
- 	adapter->filter_list_dma = dma_map_single(dev,
- 			adapter->filter_list_addr, 4096, DMA_BIDIRECTIONAL);
--	adapter->rx_queue.queue_dma = dma_map_single(dev,
--			adapter->rx_queue.queue_addr,
--			adapter->rx_queue.queue_len, DMA_BIDIRECTIONAL);
- 
- 	if ((dma_mapping_error(dev, adapter->buffer_list_dma)) ||
--	    (dma_mapping_error(dev, adapter->filter_list_dma)) ||
--	    (dma_mapping_error(dev, adapter->rx_queue.queue_dma))) {
-+	    (dma_mapping_error(dev, adapter->filter_list_dma))) {
- 		netdev_err(netdev, "unable to map filter or buffer list "
- 			   "pages\n");
- 		rc = -ENOMEM;
 
 
