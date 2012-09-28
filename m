@@ -1,61 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab2I1KcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 06:32:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab2I1KcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 06:32:04 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <87ipay3cof.fsf@rustcorp.com.au>
-References: <87ipay3cof.fsf@rustcorp.com.au> <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, pjones@redhat.com,
-        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        keyrings@linux-nfs.org
-Subject: Re: [GIT PULL] Asymmetric keys and module signing
-Date: Fri, 28 Sep 2012 11:31:53 +0100
-Message-ID: <27846.1348828313@warthog.procyon.org.uk>
+	id S1757148Ab2I1KcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 06:32:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59902 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756255Ab2I1KcO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 06:32:14 -0400
+Date: Fri, 28 Sep 2012 12:32:07 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: CMA broken in next-20120926
+Message-ID: <20120928103207.GA22811@avionic-0098.mockup.avionic-design.de>
+References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
+ <20120927151159.4427fc8f.akpm@linux-foundation.org>
+ <20120928054330.GA27594@bbox>
+ <20120928083722.GM3429@suse.de>
+ <50656459.70309@ti.com>
+ <20120928102728.GN3429@suse.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Disposition: inline
+In-Reply-To: <20120928102728.GN3429@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:xarvXUeAUvZbpokBPj1O7m9DI7oXCo1pL5zydeXFgUh
+ 27cvnihQCFdcEPW6d3lmKeUAImpV10zenjZEHKuMH9os7c0Rp+
+ HpwOWxIDtqWW0mFRKFy6kzBrycT+FRzJOamEWSq1mdEnGnYIQT
+ MsSWw6S28lXAa6/gZADGJnYzQ8/S/hl54nclbzflFvwqa5eYWd
+ x0oGYWOA7v77XtC9NS4Uto+Uol0wwozmxYq4W5XTjdLpWRHl2r
+ OYtthYRgpoYhYN+cUuXPDPl1ZQ6lsR7cshqYmvgnkFfLHe0Jd+
+ HTAjVwh/b2Wdk/sFVHKLwz/9TO5JZDLnouetulyJ6SiKQujWRy
+ lZYFfnXojmQUgkuY1hLw6gyhaKIHHyjHUCOd5EAEq+vJ6wb7gO
+ qheLIlisGyQ2+NjutV51eDiEzjqlJ7SvZhObNX9228jwG94J0U
+ FheKi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi Rusty,
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've pushed two additional patches.  The first makes the X.509 cert signature
-use the same hash algorithm as the signatures on the modules - which should
-fix the problem you're seeing, I think.  The second makes elements of the
-names use UTF8 strings, just in case someone wants to use accented characters.
+On Fri, Sep 28, 2012 at 11:27:28AM +0100, Mel Gorman wrote:
+> On Fri, Sep 28, 2012 at 11:48:25AM +0300, Peter Ujfalusi wrote:
+> > Hi,
+> >=20
+> > On 09/28/2012 11:37 AM, Mel Gorman wrote:
+> > >> I hope this patch fixes the bug. If this patch fixes the problem
+> > >> but has some problem about description or someone has better idea,
+> > >> feel free to modify and resend to akpm, Please.
+> > >>
+> > >=20
+> > > A full revert is overkill. Can the following patch be tested as a
+> > > potential replacement please?
+> > >=20
+> > > ---8<---
+> > > mm: compaction: Iron out isolate_freepages_block() and isolate_freepa=
+ges_range() -fix1
+> > >=20
+> > > CMA is reported to be broken in next-20120926. Minchan Kim pointed out
+> > > that this was due to nr_scanned !=3D total_isolated in the case of CMA
+> > > because PageBuddy pages are one scan but many isolations in CMA. This
+> > > patch should address the problem.
+> > >=20
+> > > This patch is a fix for
+> > > mm-compaction-acquire-the-zone-lock-as-late-as-possible-fix-2.patch
+> > >=20
+> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> >=20
+> > linux-next + this patch alone also works for me.
+> >=20
+> > Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>=20
+> Thanks Peter. I expect it also works for Thierry as I expect you were
+> suffering the same problem but obviously confirmation of that would be ni=
+ce.
 
-David
----
+I've been running a few tests and indeed this solves the obvious problem
+that the coherent pool cannot be created at boot (which in turn caused
+the ethernet adapter to fail on Tegra).
 
-The following changes since commit 15765081423824e1ccc329264ae13f5ea87f3a85:
+However I've been working on the Tegra DRM driver, which uses CMA to
+allocate large chunks of framebuffer memory and these are now failing.
+I'll need to check if Minchan's patch solves that problem as well.
 
-  MODSIGN: Sign modules during the build process (2012-09-26 10:11:06 +0100)
+Thierry
 
-are available in the git repository at:
+--r5Pyd7+fXNt84Ff3
+Content-Type: application/pgp-signature
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-modsign.git modsign-post-KS
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-for you to fetch changes up to 9034de9a2c376229e2309eed7e2c871785b5890f:
+iQIcBAEBAgAGBQJQZXynAAoJEN0jrNd/PrOh8pwP/1hNys2zUbTUAMg0bltfzAZy
+OIHQ5Z6dFXc0V3ZgEO6DfpDmgBBDYEXvhRm2fjq1kQrX52WPce8+BeSTwVQPeoiU
+dUYT6h1c7t1BCzievrlC+pZJfcSK3oKWLQCMRpVhvf20NAqQWKmoVNYAQ7eqmjaK
+rTF7Y/ZR1tEp8exVmlcJ1Y+7lTMpU7hAHy+Jtlal/1IbUo2X5GAxiW0yx6gW1CNs
+Zgamep0+WpX1I5gqRekN3HLldZcEcnFzpax4rKuQjTSgTfYindq9pqUKQZ0S/tLc
+ZjqyjoGqIxDiJ5FK1uLt5SMqNh1C4hUQLzXFDMgx/lxBJTDPbeABBpTkRvnn4InS
+nC//fK6+QJKAlIx6RatGJ3F/WT2hNOLDhNN5CM4Jo/PQol2TeCFHwy/KFTRwsu7G
+O8xva7/hA1WKCjUU9yaaiflIe/YjbnF+fW/96N38l88xqoq9pCu8uKYIbGeRNs5h
+5RR2EvZuXGzgM13uZMb+sFQNObSokUU/Z4CmM+kUMTC3xxXRGTDOb4TnQVvmH8VE
+GhRb6tP7dnVLhOh6F+zMCqTmT4bWB1kFlMEPMhNXc5fqhZFTx+qW2g/oxt5P9Zap
+BWQAhWabfqMZYq7Dur8oFdislb0Vk6v2AYj+PVb4/hdJKYXeI3tEWXa0nlOXahBw
+1VUSjPJuORfP0/4jK7E5
+=9sTR
+-----END PGP SIGNATURE-----
 
-  MODSIGN: Use utf8 strings in signer's name in autogenerated X.509 certs (2012-09-28 11:16:57 +0100)
-
-----------------------------------------------------------------
-(from the branch description for modsign-post-KS local branch)
-
-post Kernel-Summit module signing
-----------------------------------------------------------------
-David Howells (2):
-      MODSIGN: Use the same digest for the autogen key sig as for the module sig
-      MODSIGN: Use utf8 strings in signer's name in autogenerated X.509 certs
-
- kernel/Makefile | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+--r5Pyd7+fXNt84Ff3--
