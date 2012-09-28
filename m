@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032577Ab2I1U12 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:27:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032557Ab2I1U1V (ORCPT
+	id S1032592Ab2I1U1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:27:35 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51449 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032557Ab2I1U1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:27:21 -0400
+	Fri, 28 Sep 2012 16:27:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jovi Zhang <boojovi@gmail.com>, Youquan Song <youquan.song@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Ralf Baechle <ralf@linux-mips.org>
-Subject: [ 107/218] MIPS: mm: Add compound tail page _mapcount when mapped
-Date: Fri, 28 Sep 2012 13:15:24 -0700
-Message-Id: <20120928201513.879672397@linuxfoundation.org>
+        Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 102/218] Bluetooth: mgmt: Fix enabling LE while powered off
+Date: Fri, 28 Sep 2012 13:15:19 -0700
+Message-Id: <20120928201513.281322695@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,41 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jovi Zhang <bookjovi@gmail.com>
+From: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
 
-commit af89fa3986b9d034a286544ab1ed95096496a2f9 upstream.
+commit 562fcc246ebe31ade6e1be08585673b9b2785498 upstream.
 
-See commit b6999b191 which did the same modification for x86's mm/gup,
+When new BT USB adapter is plugged in it's configured while still being powered
+off (HCI_AUTO_OFF flag is set), thus Set LE will only set dev_flags but won't
+write changes to controller. As a result it's not possible to start device
+discovery session on LE controller as it uses interleaved discovery which
+requires LE Supported Host flag in extended features.
 
-Quote from commit b6999b191:
-    "If compound pages are used and the page is a
-    tail page, gup_huge_pmd() increases _mapcount to record tail page are
-    mapped while gup_huge_pud does not do that."
+This patch ensures HCI Write LE Host Supported is sent when Set Powered is
+called to power on controller and clear HCI_AUTO_OFF flag.
 
-[ralf@linux-mips.org: fixed rejects caused by the original patch getting
-linewrapped.]
-
-Signed-off-by: Jovi Zhang <boojovi@gmail.com>
-Cc: Youquan Song <youquan.song@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Patchwork: https://patchwork.linux-mips.org/patch/4291/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
+Acked-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/mm/gup.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/bluetooth/mgmt.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/mips/mm/gup.c
-+++ b/arch/mips/mm/gup.c
-@@ -152,6 +152,8 @@ static int gup_huge_pud(pud_t pud, unsig
- 	do {
- 		VM_BUG_ON(compound_head(page) != head);
- 		pages[*nr] = page;
-+		if (PageTail(page))
-+			get_huge_page_tail(page);
- 		(*nr)++;
- 		page++;
- 		refs++;
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2807,6 +2807,16 @@ int mgmt_powered(struct hci_dev *hdev, u
+ 			hci_send_cmd(hdev, HCI_OP_WRITE_SSP_MODE, 1, &ssp);
+ 		}
+ 
++		if (test_bit(HCI_LE_ENABLED, &hdev->dev_flags)) {
++			struct hci_cp_write_le_host_supported cp;
++
++			cp.le = 1;
++			cp.simul = !!(hdev->features[6] & LMP_SIMUL_LE_BR);
++
++			hci_send_cmd(hdev, HCI_OP_WRITE_LE_HOST_SUPPORTED,
++				     sizeof(cp), &cp);
++		}
++
+ 		update_class(hdev);
+ 		update_name(hdev, hdev->dev_name);
+ 		update_eir(hdev);
 
 
