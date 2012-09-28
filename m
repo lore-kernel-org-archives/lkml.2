@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031122Ab2I1UsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:48:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38475 "EHLO
+	id S1423000Ab2I1UsO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:48:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55320 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422938Ab2I1Ur5 (ORCPT
+	by vger.kernel.org with ESMTP id S1422969Ab2I1UsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:47:57 -0400
-X-Sasl-enc: tj0/uzYnPMWGPrQ1yFgENVlDD1XI8+EL+DtDMUNsyEHr 1348865276
+	Fri, 28 Sep 2012 16:48:07 -0400
+X-Sasl-enc: CIUkmFTVGwsKD7Xp2HJcXmRyuZPJnTyXayi8jeT7mTuF 1348865286
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 072/127] NFS: return error from decode_getfh in decode open
-Date: Fri, 28 Sep 2012 13:34:05 -0700
-Message-Id: <20120928203054.300938581@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 079/127] xhci: Fix a logical vs bitwise AND bug
+Date: Fri, 28 Sep 2012 13:34:12 -0700
+Message-Id: <20120928203055.128703819@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,32 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@netapp.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 01913b49cf1dc6409a07dd2a4cc6af2e77f3c410 upstream.
+commit 052c7f9ffb0e95843e75448d02664459253f9ff8 upstream.
 
-If decode_getfh failed, nfs4_xdr_dec_open would return 0 since the last
-decode_* call must have succeeded.
+The intent was to test whether the flag was set.
 
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This patch should be backported to stable kernels as old as 3.0, since
+it fixes a bug in commit e95829f474f0db3a4d940cae1423783edd966027 "xhci:
+Switch PPT ports to EHCI on shutdown.", which was marked for stable.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4xdr.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -5745,7 +5745,8 @@ static int nfs4_xdr_dec_open(struct rpc_
- 	status = decode_open(xdr, res);
- 	if (status)
- 		goto out;
--	if (decode_getfh(xdr, &res->fh) != 0)
-+	status = decode_getfh(xdr, &res->fh);
-+	if (status)
- 		goto out;
- 	if (decode_getfattr(xdr, res->f_attr, res->server,
- 				!RPC_IS_ASYNC(rqstp->rq_task)) != 0)
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -594,7 +594,7 @@ void xhci_shutdown(struct usb_hcd *hcd)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+ 
+-	if (xhci->quirks && XHCI_SPURIOUS_REBOOT)
++	if (xhci->quirks & XHCI_SPURIOUS_REBOOT)
+ 		usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
+ 
+ 	spin_lock_irq(&xhci->lock);
 
 
