@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422802Ab2I1VTg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:19:36 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45679 "EHLO
+	id S1033141Ab2I1VT5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:19:57 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58752 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759278Ab2I1UiZ (ORCPT
+	by vger.kernel.org with ESMTP id S1759264Ab2I1UiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:38:25 -0400
-X-Sasl-enc: LZl1qJB37sGZcURBV06HxshzFWXcX7rbGOyqWuoG5KQ3 1348864704
+	Fri, 28 Sep 2012 16:38:22 -0400
+X-Sasl-enc: R04Md5mAdeBcgD9huTv++HZQo2tUDyh5Nmv3rw+Do5By 1348864702
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Andrew Bird <ajb@spheresystems.co.uk>,
         =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         "David S. Miller" <davem@davemloft.net>
-Subject: =?UTF-8?q?=5B=20199/218=5D=20net=3A=20qmi=5Fwwan=3A=20add=20ZTE=20MF60?=
-Date: Fri, 28 Sep 2012 13:16:56 -0700
-Message-Id: <20120928201524.402560832@linuxfoundation.org>
+Subject: =?UTF-8?q?=5B=20197/218=5D=20USB=3A=20qmi=5Fwwan=3A=20Add=20ZTE=20=28Vodafone=29=20K3765-Z?=
+Date: Fri, 28 Sep 2012 13:16:54 -0700
+Message-Id: <20120928201524.164078976@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -31,61 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: "Andrew Bird (Sphere Systems)" <ajb@spheresystems.co.uk>
 
-commit 6fecd35d4cd79fc75e8290abb86734c18500d2a2 upstream.
+commit 8965c98fdebedce077257241957b205515dd1a5f upstream.
 
-Adding a device with limited QMI support. It does not support
-normal QMI_WDS commands for connection management. Instead,
-sending a QMI_CTL SET_INSTANCE_ID command is required to
-enable the network interface:
+Add the ZTE (Vodafone) K3765-Z to the whitelist. This requires the
+previous patch to make the whitelist with forced interface 4 generic
+or the device fails to initialise. After applying this patch and
+loading the Option driver without usb-modeswitch's bind all
+interfaces trick, a wwan0 net interface and /dev/cdc-wdm0 device
+file were created. Using Bjorn Mork's perl connection script a
+connection was made to a mobile network using QMI and the network
+interface's IPv4 address was configured OK.
 
-  01 0f 00 00 00 00 00 00  20 00 04 00 01 01 00 00
-
-A number of QMI_DMS and QMI_NAS commands are also supported
-for optional device management.
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+Acked-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/qmi_wwan.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/net/usb/qmi_wwan.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 --- a/drivers/net/usb/qmi_wwan.c
 +++ b/drivers/net/usb/qmi_wwan.c
-@@ -346,6 +346,15 @@ static const struct driver_info	qmi_wwan
- 	.data		= BIT(1), /* interface whitelist bitmap */
- };
- 
-+static const struct driver_info qmi_wwan_force_int2 = {
-+	.description	= "Qualcomm WWAN/QMI device",
-+	.flags		= FLAG_WWAN,
-+	.bind		= qmi_wwan_bind_shared,
-+	.unbind		= qmi_wwan_unbind_shared,
-+	.manage_power	= qmi_wwan_manage_power,
-+	.data		= BIT(2), /* interface whitelist bitmap */
-+};
-+
- static const struct driver_info	qmi_wwan_force_int3 = {
- 	.description	= "Qualcomm WWAN/QMI device",
- 	.flags		= FLAG_WWAN,
-@@ -498,6 +507,15 @@ static const struct usb_device_id produc
+@@ -480,6 +480,15 @@ static const struct usb_device_id produc
  		.bInterfaceProtocol = 0xff,
  		.driver_info        = (unsigned long)&qmi_wwan_force_int4,
  	},
-+	{	/* ZTE MF60 */
++	{	/* ZTE (Vodafone) K3765-Z */
 +		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
 +		.idVendor           = 0x19d2,
-+		.idProduct          = 0x1402,
++		.idProduct          = 0x2002,
 +		.bInterfaceClass    = 0xff,
 +		.bInterfaceSubClass = 0xff,
 +		.bInterfaceProtocol = 0xff,
-+		.driver_info        = (unsigned long)&qmi_wwan_force_int2,
++		.driver_info        = (unsigned long)&qmi_wwan_force_int4,
 +	},
- 	{	/* Sierra Wireless MC77xx in QMI mode */
+ 	{	/* ZTE (Vodafone) K4505-Z */
  		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
- 		.idVendor           = 0x1199,
+ 		.idVendor           = 0x19d2,
 
 
