@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032106Ab2I1UXw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:23:52 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37576 "EHLO
+	id S1032138Ab2I1UYB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:24:01 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:46787 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032036Ab2I1UXq (ORCPT
+	with ESMTP id S1032118Ab2I1UX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:23:46 -0400
+	Fri, 28 Sep 2012 16:23:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
+        Murali Nalajala <mnalajal@codeaurora.org>,
+        Nicolas Pitre <nico@linaro.org>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 043/218] ARM: 7527/1: uaccess: explicitly check __user pointer when !CPU_USE_DOMAINS
-Date: Fri, 28 Sep 2012 13:14:20 -0700
-Message-Id: <20120928201506.414909935@linuxfoundation.org>
+Subject: [ 046/218] ARM: Fix ioremap() of address zero
+Date: Fri, 28 Sep 2012 13:14:23 -0700
+Message-Id: <20120928201506.751821275@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -30,239 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 8404663f81d212918ff85f493649a7991209fa04 upstream.
+commit a849088aa1552b1a28eea3daff599ee22a734ae3 upstream.
 
-The {get,put}_user macros don't perform range checking on the provided
-__user address when !CPU_HAS_DOMAINS.
+Murali Nalajala reports a regression that ioremapping address zero
+results in an oops dump:
 
-This patch reworks the out-of-line assembly accessors to check the user
-address against a specified limit, returning -EFAULT if is is out of
-range.
+Unable to handle kernel paging request at virtual address fa200000
+pgd = d4f80000
+[fa200000] *pgd=00000000
+Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+Modules linked in:
+CPU: 0    Tainted: G        W (3.4.0-g3b5f728-00009-g638207a #13)
+PC is at msm_pm_config_rst_vector_before_pc+0x8/0x30
+LR is at msm_pm_boot_config_before_pc+0x18/0x20
+pc : [<c0078f84>]    lr : [<c007903c>]    psr: a0000093
+sp : c0837ef0  ip : cfe00000  fp : 0000000d
+r10: da7efc17  r9 : 225c4278  r8 : 00000006
+r7 : 0003c000  r6 : c085c824  r5 : 00000001  r4 : fa101000
+r3 : fa200000  r2 : c095080c  r1 : 002250fc  r0 : 00000000
+Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM Segment kernel
+Control: 10c5387d  Table: 25180059  DAC: 00000015
+[<c0078f84>] (msm_pm_config_rst_vector_before_pc+0x8/0x30) from [<c007903c>] (msm_pm_boot_config_before_pc+0x18/0x20)
+[<c007903c>] (msm_pm_boot_config_before_pc+0x18/0x20) from [<c007a55c>] (msm_pm_power_collapse+0x410/0xb04)
+[<c007a55c>] (msm_pm_power_collapse+0x410/0xb04) from [<c007b17c>] (arch_idle+0x294/0x3e0)
+[<c007b17c>] (arch_idle+0x294/0x3e0) from [<c000eed8>] (default_idle+0x18/0x2c)
+[<c000eed8>] (default_idle+0x18/0x2c) from [<c000f254>] (cpu_idle+0x90/0xe4)
+[<c000f254>] (cpu_idle+0x90/0xe4) from [<c057231c>] (rest_init+0x88/0xa0)
+[<c057231c>] (rest_init+0x88/0xa0) from [<c07ff890>] (start_kernel+0x3a8/0x40c)
+Code: c0704256 e12fff1e e59f2020 e5923000 (e5930000)
 
-[will: changed get_user register allocation to match put_user]
-[rmk: fixed building on older ARM architectures]
+This is caused by the 'reserved' entries which we insert (see
+19b52abe3c5d7 - ARM: 7438/1: fill possible PMD empty section gaps)
+which get matched for physical address zero.
 
-Reported-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Resolve this by marking these reserved entries with a different flag.
+
+Tested-by: Murali Nalajala <mnalajal@codeaurora.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/assembler.h |    8 +++++++
- arch/arm/include/asm/uaccess.h   |   40 ++++++++++++++++++++++++++-------------
- arch/arm/lib/getuser.S           |   23 ++++++++++++++--------
- arch/arm/lib/putuser.S           |    6 +++++
- 4 files changed, 56 insertions(+), 21 deletions(-)
+ arch/arm/mm/mm.h  |    3 +++
+ arch/arm/mm/mmu.c |    4 ++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/assembler.h
-+++ b/arch/arm/include/asm/assembler.h
-@@ -320,4 +320,12 @@
- 	.size \name , . - \name
- 	.endm
+--- a/arch/arm/mm/mm.h
++++ b/arch/arm/mm/mm.h
+@@ -55,6 +55,9 @@ extern void __flush_dcache_page(struct a
+ /* permanent static mappings from iotable_init() */
+ #define VM_ARM_STATIC_MAPPING	0x40000000
  
-+	.macro check_uaccess, addr:req, size:req, limit:req, tmp:req, bad:req
-+#ifndef CONFIG_CPU_USE_DOMAINS
-+	adds	\tmp, \addr, #\size - 1
-+	sbcccs	\tmp, \tmp, \limit
-+	bcs	\bad
-+#endif
-+	.endm
++/* empty mapping */
++#define VM_ARM_EMPTY_MAPPING	0x20000000
 +
- #endif /* __ASM_ASSEMBLER_H__ */
---- a/arch/arm/include/asm/uaccess.h
-+++ b/arch/arm/include/asm/uaccess.h
-@@ -101,28 +101,39 @@ extern int __get_user_1(void *);
- extern int __get_user_2(void *);
- extern int __get_user_4(void *);
+ /* mapping type (attributes) for permanent static mappings */
+ #define VM_ARM_MTYPE(mt)		((mt) << 20)
+ #define VM_ARM_MTYPE_MASK	(0x1f << 20)
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -805,7 +805,7 @@ static void __init pmd_empty_section_gap
+ 	vm = early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
+ 	vm->addr = (void *)addr;
+ 	vm->size = SECTION_SIZE;
+-	vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
++	vm->flags = VM_IOREMAP | VM_ARM_EMPTY_MAPPING;
+ 	vm->caller = pmd_empty_section_gap;
+ 	vm_area_add_early(vm);
+ }
+@@ -818,7 +818,7 @@ static void __init fill_pmd_gaps(void)
  
--#define __get_user_x(__r2,__p,__e,__s,__i...)				\
-+#define __GUP_CLOBBER_1	"lr", "cc"
-+#ifdef CONFIG_CPU_USE_DOMAINS
-+#define __GUP_CLOBBER_2	"ip", "lr", "cc"
-+#else
-+#define __GUP_CLOBBER_2 "lr", "cc"
-+#endif
-+#define __GUP_CLOBBER_4	"lr", "cc"
-+
-+#define __get_user_x(__r2,__p,__e,__l,__s)				\
- 	   __asm__ __volatile__ (					\
- 		__asmeq("%0", "r0") __asmeq("%1", "r2")			\
-+		__asmeq("%3", "r1")					\
- 		"bl	__get_user_" #__s				\
- 		: "=&r" (__e), "=r" (__r2)				\
--		: "0" (__p)						\
--		: __i, "cc")
-+		: "0" (__p), "r" (__l)					\
-+		: __GUP_CLOBBER_##__s)
- 
- #define get_user(x,p)							\
- 	({								\
-+		unsigned long __limit = current_thread_info()->addr_limit - 1; \
- 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
- 		register unsigned long __r2 asm("r2");			\
-+		register unsigned long __l asm("r1") = __limit;		\
- 		register int __e asm("r0");				\
- 		switch (sizeof(*(__p))) {				\
- 		case 1:							\
--			__get_user_x(__r2, __p, __e, 1, "lr");		\
--	       		break;						\
-+			__get_user_x(__r2, __p, __e, __l, 1);		\
-+			break;						\
- 		case 2:							\
--			__get_user_x(__r2, __p, __e, 2, "r3", "lr");	\
-+			__get_user_x(__r2, __p, __e, __l, 2);		\
- 			break;						\
- 		case 4:							\
--	       		__get_user_x(__r2, __p, __e, 4, "lr");		\
-+			__get_user_x(__r2, __p, __e, __l, 4);		\
- 			break;						\
- 		default: __e = __get_user_bad(); break;			\
- 		}							\
-@@ -135,31 +146,34 @@ extern int __put_user_2(void *, unsigned
- extern int __put_user_4(void *, unsigned int);
- extern int __put_user_8(void *, unsigned long long);
- 
--#define __put_user_x(__r2,__p,__e,__s)					\
-+#define __put_user_x(__r2,__p,__e,__l,__s)				\
- 	   __asm__ __volatile__ (					\
- 		__asmeq("%0", "r0") __asmeq("%2", "r2")			\
-+		__asmeq("%3", "r1")					\
- 		"bl	__put_user_" #__s				\
- 		: "=&r" (__e)						\
--		: "0" (__p), "r" (__r2)					\
-+		: "0" (__p), "r" (__r2), "r" (__l)			\
- 		: "ip", "lr", "cc")
- 
- #define put_user(x,p)							\
- 	({								\
-+		unsigned long __limit = current_thread_info()->addr_limit - 1; \
- 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
- 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
-+		register unsigned long __l asm("r1") = __limit;		\
- 		register int __e asm("r0");				\
- 		switch (sizeof(*(__p))) {				\
- 		case 1:							\
--			__put_user_x(__r2, __p, __e, 1);		\
-+			__put_user_x(__r2, __p, __e, __l, 1);		\
- 			break;						\
- 		case 2:							\
--			__put_user_x(__r2, __p, __e, 2);		\
-+			__put_user_x(__r2, __p, __e, __l, 2);		\
- 			break;						\
- 		case 4:							\
--			__put_user_x(__r2, __p, __e, 4);		\
-+			__put_user_x(__r2, __p, __e, __l, 4);		\
- 			break;						\
- 		case 8:							\
--			__put_user_x(__r2, __p, __e, 8);		\
-+			__put_user_x(__r2, __p, __e, __l, 8);		\
- 			break;						\
- 		default: __e = __put_user_bad(); break;			\
- 		}							\
---- a/arch/arm/lib/getuser.S
-+++ b/arch/arm/lib/getuser.S
-@@ -16,8 +16,9 @@
-  * __get_user_X
-  *
-  * Inputs:	r0 contains the address
-+ *		r1 contains the address limit, which must be preserved
-  * Outputs:	r0 is the error code
-- *		r2, r3 contains the zero-extended value
-+ *		r2 contains the zero-extended value
-  *		lr corrupted
-  *
-  * No other registers must be altered.  (see <asm/uaccess.h>
-@@ -27,33 +28,39 @@
-  * Note also that it is intended that __get_user_bad is not global.
-  */
- #include <linux/linkage.h>
-+#include <asm/assembler.h>
- #include <asm/errno.h>
- #include <asm/domain.h>
- 
- ENTRY(__get_user_1)
-+	check_uaccess r0, 1, r1, r2, __get_user_bad
- 1: TUSER(ldrb)	r2, [r0]
- 	mov	r0, #0
- 	mov	pc, lr
- ENDPROC(__get_user_1)
- 
- ENTRY(__get_user_2)
--#ifdef CONFIG_THUMB2_KERNEL
--2: TUSER(ldrb)	r2, [r0]
--3: TUSER(ldrb)	r3, [r0, #1]
-+	check_uaccess r0, 2, r1, r2, __get_user_bad
-+#ifdef CONFIG_CPU_USE_DOMAINS
-+rb	.req	ip
-+2:	ldrbt	r2, [r0], #1
-+3:	ldrbt	rb, [r0], #0
- #else
--2: TUSER(ldrb)	r2, [r0], #1
--3: TUSER(ldrb)	r3, [r0]
-+rb	.req	r0
-+2:	ldrb	r2, [r0]
-+3:	ldrb	rb, [r0, #1]
- #endif
- #ifndef __ARMEB__
--	orr	r2, r2, r3, lsl #8
-+	orr	r2, r2, rb, lsl #8
- #else
--	orr	r2, r3, r2, lsl #8
-+	orr	r2, rb, r2, lsl #8
- #endif
- 	mov	r0, #0
- 	mov	pc, lr
- ENDPROC(__get_user_2)
- 
- ENTRY(__get_user_4)
-+	check_uaccess r0, 4, r1, r2, __get_user_bad
- 4: TUSER(ldr)	r2, [r0]
- 	mov	r0, #0
- 	mov	pc, lr
---- a/arch/arm/lib/putuser.S
-+++ b/arch/arm/lib/putuser.S
-@@ -16,6 +16,7 @@
-  * __put_user_X
-  *
-  * Inputs:	r0 contains the address
-+ *		r1 contains the address limit, which must be preserved
-  *		r2, r3 contains the value
-  * Outputs:	r0 is the error code
-  *		lr corrupted
-@@ -27,16 +28,19 @@
-  * Note also that it is intended that __put_user_bad is not global.
-  */
- #include <linux/linkage.h>
-+#include <asm/assembler.h>
- #include <asm/errno.h>
- #include <asm/domain.h>
- 
- ENTRY(__put_user_1)
-+	check_uaccess r0, 1, r1, ip, __put_user_bad
- 1: TUSER(strb)	r2, [r0]
- 	mov	r0, #0
- 	mov	pc, lr
- ENDPROC(__put_user_1)
- 
- ENTRY(__put_user_2)
-+	check_uaccess r0, 2, r1, ip, __put_user_bad
- 	mov	ip, r2, lsr #8
- #ifdef CONFIG_THUMB2_KERNEL
- #ifndef __ARMEB__
-@@ -60,12 +64,14 @@ ENTRY(__put_user_2)
- ENDPROC(__put_user_2)
- 
- ENTRY(__put_user_4)
-+	check_uaccess r0, 4, r1, ip, __put_user_bad
- 4: TUSER(str)	r2, [r0]
- 	mov	r0, #0
- 	mov	pc, lr
- ENDPROC(__put_user_4)
- 
- ENTRY(__put_user_8)
-+	check_uaccess r0, 8, r1, ip, __put_user_bad
- #ifdef CONFIG_THUMB2_KERNEL
- 5: TUSER(str)	r2, [r0]
- 6: TUSER(str)	r3, [r0, #4]
+ 	/* we're still single threaded hence no lock needed here */
+ 	for (vm = vmlist; vm; vm = vm->next) {
+-		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
++		if (!(vm->flags & (VM_ARM_STATIC_MAPPING | VM_ARM_EMPTY_MAPPING)))
+ 			continue;
+ 		addr = (unsigned long)vm->addr;
+ 		if (addr < next)
 
 
