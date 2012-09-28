@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030394Ab2I1TC6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:02:58 -0400
+	id S1030429Ab2I1TDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:03:11 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030382Ab2I1TCx (ORCPT
+	with ESMTP id S1030396Ab2I1TDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:02:53 -0400
+	Fri, 28 Sep 2012 15:03:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 179/262] drivers/misc/sgi-xp/xpc_uv.c: SGI XPC fails to load when cpu 0 is out of IRQ resources
-Date: Fri, 28 Sep 2012 11:51:48 -0700
-Message-Id: <20120928183019.191119759@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 183/262] drm/radeon: fence virtual address and free it once idle v4
+Date: Fri, 28 Sep 2012 11:51:52 -0700
+Message-Id: <20120928183019.674555795@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,167 +29,207 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 7838f994b4fceff24c343f4e26a6cf4393869579 upstream.
+commit e43b5ec05afdc232be25aa481315035c1888d389 upstream.
 
-On many of our larger systems, CPU 0 has had all of its IRQ resources
-consumed before XPC loads.  Worst cases on machines with multiple 10
-GigE cards and multiple IB cards have depleted the entire first socket
-of IRQs.
+Virtual address need to be fenced to know when we can safely remove it.
+This patch also properly clear the pagetable. Previously it was
+serouisly broken.
 
-This patch makes selecting the node upon which IRQs are allocated (as
-well as all the other GRU Message Queue structures) specifiable as a
-module load param and has a default behavior of searching all nodes/cpus
-for an available resources.
+Kernel 3.5/3.4 need a similar patch but adapted for difference in mutex locking.
 
-[akpm@linux-foundation.org: fix build: include cpu.h and module.h]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+v2: For to update pagetable when unbinding bo (don't bailout if
+    bo_va->valid is true).
+v3: Add kernel 3.5/3.4 comment.
+v4: Fix compilation warnings.
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/sgi-xp/xpc_uv.c |   84 +++++++++++++++++++++++++++++++++----------
- 1 file changed, 65 insertions(+), 19 deletions(-)
+ drivers/gpu/drm/radeon/radeon.h        |    1 +
+ drivers/gpu/drm/radeon/radeon_cs.c     |   30 +++++++++++++++++++++++++++---
+ drivers/gpu/drm/radeon/radeon_gart.c   |   24 ++++++++++++++++++++++--
+ drivers/gpu/drm/radeon/radeon_gem.c    |   13 ++-----------
+ drivers/gpu/drm/radeon/radeon_object.c |    6 +-----
+ 5 files changed, 53 insertions(+), 21 deletions(-)
 
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -18,6 +18,8 @@
- #include <linux/interrupt.h>
- #include <linux/delay.h>
- #include <linux/device.h>
-+#include <linux/cpu.h>
-+#include <linux/module.h>
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <asm/uv/uv_hub.h>
-@@ -59,6 +61,8 @@ static struct xpc_heartbeat_uv *xpc_hear
- 					 XPC_NOTIFY_MSG_SIZE_UV)
- #define XPC_NOTIFY_IRQ_NAME		"xpc_notify"
- 
-+static int xpc_mq_node = -1;
-+
- static struct xpc_gru_mq_uv *xpc_activate_mq_uv;
- static struct xpc_gru_mq_uv *xpc_notify_mq_uv;
- 
-@@ -109,11 +113,8 @@ xpc_get_gru_mq_irq_uv(struct xpc_gru_mq_
- #if defined CONFIG_X86_64
- 	mq->irq = uv_setup_irq(irq_name, cpu, mq->mmr_blade, mq->mmr_offset,
- 			UV_AFFINITY_CPU);
--	if (mq->irq < 0) {
--		dev_err(xpc_part, "uv_setup_irq() returned error=%d\n",
--			-mq->irq);
-+	if (mq->irq < 0)
- 		return mq->irq;
--	}
- 
- 	mq->mmr_value = uv_read_global_mmr64(mmr_pnode, mq->mmr_offset);
- 
-@@ -238,8 +239,9 @@ xpc_create_gru_mq_uv(unsigned int mq_siz
- 	mq->mmr_blade = uv_cpu_to_blade_id(cpu);
- 
- 	nid = cpu_to_node(cpu);
--	page = alloc_pages_exact_node(nid, GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
--				pg_order);
-+	page = alloc_pages_exact_node(nid,
-+				      GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
-+				      pg_order);
- 	if (page == NULL) {
- 		dev_err(xpc_part, "xpc_create_gru_mq_uv() failed to alloc %d "
- 			"bytes of memory on nid=%d for GRU mq\n", mq_size, nid);
-@@ -1731,9 +1733,50 @@ static struct xpc_arch_operations xpc_ar
- 	.notify_senders_of_disconnect = xpc_notify_senders_of_disconnect_uv,
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -323,6 +323,7 @@ struct radeon_bo_va {
+ 	uint64_t			soffset;
+ 	uint64_t			eoffset;
+ 	uint32_t			flags;
++	struct radeon_fence		*fence;
+ 	bool				valid;
  };
  
-+static int
-+xpc_init_mq_node(int nid)
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -294,6 +294,28 @@ int radeon_cs_parser_init(struct radeon_
+ 	return 0;
+ }
+ 
++static void radeon_bo_vm_fence_va(struct radeon_cs_parser *parser,
++				  struct radeon_fence *fence)
 +{
-+	int cpu;
++	struct radeon_fpriv *fpriv = parser->filp->driver_priv;
++	struct radeon_vm *vm = &fpriv->vm;
++	struct radeon_bo_list *lobj;
 +
-+	get_online_cpus();
++	if (parser->chunk_ib_idx == -1)
++		return;
++	if ((parser->cs_flags & RADEON_CS_USE_VM) == 0)
++		return;
 +
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_activate_mq_uv =
-+			xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, nid,
-+					     XPC_ACTIVATE_IRQ_NAME,
-+					     xpc_handle_activate_IRQ_uv);
-+		if (!IS_ERR(xpc_activate_mq_uv))
-+			break;
-+	}
-+	if (IS_ERR(xpc_activate_mq_uv)) {
-+		put_online_cpus();
-+		return PTR_ERR(xpc_activate_mq_uv);
-+	}
++	list_for_each_entry(lobj, &parser->validated, tv.head) {
++		struct radeon_bo_va *bo_va;
++		struct radeon_bo *rbo = lobj->bo;
 +
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_notify_mq_uv =
-+			xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, nid,
-+					     XPC_NOTIFY_IRQ_NAME,
-+					     xpc_handle_notify_IRQ_uv);
-+		if (!IS_ERR(xpc_notify_mq_uv))
-+			break;
++		bo_va = radeon_bo_va(rbo, vm);
++		radeon_fence_unref(&bo_va->fence);
++		bo_va->fence = radeon_fence_ref(fence);
 +	}
-+	if (IS_ERR(xpc_notify_mq_uv)) {
-+		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
-+		put_online_cpus();
-+		return PTR_ERR(xpc_notify_mq_uv);
-+	}
-+
-+	put_online_cpus();
-+	return 0;
 +}
 +
- int
- xpc_init_uv(void)
+ /**
+  * cs_parser_fini() - clean parser states
+  * @parser:	parser structure holding parsing context.
+@@ -306,11 +328,14 @@ static void radeon_cs_parser_fini(struct
  {
-+	int nid;
-+	int ret = 0;
-+
- 	xpc_arch_ops = xpc_arch_ops_uv;
+ 	unsigned i;
  
- 	if (sizeof(struct xpc_notify_mq_msghdr_uv) > XPC_MSG_HDR_MAX_SIZE) {
-@@ -1742,21 +1785,21 @@ xpc_init_uv(void)
- 		return -E2BIG;
+-	if (!error)
++	if (!error) {
++		/* fence all bo va before ttm_eu_fence_buffer_objects so bo are still reserved */
++		radeon_bo_vm_fence_va(parser, parser->ib.fence);
+ 		ttm_eu_fence_buffer_objects(&parser->validated,
+ 					    parser->ib.fence);
+-	else
++	} else {
+ 		ttm_eu_backoff_reservation(&parser->validated);
++	}
+ 
+ 	if (parser->relocs != NULL) {
+ 		for (i = 0; i < parser->nrelocs; i++) {
+@@ -407,7 +432,6 @@ static int radeon_cs_ib_vm_chunk(struct
+ 
+ 	if (parser->chunk_ib_idx == -1)
+ 		return 0;
+-
+ 	if ((parser->cs_flags & RADEON_CS_USE_VM) == 0)
+ 		return 0;
+ 
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -564,7 +564,7 @@ int radeon_vm_bo_update_pte(struct radeo
+ 		return -EINVAL;
  	}
  
--	xpc_activate_mq_uv = xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, 0,
--						  XPC_ACTIVATE_IRQ_NAME,
--						  xpc_handle_activate_IRQ_uv);
--	if (IS_ERR(xpc_activate_mq_uv))
--		return PTR_ERR(xpc_activate_mq_uv);
-+	if (xpc_mq_node < 0)
-+		for_each_online_node(nid) {
-+			ret = xpc_init_mq_node(nid);
+-	if (bo_va->valid)
++	if (bo_va->valid && mem)
+ 		return 0;
  
--	xpc_notify_mq_uv = xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, 0,
--						XPC_NOTIFY_IRQ_NAME,
--						xpc_handle_notify_IRQ_uv);
--	if (IS_ERR(xpc_notify_mq_uv)) {
--		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
--		return PTR_ERR(xpc_notify_mq_uv);
--	}
-+			if (!ret)
-+				break;
+ 	ngpu_pages = radeon_bo_ngpu_pages(bo);
+@@ -597,11 +597,27 @@ int radeon_vm_bo_rmv(struct radeon_devic
+ 		     struct radeon_bo *bo)
+ {
+ 	struct radeon_bo_va *bo_va;
++	int r;
+ 
+ 	bo_va = radeon_bo_va(bo, vm);
+ 	if (bo_va == NULL)
+ 		return 0;
+ 
++	/* wait for va use to end */
++	while (bo_va->fence) {
++		r = radeon_fence_wait(bo_va->fence, false);
++		if (r) {
++			DRM_ERROR("error while waiting for fence: %d\n", r);
 +		}
-+	else
-+		ret = xpc_init_mq_node(xpc_mq_node);
- 
--	return 0;
-+	if (ret < 0)
-+		dev_err(xpc_part, "xpc_init_mq_node() returned error=%d\n",
-+			-ret);
++		if (r == -EDEADLK) {
++			r = radeon_gpu_reset(rdev);
++			if (!r)
++				continue;
++		}
++		break;
++	}
++	radeon_fence_unref(&bo_va->fence);
 +
-+	return ret;
+ 	radeon_mutex_lock(&rdev->cs_mutex);
+ 	mutex_lock(&vm->mutex);
+ 	radeon_vm_bo_update_pte(rdev, vm, bo, NULL);
+@@ -661,12 +677,15 @@ void radeon_vm_fini(struct radeon_device
+ 	radeon_vm_unbind_locked(rdev, vm);
+ 	radeon_mutex_unlock(&rdev->cs_mutex);
+ 
+-	/* remove all bo */
++	/* remove all bo at this point non are busy any more because unbind
++	 * waited for the last vm fence to signal
++	 */
+ 	r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
+ 	if (!r) {
+ 		bo_va = radeon_bo_va(rdev->ring_tmp_bo.bo, vm);
+ 		list_del_init(&bo_va->bo_list);
+ 		list_del_init(&bo_va->vm_list);
++		radeon_fence_unref(&bo_va->fence);
+ 		radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
+ 		kfree(bo_va);
+ 	}
+@@ -678,6 +697,7 @@ void radeon_vm_fini(struct radeon_device
+ 		r = radeon_bo_reserve(bo_va->bo, false);
+ 		if (!r) {
+ 			list_del_init(&bo_va->bo_list);
++			radeon_fence_unref(&bo_va->fence);
+ 			radeon_bo_unreserve(bo_va->bo);
+ 			kfree(bo_va);
+ 		}
+--- a/drivers/gpu/drm/radeon/radeon_gem.c
++++ b/drivers/gpu/drm/radeon/radeon_gem.c
+@@ -134,25 +134,16 @@ void radeon_gem_object_close(struct drm_
+ 	struct radeon_device *rdev = rbo->rdev;
+ 	struct radeon_fpriv *fpriv = file_priv->driver_priv;
+ 	struct radeon_vm *vm = &fpriv->vm;
+-	struct radeon_bo_va *bo_va, *tmp;
+ 
+ 	if (rdev->family < CHIP_CAYMAN) {
+ 		return;
+ 	}
+ 
+ 	if (radeon_bo_reserve(rbo, false)) {
++		dev_err(rdev->dev, "leaking bo va because we fail to reserve bo\n");
+ 		return;
+ 	}
+-	list_for_each_entry_safe(bo_va, tmp, &rbo->va, bo_list) {
+-		if (bo_va->vm == vm) {
+-			/* remove from this vm address space */
+-			mutex_lock(&vm->mutex);
+-			list_del(&bo_va->vm_list);
+-			mutex_unlock(&vm->mutex);
+-			list_del(&bo_va->bo_list);
+-			kfree(bo_va);
+-		}
+-	}
++	radeon_vm_bo_rmv(rdev, vm, rbo);
+ 	radeon_bo_unreserve(rbo);
  }
  
- void
-@@ -1765,3 +1808,6 @@ xpc_exit_uv(void)
- 	xpc_destroy_gru_mq_uv(xpc_notify_mq_uv);
- 	xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
+--- a/drivers/gpu/drm/radeon/radeon_object.c
++++ b/drivers/gpu/drm/radeon/radeon_object.c
+@@ -52,11 +52,7 @@ void radeon_bo_clear_va(struct radeon_bo
+ 
+ 	list_for_each_entry_safe(bo_va, tmp, &bo->va, bo_list) {
+ 		/* remove from all vm address space */
+-		mutex_lock(&bo_va->vm->mutex);
+-		list_del(&bo_va->vm_list);
+-		mutex_unlock(&bo_va->vm->mutex);
+-		list_del(&bo_va->bo_list);
+-		kfree(bo_va);
++		radeon_vm_bo_rmv(bo->rdev, bo_va->vm, bo);
+ 	}
  }
-+
-+module_param(xpc_mq_node, int, 0);
-+MODULE_PARM_DESC(xpc_mq_node, "Node number on which to allocate message queues.");
+ 
 
 
