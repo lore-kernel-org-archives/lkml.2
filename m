@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab2I1Lae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 07:30:34 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50675 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab2I1Lad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 07:30:33 -0400
-Date: Fri, 28 Sep 2012 14:30:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: jyli@marvell.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [bug report] [SCSI] mvumi: GFP_KERNEL under spin lock
-Message-ID: <20120928113022.GW13767@mwanda>
-References: <20120814145926.GA29090@elgon.mountain>
+	id S1757332Ab2I1Lcf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 07:32:35 -0400
+Received: from antcom.de ([188.40.178.216]:44440 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756923Ab2I1Lce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 07:32:34 -0400
+Message-ID: <50658AD0.1050501@antcom.de>
+Date: Fri, 28 Sep 2012 13:32:32 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814145926.GA29090@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
+References: <1348780923-27428-1-git-send-email-stigge@antcom.de> <20120928024744.GV17667@game.jcrosoft.org> <50654E57.3080201@antcom.de> <20120928075145.GW17667@game.jcrosoft.org> <50656522.1050900@antcom.de> <20120928090848.GX17667@game.jcrosoft.org> <20120928102822.GY17667@game.jcrosoft.org>
+In-Reply-To: <20120928102822.GY17667@game.jcrosoft.org>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whatever happened with this?  You could just change the GFP_KERNEL
-to GFP_ATOMIC.
+On 09/28/2012 12:28 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> gpio0 = {1};
+>> set0 = {1};
+>>
+>> gpio1 = {33, 34};
+> here should be
+> 
+> pin0 = {1};
+> set0 = {1};
+> 
+> pin1 = {1, 2, 23};
+> set1 = {0, 0, 1};
+> 
+> set_blocks(gpio_chip0, pin0, set0, 1);
+> set_blocks(gpio_chip1, pin1, set1, 3);
+> 
+> You may need to add a prepare to do not do the conversion between array and
+> gpio_chip array as I guess you will work on gpio block with multiple time
+> acces
 
-regards,
-dan carpenter
+Maybe like this, for some struct block *?
 
-On Tue, Aug 14, 2012 at 05:59:27PM +0300, Dan Carpenter wrote:
-> Hello Jianyun Li,
-> 
-> The patch f0c568a478f0: "[SCSI] mvumi: Add Marvell UMI driver" from 
-> May 11, 2011, leads to the following warning:
-> drivers/scsi/mvumi.c:121 mvumi_alloc_mem_resource()
-> 	 error: scheduling with locks held: 'spin_lock:host_lock'
-> 
-> The problem is that we do a couple GPF_KERNEL allocations in
-> mvumi_alloc_mem_resource() and this static analysis program sees a path
-> where that function is called with spin_locks held.
-> 
-> mvumi_isr_handler() <- takes a spin lock
-> -> mvumi_handshake()
->    -> mvumi_init_data()
->       -> mvumi_alloc_mem_resource() <- GFP_KERNEL
-> 
-> The IRQ handler does print a warning before calling mvumi_handshake()
-> so it seems like this path doesn't get exercised very much.
-> 
-> regards,
-> dan carpenter
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+block = set_block_prepare(gc, pins, values, size);
+if (block) {
+	set_block(gc, block);
+	...
+	set_block_unprepare(gc, block);
+}
+
+Would mean that all supported drivers would need to implement those 3
+new functions... Need to be careful about not introducing bloat...
+
+Thanks,
+
+Roland
