@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032414Ab2I1U0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:26:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032397Ab2I1U0A (ORCPT
+	id S1032432Ab2I1U0P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:26:15 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032416Ab2I1U0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:26:00 -0400
+	Fri, 28 Sep 2012 16:26:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <andre.przywara@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 084/218] xen/boot: Disable NUMA for PV guests.
-Date: Fri, 28 Sep 2012 13:15:01 -0700
-Message-Id: <20120928201511.220196615@linuxfoundation.org>
+        Jonathan Cameron <jic23@cam.ac.uk>, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 087/218] hwmon: (ad7314) Add name sysfs attribute
+Date: Fri, 28 Sep 2012 13:15:04 -0700
+Message-Id: <20120928201511.573419358@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,91 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 8d54db795dfb1049d45dc34f0dddbc5347ec5642 upstream.
+commit 3ceefe4319636d89d4bdf40dca9471970f942e4f upstream.
 
-The hypervisor is in charge of allocating the proper "NUMA" memory
-and dealing with the CPU scheduler to keep them bound to the proper
-NUMA node. The PV guests (and PVHVM) have no inkling of where they
-run and do not need to know that right now. In the future we will
-need to inject NUMA configuration data (if a guest spans two or more
-NUMA nodes) so that the kernel can make the right choices. But those
-patches are not yet present.
+The 'name' sysfs attribute is mandatory for hwmon devices, but was missing
+in this driver.
 
-In the meantime, disable the NUMA capability in the PV guest, which
-also fixes a bootup issue. Andre says:
-
-"we see Dom0 crashes due to the kernel detecting the NUMA topology not
-by ACPI, but directly from the northbridge (CONFIG_AMD_NUMA).
-
-This will detect the actual NUMA config of the physical machine, but
-will crash about the mismatch with Dom0's virtual memory. Variation of
-the theme: Dom0 sees what it's not supposed to see.
-
-This happens with the said config option enabled and on a machine where
-this scanning is still enabled (K8 and Fam10h, not Bulldozer class)
-
-We have this dump then:
-NUMA: Warning: node ids are out of bound, from=-1 to=-1 distance=10
-Scanning NUMA topology in Northbridge 24
-Number of physical nodes 4
-Node 0 MemBase 0000000000000000 Limit 0000000040000000
-Node 1 MemBase 0000000040000000 Limit 0000000138000000
-Node 2 MemBase 0000000138000000 Limit 00000001f8000000
-Node 3 MemBase 00000001f8000000 Limit 0000000238000000
-Initmem setup node 0 0000000000000000-0000000040000000
-  NODE_DATA [000000003ffd9000 - 000000003fffffff]
-Initmem setup node 1 0000000040000000-0000000138000000
-  NODE_DATA [0000000137fd9000 - 0000000137ffffff]
-Initmem setup node 2 0000000138000000-00000001f8000000
-  NODE_DATA [00000001f095e000 - 00000001f0984fff]
-Initmem setup node 3 00000001f8000000-0000000238000000
-Cannot find 159744 bytes in node 3
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
-Pid: 0, comm: swapper Not tainted 3.3.6 #1 AMD Dinar/Dinar
-RIP: e030:[<ffffffff81d220e6>]  [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
-.. snip..
-  [<ffffffff81d23024>] sparse_early_usemaps_alloc_node+0x64/0x178
-  [<ffffffff81d23348>] sparse_init+0xe4/0x25a
-  [<ffffffff81d16840>] paging_init+0x13/0x22
-  [<ffffffff81d07fbb>] setup_arch+0x9c6/0xa9b
-  [<ffffffff81683954>] ? printk+0x3c/0x3e
-  [<ffffffff81d01a38>] start_kernel+0xe5/0x468
-  [<ffffffff81d012cf>] x86_64_start_reservations+0xba/0xc1
-  [<ffffffff81007153>] ? xen_setup_runstate_info+0x2c/0x36
-  [<ffffffff81d050ee>] xen_start_kernel+0x565/0x56c
-"
-
-so we just disable NUMA scanning by setting numa_off=1.
-
-Reported-and-Tested-by: Andre Przywara <andre.przywara@amd.com>
-Acked-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/setup.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/hwmon/ad7314.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -17,6 +17,7 @@
- #include <asm/e820.h>
- #include <asm/setup.h>
- #include <asm/acpi.h>
-+#include <asm/numa.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
- 
-@@ -431,4 +432,7 @@ void __init xen_arch_setup(void)
- 	disable_cpufreq();
- 	WARN_ON(set_pm_idle_to_default());
- 	fiddle_vdso();
-+#ifdef CONFIG_NUMA
-+	numa_off = 1;
-+#endif
+--- a/drivers/hwmon/ad7314.c
++++ b/drivers/hwmon/ad7314.c
+@@ -94,10 +94,18 @@ static ssize_t ad7314_show_temperature(s
+ 	}
  }
+ 
++static ssize_t ad7314_show_name(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "%s\n", to_spi_device(dev)->modalias);
++}
++
++static DEVICE_ATTR(name, S_IRUGO, ad7314_show_name, NULL);
+ static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO,
+ 			  ad7314_show_temperature, NULL, 0);
+ 
+ static struct attribute *ad7314_attributes[] = {
++	&dev_attr_name.attr,
+ 	&sensor_dev_attr_temp1_input.dev_attr.attr,
+ 	NULL,
+ };
 
 
