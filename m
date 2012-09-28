@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031283Ab2I1Tb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:31:27 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50498 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030200Ab2I1TBi (ORCPT
+	id S1031291Ab2I1Tbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:31:46 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965488Ab2I1TBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:01:38 -0400
+	Fri, 28 Sep 2012 15:01:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>, Marc Kleine-Budde <mkl@pengutronix.de>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [ 156/262] usb: chipidea: udc: fix setup of endpoint maxpacket size
-Date: Fri, 28 Sep 2012 11:51:25 -0700
-Message-Id: <20120928183016.410560625@linuxfoundation.org>
+        =?UTF-8?q?Florian=20W=C3=B6hrl?= <fw@woehrl.biz>,
+        Xiaofan Chen <xiaofanc@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Bruno Thomsen <bruno.thomsen@gmail.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: =?UTF-8?q?=5B=20154/262=5D=20USB=3A=20ftdi=5Fsio=3A=20do=20not=20claim=20CDC=20ACM=20function?=
+Date: Fri, 28 Sep 2012 11:51:23 -0700
+Message-Id: <20120928183016.175518851@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,50 +34,66 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 7f67c38bdcb6d8bce02e10521fbf1618b586319f upstream.
+commit f08dea734844aa42ec57c229b0b73b3d7d21f810 upstream.
 
-This patch changes the setup of the endpoint maxpacket size. All non control
-endpoints are initialized with an undefined ((unsigned short)~0) maxpacket
-size. The maxpacket size of Endpoint 0 will be kept at CTRL_PAYLOAD_MAX.
+The Microchip vid:pid 04d8:000a is used for their CDC ACM
+demo firmware application.  This is a device with a single
+function conforming to the CDC ACM specification and with
+the intention of demonstrating CDC ACM class firmware and
+driver interaction.  The demo is used on a number of
+development boards, and may also be used unmodified by
+vendors using Microchip hardware.
 
-Some gadget drivers check for the maxpacket size before they enable the
-endpoint, which leads to a wrong state in these drivers.
+Some vendors have re-used this vid:pid for other types of
+firmware, emulating FTDI chips. Attempting to continue to
+support such devices without breaking class based
+applications that by matching on interface
+class/subclass/proto being ff/ff/00.  I have no information
+about the actual device or interface descriptors, but this
+will at least make the proper CDC ACM devices work again.
+Anyone having details of the offending device's descriptors
+should update this entry with the details.
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Reported-by: Florian Wöhrl <fw@woehrl.biz>
+Reported-by: Xiaofan Chen <xiaofanc@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Bruno Thomsen <bruno.thomsen@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/chipidea/udc.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    4 +++-
+ drivers/usb/serial/ftdi_sio_ids.h |    5 ++++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -1468,7 +1468,12 @@ static int init_eps(struct ci13xxx *udc)
- 
- 			mEp->ep.name      = mEp->name;
- 			mEp->ep.ops       = &usb_ep_ops;
--			mEp->ep.maxpacket = CTRL_PAYLOAD_MAX;
-+			/*
-+			 * for ep0: maxP defined in desc, for other
-+			 * eps, maxP is set by epautoconfig() called
-+			 * by gadget layer
-+			 */
-+			mEp->ep.maxpacket = (unsigned short)~0;
- 
- 			INIT_LIST_HEAD(&mEp->qh.queue);
- 			mEp->qh.ptr = dma_pool_alloc(udc->qh_pool, GFP_KERNEL,
-@@ -1488,6 +1493,7 @@ static int init_eps(struct ci13xxx *udc)
- 				else
- 					udc->ep0in = mEp;
- 
-+				mEp->ep.maxpacket = CTRL_PAYLOAD_MAX;
- 				continue;
- 			}
- 
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -805,7 +805,9 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(ADI_VID, ADI_GNICEPLUS_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+-	{ USB_DEVICE(MICROCHIP_VID, MICROCHIP_USB_BOARD_PID) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MICROCHIP_VID, MICROCHIP_USB_BOARD_PID,
++					USB_CLASS_VENDOR_SPEC,
++					USB_SUBCLASS_VENDOR_SPEC, 0x00) },
+ 	{ USB_DEVICE(JETI_VID, JETI_SPC1201_PID) },
+ 	{ USB_DEVICE(MARVELL_VID, MARVELL_SHEEVAPLUG_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -542,7 +542,10 @@
+ /*
+  * Microchip Technology, Inc.
+  *
+- * MICROCHIP_VID (0x04D8) and MICROCHIP_USB_BOARD_PID (0x000A) are also used by:
++ * MICROCHIP_VID (0x04D8) and MICROCHIP_USB_BOARD_PID (0x000A) are
++ * used by single function CDC ACM class based firmware demo
++ * applications.  The VID/PID has also been used in firmware
++ * emulating FTDI serial chips by:
+  * Hornby Elite - Digital Command Control Console
+  * http://www.hornby.com/hornby-dcc/controllers/
+  */
 
 
