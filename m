@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964941Ab2I1S50 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:57:26 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
+	id S1031747Ab2I1Txs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:53:48 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964910Ab2I1S5T (ORCPT
+	with ESMTP id S964938Ab2I1S5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:57:19 -0400
+	Fri, 28 Sep 2012 14:57:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lin Ming <ming.m.lin@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 071/262] ACPI / PM: Fix resource_lock dead lock in acpi_power_on_device
-Date: Fri, 28 Sep 2012 11:50:00 -0700
-Message-Id: <20120928183006.463084885@linuxfoundation.org>
+        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 073/262] mmc: mxs-mmc: fix deadlock in SDIO IRQ case
+Date: Fri, 28 Sep 2012 11:50:02 -0700
+Message-Id: <20120928183006.675007950@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,139 +29,93 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Lin Ming <ming.m.lin@intel.com>
+From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
 
-commit 40bf66ec9791f1452b90b82aadc3b6e6aee201f5 upstream.
+commit 1af36b2a993dddfa3d6860ec4879c9e8abc9b976 upstream.
 
-Commit 0090def("ACPI: Add interface to register/unregister device
-to/from power resources") used resource_lock to protect the devices list
-that relies on power resource. It caused a mutex dead lock, as below
+Release the lock before mmc_signal_sdio_irq is called by mxs_mmc_irq_handler.
 
-    acpi_power_on ---> lock resource_lock
-      __acpi_power_on
-        acpi_power_on_device
-          acpi_power_get_inferred_state
-            acpi_power_get_list_state ---> lock resource_lock
+Backtrace:
+[   79.660000] =============================================
+[   79.660000] [ INFO: possible recursive locking detected ]
+[   79.660000] 3.4.0-00009-g3e96082-dirty #11 Not tainted
+[   79.660000] ---------------------------------------------
+[   79.660000] swapper/0 is trying to acquire lock:
+[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026ea3c>] mxs_mmc_enable_sdio_irq+0x18/0xd4
+[   79.660000]
+[   79.660000] but task is already holding lock:
+[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
+[   79.660000]
+[   79.660000] other info that might help us debug this:
+[   79.660000]  Possible unsafe locking scenario:
+[   79.660000]
+[   79.660000]        CPU0
+[   79.660000]        ----
+[   79.660000]   lock(&(&host->lock)->rlock#2);
+[   79.660000]   lock(&(&host->lock)->rlock#2);
+[   79.660000]
+[   79.660000]  *** DEADLOCK ***
+[   79.660000]
+[   79.660000]  May be due to missing lock nesting notation
+[   79.660000]
+[   79.660000] 1 lock held by swapper/0:
+[   79.660000]  #0:  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
+[   79.660000]
+[   79.660000] stack backtrace:
+[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c005f9c0>] (__lock_acquire+0x1948/0x1d48)
+[   79.660000] [<c005f9c0>] (__lock_acquire+0x1948/0x1d48) from [<c005fea0>] (lock_acquire+0xe0/0xf8)
+[   79.660000] [<c005fea0>] (lock_acquire+0xe0/0xf8) from [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58)
+[   79.660000] [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
+[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
+[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
+[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
+[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
+[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
+[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
+[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
+[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
+[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
+[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
+[   79.660000] BUG: spinlock lockup on CPU#0, swapper/0
+[   79.660000]  lock: c398cb2c, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
+[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144)
+[   79.660000] [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144) from [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58)
+[   79.660000] [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
+[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
+[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
+[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
+[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
+[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
+[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
+[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
+[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
+[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
+[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
 
-This patch adds a new mutex "devices_lock" to protect the devices list
-and calls acpi_power_on_device in acpi_power_on, instead of
-__acpi_power_on, after the resource_lock is released.
-
-[rjw: Changed data type of a boolean variable to bool.]
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/power.c |   34 +++++++++++++++++++++++-----------
- 1 file changed, 23 insertions(+), 11 deletions(-)
+ drivers/mmc/host/mxs-mmc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/power.c
-+++ b/drivers/acpi/power.c
-@@ -103,6 +103,7 @@ struct acpi_power_resource {
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -278,11 +278,11 @@ static irqreturn_t mxs_mmc_irq_handler(i
+ 	writel(stat & MXS_MMC_IRQ_BITS,
+ 	       host->base + HW_SSP_CTRL1(host) + STMP_OFFSET_REG_CLR);
  
- 	/* List of devices relying on this power resource */
- 	struct acpi_power_resource_device *devices;
-+	struct mutex devices_lock;
- };
++	spin_unlock(&host->lock);
++
+ 	if ((stat & BM_SSP_CTRL1_SDIO_IRQ) && (stat & BM_SSP_CTRL1_SDIO_IRQ_EN))
+ 		mmc_signal_sdio_irq(host->mmc);
  
- static struct list_head acpi_power_resource_list;
-@@ -221,7 +222,6 @@ static void acpi_power_on_device(struct
- 
- static int __acpi_power_on(struct acpi_power_resource *resource)
- {
--	struct acpi_power_resource_device *device_list = resource->devices;
- 	acpi_status status = AE_OK;
- 
- 	status = acpi_evaluate_object(resource->device->handle, "_ON", NULL, NULL);
-@@ -234,19 +234,15 @@ static int __acpi_power_on(struct acpi_p
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Power resource [%s] turned on\n",
- 			  resource->name));
- 
--	while (device_list) {
--		acpi_power_on_device(device_list->device);
+-	spin_unlock(&host->lock);
 -
--		device_list = device_list->next;
--	}
--
- 	return 0;
- }
- 
- static int acpi_power_on(acpi_handle handle)
- {
- 	int result = 0;
-+	bool resume_device = false;
- 	struct acpi_power_resource *resource = NULL;
-+	struct acpi_power_resource_device *device_list;
- 
- 	result = acpi_power_get_context(handle, &resource);
- 	if (result)
-@@ -262,10 +258,25 @@ static int acpi_power_on(acpi_handle han
- 		result = __acpi_power_on(resource);
- 		if (result)
- 			resource->ref_count--;
-+		else
-+			resume_device = true;
- 	}
- 
- 	mutex_unlock(&resource->resource_lock);
- 
-+	if (!resume_device)
-+		return result;
-+
-+	mutex_lock(&resource->devices_lock);
-+
-+	device_list = resource->devices;
-+	while (device_list) {
-+		acpi_power_on_device(device_list->device);
-+		device_list = device_list->next;
-+	}
-+
-+	mutex_unlock(&resource->devices_lock);
-+
- 	return result;
- }
- 
-@@ -351,7 +362,7 @@ static void __acpi_power_resource_unregi
- 	if (acpi_power_get_context(res_handle, &resource))
- 		return;
- 
--	mutex_lock(&resource->resource_lock);
-+	mutex_lock(&resource->devices_lock);
- 	prev = NULL;
- 	curr = resource->devices;
- 	while (curr) {
-@@ -368,7 +379,7 @@ static void __acpi_power_resource_unregi
- 		prev = curr;
- 		curr = curr->next;
- 	}
--	mutex_unlock(&resource->resource_lock);
-+	mutex_unlock(&resource->devices_lock);
- }
- 
- /* Unlink dev from all power resources in _PR0 */
-@@ -409,10 +420,10 @@ static int __acpi_power_resource_registe
- 
- 	power_resource_device->device = powered_device;
- 
--	mutex_lock(&resource->resource_lock);
-+	mutex_lock(&resource->devices_lock);
- 	power_resource_device->next = resource->devices;
- 	resource->devices = power_resource_device;
--	mutex_unlock(&resource->resource_lock);
-+	mutex_unlock(&resource->devices_lock);
- 
- 	return 0;
- }
-@@ -715,6 +726,7 @@ static int acpi_power_add(struct acpi_de
- 
- 	resource->device = device;
- 	mutex_init(&resource->resource_lock);
-+	mutex_init(&resource->devices_lock);
- 	strcpy(resource->name, device->pnp.bus_id);
- 	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
- 	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
+ 	if (stat & BM_SSP_CTRL1_RESP_TIMEOUT_IRQ)
+ 		cmd->error = -ETIMEDOUT;
+ 	else if (stat & BM_SSP_CTRL1_RESP_ERR_IRQ)
 
 
