@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab2I1O1a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:27:30 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:43118 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757365Ab2I1O13 (ORCPT
+	id S932156Ab2I1O1q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:27:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53785 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932117Ab2I1O1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:27:29 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Id6f1izz1202h1d1ah1d2ahzz8275bh15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
-X-WSS-ID: 0MB2DHO-01-679-02
-X-M-MSG: 
-Date: Fri, 28 Sep 2012 16:27:26 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH] AMD, iommu: Fix features reporting
-Message-ID: <20120928142726.GD4009@amd.com>
-References: <1348842146-8707-1-git-send-email-bp@amd64.org>
+	Fri, 28 Sep 2012 10:27:44 -0400
+Date: Fri, 28 Sep 2012 10:27:43 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Dan Carpenter <dan.carpenter@oracle.com>
+cc: Gabor Takacs <gbrtakacs@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: PROBLEM: kernel 3.6.rc6 bug report (usb 3.0 external hard drive
+ problem)
+In-Reply-To: <20120928141639.GH5368@mwanda>
+Message-ID: <Pine.LNX.4.44L0.1209281026470.1518-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1348842146-8707-1-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 04:22:26PM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> When the AMD IOMMU doesn't have extended features, an empty line
-> gets issued in dmesg like so:
-> 
-> [    3.061417] AMD-Vi: Found IOMMU at 0000:00:00.2 cap 0x40
-> [    3.066757] 							<---
-> [    3.068294] pci 0000:00:00.2: irq 72 for MSI/MSI-X
-> [    3.081213] AMD-Vi: Lazy IO/TLB flushing enabled
-> 
-> Fix it.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+On Fri, 28 Sep 2012, Dan Carpenter wrote:
 
-Applied, thanks :)
+> I've filed a bug for this.
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=48061
+> 
+> Probably the other information which would be useful is the output
+> from lsusb.  Anyway, I've added the USB list to the CC.
+> 
+> regards,
+> dan carpenter
+> 
+> On Sun, Sep 23, 2012 at 05:33:44PM +0200, Gabor Takacs wrote:
+> > Bug report for kernel version 3.6.rc6
+> > 
+> > Content of message:
+> > 
+> > - One-line description
+> > - Full description
+> > - Keywords
+> > - CPU info
+> > - Modules info
+> > - Kernel version
+> > - Loaded driver and hardware information
+> > - PCI information
+> > - SCSI information
+> > 
+> > One-line description: Western Digital My Passport USB 3.0 hard drive not
+> > handled by kernel
+> > 
+> > Full description: under 3.6.rc6 kernel on an Asus Zenbook Prime UX21A,
+> > when plugging in my
+> > Western Digital My Passport USB 3.0 hard drive, the system does not
+> > mount it. It worked with
+> > previous (3.4.x) kernels.
 
--- 
-AMD Operating System Research Center
+If this failure is reliable then git bisection would be a good way to 
+pin down the source of the problem.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Alan Stern
 
