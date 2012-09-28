@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab2I1K1g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 06:27:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56848 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab2I1K1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 06:27:35 -0400
-Date: Fri, 28 Sep 2012 11:27:28 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
+	id S1756995Ab2I1K3B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 06:29:01 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:42353 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751729Ab2I1K26 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 06:28:58 -0400
+From: yongd <yongd@marvell.com>
+To: Chris Ball <cjb@laptop.org>, Anton Vorontsov <anton.vorontsov@linaro.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: CMA broken in next-20120926
-Message-ID: <20120928102728.GN3429@suse.de>
-References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
- <20120927151159.4427fc8f.akpm@linux-foundation.org>
- <20120928054330.GA27594@bbox>
- <20120928083722.GM3429@suse.de>
- <50656459.70309@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <50656459.70309@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Shawn Guo <shawn.guo@linaro.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Daniel Drake <dsd@laptop.org>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Wilson Callan <wilson.callan@savantsystems.com>,
+        Ben Dooks <ben-linux@fluff.org>
+Cc: zhangfei.gao@marvell.com, kevin.liu@marvell.com, jlfu@marvell.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yongd <yongd@marvell.com>
+Subject: [PATCH 1/3] mmc: esdhc: enable polling to detect card by itself
+Date: Fri, 28 Sep 2012 18:28:31 +0800
+Message-Id: <1348828113-19668-2-git-send-email-yongd@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348828113-19668-1-git-send-email-yongd@marvell.com>
+References: <1348828113-19668-1-git-send-email-yongd@marvell.com>
+X-OriginalArrivalTime: 28 Sep 2012 10:28:35.0509 (UTC) FILETIME=[041FB650:01CD9D64]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 11:48:25AM +0300, Peter Ujfalusi wrote:
-> Hi,
-> 
-> On 09/28/2012 11:37 AM, Mel Gorman wrote:
-> >> I hope this patch fixes the bug. If this patch fixes the problem
-> >> but has some problem about description or someone has better idea,
-> >> feel free to modify and resend to akpm, Please.
-> >>
-> > 
-> > A full revert is overkill. Can the following patch be tested as a
-> > potential replacement please?
-> > 
-> > ---8<---
-> > mm: compaction: Iron out isolate_freepages_block() and isolate_freepages_range() -fix1
-> > 
-> > CMA is reported to be broken in next-20120926. Minchan Kim pointed out
-> > that this was due to nr_scanned != total_isolated in the case of CMA
-> > because PageBuddy pages are one scan but many isolations in CMA. This
-> > patch should address the problem.
-> > 
-> > This patch is a fix for
-> > mm-compaction-acquire-the-zone-lock-as-late-as-possible-fix-2.patch
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> 
-> linux-next + this patch alone also works for me.
-> 
-> Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+In the current code logic, sdhci_add_host() will enable the polling
+method (set MMC_CAP_NEEDS_POLL) for a removable card (MMC_CAP_
+NONREMOVABLE is not set) whose host's internal card detection method
+is disabled for some reason (SDHCI_QUIRK_BROKEN_CARD_DETECTION is set).
 
-Thanks Peter. I expect it also works for Thierry as I expect you were
-suffering the same problem but obviously confirmation of that would be nice.
+However, this is improper since we can have some other card detection
+methods besides host internal card detection and polling method. For
+example, if the card detection type is ESDHC_CD_GPIO (external gpio pin
+for CD), we will keep SDHCI_QUIRK_BROKEN_CARD_DETECTION set. This is right.
+But, just as above said, sdhci_add_host() will also enable polling for such
+a card. This is redundant.
 
-Andrew, can you pick up this version of the patch instead of Minchan's
-revert?
+On the other hand, for the card with ESDHC_CD_NONE detection type(no CD, neither
+controller nor gpio, so use polling), we currently rely on sdhci_add_host() to
+enable polling for us.
 
-Thanks Minchan for pointing out the obvious flaw in "mm: compaction:
-Iron out isolate_freepages_block() and isolate_freepages_range()".
+Here proposed a solution for such an embarrassing case. 1st, this patch will
+de-couple polling enabling with sdhci_add_host() by doing this in host driver
+itself, just as some other vendors. 2nd, one more patch will remove such improper
+MMC_CAP_NEEDS_POLL enabling in sdhci_add_host().
 
+Change-Id: Ia7525009d8fd188e3f0169f225e4a76ff9e94b47
+Signed-off-by: yongd <yongd@marvell.com>
+---
+ drivers/mmc/host/sdhci-esdhc-imx.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
+index e23f813..f70079c 100644
+--- a/drivers/mmc/host/sdhci-esdhc-imx.c
++++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -569,6 +569,7 @@ static int __devinit sdhci_esdhc_imx_probe(struct platform_device *pdev)
+ 		break;
+ 
+ 	case ESDHC_CD_NONE:
++		host->mmc->caps = MMC_CAP_NEEDS_POLL;
+ 		break;
+ 	}
+ 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
