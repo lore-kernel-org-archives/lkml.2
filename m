@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab2I1MfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:35:09 -0400
-Received: from antcom.de ([188.40.178.216]:37103 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757810Ab2I1MfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:35:06 -0400
-Message-ID: <50659978.8010003@antcom.de>
-Date: Fri, 28 Sep 2012 14:35:04 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1757850Ab2I1Mhq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:37:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44855 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757725Ab2I1Mhp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 08:37:45 -0400
+Date: Fri, 28 Sep 2012 13:37:43 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org
+Subject: Re: [GIT PULL] MOP500 Audio patches due for ASoC
+Message-ID: <20120928123743.GE30869@opensource.wolfsonmicro.com>
+References: <1348142956-1872-1-git-send-email-lee.jones@linaro.org>
+ <20120920125618.GP17666@opensource.wolfsonmicro.com>
+ <20120927150119.GD1176@gmail.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, Bill Gatliff <bgat@billgatliff.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
-References: <1348780923-27428-1-git-send-email-stigge@antcom.de> <CACRpkdZ+1ffsMDRZXYb5RRndoXstj_QHvHOpeikRY0bas72dKQ@mail.gmail.com> <50657356.4010801@antcom.de> <CACRpkdbEgBqSdZmebw+PBMo9G_Y24mgz17=dp11VrbKf5fKyDQ@mail.gmail.com>
-In-Reply-To: <CACRpkdbEgBqSdZmebw+PBMo9G_Y24mgz17=dp11VrbKf5fKyDQ@mail.gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120927150119.GD1176@gmail.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 27, 2012 at 04:01:19PM +0100, Lee Jones wrote:
 
-On 09/28/2012 01:34 PM, Linus Walleij wrote:
->> Or some kind of new character device node?
-> 
-> Yes, I don't know if we should create /dev/gpioN or /dev/pinctrlN for
-> this, and add GPIO functions to pinctrl (while wrapping it in the
-> gpiolib to aid migration) the latter would encourage users of the
-> new ABI to switch to writing pinctrl drivers.
+> Is there any reason why the following patches didn't make it into -next?
 
-Will have a look at this.
+> ASoC: codecs: Enable AB8500 CODEC for Device Tree
+> ASoC: Ux500: Enable ux500 MSP driver for Device Tree
 
->> Otherwise, I need to think about leaving out the sysfs for this purpose.
-> 
-> Do you really need it?
-
-In more that half of the cases, I needed userspace access. So I'm quite
-interested in it.
-
-Thanks for your notes.
-
-Roland
+They appear to be there, there's certainly no reason why they'd be any
+different to the rest of the series.
