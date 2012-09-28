@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423296Ab2I1V1n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:27:43 -0400
-Received: from jdl.com ([208.123.74.7]:58684 "EHLO jdl.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423266Ab2I1V1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:27:40 -0400
-X-Greylist: delayed 2845 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 17:27:40 EDT
-Message-Id: <E1THhLo-00073d-FY@jdl.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-cc: David Gibson <david@gibson.dropbear.id.au>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [RFC PATCH 0/2] dtc: enable use of pre-processor
-In-reply-to: <1348860731-20868-1-git-send-email-swarren@wwwdotorg.org>
-References: <1348860731-20868-1-git-send-email-swarren@wwwdotorg.org>
-Comments: In-reply-to Stephen Warren <swarren@wwwdotorg.org>
-   message dated "Fri, 28 Sep 2012 13:32:09 -0600."
-Date: Fri, 28 Sep 2012 15:39:56 -0500
-From: Jon Loeliger <jdl@jdl.com>
-X-Spam-Score: -0.0
+	id S1423307Ab2I1V2P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:28:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964881Ab2I1U27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 16:28:59 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Moiz Sonasath <m-sonasath@ti.com>, Ruchika Kharwar <ruchika@ti.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 138/218] usb: host: xhci: fix compilation error for non-PCI based stacks
+Date: Fri, 28 Sep 2012 13:15:55 -0700
+Message-Id: <20120928201517.326925492@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.1.428.g652398a
+In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
+References: <20120928201501.208384923@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> I'll post a patch to update the in-kernel dtc to the upstream dtc as
-> soon as one final dtc patch has been applied, and this series will then
-> depend on that patch.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-And that patch, I think, has just been applied to the 
-upstream DTC repo at git.jdl.com:
+------------------
 
-    commit 317a5d92bc357aba2c993ee78b4c089b7539fcc6
-    Author: Stephen Warren <swarren@nvidia.com>
-    Date:   Fri Sep 28 12:39:22 2012 -0600
+From: Moiz Sonasath <m-sonasath@ti.com>
 
-    dtc: zero out new label objects
-    
-    Without this, new->deleted may be left set to some random value, which
-    may then cause future label references to fail to locate the label. The
-    code that allocates properties and nodes already contains the equivalent
-    memset().
-    
-    Signed-off-by: Stephen Warren <swarren@nvidia.com>
+commit 296365781903226a3fb8758901eaeec09d2798e4 upstream.
 
-HTH,
-jdl
+For non PCI-based stacks, this function call
+usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
+made from xhci_shutdown is not applicable.
+
+Ideally, we wouldn't have any PCI-specific code on
+a generic driver such as the xHCI stack, but it looks
+like we should just stub usb_disable_xhci_ports() out
+for non-PCI devices.
+
+[ balbi@ti.com: slight improvement to commit log ]
+
+This patch should be backported to kernels as old as 3.0, since the
+commit it fixes (e95829f474f0db3a4d940cae1423783edd966027 "xhci: Switch
+PPT ports to EHCI on shutdown.") was marked for stable.
+
+Signed-off-by: Moiz Sonasath<m-sonasath@ti.com>
+Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/host/pci-quirks.h |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/usb/host/pci-quirks.h
++++ b/drivers/usb/host/pci-quirks.h
+@@ -15,6 +15,7 @@ void usb_disable_xhci_ports(struct pci_d
+ static inline void usb_amd_quirk_pll_disable(void) {}
+ static inline void usb_amd_quirk_pll_enable(void) {}
+ static inline void usb_amd_dev_put(void) {}
++static inline void usb_disable_xhci_ports(struct pci_dev *xhci_pdev) {}
+ #endif  /* CONFIG_PCI */
+ 
+ #endif  /*  __LINUX_USB_PCI_QUIRKS_H  */
+
+
