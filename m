@@ -1,79 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033357Ab2I1VrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:47:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3087 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030711Ab2I1VrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:47:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,504,1344236400"; 
-   d="scan'208";a="215728500"
-Date: Fri, 28 Sep 2012 14:47:09 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Gabor Takacs <gbrtakacs@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: PROBLEM: kernel 3.6.rc6 bug report (usb 3.0 external hard drive
- problem)
-Message-ID: <20120928214709.GA7260@xanatos>
-References: <20120928141639.GH5368@mwanda>
- <Pine.LNX.4.44L0.1209281026470.1518-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1209281026470.1518-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1032246Ab2I1UYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:24:47 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032225Ab2I1UYi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 16:24:38 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 059/218] perf_event: Switch to internal refcount, fix race with close()
+Date: Fri, 28 Sep 2012 13:14:36 -0700
+Message-Id: <20120928201508.312569834@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.1.428.g652398a
+In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
+References: <20120928201501.208384923@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 10:27:43AM -0400, Alan Stern wrote:
-> On Fri, 28 Sep 2012, Dan Carpenter wrote:
-> 
-> > I've filed a bug for this.
-> > 
-> > https://bugzilla.kernel.org/show_bug.cgi?id=48061
-> > 
-> > Probably the other information which would be useful is the output
-> > from lsusb.  Anyway, I've added the USB list to the CC.
-> > 
-> > regards,
-> > dan carpenter
-> > 
-> > On Sun, Sep 23, 2012 at 05:33:44PM +0200, Gabor Takacs wrote:
-> > > Bug report for kernel version 3.6.rc6
-> > > 
-> > > Content of message:
-> > > 
-> > > - One-line description
-> > > - Full description
-> > > - Keywords
-> > > - CPU info
-> > > - Modules info
-> > > - Kernel version
-> > > - Loaded driver and hardware information
-> > > - PCI information
-> > > - SCSI information
-> > > 
-> > > One-line description: Western Digital My Passport USB 3.0 hard drive not
-> > > handled by kernel
-> > > 
-> > > Full description: under 3.6.rc6 kernel on an Asus Zenbook Prime UX21A,
-> > > when plugging in my
-> > > Western Digital My Passport USB 3.0 hard drive, the system does not
-> > > mount it. It worked with
-> > > previous (3.4.x) kernels.
-> 
-> If this failure is reliable then git bisection would be a good way to 
-> pin down the source of the problem.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-This looks awfully like Don Zickus' issue with his WD hard drive:
+------------------
 
-http://marc.info/?l=linux-usb&m=134886294107752&w=2
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-But LPM was added in 3.4, so I don't know why 3.4.x kernels worked.
-Gabor, does the patch in that mail fix your issue with the WD drive?
+commit a6fa941d94b411bbd2b6421ffbde6db3c93e65ab upstream.
 
-Sarah Sharp
+Don't mess with file refcounts (or keep a reference to file, for
+that matter) in perf_event.  Use explicit refcount of its own
+instead.  Deal with the race between the final reference to event
+going away and new children getting created for it by use of
+atomic_long_inc_not_zero() in inherit_event(); just have the
+latter free what it had allocated and return NULL, that works
+out just fine (children of siblings of something doomed are
+created as singletons, same as if the child of leader had been
+created and immediately killed).
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20120820135925.GG23464@ZenIV.linux.org.uk
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ include/linux/perf_event.h |    2 -
+ kernel/events/core.c       |   62 +++++++++++++++++++++++----------------------
+ 2 files changed, 34 insertions(+), 30 deletions(-)
+
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -925,7 +925,7 @@ struct perf_event {
+ 	struct hw_perf_event		hw;
+ 
+ 	struct perf_event_context	*ctx;
+-	struct file			*filp;
++	atomic_long_t			refcount;
+ 
+ 	/*
+ 	 * These accumulate total time (in nanoseconds) that children
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2929,12 +2929,12 @@ EXPORT_SYMBOL_GPL(perf_event_release_ker
+ /*
+  * Called when the last reference to the file is gone.
+  */
+-static int perf_release(struct inode *inode, struct file *file)
++static void put_event(struct perf_event *event)
+ {
+-	struct perf_event *event = file->private_data;
+ 	struct task_struct *owner;
+ 
+-	file->private_data = NULL;
++	if (!atomic_long_dec_and_test(&event->refcount))
++		return;
+ 
+ 	rcu_read_lock();
+ 	owner = ACCESS_ONCE(event->owner);
+@@ -2969,7 +2969,13 @@ static int perf_release(struct inode *in
+ 		put_task_struct(owner);
+ 	}
+ 
+-	return perf_event_release_kernel(event);
++	perf_event_release_kernel(event);
++}
++
++static int perf_release(struct inode *inode, struct file *file)
++{
++	put_event(file->private_data);
++	return 0;
+ }
+ 
+ u64 perf_event_read_value(struct perf_event *event, u64 *enabled, u64 *running)
+@@ -3222,7 +3228,7 @@ unlock:
+ 
+ static const struct file_operations perf_fops;
+ 
+-static struct perf_event *perf_fget_light(int fd, int *fput_needed)
++static struct file *perf_fget_light(int fd, int *fput_needed)
+ {
+ 	struct file *file;
+ 
+@@ -3236,7 +3242,7 @@ static struct perf_event *perf_fget_ligh
+ 		return ERR_PTR(-EBADF);
+ 	}
+ 
+-	return file->private_data;
++	return file;
+ }
+ 
+ static int perf_event_set_output(struct perf_event *event,
+@@ -3268,19 +3274,21 @@ static long perf_ioctl(struct file *file
+ 
+ 	case PERF_EVENT_IOC_SET_OUTPUT:
+ 	{
++		struct file *output_file = NULL;
+ 		struct perf_event *output_event = NULL;
+ 		int fput_needed = 0;
+ 		int ret;
+ 
+ 		if (arg != -1) {
+-			output_event = perf_fget_light(arg, &fput_needed);
+-			if (IS_ERR(output_event))
+-				return PTR_ERR(output_event);
++			output_file = perf_fget_light(arg, &fput_needed);
++			if (IS_ERR(output_file))
++				return PTR_ERR(output_file);
++			output_event = output_file->private_data;
+ 		}
+ 
+ 		ret = perf_event_set_output(event, output_event);
+ 		if (output_event)
+-			fput_light(output_event->filp, fput_needed);
++			fput_light(output_file, fput_needed);
+ 
+ 		return ret;
+ 	}
+@@ -5920,6 +5928,7 @@ perf_event_alloc(struct perf_event_attr
+ 
+ 	mutex_init(&event->mmap_mutex);
+ 
++	atomic_long_set(&event->refcount, 1);
+ 	event->cpu		= cpu;
+ 	event->attr		= *attr;
+ 	event->group_leader	= group_leader;
+@@ -6230,12 +6239,12 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		return event_fd;
+ 
+ 	if (group_fd != -1) {
+-		group_leader = perf_fget_light(group_fd, &fput_needed);
+-		if (IS_ERR(group_leader)) {
+-			err = PTR_ERR(group_leader);
++		group_file = perf_fget_light(group_fd, &fput_needed);
++		if (IS_ERR(group_file)) {
++			err = PTR_ERR(group_file);
+ 			goto err_fd;
+ 		}
+-		group_file = group_leader->filp;
++		group_leader = group_file->private_data;
+ 		if (flags & PERF_FLAG_FD_OUTPUT)
+ 			output_event = group_leader;
+ 		if (flags & PERF_FLAG_FD_NO_GROUP)
+@@ -6370,7 +6379,6 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		put_ctx(gctx);
+ 	}
+ 
+-	event->filp = event_file;
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	mutex_lock(&ctx->mutex);
+ 
+@@ -6460,7 +6468,6 @@ perf_event_create_kernel_counter(struct
+ 		goto err_free;
+ 	}
+ 
+-	event->filp = NULL;
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	mutex_lock(&ctx->mutex);
+ 	perf_install_in_context(ctx, event, cpu);
+@@ -6509,7 +6516,7 @@ static void sync_child_event(struct perf
+ 	 * Release the parent event, if this was the last
+ 	 * reference to it.
+ 	 */
+-	fput(parent_event->filp);
++	put_event(parent_event);
+ }
+ 
+ static void
+@@ -6585,9 +6592,8 @@ static void perf_event_exit_task_context
+ 	 *
+ 	 *   __perf_event_exit_task()
+ 	 *     sync_child_event()
+-	 *       fput(parent_event->filp)
+-	 *         perf_release()
+-	 *           mutex_lock(&ctx->mutex)
++	 *       put_event()
++	 *         mutex_lock(&ctx->mutex)
+ 	 *
+ 	 * But since its the parent context it won't be the same instance.
+ 	 */
+@@ -6655,7 +6661,7 @@ static void perf_free_event(struct perf_
+ 	list_del_init(&event->child_list);
+ 	mutex_unlock(&parent->child_mutex);
+ 
+-	fput(parent->filp);
++	put_event(parent);
+ 
+ 	perf_group_detach(event);
+ 	list_del_event(event, ctx);
+@@ -6735,6 +6741,12 @@ inherit_event(struct perf_event *parent_
+ 				           NULL, NULL);
+ 	if (IS_ERR(child_event))
+ 		return child_event;
++
++	if (!atomic_long_inc_not_zero(&parent_event->refcount)) {
++		free_event(child_event);
++		return NULL;
++	}
++
+ 	get_ctx(child_ctx);
+ 
+ 	/*
+@@ -6776,14 +6788,6 @@ inherit_event(struct perf_event *parent_
+ 	raw_spin_unlock_irqrestore(&child_ctx->lock, flags);
+ 
+ 	/*
+-	 * Get a reference to the parent filp - we will fput it
+-	 * when the child event exits. This is safe to do because
+-	 * we are in the parent and we know that the filp still
+-	 * exists and has a nonzero count:
+-	 */
+-	atomic_long_inc(&parent_event->filp->f_count);
+-
+-	/*
+ 	 * Link this into the parent event's child list
+ 	 */
+ 	WARN_ON_ONCE(parent_event->ctx->parent_ctx);
+
+
