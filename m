@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032322Ab2I1UZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:25:20 -0400
+	id S1033330Ab2I1VpG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:45:06 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031742Ab2I1UZG (ORCPT
+	with ESMTP id S1032324Ab2I1UZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:25:06 -0400
+	Fri, 28 Sep 2012 16:25:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>, Fengguang Wu <fengguang.wu@intel.com>,
-        Michael Cree <mcree@orcon.net.nz>, Matt Turner <mattst88@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 068/218] Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
-Date: Fri, 28 Sep 2012 13:14:45 -0700
-Message-Id: <20120928201509.332966277@linuxfoundation.org>
+        Robin Hill <robin@robinhill.me.uk>,
+        John Drescher <drescherjm@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [ 073/218] md/raid5: fix calculate of degraded when a replacement becomes active.
+Date: Fri, 28 Sep 2012 13:14:50 -0700
+Message-Id: <20120928201509.969336506@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,51 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: NeilBrown <neilb@suse.de>
 
-commit 67a806d9499353fabd5b5ff07337f3aa88a1c3ba upstream.
+commit e5c86471f933608db5d43679f84cb4346c32033e upstream.
 
-The following build error occurred during an alpha build:
+When a replacement device becomes active, we mark the device that it
+replaces as 'faulty' so that it can subsequently get removed.
+However 'calc_degraded' only pays attention to the primary device, not
+the replacement, so the array appears to become degraded, which is
+wrong.
 
-  net/core/sock.c:274:36: error: initializer element is not constant
+So teach 'calc_degraded' to consider any replacement if a primary
+device is faulty.
 
-Dave Anglin says:
-> Here is the line in sock.i:
->
-> struct static_key memalloc_socks = ((struct static_key) { .enabled =
-> ((atomic_t) { (0) }) });
+This is suitable for -stable as an incorrect 'degraded' value can
+confuse md and could lead to data corruption.
+This is only relevant for 3.3 and later.
 
-The above line contains two compound literals.  It also uses a designated
-initializer to initialize the field enabled.  A compound literal is not a
-constant expression.
-
-The location of the above statement isn't fully clear, but if a compound
-literal occurs outside the body of a function, the initializer list must
-consist of constant expressions.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-Acked-by: Matt Turner <mattst88@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Robin Hill <robin@robinhill.me.uk>
+Reported-by: John Drescher <drescherjm@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/alpha/include/asm/atomic.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/alpha/include/asm/atomic.h
-+++ b/arch/alpha/include/asm/atomic.h
-@@ -14,8 +14,8 @@
-  */
- 
- 
--#define ATOMIC_INIT(i)		( (atomic_t) { (i) } )
--#define ATOMIC64_INIT(i)	( (atomic64_t) { (i) } )
-+#define ATOMIC_INIT(i)		{ (i) }
-+#define ATOMIC64_INIT(i)	{ (i) }
- 
- #define atomic_read(v)		(*(volatile int *)&(v)->counter)
- #define atomic64_read(v)	(*(volatile long *)&(v)->counter)
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -380,6 +380,8 @@ static int calc_degraded(struct r5conf *
+ 	degraded = 0;
+ 	for (i = 0; i < conf->previous_raid_disks; i++) {
+ 		struct md_rdev *rdev = rcu_dereference(conf->disks[i].rdev);
++		if (rdev && test_bit(Faulty, &rdev->flags))
++			rdev = rcu_dereference(conf->disks[i].replacement);
+ 		if (!rdev || test_bit(Faulty, &rdev->flags))
+ 			degraded++;
+ 		else if (test_bit(In_sync, &rdev->flags))
+@@ -404,6 +406,8 @@ static int calc_degraded(struct r5conf *
+ 	degraded2 = 0;
+ 	for (i = 0; i < conf->raid_disks; i++) {
+ 		struct md_rdev *rdev = rcu_dereference(conf->disks[i].rdev);
++		if (rdev && test_bit(Faulty, &rdev->flags))
++			rdev = rcu_dereference(conf->disks[i].replacement);
+ 		if (!rdev || test_bit(Faulty, &rdev->flags))
+ 			degraded2++;
+ 		else if (test_bit(In_sync, &rdev->flags))
 
 
