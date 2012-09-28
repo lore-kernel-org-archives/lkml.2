@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031904Ab2I1Utq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:49:46 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37125 "EHLO
+	id S1161088Ab2I1UuA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:50:00 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41274 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1945959Ab2I1UtB (ORCPT
+	by vger.kernel.org with ESMTP id S1945957Ab2I1UtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:49:01 -0400
-X-Sasl-enc: hlTkKNVuu9B9W+CiXLnbgm5YipsSQpJMMZjavPTSsTP6 1348865340
+	Fri, 28 Sep 2012 16:49:00 -0400
+X-Sasl-enc: 7pMwCWFG1/BLGKpPZWICpF4pfbhFOIfZs9qY0rRzxn4F 1348865339
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Cooper <acooper@gmail.com>, Arindam Nath <arindam.nath@amd.com>,
-        Philip Rakity <prakity@marvell.com>,
-        Girish K S <girish.shivananjappa@linaro.org>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        Subhash Jadavani <subhashj@codeaurora.org>,
         Chris Ball <cjb@laptop.org>
-Subject: [ 120/127] mmc: Prevent 1.8V switch for SD hosts that dont support UHS modes.
-Date: Fri, 28 Sep 2012 13:34:53 -0700
-Message-Id: <20120928203059.932060482@linuxfoundation.org>
+Subject: [ 119/127] mmc: sd: Handle SD3.0 cards not supporting UHS-I bus speed mode
+Date: Fri, 28 Sep 2012 13:34:52 -0700
+Message-Id: <20120928203059.822523738@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -30,43 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Cooper <acooper@gmail.com>
+From: Subhash Jadavani <subhashj@codeaurora.org>
 
-commit 4188bba0e9e7ba58d231b528df495666f2742b74 upstream.
+commit f2815f68dabbb373fd1c9f0fd4a609d486697c2b upstream.
 
-The driver should not try to switch to 1.8V when the SD 3.0 host
-controller does not have any UHS capabilities bits set (SDR50, DDR50
-or SDR104). See page 72 of "SD Specifications Part A2 SD Host
-Controller Simplified Specification Version 3.00" under
-"1.8V Signaling Enable". Instead of setting SDR12 and SDR25 in the host
-capabilities data structure for all V3.0 host controllers, only set them
-if SDR104, SDR50 or DDR50 is set in the host capabilities register. This
-will prevent the switch to 1.8V later.
+Here is Essential conditions to indicate Version 3.00 Card
+(SD_SPEC=2 and SD_SPEC3=1) :
+(1) The card shall support CMD6
+(2) The card shall support CMD8
+(3) The card shall support CMD42
+(4) User area capacity shall be up to 2GB (SDSC) or 32GB (SDHC)
+    User area capacity shall be more than or equal to 32GB and
+    up to 2TB (SDXC)
+(5) Speed Class shall be supported (SDHC or SDXC)
 
-Signed-off-by: Al Cooper <acooper@gmail.com>
-Acked-by: Arindam Nath <arindam.nath@amd.com>
-Acked-by: Philip Rakity <prakity@marvell.com>
-Acked-by: Girish K S <girish.shivananjappa@linaro.org>
+So even if SD card doesn't support any of the newly defined
+UHS-I bus speed mode, it can advertise itself as SD3.0 cards
+as long as it supports all the essential conditions of
+SD3.0 cards. Given this, these type of cards should atleast
+run in High Speed mode @50MHZ if it supports HS.
+
+But current initialization sequence for SD3.0 cards is
+such that these non-UHS-I SD3.0 cards runs in Default
+Speed mode @25MHz.
+
+This patch makes sure that these non-UHS-I SD3.0 cards run
+in High Speed Mode @50MHz.
+
+Tested this patch with SanDisk Extreme SDHC 8GB Class 10 card.
+
+Reported-by: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Signed-off-by: Subhash Jadavani <subhashj@codeaurora.org>
 Signed-off-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/mmc/core/sd.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2515,8 +2515,9 @@ int sdhci_add_host(struct sdhci_host *ho
- 	    mmc_card_is_removable(mmc))
- 		mmc->caps |= MMC_CAP_NEEDS_POLL;
+--- a/drivers/mmc/core/sd.c
++++ b/drivers/mmc/core/sd.c
+@@ -306,6 +306,9 @@ static int mmc_read_switch(struct mmc_ca
+ 		goto out;
+ 	}
  
--	/* UHS-I mode(s) supported by the host controller. */
--	if (host->version >= SDHCI_SPEC_300)
-+	/* Any UHS-I mode in caps implies SDR12 and SDR25 support. */
-+	if (caps[1] & (SDHCI_SUPPORT_SDR104 | SDHCI_SUPPORT_SDR50 |
-+		       SDHCI_SUPPORT_DDR50))
- 		mmc->caps |= MMC_CAP_UHS_SDR12 | MMC_CAP_UHS_SDR25;
++	if (status[13] & UHS_SDR50_BUS_SPEED)
++		card->sw_caps.hs_max_dtr = 50000000;
++
+ 	if (card->scr.sda_spec3) {
+ 		card->sw_caps.sd3_bus_mode = status[13];
  
- 	/* SDR104 supports also implies SDR50 support */
+@@ -348,9 +351,6 @@ static int mmc_read_switch(struct mmc_ca
+ 		}
+ 
+ 		card->sw_caps.sd3_curr_limit = status[7];
+-	} else {
+-		if (status[13] & 0x02)
+-			card->sw_caps.hs_max_dtr = 50000000;
+ 	}
+ 
+ out:
 
 
