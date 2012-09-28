@@ -1,115 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025Ab2I1IFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 04:05:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52404 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab2I1IFL (ORCPT
+	id S1757034Ab2I1IFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 04:05:49 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:56887 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755484Ab2I1IF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 04:05:11 -0400
-Message-ID: <50655A29.1050303@gmail.com>
-Date: Fri, 28 Sep 2012 16:04:57 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 28 Sep 2012 04:05:29 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <alan@lxorguk.ukuu.org.uk>
+Cc: Arun Murthy <arun.murthy@stericsson.com>
+Subject: [PATCHv4 0/4] modem_shm: U8500 SHaRed Memory driver(SHRM)
+Date: Fri, 28 Sep 2012 13:35:00 +0530
+Message-ID: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.4.3
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] memory_hotplug: Don't modify the zone_start_pfn outside
- of zone_span_writelock()
-References: <1348728470-5580-1-git-send-email-laijs@cn.fujitsu.com> <1348728470-5580-4-git-send-email-laijs@cn.fujitsu.com> <5064525E.5080901@gmail.com> <506551CF.9090009@cn.fujitsu.com>
-In-Reply-To: <506551CF.9090009@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 03:29 PM, Lai Jiangshan wrote:
-> Hi, Chen,
->
-> On 09/27/2012 09:19 PM, Ni zhan Chen wrote:
->> On 09/27/2012 02:47 PM, Lai Jiangshan wrote:
->>> The __add_zone() maybe call sleep-able init_currently_empty_zone()
->>> to init wait_table,
->>>
->>> But this function also modifies the zone_start_pfn without any lock.
->>> It is bugy.
->>>
->>> So we move this modification out, and we ensure the modification
->>> of zone_start_pfn is only done with zone_span_writelock() held or in booting.
->>>
->>> Since zone_start_pfn is not modified by init_currently_empty_zone()
->>> grow_zone_span() needs to check zone_start_pfn before update it.
->>>
->>> CC: Mel Gorman <mel@csn.ul.ie>
->>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
->>> Reported-by: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
->>> Tested-by: Wen Congyang <wency@cn.fujitsu.com>
->>> ---
->>>    mm/memory_hotplug.c |    2 +-
->>>    mm/page_alloc.c     |    3 +--
->>>    2 files changed, 2 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->>> index b62d429b..790561f 100644
->>> --- a/mm/memory_hotplug.c
->>> +++ b/mm/memory_hotplug.c
->>> @@ -205,7 +205,7 @@ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
->>>        zone_span_writelock(zone);
->>>          old_zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
->>> -    if (start_pfn < zone->zone_start_pfn)
->>> +    if (!zone->zone_start_pfn || start_pfn < zone->zone_start_pfn)
->>>            zone->zone_start_pfn = start_pfn;
->>>          zone->spanned_pages = max(old_zone_end_pfn, end_pfn) -
->>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->>> index c13ea75..2545013 100644
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -3997,8 +3997,6 @@ int __meminit init_currently_empty_zone(struct zone *zone,
->>>            return ret;
->>>        pgdat->nr_zones = zone_idx(zone) + 1;
->>>    -    zone->zone_start_pfn = zone_start_pfn;
->>> -
->> then how can mminit_dprintk print zone->zone_start_pfn ? always print 0 make no sense.
->
-> The full code here:
->
-> 	mminit_dprintk(MMINIT_TRACE, "memmap_init",
-> 			"Initialising map node %d zone %lu pfns %lu -> %lu\n",
-> 			pgdat->node_id,
-> 			(unsigned long)zone_idx(zone),
-> 			zone_start_pfn, (zone_start_pfn + size));
->
->
-> It doesn't always print 0, it still behaves as I expected.
-> Could you elaborate?
+In u8500 platform the communication between the APE(Application Processor) and
+the modem subsystem(CMT) is by means of a shared DDR. The series of patches
+include a protocol called ShaRed Memory(SHRM) protocol for communicating
+between the APE and the CMT.
+Interrupt generation registers in CMT and PRCMU on APE side are used to support
+the shrm protocol.
 
-Yeah, you are right. I mean mminit_dprintk is called after 
-zone->zone_start_pfn initialized to show initialising state, but after 
-this patch applied zone->zone_start_pfn will not be initialized before 
-this print point.
+v2 - Included netdev mailing list
+v3 - Implemented comments from Alan Cox and Greg KH
+v4 - Re-worked on the ModemAccessFramework(MAF) part
 
->
-> Thanks,
-> Lai
->
->
->>>        mminit_dprintk(MMINIT_TRACE, "memmap_init",
->>>                "Initialising map node %d zone %lu pfns %lu -> %lu\n",
->>>                pgdat->node_id,
->>> @@ -4465,6 +4463,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->>>            ret = init_currently_empty_zone(zone, zone_start_pfn,
->>>                            size, MEMMAP_EARLY);
->>>            BUG_ON(ret);
->>> +        zone->zone_start_pfn = zone_start_pfn;
->>>            memmap_init(size, nid, j, zone_start_pfn);
->>>            zone_start_pfn += size;
->>>        }
->>
->
+Arun Murthy (4):
+  modem_shm: Add Modem Access Framework
+  modem_shm: Register u8500 client for MAF
+  modem_shm: u8500-shm: U8500 Shared Memory Driver
+  Doc: Add u8500_shrm document
+
+ Documentation/DocBook/Makefile              |    2 +-
+ Documentation/DocBook/shrm.tmpl             |  125 +++
+ Documentation/modem_shm/u8500_shrm.txt      |  254 +++++
+ drivers/Kconfig                             |    2 +
+ drivers/Makefile                            |    1 +
+ drivers/modem_shm/Kconfig                   |   22 +
+ drivers/modem_shm/Makefile                  |    3 +
+ drivers/modem_shm/modem_access.c            |  413 +++++++
+ drivers/modem_shm/modem_u8500.c             |   96 ++
+ drivers/modem_shm/u8500_shm/Kconfig         |   43 +
+ drivers/modem_shm/u8500_shm/Makefile        |    7 +
+ drivers/modem_shm/u8500_shm/shrm.h          |   23 +
+ drivers/modem_shm/u8500_shm/shrm_char.c     |  816 ++++++++++++++
+ drivers/modem_shm/u8500_shm/shrm_config.h   |  114 ++
+ drivers/modem_shm/u8500_shm/shrm_driver.c   |  733 ++++++++++++
+ drivers/modem_shm/u8500_shm/shrm_driver.h   |  226 ++++
+ drivers/modem_shm/u8500_shm/shrm_fifo.c     |  838 ++++++++++++++
+ drivers/modem_shm/u8500_shm/shrm_ioctl.h    |   43 +
+ drivers/modem_shm/u8500_shm/shrm_net.c      |  313 ++++++
+ drivers/modem_shm/u8500_shm/shrm_net.h      |   46 +
+ drivers/modem_shm/u8500_shm/shrm_private.h  |  184 +++
+ drivers/modem_shm/u8500_shm/shrm_protocol.c | 1591 +++++++++++++++++++++++++++
+ include/linux/modem_shm/modem.h             |   64 ++
+ include/linux/modem_shm/modem_client.h      |   55 +
+ 24 files changed, 6013 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/DocBook/shrm.tmpl
+ create mode 100644 Documentation/modem_shm/u8500_shrm.txt
+ create mode 100644 drivers/modem_shm/Kconfig
+ create mode 100644 drivers/modem_shm/Makefile
+ create mode 100644 drivers/modem_shm/modem_access.c
+ create mode 100644 drivers/modem_shm/modem_u8500.c
+ create mode 100644 drivers/modem_shm/u8500_shm/Kconfig
+ create mode 100644 drivers/modem_shm/u8500_shm/Makefile
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm.h
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_char.c
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_config.h
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_driver.c
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_driver.h
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_fifo.c
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_ioctl.h
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_net.c
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_net.h
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_private.h
+ create mode 100644 drivers/modem_shm/u8500_shm/shrm_protocol.c
+ create mode 100644 include/linux/modem_shm/modem.h
+ create mode 100644 include/linux/modem_shm/modem_client.h
+
+-- 
+1.7.4.3
 
