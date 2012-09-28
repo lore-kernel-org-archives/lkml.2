@@ -1,98 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab2I1H4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 03:56:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50463 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755208Ab2I1H4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 03:56:44 -0400
-Date: Fri, 28 Sep 2012 08:56:28 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: CMA broken in next-20120926
-Message-ID: <20120928075628.GJ3429@suse.de>
-References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
- <20120927151159.4427fc8f.akpm@linux-foundation.org>
- <20120928054330.GA27594@bbox>
+	id S1756866Ab2I1H5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 03:57:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37998 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab2I1H5G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 03:57:06 -0400
+Date: Fri, 28 Sep 2012 00:56:41 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-ii8j8cp87cgctecfqp2ib6rn@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, riel@redhat.com,
+        akpm@linux-foundation.org, Lee.Schermerhorn@hp.com, tglx@linutronix.de
+Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        Lee.Schermerhorn@hp.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/numa] sched, mm: Introduce tsk_home_node()
+Git-Commit-ID: 56c12cdbeaaaf38fbbfd4de355ea146ce52d8194
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120928054330.GA27594@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 28 Sep 2012 00:56:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 02:43:30PM +0900, Minchan Kim wrote:
-> On Thu, Sep 27, 2012 at 03:11:59PM -0700, Andrew Morton wrote:
-> > On Thu, 27 Sep 2012 13:29:11 +0200
-> > Thierry Reding <thierry.reding@avionic-design.de> wrote:
-> > 
-> > > Hi Marek,
-> > > 
-> > > any idea why CMA might be broken in next-20120926. I see that there
-> > > haven't been any major changes to CMA itself, but there's been quite a
-> > > bit of restructuring of various memory allocation bits lately. I wasn't
-> > > able to track the problem down, though.
-> > > 
-> > > What I see is this during boot (with CMA_DEBUG enabled):
-> > > 
-> > > [    0.266904] cma: dma_alloc_from_contiguous(cma db474f80, count 64, align 6)
-> > > [    0.284469] cma: dma_alloc_from_contiguous(): memory range at c09d7000 is busy, retrying
-> > > [    0.293648] cma: dma_alloc_from_contiguous(): memory range at c09d7800 is busy, retrying
-> > > ...
-> > > [    2.648619] DMA: failed to allocate 256 KiB pool for atomic coherent allocation
-> > > ...
-> > > [    4.196193] WARNING: at /home/thierry.reding/src/kernel/linux-ipmp.git/arch/arm/mm/dma-mapping.c:485 __alloc_from_pool+0xdc/0x110()
-> > > [    4.207988] coherent pool not initialised!
-> > > 
-> > > So the pool isn't getting initialized properly because CMA can't get at
-> > > the memory. Do you have any hints as to what might be going on? If it's
-> > > any help, I started seeing this with next-20120926 and it is in today's
-> > > next as well.
-> > > 
-> > 
-> > Bart and Minchan have made recent changes to CMA.  Let us cc them.
-> 
-> Hi all,
-> 
-> I have no time now so I look over the problem during short time
-> so I mighte be wrong. Even I should leave the office soon and
-> Korea will have long vacation from now on so I will be off by next week.
-> So it's hard to reach on me.
-> 
-> I hope this patch fixes the bug. If this patch fixes the problem
-> but has some problem about description or someone has better idea,
-> feel free to modify and resend to akpm, Please.
-> 
-> Thierry, Could you test below patch?
-> 
-> From 24a547855fa2bd4212a779cc73997837148310b3 Mon Sep 17 00:00:00 2001
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Fri, 28 Sep 2012 14:28:32 +0900
-> Subject: [PATCH] revert mm: compaction: iron out isolate_freepages_block()
->  and isolate_freepages_range()
-> 
-> [1] made bug on CMA.
-> The nr_scanned should be never equal to total_isolated for successful CMA.
-> This patch reverts part of the patch.
-> 
+Commit-ID:  56c12cdbeaaaf38fbbfd4de355ea146ce52d8194
+Gitweb:     http://git.kernel.org/tip/56c12cdbeaaaf38fbbfd4de355ea146ce52d8194
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Sat, 3 Mar 2012 17:05:16 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 27 Sep 2012 14:46:02 +0200
 
-Why should nr_scanned never be equal to total_isolated for CMA?
+sched, mm: Introduce tsk_home_node()
 
-Reverting the patch reintroduces Andrew's complaint that this function
-was "straggly" and getting a bit out of control so I'd much prefer to
-understand why this situation is not true and fix that.
+Introduce the home-node concept for tasks. In order to keep memory
+locality we need to have a something to stay local to, we define the
+home-node of a task as the node we prefer to allocate memory from and
+prefer to execute on.
 
--- 
-Mel Gorman
-SUSE Labs
+These are no hard guarantees, merely soft preferences. This allows for
+optimal resource usage, we can run a task away from the home-node, the
+remote memory hit -- while expensive -- is less expensive than not
+running at all, or very little, due to severe cpu overload.
+
+Similarly, we can allocate memory from another node if our home-node
+is depleted, again, some memory is better than no memory.
+
+This patch merely introduces the basic infrastructure, all policy
+comes later.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-ii8j8cp87cgctecfqp2ib6rn@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/sh/mm/Kconfig        |    1 +
+ include/linux/init_task.h |    8 ++++++++
+ include/linux/sched.h     |   12 ++++++++++++
+ init/Kconfig              |   11 +++++++++++
+ kernel/sched/core.c       |   36 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 68 insertions(+), 0 deletions(-)
+
+diff --git a/arch/sh/mm/Kconfig b/arch/sh/mm/Kconfig
+index cb8f992..1210cc7 100644
+--- a/arch/sh/mm/Kconfig
++++ b/arch/sh/mm/Kconfig
+@@ -111,6 +111,7 @@ config VSYSCALL
+ config NUMA
+ 	bool "Non Uniform Memory Access (NUMA) Support"
+ 	depends on MMU && SYS_SUPPORTS_NUMA && EXPERIMENTAL
++	select EMBEDDED_NUMA
+ 	default n
+ 	help
+ 	  Some SH systems have many various memories scattered around
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 89f1cb1..18906c1 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -143,6 +143,13 @@ extern struct task_group root_task_group;
+ 
+ #define INIT_TASK_COMM "swapper"
+ 
++#ifdef CONFIG_SCHED_NUMA
++# define INIT_TASK_NUMA(tsk)						\
++	.node = -1,
++#else
++# define INIT_TASK_NUMA(tsk)
++#endif
++
+ /*
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+@@ -210,6 +217,7 @@ extern struct task_group root_task_group;
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
+ 	INIT_CPUSET_SEQ							\
++	INIT_TASK_NUMA(tsk)						\
+ }
+ 
+ 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8c38df0..d28ff49 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1518,6 +1518,9 @@ struct task_struct {
+ 	short il_next;
+ 	short pref_node_fork;
+ #endif
++#ifdef CONFIG_SCHED_NUMA
++	int node;
++#endif
+ 	struct rcu_head rcu;
+ 
+ 	/*
+@@ -1589,6 +1592,15 @@ struct task_struct {
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+ #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
+ 
++static inline int tsk_home_node(struct task_struct *p)
++{
++#ifdef CONFIG_SCHED_NUMA
++	return p->node;
++#else
++	return -1;
++#endif
++}
++
+ /*
+  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
+  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
+diff --git a/init/Kconfig b/init/Kconfig
+index c40d0fb..beee6d5 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -634,6 +634,17 @@ config LOG_BUF_SHIFT
+ config HAVE_UNSTABLE_SCHED_CLOCK
+ 	bool
+ 
++#
++# For architectures that (ab)use NUMA to represent different memory regions
++# all cpu-local but of different latencies, such as SuperH.
++#
++config EMBEDDED_NUMA
++	bool
++
++config SCHED_NUMA
++	def_bool y
++	depends on SMP && NUMA && MIGRATION && !EMBEDDED_NUMA
++
+ menuconfig CGROUPS
+ 	boolean "Control Group support"
+ 	depends on EVENTFD
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ba144b1..a64c43b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5979,6 +5979,42 @@ static struct sched_domain_topology_level default_topology[] = {
+ 
+ static struct sched_domain_topology_level *sched_domain_topology = default_topology;
+ 
++#ifdef CONFIG_SCHED_NUMA
++
++/*
++ * Requeues a task ensuring its on the right load-balance list so
++ * that it might get migrated to its new home.
++ *
++ * Note that we cannot actively migrate ourselves since our callers
++ * can be from atomic context. We rely on the regular load-balance
++ * mechanisms to move us around -- its all preference anyway.
++ */
++void sched_setnode(struct task_struct *p, int node)
++{
++	unsigned long flags;
++	int on_rq, running;
++	struct rq *rq;
++
++	rq = task_rq_lock(p, &flags);
++	on_rq = p->on_rq;
++	running = task_current(rq, p);
++
++	if (on_rq)
++		dequeue_task(rq, p, 0);
++	if (running)
++		p->sched_class->put_prev_task(rq, p);
++
++	p->node = node;
++
++	if (running)
++		p->sched_class->set_curr_task(rq);
++	if (on_rq)
++		enqueue_task(rq, p, 0);
++	task_rq_unlock(rq, p, &flags);
++}
++
++#endif /* CONFIG_SCHED_NUMA */
++
+ #ifdef CONFIG_NUMA
+ 
+ static int sched_domains_numa_levels;
