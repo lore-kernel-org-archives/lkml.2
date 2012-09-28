@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033165Ab2I1VV1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:21:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
+	id S1033170Ab2I1VVo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:21:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964989Ab2I1UaY (ORCPT
+	with ESMTP id S1032804Ab2I1UaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:30:24 -0400
+	Fri, 28 Sep 2012 16:30:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 165/218] workqueue: UNBOUND -> REBIND morphing in rebind_workers() should be atomic
-Date: Fri, 28 Sep 2012 13:16:22 -0700
-Message-Id: <20120928201520.467902828@linuxfoundation.org>
+        Wang Xingchao <xingchao.wang@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 163/218] drm/i915: HDMI - Clear Audio Enable bit for Hot Plug
+Date: Fri, 28 Sep 2012 13:16:20 -0700
+Message-Id: <20120928201520.236394776@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -26,59 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Wang Xingchao <xingchao.wang@intel.com>
 
-commit 96e65306b81351b656835c15931d1d237b252f27 upstream.
+commit b98b60167279df3acac9422c3c9820d9ebbcf9fb upstream.
 
-The compiler may compile the following code into TWO write/modify
-instructions.
+Clear Audio Enable bit to trigger unsolicated event to notify Audio
+Driver part the HDMI hot plug change. The patch fixed the bug when
+remove HDMI cable the bit was not cleared correctly.
 
-	worker->flags &= ~WORKER_UNBOUND;
-	worker->flags |= WORKER_REBIND;
+In intel_hdmi_dpms(), if intel_hdmi->has_audio been true, the "Audio enable bit" will
+be set to trigger unsolicated event to notify Alsa driver the change.
 
-so the other CPU may temporarily see worker->flags which doesn't have
-either WORKER_UNBOUND or WORKER_REBIND set and perform local wakeup
-prematurely.
+intel_hdmi->has_audio will be reset to false from intel_hdmi_detect() after
+remove the hdmi cable, here's debug log:
 
-Fix it by using single explicit assignment via ACCESS_ONCE().
+[  187.494153] [drm:output_poll_execute], [CONNECTOR:17:HDMI-A-1] status updated from 1 to 2
+[  187.525349] [drm:intel_hdmi_detect], HDMI: has_audio = 0
 
-Because idle workers have another WORKER_NOT_RUNNING flag, this bug
-doesn't exist for them; however, update it to use the same pattern for
-consistency.
+so when comes back to intel_hdmi_dpms(), the "Audio enable bit" will not be cleared. And this
+cause the eld infomation and pin presence doesnot update accordingly in alsa driver side.
 
-tj: Applied the change to idle workers too and updated comments and
-    patch description a bit.
+This patch will also trigger unsolicated event to alsa driver to notify the hot plug event:
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+[  187.853159] ALSA sound/pci/hda/patch_hdmi.c:772 HDMI hot plug event: Codec=3 Pin=5 Presence_Detect=0 ELD_Valid=1
+[  187.853268] ALSA sound/pci/hda/patch_hdmi.c:990 HDMI status: Codec=3 Pin=5 Presence_Detect=0 ELD_Valid=0
+
+Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_hdmi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3433,14 +3433,17 @@ static int __cpuinit trustee_thread(void
+--- a/drivers/gpu/drm/i915/intel_hdmi.c
++++ b/drivers/gpu/drm/i915/intel_hdmi.c
+@@ -271,7 +271,7 @@ static void intel_hdmi_dpms(struct drm_e
+ 	u32 temp;
+ 	u32 enable_bits = SDVO_ENABLE;
  
- 	for_each_busy_worker(worker, i, pos, gcwq) {
- 		struct work_struct *rebind_work = &worker->rebind_work;
-+		unsigned long worker_flags = worker->flags;
+-	if (intel_hdmi->has_audio)
++	if (intel_hdmi->has_audio || mode != DRM_MODE_DPMS_ON)
+ 		enable_bits |= SDVO_AUDIO_ENABLE;
  
- 		/*
- 		 * Rebind_work may race with future cpu hotplug
- 		 * operations.  Use a separate flag to mark that
--		 * rebinding is scheduled.
-+		 * rebinding is scheduled.  The morphing should
-+		 * be atomic.
- 		 */
--		worker->flags |= WORKER_REBIND;
--		worker->flags &= ~WORKER_ROGUE;
-+		worker_flags |= WORKER_REBIND;
-+		worker_flags &= ~WORKER_ROGUE;
-+		ACCESS_ONCE(worker->flags) = worker_flags;
- 
- 		/* queue rebind_work, wq doesn't matter, use the default one */
- 		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
+ 	temp = I915_READ(intel_hdmi->sdvox_reg);
 
 
