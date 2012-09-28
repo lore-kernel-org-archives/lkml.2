@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946378Ab2I1Vpa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:45:30 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032317Ab2I1UZT (ORCPT
+	id S1946405Ab2I1Vp5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:45:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032297Ab2I1UZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:25:19 -0400
+	Fri, 28 Sep 2012 16:25:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [ 072/218] md: make sure metadata is updated when spares are activated or removed.
-Date: Fri, 28 Sep 2012 13:14:49 -0700
-Message-Id: <20120928201509.839556782@linuxfoundation.org>
+        Borislav Petkov <bp@amd64.org>, Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 061/218] ACPI / PM: Use KERN_DEBUG when no power resources are found
+Date: Fri, 28 Sep 2012 13:14:38 -0700
+Message-Id: <20120928201508.555677500@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -26,60 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit 6dafab6b1383e912cd252fa809570b484eb6e0dc upstream.
+commit f25b70613c048ceb1df052576fda03321ebf41cf upstream.
 
-It isn't always necessary to update the metadata when spares are
-removed as the presence-or-not of a spare isn't really important to
-the integrity of an array.
-Also activating a spare doesn't always require updating the metadata
-as the update on 'recovery-completed' is usually sufficient.
+commit a606dac368eed5696fb38e16b1394f1d049c09e9 adds support to link
+devices which have _PRx, if a device does not have _PRx, a warning
+message will be printed.
 
-However the introduction of 'replacement' devices have made these
-transitions sometimes more important.  For example the 'Replacement'
-flag isn't cleared until the original device is removed, so we need
-to ensure a metadata update after that 'spare' is removed.
+This commit is for ZPODD on Intel ZPODD capable platforms, on other
+platforms, it has no problem if there is no power resource for this
+device, so a warning here is not appropriate, change it to debug.
 
-So set MD_CHANGE_DEVS whenever a spare is activated or removed, to
-complement the current situation where it is set when a spare is added
-or a device is failed (or a number of other less common situations).
-
-This is suitable for -stable as out-of-data metadata could lead
-to data corruption.
-This is only relevant for 3.3 and later 9when 'replacement' as
-introduced.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: Borislav Petkov <bp@amd64.org>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/acpi/power.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7420,6 +7420,8 @@ static int remove_and_add_spares(struct
- 			}
- 		}
- 	}
-+	if (removed)
-+		set_bit(MD_CHANGE_DEVS, &mddev->flags);
- 	return spares;
+--- a/drivers/acpi/power.c
++++ b/drivers/acpi/power.c
+@@ -468,7 +468,7 @@ int acpi_power_resource_register_device(
+ 	return ret;
+ 
+ no_power_resource:
+-	printk(KERN_WARNING PREFIX "Invalid Power Resource to register!");
++	printk(KERN_DEBUG PREFIX "Invalid Power Resource to register!");
+ 	return -ENODEV;
  }
  
-@@ -7433,9 +7435,11 @@ static void reap_sync_thread(struct mdde
- 	    !test_bit(MD_RECOVERY_REQUESTED, &mddev->recovery)) {
- 		/* success...*/
- 		/* activate any spares */
--		if (mddev->pers->spare_active(mddev))
-+		if (mddev->pers->spare_active(mddev)) {
- 			sysfs_notify(&mddev->kobj, NULL,
- 				     "degraded");
-+			set_bit(MD_CHANGE_DEVS, &mddev->flags);
-+		}
- 	}
- 	if (test_bit(MD_RECOVERY_RESHAPE, &mddev->recovery) &&
- 	    mddev->pers->finish_reshape)
 
 
