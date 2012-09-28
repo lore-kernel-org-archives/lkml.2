@@ -1,100 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab2I1PwI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:52:08 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:44929 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757628Ab2I1PwG (ORCPT
+	id S1758038Ab2I1P5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:57:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51521 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756195Ab2I1P5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:52:06 -0400
-Date: Fri, 28 Sep 2012 10:52:02 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: mlx4_en_alloc_frag allocation failures
-Message-ID: <20120928155202.GC2731@BohrerMBP.rgmadvisors.com>
-References: <20120928151429.GB2731@BohrerMBP.rgmadvisors.com>
- <1348847408.5093.2548.camel@edumazet-glaptop>
+	Fri, 28 Sep 2012 11:57:49 -0400
+Date: Fri, 28 Sep 2012 16:57:46 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Bryan Huntsman <bryanh@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v2 RESEND 2/2] ARM: local timers: add timer support using
+ IO mapped register
+Message-ID: <20120928155746.GB2253@linaro.org>
+References: <1347694914-1457-1-git-send-email-rvaswani@codeaurora.org>
+ <1347694914-1457-2-git-send-email-rvaswani@codeaurora.org>
+ <5062013F.8050507@codeaurora.org>
+ <20120928122858.GD9472@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1348847408.5093.2548.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120928122858.GD9472@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 05:50:08PM +0200, Eric Dumazet wrote:
-> On Fri, 2012-09-28 at 10:14 -0500, Shawn Bohrer wrote:
-> > We've got a new application that is receiving UDP multicast data using
-> > AF_PACKET and writing out the packets in a custom format to disk.  The
-> > packet rates are bursty, but it seems to be roughly 100 Mbps on
-> > average for 1 minute periods.  With this application running all day
-> > we get a lot of these messages:
-> > 
-> > [1298269.103034] kswapd1: page allocation failure: order:2, mode:0x4020
-> > [1298269.103038] Pid: 80, comm: kswapd1 Not tainted 3.4.9-2.rgm.fc16.x86_64 #1
-> > [1298269.103040] Call Trace:
-> > [1298269.103041]  <IRQ>  [<ffffffff810db746>] warn_alloc_failed+0xf6/0x160
-> > [1298269.103053]  [<ffffffff813c767d>] ? skb_copy_bits+0x16d/0x2c0
-> > [1298269.103058]  [<ffffffff810e83a9>] ? wakeup_kswapd+0x69/0x160
-> > [1298269.103060]  [<ffffffff810df188>] __alloc_pages_nodemask+0x6e8/0x930
-> > [1298269.103064]  [<ffffffff81114316>] alloc_pages_current+0xb6/0x120
-> > [1298269.103070]  [<ffffffffa00c142b>] mlx4_en_alloc_frag+0x16b/0x1e0 [mlx4_en]
-> > [1298269.103073]  [<ffffffffa00c18a0>] mlx4_en_complete_rx_desc+0x120/0x1d0 [mlx4_en]
-> > [1298269.103076]  [<ffffffffa00c27d4>] mlx4_en_process_rx_cq+0x584/0x700 [mlx4_en]
-> > [1298269.103079]  [<ffffffffa00c29ef>] mlx4_en_poll_rx_cq+0x3f/0x80 [mlx4_en]
-> > [1298269.103083]  [<ffffffff813d6569>] net_rx_action+0x119/0x210
-> > [1298269.103086]  [<ffffffff8103c690>] __do_softirq+0xb0/0x220
-> > [1298269.103090]  [<ffffffff8109911d>] ? handle_irq_event+0x4d/0x70
-> > [1298269.103095]  [<ffffffff8148e30c>] call_softirq+0x1c/0x30
-> > [1298269.103100]  [<ffffffff81003ef5>] do_softirq+0x55/0x90
-> > [1298269.103101]  [<ffffffff8103ca65>] irq_exit+0x75/0x80
-> > [1298269.103103]  [<ffffffff8148e853>] do_IRQ+0x63/0xe0
-> > [1298269.103107]  [<ffffffff81485667>] common_interrupt+0x67/0x67
-> > [1298269.103108]  <EOI>  [<ffffffff8148523f>] ? _raw_spin_unlock_irqrestore+0xf/0x20
-> > [1298269.103113]  [<ffffffff811184b1>] compaction_alloc+0x361/0x3f0
-> > [1298269.103115]  [<ffffffff810e29b7>] ? pagevec_lru_move_fn+0xd7/0xf0
-> > [1298269.103118]  [<ffffffff81123d19>] migrate_pages+0xa9/0x470
-> > [1298269.103120]  [<ffffffff81118150>] ? perf_trace_mm_compaction_migratepages+0xd0/0xd0
-> > [1298269.103122]  [<ffffffff81118abb>] compact_zone+0x4cb/0x910
-> > [1298269.103124]  [<ffffffff8111904b>] __compact_pgdat+0x14b/0x190
-> > [1298269.103125]  [<ffffffff8111931d>] compact_pgdat+0x2d/0x30
-> > [1298269.103129]  [<ffffffff810f32b9>] ? fragmentation_index+0x19/0x70
-> > [1298269.103131]  [<ffffffff810eb15f>] balance_pgdat+0x6ef/0x710
-> > [1298269.103133]  [<ffffffff810eb2ca>] kswapd+0x14a/0x390
-> > [1298269.103136]  [<ffffffff810567c0>] ? add_wait_queue+0x60/0x60
-> > [1298269.103138]  [<ffffffff810eb180>] ? balance_pgdat+0x710/0x710
-> > [1298269.103140]  [<ffffffff81055e93>] kthread+0x93/0xa0
-> > [1298269.103142]  [<ffffffff8148e214>] kernel_thread_helper+0x4/0x10
-> > [1298269.103144]  [<ffffffff81055e00>] ? kthread_worker_fn+0x140/0x140
-> > [1298269.103146]  [<ffffffff8148e210>] ? gs_change+0xb/0xb
-> > 
-> > The kernel is based on a Fedora 16 kernel and actually has the 3.4.10
-> > patches applied.  I can easily test patches or different kernels.
-> > 
-> > I'm mostly wondering if there is anything that can be done about these
-> > failures?  It appears that these failures have to do with handling
-> > fragmented IP frames, but the majority of the packets this machines
-> > should not be fragmented (there are probably some that are).
-> > 
-> > From a memory management point of view the system has 48GB of RAM, and
-> > typically 44GB of that is page cache.  The dirty pages seem to hover
-> > around 5-6MB and the filesystem/disks don't seem to have any problems
-> > keeping up with writing out the data.
+[ Note: please aim to CC devicetree-discuss@lists.ozlabs.org with any
+patches or bindings relevant to device tree. ]
+
+[ Lorenzo, there's a question for you further down this mail. ]
+
+On Fri, Sep 28, 2012 at 01:28:58PM +0100, Mark Rutland wrote:
+> On Tue, Sep 25, 2012 at 08:08:47PM +0100, Rohit Vaswani wrote:
+> > Any comments ?
 > 
-> What is the value of /proc/sys/vm/min_free_kbytes ?
+> I have a few questions about the irq side of things.
+> 
+> > > diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> > > index 52478c8..8e01328 100644
+> > > --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
+> > > +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> > > @@ -7,10 +7,13 @@ The timer is attached to a GIC to deliver its per-processor interrupts.
+> > >
+> > >   ** Timer node properties:
+> > >
+> > > -- compatible : Should at least contain "arm,armv7-timer".
+> > > +- compatible : Should at least contain "arm,armv7-timer" or
+> > > +  "arm,armv7-timer-mem" if using the memory mapped arch timer interface.
+> > >
+> > > -- interrupts : Interrupt list for secure, non-secure, virtual and
+> > > -  hypervisor timers, in that order.
+> > > +- interrupts : If using the cp15 interface, the interrupt list for secure,
+> > > +  non-secure, virtual and hypervisor timers, in that order.
 
-$ cat /proc/sys/vm/min_free_kbytes
-90112
+We should use the correct architectural terms for documenting these.
+For example, "non-secure" requires qualification.
 
---
-Shawn
+If I understand the ARM ARM correctly, the architectural names are
 
--- 
+ * Secure PL1 physical
+ * Non-secure PL2 physical
+ * Non-secure PL1 physical
+ * Virtual
 
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+[...]
+
+> What privilege level are the interrupts for the memory-mapped interface?
+> 
+> Could each core have multiple interrupts at different privilege levels?
+> 
+> I also notice we don't seem to handle the case of systems without security
+> extensions, which only have physical and virtual interrupts. If we're adding
+> support for different interrupt setups, how do we handle them?
+
+Agreed, some of the timers will be absent depending on the architectural
+options implemented by the processor.
+
+Also, timers not visible to / usable by the kernel being booted should
+probably left out of the DT, even though the hardware may physically have
+them:
+
+For example, a guest should not see the Secure PL1 physical timer or the
+Non-secure PL2 physical timer.  A hypervisor or host OS which does not
+provide the guest with access to the Non-secure PL1 physical timer (such
+as KVM) should leave that out too: there is no exception-free way for
+the OS to probe that directly: i.e., from the guest's point of view the
+device doesn't exist at all, so it seems wrong for the DT to include them
+in this case.
+
+
+[...]
+
+> > > +  If using the memory mapped interface, list the interrupts for each core,
+> > > +  starting with core 0.
+> 
+> I take it that core 0 means physical cpu 0 (i.e. MPIDR.Aff{2,1,0} == 0)?
+
+Lorenzo, should we have a standard way of referring to CPUs and topology
+nodes documented as part of the topology bindings?  We certainly need
+rules of some kind, since when the topology is non-trivial there is no
+well-defined "first" CPU, nor any single correct order in which to list
+CPUs.
+
+The topology may also be sparsely populated (e.g.,
+Aff[2,1,0] in { (0,0,0), (0,0,1), (0,1,0), (0,1,1), (0,1,2), (0,1,3) })
+
+It would be bad if different driver bindings end up solving this in
+different ways (even non-broken ways)
+
+Cheers
+---Dave
+
+[...]
