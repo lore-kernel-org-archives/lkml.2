@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965345Ab2I1TA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:00:27 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50498 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030186Ab2I1TAU (ORCPT
+	id S965372Ab2I1TAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:00:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965342Ab2I1TA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:00:20 -0400
+	Fri, 28 Sep 2012 15:00:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eddie Wai <eddie.wai@broadcom.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 123/262] SCSI: bnx2i: Fixed NULL ptr deference for 1G bnx2 Linux iSCSI offload
-Date: Fri, 28 Sep 2012 11:50:52 -0700
-Message-Id: <20120928183012.600253138@linuxfoundation.org>
+        Mel Gorman <mel@csn.ul.ie>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Wen Congyang <wency@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 133/262] tracing: Dont call page_to_pfn() if page is NULL
+Date: Fri, 28 Sep 2012 11:51:02 -0700
+Message-Id: <20120928183013.751642926@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,75 +32,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Eddie Wai <eddie.wai@broadcom.com>
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-commit d6532207116307eb7ecbfa7b9e02c53230096a50 upstream.
+commit 85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa upstream.
 
-This patch fixes the following kernel panic invoked by uninitialized fields
-in the chip initialization for the 1G bnx2 iSCSI offload.
+When allocating memory fails, page is NULL. page_to_pfn() will
+cause the kernel panicked if we don't use sparsemem vmemmap.
 
-One of the bits in the chip initialization is being used by the latest
-firmware to control overflow packets.  When this control bit gets enabled
-erroneously, it would ultimately result in a bad packet placement which would
-cause the bnx2 driver to dereference a NULL ptr in the placement handler.
+Link: http://lkml.kernel.org/r/505AB1FF.8020104@cn.fujitsu.com
 
-This can happen under certain stress I/O environment under the Linux
-iSCSI offload operation.
-
-This change only affects Broadcom's 5709 chipset.
-
-Unable to handle kernel NULL pointer dereference at 0000000000000008 RIP:
- [<ffffffff881f0e7d>] :bnx2:bnx2_poll_work+0xd0d/0x13c5
-Pid: 0, comm: swapper Tainted: G     ---- 2.6.18-333.el5debug #2
-RIP: 0010:[<ffffffff881f0e7d>]  [<ffffffff881f0e7d>] :bnx2:bnx2_poll_work+0xd0d/0x13c5
-RSP: 0018:ffff8101b575bd50  EFLAGS: 00010216
-RAX: 0000000000000005 RBX: ffff81007c5fb180 RCX: 0000000000000000
-RDX: 0000000000000ffc RSI: 00000000817e8000 RDI: 0000000000000220
-RBP: ffff81015bbd7ec0 R08: ffff8100817e9000 R09: 0000000000000000
-R10: ffff81007c5fb180 R11: 00000000000000c8 R12: 000000007a25a010
-R13: 0000000000000000 R14: 0000000000000005 R15: ffff810159f80558
-FS:  0000000000000000(0000) GS:ffff8101afebc240(0000) knlGS:0000000000000000
-CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-CR2: 0000000000000008 CR3: 0000000000201000 CR4: 00000000000006a0
-Process swapper (pid: 0, threadinfo ffff8101b5754000, task ffff8101afebd820)
-Stack:  000000000000000b ffff810159f80000 0000000000000040 ffff810159f80520
- ffff810159f80500 00cf00cf8008e84b ffffc200100939e0 ffff810009035b20
- 0000502900000000 000000be00000001 ffff8100817e7810 00d08101b575bea8
-Call Trace:
- <IRQ>  [<ffffffff8008e0d0>] show_schedstat+0x1c2/0x25b
- [<ffffffff881f1886>] :bnx2:bnx2_poll+0xf6/0x231
- [<ffffffff8000c9b9>] net_rx_action+0xac/0x1b1
- [<ffffffff800125a0>] __do_softirq+0x89/0x133
- [<ffffffff8005e30c>] call_softirq+0x1c/0x28
- [<ffffffff8006d5de>] do_softirq+0x2c/0x7d
- [<ffffffff8006d46e>] do_IRQ+0xee/0xf7
- [<ffffffff8005d625>] ret_from_intr+0x0/0xa
- <EOI>  [<ffffffff801a5780>] acpi_processor_idle_simple+0x1c5/0x341
- [<ffffffff801a573d>] acpi_processor_idle_simple+0x182/0x341
- [<ffffffff801a55bb>] acpi_processor_idle_simple+0x0/0x341
- [<ffffffff80049560>] cpu_idle+0x95/0xb8
- [<ffffffff80078b1c>] start_secondary+0x479/0x488
-
-Signed-off-by: Eddie Wai <eddie.wai@broadcom.com>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/bnx2i/bnx2i_hwi.c |    3 +++
- 1 file changed, 3 insertions(+)
+ include/trace/events/kmem.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/bnx2i/bnx2i_hwi.c
-+++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
-@@ -1264,6 +1264,9 @@ int bnx2i_send_fw_iscsi_init_msg(struct
- 	int rc = 0;
- 	u64 mask64;
+--- a/include/trace/events/kmem.h
++++ b/include/trace/events/kmem.h
+@@ -214,7 +214,7 @@ TRACE_EVENT(mm_page_alloc,
  
-+	memset(&iscsi_init, 0x00, sizeof(struct iscsi_kwqe_init1));
-+	memset(&iscsi_init2, 0x00, sizeof(struct iscsi_kwqe_init2));
-+
- 	bnx2i_adjust_qp_size(hba);
+ 	TP_printk("page=%p pfn=%lu order=%d migratetype=%d gfp_flags=%s",
+ 		__entry->page,
+-		page_to_pfn(__entry->page),
++		__entry->page ? page_to_pfn(__entry->page) : 0,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		show_gfp_flags(__entry->gfp_flags))
+@@ -240,7 +240,7 @@ DECLARE_EVENT_CLASS(mm_page,
  
- 	iscsi_init.flags =
+ 	TP_printk("page=%p pfn=%lu order=%u migratetype=%d percpu_refill=%d",
+ 		__entry->page,
+-		page_to_pfn(__entry->page),
++		__entry->page ? page_to_pfn(__entry->page) : 0,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		__entry->order == 0)
 
 
