@@ -1,115 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab2I1GOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 02:14:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37346 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab2I1GOR (ORCPT
+	id S1755522Ab2I1GPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 02:15:11 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:64652 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab2I1GPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 02:14:17 -0400
-Date: Thu, 27 Sep 2012 23:13:58 -0700
-From: tip-bot for Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Message-ID: <tip-fd0f5869724ff6195c6e7f12f8287c66a132e0ba@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        alex.shi@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
-        tomoki.sekiyama.qu@hitachi.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, alex.shi@intel.com, tomoki.sekiyama.qu@hitachi.com,
-        hpa@linux.intel.com
-In-Reply-To: <20120926021128.22212.20440.stgit@hpxw>
-References: <20120926021128.22212.20440.stgit@hpxw>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86:
-  Distinguish TLB shootdown interrupts from other functions call interrupts
-Git-Commit-ID: fd0f5869724ff6195c6e7f12f8287c66a132e0ba
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 28 Sep 2012 02:15:09 -0400
+Message-ID: <50654061.1060801@gmail.com>
+Date: Fri, 28 Sep 2012 14:14:57 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 27 Sep 2012 23:14:04 -0700 (PDT)
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, wency@cn.fujitsu.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/4] memory-hotplug: add memory_block_release
+References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-2-git-send-email-wency@cn.fujitsu.com> <CAEkdkmVW5wwG4_cy0yHFNVmk2bzAqzo2adRsMn1yHOW9Ex98_g@mail.gmail.com> <5064EE3F.3080606@jp.fujitsu.com> <CAHGf_=pDn852sRadnXQMWx3rOTxGLy7876pxk1Ww4oJtkBAZbQ@mail.gmail.com> <50651D65.5080400@jp.fujitsu.com>
+In-Reply-To: <50651D65.5080400@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd0f5869724ff6195c6e7f12f8287c66a132e0ba
-Gitweb:     http://git.kernel.org/tip/fd0f5869724ff6195c6e7f12f8287c66a132e0ba
-Author:     Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-AuthorDate: Wed, 26 Sep 2012 11:11:28 +0900
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 27 Sep 2012 22:52:34 -0700
+On 09/28/2012 11:45 AM, Yasuaki Ishimatsu wrote:
+> Hi Kosaki-san,
+>
+> 2012/09/28 10:35, KOSAKI Motohiro wrote:
+>> On Thu, Sep 27, 2012 at 8:24 PM, Yasuaki Ishimatsu
+>> <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>>> Hi Chen,
+>>>
+>>>
+>>> 2012/09/27 19:20, Ni zhan Chen wrote:
+>>>>
+>>>> Hi Congyang,
+>>>>
+>>>> 2012/9/27 <wency@cn.fujitsu.com>
+>>>>
+>>>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>
+>>>>> When calling remove_memory_block(), the function shows following 
+>>>>> message
+>>>>> at
+>>>>> device_release().
+>>>>>
+>>>>> Device 'memory528' does not have a release() function, it is 
+>>>>> broken and
+>>>>> must
+>>>>> be fixed.
+>>>>>
+>>>>
+>>>> What's the difference between the patch and original implemetation?
+>>>
+>>>
+>>> The implementation is for removing a memory_block. So the purpose is
+>>> same as original one. But original code is bad manner. 
+>>> kobject_cleanup()
+>>> is called by remove_memory_block() at last. But release function for
+>>> releasing memory_block is not registered. As a result, the kernel 
+>>> message
+>>> is shown. IMHO, memory_block should be release by the releae function.
+>>
+>> but your patch introduced use after free bug, if i understand correctly.
+>> See unregister_memory() function. After your patch, kobject_put() call
+>> release_memory_block() and kfree(). and then device_unregister() will
+>> touch freed memory.
+>
+> It is not correct. The kobject_put() is prepared against 
+> find_memory_block()
+> in remove_memory_block() since kobject->kref is incremented in it.
+> So release_memory_block() is called by device_unregister() correctly 
+> as follows:
 
-x86: Distinguish TLB shootdown interrupts from other functions call interrupts
+Another issue is memory hotplug which is not associated to this patch 
+report to you:
+IIUC, function register_mem_sect_under_node should be renamed to 
+register_mem_block_under_node,
+since this function is register memory block instead of memory section.
 
-As TLB shootdown requests to other CPU cores are now using function call
-interrupts, TLB shootdowns entry in /proc/interrupts is always shown as 0.
+>
+> [ 1014.589008] Pid: 126, comm: kworker/0:2 Not tainted 
+> 3.6.0-rc3-enable-memory-hotremove-and-root-bridge #3
+> [ 1014.702437] Call Trace:
+> [ 1014.731684]  [<ffffffff8144d096>] release_memory_block+0x16/0x30
+> [ 1014.803581]  [<ffffffff81438587>] device_release+0x27/0xa0
+> [ 1014.869312]  [<ffffffff8133e962>] kobject_cleanup+0x82/0x1b0
+> [ 1014.937062]  [<ffffffff8133ea9d>] kobject_release+0xd/0x10
+> [ 1015.002718]  [<ffffffff8133e7ec>] kobject_put+0x2c/0x60
+> [ 1015.065271]  [<ffffffff81438107>] put_device+0x17/0x20
+> [ 1015.126794]  [<ffffffff8143918a>] device_unregister+0x2a/0x60
+> [ 1015.195578]  [<ffffffff8144d55b>] remove_memory_block+0xbb/0xf0
+> [ 1015.266434]  [<ffffffff8144d5af>] unregister_memory_section+0x1f/0x30
+> [ 1015.343532]  [<ffffffff811c0a58>] __remove_section+0x68/0x110
+> [ 1015.412318]  [<ffffffff811c0be7>] __remove_pages+0xe7/0x120
+> [ 1015.479021]  [<ffffffff81653d8c>] arch_remove_memory+0x2c/0x80
+> [ 1015.548845]  [<ffffffff8165497b>] remove_memory+0x6b/0xd0
+> [ 1015.613474]  [<ffffffff813d946c>] 
+> acpi_memory_device_remove_memory+0x48/0x73
+> [ 1015.697834]  [<ffffffff813d94c2>] acpi_memory_device_remove+0x2b/0x44
+> [ 1015.774922]  [<ffffffff813a61e4>] acpi_device_remove+0x90/0xb2
+> [ 1015.844796]  [<ffffffff8143c2fc>] __device_release_driver+0x7c/0xf0
+> [ 1015.919814]  [<ffffffff8143c47f>] device_release_driver+0x2f/0x50
+> [ 1015.992753]  [<ffffffff813a70dc>] acpi_bus_remove+0x32/0x6d
+> [ 1016.059462]  [<ffffffff813a71a8>] acpi_bus_trim+0x91/0x102
+> [ 1016.125128]  [<ffffffff813a72a1>] 
+> acpi_bus_hot_remove_device+0x88/0x16b
+> [ 1016.204295]  [<ffffffff813a2e57>] acpi_os_execute_deferred+0x27/0x34
+> [ 1016.280350]  [<ffffffff81090599>] process_one_work+0x219/0x680
+> [ 1016.350173]  [<ffffffff81090538>] ? process_one_work+0x1b8/0x680
+> [ 1016.422072]  [<ffffffff813a2e30>] ? 
+> acpi_os_wait_events_complete+0x23/0x23
+> [ 1016.504357]  [<ffffffff810923ce>] worker_thread+0x12e/0x320
+> [ 1016.571064]  [<ffffffff810922a0>] ? manage_workers+0x110/0x110
+> [ 1016.640886]  [<ffffffff810983a6>] kthread+0xc6/0xd0
+> [ 1016.699290]  [<ffffffff8167b144>] kernel_thread_helper+0x4/0x10
+> [ 1016.770149]  [<ffffffff81670bb0>] ? retint_restore_args+0x13/0x13
+> [ 1016.843165]  [<ffffffff810982e0>] ? __init_kthread_worker+0x70/0x70
+> [ 1016.918200]  [<ffffffff8167b140>] ? gs_change+0x13/0x13
+>
+> Thanks,
+> Yasuaki Ishimatsu
+>
+>>
+>> static void
+>> unregister_memory(struct memory_block *memory)
+>> {
+>>     BUG_ON(memory->dev.bus != &memory_subsys);
+>>
+>>     /* drop the ref. we got in remove_memory_block() */
+>>     kobject_put(&memory->dev.kobj);
+>>     device_unregister(&memory->dev);
+>> }
+>>
+>
+>
+>
 
-This behavior change was introduced by commit 52aec3308db8 ("x86/tlb:
-replace INVALIDATE_TLB_VECTOR by CALL_FUNCTION_VECTOR").
-
-This patch reverts TLB shootdowns entry in /proc/interrupts to count TLB
-shootdowns separately from the other function call interrupts.
-
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Link: http://lkml.kernel.org/r/20120926021128.22212.20440.stgit@hpxw
-Acked-by: Alex Shi <alex.shi@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/hardirq.h |    4 ++++
- arch/x86/kernel/irq.c          |    4 ++--
- arch/x86/mm/tlb.c              |    2 ++
- 3 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
-index d3895db..81f04ce 100644
---- a/arch/x86/include/asm/hardirq.h
-+++ b/arch/x86/include/asm/hardirq.h
-@@ -18,6 +18,10 @@ typedef struct {
- #ifdef CONFIG_SMP
- 	unsigned int irq_resched_count;
- 	unsigned int irq_call_count;
-+	/*
-+	 * irq_tlb_count is double-counted in irq_call_count, so it must be
-+	 * subtracted from irq_call_count when displaying irq_call_count
-+	 */
- 	unsigned int irq_tlb_count;
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 1f5f1d5..355b13f 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -92,7 +92,8 @@ int arch_show_interrupts(struct seq_file *p, int prec)
- 	seq_printf(p, "  Rescheduling interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "CAL");
- 	for_each_online_cpu(j)
--		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count);
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count -
-+					irq_stats(j)->irq_tlb_count);
- 	seq_printf(p, "  Function call interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "TLB");
- 	for_each_online_cpu(j)
-@@ -147,7 +148,6 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
- #ifdef CONFIG_SMP
- 	sum += irq_stats(cpu)->irq_resched_count;
- 	sum += irq_stats(cpu)->irq_call_count;
--	sum += irq_stats(cpu)->irq_tlb_count;
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
- 	sum += irq_stats(cpu)->irq_thermal_count;
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index a085c56..0777f04 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -98,6 +98,8 @@ static void flush_tlb_func(void *info)
- {
- 	struct flush_tlb_info *f = info;
- 
-+	inc_irq_stat(irq_tlb_count);
-+
- 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
- 		return;
- 
