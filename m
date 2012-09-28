@@ -1,190 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab2I1Ljb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 07:39:31 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56163 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757495Ab2I1Lj3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 07:39:29 -0400
-Date: Fri, 28 Sep 2012 13:39:24 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: CMA broken in next-20120926
-Message-ID: <20120928113924.GA25342@avionic-0098.mockup.avionic-design.de>
-References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
- <20120927151159.4427fc8f.akpm@linux-foundation.org>
- <20120928054330.GA27594@bbox>
- <20120928083722.GM3429@suse.de>
- <50656459.70309@ti.com>
- <20120928102728.GN3429@suse.de>
- <20120928103207.GA22811@avionic-0098.mockup.avionic-design.de>
- <20120928103815.GA15219@avionic-0098.mockup.avionic-design.de>
- <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
- <20120928110712.GB29125@suse.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+HP7ph2BbKc20aGI"
-Content-Disposition: inline
-In-Reply-To: <20120928110712.GB29125@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:kxgwIH37TI2nbPuzM8z+c7VXiAyATcV7KZF9rxtbsAF
- gBZ3FGP+ply12SPavPwhVIBQeV8IFD/VhnHQX8LOAL6eXQZ4uj
- 98rEVKu+sOyZ7EiCv1VLM22S3exZleoBRkM3SbAJZxwB6KSdbs
- hzysU/ZqrQrfKJUinT8t9JeYo25xIWEf5ZyYbyy5fGOxSHtAbe
- H+YM7+SD8OWWoid6XaH40S2GgwRIevcq+b3u5xblRLtKQppB+K
- uN4bWJGW+FgWL88SnphUnakfp1xSXa+OWRpS2hdCky/NFmvREb
- o90qlebRDinTtgT0AcS0SPJREW+NSkEIK15BMph0HBlxEi/bfh
- XPSWPx+i3X6hNqSMuIJu3cIkbw2dSWogrG9y5rWNX3rMSDx3XS
- E0TiW8+5N3/tKkuxqlSJ6phliSIfOzIrbsi0uL49t5TgGwev1g
- 6Bn4+
+	id S1757639Ab2I1Lkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 07:40:47 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:51749 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757474Ab2I1Lkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 07:40:45 -0400
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit
+ scenarios in PLE handler
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+In-Reply-To: <506537C7.9070909@linux.vnet.ibm.com>
+References: <20120921115942.27611.67488.sendpatchset@codeblue>
+	 <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com>
+	 <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com>
+	 <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com>
+	 <5061B437.8070300@linux.vnet.ibm.com> <5064101A.5070902@redhat.com>
+	 <50643745.6010202@linux.vnet.ibm.com> <506440AF.9080202@redhat.com>
+	 <506537C7.9070909@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Fri, 28 Sep 2012 06:40:38 -0500
+Message-ID: <1348832438.5551.5.camel@oc6622382223.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092811-1976-0000-0000-000011D0C6B8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-09-28 at 11:08 +0530, Raghavendra K T wrote:
+> On 09/27/2012 05:33 PM, Avi Kivity wrote:
+> > On 09/27/2012 01:23 PM, Raghavendra K T wrote:
+> >>>
+> >>> This gives us a good case for tracking preemption on a per-vm basis.  As
+> >>> long as we aren't preempted, we can keep the PLE window high, and also
+> >>> return immediately from the handler without looking for candidates.
+> >>
+> >> 1) So do you think, deferring preemption patch ( Vatsa was mentioning
+> >> long back)  is also another thing worth trying, so we reduce the chance
+> >> of LHP.
+> >
+> > Yes, we have to keep it in mind.  It will be useful for fine grained
+> > locks, not so much so coarse locks or IPIs.
+> >
+> 
+> Agree.
+> 
+> > I would still of course prefer a PLE solution, but if we can't get it to
+> > work we can consider preemption deferral.
+> >
+> 
+> Okay.
+> 
+> >>
+> >> IIRC, with defer preemption :
+> >> we will have hook in spinlock/unlock path to measure depth of lock held,
+> >> and shared with host scheduler (may be via MSRs now).
+> >> Host scheduler 'prefers' not to preempt lock holding vcpu. (or rather
+> >> give say one chance.
+> >
+> > A downside is that we have to do that even when undercommitted.
 
---+HP7ph2BbKc20aGI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hopefully vcpu preemption is very rare when undercommitted, so it should
+not happen much at all.
+> >
+> > Also there may be a lot of false positives (deferred preemptions even
+> > when there is no contention).
 
-On Fri, Sep 28, 2012 at 12:07:12PM +0100, Mel Gorman wrote:
-> On Fri, Sep 28, 2012 at 12:51:13PM +0200, Thierry Reding wrote:
-> > On Fri, Sep 28, 2012 at 12:38:15PM +0200, Thierry Reding wrote:
-> > > On Fri, Sep 28, 2012 at 12:32:07PM +0200, Thierry Reding wrote:
-> > > > On Fri, Sep 28, 2012 at 11:27:28AM +0100, Mel Gorman wrote:
-> > > > > On Fri, Sep 28, 2012 at 11:48:25AM +0300, Peter Ujfalusi wrote:
-> > > > > > Hi,
-> > > > > >=20
-> > > > > > On 09/28/2012 11:37 AM, Mel Gorman wrote:
-> > > > > > >> I hope this patch fixes the bug. If this patch fixes the pro=
-blem
-> > > > > > >> but has some problem about description or someone has better=
- idea,
-> > > > > > >> feel free to modify and resend to akpm, Please.
-> > > > > > >>
-> > > > > > >=20
-> > > > > > > A full revert is overkill. Can the following patch be tested =
-as a
-> > > > > > > potential replacement please?
-> > > > > > >=20
-> > > > > > > ---8<---
-> > > > > > > mm: compaction: Iron out isolate_freepages_block() and isolat=
-e_freepages_range() -fix1
-> > > > > > >=20
-> > > > > > > CMA is reported to be broken in next-20120926. Minchan Kim po=
-inted out
-> > > > > > > that this was due to nr_scanned !=3D total_isolated in the ca=
-se of CMA
-> > > > > > > because PageBuddy pages are one scan but many isolations in C=
-MA. This
-> > > > > > > patch should address the problem.
-> > > > > > >=20
-> > > > > > > This patch is a fix for
-> > > > > > > mm-compaction-acquire-the-zone-lock-as-late-as-possible-fix-2=
-=2Epatch
-> > > > > > >=20
-> > > > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > > > >=20
-> > > > > > linux-next + this patch alone also works for me.
-> > > > > >=20
-> > > > > > Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> > > > >=20
-> > > > > Thanks Peter. I expect it also works for Thierry as I expect you =
-were
-> > > > > suffering the same problem but obviously confirmation of that wou=
-ld be nice.
-> > > >=20
-> > > > I've been running a few tests and indeed this solves the obvious pr=
-oblem
-> > > > that the coherent pool cannot be created at boot (which in turn cau=
-sed
-> > > > the ethernet adapter to fail on Tegra).
-> > > >=20
-> > > > However I've been working on the Tegra DRM driver, which uses CMA to
-> > > > allocate large chunks of framebuffer memory and these are now faili=
-ng.
-> > > > I'll need to check if Minchan's patch solves that problem as well.
-> > >=20
-> > > Indeed, with Minchan's patch the DRM can allocate the framebuffer
-> > > without a problem. Something else must be wrong then.
-> >=20
-> > However, depending on the size of the allocation it also happens with
-> > Minchan's patch. What I see is this:
-> >=20
-> > [   60.736729] alloc_contig_range test_pages_isolated(1e900, 1f0e9) fai=
-led
-> > [   60.743572] alloc_contig_range test_pages_isolated(1ea00, 1f1e9) fai=
-led
-> > [   60.750424] alloc_contig_range test_pages_isolated(1ea00, 1f2e9) fai=
-led
-> > [   60.757239] alloc_contig_range test_pages_isolated(1ec00, 1f3e9) fai=
-led
-> > [   60.764066] alloc_contig_range test_pages_isolated(1ec00, 1f4e9) fai=
-led
-> > [   60.770893] alloc_contig_range test_pages_isolated(1ec00, 1f5e9) fai=
-led
-> > [   60.777698] alloc_contig_range test_pages_isolated(1ec00, 1f6e9) fai=
-led
-> > [   60.784526] alloc_contig_range test_pages_isolated(1f000, 1f7e9) fai=
-led
-> > [   60.791148] drm tegra: Failed to alloc buffer: 8294400
-> >=20
-> > I'm pretty sure this did work before next-20120926.
-> >=20
->=20
-> Can you double check this please?
->=20
-> This is a separate bug but may be related to the same series. However, CM=
-A should
-> be ignoring the "skip" hints and because it's sync compaction it should
-> not be exiting due to lock contention. Maybe Marek will spot it.
+It will be interesting to see how this behaves with a very high lock
+activity in a guest.  Once the scheduler defers preemption, is it for a
+fixed amount of time, or does it know to cut the deferral short as soon
+as the lock depth is reduced [by x]?
+> 
+> Yes. That is a worry.
+> 
+> >
+> >>
+> >> 2) looking at the result (comparing A & C) , I do feel we have
+> >> significant in iterating over vcpus (when compared to even vmexit)
+> >> so We still would need undercommit fix sugested by PeterZ (improving by
+> >> 140%). ?
+> >
+> > Looking only at the current runqueue?  My worry is that it misses a lot
+> > of cases.  Maybe try the current runqueue first and then others.
+> >
+> > Or were you referring to something else?
+> 
+> No. I was referring to the same thing.
+> 
+> However. I had tried following also (which works well to check 
+> undercommited scenario). But thinking to use only for yielding in case
+> of overcommit (yield in overcommit suggested by Rik) and keep 
+> undercommit patch as suggested by PeterZ
+> 
+> [ patch is not in proper diff I suppose ].
+> 
+> Will test them.
+> 
+> Peter, Can I post your patch with your from/sob.. in V2?
+> Please let me know..
+> 
+> ---
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 28f00bc..9ed3759 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1620,6 +1620,21 @@ bool kvm_vcpu_eligible_for_directed_yield(struct 
+> kvm_vcpu *vcpu)
+>   	return eligible;
+>   }
+>   #endif
+> +
+> +bool kvm_overcommitted()
+> +{
+> +	unsigned long load;
+> +
+> +	load = avenrun[0] + FIXED_1/200;
+> +	load = load >> FSHIFT;
+> +	load = (load << 7) / num_online_cpus();
+> +
+> +	if (load > 128)
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
+>   void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>   {
+>   	struct kvm *kvm = me->kvm;
+> @@ -1629,6 +1644,9 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>   	int pass;
+>   	int i;
+> 
+> +	if (!kvm_overcommitted())
+> +		return;
+> +
+>   	kvm_vcpu_set_in_spin_loop(me, true);
+>   	/*
+>   	 * We boost the priority of a VCPU that is runnable but not
 
-I've written a small test module that tries to allocate growing blocks
-of contiguous memory and it seems like with your patch this always fails
-at 8 MiB. Given the default size for CMA allocations is 16 MiB I thought
-I should try increasing that but it doesn't make a difference. The
-allocation still fails at 8 MiB.
 
-Maybe that'll give another clue.
-
-> Failing that, would you be in a position to bisect between v3.6-rc6 and
-> current next to try pin-point exactly which patch introduced this
-> problem please?
-
-I can possibly do that but probably not before sometime later next week
-unfortunately. But I'll see if I can find some time to double-check that
-some older linux-next version works and that my memory isn't failing me.
-
-Thierry
-
---+HP7ph2BbKc20aGI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQZYxsAAoJEN0jrNd/PrOhJUIP/34Md+W2RYZgJlYTI2Zno+oo
-uQxSLEuDb+D1MUhZxMnTFVK7y18nT36DM5HVzEvPYgGL02/HPOkMPTXBW3E3pweo
-2sqmNT8r3cPWNVCj21IwxuIQDO76JFfIRpTLQpxzh+JpWS6utDPA8EWW3VNZz4Zb
-FZUfgfDwhCDXykN13p4amvBWy/A75xXf/WsGx0IleB6qicrl6IFcxYDmESl2Ohud
-WP9bpTh5Re/2OJypUHdOvHnVAnQiUhmd4ubgZpp4NQj6VOz34GDECgQzsg/y4Luv
-t9QjKc/7Taw59vtedyA6hS93wWzkUPyv05G3pMlwtswSG2OiRG9MOYB+V6nf6Lhj
-s5rLYFyFNF63JDBK5VzvtAyGmsvVT6fEjQ3U1Mhu3wz89TUwPfdg8i+CCdJ/g1PL
-8V4Fb9rv128m+RTgZgl03RV5ZgekF8TTTRwIfLMMudUPFZvEE8qHKrdJ5ft0d0RS
-LzBpt4DUMF+xqGcPe6fI+yg624iOJ7iDk6sB57ubIz5zEuo4xYHwUmY16pTAVgIR
-/6ENXSpYmZFsnGlwI9ImFU/nhljZQdmsWMDE93ATEgdjMmg2Ql+YNLHnnY0faV6B
-MS61G6ktCHyYF4Y2uVBS30+uvdsm3BDm3Vga6Sn0KonYqGmoD5BZ7GzXd9z9Q264
-YBqdSFF2KRgVHhI/Lu/F
-=iu9m
------END PGP SIGNATURE-----
-
---+HP7ph2BbKc20aGI--
