@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030339Ab2I1UzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:55:16 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45808 "EHLO
+	id S1030824Ab2I1Uzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:55:41 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36926 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423020Ab2I1UsU (ORCPT
+	by vger.kernel.org with ESMTP id S1423010Ab2I1UsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:20 -0400
-X-Sasl-enc: tBfQGvazdIIqv6FosRZyFqp9krjTPa5JTMWuR1pikmKG 1348865299
+	Fri, 28 Sep 2012 16:48:19 -0400
+X-Sasl-enc: E3vDwbvEWhK+dK6imhHlhyIpK8+8j9YFm1sUnpiXZX/+ 1348865298
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 088/127] drivers/misc/sgi-xp/xpc_uv.c: SGI XPC fails to load when cpu 0 is out of IRQ resources
-Date: Fri, 28 Sep 2012 13:34:21 -0700
-Message-Id: <20120928203056.249614652@linuxfoundation.org>
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 087/127] PM / Runtime: Clear power.deferred_resume on success in rpm_suspend()
+Date: Fri, 28 Sep 2012 13:34:20 -0700
+Message-Id: <20120928203056.123938359@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,167 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 7838f994b4fceff24c343f4e26a6cf4393869579 upstream.
+commit 58a34de7b1a920d287d17d2ca08bc9aaf7e6d35b upstream.
 
-On many of our larger systems, CPU 0 has had all of its IRQ resources
-consumed before XPC loads.  Worst cases on machines with multiple 10
-GigE cards and multiple IB cards have depleted the entire first socket
-of IRQs.
+The power.deferred_resume can only be set if the runtime PM status
+of device is RPM_SUSPENDING and it should be cleared after its
+status has been changed, regardless of whether or not the runtime
+suspend has been successful.  However, it only is cleared on
+suspend failure, while it may remain set on successful suspend and
+is happily leaked to rpm_resume() executed in that case.
 
-This patch makes selecting the node upon which IRQs are allocated (as
-well as all the other GRU Message Queue structures) specifiable as a
-module load param and has a default behavior of searching all nodes/cpus
-for an available resources.
+That shouldn't happen, so if power.deferred_resume is set in
+rpm_suspend() after the status has been changed to RPM_SUSPENDED,
+clear it before calling rpm_resume().  Then, it doesn't need to be
+cleared before changing the status to RPM_SUSPENDING any more,
+because it's always cleared after the status has been changed to
+either RPM_SUSPENDED (on success) or RPM_ACTIVE (on failure).
 
-[akpm@linux-foundation.org: fix build: include cpu.h and module.h]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/sgi-xp/xpc_uv.c |   84 +++++++++++++++++++++++++++++++++----------
- 1 file changed, 65 insertions(+), 19 deletions(-)
+ drivers/base/power/runtime.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -18,6 +18,8 @@
- #include <linux/interrupt.h>
- #include <linux/delay.h>
- #include <linux/device.h>
-+#include <linux/cpu.h>
-+#include <linux/module.h>
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <asm/uv/uv_hub.h>
-@@ -59,6 +61,8 @@ static struct xpc_heartbeat_uv *xpc_hear
- 					 XPC_NOTIFY_MSG_SIZE_UV)
- #define XPC_NOTIFY_IRQ_NAME		"xpc_notify"
- 
-+static int xpc_mq_node = -1;
-+
- static struct xpc_gru_mq_uv *xpc_activate_mq_uv;
- static struct xpc_gru_mq_uv *xpc_notify_mq_uv;
- 
-@@ -109,11 +113,8 @@ xpc_get_gru_mq_irq_uv(struct xpc_gru_mq_
- #if defined CONFIG_X86_64
- 	mq->irq = uv_setup_irq(irq_name, cpu, mq->mmr_blade, mq->mmr_offset,
- 			UV_AFFINITY_CPU);
--	if (mq->irq < 0) {
--		dev_err(xpc_part, "uv_setup_irq() returned error=%d\n",
--			-mq->irq);
-+	if (mq->irq < 0)
- 		return mq->irq;
--	}
- 
- 	mq->mmr_value = uv_read_global_mmr64(mmr_pnode, mq->mmr_offset);
- 
-@@ -238,8 +239,9 @@ xpc_create_gru_mq_uv(unsigned int mq_siz
- 	mq->mmr_blade = uv_cpu_to_blade_id(cpu);
- 
- 	nid = cpu_to_node(cpu);
--	page = alloc_pages_exact_node(nid, GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
--				pg_order);
-+	page = alloc_pages_exact_node(nid,
-+				      GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
-+				      pg_order);
- 	if (page == NULL) {
- 		dev_err(xpc_part, "xpc_create_gru_mq_uv() failed to alloc %d "
- 			"bytes of memory on nid=%d for GRU mq\n", mq_size, nid);
-@@ -1731,9 +1733,50 @@ static struct xpc_arch_operations xpc_ar
- 	.notify_senders_of_disconnect = xpc_notify_senders_of_disconnect_uv,
- };
- 
-+static int
-+xpc_init_mq_node(int nid)
-+{
-+	int cpu;
-+
-+	get_online_cpus();
-+
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_activate_mq_uv =
-+			xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, nid,
-+					     XPC_ACTIVATE_IRQ_NAME,
-+					     xpc_handle_activate_IRQ_uv);
-+		if (!IS_ERR(xpc_activate_mq_uv))
-+			break;
-+	}
-+	if (IS_ERR(xpc_activate_mq_uv)) {
-+		put_online_cpus();
-+		return PTR_ERR(xpc_activate_mq_uv);
-+	}
-+
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_notify_mq_uv =
-+			xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, nid,
-+					     XPC_NOTIFY_IRQ_NAME,
-+					     xpc_handle_notify_IRQ_uv);
-+		if (!IS_ERR(xpc_notify_mq_uv))
-+			break;
-+	}
-+	if (IS_ERR(xpc_notify_mq_uv)) {
-+		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
-+		put_online_cpus();
-+		return PTR_ERR(xpc_notify_mq_uv);
-+	}
-+
-+	put_online_cpus();
-+	return 0;
-+}
-+
- int
- xpc_init_uv(void)
- {
-+	int nid;
-+	int ret = 0;
-+
- 	xpc_arch_ops = xpc_arch_ops_uv;
- 
- 	if (sizeof(struct xpc_notify_mq_msghdr_uv) > XPC_MSG_HDR_MAX_SIZE) {
-@@ -1742,21 +1785,21 @@ xpc_init_uv(void)
- 		return -E2BIG;
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -360,7 +360,6 @@ static int rpm_suspend(struct device *de
+ 		goto repeat;
  	}
  
--	xpc_activate_mq_uv = xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, 0,
--						  XPC_ACTIVATE_IRQ_NAME,
--						  xpc_handle_activate_IRQ_uv);
--	if (IS_ERR(xpc_activate_mq_uv))
--		return PTR_ERR(xpc_activate_mq_uv);
-+	if (xpc_mq_node < 0)
-+		for_each_online_node(nid) {
-+			ret = xpc_init_mq_node(nid);
+-	dev->power.deferred_resume = false;
+ 	if (dev->power.no_callbacks)
+ 		goto no_callback;	/* Assume success. */
  
--	xpc_notify_mq_uv = xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, 0,
--						XPC_NOTIFY_IRQ_NAME,
--						xpc_handle_notify_IRQ_uv);
--	if (IS_ERR(xpc_notify_mq_uv)) {
--		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
--		return PTR_ERR(xpc_notify_mq_uv);
--	}
-+			if (!ret)
-+				break;
-+		}
-+	else
-+		ret = xpc_init_mq_node(xpc_mq_node);
+@@ -420,6 +419,7 @@ static int rpm_suspend(struct device *de
+ 	wake_up_all(&dev->power.wait_queue);
  
--	return 0;
-+	if (ret < 0)
-+		dev_err(xpc_part, "xpc_init_mq_node() returned error=%d\n",
-+			-ret);
-+
-+	return ret;
- }
- 
- void
-@@ -1765,3 +1808,6 @@ xpc_exit_uv(void)
- 	xpc_destroy_gru_mq_uv(xpc_notify_mq_uv);
- 	xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
- }
-+
-+module_param(xpc_mq_node, int, 0);
-+MODULE_PARM_DESC(xpc_mq_node, "Node number on which to allocate message queues.");
+ 	if (dev->power.deferred_resume) {
++		dev->power.deferred_resume = false;
+ 		rpm_resume(dev, 0);
+ 		retval = -EAGAIN;
+ 		goto out;
 
 
