@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759207Ab2I1Ugt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:36:49 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56031 "EHLO
+	id S1759220Ab2I1Ugx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:36:53 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46627 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759179Ab2I1Ugp (ORCPT
+	by vger.kernel.org with ESMTP id S1759204Ab2I1Ugt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:36:45 -0400
-X-Sasl-enc: 5DSgW5x/+wjn2Eu82F7fOktKc891YtpJ34AG/rqCgMQJ 1348864603
+	Fri, 28 Sep 2012 16:36:49 -0400
+X-Sasl-enc: NZUA5JRY2TREte1KKH+dBe5RkwTBGgX8ZlkBOGf6otJd 1348864608
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Douglas Bagnall <douglas@paradise.net.nz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [ 189/218] media: Avoid sysfs oops when an rc_devs raw device is absent
-Date: Fri, 28 Sep 2012 13:16:46 -0700
-Message-Id: <20120928201523.208334100@linuxfoundation.org>
+        Timur Tabi <timur@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: [ 193/218] powerpc/85xx: p1022ds: disable the NAND flash node if video is enabled
+Date: Fri, 28 Sep 2012 13:16:50 -0700
+Message-Id: <20120928201523.724527748@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -29,51 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Bagnall <douglas@paradise.net.nz>
+From: Timur Tabi <timur@freescale.com>
 
-commit 720bb6436ff30fccad05cf5bdf961ea5b1f5686d upstream.
+commit 6269f2584a359766f53005c676daff8aee60cbed upstream.
 
-For some reason, when the lirc daemon learns that a usb remote control
-has been unplugged, it wants to read the sysfs attributes of the
-disappearing device. This is useful for uncovering transient
-inconsistencies, but less so for keeping the system running when such
-inconsistencies exist.
+The Freescale P1022 has a unique pin muxing "feature" where the DIU video
+controller's video signals are muxed with 24 of the local bus address signals.
+When the DIU is enabled, the bulk of the local bus is disabled, preventing
+access to memory-mapped devices like NAND flash and the pixis FPGA.
 
-Under some circumstances (like every time I unplug my dvb stick from
-my laptop), lirc catches an rc_dev whose raw event handler has been
-removed (presumably by ir_raw_event_unregister), and proceeds to
-interrogate the raw protocols supported by the NULL pointer.
+Therefore, if the DIU is going to be enabled, then memory-mapped devices on
+the localbus, like NAND flash, need to be disabled.
 
-This patch avoids the NULL dereference, and ignores the issue of how
-this state of affairs came about in the first place.
+This patch is similar to "powerpc/85xx: p1022ds: disable the NOR flash node
+if video is enabled", except that it disables the NAND flash node instead.
+This PIXIS node needs to remain enabled because it is used by platform code
+to switch into indirect mode.
 
-Version 2 incorporates changes recommended by Mauro Carvalho Chehab
-(-ENODEV instead of -EINVAL, and a signed-off-by).
-
-Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Timur Tabi <timur@freescale.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/media/rc/rc-main.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -775,10 +775,11 @@ static ssize_t show_protocols(struct dev
- 	if (dev->driver_type == RC_DRIVER_SCANCODE) {
- 		enabled = dev->rc_map.rc_type;
- 		allowed = dev->allowed_protos;
--	} else {
-+	} else if (dev->raw) {
- 		enabled = dev->raw->enabled_protocols;
- 		allowed = ir_raw_get_allowed_protocols();
--	}
-+	} else
-+		return -ENODEV;
+---
+ arch/powerpc/platforms/85xx/p1022_ds.c |   38 +++++++++++++++++++++++++--------
+ 1 file changed, 29 insertions(+), 9 deletions(-)
+
+--- a/arch/powerpc/platforms/85xx/p1022_ds.c
++++ b/arch/powerpc/platforms/85xx/p1022_ds.c
+@@ -435,6 +435,8 @@ static void __init disable_one_node(stru
+ 		prom_update_property(np, new, old);
+ 	else
+ 		prom_add_property(np, new);
++
++	pr_info("p1022ds: disabling %s node\n", np->full_name);
+ }
  
- 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
- 		   (long long)allowed,
+ /* TRUE if there is a "video=fslfb" command-line parameter. */
+@@ -499,28 +501,46 @@ static void __init p1022_ds_setup_arch(v
+ 	diu_ops.valid_monitor_port	= p1022ds_valid_monitor_port;
+ 
+ 	/*
+-	 * Disable the NOR flash node if there is video=fslfb... command-line
+-	 * parameter.  When the DIU is active, NOR flash is unavailable, so we
+-	 * have to disable the node before the MTD driver loads.
++	 * Disable the NOR and NAND flash nodes if there is video=fslfb...
++	 * command-line parameter.  When the DIU is active, the localbus is
++	 * unavailable, so we have to disable these nodes before the MTD
++	 * driver loads.
+ 	 */
+ 	if (fslfb) {
+ 		struct device_node *np =
+ 			of_find_compatible_node(NULL, NULL, "fsl,p1022-elbc");
+ 
+ 		if (np) {
+-			np = of_find_compatible_node(np, NULL, "cfi-flash");
+-			if (np) {
++			struct device_node *np2;
++
++			of_node_get(np);
++			np2 = of_find_compatible_node(np, NULL, "cfi-flash");
++			if (np2) {
+ 				static struct property nor_status = {
+ 					.name = "status",
+ 					.value = "disabled",
+ 					.length = sizeof("disabled"),
+ 				};
+ 
+-				pr_info("p1022ds: disabling %s node",
+-					np->full_name);
+-				disable_one_node(np, &nor_status);
+-				of_node_put(np);
++				disable_one_node(np2, &nor_status);
++				of_node_put(np2);
++			}
++
++			of_node_get(np);
++			np2 = of_find_compatible_node(np, NULL,
++						      "fsl,elbc-fcm-nand");
++			if (np2) {
++				static struct property nand_status = {
++					.name = "status",
++					.value = "disabled",
++					.length = sizeof("disabled"),
++				};
++
++				disable_one_node(np2, &nand_status);
++				of_node_put(np2);
+ 			}
++
++			of_node_put(np);
+ 		}
+ 
+ 	}
 
 
