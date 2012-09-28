@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030207Ab2I1TBj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:01:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	id S1030224Ab2I1TBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:01:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030191Ab2I1TBf (ORCPT
+	with ESMTP id S1030209Ab2I1TBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:01:35 -0400
+	Fri, 28 Sep 2012 15:01:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo Van Doorn <ivdoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 147/262] rt2x00: Fix word size of rt2500usb MAC_CSR19 register.
-Date: Fri, 28 Sep 2012 11:51:16 -0700
-Message-Id: <20120928183015.426695824@linuxfoundation.org>
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [ 157/262] usb: chipidea: udc: dont stall endpoint if request list is empty in isr_tr_complete_low
+Date: Fri, 28 Sep 2012 11:51:26 -0700
+Message-Id: <20120928183016.519334717@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,57 +30,56 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Gertjan van Wingerde <gwingerde@gmail.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit 6ced58a5dbb94dbfbea1b33ca3c56d1e929cd548 upstream.
+commit db89960e50f45274c07dc60926b5a49489b8a7a0 upstream.
 
-The register is 16 bits wide, not 32.
+When attaching an imx28 or imx53 in USB gadget mode to a Windows host and
+starting a rndis connection we see this message every 4-10 seconds:
 
-Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Acked-by: Ivo Van Doorn <ivdoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+    g_ether gadget: high speed config #2: RNDIS
+
+Analysis shows that each time this message is printed, the rndis connection is
+re-establish due to a reset because of a stalled endpoint (ep 0, dir 1). The
+endpoint is stalled because the reqeust complete bit on that endpoint is set,
+but in isr_tr_complete_low() the endpoint request list (mEp->qh.queue) is
+empty.
+
+This patch removed this check, because the code doesn't take the following
+situation into account:
+
+The loop over all endpoints in isr_tr_complete_handler() will call ep_nuke() on
+both ep0/dir0 and ep/dir1 in the first loop. Pending reqeusts will be flushed
+and completed here. There seems to be a race condition, the request is nuked,
+but the request complete bit will be set, too. The subsequent check (in
+ep0/dir1's loop cycle) for endpoint request list (mEp->qh.queue) empty will
+fail.
+
+Both other mainline chipidea drivers (mv_udc_core.c and fsl_udc_core.c) don't
+have this check.
+
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2500usb.c |    2 +-
- drivers/net/wireless/rt2x00/rt2500usb.h |   16 ++++++++--------
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/usb/chipidea/udc.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2500usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2500usb.c
-@@ -283,7 +283,7 @@ static int rt2500usb_rfkill_poll(struct
- 	u16 reg;
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -771,10 +771,7 @@ __acquires(mEp->lock)
+ {
+ 	struct ci13xxx_req *mReq, *mReqTemp;
+ 	struct ci13xxx_ep *mEpTemp = mEp;
+-	int uninitialized_var(retval);
+-
+-	if (list_empty(&mEp->qh.queue))
+-		return -EINVAL;
++	int retval = 0;
  
- 	rt2500usb_register_read(rt2x00dev, MAC_CSR19, &reg);
--	return rt2x00_get_field32(reg, MAC_CSR19_BIT7);
-+	return rt2x00_get_field16(reg, MAC_CSR19_BIT7);
- }
- 
- #ifdef CONFIG_RT2X00_LIB_LEDS
---- a/drivers/net/wireless/rt2x00/rt2500usb.h
-+++ b/drivers/net/wireless/rt2x00/rt2500usb.h
-@@ -189,14 +189,14 @@
-  * MAC_CSR19: GPIO control register.
-  */
- #define MAC_CSR19			0x0426
--#define MAC_CSR19_BIT0			FIELD32(0x0001)
--#define MAC_CSR19_BIT1			FIELD32(0x0002)
--#define MAC_CSR19_BIT2			FIELD32(0x0004)
--#define MAC_CSR19_BIT3			FIELD32(0x0008)
--#define MAC_CSR19_BIT4			FIELD32(0x0010)
--#define MAC_CSR19_BIT5			FIELD32(0x0020)
--#define MAC_CSR19_BIT6			FIELD32(0x0040)
--#define MAC_CSR19_BIT7			FIELD32(0x0080)
-+#define MAC_CSR19_BIT0			FIELD16(0x0001)
-+#define MAC_CSR19_BIT1			FIELD16(0x0002)
-+#define MAC_CSR19_BIT2			FIELD16(0x0004)
-+#define MAC_CSR19_BIT3			FIELD16(0x0008)
-+#define MAC_CSR19_BIT4			FIELD16(0x0010)
-+#define MAC_CSR19_BIT5			FIELD16(0x0020)
-+#define MAC_CSR19_BIT6			FIELD16(0x0040)
-+#define MAC_CSR19_BIT7			FIELD16(0x0080)
- 
- /*
-  * MAC_CSR20: LED control register.
+ 	list_for_each_entry_safe(mReq, mReqTemp, &mEp->qh.queue,
+ 			queue) {
 
 
