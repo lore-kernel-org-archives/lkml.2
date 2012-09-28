@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759935Ab2I1Uyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:54:39 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34920 "EHLO
+	id S1759954Ab2I1Uyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:54:55 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54373 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423033Ab2I1UsX (ORCPT
+	by vger.kernel.org with ESMTP id S1423022Ab2I1UsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:23 -0400
-X-Sasl-enc: iqsPRMPyyspQnfwnyxRhckD2HiBuuEFMgL3kcBvfFS1g 1348865302
+	Fri, 28 Sep 2012 16:48:21 -0400
+X-Sasl-enc: 7eJ7a1loHqn6Wp0bYY6t6jdWg2SxtladBI2TmSQBqn1M 1348865300
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 090/127] drm/radeon/kms: extend the Fujitsu D3003-S2 board connector quirk to cover later silicon stepping
-Date: Fri, 28 Sep 2012 13:34:23 -0700
-Message-Id: <20120928203056.480403896@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>, Josh Boyer <jwboyer@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 089/127] fbcon: fix race condition between console lock and cursor timer (v1.1)
+Date: Fri, 28 Sep 2012 13:34:22 -0700
+Message-Id: <20120928203056.373319381@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,32 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 52e9b39d9a89ae33662596bd30e62dd56bddbe73 upstream.
+commit d8636a2717bb3da2a7ce2154bf08de90bb8c87b0 upstream.
 
-There is a more recent APU stepping with a new PCI ID
-shipping in the same board by Fujitsu which needs the
-same quirk to correctly mark the back plane connectors.
+So we've had a fair few reports of fbcon handover breakage between
+efi/vesafb and i915 surface recently, so I dedicated a couple of
+days to finding the problem.
 
-Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Essentially the last thing we saw was the conflicting framebuffer
+message and that was all.
+
+So after much tracing with direct netconsole writes (printks
+under console_lock not so useful), I think I found the race.
+
+Thread A (driver load)    Thread B (timer thread)
+  unbind_con_driver ->              |
+  bind_con_driver ->                |
+  vc->vc_sw->con_deinit ->          |
+  fbcon_deinit ->                   |
+  console_lock()                    |
+      |                             |
+      |                       fbcon_flashcursor timer fires
+      |                       console_lock() <- blocked for A
+      |
+      |
+fbcon_del_cursor_timer ->
+  del_timer_sync
+  (BOOM)
+
+Of course because all of this is under the console lock,
+we never see anything, also since we also just unbound the active
+console guess what we never see anything.
+
+Hopefully this fixes the problem for anyone seeing vesafb->kms
+driver handoff.
+
+v1.1: add comment suggestion from Alan.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Acked-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Tested-by: Josh Boyer <jwboyer@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/console/fbcon.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -488,7 +488,7 @@ static bool radeon_atom_apply_quirks(str
- 	}
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -373,8 +373,15 @@ static void fb_flashcursor(struct work_s
+ 	struct vc_data *vc = NULL;
+ 	int c;
+ 	int mode;
++	int ret;
++
++	/* FIXME: we should sort out the unbind locking instead */
++	/* instead we just fail to flash the cursor if we can't get
++	 * the lock instead of blocking fbcon deinit */
++	ret = console_trylock();
++	if (ret == 0)
++		return;
  
- 	/* Fujitsu D3003-S2 board lists DVI-I as DVI-D and VGA */
--	if ((dev->pdev->device == 0x9802) &&
-+	if (((dev->pdev->device == 0x9802) || (dev->pdev->device == 0x9806)) &&
- 	    (dev->pdev->subsystem_vendor == 0x1734) &&
- 	    (dev->pdev->subsystem_device == 0x11bd)) {
- 		if (*connector_type == DRM_MODE_CONNECTOR_VGA) {
+-	console_lock();
+ 	if (ops && ops->currcon != -1)
+ 		vc = vc_cons[ops->currcon].d;
+ 
 
 
