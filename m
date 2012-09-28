@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab2I1XU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 19:20:59 -0400
-Received: from nm11.bullet.mail.ne1.yahoo.com ([98.138.90.74]:47869 "HELO
-	nm11.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758809Ab2I1XU4 (ORCPT
+	id S1759053Ab2I1XVL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 19:21:11 -0400
+Received: from nm40-vm7.bullet.mail.ne1.yahoo.com ([98.138.229.183]:31453 "HELO
+	nm40-vm7.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758808Ab2I1XVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 19:20:56 -0400
-X-Yahoo-Newman-Id: 631473.69864.bm@omp1013.access.mail.mud.yahoo.com
+	Fri, 28 Sep 2012 19:21:04 -0400
+X-Yahoo-Newman-Id: 877895.59262.bm@omp1025.access.mail.mud.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: lbuquwkVM1nGOHV526TJsWRRKhou.bYgTLHOOjZzlxosTPh
- C9CdCv35ePjI.2mdXuHg_MIRlb0K.oNpCVRu.B_4o7tqwQYSAbfnhqRpJ28X
- Bva3h91loXkO7vRHT3CmVplQ4oqkksYf50157HV8JfKk5ra0tVBiNdrzZlz9
- oJbwjX1nLxjPML9R77TfdEw_gqe09iZAN4FnLzCdlw3AJOIK2UXrP28Ze2I_
- FnuTwHPZ3x7OMV8Qwp3kWKULQJgADy7SmjTQZpcuslceTUn8IuRlJfHSHJDU
- KfzYSjWmwF0s7DqCucPTPP.HwIbuMCVkCFxZe5Nk29Ipd3ybJ3BHCcMjvvBO
- awcbKWEdRYeXbepZxijUAHFSg1oSbVN9m63FX5m0c5tWWk0xfbiUGant.KBq
- M1Cd69dB8IYQ6f0VBbfe12z4LFJZojLWGfbPAxzrD1Acl_w3DcmLn
+X-YMail-OSG: n69SUEAVM1mejJTEG5kOO7jo6dnJ6BMYjT7pwyw2qqdebls
+ fnFILcjqX2.cjcNasoXFIq8AU50wCsoiwFiofIkZwx7hNz_Ti0t8FsUGd_Xp
+ pBUvL8z0cIA19bCWN_wgfgHvVo4_EgDAHhR1FUvkNa2zkKhlhjtZfitwBgQc
+ 1TYXm1CaZf.NmcUuvca2jBJMa_hCs6hfB8CvvpFv.Oy2adVZfzZqBon4UESu
+ zNjUXCzNdeafCKgeQ8.7AXYpMb37adXlvlMroNU6yEEGxUWjvXR6Au1CXHc_
+ Rn6M_2fnX2G4.o2wFvo0I8JdRiTIrWOw32drkUruomsM3A0QsuhXNLDj3L2L
+ 6VXchlyI7iQpNxdgDZKZRfCkqXhXLMR0natD3NRefDw2atBttuKWwglaAn2s
+ _gox6_N._9aPAoevapb27jq9M0.ovBGXhmvnUZW1SHfGoqZD0DL9C0Q--
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: Daniel Santos <daniel.santos@pobox.com>
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -32,9 +32,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Pavel Pisa <pisa@cmp.felk.cvut.cz>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 2/10] compiler-gcc4.h: Reorder macros based upon gcc ver
-Date: Fri, 28 Sep 2012 18:20:03 -0500
-Message-Id: <1348874411-28288-3-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH 6/10] bug.h: Replace __linktime_error with __compiletime_error
+Date: Fri, 28 Sep 2012 18:20:07 -0500
+Message-Id: <1348874411-28288-7-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
 References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
@@ -42,64 +42,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helps to keep the file from getting confusing, removes one
-duplicate version check and should encourage future editors to put new
-macros where they belong.
-
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- include/linux/compiler-gcc4.h |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+ include/linux/bug.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 8721704..4506d65 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -13,6 +13,10 @@
- #define __must_check 		__attribute__((warn_unused_result))
- #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
+diff --git a/include/linux/bug.h b/include/linux/bug.h
+index aaac4bb..298a916 100644
+--- a/include/linux/bug.h
++++ b/include/linux/bug.h
+@@ -73,7 +73,7 @@ extern int __build_bug_on_failed;
+ #define BUILD_BUG()						\
+ 	do {							\
+ 		extern void __build_bug_failed(void)		\
+-			__linktime_error("BUILD_BUG failed");	\
++			__compiletime_error("BUILD_BUG failed");\
+ 		__build_bug_failed();				\
+ 	} while (0)
  
-+#if __GNUC_MINOR__ > 0
-+# define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
-+#endif
-+
- #if __GNUC_MINOR__ >= 3
- /* Mark functions as cold. gcc will assume any path leading to a call
-    to them will be unlikely.  This means a lot of manual unlikely()s
-@@ -31,6 +35,12 @@
- 
- #define __linktime_error(message) __attribute__((__error__(message)))
- 
-+#ifndef __CHECKER__
-+# define __compiletime_warning(message) __attribute__((warning(message)))
-+# define __compiletime_error(message) __attribute__((error(message)))
-+#endif /* __CHECKER__ */
-+#endif /* __GNUC_MINOR__ >= 3 */
-+
- #if __GNUC_MINOR__ >= 5
- /*
-  * Mark a position in code as unreachable.  This can be used to
-@@ -46,8 +56,7 @@
- /* Mark a function definition as prohibited from being cloned. */
- #define __noclone	__attribute__((__noclone__))
- 
--#endif
--#endif
-+#endif /* __GNUC_MINOR__ >= 5 */
- 
- #if __GNUC_MINOR__ >= 6
- /*
-@@ -56,10 +65,3 @@
- #define __visible __attribute__((externally_visible))
- #endif
- 
--#if __GNUC_MINOR__ > 0
--#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
--#endif
--#if __GNUC_MINOR__ >= 3 && !defined(__CHECKER__)
--#define __compiletime_warning(message) __attribute__((warning(message)))
--#define __compiletime_error(message) __attribute__((error(message)))
--#endif
 -- 
 1.7.3.4
 
