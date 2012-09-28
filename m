@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759885Ab2I1Uxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:53:51 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56828 "EHLO
+	id S1759935Ab2I1Uyj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:54:39 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34920 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423039Ab2I1Us2 (ORCPT
+	by vger.kernel.org with ESMTP id S1423033Ab2I1UsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:28 -0400
-X-Sasl-enc: IypYUr2vJd9jmxAze0T7HB2ww2K6deaR0y+p0/IrCuLL 1348865307
+	Fri, 28 Sep 2012 16:48:23 -0400
+X-Sasl-enc: iqsPRMPyyspQnfwnyxRhckD2HiBuuEFMgL3kcBvfFS1g 1348865302
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 086/127] PM / Runtime: Fix rpm_resume() return value for power.no_callbacks set
-Date: Fri, 28 Sep 2012 13:34:19 -0700
-Message-Id: <20120928203055.989714094@linuxfoundation.org>
+        Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 090/127] drm/radeon/kms: extend the Fujitsu D3003-S2 board connector quirk to cover later silicon stepping
+Date: Fri, 28 Sep 2012 13:34:23 -0700
+Message-Id: <20120928203056.480403896@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,46 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
 
-commit 7f321c26c04807834fef4c524d2b21573423fc74 upstream.
+commit 52e9b39d9a89ae33662596bd30e62dd56bddbe73 upstream.
 
-For devices whose power.no_callbacks flag is set, rpm_resume()
-should return 1 if the device's parent is already active, so that
-the callers of pm_runtime_get() don't think that they have to wait
-for the device to resume (asynchronously) in that case (the core
-won't queue up an asynchronous resume in that case, so there's
-nothing to wait for anyway).
+There is a more recent APU stepping with a new PCI ID
+shipping in the same board by Fujitsu which needs the
+same quirk to correctly mark the back plane connectors.
 
-Modify the code accordingly (and make sure that an idle notification
-will be queued up on success, even if 1 is to be returned).
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/power/runtime.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -533,6 +533,7 @@ static int rpm_resume(struct device *dev
- 		    || dev->parent->power.runtime_status == RPM_ACTIVE) {
- 			atomic_inc(&dev->parent->power.child_count);
- 			spin_unlock(&dev->parent->power.lock);
-+			retval = 1;
- 			goto no_callback;	/* Assume success. */
- 		}
- 		spin_unlock(&dev->parent->power.lock);
-@@ -610,7 +611,7 @@ static int rpm_resume(struct device *dev
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -488,7 +488,7 @@ static bool radeon_atom_apply_quirks(str
  	}
- 	wake_up_all(&dev->power.wait_queue);
  
--	if (!retval)
-+	if (retval >= 0)
- 		rpm_idle(dev, RPM_ASYNC);
- 
-  out:
+ 	/* Fujitsu D3003-S2 board lists DVI-I as DVI-D and VGA */
+-	if ((dev->pdev->device == 0x9802) &&
++	if (((dev->pdev->device == 0x9802) || (dev->pdev->device == 0x9806)) &&
+ 	    (dev->pdev->subsystem_vendor == 0x1734) &&
+ 	    (dev->pdev->subsystem_device == 0x11bd)) {
+ 		if (*connector_type == DRM_MODE_CONNECTOR_VGA) {
 
 
