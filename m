@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759121Ab2I1TFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:05:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	id S1759142Ab2I1TF1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:05:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759094Ab2I1TFN (ORCPT
+	with ESMTP id S1759117Ab2I1TFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:05:13 -0400
+	Fri, 28 Sep 2012 15:05:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 223/262] Bluetooth: Change signature of smp_conn_security()
-Date: Fri, 28 Sep 2012 11:52:32 -0700
-Message-Id: <20120928183024.559883534@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Williams <dan.j.williams@gmail.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [ 225/262] Fix a dead loop in async_synchronize_full()
+Date: Fri, 28 Sep 2012 11:52:34 -0700
+Message-Id: <20120928183024.791752230@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,94 +33,89 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+From: Li Zhong <zhong@linux.vnet.ibm.com>
 
-commit cc110922da7e902b62d18641a370fec01a9fa794 upstream.
+[Fixed upstream by commits 2955b47d2c1983998a8c5915cb96884e67f7cb53 and
+a4683487f90bfe3049686fc5c566bdc1ad03ace6 from Dan Williams, but they are much
+more intrusive than this tiny fix, according to Andrew - gregkh]
 
-To make it clear that it may be called from contexts that may not have
-any knowledge of L2CAP, we change the connection parameter, to receive
-a hci_conn.
+This patch tries to fix a dead loop in  async_synchronize_full(), which
+could be seen when preemption is disabled on a single cpu machine. 
 
-This also makes it clear that it is checking the security of the link.
+void async_synchronize_full(void)
+{
+        do {
+                async_synchronize_cookie(next_cookie);
+        } while (!list_empty(&async_running) || !
+list_empty(&async_pending));
+}
 
-Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+async_synchronize_cookie() calls async_synchronize_cookie_domain() with
+&async_running as the default domain to synchronize. 
+
+However, there might be some works in the async_pending list from other
+domains. On a single cpu system, without preemption, there is no chance
+for the other works to finish, so async_synchronize_full() enters a dead
+loop. 
+
+It seems async_synchronize_full() wants to synchronize all entries in
+all running lists(domains), so maybe we could just check the entry_count
+to know whether all works are finished. 
+
+Currently, async_synchronize_cookie_domain() expects a non-NULL running
+list ( if NULL, there would be NULL pointer dereference ), so maybe a
+NULL pointer could be used as an indication for the functions to
+synchronize all works in all domains. 
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Christian Kujau <lists@nerdbynature.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Williams <dan.j.williams@gmail.com>
+Cc: Christian Kujau <lists@nerdbynature.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/net/bluetooth/smp.h |    2 +-
- net/bluetooth/l2cap_core.c  |   11 ++++++-----
- net/bluetooth/l2cap_sock.c  |    2 +-
- net/bluetooth/smp.c         |    4 ++--
- 4 files changed, 10 insertions(+), 9 deletions(-)
+ kernel/async.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/include/net/bluetooth/smp.h
-+++ b/include/net/bluetooth/smp.h
-@@ -136,7 +136,7 @@ struct smp_chan {
- };
- 
- /* SMP Commands */
--int smp_conn_security(struct l2cap_conn *conn, __u8 sec_level);
-+int smp_conn_security(struct hci_conn *hcon, __u8 sec_level);
- int smp_sig_channel(struct l2cap_conn *conn, struct sk_buff *skb);
- int smp_distribute_keys(struct l2cap_conn *conn, __u8 force);
- int smp_user_confirm_reply(struct hci_conn *conn, u16 mgmt_op, __le32 passkey);
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -1184,14 +1184,15 @@ clean:
- static void l2cap_conn_ready(struct l2cap_conn *conn)
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -86,6 +86,13 @@ static async_cookie_t  __lowest_in_progr
  {
- 	struct l2cap_chan *chan;
-+	struct hci_conn *hcon = conn->hcon;
+ 	struct async_entry *entry;
  
- 	BT_DBG("conn %p", conn);
- 
--	if (!conn->hcon->out && conn->hcon->type == LE_LINK)
-+	if (!hcon->out && hcon->type == LE_LINK)
- 		l2cap_le_conn_ready(conn);
- 
--	if (conn->hcon->out && conn->hcon->type == LE_LINK)
--		smp_conn_security(conn, conn->hcon->pending_sec_level);
-+	if (hcon->out && hcon->type == LE_LINK)
-+		smp_conn_security(hcon, hcon->pending_sec_level);
- 
- 	mutex_lock(&conn->chan_lock);
- 
-@@ -1199,8 +1200,8 @@ static void l2cap_conn_ready(struct l2ca
- 
- 		l2cap_chan_lock(chan);
- 
--		if (conn->hcon->type == LE_LINK) {
--			if (smp_conn_security(conn, chan->sec_level))
-+		if (hcon->type == LE_LINK) {
-+			if (smp_conn_security(hcon, chan->sec_level))
- 				l2cap_chan_ready(chan);
- 
- 		} else if (chan->chan_type != L2CAP_CHAN_CONN_ORIENTED) {
---- a/net/bluetooth/l2cap_sock.c
-+++ b/net/bluetooth/l2cap_sock.c
-@@ -596,7 +596,7 @@ static int l2cap_sock_setsockopt(struct
- 				break;
- 			}
- 
--			if (smp_conn_security(conn, sec.level))
-+			if (smp_conn_security(conn->hcon, sec.level))
- 				break;
- 			sk->sk_state = BT_CONFIG;
- 			chan->state = BT_CONFIG;
---- a/net/bluetooth/smp.c
-+++ b/net/bluetooth/smp.c
-@@ -756,9 +756,9 @@ static u8 smp_cmd_security_req(struct l2
- 	return 0;
++	if (!running) { /* just check the entry count */
++		if (atomic_read(&entry_count))
++			return 0; /* smaller than any cookie */
++		else
++			return next_cookie;
++	}
++
+ 	if (!list_empty(running)) {
+ 		entry = list_first_entry(running,
+ 			struct async_entry, list);
+@@ -236,9 +243,7 @@ EXPORT_SYMBOL_GPL(async_schedule_domain)
+  */
+ void async_synchronize_full(void)
+ {
+-	do {
+-		async_synchronize_cookie(next_cookie);
+-	} while (!list_empty(&async_running) || !list_empty(&async_pending));
++	async_synchronize_cookie_domain(next_cookie, NULL);
  }
+ EXPORT_SYMBOL_GPL(async_synchronize_full);
  
--int smp_conn_security(struct l2cap_conn *conn, __u8 sec_level)
-+int smp_conn_security(struct hci_conn *hcon, __u8 sec_level)
- {
--	struct hci_conn *hcon = conn->hcon;
-+	struct l2cap_conn *conn = hcon->l2cap_data;
- 	struct smp_chan *smp = conn->smp_chan;
- 	__u8 authreq;
- 
+@@ -258,7 +263,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full
+ /**
+  * async_synchronize_cookie_domain - synchronize asynchronous function calls within a certain domain with cookie checkpointing
+  * @cookie: async_cookie_t to use as checkpoint
+- * @running: running list to synchronize on
++ * @running: running list to synchronize on, NULL indicates all lists
+  *
+  * This function waits until all asynchronous function calls for the
+  * synchronization domain specified by the running list @list submitted
 
 
