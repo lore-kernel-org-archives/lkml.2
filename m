@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031912Ab2I1ViD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:38:03 -0400
-Received: from smtp161.dfw.emailsrvr.com ([67.192.241.161]:34944 "EHLO
-	smtp161.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964894Ab2I1Vh6 (ORCPT
+	id S1946305Ab2I1Vi2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:38:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58980 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423371Ab2I1Vg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:37:58 -0400
-Message-ID: <506618BA.4070509@calxeda.com>
-Date: Fri, 28 Sep 2012 16:38:02 -0500
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: Re: [PATCH 02/12] ata: mark probe function as __devinit rather than
- __init
-References: <1348868177-21205-1-git-send-email-arnd@arndb.de> <1348868177-21205-3-git-send-email-arnd@arndb.de>
-In-Reply-To: <1348868177-21205-3-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Sep 2012 17:36:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 12/12] time/jiffies: bring back unconditional LATCH definition
+Date: Fri, 28 Sep 2012 23:36:17 +0200
+Message-Id: <1348868177-21205-13-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1348868177-21205-1-git-send-email-arnd@arndb.de>
+References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:z+i04FELI9ViJEc3dVE+85Eaap8xKYmZ7c0UyQiQlQe
+ 3IUIHtAQpokjXP29K+2hUmdwr/2U+8ZgSw6zJjxdTIb/teUJV1
+ Vnbdvs0aWtVdOofOkieLzd1lOf4SFEQ1NUJqH4mCTKRc8bvMfp
+ sscYT07jV8sZGUDcdYFTmNeLrkzSUvPtb7qTXN9C8VTPW9IcUF
+ httd3ph7Pdj4cw7N+Je98jc4uGnVzqBmGNhiSqBVsNW0vRJtPL
+ 7rCQKS8Dsa8nY9nYkZa7d/eWZFSCfaeGl81hkreseXkPK1auEo
+ 1agm7IYzOInwm1O4Gk339AMf03dBo2AfhZEIAU/eAkS8hkhDEP
+ mIDBpcAQOjuldX7NJYIGjtgT92CKFvMsR1u8eCQyQC3DAzzMj5
+ x6BfReiEThdtQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 04:36 PM, Arnd Bergmann wrote:
-> Functions for hotplugging must be marked as __devinit so
-> they do not get discarded, as pointed out by a build time
-> warning from modpost.
-> 
-> Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Jeff Garzik <jgarzik@redhat.com>
-> ---
->  drivers/ata/sata_highbank.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-> index 0d7c4c2..36a141a 100644
-> --- a/drivers/ata/sata_highbank.c
-> +++ b/drivers/ata/sata_highbank.c
-> @@ -260,7 +260,7 @@ static const struct of_device_id ahci_of_match[] = {
->  };
->  MODULE_DEVICE_TABLE(of, ahci_of_match);
->  
-> -static int __init ahci_highbank_probe(struct platform_device *pdev)
-> +static int __devinit ahci_highbank_probe(struct platform_device *pdev)
->  {
->  	struct device *dev = &pdev->dev;
->  	struct ahci_host_priv *hpriv;
+Patch a7ea3bbf5d "time/jiffies: Allow CLOCK_TICK_RATE to be undefined"
+breaks the compilation of targets that rely on the LATCH definition,
+because of recursive header file inclusion not defining CLOCK_TICK_RATE
+before it is checked here.
 
-Thanks. I just ran into this today and couldn't figure out the error
-message.
+This fixes the problem by moving LATCH back to where it was, but it
+seems that there are still cases where SHIFTED_HZ is defined incorrectly
+because of the same problem. Need to investigate further.
 
-Acked-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Without this patch, building h7201_defconfig results in:
 
---Mark Langsdorf
-Calxeda, Inc.
+arch/arm/mach-h720x/common.c: In function 'h720x_gettimeoffset':
+arch/arm/mach-h720x/common.c:50:73: error: 'LATCH' undeclared (first use in this function)
+arch/arm/mach-h720x/common.c:50:73: note: each undeclared identifier is reported only once for each function it appears in
+arch/arm/mach-h720x/common.c:51:1: warning: control reaches end of non-void function [-Wreturn-type]
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/jiffies.h |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 05e3c2c7..d229ada 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -51,9 +51,10 @@
+ #define SH_DIV(NOM,DEN,LSH) (   (((NOM) / (DEN)) << (LSH))              \
+                              + ((((NOM) % (DEN)) << (LSH)) + (DEN) / 2) / (DEN))
+ 
+-#ifdef CLOCK_TICK_RATE
+ /* LATCH is used in the interval timer and ftape setup. */
+-# define LATCH ((CLOCK_TICK_RATE + HZ/2) / HZ)	/* For divider */
++#define LATCH ((CLOCK_TICK_RATE + HZ/2) / HZ)	/* For divider */
++
++#ifdef CLOCK_TICK_RATE
+ 
+ /*
+  * HZ is the requested value. However the CLOCK_TICK_RATE may not allow
+-- 
+1.7.10
 
