@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab2I1S4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:56:12 -0400
+	id S932315Ab2I1S4T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:56:19 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263Ab2I1S4H (ORCPT
+	with ESMTP id S932263Ab2I1S4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:56:07 -0400
+	Fri, 28 Sep 2012 14:56:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Colin Ian King <colin.king@canonical.com>
-Subject: [ 041/262] eCryptfs: Copy up attributes of the lower target inode after rename
-Date: Fri, 28 Sep 2012 11:49:30 -0700
-Message-Id: <20120928183002.841727280@linuxfoundation.org>
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [ 051/262] ARM: clk-imx25: Fix SSI clock registration
+Date: Fri, 28 Sep 2012 11:49:40 -0700
+Message-Id: <20120928183003.935825183@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,62 +29,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 8335eafc2859e1a26282bef7c3d19f3d68868b8a upstream.
+commit 912bfe76528c287bc4812521b8d53366954b39a5 upstream.
 
-After calling into the lower filesystem to do a rename, the lower target
-inode's attributes were not copied up to the eCryptfs target inode. This
-resulted in the eCryptfs target inode staying around, rather than being
-evicted, because i_nlink was not updated for the eCryptfs inode. This
-also meant that eCryptfs didn't do the final iput() on the lower target
-inode so it stayed around, as well. This would result in a failure to
-free up space occupied by the target file in the rename() operation.
-Both target inodes would eventually be evicted when the eCryptfs
-filesystem was unmounted.
+SSI block has two types of clock:
 
-This patch calls fsstack_copy_attr_all() after the lower filesystem
-does its ->rename() so that important inode attributes, such as i_nlink,
-are updated at the eCryptfs layer. ecryptfs_evict_inode() is now called
-and eCryptfs can drop its final reference on the lower inode.
+ipg: bus clock, the clock needed for accessing registers.
+per: peripheral clock, the clock needed for generating the bit rate.
 
-http://launchpad.net/bugs/561129
+Currently SSI driver only supports slave mode and only need to handle
+the ipg clock, because the peripheral clock comes from the master codec.
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Tested-by: Colin Ian King <colin.king@canonical.com>
+Only register the ipg clock and do not register the peripheral clock for ssi.
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/inode.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/mach-imx/clk-imx25.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -621,6 +621,7 @@ ecryptfs_rename(struct inode *old_dir, s
- 	struct dentry *lower_old_dir_dentry;
- 	struct dentry *lower_new_dir_dentry;
- 	struct dentry *trap = NULL;
-+	struct inode *target_inode;
- 
- 	lower_old_dentry = ecryptfs_dentry_to_lower(old_dentry);
- 	lower_new_dentry = ecryptfs_dentry_to_lower(new_dentry);
-@@ -628,6 +629,7 @@ ecryptfs_rename(struct inode *old_dir, s
- 	dget(lower_new_dentry);
- 	lower_old_dir_dentry = dget_parent(lower_old_dentry);
- 	lower_new_dir_dentry = dget_parent(lower_new_dentry);
-+	target_inode = new_dentry->d_inode;
- 	trap = lock_rename(lower_old_dir_dentry, lower_new_dir_dentry);
- 	/* source should not be ancestor of target */
- 	if (trap == lower_old_dentry) {
-@@ -643,6 +645,9 @@ ecryptfs_rename(struct inode *old_dir, s
- 			lower_new_dir_dentry->d_inode, lower_new_dentry);
- 	if (rc)
- 		goto out_lock;
-+	if (target_inode)
-+		fsstack_copy_attr_all(target_inode,
-+				      ecryptfs_inode_to_lower(target_inode));
- 	fsstack_copy_attr_all(new_dir, lower_new_dir_dentry->d_inode);
- 	if (new_dir != old_dir)
- 		fsstack_copy_attr_all(old_dir, lower_old_dir_dentry->d_inode);
+--- a/arch/arm/mach-imx/clk-imx25.c
++++ b/arch/arm/mach-imx/clk-imx25.c
+@@ -222,10 +222,8 @@ int __init mx25_clocks_init(void)
+ 	clk_register_clkdev(clk[lcdc_ipg], "ipg", "imx-fb.0");
+ 	clk_register_clkdev(clk[lcdc_ahb], "ahb", "imx-fb.0");
+ 	clk_register_clkdev(clk[wdt_ipg], NULL, "imx2-wdt.0");
+-	clk_register_clkdev(clk[ssi1_ipg_per], "per", "imx-ssi.0");
+-	clk_register_clkdev(clk[ssi1_ipg], "ipg", "imx-ssi.0");
+-	clk_register_clkdev(clk[ssi2_ipg_per], "per", "imx-ssi.1");
+-	clk_register_clkdev(clk[ssi2_ipg], "ipg", "imx-ssi.1");
++	clk_register_clkdev(clk[ssi1_ipg], NULL, "imx-ssi.0");
++	clk_register_clkdev(clk[ssi2_ipg], NULL, "imx-ssi.1");
+ 	clk_register_clkdev(clk[esdhc1_ipg_per], "per", "sdhci-esdhc-imx25.0");
+ 	clk_register_clkdev(clk[esdhc1_ipg], "ipg", "sdhci-esdhc-imx25.0");
+ 	clk_register_clkdev(clk[esdhc1_ahb], "ahb", "sdhci-esdhc-imx25.0");
 
 
