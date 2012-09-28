@@ -1,51 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab2I1QHD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 12:07:03 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43352 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757484Ab2I1QHA (ORCPT
+	id S1758297Ab2I1QKz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 12:10:55 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41949 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756195Ab2I1QKy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 12:07:00 -0400
-Date: Fri, 28 Sep 2012 09:06:56 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Re: 3.4.10 i915 [GM45] regression
-Message-ID: <20120928160656.GE2625@kroah.com>
-References: <2372445.fuIXicT4H0@tux200s>
- <20120907011542.GA26688@kroah.com>
- <2329337.9aFzn0oRxF@tux200s>
- <CAKMK7uHqk1x4dM9ZA0usskNoArR6eTFmEtVw+_juzVq1NeYg+A@mail.gmail.com>
- <20120910135803.GB2972@herton-Z68MA-D2H-B3>
- <20120910140734.GC2972@herton-Z68MA-D2H-B3>
- <20120926234223.GC26223@kroah.com>
- <20120927185917.GC3211@herton-Z68MA-D2H-B3>
- <20120927202553.GA19276@kroah.com>
- <CAKMK7uFm7YVMeUKUj4wmCeV4myYYODrp2XFDn5O8PHmjg3_U4g@mail.gmail.com>
+	Fri, 28 Sep 2012 12:10:54 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "hs@denx.de" <hs@denx.de>,
+        "mikedunn@newsguy.com" <mikedunn@newsguy.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [REMINDER: PATCH 1/1] mtd:nand:clk: preparation for switch to
+ common clock framework
+Thread-Topic: [REMINDER: PATCH 1/1] mtd:nand:clk: preparation for switch to
+ common clock framework
+Thread-Index: AQHNnZPIZ6zk10dzA0GJ1jdD0okYrQ==
+Date: Fri, 28 Sep 2012 16:10:32 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B7041EF679@DFLE12.ent.ti.com>
+References: <1347899860-24358-1-git-send-email-m-karicheri2@ti.com>
+ <1347899860-24358-2-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1347899860-24358-2-git-send-email-m-karicheri2@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKMK7uFm7YVMeUKUj4wmCeV4myYYODrp2XFDn5O8PHmjg3_U4g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 08:16:01AM +0200, Daniel Vetter wrote:
-> On Thu, Sep 27, 2012 at 10:25 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> I think the conclusion looking at the bug report
-> >> (https://bugs.freedesktop.org/show_bug.cgi?id=54575) is
-> >> that the commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 should be
-> >> reverted on 3.4, please correct me if I'm wrong.
-> >
-> > Daniel, do you agree with this?
-> 
-> Yeah, seems like the sanest thing to do given the situation and lack
-> of any understanding what's actually going on.
+>> -----Original Message-----
+>> From: Karicheri, Muralidharan
+>> Sent: Monday, September 17, 2012 12:38 PM
+>> To: dwmw2@infradead.org; artem.bityutskiy@linux.intel.com; hs@denx.de;
+>> mikedunn@newsguy.com; linux-mtd@lists.infradead.org; linux-kernel@vger.kernel.org;
+>> davinci-linux-open-source@linux.davincidsp.com; linux-arm-kernel@lists.infradead.org
+>> Cc: Karicheri, Muralidharan
+>> Subject: [PATCH 1/1] mtd:nand:clk: preparation for switch to common clock framework
+>> 
+>> As a first step towards migrating davinci platforms to use common clock
+>> framework, replace all instances of clk_enable() with clk_prepare_enable()
+>> and clk_disable() with clk_disable_unprepare(). Until the platform is
+>> switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
+>> adds a might_sleep() call and would work without any issues.
+>> 
+>> This will make it easy later to switch to common clk based implementation
+>> of clk driver from DaVinci specific driver.
+>> 
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> Reviewed-by: Mike Turquette <mturquette@linaro.org>
+>> 
+>> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+>> index f386b3c..df1ab7d 100644
+>> --- a/drivers/mtd/nand/davinci_nand.c
+>> +++ b/drivers/mtd/nand/davinci_nand.c
+>> @@ -724,7 +724,7 @@ static int __init nand_davinci_probe(struct platform_device
+>> *pdev)
+>>  		goto err_clk;
+>>  	}
+>> 
+>> -	ret = clk_enable(info->clk);
+>> +	ret = clk_prepare_enable(info->clk);
+>>  	if (ret < 0) {
+>>  		dev_dbg(&pdev->dev, "unable to enable AEMIF clock, err %d\n",
+>>  			ret);
+>> @@ -835,7 +835,7 @@ syndrome_done:
+>> 
+>>  err_scan:
+>>  err_timing:
+>> -	clk_disable(info->clk);
+>> +	clk_disable_unprepare(info->clk);
+>> 
+>>  err_clk_enable:
+>>  	clk_put(info->clk);
+>> @@ -872,7 +872,7 @@ static int __exit nand_davinci_remove(struct platform_device
+>> *pdev)
+>> 
+>>  	nand_release(&info->mtd);
+>> 
+>> -	clk_disable(info->clk);
+>> +	clk_disable_unprepare(info->clk);
+>>  	clk_put(info->clk);
+>> 
+>>  	kfree(info);
+>> --
+>> 1.7.9.5
 
-Ok, now reverted, thanks.
+Could you please review and apply this patch to mtd subsystem tree for linux-next?
 
-greg k-h
+Murali Karicheri
+Software Design Engineer
+
+
