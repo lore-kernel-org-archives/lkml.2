@@ -1,57 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab2I1OTn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:19:43 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:47919 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757302Ab2I1OTm (ORCPT
+	id S932109Ab2I1OUZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:20:25 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:35757 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756195Ab2I1OUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:19:42 -0400
-Date: Fri, 28 Sep 2012 14:10:20 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: David Rientjes <rientjes@google.com>
-cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
-In-Reply-To: <alpine.DEB.2.00.1209271551220.13360@chino.kir.corp.google.com>
-Message-ID: <0000013a0d36b332-44a8ef43-b881-4267-bb4b-f2e441ae185c-000000@email.amazonses.com>
-References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com>
- <0000013a03150b18-b7c1bfbe-967f-4c33-86e0-f3ca344706cd-000000@email.amazonses.com> <alpine.DEB.2.00.1209261810180.7072@chino.kir.corp.google.com> <0000013a0804637a-82ca7649-bc6c-42ef-9a2c-e79b63f47a23-000000@email.amazonses.com>
- <alpine.DEB.2.00.1209271551220.13360@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 28 Sep 2012 10:20:24 -0400
+Date: Fri, 28 Sep 2012 10:20:18 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/16] iommu/amd: Add IRTE invalidation routine
+Message-ID: <20120928142017.GE7483@localhost.localdomain>
+References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+ <1348835046-3262-8-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348835046-3262-8-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Sep 2012, David Rientjes wrote:
+On Fri, Sep 28, 2012 at 02:23:57PM +0200, Joerg Roedel wrote:
+> Add routine to invalidate the IOMMU cache for interupt
+> translations. Also include the IRTE caches when flushing all
+> IOMMU caches.
+> 
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> ---
+>  drivers/iommu/amd_iommu.c       |   27 +++++++++++++++++++++++++++
+>  drivers/iommu/amd_iommu_types.h |    1 +
+>  2 files changed, 28 insertions(+)
+> 
+> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+> index b6a8079..a2c1f7a 100644
+> --- a/drivers/iommu/amd_iommu.c
+> +++ b/drivers/iommu/amd_iommu.c
+> @@ -902,6 +902,13 @@ static void build_inv_all(struct iommu_cmd *cmd)
+>  	CMD_SET_TYPE(cmd, CMD_INV_ALL);
+>  }
+>  
+> +static void build_inv_irt(struct iommu_cmd *cmd, u16 devid)
+> +{
+> +	memset(cmd, 0, sizeof(*cmd));
+> +	cmd->data[0] = devid;
+> +	CMD_SET_TYPE(cmd, CMD_INV_IRT);
+> +}
+> +
+>  /*
+>   * Writes the command to the IOMMUs command buffer and informs the
+>   * hardware about the new command.
+> @@ -1023,12 +1030,32 @@ static void iommu_flush_all(struct amd_iommu *iommu)
+>  	iommu_completion_wait(iommu);
+>  }
+>  
+> +static void iommu_flush_irt(struct amd_iommu *iommu, u16 devid)
+> +{
+> +	struct iommu_cmd cmd;
+> +
+> +	build_inv_irt(&cmd, devid);
+> +
+> +	iommu_queue_command(iommu, &cmd);
+> +}
+> +
+> +static void iommu_flush_irt_all(struct amd_iommu *iommu)
+> +{
+> +	u32 devid;
+> +
+> +	for (devid = 0; devid <= 0xffff; ++devid)
 
-> No, it's implementation defined so it shouldn't be in kmem_cache_create(),
-> it should be in __kmem_cache_create()
+Should this be #define? Or perhaps based of sizeof?
 
-The flags are standardized between allocators. We carve out a couple of
-bits here that can be slab specific.
+Is there a specific reason that it is u16 in the build_inv_irt but here it is u32?
 
-> > There *are* multiple slab allocators using those bits! And this works for
-> > them. There is nothing too restrictive here. The internal flags are
-> > standardized by this patch to be in the highest nibble.
-> >
->
-> I'm referring to additional slab allocators that will be proposed for
-> inclusion shortly.
-
-I am sorry but we cannot consider something that has not been discussed
-and publicly reviewed on the mailing list before. We have no way to
-understand your rationales at this point and it would take quite some time
-to review a new allocator. I would at least have expected the design of
-the allocator to be discussed on linux-mm. Nothing of that nature has
-happened as far as I can tell.
-
-I think there was a presentation at one of the conference but sadly I was
-not able to attend it. I tried to find some details on what was proposed
-but so far I have been unsuccessful.
-
+> +		iommu_flush_irt(iommu, devid);
+> +
+> +	iommu_completion_wait(iommu);
+> +}
+> +
+>  void iommu_flush_all_caches(struct amd_iommu *iommu)
+>  {
+>  	if (iommu_feature(iommu, FEATURE_IA)) {
+>  		iommu_flush_all(iommu);
+>  	} else {
+>  		iommu_flush_dte_all(iommu);
+> +		iommu_flush_irt_all(iommu);
+>  		iommu_flush_tlb_all(iommu);
+>  	}
+>  }
+> diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+> index 1a7d480..b183306 100644
+> --- a/drivers/iommu/amd_iommu_types.h
+> +++ b/drivers/iommu/amd_iommu_types.h
+> @@ -152,6 +152,7 @@
+>  #define CMD_INV_DEV_ENTRY       0x02
+>  #define CMD_INV_IOMMU_PAGES	0x03
+>  #define CMD_INV_IOTLB_PAGES	0x04
+> +#define CMD_INV_IRT		0x05
+>  #define CMD_COMPLETE_PPR	0x07
+>  #define CMD_INV_ALL		0x08
+>  
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> iommu mailing list
+> iommu@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/iommu
