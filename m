@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757916Ab2I1NaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 09:30:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18476 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755977Ab2I1NaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 09:30:21 -0400
-Date: Fri, 28 Sep 2012 15:30:06 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org
-Subject: Re: [patch for-3.6] mm, thp: fix mapped pages avoiding unevictable
- list on mlock
-Message-ID: <20120928133005.GA19474@redhat.com>
-References: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com>
+	id S1758076Ab2I1NbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 09:31:09 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:51583 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757240Ab2I1NbG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 09:31:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com>
+In-Reply-To: <20120928125758.GK31006@arwen.pp.htv.fi>
+References: <1348836795-4783-1-git-send-email-kishon@ti.com>
+	<1348836795-4783-2-git-send-email-kishon@ti.com>
+	<20120928125758.GK31006@arwen.pp.htv.fi>
+Date: Fri, 28 Sep 2012 19:01:04 +0530
+Message-ID: <CAAe_U6JX8nqhZU-m+0Cfh1-xEkZhXNf2ecYcg_JX9mx5fv1b3A@mail.gmail.com>
+Subject: Re: [PATCH 1/6] usb: dwc3-omap: use of_platform API to create dwc3
+ core pdev
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: balbi@ti.com
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Hi,
 
-On Wed, Sep 19, 2012 at 06:19:27PM -0700, David Rientjes wrote:
-> +	if ((flags & FOLL_MLOCK) && (vma->vm_flags & VM_LOCKED)) {
-> +		if (page->mapping && trylock_page(page)) {
-> +			lru_add_drain();
-> +			if (page->mapping)
-> +				mlock_vma_page(page);
-> +			unlock_page(page);
-> +		}
-> +	}
+On Fri, Sep 28, 2012 at 6:27 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Fri, Sep 28, 2012 at 06:23:10PM +0530, Kishon Vijay Abraham I wrote:
+>> Used of_platform_populate() to populate dwc3 core platform_device
+>> from device tree data. Since now the allocation of unique device id is
+>> handled be of_*, removed the call to dwc3_get_device_id.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>
+> I think it's best if you split the use of device_for_each_child() from
+> this patch. So first do the device_for_each_child() part, then later use
+> of_platform_populate().
 
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+I think it's better to have it both together as of_platform_populate
+will create the device and the device_for_each_child() part will
+delete it on error conditions and during driver removal.
+In this patch the first device_for_each_child() comes in error
+condition and it is not needed if we have not created the device using
+of_platform_populate.
 
-Without the patch the kernel will be perfectly fine too, this is is
-only to show more "uptodate" values in meminfo.
-
-The meminfo would eventually go in sync as the vmscan started walking
-lrus and the old behavior will still happen when trylock
-fails.
-
-Without the patch the refiling events happen lazily as needed, now
-they happen even if they're not needed.
-
-In some ways we could drop this and also the 4k case and we'd overall
-improve performance.
-
-But transparent hugepages must behave identical to 4k pages, so unless
-we remove it from the 4k case, it's certainly good to apply the above.
-
-The patch can be deferred to 3.7 if needed.
-
-Thanks!
-Andrea
+Thanks
+Kishon
