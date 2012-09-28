@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032010Ab2I1UXA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:23:00 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46787 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031983Ab2I1UWv (ORCPT
+	id S1032026Ab2I1UXK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:23:10 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031263Ab2I1UXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:22:51 -0400
+	Fri, 28 Sep 2012 16:23:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 026/218] sfc: Fix reporting of IPv4 full filters through ethtool
-Date: Fri, 28 Sep 2012 13:14:03 -0700
-Message-Id: <20120928201504.387557862@linuxfoundation.org>
+        Dmitry Kozlov <xeb@mail.ru>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 028/218] l2tp: avoid to use synchronize_rcu in tunnel free function
+Date: Fri, 28 Sep 2012 13:14:05 -0700
+Message-Id: <20120928201504.615953365@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,30 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: "xeb@mail.ru" <xeb@mail.ru>
 
-[ Upstream commit ac70b2e9a13423b5efa0178e081936ce6979aea5 ]
+[ Upstream commit 99469c32f79a32d8481f87be0d3c66dad286f4ec ]
 
-ETHTOOL_GRXCLSRULE returns filters for a TCP/IPv4 or UDP/IPv4 4-tuple
-with source and destination swapped.
+Avoid to use synchronize_rcu in l2tp_tunnel_free because context may be
+atomic.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Dmitry Kozlov <xeb@mail.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- drivers/net/ethernet/sfc/ethtool.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/l2tp/l2tp_core.c |    3 +--
+ net/l2tp/l2tp_core.h |    1 +
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/sfc/ethtool.c
-+++ b/drivers/net/ethernet/sfc/ethtool.c
-@@ -863,8 +863,8 @@ static int efx_ethtool_get_class_rule(st
- 				       &ip_entry->ip4dst, &ip_entry->pdst);
- 	if (rc != 0) {
- 		rc = efx_filter_get_ipv4_full(
--			&spec, &proto, &ip_entry->ip4src, &ip_entry->psrc,
--			&ip_entry->ip4dst, &ip_entry->pdst);
-+			&spec, &proto, &ip_entry->ip4dst, &ip_entry->pdst,
-+			&ip_entry->ip4src, &ip_entry->psrc);
- 		EFX_WARN_ON_PARANOID(rc);
- 		ip_mask->ip4src = ~0;
- 		ip_mask->psrc = ~0;
+--- a/net/l2tp/l2tp_core.c
++++ b/net/l2tp/l2tp_core.c
+@@ -1253,11 +1253,10 @@ static void l2tp_tunnel_free(struct l2tp
+ 	/* Remove from tunnel list */
+ 	spin_lock_bh(&pn->l2tp_tunnel_list_lock);
+ 	list_del_rcu(&tunnel->list);
++	kfree_rcu(tunnel, rcu);
+ 	spin_unlock_bh(&pn->l2tp_tunnel_list_lock);
+-	synchronize_rcu();
+ 
+ 	atomic_dec(&l2tp_tunnel_count);
+-	kfree(tunnel);
+ }
+ 
+ /* Create a socket for the tunnel, if one isn't set up by
+--- a/net/l2tp/l2tp_core.h
++++ b/net/l2tp/l2tp_core.h
+@@ -157,6 +157,7 @@ struct l2tp_tunnel_cfg {
+ 
+ struct l2tp_tunnel {
+ 	int			magic;		/* Should be L2TP_TUNNEL_MAGIC */
++	struct rcu_head rcu;
+ 	rwlock_t		hlist_lock;	/* protect session_hlist */
+ 	struct hlist_head	session_hlist[L2TP_HASH_SIZE];
+ 						/* hashed list of sessions,
 
 
