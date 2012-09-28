@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030409Ab2I1TDE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:03:04 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030396Ab2I1TC6 (ORCPT
+	id S1030443Ab2I1TDU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:03:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030426Ab2I1TDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:02:58 -0400
+	Fri, 28 Sep 2012 15:03:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 181/262] drm/radeon: avoid turning off spread spectrum for used pll
-Date: Fri, 28 Sep 2012 11:51:50 -0700
-Message-Id: <20120928183019.451737426@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Subject: [ 185/262] drm/radeon: implement ACPI VFCT vbios fetch (v3)
+Date: Fri, 28 Sep 2012 11:51:54 -0700
+Message-Id: <20120928183019.908679757@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,85 +29,109 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: David Lamparter <equinox@diac24.net>
 
-commit 5efcc76c13a745f98e7b6604d6aca49761be1970 upstream.
+commit 268ba0a99f89a84dc5eb312470896113d0709c74 upstream.
 
-If spread spectrum is enabled and in use for a given pll we
-should not turn it off as it will lead to turning off display
-for crtc that use the pll (this behavior was observed on chelsea
-edp).
+This is required for pure UEFI systems.  The vbios is stored
+in ACPI rather than at the legacy vga location.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=26891
+
+V2: fix #ifdefs as per Greg's comments
+V3: fix it harder
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Jerome Glisse <jglisse@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_bios.c |   60 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -444,11 +444,28 @@ union atom_enable_ss {
- static void atombios_crtc_program_ss(struct radeon_device *rdev,
- 				     int enable,
- 				     int pll_id,
-+				     int crtc_id,
- 				     struct radeon_atom_ss *ss)
- {
-+	unsigned i;
- 	int index = GetIndexIntoMasterTable(COMMAND, EnableSpreadSpectrumOnPPLL);
- 	union atom_enable_ss args;
+--- a/drivers/gpu/drm/radeon/radeon_bios.c
++++ b/drivers/gpu/drm/radeon/radeon_bios.c
+@@ -32,6 +32,7 @@
  
-+	if (!enable) {
-+		for (i = 0; i < 6; i++) {
-+			if (rdev->mode_info.crtcs[i] &&
-+			    rdev->mode_info.crtcs[i]->enabled &&
-+			    i != crtc_id &&
-+			    pll_id == rdev->mode_info.crtcs[i]->pll_id) {
-+				/* one other crtc is using this pll don't turn
-+				 * off spread spectrum as it might turn off
-+				 * display on active crtc
-+				 */
-+				return;
-+			}
-+		}
+ #include <linux/vga_switcheroo.h>
+ #include <linux/slab.h>
++#include <linux/acpi.h>
+ /*
+  * BIOS.
+  */
+@@ -548,6 +549,63 @@ static bool radeon_read_disabled_bios(st
+ 		return legacy_read_disabled_bios(rdev);
+ }
+ 
++#ifdef CONFIG_ACPI
++static bool radeon_acpi_vfct_bios(struct radeon_device *rdev)
++{
++	bool ret = false;
++	struct acpi_table_header *hdr;
++	/* acpi_get_table_with_size is not exported :( */
++	acpi_size tbl_size = 0x7fffffff;
++	UEFI_ACPI_VFCT *vfct;
++	GOP_VBIOS_CONTENT *vbios;
++	VFCT_IMAGE_HEADER *vhdr;
++
++	if (!ACPI_SUCCESS(acpi_get_table("VFCT", 1, &hdr)))
++		return false;
++	if (tbl_size < sizeof(UEFI_ACPI_VFCT)) {
++		DRM_ERROR("ACPI VFCT table present but broken (too short #1)\n");
++		goto out_unmap;
 +	}
 +
- 	memset(&args, 0, sizeof(args));
++	vfct = (UEFI_ACPI_VFCT *)hdr;
++	if (vfct->VBIOSImageOffset + sizeof(VFCT_IMAGE_HEADER) > tbl_size) {
++		DRM_ERROR("ACPI VFCT table present but broken (too short #2)\n");
++		goto out_unmap;
++	}
++
++	vbios = (GOP_VBIOS_CONTENT *)((char *)hdr + vfct->VBIOSImageOffset);
++	vhdr = &vbios->VbiosHeader;
++	DRM_INFO("ACPI VFCT contains a BIOS for %02x:%02x.%d %04x:%04x, size %d\n",
++			vhdr->PCIBus, vhdr->PCIDevice, vhdr->PCIFunction,
++			vhdr->VendorID, vhdr->DeviceID, vhdr->ImageLength);
++
++	if (vhdr->PCIBus != rdev->pdev->bus->number ||
++	    vhdr->PCIDevice != PCI_SLOT(rdev->pdev->devfn) ||
++	    vhdr->PCIFunction != PCI_FUNC(rdev->pdev->devfn) ||
++	    vhdr->VendorID != rdev->pdev->vendor ||
++	    vhdr->DeviceID != rdev->pdev->device) {
++		DRM_INFO("ACPI VFCT table is not for this card\n");
++		goto out_unmap;
++	};
++
++	if (vfct->VBIOSImageOffset + sizeof(VFCT_IMAGE_HEADER) + vhdr->ImageLength > tbl_size) {
++		DRM_ERROR("ACPI VFCT image truncated\n");
++		goto out_unmap;
++	}
++
++	rdev->bios = kmemdup(&vbios->VbiosContent, vhdr->ImageLength, GFP_KERNEL);
++	ret = !!rdev->bios;
++
++out_unmap:
++	/* uh, no idea what to do here... */
++	return ret;
++}
++#else
++static inline bool radeon_acpi_vfct_bios(struct radeon_device *rdev)
++{
++	return false;
++}
++#endif
  
- 	if (ASIC_IS_DCE5(rdev)) {
-@@ -1036,7 +1053,7 @@ static void atombios_crtc_set_pll(struct
- 		radeon_compute_pll_legacy(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
- 					  &ref_div, &post_div);
+ bool radeon_get_bios(struct radeon_device *rdev)
+ {
+@@ -556,6 +614,8 @@ bool radeon_get_bios(struct radeon_devic
  
--	atombios_crtc_program_ss(rdev, ATOM_DISABLE, radeon_crtc->pll_id, &ss);
-+	atombios_crtc_program_ss(rdev, ATOM_DISABLE, radeon_crtc->pll_id, radeon_crtc->crtc_id, &ss);
- 
- 	atombios_crtc_program_pll(crtc, radeon_crtc->crtc_id, radeon_crtc->pll_id,
- 				  encoder_mode, radeon_encoder->encoder_id, mode->clock,
-@@ -1059,7 +1076,7 @@ static void atombios_crtc_set_pll(struct
- 			ss.step = step_size;
- 		}
- 
--		atombios_crtc_program_ss(rdev, ATOM_ENABLE, radeon_crtc->pll_id, &ss);
-+		atombios_crtc_program_ss(rdev, ATOM_ENABLE, radeon_crtc->pll_id, radeon_crtc->crtc_id, &ss);
- 	}
- }
- 
-@@ -1576,11 +1593,11 @@ void radeon_atom_disp_eng_pll_init(struc
- 								   ASIC_INTERNAL_SS_ON_DCPLL,
- 								   rdev->clock.default_dispclk);
- 		if (ss_enabled)
--			atombios_crtc_program_ss(rdev, ATOM_DISABLE, ATOM_DCPLL, &ss);
-+			atombios_crtc_program_ss(rdev, ATOM_DISABLE, ATOM_DCPLL, -1, &ss);
- 		/* XXX: DCE5, make sure voltage, dispclk is high enough */
- 		atombios_crtc_set_disp_eng_pll(rdev, rdev->clock.default_dispclk);
- 		if (ss_enabled)
--			atombios_crtc_program_ss(rdev, ATOM_ENABLE, ATOM_DCPLL, &ss);
-+			atombios_crtc_program_ss(rdev, ATOM_ENABLE, ATOM_DCPLL, -1, &ss);
- 	}
- 
- }
+ 	r = radeon_atrm_get_bios(rdev);
+ 	if (r == false)
++		r = radeon_acpi_vfct_bios(rdev);
++	if (r == false)
+ 		r = igp_read_bios_from_vram(rdev);
+ 	if (r == false)
+ 		r = radeon_read_bios(rdev);
 
 
