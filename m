@@ -1,114 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab2I1OUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 10:20:25 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:35757 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756195Ab2I1OUY (ORCPT
+	id S1757681Ab2I1OWK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 10:22:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56184 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab2I1OWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 10:20:24 -0400
-Date: Fri, 28 Sep 2012 10:20:18 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/16] iommu/amd: Add IRTE invalidation routine
-Message-ID: <20120928142017.GE7483@localhost.localdomain>
-References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
- <1348835046-3262-8-git-send-email-joerg.roedel@amd.com>
+	Fri, 28 Sep 2012 10:22:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348835046-3262-8-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20120928141338.GI7916@n2100.arm.linux.org.uk>
+References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com>
+	<CAK7N6vqS9PW85hgcA7EVzCk-TQo_ru4OcC5i0Rw-b2hvb4YoXg@mail.gmail.com>
+	<20120928084626.GB7916@n2100.arm.linux.org.uk>
+	<CACVXFVOOVvf4xOABnv1FqPOMH6_XwFcH-ZTfBDojQrZJyypT+A@mail.gmail.com>
+	<20120928135459.GH7916@n2100.arm.linux.org.uk>
+	<CACVXFVPs-TSoep3T_Pn3PgNEKWYSCiRNSnNOD66TcERUQJmmeA@mail.gmail.com>
+	<20120928141338.GI7916@n2100.arm.linux.org.uk>
+Date: Fri, 28 Sep 2012 22:22:06 +0800
+Message-ID: <CACVXFVPZYiNvBf1ongckAcsikG4FxrRrJ9C4Uye5+6qxP4jwBQ@mail.gmail.com>
+Subject: Re: [PATCH] driver core: fix possible missing of device probe
+From: Ming Lei <ming.lei@canonical.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: anish singh <anish198519851985@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 02:23:57PM +0200, Joerg Roedel wrote:
-> Add routine to invalidate the IOMMU cache for interupt
-> translations. Also include the IRTE caches when flushing all
-> IOMMU caches.
-> 
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  drivers/iommu/amd_iommu.c       |   27 +++++++++++++++++++++++++++
->  drivers/iommu/amd_iommu_types.h |    1 +
->  2 files changed, 28 insertions(+)
-> 
-> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-> index b6a8079..a2c1f7a 100644
-> --- a/drivers/iommu/amd_iommu.c
-> +++ b/drivers/iommu/amd_iommu.c
-> @@ -902,6 +902,13 @@ static void build_inv_all(struct iommu_cmd *cmd)
->  	CMD_SET_TYPE(cmd, CMD_INV_ALL);
->  }
->  
-> +static void build_inv_irt(struct iommu_cmd *cmd, u16 devid)
-> +{
-> +	memset(cmd, 0, sizeof(*cmd));
-> +	cmd->data[0] = devid;
-> +	CMD_SET_TYPE(cmd, CMD_INV_IRT);
-> +}
-> +
->  /*
->   * Writes the command to the IOMMUs command buffer and informs the
->   * hardware about the new command.
-> @@ -1023,12 +1030,32 @@ static void iommu_flush_all(struct amd_iommu *iommu)
->  	iommu_completion_wait(iommu);
->  }
->  
-> +static void iommu_flush_irt(struct amd_iommu *iommu, u16 devid)
-> +{
-> +	struct iommu_cmd cmd;
-> +
-> +	build_inv_irt(&cmd, devid);
-> +
-> +	iommu_queue_command(iommu, &cmd);
-> +}
-> +
-> +static void iommu_flush_irt_all(struct amd_iommu *iommu)
-> +{
-> +	u32 devid;
-> +
-> +	for (devid = 0; devid <= 0xffff; ++devid)
+On Fri, Sep 28, 2012 at 10:13 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Sep 28, 2012 at 10:07:22PM +0800, Ming Lei wrote:
+>> On Fri, Sep 28, 2012 at 9:55 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> >> I do not mention threads case in one CPU because the context in
+>> >> which device_add runs will always see the driver added into
+>> >
+>> > There you go again.  Look at my _much_ better description of the problem
+>> > and you'll notice that device_add has nothing to do with this.
+>>
+>> OK, I explain it again:
+>>
+>> CPU0                                          CPU1
+>>
+>> driver_register
+>>       ...
+>>       bus_add_driver
+>>               driver_attach
+>>                                               device_add(devb)
+>>
+>>               klist_add_tail(klist_drivers)
+>>
+>> When device_add(devb) is run just after completion of driver_attach
+>> and before klist_add_tail(klist_drivers), the 'devb' can't be probed
+>> in device_add because the driver hasn't been added into bus,
+>> and it wasn't be probed in driver_attach because driver_attach didn't
+>> see the device in the bus.
+>>
+>> So the 'devb' will be missed to be probed in the bus, won't it?
+>
+> Wait a moment.  You're describing a *totally* *different* problem to
+> the problem I reported.  I say - for the third time - that in the
 
-Should this be #define? Or perhaps based of sizeof?
+I don't see there is any difference between them. In my above description,
+it will become same if the 'device_add' is changed to 'bus_probe_device'.
 
-Is there a specific reason that it is u16 in the build_inv_irt but here it is u32?
+I have mentioned it in my commit log already.
 
-> +		iommu_flush_irt(iommu, devid);
-> +
-> +	iommu_completion_wait(iommu);
-> +}
-> +
->  void iommu_flush_all_caches(struct amd_iommu *iommu)
->  {
->  	if (iommu_feature(iommu, FEATURE_IA)) {
->  		iommu_flush_all(iommu);
->  	} else {
->  		iommu_flush_dte_all(iommu);
-> +		iommu_flush_irt_all(iommu);
->  		iommu_flush_tlb_all(iommu);
->  	}
->  }
-> diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-> index 1a7d480..b183306 100644
-> --- a/drivers/iommu/amd_iommu_types.h
-> +++ b/drivers/iommu/amd_iommu_types.h
-> @@ -152,6 +152,7 @@
->  #define CMD_INV_DEV_ENTRY       0x02
->  #define CMD_INV_IOMMU_PAGES	0x03
->  #define CMD_INV_IOTLB_PAGES	0x04
-> +#define CMD_INV_IRT		0x05
->  #define CMD_COMPLETE_PPR	0x07
->  #define CMD_INV_ALL		0x08
->  
-> -- 
-> 1.7.9.5
-> 
-> 
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+> problem I reported, device_add() has NOTHING TO DO WITH IT.
+>
+> In your previous mail, you complained that my description did not
+> cover another case.  I throw that back at you and say to you that
+> _your_ description does _not_ cover my case, but refers to a
+> _different_ problem which happens to be fixed by the _same_ fix.
+
+As said above, if 'device_add()' is replaced with 'bus_probe_device()',
+that becomes your problem, right?
+
+>
+> To attach my "reported-by" to a problem description which is not
+> the problem that I reported is bad practice, and actually creates
+> a lie.  If you wish to keep your problem description, then you must
+> remove my Reported-by, because the problem you refer to in your
+> description is not _my_ problem.
+
+I mentioned 'bus_probe_device'  case in my commit log.
+If you still think that is not your problem, I can remove the reported-by.
+
+
+Thanks,
+--
+Ming Lei
