@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab2I1BWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:22:12 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55460 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755186Ab2I1BWL (ORCPT
+	id S1756152Ab2I1B1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:27:34 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60816 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755278Ab2I1B1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:22:11 -0400
-Date: Thu, 27 Sep 2012 18:19:30 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: mathieu.poirier@linaro.org
-Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: [PATCH 48/57] power: ab8500 : quick re-attach for ext charger
-Message-ID: <20120928011930.GG5040@lizard>
-References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
- <1348589574-25655-49-git-send-email-mathieu.poirier@linaro.org>
+	Thu, 27 Sep 2012 21:27:32 -0400
+Message-ID: <5064FCFE.4070009@gmail.com>
+Date: Fri, 28 Sep 2012 03:27:26 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1348589574-25655-49-git-send-email-mathieu.poirier@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: dri-devel@lists.freedesktop.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: hot CPU with 3.6.0-rc7+ and intel graphic
+References: <506473D8.10904@gmx.de>
+In-Reply-To: <506473D8.10904@gmx.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 10:12:45AM -0600, mathieu.poirier@linaro.org wrote:
-> From: Rupesh Kumar <rupesh.kumar@stericsson.com>
+On 27.09.2012 17:42, Toralf Förster wrote:
+> I'm observing a high CPU usage at my ThinkPad T420 (i5-2540M CPU), w/
+> integrated intel graphic.
 > 
-> Quick re-attach charging behaviour is not required
-> for external ac charger. Internal AC/USB Charger removal
-> detection problem is due to a bug in AB8500 ASICs.
+> Powertop-2.1 shows that the GPU is always at 100%, although I've defined
+> these settings :
+> $> cat /etc/modprobe.d/i915.conf
+> options i915 i915_enable_rc6=7 lvds_downclock=0
 > 
-> Signed-off-by: Rupesh Kumar <rupesh.kumar@stericsson.com>
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> Reviewed-by: Hakan BERG <hakan.berg@stericsson.com>
-> Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
-> ---
->  drivers/power/abx500_chargalg.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
-> index 180deab..ce58f20 100644
-> --- a/drivers/power/abx500_chargalg.c
-> +++ b/drivers/power/abx500_chargalg.c
-> @@ -330,12 +330,13 @@ static int abx500_chargalg_check_charger_enable(struct abx500_chargalg *di)
->  		return di->usb_chg->ops.check_enable(di->usb_chg,
->  			di->bat->bat_type[di->bat->batt_id].normal_vol_lvl,
->  			di->bat->bat_type[di->bat->batt_id].normal_cur_lvl);
-> -	} else if (di->chg_info.charger_type & AC_CHG) {
-> +	} else if ((di->chg_info.charger_type & AC_CHG) &&
-> +					!(di->ac_chg->external)) {
->  		return di->ac_chg->ops.check_enable(di->ac_chg,
->  			di->bat->bat_type[di->bat->batt_id].normal_vol_lvl,
->  			di->bat->bat_type[di->bat->batt_id].normal_cur_lvl);
->  	}
-> -	return -ENXIO;
-> +	return 0;
+> Kernel 3.5.4 works fine, I don't see any differences in dmesg output.
 
-I'm not sure about this logic, but I guess it should be
+Could you try to bisect this problem?
 
-	} else {
-		return 0;
-	}
-	return -ENXIO;
 
->  }
->  
->  /**
-> -- 
-> 1.7.5.4
+Daniel
+
+
