@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab2I1MGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 08:06:44 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44777 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab2I1MGm (ORCPT
+	id S1757732Ab2I1MMi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 08:12:38 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:43646 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757519Ab2I1MMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 08:06:42 -0400
-Date: Fri, 28 Sep 2012 08:06:07 -0400
-From: Bob Copeland <me@bobcopeland.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: yongjun_wei@trendmicro.com.cn, linux-karma-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] omfs: convert to use beXX_add_cpu()
-Message-ID: <20120928120607.GA18992@localhost>
-References: <CAPgLHd-cc+_6316S9NxBFXHLdjM0trf1QvPt3aXhAE9on9u9WA@mail.gmail.com>
+	Fri, 28 Sep 2012 08:12:35 -0400
+X-Greylist: delayed 547 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 08:12:35 EDT
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: <gregkh@suse.de>, <alan@linux.intel.com>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Vineet.Gupta1@synopsys.com>,
+        <Alexey.Brodkin@synopsys.com>
+Subject: [PATCH] tty/8250_early: Prevent rounding error in uartclk to baud ratio
+Date: Fri, 28 Sep 2012 16:03:04 +0400
+Message-ID: <1348833784-31385-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd-cc+_6316S9NxBFXHLdjM0trf1QvPt3aXhAE9on9u9WA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Originating-IP: [10.225.15.77]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 12:51:01PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Convert cpu_to_beXX(beXX_to_cpu(E1) + E2) to use beXX_add_cpu().
-> 
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Modify divisor to select the nearest baud rate divider rather than the
+lowest. It minimizes baud rate errors especially on low UART clock
+frequencies.
 
-Thanks,
+For example, if uartclk is 33000000 and baud is 115200 the ratio is
+about 17.9 The current code selects 17 (5% error) but should select 18
+(0.5% error).
 
-Acked-by: Bob Copeland <me@bobcopeland.com>
+On the same lines as following:
+http://www.kernel.org/pub/linux/kernel/people/akpm/patches/2.6/2.6.9-rc3/2.6.9-rc3-mm2/broken-out/serial-pick-nearest-baud-rate-divider.patch
 
+Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+---
+ drivers/tty/serial/8250_early.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/8250_early.c b/drivers/tty/serial/8250_early.c
+index eaafb98..cfc46b7 100644
+--- a/drivers/tty/serial/8250_early.c
++++ b/drivers/tty/serial/8250_early.c
+@@ -140,7 +140,7 @@ static void __init init_port(struct early_serial8250_device *device)
+ 	serial_out(port, UART_FCR, 0);		/* no fifo */
+ 	serial_out(port, UART_MCR, 0x3);	/* DTR + RTS */
+ 
+-	divisor = port->uartclk / (16 * device->baud);
++	divisor = (port->uartclk + (8 * device->baud)) / (16 *	device->baud);
+ 	c = serial_in(port, UART_LCR);
+ 	serial_out(port, UART_LCR, c | UART_LCR_DLAB);
+ 	serial_out(port, UART_DLL, divisor & 0xff);
 -- 
-Bob Copeland %% www.bobcopeland.com
+1.7.9.5
+
