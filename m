@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab2I1Uvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:51:43 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55704 "EHLO
+	id S1759550Ab2I1UwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:52:01 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45906 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1945952Ab2I1Uso (ORCPT
+	by vger.kernel.org with ESMTP id S1945936Ab2I1Usk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:44 -0400
-X-Sasl-enc: jkhgpSAGRDV4l8PO7Bwo6xA0tskGZ2WF06uf7pFgezRl 1348865323
+	Fri, 28 Sep 2012 16:48:40 -0400
+X-Sasl-enc: 5US7jk3UnrUzFA9/OU67NLAyT3qHwaHLX9a+18th5KFo 1348865319
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 105/127] sched: Fix race in task_group()
-Date: Fri, 28 Sep 2012 13:34:38 -0700
-Message-Id: <20120928203058.151484033@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [ 094/127] md: make sure metadata is updated when spares are activated or removed.
+Date: Fri, 28 Sep 2012 13:34:27 -0700
+Message-Id: <20120928203056.912250649@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,149 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: NeilBrown <neilb@suse.de>
 
-commit 8323f26ce3425460769605a6aece7a174edaa7d1 upstream.
+commit 6dafab6b1383e912cd252fa809570b484eb6e0dc upstream.
 
-Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
-Don't call task_group() too many times in set_task_rq()"), he
-found the reason to be that the multiple task_group()
-invocations in set_task_rq() returned different values.
+It isn't always necessary to update the metadata when spares are
+removed as the presence-or-not of a spare isn't really important to
+the integrity of an array.
+Also activating a spare doesn't always require updating the metadata
+as the update on 'recovery-completed' is usually sufficient.
 
-Looking at all that I found a lack of serialization and plain
-wrong comments.
+However the introduction of 'replacement' devices have made these
+transitions sometimes more important.  For example the 'Replacement'
+flag isn't cleared until the original device is removed, so we need
+to ensure a metadata update after that 'spare' is removed.
 
-The below tries to fix it using an extra pointer which is
-updated under the appropriate scheduler locks. Its not pretty,
-but I can't really see another way given how all the cgroup
-stuff works.
+So set MD_CHANGE_DEVS whenever a spare is activated or removed, to
+complement the current situation where it is set when a spare is added
+or a device is failed (or a number of other less common situations).
 
-Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+This is suitable for -stable as out-of-data metadata could lead
+to data corruption.
+This is only relevant for 3.3 and later 9when 'replacement' as
+introduced.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/init_task.h |   12 +++++++++++-
- include/linux/sched.h     |    5 ++++-
- kernel/sched.c            |   32 ++++++++++++++++++--------------
- 3 files changed, 33 insertions(+), 16 deletions(-)
+ drivers/md/md.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -124,8 +124,17 @@ extern struct group_info init_groups;
- 
- extern struct cred init_cred;
- 
-+extern struct task_group root_task_group;
-+
-+#ifdef CONFIG_CGROUP_SCHED
-+# define INIT_CGROUP_SCHED(tsk)						\
-+	.sched_task_group = &root_task_group,
-+#else
-+# define INIT_CGROUP_SCHED(tsk)
-+#endif
-+
- #ifdef CONFIG_PERF_EVENTS
--# define INIT_PERF_EVENTS(tsk)					\
-+# define INIT_PERF_EVENTS(tsk)						\
- 	.perf_event_mutex = 						\
- 		 __MUTEX_INITIALIZER(tsk.perf_event_mutex),		\
- 	.perf_event_list = LIST_HEAD_INIT(tsk.perf_event_list),
-@@ -160,6 +169,7 @@ extern struct cred init_cred;
- 	},								\
- 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
- 	INIT_PUSHABLE_TASKS(tsk)					\
-+	INIT_CGROUP_SCHED(tsk)						\
- 	.ptraced	= LIST_HEAD_INIT(tsk.ptraced),			\
- 	.ptrace_entry	= LIST_HEAD_INIT(tsk.ptrace_entry),		\
- 	.real_parent	= &tsk,						\
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1235,6 +1235,9 @@ struct task_struct {
- 	const struct sched_class *sched_class;
- 	struct sched_entity se;
- 	struct sched_rt_entity rt;
-+#ifdef CONFIG_CGROUP_SCHED
-+	struct task_group *sched_task_group;
-+#endif
- 
- #ifdef CONFIG_PREEMPT_NOTIFIERS
- 	/* list of struct preempt_notifier: */
-@@ -2613,7 +2616,7 @@ extern int sched_group_set_rt_period(str
- extern long sched_group_rt_period(struct task_group *tg);
- extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
- #endif
--#endif
-+#endif /* CONFIG_CGROUP_SCHED */
- 
- extern int task_can_switch_user(struct user_struct *up,
- 					struct task_struct *tsk);
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -605,22 +605,19 @@ static inline int cpu_of(struct rq *rq)
- /*
-  * Return the group to which this tasks belongs.
-  *
-- * We use task_subsys_state_check() and extend the RCU verification with
-- * pi->lock and rq->lock because cpu_cgroup_attach() holds those locks for each
-- * task it moves into the cgroup. Therefore by holding either of those locks,
-- * we pin the task to the current cgroup.
-+ * We cannot use task_subsys_state() and friends because the cgroup
-+ * subsystem changes that value before the cgroup_subsys::attach() method
-+ * is called, therefore we cannot pin it and might observe the wrong value.
-+ *
-+ * The same is true for autogroup's p->signal->autogroup->tg, the autogroup
-+ * core changes this before calling sched_move_task().
-+ *
-+ * Instead we use a 'copy' which is updated from sched_move_task() while
-+ * holding both task_struct::pi_lock and rq::lock.
-  */
- static inline struct task_group *task_group(struct task_struct *p)
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7096,6 +7096,7 @@ static int remove_and_add_spares(mddev_t
  {
--	struct task_group *tg;
--	struct cgroup_subsys_state *css;
--
--	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
--			lockdep_is_held(&p->pi_lock) ||
--			lockdep_is_held(&task_rq(p)->lock));
--	tg = container_of(css, struct task_group, css);
--
--	return autogroup_task_group(p, tg);
-+	return p->sched_task_group;
+ 	mdk_rdev_t *rdev;
+ 	int spares = 0;
++	int removed = 0;
+ 
+ 	mddev->curr_resync_completed = 0;
+ 
+@@ -7111,6 +7112,7 @@ static int remove_and_add_spares(mddev_t
+ 				sprintf(nm,"rd%d", rdev->raid_disk);
+ 				sysfs_remove_link(&mddev->kobj, nm);
+ 				rdev->raid_disk = -1;
++				removed = 1;
+ 			}
+ 		}
+ 
+@@ -7139,6 +7141,8 @@ static int remove_and_add_spares(mddev_t
+ 			}
+ 		}
+ 	}
++	if (removed)
++		set_bit(MD_CHANGE_DEVS, &mddev->flags);
+ 	return spares;
  }
  
- /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
-@@ -2206,7 +2203,7 @@ void set_task_cpu(struct task_struct *p,
- 	 * a task's CPU. ->pi_lock for waking tasks, rq->lock for runnable tasks.
- 	 *
- 	 * sched_move_task() holds both and thus holding either pins the cgroup,
--	 * see set_task_rq().
-+	 * see task_group().
- 	 *
- 	 * Furthermore, all task_rq users should acquire both locks, see
- 	 * task_rq_lock().
-@@ -8545,6 +8542,7 @@ void sched_destroy_group(struct task_gro
-  */
- void sched_move_task(struct task_struct *tsk)
- {
-+	struct task_group *tg;
- 	int on_rq, running;
- 	unsigned long flags;
- 	struct rq *rq;
-@@ -8559,6 +8557,12 @@ void sched_move_task(struct task_struct
- 	if (unlikely(running))
- 		tsk->sched_class->put_prev_task(rq, tsk);
- 
-+	tg = container_of(task_subsys_state_check(tsk, cpu_cgroup_subsys_id,
-+				lockdep_is_held(&tsk->sighand->siglock)),
-+			  struct task_group, css);
-+	tg = autogroup_task_group(tsk, tg);
-+	tsk->sched_task_group = tg;
-+
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	if (tsk->sched_class->task_move_group)
- 		tsk->sched_class->task_move_group(tsk, on_rq);
+@@ -7152,9 +7156,11 @@ static void reap_sync_thread(mddev_t *md
+ 	    !test_bit(MD_RECOVERY_REQUESTED, &mddev->recovery)) {
+ 		/* success...*/
+ 		/* activate any spares */
+-		if (mddev->pers->spare_active(mddev))
++		if (mddev->pers->spare_active(mddev)) {
+ 			sysfs_notify(&mddev->kobj, NULL,
+ 				     "degraded");
++			set_bit(MD_CHANGE_DEVS, &mddev->flags);
++		}
+ 	}
+ 	if (test_bit(MD_RECOVERY_RESHAPE, &mddev->recovery) &&
+ 	    mddev->pers->finish_reshape)
 
 
