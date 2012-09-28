@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab2I1GDZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 02:03:25 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64648 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2I1GDY (ORCPT
+	id S1755038Ab2I1GEV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 02:04:21 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64686 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407Ab2I1GEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 02:03:24 -0400
+	Fri, 28 Sep 2012 02:04:12 -0400
+X-AuditID: 9c93016f-b7b1eae000000815-61-50653ddbd43f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 03/14] perf hists: Separate overhead and baseline columns
+References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+	<1348744175-11115-4-git-send-email-jolsa@redhat.com>
+Date: Fri, 28 Sep 2012 14:56:01 +0900
+In-Reply-To: <1348744175-11115-4-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Thu, 27 Sep 2012 13:09:24 +0200")
+Message-ID: <87zk4au1vy.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <7d5c2cac08134446583624cc124d46d9726bdb2d.1348736069.git.viresh.kumar@linaro.org>
-References: <cover.1348736069.git.viresh.kumar@linaro.org>
-	<7d5c2cac08134446583624cc124d46d9726bdb2d.1348736069.git.viresh.kumar@linaro.org>
-Date: Fri, 28 Sep 2012 11:33:23 +0530
-Message-ID: <CAKohpomEc7wAdvSK5dUfyeywwWt9+Z_DkQ56xoFRPy2-x9+A7w@mail.gmail.com>
-Subject: Re: [PATCH V2 3/3] workqueue: Schedule work on non-idle cpu instead
- of current one
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
-        peterz@infradead.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Arvind.Chauhan@arm.com, amit.kucheria@linaro.org,
-        vincent.guittot@linaro.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 September 2012 14:34, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Workqueues queues work on current cpu, if the caller haven't passed a preferred
-> cpu. This may wake up an idle CPU, which is actually not required.
+On Thu, 27 Sep 2012 13:09:24 +0200, Jiri Olsa wrote:
+> Currently the overhead and baseline columns are handled within
+> single function and the distinction is made by 'baseline hists'
+> pointer passed by 'struct perf_hpp::ptr'.
 >
-> This work can be processed by any CPU and so we must select a non-idle CPU here.
-> This patch adds in support in workqueue framework to get preferred CPU details
-> from the scheduler, instead of using current CPU.
+> Since hists pointer is now part of each hist_entry, it's possible
+> to locate paired hists pointer directly from the passed struct
+> hist_entry pointer.
 >
-> Most of the time when a work is queued, the current cpu isn't idle and so we
-> will choose it only. There are cases when a cpu is idle when it queues some
-> work. For example, consider following scenario:
-> - A cpu has programmed a timer and is IDLE now.
-> - CPU gets into interrupt handler due to timer and queues a work. As the CPU is
->   currently IDLE, we can queue this work to some other CPU.
+> Also separating those 2 columns makes the code more obvious.
+
+Yes, it was thinking about something like this.
+
+
 >
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > ---
->  kernel/workqueue.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 143fd8c..5fa4ba4 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1238,7 +1238,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
->                 struct global_cwq *last_gcwq;
->
->                 if (cpu == WORK_CPU_UNBOUND)
-> -                       cpu = raw_smp_processor_id();
-> +                       cpu = sched_select_cpu(0);
+[snip]
+> +static int hpp__color_baseline(struct perf_hpp *hpp, struct hist_entry *he)
+> +{
+> +	double percent = baseline_percent(he);
+> +
+> +	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%%", percent);
 
-Hi Tejun,
-
-Following change is also required with this patch:
+Is it possible to have a baseline value over 100%?  I changed 'overhead'
+colum format from '2 spaces + %5.2f + %' to '1 space + %6.2f + %' for
+the case.  Probably it'd better using it here too for consistency.
 
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1383,7 +1383,7 @@ static void __queue_delayed_work(int cpu, struct
-workqueue_struct *wq,
-                if (gcwq)
-                        lcpu = gcwq->cpu;
-                if (lcpu == WORK_CPU_UNBOUND)
--                       lcpu = raw_smp_processor_id();
-+                       lcpu = sched_select_cpu(0);
-        } else {
-                lcpu = WORK_CPU_UNBOUND;
-        }
+> +}
+> +
+> +static int hpp__entry_baseline(struct perf_hpp *hpp, struct hist_entry *he)
+> +{
+> +	double percent = baseline_percent(he);
+> +	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%%";
 
-Otherwise, we will end up running the re-reentrancy check, which we are trying
-to skip for delayed work.
+Ditto.
 
---
-viresh
+Thanks,
+Namhyung
+
+> +
+> +	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+> +}
+> +
