@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758744Ab2I1UvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:51:10 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58633 "EHLO
+	id S1758779Ab2I1Uv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:51:29 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36421 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161023Ab2I1Usq (ORCPT
+	by vger.kernel.org with ESMTP id S1161009Ab2I1Usp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:46 -0400
-X-Sasl-enc: ezqJu2qKi6WsvB/VNAlOX0Aw5nDH6AucztjalIrH/+Kg 1348865326
+	Fri, 28 Sep 2012 16:48:45 -0400
+X-Sasl-enc: zqtl3Bnt7m6jyQ14xjfVDsICu+14dWhH6mb8bCr78jJC 1348865324
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 107/127] drop_monitor: fix sleeping in invalid context warning
-Date: Fri, 28 Sep 2012 13:34:40 -0700
-Message-Id: <20120928203058.401858003@linuxfoundation.org>
+        Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [ 106/127] media: lirc_sir: make device registration work
+Date: Fri, 28 Sep 2012 13:34:39 -0700
+Message-Id: <20120928203058.266169802@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -30,114 +29,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Jarod Wilson <jarod@redhat.com>
 
-commit cde2e9a651b76d8db36ae94cd0febc82b637e5dd upstream.
+commit 4b71ca6bce8fab3d08c61bf330e781f957934ae1 upstream.
 
-Eric Dumazet pointed out this warning in the drop_monitor protocol to me:
+For one, the driver device pointer needs to be filled in, or the lirc core
+will refuse to load the driver. And we really need to wire up all the
+platform_device bits. This has been tested via the lirc sourceforge tree
+and verified to work, been sitting there for months, finally getting
+around to sending it. :\
 
-[   38.352571] BUG: sleeping function called from invalid context at kernel/mutex.c:85
-[   38.352576] in_atomic(): 1, irqs_disabled(): 0, pid: 4415, name: dropwatch
-[   38.352580] Pid: 4415, comm: dropwatch Not tainted 3.4.0-rc2+ #71
-[   38.352582] Call Trace:
-[   38.352592]  [<ffffffff8153aaf0>] ? trace_napi_poll_hit+0xd0/0xd0
-[   38.352599]  [<ffffffff81063f2a>] __might_sleep+0xca/0xf0
-[   38.352606]  [<ffffffff81655b16>] mutex_lock+0x26/0x50
-[   38.352610]  [<ffffffff8153aaf0>] ? trace_napi_poll_hit+0xd0/0xd0
-[   38.352616]  [<ffffffff810b72d9>] tracepoint_probe_register+0x29/0x90
-[   38.352621]  [<ffffffff8153a585>] set_all_monitor_traces+0x105/0x170
-[   38.352625]  [<ffffffff8153a8ca>] net_dm_cmd_trace+0x2a/0x40
-[   38.352630]  [<ffffffff8154a81a>] genl_rcv_msg+0x21a/0x2b0
-[   38.352636]  [<ffffffff810f8029>] ? zone_statistics+0x99/0xc0
-[   38.352640]  [<ffffffff8154a600>] ? genl_rcv+0x30/0x30
-[   38.352645]  [<ffffffff8154a059>] netlink_rcv_skb+0xa9/0xd0
-[   38.352649]  [<ffffffff8154a5f0>] genl_rcv+0x20/0x30
-[   38.352653]  [<ffffffff81549a7e>] netlink_unicast+0x1ae/0x1f0
-[   38.352658]  [<ffffffff81549d76>] netlink_sendmsg+0x2b6/0x310
-[   38.352663]  [<ffffffff8150824f>] sock_sendmsg+0x10f/0x130
-[   38.352668]  [<ffffffff8150abe0>] ? move_addr_to_kernel+0x60/0xb0
-[   38.352673]  [<ffffffff81515f04>] ? verify_iovec+0x64/0xe0
-[   38.352677]  [<ffffffff81509c46>] __sys_sendmsg+0x386/0x390
-[   38.352682]  [<ffffffff810ffaf9>] ? handle_mm_fault+0x139/0x210
-[   38.352687]  [<ffffffff8165b5bc>] ? do_page_fault+0x1ec/0x4f0
-[   38.352693]  [<ffffffff8106ba4d>] ? set_next_entity+0x9d/0xb0
-[   38.352699]  [<ffffffff81310b49>] ? tty_ldisc_deref+0x9/0x10
-[   38.352703]  [<ffffffff8106d363>] ? pick_next_task_fair+0x63/0x140
-[   38.352708]  [<ffffffff8150b8d4>] sys_sendmsg+0x44/0x80
-[   38.352713]  [<ffffffff8165f8e2>] system_call_fastpath+0x16/0x1b
-
-It stems from holding a spinlock (trace_state_lock) while attempting to register
-or unregister tracepoint hooks, making in_atomic() true in this context, leading
-to the warning when the tracepoint calls might_sleep() while its taking a mutex.
-Since we only use the trace_state_lock to prevent trace protocol state races, as
-well as hardware stat list updates on an rcu write side, we can just convert the
-spinlock to a mutex to avoid this problem.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/core/drop_monitor.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/staging/lirc/lirc_sir.c |   60 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 58 insertions(+), 2 deletions(-)
 
---- a/net/core/drop_monitor.c
-+++ b/net/core/drop_monitor.c
-@@ -42,7 +42,7 @@ static void send_dm_alert(struct work_st
-  * netlink alerts
-  */
- static int trace_state = TRACE_OFF;
--static DEFINE_SPINLOCK(trace_state_lock);
-+static DEFINE_MUTEX(trace_state_mutex);
+--- a/drivers/staging/lirc/lirc_sir.c
++++ b/drivers/staging/lirc/lirc_sir.c
+@@ -53,6 +53,7 @@
+ #include <linux/io.h>
+ #include <asm/irq.h>
+ #include <linux/fcntl.h>
++#include <linux/platform_device.h>
+ #ifdef LIRC_ON_SA1100
+ #include <asm/hardware.h>
+ #ifdef CONFIG_SA1100_COLLIE
+@@ -488,9 +489,11 @@ static struct lirc_driver driver = {
+ 	.owner		= THIS_MODULE,
+ };
  
- struct per_cpu_dm_data {
- 	struct work_struct dm_alert_work;
-@@ -213,7 +213,7 @@ static int set_all_monitor_traces(int st
- 	struct dm_hw_stat_delta *new_stat = NULL;
- 	struct dm_hw_stat_delta *temp;
++static struct platform_device *lirc_sir_dev;
  
--	spin_lock(&trace_state_lock);
-+	mutex_lock(&trace_state_mutex);
- 
- 	if (state == trace_state) {
- 		rc = -EAGAIN;
-@@ -252,7 +252,7 @@ static int set_all_monitor_traces(int st
- 		rc = -EINPROGRESS;
- 
- out_unlock:
--	spin_unlock(&trace_state_lock);
-+	mutex_unlock(&trace_state_mutex);
- 
- 	return rc;
+ static int init_chrdev(void)
+ {
++	driver.dev = &lirc_sir_dev->dev;
+ 	driver.minor = lirc_register_driver(&driver);
+ 	if (driver.minor < 0) {
+ 		printk(KERN_ERR LIRC_DRIVER_NAME ": init_chrdev() failed.\n");
+@@ -1216,20 +1219,71 @@ static int init_lirc_sir(void)
+ 	return 0;
  }
-@@ -295,12 +295,12 @@ static int dropmon_net_event(struct noti
  
- 		new_stat->dev = dev;
- 		new_stat->last_rx = jiffies;
--		spin_lock(&trace_state_lock);
-+		mutex_lock(&trace_state_mutex);
- 		list_add_rcu(&new_stat->list, &hw_stats_list);
--		spin_unlock(&trace_state_lock);
-+		mutex_unlock(&trace_state_mutex);
- 		break;
- 	case NETDEV_UNREGISTER:
--		spin_lock(&trace_state_lock);
-+		mutex_lock(&trace_state_mutex);
- 		list_for_each_entry_safe(new_stat, tmp, &hw_stats_list, list) {
- 			if (new_stat->dev == dev) {
- 				new_stat->dev = NULL;
-@@ -311,7 +311,7 @@ static int dropmon_net_event(struct noti
- 				}
- 			}
- 		}
--		spin_unlock(&trace_state_lock);
-+		mutex_unlock(&trace_state_mutex);
- 		break;
++static int __devinit lirc_sir_probe(struct platform_device *dev)
++{
++	return 0;
++}
++
++static int __devexit lirc_sir_remove(struct platform_device *dev)
++{
++	return 0;
++}
++
++static struct platform_driver lirc_sir_driver = {
++	.probe		= lirc_sir_probe,
++	.remove		= __devexit_p(lirc_sir_remove),
++	.driver		= {
++		.name	= "lirc_sir",
++		.owner	= THIS_MODULE,
++	},
++};
+ 
+ static int __init lirc_sir_init(void)
+ {
+ 	int retval;
+ 
++	retval = platform_driver_register(&lirc_sir_driver);
++	if (retval) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform driver register "
++		       "failed!\n");
++		return -ENODEV;
++	}
++
++	lirc_sir_dev = platform_device_alloc("lirc_dev", 0);
++	if (!lirc_sir_dev) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device alloc "
++		       "failed!\n");
++		retval = -ENOMEM;
++		goto pdev_alloc_fail;
++	}
++
++	retval = platform_device_add(lirc_sir_dev);
++	if (retval) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device add "
++		       "failed!\n");
++		retval = -ENODEV;
++		goto pdev_add_fail;
++	}
++
+ 	retval = init_chrdev();
+ 	if (retval < 0)
+-		return retval;
++		goto fail;
++
+ 	retval = init_lirc_sir();
+ 	if (retval) {
+ 		drop_chrdev();
+-		return retval;
++		goto fail;
  	}
- out:
++
+ 	return 0;
++
++fail:
++	platform_device_del(lirc_sir_dev);
++pdev_add_fail:
++	platform_device_put(lirc_sir_dev);
++pdev_alloc_fail:
++	platform_driver_unregister(&lirc_sir_driver);
++	return retval;
+ }
+ 
+ static void __exit lirc_sir_exit(void)
+@@ -1237,6 +1291,8 @@ static void __exit lirc_sir_exit(void)
+ 	drop_hardware();
+ 	drop_chrdev();
+ 	drop_port();
++	platform_device_unregister(lirc_sir_dev);
++	platform_driver_unregister(&lirc_sir_driver);
+ 	printk(KERN_INFO LIRC_DRIVER_NAME ": Uninstalled.\n");
+ }
+ 
 
 
