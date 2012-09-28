@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031198Ab2I1T15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:27:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	id S1031205Ab2I1T2T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:28:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030326Ab2I1TCd (ORCPT
+	with ESMTP id S1030320Ab2I1TCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:02:33 -0400
+	Fri, 28 Sep 2012 15:02:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Chris Mason <chris.mason@fusionio.com>, Ingo Molnar <mingo@elte.hu>,
-        Nicolas Pitre <nico@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 173/262] mutex: Place lock in contended state after fastpath_lock failure
-Date: Fri, 28 Sep 2012 11:51:42 -0700
-Message-Id: <20120928183018.432178544@linuxfoundation.org>
+        Dirk Behme <dirk.behme@de.bosch.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Troy Kisky <troy.kisky@boundarydevices.com>,
+        Xinyu Chen <xinyu.chen@freescale.com>
+Subject: [ 172/262] tty: serial: imx: dont reinit clock in imx_setup_ufcr()
+Date: Fri, 28 Sep 2012 11:51:41 -0700
+Message-Id: <20120928183018.319356722@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -32,80 +31,62 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Dirk Behme <dirk.behme@de.bosch.com>
 
-commit 0bce9c46bf3b15f485d82d7e81dabed6ebcc24b1 upstream.
+commit 7be0670f7b9198382938a03ff3db7f47ef6b4780 upstream.
 
-ARM recently moved to asm-generic/mutex-xchg.h for its mutex
-implementation after the previous implementation was found to be missing
-some crucial memory barriers. However, this has revealed some problems
-running hackbench on SMP platforms due to the way in which the
-MUTEX_SPIN_ON_OWNER code operates.
+Remove the clock configuration from imx_setup_ufcr(). This
+isn't needed here and will cause garbage output if done.
 
-The symptoms are that a bunch of hackbench tasks are left waiting on an
-unlocked mutex and therefore never get woken up to claim it. This boils
-down to the following sequence of events:
+To be be sure that we only touch the bits we want (TXTL and RXTL)
+we have to mask out all other bits of the UFCR register. Add
+one non-existing bit macro for this, too (bit 6, DCEDTE on i.MX6).
 
-        Task A        Task B        Task C        Lock value
-0                                                     1
-1       lock()                                        0
-2                     lock()                          0
-3                     spin(A)                         0
-4       unlock()                                      1
-5                                   lock()            0
-6                     cmpxchg(1,0)                    0
-7                     contended()                    -1
-8       lock()                                        0
-9       spin(C)                                       0
-10                                  unlock()          1
-11      cmpxchg(1,0)                                  0
-12      unlock()                                      1
-
-At this point, the lock is unlocked, but Task B is in an uninterruptible
-sleep with nobody to wake it up.
-
-This patch fixes the problem by ensuring we put the lock into the
-contended state if we fail to acquire it on the fastpath, ensuring that
-any blocked waiters are woken up when the mutex is released.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Chris Mason <chris.mason@fusionio.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-6e9lrw2avczr0617fzl5vqb8@git.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
+CC: Shawn Guo <shawn.guo@linaro.org>
+CC: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Troy Kisky <troy.kisky@boundarydevices.com>
+CC: Xinyu Chen <xinyu.chen@freescale.com>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/asm-generic/mutex-xchg.h |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/tty/serial/imx.c |   18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
---- a/include/asm-generic/mutex-xchg.h
-+++ b/include/asm-generic/mutex-xchg.h
-@@ -26,7 +26,13 @@ static inline void
- __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -132,6 +132,7 @@
+ #define  UCR4_OREN  	 (1<<1)  /* Receiver overrun interrupt enable */
+ #define  UCR4_DREN  	 (1<<0)  /* Recv data ready interrupt enable */
+ #define  UFCR_RXTL_SHF   0       /* Receiver trigger level shift */
++#define  UFCR_DCEDTE	 (1<<6)  /* DCE/DTE mode select */
+ #define  UFCR_RFDIV      (7<<7)  /* Reference freq divider mask */
+ #define  UFCR_RFDIV_REG(x)	(((x) < 7 ? 6 - (x) : 6) << 7)
+ #define  UFCR_TXTL_SHF   10      /* Transmitter trigger level shift */
+@@ -668,22 +669,11 @@ static void imx_break_ctl(struct uart_po
+ static int imx_setup_ufcr(struct imx_port *sport, unsigned int mode)
  {
- 	if (unlikely(atomic_xchg(count, 0) != 1))
--		fail_fn(count);
-+		/*
-+		 * We failed to acquire the lock, so mark it contended
-+		 * to ensure that any waiting tasks are woken up by the
-+		 * unlock slow path.
-+		 */
-+		if (likely(atomic_xchg(count, -1) != 1))
-+			fail_fn(count);
- }
+ 	unsigned int val;
+-	unsigned int ufcr_rfdiv;
+-
+-	/* set receiver / transmitter trigger level.
+-	 * RFDIV is set such way to satisfy requested uartclk value
+-	 */
+-	val = TXTL << 10 | RXTL;
+-	ufcr_rfdiv = (clk_get_rate(sport->clk_per) + sport->port.uartclk / 2)
+-			/ sport->port.uartclk;
+-
+-	if(!ufcr_rfdiv)
+-		ufcr_rfdiv = 1;
+-
+-	val |= UFCR_RFDIV_REG(ufcr_rfdiv);
  
- /**
-@@ -43,7 +49,8 @@ static inline int
- __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
- {
- 	if (unlikely(atomic_xchg(count, 0) != 1))
--		return fail_fn(count);
-+		if (likely(atomic_xchg(count, -1) != 1))
-+			return fail_fn(count);
++	/* set receiver / transmitter trigger level */
++	val = readl(sport->port.membase + UFCR) & (UFCR_RFDIV | UFCR_DCEDTE);
++	val |= TXTL << UFCR_TXTL_SHF | RXTL;
+ 	writel(val, sport->port.membase + UFCR);
+-
  	return 0;
  }
  
