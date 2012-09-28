@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031645Ab2I1U5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:57:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49275 "EHLO
+	id S1031919Ab2I1U5y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:57:54 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36626 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422962Ab2I1UsE (ORCPT
+	by vger.kernel.org with ESMTP id S1031541Ab2I1UsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:04 -0400
-X-Sasl-enc: sBRWtX5RfpGdQhMkhZoDD7Aimr578bxHvBaP1urxkA2e 1348865283
+	Fri, 28 Sep 2012 16:48:03 -0400
+X-Sasl-enc: E5Mo4K1+lOaz9G1ERxMdM3fawtp06bmF4Uv052m0dP/U 1348865282
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>, adam ? <adam3337@wp.pl>
-Subject: [ 077/127] USB: add device quirk for Joss Optical touchboard
-Date: Fri, 28 Sep 2012 13:34:10 -0700
-Message-Id: <20120928203054.869936112@linuxfoundation.org>
+        =?UTF-8?q?=C3=89ric=20Piel?= <piel@delmic.com>
+Subject: =?UTF-8?q?=5B=20076/127=5D=20USB=3A=20ftdi-sio=3A=20add=20support=20for=20more=20Physik=20Instrumente=20devices?=
+Date: Fri, 28 Sep 2012 13:34:09 -0700
+Message-Id: <20120928203054.775348119@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,34 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Éric Piel <piel@delmic.com>
 
-commit 92fc7a8b0f20bdb243c706daf42658e8e0cd2ef0 upstream.
+commit dafc4f7be1a556ca3868d343c00127728b397068 upstream.
 
-This patch (as1604) adds a CONFIG_INTF_STRINGS quirk for the Joss
-infrared touchboard device.  The device doesn't like to be asked for
-its interface strings.
+Commit b69cc672052540 added support for the E-861.  After acquiring a C-867, I
+realised that every Physik Instrumente's device has a different PID. They are
+listed in the Windows device driver's .inf file. So here are all PIDs for the
+current (and probably future) USB devices from Physik Instrumente.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: adam ? <adam3337@wp.pl>
+Compiled, but only actually tested on the E-861 and C-867.
+
+Signed-off-by: Éric Piel <piel@delmic.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |   17 +++++++++++++++++
+ drivers/usb/serial/ftdi_sio_ids.h |   21 ++++++++++++++++++++-
+ 2 files changed, 37 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -96,6 +96,10 @@ static const struct usb_device_id usb_qu
- 	{ USB_DEVICE(0x04b4, 0x0526), .driver_info =
- 			USB_QUIRK_CONFIG_INTF_STRINGS },
- 
-+	/* Microchip Joss Optical infrared touchboard device */
-+	{ USB_DEVICE(0x04d8, 0x000c), .driver_info =
-+			USB_QUIRK_CONFIG_INTF_STRINGS },
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -811,7 +811,24 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
+ 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
++	{ USB_DEVICE(FTDI_VID, PI_C865_PID) },
++	{ USB_DEVICE(FTDI_VID, PI_C857_PID) },
++	{ USB_DEVICE(PI_VID, PI_C866_PID) },
++	{ USB_DEVICE(PI_VID, PI_C663_PID) },
++	{ USB_DEVICE(PI_VID, PI_C725_PID) },
++	{ USB_DEVICE(PI_VID, PI_E517_PID) },
++	{ USB_DEVICE(PI_VID, PI_C863_PID) },
+ 	{ USB_DEVICE(PI_VID, PI_E861_PID) },
++	{ USB_DEVICE(PI_VID, PI_C867_PID) },
++	{ USB_DEVICE(PI_VID, PI_E609_PID) },
++	{ USB_DEVICE(PI_VID, PI_E709_PID) },
++	{ USB_DEVICE(PI_VID, PI_100F_PID) },
++	{ USB_DEVICE(PI_VID, PI_1011_PID) },
++	{ USB_DEVICE(PI_VID, PI_1012_PID) },
++	{ USB_DEVICE(PI_VID, PI_1013_PID) },
++	{ USB_DEVICE(PI_VID, PI_1014_PID) },
++	{ USB_DEVICE(PI_VID, PI_1015_PID) },
++	{ USB_DEVICE(PI_VID, PI_1016_PID) },
+ 	{ USB_DEVICE(KONDO_VID, KONDO_USB_SERIAL_PID) },
+ 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -797,8 +797,27 @@
+  * Physik Instrumente
+  * http://www.physikinstrumente.com/en/products/
+  */
++/* These two devices use the VID of FTDI */
++#define PI_C865_PID	0xe0a0  /* PI C-865 Piezomotor Controller */
++#define PI_C857_PID	0xe0a1  /* PI Encoder Trigger Box */
 +
- 	/* Samsung Android phone modem - ID conflict with SPH-I500 */
- 	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
- 			USB_QUIRK_CONFIG_INTF_STRINGS },
+ #define PI_VID              0x1a72  /* Vendor ID */
+-#define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
++#define PI_C866_PID	0x1000  /* PI C-866 Piezomotor Controller */
++#define PI_C663_PID	0x1001  /* PI C-663 Mercury-Step */
++#define PI_C725_PID	0x1002  /* PI C-725 Piezomotor Controller */
++#define PI_E517_PID	0x1005  /* PI E-517 Digital Piezo Controller Operation Module */
++#define PI_C863_PID	0x1007  /* PI C-863 */
++#define PI_E861_PID	0x1008  /* PI E-861 Piezomotor Controller */
++#define PI_C867_PID	0x1009  /* PI C-867 Piezomotor Controller */
++#define PI_E609_PID	0x100D  /* PI E-609 Digital Piezo Controller */
++#define PI_E709_PID	0x100E  /* PI E-709 Digital Piezo Controller */
++#define PI_100F_PID	0x100F  /* PI Digital Piezo Controller */
++#define PI_1011_PID	0x1011  /* PI Digital Piezo Controller */
++#define PI_1012_PID	0x1012  /* PI Motion Controller */
++#define PI_1013_PID	0x1013  /* PI Motion Controller */
++#define PI_1014_PID	0x1014  /* PI Device */
++#define PI_1015_PID	0x1015  /* PI Device */
++#define PI_1016_PID	0x1016  /* PI Digital Servo Module */
+ 
+ /*
+  * Kondo Kagaku Co.Ltd.
 
 
