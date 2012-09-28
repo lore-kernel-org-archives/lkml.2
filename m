@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758849Ab2I1Syt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:54:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758808Ab2I1Syj (ORCPT
+	id S1758809Ab2I1Sy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:54:56 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758514Ab2I1Syv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:54:39 -0400
+	Fri, 28 Sep 2012 14:54:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Aleksandr Kotov <a1k@mail.ru>, Eric Leblond <eric@regit.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 020/262] llc: fix info leak via getsockname()
-Date: Fri, 28 Sep 2012 11:49:09 -0700
-Message-Id: <20120928183000.331287619@linuxfoundation.org>
+Subject: [ 024/262] af_packet: dont emit packet on orig fanout group
+Date: Fri, 28 Sep 2012 11:49:13 -0700
+Message-Id: <20120928183000.785828259@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -31,45 +30,99 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Eric Leblond <eric@regit.org>
 
-[ Upstream commit 3592aaeb80290bda0f2cf0b5456c97bfc638b192 ]
+[ Upstream commit c0de08d04215031d68fa13af36f347a6cfa252ca ]
 
-The LLC code wrongly returns 0, i.e. "success", when the socket is
-zapped. Together with the uninitialized uaddrlen pointer argument from
-sys_getsockname this leads to an arbitrary memory leak of up to 128
-bytes kernel stack via the getsockname() syscall.
+If a packet is emitted on one socket in one group of fanout sockets,
+it is transmitted again. It is thus read again on one of the sockets
+of the fanout group. This result in a loop for software which
+generate packets when receiving one.
+This retransmission is not the intended behavior: a fanout group
+must behave like a single socket. The packet should not be
+transmitted on a socket if it originates from a socket belonging
+to the same fanout group.
 
-Return an error instead when the socket is zapped to prevent the info
-leak. Also remove the unnecessary memset(0). We don't directly write to
-the memory pointed by uaddr but memcpy() a local structure at the end of
-the function that is properly initialized.
+This patch fixes the issue by changing the transmission check to
+take fanout group info account.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Reported-by: Aleksandr Kotov <a1k@mail.ru>
+Signed-off-by: Eric Leblond <eric@regit.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/llc/af_llc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ include/linux/netdevice.h |    2 ++
+ net/core/dev.c            |   16 ++++++++++++++--
+ net/packet/af_packet.c    |    9 +++++++++
+ 3 files changed, 25 insertions(+), 2 deletions(-)
 
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -969,14 +969,13 @@ static int llc_ui_getname(struct socket
- 	struct sockaddr_llc sllc;
- 	struct sock *sk = sock->sk;
- 	struct llc_sock *llc = llc_sk(sk);
--	int rc = 0;
-+	int rc = -EBADF;
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1520,6 +1520,8 @@ struct packet_type {
+ 	struct sk_buff		**(*gro_receive)(struct sk_buff **head,
+ 					       struct sk_buff *skb);
+ 	int			(*gro_complete)(struct sk_buff *skb);
++	bool			(*id_match)(struct packet_type *ptype,
++					    struct sock *sk);
+ 	void			*af_packet_priv;
+ 	struct list_head	list;
+ };
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1640,6 +1640,19 @@ static inline int deliver_skb(struct sk_
+ 	return pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
+ }
  
- 	memset(&sllc, 0, sizeof(sllc));
- 	lock_sock(sk);
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		goto out;
- 	*uaddrlen = sizeof(sllc);
--	memset(uaddr, 0, *uaddrlen);
- 	if (peer) {
- 		rc = -ENOTCONN;
- 		if (sk->sk_state != TCP_ESTABLISHED)
++static inline bool skb_loop_sk(struct packet_type *ptype, struct sk_buff *skb)
++{
++	if (ptype->af_packet_priv == NULL)
++		return false;
++
++	if (ptype->id_match)
++		return ptype->id_match(ptype, skb->sk);
++	else if ((struct sock *)ptype->af_packet_priv == skb->sk)
++		return true;
++
++	return false;
++}
++
+ /*
+  *	Support routine. Sends outgoing frames to any network
+  *	taps currently in use.
+@@ -1657,8 +1670,7 @@ static void dev_queue_xmit_nit(struct sk
+ 		 * they originated from - MvS (miquels@drinkel.ow.org)
+ 		 */
+ 		if ((ptype->dev == dev || !ptype->dev) &&
+-		    (ptype->af_packet_priv == NULL ||
+-		     (struct sock *)ptype->af_packet_priv != skb->sk)) {
++		    (!skb_loop_sk(ptype, skb))) {
+ 			if (pt_prev) {
+ 				deliver_skb(skb2, pt_prev, skb->dev);
+ 				pt_prev = ptype;
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -1280,6 +1280,14 @@ static void __fanout_unlink(struct sock
+ 	spin_unlock(&f->lock);
+ }
+ 
++bool match_fanout_group(struct packet_type *ptype, struct sock * sk)
++{
++	if (ptype->af_packet_priv == (void*)((struct packet_sock *)sk)->fanout)
++		return true;
++
++	return false;
++}
++
+ static int fanout_add(struct sock *sk, u16 id, u16 type_flags)
+ {
+ 	struct packet_sock *po = pkt_sk(sk);
+@@ -1332,6 +1340,7 @@ static int fanout_add(struct sock *sk, u
+ 		match->prot_hook.dev = po->prot_hook.dev;
+ 		match->prot_hook.func = packet_rcv_fanout;
+ 		match->prot_hook.af_packet_priv = match;
++		match->prot_hook.id_match = match_fanout_group;
+ 		dev_add_pack(&match->prot_hook);
+ 		list_add(&match->list, &fanout_list);
+ 	}
 
 
