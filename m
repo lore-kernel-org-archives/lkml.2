@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab2I1HsY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 03:48:24 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47589 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755942Ab2I1HsW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 03:48:22 -0400
-Message-ID: <1348818498.2411.8.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH scsi] Add NULL checking of return value from
- scsi_cmd_to_driver()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Fri, 28 Sep 2012 08:48:18 +0100
-In-Reply-To: <yq1bogr8itb.fsf@sermon.lab.mkp.net>
-References: <1348464626.2475.13.camel@ThinkPad-T420>
-	 <1348465493.2467.3.camel@dabdike> <1348470210.2475.47.camel@ThinkPad-T420>
-	 <1348472104.2467.8.camel@dabdike> <yq13924b4uw.fsf@sermon.lab.mkp.net>
-	 <1348721055.2509.0.camel@dabdike> <yq1bogr8itb.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
+	id S1756797Ab2I1Hs4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 03:48:56 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:34766 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756302Ab2I1Hsz convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Fri, 28 Sep 2012 03:48:55 -0400
+Message-Id: <5065729C020000780009E63B@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 28 Sep 2012 08:49:16 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daniel Kiper" <daniel.kiper@oracle.com>
+Cc: <andrew.cooper3@citrix.com>, "xen-devel" <xen-devel@lists.xen.org>,
+        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/11] kexec: introduce kexec_ops struct
+References: <1348769198-29580-1-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-2-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1348769198-29580-2-git-send-email-daniel.kiper@oracle.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-27 at 13:41 -0400, Martin K. Petersen wrote:
-> >>>>> "James" == James Bottomley <James.Bottomley@HansenPartnership.com> writes:
-> 
-> >> I'm fine with having the eh action be triggered for FS requests only,
-> >> if that's what you're asking?
-> 
-> James> Sort of ... I was thinking do it for all non REQ_TYPE_BLOCK_PC
-> James> commands (which includes flush and other strange types), but if
-> James> you think it should only be for REQ_TYPE_FS, that's fine too.
-> 
-> I'm ok either way.
+>>> On 27.09.12 at 20:06, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> Some kexec/kdump implementations (e.g. Xen PVOPS) on different archs could
+> not use default functions or require some changes in behavior of kexec/kdump
+> generic code. To cope with that problem kexec_ops struct was introduced.
+> It allows a developer to replace all or some functions and control some
+> functionality of kexec/kdump generic code.
 
-OK, let's mirror the code in scsi.c then, so != REQ_TYPE_BLOCK_PC.
+I'm not convinced that doing this at the architecture independent
+layer is really necessary/desirable. Nevertheless, if that's the right
+place, then everything else looks good to me, except for a
+cosmetic thing:
 
-James
+> @@ -392,7 +435,7 @@ static void kimage_free_page_list(struct list_head *list)
+>  
+>  		page = list_entry(pos, struct page, lru);
+>  		list_del(&page->lru);
+> -		kimage_free_pages(page);
+> +		(*kexec_ops.kimage_free_pages)(page);
+
+These constructs are generally better readable without the
+explicit yet redundant indirection:
+
+		kexec_ops.kimage_free_pages(page);
+
+Jan
 
 
