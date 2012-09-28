@@ -1,51 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab2I1C2l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 22:28:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47418 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab2I1C2k convert rfc822-to-8bit (ORCPT
+	id S1756284Ab2I1Chx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 22:37:53 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50985 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2I1Chw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 22:28:40 -0400
+	Thu, 27 Sep 2012 22:37:52 -0400
+Date: Thu, 27 Sep 2012 19:35:11 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: mathieu.poirier@linaro.org
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: [PATCH 51/57] power: ab8500: Re-alignment with internal
+ developement.
+Message-ID: <20120928023510.GJ5040@lizard>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-52-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <506474D0.9020406@cs.tu-berlin.de>
-References: <1348682325-8402-1-git-send-email-schnhrr@cs.tu-berlin.de>
- <20120926211526.GA30261@kroah.com> <506382B0.8040908@cs.tu-berlin.de>
- <CAPXgP11xwBDSZ9q9thzbXd5xZW_jeq-OW96hSoXFbXQBjQWbqw@mail.gmail.com> <506474D0.9020406@cs.tu-berlin.de>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 28 Sep 2012 04:28:18 +0200
-Message-ID: <CAPXgP1255L5ok7Fw-sBwdxkEQ1sixLp403BGq-tPwCw+oVCiDQ@mail.gmail.com>
-Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
-To: =?UTF-8?Q?Jan_H=2E_Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1348589574-25655-52-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 5:46 PM, "Jan H. Schönherr"
-<schnhrr@cs.tu-berlin.de> wrote:
-> Am 27.09.2012 15:39, schrieb Kay Sievers:
+On Tue, Sep 25, 2012 at 10:12:48AM -0600, mathieu.poirier@linaro.org wrote:
+> From: "Mathieu J. Poirier" <mathieu.poirier@linaro.org>
+> 
+> A lot of developement happened internally since the first
+> mainlining of the battery managmenent driver.  Most of the
+> new code can be historically accounted for but some of it
+> can't.
+> 
+> This patch is a gathering of the code for which history was
+> lost but still relevant to the well being of the driver.
 
->> It is a flag that we have not been able to merge a continuation line
->> in the buffer, because we had a race with another thread, or the
->> console lock was taken for a long time and we couldn't use the merge
->> buffer.
->
-> But it is also set, if we don't know yet, whether there is going to
-> be a continuation (printk.c, line 1583):
->
->         log_store(facility, level, lflags | LOG_CONT, 0,
->                   dict, dictlen, text, text_len);
->
-> This confuses devkmsg_read() and msg_print_text() later on.
+Nope, sorry. The patch has to be logically separated and the description
+should precisely describe the change(s), not 'let's gather some missing
+bits.'
 
-Yeah, I can see that here too. Tested your patch and seems to behave
-well with a bunch of other tests I still have available. Looks good
-and worth to try:
-  Tested-By: Kay Sievers <kay@vrfy.org>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> ---
+>  drivers/power/ab8500_charger.c  |    2 +-
+>  drivers/power/abx500_chargalg.c |   66 +++++++++++++++++++++++++++------------
+>  2 files changed, 47 insertions(+), 21 deletions(-)
+> 
+> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+> index 1290470..3a97012 100644
+> --- a/drivers/power/ab8500_charger.c
+> +++ b/drivers/power/ab8500_charger.c
+> @@ -720,7 +720,7 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+>  		di->is_aca_rid = 0;
+>  		break;
+>  	case USB_STAT_ACA_RID_C_HS_CHIRP:
+> -		case USB_STAT_ACA_RID_C_NM:
+> +	case USB_STAT_ACA_RID_C_NM:
+>  		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_1P5;
+>  		di->is_aca_rid = 1;
+>  		break;
+> diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
+> index 1df238f..636d970 100644
+> --- a/drivers/power/abx500_chargalg.c
+> +++ b/drivers/power/abx500_chargalg.c
+> @@ -27,7 +27,7 @@
+>  #include <linux/notifier.h>
+>  
+>  /* Watchdog kick interval */
+> -#define CHG_WD_INTERVAL			(6 * HZ)
+> +#define CHG_WD_INTERVAL			(60 * HZ)
+>  
+>  /* End-of-charge criteria counter */
+>  #define EOC_COND_CNT			10
+> @@ -513,7 +513,7 @@ static int abx500_chargalg_kick_watchdog(struct abx500_chargalg *di)
+>  static int abx500_chargalg_ac_en(struct abx500_chargalg *di, int enable,
+>  	int vset, int iset)
+>  {
+> -	static int ab8500_chargalg_ex_ac_enable_toggle;
+> +	static int abx500_chargalg_ex_ac_enable_toggle;
+>  
+>  	if (!di->ac_chg || !di->ac_chg->ops.enable)
+>  		return -ENXIO;
+> @@ -529,10 +529,10 @@ static int abx500_chargalg_ac_en(struct abx500_chargalg *di, int enable,
+>  
+>  	/*enable external charger*/
+>  	if (enable && di->ac_chg->external &&
+> -		!ab8500_chargalg_ex_ac_enable_toggle) {
+> +		!abx500_chargalg_ex_ac_enable_toggle) {
+>  		blocking_notifier_call_chain(&charger_notifier_list,
+>  					0, di->dev);
+> -		ab8500_chargalg_ex_ac_enable_toggle++;
+> +		abx500_chargalg_ex_ac_enable_toggle++;
+>  	}
+>  
+>  	return di->ac_chg->ops.enable(di->ac_chg, enable, vset, iset);
+> @@ -899,6 +899,27 @@ static void handle_maxim_chg_curr(struct abx500_chargalg *di)
+>  	}
+>  }
+>  
+> +static void abx500_chargalg_check_safety_timer(struct abx500_chargalg *di)
+> +{
+> +	/*
+> +	 * The safety timer will not be started until the capacity reported
+> +	 * from the FG algorithm is 100%. Then we know that the amount of
+> +	 * charge that's gone into the battery is enough for the battery
+> +	 * to be full. If it has not reached end-of-charge before the safety
+> +	 * timer has expired then we know that the battery is overcharged
+> +	 * and charging will be stopped to protect the battery.
+> +	 */
+> +	if (di->batt_data.percent == 100 &&
+> +		!timer_pending(&di->safety_timer)) {
+
+Wrong indentation.
+
+> +		abx500_chargalg_start_safety_timer(di);
+> +		dev_dbg(di->dev, "start safety timer\n");
+> +	} else if (di->batt_data.percent != 100 &&
+> +		timer_pending(&di->safety_timer)) {
+
+Ditto.
+
+Plus, I think this can be simplified, you can just do.
+
+abx500_chargalg_check_safety_timer()
+{
+	if (di->batt_data.percent < 100) {
+		dev_dbg(di->dev, "stopping safety timer\n");
+		abx500_chargalg_stop_safety_timer(di);
+		return;
+	}
+
+	dev_dbg(di->dev, "starting safety timer\n");
+	abx500_chargalg_start_safety_timer(di);
+}
+
+The thing is, restarting an already pending timer is no-op, unless you
+program the timer before the previously programmed value.
+
+And stopping unarmed timer should be alo no-op.
+
+(btw, these dev_dbg() should probably be placed into the start/stop
+functions, to catch all the users/invocations in the debug log).
+
+> +		abx500_chargalg_stop_safety_timer(di);
+> +		dev_dbg(di->dev, "stop safety timer\n");
+> +	}
+> +}
+> +
+>  static int abx500_chargalg_get_ext_psy_data(struct device *dev, void *data)
+>  {
+>  	struct power_supply *psy;
+> @@ -1125,6 +1146,10 @@ static int abx500_chargalg_get_ext_psy_data(struct device *dev, void *data)
+>  			switch (ext->type) {
+>  			case POWER_SUPPLY_TYPE_BATTERY:
+>  				di->batt_data.volt = ret.intval / 1000;
+> +				if (di->batt_data.volt >= BATT_OVV_VALUE)
+> +					di->events.batt_ovv = true;
+> +				else
+> +					di->events.batt_ovv = false;
+>  				break;
+>  			case POWER_SUPPLY_TYPE_MAINS:
+>  				di->chg_info.ac_volt = ret.intval / 1000;
+> @@ -1214,7 +1239,6 @@ static int abx500_chargalg_get_ext_psy_data(struct device *dev, void *data)
+>  			}
+>  			break;
+>  		case POWER_SUPPLY_PROP_CAPACITY:
+> -			di->batt_data.percent = ret.intval;
+>  			if (!capacity_updated)
+>  				di->batt_data.percent = ret.intval;
+>  			break;
+> @@ -1465,12 +1489,12 @@ static void abx500_chargalg_algorithm(struct abx500_chargalg *di)
+>  			di->bat->bat_type[di->bat->batt_id].normal_vol_lvl,
+>  			di->bat->bat_type[di->bat->batt_id].normal_cur_lvl);
+>  		abx500_chargalg_state_to(di, STATE_NORMAL);
+> -		abx500_chargalg_start_safety_timer(di);
+>  		abx500_chargalg_stop_maintenance_timer(di);
+>  		init_maxim_chg_curr(di);
+>  		di->charge_status = POWER_SUPPLY_STATUS_CHARGING;
+>  		di->eoc_cnt = 0;
+>  		di->maintenance_chg = false;
+> +		di->maint_state = MAINT_A;
+>  		power_supply_changed(&di->chargalg_psy);
+>  
+>  		break;
+> @@ -1478,17 +1502,14 @@ static void abx500_chargalg_algorithm(struct abx500_chargalg *di)
+>  	case STATE_NORMAL:
+>  		handle_maxim_chg_curr(di);
+>  		if (di->charge_status == POWER_SUPPLY_STATUS_FULL &&
+> -			di->maintenance_chg) {
+> -			if (di->bat->no_maintenance)
+> -				abx500_chargalg_state_to(di,
+> -					STATE_WAIT_FOR_RECHARGE_INIT);
+> -			else
+> -				abx500_chargalg_state_to(di,
+> -					STATE_MAINTENANCE_A_INIT);
+> -		}
+> +				di->maintenance_chg)
+> +			abx500_chargalg_state_to(di,
+> +				STATE_WAIT_FOR_RECHARGE_INIT);
+> +
+> +		/* Check whether we should start the safety timer or not */
+> +		abx500_chargalg_check_safety_timer(di);
+>  		break;
+>  
+> -	/* This state will be used when the maintenance state is disabled */
+>  	case STATE_WAIT_FOR_RECHARGE_INIT:
+>  		abx500_chargalg_hold_charging(di);
+>  		abx500_chargalg_state_to(di, STATE_WAIT_FOR_RECHARGE);
+> @@ -1531,13 +1552,15 @@ static void abx500_chargalg_algorithm(struct abx500_chargalg *di)
+>  			di->bat->bat_type[
+>  				di->bat->batt_id].maint_a_cur_lvl);
+>  		abx500_chargalg_state_to(di, STATE_MAINTENANCE_A);
+> +		di->maint_state = MAINT_B;
+>  		power_supply_changed(&di->chargalg_psy);
+>  		/* Intentional fallthrough*/
+>  
+>  	case STATE_MAINTENANCE_A:
+>  		if (di->events.maintenance_timer_expired) {
+>  			abx500_chargalg_stop_maintenance_timer(di);
+> -			abx500_chargalg_state_to(di, STATE_MAINTENANCE_B_INIT);
+> +			abx500_chargalg_state_to(di,
+> +					STATE_WAIT_FOR_RECHARGE_INIT);
+>  		}
+>  		break;
+>  
+> @@ -1603,7 +1626,8 @@ static void abx500_chargalg_algorithm(struct abx500_chargalg *di)
+>  	/* Start charging directly if the new state is a charge state */
+>  	if (di->charge_state == STATE_NORMAL_INIT ||
+>  			di->charge_state == STATE_MAINTENANCE_A_INIT ||
+> -			di->charge_state == STATE_MAINTENANCE_B_INIT)
+> +			di->charge_state == STATE_MAINTENANCE_B_INIT ||
+> +			di->charge_state == STATE_WAIT_FOR_RECHARGE_INIT)
+>  		queue_work(di->chargalg_wq, &di->chargalg_work);
+>  }
+>  
+> @@ -1824,7 +1848,7 @@ static struct attribute *abx500_chargalg_chg[] = {
+>  	NULL
+>  };
+>  
+> -static const struct sysfs_ops abx500_chargalg_sysfs_ops = {
+> +const struct sysfs_ops abx500_chargalg_sysfs_ops = {
+
+Why?..
+
+>  	.show = abx500_chargalg_sysfs_show,
+>  	.store = abx500_chargalg_sysfs_charger,
+>  };
+> @@ -2009,10 +2033,12 @@ static int __devinit abx500_chargalg_probe(struct platform_device *pdev)
+>  		goto free_psy;
+>  	}
+>  
+> +	di->charge_status = POWER_SUPPLY_STATUS_DISCHARGING;
+> +	abx500_chargalg_state_to(di, STATE_HANDHELD);
+> +
+>  	/* Run the charging algorithm */
+>  	queue_delayed_work(di->chargalg_wq, &di->chargalg_periodic_work, 0);
+>  
+> -	dev_info(di->dev, "probe success\n");
+>  	return ret;
+>  
+>  free_psy:
+> @@ -2052,4 +2078,4 @@ module_exit(abx500_chargalg_exit);
+>  MODULE_LICENSE("GPL v2");
+>  MODULE_AUTHOR("Johan Palsson, Karl Komierowski");
+>  MODULE_ALIAS("platform:abx500-chargalg");
+> -MODULE_DESCRIPTION("abx500 battery charging algorithm");
+> +MODULE_DESCRIPTION("abx500 battery temperatur driver");
+
+typo?
+
 
 Thanks,
-Kay
+Anton.
