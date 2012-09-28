@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758937Ab2I1Sza (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:55:30 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63190 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758921Ab2I1SzZ (ORCPT
+	id S1758974Ab2I1Szo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:55:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758921Ab2I1Szh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:55:25 -0400
+	Fri, 28 Sep 2012 14:55:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 035/262] workqueue: reimplement work_on_cpu() using system_wq
-Date: Fri, 28 Sep 2012 11:49:24 -0700
-Message-Id: <20120928183002.059953256@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 039/262] vfs: dcache: use DCACHE_DENTRY_KILLED instead of DCACHE_DISCONNECTED in d_kill()
+Date: Fri, 28 Sep 2012 11:49:28 -0700
+Message-Id: <20120928183002.555118255@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -31,82 +30,64 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit ed48ece27cd3d5ee0354c32bbaec0f3e1d4715c3 upstream.
+commit b161dfa6937ae46d50adce8a7c6b12233e96e7bd upstream.
 
-The existing work_on_cpu() implementation is hugely inefficient.  It
-creates a new kthread, execute that single function and then let the
-kthread die on each invocation.
+IBM reported a soft lockup after applying the fix for the rename_lock
+deadlock.  Commit c83ce989cb5f ("VFS: Fix the nfs sillyrename regression
+in kernel 2.6.38") was found to be the culprit.
 
-Now that system_wq can handle concurrent executions, there's no
-advantage of doing this.  Reimplement work_on_cpu() using system_wq
-which makes it simpler and way more efficient.
+The nfs sillyrename fix used DCACHE_DISCONNECTED to indicate that the
+dentry was killed.  This flag can be set on non-killed dentries too,
+which results in infinite retries when trying to traverse the dentry
+tree.
 
-stable: While this isn't a fix in itself, it's needed to fix a
-        workqueue related bug in cpufreq/powernow-k8.  AFAICS, this
-        shouldn't break other existing users.
+This patch introduces a separate flag: DCACHE_DENTRY_KILLED, which is
+only set in d_kill() and makes try_to_ascend() test only this flag.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
+IBM reported successful test results with this patch.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |   25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
+ fs/dcache.c            |    4 ++--
+ include/linux/dcache.h |    2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3628,18 +3628,17 @@ static int __devinit workqueue_cpu_down_
- #ifdef CONFIG_SMP
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -389,7 +389,7 @@ static struct dentry *d_kill(struct dent
+ 	 * Inform try_to_ascend() that we are no longer attached to the
+ 	 * dentry tree
+ 	 */
+-	dentry->d_flags |= DCACHE_DISCONNECTED;
++	dentry->d_flags |= DCACHE_DENTRY_KILLED;
+ 	if (parent)
+ 		spin_unlock(&parent->d_lock);
+ 	dentry_iput(dentry);
+@@ -1046,7 +1046,7 @@ static struct dentry *try_to_ascend(stru
+ 	 * or deletion
+ 	 */
+ 	if (new != old->d_parent ||
+-		 (old->d_flags & DCACHE_DISCONNECTED) ||
++		 (old->d_flags & DCACHE_DENTRY_KILLED) ||
+ 		 (!locked && read_seqretry(&rename_lock, seq))) {
+ 		spin_unlock(&new->d_lock);
+ 		new = NULL;
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -206,6 +206,8 @@ struct dentry_operations {
+ #define DCACHE_MANAGED_DENTRY \
+ 	(DCACHE_MOUNTED|DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT)
  
- struct work_for_cpu {
--	struct completion completion;
-+	struct work_struct work;
- 	long (*fn)(void *);
- 	void *arg;
- 	long ret;
- };
- 
--static int do_work_for_cpu(void *_wfc)
-+static void work_for_cpu_fn(struct work_struct *work)
- {
--	struct work_for_cpu *wfc = _wfc;
-+	struct work_for_cpu *wfc = container_of(work, struct work_for_cpu, work);
++#define DCACHE_DENTRY_KILLED	0x100000
 +
- 	wfc->ret = wfc->fn(wfc->arg);
--	complete(&wfc->completion);
--	return 0;
- }
+ extern seqlock_t rename_lock;
  
- /**
-@@ -3654,19 +3653,11 @@ static int do_work_for_cpu(void *_wfc)
-  */
- long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg)
- {
--	struct task_struct *sub_thread;
--	struct work_for_cpu wfc = {
--		.completion = COMPLETION_INITIALIZER_ONSTACK(wfc.completion),
--		.fn = fn,
--		.arg = arg,
--	};
-+	struct work_for_cpu wfc = { .fn = fn, .arg = arg };
- 
--	sub_thread = kthread_create(do_work_for_cpu, &wfc, "work_for_cpu");
--	if (IS_ERR(sub_thread))
--		return PTR_ERR(sub_thread);
--	kthread_bind(sub_thread, cpu);
--	wake_up_process(sub_thread);
--	wait_for_completion(&wfc.completion);
-+	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-+	schedule_work_on(cpu, &wfc.work);
-+	flush_work(&wfc.work);
- 	return wfc.ret;
- }
- EXPORT_SYMBOL_GPL(work_on_cpu);
+ static inline int dname_external(struct dentry *dentry)
 
 
