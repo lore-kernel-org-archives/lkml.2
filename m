@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759913Ab2I1Uxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:53:55 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56828 "EHLO
+	id S1759900Ab2I1Uxx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:53:53 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38070 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423001Ab2I1UsZ (ORCPT
+	by vger.kernel.org with ESMTP id S1423038Ab2I1Us1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:25 -0400
-X-Sasl-enc: xALkRoaGmcX8reA9E7ySONPGWMO6mtIpSXuHC9CivEQm 1348865305
+	Fri, 28 Sep 2012 16:48:27 -0400
+X-Sasl-enc: 9HsMW/oh69dyaIh9331Lw/PfzlZ9cLhHChn/RtvGeNoL 1348865306
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        AceLan Kao <acelan.kao@canonical.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: [ 092/127] asus-nb-wmi: add some video toggle keys
-Date: Fri, 28 Sep 2012 13:34:25 -0700
-Message-Id: <20120928203056.699771870@linuxfoundation.org>
+        Wang Xingchao <xingchao.wang@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 093/127] drm/i915: HDMI - Clear Audio Enable bit for Hot Plug
+Date: Fri, 28 Sep 2012 13:34:26 -0700
+Message-Id: <20120928203056.804016146@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,39 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Wang Xingchao <xingchao.wang@intel.com>
 
-commit 3766054fff4af1b58a1440a284907887f4d2e8be upstream.
+commit b98b60167279df3acac9422c3c9820d9ebbcf9fb upstream.
 
-There are some new video switch keys that used by newer machines.
-0xA0 - SDSP HDMI only
-0xA1 - SDSP LCD + HDMI
-0xA2 - SDSP CRT + HDMI
-0xA3 - SDSP TV + HDMI
-But in Linux, there is no suitable userspace application to handle this,
-so, mapping them all to KEY_SWITCHVIDEOMODE.
+Clear Audio Enable bit to trigger unsolicated event to notify Audio
+Driver part the HDMI hot plug change. The patch fixed the bug when
+remove HDMI cable the bit was not cleared correctly.
 
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>
+In intel_hdmi_dpms(), if intel_hdmi->has_audio been true, the "Audio enable bit" will
+be set to trigger unsolicated event to notify Alsa driver the change.
+
+intel_hdmi->has_audio will be reset to false from intel_hdmi_detect() after
+remove the hdmi cable, here's debug log:
+
+[  187.494153] [drm:output_poll_execute], [CONNECTOR:17:HDMI-A-1] status updated from 1 to 2
+[  187.525349] [drm:intel_hdmi_detect], HDMI: has_audio = 0
+
+so when comes back to intel_hdmi_dpms(), the "Audio enable bit" will not be cleared. And this
+cause the eld infomation and pin presence doesnot update accordingly in alsa driver side.
+
+This patch will also trigger unsolicated event to alsa driver to notify the hot plug event:
+
+[  187.853159] ALSA sound/pci/hda/patch_hdmi.c:772 HDMI hot plug event: Codec=3 Pin=5 Presence_Detect=0 ELD_Valid=1
+[  187.853268] ALSA sound/pci/hda/patch_hdmi.c:990 HDMI status: Codec=3 Pin=5 Presence_Detect=0 ELD_Valid=0
+
+Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/asus-nb-wmi.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/intel_hdmi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/platform/x86/asus-nb-wmi.c
-+++ b/drivers/platform/x86/asus-nb-wmi.c
-@@ -68,6 +68,10 @@ static const struct key_entry asus_nb_wm
- 	{ KE_KEY, 0x8A, { KEY_PROG1 } },
- 	{ KE_KEY, 0x95, { KEY_MEDIA } },
- 	{ KE_KEY, 0x99, { KEY_PHONE } },
-+	{ KE_KEY, 0xA0, { KEY_SWITCHVIDEOMODE } }, /* SDSP HDMI only */
-+	{ KE_KEY, 0xA1, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + HDMI */
-+	{ KE_KEY, 0xA2, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + HDMI */
-+	{ KE_KEY, 0xA3, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV + HDMI */
- 	{ KE_KEY, 0xb5, { KEY_CALC } },
- 	{ KE_KEY, 0xc4, { KEY_KBDILLUMUP } },
- 	{ KE_KEY, 0xc5, { KEY_KBDILLUMDOWN } },
+--- a/drivers/gpu/drm/i915/intel_hdmi.c
++++ b/drivers/gpu/drm/i915/intel_hdmi.c
+@@ -160,7 +160,7 @@ static void intel_hdmi_dpms(struct drm_e
+ 	u32 temp;
+ 	u32 enable_bits = SDVO_ENABLE;
+ 
+-	if (intel_hdmi->has_audio)
++	if (intel_hdmi->has_audio || mode != DRM_MODE_DPMS_ON)
+ 		enable_bits |= SDVO_AUDIO_ENABLE;
+ 
+ 	temp = I915_READ(intel_hdmi->sdvox_reg);
 
 
