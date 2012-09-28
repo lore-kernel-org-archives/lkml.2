@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110Ab2I1UgW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:36:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42421 "EHLO
+	id S1759175Ab2I1Ugn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:36:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758969Ab2I1UgS (ORCPT
+	with ESMTP id S965004Ab2I1Uad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:36:18 -0400
-Date: Fri, 28 Sep 2012 13:36:16 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
-In-Reply-To: <0000013a0d314c3f-e5b12d01-7a99-4368-82a0-f5de4d46f804-000000@email.amazonses.com>
-Message-ID: <alpine.DEB.2.00.1209281332460.21335@chino.kir.corp.google.com>
-References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com> <5062C029.308@parallels.com>
- <alpine.DEB.2.00.1209261813300.7072@chino.kir.corp.google.com> <0000013a08020b4d-ecc22fc9-75e4-4f1d-8a76-5496a98d1df9-000000@email.amazonses.com> <alpine.DEB.2.00.1209271546460.13360@chino.kir.corp.google.com>
- <0000013a0d314c3f-e5b12d01-7a99-4368-82a0-f5de4d46f804-000000@email.amazonses.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 28 Sep 2012 16:30:33 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 168/218] macvtap: zerocopy: fix truesize underestimation
+Date: Fri, 28 Sep 2012 13:16:25 -0700
+Message-Id: <20120928201520.790138548@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.1.428.g652398a
+In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
+References: <20120928201501.208384923@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Sep 2012, Christoph Lameter wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> > > This means touching another field from critical paths of the allocators.
-> > > It would increase the cache footprint and therefore reduce performance.
-> > >
-> >
-> > To clarify your statement, you're referring to the mm/slab.c allocation of
-> > new slab pages and when debugging is enabled as "critical paths", correct?
-> > We would disagree on that point.
-> 
-> This is not debugging specific. Flags are also consulted to do RCU
-> processing and other things.
-> 
+------------------
 
-There is no "critical path" in mm/slab.c that tests CFLGS_OFF_SLAB; the 
-flag itself is used to determine where slab management is done and you 
-certainly wouldn't want to find this for any path that is critical.
+From: Jason Wang <jasowang@redhat.com>
 
-If you'd like to disagree with that, please show the code and why you 
-consider increasing the cache footprint in that case to be critical to 
-performance.
+commit 4ef67ebedffa44ed9939b34708ac2fee06d2f65f upstream.
+
+As the skb fragment were pinned/built from user pages, we should
+account the page instead of length for truesize.
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/macvtap.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -520,6 +520,7 @@ static int zerocopy_sg_from_iovec(struct
+ 		struct page *page[MAX_SKB_FRAGS];
+ 		int num_pages;
+ 		unsigned long base;
++		unsigned long truesize;
+ 
+ 		len = from->iov_len - offset;
+ 		if (!len) {
+@@ -535,10 +536,11 @@ static int zerocopy_sg_from_iovec(struct
+ 		if (num_pages != size)
+ 			/* put_page is in skb free */
+ 			return -EFAULT;
++		truesize = size * PAGE_SIZE;
+ 		skb->data_len += len;
+ 		skb->len += len;
+-		skb->truesize += len;
+-		atomic_add(len, &skb->sk->sk_wmem_alloc);
++		skb->truesize += truesize;
++		atomic_add(truesize, &skb->sk->sk_wmem_alloc);
+ 		while (len) {
+ 			int off = base & ~PAGE_MASK;
+ 			int size = min_t(int, len, PAGE_SIZE - off);
+
+
