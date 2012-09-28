@@ -1,124 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab2I1KHm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 06:07:42 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:39724 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757416Ab2I1KHi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 06:07:38 -0400
+	id S1757452Ab2I1KJM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 06:09:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:3384 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757039Ab2I1KJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 06:09:09 -0400
+X-IronPort-AV: E=Sophos;i="4.80,501,1344182400"; 
+   d="scan'208";a="5934500"
+Message-ID: <506577CB.1050401@cn.fujitsu.com>
+Date: Fri, 28 Sep 2012 18:11:23 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <5064D7CA.1070909@ti.com>
-References: <1346943430-18236-1-git-send-email-kishon@ti.com>
-	<1346943430-18236-2-git-send-email-kishon@ti.com>
-	<50605CFB.5090402@gmail.com>
-	<CAAe_U6+2Vxd8F_JMafm41+0SnZSrZCa_9VKRbdB200BUHw5vEQ@mail.gmail.com>
-	<506461A0.4050103@gmail.com>
-	<5064D7CA.1070909@ti.com>
-Date: Fri, 28 Sep 2012 15:37:37 +0530
-Message-ID: <CAAe_U6KHk1nuSBVn-4H397wzUk0cnqGe_H0D8RVqrSFYGJVMCg@mail.gmail.com>
-Subject: Re: [PATCH 1/5] drivers: usb: phy: add a new driver for omap usb2 phy
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-Cc: Rob Herring <robherring2@gmail.com>, grant.likely@secretlab.ca,
-        rob@landley.net, tony@atomide.com, linux@arm.linux.org.uk,
-        balbi@ti.com, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/12] workqueue: add WORKER_RESCUER
+References: <1348680043-5077-1-git-send-email-laijs@cn.fujitsu.com> <1348680043-5077-2-git-send-email-laijs@cn.fujitsu.com> <20120926180711.GB12544@google.com>
+In-Reply-To: <20120926180711.GB12544@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/28 18:09:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/28 18:09:17,
+	Serialize complete at 2012/09/28 18:09:17
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, Sep 28, 2012 at 4:18 AM, Cousson, Benoit <b-cousson@ti.com> wrote:
-> On 9/27/2012 7:24 AM, Rob Herring wrote:
+On 09/27/2012 02:07 AM, Tejun Heo wrote:
+> On Thu, Sep 27, 2012 at 01:20:32AM +0800, Lai Jiangshan wrote:
+>> rescuer thread must be a worker which is WORKER_NOT_RUNNING:
+>> 	If it is *not* WORKER_NOT_RUNNING, it will increase the nr_running
+>> 	and it disables the normal workers wrongly.
 >>
->> On 09/25/2012 05:06 AM, ABRAHAM, KISHON VIJAY wrote:
->>>
->>> Hi,
->>>
->>> On Mon, Sep 24, 2012 at 6:45 PM, Rob Herring <robherring2@gmail.com>
->>> wrote:
->>>>
->>>> On 09/06/2012 09:57 AM, Kishon Vijay Abraham I wrote:
->>>>>
->>>>> All phy related programming like enabling/disabling the clocks,
->>>>> powering
->>>>> on/off the phy is taken care of by this driver. It is also used for OTG
->>>>> related functionality like srp.
->>>>>
->>>>> This also includes device tree support for usb2 phy driver and
->>>>> the documentation with device tree binding information is updated.
->>>>>
->>>>> Currently writing to control module register is taken care in this
->>>>> driver which will be removed once the control module driver is in
->>>>> place.
->>>>>
->>>>> Cc: Felipe Balbi <balbi@ti.com>
->>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>>> ---
->>>>>   Documentation/devicetree/bindings/usb/usb-phy.txt |   17 ++
->>>>>   drivers/usb/phy/Kconfig                           |    9 +
->>>>>   drivers/usb/phy/Makefile                          |    1 +
->>>>>   drivers/usb/phy/omap-usb2.c                       |  271
->>>>> +++++++++++++++++++++
->>>>>   include/linux/usb/omap_usb.h                      |   46 ++++
->>>>>   include/linux/usb/phy_companion.h                 |   34 +++
->>>>>   6 files changed, 378 insertions(+)
->>>>>   create mode 100644 Documentation/devicetree/bindings/usb/usb-phy.txt
->>>>>   create mode 100644 drivers/usb/phy/omap-usb2.c
->>>>>   create mode 100644 include/linux/usb/omap_usb.h
->>>>>   create mode 100644 include/linux/usb/phy_companion.h
->>>>>
->>>>> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt
->>>>> b/Documentation/devicetree/bindings/usb/usb-phy.txt
->>>>> new file mode 100644
->>>>> index 0000000..80d4148
->>>>> --- /dev/null
->>>>> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
->>>>
->>>>
->>>> This is a very generic name...
->>>>
->>>>> @@ -0,0 +1,17 @@
->>>>> +USB PHY
->>>>> +
->>>>> +OMAP USB2 PHY
->>>>> +
->>>>> +Required properties:
->>>>> + - compatible: Should be "ti,omap-usb2"
->>>>
->>>>
->>>> ...for a specific phy. However, I do think a generic binding to describe
->>>> host ctrlr to phy connections is needed.
->>>>
->>>>> + - reg : Address and length of the register set for the device. Also
->>>>> +add the address of control module dev conf register until a driver for
->>>>> +control module is added
->>>>
->>>>
->>>> The dts should describe the h/w, not what you need for the current
->>>> driver. The 2nd reg field does not belong here.
->>>
->>>
->>> Indeed. This was discussed and agreed upon as a interim solution till
->>> we have a control module driver in place to write to the control
->>> module register.
+>> So rescuer thread must be WORKER_NOT_RUNNING.
 >>
+>> Currently code implement it by always setting WORKER_PREP on rescuer thread,
+>> but this kind of implement is ugly:
+>> A)	It reuses WORKER_PREP which is used for a different meaning.
+>> B)	It does not told us rescuer thread is WORKER_NOT_RUNNING.
 >>
->> Discussed where and agreed by who? I for one do not agree.
->
->
-> Yeah, what was tolerated was the addition of that address inside hwmod data,
-> but I do agree that it should not go into DTS.
+>> So we add WORKER_RESCUER to fix these two sematic.
+> 
+> Ah, right, we always have WORKER_PREP set for rescuers.  So, this
+> doesn't actually change the behavior at all?  
 
-So how can we handle reg writes to control module until we have a
-control module driver. usb2 phy does not have a hwmod data for itself.
-Do you think we should add a new hwmod data for usb2 phy and use this
-in the usb2phy data node in the dts file?
+No, this doesn't change the behavior at all.
 
-Thanks
-Kishon
+> I'm not necessarily
+> against it but the commit message seems a bit misleading.
+> 
+
+I just try my best to say" we need to add WORKER_RESCUER to told us
+rescuer is WORKER_NOT_RUNNING explicity, using WORKER_PREP only will
+hide this info"
+
+Thanks,
+Lai
+
