@@ -1,150 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab2I1N4P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 09:56:15 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43180 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714Ab2I1N4O (ORCPT
+	id S1758158Ab2I1N6k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 09:58:40 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:13340
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756714Ab2I1N6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 09:56:14 -0400
-Date: Fri, 28 Sep 2012 14:55:00 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: anish singh <anish198519851985@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] driver core: fix possible missing of device probe
-Message-ID: <20120928135459.GH7916@n2100.arm.linux.org.uk>
-References: <1348793563-19186-1-git-send-email-ming.lei@canonical.com> <CAK7N6vqS9PW85hgcA7EVzCk-TQo_ru4OcC5i0Rw-b2hvb4YoXg@mail.gmail.com> <20120928084626.GB7916@n2100.arm.linux.org.uk> <CACVXFVOOVvf4xOABnv1FqPOMH6_XwFcH-ZTfBDojQrZJyypT+A@mail.gmail.com>
+	Fri, 28 Sep 2012 09:58:38 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz8275bh15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MB2C5F-02-3OL-02
+X-M-MSG: 
+Date: Fri, 28 Sep 2012 15:58:24 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Florian Dazinger <florian@dazinger.net>,
+        iommu <iommu@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: 3.6-rc7 boot crash + bisection
+Message-ID: <20120928135824.GB4009@amd.com>
+References: <20120924210348.5f50677b@brain.lan>
+ <1348597970.28860.114.camel@bling.home>
+ <20120925205420.0a07dea2@brain.lan>
+ <1348602226.28860.132.camel@bling.home>
+ <20120926132050.GB10549@amd.com>
+ <1348670159.28860.183.camel@bling.home>
+ <20120926151044.GE10549@amd.com>
+ <1348676470.28860.197.camel@bling.home>
+ <1348689013.28860.220.camel@bling.home>
+ <1348697043.28860.235.camel@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CACVXFVOOVvf4xOABnv1FqPOMH6_XwFcH-ZTfBDojQrZJyypT+A@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1348697043.28860.235.camel@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 09:42:40PM +0800, Ming Lei wrote:
-> On Fri, Sep 28, 2012 at 4:46 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> >
-> > Actually, this description is rubbish.  It's not about the SMP barriers,
-> > or read/write device/driver lists, or about two CPUs (my test setup only
-> > has one CPU.)
-> 
-> Could you point out in detail what is wrong with my description?
-> 
-> Looks the description has been posted for about 12 days...
-> 
-> >
-> > It's about threads, and the relative timing of those threads through
-> 
-> I do not mention threads case in one CPU because the context in
-> which device_add runs will always see the driver added into
+On Wed, Sep 26, 2012 at 04:04:03PM -0600, Alex Williamson wrote:
 
-There you go again.  Look at my _much_ better description of the problem
-and you'll notice that device_add has nothing to do with this.
-
-> bus's driver list after applying the patch in this situation. And it
-> is obvious under UP case.
+> Here's a lockdep clean version of it:
 > 
-> But in SMP case, it is not so obvious like UP, driver_register and
-> device_add will be run in two individual CPU,  so memory barrier
-
-Again, device_add() has nothing to do with this.  Do you actually
-understand the problem?  Plainly as you're bringing device_add() into
-this, you do not.
-
-> plays a role in making device_add see the new added driver in
-> the situation described in the commit log, and avoid the problem.
+> amd_iommu: Handle aliases not backed by devices
 > 
-> > the driver model code.  All in all, what with the error path issue, and
-> > now the blatently wrong description, I'm not gaining much confidence in
-> > Ming Lei.
-> >
-> > The below is actually what's happening, according to my analysis - and
-> > you'll notice that the device list has absolutely nothing to do with it:
+> Aliases sometimes don't have a struct pci_dev backing them.  This breaks
+> our attempt to figure out the topology and device quirks that may effect
+> IOMMU grouping.  When this happens, allocate an IOMMU group on the
+> dev_data for the alias and make use of it for all devices referencing
+> this alias.
+
+Yes, this is the real fix. But it is too big for v3.6 at this time, so
+I'll would take this for 3.7 and use my small fix for 3.6.
+
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
 > 
-> I don't think your analysis is complete for the two reasons:
-> 
->       - the problem isn't only triggered by deferred probe, and can be triggered
->         by device_add too
->       - your analysis doesn't cover SMP case
+> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+> index b64502d..4eacb17 100644
+> --- a/drivers/iommu/amd_iommu.c
+> +++ b/drivers/iommu/amd_iommu.c
+> @@ -71,6 +71,7 @@ static DEFINE_SPINLOCK(iommu_pd_list_lock);
+>  /* List of all available dev_data structures */
+>  static LIST_HEAD(dev_data_list);
+>  static DEFINE_SPINLOCK(dev_data_list_lock);
+> +static DEFINE_MUTEX(dev_data_iommu_group_lock);
 
-Total rubbish.  It does cover the SMP case, because those threads can run
-on different CPUs.  The key issue is that there's a race between different
-parts of the kernel, and IT IS NOT between the major device list and driver
-list as you keep on bringing up.
+I think this lock is not necessary. The iommu_init_device routine does
+not run multiple times in parallel for the same device. So we should be
+safe on that side.
 
-> In fact, it is just a race between driver_register and device_add or
-> bus_probe_device, and should be nothing to do with deferred probe.
-> 
-> See my posted description again:
-> 
->           Inside bus_add_driver(), one device might be added into
->           the bus or probed which is triggered by deferred probe
->           just after completing of driver_attach() and before
->           'klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers)',
->           so the device won't be probed by this driver.
 
-This paragraph makes no sense to me as a native English speaker.
+	Joerg
 
-> > Thread 0                        Thread 1                        Thread 2
-> > driver_attach()
-> >  bus_for_each_dev()
-> >   __driver_attach(, devA)
-> >    driver_probe_device(, devA)
-> >     really_probe(devA, )
-> >      driver_deferred_probe_add(devA)
-> >                                 driver_attach()
-> >                                  bus_for_each_dev()
-> >                                   __driver_attach(, devA)
-> >                                    driver_probe_device(, devB)
-> >                                     really_probe(devB, )
-> >                                      driver_bound(devB)
-> >                                       driver_deferred_probe_trigger()
-> >                                                                 deferred_probe_work_func()
-> >                                                                  bus_probe_device(devA)
-> >                                                                   device_attach(devA)
-> >                                                                    bus_for_each_drv()
-> >                                                                     __device_attach(, devA)
-> >                                                                      *fails to find driver*
-> >                                                                      *devA dropped from
-> >                                                                       deferred probe list*
-> > klist_add_tail(klist_drivers)
-> 
-> Didn't my description cover the description above? ( bus_probe_device is
-> called between driver_attach and klist_add_tail)
+-- 
+AMD Operating System Research Center
 
-Given that your description makes no sense (either to me or, as we've
-also found out, to Anish Singh), it means your description is not able
-to be understood.  So no, your description does not cover the situation
-I reported by the mere fact that it was uninteligable.
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-> Also it is only one of the two situations addressed by the patch.
-> 
-> >
-> > The reason this fix works is because the order in thread 0 means that
-> > when thread 2 comes to re-probe the device, it does find the driver,
-> 
-> You mean the driver_attach on same driver can happen at the same time?
-> If so, it is simply wrong.
-
-Sigh... your lack of understanding is impressive.  I do not mean that
-driver_attach() can happen on the same struct device_driver simultaneously.
-Go back and look at my description of the three threads.  Do you see two
-driver_attach() statements in that?  No.  So clearly I don't mean that.
-
-> > and if the resources that the driver needs are still not found (and it
-> > again returns -EPROBE_DEFER) the device will be placed back on the
-> > deferred probe list.
-> 
-> Thanks,
-
-Sorry, I don't think you know what you're talking about, and as such
-please remove my reported and tested by from this patch.  I do not wish
-to endorse a patch created by someone who seemingly has a total lack of
-understanding of the problem I reported.
-
-Thanks.
