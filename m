@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965223Ab2I1VFk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:05:40 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45041 "EHLO
+	id S1423171Ab2I1VFv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:05:51 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59152 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031879Ab2I1Uqy (ORCPT
+	by vger.kernel.org with ESMTP id S965226Ab2I1VFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:46:54 -0400
-X-Sasl-enc: Z5JxSnNpeuZDcW+cI8CAlRgvhqhGSQqnBRD9v23wxkt5 1348865213
+	Fri, 28 Sep 2012 17:05:44 -0400
+X-Sasl-enc: 25u3ioCsi2c3Niufx9OQg+SmAOinhazd5971JNbSOp0w 1348866344
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Keerthy <j-keerthy@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 046/127] hwmon: (twl4030-madc-hwmon) Initialize uninitialized structure elements
-Date: Fri, 28 Sep 2012 13:33:39 -0700
-Message-Id: <20120928203051.237286838@linuxfoundation.org>
+        Weiping Pan <wpan@redhat.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 102/127] rds: set correct msg_namelen
+Date: Fri, 28 Sep 2012 13:34:35 -0700
+Message-Id: <20120928203057.832216974@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,44 +27,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Weiping Pan <wpan@redhat.com>
 
-commit 73d7c119255615a26070f9d6cdb722a166a29015 upstream.
+commit 06b6a1cf6e776426766298d055bb3991957d90a7 upstream.
 
-twl4030_madc_conversion uses do_avg and type structure elements of
-twl4030_madc_request. Initialize structure to avoid random operation.
+Jay Fenlason (fenlason@redhat.com) found a bug,
+that recvfrom() on an RDS socket can return the contents of random kernel
+memory to userspace if it was called with a address length larger than
+sizeof(struct sockaddr_in).
+rds_recvmsg() also fails to set the addr_len paramater properly before
+returning, but that's just a bug.
+There are also a number of cases wher recvfrom() can return an entirely bogus
+address. Anything in rds_recvmsg() that returns a non-negative value but does
+not go through the "sin = (struct sockaddr_in *)msg->msg_name;" code path
+at the end of the while(1) loop will return up to 128 bytes of kernel memory
+to userspace.
 
-Fix for: Coverity CID 200794 Uninitialized scalar variable.
+And I write two test programs to reproduce this bug, you will see that in
+rds_server, fromAddr will be overwritten and the following sock_fd will be
+destroyed.
+Yes, it is the programmer's fault to set msg_namelen incorrectly, but it is
+better to make the kernel copy the real length of address to user space in
+such case.
 
-Cc: Keerthy <j-keerthy@ti.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Keerthy <j-keerthy@ti.com>
+How to run the test programs ?
+I test them on 32bit x86 system, 3.5.0-rc7.
+
+1 compile
+gcc -o rds_client rds_client.c
+gcc -o rds_server rds_server.c
+
+2 run ./rds_server on one console
+
+3 run ./rds_client on another console
+
+4 you will see something like:
+server is waiting to receive data...
+old socket fd=3
+server received data from client:data from client
+msg.msg_namelen=32
+new socket fd=-1067277685
+sendmsg()
+: Bad file descriptor
+
+/***************** rds_client.c ********************/
+
+int main(void)
+{
+	int sock_fd;
+	struct sockaddr_in serverAddr;
+	struct sockaddr_in toAddr;
+	char recvBuffer[128] = "data from client";
+	struct msghdr msg;
+	struct iovec iov;
+
+	sock_fd = socket(AF_RDS, SOCK_SEQPACKET, 0);
+	if (sock_fd < 0) {
+		perror("create socket error\n");
+		exit(1);
+	}
+
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	serverAddr.sin_port = htons(4001);
+
+	if (bind(sock_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+		perror("bind() error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	memset(&toAddr, 0, sizeof(toAddr));
+	toAddr.sin_family = AF_INET;
+	toAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	toAddr.sin_port = htons(4000);
+	msg.msg_name = &toAddr;
+	msg.msg_namelen = sizeof(toAddr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = recvBuffer;
+	msg.msg_iov->iov_len = strlen(recvBuffer) + 1;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+
+	if (sendmsg(sock_fd, &msg, 0) == -1) {
+		perror("sendto() error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	printf("client send data:%s\n", recvBuffer);
+
+	memset(recvBuffer, '\0', 128);
+
+	msg.msg_name = &toAddr;
+	msg.msg_namelen = sizeof(toAddr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = recvBuffer;
+	msg.msg_iov->iov_len = 128;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+	if (recvmsg(sock_fd, &msg, 0) == -1) {
+		perror("recvmsg() error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	printf("receive data from server:%s\n", recvBuffer);
+
+	close(sock_fd);
+
+	return 0;
+}
+
+/***************** rds_server.c ********************/
+
+int main(void)
+{
+	struct sockaddr_in fromAddr;
+	int sock_fd;
+	struct sockaddr_in serverAddr;
+	unsigned int addrLen;
+	char recvBuffer[128];
+	struct msghdr msg;
+	struct iovec iov;
+
+	sock_fd = socket(AF_RDS, SOCK_SEQPACKET, 0);
+	if(sock_fd < 0) {
+		perror("create socket error\n");
+		exit(0);
+	}
+
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	serverAddr.sin_port = htons(4000);
+	if (bind(sock_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+		perror("bind error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	printf("server is waiting to receive data...\n");
+	msg.msg_name = &fromAddr;
+
+	/*
+	 * I add 16 to sizeof(fromAddr), ie 32,
+	 * and pay attention to the definition of fromAddr,
+	 * recvmsg() will overwrite sock_fd,
+	 * since kernel will copy 32 bytes to userspace.
+	 *
+	 * If you just use sizeof(fromAddr), it works fine.
+	 * */
+	msg.msg_namelen = sizeof(fromAddr) + 16;
+	/* msg.msg_namelen = sizeof(fromAddr); */
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = recvBuffer;
+	msg.msg_iov->iov_len = 128;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+
+	while (1) {
+		printf("old socket fd=%d\n", sock_fd);
+		if (recvmsg(sock_fd, &msg, 0) == -1) {
+			perror("recvmsg() error\n");
+			close(sock_fd);
+			exit(1);
+		}
+		printf("server received data from client:%s\n", recvBuffer);
+		printf("msg.msg_namelen=%d\n", msg.msg_namelen);
+		printf("new socket fd=%d\n", sock_fd);
+		strcat(recvBuffer, "--data from server");
+		if (sendmsg(sock_fd, &msg, 0) == -1) {
+			perror("sendmsg()\n");
+			close(sock_fd);
+			exit(1);
+		}
+	}
+
+	close(sock_fd);
+	return 0;
+}
+
+Signed-off-by: Weiping Pan <wpan@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/twl4030-madc-hwmon.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ net/rds/recv.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/hwmon/twl4030-madc-hwmon.c
-+++ b/drivers/hwmon/twl4030-madc-hwmon.c
-@@ -44,12 +44,13 @@ static ssize_t madc_read(struct device *
- 			 struct device_attribute *devattr, char *buf)
- {
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
--	struct twl4030_madc_request req;
-+	struct twl4030_madc_request req = {
-+		.channels = 1 << attr->index,
-+		.method = TWL4030_MADC_SW2,
-+		.type = TWL4030_MADC_WAIT,
-+	};
- 	long val;
+--- a/net/rds/recv.c
++++ b/net/rds/recv.c
+@@ -409,6 +409,8 @@ int rds_recvmsg(struct kiocb *iocb, stru
  
--	req.channels = (1 << attr->index);
--	req.method = TWL4030_MADC_SW2;
--	req.func_cb = NULL;
- 	val = twl4030_madc_conversion(&req);
- 	if (val < 0)
- 		return val;
+ 	rdsdebug("size %zu flags 0x%x timeo %ld\n", size, msg_flags, timeo);
+ 
++	msg->msg_namelen = 0;
++
+ 	if (msg_flags & MSG_OOB)
+ 		goto out;
+ 
+@@ -484,6 +486,7 @@ int rds_recvmsg(struct kiocb *iocb, stru
+ 			sin->sin_port = inc->i_hdr.h_sport;
+ 			sin->sin_addr.s_addr = inc->i_saddr;
+ 			memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
++			msg->msg_namelen = sizeof(*sin);
+ 		}
+ 		break;
+ 	}
 
 
