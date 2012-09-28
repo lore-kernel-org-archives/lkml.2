@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab2I1DGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 23:06:35 -0400
-Received: from 11.mo4.mail-out.ovh.net ([46.105.34.195]:35257 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755935Ab2I1DGe (ORCPT
+	id S1756729Ab2I1DLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 23:11:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53793 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2I1DLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 23:06:34 -0400
-X-Greylist: delayed 980 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Sep 2012 23:06:33 EDT
-Date: Fri, 28 Sep 2012 04:47:44 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
-Message-ID: <20120928024744.GV17667@game.jcrosoft.org>
-References: <1348780923-27428-1-git-send-email-stigge@antcom.de>
+	Thu, 27 Sep 2012 23:11:03 -0400
+Date: Thu, 27 Sep 2012 22:10:56 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH V2 01/10] Secure boot: Add new capability
+Message-ID: <20120928031056.GA5478@sergelap>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+ <1348152065-31353-2-git-send-email-mjg@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1348780923-27428-1-git-send-email-stigge@antcom.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 1176846879533280093
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+In-Reply-To: <1348152065-31353-2-git-send-email-mjg@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23:22 Thu 27 Sep     , Roland Stigge wrote:
-> The recurring task of providing simultaneous access to GPIO lines (especially
-> for bit banging protocols) needs an appropriate API.
+Quoting Matthew Garrett (mjg@redhat.com):
+> Secure boot adds certain policy requirements, including that root must not
+> be able to do anything that could cause the kernel to execute arbitrary code.
+> The simplest way to handle this would seem to be to add a new capability
+> and gate various functionality on that. We'll then strip it from the initial
+> capability set if required.
 > 
-> This patch adds a kernel internal "Block GPIO" API that enables simultaneous
-> access to several GPIOs in the same gpio_chip (bit mapped). Further, it adds a
-> sysfs interface (/sys/class/gpio/gpiochipXX/block).
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+
 > ---
-> NOTE: This is only useful if individual drivers implement the .get_block() and
-> .set_block() functions. I'm providing an example implementation for max730x
-> (see next patch), and can provide further driver patches after API review.
+>  include/linux/capability.h | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
 > 
-> Thanks in advance!
-> 
->  Documentation/gpio.txt     |   52 +++++++++++++++++++
->  drivers/gpio/gpiolib.c     |  121 +++++++++++++++++++++++++++++++++++++++++++++
->  include/asm-generic/gpio.h |    7 ++
->  include/linux/gpio.h       |   24 ++++++++
->  4 files changed, 204 insertions(+)
-> 
-> --- linux-2.6.orig/Documentation/gpio.txt
-> +++ linux-2.6/Documentation/gpio.txt
-> @@ -439,6 +439,51 @@ slower clock delays the rising edge of S
->  signaling rate accordingly.
+> diff --git a/include/linux/capability.h b/include/linux/capability.h
+> index d10b7ed..4345bc8 100644
+> --- a/include/linux/capability.h
+> +++ b/include/linux/capability.h
+> @@ -364,7 +364,11 @@ struct cpu_vfs_cap_data {
 >  
+>  #define CAP_BLOCK_SUSPEND    36
 >  
-> +Block GPIO (optional)
-> +---------------------
+> -#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
+> +/* Allow things that trivially permit root to modify the running kernel */
 > +
-> +The above described interface concentrates on handling single GPIOs.  However,
-> +in applications where it is critical to set several GPIOs at once, this
-> +interface doesn't work well, e.g. bit-banging protocols via GPIO lines.
-> +Consider a GPIO controller that is connected via a slow I2C line. When
-> +switching two or more GPIOs one after another, there can be considerable time
-> +between those events. This is solved by an interface called Block GPIO:
+> +#define CAP_COMPROMISE_KERNEL  37
 > +
-> +void gpio_get_block(unsigned int gpio, u8* values, size_t size);
-> +void gpio_set_block(unsigned int gpio, u8* set, u8* clr, size_t size);
-> +
-> +The function gpio_get_block() detects the current state of several GPIOs at
-> +once, practically by doing only one query at the hardware level (e.g. memory
-> +mapped or via bus transfers like I2C). There are some limits to this interface:
-> +A certain gpio_chip (see below) must be specified via the gpio parameter as the
-> +first GPIO in the gpio_chip group. The Block GPIO interface only supports
-> +simultaneous handling of GPIOs in the same gpio_chip group since different
-> +gpio_chips typically map to different GPIO hardware blocks.
-so basicaly you use a gpio numberthat you do not request, that is maybe
-requested. This is broken if you want to get or set block you need to pass the
-list of GPIO you want to control not some fancy magic
-
-Otherwise this will end be broken code.
-
-And how you can hope to describe this via DT
-
-Best Regards,
-J.
+> +#define CAP_LAST_CAP         CAP_COMPROMISE_KERNEL
+>  
+>  #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
+>  
+> -- 
+> 1.7.11.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
