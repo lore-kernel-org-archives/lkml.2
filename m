@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab2I1EcA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 00:32:00 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42307 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab2I1Eb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 00:31:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,498,1344236400"; 
-   d="scan'208";a="215093231"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
-        acme@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 10/31] perf, x86: Support PERF_SAMPLE_ADDR on Haswell
-Date: Thu, 27 Sep 2012 21:31:15 -0700
-Message-Id: <1348806696-31170-11-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
-References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
+	id S1753473Ab2I1Edo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 00:33:44 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54411 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753577Ab2I1Edk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 00:33:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABb+yY1qbs_s7a-rb91wehEUbO1Azax+-PCaH2QQ=gr+Mc5ioA@mail.gmail.com>
+References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
+	<1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
+	<CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
+	<CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
+	<1348739292.1648.15.camel@vkoul-udesk3>
+	<CAG17yqRxZFsKpx+gpEGoZTbs4x7ijmqywX39=ezq2+RZkvk=TA@mail.gmail.com>
+	<CABb+yY1qbs_s7a-rb91wehEUbO1Azax+-PCaH2QQ=gr+Mc5ioA@mail.gmail.com>
+Date: Fri, 28 Sep 2012 10:03:39 +0530
+Message-ID: <CAG17yqTSj4wg0f-9kuzqYDicpD50mjZ2vuWCm+s4vfCTcQs_1g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
+From: Inderpal Singh <inderpal.singh@linaro.org>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, boojin.kim@samsung.com,
+        patches@linaro.org, kgene.kim@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 27 September 2012 21:36, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+> On Thu, Sep 27, 2012 at 9:11 PM, Inderpal Singh
+> <inderpal.singh@linaro.org> wrote:
+>> On 27 September 2012 15:18, Vinod Koul <vinod.koul@linux.intel.com> wrote:
+>>> On Wed, 2012-09-26 at 12:11 +0530, Inderpal Singh wrote:
+>>>> If we fail pl330_remove while some client is queued, the force unload
+>>>> will fail and the
+>>>> force unload will lose its purpose.
+>>>> How about conditionally DMA_TERMINATE_ALL and free resources like
+>>>> below ?
+>>> Why would you want to remove the driver when it is doing something
+>>> useful? You have to ensure driver is not doing anything.
+>>>
+>>> What is point here?
+>>>
+>> As mentioned by jassi,  if the pl330 module is forced unloaded while
+>> some client is queued, we have to manually do DMA_TERMINATE_ALL.
+>>
+> I meant that in the current situation. Not ideally.
+>
+>> If failing remove is a better option in case some client is queued, we
+>> can do away with DMA_TERMINATE_ALL and free_chan_resources and simply
+>> return a suitable error code from remove.
+>>
+> That was exactly what I suggested as an alternative.
 
-Haswell supplies the address for every PEBS event, so always fill it in
-when the user requested it.  It will be 0 when not useful (no memory access)
+Yes, but our discussion went about continue doing DMA_TERMINATE_ALL and freeing.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+Now, if we have to check if any client is using the channel and then
+decide. We will have to traverse the channel list twice once to check
+the usage and second time to delete the nodes from the list if we go
+ahead with remove.
+The remove will look like below:
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 5b60dcf..81fc14a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -623,6 +623,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 		data.raw = &raw;
- 	}
- 
-+	if ((event->attr.sample_type & PERF_SAMPLE_ADDR) &&
-+		x86_pmu.intel_cap.pebs_format >= 2)
-+		data.addr = ((struct pebs_record_v2 *)pebs)->nhm.dla;
+@@ -3008,18 +3008,19 @@ static int __devexit pl330_remove(struct
+amba_device *adev)
+        if (!pdmac)
+                return 0;
+
++       /* check if any client is using any channel */
++       list_for_each_entry_safe(pch, _p, &pdmac->ddma.channels,
++                       chan.device_node) {
 +
- 	if (has_branch_stack(event))
- 		data.br_stack = &cpuc->lbr_stack;
- 
--- 
-1.7.7.6
++               if (pch->chan.client_count)
++                       return -EBUSY;
++       }
++
+        amba_set_drvdata(adev, NULL);
 
+-       /* Idle the DMAC */
+        list_for_each_entry_safe(pch, _p, &pdmac->ddma.channels,
+                        chan.device_node) {
+
+                /* Remove the channel */
+                list_del(&pch->chan.device_node);
+-
+-               /* Flush the channel */
+-               pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+-               pl330_free_chan_resources(&pch->chan);
+        }
+
+Please suggest if there is any better way to do it.
+
+Thanks,
+Inder
