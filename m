@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032923Ab2I1Ud4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:33:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
+	id S1031340Ab2I1Udz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:33:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032845Ab2I1UbH (ORCPT
+	with ESMTP id S1032861Ab2I1UbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:31:07 -0400
+	Fri, 28 Sep 2012 16:31:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Williams <dan.j.williams@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [ 179/218] Fix a dead loop in async_synchronize_full()
-Date: Fri, 28 Sep 2012 13:16:36 -0700
-Message-Id: <20120928201522.053359285@linuxfoundation.org>
+        Mark Rustad <mark.d.rustad@intel.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 177/218] net: Statically initialize init_net.dev_base_head
+Date: Fri, 28 Sep 2012 13:16:34 -0700
+Message-Id: <20120928201521.829782380@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -31,94 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
 
-[Fixed upstream by commits 2955b47d2c1983998a8c5915cb96884e67f7cb53 and
-a4683487f90bfe3049686fc5c566bdc1ad03ace6 from Dan Williams, but they are much
-more intrusive than this tiny fix, according to Andrew - gregkh]
+commit 734b65417b24d6eea3e3d7457e1f11493890ee1d upstream.
 
-This patch tries to fix a dead loop in  async_synchronize_full(), which
-could be seen when preemption is disabled on a single cpu machine. 
+This change eliminates an initialization-order hazard most
+recently seen when netprio_cgroup is built into the kernel.
 
-void async_synchronize_full(void)
-{
-        do {
-                async_synchronize_cookie(next_cookie);
-        } while (!list_empty(&async_running) || !
-list_empty(&async_pending));
-}
+With thanks to Eric Dumazet for catching a bug.
 
-async_synchronize_cookie() calls async_synchronize_cookie_domain() with
-&async_running as the default domain to synchronize. 
-
-However, there might be some works in the async_pending list from other
-domains. On a single cpu system, without preemption, there is no chance
-for the other works to finish, so async_synchronize_full() enters a dead
-loop. 
-
-It seems async_synchronize_full() wants to synchronize all entries in
-all running lists(domains), so maybe we could just check the entry_count
-to know whether all works are finished. 
-
-Currently, async_synchronize_cookie_domain() expects a non-NULL running
-list ( if NULL, there would be NULL pointer dereference ), so maybe a
-NULL pointer could be used as an indication for the functions to
-synchronize all works in all domains. 
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Christian Kujau <lists@nerdbynature.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Williams <dan.j.williams@gmail.com>
-Cc: Christian Kujau <lists@nerdbynature.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- kernel/async.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ net/core/dev.c           |    3 ++-
+ net/core/net_namespace.c |    4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/async.c b/kernel/async.c
-index bd0c168..32d8dc9 100644
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -86,6 +86,13 @@ static async_cookie_t  __lowest_in_progress(struct list_head *running)
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6303,7 +6303,8 @@ static struct hlist_head *netdev_create_
+ /* Initialize per network namespace state */
+ static int __net_init netdev_init(struct net *net)
  {
- 	struct async_entry *entry;
+-	INIT_LIST_HEAD(&net->dev_base_head);
++	if (net != &init_net)
++		INIT_LIST_HEAD(&net->dev_base_head);
  
-+	if (!running) { /* just check the entry count */
-+		if (atomic_read(&entry_count))
-+			return 0; /* smaller than any cookie */
-+		else
-+			return next_cookie;
-+	}
-+
- 	if (!list_empty(running)) {
- 		entry = list_first_entry(running,
- 			struct async_entry, list);
-@@ -236,9 +243,7 @@ EXPORT_SYMBOL_GPL(async_schedule_domain);
-  */
- void async_synchronize_full(void)
- {
--	do {
--		async_synchronize_cookie(next_cookie);
--	} while (!list_empty(&async_running) || !list_empty(&async_pending));
-+	async_synchronize_cookie_domain(next_cookie, NULL);
- }
- EXPORT_SYMBOL_GPL(async_synchronize_full);
+ 	net->dev_name_head = netdev_create_hash();
+ 	if (net->dev_name_head == NULL)
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -25,7 +25,9 @@ static DEFINE_MUTEX(net_mutex);
+ LIST_HEAD(net_namespace_list);
+ EXPORT_SYMBOL_GPL(net_namespace_list);
  
-@@ -258,7 +263,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full_domain);
- /**
-  * async_synchronize_cookie_domain - synchronize asynchronous function calls within a certain domain with cookie checkpointing
-  * @cookie: async_cookie_t to use as checkpoint
-- * @running: running list to synchronize on
-+ * @running: running list to synchronize on, NULL indicates all lists
-  *
-  * This function waits until all asynchronous function calls for the
-  * synchronization domain specified by the running list @list submitted
--- 
-1.7.9.5
-
+-struct net init_net;
++struct net init_net = {
++	.dev_base_head = LIST_HEAD_INIT(init_net.dev_base_head),
++};
+ EXPORT_SYMBOL(init_net);
+ 
+ #define INITIAL_NET_GEN_PTRS	13 /* +1 for len +2 for rcu_head */
 
 
