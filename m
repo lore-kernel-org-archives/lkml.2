@@ -1,183 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2I1Dun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 23:50:43 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38042 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754895Ab2I1Duk (ORCPT
+	id S1751031Ab2I1ENW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 00:13:22 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:48025 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750705Ab2I1ENV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 23:50:40 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50651E68.3040208@jp.fujitsu.com>
-Date: Fri, 28 Sep 2012 12:50:00 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Ni zhan Chen <nizhan.chen@gmail.com>
-CC: <wency@cn.fujitsu.com>, <x86@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-acpi@vger.kernel.org>, <linux-s390@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
-        <cmetcalf@tilera.com>, <sparclinux@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC v9 PATCH 01/21] memory-hotplug: rename remove_memory() to
- offline_memory()/offline_pages()
-References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <1346837155-534-2-git-send-email-wency@cn.fujitsu.com> <506509E4.1090000@gmail.com>
-In-Reply-To: <506509E4.1090000@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Fri, 28 Sep 2012 00:13:21 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/BJIgXikjByJhcBvl8jYiH9GRMX2EIw9RTe3EShd
+	Punz1CaMI/Qm00
+Message-ID: <1348805595.7072.18.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Fri, 28 Sep 2012 06:13:15 +0200
+In-Reply-To: <CA+55aFwnos6qFMi6R9uGxY2QtkUVm3hEc_Lgx1R0+AZt5V=SRA@mail.gmail.com>
+References: <20120926163233.GA5339@x1.osrc.amd.com>
+	 <CA+55aFzC1GZG8+Gv9KmAcV=RGU+hw39hwC9AjfYVqiJ84qAYkw@mail.gmail.com>
+	 <20120926213723.GA27692@liondog.tnic>
+	 <1348722568.7059.115.camel@marge.simpson.net>
+	 <20120927054742.GA4370@gmail.com>
+	 <1348727665.7059.160.camel@marge.simpson.net>
+	 <20120927064142.GB5996@gmail.com>
+	 <1348728852.7059.171.camel@marge.simpson.net>
+	 <20120927071011.GA8980@gmail.com>
+	 <CA+55aFyxjdir-LZneBTk1JQV0cVSRFzEK9Jpxje2SJqA6aP3Yg@mail.gmail.com>
+	 <20120927180507.GD8527@x1.osrc.amd.com>
+	 <CA+55aFyTrcmx3Uf7UGU=-K=BwTym8aN15fTo==cV2bCK6so0Fg@mail.gmail.com>
+	 <1348770584.3292.44.camel@twins>
+	 <CA+55aFwnos6qFMi6R9uGxY2QtkUVm3hEc_Lgx1R0+AZt5V=SRA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen,
+On Thu, 2012-09-27 at 12:40 -0700, Linus Torvalds wrote: 
+> On Thu, Sep 27, 2012 at 11:29 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> >
+> > Don't forget to run the desktop interactivity benchmarks after you're
+> > done wriggling with this knob... wakeup preemption is important for most
+> > those.
+> 
+> So I don't think we want to *just* wiggle that knob per se. We
+> definitely don't want to hurt latency on actual interactive asks. But
+> it's interesting that it helps psql so much, and that there seems to
+> be some interaction with the select_idle_sibling().
+> 
+> So I do have a few things I react to when looking at that wakeup granularity..
+> 
+> I wonder about this comment, for example:
+> 
+>          * By using 'se' instead of 'curr' we penalize light tasks, so
+>          * they get preempted easier. That is, if 'se' < 'curr' then
+>          * the resulting gran will be larger, therefore penalizing the
+>          * lighter, if otoh 'se' > 'curr' then the resulting gran will
+>          * be smaller, again penalizing the lighter task.
+> 
+> why would we want to preempt light tasks easier? It sounds backwards
+> to me. If they are light, we have *less* reason to preempt them, since
+> they are more likely to just go to sleep on their own, no?
 
-2012/09/28 11:22, Ni zhan Chen wrote:
-> On 09/05/2012 05:25 PM, wency@cn.fujitsu.com wrote:
->> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> remove_memory() only try to offline pages. It is called in two cases:
->> 1. hot remove a memory device
->> 2. echo offline >/sys/devices/system/memory/memoryXX/state
->>
->> In the 1st case, we should also change memory block's state, and notify
->> the userspace that the memory block's state is changed after offlining
->> pages.
->>
->> So rename remove_memory() to offline_memory()/offline_pages(). And in
->> the 1st case, offline_memory() will be used. The function offline_memory()
->> is not implemented. In the 2nd case, offline_pages() will be used.
->
-> But this time there is not a function associated with add_memory.
+At, that particular 'light' refers to se->load.weight.
 
-To associate with add_memory() later, we renamed it.
+> Another question is whether the fact that this same load interacts
+> with select_idle_sibling() is perhaps a sign that maybe the preemption
+> logic is all fine, but it interacts badly with the "pick new cpu"
+> code. In particular, after having changed rq's, is the vruntime really
+> comparable? IOW, maybe this is an interaction between "place_entity()"
+> and then the immediately following (?) call to check wakeup
+> preemption?
 
-Thanks,
-Yasuaki Ishimatsu
+I think vruntime should be fine.  We set take the delta between the
+task's vruntime when it went to sleep and it's previous rq min_vruntime
+to capture progress made while it slept, and apply the relative offset
+in the task's new home so a task can migrate and still have a chance to
+preempt on wakeup.
 
->
->>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->> ---
->>   drivers/acpi/acpi_memhotplug.c |    2 +-
->>   drivers/base/memory.c          |    9 +++------
->>   include/linux/memory_hotplug.h |    3 ++-
->>   mm/memory_hotplug.c            |   22 ++++++++++++++--------
->>   4 files changed, 20 insertions(+), 16 deletions(-)
->>
->> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
->> index 24c807f..2a7beac 100644
->> --- a/drivers/acpi/acpi_memhotplug.c
->> +++ b/drivers/acpi/acpi_memhotplug.c
->> @@ -318,7 +318,7 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->>        */
->>       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->>           if (info->enabled) {
->> -            result = remove_memory(info->start_addr, info->length);
->> +            result = offline_memory(info->start_addr, info->length);
->>               if (result)
->>                   return result;
->>           }
->> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
->> index 7dda4f7..44e7de6 100644
->> --- a/drivers/base/memory.c
->> +++ b/drivers/base/memory.c
->> @@ -248,26 +248,23 @@ static bool pages_correctly_reserved(unsigned long start_pfn,
->>   static int
->>   memory_block_action(unsigned long phys_index, unsigned long action)
->>   {
->> -    unsigned long start_pfn, start_paddr;
->> +    unsigned long start_pfn;
->>       unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
->>       struct page *first_page;
->>       int ret;
->>       first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
->> +    start_pfn = page_to_pfn(first_page);
->>       switch (action) {
->>           case MEM_ONLINE:
->> -            start_pfn = page_to_pfn(first_page);
->> -
->>               if (!pages_correctly_reserved(start_pfn, nr_pages))
->>                   return -EBUSY;
->>               ret = online_pages(start_pfn, nr_pages);
->>               break;
->>           case MEM_OFFLINE:
->> -            start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
->> -            ret = remove_memory(start_paddr,
->> -                        nr_pages << PAGE_SHIFT);
->> +            ret = offline_pages(start_pfn, nr_pages);
->>               break;
->>           default:
->>               WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
->> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
->> index 910550f..c183f39 100644
->> --- a/include/linux/memory_hotplug.h
->> +++ b/include/linux/memory_hotplug.h
->> @@ -233,7 +233,8 @@ static inline int is_mem_section_removable(unsigned long pfn,
->>   extern int mem_online_node(int nid);
->>   extern int add_memory(int nid, u64 start, u64 size);
->>   extern int arch_add_memory(int nid, u64 start, u64 size);
->> -extern int remove_memory(u64 start, u64 size);
->> +extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
->> +extern int offline_memory(u64 start, u64 size);
->>   extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
->>                                   int nr_pages);
->>   extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index 3ad25f9..bb42316 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -866,7 +866,7 @@ check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
->>       return offlined;
->>   }
->> -static int __ref offline_pages(unsigned long start_pfn,
->> +static int __ref __offline_pages(unsigned long start_pfn,
->>             unsigned long end_pfn, unsigned long timeout)
->>   {
->>       unsigned long pfn, nr_pages, expire;
->> @@ -994,18 +994,24 @@ out:
->>       return ret;
->>   }
->> -int remove_memory(u64 start, u64 size)
->> +int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
->>   {
->> -    unsigned long start_pfn, end_pfn;
->> +    return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
->> +}
->> -    start_pfn = PFN_DOWN(start);
->> -    end_pfn = start_pfn + PFN_DOWN(size);
->> -    return offline_pages(start_pfn, end_pfn, 120 * HZ);
->> +int offline_memory(u64 start, u64 size)
->> +{
->> +    return -EINVAL;
->>   }
->>   #else
->> -int remove_memory(u64 start, u64 size)
->> +int offline_pages(unsigned long start, unsigned long size)
->> +{
->> +    return -EINVAL;
->> +}
->> +
->> +int offline_memory(u64 start, u64 size)
->>   {
->>       return -EINVAL;
->>   }
->>   #endif /* CONFIG_MEMORY_HOTREMOVE */
->> -EXPORT_SYMBOL_GPL(remove_memory);
->> +EXPORT_SYMBOL_GPL(offline_memory);
->
+> The fact that *either* changing select_idle_sibling() *or* changing
+> the wakeup preemption granularity seems to have such a huge impact
+> does seem to tie them together somehow for this particular load. No?
 
+The way I read it, Boris had wakeup preemption disabled.
+
+-Mike
 
