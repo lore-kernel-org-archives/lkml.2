@@ -1,121 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601Ab2I1DeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 23:34:11 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50783 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab2I1DeJ (ORCPT
+	id S1755935Ab2I1Dhm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 23:37:42 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:57875 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755352Ab2I1Dhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 23:34:09 -0400
-Date: Fri, 28 Sep 2012 13:33:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: linux-next: manual merge of the tip tree with the rr tree
-Message-Id: <20120928133341.5697fbecc1674b2143101f52@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__28_Sep_2012_13_33_41_+1000_tjy2c38w=8GLtZRr"
+	Thu, 27 Sep 2012 23:37:38 -0400
+Message-ID: <50651B77.1070809@gmail.com>
+Date: Fri, 28 Sep 2012 11:37:27 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC v9 PATCH 05/21] memory-hotplug: check whether memory is
+ present or not
+References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <1346837155-534-6-git-send-email-wency@cn.fujitsu.com> <504E9EBE.1040403@cn.fujitsu.com> <504EA0F7.5090805@jp.fujitsu.com>
+In-Reply-To: <504EA0F7.5090805@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__28_Sep_2012_13_33_41_+1000_tjy2c38w=8GLtZRr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/11/2012 10:24 AM, Yasuaki Ishimatsu wrote:
+> Hi Wen,
+>
+> 2012/09/11 11:15, Wen Congyang wrote:
+>> Hi, ishimatsu
+>>
+>> At 09/05/2012 05:25 PM, wency@cn.fujitsu.com Wrote:
+>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>
+>>> If system supports memory hot-remove, online_pages() may online 
+>>> removed pages.
+>>> So online_pages() need to check whether onlining pages are present 
+>>> or not.
+>>
+>> Because we use memory_block_change_state() to hotremoving memory, I 
+>> think
+>> this patch can be removed. What do you think?
+>
+> Pleae teach me detals a little more. If we use 
+> memory_block_change_state(),
+> does the conflict never occur? Why?
 
-Hi all,
+since memory hot-add or hot-remove is based on memblock, if check in 
+memory_block_change_state()
+can guarantee conflict never occur?
 
-Today's linux-next merge of the tip tree got a conflict in arch/Kconfig
-between commit 9a9d5786a5e7 ("Make most arch asm/module.h files use
-asm-generic/module.h") from the rr tree and commits fdf9c356502a
-("cputime: Make finegrained irqtime accounting generally available") and
-2b1d5024e17b ("rcu: Settle config for userspace extended quiescent
-state") from the tip tree.
+>
+> Thansk,
+> Yasuaki Ishimatsu
+>
+>> Thanks
+>> Wen Congyang
+>>
+>>>
+>>> CC: David Rientjes <rientjes@google.com>
+>>> CC: Jiang Liu <liuj97@gmail.com>
+>>> CC: Len Brown <len.brown@intel.com>
+>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>> CC: Paul Mackerras <paulus@samba.org>
+>>> CC: Christoph Lameter <cl@linux.com>
+>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>> ---
+>>>   include/linux/mmzone.h |   19 +++++++++++++++++++
+>>>   mm/memory_hotplug.c    |   13 +++++++++++++
+>>>   2 files changed, 32 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>>> index 2daa54f..ac3ae30 100644
+>>> --- a/include/linux/mmzone.h
+>>> +++ b/include/linux/mmzone.h
+>>> @@ -1180,6 +1180,25 @@ void sparse_init(void);
+>>>   #define sparse_index_init(_sec, _nid)  do {} while (0)
+>>>   #endif /* CONFIG_SPARSEMEM */
+>>>
+>>> +#ifdef CONFIG_SPARSEMEM
+>>> +static inline int pfns_present(unsigned long pfn, unsigned long 
+>>> nr_pages)
+>>> +{
+>>> +    int i;
+>>> +    for (i = 0; i < nr_pages; i++) {
+>>> +        if (pfn_present(pfn + i))
+>>> +            continue;
+>>> +        else
+>>> +            return -EINVAL;
+>>> +    }
+>>> +    return 0;
+>>> +}
+>>> +#else
+>>> +static inline int pfns_present(unsigned long pfn, unsigned long 
+>>> nr_pages)
+>>> +{
+>>> +    return 0;
+>>> +}
+>>> +#endif /* CONFIG_SPARSEMEM*/
+>>> +
+>>>   #ifdef CONFIG_NODES_SPAN_OTHER_NODES
+>>>   bool early_pfn_in_nid(unsigned long pfn, int nid);
+>>>   #else
+>>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>>> index 49f7747..299747d 100644
+>>> --- a/mm/memory_hotplug.c
+>>> +++ b/mm/memory_hotplug.c
+>>> @@ -467,6 +467,19 @@ int __ref online_pages(unsigned long pfn, 
+>>> unsigned long nr_pages)
+>>>       struct memory_notify arg;
+>>>
+>>>       lock_memory_hotplug();
+>>> +    /*
+>>> +     * If system supports memory hot-remove, the memory may have been
+>>> +     * removed. So we check whether the memory has been removed or 
+>>> not.
+>>> +     *
+>>> +     * Note: When CONFIG_SPARSEMEM is defined, pfns_present() become
+>>> +     *       effective. If CONFIG_SPARSEMEM is not defined, 
+>>> pfns_present()
+>>> +     *       always returns 0.
+>>> +     */
+>>> +    ret = pfns_present(pfn, nr_pages);
+>>> +    if (ret) {
+>>> +        unlock_memory_hotplug();
+>>> +        return ret;
+>>> +    }
+>>>       arg.start_pfn = pfn;
+>>>       arg.nr_pages = nr_pages;
+>>>       arg.status_change_nid = -1;
+>>
+>
+>
+> -- 
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/Kconfig
-index 3450115,a62965d..0000000
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@@ -281,23 -294,23 +294,42 @@@ config SECCOMP_FILTE
- =20
-  	  See Documentation/prctl/seccomp_filter.txt for details.
- =20
- +config HAVE_MOD_ARCH_SPECIFIC
- +	bool
- +	help
- +	  The arch uses struct mod_arch_specific to store data.  Many arches
- +	  just need a simple module loader without arch specific data - those
- +	  should not enable this.
- +
- +config MODULES_USE_ELF_RELA
- +	bool
- +	help
- +	  Modules only use ELF RELA relocations.  Modules with ELF REL
- +	  relocations will give an error.
- +
- +config MODULES_USE_ELF_REL
- +	bool
- +	help
- +	  Modules only use ELF REL relocations.  Modules with ELF RELA
- +	  relocations will give an error.
- +
-+ config HAVE_RCU_USER_QS
-+ 	bool
-+ 	help
-+ 	  Provide kernel entry/exit hooks necessary for userspace
-+ 	  RCU extended quiescent state. Syscalls need to be wrapped inside
-+ 	  rcu_user_exit()-rcu_user_enter() through the slow path using
-+ 	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
-+ 	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
-+ 	  preemption or signal handling on irq exit still need to be protected.
-+=20
-+ config HAVE_VIRT_CPU_ACCOUNTING
-+ 	bool
-+=20
-+ config HAVE_IRQ_TIME_ACCOUNTING
-+ 	bool
-+ 	help
-+ 	  Archs need to ensure they use a high enough resolution clock to
-+ 	  support irq time accounting and then call enable_sched_clock_irqtime().
-+=20
-  source "kernel/gcov/Kconfig"
-
---Signature=_Fri__28_Sep_2012_13_33_41_+1000_tjy2c38w=8GLtZRr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQZRqVAAoJEECxmPOUX5FEWOQP/3O5F7yVqjKKKEEGdMU/Q6Fr
-Fe9WJm07yw7OvgldY4ELJ1C656iE7jE+hC45mh9fttVGVNULeBJfetHyrAon89oh
-ZXSMEgwUFRn5T02DUMFYLeKRN3rPkleADai7UUR9opsNViAUKtdqO626n3Z7L6Wh
-GxmNpy1H8jJpc1YND0S8KLNMCeAt7FPhaZYpjUckWqCsufVT0Xv3aA3GGX+w0IlD
-setJhcFDhPIFNRMJSIrnrUdE5aKs8e7SGVGMHdd2DRwuYxn/eS8Xb49m5NnzshIa
-cgaYzpSq2k6hptG2jUd9Uo3VsdquPVJMJY5zILH9u6oqiuW7e91svZtvyESMMCdq
-ca0O7F5PXoyq++QT3W18/oDTN3sgWE/Mwj4ol2jFASZsAgS8OJkw33CgBXFNIE0i
-pC2t6FsgBk7CC9whh1NvJguFVv0VJzMUMEembOT9lPAApFgK/XwPrF5bM+ZaXqzQ
-Q8UaQgcATqGSY7FI6ySCc7M82b6Pau+K6ae+O9gacOcfHPVqzknXvkMhofMQoa0Q
-uYLLzKTAeUXGLIGTW9VHe4h/txHBbHuvac7FCFX8fznv10FcUpU6j9wf2w4NSvyH
-ZkVCeIoYjoUUbpLun4GI7Kk6RdP5apBYa6Y1vKEFMU5Qgz3Z5OveFoPA7jz2LwhX
-V4u183nhYNkpf3BjaU2w
-=Wmq7
------END PGP SIGNATURE-----
-
---Signature=_Fri__28_Sep_2012_13_33_41_+1000_tjy2c38w=8GLtZRr--
