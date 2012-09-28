@@ -1,50 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759467Ab2I1UkI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:40:08 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:51255 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759436Ab2I1Uj7 (ORCPT
+	id S1759484Ab2I1UkM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:40:12 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40590 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759455Ab2I1UkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:39:59 -0400
-Date: Fri, 28 Sep 2012 13:39:56 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
-In-Reply-To: <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com>
-Message-ID: <alpine.DEB.2.00.1209281336380.21335@chino.kir.corp.google.com>
-References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com> <5062C029.308@parallels.com>
- <alpine.DEB.2.00.1209261813300.7072@chino.kir.corp.google.com> <5063F94C.4090600@parallels.com> <alpine.DEB.2.00.1209271552350.13360@chino.kir.corp.google.com> <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 28 Sep 2012 16:40:01 -0400
+X-Sasl-enc: rgxE1d/0G3RyJqafLyb4M9WXJCBQ+bwHEYKLzMVT6JLj 1348864800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 002/127] sfc: Fix maximum number of TSO segments and minimum TX queue size
+Date: Fri, 28 Sep 2012 13:32:55 -0700
+Message-Id: <20120928203046.112041973@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.1.428.g652398a
+In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
+References: <20120928203045.835238916@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Sep 2012, Christoph Lameter wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> > For context, as many people who attended the kernel summit and LinuxCon
-> > are aware, a new slab allocator is going to be proposed soon that actually
-> > uses additional bits that aren't defined for all slab allocators.  My
-> > opinion is that leaving unused bits and reserved bits to the
-> > implementation is the best software engineering practice.
-> 
-> Could you please come out with the new allocator and post some patchsets?
-> 
-> We can extend the number of flags reserved if necessary but we really need
-> to see the source for that.
-> 
+------------------
 
-The first prototype, SLAM XP1, will be posted in October.  I'd simply like 
-to avoid reverting this patch down the road and having all of us 
-reconsider the topic again when clear alternatives exist that, in my 
-opinion, make the code cleaner.
 
- [ There _was_ a field for internal flags for mm/slab.c, called "dflags", 
-   before I removed it because it was unused; I'm regretting that now 
-   because it would have been very easy to use it for this purpose. ]
+From: Ben Hutchings <bhutchings@solarflare.com>
+
+[ Upstream commit 7e6d06f0de3f74ca929441add094518ae332257c ]
+
+Currently an skb requiring TSO may not fit within a minimum-size TX
+queue.  The TX queue selected for the skb may stall and trigger the TX
+watchdog repeatedly (since the problem skb will be retried after the
+TX reset).  This issue is designated as CVE-2012-3412.
+
+Set the maximum number of TSO segments for our devices to 100.  This
+should make no difference to behaviour unless the actual MSS is less
+than about 700.  Increase the minimum TX queue size accordingly to
+allow for 2 worst-case skbs, so that there will definitely be space
+to add an skb after we wake a queue.
+
+To avoid invalidating existing configurations, change
+efx_ethtool_set_ringparam() to fix up values that are too small rather
+than returning -EINVAL.
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/sfc/efx.c     |    6 ++++++
+ drivers/net/sfc/efx.h     |   14 ++++++++++----
+ drivers/net/sfc/ethtool.c |   16 +++++++++++-----
+ drivers/net/sfc/nic.h     |    5 +++++
+ drivers/net/sfc/tx.c      |   19 +++++++++++++++++++
+ 5 files changed, 51 insertions(+), 9 deletions(-)
+
+--- a/drivers/net/sfc/efx.c
++++ b/drivers/net/sfc/efx.c
+@@ -1383,6 +1383,11 @@ static int efx_probe_all(struct efx_nic
+ 		goto fail2;
+ 	}
+ 
++	BUILD_BUG_ON(EFX_DEFAULT_DMAQ_SIZE < EFX_RXQ_MIN_ENT);
++	if (WARN_ON(EFX_DEFAULT_DMAQ_SIZE < EFX_TXQ_MIN_ENT(efx))) {
++		rc = -EINVAL;
++		goto fail3;
++	}
+ 	efx->rxq_entries = efx->txq_entries = EFX_DEFAULT_DMAQ_SIZE;
+ 	rc = efx_probe_channels(efx);
+ 	if (rc)
+@@ -1942,6 +1947,7 @@ static int efx_register_netdev(struct ef
+ 	net_dev->irq = efx->pci_dev->irq;
+ 	net_dev->netdev_ops = &efx_netdev_ops;
+ 	SET_ETHTOOL_OPS(net_dev, &efx_ethtool_ops);
++	net_dev->gso_max_segs = EFX_TSO_MAX_SEGS;
+ 
+ 	/* Clear MAC statistics */
+ 	efx->mac_op->update_stats(efx);
+--- a/drivers/net/sfc/efx.h
++++ b/drivers/net/sfc/efx.h
+@@ -38,6 +38,7 @@ extern netdev_tx_t
+ efx_enqueue_skb(struct efx_tx_queue *tx_queue, struct sk_buff *skb);
+ extern void efx_xmit_done(struct efx_tx_queue *tx_queue, unsigned int index);
+ extern int efx_setup_tc(struct net_device *net_dev, u8 num_tc);
++extern unsigned int efx_tx_max_skb_descs(struct efx_nic *efx);
+ 
+ /* RX */
+ extern int efx_probe_rx_queue(struct efx_rx_queue *rx_queue);
+@@ -60,10 +61,15 @@ extern void efx_schedule_slow_fill(struc
+ #define EFX_MAX_EVQ_SIZE 16384UL
+ #define EFX_MIN_EVQ_SIZE 512UL
+ 
+-/* The smallest [rt]xq_entries that the driver supports. Callers of
+- * efx_wake_queue() assume that they can subsequently send at least one
+- * skb. Falcon/A1 may require up to three descriptors per skb_frag. */
+-#define EFX_MIN_RING_SIZE (roundup_pow_of_two(2 * 3 * MAX_SKB_FRAGS))
++/* Maximum number of TCP segments we support for soft-TSO */
++#define EFX_TSO_MAX_SEGS	100
++
++/* The smallest [rt]xq_entries that the driver supports.  RX minimum
++ * is a bit arbitrary.  For TX, we must have space for at least 2
++ * TSO skbs.
++ */
++#define EFX_RXQ_MIN_ENT		128U
++#define EFX_TXQ_MIN_ENT(efx)	(2 * efx_tx_max_skb_descs(efx))
+ 
+ /* Filters */
+ extern int efx_probe_filters(struct efx_nic *efx);
+--- a/drivers/net/sfc/ethtool.c
++++ b/drivers/net/sfc/ethtool.c
+@@ -677,21 +677,27 @@ static int efx_ethtool_set_ringparam(str
+ 				     struct ethtool_ringparam *ring)
+ {
+ 	struct efx_nic *efx = netdev_priv(net_dev);
++	u32 txq_entries;
+ 
+ 	if (ring->rx_mini_pending || ring->rx_jumbo_pending ||
+ 	    ring->rx_pending > EFX_MAX_DMAQ_SIZE ||
+ 	    ring->tx_pending > EFX_MAX_DMAQ_SIZE)
+ 		return -EINVAL;
+ 
+-	if (ring->rx_pending < EFX_MIN_RING_SIZE ||
+-	    ring->tx_pending < EFX_MIN_RING_SIZE) {
++	if (ring->rx_pending < EFX_RXQ_MIN_ENT) {
+ 		netif_err(efx, drv, efx->net_dev,
+-			  "TX and RX queues cannot be smaller than %ld\n",
+-			  EFX_MIN_RING_SIZE);
++			  "RX queues cannot be smaller than %u\n",
++			  EFX_RXQ_MIN_ENT);
+ 		return -EINVAL;
+ 	}
+ 
+-	return efx_realloc_channels(efx, ring->rx_pending, ring->tx_pending);
++	txq_entries = max(ring->tx_pending, EFX_TXQ_MIN_ENT(efx));
++	if (txq_entries != ring->tx_pending)
++		netif_warn(efx, drv, efx->net_dev,
++			   "increasing TX queue size to minimum of %u\n",
++			   txq_entries);
++
++	return efx_realloc_channels(efx, ring->rx_pending, txq_entries);
+ }
+ 
+ static int efx_ethtool_set_pauseparam(struct net_device *net_dev,
+--- a/drivers/net/sfc/nic.h
++++ b/drivers/net/sfc/nic.h
+@@ -65,6 +65,11 @@ enum {
+ #define FALCON_GMAC_LOOPBACKS			\
+ 	(1 << LOOPBACK_GMAC)
+ 
++/* Alignment of PCIe DMA boundaries (4KB) */
++#define EFX_PAGE_SIZE	4096
++/* Size and alignment of buffer table entries (same) */
++#define EFX_BUF_SIZE	EFX_PAGE_SIZE
++
+ /**
+  * struct falcon_board_type - board operations and type information
+  * @id: Board type id, as found in NVRAM
+--- a/drivers/net/sfc/tx.c
++++ b/drivers/net/sfc/tx.c
+@@ -115,6 +115,25 @@ efx_max_tx_len(struct efx_nic *efx, dma_
+ 	return len;
+ }
+ 
++unsigned int efx_tx_max_skb_descs(struct efx_nic *efx)
++{
++	/* Header and payload descriptor for each output segment, plus
++	 * one for every input fragment boundary within a segment
++	 */
++	unsigned int max_descs = EFX_TSO_MAX_SEGS * 2 + MAX_SKB_FRAGS;
++
++	/* Possibly one more per segment for the alignment workaround */
++	if (EFX_WORKAROUND_5391(efx))
++		max_descs += EFX_TSO_MAX_SEGS;
++
++	/* Possibly more for PCIe page boundaries within input fragments */
++	if (PAGE_SIZE > EFX_PAGE_SIZE)
++		max_descs += max_t(unsigned int, MAX_SKB_FRAGS,
++				   DIV_ROUND_UP(GSO_MAX_SIZE, EFX_PAGE_SIZE));
++
++	return max_descs;
++}
++
+ /*
+  * Add a socket buffer to a TX queue
+  *
+
+
