@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031201Ab2I1Tsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:48:47 -0400
+	id S965076Ab2I1S6X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:58:23 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965098Ab2I1S6d (ORCPT
+	with ESMTP id S965042Ab2I1S6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:58:33 -0400
+	Fri, 28 Sep 2012 14:58:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Haifeng Li <omycle@gmail.com>, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>, KyongHo Cho <pullip.cho@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 096/262] mm/page_alloc: fix the page address of higher pages buddy calculation
-Date: Fri, 28 Sep 2012 11:50:25 -0700
-Message-Id: <20120928183009.391920257@linuxfoundation.org>
+        Jason Baron <jbaron@redhat.com>
+Subject: [ 086/262] dyndbg: fix for SOH in logging messages
+Date: Fri, 28 Sep 2012 11:50:15 -0700
+Message-Id: <20120928183008.304394317@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -33,46 +32,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Li Haifeng <omycle@gmail.com>
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
 
-commit 0ba8f2d59304dfe69b59c034de723ad80f7ab9ac upstream.
+commit ebdc82899ec5ed35af1c79ed6a4eeda69dad9b90 upstream.
 
-The heuristic method for buddy has been introduced since commit
-43506fad21ca ("mm/page_alloc.c: simplify calculation of combined index
-of adjacent buddy lists").  But the page address of higher page's buddy
-was wrongly calculated, which will lead page_is_buddy to fail for ever.
-IOW, the heuristic method would be disabled with the wrong page address
-of higher page's buddy.
+commit af7f2158fde was done against master, and clashed with structured
+logging's change of KERN_LEVEL to SOH.
 
-Calculating the page address of higher page's buddy should be based
-higher_page with the offset between index of higher page and index of
-higher page's buddy.
+Bisected and fixed by Markus Trippelsdorf.
 
-Signed-off-by: Haifeng Li <omycle@gmail.com>
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: KyongHo Cho <pullip.cho@samsung.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jason Baron <jbaron@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -580,7 +580,7 @@ static inline void __free_one_page(struc
- 		combined_idx = buddy_idx & page_idx;
- 		higher_page = page + (combined_idx - page_idx);
- 		buddy_idx = __find_buddy_index(combined_idx, order + 1);
--		higher_buddy = page + (buddy_idx - combined_idx);
-+		higher_buddy = higher_page + (buddy_idx - combined_idx);
- 		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
- 			list_add_tail(&page->lru,
- 				&zone->free_area[order].free_list[migratetype]);
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1895,8 +1895,8 @@ int __dev_printk(const char *level, cons
+ 				    "DEVICE=+%s:%s", subsys, dev_name(dev));
+ 	}
+ skip:
+-	if (level[3])
+-		level_extra = &level[3]; /* skip past "<L>" */
++	if (level[2])
++		level_extra = &level[2]; /* skip past KERN_SOH "L" */
+ 
+ 	return printk_emit(0, level[1] - '0',
+ 			   dictlen ? dict : NULL, dictlen,
 
 
