@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab2I1BOj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:14:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46544 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab2I1BOi (ORCPT
+	id S1755794Ab2I1BTp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:19:45 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46190 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab2I1BTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:14:38 -0400
-Date: Thu, 27 Sep 2012 18:11:57 -0700
+	Thu, 27 Sep 2012 21:19:42 -0400
+Date: Thu, 27 Sep 2012 18:17:00 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: mathieu.poirier@linaro.org
 Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: [PATCH 47/57] power: Harmonising platform data
- declaration/handling
-Message-ID: <20120928011156.GE5040@lizard>
+Subject: Re: [PATCH 46/57] power: chargealg: Realign with upstream version
+Message-ID: <20120928011700.GF5040@lizard>
 References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
- <1348589574-25655-48-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-47-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1348589574-25655-48-git-send-email-mathieu.poirier@linaro.org>
+In-Reply-To: <1348589574-25655-47-git-send-email-mathieu.poirier@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 10:12:44AM -0600, mathieu.poirier@linaro.org wrote:
-> From: "Mathieu J. Poirier" <mathieu.poirier@linaro.org>
+On Tue, Sep 25, 2012 at 10:12:43AM -0600, mathieu.poirier@linaro.org wrote:
+> From: Loic Pallardy <loic.pallardy@stericsson.com>
 > 
-> Making platform data declaration and handling similar accross all
-> ab8500_xyc.c battery management files.  Also adding gards against
-> NULL platform data.
+> Upstream version of AB charge algo has been reverted
+> during kernel 3.4 port.
+
+Why it's been reverted in the first place?.. If you're just reverting what
+has been reverted before, you're probably breaking things again, so the
+patch would [temporary] introduce some breakage?
+
+> This patch restore state by:
+> - renaming ab8500_chargal.c in abx500_chargal.c
+> - renaming function from ab8500 to abx500
+> - moving generic structure in "include/mfd/abx500.h"
 > 
-> Signed-off-by: Philippe Langlais <philippe.langlais@stericsson.com>
+> Goal is to ease next code reversion and realignment
+> with mainline
+
+I still hardly understand the rationale behind this change. But if it
+compiles, bisectionable and works... it's fine by me. :-)
+
+> 
+> Signed-off-by: Loic Pallardy <loic.pallardy@stericsson.com>
 > Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
 > ---
->  drivers/power/ab8500_btemp.c    |   17 +++++++++--------
->  drivers/power/ab8500_charger.c  |   18 +++++++++---------
->  drivers/power/ab8500_fg.c       |   17 +++++++++--------
->  drivers/power/abx500_chargalg.c |   25 ++++++++++++++++++++-----
->  4 files changed, 47 insertions(+), 30 deletions(-)
+>  drivers/power/ab8500_charger.c       |  166 +++++++++++-----------------------
+>  include/linux/mfd/abx500.h           |   10 ++-
+>  include/linux/mfd/abx500/ab8500-bm.h |    5 +-
+>  3 files changed, 65 insertions(+), 116 deletions(-)
 > 
-> diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
-> index 1f33122..cf4b653 100644
-> --- a/drivers/power/ab8500_btemp.c
-> +++ b/drivers/power/ab8500_btemp.c
-> @@ -1028,10 +1028,10 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+[...]
+> @@ -2678,7 +2616,7 @@ static void ab8500_charger_vbus_drop_end_work(struct work_struct *work)
 >  {
->  	int irq, i, ret = 0;
->  	u8 val;
-> -	struct ab8500_platform_data *plat_data;
-> -	struct ab8500_btemp *di;
-> +	struct ab8500_platform_data *plat;
->  
-> -	di = kzalloc(sizeof(*di), GFP_KERNEL);
+>  	struct ab8500_charger *di = container_of(work,
+>  		struct ab8500_charger, vbus_drop_end_work.work);
+> -	int ret;
+> +	int ret, curr;
 
-While at it, you could remove the unneeded empty line.
-
-> +	struct ab8500_btemp *di =
-> +		kzalloc(sizeof(struct ab8500_btemp), GFP_KERNEL);
-
-And here you need the empty line.
-
->  	if (!di)
->  		return -ENOMEM;
->  
+Should be one variable declaration per line.
