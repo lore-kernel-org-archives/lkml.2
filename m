@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab2I1BmH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:42:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35614 "EHLO
+	id S1756308Ab2I1Bm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:42:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35628 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab2I1BmF (ORCPT
+	with ESMTP id S1755086Ab2I1Bm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:42:05 -0400
-Date: Thu, 27 Sep 2012 18:41:43 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Message-ID: <tip-684304887f5093a69343cd909f01c5b3ba914852@git.kernel.org>
+	Thu, 27 Sep 2012 21:42:57 -0400
+Date: Thu, 27 Sep 2012 18:42:39 -0700
+From: tip-bot for Thomas Renninger <trenn@suse.de>
+Message-ID: <tip-9e0a90cdff5b89599d73695b4d9971d1075c0b14@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, trenn@suse.de, tglx@linutronix.de,
-        hpa@linux.intel.com
+        yinghai@kernel.org, lenb@kernel.org, eric.piel@tremplin-utc.net,
+        tglx@linutronix.de, trenn@suse.de, hpa@linux.intel.com,
+        robert.moore@intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, trenn@suse.de,
-        hpa@linux.intel.com
-In-Reply-To: <1348661941-71287-2-git-send-email-trenn@suse.de>
-References: <1348661941-71287-2-git-send-email-trenn@suse.de>
+        yinghai@kernel.org, lenb@kernel.org, eric.piel@tremplin-utc.net,
+        tglx@linutronix.de, trenn@suse.de, hpa@linux.intel.com,
+        robert.moore@intel.com
+In-Reply-To: <1348661941-71287-3-git-send-email-trenn@suse.de>
+References: <1348661941-71287-3-git-send-email-trenn@suse.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/acpi] lib: Add early cpio decoder
-Git-Commit-ID: 684304887f5093a69343cd909f01c5b3ba914852
+Subject: [tip:x86/acpi] X86 ACPI:
+  Introduce x86 arch specific arch_reserve_mem_area() for e820 handling
+Git-Commit-ID: 9e0a90cdff5b89599d73695b4d9971d1075c0b14
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,219 +32,65 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 27 Sep 2012 18:41:49 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 27 Sep 2012 18:42:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  684304887f5093a69343cd909f01c5b3ba914852
-Gitweb:     http://git.kernel.org/tip/684304887f5093a69343cd909f01c5b3ba914852
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Wed, 26 Sep 2012 14:18:56 +0200
+Commit-ID:  9e0a90cdff5b89599d73695b4d9971d1075c0b14
+Gitweb:     http://git.kernel.org/tip/9e0a90cdff5b89599d73695b4d9971d1075c0b14
+Author:     Thomas Renninger <trenn@suse.de>
+AuthorDate: Wed, 26 Sep 2012 14:18:57 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 27 Sep 2012 15:00:13 -0700
+CommitDate: Thu, 27 Sep 2012 15:00:44 -0700
 
-lib: Add early cpio decoder
+X86 ACPI: Introduce x86 arch specific arch_reserve_mem_area() for e820 handling
 
-Add a simple cpio decoder without library dependencies for the purpose
-of extracting components from the initramfs blob for early kernel
-uses.  Intended consumers so far are microcode and ACPI override.
+This is needed for ACPI table overriding via initrd. Beside reserving
+memblocks, X86 also requires to flag the memory area to E820_RESERVED or
+E820_ACPI in the e820 mappings to be able to io(re)map it later.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1348661941-71287-2-git-send-email-trenn@suse.de
-Cc: Fenghua Yu <fenghua.yu@intel.com>
 Signed-off-by: Thomas Renninger <trenn@suse.de>
+Link: http://lkml.kernel.org/r/1348661941-71287-3-git-send-email-trenn@suse.de
+Cc: Len Brown <lenb@kernel.org>
+Cc: Robert Moore <robert.moore@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Eric Piel <eric.piel@tremplin-utc.net>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- include/linux/earlycpio.h |   17 +++++
- lib/Makefile              |    2 +-
- lib/earlycpio.c           |  145 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 163 insertions(+), 1 deletions(-)
+ arch/x86/kernel/acpi/boot.c |    6 ++++++
+ include/linux/acpi.h        |    9 +++++++++
+ 2 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/earlycpio.h b/include/linux/earlycpio.h
-new file mode 100644
-index 0000000..111f46d
---- /dev/null
-+++ b/include/linux/earlycpio.h
-@@ -0,0 +1,17 @@
-+#ifndef _LINUX_EARLYCPIO_H
-+#define _LINUX_EARLYCPIO_H
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index b2297e5..6b75777 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1700,3 +1700,9 @@ int __acpi_release_global_lock(unsigned int *lock)
+ 	} while (unlikely (val != old));
+ 	return old & 0x1;
+ }
 +
-+#include <linux/types.h>
-+
-+#define MAX_CPIO_FILE_NAME 18
-+
-+struct cpio_data {
-+	void *data;
-+	size_t size;
-+	char name[MAX_CPIO_FILE_NAME];
-+};
-+
-+struct cpio_data find_cpio_data(const char *path, void *data, size_t len,
-+				long *offset);
-+
-+#endif /* _LINUX_EARLYCPIO_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index 42d283e..0924041 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
--	 is_single_threaded.o plist.o decompress.o
-+	 is_single_threaded.o plist.o decompress.o earlycpio.o
- 
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
-diff --git a/lib/earlycpio.c b/lib/earlycpio.c
-new file mode 100644
-index 0000000..8078ef4
---- /dev/null
-+++ b/lib/earlycpio.c
-@@ -0,0 +1,145 @@
-+/* ----------------------------------------------------------------------- *
-+ *
-+ *   Copyright 2012 Intel Corporation; author H. Peter Anvin
-+ *
-+ *   This file is part of the Linux kernel, and is made available
-+ *   under the terms of the GNU General Public License version 2, as
-+ *   published by the Free Software Foundation.
-+ *
-+ *   This program is distributed in the hope it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *   General Public License for more details.
-+ *
-+ * ----------------------------------------------------------------------- */
-+
-+/*
-+ * earlycpio.c
-+ *
-+ * Find a specific cpio member; must precede any compressed content.
-+ * This is used to locate data items in the initramfs used by the
-+ * kernel itself during early boot (before the main initramfs is
-+ * decompressed.)  It is the responsibility of the initramfs creator
-+ * to ensure that these items are uncompressed at the head of the
-+ * blob.  Depending on the boot loader or package tool that may be a
-+ * separate file or part of the same file.
-+ */
-+
-+#include <linux/earlycpio.h>
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+
-+enum cpio_fields {
-+	C_MAGIC,
-+	C_INO,
-+	C_MODE,
-+	C_UID,
-+	C_GID,
-+	C_NLINK,
-+	C_MTIME,
-+	C_FILESIZE,
-+	C_MAJ,
-+	C_MIN,
-+	C_RMAJ,
-+	C_RMIN,
-+	C_NAMESIZE,
-+	C_CHKSUM,
-+	C_NFIELDS
-+};
-+
-+/**
-+ * cpio_data find_cpio_data - Search for files in an uncompressed cpio
-+ * @path:   The directory to search for, including a slash at the end
-+ * @data:   Pointer to the the cpio archive or a header inside
-+ * @len:    Remaining length of the cpio based on data pointer
-+ * @offset: When a matching file is found, this is the offset to the
-+ *          beginning of the cpio. It can be used to iterate through
-+ *          the cpio to find all files inside of a directory path
-+ *
-+ * @return: struct cpio_data containing the address, length and
-+ *          filename (with the directory path cut off) of the found file.
-+ *          If you search for a filename and not for files in a directory,
-+ *          pass the absolute path of the filename in the cpio and make sure
-+ *          the match returned an empty filename string.
-+ */
-+
-+struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
-+					  size_t len,  long *offset)
++void __init arch_reserve_mem_area(acpi_physical_address addr, size_t size)
 +{
-+	const size_t cpio_header_len = 8*C_NFIELDS - 2;
-+	struct cpio_data cd = { NULL, 0, "" };
-+	const char *p, *dptr, *nptr;
-+	unsigned int ch[C_NFIELDS], *chp, v;
-+	unsigned char c, x;
-+	size_t mypathsize = strlen(path);
-+	int i, j;
-+
-+	p = data;
-+
-+	while (len > cpio_header_len) {
-+		if (!*p) {
-+			/* All cpio headers need to be 4-byte aligned */
-+			p += 4;
-+			len -= 4;
-+			continue;
-+		}
-+
-+		j = 6;		/* The magic field is only 6 characters */
-+		chp = ch;
-+		for (i = C_NFIELDS; i; i--) {
-+			v = 0;
-+			while (j--) {
-+				v <<= 4;
-+				c = *p++;
-+
-+				x = c - '0';
-+				if (x < 10) {
-+					v += x;
-+					continue;
-+				}
-+
-+				x = (c | 0x20) - 'a';
-+				if (x < 6) {
-+					v += x + 10;
-+					continue;
-+				}
-+
-+				goto quit; /* Invalid hexadecimal */
-+			}
-+			*chp++ = v;
-+			j = 8;	/* All other fields are 8 characters */
-+		}
-+
-+		if ((ch[C_MAGIC] - 0x070701) > 1)
-+			goto quit; /* Invalid magic */
-+
-+		len -= cpio_header_len;
-+
-+		dptr = PTR_ALIGN(p + ch[C_NAMESIZE], 4);
-+		nptr = PTR_ALIGN(dptr + ch[C_FILESIZE], 4);
-+
-+		if (nptr > p + len || dptr < p || nptr < dptr)
-+			goto quit; /* Buffer overrun */
-+
-+		if ((ch[C_MODE] & 0170000) == 0100000 &&
-+		    ch[C_NAMESIZE] >= mypathsize &&
-+		    !memcmp(p, path, mypathsize)) {
-+			*offset = (long)nptr - (long)data;
-+			if (ch[C_NAMESIZE] - mypathsize >= MAX_CPIO_FILE_NAME) {
-+				pr_warn(
-+				"File %s exceeding MAX_CPIO_FILE_NAME [%d]\n",
-+				p, MAX_CPIO_FILE_NAME);
-+			}
-+			strlcpy(cd.name, p + mypathsize, MAX_CPIO_FILE_NAME);
-+
-+			cd.data = (void *)dptr;
-+			cd.size = ch[C_FILESIZE];
-+			return cd; /* Found it! */
-+		}
-+		len -= (nptr - p);
-+		p = nptr;
-+	}
-+
-+quit:
-+	return cd;
++	e820_add_region(addr, size, E820_ACPI);
++	update_e820();
 +}
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 4f2a762..ebecc46 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -430,4 +430,13 @@ acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+ #define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
+ #endif
+ 
++#if CONFIG_X86
++void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
++#else
++static inline void arch_reserve_mem_area(acpi_physical_address addr,
++					  size_t size)
++{
++}
++#endif /* CONFIG_X86 */
++
+ #endif	/*_LINUX_ACPI_H*/
