@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031177Ab2I1T1Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:27:16 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030296Ab2I1TCt (ORCPT
+	id S1031186Ab2I1T1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:27:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030340Ab2I1TCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:02:49 -0400
+	Fri, 28 Sep 2012 15:02:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Moiz Sonasath <m-sonasath@ti.com>, Ruchika Kharwar <ruchika@ti.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 170/262] usb: host: xhci: fix compilation error for non-PCI based stacks
-Date: Fri, 28 Sep 2012 11:51:39 -0700
-Message-Id: <20120928183018.088223628@linuxfoundation.org>
+        James Nute <newten82@gmail.com>, Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 175/262] drivers/rtc/rtc-rs5c348.c: fix hour decoding in 12-hour mode
+Date: Fri, 28 Sep 2012 11:51:44 -0700
+Message-Id: <20120928183018.716677540@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,44 +30,53 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Moiz Sonasath <m-sonasath@ti.com>
+From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
 
-commit 296365781903226a3fb8758901eaeec09d2798e4 upstream.
+commit 7dbfb315b2aaef0a115765946bf3026d074c33a7 upstream.
 
-For non PCI-based stacks, this function call
-usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
-made from xhci_shutdown is not applicable.
+Correct the offset by subtracting 20 from tm_hour before taking the
+modulo 12.
 
-Ideally, we wouldn't have any PCI-specific code on
-a generic driver such as the xHCI stack, but it looks
-like we should just stub usb_disable_xhci_ports() out
-for non-PCI devices.
+[ "Why 20?" I hear you ask. Or at least I did.
 
-[ balbi@ti.com: slight improvement to commit log ]
+  Here's the reason why: RS5C348_BIT_PM is 32, and is - stupidly -
+  included in the RS5C348_HOURS_MASK define.  So it's really subtracting
+  out that bit to get "hour+12".  But then because it does things modulo
+  12, it needs to add the 12 in again afterwards anyway.
 
-This patch should be backported to kernels as old as 3.0, since the
-commit it fixes (e95829f474f0db3a4d940cae1423783edd966027 "xhci: Switch
-PPT ports to EHCI on shutdown.") was marked for stable.
+  This code is confused.  It would be much clearer if RS5C348_HOURS_MASK
+  just didn't include the RS5C348_BIT_PM bit at all, then it wouldn't
+  need to do the silly subtract either.
 
-Signed-off-by: Moiz Sonasath<m-sonasath@ti.com>
-Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+  Whatever. It's all just math, the end result is the same.   - Linus ]
+
+Reported-by: James Nute <newten82@gmail.com>
+Tested-by: James Nute <newten82@gmail.com>
+Signed-off-by: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/rtc/rtc-rs5c348.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.h
-+++ b/drivers/usb/host/pci-quirks.h
-@@ -15,6 +15,7 @@ void usb_disable_xhci_ports(struct pci_d
- static inline void usb_amd_quirk_pll_disable(void) {}
- static inline void usb_amd_quirk_pll_enable(void) {}
- static inline void usb_amd_dev_put(void) {}
-+static inline void usb_disable_xhci_ports(struct pci_dev *xhci_pdev) {}
- #endif  /* CONFIG_PCI */
- 
- #endif  /*  __LINUX_USB_PCI_QUIRKS_H  */
+--- a/drivers/rtc/rtc-rs5c348.c
++++ b/drivers/rtc/rtc-rs5c348.c
+@@ -122,9 +122,12 @@ rs5c348_rtc_read_time(struct device *dev
+ 	tm->tm_min = bcd2bin(rxbuf[RS5C348_REG_MINS] & RS5C348_MINS_MASK);
+ 	tm->tm_hour = bcd2bin(rxbuf[RS5C348_REG_HOURS] & RS5C348_HOURS_MASK);
+ 	if (!pdata->rtc_24h) {
+-		tm->tm_hour %= 12;
+-		if (rxbuf[RS5C348_REG_HOURS] & RS5C348_BIT_PM)
++		if (rxbuf[RS5C348_REG_HOURS] & RS5C348_BIT_PM) {
++			tm->tm_hour -= 20;
++			tm->tm_hour %= 12;
+ 			tm->tm_hour += 12;
++		} else
++			tm->tm_hour %= 12;
+ 	}
+ 	tm->tm_wday = bcd2bin(rxbuf[RS5C348_REG_WDAY] & RS5C348_WDAY_MASK);
+ 	tm->tm_mday = bcd2bin(rxbuf[RS5C348_REG_DAY] & RS5C348_DAY_MASK);
 
 
