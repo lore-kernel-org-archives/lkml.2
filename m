@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422725Ab2I1VAI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:00:08 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59817 "EHLO
+	id S1422954Ab2I1VAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:00:31 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37864 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1033013Ab2I1Ury (ORCPT
+	by vger.kernel.org with ESMTP id S1422928Ab2I1Urx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:47:54 -0400
-X-Sasl-enc: OgvQGEDtRzNAR/v5qsz88SgPCn1FhLx2qv0PGkXR+wyV 1348865274
+	Fri, 28 Sep 2012 16:47:53 -0400
+X-Sasl-enc: 93ljZqf5VJjWZZ72B1QNUucpcL1b1fQgSuEVoBuD15/y 1348865272
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?S=C3=B8ren=20Holm?= <sgh@sgh.dk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: =?UTF-8?q?=5B=20062/127=5D=20asix=3A=20Support=20DLink=20DUB-E100=20H/W=20Ver=20C1?=
-Date: Fri, 28 Sep 2012 13:33:55 -0700
-Message-Id: <20120928203053.107402807@linuxfoundation.org>
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Ivo Van Doorn <ivdoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 069/127] rt2x00: Fix rfkill polling prior to interface start.
+Date: Fri, 28 Sep 2012 13:34:02 -0700
+Message-Id: <20120928203053.985132231@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,30 +29,252 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Søren Holm <sgh@sgh.dk>
+From: Gertjan van Wingerde <gwingerde@gmail.com>
 
-commit ed3770a9cd5764a575b83810ea679bbff2b03082 upstream.
+commit a396e10019eaf3809b0219c966865aaafec12630 upstream.
 
-Signed-off-by: Søren Holm <sgh@sgh.dk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+We need to program the rfkill switch GPIO pin direction to input at
+device initialization time, not only when the interface is brought up.
+Doing this only when the interface is brought up could lead to rfkill
+detecting the switch is turned on erroneously and inability to create
+the interface and bringing it up.
+
+Reported-and-tested-by: Andreas Messer <andi@bastelmap.de>
+Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Acked-by: Ivo Van Doorn <ivdoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/asix.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/rt2x00/rt2400pci.c |    9 +++++++++
+ drivers/net/wireless/rt2x00/rt2400pci.h |    1 +
+ drivers/net/wireless/rt2x00/rt2500pci.c |    9 +++++++++
+ drivers/net/wireless/rt2x00/rt2500usb.c |    9 +++++++++
+ drivers/net/wireless/rt2x00/rt2500usb.h |    1 +
+ drivers/net/wireless/rt2x00/rt2800pci.c |    9 +++++++++
+ drivers/net/wireless/rt2x00/rt2800usb.c |    9 +++++++++
+ drivers/net/wireless/rt2x00/rt61pci.c   |    9 +++++++++
+ drivers/net/wireless/rt2x00/rt61pci.h   |    1 +
+ drivers/net/wireless/rt2x00/rt73usb.c   |    9 +++++++++
+ drivers/net/wireless/rt2x00/rt73usb.h   |    3 +++
+ 11 files changed, 69 insertions(+)
 
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -1537,6 +1537,10 @@ static const struct usb_device_id	produc
- 	USB_DEVICE (0x2001, 0x3c05),
- 	.driver_info = (unsigned long) &ax88772_info,
- }, {
-+       // DLink DUB-E100 H/W Ver C1
-+       USB_DEVICE (0x2001, 0x1a02),
-+       .driver_info = (unsigned long) &ax88772_info,
-+}, {
- 	// Linksys USB1000
- 	USB_DEVICE (0x1737, 0x0039),
- 	.driver_info = (unsigned long) &ax88178_info,
+--- a/drivers/net/wireless/rt2x00/rt2400pci.c
++++ b/drivers/net/wireless/rt2x00/rt2400pci.c
+@@ -1618,6 +1618,7 @@ static int rt2400pci_probe_hw_mode(struc
+ static int rt2400pci_probe_hw(struct rt2x00_dev *rt2x00dev)
+ {
+ 	int retval;
++	u32 reg;
+ 
+ 	/*
+ 	 * Allocate eeprom data.
+@@ -1631,6 +1632,14 @@ static int rt2400pci_probe_hw(struct rt2
+ 		return retval;
+ 
+ 	/*
++	 * Enable rfkill polling by setting GPIO direction of the
++	 * rfkill switch GPIO pin correctly.
++	 */
++	rt2x00pci_register_read(rt2x00dev, GPIOCSR, &reg);
++	rt2x00_set_field32(&reg, GPIOCSR_BIT8, 1);
++	rt2x00pci_register_write(rt2x00dev, GPIOCSR, reg);
++
++	/*
+ 	 * Initialize hw specifications.
+ 	 */
+ 	retval = rt2400pci_probe_hw_mode(rt2x00dev);
+--- a/drivers/net/wireless/rt2x00/rt2400pci.h
++++ b/drivers/net/wireless/rt2x00/rt2400pci.h
+@@ -670,6 +670,7 @@
+ #define GPIOCSR_BIT5			FIELD32(0x00000020)
+ #define GPIOCSR_BIT6			FIELD32(0x00000040)
+ #define GPIOCSR_BIT7			FIELD32(0x00000080)
++#define GPIOCSR_BIT8			FIELD32(0x00000100)
+ 
+ /*
+  * BBPPCSR: BBP Pin control register.
+--- a/drivers/net/wireless/rt2x00/rt2500pci.c
++++ b/drivers/net/wireless/rt2x00/rt2500pci.c
+@@ -1936,6 +1936,7 @@ static int rt2500pci_probe_hw_mode(struc
+ static int rt2500pci_probe_hw(struct rt2x00_dev *rt2x00dev)
+ {
+ 	int retval;
++	u32 reg;
+ 
+ 	/*
+ 	 * Allocate eeprom data.
+@@ -1949,6 +1950,14 @@ static int rt2500pci_probe_hw(struct rt2
+ 		return retval;
+ 
+ 	/*
++	 * Enable rfkill polling by setting GPIO direction of the
++	 * rfkill switch GPIO pin correctly.
++	 */
++	rt2x00pci_register_read(rt2x00dev, GPIOCSR, &reg);
++	rt2x00_set_field32(&reg, GPIOCSR_DIR0, 1);
++	rt2x00pci_register_write(rt2x00dev, GPIOCSR, reg);
++
++	/*
+ 	 * Initialize hw specifications.
+ 	 */
+ 	retval = rt2500pci_probe_hw_mode(rt2x00dev);
+--- a/drivers/net/wireless/rt2x00/rt2500usb.c
++++ b/drivers/net/wireless/rt2x00/rt2500usb.c
+@@ -1768,6 +1768,7 @@ static int rt2500usb_probe_hw_mode(struc
+ static int rt2500usb_probe_hw(struct rt2x00_dev *rt2x00dev)
+ {
+ 	int retval;
++	u16 reg;
+ 
+ 	/*
+ 	 * Allocate eeprom data.
+@@ -1781,6 +1782,14 @@ static int rt2500usb_probe_hw(struct rt2
+ 		return retval;
+ 
+ 	/*
++	 * Enable rfkill polling by setting GPIO direction of the
++	 * rfkill switch GPIO pin correctly.
++	 */
++	rt2500usb_register_read(rt2x00dev, MAC_CSR19, &reg);
++	rt2x00_set_field16(&reg, MAC_CSR19_BIT8, 0);
++	rt2500usb_register_write(rt2x00dev, MAC_CSR19, reg);
++
++	/*
+ 	 * Initialize hw specifications.
+ 	 */
+ 	retval = rt2500usb_probe_hw_mode(rt2x00dev);
+--- a/drivers/net/wireless/rt2x00/rt2500usb.h
++++ b/drivers/net/wireless/rt2x00/rt2500usb.h
+@@ -197,6 +197,7 @@
+ #define MAC_CSR19_BIT5			FIELD16(0x0020)
+ #define MAC_CSR19_BIT6			FIELD16(0x0040)
+ #define MAC_CSR19_BIT7			FIELD16(0x0080)
++#define MAC_CSR19_BIT8			FIELD16(0x0100)
+ 
+ /*
+  * MAC_CSR20: LED control register.
+--- a/drivers/net/wireless/rt2x00/rt2800pci.c
++++ b/drivers/net/wireless/rt2x00/rt2800pci.c
+@@ -941,6 +941,7 @@ static int rt2800pci_validate_eeprom(str
+ static int rt2800pci_probe_hw(struct rt2x00_dev *rt2x00dev)
+ {
+ 	int retval;
++	u32 reg;
+ 
+ 	/*
+ 	 * Allocate eeprom data.
+@@ -954,6 +955,14 @@ static int rt2800pci_probe_hw(struct rt2
+ 		return retval;
+ 
+ 	/*
++	 * Enable rfkill polling by setting GPIO direction of the
++	 * rfkill switch GPIO pin correctly.
++	 */
++	rt2x00pci_register_read(rt2x00dev, GPIO_CTRL_CFG, &reg);
++	rt2x00_set_field32(&reg, GPIO_CTRL_CFG_GPIOD_BIT2, 1);
++	rt2x00pci_register_write(rt2x00dev, GPIO_CTRL_CFG, reg);
++
++	/*
+ 	 * Initialize hw specifications.
+ 	 */
+ 	retval = rt2800_probe_hw_mode(rt2x00dev);
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -600,6 +600,7 @@ static int rt2800usb_validate_eeprom(str
+ static int rt2800usb_probe_hw(struct rt2x00_dev *rt2x00dev)
+ {
+ 	int retval;
++	u32 reg;
+ 
+ 	/*
+ 	 * Allocate eeprom data.
+@@ -613,6 +614,14 @@ static int rt2800usb_probe_hw(struct rt2
+ 		return retval;
+ 
+ 	/*
++	 * Enable rfkill polling by setting GPIO direction of the
++	 * rfkill switch GPIO pin correctly.
++	 */
++	rt2x00usb_register_read(rt2x00dev, GPIO_CTRL_CFG, &reg);
++	rt2x00_set_field32(&reg, GPIO_CTRL_CFG_GPIOD_BIT2, 1);
++	rt2x00usb_register_write(rt2x00dev, GPIO_CTRL_CFG, reg);
++
++	/*
+ 	 * Initialize hw specifications.
+ 	 */
+ 	retval = rt2800_probe_hw_mode(rt2x00dev);
+--- a/drivers/net/wireless/rt2x00/rt61pci.c
++++ b/drivers/net/wireless/rt2x00/rt61pci.c
+@@ -2840,6 +2840,7 @@ static int rt61pci_probe_hw_mode(struct
+ static int rt61pci_probe_hw(struct rt2x00_dev *rt2x00dev)
+ {
+ 	int retval;
++	u32 reg;
+ 
+ 	/*
+ 	 * Disable power saving.
+@@ -2858,6 +2859,14 @@ static int rt61pci_probe_hw(struct rt2x0
+ 		return retval;
+ 
+ 	/*
++	 * Enable rfkill polling by setting GPIO direction of the
++	 * rfkill switch GPIO pin correctly.
++	 */
++	rt2x00pci_register_read(rt2x00dev, MAC_CSR13, &reg);
++	rt2x00_set_field32(&reg, MAC_CSR13_BIT13, 1);
++	rt2x00pci_register_write(rt2x00dev, MAC_CSR13, reg);
++
++	/*
+ 	 * Initialize hw specifications.
+ 	 */
+ 	retval = rt61pci_probe_hw_mode(rt2x00dev);
+--- a/drivers/net/wireless/rt2x00/rt61pci.h
++++ b/drivers/net/wireless/rt2x00/rt61pci.h
+@@ -372,6 +372,7 @@ struct hw_pairwise_ta_entry {
+ #define MAC_CSR13_BIT10			FIELD32(0x00000400)
+ #define MAC_CSR13_BIT11			FIELD32(0x00000800)
+ #define MAC_CSR13_BIT12			FIELD32(0x00001000)
++#define MAC_CSR13_BIT13			FIELD32(0x00002000)
+ 
+ /*
+  * MAC_CSR14: LED control register.
+--- a/drivers/net/wireless/rt2x00/rt73usb.c
++++ b/drivers/net/wireless/rt2x00/rt73usb.c
+@@ -2177,6 +2177,7 @@ static int rt73usb_probe_hw_mode(struct
+ static int rt73usb_probe_hw(struct rt2x00_dev *rt2x00dev)
+ {
+ 	int retval;
++	u32 reg;
+ 
+ 	/*
+ 	 * Allocate eeprom data.
+@@ -2190,6 +2191,14 @@ static int rt73usb_probe_hw(struct rt2x0
+ 		return retval;
+ 
+ 	/*
++	 * Enable rfkill polling by setting GPIO direction of the
++	 * rfkill switch GPIO pin correctly.
++	 */
++	rt2x00usb_register_read(rt2x00dev, MAC_CSR13, &reg);
++	rt2x00_set_field32(&reg, MAC_CSR13_BIT15, 0);
++	rt2x00usb_register_write(rt2x00dev, MAC_CSR13, reg);
++
++	/*
+ 	 * Initialize hw specifications.
+ 	 */
+ 	retval = rt73usb_probe_hw_mode(rt2x00dev);
+--- a/drivers/net/wireless/rt2x00/rt73usb.h
++++ b/drivers/net/wireless/rt2x00/rt73usb.h
+@@ -282,6 +282,9 @@ struct hw_pairwise_ta_entry {
+ #define MAC_CSR13_BIT10			FIELD32(0x00000400)
+ #define MAC_CSR13_BIT11			FIELD32(0x00000800)
+ #define MAC_CSR13_BIT12			FIELD32(0x00001000)
++#define MAC_CSR13_BIT13			FIELD32(0x00002000)
++#define MAC_CSR13_BIT14			FIELD32(0x00004000)
++#define MAC_CSR13_BIT15			FIELD32(0x00008000)
+ 
+ /*
+  * MAC_CSR14: LED control register.
 
 
