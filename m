@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030351Ab2I1TCl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:02:41 -0400
+	id S1030366Ab2I1TCq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:02:46 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030262Ab2I1TCg (ORCPT
+	with ESMTP id S1030288Ab2I1TCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:02:36 -0400
+	Fri, 28 Sep 2012 15:02:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 174/262] x86, avx: dont use avx instructions with "noxsave" boot param
-Date: Fri, 28 Sep 2012 11:51:43 -0700
-Message-Id: <20120928183018.599659336@linuxfoundation.org>
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 176/262] PM / Runtime: Fix rpm_resume() return value for power.no_callbacks set
+Date: Fri, 28 Sep 2012 11:51:45 -0700
+Message-Id: <20120928183018.827743612@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,38 +29,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit c6fd893da927c6cefb2ece22402765379921a834 upstream.
+commit 7f321c26c04807834fef4c524d2b21573423fc74 upstream.
 
-Clear AVX, AVX2 features along with clearing XSAVE feature bits,
-as part of the parsing "noxsave" parameter.
+For devices whose power.no_callbacks flag is set, rpm_resume()
+should return 1 if the device's parent is already active, so that
+the callers of pm_runtime_get() don't think that they have to wait
+for the device to resume (asynchronously) in that case (the core
+won't queue up an asynchronous resume in that case, so there's
+nothing to wait for anyway).
 
-Fixes the kernel boot panic with "noxsave" boot parameter.
+Modify the code accordingly (and make sure that an idle notification
+will be queued up on success, even if 1 is to be returned).
 
-We could have checked cpu_has_osxsave along with cpu_has_avx etc, but Peter
-mentioned clearing the feature bits will be better for uses like
-static_cpu_has() etc.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/r/1343755754.2041.2.camel@sbsiddha-desk.sc.intel.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/common.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/base/power/runtime.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -144,6 +144,8 @@ static int __init x86_xsave_setup(char *
- {
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
-+	setup_clear_cpu_cap(X86_FEATURE_AVX);
-+	setup_clear_cpu_cap(X86_FEATURE_AVX2);
- 	return 1;
- }
- __setup("noxsave", x86_xsave_setup);
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -584,6 +584,7 @@ static int rpm_resume(struct device *dev
+ 		    || dev->parent->power.runtime_status == RPM_ACTIVE) {
+ 			atomic_inc(&dev->parent->power.child_count);
+ 			spin_unlock(&dev->parent->power.lock);
++			retval = 1;
+ 			goto no_callback;	/* Assume success. */
+ 		}
+ 		spin_unlock(&dev->parent->power.lock);
+@@ -664,7 +665,7 @@ static int rpm_resume(struct device *dev
+ 	}
+ 	wake_up_all(&dev->power.wait_queue);
+ 
+-	if (!retval)
++	if (retval >= 0)
+ 		rpm_idle(dev, RPM_ASYNC);
+ 
+  out:
 
 
