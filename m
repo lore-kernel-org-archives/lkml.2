@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030798Ab2I1TGr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:06:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	id S1030832Ab2I1THB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:07:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030774Ab2I1TGi (ORCPT
+	with ESMTP id S1030816Ab2I1TGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:06:38 -0400
+	Fri, 28 Sep 2012 15:06:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Andy Walls <awalls@md.metrocast.net>,
-        Colin Cross <ccross@google.com>
-Subject: [ 250/262] kthread_worker: reorganize to prepare for flush_kthread_work() reimplementation
-Date: Fri, 28 Sep 2012 11:52:59 -0700
-Message-Id: <20120928183027.974451588@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [ 255/262] USB: Fix race condition when removing host controllers
+Date: Fri, 28 Sep 2012 11:53:04 -0700
+Message-Id: <20120928183028.656638828@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,100 +29,68 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 9a2e03d8ed518a61154f18d83d6466628e519f94 upstream.
+commit 0d00dc2611abbe6ad244d50569c2ee82ce42846c upstream.
 
-Make the following two non-functional changes.
+This patch (as1607) fixes a race that can occur if a USB host
+controller is removed while a process is reading the
+/sys/kernel/debug/usb/devices file.
 
-* Separate out insert_kthread_work() from queue_kthread_work().
+The usb_device_read() routine uses the bus->root_hub pointer to
+determine whether or not the root hub is registered.  The is not a
+valid test, because the pointer is set before the root hub gets
+registered and remains set even after the root hub is unregistered and
+deallocated.  As a result, usb_device_read() or usb_device_dump() can
+access freed memory, causing an oops.
 
-* Relocate struct kthread_flush_work and kthread_flush_work_fn()
-  definitions above flush_kthread_work().
+The patch changes the test to use the hcd->rh_registered flag, which
+does get set and cleared at the appropriate times.  It also makes sure
+to hold the usb_bus_list_lock mutex while setting the flag, so that
+usb_device_read() will become aware of new root hubs as soon as they
+are registered.
 
-v2: Added lockdep_assert_held() in insert_kthread_work() as suggested
-    by Andy Walls.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Andy Walls <awalls@md.metrocast.net>
-Cc: Colin Cross <ccross@google.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Don Zickus <dzickus@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/kthread.c |   42 ++++++++++++++++++++++++++----------------
- 1 file changed, 26 insertions(+), 16 deletions(-)
+ drivers/usb/core/devices.c |    2 +-
+ drivers/usb/core/hcd.c     |    6 ++----
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -378,6 +378,19 @@ repeat:
- }
- EXPORT_SYMBOL_GPL(kthread_worker_fn);
- 
-+/* insert @work before @pos in @worker */
-+static void insert_kthread_work(struct kthread_worker *worker,
-+			       struct kthread_work *work,
-+			       struct list_head *pos)
-+{
-+	lockdep_assert_held(&worker->lock);
-+
-+	list_add_tail(&work->node, pos);
-+	work->queue_seq++;
-+	if (likely(worker->task))
-+		wake_up_process(worker->task);
-+}
-+
- /**
-  * queue_kthread_work - queue a kthread_work
-  * @worker: target kthread_worker
-@@ -395,10 +408,7 @@ bool queue_kthread_work(struct kthread_w
- 
- 	spin_lock_irqsave(&worker->lock, flags);
- 	if (list_empty(&work->node)) {
--		list_add_tail(&work->node, &worker->work_list);
--		work->queue_seq++;
--		if (likely(worker->task))
--			wake_up_process(worker->task);
-+		insert_kthread_work(worker, work, &worker->work_list);
- 		ret = true;
+--- a/drivers/usb/core/devices.c
++++ b/drivers/usb/core/devices.c
+@@ -624,7 +624,7 @@ static ssize_t usb_device_read(struct fi
+ 	/* print devices for all busses */
+ 	list_for_each_entry(bus, &usb_bus_list, bus_list) {
+ 		/* recurse through all children of the root hub */
+-		if (!bus->root_hub)
++		if (!bus_to_hcd(bus)->rh_registered)
+ 			continue;
+ 		usb_lock_device(bus->root_hub);
+ 		ret = usb_device_dump(&buf, &nbytes, &skip_bytes, ppos,
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1011,10 +1011,7 @@ static int register_root_hub(struct usb_
+ 	if (retval) {
+ 		dev_err (parent_dev, "can't register root hub for %s, %d\n",
+ 				dev_name(&usb_dev->dev), retval);
+-	}
+-	mutex_unlock(&usb_bus_list_lock);
+-
+-	if (retval == 0) {
++	} else {
+ 		spin_lock_irq (&hcd_root_hub_lock);
+ 		hcd->rh_registered = 1;
+ 		spin_unlock_irq (&hcd_root_hub_lock);
+@@ -1023,6 +1020,7 @@ static int register_root_hub(struct usb_
+ 		if (HCD_DEAD(hcd))
+ 			usb_hc_died (hcd);	/* This time clean up */
  	}
- 	spin_unlock_irqrestore(&worker->lock, flags);
-@@ -406,6 +416,18 @@ bool queue_kthread_work(struct kthread_w
- }
- EXPORT_SYMBOL_GPL(queue_kthread_work);
++	mutex_unlock(&usb_bus_list_lock);
  
-+struct kthread_flush_work {
-+	struct kthread_work	work;
-+	struct completion	done;
-+};
-+
-+static void kthread_flush_work_fn(struct kthread_work *work)
-+{
-+	struct kthread_flush_work *fwork =
-+		container_of(work, struct kthread_flush_work, work);
-+	complete(&fwork->done);
-+}
-+
- /**
-  * flush_kthread_work - flush a kthread_work
-  * @work: work to flush
-@@ -436,18 +458,6 @@ void flush_kthread_work(struct kthread_w
+ 	return retval;
  }
- EXPORT_SYMBOL_GPL(flush_kthread_work);
- 
--struct kthread_flush_work {
--	struct kthread_work	work;
--	struct completion	done;
--};
--
--static void kthread_flush_work_fn(struct kthread_work *work)
--{
--	struct kthread_flush_work *fwork =
--		container_of(work, struct kthread_flush_work, work);
--	complete(&fwork->done);
--}
--
- /**
-  * flush_kthread_worker - flush all current works on a kthread_worker
-  * @worker: worker to flush
 
 
