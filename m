@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031676Ab2I1TsU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:48:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965095Ab2I1S6g (ORCPT
+	id S1031201Ab2I1Tsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:48:47 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965098Ab2I1S6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:58:36 -0400
+	Fri, 28 Sep 2012 14:58:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dick Streefland <dick.streefland@altium.nl>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 089/262] SUNRPC: Fix a UDP transport regression
-Date: Fri, 28 Sep 2012 11:50:18 -0700
-Message-Id: <20120928183008.625737819@linuxfoundation.org>
+        Haifeng Li <omycle@gmail.com>, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, KyongHo Cho <pullip.cho@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 096/262] mm/page_alloc: fix the page address of higher pages buddy calculation
+Date: Fri, 28 Sep 2012 11:50:25 -0700
+Message-Id: <20120928183009.391920257@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,155 +33,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Li Haifeng <omycle@gmail.com>
 
-commit f39c1bfb5a03e2d255451bff05be0d7255298fa4 upstream.
+commit 0ba8f2d59304dfe69b59c034de723ad80f7ab9ac upstream.
 
-Commit 43cedbf0e8dfb9c5610eb7985d5f21263e313802 (SUNRPC: Ensure that
-we grab the XPRT_LOCK before calling xprt_alloc_slot) is causing
-hangs in the case of NFS over UDP mounts.
+The heuristic method for buddy has been introduced since commit
+43506fad21ca ("mm/page_alloc.c: simplify calculation of combined index
+of adjacent buddy lists").  But the page address of higher page's buddy
+was wrongly calculated, which will lead page_is_buddy to fail for ever.
+IOW, the heuristic method would be disabled with the wrong page address
+of higher page's buddy.
 
-Since neither the UDP or the RDMA transport mechanism use dynamic slot
-allocation, we can skip grabbing the socket lock for those transports.
-Add a new rpc_xprt_op to allow switching between the TCP and UDP/RDMA
-case.
+Calculating the page address of higher page's buddy should be based
+higher_page with the offset between index of higher page and index of
+higher page's buddy.
 
-Note that the NFSv4.1 back channel assigns the slot directly
-through rpc_run_bc_task, so we can ignore that case.
-
-Reported-by: Dick Streefland <dick.streefland@altium.nl>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Haifeng Li <omycle@gmail.com>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KyongHo Cho <pullip.cho@samsung.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/sunrpc/xprt.h     |    3 +++
- net/sunrpc/xprt.c               |   34 ++++++++++++++++++++--------------
- net/sunrpc/xprtrdma/transport.c |    1 +
- net/sunrpc/xprtsock.c           |    3 +++
- 4 files changed, 27 insertions(+), 14 deletions(-)
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/sunrpc/xprt.h
-+++ b/include/linux/sunrpc/xprt.h
-@@ -114,6 +114,7 @@ struct rpc_xprt_ops {
- 	void		(*set_buffer_size)(struct rpc_xprt *xprt, size_t sndsize, size_t rcvsize);
- 	int		(*reserve_xprt)(struct rpc_xprt *xprt, struct rpc_task *task);
- 	void		(*release_xprt)(struct rpc_xprt *xprt, struct rpc_task *task);
-+	void		(*alloc_slot)(struct rpc_xprt *xprt, struct rpc_task *task);
- 	void		(*rpcbind)(struct rpc_task *task);
- 	void		(*set_port)(struct rpc_xprt *xprt, unsigned short port);
- 	void		(*connect)(struct rpc_task *task);
-@@ -279,6 +280,8 @@ void			xprt_connect(struct rpc_task *tas
- void			xprt_reserve(struct rpc_task *task);
- int			xprt_reserve_xprt(struct rpc_xprt *xprt, struct rpc_task *task);
- int			xprt_reserve_xprt_cong(struct rpc_xprt *xprt, struct rpc_task *task);
-+void			xprt_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task);
-+void			xprt_lock_and_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task);
- int			xprt_prepare_transmit(struct rpc_task *task);
- void			xprt_transmit(struct rpc_task *task);
- void			xprt_end_transmit(struct rpc_task *task);
---- a/net/sunrpc/xprt.c
-+++ b/net/sunrpc/xprt.c
-@@ -969,11 +969,11 @@ static bool xprt_dynamic_free_slot(struc
- 	return false;
- }
- 
--static void xprt_alloc_slot(struct rpc_task *task)
-+void xprt_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task)
- {
--	struct rpc_xprt	*xprt = task->tk_xprt;
- 	struct rpc_rqst *req;
- 
-+	spin_lock(&xprt->reserve_lock);
- 	if (!list_empty(&xprt->free)) {
- 		req = list_entry(xprt->free.next, struct rpc_rqst, rq_list);
- 		list_del(&req->rq_list);
-@@ -994,12 +994,29 @@ static void xprt_alloc_slot(struct rpc_t
- 	default:
- 		task->tk_status = -EAGAIN;
- 	}
-+	spin_unlock(&xprt->reserve_lock);
- 	return;
- out_init_req:
- 	task->tk_status = 0;
- 	task->tk_rqstp = req;
- 	xprt_request_init(task, xprt);
-+	spin_unlock(&xprt->reserve_lock);
-+}
-+EXPORT_SYMBOL_GPL(xprt_alloc_slot);
-+
-+void xprt_lock_and_alloc_slot(struct rpc_xprt *xprt, struct rpc_task *task)
-+{
-+	/* Note: grabbing the xprt_lock_write() ensures that we throttle
-+	 * new slot allocation if the transport is congested (i.e. when
-+	 * reconnecting a stream transport or when out of socket write
-+	 * buffer space).
-+	 */
-+	if (xprt_lock_write(xprt, task)) {
-+		xprt_alloc_slot(xprt, task);
-+		xprt_release_write(xprt, task);
-+	}
- }
-+EXPORT_SYMBOL_GPL(xprt_lock_and_alloc_slot);
- 
- static void xprt_free_slot(struct rpc_xprt *xprt, struct rpc_rqst *req)
- {
-@@ -1083,20 +1100,9 @@ void xprt_reserve(struct rpc_task *task)
- 	if (task->tk_rqstp != NULL)
- 		return;
- 
--	/* Note: grabbing the xprt_lock_write() here is not strictly needed,
--	 * but ensures that we throttle new slot allocation if the transport
--	 * is congested (e.g. if reconnecting or if we're out of socket
--	 * write buffer space).
--	 */
- 	task->tk_timeout = 0;
- 	task->tk_status = -EAGAIN;
--	if (!xprt_lock_write(xprt, task))
--		return;
--
--	spin_lock(&xprt->reserve_lock);
--	xprt_alloc_slot(task);
--	spin_unlock(&xprt->reserve_lock);
--	xprt_release_write(xprt, task);
-+	xprt->ops->alloc_slot(xprt, task);
- }
- 
- static inline __be32 xprt_alloc_xid(struct rpc_xprt *xprt)
---- a/net/sunrpc/xprtrdma/transport.c
-+++ b/net/sunrpc/xprtrdma/transport.c
-@@ -713,6 +713,7 @@ static void xprt_rdma_print_stats(struct
- static struct rpc_xprt_ops xprt_rdma_procs = {
- 	.reserve_xprt		= xprt_rdma_reserve_xprt,
- 	.release_xprt		= xprt_release_xprt_cong, /* sunrpc/xprt.c */
-+	.alloc_slot		= xprt_alloc_slot,
- 	.release_request	= xprt_release_rqst_cong,       /* ditto */
- 	.set_retrans_timeout	= xprt_set_retrans_timeout_def, /* ditto */
- 	.rpcbind		= rpcb_getport_async,	/* sunrpc/rpcb_clnt.c */
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -2433,6 +2433,7 @@ static void bc_destroy(struct rpc_xprt *
- static struct rpc_xprt_ops xs_local_ops = {
- 	.reserve_xprt		= xprt_reserve_xprt,
- 	.release_xprt		= xs_tcp_release_xprt,
-+	.alloc_slot		= xprt_alloc_slot,
- 	.rpcbind		= xs_local_rpcbind,
- 	.set_port		= xs_local_set_port,
- 	.connect		= xs_connect,
-@@ -2449,6 +2450,7 @@ static struct rpc_xprt_ops xs_udp_ops =
- 	.set_buffer_size	= xs_udp_set_buffer_size,
- 	.reserve_xprt		= xprt_reserve_xprt_cong,
- 	.release_xprt		= xprt_release_xprt_cong,
-+	.alloc_slot		= xprt_alloc_slot,
- 	.rpcbind		= rpcb_getport_async,
- 	.set_port		= xs_set_port,
- 	.connect		= xs_connect,
-@@ -2466,6 +2468,7 @@ static struct rpc_xprt_ops xs_udp_ops =
- static struct rpc_xprt_ops xs_tcp_ops = {
- 	.reserve_xprt		= xprt_reserve_xprt,
- 	.release_xprt		= xs_tcp_release_xprt,
-+	.alloc_slot		= xprt_lock_and_alloc_slot,
- 	.rpcbind		= rpcb_getport_async,
- 	.set_port		= xs_set_port,
- 	.connect		= xs_connect,
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -580,7 +580,7 @@ static inline void __free_one_page(struc
+ 		combined_idx = buddy_idx & page_idx;
+ 		higher_page = page + (combined_idx - page_idx);
+ 		buddy_idx = __find_buddy_index(combined_idx, order + 1);
+-		higher_buddy = page + (buddy_idx - combined_idx);
++		higher_buddy = higher_page + (buddy_idx - combined_idx);
+ 		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+ 			list_add_tail(&page->lru,
+ 				&zone->free_area[order].free_list[migratetype]);
 
 
