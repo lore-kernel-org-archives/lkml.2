@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032902Ab2I1Ubq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:31:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965129Ab2I1Ubl (ORCPT
+	id S1032912Ab2I1UcF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:32:05 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36926 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965071Ab2I1Ubf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:31:41 -0400
+	Fri, 28 Sep 2012 16:31:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 183/218] sched: Fix race in task_group()
-Date: Fri, 28 Sep 2012 13:16:40 -0700
-Message-Id: <20120928201522.494545134@linuxfoundation.org>
+        Zhouping Liu <zliu@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 188/218] time: Move ktime_t overflow checking into timespec_valid_strict
+Date: Fri, 28 Sep 2012 13:16:45 -0700
+Message-Id: <20120928201523.090406177@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,152 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 8323f26ce3425460769605a6aece7a174edaa7d1 upstream.
+commit cee58483cf56e0ba355fdd97ff5e8925329aa936 upstream
 
-Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
-Don't call task_group() too many times in set_task_rq()"), he
-found the reason to be that the multiple task_group()
-invocations in set_task_rq() returned different values.
+Andreas Bombe reported that the added ktime_t overflow checking added to
+timespec_valid in commit 4e8b14526ca7 ("time: Improve sanity checking of
+timekeeping inputs") was causing problems with X.org because it caused
+timeouts larger then KTIME_T to be invalid.
 
-Looking at all that I found a lack of serialization and plain
-wrong comments.
+Previously, these large timeouts would be clamped to KTIME_MAX and would
+never expire, which is valid.
 
-The below tries to fix it using an extra pointer which is
-updated under the appropriate scheduler locks. Its not pretty,
-but I can't really see another way given how all the cgroup
-stuff works.
+This patch splits the ktime_t overflow checking into a new
+timespec_valid_strict function, and converts the timekeeping codes
+internal checking to use this more strict function.
 
-Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-and-tested-by: Andreas Bombe <aeb@debian.org>
+Cc: Zhouping Liu <zliu@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/init_task.h |   12 +++++++++++-
- include/linux/sched.h     |    5 ++++-
- kernel/sched/core.c       |    9 ++++++++-
- kernel/sched/sched.h      |   23 ++++++++++-------------
- 4 files changed, 33 insertions(+), 16 deletions(-)
+ include/linux/time.h      |    7 +++++++
+ kernel/time/timekeeping.c |   10 +++++-----
+ 2 files changed, 12 insertions(+), 5 deletions(-)
 
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -123,8 +123,17 @@ extern struct group_info init_groups;
- 
- extern struct cred init_cred;
- 
-+extern struct task_group root_task_group;
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -125,6 +125,13 @@ static inline bool timespec_valid(const
+ 	/* Can't have more nanoseconds then a second */
+ 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
+ 		return false;
++	return true;
++}
 +
-+#ifdef CONFIG_CGROUP_SCHED
-+# define INIT_CGROUP_SCHED(tsk)						\
-+	.sched_task_group = &root_task_group,
-+#else
-+# define INIT_CGROUP_SCHED(tsk)
-+#endif
-+
- #ifdef CONFIG_PERF_EVENTS
--# define INIT_PERF_EVENTS(tsk)					\
-+# define INIT_PERF_EVENTS(tsk)						\
- 	.perf_event_mutex = 						\
- 		 __MUTEX_INITIALIZER(tsk.perf_event_mutex),		\
- 	.perf_event_list = LIST_HEAD_INIT(tsk.perf_event_list),
-@@ -161,6 +170,7 @@ extern struct cred init_cred;
- 	},								\
- 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
- 	INIT_PUSHABLE_TASKS(tsk)					\
-+	INIT_CGROUP_SCHED(tsk)						\
- 	.ptraced	= LIST_HEAD_INIT(tsk.ptraced),			\
- 	.ptrace_entry	= LIST_HEAD_INIT(tsk.ptrace_entry),		\
- 	.real_parent	= &tsk,						\
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1279,6 +1279,9 @@ struct task_struct {
- 	const struct sched_class *sched_class;
- 	struct sched_entity se;
- 	struct sched_rt_entity rt;
-+#ifdef CONFIG_CGROUP_SCHED
-+	struct task_group *sched_task_group;
-+#endif
- 
- #ifdef CONFIG_PREEMPT_NOTIFIERS
- 	/* list of struct preempt_notifier: */
-@@ -2744,7 +2747,7 @@ extern int sched_group_set_rt_period(str
- extern long sched_group_rt_period(struct task_group *tg);
- extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
- #endif
--#endif
-+#endif /* CONFIG_CGROUP_SCHED */
- 
- extern int task_can_switch_user(struct user_struct *up,
- 					struct task_struct *tsk);
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1098,7 +1098,7 @@ void set_task_cpu(struct task_struct *p,
- 	 * a task's CPU. ->pi_lock for waking tasks, rq->lock for runnable tasks.
- 	 *
- 	 * sched_move_task() holds both and thus holding either pins the cgroup,
--	 * see set_task_rq().
-+	 * see task_group().
- 	 *
- 	 * Furthermore, all task_rq users should acquire both locks, see
- 	 * task_rq_lock().
-@@ -7427,6 +7427,7 @@ void sched_destroy_group(struct task_gro
-  */
- void sched_move_task(struct task_struct *tsk)
- {
-+	struct task_group *tg;
- 	int on_rq, running;
++static inline bool timespec_valid_strict(const struct timespec *ts)
++{
++	if (!timespec_valid(ts))
++		return false;
+ 	/* Disallow values that could overflow ktime_t */
+ 	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
+ 		return false;
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -385,7 +385,7 @@ int do_settimeofday(const struct timespe
+ 	struct timespec ts_delta;
  	unsigned long flags;
- 	struct rq *rq;
-@@ -7441,6 +7442,12 @@ void sched_move_task(struct task_struct
- 	if (unlikely(running))
- 		tsk->sched_class->put_prev_task(rq, tsk);
  
-+	tg = container_of(task_subsys_state_check(tsk, cpu_cgroup_subsys_id,
-+				lockdep_is_held(&tsk->sighand->siglock)),
-+			  struct task_group, css);
-+	tg = autogroup_task_group(tsk, tg);
-+	tsk->sched_task_group = tg;
-+
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	if (tsk->sched_class->task_move_group)
- 		tsk->sched_class->task_move_group(tsk, on_rq);
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -536,22 +536,19 @@ DECLARE_PER_CPU(int, sd_llc_id);
- /*
-  * Return the group to which this tasks belongs.
-  *
-- * We use task_subsys_state_check() and extend the RCU verification with
-- * pi->lock and rq->lock because cpu_cgroup_attach() holds those locks for each
-- * task it moves into the cgroup. Therefore by holding either of those locks,
-- * we pin the task to the current cgroup.
-+ * We cannot use task_subsys_state() and friends because the cgroup
-+ * subsystem changes that value before the cgroup_subsys::attach() method
-+ * is called, therefore we cannot pin it and might observe the wrong value.
-+ *
-+ * The same is true for autogroup's p->signal->autogroup->tg, the autogroup
-+ * core changes this before calling sched_move_task().
-+ *
-+ * Instead we use a 'copy' which is updated from sched_move_task() while
-+ * holding both task_struct::pi_lock and rq::lock.
+-	if (!timespec_valid(tv))
++	if (!timespec_valid_strict(tv))
+ 		return -EINVAL;
+ 
+ 	write_seqlock_irqsave(&timekeeper.lock, flags);
+@@ -431,7 +431,7 @@ int timekeeping_inject_offset(struct tim
+ 	timekeeping_forward_now();
+ 
+ 	tmp = timespec_add(timekeeper.xtime,  *ts);
+-	if (!timespec_valid(&tmp)) {
++	if (!timespec_valid_strict(&tmp)) {
+ 		ret = -EINVAL;
+ 		goto error;
+ 	}
+@@ -608,7 +608,7 @@ void __init timekeeping_init(void)
+ 	struct timespec now, boot;
+ 
+ 	read_persistent_clock(&now);
+-	if (!timespec_valid(&now)) {
++	if (!timespec_valid_strict(&now)) {
+ 		pr_warn("WARNING: Persistent clock returned invalid value!\n"
+ 			"         Check your CMOS/BIOS settings.\n");
+ 		now.tv_sec = 0;
+@@ -616,7 +616,7 @@ void __init timekeeping_init(void)
+ 	}
+ 
+ 	read_boot_clock(&boot);
+-	if (!timespec_valid(&boot)) {
++	if (!timespec_valid_strict(&boot)) {
+ 		pr_warn("WARNING: Boot clock returned invalid value!\n"
+ 			"         Check your CMOS/BIOS settings.\n");
+ 		boot.tv_sec = 0;
+@@ -667,7 +667,7 @@ static void update_sleep_time(struct tim
   */
- static inline struct task_group *task_group(struct task_struct *p)
+ static void __timekeeping_inject_sleeptime(struct timespec *delta)
  {
--	struct task_group *tg;
--	struct cgroup_subsys_state *css;
--
--	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
--			lockdep_is_held(&p->pi_lock) ||
--			lockdep_is_held(&task_rq(p)->lock));
--	tg = container_of(css, struct task_group, css);
--
--	return autogroup_task_group(p, tg);
-+	return p->sched_task_group;
- }
- 
- /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
+-	if (!timespec_valid(delta)) {
++	if (!timespec_valid_strict(delta)) {
+ 		printk(KERN_WARNING "__timekeeping_inject_sleeptime: Invalid "
+ 					"sleep delta value!\n");
+ 		return;
 
 
