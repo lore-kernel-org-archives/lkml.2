@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032864Ab2I1VJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:09:46 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48462 "EHLO
+	id S1423257Ab2I1VKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:10:04 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60898 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965236Ab2I1VFr (ORCPT
+	by vger.kernel.org with ESMTP id S965194Ab2I1VFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 17:05:47 -0400
-X-Sasl-enc: fNvJ+Q9V0/8gWJW+hZmC95E5iUwfHvw0SZCEW2XKgvTS 1348866346
+	Fri, 28 Sep 2012 17:05:46 -0400
+X-Sasl-enc: KnDOrOjnAMvMgo1LwP/p6/oy74ml6Z2we6i7FAa1Jkor 1348866345
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        CAI Qian <caiqian@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
         John Stultz <john.stultz@linaro.org>,
-        Prarit Bhargava <prarit@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 112/127] time: Avoid making adjustments if we havent accumulated anything
-Date: Fri, 28 Sep 2012 13:34:45 -0700
-Message-Id: <20120928203059.000860516@linuxfoundation.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 111/127] time: Improve sanity checking of timekeeping inputs
+Date: Fri, 28 Sep 2012 13:34:44 -0700
+Message-Id: <20120928203058.891797937@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -31,36 +33,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: John Stultz <john.stultz@linaro.org>
 
-commit bf2ac312195155511a0f79325515cbb61929898a upstream
+commit 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b upstream
 
-If update_wall_time() is called and the current offset isn't large
-enough to accumulate, avoid re-calling timekeeping_adjust which may
-change the clock freq and can cause 1ns inconsistencies with
-CLOCK_REALTIME_COARSE/CLOCK_MONOTONIC_COARSE.
+Unexpected behavior could occur if the time is set to a value large
+enough to overflow a 64bit ktime_t (which is something larger then the
+year 2262).
 
+Also unexpected behavior could occur if large negative offsets are
+injected via adjtimex.
+
+So this patch improves the sanity check timekeeping inputs by
+improving the timespec_valid() check, and then makes better use of
+timespec_valid() to make sure we don't set the time to an invalid
+negative value or one that overflows ktime_t.
+
+Note: This does not protect from setting the time close to overflowing
+ktime_t and then letting natural accumulation cause the overflow.
+
+Reported-by: CAI Qian <caiqian@redhat.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Zhouping Liu <zliu@redhat.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1345595449-34965-5-git-send-email-john.stultz@linaro.org
+Link: http://lkml.kernel.org/r/1344454580-17031-1-git-send-email-john.stultz@linaro.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- kernel/time/timekeeping.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/ktime.h     |    7 -------
+ include/linux/time.h      |   22 ++++++++++++++++++++--
+ kernel/time/timekeeping.c |   26 ++++++++++++++++++++++++--
+ 3 files changed, 44 insertions(+), 11 deletions(-)
 
+--- a/include/linux/ktime.h
++++ b/include/linux/ktime.h
+@@ -58,13 +58,6 @@ union ktime {
+ 
+ typedef union ktime ktime_t;		/* Kill this */
+ 
+-#define KTIME_MAX			((s64)~((u64)1 << 63))
+-#if (BITS_PER_LONG == 64)
+-# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
+-#else
+-# define KTIME_SEC_MAX			LONG_MAX
+-#endif
+-
+ /*
+  * ktime_t definitions when using the 64-bit scalar representation:
+  */
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -107,11 +107,29 @@ static inline struct timespec timespec_s
+ 	return ts_delta;
+ }
+ 
++#define KTIME_MAX			((s64)~((u64)1 << 63))
++#if (BITS_PER_LONG == 64)
++# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
++#else
++# define KTIME_SEC_MAX			LONG_MAX
++#endif
++
+ /*
+  * Returns true if the timespec is norm, false if denorm:
+  */
+-#define timespec_valid(ts) \
+-	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
++static inline bool timespec_valid(const struct timespec *ts)
++{
++	/* Dates before 1970 are bogus */
++	if (ts->tv_sec < 0)
++		return false;
++	/* Can't have more nanoseconds then a second */
++	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
++		return false;
++	/* Disallow values that could overflow ktime_t */
++	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
++		return false;
++	return true;
++}
+ 
+ extern void read_persistent_clock(struct timespec *ts);
+ extern void read_boot_clock(struct timespec *ts);
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -919,6 +919,10 @@ static void update_wall_time(void)
- #else
- 	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
- #endif
-+	/* Check if there's really nothing to do */
-+	if (offset < timekeeper.cycle_interval)
-+		return;
-+
- 	timekeeper.xtime_nsec = (s64)xtime.tv_nsec << timekeeper.shift;
+@@ -382,7 +382,7 @@ int do_settimeofday(const struct timespe
+ 	struct timespec ts_delta;
+ 	unsigned long flags;
  
- 	/*
+-	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
++	if (!timespec_valid(tv))
+ 		return -EINVAL;
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+@@ -417,6 +417,8 @@ EXPORT_SYMBOL(do_settimeofday);
+ int timekeeping_inject_offset(struct timespec *ts)
+ {
+ 	unsigned long flags;
++	struct timespec tmp;
++	int ret = 0;
+ 
+ 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
+ 		return -EINVAL;
+@@ -425,9 +427,16 @@ int timekeeping_inject_offset(struct tim
+ 
+ 	timekeeping_forward_now();
+ 
++	tmp = timespec_add(xtime,  *ts);
++	if (!timespec_valid(&tmp)) {
++		ret = -EINVAL;
++		goto error;
++	}
++
+ 	xtime = timespec_add(xtime, *ts);
+ 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
+ 
++error: /* even if we error out, we forwarded the time, so call update */
+ 	timekeeping_update(true);
+ 
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
+@@ -435,7 +444,7 @@ int timekeeping_inject_offset(struct tim
+ 	/* signal hrtimers about time change */
+ 	clock_was_set();
+ 
+-	return 0;
++	return ret;
+ }
+ EXPORT_SYMBOL(timekeeping_inject_offset);
+ 
+@@ -582,7 +591,20 @@ void __init timekeeping_init(void)
+ 	struct timespec now, boot;
+ 
+ 	read_persistent_clock(&now);
++	if (!timespec_valid(&now)) {
++		pr_warn("WARNING: Persistent clock returned invalid value!\n"
++			"         Check your CMOS/BIOS settings.\n");
++		now.tv_sec = 0;
++		now.tv_nsec = 0;
++	}
++
+ 	read_boot_clock(&boot);
++	if (!timespec_valid(&boot)) {
++		pr_warn("WARNING: Boot clock returned invalid value!\n"
++			"         Check your CMOS/BIOS settings.\n");
++		boot.tv_sec = 0;
++		boot.tv_nsec = 0;
++	}
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+ 
 
 
