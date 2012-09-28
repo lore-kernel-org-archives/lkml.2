@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab2I1IJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 04:09:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50943 "EHLO mx2.suse.de"
+	id S1757066Ab2I1IKS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 04:10:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39898 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755522Ab2I1IJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 04:09:25 -0400
-Date: Fri, 28 Sep 2012 09:09:17 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: CMA broken in next-20120926
-Message-ID: <20120928080917.GL3429@suse.de>
-References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
- <20120927151159.4427fc8f.akpm@linux-foundation.org>
- <20120928054330.GA27594@bbox>
- <20120928075628.GJ3429@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120928075628.GJ3429@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756888Ab2I1IKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 04:10:04 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87ipay3cof.fsf@rustcorp.com.au>
+References: <87ipay3cof.fsf@rustcorp.com.au> <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, pjones@redhat.com,
+        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        keyrings@linux-nfs.org
+Subject: Re: [GIT PULL] Asymmetric keys and module signing
+Date: Fri, 28 Sep 2012 09:09:53 +0100
+Message-ID: <27378.1348819793@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 08:56:28AM +0100, Mel Gorman wrote:
-> On Fri, Sep 28, 2012 at 02:43:30PM +0900, Minchan Kim wrote:
-> > On Thu, Sep 27, 2012 at 03:11:59PM -0700, Andrew Morton wrote:
-> > > On Thu, 27 Sep 2012 13:29:11 +0200
-> > > Thierry Reding <thierry.reding@avionic-design.de> wrote:
-> > > 
-> > > > Hi Marek,
-> > > > 
-> > > > any idea why CMA might be broken in next-20120926. I see that there
-> > > > haven't been any major changes to CMA itself, but there's been quite a
-> > > > bit of restructuring of various memory allocation bits lately. I wasn't
-> > > > able to track the problem down, though.
-> > > > 
-> > > > What I see is this during boot (with CMA_DEBUG enabled):
-> > > > 
-> > > > [    0.266904] cma: dma_alloc_from_contiguous(cma db474f80, count 64, align 6)
-> > > > [    0.284469] cma: dma_alloc_from_contiguous(): memory range at c09d7000 is busy, retrying
-> > > > [    0.293648] cma: dma_alloc_from_contiguous(): memory range at c09d7800 is busy, retrying
-> > > > ...
-> > > > [    2.648619] DMA: failed to allocate 256 KiB pool for atomic coherent allocation
-> > > > ...
-> > > > [    4.196193] WARNING: at /home/thierry.reding/src/kernel/linux-ipmp.git/arch/arm/mm/dma-mapping.c:485 __alloc_from_pool+0xdc/0x110()
-> > > > [    4.207988] coherent pool not initialised!
-> > > > 
-> > > > So the pool isn't getting initialized properly because CMA can't get at
-> > > > the memory. Do you have any hints as to what might be going on? If it's
-> > > > any help, I started seeing this with next-20120926 and it is in today's
-> > > > next as well.
-> > > > 
-> > > 
-> > > Bart and Minchan have made recent changes to CMA.  Let us cc them.
-> > 
-> > Hi all,
-> > 
-> > I have no time now so I look over the problem during short time
-> > so I mighte be wrong. Even I should leave the office soon and
-> > Korea will have long vacation from now on so I will be off by next week.
-> > So it's hard to reach on me.
-> > 
-> > I hope this patch fixes the bug. If this patch fixes the problem
-> > but has some problem about description or someone has better idea,
-> > feel free to modify and resend to akpm, Please.
-> > 
-> > Thierry, Could you test below patch?
-> > 
-> > From 24a547855fa2bd4212a779cc73997837148310b3 Mon Sep 17 00:00:00 2001
-> > From: Minchan Kim <minchan@kernel.org>
-> > Date: Fri, 28 Sep 2012 14:28:32 +0900
-> > Subject: [PATCH] revert mm: compaction: iron out isolate_freepages_block()
-> >  and isolate_freepages_range()
-> > 
-> > [1] made bug on CMA.
-> > The nr_scanned should be never equal to total_isolated for successful CMA.
-> > This patch reverts part of the patch.
-> > 
-> 
-> Why should nr_scanned never be equal to total_isolated for CMA?
-> 
 
-Ah crap, never mind. It's so obvious that you probably heard the face
-slap all the way in Korea. Am putting together an alternative fix to a
-revert that I'll post shortly.
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
--- 
-Mel Gorman
-SUSE Labs
+> And after those three fixes, I still get all fail:
+> 
+> [    3.361036] Request for unknown module key 'Magrathea: Glacier signing key: 6
+> e03943da0f3b015ba6ed7f5e0cac4fe48680994' err -11
+
+Can you look back further in your kernel output, see if you can spot the bit
+where it's trying to load the keys.  Look for things from modsign_pubkey.c:
+
+	pr_notice("Loading module verification certificates\n");
+	...
+			pr_err("MODSIGN: Problem loading in-kernel X.509 certificate (%ld)\n",
+			       PTR_ERR(key));
+		else
+			pr_notice("MODSIGN: Loaded cert '%s'\n",
+				  key_ref_to_ptr(key)->description);
+
+> CONFIG_CRYPTO_SHA1=m
+
+Hmmm...  I suspect it's that.  We need a hash to verify the key's own
+signature too - and if you're using the key my autogen patch created for you,
+I think that would be SHA1, so that must be built in too.
+
+If you can see your kernel log (assuming a panic doesn't prevent you), I
+suspect you'll see something like:
+
+	MODSIGN: Problem loading in-kernel X.509 certificate (-65)
+
+which is -ENOPKG.
+
+The answer would be to either select SHA1 in Kconfig or, if possible, to tell
+openssl to use the same hash algorithm to sign the key as we're going to use
+in signing the modules.
+
+David
