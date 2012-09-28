@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759526Ab2I1Ukn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:40:43 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57769 "EHLO
+	id S1946042Ab2I1VLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:11:23 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46918 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759487Ab2I1UkX (ORCPT
+	by vger.kernel.org with ESMTP id S1759524Ab2I1Ukn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:23 -0400
-X-Sasl-enc: cJOURMIrO2VUGE0sZfZAk9NLlOcsbBwi8zyV9tMXV1xd 1348864822
+	Fri, 28 Sep 2012 16:40:43 -0400
+X-Sasl-enc: o1YOATP73Q3OpuTjUfElKXEJjS0+aFhWIoo571pWKQrd 1348864842
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fengguang Wu <fengguang.wu@intel.com>,
+        Mathias Krause <minipli@googlemail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 005/127] isdnloop: fix and simplify isdnloop_init()
-Date: Fri, 28 Sep 2012 13:32:58 -0700
-Message-Id: <20120928203046.434542003@linuxfoundation.org>
+Subject: [ 019/127] net: fix info leak in compat dev_ifconf()
+Date: Fri, 28 Sep 2012 13:33:12 -0700
+Message-Id: <20120928203048.069227442@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,59 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Wu Fengguang <fengguang.wu@intel.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 77f00f6324cb97cf1df6f9c4aaeea6ada23abdb2 ]
+[ Upstream commit 43da5f2e0d0c69ded3d51907d9552310a6b545e8 ]
 
-Fix a buffer overflow bug by removing the revision and printk.
+The implementation of dev_ifconf() for the compat ioctl interface uses
+an intermediate ifc structure allocated in userland for the duration of
+the syscall. Though, it fails to initialize the padding bytes inserted
+for alignment and that for leaks four bytes of kernel stack. Add an
+explicit memset(0) before filling the structure to avoid the info leak.
 
-[   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7
-[   22.097508] isdnloop: (loop0) virtual card added
-[   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
-[   22.174400]
-[   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
-[   22.624071] Call Trace:
-[   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
-[   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
-[   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
-[   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
-
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/isdn/isdnloop/isdnloop.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ net/socket.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -16,7 +16,6 @@
- #include <linux/sched.h>
- #include "isdnloop.h"
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2645,6 +2645,7 @@ static int dev_ifconf(struct net *net, s
+ 	if (copy_from_user(&ifc32, uifc32, sizeof(struct compat_ifconf)))
+ 		return -EFAULT;
  
--static char *revision = "$Revision: 1.11.6.7 $";
- static char *isdnloop_id = "loop0";
- 
- MODULE_DESCRIPTION("ISDN4Linux: Pseudo Driver that simulates an ISDN card");
-@@ -1494,17 +1493,6 @@ isdnloop_addcard(char *id1)
- static int __init
- isdnloop_init(void)
- {
--	char *p;
--	char rev[10];
--
--	if ((p = strchr(revision, ':'))) {
--		strcpy(rev, p + 1);
--		p = strchr(rev, '$');
--		*p = 0;
--	} else
--		strcpy(rev, " ??? ");
--	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev%s\n", rev);
--
- 	if (isdnloop_id)
- 		return (isdnloop_addcard(isdnloop_id));
- 
++	memset(&ifc, 0, sizeof(ifc));
+ 	if (ifc32.ifcbuf == 0) {
+ 		ifc32.ifc_len = 0;
+ 		ifc.ifc_len = 0;
 
 
