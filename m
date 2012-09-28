@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031512Ab2I1Tke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:40:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	id S1030756Ab2I1TlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:41:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965311Ab2I1TAO (ORCPT
+	with ESMTP id S932205Ab2I1TAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:00:14 -0400
+	Fri, 28 Sep 2012 15:00:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mark Salter <msalter@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 129/262] c/r: prctl: fix build error for no-MMU case
-Date: Fri, 28 Sep 2012 11:50:58 -0700
-Message-Id: <20120928183013.267216695@linuxfoundation.org>
+        Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 126/262] Bluetooth: mgmt: Fix enabling SSP while powered off
+Date: Fri, 28 Sep 2012 11:50:55 -0700
+Message-Id: <20120928183012.933217395@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -31,43 +30,43 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Salter <msalter@redhat.com>
+From: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
 
-commit be8cfc4af15cf611dfeb66a1fb5df43d5f1e280a upstream.
+commit 3d1cbdd6aefff711bcf389fdabc4af9bc22e8201 upstream.
 
-Commit 1ad75b9e1628 ("c/r: prctl: add minimal address test to
-PR_SET_MM") added some address checking to prctl_set_mm() used by
-checkpoint-restore.  This causes a build error for no-MMU systems:
+When new BT USB adapter is plugged in it's configured while still being powered
+off (HCI_AUTO_OFF flag is set), thus Set SSP will only set dev_flags but won't
+write changes to controller. As a result remote devices won't use Secure Simple
+Pairing with our device due to SSP Host Support flag disabled in extended
+features and may also reject SSP attempt from our side (with possible fallback
+to legacy pairing).
 
-   kernel/sys.c: In function 'prctl_set_mm':
-   kernel/sys.c:1868:34: error: 'mmap_min_addr' undeclared (first use in this function)
+This patch ensures HCI Write Simple Pairing Mode is sent when Set Powered is
+called to power on controller and clear HCI_AUTO_OFF flag.
 
-The test for mmap_min_addr doesn't make a lot of sense for no-MMU code
-as noted in commit 6e1415467614 ("NOMMU: Optimise away the
-{dac_,}mmap_min_addr tests").
-
-This patch defines mmap_min_addr as 0UL in the no-MMU case so that the
-compiler will optimize away tests for "addr < mmap_min_addr".
-
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
+Acked-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/security.h |    1 +
- 1 file changed, 1 insertion(+)
+ net/bluetooth/mgmt.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -118,6 +118,7 @@ void reset_security_ops(void);
- extern unsigned long mmap_min_addr;
- extern unsigned long dac_mmap_min_addr;
- #else
-+#define mmap_min_addr		0UL
- #define dac_mmap_min_addr	0UL
- #endif
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2879,6 +2879,12 @@ int mgmt_powered(struct hci_dev *hdev, u
+ 		if (scan)
+ 			hci_send_cmd(hdev, HCI_OP_WRITE_SCAN_ENABLE, 1, &scan);
  
++		if (test_bit(HCI_SSP_ENABLED, &hdev->dev_flags)) {
++			u8 ssp = 1;
++
++			hci_send_cmd(hdev, HCI_OP_WRITE_SSP_MODE, 1, &ssp);
++		}
++
+ 		update_class(hdev);
+ 		update_name(hdev, hdev->dev_name);
+ 		update_eir(hdev);
 
 
