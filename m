@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031080Ab2I1Tde (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:33:34 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965432Ab2I1TBQ (ORCPT
+	id S1031346Ab2I1Tdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:33:51 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:33476 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965440Ab2I1TBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:01:16 -0400
+	Fri, 28 Sep 2012 15:01:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andi Kleen <andi@firstfloor.org>, David Binderman <dcb314@hotmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 149/262] NFS: Fix the initialisation of the readdir cookieverf array
-Date: Fri, 28 Sep 2012 11:51:18 -0700
-Message-Id: <20120928183015.636940504@linuxfoundation.org>
+        Jan Luebbe <jlu@pengutronix.de>, Anant Gole <anantgole@ti.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 139/262] can: ti_hecc: fix oops during rmmod
+Date: Fri, 28 Sep 2012 11:51:08 -0700
+Message-Id: <20120928183014.410443773@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,85 +29,77 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit c3f52af3e03013db5237e339c817beaae5ec9e3a upstream.
+commit ab04c8bd423edb03e2148350a091836c196107fc upstream.
 
-When the NFS_COOKIEVERF helper macro was converted into a static
-inline function in commit 99fadcd764 (nfs: convert NFS_*(inode)
-helpers to static inline), we broke the initialisation of the
-readdir cookies, since that depended on doing a memset with an
-argument of 'sizeof(NFS_COOKIEVERF(inode))' which therefore
-changed from sizeof(be32 cookieverf[2]) to sizeof(be32 *).
+This patch fixes an oops which occurs when unloading the driver, while the
+network interface is still up. The problem is that first the io mapping is
+teared own, then the CAN device is unregistered, resulting in accessing the
+hardware's iomem:
 
-At this point, NFS_COOKIEVERF seems to be more of an obfuscation
-than a helper, so the best thing would be to just get rid of it.
+[  172.744232] Unable to handle kernel paging request at virtual address c88b0040
+[  172.752441] pgd = c7be4000
+[  172.755645] [c88b0040] *pgd=87821811, *pte=00000000, *ppte=00000000
+[  172.762207] Internal error: Oops: 807 [#1] PREEMPT ARM
+[  172.767517] Modules linked in: ti_hecc(-) can_dev
+[  172.772430] CPU: 0    Not tainted  (3.5.0alpha-00037-g3554cc0 #126)
+[  172.778961] PC is at ti_hecc_close+0xb0/0x100 [ti_hecc]
+[  172.784423] LR is at __dev_close_many+0x90/0xc0
+[  172.789123] pc : [<bf00c768>]    lr : [<c033be58>]    psr: 60000013
+[  172.789123] sp : c5c1de68  ip : 00040081  fp : 00000000
+[  172.801025] r10: 00000001  r9 : c5c1c000  r8 : 00100100
+[  172.806457] r7 : c5d0a48c  r6 : c5d0a400  r5 : 00000000  r4 : c5d0a000
+[  172.813232] r3 : c88b0000  r2 : 00000001  r1 : c5d0a000  r0 : c5d0a000
+[  172.820037] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[  172.827423] Control: 10c5387d  Table: 87be4019  DAC: 00000015
+[  172.833404] Process rmmod (pid: 600, stack limit = 0xc5c1c2f0)
+[  172.839447] Stack: (0xc5c1de68 to 0xc5c1e000)
+[  172.843994] de60:                   bf00c6b8 c5c1dec8 c5d0a000 c5d0a000 00200200 c033be58
+[  172.852478] de80: c5c1de44 c5c1dec8 c5c1dec8 c033bf2c c5c1de90 c5c1de90 c5d0a084 c5c1de44
+[  172.860992] dea0: c5c1dec8 c033c098 c061d3dc c5d0a000 00000000 c05edf28 c05edb34 c000d724
+[  172.869476] dec0: 00000000 c033c2f8 c5d0a084 c5d0a084 00000000 c033c370 00000000 c5d0a000
+[  172.877990] dee0: c05edb00 c033c3b8 c5d0a000 bf00d3ac c05edb00 bf00d7c8 bf00d7c8 c02842dc
+[  172.886474] df00: c02842c8 c0282f90 c5c1c000 c05edb00 bf00d7c8 c0283668 bf00d7c8 00000000
+[  172.894989] df20: c0611f98 befe2f80 c000d724 c0282d10 bf00d804 00000000 00000013 c0068a8c
+[  172.903472] df40: c5c538e8 685f6974 00636365 c61571a8 c5cb9980 c61571a8 c6158a20 c00c9bc4
+[  172.911987] df60: 00000000 00000000 c5cb9980 00000000 c5cb9980 00000000 c7823680 00000006
+[  172.920471] df80: bf00d804 00000880 c5c1df8c 00000000 000d4267 befe2f80 00000001 b6d90068
+[  172.928985] dfa0: 00000081 c000d5a0 befe2f80 00000001 befe2f80 00000880 b6d90008 00000008
+[  172.937469] dfc0: befe2f80 00000001 b6d90068 00000081 00000001 00000000 befe2eac 00000000
+[  172.945983] dfe0: 00000000 befe2b18 00023ba4 b6e6addc 60000010 befe2f80 a8e00190 86d2d344
+[  172.954498] [<bf00c768>] (ti_hecc_close+0xb0/0x100 [ti_hecc]) from [<c033be58>] (__dev__registered_many+0xc0/0x2a0)
+[  172.984161] [<c033c098>] (rollback_registered_many+0xc0/0x2a0) from [<c033c2f8>] (rollback_registered+0x20/0x30)
+[  172.994750] [<c033c2f8>] (rollback_registered+0x20/0x30) from [<c033c370>] (unregister_netdevice_queue+0x68/0x98)
+[  173.005401] [<c033c370>] (unregister_netdevice_queue+0x68/0x98) from [<c033c3b8>] (unregister_netdev+0x18/0x20)
+[  173.015899] [<c033c3b8>] (unregister_netdev+0x18/0x20) from [<bf00d3ac>] (ti_hecc_remove+0x60/0x80 [ti_hecc])
+[  173.026245] [<bf00d3ac>] (ti_hecc_remove+0x60/0x80 [ti_hecc]) from [<c02842dc>] (platform_drv_remove+0x14/0x18)
+[  173.036712] [<c02842dc>] (platform_drv_remove+0x14/0x18) from [<c0282f90>] (__device_release_driver+0x7c/0xbc)
 
-Also see: https://bugzilla.kernel.org/show_bug.cgi?id=46881
-
-Reported-by: Andi Kleen <andi@firstfloor.org>
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Jan Luebbe <jlu@pengutronix.de>
+Cc: Anant Gole <anantgole@ti.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/inode.c         |    2 +-
- fs/nfs/nfs3proc.c      |    2 +-
- fs/nfs/nfs4proc.c      |    4 ++--
- include/linux/nfs_fs.h |    5 -----
- 4 files changed, 4 insertions(+), 9 deletions(-)
+ drivers/net/can/ti_hecc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -152,7 +152,7 @@ static void nfs_zap_caches_locked(struct
- 	nfsi->attrtimeo = NFS_MINATTRTIMEO(inode);
- 	nfsi->attrtimeo_timestamp = jiffies;
+--- a/drivers/net/can/ti_hecc.c
++++ b/drivers/net/can/ti_hecc.c
+@@ -984,12 +984,12 @@ static int __devexit ti_hecc_remove(stru
+ 	struct net_device *ndev = platform_get_drvdata(pdev);
+ 	struct ti_hecc_priv *priv = netdev_priv(ndev);
  
--	memset(NFS_COOKIEVERF(inode), 0, sizeof(NFS_COOKIEVERF(inode)));
-+	memset(NFS_I(inode)->cookieverf, 0, sizeof(NFS_I(inode)->cookieverf));
- 	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode))
- 		nfsi->cache_validity |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL|NFS_INO_REVAL_PAGECACHE;
- 	else
---- a/fs/nfs/nfs3proc.c
-+++ b/fs/nfs/nfs3proc.c
-@@ -643,7 +643,7 @@ nfs3_proc_readdir(struct dentry *dentry,
- 		  u64 cookie, struct page **pages, unsigned int count, int plus)
- {
- 	struct inode		*dir = dentry->d_inode;
--	__be32			*verf = NFS_COOKIEVERF(dir);
-+	__be32			*verf = NFS_I(dir)->cookieverf;
- 	struct nfs3_readdirargs	arg = {
- 		.fh		= NFS_FH(dir),
- 		.cookie		= cookie,
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3189,11 +3189,11 @@ static int _nfs4_proc_readdir(struct den
- 			dentry->d_parent->d_name.name,
- 			dentry->d_name.name,
- 			(unsigned long long)cookie);
--	nfs4_setup_readdir(cookie, NFS_COOKIEVERF(dir), dentry, &args);
-+	nfs4_setup_readdir(cookie, NFS_I(dir)->cookieverf, dentry, &args);
- 	res.pgbase = args.pgbase;
- 	status = nfs4_call_sync(NFS_SERVER(dir)->client, NFS_SERVER(dir), &msg, &args.seq_args, &res.seq_res, 0);
- 	if (status >= 0) {
--		memcpy(NFS_COOKIEVERF(dir), res.verifier.data, NFS4_VERIFIER_SIZE);
-+		memcpy(NFS_I(dir)->cookieverf, res.verifier.data, NFS4_VERIFIER_SIZE);
- 		status += args.pgbase;
- 	}
++	unregister_candev(ndev);
+ 	clk_disable(priv->clk);
+ 	clk_put(priv->clk);
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	iounmap(priv->base);
+ 	release_mem_region(res->start, resource_size(res));
+-	unregister_candev(ndev);
+ 	free_candev(ndev);
+ 	platform_set_drvdata(pdev, NULL);
  
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -265,11 +265,6 @@ static inline const struct nfs_rpc_ops *
- 	return NFS_SERVER(inode)->nfs_client->rpc_ops;
- }
- 
--static inline __be32 *NFS_COOKIEVERF(const struct inode *inode)
--{
--	return NFS_I(inode)->cookieverf;
--}
--
- static inline unsigned NFS_MINATTRTIMEO(const struct inode *inode)
- {
- 	struct nfs_server *nfss = NFS_SERVER(inode);
 
 
