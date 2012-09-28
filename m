@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030854Ab2I1TOh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:14:37 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60014 "EHLO
+	id S1030968Ab2I1TOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:14:54 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35065 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030581Ab2I1TOf (ORCPT
+	with ESMTP id S1759190Ab2I1TFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:14:35 -0400
-Date: Fri, 28 Sep 2012 12:11:52 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: [PATCH 18/57] power: Add sysfs interfaces for capacity
-Message-ID: <20120928191152.GA28243@lizard>
-References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
- <1348589574-25655-19-git-send-email-mathieu.poirier@linaro.org>
- <20120927070815.GI8836@lizard>
- <5065EBC0.2010105@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5065EBC0.2010105@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Sep 2012 15:05:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Douglas Bagnall <douglas@paradise.net.nz>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [ 233/262] media: Avoid sysfs oops when an rc_devs raw device is absent
+Date: Fri, 28 Sep 2012 11:52:42 -0700
+Message-Id: <20120928183025.808730472@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
+References: <20120928182957.993484211@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 12:26:08PM -0600, Mathieu Poirier wrote:
-> On 12-09-27 01:08 AM, Anton Vorontsov wrote:
-> > On Tue, Sep 25, 2012 at 10:12:15AM -0600, mathieu.poirier@linaro.org wrote:
-> >> From: Daniel WILLERUD <daniel.willerud@stericsson.com>
-> >>
-> >> Switchable depending on whether capacity scaling is enabled
-> >>
-> >> Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
-> >> Signed-off-by: Daniel WILLERUD <daniel.willerud@stericsson.com>
-> >> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> >> Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
-> >> ---
-> >>  drivers/power/ab8500_fg.c |   57 ++++++++++++++++++++++++++++++++++++++++++++-
-> >>  1 files changed, 56 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-> >> index 8507254..46010ec 100644
-> >> --- a/drivers/power/ab8500_fg.c
-> >> +++ b/drivers/power/ab8500_fg.c
-> >> @@ -266,7 +266,6 @@ static enum power_supply_property ab8500_fg_props[] = {
-> >>  	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
-> >>  	POWER_SUPPLY_PROP_CHARGE_FULL,
-> >>  	POWER_SUPPLY_PROP_CHARGE_NOW,
-> >> -	POWER_SUPPLY_PROP_CAPACITY,
-> > [...]
-> >> +static struct device_attribute ab8500_fg_sysfs_psy_attrs[] = {
-> >> +	__ATTR(capacity, S_IRUGO, ab8500_show_capacity, NULL),
-> >> +};
-> > 
-> > I don't understand the rationale behind this patch. Why remove normal
-> > power supply property, and make your own with the same name? Something
-> > isn't right...
-> 
-> The similarity in the naming convention it a coincidence here.  In one
-> case it's a enum and the other sysfs attribute.  Could you expand on
-> your suspicions ?
+From: Greg KH <gregkh@linuxfoundation.org>
 
->From the userland point of view, how would the new attribute look like?
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-Originally the driver reported capacity via power supply class, i.e.
-PROP_CAPACITY, now you change to your own attribute.. so the question is
-why you do this.
+------------------
 
-If you need optional attributes, it is still possible to make this w/o
-introducing your own attributes mechanisms.
+From: Douglas Bagnall <douglas@paradise.net.nz>
 
-Thanks,
-Anton.
+commit 720bb6436ff30fccad05cf5bdf961ea5b1f5686d upstream.
+
+For some reason, when the lirc daemon learns that a usb remote control
+has been unplugged, it wants to read the sysfs attributes of the
+disappearing device. This is useful for uncovering transient
+inconsistencies, but less so for keeping the system running when such
+inconsistencies exist.
+
+Under some circumstances (like every time I unplug my dvb stick from
+my laptop), lirc catches an rc_dev whose raw event handler has been
+removed (presumably by ir_raw_event_unregister), and proceeds to
+interrogate the raw protocols supported by the NULL pointer.
+
+This patch avoids the NULL dereference, and ignores the issue of how
+this state of affairs came about in the first place.
+
+Version 2 incorporates changes recommended by Mauro Carvalho Chehab
+(-ENODEV instead of -EINVAL, and a signed-off-by).
+
+Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/media/rc/rc-main.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/media/rc/rc-main.c
++++ b/drivers/media/rc/rc-main.c
+@@ -775,10 +775,11 @@ static ssize_t show_protocols(struct dev
+ 	if (dev->driver_type == RC_DRIVER_SCANCODE) {
+ 		enabled = dev->rc_map.rc_type;
+ 		allowed = dev->allowed_protos;
+-	} else {
++	} else if (dev->raw) {
+ 		enabled = dev->raw->enabled_protocols;
+ 		allowed = ir_raw_get_allowed_protocols();
+-	}
++	} else
++		return -ENODEV;
+ 
+ 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
+ 		   (long long)allowed,
+
+
