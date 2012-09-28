@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422908Ab2I1Urn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:47:43 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50928 "EHLO
+	id S1422920Ab2I1Urr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:47:47 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39039 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422885Ab2I1Urj (ORCPT
+	by vger.kernel.org with ESMTP id S1031541Ab2I1Urn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:47:39 -0400
-X-Sasl-enc: EM8jgDhhYrXGTIl1yjcom7dwO+GibRxIOr/MAinn1kaK 1348865258
+	Fri, 28 Sep 2012 16:47:43 -0400
+X-Sasl-enc: WLtACYremDrVT1FaovhLV2PIvKXjpY99DabC3qpApzbV 1348865262
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Beno=C3=AEt=20Locher?= <Benoit.Locher@skf.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: =?UTF-8?q?=5B=20047/127=5D=20can=3A=20mcp251x=3A=20avoid=20repeated=20frame=20bug?=
-Date: Fri, 28 Sep 2012 13:33:40 -0700
-Message-Id: <20120928203051.343680003@linuxfoundation.org>
+        Andre Przywara <andre.przywara@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 050/127] xen/boot: Disable NUMA for PV guests.
+Date: Fri, 28 Sep 2012 13:33:43 -0700
+Message-Id: <20120928203051.694478841@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,58 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benoît Locher <Benoit.Locher@skf.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit cab32f39dcc5b35db96497dc0a026b5dea76e4e7 upstream.
+commit 8d54db795dfb1049d45dc34f0dddbc5347ec5642 upstream.
 
-The MCP2515 has a silicon bug causing repeated frame transmission, see section
-5 of MCP2515 Rev. B Silicon Errata Revision G (March 2007).
+The hypervisor is in charge of allocating the proper "NUMA" memory
+and dealing with the CPU scheduler to keep them bound to the proper
+NUMA node. The PV guests (and PVHVM) have no inkling of where they
+run and do not need to know that right now. In the future we will
+need to inject NUMA configuration data (if a guest spans two or more
+NUMA nodes) so that the kernel can make the right choices. But those
+patches are not yet present.
 
-Basically, setting TXBnCTRL.TXREQ in either SPI mode (00 or 11) will eventually
-cause the bug. The workaround proposed by Microchip is to use mode 00 and send
-a RTS command on the SPI bus to initiate the transmission.
+In the meantime, disable the NUMA capability in the PV guest, which
+also fixes a bootup issue. Andre says:
 
-Signed-off-by: Benoît Locher <Benoit.Locher@skf.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+"we see Dom0 crashes due to the kernel detecting the NUMA topology not
+by ACPI, but directly from the northbridge (CONFIG_AMD_NUMA).
+
+This will detect the actual NUMA config of the physical machine, but
+will crash about the mismatch with Dom0's virtual memory. Variation of
+the theme: Dom0 sees what it's not supposed to see.
+
+This happens with the said config option enabled and on a machine where
+this scanning is still enabled (K8 and Fam10h, not Bulldozer class)
+
+We have this dump then:
+NUMA: Warning: node ids are out of bound, from=-1 to=-1 distance=10
+Scanning NUMA topology in Northbridge 24
+Number of physical nodes 4
+Node 0 MemBase 0000000000000000 Limit 0000000040000000
+Node 1 MemBase 0000000040000000 Limit 0000000138000000
+Node 2 MemBase 0000000138000000 Limit 00000001f8000000
+Node 3 MemBase 00000001f8000000 Limit 0000000238000000
+Initmem setup node 0 0000000000000000-0000000040000000
+  NODE_DATA [000000003ffd9000 - 000000003fffffff]
+Initmem setup node 1 0000000040000000-0000000138000000
+  NODE_DATA [0000000137fd9000 - 0000000137ffffff]
+Initmem setup node 2 0000000138000000-00000001f8000000
+  NODE_DATA [00000001f095e000 - 00000001f0984fff]
+Initmem setup node 3 00000001f8000000-0000000238000000
+Cannot find 159744 bytes in node 3
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
+Pid: 0, comm: swapper Not tainted 3.3.6 #1 AMD Dinar/Dinar
+RIP: e030:[<ffffffff81d220e6>]  [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
+.. snip..
+  [<ffffffff81d23024>] sparse_early_usemaps_alloc_node+0x64/0x178
+  [<ffffffff81d23348>] sparse_init+0xe4/0x25a
+  [<ffffffff81d16840>] paging_init+0x13/0x22
+  [<ffffffff81d07fbb>] setup_arch+0x9c6/0xa9b
+  [<ffffffff81683954>] ? printk+0x3c/0x3e
+  [<ffffffff81d01a38>] start_kernel+0xe5/0x468
+  [<ffffffff81d012cf>] x86_64_start_reservations+0xba/0xc1
+  [<ffffffff81007153>] ? xen_setup_runstate_info+0x2c/0x36
+  [<ffffffff81d050ee>] xen_start_kernel+0x565/0x56c
+"
+
+so we just disable NUMA scanning by setting numa_off=1.
+
+Reported-and-Tested-by: Andre Przywara <andre.przywara@amd.com>
+Acked-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/mcp251x.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/x86/xen/setup.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/can/mcp251x.c
-+++ b/drivers/net/can/mcp251x.c
-@@ -83,6 +83,11 @@
- #define INSTRUCTION_LOAD_TXB(n)	(0x40 + 2 * (n))
- #define INSTRUCTION_READ_RXB(n)	(((n) == 0) ? 0x90 : 0x94)
- #define INSTRUCTION_RESET	0xC0
-+#define RTS_TXB0		0x01
-+#define RTS_TXB1		0x02
-+#define RTS_TXB2		0x04
-+#define INSTRUCTION_RTS(n)	(0x80 | ((n) & 0x07))
-+
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -15,6 +15,7 @@
+ #include <asm/e820.h>
+ #include <asm/setup.h>
+ #include <asm/acpi.h>
++#include <asm/numa.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
  
- /* MPC251x registers */
- #define CANSTAT	      0x0e
-@@ -397,6 +402,7 @@ static void mcp251x_hw_tx_frame(struct s
- static void mcp251x_hw_tx(struct spi_device *spi, struct can_frame *frame,
- 			  int tx_buf_idx)
- {
-+	struct mcp251x_priv *priv = dev_get_drvdata(&spi->dev);
- 	u32 sid, eid, exide, rtr;
- 	u8 buf[SPI_TRANSFER_BUF_LEN];
+@@ -463,4 +464,7 @@ void __init xen_arch_setup(void)
+ 	boot_option_idle_override = IDLE_HALT;
  
-@@ -418,7 +424,10 @@ static void mcp251x_hw_tx(struct spi_dev
- 	buf[TXBDLC_OFF] = (rtr << DLC_RTR_SHIFT) | frame->can_dlc;
- 	memcpy(buf + TXBDAT_OFF, frame->data, frame->can_dlc);
- 	mcp251x_hw_tx_frame(spi, buf, frame->can_dlc, tx_buf_idx);
--	mcp251x_write_reg(spi, TXBCTRL(tx_buf_idx), TXBCTRL_TXREQ);
-+
-+	/* use INSTRUCTION_RTS, to avoid "repeated frame problem" */
-+	priv->spi_tx_buf[0] = INSTRUCTION_RTS(1 << tx_buf_idx);
-+	mcp251x_spi_trans(priv->spi, 1);
+ 	fiddle_vdso();
++#ifdef CONFIG_NUMA
++	numa_off = 1;
++#endif
  }
- 
- static void mcp251x_hw_rx_frame(struct spi_device *spi, u8 *buf,
 
 
