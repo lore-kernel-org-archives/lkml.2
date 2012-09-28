@@ -1,139 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab2I1FmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 01:42:09 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:51270 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2I1FmG (ORCPT
+	id S1752777Ab2I1FqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 01:46:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:57422 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab2I1FqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 01:42:06 -0400
-Message-ID: <506537C7.9070909@linux.vnet.ibm.com>
-Date: Fri, 28 Sep 2012 11:08:15 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Fri, 28 Sep 2012 01:46:07 -0400
+Date: Fri, 28 Sep 2012 07:45:48 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Philip, Avinash" <avinashphilip@ti.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, rpurdie@rpsys.net,
+        broonie@opensource.wolfsonmicro.com, shawn.guo@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nsekhar@ti.com, gururaja.hebbar@ti.com
+Subject: Re: [PATCH v3] pwm_backlight: Add device tree support for Low
+ Threshold Brightness
+Message-ID: <20120928054548.GB10237@avionic-0098.mockup.avionic-design.de>
+References: <1348670827-5720-1-git-send-email-avinashphilip@ti.com>
+ <20120927143309.02614908.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
- in PLE handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue> <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com> <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com> <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com> <5061B437.8070300@linux.vnet.ibm.com> <5064101A.5070902@redhat.com> <50643745.6010202@linux.vnet.ibm.com> <506440AF.9080202@redhat.com>
-In-Reply-To: <506440AF.9080202@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12092805-3864-0000-0000-000004D3A1B0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="U+BazGySraz5kW0T"
+Content-Disposition: inline
+In-Reply-To: <20120927143309.02614908.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:qTptiof8N7i2P4yVm4RpXYun3uAn2Y3UFEyiRnrM2Ey
+ U3UeUNVYHI9TsGfw87zKoEZb1ByCJhM+e5MmnAgdu1PAbQt2DD
+ tLXA3nXA3Z4CRGFDw/stcA1J9iXWhDelHyIpp52Mse2o096HlS
+ aeXu0FAkzIHULOh1WIFL8UFmwyMsS6FPGjcE3NeIrq/PuNNR57
+ g/DoWZNmm8L4g1N/ldMI9LQlagGKEj+zcOxWaS67CuYQ+bk4q/
+ Yos6ttE7fVi8wWhS9t5JkpCdPC7kTaoyZ1FLUUHEDCbovSXXTg
+ 4kFK9omb/LG2ZhtcL+qyQ5xZPwfpkQeOVV99pWCgfQ0DyuS5mI
+ DGiBSoZT4v6LVTjLD+1mk6KFv3xtx9ZFc/XRU0Z82ysK7+zE2l
+ ioUqOkLNGKnwrIXOxdhi1RbUT7lBiICPQTLjGKlsewnN3XWucJ
+ iiGKK
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2012 05:33 PM, Avi Kivity wrote:
-> On 09/27/2012 01:23 PM, Raghavendra K T wrote:
->>>
->>> This gives us a good case for tracking preemption on a per-vm basis.  As
->>> long as we aren't preempted, we can keep the PLE window high, and also
->>> return immediately from the handler without looking for candidates.
->>
->> 1) So do you think, deferring preemption patch ( Vatsa was mentioning
->> long back)  is also another thing worth trying, so we reduce the chance
->> of LHP.
->
-> Yes, we have to keep it in mind.  It will be useful for fine grained
-> locks, not so much so coarse locks or IPIs.
->
 
-Agree.
+--U+BazGySraz5kW0T
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I would still of course prefer a PLE solution, but if we can't get it to
-> work we can consider preemption deferral.
->
+On Thu, Sep 27, 2012 at 02:33:09PM -0700, Andrew Morton wrote:
+> On Wed, 26 Sep 2012 20:17:07 +0530
+> "Philip, Avinash" <avinashphilip@ti.com> wrote:
+>=20
+> > Some back lights perform poorly when driven by a PWM with a short
+> > duty-cycle. For such devices, the low threshold can be used to specify a
+> > lower bound for the duty-cycle and should be chosen to exclude the
+> > problematic range.
+> >=20
+> > Add device tree probing support for lth_brightness putting
+> > low-threshold-brightness as optional property.
+> >=20
+> > ...
+> >
+> > --- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.t=
+xt
+> > +++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.t=
+xt
+> > @@ -14,6 +14,15 @@ Required properties:
+> >  Optional properties:
+> >    - pwm-names: a list of names for the PWM devices specified in the
+> >                 "pwms" property (see PWM binding[0])
+> > +  - low-threshold-brightness: brightness threshold low level. Low thre=
+shold
+> > +    brightness set to value so that backlight present on low end of
+> > +    brightness.
+> > +    Some panels, backlight would absent if duty percentage of PWM wave=
+ is less
+> > +    than certain level (say 20%). By setting low-threshold-brightness =
+to a
+> > +    value above (percentage of brightness-levels max) 50 (20% of 255, =
+if 255
+> > +    is max). On setting low-threshold-brightness, range of brightness-=
+levels
+> > +    is calculated in a region of low-threshold-brightness to brightnes=
+s-levels
+> > +    max.
+>=20
+> hoo boy, that's hard to follow.  How does this look?
+>=20
+> --- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt=
+~pwm_backlight-add-device-tree-support-for-low-threshold-brightness-fix
+> +++ a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> @@ -14,15 +14,15 @@ Required properties:
+>  Optional properties:
+>    - pwm-names: a list of names for the PWM devices specified in the
+>                 "pwms" property (see PWM binding[0])
+> -  - low-threshold-brightness: brightness threshold low level. Low thresh=
+old
+> -    brightness set to value so that backlight present on low end of
+> -    brightness.
+> -    Some panels, backlight would absent if duty percentage of PWM wave i=
+s less
+> -    than certain level (say 20%). By setting low-threshold-brightness to=
+ a
+> -    value above (percentage of brightness-levels max) 50 (20% of 255, if=
+ 255
+> -    is max). On setting low-threshold-brightness, range of brightness-le=
+vels
+> -    is calculated in a region of low-threshold-brightness to brightness-=
+levels
+> -    max.
+> +  - low-threshold-brightness: brightness threshold low level. Sets the l=
+owest
+> +    brightness value.
+> +    On some panels the backlight misbehaves if the duty cycle percentage=
+ of the
+> +    PWM wave is less than a certain level (say 20%).  In this example th=
+e user
+> +    can set low-threshold-brightness to a value above 50 (ie, 20% of 255=
+), thus
+> +    preventing the PWM duty cycle from going too low.
+> +    On setting low-threshold-brightness the range of brightness levels is
+> +    calculated in the range low-threshold-brightness to the maximum valu=
+e in
+> +    brightness-levels, described above.
+> =20
+>  [0]: Documentation/devicetree/bindings/pwm/pwm.txt
+> =20
+>=20
+>=20
+> Also, I'm wondering if we really needed a new property - couldn't one
+> do this simply by setting brightness-levels to 50..255?
 
-Okay.
+Yes. This was discussed in the thread that followed the posting of this
+patch's v2. We've decided to drop it and go with brightness-levels only
+for device tree data. Eventually all existing users should convert to
+that as well so we can remove some of the cruft from the platform data
+up.
 
->>
->> IIRC, with defer preemption :
->> we will have hook in spinlock/unlock path to measure depth of lock held,
->> and shared with host scheduler (may be via MSRs now).
->> Host scheduler 'prefers' not to preempt lock holding vcpu. (or rather
->> give say one chance.
->
-> A downside is that we have to do that even when undercommitted.
->
-> Also there may be a lot of false positives (deferred preemptions even
-> when there is no contention).
+Thierry
 
-Yes. That is a worry.
+--U+BazGySraz5kW0T
+Content-Type: application/pgp-signature
 
->
->>
->> 2) looking at the result (comparing A & C) , I do feel we have
->> significant in iterating over vcpus (when compared to even vmexit)
->> so We still would need undercommit fix sugested by PeterZ (improving by
->> 140%). ?
->
-> Looking only at the current runqueue?  My worry is that it misses a lot
-> of cases.  Maybe try the current runqueue first and then others.
->
-> Or were you referring to something else?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-No. I was referring to the same thing.
+iQIcBAEBAgAGBQJQZTmMAAoJEN0jrNd/PrOhuxsQALsRNFfz8Bm/fSbycbr7ZJfu
+jyCL1pQse6n0jxVYoIa3yK/+jZWIdaLReiuft4aYbcSKajNPEBgyNrxdccKDTebd
+aq8a4QYpdTDSnYjX7uDQ1XOPxn3IAk9dB3398sKHccAJ+XnccVxKvmgdXeZyQnC0
+9Qd4oH/vOWXYXeiB9dUKxZQpNsr9at95xvrqIhcOgyg13M3TG7L/0LJNID74CYjS
+ZN/IFNm3AsWHdLsh4trdjU9bC/E8eNZJ5HiEi9nVm4EhyoYGJeAlRRt0R+M6EiUS
+xucgzn9DeQjBODiXzlVsAOXIHwrglfoYiBzHNtAa7XsIeDxjc29cCKeBkGz+gtfH
+u5cwGXlit2TWUsrUtPOEGrM887b41Xx2KW2xAWnGj/JfWaupH7SzinQZafAKpEpY
+/M9+96jAQjnrnYvKE3bPlAOF6QkFpiRTRVDxtnq+wV8L+PyeZn+s/5hYE3YwloAq
+g1lKzAIwWStvcAJT/WVoJ/1/SYA8lBBwqwE0YA7jaYHzVd0AuNvYrhwMXGz55mxt
+/oSHOiVe7NWNUUE7jmkfFWizK8fngjxWMjth3pUV7sDeR1tqG0SxxQ0Wj+VKYy0J
+BQHDkRyAzf4i1vedfw6TGeoHnhdEGICiqlSPHIknGWtciL5KUoq+/u08Q/PXGMNy
+8Pzt/TOdpaK194HmlBo2
+=lgr/
+-----END PGP SIGNATURE-----
 
-However. I had tried following also (which works well to check 
-undercommited scenario). But thinking to use only for yielding in case
-of overcommit (yield in overcommit suggested by Rik) and keep 
-undercommit patch as suggested by PeterZ
-
-[ patch is not in proper diff I suppose ].
-
-Will test them.
-
-Peter, Can I post your patch with your from/sob.. in V2?
-Please let me know..
-
----
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 28f00bc..9ed3759 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1620,6 +1620,21 @@ bool kvm_vcpu_eligible_for_directed_yield(struct 
-kvm_vcpu *vcpu)
-  	return eligible;
-  }
-  #endif
-+
-+bool kvm_overcommitted()
-+{
-+	unsigned long load;
-+
-+	load = avenrun[0] + FIXED_1/200;
-+	load = load >> FSHIFT;
-+	load = (load << 7) / num_online_cpus();
-+
-+	if (load > 128)
-+		return true;
-+
-+	return false;
-+}
-+
-  void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-  {
-  	struct kvm *kvm = me->kvm;
-@@ -1629,6 +1644,9 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-  	int pass;
-  	int i;
-
-+	if (!kvm_overcommitted())
-+		return;
-+
-  	kvm_vcpu_set_in_spin_loop(me, true);
-  	/*
-  	 * We boost the priority of a VCPU that is runnable but not
-
+--U+BazGySraz5kW0T--
