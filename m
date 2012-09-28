@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032544Ab2I1U1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:27:15 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
+	id S1032561Ab2I1U1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:27:21 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032535Ab2I1U1I (ORCPT
+	with ESMTP id S1032542Ab2I1U1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:27:08 -0400
+	Fri, 28 Sep 2012 16:27:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Toshi Kani <toshi.kani@hp.com>, Lisa Mitchell <lisa.mitchell@hp.com>,
-        Thomas Mingarelli <Thomas.Mingarelli@hp.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [ 103/218] hpwdt: Fix kdump issue in hpwdt
-Date: Fri, 28 Sep 2012 13:15:20 -0700
-Message-Id: <20120928201513.387355050@linuxfoundation.org>
+        Mel Gorman <mel@csn.ul.ie>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Wen Congyang <wency@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 105/218] tracing: Dont call page_to_pfn() if page is NULL
+Date: Fri, 28 Sep 2012 13:15:22 -0700
+Message-Id: <20120928201513.639503947@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,37 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshi Kani <toshi.kani@hp.com>
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-commit 308b135e4fcc00c80c07e0e04e7afa8edf78583c upstream.
+commit 85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa upstream.
 
-kdump can be interrupted by watchdog timer when the timer is left
-activated on the crash kernel. Changed the hpwdt driver to disable
-watchdog timer at boot-time. This assures that watchdog timer is
-disabled until /dev/watchdog is opened, and prevents watchdog timer
-to be left running on the crash kernel.
+When allocating memory fails, page is NULL. page_to_pfn() will
+cause the kernel panicked if we don't use sparsemem vmemmap.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Lisa Mitchell <lisa.mitchell@hp.com>
-Signed-off-by: Thomas Mingarelli <Thomas.Mingarelli@hp.com>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Link: http://lkml.kernel.org/r/505AB1FF.8020104@cn.fujitsu.com
+
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/watchdog/hpwdt.c |    3 +++
- 1 file changed, 3 insertions(+)
+ include/trace/events/kmem.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -806,6 +806,9 @@ static int __devinit hpwdt_init_one(stru
- 	hpwdt_timer_reg = pci_mem_addr + 0x70;
- 	hpwdt_timer_con = pci_mem_addr + 0x72;
+--- a/include/trace/events/kmem.h
++++ b/include/trace/events/kmem.h
+@@ -214,7 +214,7 @@ TRACE_EVENT(mm_page_alloc,
  
-+	/* Make sure that timer is disabled until /dev/watchdog is opened */
-+	hpwdt_stop();
-+
- 	/* Make sure that we have a valid soft_margin */
- 	if (hpwdt_change_timer(soft_margin))
- 		hpwdt_change_timer(DEFAULT_MARGIN);
+ 	TP_printk("page=%p pfn=%lu order=%d migratetype=%d gfp_flags=%s",
+ 		__entry->page,
+-		page_to_pfn(__entry->page),
++		__entry->page ? page_to_pfn(__entry->page) : 0,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		show_gfp_flags(__entry->gfp_flags))
+@@ -240,7 +240,7 @@ DECLARE_EVENT_CLASS(mm_page,
+ 
+ 	TP_printk("page=%p pfn=%lu order=%u migratetype=%d percpu_refill=%d",
+ 		__entry->page,
+-		page_to_pfn(__entry->page),
++		__entry->page ? page_to_pfn(__entry->page) : 0,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		__entry->order == 0)
 
 
