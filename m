@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965230Ab2I1S7Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:59:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
+	id S965248Ab2I1S7d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:59:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965202Ab2I1S7Q (ORCPT
+	with ESMTP id S965202Ab2I1S7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:59:16 -0400
+	Fri, 28 Sep 2012 14:59:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paul Thomas <pthomas8589@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 110/262] hwmon: (ads7871) Add name sysfs attribute
-Date: Fri, 28 Sep 2012 11:50:39 -0700
-Message-Id: <20120928183011.164630577@linuxfoundation.org>
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 113/262] HID: Fix logitech-dj: missing Unifying device issue
+Date: Fri, 28 Sep 2012 11:50:42 -0700
+Message-Id: <20120928183011.487438017@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,54 +29,154 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Nestor Lopez Casado <nlopezcasad@logitech.com>
 
-commit 4e21f4eaa49f78d3e977e316514c941053871c76 upstream.
+commit 596264082f10dd4a567c43d4526b2f54ac5520bc upstream.
 
-The 'name' sysfs attribute is mandatory for hwmon devices, but was missing
-in this driver.
+This patch fixes an issue introduced after commit 4ea5454203d991ec
+("HID: Fix race condition between driver core and ll-driver").
 
-Cc: Paul Thomas <pthomas8589@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Paul Thomas <pthomas8589@gmail.com>
+After that commit, hid-core discards any incoming packet that arrives while
+hid driver's probe function is being executed.
+
+This broke the enumeration process of hid-logitech-dj, that must receive
+control packets in-band with the mouse and keyboard packets. Discarding mouse
+or keyboard data at the very begining is usually fine, but it is not the case
+for control packets.
+
+This patch forces a re-enumeration of the paired devices when a packet arrives
+that comes from an unknown device.
+
+Based on a patch originally written by Benjamin Tissoires.
+
+Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ads7871.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/hid/hid-logitech-dj.c |   45 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/hid/hid-logitech-dj.h |    1 
+ 2 files changed, 46 insertions(+)
 
---- a/drivers/hwmon/ads7871.c
-+++ b/drivers/hwmon/ads7871.c
-@@ -139,6 +139,12 @@ static ssize_t show_voltage(struct devic
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -193,6 +193,7 @@ static struct hid_ll_driver logi_dj_ll_d
+ static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
+ 					size_t count,
+ 					unsigned char report_type);
++static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev);
+ 
+ static void logi_dj_recv_destroy_djhid_device(struct dj_receiver_dev *djrcv_dev,
+ 						struct dj_report *dj_report)
+@@ -233,6 +234,7 @@ static void logi_dj_recv_add_djhid_devic
+ 	if (dj_report->report_params[DEVICE_PAIRED_PARAM_SPFUNCTION] &
+ 	    SPFUNCTION_DEVICE_LIST_EMPTY) {
+ 		dbg_hid("%s: device list is empty\n", __func__);
++		djrcv_dev->querying_devices = false;
+ 		return;
+ 	}
+ 
+@@ -243,6 +245,12 @@ static void logi_dj_recv_add_djhid_devic
+ 		return;
+ 	}
+ 
++	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
++		/* The device is already known. No need to reallocate it. */
++		dbg_hid("%s: device is already known\n", __func__);
++		return;
++	}
++
+ 	dj_hiddev = hid_allocate_device();
+ 	if (IS_ERR(dj_hiddev)) {
+ 		dev_err(&djrcv_hdev->dev, "%s: hid_allocate_device failed\n",
+@@ -306,6 +314,7 @@ static void delayedwork_callback(struct
+ 	struct dj_report dj_report;
+ 	unsigned long flags;
+ 	int count;
++	int retval;
+ 
+ 	dbg_hid("%s\n", __func__);
+ 
+@@ -338,6 +347,25 @@ static void delayedwork_callback(struct
+ 		logi_dj_recv_destroy_djhid_device(djrcv_dev, &dj_report);
+ 		break;
+ 	default:
++	/* A normal report (i. e. not belonging to a pair/unpair notification)
++	 * arriving here, means that the report arrived but we did not have a
++	 * paired dj_device associated to the report's device_index, this
++	 * means that the original "device paired" notification corresponding
++	 * to this dj_device never arrived to this driver. The reason is that
++	 * hid-core discards all packets coming from a device while probe() is
++	 * executing. */
++	if (!djrcv_dev->paired_dj_devices[dj_report.device_index]) {
++		/* ok, we don't know the device, just re-ask the
++		 * receiver for the list of connected devices. */
++		retval = logi_dj_recv_query_paired_devices(djrcv_dev);
++		if (!retval) {
++			/* everything went fine, so just leave */
++			break;
++		}
++		dev_err(&djrcv_dev->hdev->dev,
++			"%s:logi_dj_recv_query_paired_devices "
++			"error:%d\n", __func__, retval);
++		}
+ 		dbg_hid("%s: unexpected report type\n", __func__);
  	}
  }
- 
-+static ssize_t ads7871_show_name(struct device *dev,
-+				 struct device_attribute *devattr, char *buf)
-+{
-+	return sprintf(buf, "%s\n", to_spi_device(dev)->modalias);
-+}
+@@ -368,6 +396,12 @@ static void logi_dj_recv_forward_null_re
+ 	if (!djdev) {
+ 		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
+ 			" is NULL, index %d\n", dj_report->device_index);
++		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
 +
- static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, show_voltage, NULL, 0);
- static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, show_voltage, NULL, 1);
- static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, show_voltage, NULL, 2);
-@@ -148,6 +154,8 @@ static SENSOR_DEVICE_ATTR(in5_input, S_I
- static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, show_voltage, NULL, 6);
- static SENSOR_DEVICE_ATTR(in7_input, S_IRUGO, show_voltage, NULL, 7);
++		if (schedule_work(&djrcv_dev->work) == 0) {
++			dbg_hid("%s: did not schedule the work item, was already "
++			"queued\n", __func__);
++		}
+ 		return;
+ 	}
  
-+static DEVICE_ATTR(name, S_IRUGO, ads7871_show_name, NULL);
+@@ -398,6 +432,12 @@ static void logi_dj_recv_forward_report(
+ 	if (dj_device == NULL) {
+ 		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
+ 			" is NULL, index %d\n", dj_report->device_index);
++		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
 +
- static struct attribute *ads7871_attributes[] = {
- 	&sensor_dev_attr_in0_input.dev_attr.attr,
- 	&sensor_dev_attr_in1_input.dev_attr.attr,
-@@ -157,6 +165,7 @@ static struct attribute *ads7871_attribu
- 	&sensor_dev_attr_in5_input.dev_attr.attr,
- 	&sensor_dev_attr_in6_input.dev_attr.attr,
- 	&sensor_dev_attr_in7_input.dev_attr.attr,
-+	&dev_attr_name.attr,
- 	NULL
++		if (schedule_work(&djrcv_dev->work) == 0) {
++			dbg_hid("%s: did not schedule the work item, was already "
++			"queued\n", __func__);
++		}
+ 		return;
+ 	}
+ 
+@@ -439,6 +479,10 @@ static int logi_dj_recv_query_paired_dev
+ 	struct dj_report *dj_report;
+ 	int retval;
+ 
++	/* no need to protect djrcv_dev->querying_devices */
++	if (djrcv_dev->querying_devices)
++		return 0;
++
+ 	dj_report = kzalloc(sizeof(struct dj_report), GFP_KERNEL);
+ 	if (!dj_report)
+ 		return -ENOMEM;
+@@ -450,6 +494,7 @@ static int logi_dj_recv_query_paired_dev
+ 	return retval;
+ }
+ 
++
+ static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
+ 					  unsigned timeout)
+ {
+--- a/drivers/hid/hid-logitech-dj.h
++++ b/drivers/hid/hid-logitech-dj.h
+@@ -101,6 +101,7 @@ struct dj_receiver_dev {
+ 	struct work_struct work;
+ 	struct kfifo notif_fifo;
+ 	spinlock_t lock;
++	bool querying_devices;
  };
  
+ struct dj_device {
 
 
