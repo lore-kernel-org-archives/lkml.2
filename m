@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423429Ab2I1VjD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:39:03 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:63067 "EHLO
+	id S1946358Ab2I1VjK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:39:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63035 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423354Ab2I1VgW (ORCPT
+	with ESMTP id S1423352Ab2I1VgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Sep 2012 17:36:22 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 01/12] mtd: atmel nand: build regression
-Date: Fri, 28 Sep 2012 23:36:06 +0200
-Message-Id: <1348868177-21205-2-git-send-email-arnd@arndb.de>
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [PATCH 02/12] ata: mark probe function as __devinit rather than __init
+Date: Fri, 28 Sep 2012 23:36:07 +0200
+Message-Id: <1348868177-21205-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1348868177-21205-1-git-send-email-arnd@arndb.de>
 References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:9Fbq1MsUJ6ygBmdvuMvCw5l1YBa5tixauLBXHjpezPS
- 7XjGAC0y9mmto3CZ2xKlakgzP7Yd/X8mcfvmBCXrmGIej4hzbT
- 3RM0Wxjjhs8Ia4YbrdAfhMHI9XwZ4p3Qd/mYUZ+rrk7T/XBkda
- Yb12wN8gA94mIuJLduualKvZPs54CoGgh9y7Xrs7wx03Q0eNFT
- N+uqNje4f2y8HkKW9S6bnBQtjvmWHgtIrYM3USXJ63mUOXthhq
- wBCqrWPCmR2dloXXx0b6fB8Rc/FIEd5mwF7/9cJxiRtREv8jI0
- e2EHFcZIlyTgYvIJMFlALr+UMJbH6bJ17wMyXJa4vJiuQXF9yx
- AOXBGcUEGCsSm70dfUzWbyn0RIDMLjOywUt+ZvUTZy+H6gI3Hh
- S3ODNglIchogw==
+X-Provags-ID: V02:K0:piGqQJntyoEnzCUbir+vn5p77MPamPP0OvHXsZ1OVUi
+ 8gH82Y9XKK6WFejQbgJkm7ejeDdqJvdzgsSOb8fz6GZn3A7c2l
+ mk3R+MtgmleEPw0HDR3JEELEolCpsl+jafYbnDYb+20Hev9qfl
+ WFWkQMpbZbU8jrmsktcZcGO3sMULGR3sFm7s4b2xfXQApyM7Yd
+ q8dIIS0pvotTFrGmZ/5fHcFHOGccV5TJz4zmpnQ+vzl86eMpHb
+ FYRTmp23FBLLJgFThgQ982EFXA5eagSK94F/fvfeRIdZkNofpw
+ +h3ITwg/VLiZccpSfnL1JQl3iwuanVsoxYOk4i0TDlR5EJ3R55
+ FKr6T4PS7BbTNjpsN0hDajTadfPIgag3BmINsczUImPSrKQf/0
+ dWE7ZoIOr+Vcw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The atmel_nand driver was broken by b654a9a46fc2 "mtd: atmel nand: fix
-gpio missing request". This is a rather helpless attempt to fix this,
-probably messing up the error handling even further but getting the
-build to work again, so please treat it as a bug report rather than
-a fix to be applied.
+Functions for hotplugging must be marked as __devinit so
+they do not get discarded, as pointed out by a build time
+warning from modpost.
 
-Without this patch, building any at91 configuration results in:
-
-drivers/mtd/nand/atmel_nand.c: In function 'atmel_nand_probe':
-drivers/mtd/nand/atmel_nand.c:1451:4: error: label 'err_ecc_ioremap' used but not defined
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Jeff Garzik <jgarzik@redhat.com>
 ---
- drivers/mtd/nand/atmel_nand.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/ata/sata_highbank.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-index 9144557..eba5b2a 100644
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -1420,7 +1420,7 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
- 			dev_err(&pdev->dev,
- 				"can't request rdy gpio %d\n",
- 				host->board.rdy_pin);
--			goto err_ecc_ioremap;
-+			goto err_no_card;
- 		}
+diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+index 0d7c4c2..36a141a 100644
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -260,7 +260,7 @@ static const struct of_device_id ahci_of_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, ahci_of_match);
  
- 		res = gpio_direction_input(host->board.rdy_pin);
-@@ -1428,7 +1428,7 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
- 			dev_err(&pdev->dev,
- 				"can't request input direction rdy gpio %d\n",
- 				host->board.rdy_pin);
--			goto err_ecc_ioremap;
-+			goto err_no_card;
- 		}
- 
- 		nand_chip->dev_ready = atmel_nand_device_ready;
-@@ -1440,7 +1440,7 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
- 			dev_err(&pdev->dev,
- 				"can't request enable gpio %d\n",
- 				host->board.enable_pin);
--			goto err_ecc_ioremap;
-+			goto err_no_card;
- 		}
- 
- 		res = gpio_direction_output(host->board.enable_pin, 1);
-@@ -1448,7 +1448,7 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
- 			dev_err(&pdev->dev,
- 				"can't request output direction enable gpio %d\n",
- 				host->board.enable_pin);
--			goto err_ecc_ioremap;
-+			goto err_no_card;
- 		}
- 	}
- 
+-static int __init ahci_highbank_probe(struct platform_device *pdev)
++static int __devinit ahci_highbank_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct ahci_host_priv *hpriv;
 -- 
 1.7.10
 
