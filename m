@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033082Ab2I1VS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:18:26 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37347 "EHLO
+	id S1033068Ab2I1VSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:18:24 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54647 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759302Ab2I1Uid (ORCPT
+	by vger.kernel.org with ESMTP id S1759304Ab2I1Uie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:38:33 -0400
-X-Sasl-enc: vFDKThJZlhUjnFSGy5Vysd6BssPCR0Krf9RhbcqPKnBk 1348864711
+	Fri, 28 Sep 2012 16:38:34 -0400
+X-Sasl-enc: oRtCKhlhrekAeM0YHEjZ5ePOWzqc+kQ+FpqA2eJTXvaR 1348864713
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        "Cho, Yu-Chen" <acho@suse.com>
-Subject: [ 204/218] irq_remap: disable IRQ remapping if any IOAPIC lacks an IOMMU
-Date: Fri, 28 Sep 2012 13:17:01 -0700
-Message-Id: <20120928201524.994139385@linuxfoundation.org>
+        Richard Genoud <richard.genoud@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 205/218] UBI: fix a horrible memory deallocation bug
+Date: Fri, 28 Sep 2012 13:17:02 -0700
+Message-Id: <20120928201525.114777793@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -30,69 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 32ab31e01e2def6f48294d872d9bb42573aae00f upstream.
+commit 78b495c39add820ab66ab897af9bd77a5f2e91f6 upstream
 
-The ACPI tables in the Macbook Air 5,1 define a single IOAPIC with id 2,
-but the only remapping unit described in the DMAR table matches id 0.
-Interrupt remapping fails as a result, and the kernel panics with the
-message "timer doesn't work through Interrupt-remapped IO-APIC."
+UBI was mistakingly using 'kfree()' instead of 'kmem_cache_free()' when
+freeing "attach eraseblock" structures in vtbl.c. Thankfully, this happened
+only when we were doing auto-format, so many systems were unaffected. However,
+there are still many users affected.
 
-To fix this, check each IOAPIC for a corresponding IOMMU. If an IOMMU is
-not found, do not allow IRQ remapping to be enabled.
+It is strange, but the system did not crash and nothing bad happened when
+the SLUB memory allocator was used. However, in case of SLOB we observed an
+crash right away.
 
-v2: Move check to parse_ioapics_under_ir(), raise log level to KERN_ERR,
-    and add FW_BUG to the log message
-v3: Skip check if IOMMU doesn't support interrupt remapping and remove
-    existing check that the IOMMU count equals the IOAPIC count
+This problem was introduced in 2.6.39 by commit
+"6c1e875 UBI: add slab cache for ubi_scan_leb objects"
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Acked-by: Cho, Yu-Chen <acho@suse.com>
+Reported-by: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intr_remapping.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ drivers/mtd/ubi/vtbl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/iommu/intr_remapping.c
-+++ b/drivers/iommu/intr_remapping.c
-@@ -752,6 +752,7 @@ int __init parse_ioapics_under_ir(void)
- {
- 	struct dmar_drhd_unit *drhd;
- 	int ir_supported = 0;
-+	int ioapic_idx;
+--- a/drivers/mtd/ubi/vtbl.c
++++ b/drivers/mtd/ubi/vtbl.c
+@@ -346,7 +346,7 @@ retry:
+ 	 */
+ 	err = ubi_scan_add_used(ubi, si, new_seb->pnum, new_seb->ec,
+ 				vid_hdr, 0);
+-	kfree(new_seb);
++	kmem_cache_free(si->scan_leb_slab, new_seb);
+ 	ubi_free_vid_hdr(ubi, vid_hdr);
+ 	return err;
  
- 	for_each_drhd_unit(drhd) {
- 		struct intel_iommu *iommu = drhd->iommu;
-@@ -764,13 +765,20 @@ int __init parse_ioapics_under_ir(void)
- 		}
+@@ -359,7 +359,7 @@ write_error:
+ 		list_add(&new_seb->u.list, &si->erase);
+ 		goto retry;
  	}
- 
--	if (ir_supported && ir_ioapic_num != nr_ioapics) {
--		printk(KERN_WARNING
--		       "Not all IO-APIC's listed under remapping hardware\n");
--		return -1;
-+	if (!ir_supported)
-+		return 0;
-+
-+	for (ioapic_idx = 0; ioapic_idx < nr_ioapics; ioapic_idx++) {
-+		int ioapic_id = mpc_ioapic_id(ioapic_idx);
-+		if (!map_ioapic_to_ir(ioapic_id)) {
-+			pr_err(FW_BUG "ioapic %d has no mapping iommu, "
-+			       "interrupt remapping will be disabled\n",
-+			       ioapic_id);
-+			return -1;
-+		}
- 	}
- 
--	return ir_supported;
-+	return 1;
- }
- 
- int __init ir_dev_scope_init(void)
+-	kfree(new_seb);
++	kmem_cache_free(si->scan_leb_slab, new_seb);
+ out_free:
+ 	ubi_free_vid_hdr(ubi, vid_hdr);
+ 	return err;
 
 
