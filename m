@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964794Ab2I1XVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 19:21:44 -0400
-Received: from nm20-vm1.bullet.mail.ne1.yahoo.com ([98.138.91.21]:38303 "HELO
-	nm20-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759127Ab2I1XVl (ORCPT
+	id S1759017Ab2I1XVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 19:21:09 -0400
+Received: from nm22-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.60]:39002 "EHLO
+	nm22-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758809Ab2I1XVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 19:21:41 -0400
-X-Yahoo-Newman-Id: 861029.56631.bm@omp1025.access.mail.mud.yahoo.com
+	Fri, 28 Sep 2012 19:21:00 -0400
+X-Yahoo-Newman-Id: 766781.39372.bm@omp1020.access.mail.mud.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: GH0GOEUVM1k7Zp2eCzm94lg1V.cTJcX1Ac5Njjwr7gqp6Uj
- zcSu4eZH4.1nuicyfeHTYtQQBf4GBJSqz_IsWoJALu6aMo6f0UTwh.fB1JvX
- 3rxBytkKfmHD2gG1niveczrkYgrxpicGuwSnraXEOfDRB3hTtLTZSkjxzoFU
- FuZIEG0RYnpiOw1rd3HMOd1xCV6YL1OBuKr8WFa9ohDlDdlLc4q8gM4hBn5i
- VHTl7Bp1kFpmdciIUayYJ_D4HuTfRDEay3hngKw8SKiwFjdy5dViju1cqCxE
- qoEXNfar4.Ucyy6_m6nUAGycnGY7Zti4OI.sxR2ZFPyiyMcZ1B76M8Xrkw6q
- o3VtI39VCRRysRoxSH7deGqu_A196YGua2L4uQuUD808zbC349HyR4qlOMfb
- wBPQn8CL72NrTNiwc_POxoqUo5KzQJ56SWxMBAm8sNi0f_s9iUK..Mhlr_3a
- PLtxEl1IZVf9hWAGPeMv.6sP1GiPCdpsU3dXlHIXh7c7vEGnRPMGsTIsxhR3
- A4nnIAfjKEXbKv6hETLEzNvA4MjTlidT7w_b6
+X-YMail-OSG: 6FDnDW8VM1k6LrgkFRm.swHm.h3A_joyHDIZVq8xIB85o0K
+ RZP6NEkd1SlsVD1JjTVcNRUvasLyAif_qq9lVrWY0B7ycyRKohqxgwZNMbhu
+ 4AjUDnEXiIMGcUH_EKfiuwjVg64p29zBjuBcg7w7zR1rU4J3iLuw6n1BkjSY
+ _bPr6SbYsGjRW3Wil1TDwg5fNJD7mcJh_yBDXJCHja.c18kq0xlLD1AiZE1i
+ XoR3eDl5kYz5Em7KDYqDRPMXhMMAQQLsMaH2u7Ukiw6scraqo3fRpRcrZs61
+ Wy.5Ckr4WJiRTDrICRo1hoZlBp4sMm3XmcAd1ES5Vi7bPkV1Eb47FV5pIvY8
+ TCDaIYOkRnrBZ2hQiRlCou2MHL9jNiIEYQ8s63eaOoeg_WdYrtsukKkwNHwl
+ 7r_9cMC.wkJizX7bWYxHquzvHI8viqW3eX3r2uDpglH3VA0hxhZnxjA--
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: Daniel Santos <daniel.santos@pobox.com>
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -34,9 +32,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Pavel Pisa <pisa@cmp.felk.cvut.cz>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 7/10] compiler{,-gcc4}.h: Introduce __flatten function attribute
-Date: Fri, 28 Sep 2012 18:20:08 -0500
-Message-Id: <1348874411-28288-8-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH 5/10] compiler{,-gcc4}.h: Remove duplicate macros
+Date: Fri, 28 Sep 2012 18:20:06 -0500
+Message-Id: <1348874411-28288-6-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
 References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
@@ -44,69 +42,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For gcc 4.1 & later, expands to __attribute__((flatten)) which forces
-the compiler to inline everything it can into the function.  This is
-useful in combination with noinline when you want to control the depth
-of inlining, or create a single function where inline expansions will
-occur. (see
-http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html#index-g_t_0040code_007bflatten_007d-function-attribute-2512)
-
-Normally, it's best to leave this type of thing up to the compiler.
-However, the generic rbtree code uses inline functions just to be able
-to inject compile-time constant data that specifies how the caller wants
-the function to behave (via struct rb_relationship).  This data can be
-thought of as the template parameters of a C++ templatized function.
-Since some of these functions, once expanded, become quite large, gcc
-sometimes decides not to perform some important inlining, in one case,
-even generating a few bytes more code by not doing so. (Note: I have not
-eliminated the possibility that this was an optimization bug, but the
-flatten attribute fixes it in either case.)
-
-Combining __flatten and noinline insures that important optimizations
-occur in these cases and that the inline expansion occurs in exactly one
-place, thus not leading to unnecissary bloat. However, it also can
-eliminate some opportunities for optimization should gcc otherwise
-decide the function its self is a good candidate for inlining.
+__linktime_error() does the same thing as __compiletime_error() and is
+only used in bug.h.  Since the macro defines a function attribute that
+will cause a failure at compile-time (not link-time), it makes more
+sense to keep __compiletime_error(), which is also neatly mated with
+__compiletime_warning().
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- include/linux/compiler-gcc4.h |    7 ++++++-
- include/linux/compiler.h      |    4 ++++
- 2 files changed, 10 insertions(+), 1 deletions(-)
+ include/linux/compiler-gcc4.h |    2 --
+ include/linux/compiler.h      |    3 ---
+ 2 files changed, 0 insertions(+), 5 deletions(-)
 
 diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index ad610f2..5a0897e 100644
+index b44307d..ad610f2 100644
 --- a/include/linux/compiler-gcc4.h
 +++ b/include/linux/compiler-gcc4.h
-@@ -15,7 +15,12 @@
+@@ -33,8 +33,6 @@
+    the kernel context */
+ #define __cold			__attribute__((__cold__))
  
- #if GCC_VERSION >= 40102
- # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
--#endif
-+
-+/* flatten introduced in 4.1, but broken in 4.6.0 (gcc bug #48731)*/
-+# if GCC_VERSION != 40600
-+#  define __flatten __attribute__((flatten))
-+# endif
-+#endif /* GCC_VERSION >= 40102 */
- 
- #if GCC_VERSION >= 40300
- /* Mark functions as cold. gcc will assume any path leading to a call
+-#define __linktime_error(message) __attribute__((__error__(message)))
+-
+ #ifndef __CHECKER__
+ # define __compiletime_warning(message) __attribute__((warning(message)))
+ # define __compiletime_error(message) __attribute__((error(message)))
 diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index fd455aa..268aeb6 100644
+index f430e41..fd455aa 100644
 --- a/include/linux/compiler.h
 +++ b/include/linux/compiler.h
-@@ -244,6 +244,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- #define __always_inline inline
+@@ -297,9 +297,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #ifndef __compiletime_error
+ # define __compiletime_error(message)
  #endif
- 
-+#ifndef __flatten
-+#define __flatten
-+#endif
-+
- #endif /* __KERNEL__ */
- 
+-#ifndef __linktime_error
+-# define __linktime_error(message)
+-#endif
  /*
+  * Prevent the compiler from merging or refetching accesses.  The compiler
+  * is also forbidden from reordering successive instances of ACCESS_ONCE(),
 -- 
 1.7.3.4
 
