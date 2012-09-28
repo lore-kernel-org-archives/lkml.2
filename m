@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab2I1WlH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 18:41:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54347 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932167Ab2I1WlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 18:41:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,504,1344236400"; 
-   d="scan'208";a="150457871"
-Date: Sat, 29 Sep 2012 00:40:54 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com
-Subject: Re: [PATCH v2 0/4] mfd: support dt on 88pm860x
-Message-ID: <20120928224054.GP30928@sortiz-mobl>
-References: <1348222014-15927-1-git-send-email-haojian.zhuang@gmail.com>
+	id S964930Ab2I1WrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 18:47:16 -0400
+Received: from bufferz.csloxinfo.com ([203.146.237.187]:56989 "EHLO
+	bufferz9.csloxinfo.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932167Ab2I1WrO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 18:47:14 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ai7rAHsnZlDLqu3w/2dsb2JhbABFD4FnBgGDR0ekOiKBH4J+VIJ1gQGFZoRzgQcBgWYgDgQBMX4NAg0+PwMBhVUCBSeBfAMNAZcejkOJMQ2JVIEhihGGDQOHVYEBgWuLKIYEhnuDLIIxAkCBVzQ
+Spam_Positive: LL
+X-IronPort-AV: E=Sophos;i="4.80,505,1344186000"; 
+   d="scan'208";a="91645451"
+Date: Sat, 29 Sep 2012 05:10:45 +0700 (ICT)
+From: Lloyd Dawnson <eumporn_c@team.co.th>
+Message-ID: <199731594.823168.1348870245929.JavaMail.root@team.co.th>
+Subject: Important Notice: Claim Your Mid Year Reward!!
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348222014-15927-1-git-send-email-haojian.zhuang@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.203.67.117]
+X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Haojian,
 
-On Fri, Sep 21, 2012 at 06:06:50PM +0800, Haojian Zhuang wrote:
-> Changelog:
-> v2:
-> 1. Resolve merge conflict since other patches also update 88pm860x-core.c
-> 2. Add document of DT support
-All 4 patches applied, thanks.
 
-Cheers,
-Samuel.
+Attention Email Owner!
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+This is to officially inform you that your email has qualified you as one of our Mid-year Award winner and the sum of: £1,950,845 has been awarded to you . Kindly Acknowledge the receipt of this e-mail by replying with your Name, contact info and Phone# to the below email address:
+Email:  lloyd.dawnson@gmail.com 
+
+Best wishes, 
+Lloyd Dawnson
+Local Organizing Committee (L.O.C)
