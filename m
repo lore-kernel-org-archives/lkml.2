@@ -1,86 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab2I1B53 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:57:29 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:50960 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756588Ab2I1Bzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:55:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:in-reply-to:references; q=dns; s=sasl; b=
-	uBMQbfqjA7KO93K2buaj/SzeHm0/piWvbdZksA4s7L4rWr6yTyGJgcx3dWl9Sg7h
-	fUW48C2GEotd0uh6Sm85f/aSiJkwCJYx37EgSRrfGp4gMHmK8YqMIM1vRhIyJGmA
-	PjUXS4ulIEsxEhYpvn3VXhQX3LCFDqlebx3mbOh0c+8=
-From: Daniel Santos <daniel.santos@pobox.com>
-To: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-sparse@vger.kernel.org, Akinobu Mita <akinobu.mita@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Daniel Santos <daniel.santos@pobox.com>
-Subject: [PATCH v6 3/25] compiler-gcc.h: Add gcc-recommended GCC_VERSION
- macro
-Date: Thu, 27 Sep 2012 20:54:19 -0500
-Message-Id: <1348797281-25021-4-git-send-email-daniel.santos@pobox.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1348797281-25021-1-git-send-email-daniel.santos@pobox.com>
-References: <1348797281-25021-1-git-send-email-daniel.santos@pobox.com>
-X-Pobox-Relay-ID: A282C21C-090F-11E2-84AF-18772E706CDE-06139138!b-pb-sasl-quonix.pobox.com
+	id S1756805Ab2I1B5v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:57:51 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:59418 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756668Ab2I1B5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Sep 2012 21:57:48 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: sameo@linux.intel.com
+Cc: broonie@opensource.wolfsonmicro.com, marex@denx.de,
+        ashish.jangam@kpitcummins.com, dchen@diasemi.com, arnd@arndb.de,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH v2] mfd: da9052-core:  Use regmap_irq_get_virq() and fix the probe
+Date: Thu, 27 Sep 2012 22:57:38 -0300
+Message-Id: <1348797458-2562-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Throughout compiler*.h, many version checks are made.  These can be
-simplified by using the macro that gcc's documentation recommends.
-However, my primary reason for adding this is that I need bug-check
-macros that are enabled at certain gcc versions and it's cleaner to use
-this macro than the tradition method:
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ => 2)
+On a mx53qsb dt-kernel the da9052-core driver fails to probe as follows:
 
-If you add patch level, it gets this ugly:
+da9052 1-0048: DA9052 ADC IRQ failed ret=-22
 
-if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 2 || \
-   __GNUC_MINOR__ == 2 __GNUC_PATCHLEVEL__ >= 1))
+The reason for the error was due to passing only the offset as the interrupt 
+number in request_threaded_irq().
 
-As opposed to:
+The recommended approach though is to use regmap_get_virq() to acquire the 
+interrupt number.
 
-if GCC_VERSION >= 40201
+Fix it and allow the driver to probe successfully.
 
-While having separate headers for gcc 3 & 4 eliminates some of this
-verbosity, they can still be cleaned up by this.
+Also provide a few more error logs and change the irq string to "adc-irq", so
+that it appears as a single word in 'cat /proc/interrupts'.
 
-See also:
-http://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
-
-Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
- include/linux/compiler-gcc.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Changes since v2:
+- Use regmap_irq_get_virq() instead of relying on irq_base
 
-diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
-index 6a6d7ae..24545cd 100644
---- a/include/linux/compiler-gcc.h
-+++ b/include/linux/compiler-gcc.h
-@@ -5,6 +5,9 @@
- /*
-  * Common definitions for all gcc versions go here.
-  */
-+#define GCC_VERSION (__GNUC__ * 10000 \
-+		   + __GNUC_MINOR__ * 100 \
-+		   + __GNUC_PATCHLEVEL__)
+Arnd/Mark,
+
+I also plan to convert the other da9052 drivers to use regmap_irq_get_virq().
+
+ drivers/mfd/da9052-core.c         |   31 ++++++++++++++++++-------------
+ include/linux/mfd/da9052/da9052.h |    1 +
+ 2 files changed, 19 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
+index a0a62b2..79f9674 100644
+--- a/drivers/mfd/da9052-core.c
++++ b/drivers/mfd/da9052-core.c
+@@ -782,35 +782,40 @@ int __devinit da9052_device_init(struct da9052 *da9052, u8 chip_id)
  
+ 	da9052->chip_id = chip_id;
  
- /* Optimization barrier */
+-	if (!pdata || !pdata->irq_base)
+-		da9052->irq_base = -1;
+-	else
+-		da9052->irq_base = pdata->irq_base;
+-
+ 	ret = regmap_add_irq_chip(da9052->regmap, da9052->chip_irq,
+ 				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				  da9052->irq_base, &da9052_regmap_irq_chip,
++				  -1, &da9052_regmap_irq_chip,
+ 				  &da9052->irq_data);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(da9052->dev, "regmap_add_irq_chip failed: %d\n", ret);
+ 		goto regmap_err;
++	}
+ 
+-	da9052->irq_base = regmap_irq_chip_get_base(da9052->irq_data);
++	da9052->irq = regmap_irq_get_virq(da9052->irq_data, DA9052_IRQ_ADC_EOM);
+ 
+-	ret = request_threaded_irq(DA9052_IRQ_ADC_EOM, NULL, da9052_auxadc_irq,
++	if (da9052->irq < 0) {
++		ret = da9052->irq;
++		dev_err(da9052->dev, "regmap_irq_get_virq failed: %d\n", ret);
++		goto regmap_err;
++	}
++
++	ret = request_threaded_irq(da9052->irq, NULL, da9052_auxadc_irq,
+ 				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				   "adc irq", da9052);
++				   "adc-irq", da9052);
+ 	if (ret != 0)
+ 		dev_err(da9052->dev, "DA9052 ADC IRQ failed ret=%d\n", ret);
+ 
+ 	ret = mfd_add_devices(da9052->dev, -1, da9052_subdev_info,
+ 			      ARRAY_SIZE(da9052_subdev_info), NULL, 0, NULL);
+-	if (ret)
++	if (ret) {
++		dev_err(da9052->dev, "mfd_add_devices failed: %d\n", ret);
+ 		goto err;
++	}
+ 
+ 	return 0;
+ 
+ err:
+-	free_irq(DA9052_IRQ_ADC_EOM, da9052);
++	free_irq(da9052->irq, da9052);
+ 	mfd_remove_devices(da9052->dev);
+ regmap_err:
+ 	return ret;
+@@ -818,7 +823,7 @@ regmap_err:
+ 
+ void da9052_device_exit(struct da9052 *da9052)
+ {
+-	free_irq(DA9052_IRQ_ADC_EOM, da9052);
++	free_irq(da9052->irq, da9052);
+ 	regmap_del_irq_chip(da9052->chip_irq, da9052->irq_data);
+ 	mfd_remove_devices(da9052->dev);
+ }
+diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
+index 0507c4c..f0b259d 100644
+--- a/include/linux/mfd/da9052/da9052.h
++++ b/include/linux/mfd/da9052/da9052.h
+@@ -99,6 +99,7 @@ struct da9052 {
+ 	u8 chip_id;
+ 
+ 	int chip_irq;
++	int irq;
+ };
+ 
+ /* ADC API */
 -- 
-1.7.3.4
+1.7.9.5
 
