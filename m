@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031006Ab2I1TQp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:16:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	id S1031014Ab2I1TRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:17:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759126Ab2I1TFX (ORCPT
+	with ESMTP id S1759081Ab2I1TFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:05:23 -0400
+	Fri, 28 Sep 2012 15:05:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Weiping Pan <wpan@redhat.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 226/262] rds: set correct msg_namelen
-Date: Fri, 28 Sep 2012 11:52:35 -0700
-Message-Id: <20120928183024.916255348@linuxfoundation.org>
+        =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= 
+	<jprvita@openbossa.org>,
+        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: =?UTF-8?q?=5B=20224/262=5D=20Bluetooth=3A=20Fix=20sending=20a=20HCI=20Authorization=20Request=20over=20LE=20links?=
+Date: Fri, 28 Sep 2012 11:52:33 -0700
+Message-Id: <20120928183024.669697579@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,220 +34,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Weiping Pan <wpan@redhat.com>
+From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
 
-commit 06b6a1cf6e776426766298d055bb3991957d90a7 upstream.
+commit d8343f125710fb596f7a88cd756679f14f4e77b9 upstream.
 
-Jay Fenlason (fenlason@redhat.com) found a bug,
-that recvfrom() on an RDS socket can return the contents of random kernel
-memory to userspace if it was called with a address length larger than
-sizeof(struct sockaddr_in).
-rds_recvmsg() also fails to set the addr_len paramater properly before
-returning, but that's just a bug.
-There are also a number of cases wher recvfrom() can return an entirely bogus
-address. Anything in rds_recvmsg() that returns a non-negative value but does
-not go through the "sin = (struct sockaddr_in *)msg->msg_name;" code path
-at the end of the while(1) loop will return up to 128 bytes of kernel memory
-to userspace.
+In the case that the link is already in the connected state and a
+Pairing request arrives from the mgmt interface, hci_conn_security()
+would be called but it was not considering LE links.
 
-And I write two test programs to reproduce this bug, you will see that in
-rds_server, fromAddr will be overwritten and the following sock_fd will be
-destroyed.
-Yes, it is the programmer's fault to set msg_namelen incorrectly, but it is
-better to make the kernel copy the real length of address to user space in
-such case.
-
-How to run the test programs ?
-I test them on 32bit x86 system, 3.5.0-rc7.
-
-1 compile
-gcc -o rds_client rds_client.c
-gcc -o rds_server rds_server.c
-
-2 run ./rds_server on one console
-
-3 run ./rds_client on another console
-
-4 you will see something like:
-server is waiting to receive data...
-old socket fd=3
-server received data from client:data from client
-msg.msg_namelen=32
-new socket fd=-1067277685
-sendmsg()
-: Bad file descriptor
-
-/***************** rds_client.c ********************/
-
-int main(void)
-{
-	int sock_fd;
-	struct sockaddr_in serverAddr;
-	struct sockaddr_in toAddr;
-	char recvBuffer[128] = "data from client";
-	struct msghdr msg;
-	struct iovec iov;
-
-	sock_fd = socket(AF_RDS, SOCK_SEQPACKET, 0);
-	if (sock_fd < 0) {
-		perror("create socket error\n");
-		exit(1);
-	}
-
-	memset(&serverAddr, 0, sizeof(serverAddr));
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	serverAddr.sin_port = htons(4001);
-
-	if (bind(sock_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-		perror("bind() error\n");
-		close(sock_fd);
-		exit(1);
-	}
-
-	memset(&toAddr, 0, sizeof(toAddr));
-	toAddr.sin_family = AF_INET;
-	toAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	toAddr.sin_port = htons(4000);
-	msg.msg_name = &toAddr;
-	msg.msg_namelen = sizeof(toAddr);
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_iov->iov_base = recvBuffer;
-	msg.msg_iov->iov_len = strlen(recvBuffer) + 1;
-	msg.msg_control = 0;
-	msg.msg_controllen = 0;
-	msg.msg_flags = 0;
-
-	if (sendmsg(sock_fd, &msg, 0) == -1) {
-		perror("sendto() error\n");
-		close(sock_fd);
-		exit(1);
-	}
-
-	printf("client send data:%s\n", recvBuffer);
-
-	memset(recvBuffer, '\0', 128);
-
-	msg.msg_name = &toAddr;
-	msg.msg_namelen = sizeof(toAddr);
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_iov->iov_base = recvBuffer;
-	msg.msg_iov->iov_len = 128;
-	msg.msg_control = 0;
-	msg.msg_controllen = 0;
-	msg.msg_flags = 0;
-	if (recvmsg(sock_fd, &msg, 0) == -1) {
-		perror("recvmsg() error\n");
-		close(sock_fd);
-		exit(1);
-	}
-
-	printf("receive data from server:%s\n", recvBuffer);
-
-	close(sock_fd);
-
-	return 0;
-}
-
-/***************** rds_server.c ********************/
-
-int main(void)
-{
-	struct sockaddr_in fromAddr;
-	int sock_fd;
-	struct sockaddr_in serverAddr;
-	unsigned int addrLen;
-	char recvBuffer[128];
-	struct msghdr msg;
-	struct iovec iov;
-
-	sock_fd = socket(AF_RDS, SOCK_SEQPACKET, 0);
-	if(sock_fd < 0) {
-		perror("create socket error\n");
-		exit(0);
-	}
-
-	memset(&serverAddr, 0, sizeof(serverAddr));
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	serverAddr.sin_port = htons(4000);
-	if (bind(sock_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-		perror("bind error\n");
-		close(sock_fd);
-		exit(1);
-	}
-
-	printf("server is waiting to receive data...\n");
-	msg.msg_name = &fromAddr;
-
-	/*
-	 * I add 16 to sizeof(fromAddr), ie 32,
-	 * and pay attention to the definition of fromAddr,
-	 * recvmsg() will overwrite sock_fd,
-	 * since kernel will copy 32 bytes to userspace.
-	 *
-	 * If you just use sizeof(fromAddr), it works fine.
-	 * */
-	msg.msg_namelen = sizeof(fromAddr) + 16;
-	/* msg.msg_namelen = sizeof(fromAddr); */
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_iov->iov_base = recvBuffer;
-	msg.msg_iov->iov_len = 128;
-	msg.msg_control = 0;
-	msg.msg_controllen = 0;
-	msg.msg_flags = 0;
-
-	while (1) {
-		printf("old socket fd=%d\n", sock_fd);
-		if (recvmsg(sock_fd, &msg, 0) == -1) {
-			perror("recvmsg() error\n");
-			close(sock_fd);
-			exit(1);
-		}
-		printf("server received data from client:%s\n", recvBuffer);
-		printf("msg.msg_namelen=%d\n", msg.msg_namelen);
-		printf("new socket fd=%d\n", sock_fd);
-		strcat(recvBuffer, "--data from server");
-		if (sendmsg(sock_fd, &msg, 0) == -1) {
-			perror("sendmsg()\n");
-			close(sock_fd);
-			exit(1);
-		}
-	}
-
-	close(sock_fd);
-	return 0;
-}
-
-Signed-off-by: Weiping Pan <wpan@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: João Paulo Rechi Vita <jprvita@openbossa.org>
+Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/rds/recv.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/bluetooth/hci_conn.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/rds/recv.c
-+++ b/net/rds/recv.c
-@@ -410,6 +410,8 @@ int rds_recvmsg(struct kiocb *iocb, stru
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -42,6 +42,7 @@
  
- 	rdsdebug("size %zu flags 0x%x timeo %ld\n", size, msg_flags, timeo);
+ #include <net/bluetooth/bluetooth.h>
+ #include <net/bluetooth/hci_core.h>
++#include <net/bluetooth/smp.h>
  
-+	msg->msg_namelen = 0;
+ static void hci_le_connect(struct hci_conn *conn)
+ {
+@@ -627,6 +628,9 @@ int hci_conn_security(struct hci_conn *c
+ {
+ 	BT_DBG("conn %p", conn);
+ 
++	if (conn->type == LE_LINK)
++		return smp_conn_security(conn, sec_level);
 +
- 	if (msg_flags & MSG_OOB)
- 		goto out;
- 
-@@ -485,6 +487,7 @@ int rds_recvmsg(struct kiocb *iocb, stru
- 			sin->sin_port = inc->i_hdr.h_sport;
- 			sin->sin_addr.s_addr = inc->i_saddr;
- 			memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
-+			msg->msg_namelen = sizeof(*sin);
- 		}
- 		break;
- 	}
+ 	/* For sdp we don't need the link key. */
+ 	if (sec_level == BT_SECURITY_SDP)
+ 		return 1;
 
 
