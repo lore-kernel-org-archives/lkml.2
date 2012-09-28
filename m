@@ -1,34 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab2I1Jg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 05:36:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57434 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab2I1Jg2 convert rfc822-to-8bit (ORCPT
+	id S1757443Ab2I1Jiw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 05:38:52 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:58519 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755869Ab2I1Jiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 05:36:28 -0400
-Message-ID: <1348824980.3292.68.camel@twins>
-Subject: Re: [PATCH 26/31] perf, x86: Support for printing PMU state on
- spurious PMIs
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, eranian@google.com,
-        acme@redhat.com, Andi Kleen <ak@linux.intel.com>
-Date: Fri, 28 Sep 2012 11:36:20 +0200
-In-Reply-To: <1348806696-31170-27-git-send-email-andi@firstfloor.org>
-References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
-	 <1348806696-31170-27-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Fri, 28 Sep 2012 05:38:51 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 28 Sep 2012 11:38:37 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: linux1394-devel@lists.sourceforge.net
+Cc: Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire: remove global lock around address handlers,
+ convert to RCU
+Message-ID: <20120928113837.4f5de6ef@stein>
+In-Reply-To: <20120927214436.1da8b8ef@stein>
+References: <1345359002.6089.3.camel@thor>
+	<20120819122759.30f9981f@stein>
+	<1345403610.7706.72.camel@thor>
+	<20120820030450.7f5bfa37@stein>
+	<20120927214436.1da8b8ef@stein>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-27 at 21:31 -0700, Andi Kleen wrote:
+On Sep 27 Stefan Richter wrote:
+> --- a/drivers/firewire/core-transaction.c
+> +++ b/drivers/firewire/core-transaction.c
+> @@ -489,7 +489,7 @@ static struct fw_address_handler *lookup
+>  {
+>  	struct fw_address_handler *handler;
+>  
+> -	list_for_each_entry(handler, list, link) {
+> +	list_for_each_entry_rcu(handler, list, link) {
+>  		if (handler->offset < offset + length &&
+>  		    offset < handler->offset + handler->length)
+>  			return handler;
+[...]
 
-> +static bool print_spurious_pmi __read_mostly;
-> +module_param(print_spurious_pmi, bool, 0644);
-
-Shouldn't this be a per-pmu sysfs attr? 
+I will add an #include <linux/rculist.h> to core-transaction.c.
+-- 
+Stefan Richter
+-=====-===-- =--= ===--
+http://arcgraph.de/sr/
