@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030989Ab2I1TPz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:15:55 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54594 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759164Ab2I1TFf (ORCPT
+	id S1030998Ab2I1TQU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:16:20 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35065 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759152Ab2I1TFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:05:35 -0400
+	Fri, 28 Sep 2012 15:05:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        CAI Qian <caiqian@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 230/262] time: Improve sanity checking of timekeeping inputs
-Date: Fri, 28 Sep 2012 11:52:39 -0700
-Message-Id: <20120928183025.395966300@linuxfoundation.org>
+        Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [ 229/262] media: lirc_sir: make device registration work
+Date: Fri, 28 Sep 2012 11:52:38 -0700
+Message-Id: <20120928183025.244824174@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -32,160 +30,129 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Jarod Wilson <jarod@redhat.com>
 
-commit 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b upstream.
+commit 4b71ca6bce8fab3d08c61bf330e781f957934ae1 upstream.
 
-Unexpected behavior could occur if the time is set to a value large
-enough to overflow a 64bit ktime_t (which is something larger then the
-year 2262).
+For one, the driver device pointer needs to be filled in, or the lirc core
+will refuse to load the driver. And we really need to wire up all the
+platform_device bits. This has been tested via the lirc sourceforge tree
+and verified to work, been sitting there for months, finally getting
+around to sending it. :\
 
-Also unexpected behavior could occur if large negative offsets are
-injected via adjtimex.
-
-So this patch improves the sanity check timekeeping inputs by
-improving the timespec_valid() check, and then makes better use of
-timespec_valid() to make sure we don't set the time to an invalid
-negative value or one that overflows ktime_t.
-
-Note: This does not protect from setting the time close to overflowing
-ktime_t and then letting natural accumulation cause the overflow.
-
-Reported-by: CAI Qian <caiqian@redhat.com>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Zhouping Liu <zliu@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1344454580-17031-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ktime.h     |    7 -------
- include/linux/time.h      |   22 ++++++++++++++++++++--
- kernel/time/timekeeping.c |   26 ++++++++++++++++++++++++--
- 3 files changed, 44 insertions(+), 11 deletions(-)
+ drivers/staging/media/lirc/lirc_sir.c |   60 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 58 insertions(+), 2 deletions(-)
 
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -58,13 +58,6 @@ union ktime {
+--- a/drivers/staging/media/lirc/lirc_sir.c
++++ b/drivers/staging/media/lirc/lirc_sir.c
+@@ -52,6 +52,7 @@
+ #include <linux/io.h>
+ #include <asm/irq.h>
+ #include <linux/fcntl.h>
++#include <linux/platform_device.h>
+ #ifdef LIRC_ON_SA1100
+ #include <asm/hardware.h>
+ #ifdef CONFIG_SA1100_COLLIE
+@@ -487,9 +488,11 @@ static struct lirc_driver driver = {
+ 	.owner		= THIS_MODULE,
+ };
  
- typedef union ktime ktime_t;		/* Kill this */
++static struct platform_device *lirc_sir_dev;
  
--#define KTIME_MAX			((s64)~((u64)1 << 63))
--#if (BITS_PER_LONG == 64)
--# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
--#else
--# define KTIME_SEC_MAX			LONG_MAX
--#endif
--
- /*
-  * ktime_t definitions when using the 64-bit scalar representation:
-  */
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -107,11 +107,29 @@ static inline struct timespec timespec_s
- 	return ts_delta;
- }
- 
-+#define KTIME_MAX			((s64)~((u64)1 << 63))
-+#if (BITS_PER_LONG == 64)
-+# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
-+#else
-+# define KTIME_SEC_MAX			LONG_MAX
-+#endif
-+
- /*
-  * Returns true if the timespec is norm, false if denorm:
-  */
--#define timespec_valid(ts) \
--	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
-+static inline bool timespec_valid(const struct timespec *ts)
-+{
-+	/* Dates before 1970 are bogus */
-+	if (ts->tv_sec < 0)
-+		return false;
-+	/* Can't have more nanoseconds then a second */
-+	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
-+		return false;
-+	/* Disallow values that could overflow ktime_t */
-+	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
-+		return false;
-+	return true;
-+}
- 
- extern void read_persistent_clock(struct timespec *ts);
- extern void read_boot_clock(struct timespec *ts);
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -384,7 +384,7 @@ int do_settimeofday(const struct timespe
- 	struct timespec ts_delta;
- 	unsigned long flags;
- 
--	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
-+	if (!timespec_valid(tv))
- 		return -EINVAL;
- 
- 	write_seqlock_irqsave(&timekeeper.lock, flags);
-@@ -418,6 +418,8 @@ EXPORT_SYMBOL(do_settimeofday);
- int timekeeping_inject_offset(struct timespec *ts)
+ static int init_chrdev(void)
  {
- 	unsigned long flags;
-+	struct timespec tmp;
-+	int ret = 0;
- 
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
-@@ -426,10 +428,17 @@ int timekeeping_inject_offset(struct tim
- 
- 	timekeeping_forward_now();
- 
-+	tmp = timespec_add(timekeeper.xtime,  *ts);
-+	if (!timespec_valid(&tmp)) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
-+
- 	timekeeper.xtime = timespec_add(timekeeper.xtime, *ts);
- 	timekeeper.wall_to_monotonic =
- 				timespec_sub(timekeeper.wall_to_monotonic, *ts);
- 
-+error: /* even if we error out, we forwarded the time, so call update */
- 	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
-@@ -437,7 +446,7 @@ int timekeeping_inject_offset(struct tim
- 	/* signal hrtimers about time change */
- 	clock_was_set();
- 
--	return 0;
-+	return ret;
++	driver.dev = &lirc_sir_dev->dev;
+ 	driver.minor = lirc_register_driver(&driver);
+ 	if (driver.minor < 0) {
+ 		printk(KERN_ERR LIRC_DRIVER_NAME ": init_chrdev() failed.\n");
+@@ -1215,20 +1218,71 @@ static int init_lirc_sir(void)
+ 	return 0;
  }
- EXPORT_SYMBOL(timekeeping_inject_offset);
  
-@@ -597,7 +606,20 @@ void __init timekeeping_init(void)
- 	struct timespec now, boot;
++static int __devinit lirc_sir_probe(struct platform_device *dev)
++{
++	return 0;
++}
++
++static int __devexit lirc_sir_remove(struct platform_device *dev)
++{
++	return 0;
++}
++
++static struct platform_driver lirc_sir_driver = {
++	.probe		= lirc_sir_probe,
++	.remove		= __devexit_p(lirc_sir_remove),
++	.driver		= {
++		.name	= "lirc_sir",
++		.owner	= THIS_MODULE,
++	},
++};
  
- 	read_persistent_clock(&now);
-+	if (!timespec_valid(&now)) {
-+		pr_warn("WARNING: Persistent clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		now.tv_sec = 0;
-+		now.tv_nsec = 0;
+ static int __init lirc_sir_init(void)
+ {
+ 	int retval;
+ 
++	retval = platform_driver_register(&lirc_sir_driver);
++	if (retval) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform driver register "
++		       "failed!\n");
++		return -ENODEV;
 +	}
 +
- 	read_boot_clock(&boot);
-+	if (!timespec_valid(&boot)) {
-+		pr_warn("WARNING: Boot clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		boot.tv_sec = 0;
-+		boot.tv_nsec = 0;
++	lirc_sir_dev = platform_device_alloc("lirc_dev", 0);
++	if (!lirc_sir_dev) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device alloc "
++		       "failed!\n");
++		retval = -ENOMEM;
++		goto pdev_alloc_fail;
 +	}
++
++	retval = platform_device_add(lirc_sir_dev);
++	if (retval) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device add "
++		       "failed!\n");
++		retval = -ENODEV;
++		goto pdev_add_fail;
++	}
++
+ 	retval = init_chrdev();
+ 	if (retval < 0)
+-		return retval;
++		goto fail;
++
+ 	retval = init_lirc_sir();
+ 	if (retval) {
+ 		drop_chrdev();
+-		return retval;
++		goto fail;
+ 	}
++
+ 	return 0;
++
++fail:
++	platform_device_del(lirc_sir_dev);
++pdev_add_fail:
++	platform_device_put(lirc_sir_dev);
++pdev_alloc_fail:
++	platform_driver_unregister(&lirc_sir_driver);
++	return retval;
+ }
  
- 	seqlock_init(&timekeeper.lock);
+ static void __exit lirc_sir_exit(void)
+@@ -1236,6 +1290,8 @@ static void __exit lirc_sir_exit(void)
+ 	drop_hardware();
+ 	drop_chrdev();
+ 	drop_port();
++	platform_device_unregister(lirc_sir_dev);
++	platform_driver_unregister(&lirc_sir_driver);
+ 	printk(KERN_INFO LIRC_DRIVER_NAME ": Uninstalled.\n");
+ }
  
 
 
