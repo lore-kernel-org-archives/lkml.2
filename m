@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759074Ab2I1TFF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:05:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	id S1759099Ab2I1TFN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:05:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759029Ab2I1TE6 (ORCPT
+	with ESMTP id S1759053Ab2I1TFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:04:58 -0400
+	Fri, 28 Sep 2012 15:05:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Brian Cockrell <brian.cockrell@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 210/262] iwlwifi: dont double free the interrupt in failure path
-Date: Fri, 28 Sep 2012 11:52:19 -0700
-Message-Id: <20120928183022.905697432@linuxfoundation.org>
+        Henrik Rydberg <rydberg@euromail.se>, Shea Levy <shea@shealevy.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 221/262] Bluetooth: Add support for Apple vendor-specific devices
+Date: Fri, 28 Sep 2012 11:52:30 -0700
+Message-Id: <20120928183024.292321416@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -31,34 +30,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit a7be50b7e30f9d77cb059a7ffdb781bb0fb92eba upstream.
+commit 1fa6535faf055cd71311ab887e94fc234f04ee18 upstream.
 
-When the driver can't get the HW ready, we would release
-the interrupt twice which made the kernel complain loudly.
+As pointed out by Gustavo and Marcel, all Apple-specific Broadcom
+devices seen so far have the same interface class, subclass and
+protocol numbers. This patch adds an entry which matches all of them,
+using the new USB_VENDOR_AND_INTERFACE_INFO() macro.
 
-Reported-by: Brian Cockrell <brian.cockrell@intel.com>
-Tested-by: Brian Cockrell <brian.cockrell@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+In particular, this patch adds support for the MacBook Pro Retina
+(05ac:8286), which is not in the present list.
+
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Tested-by: Shea Levy <shea@shealevy.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/net/wireless/iwlwifi/iwl-trans-pcie.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/bluetooth/btusb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-@@ -1437,6 +1437,7 @@ static int iwl_trans_pcie_start_hw(struc
- 	return err;
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -60,6 +60,9 @@ static struct usb_device_id btusb_table[
+ 	/* Generic Bluetooth USB device */
+ 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
  
- err_free_irq:
-+	trans_pcie->irq_requested = false;
- 	free_irq(trans_pcie->irq, trans);
- error:
- 	iwl_free_isr_ict(trans);
++	/* Apple-specific (Broadcom) devices */
++	{ USB_VENDOR_AND_INTERFACE_INFO(0x05ac, 0xff, 0x01, 0x01) },
++
+ 	/* Broadcom SoftSailing reporting vendor specific */
+ 	{ USB_DEVICE(0x0a5c, 0x21e1) },
+ 
 
 
