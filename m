@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031188Ab2I1Uz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:55:59 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37459 "EHLO
+	id S1161090Ab2I1U4R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:56:17 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49961 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423003Ab2I1UsR (ORCPT
+	by vger.kernel.org with ESMTP id S1422991Ab2I1UsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:48:17 -0400
-X-Sasl-enc: sq835KaW/iKWvxeQ37Sb1FvA5UXgdytjTW5FWgMCr/nv 1348865296
+	Fri, 28 Sep 2012 16:48:13 -0400
+X-Sasl-enc: yfqH1W+UgqtcW9/mWV57v21g8zWvXsbz0o8Uwp6miwRD 1348865292
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Keng-Yu Lin <kengyu@canonical.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 078/127] Intel xhci: Only switch the switchable ports
-Date: Fri, 28 Sep 2012 13:34:11 -0700
-Message-Id: <20120928203054.999088035@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        James Ettle <theholyettlz@googlemail.com>,
+        Matthew Hall <mhall@mhcomputing.net>
+Subject: [ 083/127] xhci: Fix bug after deq ptr set to link TRB.
+Date: Fri, 28 Sep 2012 13:34:16 -0700
+Message-Id: <20120928203055.626098148@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,85 +29,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keng-Yu Lin <kengyu@canonical.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit a96874a2a92feaef607ddd3137277a788cb927a6 upstream.
+commit 50d0206fcaea3e736f912fd5b00ec6233fb4ce44 upstream.
 
-With a previous patch to enable the EHCI/XHCI port switching, it switches
-all the available ports.
+This patch fixes a particularly nasty bug that was revealed by the ring
+expansion patches.  The bug has been present since the very beginning of
+the xHCI driver history, and could have caused general protection faults
+from bad memory accesses.
 
-The assumption is not correct because the BIOS may expect some ports
-not switchable by the OS.
+The first thing to note is that a Set TR Dequeue Pointer command can
+move the dequeue pointer to a link TRB, if the canceled or stalled
+transfer TD ended just before a link TRB.  The function to increment the
+dequeue pointer, inc_deq, was written before cancellation and stall
+support was added.  It assumed that the dequeue pointer could never
+point to a link TRB.  It would unconditionally increment the dequeue
+pointer at the start of the function, check if the pointer was now on a
+link TRB, and move it to the top of the next segment if so.
 
-There are two more registers that contains the information of the switchable
-and non-switchable ports.
+This means that if a Set TR Dequeue Point command moved the dequeue
+pointer to a link TRB, a subsequent call to inc_deq() would move the
+pointer off the segment and into la-la-land.  It would then read from
+that memory to determine if it was a link TRB.  Other functions would
+often call inc_deq() until the dequeue pointer matched some other
+pointer, which means this function would quite happily read all of
+system memory before wrapping around to the right pointer value.
 
-This patch adds the checking code for the two register so that only the
-switchable ports are altered.
+Often, there would be another endpoint segment from a different ring
+allocated from the same DMA pool, which would be contiguous to the
+segment inc_deq just stepped off of.  inc_deq would eventually find the
+link TRB in that segment, and blindly move the dequeue pointer back to
+the top of the correct ring segment.
 
-This patch should be backported to kernels as old as 3.0, that contain
-commit ID 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
-EHCI/xHCI port switching."
+The only reason the original code worked at all is because there was
+only one ring segment.  With the ring expansion patches, the dequeue
+pointer would eventually wrap into place, but the dequeue segment would
+be out-of-sync.  On the second TD after the dequeue pointer was moved to
+a link TRB, trb_in_td() would fail (because the dequeue pointer and
+dequeue segment were out-of-sync), and this message would appear:
 
-Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
+ERROR Transfer event TRB DMA ptr not part of current TD
+
+This fixes bugzilla entry 4333 (option-based modem unhappy on USB 3.0
+port: "Transfer event TRB DMA ptr not part of current TD", "rejecting
+I/O to offline device"),
+
+	https://bugzilla.kernel.org/show_bug.cgi?id=43333
+
+and possibly other general protection fault bugs as well.
+
+This patch should be backported to kernels as old as 2.6.31.  A separate
+patch will be created for kernels older than 3.4, since inc_deq was
+modified in 3.4 and this patch will not apply.
+
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: James Ettle <theholyettlz@googlemail.com>
+Tested-by: Matthew Hall <mhall@mhcomputing.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |   27 +++++++++++++++++++++++----
- 1 file changed, 23 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci-ring.c |   39 ++++++++++++++++++++++++---------------
+ 1 file changed, 24 insertions(+), 15 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -73,7 +73,9 @@
- #define	NB_PIF0_PWRDOWN_1	0x01100013
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -147,25 +147,34 @@ static void next_trb(struct xhci_hcd *xh
+  */
+ static void inc_deq(struct xhci_hcd *xhci, struct xhci_ring *ring, bool consumer)
+ {
+-	union xhci_trb *next = ++(ring->dequeue);
+ 	unsigned long long addr;
  
- #define USB_INTEL_XUSB2PR      0xD0
-+#define USB_INTEL_USB2PRM      0xD4
- #define USB_INTEL_USB3_PSSEN   0xD8
-+#define USB_INTEL_USB3PRM      0xDC
+ 	ring->deq_updates++;
+-	/* Update the dequeue pointer further if that was a link TRB or we're at
+-	 * the end of an event ring segment (which doesn't have link TRBS)
+-	 */
+-	while (last_trb(xhci, ring, ring->deq_seg, next)) {
+-		if (consumer && last_trb_on_last_seg(xhci, ring, ring->deq_seg, next)) {
+-			ring->cycle_state = (ring->cycle_state ? 0 : 1);
+-			if (!in_interrupt())
+-				xhci_dbg(xhci, "Toggle cycle state for ring %p = %i\n",
+-						ring,
+-						(unsigned int) ring->cycle_state);
++
++	do {
++		/*
++		 * Update the dequeue pointer further if that was a link TRB or
++		 * we're at the end of an event ring segment (which doesn't have
++		 * link TRBS)
++		 */
++		if (last_trb(xhci, ring, ring->deq_seg, ring->dequeue)) {
++			if (consumer && last_trb_on_last_seg(xhci, ring,
++						ring->deq_seg, ring->dequeue)) {
++				if (!in_interrupt())
++					xhci_dbg(xhci, "Toggle cycle state "
++							"for ring %p = %i\n",
++							ring,
++							(unsigned int)
++							ring->cycle_state);
++				ring->cycle_state = (ring->cycle_state ? 0 : 1);
++			}
++			ring->deq_seg = ring->deq_seg->next;
++			ring->dequeue = ring->deq_seg->trbs;
++		} else {
++			ring->dequeue++;
+ 		}
+-		ring->deq_seg = ring->deq_seg->next;
+-		ring->dequeue = ring->deq_seg->trbs;
+-		next = ring->dequeue;
+-	}
++	} while (last_trb(xhci, ring, ring->deq_seg, ring->dequeue));
++
+ 	addr = (unsigned long long) xhci_trb_virt_to_dma(ring->deq_seg, ring->dequeue);
+ }
  
- static struct amd_chipset_info {
- 	struct pci_dev	*nb_dev;
-@@ -758,10 +760,18 @@ void usb_enable_xhci_ports(struct pci_de
- #if defined(CONFIG_USB_XHCI_HCD) || defined(CONFIG_USB_XHCI_HCD_MODULE)
- 	u32		ports_available;
- 
--	ports_available = 0xffffffff;
-+	/* Read USB3PRM, the USB 3.0 Port Routing Mask Register
-+	 * Indicate the ports that can be changed from OS.
-+	 */
-+	pci_read_config_dword(xhci_pdev, USB_INTEL_USB3PRM,
-+			&ports_available);
-+
-+	dev_dbg(&xhci_pdev->dev, "Configurable ports to enable SuperSpeed: 0x%x\n",
-+			ports_available);
-+
- 	/* Write USB3_PSSEN, the USB 3.0 Port SuperSpeed Enable
--	 * Register, to turn on SuperSpeed terminations for all
--	 * available ports.
-+	 * Register, to turn on SuperSpeed terminations for the
-+	 * switchable ports.
- 	 */
- 	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN,
- 			cpu_to_le32(ports_available));
-@@ -771,7 +781,16 @@ void usb_enable_xhci_ports(struct pci_de
- 	dev_dbg(&xhci_pdev->dev, "USB 3.0 ports that are now enabled "
- 			"under xHCI: 0x%x\n", ports_available);
- 
--	ports_available = 0xffffffff;
-+	/* Read XUSB2PRM, xHCI USB 2.0 Port Routing Mask Register
-+	 * Indicate the USB 2.0 ports to be controlled by the xHCI host.
-+	 */
-+
-+	pci_read_config_dword(xhci_pdev, USB_INTEL_USB2PRM,
-+			&ports_available);
-+
-+	dev_dbg(&xhci_pdev->dev, "Configurable USB 2.0 ports to hand over to xCHI: 0x%x\n",
-+			ports_available);
-+
- 	/* Write XUSB2PR, the xHC USB 2.0 Port Routing Register, to
- 	 * switch the USB 2.0 power and data lines over to the xHCI
- 	 * host.
 
 
