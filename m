@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032946Ab2I1UrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:47:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58902 "EHLO
+	id S1032981Ab2I1UrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:47:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39449 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1032931Ab2I1Uq4 (ORCPT
+	by vger.kernel.org with ESMTP id S1030893Ab2I1UrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:46:56 -0400
-X-Sasl-enc: VGht0XjP503ZsVAi8EKEP23/84oUf4u2LXlELmxBTJJL 1348865215
+	Fri, 28 Sep 2012 16:47:02 -0400
+X-Sasl-enc: 3BqV5IfIdjM6TJGR0UWawY9ZxGSn6AHHX7FWnSL6qLzF 1348865221
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 056/127] Bluetooth: Fix not removing power_off delayed work
-Date: Fri, 28 Sep 2012 13:33:49 -0700
-Message-Id: <20120928203052.382739768@linuxfoundation.org>
+        Mel Gorman <mel@csn.ul.ie>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Wen Congyang <wency@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 060/127] tracing: Dont call page_to_pfn() if page is NULL
+Date: Fri, 28 Sep 2012 13:33:53 -0700
+Message-Id: <20120928203052.855620529@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -28,76 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-commit 78c04c0bf52360dc2f7185e99c8e9aa05d73ae5a upstream.
+commit 85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa upstream.
 
-For example, when a usb reset is received (I could reproduce it
-running something very similar to this[1] in a loop) it could be
-that the device is unregistered while the power_off delayed work
-is still scheduled to run.
+When allocating memory fails, page is NULL. page_to_pfn() will
+cause the kernel panicked if we don't use sparsemem vmemmap.
 
-Backtrace:
+Link: http://lkml.kernel.org/r/505AB1FF.8020104@cn.fujitsu.com
 
-WARNING: at lib/debugobjects.c:261 debug_print_object+0x7c/0x8d()
-Hardware name: To Be Filled By O.E.M.
-ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x26
-Modules linked in: nouveau mxm_wmi btusb wmi bluetooth ttm coretemp drm_kms_helper
-Pid: 2114, comm: usb-reset Not tainted 3.5.0bt-next #2
-Call Trace:
- [<ffffffff8124cc00>] ? free_obj_work+0x57/0x91
- [<ffffffff81058f88>] warn_slowpath_common+0x7e/0x97
- [<ffffffff81059035>] warn_slowpath_fmt+0x41/0x43
- [<ffffffff8124ccb6>] debug_print_object+0x7c/0x8d
- [<ffffffff8106e3ec>] ? __queue_work+0x259/0x259
- [<ffffffff8124d63e>] ? debug_check_no_obj_freed+0x6f/0x1b5
- [<ffffffff8124d667>] debug_check_no_obj_freed+0x98/0x1b5
- [<ffffffffa00aa031>] ? bt_host_release+0x10/0x1e [bluetooth]
- [<ffffffff810fc035>] kfree+0x90/0xe6
- [<ffffffffa00aa031>] bt_host_release+0x10/0x1e [bluetooth]
- [<ffffffff812ec2f9>] device_release+0x4a/0x7e
- [<ffffffff8123ef57>] kobject_release+0x11d/0x154
- [<ffffffff8123ed98>] kobject_put+0x4a/0x4f
- [<ffffffff812ec0d9>] put_device+0x12/0x14
- [<ffffffffa009472b>] hci_free_dev+0x22/0x26 [bluetooth]
- [<ffffffffa0280dd0>] btusb_disconnect+0x96/0x9f [btusb]
- [<ffffffff813581b4>] usb_unbind_interface+0x57/0x106
- [<ffffffff812ef988>] __device_release_driver+0x83/0xd6
- [<ffffffff812ef9fb>] device_release_driver+0x20/0x2d
- [<ffffffff813582a7>] usb_driver_release_interface+0x44/0x7b
- [<ffffffff81358795>] usb_forced_unbind_intf+0x45/0x4e
- [<ffffffff8134f959>] usb_reset_device+0xa6/0x12e
- [<ffffffff8135df86>] usbdev_do_ioctl+0x319/0xe20
- [<ffffffff81203244>] ? avc_has_perm_flags+0xc9/0x12e
- [<ffffffff812031a0>] ? avc_has_perm_flags+0x25/0x12e
- [<ffffffff81050101>] ? do_page_fault+0x31e/0x3a1
- [<ffffffff8135eaa6>] usbdev_ioctl+0x9/0xd
- [<ffffffff811126b1>] vfs_ioctl+0x21/0x34
- [<ffffffff81112f7b>] do_vfs_ioctl+0x408/0x44b
- [<ffffffff81208d45>] ? file_has_perm+0x76/0x81
- [<ffffffff8111300f>] sys_ioctl+0x51/0x76
- [<ffffffff8158db22>] system_call_fastpath+0x16/0x1b
-
-[1] http://cpansearch.perl.org/src/DPAVLIN/Biblio-RFID-0.03/examples/usbreset.c
-
-Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/trace/events/kmem.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -588,6 +588,8 @@ static int hci_dev_do_close(struct hci_d
- {
- 	BT_DBG("%s %p", hdev->name, hdev);
+--- a/include/trace/events/kmem.h
++++ b/include/trace/events/kmem.h
+@@ -214,7 +214,7 @@ TRACE_EVENT(mm_page_alloc,
  
-+	cancel_delayed_work(&hdev->power_off);
-+
- 	hci_req_cancel(hdev, ENODEV);
- 	hci_req_lock(hdev);
+ 	TP_printk("page=%p pfn=%lu order=%d migratetype=%d gfp_flags=%s",
+ 		__entry->page,
+-		page_to_pfn(__entry->page),
++		__entry->page ? page_to_pfn(__entry->page) : 0,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		show_gfp_flags(__entry->gfp_flags))
+@@ -240,7 +240,7 @@ DECLARE_EVENT_CLASS(mm_page,
  
+ 	TP_printk("page=%p pfn=%lu order=%u migratetype=%d percpu_refill=%d",
+ 		__entry->page,
+-		page_to_pfn(__entry->page),
++		__entry->page ? page_to_pfn(__entry->page) : 0,
+ 		__entry->order,
+ 		__entry->migratetype,
+ 		__entry->order == 0)
 
 
