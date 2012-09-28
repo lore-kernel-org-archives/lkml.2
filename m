@@ -1,117 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758495Ab2I1PO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:14:27 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:58203 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758443Ab2I1POY (ORCPT
+	id S1758541Ab2I1POh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:14:37 -0400
+Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:53653 "EHLO
+	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758512Ab2I1POd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:14:24 -0400
-Date: Fri, 28 Sep 2012 17:14:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arun Sharma <asharma@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC/PATCHSET 00/15] perf report: Add support to accumulate hist
- periods
-Message-ID: <20120928151407.GA14215@somewhere.redhat.com>
-References: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
- <87pq5awvgp.fsf@sejong.aot.lge.com>
- <20120927230138.GA10660@somewhere.redhat.com>
- <874nmivgqk.fsf@sejong.aot.lge.com>
- <CABPqkBQbaDdGwyOK-qcheqyTzrr505undnFae8BQGEx+r0hKyg@mail.gmail.com>
+	Fri, 28 Sep 2012 11:14:33 -0400
+Date: Fri, 28 Sep 2012 10:14:30 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: netdev@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: mlx4_en_alloc_frag allocation failures
+Message-ID: <20120928151429.GB2731@BohrerMBP.rgmadvisors.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQbaDdGwyOK-qcheqyTzrr505undnFae8BQGEx+r0hKyg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 09:07:57AM +0200, Stephane Eranian wrote:
-> On Fri, Sep 28, 2012 at 7:49 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> > Hi Frederic,
-> >
-> > On Fri, 28 Sep 2012 01:01:48 +0200, Frederic Weisbecker wrote:
-> >> When Arun was working on this, I asked him to explore if it could make sense to reuse
-> >> the "-b, --branch-stack"  perf report option. Because after all, this feature is doing
-> >> about the same than "-b" except it's using callchains instead of full branch tracing.
-> >> But callchains are branches. Just a limited subset of all branches taken on excecution.
-> >> So you can probably reuse some interface and even ground code there.
-> >>
-> >> What do you think?
-> >
-> > Umm.. first of all, I'm not familiar with the branch stack thing.  It's
-> > intel-specific, right?
-> >
-> The kernel API is NOT specific to Intel. It is abstracted to be portable
-> across architecture. The implementation only exists on certain Intel
-> X86 processors.
-> 
-> > Also I don't understand what exactly you want here.  What kind of
-> > interface did you say?  Can you elaborate it bit more?
-> >
-> Not clear to me either.
-> 
-> > And AFAIK branch stack can collect much more branch information than
-> > just callstacks.  Can we differentiate which is which easily?  Is there
-> > any limitation on using it?  What if callstacks are not sync'ed with
-> > branch stacks - is it possible though?
-> >
-> First of all branch stack is not a branch tracing mechanism. This is a
-> branch sampling mechanism. Not all branches are captured. Only the
-> last N consecutive branches leading to a PMU interrupt are captured
-> in each sample.
-> 
-> Yes, the branch stack mechanism as it exists on Intel processors
-> can capture more then call branches. It is HW based and provides
-> a branch type filter. Filtering capability is exposed at the API level
-> in a generic fashion. The hw filter is based on opcodes. Call branches
-> all cover call, syscall instructions. As such, the branch stack mechanism
-> cannot be used to capture callstacks to shared libraries, simply because
-> there a a non call instruction in the trampoline. To obtain a better quality
-> callstack you have instead to sample return branches. So yes, callstacks
-> are not sync'ed with branch stack even if limited to call branches.
-> 
+We've got a new application that is receiving UDP multicast data using
+AF_PACKET and writing out the packets in a custom format to disk.  The
+packet rates are bursty, but it seems to be roughly 100 Mbps on
+average for 1 minute periods.  With this application running all day
+we get a lot of these messages:
 
-You're right. One doesn't simply sample callchains on top of branch tracing. Not easily at least.
-But that's not what we want here. We want the other way round: use callchains as branch sampling.
-And a callchain _is_ a branch sampling. Just a specialized one.
+[1298269.103034] kswapd1: page allocation failure: order:2, mode:0x4020
+[1298269.103038] Pid: 80, comm: kswapd1 Not tainted 3.4.9-2.rgm.fc16.x86_64 #1
+[1298269.103040] Call Trace:
+[1298269.103041]  <IRQ>  [<ffffffff810db746>] warn_alloc_failed+0xf6/0x160
+[1298269.103053]  [<ffffffff813c767d>] ? skb_copy_bits+0x16d/0x2c0
+[1298269.103058]  [<ffffffff810e83a9>] ? wakeup_kswapd+0x69/0x160
+[1298269.103060]  [<ffffffff810df188>] __alloc_pages_nodemask+0x6e8/0x930
+[1298269.103064]  [<ffffffff81114316>] alloc_pages_current+0xb6/0x120
+[1298269.103070]  [<ffffffffa00c142b>] mlx4_en_alloc_frag+0x16b/0x1e0 [mlx4_en]
+[1298269.103073]  [<ffffffffa00c18a0>] mlx4_en_complete_rx_desc+0x120/0x1d0 [mlx4_en]
+[1298269.103076]  [<ffffffffa00c27d4>] mlx4_en_process_rx_cq+0x584/0x700 [mlx4_en]
+[1298269.103079]  [<ffffffffa00c29ef>] mlx4_en_poll_rx_cq+0x3f/0x80 [mlx4_en]
+[1298269.103083]  [<ffffffff813d6569>] net_rx_action+0x119/0x210
+[1298269.103086]  [<ffffffff8103c690>] __do_softirq+0xb0/0x220
+[1298269.103090]  [<ffffffff8109911d>] ? handle_irq_event+0x4d/0x70
+[1298269.103095]  [<ffffffff8148e30c>] call_softirq+0x1c/0x30
+[1298269.103100]  [<ffffffff81003ef5>] do_softirq+0x55/0x90
+[1298269.103101]  [<ffffffff8103ca65>] irq_exit+0x75/0x80
+[1298269.103103]  [<ffffffff8148e853>] do_IRQ+0x63/0xe0
+[1298269.103107]  [<ffffffff81485667>] common_interrupt+0x67/0x67
+[1298269.103108]  <EOI>  [<ffffffff8148523f>] ? _raw_spin_unlock_irqrestore+0xf/0x20
+[1298269.103113]  [<ffffffff811184b1>] compaction_alloc+0x361/0x3f0
+[1298269.103115]  [<ffffffff810e29b7>] ? pagevec_lru_move_fn+0xd7/0xf0
+[1298269.103118]  [<ffffffff81123d19>] migrate_pages+0xa9/0x470
+[1298269.103120]  [<ffffffff81118150>] ? perf_trace_mm_compaction_migratepages+0xd0/0xd0
+[1298269.103122]  [<ffffffff81118abb>] compact_zone+0x4cb/0x910
+[1298269.103124]  [<ffffffff8111904b>] __compact_pgdat+0x14b/0x190
+[1298269.103125]  [<ffffffff8111931d>] compact_pgdat+0x2d/0x30
+[1298269.103129]  [<ffffffff810f32b9>] ? fragmentation_index+0x19/0x70
+[1298269.103131]  [<ffffffff810eb15f>] balance_pgdat+0x6ef/0x710
+[1298269.103133]  [<ffffffff810eb2ca>] kswapd+0x14a/0x390
+[1298269.103136]  [<ffffffff810567c0>] ? add_wait_queue+0x60/0x60
+[1298269.103138]  [<ffffffff810eb180>] ? balance_pgdat+0x710/0x710
+[1298269.103140]  [<ffffffff81055e93>] kthread+0x93/0xa0
+[1298269.103142]  [<ffffffff8148e214>] kernel_thread_helper+0x4/0x10
+[1298269.103144]  [<ffffffff81055e00>] ? kthread_worker_fn+0x140/0x140
+[1298269.103146]  [<ffffffff8148e210>] ? gs_change+0xb/0xb
 
-PERF_SAMPLE_BRANCH_STACK either records only calls, only ret, or everything, or....
-You can define the filter with "-j" option. Now callchains can be considered as the result
-of a specific "-j" filter option. It's just a high level filtering. ie: not just based on opcode
-types but on semantic post-processing. As if we applied a specific filter on a pure branch tracing
-that cancelled calls that had matching ret.
+The kernel is based on a Fedora 16 kernel and actually has the 3.4.10
+patches applied.  I can easily test patches or different kernels.
 
-But in the end, what we have is just branches. Some branch layout that is biased, that already passed
-through a semantic wheel, still it's just _branches_.
+I'm mostly wondering if there is anything that can be done about these
+failures?  It appears that these failures have to do with handling
+fragmented IP frames, but the majority of the packets this machines
+should not be fragmented (there are probably some that are).
 
-Note I'm not arguing about adding a "-j callchain" option, just trying to show you that callchains
-are not really different from other filtered source of branch sampling.
+>From a memory management point of view the system has 48GB of RAM, and
+typically 44GB of that is page cache.  The dirty pages seem to hover
+around 5-6MB and the filesystem/disks don't seem to have any problems
+keeping up with writing out the data.
 
+--
+Shawn
 
-> > But I think it'd be good if the branch stack can be changed to call
-> > stack in general.  Did you mean this?
-> >
-> That's not going to happen. The mechanism is much more generic than
-> that.
-> 
-> Quite frankly, I don't understand Frederic's motivation here. The mechanism
-> are not quite the same.
+-- 
 
-So, considering that callchains are just "branches", why can't we use them as
-a branch source, just like PERF_SAMPLE_BRANCH_STACK data samples, that we
-can reuse in "perf report -b".
-
-Look at commit b50311dc2ac1c04ad19163c2359910b25e16caf6
-"perf report: Add support for taken branch sampling". It's doing (except for a few details
-like the period weight of branch samples) the same than in Namhyung patch, just with
-PERF_SAMPLE_BRANCH_STACK instead of callchains.
-
-I don't understand what justifies this duplication.
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
