@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759484Ab2I1UkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:40:12 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40590 "EHLO
+	id S1759509Ab2I1Ukj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:40:39 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47591 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759455Ab2I1UkB (ORCPT
+	by vger.kernel.org with ESMTP id S1759486Ab2I1UkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:40:01 -0400
-X-Sasl-enc: rgxE1d/0G3RyJqafLyb4M9WXJCBQ+bwHEYKLzMVT6JLj 1348864800
+	Fri, 28 Sep 2012 16:40:17 -0400
+X-Sasl-enc: NxwipQ4TLMkWG1dzbf5tVY2IO57ZjP6oLdHbSdM6XieO 1348864817
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
+        Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 002/127] sfc: Fix maximum number of TSO segments and minimum TX queue size
-Date: Fri, 28 Sep 2012 13:32:55 -0700
-Message-Id: <20120928203046.112041973@linuxfoundation.org>
+Subject: [ 004/127] net_sched: gact: Fix potential panic in tcf_gact().
+Date: Fri, 28 Sep 2012 13:32:57 -0700
+Message-Id: <20120928203046.324583253@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -29,164 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
 
-[ Upstream commit 7e6d06f0de3f74ca929441add094518ae332257c ]
+[ Upstream commit 696ecdc10622d86541f2e35cc16e15b6b3b1b67e ]
 
-Currently an skb requiring TSO may not fit within a minimum-size TX
-queue.  The TX queue selected for the skb may stall and trigger the TX
-watchdog repeatedly (since the problem skb will be retried after the
-TX reset).  This issue is designated as CVE-2012-3412.
+gact_rand array is accessed by gact->tcfg_ptype whose value
+is assumed to less than MAX_RAND, but any range checks are
+not performed.
 
-Set the maximum number of TSO segments for our devices to 100.  This
-should make no difference to behaviour unless the actual MSS is less
-than about 700.  Increase the minimum TX queue size accordingly to
-allow for 2 worst-case skbs, so that there will definitely be space
-to add an skb after we wake a queue.
+So add a check in tcf_gact_init(). And in tcf_gact(), we can
+reduce a branch.
 
-To avoid invalidating existing configurations, change
-efx_ethtool_set_ringparam() to fix up values that are too small rather
-than returning -EINVAL.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/sfc/efx.c     |    6 ++++++
- drivers/net/sfc/efx.h     |   14 ++++++++++----
- drivers/net/sfc/ethtool.c |   16 +++++++++++-----
- drivers/net/sfc/nic.h     |    5 +++++
- drivers/net/sfc/tx.c      |   19 +++++++++++++++++++
- 5 files changed, 51 insertions(+), 9 deletions(-)
+ net/sched/act_gact.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/net/sfc/efx.c
-+++ b/drivers/net/sfc/efx.c
-@@ -1383,6 +1383,11 @@ static int efx_probe_all(struct efx_nic
- 		goto fail2;
- 	}
+--- a/net/sched/act_gact.c
++++ b/net/sched/act_gact.c
+@@ -67,6 +67,9 @@ static int tcf_gact_init(struct nlattr *
+ 	struct tcf_common *pc;
+ 	int ret = 0;
+ 	int err;
++#ifdef CONFIG_GACT_PROB
++	struct tc_gact_p *p_parm = NULL;
++#endif
  
-+	BUILD_BUG_ON(EFX_DEFAULT_DMAQ_SIZE < EFX_RXQ_MIN_ENT);
-+	if (WARN_ON(EFX_DEFAULT_DMAQ_SIZE < EFX_TXQ_MIN_ENT(efx))) {
-+		rc = -EINVAL;
-+		goto fail3;
+ 	if (nla == NULL)
+ 		return -EINVAL;
+@@ -82,6 +85,12 @@ static int tcf_gact_init(struct nlattr *
+ #ifndef CONFIG_GACT_PROB
+ 	if (tb[TCA_GACT_PROB] != NULL)
+ 		return -EOPNOTSUPP;
++#else
++	if (tb[TCA_GACT_PROB]) {
++		p_parm = nla_data(tb[TCA_GACT_PROB]);
++		if (p_parm->ptype >= MAX_RAND)
++			return -EINVAL;
 +	}
- 	efx->rxq_entries = efx->txq_entries = EFX_DEFAULT_DMAQ_SIZE;
- 	rc = efx_probe_channels(efx);
- 	if (rc)
-@@ -1942,6 +1947,7 @@ static int efx_register_netdev(struct ef
- 	net_dev->irq = efx->pci_dev->irq;
- 	net_dev->netdev_ops = &efx_netdev_ops;
- 	SET_ETHTOOL_OPS(net_dev, &efx_ethtool_ops);
-+	net_dev->gso_max_segs = EFX_TSO_MAX_SEGS;
+ #endif
  
- 	/* Clear MAC statistics */
- 	efx->mac_op->update_stats(efx);
---- a/drivers/net/sfc/efx.h
-+++ b/drivers/net/sfc/efx.h
-@@ -38,6 +38,7 @@ extern netdev_tx_t
- efx_enqueue_skb(struct efx_tx_queue *tx_queue, struct sk_buff *skb);
- extern void efx_xmit_done(struct efx_tx_queue *tx_queue, unsigned int index);
- extern int efx_setup_tc(struct net_device *net_dev, u8 num_tc);
-+extern unsigned int efx_tx_max_skb_descs(struct efx_nic *efx);
+ 	pc = tcf_hash_check(parm->index, a, bind, &gact_hash_info);
+@@ -103,8 +112,7 @@ static int tcf_gact_init(struct nlattr *
+ 	spin_lock_bh(&gact->tcf_lock);
+ 	gact->tcf_action = parm->action;
+ #ifdef CONFIG_GACT_PROB
+-	if (tb[TCA_GACT_PROB] != NULL) {
+-		struct tc_gact_p *p_parm = nla_data(tb[TCA_GACT_PROB]);
++	if (p_parm) {
+ 		gact->tcfg_paction = p_parm->paction;
+ 		gact->tcfg_pval    = p_parm->pval;
+ 		gact->tcfg_ptype   = p_parm->ptype;
+@@ -132,7 +140,7 @@ static int tcf_gact(struct sk_buff *skb,
  
- /* RX */
- extern int efx_probe_rx_queue(struct efx_rx_queue *rx_queue);
-@@ -60,10 +61,15 @@ extern void efx_schedule_slow_fill(struc
- #define EFX_MAX_EVQ_SIZE 16384UL
- #define EFX_MIN_EVQ_SIZE 512UL
- 
--/* The smallest [rt]xq_entries that the driver supports. Callers of
-- * efx_wake_queue() assume that they can subsequently send at least one
-- * skb. Falcon/A1 may require up to three descriptors per skb_frag. */
--#define EFX_MIN_RING_SIZE (roundup_pow_of_two(2 * 3 * MAX_SKB_FRAGS))
-+/* Maximum number of TCP segments we support for soft-TSO */
-+#define EFX_TSO_MAX_SEGS	100
-+
-+/* The smallest [rt]xq_entries that the driver supports.  RX minimum
-+ * is a bit arbitrary.  For TX, we must have space for at least 2
-+ * TSO skbs.
-+ */
-+#define EFX_RXQ_MIN_ENT		128U
-+#define EFX_TXQ_MIN_ENT(efx)	(2 * efx_tx_max_skb_descs(efx))
- 
- /* Filters */
- extern int efx_probe_filters(struct efx_nic *efx);
---- a/drivers/net/sfc/ethtool.c
-+++ b/drivers/net/sfc/ethtool.c
-@@ -677,21 +677,27 @@ static int efx_ethtool_set_ringparam(str
- 				     struct ethtool_ringparam *ring)
- {
- 	struct efx_nic *efx = netdev_priv(net_dev);
-+	u32 txq_entries;
- 
- 	if (ring->rx_mini_pending || ring->rx_jumbo_pending ||
- 	    ring->rx_pending > EFX_MAX_DMAQ_SIZE ||
- 	    ring->tx_pending > EFX_MAX_DMAQ_SIZE)
- 		return -EINVAL;
- 
--	if (ring->rx_pending < EFX_MIN_RING_SIZE ||
--	    ring->tx_pending < EFX_MIN_RING_SIZE) {
-+	if (ring->rx_pending < EFX_RXQ_MIN_ENT) {
- 		netif_err(efx, drv, efx->net_dev,
--			  "TX and RX queues cannot be smaller than %ld\n",
--			  EFX_MIN_RING_SIZE);
-+			  "RX queues cannot be smaller than %u\n",
-+			  EFX_RXQ_MIN_ENT);
- 		return -EINVAL;
- 	}
- 
--	return efx_realloc_channels(efx, ring->rx_pending, ring->tx_pending);
-+	txq_entries = max(ring->tx_pending, EFX_TXQ_MIN_ENT(efx));
-+	if (txq_entries != ring->tx_pending)
-+		netif_warn(efx, drv, efx->net_dev,
-+			   "increasing TX queue size to minimum of %u\n",
-+			   txq_entries);
-+
-+	return efx_realloc_channels(efx, ring->rx_pending, txq_entries);
- }
- 
- static int efx_ethtool_set_pauseparam(struct net_device *net_dev,
---- a/drivers/net/sfc/nic.h
-+++ b/drivers/net/sfc/nic.h
-@@ -65,6 +65,11 @@ enum {
- #define FALCON_GMAC_LOOPBACKS			\
- 	(1 << LOOPBACK_GMAC)
- 
-+/* Alignment of PCIe DMA boundaries (4KB) */
-+#define EFX_PAGE_SIZE	4096
-+/* Size and alignment of buffer table entries (same) */
-+#define EFX_BUF_SIZE	EFX_PAGE_SIZE
-+
- /**
-  * struct falcon_board_type - board operations and type information
-  * @id: Board type id, as found in NVRAM
---- a/drivers/net/sfc/tx.c
-+++ b/drivers/net/sfc/tx.c
-@@ -115,6 +115,25 @@ efx_max_tx_len(struct efx_nic *efx, dma_
- 	return len;
- }
- 
-+unsigned int efx_tx_max_skb_descs(struct efx_nic *efx)
-+{
-+	/* Header and payload descriptor for each output segment, plus
-+	 * one for every input fragment boundary within a segment
-+	 */
-+	unsigned int max_descs = EFX_TSO_MAX_SEGS * 2 + MAX_SKB_FRAGS;
-+
-+	/* Possibly one more per segment for the alignment workaround */
-+	if (EFX_WORKAROUND_5391(efx))
-+		max_descs += EFX_TSO_MAX_SEGS;
-+
-+	/* Possibly more for PCIe page boundaries within input fragments */
-+	if (PAGE_SIZE > EFX_PAGE_SIZE)
-+		max_descs += max_t(unsigned int, MAX_SKB_FRAGS,
-+				   DIV_ROUND_UP(GSO_MAX_SIZE, EFX_PAGE_SIZE));
-+
-+	return max_descs;
-+}
-+
- /*
-  * Add a socket buffer to a TX queue
-  *
+ 	spin_lock(&gact->tcf_lock);
+ #ifdef CONFIG_GACT_PROB
+-	if (gact->tcfg_ptype && gact_rand[gact->tcfg_ptype] != NULL)
++	if (gact->tcfg_ptype)
+ 		action = gact_rand[gact->tcfg_ptype](gact);
+ 	else
+ 		action = gact->tcf_action;
 
 
