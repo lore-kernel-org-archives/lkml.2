@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032546Ab2I1Vfv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:35:51 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61998 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964921Ab2I1U1B (ORCPT
+	id S1423349Ab2I1VgH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:36:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964897Ab2I1U06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:27:01 -0400
+	Fri, 28 Sep 2012 16:26:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+        Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>,
+        Johan Hedberg <johan.hedberg@intel.com>,
         Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 101/218] Bluetooth: Fix not removing power_off delayed work
-Date: Fri, 28 Sep 2012 13:15:18 -0700
-Message-Id: <20120928201513.149605492@linuxfoundation.org>
+Subject: [ 100/218] Bluetooth: mgmt: Fix enabling SSP while powered off
+Date: Fri, 28 Sep 2012 13:15:17 -0700
+Message-Id: <20120928201513.038474485@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,76 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+From: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
 
-commit 78c04c0bf52360dc2f7185e99c8e9aa05d73ae5a upstream.
+commit 3d1cbdd6aefff711bcf389fdabc4af9bc22e8201 upstream.
 
-For example, when a usb reset is received (I could reproduce it
-running something very similar to this[1] in a loop) it could be
-that the device is unregistered while the power_off delayed work
-is still scheduled to run.
+When new BT USB adapter is plugged in it's configured while still being powered
+off (HCI_AUTO_OFF flag is set), thus Set SSP will only set dev_flags but won't
+write changes to controller. As a result remote devices won't use Secure Simple
+Pairing with our device due to SSP Host Support flag disabled in extended
+features and may also reject SSP attempt from our side (with possible fallback
+to legacy pairing).
 
-Backtrace:
+This patch ensures HCI Write Simple Pairing Mode is sent when Set Powered is
+called to power on controller and clear HCI_AUTO_OFF flag.
 
-WARNING: at lib/debugobjects.c:261 debug_print_object+0x7c/0x8d()
-Hardware name: To Be Filled By O.E.M.
-ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x26
-Modules linked in: nouveau mxm_wmi btusb wmi bluetooth ttm coretemp drm_kms_helper
-Pid: 2114, comm: usb-reset Not tainted 3.5.0bt-next #2
-Call Trace:
- [<ffffffff8124cc00>] ? free_obj_work+0x57/0x91
- [<ffffffff81058f88>] warn_slowpath_common+0x7e/0x97
- [<ffffffff81059035>] warn_slowpath_fmt+0x41/0x43
- [<ffffffff8124ccb6>] debug_print_object+0x7c/0x8d
- [<ffffffff8106e3ec>] ? __queue_work+0x259/0x259
- [<ffffffff8124d63e>] ? debug_check_no_obj_freed+0x6f/0x1b5
- [<ffffffff8124d667>] debug_check_no_obj_freed+0x98/0x1b5
- [<ffffffffa00aa031>] ? bt_host_release+0x10/0x1e [bluetooth]
- [<ffffffff810fc035>] kfree+0x90/0xe6
- [<ffffffffa00aa031>] bt_host_release+0x10/0x1e [bluetooth]
- [<ffffffff812ec2f9>] device_release+0x4a/0x7e
- [<ffffffff8123ef57>] kobject_release+0x11d/0x154
- [<ffffffff8123ed98>] kobject_put+0x4a/0x4f
- [<ffffffff812ec0d9>] put_device+0x12/0x14
- [<ffffffffa009472b>] hci_free_dev+0x22/0x26 [bluetooth]
- [<ffffffffa0280dd0>] btusb_disconnect+0x96/0x9f [btusb]
- [<ffffffff813581b4>] usb_unbind_interface+0x57/0x106
- [<ffffffff812ef988>] __device_release_driver+0x83/0xd6
- [<ffffffff812ef9fb>] device_release_driver+0x20/0x2d
- [<ffffffff813582a7>] usb_driver_release_interface+0x44/0x7b
- [<ffffffff81358795>] usb_forced_unbind_intf+0x45/0x4e
- [<ffffffff8134f959>] usb_reset_device+0xa6/0x12e
- [<ffffffff8135df86>] usbdev_do_ioctl+0x319/0xe20
- [<ffffffff81203244>] ? avc_has_perm_flags+0xc9/0x12e
- [<ffffffff812031a0>] ? avc_has_perm_flags+0x25/0x12e
- [<ffffffff81050101>] ? do_page_fault+0x31e/0x3a1
- [<ffffffff8135eaa6>] usbdev_ioctl+0x9/0xd
- [<ffffffff811126b1>] vfs_ioctl+0x21/0x34
- [<ffffffff81112f7b>] do_vfs_ioctl+0x408/0x44b
- [<ffffffff81208d45>] ? file_has_perm+0x76/0x81
- [<ffffffff8111300f>] sys_ioctl+0x51/0x76
- [<ffffffff8158db22>] system_call_fastpath+0x16/0x1b
-
-[1] http://cpansearch.perl.org/src/DPAVLIN/Biblio-RFID-0.03/examples/usbreset.c
-
-Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+Signed-off-by: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
+Acked-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/bluetooth/mgmt.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -750,6 +750,8 @@ static int hci_dev_do_close(struct hci_d
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2801,6 +2801,12 @@ int mgmt_powered(struct hci_dev *hdev, u
+ 		if (scan)
+ 			hci_send_cmd(hdev, HCI_OP_WRITE_SCAN_ENABLE, 1, &scan);
  
- 	cancel_work_sync(&hdev->le_scan);
- 
-+	cancel_delayed_work(&hdev->power_off);
++		if (test_bit(HCI_SSP_ENABLED, &hdev->dev_flags)) {
++			u8 ssp = 1;
 +
- 	hci_req_cancel(hdev, ENODEV);
- 	hci_req_lock(hdev);
- 
++			hci_send_cmd(hdev, HCI_OP_WRITE_SSP_MODE, 1, &ssp);
++		}
++
+ 		update_class(hdev);
+ 		update_name(hdev, hdev->dev_name);
+ 		update_eir(hdev);
 
 
