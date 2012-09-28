@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032942Ab2I1VsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:48:22 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032236Ab2I1UYo (ORCPT
+	id S1032936Ab2I1Vsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:48:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031055Ab2I1UYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:24:44 -0400
+	Fri, 28 Sep 2012 16:24:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 053/218] staging: vt6656: [BUG] - Failed connection, incorrect endian.
-Date: Fri, 28 Sep 2012 13:14:30 -0700
-Message-Id: <20120928201507.601131601@linuxfoundation.org>
+        Francesco Ruggeri <fruggeri@aristanetworks.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 057/218] fs/proc: fix potential unregister_sysctl_table hang
+Date: Fri, 28 Sep 2012 13:14:34 -0700
+Message-Id: <20120928201508.075951691@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -26,110 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Francesco Ruggeri <fruggeri@aristanetworks.com>
 
-commit aa209eef3ce8419ff2926c2fa944dfbfb5afbacb upstream.
+commit 6bf6104573482570f7103d3e5ddf9574db43a363 upstream.
 
-Hi,
+The unregister_sysctl_table() function hangs if all references to its
+ctl_table_header structure are not dropped.
 
-This patch fixes a bug with driver failing to negotiate a connection.
+This can happen sometimes because of a leak in proc_sys_lookup():
+proc_sys_lookup() gets a reference to the table via lookup_entry(), but
+it does not release it when a subsequent call to sysctl_follow_link()
+fails.
 
-The bug was traced to commit
-203e4615ee9d9fa8d3506b9d0ef30095e4d5bc90
-staging: vt6656: removed custom definitions of Ethernet packet types
+This patch fixes this leak by making sure the reference is always
+dropped on return.
 
-In that patch, definitions in include/linux/if_ether.h replaced ones
-in tether.h which had both big and little endian definitions.
+See also commit 076c3eed2c31 ("sysctl: Rewrite proc_sys_lookup
+introducing find_entry and lookup_entry") which reorganized this code in
+3.4.
 
-include/linux/if_ether.h only refers to big endian values, cpu_to_be16
-should be used for the correct endian architectures.
+Tested in Linux 3.4.4.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Francesco Ruggeri <fruggeri@aristanetworks.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/dpc.c  |    2 +-
- drivers/staging/vt6656/rxtx.c |   38 +++++++++++++++++++-------------------
- 2 files changed, 20 insertions(+), 20 deletions(-)
+ fs/proc/proc_sysctl.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/vt6656/dpc.c
-+++ b/drivers/staging/vt6656/dpc.c
-@@ -200,7 +200,7 @@ s_vProcessRxMACHeader (
-     } else if (!compare_ether_addr(pbyRxBuffer, &pDevice->abySNAP_RFC1042[0])) {
-         cbHeaderSize += 6;
-         pwType = (PWORD) (pbyRxBufferAddr + cbHeaderSize);
--	if ((*pwType == cpu_to_le16(ETH_P_IPX)) ||
-+	if ((*pwType == cpu_to_be16(ETH_P_IPX)) ||
- 	    (*pwType == cpu_to_le16(0xF380))) {
- 		cbHeaderSize -= 8;
-             pwType = (PWORD) (pbyRxBufferAddr + cbHeaderSize);
---- a/drivers/staging/vt6656/rxtx.c
-+++ b/drivers/staging/vt6656/rxtx.c
-@@ -1701,7 +1701,7 @@ s_bPacketToWirelessUsb(
-     // 802.1H
-     if (ntohs(psEthHeader->wType) > ETH_DATA_LEN) {
- 	if (pDevice->dwDiagRefCount == 0) {
--		if ((psEthHeader->wType == cpu_to_le16(ETH_P_IPX)) ||
-+		if ((psEthHeader->wType == cpu_to_be16(ETH_P_IPX)) ||
- 		    (psEthHeader->wType == cpu_to_le16(0xF380))) {
- 			memcpy((PBYTE) (pbyPayloadHead),
- 			       abySNAP_Bridgetunnel, 6);
-@@ -2840,10 +2840,10 @@ int nsDMA_tx_packet(PSDevice pDevice, un
-     Packet_Type = skb->data[ETH_HLEN+1];
-     Descriptor_type = skb->data[ETH_HLEN+1+1+2];
-     Key_info = (skb->data[ETH_HLEN+1+1+2+1] << 8)|(skb->data[ETH_HLEN+1+1+2+2]);
--    if (pDevice->sTxEthHeader.wType == cpu_to_le16(ETH_P_PAE)) {
--	/* 802.1x OR eapol-key challenge frame transfer */
--	if (((Protocol_Version == 1) || (Protocol_Version == 2)) &&
--		(Packet_Type == 3)) {
-+	if (pDevice->sTxEthHeader.wType == cpu_to_be16(ETH_P_PAE)) {
-+		/* 802.1x OR eapol-key challenge frame transfer */
-+		if (((Protocol_Version == 1) || (Protocol_Version == 2)) &&
-+			(Packet_Type == 3)) {
-                         bTxeapol_key = TRUE;
-                        if(!(Key_info & BIT3) &&  //WPA or RSN group-key challenge
- 			   (Key_info & BIT8) && (Key_info & BIT9)) {    //send 2/2 key
-@@ -2989,19 +2989,19 @@ int nsDMA_tx_packet(PSDevice pDevice, un
-         }
-     }
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -462,9 +462,6 @@ static struct dentry *proc_sys_lookup(st
  
--    if (pDevice->sTxEthHeader.wType == cpu_to_le16(ETH_P_PAE)) {
--        if (pDevice->byBBType != BB_TYPE_11A) {
--            pDevice->wCurrentRate = RATE_1M;
--            pDevice->byACKRate = RATE_1M;
--            pDevice->byTopCCKBasicRate = RATE_1M;
--            pDevice->byTopOFDMBasicRate = RATE_6M;
--        } else {
--            pDevice->wCurrentRate = RATE_6M;
--            pDevice->byACKRate = RATE_6M;
--            pDevice->byTopCCKBasicRate = RATE_1M;
--            pDevice->byTopOFDMBasicRate = RATE_6M;
--        }
--    }
-+	if (pDevice->sTxEthHeader.wType == cpu_to_be16(ETH_P_PAE)) {
-+		if (pDevice->byBBType != BB_TYPE_11A) {
-+			pDevice->wCurrentRate = RATE_1M;
-+			pDevice->byACKRate = RATE_1M;
-+			pDevice->byTopCCKBasicRate = RATE_1M;
-+			pDevice->byTopOFDMBasicRate = RATE_6M;
-+		} else {
-+			pDevice->wCurrentRate = RATE_6M;
-+			pDevice->byACKRate = RATE_6M;
-+			pDevice->byTopCCKBasicRate = RATE_1M;
-+			pDevice->byTopOFDMBasicRate = RATE_6M;
-+		}
-+	}
+ 	err = ERR_PTR(-ENOMEM);
+ 	inode = proc_sys_make_inode(dir->i_sb, h ? h : head, p);
+-	if (h)
+-		sysctl_head_finish(h);
+-
+ 	if (!inode)
+ 		goto out;
  
-     DBG_PRT(MSG_LEVEL_DEBUG,
- 	    KERN_INFO "dma_tx: pDevice->wCurrentRate = %d\n",
-@@ -3017,7 +3017,7 @@ int nsDMA_tx_packet(PSDevice pDevice, un
+@@ -473,6 +470,8 @@ static struct dentry *proc_sys_lookup(st
+ 	d_add(dentry, inode);
  
-     if (bNeedEncryption == TRUE) {
-         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"ntohs Pkt Type=%04x\n", ntohs(pDevice->sTxEthHeader.wType));
--	if ((pDevice->sTxEthHeader.wType) == cpu_to_le16(ETH_P_PAE)) {
-+	if ((pDevice->sTxEthHeader.wType) == cpu_to_be16(ETH_P_PAE)) {
- 		bNeedEncryption = FALSE;
-             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Pkt Type=%04x\n", (pDevice->sTxEthHeader.wType));
-             if ((pMgmt->eCurrMode == WMAC_MODE_ESS_STA) && (pMgmt->eCurrState == WMAC_STATE_ASSOC)) {
+ out:
++	if (h)
++		sysctl_head_finish(h);
+ 	sysctl_head_finish(head);
+ 	return err;
+ }
 
 
