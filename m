@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab2I1Pv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:51:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58674 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756195Ab2I1Pv1 (ORCPT
+	id S1758312Ab2I1PwI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:52:08 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:44929 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757628Ab2I1PwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:51:27 -0400
-Date: Fri, 28 Sep 2012 16:51:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>, sameo@linux.intel.com,
-        Marek Vasut <marex@denx.de>, ashish.jangam@kpitcummins.com,
-        dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mfd: da9052-core: Use regmap_irq_get_virq() and fix
- the probe
-Message-ID: <20120928155121.GA22510@opensource.wolfsonmicro.com>
-References: <1348797458-2562-1-git-send-email-festevam@gmail.com>
- <20120928104944.GB30869@opensource.wolfsonmicro.com>
- <5065B534.7040602@freescale.com>
- <20120928142924.GA22101@opensource.wolfsonmicro.com>
- <CAOMZO5DgOjs06BJZWsEay-jP5pjzMNTZTZnvAvzAd-JD9kqs1g@mail.gmail.com>
+	Fri, 28 Sep 2012 11:52:06 -0400
+Date: Fri, 28 Sep 2012 10:52:02 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: mlx4_en_alloc_frag allocation failures
+Message-ID: <20120928155202.GC2731@BohrerMBP.rgmadvisors.com>
+References: <20120928151429.GB2731@BohrerMBP.rgmadvisors.com>
+ <1348847408.5093.2548.camel@edumazet-glaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5DgOjs06BJZWsEay-jP5pjzMNTZTZnvAvzAd-JD9kqs1g@mail.gmail.com>
-X-Cookie: Beware of Bigfoot!
+In-Reply-To: <1348847408.5093.2548.camel@edumazet-glaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 12:37:35PM -0300, Fabio Estevam wrote:
-> On Fri, Sep 28, 2012 at 11:29 AM, Mark Brown
+On Fri, Sep 28, 2012 at 05:50:08PM +0200, Eric Dumazet wrote:
+> On Fri, 2012-09-28 at 10:14 -0500, Shawn Bohrer wrote:
+> > We've got a new application that is receiving UDP multicast data using
+> > AF_PACKET and writing out the packets in a custom format to disk.  The
+> > packet rates are bursty, but it seems to be roughly 100 Mbps on
+> > average for 1 minute periods.  With this application running all day
+> > we get a lot of these messages:
+> > 
+> > [1298269.103034] kswapd1: page allocation failure: order:2, mode:0x4020
+> > [1298269.103038] Pid: 80, comm: kswapd1 Not tainted 3.4.9-2.rgm.fc16.x86_64 #1
+> > [1298269.103040] Call Trace:
+> > [1298269.103041]  <IRQ>  [<ffffffff810db746>] warn_alloc_failed+0xf6/0x160
+> > [1298269.103053]  [<ffffffff813c767d>] ? skb_copy_bits+0x16d/0x2c0
+> > [1298269.103058]  [<ffffffff810e83a9>] ? wakeup_kswapd+0x69/0x160
+> > [1298269.103060]  [<ffffffff810df188>] __alloc_pages_nodemask+0x6e8/0x930
+> > [1298269.103064]  [<ffffffff81114316>] alloc_pages_current+0xb6/0x120
+> > [1298269.103070]  [<ffffffffa00c142b>] mlx4_en_alloc_frag+0x16b/0x1e0 [mlx4_en]
+> > [1298269.103073]  [<ffffffffa00c18a0>] mlx4_en_complete_rx_desc+0x120/0x1d0 [mlx4_en]
+> > [1298269.103076]  [<ffffffffa00c27d4>] mlx4_en_process_rx_cq+0x584/0x700 [mlx4_en]
+> > [1298269.103079]  [<ffffffffa00c29ef>] mlx4_en_poll_rx_cq+0x3f/0x80 [mlx4_en]
+> > [1298269.103083]  [<ffffffff813d6569>] net_rx_action+0x119/0x210
+> > [1298269.103086]  [<ffffffff8103c690>] __do_softirq+0xb0/0x220
+> > [1298269.103090]  [<ffffffff8109911d>] ? handle_irq_event+0x4d/0x70
+> > [1298269.103095]  [<ffffffff8148e30c>] call_softirq+0x1c/0x30
+> > [1298269.103100]  [<ffffffff81003ef5>] do_softirq+0x55/0x90
+> > [1298269.103101]  [<ffffffff8103ca65>] irq_exit+0x75/0x80
+> > [1298269.103103]  [<ffffffff8148e853>] do_IRQ+0x63/0xe0
+> > [1298269.103107]  [<ffffffff81485667>] common_interrupt+0x67/0x67
+> > [1298269.103108]  <EOI>  [<ffffffff8148523f>] ? _raw_spin_unlock_irqrestore+0xf/0x20
+> > [1298269.103113]  [<ffffffff811184b1>] compaction_alloc+0x361/0x3f0
+> > [1298269.103115]  [<ffffffff810e29b7>] ? pagevec_lru_move_fn+0xd7/0xf0
+> > [1298269.103118]  [<ffffffff81123d19>] migrate_pages+0xa9/0x470
+> > [1298269.103120]  [<ffffffff81118150>] ? perf_trace_mm_compaction_migratepages+0xd0/0xd0
+> > [1298269.103122]  [<ffffffff81118abb>] compact_zone+0x4cb/0x910
+> > [1298269.103124]  [<ffffffff8111904b>] __compact_pgdat+0x14b/0x190
+> > [1298269.103125]  [<ffffffff8111931d>] compact_pgdat+0x2d/0x30
+> > [1298269.103129]  [<ffffffff810f32b9>] ? fragmentation_index+0x19/0x70
+> > [1298269.103131]  [<ffffffff810eb15f>] balance_pgdat+0x6ef/0x710
+> > [1298269.103133]  [<ffffffff810eb2ca>] kswapd+0x14a/0x390
+> > [1298269.103136]  [<ffffffff810567c0>] ? add_wait_queue+0x60/0x60
+> > [1298269.103138]  [<ffffffff810eb180>] ? balance_pgdat+0x710/0x710
+> > [1298269.103140]  [<ffffffff81055e93>] kthread+0x93/0xa0
+> > [1298269.103142]  [<ffffffff8148e214>] kernel_thread_helper+0x4/0x10
+> > [1298269.103144]  [<ffffffff81055e00>] ? kthread_worker_fn+0x140/0x140
+> > [1298269.103146]  [<ffffffff8148e210>] ? gs_change+0xb/0xb
+> > 
+> > The kernel is based on a Fedora 16 kernel and actually has the 3.4.10
+> > patches applied.  I can easily test patches or different kernels.
+> > 
+> > I'm mostly wondering if there is anything that can be done about these
+> > failures?  It appears that these failures have to do with handling
+> > fragmented IP frames, but the majority of the packets this machines
+> > should not be fragmented (there are probably some that are).
+> > 
+> > From a memory management point of view the system has 48GB of RAM, and
+> > typically 44GB of that is page cache.  The dirty pages seem to hover
+> > around 5-6MB and the filesystem/disks don't seem to have any problems
+> > keeping up with writing out the data.
+> 
+> What is the value of /proc/sys/vm/min_free_kbytes ?
 
-> > No, this doesn't support linear domains, if you're going to do this it'd
-> > be better to just leave it as irq_base though as discussed that's not
-> > ideal.  When I've done these conversions I've just done the virq
-> > conversion at every use.
+$ cat /proc/sys/vm/min_free_kbytes
+90112
 
-> Ok, so if I understand you correctly you suggest that Samuel applies
-> the v1 of the patch:
-> https://lkml.org/lkml/2012/9/26/551
+--
+Shawn
 
-> Please confirm.
+-- 
 
-Well, I'd really rather fix it to work with linear domains while we're
-at it.  Right now it's mostly working by accident rather than design
-(and even for legacy domains it's doing the wrong thing since it doesn't
-pass the irq_base into mfd_add_devices).  This is especially true if
-we're looking at making the device DT only in which case there's really
-no reason to use anything other than a linear domain.
-
-But yes, of the changes posted thus far this is the best one.
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
