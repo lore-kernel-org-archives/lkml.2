@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030715Ab2I1TGV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:06:21 -0400
+	id S1030918Ab2I1TMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:12:34 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030681Ab2I1TGG (ORCPT
+	with ESMTP id S1030688Ab2I1TGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:06:06 -0400
+	Fri, 28 Sep 2012 15:06:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Keshava Munegowda <keshava_mgowda@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 240/262] OMAP: USB : Fix the EHCI enumeration and core retention issue
-Date: Fri, 28 Sep 2012 11:52:49 -0700
-Message-Id: <20120928183026.748104204@linuxfoundation.org>
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 235/262] pch_uart: Fix rx error interrupt setting issue
+Date: Fri, 28 Sep 2012 11:52:44 -0700
+Message-Id: <20120928183026.095890079@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,240 +29,81 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Keshava Munegowda <keshava_mgowda@ti.com>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit 872c495dd0f9d1f48814a8ee80c2c7b3b7c3b4d9 upstream.
+commit 9539dfb7ac1c84522fe1f79bb7dac2990f3de44a upstream.
 
-This commit 354ab8567ae3107a8cbe7228c3181990ba598aac titled
-"Fix OMAP EHCI suspend/resume failure (i693)" is causing
-the usb hub and device detection fails in beagle XM
-causeing NFS not functional. This affects the core retention too.
-The same commit logic needs to be revisted adhering to hwmod and
-device tree framework.
-for now, this commit id 354ab8567ae3107a8cbe7228c3181990ba598aac
-titled "Fix OMAP EHCI suspend/resume failure (i693)" reverted.
+Rx Error interrupt(E.G. parity error) is not enabled.
+So, when parity error occurs, error interrupt is not occurred.
+As a result, the received data is not dropped.
 
-This patch is validated on BeagleXM with NFS support over
-usb ethernet and USB mass storage and other device detection.
+This patch adds enable/disable rx error interrupt code.
 
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-omap.c |  164 -------------------------------------------
- 1 file changed, 1 insertion(+), 163 deletions(-)
+ drivers/tty/serial/pch_uart.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -56,15 +56,6 @@
- #define	EHCI_INSNREG05_ULPI_EXTREGADD_SHIFT		8
- #define	EHCI_INSNREG05_ULPI_WRDATA_SHIFT		0
- 
--/* Errata i693 */
--static struct clk	*utmi_p1_fck;
--static struct clk	*utmi_p2_fck;
--static struct clk	*xclk60mhsp1_ck;
--static struct clk	*xclk60mhsp2_ck;
--static struct clk	*usbhost_p1_fck;
--static struct clk	*usbhost_p2_fck;
--static struct clk	*init_60m_fclk;
--
- /*-------------------------------------------------------------------------*/
- 
- static const struct hc_driver ehci_omap_hc_driver;
-@@ -80,40 +71,6 @@ static inline u32 ehci_read(void __iomem
- 	return __raw_readl(base + reg);
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -754,7 +754,8 @@ static void pch_dma_rx_complete(void *ar
+ 		tty_flip_buffer_push(tty);
+ 	tty_kref_put(tty);
+ 	async_tx_ack(priv->desc_rx);
+-	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT);
++	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT |
++					    PCH_UART_HAL_RX_ERR_INT);
  }
  
--/* Erratum i693 workaround sequence */
--static void omap_ehci_erratum_i693(struct ehci_hcd *ehci)
--{
--	int ret = 0;
--
--	/* Switch to the internal 60 MHz clock */
--	ret = clk_set_parent(utmi_p1_fck, init_60m_fclk);
--	if (ret != 0)
--		ehci_err(ehci, "init_60m_fclk set parent"
--			"failed error:%d\n", ret);
--
--	ret = clk_set_parent(utmi_p2_fck, init_60m_fclk);
--	if (ret != 0)
--		ehci_err(ehci, "init_60m_fclk set parent"
--			"failed error:%d\n", ret);
--
--	clk_enable(usbhost_p1_fck);
--	clk_enable(usbhost_p2_fck);
--
--	/* Wait 1ms and switch back to the external clock */
--	mdelay(1);
--	ret = clk_set_parent(utmi_p1_fck, xclk60mhsp1_ck);
--	if (ret != 0)
--		ehci_err(ehci, "xclk60mhsp1_ck set parent"
--			"failed error:%d\n", ret);
--
--	ret = clk_set_parent(utmi_p2_fck, xclk60mhsp2_ck);
--	if (ret != 0)
--		ehci_err(ehci, "xclk60mhsp2_ck set parent"
--			"failed error:%d\n", ret);
--
--	clk_disable(usbhost_p1_fck);
--	clk_disable(usbhost_p2_fck);
--}
- 
- static void omap_ehci_soft_phy_reset(struct platform_device *pdev, u8 port)
- {
-@@ -145,50 +102,6 @@ static void omap_ehci_soft_phy_reset(str
+ static void pch_dma_tx_complete(void *arg)
+@@ -809,7 +810,8 @@ static int handle_rx_to(struct eg20t_por
+ 	int rx_size;
+ 	int ret;
+ 	if (!priv->start_rx) {
+-		pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT);
++		pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT |
++						     PCH_UART_HAL_RX_ERR_INT);
+ 		return 0;
  	}
+ 	buf = &priv->rxbuf;
+@@ -1078,11 +1080,13 @@ static irqreturn_t pch_uart_interrupt(in
+ 		case PCH_UART_IID_RDR:	/* Received Data Ready */
+ 			if (priv->use_dma) {
+ 				pch_uart_hal_disable_interrupt(priv,
+-							PCH_UART_HAL_RX_INT);
++						PCH_UART_HAL_RX_INT |
++						PCH_UART_HAL_RX_ERR_INT);
+ 				ret = dma_handle_rx(priv);
+ 				if (!ret)
+ 					pch_uart_hal_enable_interrupt(priv,
+-							PCH_UART_HAL_RX_INT);
++						PCH_UART_HAL_RX_INT |
++						PCH_UART_HAL_RX_ERR_INT);
+ 			} else {
+ 				ret = handle_rx(priv);
+ 			}
+@@ -1208,7 +1212,8 @@ static void pch_uart_stop_rx(struct uart
+ 	struct eg20t_port *priv;
+ 	priv = container_of(port, struct eg20t_port, port);
+ 	priv->start_rx = 0;
+-	pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT);
++	pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT |
++					     PCH_UART_HAL_RX_ERR_INT);
  }
  
--static int omap_ehci_hub_control(
--	struct usb_hcd	*hcd,
--	u16		typeReq,
--	u16		wValue,
--	u16		wIndex,
--	char		*buf,
--	u16		wLength
--)
--{
--	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
--	u32 __iomem *status_reg = &ehci->regs->port_status[
--				(wIndex & 0xff) - 1];
--	u32		temp;
--	unsigned long	flags;
--	int		retval = 0;
--
--	spin_lock_irqsave(&ehci->lock, flags);
--
--	if (typeReq == SetPortFeature && wValue == USB_PORT_FEAT_SUSPEND) {
--		temp = ehci_readl(ehci, status_reg);
--		if ((temp & PORT_PE) == 0 || (temp & PORT_RESET) != 0) {
--			retval = -EPIPE;
--			goto done;
--		}
--
--		temp &= ~PORT_WKCONN_E;
--		temp |= PORT_WKDISC_E | PORT_WKOC_E;
--		ehci_writel(ehci, temp | PORT_SUSPEND, status_reg);
--
--		omap_ehci_erratum_i693(ehci);
--
--		set_bit((wIndex & 0xff) - 1, &ehci->suspended_ports);
--		goto done;
--	}
--
--	spin_unlock_irqrestore(&ehci->lock, flags);
--
--	/* Handle the hub control events here */
--	return ehci_hub_control(hcd, typeReq, wValue, wIndex, buf, wLength);
--done:
--	spin_unlock_irqrestore(&ehci->lock, flags);
--	return retval;
--}
--
- static void disable_put_regulator(
- 		struct ehci_hcd_omap_platform_data *pdata)
- {
-@@ -351,76 +264,9 @@ static int ehci_hcd_omap_probe(struct pl
- 	/* root ports should always stay powered */
- 	ehci_port_power(omap_ehci, 1);
+ /* Enable the modem status interrupts. */
+@@ -1301,7 +1306,8 @@ static int pch_uart_startup(struct uart_
+ 		pch_request_dma(port);
  
--	/* get clocks */
--	utmi_p1_fck = clk_get(dev, "utmi_p1_gfclk");
--	if (IS_ERR(utmi_p1_fck)) {
--		ret = PTR_ERR(utmi_p1_fck);
--		dev_err(dev, "utmi_p1_gfclk failed error:%d\n",	ret);
--		goto err_add_hcd;
--	}
--
--	xclk60mhsp1_ck = clk_get(dev, "xclk60mhsp1_ck");
--	if (IS_ERR(xclk60mhsp1_ck)) {
--		ret = PTR_ERR(xclk60mhsp1_ck);
--		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
--		goto err_utmi_p1_fck;
--	}
--
--	utmi_p2_fck = clk_get(dev, "utmi_p2_gfclk");
--	if (IS_ERR(utmi_p2_fck)) {
--		ret = PTR_ERR(utmi_p2_fck);
--		dev_err(dev, "utmi_p2_gfclk failed error:%d\n", ret);
--		goto err_xclk60mhsp1_ck;
--	}
--
--	xclk60mhsp2_ck = clk_get(dev, "xclk60mhsp2_ck");
--	if (IS_ERR(xclk60mhsp2_ck)) {
--		ret = PTR_ERR(xclk60mhsp2_ck);
--		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
--		goto err_utmi_p2_fck;
--	}
--
--	usbhost_p1_fck = clk_get(dev, "usb_host_hs_utmi_p1_clk");
--	if (IS_ERR(usbhost_p1_fck)) {
--		ret = PTR_ERR(usbhost_p1_fck);
--		dev_err(dev, "usbhost_p1_fck failed error:%d\n", ret);
--		goto err_xclk60mhsp2_ck;
--	}
--
--	usbhost_p2_fck = clk_get(dev, "usb_host_hs_utmi_p2_clk");
--	if (IS_ERR(usbhost_p2_fck)) {
--		ret = PTR_ERR(usbhost_p2_fck);
--		dev_err(dev, "usbhost_p2_fck failed error:%d\n", ret);
--		goto err_usbhost_p1_fck;
--	}
--
--	init_60m_fclk = clk_get(dev, "init_60m_fclk");
--	if (IS_ERR(init_60m_fclk)) {
--		ret = PTR_ERR(init_60m_fclk);
--		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
--		goto err_usbhost_p2_fck;
--	}
+ 	priv->start_rx = 1;
+-	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT);
++	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT |
++					    PCH_UART_HAL_RX_ERR_INT);
+ 	uart_update_timeout(port, CS8, default_baud);
  
  	return 0;
- 
--err_usbhost_p2_fck:
--	clk_put(usbhost_p2_fck);
--
--err_usbhost_p1_fck:
--	clk_put(usbhost_p1_fck);
--
--err_xclk60mhsp2_ck:
--	clk_put(xclk60mhsp2_ck);
--
--err_utmi_p2_fck:
--	clk_put(utmi_p2_fck);
--
--err_xclk60mhsp1_ck:
--	clk_put(xclk60mhsp1_ck);
--
--err_utmi_p1_fck:
--	clk_put(utmi_p1_fck);
--
- err_add_hcd:
- 	disable_put_regulator(pdata);
- 	pm_runtime_put_sync(dev);
-@@ -450,14 +296,6 @@ static int ehci_hcd_omap_remove(struct p
- 	iounmap(hcd->regs);
- 	usb_put_hcd(hcd);
- 
--	clk_put(utmi_p1_fck);
--	clk_put(utmi_p2_fck);
--	clk_put(xclk60mhsp1_ck);
--	clk_put(xclk60mhsp2_ck);
--	clk_put(usbhost_p1_fck);
--	clk_put(usbhost_p2_fck);
--	clk_put(init_60m_fclk);
--
- 	pm_runtime_put_sync(dev);
- 	pm_runtime_disable(dev);
- 
-@@ -528,7 +366,7 @@ static const struct hc_driver ehci_omap_
- 	 * root hub support
- 	 */
- 	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= omap_ehci_hub_control,
-+	.hub_control		= ehci_hub_control,
- 	.bus_suspend		= ehci_bus_suspend,
- 	.bus_resume		= ehci_bus_resume,
- 
 
 
