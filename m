@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551Ab2I1Pgf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 11:36:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34729 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758458Ab2I1Pge convert rfc822-to-8bit (ORCPT
+	id S1758572Ab2I1Pgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 11:36:42 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:30191
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758473Ab2I1Pgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 11:36:34 -0400
-Message-ID: <1348846580.3292.90.camel@twins>
-Subject: Re: [PATCH 04/31] perf, core: Add generic intx/intx_checkpointed
- counter modifiers
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, eranian@google.com,
-        acme@redhat.com, Andi Kleen <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Date: Fri, 28 Sep 2012 17:36:20 +0200
-In-Reply-To: <20120928152911.GU16230@one.firstfloor.org>
-References: <1348806696-31170-1-git-send-email-andi@firstfloor.org>
-	 <1348806696-31170-5-git-send-email-andi@firstfloor.org>
-	 <1348822920.3292.60.camel@twins>
-	 <20120928145324.GQ16230@one.firstfloor.org>
-	 <1348845559.3292.84.camel@twins>
-	 <20120928152911.GU16230@one.firstfloor.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 28 Sep 2012 11:36:39 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MB2GOV-01-38W-02
+X-M-MSG: 
+Date: Fri, 28 Sep 2012 17:36:29 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/16] iommu/amd: Add IRTE invalidation routine
+Message-ID: <20120928153629.GJ4009@amd.com>
+References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+ <1348835046-3262-8-git-send-email-joerg.roedel@amd.com>
+ <20120928142017.GE7483@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120928142017.GE7483@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-28 at 17:29 +0200, Andi Kleen wrote:
-> Still would need new fields, but I presume that could be fit in.
+On Fri, Sep 28, 2012 at 10:20:18AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Sep 28, 2012 at 02:23:57PM +0200, Joerg Roedel wrote:
+> > +static void iommu_flush_irt_all(struct amd_iommu *iommu)
+> > +{
+> > +	u32 devid;
+> > +
+> > +	for (devid = 0; devid <= 0xffff; ++devid)
 > 
-Very much so, for all except the P4 PMU the first config is directly
-mapped to the perfctl msr.
+> Should this be #define? Or perhaps based of sizeof?
+
+I'll add a define for that. The 0xffff is a hardware constant, so sizeof
+will not work.
+
+> Is there a specific reason that it is u16 in the build_inv_irt but
+> here it is u32?
+
+Yes, with u16 the loop-counter will overflow and make it to an endless
+loop.
+
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
