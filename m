@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031087Ab2I1TUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:20:08 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:33176 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030614Ab2I1TUF (ORCPT
+	id S1030959Ab2I1TUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:20:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030600Ab2I1TEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:20:05 -0400
-Date: Fri, 28 Sep 2012 15:20:14 -0400
-From: Matt Porter <mporter@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Benoit Cousson <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/3] uio: uio_pruss: port to AM33xx
-Message-ID: <20120928192014.GH5641@beef>
-References: <1348667071-12631-1-git-send-email-mporter@ti.com>
- <1348667071-12631-2-git-send-email-mporter@ti.com>
- <20120926211019.GB16674@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120926211019.GB16674@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Sep 2012 15:04:33 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 202/262] drm/radeon: fix dig encoder selection on DCE61
+Date: Fri, 28 Sep 2012 11:52:11 -0700
+Message-Id: <20120928183021.942116128@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
+References: <20120928182957.993484211@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 02:10:19PM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Sep 26, 2012 at 09:44:29AM -0400, Matt Porter wrote:
-> > Add ifdefery hacks to only use SRAM on Davinci. This
-> > needs to be cleaned up with a sane generic SRAM allocator
-> > (like the DT based driver available that can't be used on
-> > Davinci which is just starting DT conversion) before it
-> > can go upstream.
-> > 
-> > Adds DT, pinctrl, and runtime PM support for use on
-> > AM33xx.
-> 
-> Ick, that's really messy, no other way to do this in a "cleaner"
-> fashion?
+From: Greg KH <gregkh@linuxfoundation.org>
 
-There is, I had to untangle some ugly history on the SRAM situation
-first.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-First, and what I found humorous is that this driver is completely
-dead code in the tree...a driver to nowhere. It's not hooked up at all
-for DA850, no platform devices, no clock support, and to top it off the
-private SRAM API it's calling uses the ARM local SRAM that the PRU can't
-even access it [1]. So it's completely broken and one possible course
-of action is to just say tough luck to Davinci and remove all that SRAM
-code. I happen to care a bit about DA850 as I have the AM180x variant
-here...
+------------------
 
-I noticed that previous attempts at consolidating SRAM allocation failed
-to achieve consensus [2] or in the case of when Jean added the phys
-support to genalloc the associated mach-davinci/ support was never
-picked up [3]. The patch in to enable L3 RAM support [1] depended
-on the genalloc conversion and all appears to have been forgotten and
-bitrotted since then.
+From: Alex Deucher <alexander.deucher@amd.com>
 
-I decided to go ahead and add a genalloc pool for the L3 RAM (shared
-sram) on DA850 that PRU can use and strip out the private API. I'll
-post v2 with that supports that supports both platforms cleanly.
+commit 41fa54377057ab38bc3e08ebb46168a7daf2e63b upstream.
 
--Matt
+Was using the DCE41 code which was wrong. Fixes
+blank displays on a number of Trinity systems.
 
-[1]
-http://lists.infradead.org/pipermail/linux-arm-kernel/2011-June/051609.html
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-[2] https://patchwork.kernel.org/patch/710741/
+---
+ drivers/gpu/drm/radeon/atombios_encoders.c |   31 ++++++++++++++++++++++++-----
+ 1 file changed, 26 insertions(+), 5 deletions(-)
 
-[3]
-http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/057293.html
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1769,13 +1769,34 @@ static int radeon_atom_pick_dig_encoder(
+ 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(encoder->crtc);
+ 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
+ 	struct drm_encoder *test_encoder;
+-	struct radeon_encoder_atom_dig *dig;
++	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
+ 	uint32_t dig_enc_in_use = 0;
+ 
+-	/* DCE4/5 */
+-	if (ASIC_IS_DCE4(rdev)) {
+-		dig = radeon_encoder->enc_priv;
+-		if (ASIC_IS_DCE41(rdev)) {
++	if (ASIC_IS_DCE6(rdev)) {
++		/* DCE6 */
++		switch (radeon_encoder->encoder_id) {
++		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
++			if (dig->linkb)
++				return 1;
++			else
++				return 0;
++			break;
++		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
++			if (dig->linkb)
++				return 3;
++			else
++				return 2;
++			break;
++		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
++			if (dig->linkb)
++				return 5;
++			else
++				return 4;
++			break;
++		}
++	} else if (ASIC_IS_DCE4(rdev)) {
++		/* DCE4/5 */
++		if (ASIC_IS_DCE41(rdev) && !ASIC_IS_DCE61(rdev)) {
+ 			/* ontario follows DCE4 */
+ 			if (rdev->family == CHIP_PALM) {
+ 				if (dig->linkb)
+
 
