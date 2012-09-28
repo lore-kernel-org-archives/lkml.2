@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965439Ab2I1Thg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:37:36 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965316Ab2I1TAR (ORCPT
+	id S1031400Ab2I1Thr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:37:47 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:38829 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965316Ab2I1Tho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:00:17 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Toshi Kani <toshi.kani@hp.com>, Lisa Mitchell <lisa.mitchell@hp.com>,
-        Thomas Mingarelli <Thomas.Mingarelli@hp.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [ 130/262] hpwdt: Fix kdump issue in hpwdt
-Date: Fri, 28 Sep 2012 11:50:59 -0700
-Message-Id: <20120928183013.375493433@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
-References: <20120928182957.993484211@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 28 Sep 2012 15:37:44 -0400
+From: Matt Porter <mporter@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Benoit Cousson <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Sekhar Nori <nsekhar@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Subject: [PATCH v2 0/7] uio_pruss cleanup and platform support
+Date: Fri, 28 Sep 2012 15:37:45 -0400
+Message-Id: <1348861072-14507-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Changes since v1:
+	- Replaced uio_pruss private SRAM API use with genalloc
+	- Added DA850 platform device and clock support
+	- Added DA850 L3 RAM gen_pool support
+	- Split out DT binding
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+This series enables uio_pruss on both DA850 and AM33xx. The driver
+previously was not enabled by any platform and the private SRAM API
+was accessing an invalid SRAM bank for use on DA850. For AM33xx,
+DT, pinctrl, and runtime PM support are added since AM33xx only
+boots via DT.
 
-------------------
+The AM33xx support requires some help in hwmod due to the following
+comment in arch/arm/mach-omap2/omap_hwmod.c:
+	/*
+	 * If an IP block contains HW reset lines and any of them are
+	 * asserted, we let integration code associated with that
+	 * block handle the enable.  We've received very little
+	 * information on what those driver authors need, and until
+	 * detailed information is provided and the driver code is
+	 * posted to the public lists, this is probably the best we
+	 * can do.
+	 */
 
-From: Toshi Kani <toshi.kani@hp.com>
+The approach to deal with the hardware reset (for at least the pruss
+hwmod) was to add a generic omap property to properly define this
+hardware. The implementation simply deasserts any rst lines that
+are called out in the property when the omap_device is
+instantiated. This is not the ideal implementation as the sequence is
+a bit wrong for pruss since the busy check during the hard reset
+will fail, even though it fails in a benign manner. Ideally, we would
+want the implementation to observe the ti,deassert-hard-reset property
+and use that in omap_hwmod.c:_enable() *after* the module is unidled
+and the clocks active. However, this is actually functional for purposes
+of getting the uio_pruss driver up and running.
 
-commit 308b135e4fcc00c80c07e0e04e7afa8edf78583c upstream.
+Matt Porter (7):
+  uio: uio_pruss: replace private SRAM API with genalloc
+  uio: uio_pruss: add support for am33xx
+  uio: dt: add TI PRUSS binding
+  ARM: davinci: Add support for an L3RAM gen_pool
+  ARM: davinci: Add support for PRUSS on DA850
+  ARM: omap: add DT support for deasserting hardware reset lines
+  ARM: dts: AM33xx PRUSS support
 
-kdump can be interrupted by watchdog timer when the timer is left
-activated on the crash kernel. Changed the hpwdt driver to disable
-watchdog timer at boot-time. This assures that watchdog timer is
-disabled until /dev/watchdog is opened, and prevents watchdog timer
-to be left running on the crash kernel.
+ .../devicetree/bindings/arm/omap/omap.txt          |    2 +
+ Documentation/devicetree/bindings/uio/pruss.txt    |   17 +++
+ arch/arm/boot/dts/am335x-bone.dts                  |    4 +
+ arch/arm/boot/dts/am33xx.dtsi                      |   11 ++
+ arch/arm/mach-davinci/board-da850-evm.c            |   12 +++
+ arch/arm/mach-davinci/da850.c                      |    9 ++
+ arch/arm/mach-davinci/devices-da8xx.c              |   66 ++++++++++++
+ arch/arm/mach-davinci/include/mach/common.h        |    2 +
+ arch/arm/mach-davinci/include/mach/da8xx.h         |    3 +
+ arch/arm/mach-davinci/include/mach/sram.h          |    3 +
+ arch/arm/mach-davinci/sram.c                       |   28 ++++-
+ arch/arm/plat-omap/omap_device.c                   |   25 ++++-
+ drivers/uio/Kconfig                                |    5 +-
+ drivers/uio/uio_pruss.c                            |  108 +++++++++++++++-----
+ include/linux/platform_data/uio_pruss.h            |    3 +-
+ 15 files changed, 269 insertions(+), 29 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/uio/pruss.txt
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Lisa Mitchell <lisa.mitchell@hp.com>
-Signed-off-by: Thomas Mingarelli <Thomas.Mingarelli@hp.com>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/watchdog/hpwdt.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -814,6 +814,9 @@ static int __devinit hpwdt_init_one(stru
- 	hpwdt_timer_reg = pci_mem_addr + 0x70;
- 	hpwdt_timer_con = pci_mem_addr + 0x72;
- 
-+	/* Make sure that timer is disabled until /dev/watchdog is opened */
-+	hpwdt_stop();
-+
- 	/* Make sure that we have a valid soft_margin */
- 	if (hpwdt_change_timer(soft_margin))
- 		hpwdt_change_timer(DEFAULT_MARGIN);
-
+-- 
+1.7.9.5
 
