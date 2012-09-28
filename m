@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423145Ab2I1VEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:04:30 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42085 "EHLO
+	id S1032737Ab2I1VEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:04:49 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57438 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1032935Ab2I1Uq7 (ORCPT
+	by vger.kernel.org with ESMTP id S1031878Ab2I1Uq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:46:59 -0400
-X-Sasl-enc: J9vkZzTxmcCLwkc5TUOC67SxqtLiE82shNIF1z3cgYRA 1348865218
+	Fri, 28 Sep 2012 16:46:58 -0400
+X-Sasl-enc: U//ULSA9fBLARz2QcQ8kFmIclE+QW8/l0T5Jy/u59eCW 1348865217
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "\"will.deacon@arm.com, arm@kernel.org,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-	Tetsuyuki Kobayashi\"" <koba@kmckk.co.jp>,
-        Tetsuyuki Kobayashi <koba@kmckk.co.jp>
-Subject: [ 058/127] ARM: fix bad applied patch for arch/arm/Kconfig of stable 3.0.y tree.
-Date: Fri, 28 Sep 2012 13:33:51 -0700
-Message-Id: <20120928203052.616178747@linuxfoundation.org>
+        Toshi Kani <toshi.kani@hp.com>, Lisa Mitchell <lisa.mitchell@hp.com>,
+        Thomas Mingarelli <Thomas.Mingarelli@hp.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [ 057/127] hpwdt: Fix kdump issue in hpwdt
+Date: Fri, 28 Sep 2012 13:33:50 -0700
+Message-Id: <20120928203052.498674723@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -30,89 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuyuki Kobayashi <koba@kmckk.co.jp>
+From: Toshi Kani <toshi.kani@hp.com>
 
-No upstream commit as this is a merge error in the 3.0 tree.
+commit 308b135e4fcc00c80c07e0e04e7afa8edf78583c upstream.
 
-ARM_ERRATA_764369 and PL310_ERRATA_769419 do not appear in config menu in
-stable 3.0.y tree.
-This is because backported patch for arm/arm/Kconfig applied wrong place.
-This patch solves it.
+kdump can be interrupted by watchdog timer when the timer is left
+activated on the crash kernel. Changed the hpwdt driver to disable
+watchdog timer at boot-time. This assures that watchdog timer is
+disabled until /dev/watchdog is opened, and prevents watchdog timer
+to be left running on the crash kernel.
 
-Signed-off-by: Tetsuyuki Kobayashi <koba@kmckk.co.jp>
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Lisa Mitchell <lisa.mitchell@hp.com>
+Signed-off-by: Thomas Mingarelli <Thomas.Mingarelli@hp.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/Kconfig |   52 ++++++++++++++++++++++++++--------------------------
- 1 file changed, 26 insertions(+), 26 deletions(-)
+ drivers/watchdog/hpwdt.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1234,6 +1234,32 @@ config ARM_ERRATA_754327
- 	  This workaround defines cpu_relax() as smp_mb(), preventing correctly
- 	  written polling loops from denying visibility of updates to memory.
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -773,6 +773,9 @@ static int __devinit hpwdt_init_one(stru
+ 	hpwdt_timer_reg = pci_mem_addr + 0x70;
+ 	hpwdt_timer_con = pci_mem_addr + 0x72;
  
-+config ARM_ERRATA_764369
-+	bool "ARM errata: Data cache line maintenance operation by MVA may not succeed"
-+	depends on CPU_V7 && SMP
-+	help
-+	  This option enables the workaround for erratum 764369
-+	  affecting Cortex-A9 MPCore with two or more processors (all
-+	  current revisions). Under certain timing circumstances, a data
-+	  cache line maintenance operation by MVA targeting an Inner
-+	  Shareable memory region may fail to proceed up to either the
-+	  Point of Coherency or to the Point of Unification of the
-+	  system. This workaround adds a DSB instruction before the
-+	  relevant cache maintenance functions and sets a specific bit
-+	  in the diagnostic control register of the SCU.
++	/* Make sure that timer is disabled until /dev/watchdog is opened */
++	hpwdt_stop();
 +
-+config PL310_ERRATA_769419
-+	bool "PL310 errata: no automatic Store Buffer drain"
-+	depends on CACHE_L2X0
-+	help
-+	  On revisions of the PL310 prior to r3p2, the Store Buffer does
-+	  not automatically drain. This can cause normal, non-cacheable
-+	  writes to be retained when the memory system is idle, leading
-+	  to suboptimal I/O performance for drivers using coherent DMA.
-+	  This option adds a write barrier to the cpu_idle loop so that,
-+	  on systems with an outer cache, the store buffer is drained
-+	  explicitly.
-+
- endmenu
- 
- source "arch/arm/common/Kconfig"
-@@ -1298,32 +1324,6 @@ source "drivers/pci/Kconfig"
- 
- source "drivers/pcmcia/Kconfig"
- 
--config ARM_ERRATA_764369
--	bool "ARM errata: Data cache line maintenance operation by MVA may not succeed"
--	depends on CPU_V7 && SMP
--	help
--	  This option enables the workaround for erratum 764369
--	  affecting Cortex-A9 MPCore with two or more processors (all
--	  current revisions). Under certain timing circumstances, a data
--	  cache line maintenance operation by MVA targeting an Inner
--	  Shareable memory region may fail to proceed up to either the
--	  Point of Coherency or to the Point of Unification of the
--	  system. This workaround adds a DSB instruction before the
--	  relevant cache maintenance functions and sets a specific bit
--	  in the diagnostic control register of the SCU.
--
--config PL310_ERRATA_769419
--	bool "PL310 errata: no automatic Store Buffer drain"
--	depends on CACHE_L2X0
--	help
--	  On revisions of the PL310 prior to r3p2, the Store Buffer does
--	  not automatically drain. This can cause normal, non-cacheable
--	  writes to be retained when the memory system is idle, leading
--	  to suboptimal I/O performance for drivers using coherent DMA.
--	  This option adds a write barrier to the cpu_idle loop so that,
--	  on systems with an outer cache, the store buffer is drained
--	  explicitly.
--
- endmenu
- 
- menu "Kernel Features"
+ 	/* Make sure that we have a valid soft_margin */
+ 	if (hpwdt_change_timer(soft_margin))
+ 		hpwdt_change_timer(DEFAULT_MARGIN);
 
 
