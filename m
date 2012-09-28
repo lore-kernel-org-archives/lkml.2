@@ -1,93 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab2I1CUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 22:20:22 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:42914 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab2I1CUS (ORCPT
+	id S1756424Ab2I1CWn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 22:22:43 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50255 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab2I1CWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 22:20:18 -0400
-From: GeneralTouch <aroundight77@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>, yxhma <yxhma@163.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xianhan Yu <aroundight77@gmail.com>
-Subject: [PATCH 1/1] hid:Fix problem on GeneralTouch multi-touchscreen
-Date: Fri, 28 Sep 2012 10:18:59 +0800
-Message-Id: <1348798739-2950-1-git-send-email-aroundight77@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 27 Sep 2012 22:22:41 -0400
+Message-ID: <506509E4.1090000@gmail.com>
+Date: Fri, 28 Sep 2012 10:22:28 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: wency@cn.fujitsu.com
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [RFC v9 PATCH 01/21] memory-hotplug: rename remove_memory() to
+ offline_memory()/offline_pages()
+References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <1346837155-534-2-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1346837155-534-2-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xianhan Yu <aroundight77@gmail.com>
+On 09/05/2012 05:25 PM, wency@cn.fujitsu.com wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>
+> remove_memory() only try to offline pages. It is called in two cases:
+> 1. hot remove a memory device
+> 2. echo offline >/sys/devices/system/memory/memoryXX/state
+>
+> In the 1st case, we should also change memory block's state, and notify
+> the userspace that the memory block's state is changed after offlining
+> pages.
+>
+> So rename remove_memory() to offline_memory()/offline_pages(). And in
+> the 1st case, offline_memory() will be used. The function offline_memory()
+> is not implemented. In the 2nd case, offline_pages() will be used.
 
-Fix the touch-up no response problem on GeneralTouch twofingers touchscreen and modify the driver for new GeneralTouch PWT touchscreen.
+But this time there is not a function associated with add_memory.
 
-Signed-off-by: Xianhan Yu <aroundight77@gmail.com>
----
- drivers/hid/hid-ids.h        |    1 +
- drivers/hid/hid-multitouch.c |   20 ++++++++++++++++++--
- 2 files changed, 19 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 1dcb76f..a6d5890 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -305,6 +305,7 @@
- 
- #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
- #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
- 
- #define USB_VENDOR_ID_GLAB		0x06c2
- #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 59c8b5c..7aece16 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -115,6 +115,8 @@ struct mt_device {
- #define MT_CLS_EGALAX_SERIAL			0x0104
- #define MT_CLS_TOPSEED				0x0105
- #define MT_CLS_PANASONIC			0x0106
-+#define MT_CLS_GENERALTOUCH_TWOFINGERS		0x0107
-+#define MT_CLS_GENERALTOUCH_PWT_TENFINGERS	0x0108
- 
- #define MT_DEFAULT_MAXCONTACT	10
- 
-@@ -215,7 +217,18 @@ static struct mt_class mt_classes[] = {
- 	{ .name = MT_CLS_PANASONIC,
- 		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
- 		.maxcontacts = 4 },
--
-+	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
-+		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
-+			MT_QUIRK_VALID_IS_INRANGE |
-+			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
-+		.maxcontacts = 2
-+	},
-+	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
-+			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
-+		.maxcontacts = 10
-+	},
-+
- 	{ }
- };
- 
-@@ -893,9 +906,12 @@ static const struct hid_device_id mt_devices[] = {
- 			USB_DEVICE_ID_ELO_TS2515) },
- 
- 	/* GeneralTouch panel */
--	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
-+	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
- 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
- 			USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
- 
- 	/* Gametel game controller */
- 	{ .driver_data = MT_CLS_DEFAULT,
--- 
-1.7.9.5
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>   drivers/acpi/acpi_memhotplug.c |    2 +-
+>   drivers/base/memory.c          |    9 +++------
+>   include/linux/memory_hotplug.h |    3 ++-
+>   mm/memory_hotplug.c            |   22 ++++++++++++++--------
+>   4 files changed, 20 insertions(+), 16 deletions(-)
+>
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 24c807f..2a7beac 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -318,7 +318,7 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+>   	 */
+>   	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>   		if (info->enabled) {
+> -			result = remove_memory(info->start_addr, info->length);
+> +			result = offline_memory(info->start_addr, info->length);
+>   			if (result)
+>   				return result;
+>   		}
+> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> index 7dda4f7..44e7de6 100644
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -248,26 +248,23 @@ static bool pages_correctly_reserved(unsigned long start_pfn,
+>   static int
+>   memory_block_action(unsigned long phys_index, unsigned long action)
+>   {
+> -	unsigned long start_pfn, start_paddr;
+> +	unsigned long start_pfn;
+>   	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
+>   	struct page *first_page;
+>   	int ret;
+>   
+>   	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
+> +	start_pfn = page_to_pfn(first_page);
+>   
+>   	switch (action) {
+>   		case MEM_ONLINE:
+> -			start_pfn = page_to_pfn(first_page);
+> -
+>   			if (!pages_correctly_reserved(start_pfn, nr_pages))
+>   				return -EBUSY;
+>   
+>   			ret = online_pages(start_pfn, nr_pages);
+>   			break;
+>   		case MEM_OFFLINE:
+> -			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
+> -			ret = remove_memory(start_paddr,
+> -					    nr_pages << PAGE_SHIFT);
+> +			ret = offline_pages(start_pfn, nr_pages);
+>   			break;
+>   		default:
+>   			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
+> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+> index 910550f..c183f39 100644
+> --- a/include/linux/memory_hotplug.h
+> +++ b/include/linux/memory_hotplug.h
+> @@ -233,7 +233,8 @@ static inline int is_mem_section_removable(unsigned long pfn,
+>   extern int mem_online_node(int nid);
+>   extern int add_memory(int nid, u64 start, u64 size);
+>   extern int arch_add_memory(int nid, u64 start, u64 size);
+> -extern int remove_memory(u64 start, u64 size);
+> +extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
+> +extern int offline_memory(u64 start, u64 size);
+>   extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>   								int nr_pages);
+>   extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 3ad25f9..bb42316 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -866,7 +866,7 @@ check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
+>   	return offlined;
+>   }
+>   
+> -static int __ref offline_pages(unsigned long start_pfn,
+> +static int __ref __offline_pages(unsigned long start_pfn,
+>   		  unsigned long end_pfn, unsigned long timeout)
+>   {
+>   	unsigned long pfn, nr_pages, expire;
+> @@ -994,18 +994,24 @@ out:
+>   	return ret;
+>   }
+>   
+> -int remove_memory(u64 start, u64 size)
+> +int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+>   {
+> -	unsigned long start_pfn, end_pfn;
+> +	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
+> +}
+>   
+> -	start_pfn = PFN_DOWN(start);
+> -	end_pfn = start_pfn + PFN_DOWN(size);
+> -	return offline_pages(start_pfn, end_pfn, 120 * HZ);
+> +int offline_memory(u64 start, u64 size)
+> +{
+> +	return -EINVAL;
+>   }
+>   #else
+> -int remove_memory(u64 start, u64 size)
+> +int offline_pages(unsigned long start, unsigned long size)
+> +{
+> +	return -EINVAL;
+> +}
+> +
+> +int offline_memory(u64 start, u64 size)
+>   {
+>   	return -EINVAL;
+>   }
+>   #endif /* CONFIG_MEMORY_HOTREMOVE */
+> -EXPORT_SYMBOL_GPL(remove_memory);
+> +EXPORT_SYMBOL_GPL(offline_memory);
 
