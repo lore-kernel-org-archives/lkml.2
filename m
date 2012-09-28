@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033218Ab2I1V2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:28:32 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964865Ab2I1U2x (ORCPT
+	id S1033232Ab2I1V2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:28:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032726Ab2I1U2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:28:53 -0400
+	Fri, 28 Sep 2012 16:28:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 136/218] xhci: Make handover code more robust
-Date: Fri, 28 Sep 2012 13:15:53 -0700
-Message-Id: <20120928201517.084860519@linuxfoundation.org>
+Subject: [ 135/218] xhci: Fix a logical vs bitwise AND bug
+Date: Fri, 28 Sep 2012 13:15:52 -0700
+Message-Id: <20120928201516.963564618@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -27,67 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit e955a1cd086de4d165ae0f4c7be7289d84b63bdc upstream.
+commit 052c7f9ffb0e95843e75448d02664459253f9ff8 upstream.
 
-My test platform (Intel DX79SI) boots reliably under BIOS, but frequently
-crashes when booting via UEFI. I finally tracked this down to the xhci
-handoff code. It seems that reads from the device occasionally just return
-0xff, resulting in xhci_find_next_cap_offset generating a value that's
-larger than the resource region. We then oops when attempting to read the
-value. Sanity checking that value lets us avoid the crash.
+The intent was to test whether the flag was set.
 
-I've no idea what's causing the underlying problem, and xhci still doesn't
-actually *work* even with this, but the machine at least boots which will
-probably make further debugging easier.
+This patch should be backported to stable kernels as old as 3.0, since
+it fixes a bug in commit e95829f474f0db3a4d940cae1423783edd966027 "xhci:
+Switch PPT ports to EHCI on shutdown.", which was marked for stable.
 
-This should be backported to kernels as old as 2.6.31, that contain the
-commit 66d4eadd8d067269ea8fead1a50fe87c2979a80d "USB: xhci: BIOS handoff
-and HW initialization."
-
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -841,12 +841,12 @@ static void __devinit quirk_usb_handoff_
- 	void __iomem *op_reg_base;
- 	u32 val;
- 	int timeout;
-+	int len = pci_resource_len(pdev, 0);
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -760,7 +760,7 @@ void xhci_shutdown(struct usb_hcd *hcd)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
  
- 	if (!mmio_resource_enabled(pdev, 0))
- 		return;
+-	if (xhci->quirks && XHCI_SPURIOUS_REBOOT)
++	if (xhci->quirks & XHCI_SPURIOUS_REBOOT)
+ 		usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
  
--	base = ioremap_nocache(pci_resource_start(pdev, 0),
--				pci_resource_len(pdev, 0));
-+	base = ioremap_nocache(pci_resource_start(pdev, 0), len);
- 	if (base == NULL)
- 		return;
- 
-@@ -856,9 +856,17 @@ static void __devinit quirk_usb_handoff_
- 	 */
- 	ext_cap_offset = xhci_find_next_cap_offset(base, XHCI_HCC_PARAMS_OFFSET);
- 	do {
-+		if ((ext_cap_offset + sizeof(val)) > len) {
-+			/* We're reading garbage from the controller */
-+			dev_warn(&pdev->dev,
-+				 "xHCI controller failing to respond");
-+			return;
-+		}
-+
- 		if (!ext_cap_offset)
- 			/* We've reached the end of the extended capabilities */
- 			goto hc_init;
-+
- 		val = readl(base + ext_cap_offset);
- 		if (XHCI_EXT_CAPS_ID(val) == XHCI_EXT_CAPS_LEGACY)
- 			break;
+ 	spin_lock_irq(&xhci->lock);
 
 
