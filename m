@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab2I1IBA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 04:01:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38084 "EHLO
+	id S1756916Ab2I1IBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 04:01:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38095 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab2I1IA6 (ORCPT
+	with ESMTP id S1752619Ab2I1IBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 04:00:58 -0400
-Date: Fri, 28 Sep 2012 01:00:27 -0700
+	Fri, 28 Sep 2012 04:01:43 -0400
+Date: Fri, 28 Sep 2012 01:01:23 -0700
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-g0gzzzjrvrzxl6kgwnil1e97@git.kernel.org>
+Message-ID: <tip-s248lool1ytyeul5g1qow8ih@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, tglx@linutronix.de
+        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
-        cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, tglx@linutronix.de
+        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] sched: Implement home-node awareness
-Git-Commit-ID: fc2fbef0374693278a767a3d31ef18293e68f6be
+Subject: [tip:sched/numa] sched/numa:
+  Implement NUMA home-node selection code
+Git-Commit-ID: 4ae834f767c59b42cdf2a5077a18388525ba78b2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,629 +28,482 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 28 Sep 2012 01:00:33 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 28 Sep 2012 01:01:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fc2fbef0374693278a767a3d31ef18293e68f6be
-Gitweb:     http://git.kernel.org/tip/fc2fbef0374693278a767a3d31ef18293e68f6be
+Commit-ID:  4ae834f767c59b42cdf2a5077a18388525ba78b2
+Gitweb:     http://git.kernel.org/tip/4ae834f767c59b42cdf2a5077a18388525ba78b2
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Sat, 3 Mar 2012 16:56:25 +0100
+AuthorDate: Mon, 16 Jul 2012 11:22:09 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 27 Sep 2012 17:04:44 +0200
+CommitDate: Thu, 27 Sep 2012 17:04:47 +0200
 
-sched: Implement home-node awareness
+sched/numa: Implement NUMA home-node selection code
 
-Implement home node preference in the scheduler's load-balancer.
+Now that we have infrastructure in place to migrate pages back to
+their home-node, and migrate memory towards the home-node, we need to
+set the home-node.
 
-This is done in four pieces:
+Instead of creating a seconday control loop, fully rely on the
+existing load-balancer to do the right thing. The home-node selection
+logic will simply pick the node the task has been found to run on
+for two consequtive samples (see task_tick_numa).
 
- - task_numa_hot(); make it harder to migrate tasks away from their
-   home-node, controlled using the NUMA_HOT feature flag.
+This means NUMA placement is directly related to regular placement.
+The home-node logic in the load-balancer tries to keep a task on the
+home-node wheras the fairness and work-conserving constraints will try
+and move it away.
 
- - select_task_rq_fair(); prefer placing the task in their home-node,
-   controlled using the NUMA_BIAS feature flag.
-
- - load_balance(); during the regular pull load-balance pass, try
-   pulling tasks that are on the wrong node first with a preference
-   of moving them nearer to their home-node through task_numa_hot(),
-   controlled through the NUMA_PULL feature flag.
-
- - load_balance(); when the balancer finds no imbalance, introduce
-   some such that it still prefers to move tasks towards their
-   home-node, using active load-balance if needed, controlled through
-   the NUMA_PULL_BIAS feature flag.
-
-In order to easily find off-node tasks, split the per-cpu task list
-into two parts.
+The balance between these two 'forces' is what will result in the NUMA
+placement.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Turner <pjt@google.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-g0gzzzjrvrzxl6kgwnil1e97@git.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-s248lool1ytyeul5g1qow8ih@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h   |    1 +
- kernel/sched/core.c     |   21 ++++-
- kernel/sched/debug.c    |    3 +
- kernel/sched/fair.c     |  248 +++++++++++++++++++++++++++++++++++++++++++++--
- kernel/sched/features.h |    8 ++
- kernel/sched/sched.h    |   16 +++
- 6 files changed, 286 insertions(+), 11 deletions(-)
+ include/linux/init_task.h |    3 +-
+ include/linux/mm_types.h  |    3 +
+ include/linux/sched.h     |   16 +++--
+ kernel/sched/core.c       |   16 ++++-
+ kernel/sched/fair.c       |  174 +++++++++++++++++++++++++++++++++++++++++++--
+ kernel/sched/features.h   |    1 +
+ kernel/sched/sched.h      |   33 ++++++---
+ kernel/sysctl.c           |   13 +++-
+ 8 files changed, 233 insertions(+), 26 deletions(-)
 
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 18906c1..36aca4e 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -145,7 +145,8 @@ extern struct task_group root_task_group;
+ 
+ #ifdef CONFIG_SCHED_NUMA
+ # define INIT_TASK_NUMA(tsk)						\
+-	.node = -1,
++	.node = -1,							\
++	.node_last = -1,
+ #else
+ # define INIT_TASK_NUMA(tsk)
+ #endif
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index bf78672..f407966 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -404,6 +404,9 @@ struct mm_struct {
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+ 	struct cpumask cpumask_allocation;
+ #endif
++#ifdef CONFIG_SCHED_NUMA
++	unsigned long numa_next_scan;
++#endif
+ 	struct uprobes_state uprobes_state;
+ };
+ 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d28ff49..8755ef1 100644
+index 8755ef1..63dde76 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -861,6 +861,7 @@ enum cpu_idle_type {
- #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
- #define SD_PREFER_SIBLING	0x1000	/* Prefer to place tasks in a sibling domain */
- #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
-+#define SD_NUMA			0x4000	/* cross-node balancing */
+@@ -1520,8 +1520,12 @@ struct task_struct {
+ 	short pref_node_fork;
+ #endif
+ #ifdef CONFIG_SCHED_NUMA
+-	int node;
+-#endif
++	int node;			/* task home node   */
++	int node_last;			/* home node filter */
++	u64 node_stamp;			/* migration stamp  */
++	unsigned long numa_contrib;
++#endif /* CONFIG_SCHED_NUMA */
++
+ 	struct rcu_head rcu;
  
- extern int __weak arch_sd_sibiling_asym_packing(void);
+ 	/*
+@@ -2037,22 +2041,22 @@ extern unsigned int sysctl_sched_nr_migrate;
+ extern unsigned int sysctl_sched_time_avg;
+ extern unsigned int sysctl_timer_migration;
+ extern unsigned int sysctl_sched_shares_window;
++extern unsigned int sysctl_sched_numa_task_period;
+ 
+ int sched_proc_update_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *length,
+ 		loff_t *ppos);
+-#endif
+-#ifdef CONFIG_SCHED_DEBUG
++
+ static inline unsigned int get_sysctl_timer_migration(void)
+ {
+ 	return sysctl_timer_migration;
+ }
+-#else
++#else /* CONFIG_SCHED_DEBUG */
+ static inline unsigned int get_sysctl_timer_migration(void)
+ {
+ 	return 1;
+ }
+-#endif
++#endif /* CONFIG_SCHED_DEBUG */
+ extern unsigned int sysctl_sched_rt_period;
+ extern int sysctl_sched_rt_runtime;
  
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a64c43b..f7e7432 100644
+index f7e7432..fda809d 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -5472,7 +5472,9 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
- DEFINE_PER_CPU(struct sched_domain *, sd_llc);
- DEFINE_PER_CPU(int, sd_llc_id);
- 
--static void update_top_cache_domain(int cpu)
-+DEFINE_PER_CPU(struct sched_domain *, sd_node);
+@@ -1533,6 +1533,15 @@ static void __sched_fork(struct task_struct *p)
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 	INIT_HLIST_HEAD(&p->preempt_notifiers);
+ #endif
 +
-+static void update_domain_cache(int cpu)
- {
- 	struct sched_domain *sd;
- 	int id = cpu;
-@@ -5515,6 +5517,15 @@ static void update_top_cache_domain(int cpu)
- 
- 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
- 	per_cpu(sd_llc_id, cpu) = id;
++#ifdef CONFIG_SCHED_NUMA
++	if (p->mm && atomic_read(&p->mm->mm_users) == 1)
++		p->mm->numa_next_scan = jiffies;
 +
-+	for_each_domain(cpu, sd) {
-+		if (cpumask_equal(sched_domain_span(sd),
-+				  cpumask_of_node(cpu_to_node(cpu))))
-+			goto got_node;
-+	}
-+	sd = NULL;
-+got_node:
-+	rcu_assign_pointer(per_cpu(sd_node, cpu), sd);
++	p->node = -1;
++	p->node_last = -1;
++	p->node_stamp = 0ULL;
++#endif /* CONFIG_NUMA */
  }
  
  /*
-@@ -5557,7 +5568,7 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
- 	rcu_assign_pointer(rq->sd, sd);
- 	destroy_sched_domains(tmp, cpu);
+@@ -5996,9 +6005,9 @@ static struct sched_domain_topology_level *sched_domain_topology = default_topol
+  * Requeues a task ensuring its on the right load-balance list so
+  * that it might get migrated to its new home.
+  *
+- * Note that we cannot actively migrate ourselves since our callers
+- * can be from atomic context. We rely on the regular load-balance
+- * mechanisms to move us around -- its all preference anyway.
++ * Since home-node is pure preference there's no hard migrate to force
++ * us anywhere, this also allows us to call this from atomic context if
++ * required.
+  */
+ void sched_setnode(struct task_struct *p, int node)
+ {
+@@ -6016,6 +6025,7 @@ void sched_setnode(struct task_struct *p, int node)
+ 		p->sched_class->put_prev_task(rq, p);
  
--	update_top_cache_domain(cpu);
-+	update_domain_cache(cpu);
- }
+ 	p->node = node;
++	p->node_last = node;
  
- /* cpus with isolated domains */
-@@ -6060,6 +6071,7 @@ sd_numa_init(struct sched_domain_topology_level *tl, int cpu)
- 					| 0*SD_SHARE_PKG_RESOURCES
- 					| 1*SD_SERIALIZE
- 					| 0*SD_PREFER_SIBLING
-+					| 1*SD_NUMA
- 					| sd_local_flags(level)
- 					,
- 		.last_balance		= jiffies,
-@@ -6852,6 +6864,11 @@ void __init sched_init(void)
- 		rq->avg_idle = 2*sysctl_sched_migration_cost;
- 
- 		INIT_LIST_HEAD(&rq->cfs_tasks);
-+#ifdef CONFIG_SCHED_NUMA
-+		INIT_LIST_HEAD(&rq->offnode_tasks);
-+		rq->offnode_running = 0;
-+		rq->offnode_weight = 0;
-+#endif
- 
- 		rq_attach_root(rq, &def_root_domain);
- #ifdef CONFIG_NO_HZ
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 6f79596..c9a5f75 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -132,6 +132,9 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
- 	SEQ_printf(m, "%15Ld %15Ld %15Ld.%06ld %15Ld.%06ld %15Ld.%06ld",
- 		0LL, 0LL, 0LL, 0L, 0LL, 0L, 0LL, 0L);
- #endif
-+#ifdef CONFIG_SCHED_NUMA
-+	SEQ_printf(m, " %d/%d", p->node, cpu_to_node(task_cpu(p)));
-+#endif
- #ifdef CONFIG_CGROUP_SCHED
- 	SEQ_printf(m, " %s", task_group_path(task_group(p)));
- #endif
+ 	if (running)
+ 		p->sched_class->set_curr_task(rq);
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index ffa10d6..29c4704 100644
+index 29c4704..a1560fc 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -26,6 +26,7 @@
- #include <linux/slab.h>
+@@ -27,6 +27,8 @@
  #include <linux/profile.h>
  #include <linux/interrupt.h>
-+#include <linux/random.h>
+ #include <linux/random.h>
++#include <linux/mempolicy.h>
++#include <linux/task_work.h>
  
  #include <trace/events/sched.h>
  
-@@ -2667,6 +2668,35 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	return target;
+@@ -774,6 +776,149 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
  }
  
+ /**************************************************
++ * Scheduling class numa methods.
++ *
++ * The purpose of the NUMA bits are to maintain compute (task) and data
++ * (memory) locality. We try and achieve this by making tasks stick to
++ * a particular node (their home node) but if fairness mandates they run
++ * elsewhere for long enough, we let the memory follow them.
++ *
++ * Tasks start out with their home-node unset (-1) this effectively means
++ * they act !NUMA until we've established the task is busy enough to bother
++ * with placement.
++ */
++
++static unsigned long task_h_load(struct task_struct *p);
++
 +#ifdef CONFIG_SCHED_NUMA
-+static inline bool pick_numa_rand(int n)
++static void account_offnode_enqueue(struct rq *rq, struct task_struct *p)
 +{
-+	return !(get_random_int() % n);
++	p->numa_contrib = task_h_load(p);
++	rq->offnode_weight += p->numa_contrib;
++	rq->offnode_running++;
++}
++static void account_offnode_dequeue(struct rq *rq, struct task_struct *p)
++{
++	rq->offnode_weight -= p->numa_contrib;
++	rq->offnode_running--;
 +}
 +
 +/*
-+ * Pick a random elegible CPU in the target node, hopefully faster
-+ * than doing a least-loaded scan.
++ * numa task sample period in ms: 2.5s
 + */
-+static int numa_select_node_cpu(struct task_struct *p, int node)
++unsigned int sysctl_sched_numa_task_period = 2500;
++
++/*
++ * The expensive part of numa migration is done from task_work context.
++ * Triggered from task_tick_numa().
++ */
++void task_numa_work(struct callback_head *work)
 +{
-+	int weight = cpumask_weight(cpumask_of_node(node));
-+	int i, cpu = -1;
++	unsigned long migrate, next_scan, now = jiffies;
++	struct task_struct *t, *p = current;
++	int node = p->node_last;
 +
-+	for_each_cpu_and(i, cpumask_of_node(node), tsk_cpus_allowed(p)) {
-+		if (cpu < 0 || pick_numa_rand(weight))
-+			cpu = i;
++	WARN_ON_ONCE(p != container_of(work, struct task_struct, rcu));
++
++	/*
++	 * Who cares about NUMA placement when they're dying.
++	 *
++	 * NOTE: make sure not to dereference p->mm before this check,
++	 * exit_task_work() happens _after_ exit_mm() so we could be called
++	 * without p->mm even though we still had it when we enqueued this
++	 * work.
++	 */
++	if (p->flags & PF_EXITING)
++		return;
++
++	/*
++	 * Enforce maximal migration frequency..
++	 */
++	migrate = p->mm->numa_next_scan;
++	if (time_before(now, migrate))
++		return;
++
++	next_scan = now + 2*msecs_to_jiffies(sysctl_sched_numa_task_period);
++	if (cmpxchg(&p->mm->numa_next_scan, migrate, next_scan) != migrate)
++		return;
++
++	rcu_read_lock();
++	t = p;
++	do {
++		sched_setnode(t, node);
++	} while ((t = next_thread(t)) != p);
++	rcu_read_unlock();
++
++	lazy_migrate_process(p->mm);
++}
++
++/*
++ * Sample task location from hardirq context (tick), this has minimal bias with
++ * obvious exceptions of frequency interference and tick avoidance techniques.
++ * If this were to become a problem we could move this sampling into the
++ * sleep/wakeup path -- but we'd prefer to avoid that for obvious reasons.
++ */
++void task_tick_numa(struct rq *rq, struct task_struct *curr)
++{
++	u64 period, now;
++	int node;
++
++	/*
++	 * We don't care about NUMA placement if we don't have memory.
++	 */
++	if (!curr->mm)
++		return;
++
++	/*
++	 * Sample our node location every @sysctl_sched_numa_task_period
++	 * runtime ms. We use a two stage selection in order to filter
++	 * unlikely locations.
++	 *
++	 * If P(n) is the probability we're on node 'n', then the probability
++	 * we sample the same node twice is P(n)^2. This quadric squishes small
++	 * values and makes it more likely we end up on nodes where we have
++	 * significant presence.
++	 *
++	 * Using runtime rather than walltime has the dual advantage that
++	 * we (mostly) drive the selection from busy threads and that the
++	 * task needs to have done some actual work before we bother with
++	 * NUMA placement.
++	 */
++	now = curr->se.sum_exec_runtime;
++	period = (u64)sysctl_sched_numa_task_period * NSEC_PER_MSEC;
++
++	if (now - curr->node_stamp > period) {
++		curr->node_stamp = now;
++		node = numa_node_id();
++
++		if (curr->node_last == node && curr->node != node) {
++			/*
++			 * We can re-use curr->rcu because we checked curr->mm
++			 * != NULL so release_task()->call_rcu() was not called
++			 * yet and exit_task_work() is called before
++			 * exit_notify().
++			 */
++			init_task_work(&curr->rcu, task_numa_work);
++			task_work_add(curr, &curr->rcu, true);
++		}
++		curr->node_last = node;
 +	}
-+
-+	return cpu;
 +}
 +#else
-+static int numa_select_node_cpu(struct task_struct *p, int node)
++static void account_offnode_enqueue(struct rq *rq, struct task_struct *p)
 +{
-+	return -1;
++}
++
++static void account_offnode_dequeue(struct rq *rq, struct task_struct *p)
++{
++}
++
++static void task_tick_numa(struct rq *rq, struct task_struct *curr)
++{
 +}
 +#endif /* CONFIG_SCHED_NUMA */
 +
- /*
-  * sched_balance_self: balance the current task (running on cpu) in domains
-  * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
-@@ -2687,6 +2717,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 	int new_cpu = cpu;
- 	int want_affine = 0;
- 	int sync = wake_flags & WF_SYNC;
-+	int node = tsk_home_node(p);
++/**************************************************
+  * Scheduling class queueing methods:
+  */
  
- 	if (p->nr_cpus_allowed == 1)
- 		return prev_cpu;
-@@ -2698,6 +2729,33 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 	}
- 
- 	rcu_read_lock();
-+	if (sched_feat_numa(NUMA_BIAS) && node != -1) {
-+		/*
-+		 * For fork,exec find the idlest cpu in the home-node.
-+		 */
-+		if (sd_flag & (SD_BALANCE_FORK|SD_BALANCE_EXEC)) {
-+			int node_cpu = numa_select_node_cpu(p, node);
-+			if (node_cpu < 0)
-+				goto find_sd;
+@@ -784,9 +929,19 @@ account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	if (!parent_entity(se))
+ 		update_load_add(&rq_of(cfs_rq)->load, se->load.weight);
+ #ifdef CONFIG_SMP
+-	if (entity_is_task(se))
+-		list_add(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
+-#endif
++	if (entity_is_task(se)) {
++		struct rq *rq = rq_of(cfs_rq);
++		struct task_struct *p = task_of(se);
++		struct list_head *tasks = &rq->cfs_tasks;
 +
-+			new_cpu = cpu = node_cpu;
-+			sd = per_cpu(sd_node, cpu);
-+			goto pick_idlest;
++		if (offnode_task(p)) {
++			account_offnode_enqueue(rq, p);
++			tasks = offnode_tasks(rq);
 +		}
 +
-+		/*
-+		 * For wake, pretend we were running in the home-node.
-+		 */
-+		if (cpu_to_node(prev_cpu) != node) {
-+			int node_cpu = numa_select_node_cpu(p, node);
-+			if (node_cpu < 0)
-+				goto find_sd;
-+
-+			prev_cpu = node_cpu;
-+		}
++		list_add(&se->group_node, tasks);
 +	}
-+
-+find_sd:
- 	for_each_domain(cpu, tmp) {
- 		if (!(tmp->flags & SD_LOAD_BALANCE))
- 			continue;
-@@ -2724,6 +2782,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 		goto unlock;
- 	}
- 
-+pick_idlest:
- 	while (sd) {
- 		int load_idx = sd->forkexec_idx;
- 		struct sched_group *group;
-@@ -3046,6 +3105,8 @@ struct lb_env {
- 
- 	unsigned int		flags;
- 
-+	struct list_head	*tasks;
-+
- 	unsigned int		loop;
- 	unsigned int		loop_break;
- 	unsigned int		loop_max;
-@@ -3066,6 +3127,23 @@ static void move_task(struct task_struct *p, struct lb_env *env)
- 	check_preempt_curr(env->dst_rq, p, 0);
++#endif /* CONFIG_SMP */
+ 	cfs_rq->nr_running++;
  }
  
-+static int task_numa_hot(struct task_struct *p, int from_cpu, int to_cpu)
-+{
-+	int from_dist, to_dist;
-+	int node = tsk_home_node(p);
+@@ -796,8 +951,14 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	update_load_sub(&cfs_rq->load, se->load.weight);
+ 	if (!parent_entity(se))
+ 		update_load_sub(&rq_of(cfs_rq)->load, se->load.weight);
+-	if (entity_is_task(se))
++	if (entity_is_task(se)) {
++		struct task_struct *p = task_of(se);
 +
-+	if (!sched_feat_numa(NUMA_HOT) || node == -1)
-+		return 0; /* no node preference */
+ 		list_del_init(&se->group_node);
 +
-+	from_dist = node_distance(cpu_to_node(from_cpu), node);
-+	to_dist = node_distance(cpu_to_node(to_cpu), node);
-+
-+	if (to_dist < from_dist)
-+		return 0; /* getting closer is ok */
-+
-+	return 1; /* stick to where we are */
-+}
-+
- /*
-  * Is this task likely cache-hot:
-  */
-@@ -3151,6 +3229,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 	 */
++		if (offnode_task(p))
++			account_offnode_dequeue(rq_of(cfs_rq), p);
++	}
+ 	cfs_rq->nr_running--;
+ }
  
- 	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
-+	tsk_cache_hot |= task_numa_hot(p, env->src_cpu, env->dst_cpu);
- 	if (!tsk_cache_hot ||
- 		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
- #ifdef CONFIG_SCHEDSTATS
-@@ -3176,11 +3255,11 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
-  *
-  * Called with both runqueues locked.
-  */
--static int move_one_task(struct lb_env *env)
-+static int __move_one_task(struct lb_env *env)
- {
- 	struct task_struct *p, *n;
- 
--	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
-+	list_for_each_entry_safe(p, n, env->tasks, se.group_node) {
- 		if (throttled_lb_pair(task_group(p), env->src_rq->cpu, env->dst_cpu))
- 			continue;
- 
-@@ -3199,6 +3278,21 @@ static int move_one_task(struct lb_env *env)
+@@ -3293,8 +3454,6 @@ static int move_one_task(struct lb_env *env)
  	return 0;
  }
  
-+static int move_one_task(struct lb_env *env)
-+{
-+	if (sched_feat_numa(NUMA_PULL)) {
-+		env->tasks = offnode_tasks(env->src_rq);
-+		if (__move_one_task(env))
-+			return 1;
-+	}
-+
-+	env->tasks = &env->src_rq->cfs_tasks;
-+	if (__move_one_task(env))
-+		return 1;
-+
-+	return 0;
-+}
-+
- static unsigned long task_h_load(struct task_struct *p);
- 
+-static unsigned long task_h_load(struct task_struct *p);
+-
  static const unsigned int sched_nr_migrate_break = 32;
-@@ -3212,7 +3306,6 @@ static const unsigned int sched_nr_migrate_break = 32;
-  */
- static int move_tasks(struct lb_env *env)
- {
--	struct list_head *tasks = &env->src_rq->cfs_tasks;
- 	struct task_struct *p;
- 	unsigned long load;
- 	int pulled = 0;
-@@ -3220,8 +3313,9 @@ static int move_tasks(struct lb_env *env)
- 	if (env->imbalance <= 0)
- 		return 0;
- 
--	while (!list_empty(tasks)) {
--		p = list_first_entry(tasks, struct task_struct, se.group_node);
-+again:
-+	while (!list_empty(env->tasks)) {
-+		p = list_first_entry(env->tasks, struct task_struct, se.group_node);
- 
- 		env->loop++;
- 		/* We've more or less seen every task there is, call it quits */
-@@ -3232,7 +3326,7 @@ static int move_tasks(struct lb_env *env)
- 		if (env->loop > env->loop_break) {
- 			env->loop_break += sched_nr_migrate_break;
- 			env->flags |= LBF_NEED_BREAK;
--			break;
-+			goto out;
- 		}
- 
- 		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
-@@ -3260,7 +3354,7 @@ static int move_tasks(struct lb_env *env)
- 		 * the critical section.
- 		 */
- 		if (env->idle == CPU_NEWLY_IDLE)
--			break;
-+			goto out;
- #endif
- 
- 		/*
-@@ -3268,13 +3362,20 @@ static int move_tasks(struct lb_env *env)
- 		 * weighted load.
- 		 */
- 		if (env->imbalance <= 0)
--			break;
-+			goto out;
- 
- 		continue;
- next:
--		list_move_tail(&p->se.group_node, tasks);
-+		list_move_tail(&p->se.group_node, env->tasks);
-+	}
-+
-+	if (env->tasks == offnode_tasks(env->src_rq)) {
-+		env->tasks = &env->src_rq->cfs_tasks;
-+		env->loop = 0;
-+		goto again;
- 	}
- 
-+out:
- 	/*
- 	 * Right now, this is one of only two places move_task() is called,
- 	 * so we can safely collect move_task() stats here rather than
-@@ -3429,6 +3530,11 @@ struct sd_lb_stats {
- 	unsigned int  busiest_group_weight;
- 
- 	int group_imb; /* Is there imbalance in this sd */
-+#ifdef CONFIG_SCHED_NUMA
-+	struct sched_group *numa_group; /* group which has offnode_tasks */
-+	unsigned long numa_group_weight;
-+	unsigned long numa_group_running;
-+#endif
- };
  
  /*
-@@ -3444,6 +3550,10 @@ struct sg_lb_stats {
- 	unsigned long group_weight;
- 	int group_imb; /* Is there an imbalance in the group ? */
- 	int group_has_capacity; /* Is there extra capacity in the group? */
-+#ifdef CONFIG_SCHED_NUMA
-+	unsigned long numa_weight;
-+	unsigned long numa_running;
-+#endif
- };
- 
- /**
-@@ -3472,6 +3582,110 @@ static inline int get_sd_load_idx(struct sched_domain *sd,
- 	return load_idx;
+@@ -5174,6 +5333,9 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
+ 		cfs_rq = cfs_rq_of(se);
+ 		entity_tick(cfs_rq, se, queued);
+ 	}
++
++	if (sched_feat_numa(NUMA))
++		task_tick_numa(rq, curr);
  }
  
-+#ifdef CONFIG_SCHED_NUMA
-+static inline void update_sg_numa_stats(struct sg_lb_stats *sgs, struct rq *rq)
-+{
-+	sgs->numa_weight += rq->offnode_weight;
-+	sgs->numa_running += rq->offnode_running;
-+}
-+
-+/*
-+ * Since the offnode lists are indiscriminate (they contain tasks for all other
-+ * nodes) it is impossible to say if there's any task on there that wants to
-+ * move towards the pulling cpu. Therefore select a random offnode list to pull
-+ * from such that eventually we'll try them all.
-+ *
-+ * Select a random group that has offnode tasks as sds->numa_group
-+ */
-+static inline void update_sd_numa_stats(struct sched_domain *sd,
-+		struct sched_group *group, struct sd_lb_stats *sds,
-+		int local_group, struct sg_lb_stats *sgs)
-+{
-+	if (!(sd->flags & SD_NUMA))
-+		return;
-+
-+	if (local_group)
-+		return;
-+
-+	if (!sgs->numa_running)
-+		return;
-+
-+	if (!sds->numa_group || pick_numa_rand(sd->span_weight / group->group_weight)) {
-+		sds->numa_group = group;
-+		sds->numa_group_weight = sgs->numa_weight;
-+		sds->numa_group_running = sgs->numa_running;
-+	}
-+}
-+
-+/*
-+ * Pick a random queue from the group that has offnode tasks.
-+ */
-+static struct rq *find_busiest_numa_queue(struct lb_env *env,
-+					  struct sched_group *group)
-+{
-+	struct rq *busiest = NULL, *rq;
-+	int cpu;
-+
-+	for_each_cpu_and(cpu, sched_group_cpus(group), env->cpus) {
-+		rq = cpu_rq(cpu);
-+		if (!rq->offnode_running)
-+			continue;
-+		if (!busiest || pick_numa_rand(group->group_weight))
-+			busiest = rq;
-+	}
-+
-+	return busiest;
-+}
-+
-+/*
-+ * Called in case of no other imbalance, if there is a queue running offnode
-+ * tasksk we'll say we're imbalanced anyway to nudge these tasks towards their
-+ * proper node.
-+ */
-+static inline int check_numa_busiest_group(struct lb_env *env, struct sd_lb_stats *sds)
-+{
-+	if (!sched_feat(NUMA_PULL_BIAS))
-+		return 0;
-+
-+	if (!sds->numa_group)
-+		return 0;
-+
-+	env->imbalance = sds->numa_group_weight / sds->numa_group_running;
-+	sds->busiest = sds->numa_group;
-+	env->find_busiest_queue = find_busiest_numa_queue;
-+	return 1;
-+}
-+
-+static inline bool need_active_numa_balance(struct lb_env *env)
-+{
-+	return env->find_busiest_queue == find_busiest_numa_queue &&
-+			env->src_rq->offnode_running == 1 &&
-+			env->src_rq->nr_running == 1;
-+}
-+
-+#else /* CONFIG_SCHED_NUMA */
-+
-+static inline void update_sg_numa_stats(struct sg_lb_stats *sgs, struct rq *rq)
-+{
-+}
-+
-+static inline void update_sd_numa_stats(struct sched_domain *sd,
-+		struct sched_group *group, struct sd_lb_stats *sds,
-+		int local_group, struct sg_lb_stats *sgs)
-+{
-+}
-+
-+static inline int check_numa_busiest_group(struct lb_env *env, struct sd_lb_stats *sds)
-+{
-+	return 0;
-+}
-+
-+static inline bool need_active_numa_balance(struct lb_env *env)
-+{
-+	return false;
-+}
-+#endif /* CONFIG_SCHED_NUMA */
-+
- unsigned long default_scale_freq_power(struct sched_domain *sd, int cpu)
- {
- 	return SCHED_POWER_SCALE;
-@@ -3687,6 +3901,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 		sgs->sum_weighted_load += weighted_cpuload(i);
- 		if (idle_cpu(i))
- 			sgs->idle_cpus++;
-+
-+		update_sg_numa_stats(sgs, rq);
- 	}
- 
- 	/*
-@@ -3840,6 +4056,8 @@ static inline void update_sd_lb_stats(struct lb_env *env,
- 			sds->group_imb = sgs.group_imb;
- 		}
- 
-+		update_sd_numa_stats(env->sd, sg, sds, local_group, &sgs);
-+
- 		sg = sg->next;
- 	} while (sg != env->sd->groups);
- }
-@@ -4126,6 +4344,9 @@ force_balance:
- 	return sds.busiest;
- 
- out_balanced:
-+	if (check_numa_busiest_group(env, &sds))
-+		return sds.busiest;
-+
- ret:
- 	env->imbalance = 0;
- 	return NULL;
-@@ -4204,6 +4425,9 @@ static int need_active_balance(struct lb_env *env)
- 			return 1;
- 	}
- 
-+	if (need_active_numa_balance(env))
-+		return 1;
-+
- 	return unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2);
- }
- 
-@@ -4256,6 +4480,8 @@ redo:
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
- 	}
-+	env.src_rq  = busiest;
-+	env.src_cpu = busiest->cpu;
- 
- 	BUG_ON(busiest == env.dst_rq);
- 
-@@ -4274,6 +4500,10 @@ redo:
- 		env.src_cpu   = busiest->cpu;
- 		env.src_rq    = busiest;
- 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
-+		if (sched_feat_numa(NUMA_PULL))
-+			env.tasks = offnode_tasks(busiest);
-+		else
-+			env.tasks = &busiest->cfs_tasks;
- 
- 		update_h_load(env.src_cpu);
- more_balance:
+ /*
 diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index eebefca..a5cc07b 100644
+index a5cc07b..fa6a0ac 100644
 --- a/kernel/sched/features.h
 +++ b/kernel/sched/features.h
-@@ -61,3 +61,11 @@ SCHED_FEAT(TTWU_QUEUE, true)
- SCHED_FEAT(FORCE_SD_OVERLAP, false)
- SCHED_FEAT(RT_RUNTIME_SHARE, true)
+@@ -63,6 +63,7 @@ SCHED_FEAT(RT_RUNTIME_SHARE, true)
  SCHED_FEAT(LB_MIN, false)
-+
-+#ifdef CONFIG_SCHED_NUMA
-+SCHED_FEAT(NUMA_HOT,       true)
-+SCHED_FEAT(NUMA_BIAS,      true)
-+SCHED_FEAT(NUMA_PULL,      true)
-+SCHED_FEAT(NUMA_PULL_BIAS, true)
-+#endif
-+
+ 
+ #ifdef CONFIG_SCHED_NUMA
++SCHED_FEAT(NUMA,           true)
+ SCHED_FEAT(NUMA_HOT,       true)
+ SCHED_FEAT(NUMA_BIAS,      true)
+ SCHED_FEAT(NUMA_PULL,      true)
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 741272e..74c37e6 100644
+index 74c37e6..bc5fc3e 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -418,6 +418,12 @@ struct rq {
- 
- 	struct list_head cfs_tasks;
- 
-+#ifdef CONFIG_SCHED_NUMA
-+	unsigned long    offnode_running;
-+	unsigned long	 offnode_weight;
-+	struct list_head offnode_tasks;
-+#endif
-+
- 	u64 rt_avg;
- 	u64 age_stamp;
- 	u64 idle_stamp;
-@@ -469,6 +475,15 @@ struct rq {
+@@ -475,15 +475,6 @@ struct rq {
  #endif
  };
  
-+static inline struct list_head *offnode_tasks(struct rq *rq)
-+{
-+#ifdef CONFIG_SCHED_NUMA
-+	return &rq->offnode_tasks;
-+#else
-+	return NULL;
-+#endif
-+}
-+
+-static inline struct list_head *offnode_tasks(struct rq *rq)
+-{
+-#ifdef CONFIG_SCHED_NUMA
+-	return &rq->offnode_tasks;
+-#else
+-	return NULL;
+-#endif
+-}
+-
  static inline int cpu_of(struct rq *rq)
  {
  #ifdef CONFIG_SMP
-@@ -529,6 +544,7 @@ static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
+@@ -501,6 +492,30 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
  
- DECLARE_PER_CPU(struct sched_domain *, sd_llc);
- DECLARE_PER_CPU(int, sd_llc_id);
-+DECLARE_PER_CPU(struct sched_domain *, sd_node);
++#ifdef CONFIG_SCHED_NUMA
++static inline bool offnode_task(struct task_struct *t)
++{
++	return t->node != -1 && t->node != cpu_to_node(task_cpu(t));
++}
++
++static inline struct list_head *offnode_tasks(struct rq *rq)
++{
++	return &rq->offnode_tasks;
++}
++
++void sched_setnode(struct task_struct *p, int node);
++#else /* CONFIG_SCHED_NUMA */
++static inline bool offnode_task(struct task_struct *t)
++{
++	return false;
++}
++
++static inline struct list_head *offnode_tasks(struct rq *rq)
++{
++	return NULL;
++}
++#endif /* CONFIG_SCHED_NUMA */
++
+ #ifdef CONFIG_SMP
  
- extern int group_balance_cpu(struct sched_group *sg);
- 
+ #define rcu_dereference_check_sched_domain(p) \
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 81c7b1a..c08b95e 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -297,6 +297,7 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &min_wakeup_granularity_ns,
+ 		.extra2		= &max_wakeup_granularity_ns,
+ 	},
++#ifdef CONFIG_SMP
+ 	{
+ 		.procname	= "sched_tunable_scaling",
+ 		.data		= &sysctl_sched_tunable_scaling,
+@@ -343,7 +344,17 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
+-#endif
++#endif /* CONFIG_SMP */
++#ifdef CONFIG_SCHED_NUMA
++	{
++		.procname	= "sched_numa_task_period_ms",
++		.data		= &sysctl_sched_numa_task_period,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++#endif /* CONFIG_SCHED_NUMA */
++#endif /* CONFIG_SCHED_DEBUG */
+ 	{
+ 		.procname	= "sched_rt_period_us",
+ 		.data		= &sysctl_sched_rt_period,
