@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423349Ab2I1VgH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:36:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964897Ab2I1U06 (ORCPT
+	id S1423369Ab2I1Vg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:36:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62304 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423351Ab2I1VgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:26:58 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 100/218] Bluetooth: mgmt: Fix enabling SSP while powered off
-Date: Fri, 28 Sep 2012 13:15:17 -0700
-Message-Id: <20120928201513.038474485@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.1.428.g652398a
-In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
-References: <20120928201501.208384923@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 28 Sep 2012 17:36:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org
+Subject: [PATCH 00/12] New warnings and build errors in linux-next
+Date: Fri, 28 Sep 2012 23:36:05 +0200
+Message-Id: <1348868177-21205-1-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+X-Provags-ID: V02:K0:dv6quzqJdiZBF9OJHfn0BfbE1082Fspvc8AHaZXsbC9
+ oOCsS9KufVv7/60NXZinmBipXLJuzJtsR+22lEK20lod/sjdjB
+ 0v2DyhTYyV+hbr1cKYlAs18X+6bNy0MLpRr36KTD89dENrJTJV
+ kzYWzUcVfoWhegIJgYmoovh/a62aowrIWNDcKqQxzfMaptY5iw
+ YKSrKFoP1KbxZ7kKW3gP+XqlF/RkjvQk2a7PxPBTV04xOlLTxc
+ oxHEmiAScr3nuRNbLq+OMaj6rMIyiTK61tWZgkPioHCUF6Y1r9
+ EPvSQl5finnPAQRT2YOV7BVfpX6k9tjg9ErPb/J25P9Cn3r9Ys
+ EDFtgkmNifIaizAO6RBfmtb4m/ea8n07hemfiS83S9hTq2b3Oa
+ q6PKqsOTQdRlg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hi everyone,
 
-------------------
+I've run my own build tests on the arm-soc tree, and now on linux-next
+in order to find regressions on build warnings. These are a bunch of
+patches that I came up with to address problems that were newly
+introduced since 3.6 and that are not in the domain of the
+arm-soc tree.
 
-From: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
+I'd hope to find someone for each patch to apply or rewrite it
+in a better way. Sorry for any duplicates. I've made the patches
+last week but had not gotten around to get them ready for submission,
+it it may be possible that they are already fixed in one tree or
+another.
 
-commit 3d1cbdd6aefff711bcf389fdabc4af9bc22e8201 upstream.
+	Arnd
 
-When new BT USB adapter is plugged in it's configured while still being powered
-off (HCI_AUTO_OFF flag is set), thus Set SSP will only set dev_flags but won't
-write changes to controller. As a result remote devices won't use Secure Simple
-Pairing with our device due to SSP Host Support flag disabled in extended
-features and may also reject SSP attempt from our side (with possible fallback
-to legacy pairing).
+Arnd Bergmann (12):
+  mtd: atmel nand: build regression
+  ata: mark probe function as __devinit rather than __init
+  mmc: dw_mmc: fix building exynos driver as a module
+  video: exynos: warnings in exynos_dp_core.c
+  ARM: ixp4xx: use __iomem for MMIO
+  sched: warnings in kernel/sched/fair.c
+  staging/iio/lis3l02dq: fix building without irq_to_gpio
+  dtc: be more quiet with "make -s"
+  tty/console: fix warnings in drivers/tty/serial/kgdboc.c
+  gpio: pcf857x: select IRQ_DOMAIN
+  pinctrl: samsung: use __devinit section for init code
+  time/jiffies: bring back unconditional LATCH definition
 
-This patch ensures HCI Write Simple Pairing Mode is sent when Set Powered is
-called to power on controller and clear HCI_AUTO_OFF flag.
+ arch/arm/mach-ixp4xx/include/mach/qmgr.h   |   12 ++++++------
+ arch/arm/mach-ixp4xx/ixp4xx_qmgr.c         |    4 ++--
+ drivers/ata/sata_highbank.c                |    2 +-
+ drivers/gpio/Kconfig                       |    1 +
+ drivers/mmc/host/dw_mmc-exynos.c           |    4 ++--
+ drivers/mmc/host/dw_mmc-pltfm.c            |    2 +-
+ drivers/mmc/host/dw_mmc-pltfm.h            |    2 +-
+ drivers/mmc/host/dw_mmc.c                  |    2 +-
+ drivers/mtd/nand/atmel_nand.c              |    8 ++++----
+ drivers/pinctrl/pinctrl-samsung.c          |   10 +++++-----
+ drivers/staging/iio/accel/lis3l02dq.h      |    1 +
+ drivers/staging/iio/accel/lis3l02dq_core.c |   10 ++++++----
+ drivers/staging/iio/accel/lis3l02dq_ring.c |    2 +-
+ drivers/video/exynos/exynos_dp_core.c      |    2 +-
+ include/linux/console.h                    |   10 ++++++++--
+ include/linux/jiffies.h                    |    5 +++--
+ include/linux/mmc/dw_mmc.h                 |    2 +-
+ kernel/sched/fair.c                        |    2 +-
+ scripts/Makefile.lib                       |    2 +-
+ scripts/dtc/dtc.c                          |    5 +++--
+ 20 files changed, 50 insertions(+), 38 deletions(-)
 
-Signed-off-by: Andrzej Kaczmarek <andrzej.kaczmarek@tieto.com>
-Acked-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/bluetooth/mgmt.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -2801,6 +2801,12 @@ int mgmt_powered(struct hci_dev *hdev, u
- 		if (scan)
- 			hci_send_cmd(hdev, HCI_OP_WRITE_SCAN_ENABLE, 1, &scan);
- 
-+		if (test_bit(HCI_SSP_ENABLED, &hdev->dev_flags)) {
-+			u8 ssp = 1;
-+
-+			hci_send_cmd(hdev, HCI_OP_WRITE_SSP_MODE, 1, &ssp);
-+		}
-+
- 		update_class(hdev);
- 		update_name(hdev, hdev->dev_name);
- 		update_eir(hdev);
-
+-- 
+1.7.10
 
