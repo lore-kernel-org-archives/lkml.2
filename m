@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030896Ab2I1TLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:11:47 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54594 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030717Ab2I1TGW (ORCPT
+	id S1030715Ab2I1TGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:06:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63006 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030681Ab2I1TGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:06:22 -0400
+	Fri, 28 Sep 2012 15:06:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: =?UTF-8?q?=5B=20245/262=5D=20net=3A=20qmi=5Fwwan=3A=20add=20Sierra=20Wireless=20devices?=
-Date: Fri, 28 Sep 2012 11:52:54 -0700
-Message-Id: <20120928183027.344742799@linuxfoundation.org>
+        Keshava Munegowda <keshava_mgowda@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 240/262] OMAP: USB : Fix the EHCI enumeration and core retention issue
+Date: Fri, 28 Sep 2012 11:52:49 -0700
+Message-Id: <20120928183026.748104204@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,104 +28,240 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Keshava Munegowda <keshava_mgowda@ti.com>
 
-commit 9b469a60d68b13c288d5c3fc23de29d9d482dbe6 upstream.
+commit 872c495dd0f9d1f48814a8ee80c2c7b3b7c3b4d9 upstream.
 
-Add 6 new devices and one modified device, based on
-information from laptop vendor Windows drivers.
+This commit 354ab8567ae3107a8cbe7228c3181990ba598aac titled
+"Fix OMAP EHCI suspend/resume failure (i693)" is causing
+the usb hub and device detection fails in beagle XM
+causeing NFS not functional. This affects the core retention too.
+The same commit logic needs to be revisted adhering to hwmod and
+device tree framework.
+for now, this commit id 354ab8567ae3107a8cbe7228c3181990ba598aac
+titled "Fix OMAP EHCI suspend/resume failure (i693)" reverted.
 
-Sony provides a driver with two new devices using
-a Gobi 2k+ layout (1199:68a5 and 1199:68a9).  The
-Sony driver also adds a non-standard QMI/net
-interface to the already supported 1199:9011
-Gobi device. We do not know whether this is an
-alternate interface number or an additional
-interface which might be present, but that doesn't
-really matter.
+This patch is validated on BeagleXM with NFS support over
+usb ethernet and USB mass storage and other device detection.
 
-Lenovo provides a driver supporting 4 new devices:
- - MC7770 (1199:901b) with standard Gobi 2k+ layout
- - MC7700 (0f3d:68a2) with layout similar to MC7710
- - MC7750 (114f:68a2) with layout similar to MC7710
- - EM7700 (1199:901c) with layout similar to MC7710
-
-Note regaring the three devices similar to MC7710:
-
-The Windows drivers only support interface #8 on these
-devices.  The MC7710 can support QMI/net functions on
-interface #19 and #20 as well, and this driver is
-verified to work on interface #19 (a firmware bug is
-suspected to prevent #20 from working).
-
-We do not enable these additional interfaces until they
-either show up in a Windows driver or are verified to
-work in some other way.  Therefore limiting the new
-devices to interface #8 for now.
-
-[bmork: backported to 3.4: use driver whitelisting]
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-for stable: v3.4 and v3.5
+ drivers/usb/host/ehci-omap.c |  164 -------------------------------------------
+ 1 file changed, 1 insertion(+), 163 deletions(-)
 
- drivers/net/usb/qmi_wwan.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
-
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -534,6 +534,33 @@ static const struct usb_device_id produc
- 		.bInterfaceProtocol = 0xff,
- 		.driver_info        = (unsigned long)&qmi_wwan_sierra,
- 	},
-+	{	/* Sierra Wireless MC7700 */
-+		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
-+		.idVendor           = 0x0f3d,
-+		.idProduct          = 0x68a2,
-+		.bInterfaceClass    = 0xff,
-+		.bInterfaceSubClass = 0xff,
-+		.bInterfaceProtocol = 0xff,
-+		.driver_info        = (unsigned long)&qmi_wwan_sierra,
-+	},
-+	{	/* Sierra Wireless MC7750 */
-+		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
-+		.idVendor           = 0x114f,
-+		.idProduct          = 0x68a2,
-+		.bInterfaceClass    = 0xff,
-+		.bInterfaceSubClass = 0xff,
-+		.bInterfaceProtocol = 0xff,
-+		.driver_info        = (unsigned long)&qmi_wwan_sierra,
-+	},
-+	{	/* Sierra Wireless EM7700 */
-+		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
-+		.idVendor           = 0x1199,
-+		.idProduct          = 0x901c,
-+		.bInterfaceClass    = 0xff,
-+		.bInterfaceSubClass = 0xff,
-+		.bInterfaceProtocol = 0xff,
-+		.driver_info        = (unsigned long)&qmi_wwan_sierra,
-+	},
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -56,15 +56,6 @@
+ #define	EHCI_INSNREG05_ULPI_EXTREGADD_SHIFT		8
+ #define	EHCI_INSNREG05_ULPI_WRDATA_SHIFT		0
  
- 	/* Gobi 1000 devices */
- 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
-@@ -561,6 +588,8 @@ static const struct usb_device_id produc
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9265)},	/* Asus Gobi 2000 Modem device (VR305) */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9235)},	/* Top Global Gobi 2000 Modem device (VR306) */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9275)},	/* iRex Technologies Gobi 2000 Modem device (VR307) */
-+	{QMI_GOBI_DEVICE(0x1199, 0x68a5)},	/* Sierra Wireless Modem */
-+	{QMI_GOBI_DEVICE(0x1199, 0x68a9)},	/* Sierra Wireless Modem */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9001)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9002)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9003)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-@@ -577,6 +606,8 @@ static const struct usb_device_id produc
- 	{QMI_GOBI_DEVICE(0x1199, 0x9013)},	/* Sierra Wireless Gobi 3000 Modem device (MC8355) */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9015)},	/* Sierra Wireless Gobi 3000 Modem device */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9019)},	/* Sierra Wireless Gobi 3000 Modem device */
-+	{QMI_GOBI_DEVICE(0x1199, 0x901b)},	/* Sierra Wireless MC7770 */
-+
- 	{ }					/* END */
- };
- MODULE_DEVICE_TABLE(usb, products);
+-/* Errata i693 */
+-static struct clk	*utmi_p1_fck;
+-static struct clk	*utmi_p2_fck;
+-static struct clk	*xclk60mhsp1_ck;
+-static struct clk	*xclk60mhsp2_ck;
+-static struct clk	*usbhost_p1_fck;
+-static struct clk	*usbhost_p2_fck;
+-static struct clk	*init_60m_fclk;
+-
+ /*-------------------------------------------------------------------------*/
+ 
+ static const struct hc_driver ehci_omap_hc_driver;
+@@ -80,40 +71,6 @@ static inline u32 ehci_read(void __iomem
+ 	return __raw_readl(base + reg);
+ }
+ 
+-/* Erratum i693 workaround sequence */
+-static void omap_ehci_erratum_i693(struct ehci_hcd *ehci)
+-{
+-	int ret = 0;
+-
+-	/* Switch to the internal 60 MHz clock */
+-	ret = clk_set_parent(utmi_p1_fck, init_60m_fclk);
+-	if (ret != 0)
+-		ehci_err(ehci, "init_60m_fclk set parent"
+-			"failed error:%d\n", ret);
+-
+-	ret = clk_set_parent(utmi_p2_fck, init_60m_fclk);
+-	if (ret != 0)
+-		ehci_err(ehci, "init_60m_fclk set parent"
+-			"failed error:%d\n", ret);
+-
+-	clk_enable(usbhost_p1_fck);
+-	clk_enable(usbhost_p2_fck);
+-
+-	/* Wait 1ms and switch back to the external clock */
+-	mdelay(1);
+-	ret = clk_set_parent(utmi_p1_fck, xclk60mhsp1_ck);
+-	if (ret != 0)
+-		ehci_err(ehci, "xclk60mhsp1_ck set parent"
+-			"failed error:%d\n", ret);
+-
+-	ret = clk_set_parent(utmi_p2_fck, xclk60mhsp2_ck);
+-	if (ret != 0)
+-		ehci_err(ehci, "xclk60mhsp2_ck set parent"
+-			"failed error:%d\n", ret);
+-
+-	clk_disable(usbhost_p1_fck);
+-	clk_disable(usbhost_p2_fck);
+-}
+ 
+ static void omap_ehci_soft_phy_reset(struct platform_device *pdev, u8 port)
+ {
+@@ -145,50 +102,6 @@ static void omap_ehci_soft_phy_reset(str
+ 	}
+ }
+ 
+-static int omap_ehci_hub_control(
+-	struct usb_hcd	*hcd,
+-	u16		typeReq,
+-	u16		wValue,
+-	u16		wIndex,
+-	char		*buf,
+-	u16		wLength
+-)
+-{
+-	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
+-	u32 __iomem *status_reg = &ehci->regs->port_status[
+-				(wIndex & 0xff) - 1];
+-	u32		temp;
+-	unsigned long	flags;
+-	int		retval = 0;
+-
+-	spin_lock_irqsave(&ehci->lock, flags);
+-
+-	if (typeReq == SetPortFeature && wValue == USB_PORT_FEAT_SUSPEND) {
+-		temp = ehci_readl(ehci, status_reg);
+-		if ((temp & PORT_PE) == 0 || (temp & PORT_RESET) != 0) {
+-			retval = -EPIPE;
+-			goto done;
+-		}
+-
+-		temp &= ~PORT_WKCONN_E;
+-		temp |= PORT_WKDISC_E | PORT_WKOC_E;
+-		ehci_writel(ehci, temp | PORT_SUSPEND, status_reg);
+-
+-		omap_ehci_erratum_i693(ehci);
+-
+-		set_bit((wIndex & 0xff) - 1, &ehci->suspended_ports);
+-		goto done;
+-	}
+-
+-	spin_unlock_irqrestore(&ehci->lock, flags);
+-
+-	/* Handle the hub control events here */
+-	return ehci_hub_control(hcd, typeReq, wValue, wIndex, buf, wLength);
+-done:
+-	spin_unlock_irqrestore(&ehci->lock, flags);
+-	return retval;
+-}
+-
+ static void disable_put_regulator(
+ 		struct ehci_hcd_omap_platform_data *pdata)
+ {
+@@ -351,76 +264,9 @@ static int ehci_hcd_omap_probe(struct pl
+ 	/* root ports should always stay powered */
+ 	ehci_port_power(omap_ehci, 1);
+ 
+-	/* get clocks */
+-	utmi_p1_fck = clk_get(dev, "utmi_p1_gfclk");
+-	if (IS_ERR(utmi_p1_fck)) {
+-		ret = PTR_ERR(utmi_p1_fck);
+-		dev_err(dev, "utmi_p1_gfclk failed error:%d\n",	ret);
+-		goto err_add_hcd;
+-	}
+-
+-	xclk60mhsp1_ck = clk_get(dev, "xclk60mhsp1_ck");
+-	if (IS_ERR(xclk60mhsp1_ck)) {
+-		ret = PTR_ERR(xclk60mhsp1_ck);
+-		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
+-		goto err_utmi_p1_fck;
+-	}
+-
+-	utmi_p2_fck = clk_get(dev, "utmi_p2_gfclk");
+-	if (IS_ERR(utmi_p2_fck)) {
+-		ret = PTR_ERR(utmi_p2_fck);
+-		dev_err(dev, "utmi_p2_gfclk failed error:%d\n", ret);
+-		goto err_xclk60mhsp1_ck;
+-	}
+-
+-	xclk60mhsp2_ck = clk_get(dev, "xclk60mhsp2_ck");
+-	if (IS_ERR(xclk60mhsp2_ck)) {
+-		ret = PTR_ERR(xclk60mhsp2_ck);
+-		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
+-		goto err_utmi_p2_fck;
+-	}
+-
+-	usbhost_p1_fck = clk_get(dev, "usb_host_hs_utmi_p1_clk");
+-	if (IS_ERR(usbhost_p1_fck)) {
+-		ret = PTR_ERR(usbhost_p1_fck);
+-		dev_err(dev, "usbhost_p1_fck failed error:%d\n", ret);
+-		goto err_xclk60mhsp2_ck;
+-	}
+-
+-	usbhost_p2_fck = clk_get(dev, "usb_host_hs_utmi_p2_clk");
+-	if (IS_ERR(usbhost_p2_fck)) {
+-		ret = PTR_ERR(usbhost_p2_fck);
+-		dev_err(dev, "usbhost_p2_fck failed error:%d\n", ret);
+-		goto err_usbhost_p1_fck;
+-	}
+-
+-	init_60m_fclk = clk_get(dev, "init_60m_fclk");
+-	if (IS_ERR(init_60m_fclk)) {
+-		ret = PTR_ERR(init_60m_fclk);
+-		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
+-		goto err_usbhost_p2_fck;
+-	}
+ 
+ 	return 0;
+ 
+-err_usbhost_p2_fck:
+-	clk_put(usbhost_p2_fck);
+-
+-err_usbhost_p1_fck:
+-	clk_put(usbhost_p1_fck);
+-
+-err_xclk60mhsp2_ck:
+-	clk_put(xclk60mhsp2_ck);
+-
+-err_utmi_p2_fck:
+-	clk_put(utmi_p2_fck);
+-
+-err_xclk60mhsp1_ck:
+-	clk_put(xclk60mhsp1_ck);
+-
+-err_utmi_p1_fck:
+-	clk_put(utmi_p1_fck);
+-
+ err_add_hcd:
+ 	disable_put_regulator(pdata);
+ 	pm_runtime_put_sync(dev);
+@@ -450,14 +296,6 @@ static int ehci_hcd_omap_remove(struct p
+ 	iounmap(hcd->regs);
+ 	usb_put_hcd(hcd);
+ 
+-	clk_put(utmi_p1_fck);
+-	clk_put(utmi_p2_fck);
+-	clk_put(xclk60mhsp1_ck);
+-	clk_put(xclk60mhsp2_ck);
+-	clk_put(usbhost_p1_fck);
+-	clk_put(usbhost_p2_fck);
+-	clk_put(init_60m_fclk);
+-
+ 	pm_runtime_put_sync(dev);
+ 	pm_runtime_disable(dev);
+ 
+@@ -528,7 +366,7 @@ static const struct hc_driver ehci_omap_
+ 	 * root hub support
+ 	 */
+ 	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= omap_ehci_hub_control,
++	.hub_control		= ehci_hub_control,
+ 	.bus_suspend		= ehci_bus_suspend,
+ 	.bus_resume		= ehci_bus_resume,
+ 
 
 
