@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759220Ab2I1Ugx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:36:53 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46627 "EHLO
+	id S1759233Ab2I1UhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:37:09 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54687 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759204Ab2I1Ugt (ORCPT
+	by vger.kernel.org with ESMTP id S1759179Ab2I1Ugu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:36:49 -0400
-X-Sasl-enc: NZUA5JRY2TREte1KKH+dBe5RkwTBGgX8ZlkBOGf6otJd 1348864608
+	Fri, 28 Sep 2012 16:36:50 -0400
+X-Sasl-enc: J/wDUQz18V/aarYmxXHuumP7FpKOLiFkUX1L8YqYOZok 1348864609
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Timur Tabi <timur@freescale.com>,
         Kumar Gala <galak@kernel.crashing.org>
-Subject: [ 193/218] powerpc/85xx: p1022ds: disable the NAND flash node if video is enabled
-Date: Fri, 28 Sep 2012 13:16:50 -0700
-Message-Id: <20120928201523.724527748@linuxfoundation.org>
+Subject: [ 194/218] powerpc/85xx: p1022ds: fix DIU/LBC switching with NAND enabled
+Date: Fri, 28 Sep 2012 13:16:51 -0700
+Message-Id: <20120928201523.840342489@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -30,96 +30,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Timur Tabi <timur@freescale.com>
 
-commit 6269f2584a359766f53005c676daff8aee60cbed upstream.
+commit 896c01cb4bb3cfc2c0ea9873fa7a9f8bd0a7c8d8 upstream.
 
-The Freescale P1022 has a unique pin muxing "feature" where the DIU video
-controller's video signals are muxed with 24 of the local bus address signals.
-When the DIU is enabled, the bulk of the local bus is disabled, preventing
-access to memory-mapped devices like NAND flash and the pixis FPGA.
-
-Therefore, if the DIU is going to be enabled, then memory-mapped devices on
-the localbus, like NAND flash, need to be disabled.
-
-This patch is similar to "powerpc/85xx: p1022ds: disable the NOR flash node
-if video is enabled", except that it disables the NAND flash node instead.
-This PIXIS node needs to remain enabled because it is used by platform code
-to switch into indirect mode.
+In order for indirect mode on the PIXIS to work properly, both chip selects
+need to be set to GPCM mode, otherwise writes to the chip select base
+addresses will not actually post to the local bus -- they'll go to the
+NAND controller instead.  Therefore, we need to set BR0 and BR1 to GPCM
+mode before switching to indirect mode.
 
 Signed-off-by: Timur Tabi <timur@freescale.com>
 Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/powerpc/platforms/85xx/p1022_ds.c |   38 +++++++++++++++++++++++++--------
- 1 file changed, 29 insertions(+), 9 deletions(-)
+ arch/powerpc/platforms/85xx/p1022_ds.c |   64 +++++++++++++++++++++++++++++++--
+ 1 file changed, 62 insertions(+), 2 deletions(-)
 
 --- a/arch/powerpc/platforms/85xx/p1022_ds.c
 +++ b/arch/powerpc/platforms/85xx/p1022_ds.c
-@@ -435,6 +435,8 @@ static void __init disable_one_node(stru
- 		prom_update_property(np, new, old);
- 	else
- 		prom_add_property(np, new);
-+
-+	pr_info("p1022ds: disabling %s node\n", np->full_name);
- }
- 
- /* TRUE if there is a "video=fslfb" command-line parameter. */
-@@ -499,28 +501,46 @@ static void __init p1022_ds_setup_arch(v
- 	diu_ops.valid_monitor_port	= p1022ds_valid_monitor_port;
- 
- 	/*
--	 * Disable the NOR flash node if there is video=fslfb... command-line
--	 * parameter.  When the DIU is active, NOR flash is unavailable, so we
--	 * have to disable the node before the MTD driver loads.
-+	 * Disable the NOR and NAND flash nodes if there is video=fslfb...
-+	 * command-line parameter.  When the DIU is active, the localbus is
-+	 * unavailable, so we have to disable these nodes before the MTD
-+	 * driver loads.
- 	 */
- 	if (fslfb) {
- 		struct device_node *np =
- 			of_find_compatible_node(NULL, NULL, "fsl,p1022-elbc");
- 
- 		if (np) {
--			np = of_find_compatible_node(np, NULL, "cfi-flash");
--			if (np) {
-+			struct device_node *np2;
-+
-+			of_node_get(np);
-+			np2 = of_find_compatible_node(np, NULL, "cfi-flash");
-+			if (np2) {
- 				static struct property nor_status = {
- 					.name = "status",
- 					.value = "disabled",
- 					.length = sizeof("disabled"),
- 				};
- 
--				pr_info("p1022ds: disabling %s node",
--					np->full_name);
--				disable_one_node(np, &nor_status);
--				of_node_put(np);
-+				disable_one_node(np2, &nor_status);
-+				of_node_put(np2);
-+			}
-+
-+			of_node_get(np);
-+			np2 = of_find_compatible_node(np, NULL,
-+						      "fsl,elbc-fcm-nand");
-+			if (np2) {
-+				static struct property nand_status = {
-+					.name = "status",
-+					.value = "disabled",
-+					.length = sizeof("disabled"),
-+				};
-+
-+				disable_one_node(np2, &nand_status);
-+				of_node_put(np2);
- 			}
-+
-+			of_node_put(np);
- 		}
- 
+@@ -208,6 +208,7 @@ static void p1022ds_set_monitor_port(enu
+ 	u8 __iomem *lbc_lcs0_ba = NULL;
+ 	u8 __iomem *lbc_lcs1_ba = NULL;
+ 	phys_addr_t cs0_addr, cs1_addr;
++	u32 br0, or0, br1, or1;
+ 	const __be32 *iprop;
+ 	unsigned int num_laws;
+ 	u8 b;
+@@ -256,11 +257,70 @@ static void p1022ds_set_monitor_port(enu
  	}
+ 	num_laws = be32_to_cpup(iprop);
+ 
+-	cs0_addr = lbc_br_to_phys(ecm, num_laws, in_be32(&lbc->bank[0].br));
+-	cs1_addr = lbc_br_to_phys(ecm, num_laws, in_be32(&lbc->bank[1].br));
++	/*
++	 * Indirect mode requires both BR0 and BR1 to be set to "GPCM",
++	 * otherwise writes to these addresses won't actually appear on the
++	 * local bus, and so the PIXIS won't see them.
++	 *
++	 * In FCM mode, writes go to the NAND controller, which does not pass
++	 * them to the localbus directly.  So we force BR0 and BR1 into GPCM
++	 * mode, since we don't care about what's behind the localbus any
++	 * more.
++	 */
++	br0 = in_be32(&lbc->bank[0].br);
++	br1 = in_be32(&lbc->bank[1].br);
++	or0 = in_be32(&lbc->bank[0].or);
++	or1 = in_be32(&lbc->bank[1].or);
++
++	/* Make sure CS0 and CS1 are programmed */
++	if (!(br0 & BR_V) || !(br1 & BR_V)) {
++		pr_err("p1022ds: CS0 and/or CS1 is not programmed\n");
++		goto exit;
++	}
++
++	/*
++	 * Use the existing BRx/ORx values if it's already GPCM. Otherwise,
++	 * force the values to simple 32KB GPCM windows with the most
++	 * conservative timing.
++	 */
++	if ((br0 & BR_MSEL) != BR_MS_GPCM) {
++		br0 = (br0 & BR_BA) | BR_V;
++		or0 = 0xFFFF8000 | 0xFF7;
++		out_be32(&lbc->bank[0].br, br0);
++		out_be32(&lbc->bank[0].or, or0);
++	}
++	if ((br1 & BR_MSEL) != BR_MS_GPCM) {
++		br1 = (br1 & BR_BA) | BR_V;
++		or1 = 0xFFFF8000 | 0xFF7;
++		out_be32(&lbc->bank[1].br, br1);
++		out_be32(&lbc->bank[1].or, or1);
++	}
++
++	cs0_addr = lbc_br_to_phys(ecm, num_laws, br0);
++	if (!cs0_addr) {
++		pr_err("p1022ds: could not determine physical address for CS0"
++		       " (BR0=%08x)\n", br0);
++		goto exit;
++	}
++	cs1_addr = lbc_br_to_phys(ecm, num_laws, br1);
++	if (!cs0_addr) {
++		pr_err("p1022ds: could not determine physical address for CS1"
++		       " (BR1=%08x)\n", br1);
++		goto exit;
++	}
+ 
+ 	lbc_lcs0_ba = ioremap(cs0_addr, 1);
++	if (!lbc_lcs0_ba) {
++		pr_err("p1022ds: could not ioremap CS0 address %llx\n",
++		       (unsigned long long)cs0_addr);
++		goto exit;
++	}
+ 	lbc_lcs1_ba = ioremap(cs1_addr, 1);
++	if (!lbc_lcs1_ba) {
++		pr_err("p1022ds: could not ioremap CS1 address %llx\n",
++		       (unsigned long long)cs1_addr);
++		goto exit;
++	}
+ 
+ 	/* Make sure we're in indirect mode first. */
+ 	if ((in_be32(&guts->pmuxcr) & PMUXCR_ELBCDIU_MASK) !=
 
 
