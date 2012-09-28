@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030721Ab2I1TYB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:24:01 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
+	id S1030785Ab2I1TY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:24:29 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030479Ab2I1TDh (ORCPT
+	with ESMTP id S1030461Ab2I1TDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:03:37 -0400
+	Fri, 28 Sep 2012 15:03:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        AceLan Kao <acelan.kao@canonical.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: [ 193/262] asus-nb-wmi: add some video toggle keys
-Date: Fri, 28 Sep 2012 11:52:02 -0700
-Message-Id: <20120928183020.867318326@linuxfoundation.org>
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [ 191/262] asus-laptop: HRWS/HWRS typo
+Date: Fri, 28 Sep 2012 11:52:00 -0700
+Message-Id: <20120928183020.614072105@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,39 +29,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Corentin Chary <corentin.chary@gmail.com>
 
-commit 3766054fff4af1b58a1440a284907887f4d2e8be upstream.
+commit 8871e99f89b7d7b1ea99de550eea2a56273f42ab upstream.
 
-There are some new video switch keys that used by newer machines.
-0xA0 - SDSP HDMI only
-0xA1 - SDSP LCD + HDMI
-0xA2 - SDSP CRT + HDMI
-0xA3 - SDSP TV + HDMI
-But in Linux, there is no suitable userspace application to handle this,
-so, mapping them all to KEY_SWITCHVIDEOMODE.
-
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=24222
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/asus-nb-wmi.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/platform/x86/asus-laptop.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/platform/x86/asus-nb-wmi.c
-+++ b/drivers/platform/x86/asus-nb-wmi.c
-@@ -94,6 +94,10 @@ static const struct key_entry asus_nb_wm
- 	{ KE_KEY, 0x8A, { KEY_PROG1 } },
- 	{ KE_KEY, 0x95, { KEY_MEDIA } },
- 	{ KE_KEY, 0x99, { KEY_PHONE } },
-+	{ KE_KEY, 0xA0, { KEY_SWITCHVIDEOMODE } }, /* SDSP HDMI only */
-+	{ KE_KEY, 0xA1, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + HDMI */
-+	{ KE_KEY, 0xA2, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + HDMI */
-+	{ KE_KEY, 0xA3, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV + HDMI */
- 	{ KE_KEY, 0xb5, { KEY_CALC } },
- 	{ KE_KEY, 0xc4, { KEY_KBDILLUMUP } },
- 	{ KE_KEY, 0xc5, { KEY_KBDILLUMDOWN } },
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -863,9 +863,9 @@ static ssize_t show_infos(struct device
+ 	 * The significance of others is yet to be found.
+ 	 * If we don't find the method, we assume the device are present.
+ 	 */
+-	rv = acpi_evaluate_integer(asus->handle, "HRWS", NULL, &temp);
++	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
+ 	if (!ACPI_FAILURE(rv))
+-		len += sprintf(page + len, "HRWS value         : %#x\n",
++		len += sprintf(page + len, "HWRS value         : %#x\n",
+ 			       (uint) temp);
+ 	/*
+ 	 * Another value for userspace: the ASYM method returns 0x02 for
+@@ -1751,9 +1751,9 @@ static int asus_laptop_get_info(struct a
+ 	 * The significance of others is yet to be found.
+ 	 */
+ 	status =
+-	    acpi_evaluate_integer(asus->handle, "HRWS", NULL, &hwrs_result);
++	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
+ 	if (!ACPI_FAILURE(status))
+-		pr_notice("  HRWS returned %x", (int)hwrs_result);
++		pr_notice("  HWRS returned %x", (int)hwrs_result);
+ 
+ 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
+ 		asus->have_rsts = true;
 
 
