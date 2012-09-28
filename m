@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758734Ab2I1XLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 19:11:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55557 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758514Ab2I1XLt (ORCPT
+	id S1758754Ab2I1XPj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 19:15:39 -0400
+Received: from cloudprivilegizero1.privilegizero.it ([46.28.6.121]:57705 "EHLO
+	cloudprivilegizero1.privilegizero.it" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758514Ab2I1XPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 19:11:49 -0400
-Date: Fri, 28 Sep 2012 16:11:46 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
-In-Reply-To: <0000013a0ec088ee-69089a7c-125f-4e80-9881-e66ab96ab59d-000000@email.amazonses.com>
-Message-ID: <alpine.DEB.2.00.1209281606230.26759@chino.kir.corp.google.com>
-References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com> <5062C029.308@parallels.com>
- <alpine.DEB.2.00.1209261813300.7072@chino.kir.corp.google.com> <5063F94C.4090600@parallels.com> <alpine.DEB.2.00.1209271552350.13360@chino.kir.corp.google.com> <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com>
- <alpine.DEB.2.00.1209281336380.21335@chino.kir.corp.google.com> <0000013a0ec088ee-69089a7c-125f-4e80-9881-e66ab96ab59d-000000@email.amazonses.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 28 Sep 2012 19:15:38 -0400
+To: linux-kernel@vger.kernel.org
+Subject: il ritornello dei valori, Movimento PrivilegiZero
+Date: Sat, 29 Sep 2012 01:15:35 +0200
+From: comunica@nl.privilegizero.it
+Message-ID: <00ca45e60046123f6dcb23ff48eb14d7@nl.privilegizero.it>
+X-Priority: 3
+X-Mailer: PHPMailer [version 1.73]
+X-Mailer: phplist v2.10.19
+X-MessageID: 16
+X-ListMember: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cloudprivilegizero1.privilegizero.it
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [502 500] / [47 12]
+X-AntiAbuse: Sender Address Domain - cloudprivilegizero1.privilegizero.it
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Sep 2012, Christoph Lameter wrote:
+ .
 
-> > The first prototype, SLAM XP1, will be posted in October.  I'd simply like
-> > to avoid reverting this patch down the road and having all of us
-> > reconsider the topic again when clear alternatives exist that, in my
-> > opinion, make the code cleaner.
-> 
-> If you want to make changes to the kernel then you need to justify that at
-> the time when we can consider your patches and the approach taken.
-> 
 
-If I cannot speak up and say where there will be conflicts in the future 
-and ask that Glauber spend more of his time down the road to figure all of 
-this out again, especially when a simple and clean alternative exists, 
-then that seems to result in a big waste of time.  Nothing is suffering 
-from taking the alternative here, so please follow the best software 
-engineering practices of allowing an implementation to reserve and ignore 
-bits in an API when appropriate and not do it globally in the common code.
 
-All of the move to mm/slab_common.c has obviously slowed down posting of 
-SLAM and I haven't complained about that once or asked that it not be 
-done, I'm simply pointing out an instance here that will conflict later on 
-if we go with this patch.  That, to me, is respectful of other people's 
-time.  That said, I'll leave it to Glauber to decide how he'd like to 
-handle this issue given the knowledge of what is to come.
+--
+Per cancellarti da questa lista
+http://nl.privilegizero.it/lists/?p=unsubscribe&uid=d5d98b99fe2570f445d4c0eb20e34264
 
-Thanks.
+Per aggiornare le tue preferenze e per annullare la tua iscrizione visita
+questo link
+http://nl.privilegizero.it/lists/?p=preferences&uid=d5d98b99fe2570f445d4c0eb20e34264
+Inoltra un messaggio a qualcuno
+http://nl.privilegizero.it/lists/?p=forward&uid=d5d98b99fe2570f445d4c0eb20e34264&mid=16
+
+
+--
+powered by phpList, www.phplist.com --
+
+
