@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab2I1Bm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 21:42:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35628 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab2I1Bm5 (ORCPT
+	id S1756406Ab2I1Bnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 21:43:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50018 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755674Ab2I1Bnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 21:42:57 -0400
-Date: Thu, 27 Sep 2012 18:42:39 -0700
-From: tip-bot for Thomas Renninger <trenn@suse.de>
-Message-ID: <tip-9e0a90cdff5b89599d73695b4d9971d1075c0b14@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, lenb@kernel.org, eric.piel@tremplin-utc.net,
-        tglx@linutronix.de, trenn@suse.de, hpa@linux.intel.com,
-        robert.moore@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, lenb@kernel.org, eric.piel@tremplin-utc.net,
-        tglx@linutronix.de, trenn@suse.de, hpa@linux.intel.com,
-        robert.moore@intel.com
-In-Reply-To: <1348661941-71287-3-git-send-email-trenn@suse.de>
-References: <1348661941-71287-3-git-send-email-trenn@suse.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/acpi] X86 ACPI:
-  Introduce x86 arch specific arch_reserve_mem_area() for e820 handling
-Git-Commit-ID: 9e0a90cdff5b89599d73695b4d9971d1075c0b14
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 27 Sep 2012 18:42:46 -0700 (PDT)
+	Thu, 27 Sep 2012 21:43:37 -0400
+Date: Fri, 28 Sep 2012 11:43:35 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ivan Vecera <ivecera@redhat.com>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-Id: <20120928114335.e05b34a5cfe716df86364ccf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__28_Sep_2012_11_43_35_+1000_W.X_4H_ep0gCWGHB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9e0a90cdff5b89599d73695b4d9971d1075c0b14
-Gitweb:     http://git.kernel.org/tip/9e0a90cdff5b89599d73695b4d9971d1075c0b14
-Author:     Thomas Renninger <trenn@suse.de>
-AuthorDate: Wed, 26 Sep 2012 14:18:57 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 27 Sep 2012 15:00:44 -0700
+--Signature=_Fri__28_Sep_2012_11_43_35_+1000_W.X_4H_ep0gCWGHB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-X86 ACPI: Introduce x86 arch specific arch_reserve_mem_area() for e820 handling
+Hi all,
 
-This is needed for ACPI table overriding via initrd. Beside reserving
-memblocks, X86 also requires to flag the memory area to E820_RESERVED or
-E820_ACPI in the e820 mappings to be able to io(re)map it later.
+After merging the net-next tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Link: http://lkml.kernel.org/r/1348661941-71287-3-git-send-email-trenn@suse.de
-Cc: Len Brown <lenb@kernel.org>
-Cc: Robert Moore <robert.moore@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Eric Piel <eric.piel@tremplin-utc.net>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/acpi/boot.c |    6 ++++++
- include/linux/acpi.h        |    9 +++++++++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+drivers/net/ethernet/emulex/benet/be_main.c: In function 'be_find_vfs':
+drivers/net/ethernet/emulex/benet/be_main.c:1090:28: error: 'struct pci_dev=
+' has no member named 'physfn'
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index b2297e5..6b75777 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1700,3 +1700,9 @@ int __acpi_release_global_lock(unsigned int *lock)
- 	} while (unlikely (val != old));
- 	return old & 0x1;
- }
-+
-+void __init arch_reserve_mem_area(acpi_physical_address addr, size_t size)
-+{
-+	e820_add_region(addr, size, E820_ACPI);
-+	update_e820();
-+}
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 4f2a762..ebecc46 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -430,4 +430,13 @@ acpi_status acpi_os_prepare_sleep(u8 sleep_state,
- #define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
- #endif
- 
-+#if CONFIG_X86
-+void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
-+#else
-+static inline void arch_reserve_mem_area(acpi_physical_address addr,
-+					  size_t size)
-+{
-+}
-+#endif /* CONFIG_X86 */
-+
- #endif	/*_LINUX_ACPI_H*/
+Caused by commit 51af6d7c1f31 ("be2net: fix vfs enumeration").  physfn is
+only defined if CONFIG_PCI_ATS is set.
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__28_Sep_2012_11_43_35_+1000_W.X_4H_ep0gCWGHB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQZQDHAAoJEECxmPOUX5FEiR4P/3dRvjeRVC5rZtH/3LeWx+p0
+f6hWFmqLRI/myBRSaWuiZRkBfp9R5gNq+RtkriMjIOAxyClJQ8RWUOU91Qt/nRYr
+06l7urqyDw6XEbgPPHlfBxQ5YpH422OWBA/iAZPU1tb35AMqXB/rkf5HyRVWqk+R
+xwTZbon1wsM4Psdk9mcULaA68iLTp45d+FhqvxtEcdE5wF0i7MqmLeRSYDmGlgIl
+d+h5XpSp9LwtCyuoj+xPuTIBeCe8/1w+Bk55y6TPp0dS+UxnHElRZ9/AQxksTS1C
+BoYv9Aihqh4duWTmTgJzaNf5dcyEZvM4rqtiDRlvLyciEipiSdUp1vtS15qtiqRO
+piHOXCAYEBp4dtNuE5CETKLITOp5kjOcNpdin4rNytU7lGj5DBjYnQX/6xHX+SGd
+nVloOruSYbWBBBwQIb2DZz1te/sk8nhwEsMDbNaqA5yxxddW0RYgP4acLglfbBRu
+0tjb0TNq/VwF2Iz//VGL98OgyPaQM+qIGBeQB/wnh1ysJ3ZvvFc884jXmDS6xTks
+WARmytg6alNweVNriCrexCP1m4AqfvpSZFeOOIbHKx0Ato6iB2DML/ZhJitxEbwa
+D/p4mJdFLgMMnXuUM/uiyQ60CUCdpsFEkwV+knFbK6KMD1p7s7UbzN/gptXkkvF/
+X8mKciWINuf0iXqA8DIE
+=HlIb
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__28_Sep_2012_11_43_35_+1000_W.X_4H_ep0gCWGHB--
