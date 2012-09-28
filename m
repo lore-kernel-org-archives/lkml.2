@@ -1,236 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab2I1Axu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Sep 2012 20:53:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63928 "EHLO
+	id S1754791Ab2I1AzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Sep 2012 20:55:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60958 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab2I1Aw4 (ORCPT
+	with ESMTP id S1752845Ab2I1AzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Sep 2012 20:52:56 -0400
-Message-ID: <5064F4E2.6010301@gmail.com>
-Date: Fri, 28 Sep 2012 10:52:50 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Thu, 27 Sep 2012 20:55:23 -0400
+Date: Thu, 27 Sep 2012 17:52:23 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: mathieu.poirier@linaro.org
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: [PATCH 39/57] power: ab8500_charger: Prevent auto drop of VBUS
+Message-ID: <20120928005223.GA5040@lizard>
+References: <1348589574-25655-1-git-send-email-mathieu.poirier@linaro.org>
+ <1348589574-25655-40-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Joerg Roedel <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: BUG_ON/panic proliferation.
-References: <20120807134156.GP1996@amd.com> <20120927145217.GA18962@8bytes.org> <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF572@SACEXCMBX04-PRD.hq.netapp.com> <20120927153928.GB18962@8bytes.org> <4FA345DA4F4AE44899BD2B03EEEC2FA908FEF7A3@SACEXCMBX04-PRD.hq.netapp.com> <CA+55aFx5CtDDpXTunJDtkDQWPX7sY0hYMRyekuPErC+s5yXpWw@mail.gmail.com> <20120927173057.GA13142@redhat.com>
-In-Reply-To: <20120927173057.GA13142@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1348589574-25655-40-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/09/12 03:30, Dave Jones wrote:
-> On Thu, Sep 27, 2012 at 09:59:13AM -0700, Linus Torvalds wrote:
->
->  > We have too many f*cking BUG_ON's in the kernel, and the fact that one
->  > triggers and it has taken a month and a half without it even being
->  > resolved is a problem.
->
-> This has bothered me for a while.
->
-> $ rgrep BUG_ON drivers/ | wc -l
-> 4018
-> $ rgrep WARN_ON drivers/ | wc -l
-> 2415
-> $ rgrep panic drivers/ | wc -l
-> 997
->
-> $ rgrep BUG_ON fs | wc -l
-> 2792
-> $ rgrep WARN_ON fs | wc -l
-> 524
-> $ rgrep panic fs | wc -l
-> 381
+On Tue, Sep 25, 2012 at 10:12:36AM -0600, mathieu.poirier@linaro.org wrote:
+> From: Martin Sjoblom <martin.w.sjoblom@stericsson.com>
+> 
+> Do not set higher current in stepping functionality if VBUS is dropping.
+> After VBUS has dropped try to set current once again. If dropping again
+> then we have found the maximum capability of the charger.
+> 
+> Signed-off-by: Martin Sjoblom <martin.w.sjoblom@stericsson.com>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> Reviewed-by: Per FORLIN <per.forlin@stericsson.com>
+> ---
+>  drivers/power/ab8500_charger.c |  166 ++++++++++++++++++++++++++++------------
+>  1 files changed, 117 insertions(+), 49 deletions(-)
+> 
+> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+> index ebeb068..18931e4 100644
+> --- a/drivers/power/ab8500_charger.c
+> +++ b/drivers/power/ab8500_charger.c
+> @@ -55,6 +55,7 @@
+>  #define MAIN_CH_INPUT_CURR_SHIFT	4
+>  #define VBUS_IN_CURR_LIM_SHIFT		4
+>  #define AUTO_VBUS_IN_CURR_LIM_SHIFT	4
+> +#define VBUS_IN_CURR_LIM_RETRY_SET_TIME	30 /* seconds */
+>  
+>  #define LED_INDICATOR_PWM_ENA		0x01
+>  #define LED_INDICATOR_PWM_DIS		0x00
+> @@ -199,10 +200,15 @@ struct ab8500_charger_usb_state {
+>  	spinlock_t usb_lock;
+>  };
+>  
+> +struct ab8500_charger_max_usb_in_curr {
+> +	int usb_type_max;
+> +	int set_max;
+> +	int calculated_max;
+> +};
+[...]
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+> -		di->is_usb_host = true;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P5;
 
-The situation isn't quite that bad. Your grep picks up a few variables
-with panic in the name and some wrapper functions around panic. This
-gets closer to the real counts (still finds some instances in comments):
+It seems that you introduced struct max_usb_in_curr for no obvious
+reason.
 
-  $git grep "[^_]panic *(" drivers/  | wc -l
-  282
+Because of this, there are a lot of churn, and much much longer lines all
+over, which hurts readability.
 
-  $git grep "[^_]panic *(" fs/  | wc -l
-  53
+Why not just introduce a usb_curr_set_max and usb_curr_calc_max in di->?
+Or something alike, or make things shorter in general, somehow. E.g., why
+do you have to repeat usb_? And why repeat max?
 
-Some of those look reasonably easy to remove. For example, the panics in
-the module_init path for drivers/tty/pty.c could be modified to simply
-return -ENOMEM. Something like the below removes 9 panic calls
-(completely untested).
+struct ab8500_chg_max_usb_in_curr {
+	int type;
+	int set;
+	int calc;
+};
 
-~Ryan
+This would be at least shorter and still understandable in a context. But
+again, I guess we don't need this new struct -- you don't pass it anywhere
+anyway.
 
----
+>  		di->is_aca_rid = 0;
+>  		break;
+>  	case USB_STAT_HOST_CHG_HS_CHIRP:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+> -		di->is_usb_host = true;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P5;
+>  		di->is_aca_rid = 0;
+>  		break;
+>  	case USB_STAT_HOST_CHG_HS:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+> -		di->is_usb_host = true;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P5;
+>  		di->is_aca_rid = 0;
+>  		break;
+>  	case USB_STAT_ACA_RID_C_HS:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P9;
+> -		di->is_usb_host = false;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P9;
+>  		di->is_aca_rid = 0;
+>  		break;
+>  	case USB_STAT_ACA_RID_A:
+> @@ -690,8 +696,7 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+>  		 * can consume (900mA). Closest level is 500mA
+>  		 */
+>  		dev_dbg(di->dev, "USB_STAT_ACA_RID_A detected\n");
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+> -		di->is_usb_host = false;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P5;
+>  		di->is_aca_rid = 1;
+>  		break;
+>  	case USB_STAT_ACA_RID_B:
+> @@ -699,38 +704,35 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+>  		 * Dedicated charger level minus 120mA (20mA for ACA and
+>  		 * 100mA for potential accessory). Closest level is 1300mA
+>  		 */
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_1P3;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_1P3;
+>  		dev_dbg(di->dev, "USB Type - 0x%02x MaxCurr: %d", link_status,
+> -				di->max_usb_in_curr);
+> -		di->is_usb_host = false;
+> +				di->max_usb_in_curr.usb_type_max);
+>  		di->is_aca_rid = 1;
+>  		break;
+>  	case USB_STAT_HOST_CHG_NM:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+> -		di->is_usb_host = true;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P5;
+>  		di->is_aca_rid = 0;
+>  		break;
+>  	case USB_STAT_DEDICATED_CHG:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_1P5;
+> -		di->is_usb_host = false;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_1P5;
+>  		di->is_aca_rid = 0;
+>  		break;
+>  	case USB_STAT_ACA_RID_C_HS_CHIRP:
+>  		case USB_STAT_ACA_RID_C_NM:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_1P5;
+> -		di->is_usb_host = false;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_1P5;
+>  		di->is_aca_rid = 1;
+>  		break;
+>  	case USB_STAT_NOT_CONFIGURED:
+>  		if (di->vbus_detected) {
+>  			di->usb_device_is_unrecognised = true;
+>  			dev_dbg(di->dev, "USB Type - Legacy charger.\n");
+> -			di->max_usb_in_curr = USB_CH_IP_CUR_LVL_1P5;
+> +			di->max_usb_in_curr.usb_type_max =
+> +						USB_CH_IP_CUR_LVL_1P5;
+>  			break;
+>  		}
+>  	case USB_STAT_HM_IDGND:
+>  		dev_err(di->dev, "USB Type - Charging not allowed\n");
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P05;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P05;
+>  		ret = -ENXIO;
+>  		break;
+>  	case USB_STAT_RESERVED:
+> @@ -743,9 +745,11 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+>  		}
+>  		if (is_ab9540(di->parent) || is_ab8505(di->parent)) {
+>  			dev_dbg(di->dev, "USB Type - Charging not allowed\n");
+> -			di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P05;
+> +			di->max_usb_in_curr.usb_type_max =
+> +						USB_CH_IP_CUR_LVL_0P05;
+>  			dev_dbg(di->dev, "USB Type - 0x%02x MaxCurr: %d",
+> -					link_status, di->max_usb_in_curr);
+> +				link_status,
+> +				di->max_usb_in_curr.usb_type_max);
+>  			ret = -ENXIO;
+>  			break;
+>  		}
+> @@ -754,23 +758,24 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+>  	case USB_STAT_CARKIT_2:
+>  	case USB_STAT_ACA_DOCK_CHARGER:
+>  	case USB_STAT_CHARGER_LINE_1:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P5;
+>  		dev_dbg(di->dev, "USB Type - 0x%02x MaxCurr: %d", link_status,
+> -				di->max_usb_in_curr);
+> +				di->max_usb_in_curr.usb_type_max);
+>  	case USB_STAT_NOT_VALID_LINK:
+>  		dev_err(di->dev, "USB Type invalid - try charging anyway\n");
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P5;
+>  		break;
+>  
+>  	default:
+>  		dev_err(di->dev, "USB Type - Unknown\n");
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P05;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P05;
+>  		ret = -ENXIO;
+>  		break;
+>  	};
+>  
+> +	di->max_usb_in_curr.set_max = di->max_usb_in_curr.usb_type_max;
+>  	dev_dbg(di->dev, "USB Type - 0x%02x MaxCurr: %d",
+> -		link_status, di->max_usb_in_curr);
+> +		link_status, di->max_usb_in_curr.set_max);
+>  
+>  	return ret;
+>  }
+> @@ -1074,28 +1079,48 @@ static int ab8500_vbus_in_curr_to_regval(int curr)
+>   */
+>  static int ab8500_charger_get_usb_cur(struct ab8500_charger *di)
+>  {
+> +	int ret = 0;
+>  	switch (di->usb_state.usb_current) {
+>  	case 100:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P09;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P09;
+>  		break;
+>  	case 200:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P19;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P19;
+>  		break;
+>  	case 300:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P29;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P29;
+>  		break;
+>  	case 400:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P38;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P38;
+>  		break;
+>  	case 500:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P5;
+>  		break;
+>  	default:
+> -		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P05;
+> -		return -1;
+> +		di->max_usb_in_curr.usb_type_max = USB_CH_IP_CUR_LVL_0P05;
+> +		ret = -EPERM;
+>  		break;
+>  	};
+> -	return 0;
+> +	di->max_usb_in_curr.set_max = di->max_usb_in_curr.usb_type_max;
+> +	return ret;
+> +}
+> +
+> +/**
+> + * ab8500_charger_check_continue_stepping() - Check to allow stepping
+> + * @di:		pointer to the ab8500_charger structure
+> + * @reg:	select what charger register to check
+> + *
+> + * Check if current stepping should be allowed to continue.
+> + * Checks if charger source has not collapsed. If it has, further stepping
+> + * is not allowed.
+> + */
+> +static bool ab8500_charger_check_continue_stepping(struct ab8500_charger *di,
+> +						   int reg)
+> +{
+> +	if (reg == AB8500_USBCH_IPT_CRNTLVL_REG)
+> +		return !di->flags.vbus_drop_end;
+> +	else
+> +		return true;
 
-Remove panic calls from drivers/tty/pty.c
-    
-There is no need to panic the system if the allocation/registration of
-the pty drivers fails. Instead return an error and fail the module load.
-    
-Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+No need for else.
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 5505ffc..69af453 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -382,20 +382,21 @@ static const struct tty_operations slave_pty_ops_bsd = {
- 	.resize = pty_resize
- };
- 
--static void __init legacy_pty_init(void)
-+static int __init legacy_pty_init(void)
- {
- 	struct tty_driver *pty_driver, *pty_slave_driver;
-+	int err = -ENOMEM;
- 
- 	if (legacy_count <= 0)
--		return;
-+		return 0;
- 
- 	pty_driver = alloc_tty_driver(legacy_count);
- 	if (!pty_driver)
--		panic("Couldn't allocate pty driver");
-+		goto fail;
- 
- 	pty_slave_driver = alloc_tty_driver(legacy_count);
- 	if (!pty_slave_driver)
--		panic("Couldn't allocate pty slave driver");
-+		goto fail_put_pty_driver;
- 
- 	pty_driver->driver_name = "pty_master";
- 	pty_driver->name = "pty";
-@@ -429,13 +430,35 @@ static void __init legacy_pty_init(void)
- 	pty_slave_driver->other = pty_driver;
- 	tty_set_operations(pty_slave_driver, &slave_pty_ops_bsd);
- 
--	if (tty_register_driver(pty_driver))
--		panic("Couldn't register pty driver");
--	if (tty_register_driver(pty_slave_driver))
--		panic("Couldn't register pty slave driver");
-+	err = tty_register_driver(pty_driver);
-+	if (err)
-+		goto fail_put_pty_slave_driver;
-+	err = tty_register_driver(pty_slave_driver);
-+	if (err)
-+		goto fail_unregister_pty_driver;
-+
-+	return 0;
-+
-+fail_unregister_pty_driver:
-+	tty_unregister_driver(pty_driver);
-+fail_put_pty_slave_driver:
-+	tty_driver_put(pty_slave_driver);
-+fail_put_pty_driver:
-+	tty_driver_put(pty_driver);
-+fail:
-+	return err;
-+}
-+
-+static void __init legacy_pty_free(void)
-+{
-+	tty_unregister_driver(pty_slave_driver);
-+	tty_unregister_driver(pty_driver);
-+	tty_driver_put(pty_slave_driver);
-+	tty_driver_put(pty_driver);
- }
- #else
- static inline void legacy_pty_init(void) { }
-+static inline void legacy_pty_free(void) { }
- #endif
- 
- /* Unix98 devices */
-@@ -670,14 +693,16 @@ err_file:
- 
- static struct file_operations ptmx_fops;
- 
--static void __init unix98_pty_init(void)
-+static int __init unix98_pty_init(void)
- {
-+	int err = -ENOMEM;
-+
- 	ptm_driver = alloc_tty_driver(NR_UNIX98_PTY_MAX);
- 	if (!ptm_driver)
--		panic("Couldn't allocate Unix98 ptm driver");
-+		goto fail;
- 	pts_driver = alloc_tty_driver(NR_UNIX98_PTY_MAX);
- 	if (!pts_driver)
--		panic("Couldn't allocate Unix98 pts driver");
-+		goto fail_put_ptm_driver;
- 
- 	ptm_driver->driver_name = "pty_master";
- 	ptm_driver->name = "ptm";
-@@ -712,20 +737,40 @@ static void __init unix98_pty_init(void)
- 	pts_driver->other = ptm_driver;
- 	tty_set_operations(pts_driver, &pty_unix98_ops);
- 
--	if (tty_register_driver(ptm_driver))
--		panic("Couldn't register Unix98 ptm driver");
--	if (tty_register_driver(pts_driver))
--		panic("Couldn't register Unix98 pts driver");
-+	err = tty_register_driver(ptm_driver);
-+	if (err)
-+		goto fail_put_pts_driver;
-+	err = tty_register_driver(pts_driver);
-+	if (err)
-+		goto fail_unregister_ptm_driver;
- 
- 	/* Now create the /dev/ptmx special device */
- 	tty_default_fops(&ptmx_fops);
- 	ptmx_fops.open = ptmx_open;
- 
- 	cdev_init(&ptmx_cdev, &ptmx_fops);
--	if (cdev_add(&ptmx_cdev, MKDEV(TTYAUX_MAJOR, 2), 1) ||
--	    register_chrdev_region(MKDEV(TTYAUX_MAJOR, 2), 1, "/dev/ptmx") < 0)
--		panic("Couldn't register /dev/ptmx driver\n");
-+	err = cdev_add(&ptmx_cdev, MKDEV(TTYAUX_MAJOR, 2), 1);
-+	if (err)
-+		goto fail_unregister_pts_driver;
-+	err = register_chrdev_region(MKDEV(TTYAUX_MAJOR, 2), 1, "/dev/ptmx");
-+	if (err)
-+		goto fail_cdev_del;
-+
- 	device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 2), NULL, "ptmx");
-+	return 0;
-+
-+fail_cdev_del:
-+	cdev_del(&ptmx_cdev);
-+fail_unregister_pts_driver:
-+	tty_unregister_driver(pts_driver);
-+fail_unregister_ptm_driver:
-+	tty_unregister_driver(ptm_driver);
-+fail_put_pts_driver:
-+	tty_put_driver(pts_driver);
-+fail_put_ptm_driver:
-+	tty_put_driver(ptm_driver);
-+fail:
-+	return err;
- }
- 
- #else
-@@ -734,8 +779,17 @@ static inline void unix98_pty_init(void) { }
- 
- static int __init pty_init(void)
- {
--	legacy_pty_init();
--	unix98_pty_init();
-+	int err;
-+
-+	err = legacy_pty_init();
-+	if (err)
-+		return err;
-+
-+	err = unix98_pty_init();
-+	if (err) {
-+		legacy_pty_free();
-+		return err;
-+	}
- 	return 0;
- }
- module_init(pty_init);
+>  }
+>  
+>  /**
+> @@ -1220,7 +1245,8 @@ static int ab8500_charger_set_current(struct ab8500_charger *di,
+>  				usleep_range(step_udelay, step_udelay * 2);
+>  		}
+>  	} else {
+> -		for (i = prev_curr_index + 1; i <= curr_index; i++) {
+> +		bool allow = true;
 
+Needs empty line here.
+
+> +		for (i = prev_curr_index + 1; i <= curr_index && allow; i++) {
+>  			dev_dbg(di->dev, "curr change_2 to: %x for 0x%02x\n",
+>  				(u8) i << shift_value, reg);
+>  			ret = abx500_set_register_interruptible(di->dev,
+> @@ -1231,6 +1257,8 @@ static int ab8500_charger_set_current(struct ab8500_charger *di,
+>  			}
+>  			if (i != curr_index)
+>  				usleep_range(step_udelay, step_udelay * 2);
+> +
+> +			allow = ab8500_charger_check_continue_stepping(di, reg);
+>  		}
+>  	}
+>  
+> @@ -1255,6 +1283,8 @@ static int ab8500_charger_set_vbus_in_curr(struct ab8500_charger *di,
+>  
+>  	/* We should always use to lowest current limit */
+>  	min_value = min(di->bat->chg_params->usb_curr_max, ich_in);
+> +	if (di->max_usb_in_curr.set_max > 0)
+> +		min_value = min(di->max_usb_in_curr.set_max, min_value);
+>  
+>  	switch (min_value) {
+>  	case 100:
+> @@ -1609,7 +1639,7 @@ static int ab8500_charger_usb_en(struct ux500_charger *charger,
+>  
+>  		/* USBChInputCurr: current that can be drawn from the usb */
+>  		ret = ab8500_charger_set_vbus_in_curr(di,
+> -					di->max_usb_in_curr);
+> +					di->max_usb_in_curr.usb_type_max);
+>  		if (ret) {
+>  			dev_err(di->dev, "setting USBChInputCurr failed\n");
+>  			return ret;
+> @@ -1943,10 +1973,12 @@ static void ab8500_charger_check_vbat_work(struct work_struct *work)
+>  		(di->old_vbat > VBAT_TRESH_IP_CUR_RED &&
+>  		di->vbat > VBAT_TRESH_IP_CUR_RED))) {
+>  
+> -		dev_dbg(di->dev, "Vbat did cross threshold, curr: %d, new: %d,"
+> -			" old: %d\n", di->max_usb_in_curr, di->vbat,
+> -			di->old_vbat);
+> -		ab8500_charger_set_vbus_in_curr(di, di->max_usb_in_curr);
+> +		dev_dbg(di->dev, "Vbat did cross threshold, curr: %d,",
+> +					di->max_usb_in_curr.usb_type_max);
+> +		dev_dbg(di->dev, " new: %d, old: %d\n",
+> +						di->vbat, di->old_vbat);
+> +		ab8500_charger_set_vbus_in_curr(di,
+> +					di->max_usb_in_curr.usb_type_max);
+>  		power_supply_changed(&di->usb_chg.psy);
+>  	}
+>  
+> @@ -2224,7 +2256,8 @@ static void ab8500_charger_usb_link_attach_work(struct work_struct *work)
+>  
+>  	/* Update maximum input current if USB enumeration is not detected */
+>  	if (!di->usb.charger_online) {
+> -		ret = ab8500_charger_set_vbus_in_curr(di, di->max_usb_in_curr);
+> +		ret = ab8500_charger_set_vbus_in_curr(di,
+> +					di->max_usb_in_curr.usb_type_max);
+>  		if (ret)
+>  			return;
+>  	}
+> @@ -2403,7 +2436,7 @@ static void ab8500_charger_usb_state_changed_work(struct work_struct *work)
+>  		if (!ab8500_charger_get_usb_cur(di)) {
+>  			/* Update maximum input current */
+>  			ret = ab8500_charger_set_vbus_in_curr(di,
+> -					di->max_usb_in_curr);
+> +					di->max_usb_in_curr.usb_type_max);
+>  			if (ret)
+>  				return;
+>  
+> @@ -2617,15 +2650,45 @@ static void ab8500_charger_vbus_drop_end_work(struct work_struct *work)
+>  {
+>  	struct ab8500_charger *di = container_of(work,
+>  		struct ab8500_charger, vbus_drop_end_work.work);
+> +	int ret;
+> +	u8 reg_value;
+>  
+>  	di->flags.vbus_drop_end = false;
+>  
+>  	/* Reset the drop counter */
+>  	abx500_set_register_interruptible(di->dev,
+>  				AB8500_CHARGER, AB8500_CHARGER_CTRL, 0x01);
+> +	ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
+> +						AB8500_CH_USBCH_STAT2_REG,
+> +						&reg_value);
+> +	if (ret < 0) {
+> +		dev_err(di->dev, "%s ab8500 read failed\n", __func__);
+> +	} else {
+> +		int curr = ab8500_charger_vbus_in_curr_map[
+> +			reg_value >> AUTO_VBUS_IN_CURR_LIM_SHIFT];
+
+empty line needed.
+
+> +		if (di->max_usb_in_curr.calculated_max != curr) {
+> +			/* USB source is collapsing */
+> +			di->max_usb_in_curr.calculated_max = curr;
+> +			dev_dbg(di->dev,
+> +			"VBUS input current limiting to %d mA\n",
+> +				di->max_usb_in_curr.calculated_max);
+> +		} else {
+> +			/*
+> +			 * USB source can not give more than this amount.
+> +			 * Taking more will collapse the source.
+> +			 */
+> +			di->max_usb_in_curr.set_max =
+> +				di->max_usb_in_curr.calculated_max;
+> +			dev_dbg(di->dev,
+> +				"VBUS input current limited to %d mA\n",
+> +				di->max_usb_in_curr.set_max);
+> +			return;
+> +		}
+> +	}
+>  
+>  	if (di->usb.charger_connected)
+> -		ab8500_charger_set_vbus_in_curr(di, di->max_usb_in_curr);
+> +		ab8500_charger_set_vbus_in_curr(di,
+> +			di->max_usb_in_curr.usb_type_max);
+>  }
+>  
+>  /**
+> @@ -2779,8 +2842,13 @@ static irqreturn_t ab8500_charger_vbuschdropend_handler(int irq, void *_di)
+>  
+>  	dev_dbg(di->dev, "VBUS charger drop ended\n");
+>  	di->flags.vbus_drop_end = true;
+> +
+> +	/*
+> +	 * VBUS might have dropped due to bad connection.
+> +	 * Schedule a new input limit set to the value SW requests.
+> +	 */
+>  	queue_delayed_work(di->charger_wq, &di->vbus_drop_end_work,
+> -						round_jiffies(30 * HZ));
+> +			round_jiffies(VBUS_IN_CURR_LIM_RETRY_SET_TIME * HZ));
+>  
+>  	return IRQ_HANDLED;
+>  }
+> -- 
+> 1.7.5.4
+> 
+> 
