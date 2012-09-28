@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964876Ab2I1S44 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:56:56 -0400
+	id S964860Ab2I1S4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:56:50 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:51579 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964862Ab2I1S4v (ORCPT
+	with ESMTP id S964831Ab2I1S4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:56:51 -0400
+	Fri, 28 Sep 2012 14:56:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 063/262] staging: comedi: amplc_pci224: Fix PCI ref count
-Date: Fri, 28 Sep 2012 11:49:52 -0700
-Message-Id: <20120928183005.393264140@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [ 061/262] staging: vt6656: [BUG] - Failed connection, incorrect endian.
+Date: Fri, 28 Sep 2012 11:49:50 -0700
+Message-Id: <20120928183005.099333850@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -28,48 +28,110 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit cadf84bfeb80e216fde328d357fe856160157d2c upstream.
+commit aa209eef3ce8419ff2926c2fa944dfbfb5afbacb upstream.
 
-When attaching a PCI device manually via the comedi driver `attach` hook
-(`pci224_attach()`) (called by the comedi core for the
-`COMEDI_DEVCONFIG` ioctl), its reference count is incremented in the
-`for_each_pci_dev` loop (in `pci224_find_pci_dev()`).  It is decremented
-when the `detach` hook (`pci224_detach()`) is called to detach the
-device.  However, when the PCI device is attached automatically via the
-`attach_pci` hook (`pci224_attach_pci()`, called at probe time via
-`comedi_pci_auto_config()`) it's reference count is not incremented so
-there will be an unmatched decrement when detaching the device.
+Hi,
 
-Increment the PCI device reference count in `pci224_attach_pci()` to
-correct the mismatch.
+This patch fixes a bug with driver failing to negotiate a connection.
 
-Once support for manual configuration has been removed from this driver,
-the calls to `pci_dev_get()` and `pci_dev_put()` can be removed.
+The bug was traced to commit
+203e4615ee9d9fa8d3506b9d0ef30095e4d5bc90
+staging: vt6656: removed custom definitions of Ethernet packet types
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+In that patch, definitions in include/linux/if_ether.h replaced ones
+in tether.h which had both big and little endian definitions.
+
+include/linux/if_ether.h only refers to big endian values, cpu_to_be16
+should be used for the correct endian architectures.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/amplc_pci224.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/staging/vt6656/dpc.c  |    2 +-
+ drivers/staging/vt6656/rxtx.c |   38 +++++++++++++++++++-------------------
+ 2 files changed, 20 insertions(+), 20 deletions(-)
 
---- a/drivers/staging/comedi/drivers/amplc_pci224.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci224.c
-@@ -1519,6 +1519,13 @@ pci224_attach_pci(struct comedi_device *
- 		       dev->minor, DRIVER_NAME);
- 		return -EINVAL;
- 	}
-+	/*
-+	 * Need to 'get' the PCI device to match the 'put' in pci224_detach().
-+	 * TODO: Remove the pci_dev_get() and matching pci_dev_put() once
-+	 * support for manual attachment of PCI devices via pci224_attach()
-+	 * has been removed.
-+	 */
-+	pci_dev_get(pci_dev);
- 	return pci224_attach_common(dev, pci_dev, NULL);
- }
+--- a/drivers/staging/vt6656/dpc.c
++++ b/drivers/staging/vt6656/dpc.c
+@@ -200,7 +200,7 @@ s_vProcessRxMACHeader (
+     } else if (!compare_ether_addr(pbyRxBuffer, &pDevice->abySNAP_RFC1042[0])) {
+         cbHeaderSize += 6;
+         pwType = (PWORD) (pbyRxBufferAddr + cbHeaderSize);
+-	if ((*pwType == cpu_to_le16(ETH_P_IPX)) ||
++	if ((*pwType == cpu_to_be16(ETH_P_IPX)) ||
+ 	    (*pwType == cpu_to_le16(0xF380))) {
+ 		cbHeaderSize -= 8;
+             pwType = (PWORD) (pbyRxBufferAddr + cbHeaderSize);
+--- a/drivers/staging/vt6656/rxtx.c
++++ b/drivers/staging/vt6656/rxtx.c
+@@ -1701,7 +1701,7 @@ s_bPacketToWirelessUsb(
+     // 802.1H
+     if (ntohs(psEthHeader->wType) > ETH_DATA_LEN) {
+ 	if (pDevice->dwDiagRefCount == 0) {
+-		if ((psEthHeader->wType == cpu_to_le16(ETH_P_IPX)) ||
++		if ((psEthHeader->wType == cpu_to_be16(ETH_P_IPX)) ||
+ 		    (psEthHeader->wType == cpu_to_le16(0xF380))) {
+ 			memcpy((PBYTE) (pbyPayloadHead),
+ 			       abySNAP_Bridgetunnel, 6);
+@@ -2840,10 +2840,10 @@ int nsDMA_tx_packet(PSDevice pDevice, un
+     Packet_Type = skb->data[ETH_HLEN+1];
+     Descriptor_type = skb->data[ETH_HLEN+1+1+2];
+     Key_info = (skb->data[ETH_HLEN+1+1+2+1] << 8)|(skb->data[ETH_HLEN+1+1+2+2]);
+-    if (pDevice->sTxEthHeader.wType == cpu_to_le16(ETH_P_PAE)) {
+-	/* 802.1x OR eapol-key challenge frame transfer */
+-	if (((Protocol_Version == 1) || (Protocol_Version == 2)) &&
+-		(Packet_Type == 3)) {
++	if (pDevice->sTxEthHeader.wType == cpu_to_be16(ETH_P_PAE)) {
++		/* 802.1x OR eapol-key challenge frame transfer */
++		if (((Protocol_Version == 1) || (Protocol_Version == 2)) &&
++			(Packet_Type == 3)) {
+                         bTxeapol_key = TRUE;
+                        if(!(Key_info & BIT3) &&  //WPA or RSN group-key challenge
+ 			   (Key_info & BIT8) && (Key_info & BIT9)) {    //send 2/2 key
+@@ -2989,19 +2989,19 @@ int nsDMA_tx_packet(PSDevice pDevice, un
+         }
+     }
  
+-    if (pDevice->sTxEthHeader.wType == cpu_to_le16(ETH_P_PAE)) {
+-        if (pDevice->byBBType != BB_TYPE_11A) {
+-            pDevice->wCurrentRate = RATE_1M;
+-            pDevice->byACKRate = RATE_1M;
+-            pDevice->byTopCCKBasicRate = RATE_1M;
+-            pDevice->byTopOFDMBasicRate = RATE_6M;
+-        } else {
+-            pDevice->wCurrentRate = RATE_6M;
+-            pDevice->byACKRate = RATE_6M;
+-            pDevice->byTopCCKBasicRate = RATE_1M;
+-            pDevice->byTopOFDMBasicRate = RATE_6M;
+-        }
+-    }
++	if (pDevice->sTxEthHeader.wType == cpu_to_be16(ETH_P_PAE)) {
++		if (pDevice->byBBType != BB_TYPE_11A) {
++			pDevice->wCurrentRate = RATE_1M;
++			pDevice->byACKRate = RATE_1M;
++			pDevice->byTopCCKBasicRate = RATE_1M;
++			pDevice->byTopOFDMBasicRate = RATE_6M;
++		} else {
++			pDevice->wCurrentRate = RATE_6M;
++			pDevice->byACKRate = RATE_6M;
++			pDevice->byTopCCKBasicRate = RATE_1M;
++			pDevice->byTopOFDMBasicRate = RATE_6M;
++		}
++	}
+ 
+     DBG_PRT(MSG_LEVEL_DEBUG,
+ 	    KERN_INFO "dma_tx: pDevice->wCurrentRate = %d\n",
+@@ -3017,7 +3017,7 @@ int nsDMA_tx_packet(PSDevice pDevice, un
+ 
+     if (bNeedEncryption == TRUE) {
+         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"ntohs Pkt Type=%04x\n", ntohs(pDevice->sTxEthHeader.wType));
+-	if ((pDevice->sTxEthHeader.wType) == cpu_to_le16(ETH_P_PAE)) {
++	if ((pDevice->sTxEthHeader.wType) == cpu_to_be16(ETH_P_PAE)) {
+ 		bNeedEncryption = FALSE;
+             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Pkt Type=%04x\n", (pDevice->sTxEthHeader.wType));
+             if ((pMgmt->eCurrMode == WMAC_MODE_ESS_STA) && (pMgmt->eCurrState == WMAC_STATE_ASSOC)) {
 
 
