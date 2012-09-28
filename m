@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1033098Ab2I1VS4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:18:56 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50147 "EHLO
+	id S1033112Ab2I1VTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:19:18 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33111 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759290Ab2I1Ui2 (ORCPT
+	by vger.kernel.org with ESMTP id S1759283Ab2I1Ui1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:38:28 -0400
-X-Sasl-enc: pgWd9JdwMkzBKsm08jWInXAI3HnNt1afkUwuTe9eN9wz 1348864707
+	Fri, 28 Sep 2012 16:38:27 -0400
+X-Sasl-enc: GaVjAZIHOyGfCfwkmz2IJYWCcSvcHV4a6Mxmfg+6aOKr 1348864706
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
+        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         "David S. Miller" <davem@davemloft.net>
-Subject: =?UTF-8?q?=5B=20201/218=5D=20net=3A=20qmi=5Fwwan=3A=20add=20Sierra=20Wireless=20devices?=
-Date: Fri, 28 Sep 2012 13:16:58 -0700
-Message-Id: <20120928201524.643177717@linuxfoundation.org>
+Subject: =?UTF-8?q?=5B=20200/218=5D=20net=3A=20qmi=5Fwwan=3A=20add=20ZTE=20MF821D?=
+Date: Fri, 28 Sep 2012 13:16:57 -0700
+Message-Id: <20120928201524.512221662@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -31,104 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: BjÃ¸rn Mork <bjorn@mork.no>
 
-commit 9b469a60d68b13c288d5c3fc23de29d9d482dbe6 upstream.
+commit db8dacf953a70274172236957a4b97d4fdb376f0 upstream.
 
-Add 6 new devices and one modified device, based on
-information from laptop vendor Windows drivers.
+Sold by O2 (telefonica germany) under the name "LTE4G"
 
-Sony provides a driver with two new devices using
-a Gobi 2k+ layout (1199:68a5 and 1199:68a9).  The
-Sony driver also adds a non-standard QMI/net
-interface to the already supported 1199:9011
-Gobi device. We do not know whether this is an
-alternate interface number or an additional
-interface which might be present, but that doesn't
-really matter.
-
-Lenovo provides a driver supporting 4 new devices:
- - MC7770 (1199:901b) with standard Gobi 2k+ layout
- - MC7700 (0f3d:68a2) with layout similar to MC7710
- - MC7750 (114f:68a2) with layout similar to MC7710
- - EM7700 (1199:901c) with layout similar to MC7710
-
-Note regaring the three devices similar to MC7710:
-
-The Windows drivers only support interface #8 on these
-devices.  The MC7710 can support QMI/net functions on
-interface #19 and #20 as well, and this driver is
-verified to work on interface #19 (a firmware bug is
-suspected to prevent #20 from working).
-
-We do not enable these additional interfaces until they
-either show up in a Windows driver or are verified to
-work in some other way.  Therefore limiting the new
-devices to interface #8 for now.
-
-[bmork: backported to 3.4: use driver whitelisting]
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Tested-by: Thomas SchÃ¤fer <tschaefer@t-online.de>
+Signed-off-by: BjÃ¸rn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
-for stable: v3.4 and v3.5
 
- drivers/net/usb/qmi_wwan.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+---
+ drivers/net/usb/qmi_wwan.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 --- a/drivers/net/usb/qmi_wwan.c
 +++ b/drivers/net/usb/qmi_wwan.c
-@@ -534,6 +534,33 @@ static const struct usb_device_id produc
+@@ -453,6 +453,15 @@ static const struct usb_device_id produc
  		.bInterfaceProtocol = 0xff,
- 		.driver_info        = (unsigned long)&qmi_wwan_sierra,
+ 		.driver_info        = (unsigned long)&qmi_wwan_force_int4,
  	},
-+	{	/* Sierra Wireless MC7700 */
-+		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
-+		.idVendor           = 0x0f3d,
-+		.idProduct          = 0x68a2,
++	{	/* ZTE MF821D */
++		.match_flags        = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
++		.idVendor           = 0x19d2,
++		.idProduct          = 0x0326,
 +		.bInterfaceClass    = 0xff,
 +		.bInterfaceSubClass = 0xff,
 +		.bInterfaceProtocol = 0xff,
-+		.driver_info        = (unsigned long)&qmi_wwan_sierra,
++		.driver_info        = (unsigned long)&qmi_wwan_force_int4,
 +	},
-+	{	/* Sierra Wireless MC7750 */
-+		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
-+		.idVendor           = 0x114f,
-+		.idProduct          = 0x68a2,
-+		.bInterfaceClass    = 0xff,
-+		.bInterfaceSubClass = 0xff,
-+		.bInterfaceProtocol = 0xff,
-+		.driver_info        = (unsigned long)&qmi_wwan_sierra,
-+	},
-+	{	/* Sierra Wireless EM7700 */
-+		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
-+		.idVendor           = 0x1199,
-+		.idProduct          = 0x901c,
-+		.bInterfaceClass    = 0xff,
-+		.bInterfaceSubClass = 0xff,
-+		.bInterfaceProtocol = 0xff,
-+		.driver_info        = (unsigned long)&qmi_wwan_sierra,
-+	},
- 
- 	/* Gobi 1000 devices */
- 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
-@@ -561,6 +588,8 @@ static const struct usb_device_id produc
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9265)},	/* Asus Gobi 2000 Modem device (VR305) */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9235)},	/* Top Global Gobi 2000 Modem device (VR306) */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9275)},	/* iRex Technologies Gobi 2000 Modem device (VR307) */
-+	{QMI_GOBI_DEVICE(0x1199, 0x68a5)},	/* Sierra Wireless Modem */
-+	{QMI_GOBI_DEVICE(0x1199, 0x68a9)},	/* Sierra Wireless Modem */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9001)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9002)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9003)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-@@ -577,6 +606,8 @@ static const struct usb_device_id produc
- 	{QMI_GOBI_DEVICE(0x1199, 0x9013)},	/* Sierra Wireless Gobi 3000 Modem device (MC8355) */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9015)},	/* Sierra Wireless Gobi 3000 Modem device */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9019)},	/* Sierra Wireless Gobi 3000 Modem device */
-+	{QMI_GOBI_DEVICE(0x1199, 0x901b)},	/* Sierra Wireless MC7770 */
-+
- 	{ }					/* END */
- };
- MODULE_DEVICE_TABLE(usb, products);
+ 	{	/* ZTE (Vodafone) K3520-Z */
+ 		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
+ 		.idVendor           = 0x19d2,
 
 
