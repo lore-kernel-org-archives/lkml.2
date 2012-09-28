@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032081Ab2I1V4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:56:42 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37576 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031968Ab2I1UWp (ORCPT
+	id S1032752Ab2I1V46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:56:58 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031959Ab2I1UWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:22:45 -0400
+	Fri, 28 Sep 2012 16:22:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Aleksandr Kotov <a1k@mail.ru>, Eric Leblond <eric@regit.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 024/218] netlink: fix possible spoofing from non-root processes
-Date: Fri, 28 Sep 2012 13:14:01 -0700
-Message-Id: <20120928201504.135991932@linuxfoundation.org>
+Subject: [ 022/218] af_packet: dont emit packet on orig fanout group
+Date: Fri, 28 Sep 2012 13:13:59 -0700
+Message-Id: <20120928201503.898839664@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,72 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Eric Leblond <eric@regit.org>
 
-[ Upstream commit 20e1db19db5d6b9e4e83021595eab0dc8f107bef ]
+[ Upstream commit c0de08d04215031d68fa13af36f347a6cfa252ca ]
 
-Non-root user-space processes can send Netlink messages to other
-processes that are well-known for being subscribed to Netlink
-asynchronous notifications. This allows ilegitimate non-root
-process to send forged messages to Netlink subscribers.
+If a packet is emitted on one socket in one group of fanout sockets,
+it is transmitted again. It is thus read again on one of the sockets
+of the fanout group. This result in a loop for software which
+generate packets when receiving one.
+This retransmission is not the intended behavior: a fanout group
+must behave like a single socket. The packet should not be
+transmitted on a socket if it originates from a socket belonging
+to the same fanout group.
 
-The userspace process usually verifies the legitimate origin in
-two ways:
+This patch fixes the issue by changing the transmission check to
+take fanout group info account.
 
-a) Socket credentials. If UID != 0, then the message comes from
-   some ilegitimate process and the message needs to be dropped.
-
-b) Netlink portID. In general, portID == 0 means that the origin
-   of the messages comes from the kernel. Thus, discarding any
-   message not coming from the kernel.
-
-However, ctnetlink sets the portID in event messages that has
-been triggered by some user-space process, eg. conntrack utility.
-So other processes subscribed to ctnetlink events, eg. conntrackd,
-know that the event was triggered by some user-space action.
-
-Neither of the two ways to discard ilegitimate messages coming
-from non-root processes can help for ctnetlink.
-
-This patch adds capability validation in case that dst_pid is set
-in netlink_sendmsg(). This approach is aggressive since existing
-applications using any Netlink bus to deliver messages between
-two user-space processes will break. Note that the exception is
-NETLINK_USERSOCK, since it is reserved for netlink-to-netlink
-userspace communication.
-
-Still, if anyone wants that his Netlink bus allows netlink-to-netlink
-userspace, then they can set NL_NONROOT_SEND. However, by default,
-I don't think it makes sense to allow to use NETLINK_ROUTE to
-communicate two processes that are sending no matter what information
-that is not related to link/neighbouring/routing. They should be using
-NETLINK_USERSOCK instead for that.
-
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Reported-by: Aleksandr Kotov <a1k@mail.ru>
+Signed-off-by: Eric Leblond <eric@regit.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netlink/af_netlink.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/netdevice.h |    2 ++
+ net/core/dev.c            |   16 ++++++++++++++--
+ net/packet/af_packet.c    |    9 +++++++++
+ 3 files changed, 25 insertions(+), 2 deletions(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1340,7 +1340,8 @@ static int netlink_sendmsg(struct kiocb
- 		dst_pid = addr->nl_pid;
- 		dst_group = ffs(addr->nl_groups);
- 		err =  -EPERM;
--		if (dst_group && !netlink_capable(sock, NL_NONROOT_SEND))
-+		if ((dst_group || dst_pid) &&
-+		    !netlink_capable(sock, NL_NONROOT_SEND))
- 			goto out;
- 	} else {
- 		dst_pid = nlk->dst_pid;
-@@ -2115,6 +2116,7 @@ static void __init netlink_add_usersock_
- 	rcu_assign_pointer(nl_table[NETLINK_USERSOCK].listeners, listeners);
- 	nl_table[NETLINK_USERSOCK].module = THIS_MODULE;
- 	nl_table[NETLINK_USERSOCK].registered = 1;
-+	nl_table[NETLINK_USERSOCK].nl_nonroot = NL_NONROOT_SEND;
- 
- 	netlink_table_ungrab();
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1496,6 +1496,8 @@ struct packet_type {
+ 	struct sk_buff		**(*gro_receive)(struct sk_buff **head,
+ 					       struct sk_buff *skb);
+ 	int			(*gro_complete)(struct sk_buff *skb);
++	bool			(*id_match)(struct packet_type *ptype,
++					    struct sock *sk);
+ 	void			*af_packet_priv;
+ 	struct list_head	list;
+ };
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1641,6 +1641,19 @@ static inline int deliver_skb(struct sk_
+ 	return pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
  }
+ 
++static inline bool skb_loop_sk(struct packet_type *ptype, struct sk_buff *skb)
++{
++	if (ptype->af_packet_priv == NULL)
++		return false;
++
++	if (ptype->id_match)
++		return ptype->id_match(ptype, skb->sk);
++	else if ((struct sock *)ptype->af_packet_priv == skb->sk)
++		return true;
++
++	return false;
++}
++
+ /*
+  *	Support routine. Sends outgoing frames to any network
+  *	taps currently in use.
+@@ -1658,8 +1671,7 @@ static void dev_queue_xmit_nit(struct sk
+ 		 * they originated from - MvS (miquels@drinkel.ow.org)
+ 		 */
+ 		if ((ptype->dev == dev || !ptype->dev) &&
+-		    (ptype->af_packet_priv == NULL ||
+-		     (struct sock *)ptype->af_packet_priv != skb->sk)) {
++		    (!skb_loop_sk(ptype, skb))) {
+ 			if (pt_prev) {
+ 				deliver_skb(skb2, pt_prev, skb->dev);
+ 				pt_prev = ptype;
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -1280,6 +1280,14 @@ static void __fanout_unlink(struct sock
+ 	spin_unlock(&f->lock);
+ }
+ 
++bool match_fanout_group(struct packet_type *ptype, struct sock * sk)
++{
++	if (ptype->af_packet_priv == (void*)((struct packet_sock *)sk)->fanout)
++		return true;
++
++	return false;
++}
++
+ static int fanout_add(struct sock *sk, u16 id, u16 type_flags)
+ {
+ 	struct packet_sock *po = pkt_sk(sk);
+@@ -1332,6 +1340,7 @@ static int fanout_add(struct sock *sk, u
+ 		match->prot_hook.dev = po->prot_hook.dev;
+ 		match->prot_hook.func = packet_rcv_fanout;
+ 		match->prot_hook.af_packet_priv = match;
++		match->prot_hook.id_match = match_fanout_group;
+ 		dev_add_pack(&match->prot_hook);
+ 		list_add(&match->list, &fanout_list);
+ 	}
 
 
