@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758993Ab2I1VWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 17:22:04 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43081 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964851Ab2I1UaO (ORCPT
+	id S1033178Ab2I1VWe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:22:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63188 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032778Ab2I1UaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:30:14 -0400
+	Fri, 28 Sep 2012 16:30:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Skeggs <bskeggs@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 162/218] drm/nouveau: fix booting with plymouth + dumb support
-Date: Fri, 28 Sep 2012 13:16:19 -0700
-Message-Id: <20120928201520.134970182@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+Subject: =?UTF-8?q?=5B=20159/218=5D=20drm/radeon=3A=20dont=20disable=20plls=20that=20are=20in=20use=20by=20other=20crtcs?=
+Date: Fri, 28 Sep 2012 13:16:16 -0700
+Message-Id: <20120928201519.795927238@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,32 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 610bd7da160f76f1644ecb4cd7f39511b49a22cc upstream.
+commit 4e58591c8961b3e31709313f75819f2eec06e322 upstream.
 
-We noticed a plymouth bug on Fedora 18, and I then
-noticed this stupid thinko, fixing it fixed the problem
-with plymouth.
+Some plls are shared for DP.
 
-Acked-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/nouveau_display.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_display.c
-@@ -586,7 +586,7 @@ nouveau_display_dumb_create(struct drm_f
- 	args->size = args->pitch * args->height;
- 	args->size = roundup(args->size, PAGE_SIZE);
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1663,9 +1663,22 @@ static void atombios_crtc_disable(struct
+ 	struct drm_device *dev = crtc->dev;
+ 	struct radeon_device *rdev = dev->dev_private;
+ 	struct radeon_atom_ss ss;
++	int i;
  
--	ret = nouveau_gem_new(dev, args->size, 0, TTM_PL_FLAG_VRAM, 0, 0, &bo);
-+	ret = nouveau_gem_new(dev, args->size, 0, NOUVEAU_GEM_DOMAIN_VRAM, 0, 0, &bo);
- 	if (ret)
- 		return ret;
+ 	atombios_crtc_dpms(crtc, DRM_MODE_DPMS_OFF);
+ 
++	for (i = 0; i < rdev->num_crtc; i++) {
++		if (rdev->mode_info.crtcs[i] &&
++		    rdev->mode_info.crtcs[i]->enabled &&
++		    i != radeon_crtc->crtc_id &&
++		    radeon_crtc->pll_id == rdev->mode_info.crtcs[i]->pll_id) {
++			/* one other crtc is using this pll don't turn
++			 * off the pll
++			 */
++			goto done;
++		}
++	}
++
+ 	switch (radeon_crtc->pll_id) {
+ 	case ATOM_PPLL1:
+ 	case ATOM_PPLL2:
+@@ -1682,6 +1695,7 @@ static void atombios_crtc_disable(struct
+ 	default:
+ 		break;
+ 	}
++done:
+ 	radeon_crtc->pll_id = -1;
+ }
  
 
 
