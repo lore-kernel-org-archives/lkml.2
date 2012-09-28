@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab2I1Jiw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 05:38:52 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:58519 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab2I1Jiv (ORCPT
+	id S1757467Ab2I1JkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 05:40:20 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59302 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757315Ab2I1JkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 05:38:51 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Fri, 28 Sep 2012 11:38:37 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: linux1394-devel@lists.sourceforge.net
-Cc: Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] firewire: remove global lock around address handlers,
- convert to RCU
-Message-ID: <20120928113837.4f5de6ef@stein>
-In-Reply-To: <20120927214436.1da8b8ef@stein>
-References: <1345359002.6089.3.camel@thor>
-	<20120819122759.30f9981f@stein>
-	<1345403610.7706.72.camel@thor>
-	<20120820030450.7f5bfa37@stein>
-	<20120927214436.1da8b8ef@stein>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Sep 2012 05:40:19 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-5e-50657081a5aa
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/12] perf tools: Makefile and related cleanups
+Date: Fri, 28 Sep 2012 18:31:56 +0900
+Message-Id: <1348824728-14025-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 27 Stefan Richter wrote:
-> --- a/drivers/firewire/core-transaction.c
-> +++ b/drivers/firewire/core-transaction.c
-> @@ -489,7 +489,7 @@ static struct fw_address_handler *lookup
->  {
->  	struct fw_address_handler *handler;
->  
-> -	list_for_each_entry(handler, list, link) {
-> +	list_for_each_entry_rcu(handler, list, link) {
->  		if (handler->offset < offset + length &&
->  		    offset < handler->offset + handler->length)
->  			return handler;
-[...]
+Hi,
 
-I will add an #include <linux/rculist.h> to core-transaction.c.
+This is what I found during reading the Makefile.  Main goal is using
+positive macro name to reduce confusing when dealing with #ifdef's.
+
+You can get it from my tree too:
+
+git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git  perf/makefile
+
+Any comments are welcome, thanks.
+Namhyung
+
+
+Namhyung Kim (12):
+  perf tools: Move libdw availability check before arch Makefile
+  perf tools: Remove unused PYRF_OBJS variable on Makefile
+  perf tools: Convert to LIBELF_SUPPORT
+  perf tools: Convert to LIBUNWIND_SUPPORT
+  perf tools: Convert to LIBAUDIT_SUPPORT
+  perf tools: Convert to NEWT_SUPPORT
+  perf tools: Convert to GTK2_SUPPORT
+  perf tools: Convert to LIBPERL_SUPPORT
+  perf tools: Convert to LIBPYTHON_SUPPORT
+  perf tools: Convert to DEMANGLE_SUPPORT
+  perf tools: Convert to BACKTRACE_SUPPORT
+  perf tools: Convert to HAVE_STRLCPY
+
+ tools/perf/Makefile                     | 114 ++++++++++++--------------------
+ tools/perf/builtin-inject.c             |   2 +-
+ tools/perf/builtin-record.c             |  14 ++--
+ tools/perf/builtin-script.c             |   4 +-
+ tools/perf/perf.c                       |   4 +-
+ tools/perf/ui/gtk/util.c                |   2 +-
+ tools/perf/ui/helpline.h                |  18 ++---
+ tools/perf/util/annotate.h              |   8 +--
+ tools/perf/util/cache.h                 |  38 ++++++-----
+ tools/perf/util/debug.c                 |   2 +-
+ tools/perf/util/debug.h                 |  17 ++---
+ tools/perf/util/generate-cmdlist.sh     |   4 +-
+ tools/perf/util/hist.h                  |  27 ++++----
+ tools/perf/util/map.c                   |   2 +-
+ tools/perf/util/path.c                  |   2 +-
+ tools/perf/util/perf_regs.h             |   4 +-
+ tools/perf/util/symbol.h                |  29 ++++----
+ tools/perf/util/trace-event-scripting.c |  20 +++---
+ tools/perf/util/unwind.h                |   4 +-
+ tools/perf/util/util.c                  |   4 +-
+ 20 files changed, 149 insertions(+), 170 deletions(-)
+
 -- 
-Stefan Richter
--=====-===-- =--= ===--
-http://arcgraph.de/sr/
+1.7.11.4
+
