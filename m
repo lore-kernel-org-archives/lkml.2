@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759638Ab2I1Uly (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:41:54 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50951 "EHLO
+	id S1759659Ab2I1UmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:42:13 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33602 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759595Ab2I1UlP (ORCPT
+	by vger.kernel.org with ESMTP id S1759586Ab2I1UlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:41:15 -0400
-X-Sasl-enc: 8BdI7oK0yE8rRi8IE4Lp7Mkyh16cXFf8scsxD3bAk40P 1348864875
+	Fri, 28 Sep 2012 16:41:14 -0400
+X-Sasl-enc: KJlsfg4cstfb2NgFH0u7Dro8PDUKzpaEbo2Cr/i4HeQs 1348864873
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Neil Brown <neilb@suse.de>
-Subject: [ 043/127] md: Dont truncate size at 4TB for RAID0 and Linear
-Date: Fri, 28 Sep 2012 13:33:36 -0700
-Message-Id: <20120928203050.896493268@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Fengguang Wu <fengguang.wu@intel.com>,
+        Michael Cree <mcree@orcon.net.nz>, Matt Turner <mattst88@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 042/127] Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
+Date: Fri, 28 Sep 2012 13:33:35 -0700
+Message-Id: <20120928203050.791259697@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928203045.835238916@linuxfoundation.org>
 References: <20120928203045.835238916@linuxfoundation.org>
@@ -27,58 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 667a5313ecd7308d79629c0738b0db588b0b0a4e upstream.
+commit 67a806d9499353fabd5b5ff07337f3aa88a1c3ba upstream.
 
-commit 27a7b260f71439c40546b43588448faac01adb93
-   md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
+The following build error occurred during an alpha build:
 
-changed 0.90 metadata handling to truncated size to 4TB as that is
-all that 0.90 can record.
-However for RAID0 and Linear, 0.90 doesn't need to record the size, so
-this truncation is not needed and causes working arrays to become too small.
+  net/core/sock.c:274:36: error: initializer element is not constant
 
-So avoid the truncation for RAID0 and Linear
+Dave Anglin says:
+> Here is the line in sock.i:
+>
+> struct static_key memalloc_socks = ((struct static_key) { .enabled =
+> ((atomic_t) { (0) }) });
 
-This bug was introduced in 3.1 and is suitable for any stable kernels
-from then onwards.
-As the offending commit was tagged for 'stable', any stable kernel
-that it was applied to should also get this patch.  That includes
-at least 2.6.32, 2.6.33 and 3.0. (Thanks to Ben Hutchings for
-providing that list).
+The above line contains two compound literals.  It also uses a designated
+initializer to initialize the field enabled.  A compound literal is not a
+constant expression.
 
-Signed-off-by: Neil Brown <neilb@suse.de>
+The location of the above statement isn't fully clear, but if a compound
+literal occurs outside the body of a function, the initializer list must
+consist of constant expressions.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Acked-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/alpha/include/asm/atomic.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1096,8 +1096,11 @@ static int super_90_load(mdk_rdev_t *rde
- 			ret = 0;
- 	}
- 	rdev->sectors = rdev->sb_start;
--	/* Limit to 4TB as metadata cannot record more than that */
--	if (rdev->sectors >= (2ULL << 32))
-+	/* Limit to 4TB as metadata cannot record more than that.
-+	 * (not needed for Linear and RAID0 as metadata doesn't
-+	 * record this size)
-+	 */
-+	if (rdev->sectors >= (2ULL << 32) && sb->level >= 1)
- 		rdev->sectors = (2ULL << 32) - 2;
+--- a/arch/alpha/include/asm/atomic.h
++++ b/arch/alpha/include/asm/atomic.h
+@@ -14,8 +14,8 @@
+  */
  
- 	if (rdev->sectors < ((sector_t)sb->size) * 2 && sb->level >= 1)
-@@ -1379,7 +1382,7 @@ super_90_rdev_size_change(mdk_rdev_t *rd
- 	/* Limit to 4TB as metadata cannot record more than that.
- 	 * 4TB == 2^32 KB, or 2*2^32 sectors.
- 	 */
--	if (num_sectors >= (2ULL << 32))
-+	if (num_sectors >= (2ULL << 32) && rdev->mddev->level >= 1)
- 		num_sectors = (2ULL << 32) - 2;
- 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
- 		       rdev->sb_page);
+ 
+-#define ATOMIC_INIT(i)		( (atomic_t) { (i) } )
+-#define ATOMIC64_INIT(i)	( (atomic64_t) { (i) } )
++#define ATOMIC_INIT(i)		{ (i) }
++#define ATOMIC64_INIT(i)	{ (i) }
+ 
+ #define atomic_read(v)		(*(volatile int *)&(v)->counter)
+ #define atomic64_read(v)	(*(volatile long *)&(v)->counter)
 
 
