@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965314Ab2I1TAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 15:00:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45270 "EHLO
+	id S1031512Ab2I1Tke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 15:40:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33712 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965296Ab2I1TAI (ORCPT
+	with ESMTP id S965311Ab2I1TAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 15:00:08 -0400
+	Fri, 28 Sep 2012 15:00:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 127/262] Bluetooth: Fix not removing power_off delayed work
-Date: Fri, 28 Sep 2012 11:50:56 -0700
-Message-Id: <20120928183013.047696969@linuxfoundation.org>
+        Mark Salter <msalter@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 129/262] c/r: prctl: fix build error for no-MMU case
+Date: Fri, 28 Sep 2012 11:50:58 -0700
+Message-Id: <20120928183013.267216695@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -29,76 +31,43 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+From: Mark Salter <msalter@redhat.com>
 
-commit 78c04c0bf52360dc2f7185e99c8e9aa05d73ae5a upstream.
+commit be8cfc4af15cf611dfeb66a1fb5df43d5f1e280a upstream.
 
-For example, when a usb reset is received (I could reproduce it
-running something very similar to this[1] in a loop) it could be
-that the device is unregistered while the power_off delayed work
-is still scheduled to run.
+Commit 1ad75b9e1628 ("c/r: prctl: add minimal address test to
+PR_SET_MM") added some address checking to prctl_set_mm() used by
+checkpoint-restore.  This causes a build error for no-MMU systems:
 
-Backtrace:
+   kernel/sys.c: In function 'prctl_set_mm':
+   kernel/sys.c:1868:34: error: 'mmap_min_addr' undeclared (first use in this function)
 
-WARNING: at lib/debugobjects.c:261 debug_print_object+0x7c/0x8d()
-Hardware name: To Be Filled By O.E.M.
-ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x26
-Modules linked in: nouveau mxm_wmi btusb wmi bluetooth ttm coretemp drm_kms_helper
-Pid: 2114, comm: usb-reset Not tainted 3.5.0bt-next #2
-Call Trace:
- [<ffffffff8124cc00>] ? free_obj_work+0x57/0x91
- [<ffffffff81058f88>] warn_slowpath_common+0x7e/0x97
- [<ffffffff81059035>] warn_slowpath_fmt+0x41/0x43
- [<ffffffff8124ccb6>] debug_print_object+0x7c/0x8d
- [<ffffffff8106e3ec>] ? __queue_work+0x259/0x259
- [<ffffffff8124d63e>] ? debug_check_no_obj_freed+0x6f/0x1b5
- [<ffffffff8124d667>] debug_check_no_obj_freed+0x98/0x1b5
- [<ffffffffa00aa031>] ? bt_host_release+0x10/0x1e [bluetooth]
- [<ffffffff810fc035>] kfree+0x90/0xe6
- [<ffffffffa00aa031>] bt_host_release+0x10/0x1e [bluetooth]
- [<ffffffff812ec2f9>] device_release+0x4a/0x7e
- [<ffffffff8123ef57>] kobject_release+0x11d/0x154
- [<ffffffff8123ed98>] kobject_put+0x4a/0x4f
- [<ffffffff812ec0d9>] put_device+0x12/0x14
- [<ffffffffa009472b>] hci_free_dev+0x22/0x26 [bluetooth]
- [<ffffffffa0280dd0>] btusb_disconnect+0x96/0x9f [btusb]
- [<ffffffff813581b4>] usb_unbind_interface+0x57/0x106
- [<ffffffff812ef988>] __device_release_driver+0x83/0xd6
- [<ffffffff812ef9fb>] device_release_driver+0x20/0x2d
- [<ffffffff813582a7>] usb_driver_release_interface+0x44/0x7b
- [<ffffffff81358795>] usb_forced_unbind_intf+0x45/0x4e
- [<ffffffff8134f959>] usb_reset_device+0xa6/0x12e
- [<ffffffff8135df86>] usbdev_do_ioctl+0x319/0xe20
- [<ffffffff81203244>] ? avc_has_perm_flags+0xc9/0x12e
- [<ffffffff812031a0>] ? avc_has_perm_flags+0x25/0x12e
- [<ffffffff81050101>] ? do_page_fault+0x31e/0x3a1
- [<ffffffff8135eaa6>] usbdev_ioctl+0x9/0xd
- [<ffffffff811126b1>] vfs_ioctl+0x21/0x34
- [<ffffffff81112f7b>] do_vfs_ioctl+0x408/0x44b
- [<ffffffff81208d45>] ? file_has_perm+0x76/0x81
- [<ffffffff8111300f>] sys_ioctl+0x51/0x76
- [<ffffffff8158db22>] system_call_fastpath+0x16/0x1b
+The test for mmap_min_addr doesn't make a lot of sense for no-MMU code
+as noted in commit 6e1415467614 ("NOMMU: Optimise away the
+{dac_,}mmap_min_addr tests").
 
-[1] http://cpansearch.perl.org/src/DPAVLIN/Biblio-RFID-0.03/examples/usbreset.c
+This patch defines mmap_min_addr as 0UL in the no-MMU case so that the
+compiler will optimize away tests for "addr < mmap_min_addr".
 
-Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/security.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -753,6 +753,8 @@ static int hci_dev_do_close(struct hci_d
- 
- 	cancel_work_sync(&hdev->le_scan);
- 
-+	cancel_delayed_work(&hdev->power_off);
-+
- 	hci_req_cancel(hdev, ENODEV);
- 	hci_req_lock(hdev);
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -118,6 +118,7 @@ void reset_security_ops(void);
+ extern unsigned long mmap_min_addr;
+ extern unsigned long dac_mmap_min_addr;
+ #else
++#define mmap_min_addr		0UL
+ #define dac_mmap_min_addr	0UL
+ #endif
  
 
 
