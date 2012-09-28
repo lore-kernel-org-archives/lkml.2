@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422793Ab2I1U3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:29:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55300 "EHLO
+	id S1032783Ab2I1UaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 16:30:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47839 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032762Ab2I1U3l (ORCPT
+	with ESMTP id S1422795Ab2I1U34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:29:41 -0400
+	Fri, 28 Sep 2012 16:29:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jani Nikula <jani.nikula@intel.com>,
-        Alex Ferrando <alferpal@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 151/218] drm/i915: extract connector update from intel_ddc_get_modes() for reuse
-Date: Fri, 28 Sep 2012 13:16:08 -0700
-Message-Id: <20120928201518.833457316@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 156/218] drm/radeon/atom: powergating fixes for DCE6
+Date: Fri, 28 Sep 2012 13:16:13 -0700
+Message-Id: <20120928201519.429393637@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,84 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 4eab81366465aedcfd26de960c595bc03599c09f upstream.
+commit c205b232a64fed6d26edd7e40985b396de99a27f upstream.
 
-Refactor the connector update part of intel_ddc_get_modes() into a separate
-intel_connector_update_modes() function for reuse. No functional changes.
+Power gating is per crtc pair, but the powergating registers
+should be called individually.  The hw handles power up/down
+properly.  The pair is powered up if either crtc in the pair
+is powered up and the pair is not powered down until both
+crtcs in the pair are powered down.  This simplifies
+programming and should save additional power as the previous
+code never actually power gated the crtc pair.
 
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=45881
-Tested-by: Alex Ferrando <alferpal@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_drv.h   |    2 ++
- drivers/gpu/drm/i915/intel_modes.c |   31 ++++++++++++++++++++++---------
- 2 files changed, 24 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |   22 ++--------------------
+ 1 file changed, 2 insertions(+), 20 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -288,6 +288,8 @@ struct intel_fbc_work {
- 	int interval;
- };
- 
-+int intel_connector_update_modes(struct drm_connector *connector,
-+				struct edid *edid);
- int intel_ddc_get_modes(struct drm_connector *c, struct i2c_adapter *adapter);
- extern bool intel_ddc_probe(struct intel_encoder *intel_encoder, int ddc_bus);
- 
---- a/drivers/gpu/drm/i915/intel_modes.c
-+++ b/drivers/gpu/drm/i915/intel_modes.c
-@@ -60,6 +60,25 @@ bool intel_ddc_probe(struct intel_encode
- }
- 
- /**
-+ * intel_connector_update_modes - update connector from edid
-+ * @connector: DRM connector device to use
-+ * @edid: previously read EDID information
-+ */
-+int intel_connector_update_modes(struct drm_connector *connector,
-+				struct edid *edid)
-+{
-+	int ret;
-+
-+	drm_mode_connector_update_edid_property(connector, edid);
-+	ret = drm_add_edid_modes(connector, edid);
-+	drm_edid_to_eld(connector, edid);
-+	connector->display_info.raw_edid = NULL;
-+	kfree(edid);
-+
-+	return ret;
-+}
-+
-+/**
-  * intel_ddc_get_modes - get modelist from monitor
-  * @connector: DRM connector device to use
-  * @adapter: i2c adapter
-@@ -70,18 +89,12 @@ int intel_ddc_get_modes(struct drm_conne
- 			struct i2c_adapter *adapter)
- {
- 	struct edid *edid;
--	int ret = 0;
- 
- 	edid = drm_get_edid(connector, adapter);
--	if (edid) {
--		drm_mode_connector_update_edid_property(connector, edid);
--		ret = drm_add_edid_modes(connector, edid);
--		drm_edid_to_eld(connector, edid);
--		connector->display_info.raw_edid = NULL;
--		kfree(edid);
--	}
-+	if (!edid)
-+		return 0;
- 
--	return ret;
-+	return intel_connector_update_modes(connector, edid);
- }
- 
- static const struct drm_prop_enum_list force_audio_names[] = {
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -258,7 +258,6 @@ void atombios_crtc_dpms(struct drm_crtc
+ 		radeon_crtc->enabled = true;
+ 		/* adjust pm to dpms changes BEFORE enabling crtcs */
+ 		radeon_pm_compute_clocks(rdev);
+-		/* disable crtc pair power gating before programming */
+ 		if (ASIC_IS_DCE6(rdev) && !radeon_crtc->in_mode_set)
+ 			atombios_powergate_crtc(crtc, ATOM_DISABLE);
+ 		atombios_enable_crtc(crtc, ATOM_ENABLE);
+@@ -278,25 +277,8 @@ void atombios_crtc_dpms(struct drm_crtc
+ 			atombios_enable_crtc_memreq(crtc, ATOM_DISABLE);
+ 		atombios_enable_crtc(crtc, ATOM_DISABLE);
+ 		radeon_crtc->enabled = false;
+-		/* power gating is per-pair */
+-		if (ASIC_IS_DCE6(rdev) && !radeon_crtc->in_mode_set) {
+-			struct drm_crtc *other_crtc;
+-			struct radeon_crtc *other_radeon_crtc;
+-			list_for_each_entry(other_crtc, &rdev->ddev->mode_config.crtc_list, head) {
+-				other_radeon_crtc = to_radeon_crtc(other_crtc);
+-				if (((radeon_crtc->crtc_id == 0) && (other_radeon_crtc->crtc_id == 1)) ||
+-				    ((radeon_crtc->crtc_id == 1) && (other_radeon_crtc->crtc_id == 0)) ||
+-				    ((radeon_crtc->crtc_id == 2) && (other_radeon_crtc->crtc_id == 3)) ||
+-				    ((radeon_crtc->crtc_id == 3) && (other_radeon_crtc->crtc_id == 2)) ||
+-				    ((radeon_crtc->crtc_id == 4) && (other_radeon_crtc->crtc_id == 5)) ||
+-				    ((radeon_crtc->crtc_id == 5) && (other_radeon_crtc->crtc_id == 4))) {
+-					/* if both crtcs in the pair are off, enable power gating */
+-					if (other_radeon_crtc->enabled == false)
+-						atombios_powergate_crtc(crtc, ATOM_ENABLE);
+-					break;
+-				}
+-			}
+-		}
++		if (ASIC_IS_DCE6(rdev) && !radeon_crtc->in_mode_set)
++			atombios_powergate_crtc(crtc, ATOM_ENABLE);
+ 		/* adjust pm to dpms changes AFTER disabling crtcs */
+ 		radeon_pm_compute_clocks(rdev);
+ 		break;
 
 
