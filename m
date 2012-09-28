@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab2I1IeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 04:34:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49980 "EHLO mga11.intel.com"
+	id S1756132Ab2I1IhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 04:37:07 -0400
+Received: from mga14.intel.com ([143.182.124.37]:21636 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247Ab2I1IeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 04:34:10 -0400
+	id S1751404Ab2I1IhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 04:37:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,501,1344236400"; 
-   d="scan'208";a="227650601"
-Date: Fri, 28 Sep 2012 16:34:05 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH] slub: init_kmem_cache_cpus() and put_cpu_partial() can be
- static
-Message-ID: <20120928083405.GA23740@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="scan'208";a="150188583"
+From: Feng Tang <feng.tang@intel.com>
+To: acme@redhat.com
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, andi@firstfloor.org,
+        namhyung@kernel.org, dsahern@gmail.com, linux-kernel@vger.kernel.org,
+        Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v4 0/8] perf tools: Add script browser and runtime data file switch 
+Date: Fri, 28 Sep 2012 16:30:32 +0800
+Message-Id: <1348821040-9724-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Glauber Costa <glommer@parallels.com>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- mm/slub.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Hi Arnaldo and all,
 
---- linux.orig/mm/slub.c	2012-09-24 10:22:11.000000000 +0800
-+++ linux/mm/slub.c	2012-09-28 16:31:31.987092387 +0800
-@@ -1709,7 +1709,7 @@ static inline void note_cmpxchg_failure(
- 	stat(s, CMPXCHG_DOUBLE_CPU_FAIL);
- }
- 
--void init_kmem_cache_cpus(struct kmem_cache *s)
-+static void init_kmem_cache_cpus(struct kmem_cache *s)
- {
- 	int cpu;
- 
-@@ -1934,7 +1934,7 @@ static void unfreeze_partials(struct kme
-  * If we did not find a slot then simply move all the partials to the
-  * per node partial list.
-  */
--int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
-+static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- {
- 	struct page *oldpage;
- 	int pages;
+This is a patch set mainly to add a browser for perf script, which
+will be integrated into the main hists and annotation browser. It
+also add the inital support for runtime perf data file switch in the
+'perf report' window.
+
+Patch 1    Add the global variable "input_name"
+patch 2-5  Introduce the script browser and integrate it to
+           hists/annotation browser
+patch 6-8  Add the runtime data file switch for 'perf report' 
+
+The patches are on top of current perf/core branch of your git tree. 
+Please help to review. 
+
+Thanks to Andi/Arnaldo/Namhyung for the great suggestions/reviews.
+
+Changelog:
+	Since v3:
+	* Fix memory leak for input_name
+	* Add return value check for strdup
+	* Fix some small bugs in scripts browser
+
+	Since v2:
+	* add more filter to find_scripts()
+	* add runtime data file switch for 'perf report'
+	* emphasize the script browser doesn't cover 'record'
+	  in commit log
+	
+	Since v1:
+	* Add filter for scripts can't be run in script browser
+	* Fix some bugs about buffer handling and error check 
+
+Thanks,
+Feng
+
+--------------
+Feng Tang (8):
+  perf tool: Add a global variable "const char *input_name"
+  perf script: Add more filter to find_scripts()
+  perf ui/browser: Add a browser for perf script
+  perf ui/browser: Integrate script browser into annotation browser
+  perf ui/browser: Integrate script browser into main hists browser
+  perf header: Add is_perf_magic() func
+  perf hists browser: Add option for runtime switching perf data file
+  perf report: Enable the runtime switching of perf data file
+
+ tools/perf/Makefile               |    4 +
+ tools/perf/builtin-annotate.c     |    5 +-
+ tools/perf/builtin-buildid-list.c |    1 -
+ tools/perf/builtin-evlist.c       |    5 +-
+ tools/perf/builtin-inject.c       |    3 +-
+ tools/perf/builtin-kmem.c         |    2 -
+ tools/perf/builtin-lock.c         |    2 -
+ tools/perf/builtin-report.c       |   31 +++++--
+ tools/perf/builtin-sched.c        |    5 +-
+ tools/perf/builtin-script.c       |   84 +++++++++++++++-
+ tools/perf/builtin-timechart.c    |    2 -
+ tools/perf/perf.c                 |    1 +
+ tools/perf/perf.h                 |    1 +
+ tools/perf/ui/browsers/annotate.c |    6 +
+ tools/perf/ui/browsers/hists.c    |  142 ++++++++++++++++++++++++++++
+ tools/perf/ui/browsers/scripts.c  |  189 +++++++++++++++++++++++++++++++++++++
+ tools/perf/ui/keysyms.h           |    1 +
+ tools/perf/util/header.c          |   10 ++
+ tools/perf/util/header.h          |    1 +
+ tools/perf/util/hist.h            |    7 ++
+ 20 files changed, 470 insertions(+), 32 deletions(-)
+ create mode 100644 tools/perf/ui/browsers/scripts.c
+
