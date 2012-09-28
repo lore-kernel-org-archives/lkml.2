@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684Ab2I1SyF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 14:54:05 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47421 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758488Ab2I1Sx7 (ORCPT
+	id S1758727Ab2I1SyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 14:54:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64534 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758685Ab2I1SyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 14:53:59 -0400
+	Fri, 28 Sep 2012 14:54:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fengguang Wu <fengguang.wu@intel.com>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 006/262] isdnloop: fix and simplify isdnloop_init()
-Date: Fri, 28 Sep 2012 11:48:55 -0700
-Message-Id: <20120928182958.715493015@linuxfoundation.org>
+Subject: [ 008/262] net/core: Fix potential memory leak in dev_set_alias()
+Date: Fri, 28 Sep 2012 11:48:57 -0700
+Message-Id: <20120928182958.954871631@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120928182957.993484211@linuxfoundation.org>
 References: <20120928182957.993484211@linuxfoundation.org>
@@ -30,59 +30,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Wu Fengguang <fengguang.wu@intel.com>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-[ Upstream commit 77f00f6324cb97cf1df6f9c4aaeea6ada23abdb2 ]
+[ Upstream commit 7364e445f62825758fa61195d237a5b8ecdd06ec ]
 
-Fix a buffer overflow bug by removing the revision and printk.
+Do not leak memory by updating pointer with potentially NULL realloc return value.
 
-[   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7
-[   22.097508] isdnloop: (loop0) virtual card added
-[   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
-[   22.174400]
-[   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
-[   22.624071] Call Trace:
-[   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
-[   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
-[   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
-[   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/isdn/isdnloop/isdnloop.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ net/core/dev.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -16,7 +16,6 @@
- #include <linux/sched.h>
- #include "isdnloop.h"
- 
--static char *revision = "$Revision: 1.11.6.7 $";
- static char *isdnloop_id = "loop0";
- 
- MODULE_DESCRIPTION("ISDN4Linux: Pseudo Driver that simulates an ISDN card");
-@@ -1494,17 +1493,6 @@ isdnloop_addcard(char *id1)
- static int __init
- isdnloop_init(void)
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1055,6 +1055,8 @@ rollback:
+  */
+ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
  {
--	char *p;
--	char rev[10];
--
--	if ((p = strchr(revision, ':'))) {
--		strcpy(rev, p + 1);
--		p = strchr(rev, '$');
--		*p = 0;
--	} else
--		strcpy(rev, " ??? ");
--	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev%s\n", rev);
--
- 	if (isdnloop_id)
- 		return (isdnloop_addcard(isdnloop_id));
++	char *new_ifalias;
++
+ 	ASSERT_RTNL();
  
+ 	if (len >= IFALIASZ)
+@@ -1068,9 +1070,10 @@ int dev_set_alias(struct net_device *dev
+ 		return 0;
+ 	}
+ 
+-	dev->ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
+-	if (!dev->ifalias)
++	new_ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
++	if (!new_ifalias)
+ 		return -ENOMEM;
++	dev->ifalias = new_ifalias;
+ 
+ 	strlcpy(dev->ifalias, alias, len+1);
+ 	return len;
 
 
