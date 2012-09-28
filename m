@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758640Ab2I1Qj3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 12:39:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42090 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757572Ab2I1Qj2 (ORCPT
+	id S1758651Ab2I1QkF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 12:40:05 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:15704 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758601Ab2I1QkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 12:39:28 -0400
-Date: Fri, 28 Sep 2012 09:39:12 -0700
-From: tip-bot for Hyeoncheol Lee <hyc.lee@gmail.com>
-Message-ID: <tip-bb2d17a014914b628df42b0c76c85fa8a8c57e79@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, hyc.lee@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, hyc.lee@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        tglx@linutronix.de
-In-Reply-To: <1348713399-4541-1-git-send-email-hyc.lee@gmail.com>
-References: <1348713399-4541-1-git-send-email-hyc.lee@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Print an enum type variable in "
- enum variable-name" format when showing accessible variables
-Git-Commit-ID: bb2d17a014914b628df42b0c76c85fa8a8c57e79
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 28 Sep 2012 12:40:03 -0400
+Date: Fri, 28 Sep 2012 16:40:02 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] make GFP_NOTRACK flag unconditional
+In-Reply-To: <5065B42F.5010007@parallels.com>
+Message-ID: <0000013a0dbfc498-6debffd5-cd68-404c-92a4-4f88d40cf41b-000000@email.amazonses.com>
+References: <1348826194-21781-1-git-send-email-glommer@parallels.com> <0000013a0d475174-343e3b17-6755-42c1-9dae-a9287ad7d403-000000@email.amazonses.com> <5065B42F.5010007@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 28 Sep 2012 09:39:18 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bb2d17a014914b628df42b0c76c85fa8a8c57e79
-Gitweb:     http://git.kernel.org/tip/bb2d17a014914b628df42b0c76c85fa8a8c57e79
-Author:     Hyeoncheol Lee <hyc.lee@gmail.com>
-AuthorDate: Thu, 27 Sep 2012 11:36:39 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 27 Sep 2012 10:58:57 -0300
+On Fri, 28 Sep 2012, Glauber Costa wrote:
 
-perf probe: Print an enum type variable in "enum variable-name" format when showing accessible variables
+> On 09/28/2012 06:28 PM, Christoph Lameter wrote:
+> > On Fri, 28 Sep 2012, Glauber Costa wrote:
+> >
+> >> There was a general sentiment in a recent discussion (See
+> >> https://lkml.org/lkml/2012/9/18/258) that the __GFP flags should be
+> >> defined unconditionally. Currently, the only offender is GFP_NOTRACK,
+> >> which is conditional to KMEMCHECK.
+> >>
+> >> This simple patch makes it unconditional.
+> >
+> > __GFP_NOTRACK is only used in context where CONFIG_KMEMCHECK is defined?
+> >
+> > If that is not the case then you need to define GFP_NOTRACK and substitute
+> > it where necessary.
+> >
+>
+> The flag is passed around extensively, but I was imagining the whole
+> point of that is that having the flag itself is harmless, and will be
+> ignored by the page allocator ?
 
-When showing accessible variables, an enum type variable was printed in
-"variable-name" format. Change this format into "enum variable-name".
+Looking through it shows almost nothing that is affected.
 
-Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/1348713399-4541-1-git-send-email-hyc.lee@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/dwarf-aux.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+One thing though is that defining __GFP_NOTRACK to 0 eliminates an "or"
+operation in alloc_slab_page().
 
-diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
-index ee51e9b..3e5f543 100644
---- a/tools/perf/util/dwarf-aux.c
-+++ b/tools/perf/util/dwarf-aux.c
-@@ -804,6 +804,8 @@ int die_get_typename(Dwarf_Die *vr_die, char *buf, int len)
- 			tmp = "union ";
- 		else if (tag == DW_TAG_structure_type)
- 			tmp = "struct ";
-+		else if (tag == DW_TAG_enumeration_type)
-+			tmp = "enum ";
- 		/* Write a base name */
- 		ret = snprintf(buf, len, "%s%s", tmp, dwarf_diename(&type));
- 		return (ret >= len) ? -E2BIG : ret;
+That is already on the slob path so I guess that is minimal
+
+Acked-by: Christoph Lameter <cl@linux.com>
+
