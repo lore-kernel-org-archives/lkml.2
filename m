@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032246Ab2I1UYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 16:24:47 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52836 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032225Ab2I1UYi (ORCPT
+	id S1161026Ab2I1Vry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 17:47:54 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48962 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032248Ab2I1UYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 16:24:38 -0400
+	Fri, 28 Sep 2012 16:24:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 059/218] perf_event: Switch to internal refcount, fix race with close()
-Date: Fri, 28 Sep 2012 13:14:36 -0700
-Message-Id: <20120928201508.312569834@linuxfoundation.org>
+        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 062/218] mmc: mxs-mmc: fix deadlock in SDIO IRQ case
+Date: Fri, 28 Sep 2012 13:14:39 -0700
+Message-Id: <20120928201508.655711066@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.1.428.g652398a
 In-Reply-To: <20120928201501.208384923@linuxfoundation.org>
 References: <20120928201501.208384923@linuxfoundation.org>
@@ -28,217 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
 
-commit a6fa941d94b411bbd2b6421ffbde6db3c93e65ab upstream.
+commit 1af36b2a993dddfa3d6860ec4879c9e8abc9b976 upstream.
 
-Don't mess with file refcounts (or keep a reference to file, for
-that matter) in perf_event.  Use explicit refcount of its own
-instead.  Deal with the race between the final reference to event
-going away and new children getting created for it by use of
-atomic_long_inc_not_zero() in inherit_event(); just have the
-latter free what it had allocated and return NULL, that works
-out just fine (children of siblings of something doomed are
-created as singletons, same as if the child of leader had been
-created and immediately killed).
+Release the lock before mmc_signal_sdio_irq is called by mxs_mmc_irq_handler.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120820135925.GG23464@ZenIV.linux.org.uk
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Backtrace:
+[   79.660000] =============================================
+[   79.660000] [ INFO: possible recursive locking detected ]
+[   79.660000] 3.4.0-00009-g3e96082-dirty #11 Not tainted
+[   79.660000] ---------------------------------------------
+[   79.660000] swapper/0 is trying to acquire lock:
+[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026ea3c>] mxs_mmc_enable_sdio_irq+0x18/0xd4
+[   79.660000]
+[   79.660000] but task is already holding lock:
+[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
+[   79.660000]
+[   79.660000] other info that might help us debug this:
+[   79.660000]  Possible unsafe locking scenario:
+[   79.660000]
+[   79.660000]        CPU0
+[   79.660000]        ----
+[   79.660000]   lock(&(&host->lock)->rlock#2);
+[   79.660000]   lock(&(&host->lock)->rlock#2);
+[   79.660000]
+[   79.660000]  *** DEADLOCK ***
+[   79.660000]
+[   79.660000]  May be due to missing lock nesting notation
+[   79.660000]
+[   79.660000] 1 lock held by swapper/0:
+[   79.660000]  #0:  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
+[   79.660000]
+[   79.660000] stack backtrace:
+[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c005f9c0>] (__lock_acquire+0x1948/0x1d48)
+[   79.660000] [<c005f9c0>] (__lock_acquire+0x1948/0x1d48) from [<c005fea0>] (lock_acquire+0xe0/0xf8)
+[   79.660000] [<c005fea0>] (lock_acquire+0xe0/0xf8) from [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58)
+[   79.660000] [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
+[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
+[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
+[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
+[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
+[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
+[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
+[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
+[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
+[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
+[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
+[   79.660000] BUG: spinlock lockup on CPU#0, swapper/0
+[   79.660000]  lock: c398cb2c, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
+[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144)
+[   79.660000] [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144) from [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58)
+[   79.660000] [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
+[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
+[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
+[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
+[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
+[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
+[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
+[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
+[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
+[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
+[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
+
+Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/perf_event.h |    2 -
- kernel/events/core.c       |   62 +++++++++++++++++++++++----------------------
- 2 files changed, 34 insertions(+), 30 deletions(-)
+ drivers/mmc/host/mxs-mmc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -925,7 +925,7 @@ struct perf_event {
- 	struct hw_perf_event		hw;
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -280,11 +280,11 @@ static irqreturn_t mxs_mmc_irq_handler(i
+ 	writel(stat & MXS_MMC_IRQ_BITS,
+ 	       host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
  
- 	struct perf_event_context	*ctx;
--	struct file			*filp;
-+	atomic_long_t			refcount;
- 
- 	/*
- 	 * These accumulate total time (in nanoseconds) that children
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2929,12 +2929,12 @@ EXPORT_SYMBOL_GPL(perf_event_release_ker
- /*
-  * Called when the last reference to the file is gone.
-  */
--static int perf_release(struct inode *inode, struct file *file)
-+static void put_event(struct perf_event *event)
- {
--	struct perf_event *event = file->private_data;
- 	struct task_struct *owner;
- 
--	file->private_data = NULL;
-+	if (!atomic_long_dec_and_test(&event->refcount))
-+		return;
- 
- 	rcu_read_lock();
- 	owner = ACCESS_ONCE(event->owner);
-@@ -2969,7 +2969,13 @@ static int perf_release(struct inode *in
- 		put_task_struct(owner);
- 	}
- 
--	return perf_event_release_kernel(event);
-+	perf_event_release_kernel(event);
-+}
++	spin_unlock(&host->lock);
 +
-+static int perf_release(struct inode *inode, struct file *file)
-+{
-+	put_event(file->private_data);
-+	return 0;
- }
+ 	if ((stat & BM_SSP_CTRL1_SDIO_IRQ) && (stat & BM_SSP_CTRL1_SDIO_IRQ_EN))
+ 		mmc_signal_sdio_irq(host->mmc);
  
- u64 perf_event_read_value(struct perf_event *event, u64 *enabled, u64 *running)
-@@ -3222,7 +3228,7 @@ unlock:
- 
- static const struct file_operations perf_fops;
- 
--static struct perf_event *perf_fget_light(int fd, int *fput_needed)
-+static struct file *perf_fget_light(int fd, int *fput_needed)
- {
- 	struct file *file;
- 
-@@ -3236,7 +3242,7 @@ static struct perf_event *perf_fget_ligh
- 		return ERR_PTR(-EBADF);
- 	}
- 
--	return file->private_data;
-+	return file;
- }
- 
- static int perf_event_set_output(struct perf_event *event,
-@@ -3268,19 +3274,21 @@ static long perf_ioctl(struct file *file
- 
- 	case PERF_EVENT_IOC_SET_OUTPUT:
- 	{
-+		struct file *output_file = NULL;
- 		struct perf_event *output_event = NULL;
- 		int fput_needed = 0;
- 		int ret;
- 
- 		if (arg != -1) {
--			output_event = perf_fget_light(arg, &fput_needed);
--			if (IS_ERR(output_event))
--				return PTR_ERR(output_event);
-+			output_file = perf_fget_light(arg, &fput_needed);
-+			if (IS_ERR(output_file))
-+				return PTR_ERR(output_file);
-+			output_event = output_file->private_data;
- 		}
- 
- 		ret = perf_event_set_output(event, output_event);
- 		if (output_event)
--			fput_light(output_event->filp, fput_needed);
-+			fput_light(output_file, fput_needed);
- 
- 		return ret;
- 	}
-@@ -5920,6 +5928,7 @@ perf_event_alloc(struct perf_event_attr
- 
- 	mutex_init(&event->mmap_mutex);
- 
-+	atomic_long_set(&event->refcount, 1);
- 	event->cpu		= cpu;
- 	event->attr		= *attr;
- 	event->group_leader	= group_leader;
-@@ -6230,12 +6239,12 @@ SYSCALL_DEFINE5(perf_event_open,
- 		return event_fd;
- 
- 	if (group_fd != -1) {
--		group_leader = perf_fget_light(group_fd, &fput_needed);
--		if (IS_ERR(group_leader)) {
--			err = PTR_ERR(group_leader);
-+		group_file = perf_fget_light(group_fd, &fput_needed);
-+		if (IS_ERR(group_file)) {
-+			err = PTR_ERR(group_file);
- 			goto err_fd;
- 		}
--		group_file = group_leader->filp;
-+		group_leader = group_file->private_data;
- 		if (flags & PERF_FLAG_FD_OUTPUT)
- 			output_event = group_leader;
- 		if (flags & PERF_FLAG_FD_NO_GROUP)
-@@ -6370,7 +6379,6 @@ SYSCALL_DEFINE5(perf_event_open,
- 		put_ctx(gctx);
- 	}
- 
--	event->filp = event_file;
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	mutex_lock(&ctx->mutex);
- 
-@@ -6460,7 +6468,6 @@ perf_event_create_kernel_counter(struct
- 		goto err_free;
- 	}
- 
--	event->filp = NULL;
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	mutex_lock(&ctx->mutex);
- 	perf_install_in_context(ctx, event, cpu);
-@@ -6509,7 +6516,7 @@ static void sync_child_event(struct perf
- 	 * Release the parent event, if this was the last
- 	 * reference to it.
- 	 */
--	fput(parent_event->filp);
-+	put_event(parent_event);
- }
- 
- static void
-@@ -6585,9 +6592,8 @@ static void perf_event_exit_task_context
- 	 *
- 	 *   __perf_event_exit_task()
- 	 *     sync_child_event()
--	 *       fput(parent_event->filp)
--	 *         perf_release()
--	 *           mutex_lock(&ctx->mutex)
-+	 *       put_event()
-+	 *         mutex_lock(&ctx->mutex)
- 	 *
- 	 * But since its the parent context it won't be the same instance.
- 	 */
-@@ -6655,7 +6661,7 @@ static void perf_free_event(struct perf_
- 	list_del_init(&event->child_list);
- 	mutex_unlock(&parent->child_mutex);
- 
--	fput(parent->filp);
-+	put_event(parent);
- 
- 	perf_group_detach(event);
- 	list_del_event(event, ctx);
-@@ -6735,6 +6741,12 @@ inherit_event(struct perf_event *parent_
- 				           NULL, NULL);
- 	if (IS_ERR(child_event))
- 		return child_event;
-+
-+	if (!atomic_long_inc_not_zero(&parent_event->refcount)) {
-+		free_event(child_event);
-+		return NULL;
-+	}
-+
- 	get_ctx(child_ctx);
- 
- 	/*
-@@ -6776,14 +6788,6 @@ inherit_event(struct perf_event *parent_
- 	raw_spin_unlock_irqrestore(&child_ctx->lock, flags);
- 
- 	/*
--	 * Get a reference to the parent filp - we will fput it
--	 * when the child event exits. This is safe to do because
--	 * we are in the parent and we know that the filp still
--	 * exists and has a nonzero count:
--	 */
--	atomic_long_inc(&parent_event->filp->f_count);
+-	spin_unlock(&host->lock);
 -
--	/*
- 	 * Link this into the parent event's child list
- 	 */
- 	WARN_ON_ONCE(parent_event->ctx->parent_ctx);
+ 	if (stat & BM_SSP_CTRL1_RESP_TIMEOUT_IRQ)
+ 		cmd->error = -ETIMEDOUT;
+ 	else if (stat & BM_SSP_CTRL1_RESP_ERR_IRQ)
 
 
