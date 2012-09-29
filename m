@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab2I2Rba (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 13:31:30 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63119 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756957Ab2I2Rb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 13:31:29 -0400
+	id S1757200Ab2I2RlY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 13:41:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64210 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757267Ab2I2RlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 13:41:15 -0400
+Date: Sat, 29 Sep 2012 19:42:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/5] uprobes: Fix UPROBE_SKIP_SSTEP checks in
+	handle_swbp()
+Message-ID: <20120929174228.GA27035@redhat.com>
+References: <20120914171513.GA29599@redhat.com> <20120914171557.GA29642@redhat.com> <20120915073957.GD7588@in.ibm.com> <20120915150120.GA20608@redhat.com> <20120917172052.GK28033@linux.vnet.ibm.com> <20120918160738.GA22995@redhat.com> <20120920144311.GF27880@linux.vnet.ibm.com> <20120924200825.GA25264@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:1f05:1640:7966:69b8:c7b8:a033]
-In-Reply-To: <m3y5jskbir.fsf@intrepid.localdomain>
-References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
-	<1348868177-21205-6-git-send-email-arnd@arndb.de>
-	<m3lift6rru.fsf_-_@intrepid.localdomain>
-	<201209291458.16112.arnd@arndb.de>
-	<m3y5jskbir.fsf@intrepid.localdomain>
-Date: Sat, 29 Sep 2012 10:31:27 -0700
-Message-ID: <CAOesGMh9PCjoiUZZZtPFBrsOfO+QhjW_bSdCOf0b_uXd_Jx2qA@mail.gmail.com>
-Subject: Re: ARM SoC tree, Was: Re: [PATCH 05/12] ARM: ixp4xx: use __iomem for MMIO
-From: Olof Johansson <olof@lixom.net>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120924200825.GA25264@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 29, 2012 at 10:02 AM, Krzysztof Halasa <khc@pm.waw.pl> wrote:
+On 09/24, Oleg Nesterov wrote:
+>
+> Anyway,
+>
+> > for example
+> > 0f 1f 40 00
+>
+> OK, thanks, objdump reports "nopl 0x0(%rax)", looks fine.
+>
+> But. I do not see how __skip_sstep() can handle this case correctly.
+> Not only it should update regs->ip afaics, it should also account 2
+> extra bytes _after_ 0f 1f.
+>
+> > 0f 1f 44 00 00
+>
+> OK, nopl   0x0(%rax,%rax,1), but in this case we need to skip 3
+> extra bytes.
+>
+>
+> I am starting to think this code is broken and we should simply remove
+> all checks except 0x66 and 0x90. In this case we do not even need to
+> update regs->ip.
+>
+> Otherwise this code needs to know the insn's length.
+>
+> Right?
 
-> It would be different if my tree included e.g. core ARM changes - but it
-> doesn't. What's the _real_ reason for asking me to push my changes
-> indirectly?
+OK, I verified that the application is really killed by SIGILL if
+you probe such an instruction. I'll send the fix which simply removes
+this code. I do not know how to figure out the actual insn length.
 
-The reason is that when all ARM platform maintainers pushed code
-straight to Linus, no one was making sure that the code meets a
-quality bar and each vendor only focused on just their own stuff.
+Oleg.
 
-As an end result, over the years lots of crap got pushed straight to
-Linus, code that we have now spent about a year and a half doing
-massive cleanups and restructurings of. No vendors really talked to
-each other, all of them solved their own problems their own way
-without figuring out how to work better together and build
-infrastructure for their common requirements. Linus finally lost his
-patience with the massive churn of duplicated reinvented code and
-there was a huge blow up about it. See http://lwn.net/Articles/439326/
-for background.
-
-> Also, not that it's the most important, but how is it better for anyone
-> to delay changes - which are completely orthogonal to arm-soc - for
-> additional months? Doesn't "release early, release often" make sense
-> anymore?
-
-Nothing is delayed by going through arm-soc. We're closing down our
-tree for new (large) pull requests around the same time where you
-should no longer add them to your -next branch either (-rc6/-rc7 time
-frame).
-
-Small fixups, and of course bugfixes, are welcome closer to the merge
-window but the major chances should all have landed by then.
-
-
--Olof
