@@ -1,147 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab2I2KCK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 06:02:10 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38646 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab2I2KCI (ORCPT
+	id S1753522Ab2I2KHG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 06:07:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49532 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752540Ab2I2KHB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 06:02:08 -0400
-Message-ID: <5066C71E.9030302@kernel.org>
-Date: Sat, 29 Sep 2012 11:02:06 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120910 Thunderbird/15.0.1
+	Sat, 29 Sep 2012 06:07:01 -0400
+From: "Patil, Rachna" <rachna@ti.com>
+To: Jonathan Cameron <jic23@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: RE: [PATCH v4 0/5] Support for TSC/ADC MFD driver
+Thread-Topic: [PATCH v4 0/5] Support for TSC/ADC MFD driver
+Thread-Index: AQHNm6kp+zjgysv1QUmfOMBO+iWktpeguhGAgABhEHA=
+Date: Sat, 29 Sep 2012 10:06:29 +0000
+Message-ID: <4CE347531D4CA947960AF71FF095B9323E9582F0@DBDE01.ent.ti.com>
+References: <1348636814-14129-1-git-send-email-rachna@ti.com>
+ <5066C29D.7040009@kernel.org>
+In-Reply-To: <5066C29D.7040009@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 07/12] staging/iio/lis3l02dq: fix building without irq_to_gpio
-References: <1348868177-21205-1-git-send-email-arnd@arndb.de> <1348868177-21205-8-git-send-email-arnd@arndb.de>
-In-Reply-To: <1348868177-21205-8-git-send-email-arnd@arndb.de>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 10:36 PM, Arnd Bergmann wrote:
-> The driver has not been building for some time after the
-> irq_to_gpio function has been removed from the kernel.
-> 
-> The only board in the upstream kernel that provides
-> this device is the "Stargate 2", which is also maintained
-> by Jonathan Cameron. Rather than working around the problem
-> by adding new platform data for this driver, this patch
-> uses the of_gpio framework to get to the gpio number.
-> 
-> However, the stargate2 code does not (yet) use DT based
-> probing, so it is still broken, but at least building
-> allyesconfig works again.
-Will be optimistic to think anyone will convert a platform
-that no one still makes (stargate 2 was pretty much intel
-research only + some they gave to accademics - imote2 has
-been dropped by memsic for a while now.)  If nothing else
-there is little chance anyone will bother porting a remotely
-up to date bootloader to these boards given how few people
-are still using them for anything.
+On Sat, Sep 29, 2012 at 15:12:53, Jonathan Cameron wrote:
+> On 09/26/2012 06:20 AM, Patil, Rachna wrote:
+> > This patch set adds a MFD core driver which registers touchscreen and 
+> > ADC as its client drivers.
+> > The existing touchscreen has been modified to work as a MFD client 
+> > driver and a new ADC driver has been added in the IIO subsystem.
+> > 
+> > There are 8 analog input lines, which can be used as:
+> > 1. 8 general purpose ADC channels
+> > 2. 4 wire TS, with 4 general purpose ADC channels 3. 5 wire TS, with 3 
+> > general purpose ADC channels
+> > 
+> > This patch set has been tested on AM335x EVM.
+> > 
+> > These set of patches are based on top of Touchscreen patch set 
+> > submitted.
+> > Subject: [PATCH 0/4] input: TSC: ti_tscadc: TI Touchscreen driver 
+> > updates [1]
+> > 
+> > [1] http://www.spinics.net/lists/linux-input/msg22107.html
+> which tree have these merged in?
 
-I'm happy enough with this patch.  Would prefer to
-take it post merge window as a fix than now given timing.
+This patch set includes some changes in the touchscreen driver.
+They have not been acked as yet. I am waiting for a reply from Dmitry.
 
-Long run this driver will hopefully get replaced by the
-unified driver for all the st accelerometers (assuming that
-ever gets back to this long obsolete part).
-
-Thanks for the patch Arnd, I've been ignoring this one on
-the basis it would go away for far too long. Sorry about that!
+Regards,
+Rachna
 
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Jonathan Cameron <jic23@kernel.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/staging/iio/accel/lis3l02dq.h      |    1 +
->  drivers/staging/iio/accel/lis3l02dq_core.c |   10 ++++++----
->  drivers/staging/iio/accel/lis3l02dq_ring.c |    2 +-
->  3 files changed, 8 insertions(+), 5 deletions(-)
+> I'll assume the rest of this is going through the same tree and ack rather than signing off and taking it through IIO.
 > 
-> diff --git a/drivers/staging/iio/accel/lis3l02dq.h b/drivers/staging/iio/accel/lis3l02dq.h
-> index f9bcd41..2bac722 100644
-> --- a/drivers/staging/iio/accel/lis3l02dq.h
-> +++ b/drivers/staging/iio/accel/lis3l02dq.h
-> @@ -158,6 +158,7 @@ struct lis3l02dq_state {
->  	struct spi_device		*us;
->  	struct iio_trigger		*trig;
->  	struct mutex			buf_lock;
-> +	int				gpio;
->  	bool				trigger_on;
->  
->  	u8	tx[LIS3L02DQ_MAX_RX] ____cacheline_aligned;
-> diff --git a/drivers/staging/iio/accel/lis3l02dq_core.c b/drivers/staging/iio/accel/lis3l02dq_core.c
-> index 21b0469..d13c7e9 100644
-> --- a/drivers/staging/iio/accel/lis3l02dq_core.c
-> +++ b/drivers/staging/iio/accel/lis3l02dq_core.c
-> @@ -15,6 +15,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/irq.h>
->  #include <linux/gpio.h>
-> +#include <linux/of_gpio.h>
->  #include <linux/mutex.h>
->  #include <linux/device.h>
->  #include <linux/kernel.h>
-> @@ -690,6 +691,7 @@ static int __devinit lis3l02dq_probe(struct spi_device *spi)
->  	spi_set_drvdata(spi, indio_dev);
->  
->  	st->us = spi;
-> +	st->gpio = of_get_gpio(spi->dev.of_node, 0);
->  	mutex_init(&st->buf_lock);
->  	indio_dev->name = spi->dev.driver->name;
->  	indio_dev->dev.parent = &spi->dev;
-> @@ -711,7 +713,7 @@ static int __devinit lis3l02dq_probe(struct spi_device *spi)
->  		goto error_unreg_buffer_funcs;
->  	}
->  
-> -	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)) > 0) {
-> +	if (spi->irq) {
->  		ret = request_threaded_irq(st->us->irq,
->  					   &lis3l02dq_th,
->  					   &lis3l02dq_event_handler,
-> @@ -738,10 +740,10 @@ static int __devinit lis3l02dq_probe(struct spi_device *spi)
->  	return 0;
->  
->  error_remove_trigger:
-> -	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)))
-> +	if (spi->irq)
->  		lis3l02dq_remove_trigger(indio_dev);
->  error_free_interrupt:
-> -	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)) > 0)
-> +	if (spi->irq)
->  		free_irq(st->us->irq, indio_dev);
->  error_uninitialize_buffer:
->  	iio_buffer_unregister(indio_dev);
-> @@ -790,7 +792,7 @@ static int __devexit lis3l02dq_remove(struct spi_device *spi)
->  	lis3l02dq_disable_all_events(indio_dev);
->  	lis3l02dq_stop_device(indio_dev);
->  
-> -	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)) > 0)
-> +	if (spi->irq)
->  		free_irq(st->us->irq, indio_dev);
->  
->  	lis3l02dq_remove_trigger(indio_dev);
-> diff --git a/drivers/staging/iio/accel/lis3l02dq_ring.c b/drivers/staging/iio/accel/lis3l02dq_ring.c
-> index fa4190d..13c0b4b 100644
-> --- a/drivers/staging/iio/accel/lis3l02dq_ring.c
-> +++ b/drivers/staging/iio/accel/lis3l02dq_ring.c
-> @@ -263,7 +263,7 @@ static int lis3l02dq_trig_try_reen(struct iio_trigger *trig)
->  	/* If gpio still high (or high again)
->  	 * In theory possible we will need to do this several times */
->  	for (i = 0; i < 5; i++)
-> -		if (gpio_get_value(irq_to_gpio(st->us->irq)))
-> +		if (gpio_get_value(st->gpio))
->  			lis3l02dq_read_all(indio_dev, NULL);
->  		else
->  			break;
+> Note that patch 1 does not appear to apply to linux-next which implies some issues somewhere or that the above series has been picked up for any trees feeding linux-next as yet.
+> > 
+> > Changes in v2:
+> > 	Dropped one patch send in the last version after
+> > 	receiving internal comments. I have merged the changes
+> > 	into existing patches.
+> > 	Also added a new patch to support suspend/resume feature.
+> > 	Fixed review comments by Matthias Kaehlcke.
+> > 
+> > Changes in v3:
+> > 	Addressed review comments by Jonathan Cameron.
+> > 	Improved ADC driver with more readable labels,
+> > 	spaces and comments.
+> > 
+> > Changes in v4:
+> > 	Renamed the drivers from ti_xxx to ti_am335x_xxx.
+> > 	For consistency with other drivers renamed idev to indio_dev
+> > 	in IIO ADC driver.
+> > 	Replaced suspend/resume callbacks with dev_pm_ops.
+> > 
+> > Patil, Rachna (5):
+> >   input: TSC: ti_tscadc: Rename the existing touchscreen driver
+> >   MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
+> >   input: TSC: ti_tsc: Convert TSC into a MFDevice
+> >   IIO : ADC: tiadc: Add support of TI's ADC driver
+> >   MFD: ti_tscadc: add suspend/resume functionality
+> > 
+> >  drivers/iio/adc/Kconfig                            |    7 +
+> >  drivers/iio/adc/Makefile                           |    1 +
+> >  drivers/iio/adc/ti_am335x_adc.c                    |  258 ++++++++++++++++
+> >  drivers/input/touchscreen/Kconfig                  |    4 +-
+> >  drivers/input/touchscreen/Makefile                 |    2 +-
+> >  .../touchscreen/{ti_tscadc.c => ti_am335x_tsc.c}   |  319 ++++++--------------
+> >  drivers/mfd/Kconfig                                |    9 +
+> >  drivers/mfd/Makefile                               |    1 +
+> >  drivers/mfd/ti_am335x_tscadc.c                     |  259 ++++++++++++++++
+> >  .../linux/input/{ti_tscadc.h => ti_am335x_tsc.h}   |    4 +-
+> >  include/linux/mfd/ti_am335x_tscadc.h               |  151 +++++++++
+> >  include/linux/platform_data/ti_am335x_adc.h        |   14 +
+> >  12 files changed, 801 insertions(+), 228 deletions(-)  create mode 
+> > 100644 drivers/iio/adc/ti_am335x_adc.c  rename 
+> > drivers/input/touchscreen/{ti_tscadc.c => ti_am335x_tsc.c} (55%)  
+> > create mode 100644 drivers/mfd/ti_am335x_tscadc.c  rename 
+> > include/linux/input/{ti_tscadc.h => ti_am335x_tsc.h} (88%)  create 
+> > mode 100644 include/linux/mfd/ti_am335x_tscadc.h
+> >  create mode 100644 include/linux/platform_data/ti_am335x_adc.h
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-iio" 
+> > in the body of a message to majordomo@vger.kernel.org More majordomo 
+> > info at  http://vger.kernel.org/majordomo-info.html
+> > 
 > 
+
