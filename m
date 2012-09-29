@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759011Ab2I2DQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 23:16:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46642 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758788Ab2I2DQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 23:16:49 -0400
-Message-ID: <5066680E.3090907@zytor.com>
-Date: Fri, 28 Sep 2012 20:16:30 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: "zhenzhong.duan@oracle.com" <zhenzhong.duan@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] x86: mtrr: Constrain WB MTRR to max phys mem prior to cleanup
-References: <1347039854.6288.8.camel@thor> <504A3FA9.1050502@zytor.com>  <504D6490.2060606@oracle.com> <1348853876.2229.22.camel@thor>
-In-Reply-To: <1348853876.2229.22.camel@thor>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
+	id S1758733Ab2I2DP4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 23:15:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33729 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754804Ab2I2DPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 23:15:55 -0400
+X-Authority-Analysis: v=2.0 cv=WKj9rwQR c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wzlpjndgo3oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=FfOpIHPiV7sA:10 a=md3zbW8k98vbUrpas_UA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348888554.22822.108.camel@gandalf.local.home>
+Subject: Re: [PATCH v3 1/3] tracing,x86: add a TSC trace_clock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Fri, 28 Sep 2012 23:15:54 -0400
+In-Reply-To: <1348181550-21931-1-git-send-email-dhsharp@google.com>
+References: <1348148044.13080.59.camel@gandalf.local.home>
+	 <1348181550-21931-1-git-send-email-dhsharp@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 10:37 AM, Peter Hurley wrote:
-> 
-> An interesting side note: more recent revisions of this BIOS (rev. A11)
-> report one less variable MTRR (so, IA32_MTRRCAP is writable?)
-> 
->>> However, the right way to fix that is to use the PAT interfaces, which 
->>> doesn't have this drawback -- then MTRR cleanup becomes entirely 
->>> superfluous and the problem goes away.
->> Do you mean disable MTRR totally here?
-> 
-> Well, since PAT entries marked WC override all MTRR settings, whatever
-> the BIOS set the variable MTRRs to becomes irrelevant, so not disabled
-> but rather ignored.
-> 
+On Thu, 2012-09-20 at 15:52 -0700, David Sharp wrote:
 
-The whole point is that the display stuff should not use MTRR, but
-rather use PAT to provide WC.  Then we don't need to "clean up" the
-BIOS-set MTRRs.
+> diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
+> new file mode 100644
+> index 0000000..6726f1b
+> --- /dev/null
+> +++ b/include/asm-generic/trace_clock.h
+> @@ -0,0 +1,16 @@
+> +#ifndef _ASM_GENERIC_TRACE_CLOCK_H
+> +#define _ASM_GENERIC_TRACE_CLOCK_H
+> +/*
+> + * Arch-specific trace clocks.
+> + */
+> +
+> +/*
+> + * Additional trace clocks added to the trace_clocks
+> + * array in kernel/trace/trace.c
+> + * None if the architecture has not defined it.
+> + */
+> +#ifndef ARCH_TRACE_CLOCKS
+> +# define ARCH_TRACE_CLOCKS
+> +#endif
+> +
+> +#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
 
-	-hpa
+Unfortunately this isn't enough. You need to add a stub in all
+arch/*/include/asm/ directories. That has:
+
+--- trace_clock.h:
+#ifndef _ASM_TRACE_CLOCK_H
+#define _ASM_TRACE_CLOCK_H
+
+#include <asm-generic/trace_clock.h>
+
+#endif
+---
+
+
+Because running this against my cross-compile test, failed on all archs
+but x86.
+
+-- Steve
+
 
