@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab2I2KfX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 06:35:23 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:33652 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab2I2KfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 06:35:22 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org
-Subject: ARM SoC tree, Was: Re: [PATCH 05/12] ARM: ixp4xx: use __iomem for MMIO
-References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
-	<1348868177-21205-6-git-send-email-arnd@arndb.de>
-Date: Sat, 29 Sep 2012 12:35:17 +0200
-In-Reply-To: <1348868177-21205-6-git-send-email-arnd@arndb.de> (Arnd
-	Bergmann's message of "Fri, 28 Sep 2012 23:36:10 +0200")
-Message-ID: <m3lift6rru.fsf_-_@intrepid.localdomain>
+	id S1758590Ab2I2Kg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 06:36:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44848 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533Ab2I2Kfy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 06:35:54 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <b-cousson@ti.com>, <tony@atomide.com>, <thierry.reding@avionic-design.de>
+CC: <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <omap@vger.kernel.org>, <nsekhar@ti.com>, <gururaja.hebbar@ti.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH 2/2] ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evm
+Date: Sat, 29 Sep 2012 16:05:20 +0530
+Message-ID: <1348914920-30737-3-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1348914920-30737-1-git-send-email-avinashphilip@ti.com>
+References: <1348914920-30737-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
+PWM output from ecap0 uses as backlight source. Also adds low threshold
+value to have a uniform divisions in brightness-levels scales.
 
-> Krzysztof, please apply in your next branch so this problem goes away in
-> 3.8.
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+---
+:100644 100644 a5c4c62... 5516098... M	arch/arm/boot/dts/am335x-evm.dts
+ arch/arm/boot/dts/am335x-evm.dts |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
 
-Right, I'll look at it.
-
-> I realize it won't make 3.7 any more since the base patches are not
-> in arm-soc, but it's bad if linux-next is broken.
-
-Well, I'm not aware of any requirement to push my IXP4xx changes
-exclusively through arm-soc. I believe I can still send my tree straight
-to Linus.
-
-My tree is fairly isolated (with one trivial patch in need of ack from
-Russell, but I can remove that) and, to be honest, I can't see any
-benefit to anyone, caused by sending through intermediate trees. In
-fact, now that I have at last a bit of spare time to work on IXP4xx
-again (acquired some IXP435 devices), such requirement would only mean
-extra workload to me.
-
-Could you please point me to a statement requiring eg. my changes to go
-through arm-soc?
-
-Thanks.
+diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+index a5c4c62..5516098 100644
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@ -24,6 +24,14 @@
+ 		reg = <0x80000000 0x10000000>; /* 256 MB */
+ 	};
+ 
++	am33xx_pinmux: pinmux@44e10800 {
++		ecap0_pins: backlight_pins {
++			pinctrl-single,pins = <
++				0x164 0x0	/* eCAP0_in_PWM0_out.eCAP0_in_PWM0_out MODE0 */
++			>;
++		};
++	};
++
+ 	ocp {
+ 		uart1: serial@44e09000 {
+ 			status = "okay";
+@@ -75,6 +83,12 @@
+ 				reg = <0x48>;
+ 			};
+ 		};
++
++		ecap0: ecap@48300100 {
++			status = "okay";
++			pinctrl-names = "default";
++			pinctrl-0 = <&ecap0_pins>;
++		};
+ 	};
+ 
+ 	vbat: fixedregulator@0 {
+@@ -90,6 +104,13 @@
+ 		regulator-name = "lis3_reg";
+ 		regulator-boot-on;
+ 	};
++
++	backlight {
++		compatible	= "pwm-backlight";
++		pwms = <&ecap0 0 50000 0>;
++		brightness-levels = <0 51 53 56 62 75 101 152 255>;
++		default-brightness-level = <8>;
++	};
+ };
+ 
+ /include/ "tps65910.dtsi"
 -- 
-Krzysztof Halasa
+1.7.0.4
+
