@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759264Ab2I2A0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 20:26:36 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57724 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759086Ab2I2A0e (ORCPT
+	id S1030328Ab2I2A1D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 20:27:03 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:50048 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758352Ab2I2A1A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 20:26:34 -0400
-X-Originating-IP: 217.70.178.130
-X-Originating-IP: 50.43.46.74
-Date: Fri, 28 Sep 2012 17:26:26 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 7/10] compiler{,-gcc4}.h: Introduce __flatten function
- attribute
-Message-ID: <20120929002626.GD13907@jtriplet-mobl1>
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
- <1348874411-28288-8-git-send-email-daniel.santos@pobox.com>
+	Fri, 28 Sep 2012 20:27:00 -0400
+From: Ramesh Nagappa <ramesh.nagappa@ericsson.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "michel@digirati.com.br" <michel@digirati.com.br>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+Date: Fri, 28 Sep 2012 20:26:51 -0400
+Subject: RE: [PATCH] net: fix neigh_resolve_output can cause skb_under_panic
+Thread-Topic: [PATCH] net: fix neigh_resolve_output can cause skb_under_panic
+Thread-Index: Ac2d1Ekch7yQm/siSV6TrUV8ePFHuAABFOiQ
+Message-ID: <CA3E5132752D1F49871ED0FC40D56BBA43ECE2E743@EUSAACMS0701.eamcs.ericsson.se>
+References: <CA3E5132752D1F49871ED0FC40D56BBA43ECE2E72D@EUSAACMS0701.eamcs.ericsson.se>
+ <20120928235209.GA11474@kroah.com>
+In-Reply-To: <20120928235209.GA11474@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348874411-28288-8-git-send-email-daniel.santos@pobox.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 06:20:08PM -0500, Daniel Santos wrote:
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -15,7 +15,12 @@
->  
->  #if GCC_VERSION >= 40102
->  # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
-> -#endif
-> +
-> +/* flatten introduced in 4.1, but broken in 4.6.0 (gcc bug #48731)*/
-> +# if GCC_VERSION != 40600
-> +#  define __flatten __attribute__((flatten))
-> +# endif
-> +#endif /* GCC_VERSION >= 40102 */
+> 
+> Why is all of this in the middle of the changelog section?
+> 
+> I'm guessing you didn't use 'git send-email' for this?
+> 
+> And why are you copying me on the patch?
 
-Same comment as before: why 40102 rather than 40100?
+I got the CC list from scripts/get_maintainers.pl
 
-- Josh Triplett
+asglx-2-300 $ scripts/get_maintainer.pl 0001-net-fix-neigh_resolve_output-can-cause-skb_under_pan.patch
+"David S. Miller" <davem@davemloft.net> (maintainer:NETWORKING [GENERAL],commit_signer:3/4=75%)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> (commit_signer:3/4=75%)
+Eric Dumazet <eric.dumazet@gmail.com> (commit_signer:2/4=50%)
+Shawn Lu <shawn.lu@ericsson.com> (commit_signer:1/4=25%)
+Michel Machado <michel@digirati.com.br> (commit_signer:1/4=25%)
+netdev@vger.kernel.org (open list:NETWORKING [GENERAL])
+linux-kernel@vger.kernel.org (open list)
+
+> 
+> 
+> You need a blank line before the first Signed-off-by: line.  
+> Surely one of the reviewers should have caught this basic thing?
+
+Outlook mangled the patch. I am unable to use git send-email because of
+a corporate firewall on the build machine.
+
+> 
+> greg k-h
+> 
+
+Thanks,
+Ramesh
