@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab2I2IeK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 04:34:10 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64519 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755411Ab2I2IeG (ORCPT
+	id S964910Ab2I2ImH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 04:42:07 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:2579 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759052Ab2I2ImE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 04:34:06 -0400
-Date: Sat, 29 Sep 2012 10:34:00 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jean Delvare <jdelvare@suse.de>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Michal Marek <mmarek@suse.cz>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH] kbuild: Fix gcc -x syntax
-Message-ID: <20120929083400.GA8122@gmail.com>
-References: <1348859536.22956.4.camel@amber.site>
- <20120929073749.GA7672@gmail.com>
- <20120929082459.GA10005@brahe.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120929082459.GA10005@brahe.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 29 Sep 2012 04:42:04 -0400
+Message-ID: <1348908118.1553.23.camel@x61.thuisdomein>
+Subject: Re: [PATCH -v2] mm: frontswap: fix a wrong if condition in
+ frontswap_shrink
+From: Paul Bolle <pebolle@tiscali.nl>
+To: zhenzhong.duan@oracle.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        levinsasha928@gmail.com, Feng Jin <joe.jin@oracle.com>,
+        dan.carpenter@oracle.com
+Date: Sat, 29 Sep 2012 10:41:58 +0200
+In-Reply-To: <506662DD.4030309@oracle.com>
+References: <505C27FE.5080205@oracle.com>
+	  <1348745730.1512.19.camel@x61.thuisdomein> <50651CF5.5030903@oracle.com>
+	 <1348844071.1553.14.camel@x61.thuisdomein> <506662DD.4030309@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Sep 2012 08:41:58.0472 (UTC) FILETIME=[499B1480:01CD9E1E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2012-09-29 at 10:54 +0800, Zhenzhong Duan wrote:
+> On 2012-09-28 22:54, Paul Bolle wrote:
+> > Not even before applying your patch? Anyhow, after applying your patch
+> > the warnings gone here too.
+> I tested both cases, no warning, also didn't see -Wmaybe-uninitialized 
+> when make.
+> My env is el5. gcc version 4.1.2 20080704 (Red Hat 4.1.2-52)
+> Maybe your gcc built in/implicit spec use that option?
 
-* Bernhard Walle <bernhard@bwalle.de> wrote:
+I simply use what (was and) is shipped by Fedora 17:
+    $ sudo grep -w gcc /var/log/yum.log 
+    Sep 12 11:45:54 Installed: gcc-4.7.0-5.fc17.x86_64
+    Sep 27 13:54:24 Updated: gcc-4.7.2-2.fc17.x86_64
 
-> Hi,
-> 
-> * Ingo Molnar <mingo@kernel.org> [2012-09-29 08:37]:
-> > * Jean Delvare <jdelvare@suse.de> wrote:
-> > 
-> > > The correct syntax for gcc -x is "gcc -x assembler", not "gcc 
-> > > -xassembler". Even though the latter happens to work, the 
-> > > former is what is documented in the manual page and thus what 
-> > > gcc wrappers such as icecream do expect.
-> > > 
-> > > This isn't a cosmetic change. The missing space prevents 
-> > > icecream from recognizing compilation tasks it can't handle, 
-> > > leading to silent kernel miscompilations.
-> > 
-> > Although we can apply this patch, it won't solve the problem of 
-> > building older kernels (and bisecting, etc.).
-> > 
-> > Wouldn't it be prudent to increase the compatibility of 
-> > icecream, so that it accepts what GCC accepts in practice,
-> > such as -xassembler?
-> 
-> Wouldn't it make sense to do both? Using the documented syntax 
-> in the build system *and* increase compatibility in 3rd party 
-> tools?
+So I did my patch with a version of GCC's release 4.7.0, and tested your
+patch with a version of GCC's 4.7.2 release.
 
-Yes.
+I don't think I tweaked any settings. Unless there are strong reasons to
+do otherwise, I try to use the tools shipped by Fedora in their default
+settings. (I'm not even sure there's a way to set one's GCC settings
+locally.)
 
-Thanks,
 
-	Ingo
+Paul Bolle
+
