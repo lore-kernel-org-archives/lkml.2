@@ -1,174 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab2I2Q3d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 12:29:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37989 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756599Ab2I2Q3c (ORCPT
+	id S1756734Ab2I2Qe1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 12:34:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49886 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab2I2QeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 12:29:32 -0400
-Message-ID: <1348936155.18878.29.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 174/218] Bluetooth: Fix use-after-free bug in SMP
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        Marcel Holtmann <marcel@holtmann.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Andre Guedes <andre.guedes@openbossa.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sat, 29 Sep 2012 18:29:15 +0200
-In-Reply-To: <20120928201521.472829867@linuxfoundation.org>
-References: <20120928201501.208384923@linuxfoundation.org>
-	 <20120928201521.472829867@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Ujl2vyguSQ5Nk2Ku6CGd"
-X-Mailer: Evolution 3.4.3-1 
+	Sat, 29 Sep 2012 12:34:25 -0400
+Message-ID: <1348936450.2036.158.camel@shinybook.infradead.org>
+Subject: Re: mtd: kernel BUG at arch/x86/mm/pat.c:279!
+From: David Woodhouse <dwmw2@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Anatolij Gustschin <agust@denx.de>, dhowells@redhat.com,
+        Sasha Levin <levinsasha928@gmail.com>, suresh.b.siddha@intel.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, linux-mm <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>
+Date: Sat, 29 Sep 2012 17:34:10 +0100
+In-Reply-To: <1348935073.2036.147.camel@shinybook.infradead.org>
+References: <1340959739.2936.28.camel@lappy>
+	 <CA+1xoqdgKV_sEWvUbuxagL9JEc39ZFa6X9-acP7j-M7wvW6qbQ@mail.gmail.com>
+	 <CA+55aFzJCLxVP+WYJM-gq=aXx5gmdgwC7=_Gr2Tooj8q+Dz4dw@mail.gmail.com>
+	 <1347057778.26695.68.camel@sbsiddha-desk.sc.intel.com>
+	 <CA+55aFwW9Q+DM2gZy7r3JQJbrbMNR6sN+jewc2CY0i1wD_X=Tw@mail.gmail.com>
+	 <1347062045.26695.82.camel@sbsiddha-desk.sc.intel.com>
+	 <CA+55aFzeKcV5hROLJE31dNi3SEs+s6o0LL=96Kh8QGHPx=aZnA@mail.gmail.com>
+	 <1347202600.5876.7.camel@sbsiddha-ivb> <505068F4.4080309@gmail.com>
+	 <50506A6C.30109@gmail.com> <50656733.3040609@gmail.com>
+	 <CA+55aFyWdxD4Qb9PuPKKx_Ww_khYkWg1s-3QWVUwsTSXSUMG5w@mail.gmail.com>
+	 <1348859054.2036.122.camel@shinybook.infradead.org>
+	 <1348935073.2036.147.camel@shinybook.infradead.org>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
+	boundary="=-eQsHGtY50TS3nHUvduAs"
+X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 77.203.67.142
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-Ujl2vyguSQ5Nk2Ku6CGd
-Content-Type: multipart/mixed; boundary="=-Gfr+2feU0bouctG8JI09"
-
-
---=-Gfr+2feU0bouctG8JI09
+--=-eQsHGtY50TS3nHUvduAs
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2012-09-28 at 13:16 -0700, Greg Kroah-Hartman wrote:
-> 3.4-stable review patch.  If anyone has any objections, please let me kno=
-w.
+On Sat, 2012-09-29 at 17:11 +0100, David Woodhouse wrote:
 >=20
-> ------------------
->=20
-> From: Andre Guedes <andre.guedes@openbossa.org>
->=20
-> commit 61a0cfb008f57ecf7eb28ee762952fb42dc15d15 upstream.
->=20
-> If SMP fails, we should always cancel security_timer delayed work.
-> Otherwise, security_timer function may run after l2cap_conn object
-> has been freed.
-[...]
+> That check seems to have been missing from David's commit 402d3265 in
+> which he introduced the mtd_mmap() operation, and wasn't fixed in commit
+> dd02b67d5 where Anatolij fixed things to actually *work* in the MMU code
+> path. This should fix it:
 
-This particular bug doesn't appear to exist in earlier kernel versions,
-but it led me to find some related bugs in teardown that do.
+> +               if (map->phys =3D=3D NO_XIP)
+> +                       return -EINVAL;=20
 
-I'm attaching two patches:
-- bluetooth-fix-l2cap_conn_del-locking.patch seems to be needed for both
-  3.0 and 3.2.  It's very different from the upstream changes, and is
-  compile-tested only.
-- bluetooth-fix-deadlock-and-crash-when-smp-pairing-times-out.patch
-  (commit d06cc416f517a25713dedd9e2a9ccf4f3086c09a upstream) seems to be
-  needed for 3.2 only.
+Hm, but there's another problem. That 'map' variable is pulled from
+mtd->priv but there's a clue in the name 'priv'.... it isn't guaranteed
+to *be* a device that goes through the map abstraction.
 
-What do you think?
+Anatolij? Your patch dd02b67d5 might have worked on your test case, but
+it fails disgracefully in any of the cases where it *isn't* expected to
+work.
 
-Ben.
+I think it needs to use mtd_unmapped_area() on the device in question
+just like the !CONFIG_MMU code path does, and avoid grubbing around in
+things that it shouldn't be looking at directly.
+
+David, you made mtd_unmapped_area() return the *virtual* address... but
+there's no reason that couldn't have been the physical address, right?
+You were only using it in the !CONFIG_MMU case anyway, where they're
+equal.
+
+In the meantime, I think the quick fix is just to disable mtdchar_mmap
+in the CONFIG_MMU case. It was broken from the moment David introduced
+it, and Anatolij's fix was insufficient. I'll do that.
 
 --=20
-Ben Hutchings
-Usenet is essentially a HUGE group of people passing notes in class.
-                      - Rachel Kadel, `A Quick Guide to Newsgroup Etiquette=
-'
+dwmw2
 
---=-Gfr+2feU0bouctG8JI09
-Content-Disposition: attachment; filename="bluetooth-fix-l2cap_conn_del-locking.patch"
-Content-Type: text/x-patch; name="bluetooth-fix-l2cap_conn_del-locking.patch";
-	charset="UTF-8"
+--=-eQsHGtY50TS3nHUvduAs
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
 
-RnJvbTogQmVuIEh1dGNoaW5ncyA8YmVuQGRlY2FkZW50Lm9yZy51az4NCkRhdGU6IFNhdCwgMjkg
-U2VwIDIwMTIgMTc6NTM6MjggKzAyMDANClN1YmplY3Q6IEJsdWV0b290aDogRml4IGwyY2FwX2Nv
-bm5fZGVsKCkgbG9ja2luZw0KDQpUaGlzIGlzIGNvdmVyZWQgYnkgY29tbWl0IDNkZjkxZWEyMGU3
-NDQzNDQxMDBiMTBhZTY5YTE3MjExZmNmNWIyMDcNCignQmx1ZXRvb3RoOiBSZXZlcnQgdG8gbXV0
-ZXhlcyBmcm9tIFJDVSBsaXN0JykgdXBzdHJlYW0uDQoNCmwyY2FwX2Nvbm5fZGVsKCkgY2FuIHJh
-Y2Ugd2l0aCB2YXJpb3VzIG90aGVyIGZ1bmN0aW9ucyB0aGF0IHdhbGsgdGhlDQpjaGFubmVsIGxp
-c3Q7IGluIHBhcnRpY3VsYXIgbDJjYXBfY29ubl9zdGFydCgpIHdoaWNoIGlzIGNhbGxlZCBmcm9t
-DQpsMmNhcF9pbmZvX3RpbWVvdXQoKS4gIGwyY2FwX2NoYW5fZGVsKCkgaXRzZWxmIHRha2VzIHRo
-ZSBjaGFuX2xvY2sgZm9yDQp3cml0aW5nLCBzbyBpbnN0ZWFkIG9mIGxvY2tpbmcgaGVyZSB3ZSBt
-dXN0IG1vdmUgYWxsIGNoYW5uZWxzIG9udG8gYQ0KdGVtcG9yYXJ5IGxpc3QuDQoNClNpZ25lZC1v
-ZmYtYnk6IEJlbiBIdXRjaGluZ3MgPGJlbkBkZWNhZGVudC5vcmcudWs+DQotLS0NCi0tLSBhL25l
-dC9ibHVldG9vdGgvbDJjYXBfY29yZS5jDQorKysgYi9uZXQvYmx1ZXRvb3RoL2wyY2FwX2NvcmUu
-Yw0KQEAgLTk2OCw2ICs5NjgsNyBAQCBzdGF0aWMgdm9pZCBsMmNhcF9pbmZvX3RpbWVvdXQodW5z
-aWduZWQNCiBzdGF0aWMgdm9pZCBsMmNhcF9jb25uX2RlbChzdHJ1Y3QgaGNpX2Nvbm4gKmhjb24s
-IGludCBlcnIpDQogew0KIAlzdHJ1Y3QgbDJjYXBfY29ubiAqY29ubiA9IGhjb24tPmwyY2FwX2Rh
-dGE7DQorCXN0cnVjdCBsaXN0X2hlYWQgY2hhbl9sOw0KIAlzdHJ1Y3QgbDJjYXBfY2hhbiAqY2hh
-biwgKmw7DQogCXN0cnVjdCBzb2NrICpzazsNCiANCkBAIC05NzgsOCArOTc5LDEzIEBAIHN0YXRp
-YyB2b2lkIGwyY2FwX2Nvbm5fZGVsKHN0cnVjdCBoY2lfY28NCiANCiAJa2ZyZWVfc2tiKGNvbm4t
-PnJ4X3NrYik7DQogDQorCUlOSVRfTElTVF9IRUFEKCZjaGFuX2wpOw0KKwl3cml0ZV9sb2NrX2Jo
-KCZjb25uLT5jaGFuX2xvY2spOw0KKwlsaXN0X3NwbGljZV9pbml0KCZjb25uLT5jaGFuX2wsICZj
-aGFuX2wpOw0KKwl3cml0ZV91bmxvY2tfYmgoJmNvbm4tPmNoYW5fbG9jayk7DQorDQogCS8qIEtp
-bGwgY2hhbm5lbHMgKi8NCi0JbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKGNoYW4sIGwsICZjb25u
-LT5jaGFuX2wsIGxpc3QpIHsNCisJbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKGNoYW4sIGwsICZj
-aGFuX2wsIGxpc3QpIHsNCiAJCXNrID0gY2hhbi0+c2s7DQogCQliaF9sb2NrX3NvY2soc2spOw0K
-IAkJbDJjYXBfY2hhbl9kZWwoY2hhbiwgZXJyKTsNCg==
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
+AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
+4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
+wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
+xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
+MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
+w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
+c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
+dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
+BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
+aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
+bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
+oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
+MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
+dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
+MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
+DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
+ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
+NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
+mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
+AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
+ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
+L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
+MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
+A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
+Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
+7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
+KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
+wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
+V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
+vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
+CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
+BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
+ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
+YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
+ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
+IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
+U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
+ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
+BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
+aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
+bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
+dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
+CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
+QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
+ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
+AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
+t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
+gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
+H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
+kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
+MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
+dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
+eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwOTI5MTYzNDEwWjAjBgkqhkiG9w0BCQQx
+FgQUq1Mr54xM1gzgUn2TvgoHKsFXmIswgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
+ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
+ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
+TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
+aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCoKX+OZdy9UqeADM17y/RjNrPZ
+cct+vrEHSDJgD/N7AIg3ouzWHHoMP14ekiVj/rmW1obRTtoMZNj2aEBGMEyKJCo+w3Izl0aNtdYf
+MI/aL/Z696fIlEkZSEAYYQbr8rCGRnLt/tUYkca/ADXASi9QxhIyKz24Co9uddrFfhh2fYkwp2xE
+p2y9dz9Sd5hN98skJ11y7g+WmQwlApjoD79ALkEZJhF0DJBsYnorz3zDkFSd46KsN32BgwIpBF1I
+OgD86zZ043jYPEPqHpDNOUV4Qxgd8e3bhwLhm4kMRvwarf02wmkRp7/3JpXeceexG4tOthoW8T3F
+YY16MIdKawGwAAAAAAAA
 
 
---=-Gfr+2feU0bouctG8JI09
-Content-Disposition: attachment;
-	filename*0=bluetooth-fix-deadlock-and-crash-when-smp-pairing-times-out.p;
-	filename*1=atch
-Content-Type: text/x-patch;
-	name="bluetooth-fix-deadlock-and-crash-when-smp-pairing-times-out.patch";
-	charset="UTF-8"
-Content-Transfer-Encoding: base64
+--=-eQsHGtY50TS3nHUvduAs--
 
-RnJvbTogSm9oYW4gSGVkYmVyZyA8am9oYW4uaGVkYmVyZ0BpbnRlbC5jb20+DQpEYXRlOiBXZWQs
-IDYgSnVuIDIwMTIgMTg6NDQ6MTEgKzA4MDANClN1YmplY3Q6IEJsdWV0b290aDogRml4IGRlYWRs
-b2NrIGFuZCBjcmFzaCB3aGVuIFNNUCBwYWlyaW5nIHRpbWVzIG91dA0KDQpjb21taXQgZDA2Y2M0
-MTZmNTE3YTI1NzEzZGVkZDllMmE5Y2NmNGYzMDg2YzA5YSB1cHN0cmVhbS4NCg0KVGhlIGwyY2Fw
-X2Nvbm5fZGVsIGZ1bmN0aW9uIHRyaWVzIHRvIGNhbmNlbF9zeW5jIHRoZSBzZWN1cml0eSB0aW1l
-ciwgYnV0DQp3aGVuIGl0J3MgY2FsbGVkIGZyb20gdGhlIHRpbWVvdXQgZnVuY3Rpb24gaXRzZWxm
-IGEgZGVhZGxvY2sgb2NjdXJzLg0KU3Vic2VxdWVudGx5IHRoZSAiaGNvbi0+bDJjYXBfZGF0YSA9
-IE5VTEwiIHRoYXQncyBzdXBwb3NlZCB0byBwcm90ZWN0DQptdWx0aXBsZSBjYWxscyB0byBsMmNh
-cF9jb25uX2RlbCBuZXZlciBnZXRzIGNsZWFyZWQgYW5kIHdoZW4gdGhlDQpjb25uZWN0aW9uIGZp
-bmFsbHkgZHJvcHMgd2UgZG91YmxlIGZyZWUncyBldGMgd2hpY2ggd2lsbCBjcmFzaCB0aGUNCmtl
-cm5lbC4NCg0KVGhpcyBwYXRjaCBmaXhlcyB0aGUgaXNzdWUgYnkgdXNpbmcgdGhlIEhDSV9DT05O
-X0xFX1NNUF9QRU5EIGZvcg0KcHJvdGVjdGluZyBhZ2FpbnN0IHRoaXMuIFRoZSBzYW1lIGZsYWcg
-aXMgYWxzbyB1c2VkIGZvciB0aGUgc2FtZSBwdXJwb3NlDQppbiBvdGhlciBwbGFjZXMgaW4gdGhl
-IFNNUCBjb2RlLg0KDQpTaWduZWQtb2ZmLWJ5OiBKb2hhbiBIZWRiZXJnIDxqb2hhbi5oZWRiZXJn
-QGludGVsLmNvbT4NClNpZ25lZC1vZmYtYnk6IEd1c3Rhdm8gUGFkb3ZhbiA8Z3VzdGF2by5wYWRv
-dmFuQGNvbGxhYm9yYS5jby51az4NCltid2g6IEJhY2twb3J0ZWQgdG8gMy4yOiBwZW5kaW5nIGZs
-YWdzIGFyZSBpbiBoY2lfY29ubjo6cGVuZF0NClNpZ25lZC1vZmYtYnk6IEJlbiBIdXRjaGluZ3Mg
-PGJlbkBkZWNhZGVudC5vcmcudWs+DQotLS0NCiBuZXQvYmx1ZXRvb3RoL2wyY2FwX2NvcmUuYyB8
-ICAgIDcgKysrKysrLQ0KIDEgZmlsZSBjaGFuZ2VkLCA2IGluc2VydGlvbnMoKyksIDEgZGVsZXRp
-b24oLSkNCg0KLS0tIGEvbmV0L2JsdWV0b290aC9sMmNhcF9jb3JlLmMNCisrKyBiL25ldC9ibHVl
-dG9vdGgvbDJjYXBfY29yZS5jDQpAQCAtMTAwOSw3ICsxMDA5LDEyIEBAIHN0YXRpYyB2b2lkIHNl
-Y3VyaXR5X3RpbWVvdXQodW5zaWduZWQgbG8NCiB7DQogCXN0cnVjdCBsMmNhcF9jb25uICpjb25u
-ID0gKHZvaWQgKikgYXJnOw0KIA0KLQlsMmNhcF9jb25uX2RlbChjb25uLT5oY29uLCBFVElNRURP
-VVQpOw0KKwlCVF9EQkcoImNvbm4gJXAiLCBjb25uKTsNCisNCisJaWYgKHRlc3RfYW5kX2NsZWFy
-X2JpdChIQ0lfQ09OTl9MRV9TTVBfUEVORCwgJmNvbm4tPmhjb24tPnBlbmQpKSB7DQorCQlzbXBf
-Y2hhbl9kZXN0cm95KGNvbm4pOw0KKwkJbDJjYXBfY29ubl9kZWwoY29ubi0+aGNvbiwgRVRJTUVE
-T1VUKTsNCisJfQ0KIH0NCiANCiBzdGF0aWMgc3RydWN0IGwyY2FwX2Nvbm4gKmwyY2FwX2Nvbm5f
-YWRkKHN0cnVjdCBoY2lfY29ubiAqaGNvbiwgdTggc3RhdHVzKQ0K
-
-
---=-Gfr+2feU0bouctG8JI09--
-
---=-Ujl2vyguSQ5Nk2Ku6CGd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUGch2+e/yOyVhhEJAQprThAApVD9t9ZoWxttsFN5jgzS/ji5qX+MtlMi
-nV9PsEpFgwGShO2TnapBxvrmCNLHtCKNmiBWHkueFWzFSvZSKt7t11R7hlk1dwBm
-b4KmvSSWbilZWe3OcUJBpI0nmU0mm2A4FtpeAAieWRw/0YQD7uoWl8k9qMigNohh
-CtDMNXUrXqtFjXIPgyzKiw/TKl6q7fROPlwol6ORDy8tOjkTy/IVAYwLrbMxIDDo
-4S2h6Jscdw7iFbXyZxcLUnV6A02+IlkLtH1v7YWkqWTBbZShrn+tRayUtNi2qDQx
-4pg1IhTJaxc6mp6spIaTRaHm0wrEZIlyzPcwujSlaQlN8JvERdUQqYpbnSopBQPz
-1LdBDQ9mMbrT4r1sQBNwRuvrL2n3ZWD/KWsQZUyPa/xws9QCFhi2X/T7LADu7UKn
-L/VCgB08SoQPOU2ue16QWHxMgvF1cRi7CSsOUX8DWuG+tqYgeDKjnUiaCvGjQDGx
-ObfCvKtfirYXq1YPsNnAzMzezjB2tr0ghR5O106uM1GB6ZSII3Ax/0D1ez6ITsHw
-iXjvQjrQXMwzJ2wZ95OtQ0YuV6e2I4NpMqqfUggiYSvtPHzaquUR/whYrywAeSSi
-F77CLLheYu4mz+7cuCzmvqCQ+V8fbYKyQ/D+OtfWsrCh8MilSv9kBOuCEOhxg504
-RaJuGO4ax10=
-=sSlo
------END PGP SIGNATURE-----
-
---=-Ujl2vyguSQ5Nk2Ku6CGd--
