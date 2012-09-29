@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758933Ab2I2HZi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 03:25:38 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:42986 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758599Ab2I2HZg (ORCPT
+	id S1758990Ab2I2HaB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 03:30:01 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49702 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758429Ab2I2HaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 03:25:36 -0400
-Date: Sat, 29 Sep 2012 10:25:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Kevin Cruz <skate_ops@yahoo.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: iwlwifi can't connect to router after resuming from suspend.
-Message-ID: <20120929072527.GA13767@mwanda>
-References: <1348086305.81224.YahooMailNeo@web164004.mail.gq1.yahoo.com>
- <20120928121917.GF5368@mwanda>
- <1348870515.1973.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+	Sat, 29 Sep 2012 03:30:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 08/12] dtc: be more quiet with "make -s"
+Date: Sat, 29 Sep 2012 07:27:41 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Michal Marek <mmarek@suse.cz>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        David Gibson <dwg@au1.ibm.com>, arm@kernel.org
+References: <1348868177-21205-1-git-send-email-arnd@arndb.de> <1348868177-21205-9-git-send-email-arnd@arndb.de> <50661CC6.2010007@wwwdotorg.org>
+In-Reply-To: <50661CC6.2010007@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1348870515.1973.YahooMailNeo@web164005.mail.gq1.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209290727.41798.arnd@arndb.de>
+X-Provags-ID: V02:K0:wi7CsNTmSLpOtcqdCIOYfzi3U8x+QR9gPc8z71viptk
+ 9/Cr3VauJAn43/RHEBNkKksVdtxbZk7+lyfiR2zrk/hny9C6pp
+ GUMluwykC/gRDwB9xuC99Gphd/wL1hIsoX3KEBQPcftePlr49Z
+ WQVk06VtLevUh2OoW8Hvvr9sTBYur/WCvDmnmt4BfCnRQii5Ja
+ Kic+fE+qmsu15u/oM8I3iob17gvMLuUHgaBh+JCrPTY3+zsDtf
+ Lsft3fX1mCP+gn67KUTDxSxyMfDUYkxl1OkKeErbEAtqKAWpvZ
+ oQD1KzbatSg31sOYDDGUvaG73RloPjxgViL8/fatEqxfqqt5IQ
+ 1o7U/c1zDJ+umOkQZBhw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 03:15:15PM -0700, Kevin Cruz wrote:
-> Hey Dan,
+On Friday 28 September 2012, Stephen Warren wrote:
+> On 09/28/2012 03:36 PM, Arnd Bergmann wrote:
+> > This patch makes dtc not output the message when the "-q" flag is passed,
+> > and ensures that we pass it in both cases.
 > 
-> 
-> Thanks for the response.
-> 
-> >> Linux cyber-ubuntu 3.2.0-30-generic #48-Ubuntu SMP Fri Aug 24 16:52:48 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
-> 
-> > That kernel is too old.  Can you test with a 3.5.x kernel (or even
-> > better would be a 3.6-rc kernel).  Those are the only ones we look
-> > at on lkml.
-> 
-> I did try out Sabayon 10 live disk because it said it uses the kernel 3.5.4
-> but it did not fix the problem. I will definitely try to figure a way to
-> test the 3.6-rc kernel.  Do you know any (experimental?) distros that are
-> using it?  Is there anything else that I could do that could help, like
-> rerunning any commands/script on a newer kernel?
+> Just as an FYI, the upstream dtc no longer prints this message, and I
+> just posted a patch to pull that whole upstream dtc into the kernel.
 
-You can compile it under ubuntu.  I looked on google to find
-directions but everyone had bad advice.  This might work:
+Ok, excellent!
 
-apt-get build-dep linux-image-$(uname -r)
-download and unpack the kernel from kernel.org
-make localmodconfig
-make
-make modules_install install
-reboot
+Michal, please ignore my patch then.
 
-If it doesn't then having the dmesg from Sabayon live disk will have
-to be enough.  We can open a bug for that on bugzilla and CC the
-wireless people.
-
-regards,
-dan carpenter
-
+	Arnd
