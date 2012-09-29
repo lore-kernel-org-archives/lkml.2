@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab2I2OaJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 10:30:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57289 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab2I2OaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 10:30:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,507,1344236400"; 
-   d="scan'208";a="199695574"
-Date: Sat, 29 Sep 2012 07:30:06 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 0/3] Virtual huge zero page
-Message-ID: <20120929143006.GC4110@tassilo.jf.intel.com>
-References: <1348875441-19561-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120929134811.GC26989@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754890Ab2I2Obm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 10:31:42 -0400
+Received: from smtprelay01.ispgateway.de ([80.67.31.39]:36625 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab2I2Obk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 10:31:40 -0400
+X-Greylist: delayed 453 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 Sep 2012 10:31:40 EDT
+References: <1348433304-28320-1-git-send-email-tero.keski-valkama@neter.fi> <CABGkUujMCRazGy1+69SWBsS15B97rNEXWNsR4gG8D+5WyeF2jg@mail.gmail.com> <20120925090151.GB1247@liondog.tnic> <CABGkUugOvWCSfXvLW33jmntGYAAiPP9fStXbdRAozx3bEoKBOA@mail.gmail.com> <20120925222417.GA31780@liondog.tnic>
+Message-ID: <cone.1348928745.324944.828.1000@blau>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Tero Keski-Valkama <tero.keski-valkama@neter.fi>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] x86: Added support for Acer Aspire 5755G fan
+         control.
+Date: Sat, 29 Sep 2012 16:25:45 +0200
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
 Content-Disposition: inline
-In-Reply-To: <20120929134811.GC26989@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 29, 2012 at 03:48:11PM +0200, Andrea Arcangeli wrote:
-> On Sat, Sep 29, 2012 at 02:37:18AM +0300, Kirill A. Shutemov wrote:
-> > Cons:
-> >  - increases TLB pressure;
-> 
-> I generally don't like using 4k tlb entries ever. This only has the
+Hi,
 
->From theory I would also prefer the 2MB huge page.
+Borislav Petkov writes:
 
-But some numbers comparing between the two alternatives are definitely
-interesting.  Numbers are often better than theory.
+> Adding Peter.
 
-> There would be a small cache benefit here... but even then some first
-> level caches are virtually indexed IIRC (always physically tagged to
+Just wanted to say, that I've got currently very less spare time. I think 
+I'll be fully available again in about 2 weeks. I'll catch up then.
 
-Modern x86 doesn't have virtually indexed caches.
-
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks and kind regards,
+--peter;
