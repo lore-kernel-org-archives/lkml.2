@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751016Ab2I2UQe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 16:16:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52752 "EHLO mail.zytor.com"
+	id S1751128Ab2I2USQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 16:18:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52773 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab2I2UQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 16:16:32 -0400
-Message-ID: <50675712.4050909@zytor.com>
-Date: Sat, 29 Sep 2012 13:16:18 -0700
+	id S1750903Ab2I2USO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 16:18:14 -0400
+Message-ID: <50675776.10702@zytor.com>
+Date: Sat, 29 Sep 2012 13:17:58 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
@@ -26,27 +26,6 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2012 01:11 PM, Henrique de Moraes Holschuh wrote:
-> On Sat, 29 Sep 2012, H. Peter Anvin wrote:
->> PAT support are lacking only in the Pentium Pro and Pentium II.  Sorry, if
->> you're using crap that old, you don't get to screw up the kernel for
->> everyone else.
->
-> PAT is blacklisted for x86_model < 15 on Intel, which covers a lot
-> more boxes than p-pro and pII.  There is a comment on kernel/cpu/intel.c:
->
->          /*
->           * There is a known erratum on Pentium III and Core Solo
->           * and Core Duo CPUs.
->           * " Page with PAT set to WC while associated MTRR is UC
->           *   may consolidate to UC "
->           * Because of this erratum, it is better to stick with
->           * setting WC in MTRR rather than using PAT on these CPUs.
->           *
->           * Enable PAT WC only on P4, Core 2 or later CPUs.
->           */
->          if (c->x86 == 6 && c->x86_model < 15)
->                  clear_cpu_cap(c, X86_FEATURE_PAT);
 >
 > Intel doesn't make it easy to get all processor specification updates at
 > once so that I could hunt down every processor which acknowledges the
@@ -54,9 +33,9 @@ On 09/29/2012 01:11 PM, Henrique de Moraes Holschuh wrote:
 > that the comment is mostly correct.
 >
 
-Last I checked it was questionable if the erratum actually mattered 
-enough to bother with.  What is even more questionable is the number of 
-machines which need the workaround *and* need the "MTRR cleanup" mess.
+I should say: as far as I know the blacklist is there because noone has 
+been willing to bother looking at if it actually matters, given how old 
+the hardware is.
 
 	-hpa
 
