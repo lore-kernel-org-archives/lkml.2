@@ -1,200 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734Ab2I2Qe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 12:34:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49886 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096Ab2I2QeZ (ORCPT
+	id S1756796Ab2I2QjQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 12:39:16 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50509 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab2I2QjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 12:34:25 -0400
-Message-ID: <1348936450.2036.158.camel@shinybook.infradead.org>
-Subject: Re: mtd: kernel BUG at arch/x86/mm/pat.c:279!
-From: David Woodhouse <dwmw2@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Anatolij Gustschin <agust@denx.de>, dhowells@redhat.com,
-        Sasha Levin <levinsasha928@gmail.com>, suresh.b.siddha@intel.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, linux-mm <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Date: Sat, 29 Sep 2012 17:34:10 +0100
-In-Reply-To: <1348935073.2036.147.camel@shinybook.infradead.org>
-References: <1340959739.2936.28.camel@lappy>
-	 <CA+1xoqdgKV_sEWvUbuxagL9JEc39ZFa6X9-acP7j-M7wvW6qbQ@mail.gmail.com>
-	 <CA+55aFzJCLxVP+WYJM-gq=aXx5gmdgwC7=_Gr2Tooj8q+Dz4dw@mail.gmail.com>
-	 <1347057778.26695.68.camel@sbsiddha-desk.sc.intel.com>
-	 <CA+55aFwW9Q+DM2gZy7r3JQJbrbMNR6sN+jewc2CY0i1wD_X=Tw@mail.gmail.com>
-	 <1347062045.26695.82.camel@sbsiddha-desk.sc.intel.com>
-	 <CA+55aFzeKcV5hROLJE31dNi3SEs+s6o0LL=96Kh8QGHPx=aZnA@mail.gmail.com>
-	 <1347202600.5876.7.camel@sbsiddha-ivb> <505068F4.4080309@gmail.com>
-	 <50506A6C.30109@gmail.com> <50656733.3040609@gmail.com>
-	 <CA+55aFyWdxD4Qb9PuPKKx_Ww_khYkWg1s-3QWVUwsTSXSUMG5w@mail.gmail.com>
-	 <1348859054.2036.122.camel@shinybook.infradead.org>
-	 <1348935073.2036.147.camel@shinybook.infradead.org>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-eQsHGtY50TS3nHUvduAs"
-X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 29 Sep 2012 12:39:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120927115134.GA5654@osiris.de.ibm.com>
+References: <CAMuHMdXqsPgfToNyjbxJ-WM=-kEEvAweE03wb3vtkwVO+-RR3A@mail.gmail.com>
+	<20120927115134.GA5654@osiris.de.ibm.com>
+Date: Sat, 29 Sep 2012 18:39:13 +0200
+X-Google-Sender-Auth: J6W80lvi_RqluyqkNLgU7lCuikE
+Message-ID: <CAMuHMdUqXnY5ZNgjYN0YMpLkPw0j41MXM18H9qiLoEk-BzKYMg@mail.gmail.com>
+Subject: Re: [-next]: s390 *_irq() link errors
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jean Delvare <khali@linux-fr.org>,
+        linux-s390@vger.kernel.org, Linux-Next <linux-next@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Heiko,
 
---=-eQsHGtY50TS3nHUvduAs
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 27, 2012 at 1:51 PM, Heiko Carstens
+<heiko.carstens@de.ibm.com> wrote:
+> On Sun, Sep 16, 2012 at 09:07:54PM +0200, Geert Uytterhoeven wrote:
+>> After applying http://www.spinics.net/lists/linux-next/msg21973.html,
+>> the s390 allmodconfig build in linux-next fails in the linking stage with:
+>>
+>> ERROR: "free_irq" [drivers/power/smb347-charger.ko] undefined!
+>> ERROR: "free_irq" [drivers/power/sbs-battery.ko] undefined!
+>> ERROR: "enable_irq" [drivers/power/max17042_battery.ko] undefined!
+>> ERROR: "request_irq" [drivers/power/max17042_battery.ko] undefined!
+>> ERROR: "free_irq" [drivers/power/max17042_battery.ko] undefined!
+>> ERROR: "disable_irq" [drivers/power/max17042_battery.ko] undefined!
+>> ERROR: "request_irq" [drivers/power/lp8727_charger.ko] undefined!
+>> ERROR: "free_irq" [drivers/power/lp8727_charger.ko] undefined!
+>> ERROR: "request_irq" [drivers/nfc/pn544_hci.ko] undefined!
+>> ERROR: "free_irq" [drivers/nfc/pn544_hci.ko] undefined!
+>> ERROR: "request_irq" [drivers/nfc/pn544.ko] undefined!
+>> ERROR: "free_irq" [drivers/nfc/pn544.ko] undefined!
+>> ERROR: "request_irq" [drivers/misc/fsa9480.ko] undefined!
+>> ERROR: "free_irq" [drivers/misc/fsa9480.ko] undefined!
+>> ERROR: "request_irq" [drivers/misc/bh1770glc.ko] undefined!
+>> ERROR: "free_irq" [drivers/misc/bh1770glc.ko] undefined!
+>> ERROR: "request_irq" [drivers/misc/apds990x.ko] undefined!
+>> ERROR: "free_irq" [drivers/misc/apds990x.ko] undefined!
+>>
+>> What should these drivers depend on? GENERIC_HARDIRQS?
+>
+> Probably, but...
+>
+>> S390 is the only non-GENERIC_HARDIRQS architecture left, but all
+>> other former non-GENERIC_HARDIRQS architectures did provide e.g. request_irq()
+>> and free_irq().
+>
+> All of this started because I2C lost its HAS_IOMEM dependency. Can't
+> we simply add an !S390 dependency instead and all is well? :)
+>
+> Something like below?
+>
+> From 24c68e72b6198b8412a8605fac7d9c90796502ac Mon Sep 17 00:00:00 2001
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Date: Thu, 27 Sep 2012 13:37:14 +0200
+> Subject: [PATCH] i2c: Make I2C unavailable on s390 again
+>
+> "i2c: Make I2C available on UML" removed the IOMEM dependency from I2C which
+> resulted in I2C being avaible on s390 and causing allmodconfig and allyesconfig
+> builds to fail:
+>
+> drivers/misc/altera-stapl/altera-lpt.c: In function 'byteblaster_write':
+> drivers/misc/altera-stapl/altera-lpt.c:34:2: error: implicit declaration of function 'outb' [-Werror=implicit-function-declaration]
+>
+> Adding a HAS_PORT dependency to that driver reveals that there are lots
+> of other build errors waiting for discovery because of this change since
+> s390 does not support generic hardirqs:
+>
+> ERROR: "free_irq" [drivers/power/smb347-charger.ko] undefined!
+> ERROR: "free_irq" [drivers/power/sbs-battery.ko] undefined!
+> ERROR: "enable_irq" [drivers/power/max17042_battery.ko] undefined!
+> ERROR: "request_irq" [drivers/power/max17042_battery.ko] undefined!
+> ERROR: "free_irq" [drivers/power/max17042_battery.ko] undefined!
+> ERROR: "disable_irq" [drivers/power/max17042_battery.ko] undefined!
+> ERROR: "request_irq" [drivers/power/lp8727_charger.ko] undefined!
+> ERROR: "free_irq" [drivers/power/lp8727_charger.ko] undefined!
+> ERROR: "request_irq" [drivers/nfc/pn544_hci.ko] undefined!
+> ERROR: "free_irq" [drivers/nfc/pn544_hci.ko] undefined!
+> ERROR: "request_irq" [drivers/nfc/pn544.ko] undefined!
+> ERROR: "free_irq" [drivers/nfc/pn544.ko] undefined!
+> ERROR: "request_irq" [drivers/misc/fsa9480.ko] undefined!
+> ERROR: "free_irq" [drivers/misc/fsa9480.ko] undefined!
+> ERROR: "request_irq" [drivers/misc/bh1770glc.ko] undefined!
+> ERROR: "free_irq" [drivers/misc/bh1770glc.ko] undefined!
+> ERROR: "request_irq" [drivers/misc/apds990x.ko] undefined!
+> ERROR: "free_irq" [drivers/misc/apds990x.ko] undefined!
+>
+> Since UML seems to need generic I2C support, but lot's of now available
+> drivers fail to compile on s390, just add a !S390 dependency.
+>
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Peter Huewe <peterhuewe@gmx.de>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-On Sat, 2012-09-29 at 17:11 +0100, David Woodhouse wrote:
->=20
-> That check seems to have been missing from David's commit 402d3265 in
-> which he introduced the mtd_mmap() operation, and wasn't fixed in commit
-> dd02b67d5 where Anatolij fixed things to actually *work* in the MMU code
-> path. This should fix it:
+Yeah, s390 is so special that it's the only architecture that can be used
+in depends on !, so
 
-> +               if (map->phys =3D=3D NO_XIP)
-> +                       return -EINVAL;=20
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  drivers/i2c/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
+> index 17b35c1..2f8c76b 100644
+> --- a/drivers/i2c/Kconfig
+> +++ b/drivers/i2c/Kconfig
+> @@ -4,6 +4,7 @@
+>
+>  menuconfig I2C
+>         tristate "I2C support"
+> +       depends on !S390
+>         select RT_MUTEXES
+>         ---help---
+>           I2C (pronounce: I-squared-C) is a slow serial bus protocol used in
+> --
+> 1.7.11.7
 
-Hm, but there's another problem. That 'map' variable is pulled from
-mtd->priv but there's a clue in the name 'priv'.... it isn't guaranteed
-to *be* a device that goes through the map abstraction.
+Gr{oetje,eeting}s,
 
-Anatolij? Your patch dd02b67d5 might have worked on your test case, but
-it fails disgracefully in any of the cases where it *isn't* expected to
-work.
+                        Geert
 
-I think it needs to use mtd_unmapped_area() on the device in question
-just like the !CONFIG_MMU code path does, and avoid grubbing around in
-things that it shouldn't be looking at directly.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-David, you made mtd_unmapped_area() return the *virtual* address... but
-there's no reason that couldn't have been the physical address, right?
-You were only using it in the !CONFIG_MMU case anyway, where they're
-equal.
-
-In the meantime, I think the quick fix is just to disable mtdchar_mmap
-in the CONFIG_MMU case. It was broken from the moment David introduced
-it, and Anatolij's fix was insufficient. I'll do that.
-
---=20
-dwmw2
-
---=-eQsHGtY50TS3nHUvduAs
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwOTI5MTYzNDEwWjAjBgkqhkiG9w0BCQQx
-FgQUq1Mr54xM1gzgUn2TvgoHKsFXmIswgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCoKX+OZdy9UqeADM17y/RjNrPZ
-cct+vrEHSDJgD/N7AIg3ouzWHHoMP14ekiVj/rmW1obRTtoMZNj2aEBGMEyKJCo+w3Izl0aNtdYf
-MI/aL/Z696fIlEkZSEAYYQbr8rCGRnLt/tUYkca/ADXASi9QxhIyKz24Co9uddrFfhh2fYkwp2xE
-p2y9dz9Sd5hN98skJ11y7g+WmQwlApjoD79ALkEZJhF0DJBsYnorz3zDkFSd46KsN32BgwIpBF1I
-OgD86zZ043jYPEPqHpDNOUV4Qxgd8e3bhwLhm4kMRvwarf02wmkRp7/3JpXeceexG4tOthoW8T3F
-YY16MIdKawGwAAAAAAAA
-
-
---=-eQsHGtY50TS3nHUvduAs--
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
