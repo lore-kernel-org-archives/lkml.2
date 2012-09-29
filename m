@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759351Ab2I2Nld (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 09:41:33 -0400
-Received: from void.printf.net ([89.145.121.20]:57739 "EHLO void.printf.net"
+	id S1759445Ab2I2Ns0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 09:48:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9924 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755248Ab2I2Nlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 09:41:32 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: wei_wang@realsil.com.cn, gregkh@linuxfoundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Phil Turmel <philip@turmel.org>, sameo@linux.intel.com,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, arnd@arndb.de, oakad@yahoo.com
-Subject: Re: [PATCH v6 0/3] Add modules to support realtek PCIE card reader
-References: <cover.1347330871.git.wei_wang@realsil.com.cn>
-	<50664814.30407@turmel.org> <20120929110730.GA27797@liondog.tnic>
-Date: Sat, 29 Sep 2012 09:41:17 -0400
-In-Reply-To: <20120929110730.GA27797@liondog.tnic> (Borislav Petkov's message
-	of "Sat, 29 Sep 2012 13:07:30 +0200")
-Message-ID: <87d315osjm.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1755385Ab2I2NsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 09:48:24 -0400
+Date: Sat, 29 Sep 2012 15:48:11 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 0/3] Virtual huge zero page
+Message-ID: <20120929134811.GC26989@redhat.com>
+References: <1348875441-19561-1-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348875441-19561-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Sep 29, 2012 at 02:37:18AM +0300, Kirill A. Shutemov wrote:
+> Cons:
+>  - increases TLB pressure;
 
-On Sat, Sep 29 2012, Borislav Petkov wrote:
-> So, I think that this driver has seen a bunch of testing and reviewing
-> and we might start considering upstreaming it. There are a bunch of
-> laptops integrating those readers and maybe a single three-month-ish -rc
-> period of testing wouldn't hurt before it appears upstream.
->
-> Now, AFAICT, there is another driver in staging which supports the same
-> or a subset of the cardreaders this driver does so I don't know what
-> Realsil want to do with that. Wei?
-> 
-> And since this driver touches multiple drivers/{mfd,mmc,memstick}
-> subdirs, maybe akpm would like to merge it? At least I haven't seen any
-> other maintainers complaining about its design or wanting to take it so
+I generally don't like using 4k tlb entries ever. This only has the
+advantage of saving 2MB-4KB RAM (globally), and a chpxchg at the first
+system-wide zero page fault. I like apps to only use 2M TLB entries
+whenever possible (that is going to payoff big as the number of 2M TLB
+entries is going to increase over time).
 
-I think you've missed the mails -- Alex Dubov has acked the memstick
-portion, Samuel Ortiz has said he'll push the MFD driver for 3.7,
-and I've pushed the MMC driver into mmc-next for 3.7.  So, I think
-we should merge it.  I don't think we need akpm, since there are no
-build-time dependencies involved.
+I did some research with tricks using 4k ptes up to half the pmd was
+filled before converting it to a THP (to save some memory and cache),
+and it didn't look good, so my rule of thumb was "THP sometime costs,
+even the switch from half pte filled to transhuge pmd still costs, so
+to diminish the risk of slowdowns we should use 2M TLB entries
+immediately, whenever possible".
 
-Thanks,
+Now the rule of thumb doesn't fully apply here, 1) there's no
+compaction costs to offset, 2) chances are the zero page isn't very
+performance critical anyway... only some weird apps uses it (but
+sometime they have a legitimate reason for using it, this is why we
+support it).
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+There would be a small cache benefit here... but even then some first
+level caches are virtually indexed IIRC (always physically tagged to
+avoid the software to notice) and virtually indexed ones won't get any
+benefit.
+
+It wouldn't provide even the memory saving tradeoff by dropping the
+zero pmd at the first fault (not at the last). And it's better to
+replace it at the first fault then the last (that matches the current
+design).
+
+Another point is that the previous patch is easier to port to other
+archs by not requiring arch features to track the zero pmd.
+
+I guess it won't make a whole lot of difference but my preference is
+for the previous implementation that always guaranteed huge TLB
+entries whenever possible. Said that I'm fine either ways so if
+somebody has strong reasons for wanting this one, I'd like to hear
+about it.
+
+Thanks!
+Andrea
