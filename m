@@ -1,50 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759417Ab2I2CDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 22:03:42 -0400
-Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:38601
-	"EHLO stargate3.asicdesigners.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754780Ab2I2CDk (ORCPT
+	id S1030659Ab2I2CQL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 22:16:11 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47881 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964897Ab2I2CQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 22:03:40 -0400
-X-Greylist: delayed 1964 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 22:03:40 EDT
-Date: Fri, 28 Sep 2012 18:30:29 -0700
-From: Divy Le Ray <divy@chelsio.com>
-To: Ben Hutchings <ben@decadent.org.uk>, David Woodhouse <dwmw2@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Subject: pull request: linux-firmware: update cxgb4 firmware
-Message-ID: <20120928183029.41d151b6@zola.asicdesigners.com>
-Organization: Chelsio Communications
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 28 Sep 2012 22:16:06 -0400
+Message-ID: <506659D7.9080904@gmail.com>
+Date: Sat, 29 Sep 2012 10:15:51 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [RFC v9 PATCH 13/21] memory-hotplug: check page type in get_page_bootmem
+References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <1346837155-534-14-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1346837155-534-14-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/05/2012 05:25 PM, wency@cn.fujitsu.com wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>
+> The function get_page_bootmem() may be called more than one time to the same
+> page. There is no need to set page's type, private if the function is not
+> the first time called to the page.
+>
+> Note: the patch is just optimization and does not fix any problem.
 
-Can you please pull from the following URL?
-    git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+Hi Yasuaki,
 
-The following changes since commit 236367db10f1e618a3ced2538f5cd1802c31ebd8:
-  Yuval Mintz (1):
-       bnx2x: update fw to 7.8.2
+this patch is reasonable to me. I have another question associated to 
+get_page_bootmem(), the question is from another fujitsu guy's patch 
+changelog [commit : 04753278769f3], the changelog said  that:
 
-are available in the git repository at: 
- git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+  1) When the memmap of removing section is allocated on other
+      section by bootmem, it should/can be free.
+  2) When the memmap of removing section is allocated on the
+      same section, it shouldn't be freed. Because the section has to be
+      logical memory offlined already and all pages must be isolated against
+      page allocater. If it is freed, page allocator may use it which will
+      be removed physically soon.
 
-Divy Le Ray (1):
-     cxgb4: update firmware to revision 1.6.2.0
+but I don't see his patch guarantee 2), it means that his patch doesn't 
+guarantee the memmap of removing section which is allocated on other 
+section by bootmem doesn't be freed. Hopefully get your explaination in 
+details, thanks in advance. :-)
 
- WHENCE                  |    2 +-
- cxgb4/t4fw-1.4.23.0.bin |  Bin 326144 -> 0 bytes
- cxgb4/t4fw-1.6.2.0.bin  |  Bin 0 -> 431616 bytes
- cxgb4/t4fw.bin          |    2 +-
- 4 files changed, 2 insertions(+), 2 deletions(-)
- delete mode 100644 cxgb4/t4fw-1.4.23.0.bin
- create mode 100644 cxgb4/t4fw-1.6.2.0.bin
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Wen Congyang <wency@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> ---
+>   mm/memory_hotplug.c |   15 +++++++++++----
+>   1 files changed, 11 insertions(+), 4 deletions(-)
+>
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index d736df3..26a5012 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
+>   static void get_page_bootmem(unsigned long info,  struct page *page,
+>   			     unsigned long type)
+>   {
+> -	page->lru.next = (struct list_head *) type;
+> -	SetPagePrivate(page);
+> -	set_page_private(page, info);
+> -	atomic_inc(&page->_count);
+> +	unsigned long page_type;
+> +
+> +	page_type = (unsigned long)page->lru.next;
+> +	if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
+> +	    page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
+> +		page->lru.next = (struct list_head *)type;
+> +		SetPagePrivate(page);
+> +		set_page_private(page, info);
+> +		atomic_inc(&page->_count);
+> +	} else
+> +		atomic_inc(&page->_count);
+>   }
+>   
+>   /* reference to __meminit __free_pages_bootmem is valid
 
-Cheers,
-Divy
