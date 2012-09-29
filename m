@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030443Ab2I2BEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 21:04:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21229 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030216Ab2I2BEi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 21:04:38 -0400
-X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=CzhNhiOeKFUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=mtZY8E7kI-gA:10 a=ybZZDoGAAAAA:8 a=bU3p2L20sEzuArcpNXAA:9 a=PUjeQqilurYA:10 a=qIVjreYYsbEA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1348880675.22822.102.camel@gandalf.local.home>
-Subject: Re: [PATCH 6/10] bug.h: Replace __linktime_error with
- __compiletime_error
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Daniel Santos <daniel.santos@pobox.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri, 28 Sep 2012 21:04:35 -0400
-In-Reply-To: <20120929002353.GC13907@jtriplet-mobl1>
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
-	 <1348874411-28288-7-git-send-email-daniel.santos@pobox.com>
-	 <20120929002353.GC13907@jtriplet-mobl1>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1030490Ab2I2BP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 21:15:59 -0400
+Received: from atl.turmel.org ([74.117.157.138]:38966 "EHLO atl.turmel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964989Ab2I2BP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Sep 2012 21:15:57 -0400
+X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Sep 2012 21:15:57 EDT
+Message-ID: <50664814.30407@turmel.org>
+Date: Fri, 28 Sep 2012 21:00:04 -0400
+From: Phil Turmel <philip@turmel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: wei_wang@realsil.com.cn
+CC: cjb@laptop.org, sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        gregkh@linuxfoundation.org, arnd@arndb.de, oakad@yahoo.com,
+        bp@alien8.de
+Subject: Re: [PATCH v6 0/3] Add modules to support realtek PCIE card reader
+References: <cover.1347330871.git.wei_wang@realsil.com.cn>
+In-Reply-To: <cover.1347330871.git.wei_wang@realsil.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-28 at 17:23 -0700, Josh Triplett wrote:
-> On Fri, Sep 28, 2012 at 06:20:07PM -0500, Daniel Santos wrote:
-> > Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-> > ---
-> >  include/linux/bug.h |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/include/linux/bug.h b/include/linux/bug.h
-> > index aaac4bb..298a916 100644
-> > --- a/include/linux/bug.h
-> > +++ b/include/linux/bug.h
-> > @@ -73,7 +73,7 @@ extern int __build_bug_on_failed;
-> >  #define BUILD_BUG()						\
-> >  	do {							\
-> >  		extern void __build_bug_failed(void)		\
-> > -			__linktime_error("BUILD_BUG failed");	\
-> > +			__compiletime_error("BUILD_BUG failed");\
-> >  		__build_bug_failed();				\
-> >  	} while (0)
+On 09/11/2012 12:54 AM, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
 > 
-> This change should either occur as part of patch 5 or before patch 5,
-> not after.
+> Support for Realtek PCI-Express driver-based card readers including rts5209 and rts5229.
+> 
+> v2:
+> 1. Using platform device to replace realtek slot bus
+> 
+> v3:
+> 1. Fix a bug that DMA out of SW-IOMMU space in Lenovo Thinkpad x121e
+> 2. Tested by Borislav Petkov <bp@alien8.de>
+> 
+> v4:
+> 1. Fulfill power management callbacks
+> 
+> v5:
+> 1. Support Memstick card
+> 
+> v6:
+> 1. Fix some coding style
+> 
+> Wei WANG (3):
+>   drivers/mfd: Add realtek pcie card reader driver
+>   drivers/mmc: Add realtek pcie sdmmc host driver
+>   drivers/memstick: Add realtek pcie memstick host driver
 
-I noticed the same thing and was about to comment on it.
+I have a recent HP Pavilion dv6 with this card reader, 10ec:5209
+(rev 01).  I just applied these patches on top of 3.6-rc7.  Appears
+to work properly with a SanDisk 8GB SDHC card.  I don't have a
+memstick to test.
 
-Please do not break bisectablity. All your patches should compile and
-run at every step.
+For patches 1 & 2, feel free to add my:
 
--- Steve
+Tested-by: Philip J. Turmel <philip@turmel.org>
 
+Regards,
+
+Phil
 
