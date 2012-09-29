@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964910Ab2I2ImH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 04:42:07 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:2579 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759052Ab2I2ImE (ORCPT
+	id S1755431Ab2I2JBZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 05:01:25 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:59612 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab2I2JBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 04:42:04 -0400
-Message-ID: <1348908118.1553.23.camel@x61.thuisdomein>
-Subject: Re: [PATCH -v2] mm: frontswap: fix a wrong if condition in
- frontswap_shrink
-From: Paul Bolle <pebolle@tiscali.nl>
-To: zhenzhong.duan@oracle.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        levinsasha928@gmail.com, Feng Jin <joe.jin@oracle.com>,
-        dan.carpenter@oracle.com
-Date: Sat, 29 Sep 2012 10:41:58 +0200
-In-Reply-To: <506662DD.4030309@oracle.com>
-References: <505C27FE.5080205@oracle.com>
-	  <1348745730.1512.19.camel@x61.thuisdomein> <50651CF5.5030903@oracle.com>
-	 <1348844071.1553.14.camel@x61.thuisdomein> <506662DD.4030309@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Sep 2012 08:41:58.0472 (UTC) FILETIME=[499B1480:01CD9E1E]
+	Sat, 29 Sep 2012 05:01:22 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApdbAD24ZlBV5h1yPGdsb2JhbABFhUWFALNrGQEBAQEfGQ0ngiABAQQBOhwjEAgDDjgUJQoaiBIKuUMUkHZgA5VohXKNIw
+X-IronPort-AV: E=Sophos;i="4.80,508,1344204000"; 
+   d="scan'208";a="201735226"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sat, 29 Sep 2012 11:02:17 +0200
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Input and HID updates for 3.7
+Message-ID: <20120929090217.GA1290@polaris.bitmath.org>
+References: <20120919185605.GA778@polaris.bitmath.org>
+ <alpine.LNX.2.00.1209192351120.22959@pobox.suse.cz>
+ <20120928173539.GB6356@core.coreip.homeip.net>
+ <alpine.LNX.2.00.1209282218350.17437@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1209282218350.17437@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-09-29 at 10:54 +0800, Zhenzhong Duan wrote:
-> On 2012-09-28 22:54, Paul Bolle wrote:
-> > Not even before applying your patch? Anyhow, after applying your patch
-> > the warnings gone here too.
-> I tested both cases, no warning, also didn't see -Wmaybe-uninitialized 
-> when make.
-> My env is el5. gcc version 4.1.2 20080704 (Red Hat 4.1.2-52)
-> Maybe your gcc built in/implicit spec use that option?
+> > Hmm, it looks like the work on making evdev using dynamic device numbers
+> > will clash with Henrik's changes. I think I will also pull this into my
+> > tree and then git should be able to resolve it all properly in -next.
+> 
+> That should work. Alternatively you can pull 'from-henrik' branch from my 
+> tree in case Henrik has already ditched/rebased his tree.
 
-I simply use what (was and) is shipped by Fedora 17:
-    $ sudo grep -w gcc /var/log/yum.log 
-    Sep 12 11:45:54 Installed: gcc-4.7.0-5.fc17.x86_64
-    Sep 27 13:54:24 Updated: gcc-4.7.2-2.fc17.x86_64
+The tree will remain the same until after 3.7-rc1 is out, so pulling
+should be fine.
 
-So I did my patch with a version of GCC's release 4.7.0, and tested your
-patch with a version of GCC's 4.7.2 release.
-
-I don't think I tweaked any settings. Unless there are strong reasons to
-do otherwise, I try to use the tools shipped by Fedora in their default
-settings. (I'm not even sure there's a way to set one's GCC settings
-locally.)
-
-
-Paul Bolle
-
+Thanks,
+Henrik
