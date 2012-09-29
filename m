@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030671Ab2I2CUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 22:20:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14614 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964897Ab2I2CUs (ORCPT
+	id S1759434Ab2I2CcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 22:32:10 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:42948 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759399Ab2I2CcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 22:20:48 -0400
-X-Authority-Analysis: v=2.0 cv=WKj9rwQR c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=PmdbDfDJVPQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=uCtR7c9hs7EA:10 a=LFh7HCCk25KrJYzcJ_EA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1348885245.22822.104.camel@gandalf.local.home>
-Subject: [PATCH] lib tools traceevent: Add back pevent assignment in
- __pevent_parse_format()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>
-Date: Fri, 28 Sep 2012 22:20:45 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Fri, 28 Sep 2012 22:32:07 -0400
+Message-ID: <50665D94.7040802@gmail.com>
+Date: Sat, 29 Sep 2012 10:31:48 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: wency@cn.fujitsu.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH 0/4] bugfix for memory hotplug
+References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even though with the change of commit commit 2b29175 "tools lib traceevent:
-Carve out events format parsing routine", allowed __pevent_parse_format() to
-parse an event without the need of a pevent handler, the event still needs to
-assign the pevent handed to it.
+On 09/27/2012 01:45 PM, wency@cn.fujitsu.com wrote:
+> From: Wen Congyang <wency@cn.fujitsu.com>
+>
+> Wen Congyang (2):
+>    memory-hotplug: clear hwpoisoned flag when onlining pages
+>    memory-hotplug: auto offline page_cgroup when onlining memory block
+>      failed
 
-There's no problem with assigning it if the pevent is NULL, as the event->pevent
-would be NULL without the assignment. But function parsing handlers may be
-assigned to the pevent handler to help in parsing the event. If there's no
-pevent then there would not be any function handlers, but if the pevent
-isn't assigned first before parsing the event, it wont honor the function
-handlers that were assigned.
+Again, you should explain these two patches are the new version of 
+memory-hotplug: hot-remove physical memory [20/21,21/21]
 
-Worse yet, the current code crashes if an event has a function that it tries
-to parse. For example:
-
- # perf record -e scsi:scsi_dispatch_cmd_timeout
- Segmentation fault (core dumped)
-
-This happens because the scsi_dispatch_cmd_timeout event format has the following:
-
-  __print_hex(__get_dynamic_array(cmnd), REC->cmd_len)
-
-which hasn't been defined by the pevent code.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 47264b4..f2989c5 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -2602,6 +2602,9 @@ find_func_handler(struct pevent *pevent, char *func_name)
- {
- 	struct pevent_function_handler *func;
- 
-+	if (!pevent)
-+		return NULL;
-+
- 	for (func = pevent->func_handlers; func; func = func->next) {
- 		if (strcmp(func->name, func_name) == 0)
- 			break;
-@@ -4938,6 +4941,9 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
- 		goto event_alloc_failed;
- 	}
- 
-+	/* Add pevent to event so that it can be referenced */
-+	event->pevent = pevent;
-+
- 	ret = event_read_format(event);
- 	if (ret < 0) {
- 		ret = PEVENT_ERRNO__READ_FORMAT_FAILED;
-@@ -5041,9 +5047,6 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
- 	if (event == NULL)
- 		return ret;
- 
--	/* Add pevent to event so that it can be referenced */
--	event->pevent = pevent;
--
- 	if (add_event(pevent, event)) {
- 		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
- 		goto event_add_failed;
-
+>
+> Yasuaki Ishimatsu (2):
+>    memory-hotplug: add memory_block_release
+>    memory-hotplug: add node_device_release
+>
+>   drivers/base/memory.c |    9 ++++++++-
+>   drivers/base/node.c   |   11 +++++++++++
+>   mm/memory_hotplug.c   |    8 ++++++++
+>   mm/page_cgroup.c      |    3 +++
+>   4 files changed, 30 insertions(+), 1 deletions(-)
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
