@@ -1,122 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab2I2KHG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 06:07:06 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49532 "EHLO bear.ext.ti.com"
+	id S1753503Ab2I2KfX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 06:35:23 -0400
+Received: from inx.pm.waw.pl ([195.116.170.130]:33652 "EHLO inx.pm.waw.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752540Ab2I2KHB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 06:07:01 -0400
-From: "Patil, Rachna" <rachna@ti.com>
-To: Jonathan Cameron <jic23@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: RE: [PATCH v4 0/5] Support for TSC/ADC MFD driver
-Thread-Topic: [PATCH v4 0/5] Support for TSC/ADC MFD driver
-Thread-Index: AQHNm6kp+zjgysv1QUmfOMBO+iWktpeguhGAgABhEHA=
-Date: Sat, 29 Sep 2012 10:06:29 +0000
-Message-ID: <4CE347531D4CA947960AF71FF095B9323E9582F0@DBDE01.ent.ti.com>
-References: <1348636814-14129-1-git-send-email-rachna@ti.com>
- <5066C29D.7040009@kernel.org>
-In-Reply-To: <5066C29D.7040009@kernel.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752788Ab2I2KfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 06:35:22 -0400
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+Subject: ARM SoC tree, Was: Re: [PATCH 05/12] ARM: ixp4xx: use __iomem for MMIO
+References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
+	<1348868177-21205-6-git-send-email-arnd@arndb.de>
+Date: Sat, 29 Sep 2012 12:35:17 +0200
+In-Reply-To: <1348868177-21205-6-git-send-email-arnd@arndb.de> (Arnd
+	Bergmann's message of "Fri, 28 Sep 2012 23:36:10 +0200")
+Message-ID: <m3lift6rru.fsf_-_@intrepid.localdomain>
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 29, 2012 at 15:12:53, Jonathan Cameron wrote:
-> On 09/26/2012 06:20 AM, Patil, Rachna wrote:
-> > This patch set adds a MFD core driver which registers touchscreen and 
-> > ADC as its client drivers.
-> > The existing touchscreen has been modified to work as a MFD client 
-> > driver and a new ADC driver has been added in the IIO subsystem.
-> > 
-> > There are 8 analog input lines, which can be used as:
-> > 1. 8 general purpose ADC channels
-> > 2. 4 wire TS, with 4 general purpose ADC channels 3. 5 wire TS, with 3 
-> > general purpose ADC channels
-> > 
-> > This patch set has been tested on AM335x EVM.
-> > 
-> > These set of patches are based on top of Touchscreen patch set 
-> > submitted.
-> > Subject: [PATCH 0/4] input: TSC: ti_tscadc: TI Touchscreen driver 
-> > updates [1]
-> > 
-> > [1] http://www.spinics.net/lists/linux-input/msg22107.html
-> which tree have these merged in?
+Arnd Bergmann <arnd@arndb.de> writes:
 
-This patch set includes some changes in the touchscreen driver.
-They have not been acked as yet. I am waiting for a reply from Dmitry.
+> Krzysztof, please apply in your next branch so this problem goes away in
+> 3.8.
 
-Regards,
-Rachna
+Right, I'll look at it.
 
-> 
-> I'll assume the rest of this is going through the same tree and ack rather than signing off and taking it through IIO.
-> 
-> Note that patch 1 does not appear to apply to linux-next which implies some issues somewhere or that the above series has been picked up for any trees feeding linux-next as yet.
-> > 
-> > Changes in v2:
-> > 	Dropped one patch send in the last version after
-> > 	receiving internal comments. I have merged the changes
-> > 	into existing patches.
-> > 	Also added a new patch to support suspend/resume feature.
-> > 	Fixed review comments by Matthias Kaehlcke.
-> > 
-> > Changes in v3:
-> > 	Addressed review comments by Jonathan Cameron.
-> > 	Improved ADC driver with more readable labels,
-> > 	spaces and comments.
-> > 
-> > Changes in v4:
-> > 	Renamed the drivers from ti_xxx to ti_am335x_xxx.
-> > 	For consistency with other drivers renamed idev to indio_dev
-> > 	in IIO ADC driver.
-> > 	Replaced suspend/resume callbacks with dev_pm_ops.
-> > 
-> > Patil, Rachna (5):
-> >   input: TSC: ti_tscadc: Rename the existing touchscreen driver
-> >   MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
-> >   input: TSC: ti_tsc: Convert TSC into a MFDevice
-> >   IIO : ADC: tiadc: Add support of TI's ADC driver
-> >   MFD: ti_tscadc: add suspend/resume functionality
-> > 
-> >  drivers/iio/adc/Kconfig                            |    7 +
-> >  drivers/iio/adc/Makefile                           |    1 +
-> >  drivers/iio/adc/ti_am335x_adc.c                    |  258 ++++++++++++++++
-> >  drivers/input/touchscreen/Kconfig                  |    4 +-
-> >  drivers/input/touchscreen/Makefile                 |    2 +-
-> >  .../touchscreen/{ti_tscadc.c => ti_am335x_tsc.c}   |  319 ++++++--------------
-> >  drivers/mfd/Kconfig                                |    9 +
-> >  drivers/mfd/Makefile                               |    1 +
-> >  drivers/mfd/ti_am335x_tscadc.c                     |  259 ++++++++++++++++
-> >  .../linux/input/{ti_tscadc.h => ti_am335x_tsc.h}   |    4 +-
-> >  include/linux/mfd/ti_am335x_tscadc.h               |  151 +++++++++
-> >  include/linux/platform_data/ti_am335x_adc.h        |   14 +
-> >  12 files changed, 801 insertions(+), 228 deletions(-)  create mode 
-> > 100644 drivers/iio/adc/ti_am335x_adc.c  rename 
-> > drivers/input/touchscreen/{ti_tscadc.c => ti_am335x_tsc.c} (55%)  
-> > create mode 100644 drivers/mfd/ti_am335x_tscadc.c  rename 
-> > include/linux/input/{ti_tscadc.h => ti_am335x_tsc.h} (88%)  create 
-> > mode 100644 include/linux/mfd/ti_am335x_tscadc.h
-> >  create mode 100644 include/linux/platform_data/ti_am335x_adc.h
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-iio" 
-> > in the body of a message to majordomo@vger.kernel.org More majordomo 
-> > info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
+> I realize it won't make 3.7 any more since the base patches are not
+> in arm-soc, but it's bad if linux-next is broken.
 
+Well, I'm not aware of any requirement to push my IXP4xx changes
+exclusively through arm-soc. I believe I can still send my tree straight
+to Linus.
+
+My tree is fairly isolated (with one trivial patch in need of ack from
+Russell, but I can remove that) and, to be honest, I can't see any
+benefit to anyone, caused by sending through intermediate trees. In
+fact, now that I have at last a bit of spare time to work on IXP4xx
+again (acquired some IXP435 devices), such requirement would only mean
+extra workload to me.
+
+Could you please point me to a statement requiring eg. my changes to go
+through arm-soc?
+
+Thanks.
+-- 
+Krzysztof Halasa
