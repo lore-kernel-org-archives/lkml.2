@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab2I2SNw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 14:13:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:11229 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757370Ab2I2SNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 14:13:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,508,1344236400"; 
-   d="scan'208";a="198768493"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@redhat.com
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Add library dependencies for static perf link
-Date: Sat, 29 Sep 2012 11:13:48 -0700
-Message-Id: <1348942428-29688-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1757591Ab2I2Se4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 14:34:56 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:51769 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757358Ab2I2Sez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 14:34:55 -0400
+Date: Sat, 29 Sep 2012 18:34:54 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Matt Porter <mporter@ti.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Benoit Cousson <b-cousson@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        omar.luna@linaro.org
+Subject: Re: [PATCH v2 0/7] uio_pruss cleanup and platform support
+In-Reply-To: <1348861072-14507-1-git-send-email-mporter@ti.com>
+Message-ID: <alpine.DEB.2.00.1209291830270.20956@utopia.booyaka.com>
+References: <1348861072-14507-1-git-send-email-mporter@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
 
-When linking perf statically some of the library dependencies are always
-rejected, so libdwarf and libbfd do not work.  The problem is that these
-libraries (at least on my system) require other libraries. But unlike
-a shared link the static link doesn't find those by itself, and they
-have to be explicitely specified.
+cc Omar
 
-In my case I needed -ldl -lz for libbfd and -lslang for -lnewt
+Hi Matt
 
-Add those to the probe statements.
+On Fri, 28 Sep 2012, Matt Porter wrote:
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Makefile |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+> The AM33xx support requires some help in hwmod due to the following
+> comment in arch/arm/mach-omap2/omap_hwmod.c:
+> 	/*
+> 	 * If an IP block contains HW reset lines and any of them are
+> 	 * asserted, we let integration code associated with that
+> 	 * block handle the enable.  We've received very little
+> 	 * information on what those driver authors need, and until
+> 	 * detailed information is provided and the driver code is
+> 	 * posted to the public lists, this is probably the best we
+> 	 * can do.
+> 	 */
+> 
+> The approach to deal with the hardware reset (for at least the pruss
+> hwmod) was to add a generic omap property to properly define this
+> hardware. The implementation simply deasserts any rst lines that
+> are called out in the property when the omap_device is
+> instantiated. This is not the ideal implementation as the sequence is
+> a bit wrong for pruss since the busy check during the hard reset
+> will fail, even though it fails in a benign manner. Ideally, we would
+> want the implementation to observe the ti,deassert-hard-reset property
+> and use that in omap_hwmod.c:_enable() *after* the module is unidled
+> and the clocks active. However, this is actually functional for purposes
+> of getting the uio_pruss driver up and running.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 35655c3..a79c702 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -491,7 +491,7 @@ endif # NO_DWARF
- ifdef NO_NEWT
- 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
- else
--	FLAGS_NEWT=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lnewt
-+	FLAGS_NEWT=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lnewt -lslang
- 	ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT)),y)
- 		msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
- 		BASIC_CFLAGS += -DNO_NEWT_SUPPORT
-@@ -644,20 +644,20 @@ else
- 		EXTLIBS += -liberty
- 		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-         else
--		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
-+		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd -ldl
- 		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
- 		ifeq ($(has_bfd),y)
--			EXTLIBS += -lbfd
-+			EXTLIBS += -lbfd -ldl
- 		else
--			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
-+			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty -ldl
- 			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
- 			ifeq ($(has_bfd_iberty),y)
--				EXTLIBS += -lbfd -liberty
-+				EXTLIBS += -lbfd -liberty -ldl
- 			else
--				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
-+				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz -ldl
- 				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
- 				ifeq ($(has_bfd_iberty_z),y)
--					EXTLIBS += -lbfd -liberty -lz
-+					EXTLIBS += -lbfd -liberty -lz -ldl
- 				else
- 					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
- 					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
--- 
-1.7.7.6
+Could you please sync with Omar on the hard reset handling?  He posted 
+some patches that change the hard reset code.  Perhaps you can align on an 
+approach with him?
 
+A few general comments: if some new per-IP block flag is needed to control 
+this, the best place for it right now would be the hwmod data in 
+arch/arm/mach-omap2/omap_hwmod_*_data.c, rather than DT.  At some point 
+soon, the hard reset handling will be split between a PRM driver and some 
+hwmod bus driver, and it seems best to deal with the DT binding question 
+at that time.  That way we don't wind up with a legacy binding that has to 
+be supported over the long term.
+
+
+- Paul
