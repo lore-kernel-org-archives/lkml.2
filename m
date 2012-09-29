@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030659Ab2I2CQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 22:16:11 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:47881 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964897Ab2I2CQG (ORCPT
+	id S1030671Ab2I2CUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 22:20:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14614 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964897Ab2I2CUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 22:16:06 -0400
-Message-ID: <506659D7.9080904@gmail.com>
-Date: Sat, 29 Sep 2012 10:15:51 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [RFC v9 PATCH 13/21] memory-hotplug: check page type in get_page_bootmem
-References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <1346837155-534-14-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1346837155-534-14-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 28 Sep 2012 22:20:48 -0400
+X-Authority-Analysis: v=2.0 cv=WKj9rwQR c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=PmdbDfDJVPQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=uCtR7c9hs7EA:10 a=LFh7HCCk25KrJYzcJ_EA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1348885245.22822.104.camel@gandalf.local.home>
+Subject: [PATCH] lib tools traceevent: Add back pevent assignment in
+ __pevent_parse_format()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>
+Date: Fri, 28 Sep 2012 22:20:45 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 05:25 PM, wency@cn.fujitsu.com wrote:
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
-> The function get_page_bootmem() may be called more than one time to the same
-> page. There is no need to set page's type, private if the function is not
-> the first time called to the page.
->
-> Note: the patch is just optimization and does not fix any problem.
+Even though with the change of commit commit 2b29175 "tools lib traceevent:
+Carve out events format parsing routine", allowed __pevent_parse_format() to
+parse an event without the need of a pevent handler, the event still needs to
+assign the pevent handed to it.
 
-Hi Yasuaki,
+There's no problem with assigning it if the pevent is NULL, as the event->pevent
+would be NULL without the assignment. But function parsing handlers may be
+assigned to the pevent handler to help in parsing the event. If there's no
+pevent then there would not be any function handlers, but if the pevent
+isn't assigned first before parsing the event, it wont honor the function
+handlers that were assigned.
 
-this patch is reasonable to me. I have another question associated to 
-get_page_bootmem(), the question is from another fujitsu guy's patch 
-changelog [commit : 04753278769f3], the changelog said  that:
+Worse yet, the current code crashes if an event has a function that it tries
+to parse. For example:
 
-  1) When the memmap of removing section is allocated on other
-      section by bootmem, it should/can be free.
-  2) When the memmap of removing section is allocated on the
-      same section, it shouldn't be freed. Because the section has to be
-      logical memory offlined already and all pages must be isolated against
-      page allocater. If it is freed, page allocator may use it which will
-      be removed physically soon.
+ # perf record -e scsi:scsi_dispatch_cmd_timeout
+ Segmentation fault (core dumped)
 
-but I don't see his patch guarantee 2), it means that his patch doesn't 
-guarantee the memmap of removing section which is allocated on other 
-section by bootmem doesn't be freed. Hopefully get your explaination in 
-details, thanks in advance. :-)
+This happens because the scsi_dispatch_cmd_timeout event format has the following:
 
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
->   mm/memory_hotplug.c |   15 +++++++++++----
->   1 files changed, 11 insertions(+), 4 deletions(-)
->
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index d736df3..26a5012 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
->   static void get_page_bootmem(unsigned long info,  struct page *page,
->   			     unsigned long type)
->   {
-> -	page->lru.next = (struct list_head *) type;
-> -	SetPagePrivate(page);
-> -	set_page_private(page, info);
-> -	atomic_inc(&page->_count);
-> +	unsigned long page_type;
-> +
-> +	page_type = (unsigned long)page->lru.next;
-> +	if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
-> +	    page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
-> +		page->lru.next = (struct list_head *)type;
-> +		SetPagePrivate(page);
-> +		set_page_private(page, info);
-> +		atomic_inc(&page->_count);
-> +	} else
-> +		atomic_inc(&page->_count);
->   }
->   
->   /* reference to __meminit __free_pages_bootmem is valid
+  __print_hex(__get_dynamic_array(cmnd), REC->cmd_len)
+
+which hasn't been defined by the pevent code.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 47264b4..f2989c5 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2602,6 +2602,9 @@ find_func_handler(struct pevent *pevent, char *func_name)
+ {
+ 	struct pevent_function_handler *func;
+ 
++	if (!pevent)
++		return NULL;
++
+ 	for (func = pevent->func_handlers; func; func = func->next) {
+ 		if (strcmp(func->name, func_name) == 0)
+ 			break;
+@@ -4938,6 +4941,9 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
+ 		goto event_alloc_failed;
+ 	}
+ 
++	/* Add pevent to event so that it can be referenced */
++	event->pevent = pevent;
++
+ 	ret = event_read_format(event);
+ 	if (ret < 0) {
+ 		ret = PEVENT_ERRNO__READ_FORMAT_FAILED;
+@@ -5041,9 +5047,6 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
+ 	if (event == NULL)
+ 		return ret;
+ 
+-	/* Add pevent to event so that it can be referenced */
+-	event->pevent = pevent;
+-
+ 	if (add_event(pevent, event)) {
+ 		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
+ 		goto event_add_failed;
+
 
