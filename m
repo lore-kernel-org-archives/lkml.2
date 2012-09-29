@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab2I2P3r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 11:29:47 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59432 "EHLO mail.skyhub.de"
+	id S1756206Ab2I2PsJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 11:48:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54447 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754143Ab2I2P3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 11:29:45 -0400
-Date: Sat, 29 Sep 2012 17:29:42 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Chris Ball <cjb@laptop.org>
-Cc: wei_wang@realsil.com.cn, gregkh@linuxfoundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Phil Turmel <philip@turmel.org>, sameo@linux.intel.com,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, arnd@arndb.de, oakad@yahoo.com
-Subject: Re: [PATCH v6 0/3] Add modules to support realtek PCIE card reader
-Message-ID: <20120929152942.GA11412@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Chris Ball <cjb@laptop.org>, wei_wang@realsil.com.cn,
-	gregkh@linuxfoundation.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Phil Turmel <philip@turmel.org>, sameo@linux.intel.com,
-	devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-	linux-mmc@vger.kernel.org, arnd@arndb.de, oakad@yahoo.com
-References: <cover.1347330871.git.wei_wang@realsil.com.cn>
- <50664814.30407@turmel.org>
- <20120929110730.GA27797@liondog.tnic>
- <87d315osjm.fsf@octavius.laptop.org>
+	id S1752512Ab2I2PsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 11:48:06 -0400
+Date: Sat, 29 Sep 2012 17:47:51 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: GeneralTouch <aroundight77@gmail.com>, yxhma <yxhma@163.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] hid:Fix problem on GeneralTouch multi-touchscreen
+In-Reply-To: <CAN+gG=G6V_O5W6DCuByAmymeLSvyOtDbsaHTZOqbNgNKu+m6cQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1209291747040.837@pobox.suse.cz>
+References: <1348798739-2950-1-git-send-email-aroundight77@gmail.com> <CAN+gG=G6V_O5W6DCuByAmymeLSvyOtDbsaHTZOqbNgNKu+m6cQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <87d315osjm.fsf@octavius.laptop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 29, 2012 at 09:41:17AM -0400, Chris Ball wrote:
-> On Sat, Sep 29 2012, Borislav Petkov wrote:
-> > So, I think that this driver has seen a bunch of testing and reviewing
-> > and we might start considering upstreaming it. There are a bunch of
-> > laptops integrating those readers and maybe a single three-month-ish -rc
-> > period of testing wouldn't hurt before it appears upstream.
+On Fri, 28 Sep 2012, Benjamin Tissoires wrote:
+
+> > From: Xianhan Yu <aroundight77@gmail.com>
 > >
-> > Now, AFAICT, there is another driver in staging which supports the same
-> > or a subset of the cardreaders this driver does so I don't know what
-> > Realsil want to do with that. Wei?
-> > 
-> > And since this driver touches multiple drivers/{mfd,mmc,memstick}
-> > subdirs, maybe akpm would like to merge it? At least I haven't seen any
-> > other maintainers complaining about its design or wanting to take it so
+> > Fix the touch-up no response problem on GeneralTouch twofingers 
+> > touchscreen and modify the driver for new GeneralTouch PWT 
+> > touchscreen.
+> >
+> > Signed-off-by: Xianhan Yu <aroundight77@gmail.com>
 > 
-> I think you've missed the mails -- Alex Dubov has acked the memstick
-> portion, Samuel Ortiz has said he'll push the MFD driver for 3.7,
-> and I've pushed the MMC driver into mmc-next for 3.7.  So, I think
-> we should merge it.  I don't think we need akpm, since there are no
-> build-time dependencies involved.
+> Hi,
+> 
+> Thank you for re-submitting the patch. It's cleaner now.
+> 
+> I have a few questions, but generally speaking, the patch is good in
+> its current form.
 
-Great, all is taken care of then.
+Thanks for the review, Benjamin.
 
-Only the staging driver remains, I believe the CONFIG_RTS_PSTOR one. Wei?
+> Jiri: I know that I have not been as reactive as I used to, but I'm 
+> ending my contract in my current lab now, and I've been pretty busy. 
+> Please don't put me in the grave, I'm still the maintainer of 
+> hid-multitouch.... ;-)
 
-Thanks.
+Glad to hear that :) Perhaps it'd make sense adding yourself to 
+MAINTAINERS alongside Henrik?
 
 -- 
-Regards/Gruss,
-    Boris.
+Jiri Kosina
+SUSE Labs
