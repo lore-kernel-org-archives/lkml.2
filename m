@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964901Ab2I2Nhq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 09:37:46 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:57088 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028Ab2I2Nhn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 09:37:43 -0400
-Date: Sat, 29 Sep 2012 06:37:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: rcu: eqs related warnings in linux-next
-Message-ID: <20120929133737.GB2551@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <50659D37.2020206@gmail.com>
- <20120928133633.GC12843@somewhere.redhat.com>
- <20120928173133.GB2498@linux.vnet.ibm.com>
- <50669952.1000805@gmail.com>
- <CAFTL4hzuh+iXPpKpyHWvpx3-Dwy9aq+poJLF_u=xcVfJPiaQVw@mail.gmail.com>
+	id S1030311Ab2I2NiA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 09:38:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50245 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030199Ab2I2Nh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 09:37:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,507,1344236400"; 
+   d="scan'208";a="198722925"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@lists.linux-foundation.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Len, Brown" <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: RE: [RFC PATCH 5/6] ACPI: Introduce ACPI I2C controller enumeration
+ driver
+Thread-Topic: [RFC PATCH 5/6] ACPI: Introduce ACPI I2C controller
+ enumeration driver
+Thread-Index: AQHNnUx4YaROkQfVYU+gelfZPaq2VZefL/SAgAIjU8A=
+Date: Sat, 29 Sep 2012 13:37:53 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B90926322C16F@SHSMSX101.ccr.corp.intel.com>
+References: <1348818032.10877.325.camel@rui.sh.intel.com>
+ <20120928135401.6781d134@pyramind.ukuu.org.uk>
+In-Reply-To: <20120928135401.6781d134@pyramind.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hzuh+iXPpKpyHWvpx3-Dwy9aq+poJLF_u=xcVfJPiaQVw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092913-7282-0000-0000-00000D786456
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8TDc6J0019731
 
-On Sat, Sep 29, 2012 at 02:25:04PM +0200, Frederic Weisbecker wrote:
-> 2012/9/29 Sasha Levin <levinsasha928@gmail.com>:
-> > Maybe I could help here a bit.
-> >
-> > lappy linux # addr2line -i -e vmlinux ffffffff8111d45f
-> > /usr/src/linux/kernel/timer.c:549
-> > /usr/src/linux/include/linux/jump_label.h:101
-> > /usr/src/linux/include/trace/events/timer.h:44
-> > /usr/src/linux/kernel/timer.c:601
-> > /usr/src/linux/kernel/timer.c:734
-> > /usr/src/linux/kernel/timer.c:886
-> >
-> > Which means that it was about to:
-> >
-> >         debug_object_activate(timer, &timer_debug_descr);
 
-Understood and agreed, hence my severe diagnostic patch.
 
-> I can't find anything in the debug object code that might fault.
-> I was suspecting some per cpu allocated memory: per cpu allocation
-> sometimes use vmalloc
-> which uses lazy paging using faults. But I can't find such thing there.
+> -----Original Message-----
+> From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
+> Sent: Friday, September 28, 2012 8:54 PM
+> To: Zhang, Rui
+> Cc: LKML; linux-pm; linux-i2c; linux-acpi@vger.kernel.org; Len, Brown;
+> Rafael J. Wysocki; Grant Likely; Dirk Brandewie
+> Subject: Re: [RFC PATCH 5/6] ACPI: Introduce ACPI I2C controller
+> enumeration driver
+> Importance: High
 > 
-> May be there is some faulting specific to KVM...
+> On Fri, 28 Sep 2012 15:40:32 +0800
+> Zhang Rui <rui.zhang@intel.com> wrote:
+> 
+> > >From 6077a62f2865201ab6727ca7d628ee5e43aa57e1 Mon Sep 17 00:00:00
+> > >2001
+> > From: Zhang Rui <rui.zhang@intel.com>
+> > Date: Fri, 24 Aug 2012 15:18:25 +0800
+> > Subject: [RFC PATCH 5/6] ACPI: Introduce ACPI I2C controller
+> > enumeration  driver
+> >
+> > This driver is able to
+> > 1) enumerate I2C controller via ACPI namespace
+> >    and register it as a platform device.
+> > 2) enumerate I2C slave devices via ACPI namespace.
+> 
+> Will this also trigger and work with the ACPI4 based devices that seem
+> to have IÂ²C tables that Linux currently doesn't understand (eq some
+> GMA600/Oaktrail platforms) ?
 
-Sasha, is the easily reproducible?  If so, could you please try the
-previous patch?  It will likely give us more information on where
-this bug really lives.  (Yes, it might totally obscure the bug, but
-in that case we will just need to try some other perturbation.)
+I'm not aware of this. I think the answer is probably "No"
+because these PNPids are pretty new.
+But we can check FADT.revision to make the driver work
+on ACPI5 platforms only.
 
-							Thanx, Paul
+Thanks,
+rui
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
