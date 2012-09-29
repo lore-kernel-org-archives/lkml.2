@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759164Ab2I2ARw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Sep 2012 20:17:52 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:55698 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758829Ab2I2ARv convert rfc822-to-8bit (ORCPT
+	id S1759180Ab2I2AUj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Sep 2012 20:20:39 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48317 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758855Ab2I2AUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Sep 2012 20:17:51 -0400
-From: Ramesh Nagappa <ramesh.nagappa@ericsson.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "michel@digirati.com.br" <michel@digirati.com.br>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-Date: Fri, 28 Sep 2012 20:17:37 -0400
-Subject: RE: [PATCH] net: fix neigh_resolve_output can cause skb_under_panic
-Thread-Topic: [PATCH] net: fix neigh_resolve_output can cause skb_under_panic
-Thread-Index: Ac2d1Ekch7yQm/siSV6TrUV8ePFHuAAAvnfQ
-Message-ID: <CA3E5132752D1F49871ED0FC40D56BBA43ECE2E741@EUSAACMS0701.eamcs.ericsson.se>
-References: <CA3E5132752D1F49871ED0FC40D56BBA43ECE2E72D@EUSAACMS0701.eamcs.ericsson.se>
- <20120928235209.GA11474@kroah.com>
-In-Reply-To: <20120928235209.GA11474@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 Sep 2012 20:20:38 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 50.43.46.74
+Date: Fri, 28 Sep 2012 17:20:29 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 4/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
+Message-ID: <20120929002029.GA13907@jtriplet-mobl1>
+References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
+ <1348874411-28288-5-git-send-email-daniel.santos@pobox.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348874411-28288-5-git-send-email-daniel.santos@pobox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, Outlook managled the patch. I will try to find a way to re-submit it.
+On Fri, Sep 28, 2012 at 06:20:05PM -0500, Daniel Santos wrote:
+> --- a/include/linux/compiler-gcc4.h
+> +++ b/include/linux/compiler-gcc4.h
+> @@ -13,11 +13,11 @@
+>  #define __must_check 		__attribute__((warn_unused_result))
+>  #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
+>  
+> -#if __GNUC_MINOR__ > 0
+> +#if GCC_VERSION >= 40102
+>  # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+>  #endif
 
-> 
-> You need a blank line before the first Signed-off-by: line.  
-> Surely one of the reviewers should have caught this basic thing?
-> 
-> greg k-h
-> 
+You've changed the semantics of this one; if literally translated, this
+should have become #if GCC_VERSION >= 40100.  If you intended to change
+that, could you please document why?  And in any case, could you make
+that semantic change in a separate commit from the switch to
+GCC_VERSION?
 
--- Ramesh
+- Josh Triplett
