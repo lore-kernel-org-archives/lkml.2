@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361Ab2I2U1q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 16:27:46 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:50093 "EHLO
+	id S1751524Ab2I2Ug2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 16:36:28 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33338 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab2I2U1p (ORCPT
+	with ESMTP id S1751478Ab2I2Ug1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 16:27:45 -0400
+	Sat, 29 Sep 2012 16:36:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <1348949440.3294.2.camel@joe-AO722>
-References: <1348938460-20919-1-git-send-email-geert@linux-m68k.org>
-	<1348938460-20919-2-git-send-email-geert@linux-m68k.org>
-	<1348949440.3294.2.camel@joe-AO722>
-Date: Sat, 29 Sep 2012 22:27:44 +0200
-X-Google-Sender-Auth: QsX9xgR4vxHYxBlALQvQYIbjTyg
-Message-ID: <CAMuHMdWiDKV2=kbO8UGqZBETdrYExLRbaRFNnVTVRcWUs16OcA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] arch/um/os-Linux: Drop UM_ prefix from printk() level specifiers
+In-Reply-To: <BLU0-SMTP777C44DD0217ABB38501DE97810@phx.gbl>
+References: <CAK1hOcMongS_p5+oiaqE85tEVF8mv+SCm3yb-N=Zqz4Xuz_+WA@mail.gmail.com>
+	<BLU0-SMTP54F29C73A16BAB0885137A979D0@phx.gbl>
+	<1348839817.2411.19.camel@dabdike.int.hansenpartnership.com>
+	<BLU0-SMTP777C44DD0217ABB38501DE97810@phx.gbl>
+Date: Sat, 29 Sep 2012 22:36:26 +0200
+X-Google-Sender-Auth: AJHBRtmKUuT70KW4RwmgfvEu_t0
+Message-ID: <CAMuHMdUWOya35KFAVDkHaRvBi5f4FiOA2DN7G+q_bmi9=dtK2Q@mail.gmail.com>
+Subject: Re: parisc: orphaned asm/compat_signal.h file?
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, x86@kernel.org
+To: John David Anglin <dave.anglin@bell.net>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 29, 2012 at 10:10 PM, Joe Perches <joe@perches.com> wrote:
->> @@ -88,7 +88,7 @@ static int do_aio(aio_context_t ctx, enum aio_type type, int fd, char *buf,
->>               iocbp->aio_nbytes = sizeof(c);
->>               break;
->>       default:
->> -             printk(UM_KERN_ERR "Bogus op in do_aio - %d\n", type);
->> +             printk(KERN_ERR "Bogus op in do_aio - %d\n", type);
->
-> Maybe a follow-on patch to convert these to pr_<level>?
+On Sat, Sep 29, 2012 at 10:24 PM, John David Anglin
+<dave.anglin@bell.net> wrote:
+> Had to remove the kvm_para.h hunk because I hit this issue:
+> https://lkml.org/lkml/2012/6/13/226
+> Assume this is now fixed.
 
-That requires adding pr_<level> to arch/um/include/shared/user.h first.
-Or to avoid duplication, extracting the pr_<level> definitions from
-include/linux/printk.h to a new header file, and preincluding that one for
-the user part of UML, too.
+Unfortunately not :-(
 
 Gr{oetje,eeting}s,
 
