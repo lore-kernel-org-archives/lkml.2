@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab2I2Ncd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 09:32:33 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43345 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755135Ab2I2NcH convert rfc822-to-8bit (ORCPT
+	id S1755078Ab2I2Nb7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 09:31:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5884 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754234Ab2I2Nb4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 09:32:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABGkUugX9m=0+tGP05WhEG9Y=cyp1jZjoxULpZN3+c7Tcf1ywg@mail.gmail.com>
-References: <1348433304-28320-1-git-send-email-tero.keski-valkama@neter.fi>
-	<CABGkUujMCRazGy1+69SWBsS15B97rNEXWNsR4gG8D+5WyeF2jg@mail.gmail.com>
-	<20120925090151.GB1247@liondog.tnic>
-	<CABGkUugOvWCSfXvLW33jmntGYAAiPP9fStXbdRAozx3bEoKBOA@mail.gmail.com>
-	<20120925222417.GA31780@liondog.tnic>
-	<CABGkUuhte-0xUQTpehKid5jD5=pwDKNSG_2Cq7isTJkaBZKGHw@mail.gmail.com>
-	<CABGkUugaB4rmE_tiyEdhTPBaXUnE=a0A4w13U+L+Ux_NGrA4Vw@mail.gmail.com>
-	<CABGkUugX9m=0+tGP05WhEG9Y=cyp1jZjoxULpZN3+c7Tcf1ywg@mail.gmail.com>
-Date: Sat, 29 Sep 2012 16:32:05 +0300
-X-Google-Sender-Auth: pVF9grLNrDf2cMZS3qWz8ZOgovk
-Message-ID: <CABGkUuhrsCmuDBRcxftZkWOtCN8Qs4huNut=rhDa8LhquwqvSQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] x86: Added support for Acer Aspire 5755G fan control.
-From: Tero Keski-Valkama <tero.keski-valkama@neter.fi>
-To: Borislav Petkov <bp@alien8.de>,
-        Tero Keski-Valkama <tero.keski-valkama@neter.fi>,
-        linux-kernel@vger.kernel.org, peter@piie.net
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 29 Sep 2012 09:31:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,507,1344236400"; 
+   d="scan'208";a="216158304"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@lists.linux-foundation.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Len, Brown" <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: RE: [RFC PATCH 1/6] Introduce acpi_match_device_id().
+Thread-Topic: [RFC PATCH 1/6] Introduce acpi_match_device_id().
+Thread-Index: AQHNnUwsN9thNCVdUUiny25wHDluHZefRj6AgAILrJA=
+Date: Sat, 29 Sep 2012 13:31:52 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B90926322C156@SHSMSX101.ccr.corp.intel.com>
+References: <1348817910.10877.321.camel@rui.sh.intel.com>
+ <20120928141347.GC15548@intel.com>
+In-Reply-To: <20120928141347.GC15548@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I dumped a working registry by booting with acpi=off kernel parameter.
 
-<dump>
-EC RAM:
 
-00: 02 00 00 00 02 02 00 01 00 09 00 00 00 00 00 00
-10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01
-30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-50: 00 00 00 00 00 22 00 00 00 00 00 00 00 00 00 fe
-60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-90: 53 41 4e 59 4f 00 00 00 00 41 53 31 30 44 33 31
-a0: 00 00 00 80 c1 00 00 5f ff 10 00 0e 64 17 81 ff
-b0: 00 00 00 52 53 00 00 00 00 09 00 05 00 02 11 11
-c0: 13 00 c9 0f 3f ab 65 30 30 2a 30 11 c9 0f 64 1f
-d0: 00 00 00 00 19 7b 9b 24 00 00 05 0a 00 00 e0 40
-e0: 00 00 00 28 10 20 10 1d 10 00 00 00 00 00 00 00
-f0: 43 10 00 00 03 3f 00 00 44 00 00 00 00 00 00 00
+> -----Original Message-----
+> From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
+> Sent: Friday, September 28, 2012 10:14 PM
+> To: Zhang, Rui
+> Cc: LKML; linux-pm; linux-i2c; linux-acpi@vger.kernel.org; Len, Brown;
+> Rafael J. Wysocki; Grant Likely; Dirk Brandewie
+> Subject: Re: [RFC PATCH 1/6] Introduce acpi_match_device_id().
+> Importance: High
+> 
+> On Fri, Sep 28, 2012 at 03:38:30PM +0800, Zhang Rui wrote:
+> > >From 72df5d1f51fb27a4ba7f70a3b07df759d32b8288 Mon Sep 17 00:00:00
+> > >2001
+> > From: Zhang Rui <rui.zhang@intel.com>
+> > Date: Thu, 27 Sep 2012 15:11:55 +0800
+> > Subject: [RFC PATCH 1/6] Introduce acpi_match_device_id().
+> >
+> > This API is used to check if a device id string is compatible with an
+> > ACPI device, either PNP id exported via _HID or compatible ids
+> > exported via _CID control method.
+> >
+> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> > ---
+> >  drivers/acpi/scan.c     |   22 ++++++++++++++++++++++
+> >  include/acpi/acpi_bus.h |    6 ++++++
+> >  2 files changed, 28 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c index
+> > d1ecca2..936a7c9 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -312,6 +312,28 @@ int acpi_match_device_ids(struct acpi_device
+> > *device,  }  EXPORT_SYMBOL(acpi_match_device_ids);
+> >
+> > +int acpi_match_device_id(const struct device *dev, const char *id)
+> 
+> Would be good idea to implement this in terms of of_match_device() so
+> that it returns pointer to the matched id. This way drivers can get the
+> ->driver_data pretty easily if needed.
+>
+Good idea.
+Will do that in v2.
+ 
+> > +{
+> > +	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+> 
+> If the device is not bound to an ACPI handle this will return NULL. And
+> I don't see you doing that in this series meaning that..
+> 
 
-Not dumping EC IDX RAM.
-</dump>
 
-This configuration rewritten to a registry booted with normal ACPI
-kernel support actually speeds up the fan automatically in a sane
-manner, and it actually puts the fan to max power when the temperature
-is very high, as opposed to any other hack I have tried so far.
+You're right, I should set pdev->archdata.acpi_handle to the I2C controller in i2c_root.c.
 
-I still need to find out what exact registry value here causes the
-normal automatic fan operation.
-
-At least in this acpi=off configuration, 0xAB := 0x0E, as opposed to
-the normal kernel boot up value of 0xAB := 0x08, but of course this is
-not the only difference.
-
--- 
-Kind Regards / Ystävällisin terveisin,
-
-Tero Keski-Valkama, MSc(Tech)
-
-+358 (0)46 876 0485
-
-tero.keski-valkama@neter.fi
-http://www.neter.fi
+Thanks,
+rui
