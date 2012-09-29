@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758687Ab2I2HRU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 03:17:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10844 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757182Ab2I2HRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 03:17:18 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <87wqzdnwus.fsf@rustcorp.com.au>
-References: <87wqzdnwus.fsf@rustcorp.com.au> <87ipay3cof.fsf@rustcorp.com.au> <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk> <27378.1348819793@warthog.procyon.org.uk>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, pjones@redhat.com,
-        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        keyrings@linux-nfs.org
-Subject: Re: [GIT PULL] Asymmetric keys and module signing
-Date: Sat, 29 Sep 2012 08:16:50 +0100
-Message-ID: <29451.1348903010@warthog.procyon.org.uk>
+	id S1758933Ab2I2HZi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 03:25:38 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:42986 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758599Ab2I2HZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 03:25:36 -0400
+Date: Sat, 29 Sep 2012 10:25:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Kevin Cruz <skate_ops@yahoo.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: iwlwifi can't connect to router after resuming from suspend.
+Message-ID: <20120929072527.GA13767@mwanda>
+References: <1348086305.81224.YahooMailNeo@web164004.mail.gq1.yahoo.com>
+ <20120928121917.GF5368@mwanda>
+ <1348870515.1973.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1348870515.1973.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> wrote:
-
-> I noticed the Cert number didn't change with rebuilds: "distclean"
-> didn't remove some files:
+On Fri, Sep 28, 2012 at 03:15:15PM -0700, Kevin Cruz wrote:
+> Hey Dan,
 > 
-> $ git clean -f -f -x -d
-> Removing extra_certificates
-> Removing signing_key.priv
-> Removing signing_key.x509
-> Removing signing_key.x509.keyid
-> Removing signing_key.x509.signer
-> Removing x509.genkey
+> 
+> Thanks for the response.
+> 
+> >> Linux cyber-ubuntu 3.2.0-30-generic #48-Ubuntu SMP Fri Aug 24 16:52:48 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
+> 
+> > That kernel is too old.  Can you test with a 3.5.x kernel (or even
+> > better would be a 3.6-rc kernel).  Those are the only ones we look
+> > at on lkml.
+> 
+> I did try out Sabayon 10 live disk because it said it uses the kernel 3.5.4
+> but it did not fix the problem. I will definitely try to figure a way to
+> test the 3.6-rc kernel.  Do you know any (experimental?) distros that are
+> using it?  Is there anything else that I could do that could help, like
+> rerunning any commands/script on a newer kernel?
 
-I'm not sure whether distclean should remove those, since they can be
-externally supplied, or whether x509.genkey should have a Makefile dependency
-on kernel/Makefile.
+You can compile it under ubuntu.  I looked on google to find
+directions but everyone had bad advice.  This might work:
 
-I lean towards 'yes' when I'm altering kernel/Makefile trying to get things
-right, and 'no' when I'm doing a make distclean to change my config or
-changing kernel/Makefile for some unrelated reason.
+apt-get build-dep linux-image-$(uname -r)
+download and unpack the kernel from kernel.org
+make localmodconfig
+make
+make modules_install install
+reboot
 
-David
+If it doesn't then having the dmesg from Sabayon live disk will have
+to be enough.  We can open a bug for that on bugzilla and CC the
+wireless people.
+
+regards,
+dan carpenter
+
