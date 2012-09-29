@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab2I2Ohw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 10:37:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44013 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755241Ab2I2Ohv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 10:37:51 -0400
-Date: Sat, 29 Sep 2012 16:37:37 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 0/3] Virtual huge zero page
-Message-ID: <20120929143737.GF26989@redhat.com>
-References: <1348875441-19561-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120929134811.GC26989@redhat.com>
- <20120929143006.GC4110@tassilo.jf.intel.com>
+	id S1755565Ab2I2O6g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 10:58:36 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63699 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977Ab2I2O6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 10:58:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Krzysztof Halasa <khc@pm.waw.pl>
+Subject: Re: ARM SoC tree, Was: Re: [PATCH 05/12] ARM: ixp4xx: use __iomem for MMIO
+Date: Sat, 29 Sep 2012 14:58:15 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+References: <1348868177-21205-1-git-send-email-arnd@arndb.de> <1348868177-21205-6-git-send-email-arnd@arndb.de> <m3lift6rru.fsf_-_@intrepid.localdomain>
+In-Reply-To: <m3lift6rru.fsf_-_@intrepid.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120929143006.GC4110@tassilo.jf.intel.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209291458.16112.arnd@arndb.de>
+X-Provags-ID: V02:K0:rranG9yEQkrso1xsN+kcHU281sqoCEqpkmq6IXZXZ2r
+ FNrUnFmvOCJ9S1no01x5fCjiHekJo/CtLh0DHe7N0KA86kkpO/
+ f/HmyuBhSj9ZO8rSg8QseqOFmUszzjKPLCSZacqNvAlWs95kwD
+ DQcFYCiHhjUFFNdeF5C5BiQruhH1bVYPDmjXmjT37KztA3M09l
+ 03ntRIofubou2+i0TkIlSni5jOcT0xanr84BKRfuUhdFTcPDEV
+ yrN8pRecrZLoZsV0UvvtHfDBfhTFKER62N+Tp7gl59TzST+8Ul
+ Vhbc/1UOGK9YBZ2r+61oaJqf8A4ltIsOx0t8RH9nG3YMtLUfO4
+ 2abdG3hMdjRqseMsfdJc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 29, 2012 at 07:30:06AM -0700, Andi Kleen wrote:
-> On Sat, Sep 29, 2012 at 03:48:11PM +0200, Andrea Arcangeli wrote:
-> > On Sat, Sep 29, 2012 at 02:37:18AM +0300, Kirill A. Shutemov wrote:
-> > > Cons:
-> > >  - increases TLB pressure;
-> > 
-> > I generally don't like using 4k tlb entries ever. This only has the
+On Saturday 29 September 2012, Krzysztof Halasa wrote:
+> > I realize it won't make 3.7 any more since the base patches are not
+> > in arm-soc, but it's bad if linux-next is broken.
 > 
-> From theory I would also prefer the 2MB huge page.
+> Well, I'm not aware of any requirement to push my IXP4xx changes
+> exclusively through arm-soc. I believe I can still send my tree straight
+> to Linus.
+
+No, we don't do that any more, all ARM related changes go either
+through arm-soc (for mach-* and plat-* as well as a few related bits)
+or through Russell's arm tree (for everything else).
+
+We can make exceptions for stuff that has interdependencies with other
+subsystems and can Ack patches if you want to have them included in
+another subsystem tree.
+
+> My tree is fairly isolated (with one trivial patch in need of ack from
+> Russell, but I can remove that) and, to be honest, I can't see any
+> benefit to anyone, caused by sending through intermediate trees. In
+> fact, now that I have at last a bit of spare time to work on IXP4xx
+> again (acquired some IXP435 devices), such requirement would only mean
+> extra workload to me.
 > 
-> But some numbers comparing between the two alternatives are definitely
-> interesting.  Numbers are often better than theory.
+> Could you please point me to a statement requiring eg. my changes to go
+> through arm-soc?
 
-Sure good idea, just all standard benchmarks likely aren't using zero
-pages so I suggest a basic micro benchmark:
 
-   some loop of() {
-      memcmp(uninitalized_pointer, (char *)uninitialized_pointer+4G, 4G)
-      barrier();
-   }
+We've been doing it like this for some time. Stephen Warren replied
+to your request to add your tree to linux-next in
 
-> 
-> > There would be a small cache benefit here... but even then some first
-> > level caches are virtually indexed IIRC (always physically tagged to
-> 
-> Modern x86 doesn't have virtually indexed caches.
+http://comments.gmane.org/gmane.linux.kernel/1356118
 
-With the above memcmp, I'm quite sure the previous patch will beat the
-new one by a wide margin, especially on modern x86 with more 2M TLB
-entries and >= 8MB L2 caches.
+explaining how it works. Olof sent a mail last week in 
 
-But I agree we need to verify it before taking a decision, and that
-the numbers are better than theory, or to rephrase it "let's check the
-theory is right" :)
+http://lkml.org/lkml/2012/9/21/31
+
+explaining that we're closing the window for 3.7 except for a
+few things that were already submitted earlier.
+
+You are definitely welcome to send your pull request for arm-soc
+after the merge window so we can integrate it into the 3.8 series,
+and please send any bug fixes you have for immediate integration
+at any time to arm@kernel.org. There may be a few other things 
+in the process that are new to you, but we can work that out.
+
+The arm-soc process is definitely meant to make your life easier
+as well as help Linus understand what's going on with all of ARM
+to the degree that he needs to know, but it only works if everyone
+participates.
+
+	Arnd
