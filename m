@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780Ab2I2Vif (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 17:38:35 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:34150 "EHLO inx.pm.waw.pl"
+	id S1751799Ab2I2VmE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 17:42:04 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:51892 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671Ab2I2Vie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 17:38:34 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: ARM SoC tree, Was: Re: [PATCH 05/12] ARM: ixp4xx: use __iomem for MMIO
-References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
-	<1348868177-21205-6-git-send-email-arnd@arndb.de>
-	<m3lift6rru.fsf_-_@intrepid.localdomain>
-	<201209291458.16112.arnd@arndb.de>
-	<m3y5jskbir.fsf@intrepid.localdomain>
-	<20120929174400.GA6933@n2100.arm.linux.org.uk>
-Date: Sat, 29 Sep 2012 23:38:31 +0200
-In-Reply-To: <20120929174400.GA6933@n2100.arm.linux.org.uk> (Russell King's
-	message of "Sat, 29 Sep 2012 18:44:01 +0100")
-Message-ID: <m3pq54jyqw.fsf@intrepid.localdomain>
+	id S1751761Ab2I2VmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 17:42:02 -0400
+Date: Sat, 29 Sep 2012 14:41:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: rcu: eqs related warnings in linux-next
+Message-ID: <20120929214151.GE2551@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <50659D37.2020206@gmail.com>
+ <20120928133633.GC12843@somewhere.redhat.com>
+ <20120928173133.GB2498@linux.vnet.ibm.com>
+ <50669952.1000805@gmail.com>
+ <CAFTL4hzuh+iXPpKpyHWvpx3-Dwy9aq+poJLF_u=xcVfJPiaQVw@mail.gmail.com>
+ <20120929133737.GB2551@linux.vnet.ibm.com>
+ <506726AF.8040307@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <506726AF.8040307@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12092921-9360-0000-0000-00000B2D763F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I realize my work flow is probably suboptimal, though I can't see
-an easy solution.
+On Sat, Sep 29, 2012 at 06:49:51PM +0200, Sasha Levin wrote:
+> On 09/29/2012 03:37 PM, Paul E. McKenney wrote:
+> > Sasha, is the easily reproducible?  If so, could you please try the
+> > previous patch?  It will likely give us more information on where
+> > this bug really lives.  (Yes, it might totally obscure the bug, but
+> > in that case we will just need to try some other perturbation.)
+> 
+> Unlike the last issue, this one is *very* non-reproducible. In fact, I've only hit it once so far.
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
+Wouldn't want it to be too easy, I guess...  ;-)
 
-> That makes no sense what so ever.  The tree which is used for the next
-> stable tree will be Linus' tree, which will be the result of merging all
-> those other trees into Linus' tree.  If you base your changes off only
-> Linus' tree on the run up to the next merge window, then you are preparing
-> your changes against an _older_ kernel than if you base them off a tree
-> containing the changes which will be _included_ in the next merge
-> window.
+							Thanx, Paul
 
-Yes. I have to fix my tree and ask for pull before the end of merge
-window (fixes could follow, but it's best when there are no fixes
-needed). I know it's not a great plan. Fortunately I'm not doing heavy,
-conflicting development on this.
-
-Note I'm not only doing ARM, but also X86 and MIPS, with additional code
-shared between them, and the "stable" part of it is what I'm paid for.
-I can't simply work with arm-soc, none of my platforms will even boot
-with pure arm-soc.
-
-> If you want to work in total isolation, that's your choice, but in the
-> long run you will be playing catch-up rather than being prepared early
-> for the changes which will happen at the next merge window.  If you want
-> -rc1, rc2, rc3, rc4 etc to be broken on IXP4xx until you get around to
-> fixing up the merge window breakage, then go ahead.
->
-> Otherwise, participate and be part of the community, and get your changes
-> into arm-soc, so that others can see what's going on.
-
-Unfortunately this seems to require more time on my part, time I don't
-have. Perhaps I'm missing something?
-I.e., I can dedicate some time around the merge window (not every one,
-but this may improve), but not much more.
-
-I don't think there are any "others" interested in what's going on on
-IXP4xx. Simply, there isn't anything of importance here. It won't cause
-severe conflicts (and "next" helps here), and I post my patches to the
-list just like all people do.
-
-Of course if you can see a better way (given the limitations), I'm open.
-
-BTW I still think I'm a part of the community, even if I don't submit
-code through arm-soc :-)
--- 
-Krzysztof Halasa
