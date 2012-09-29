@@ -1,72 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445Ab2I2Ns0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Sep 2012 09:48:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9924 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755385Ab2I2NsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Sep 2012 09:48:24 -0400
-Date: Sat, 29 Sep 2012 15:48:11 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 0/3] Virtual huge zero page
-Message-ID: <20120929134811.GC26989@redhat.com>
-References: <1348875441-19561-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1030295Ab2I2NuO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Sep 2012 09:50:14 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35025 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755258Ab2I2NuM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Sep 2012 09:50:12 -0400
+Date: Sat, 29 Sep 2012 15:50:07 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: rcu: eqs related warnings in linux-next
+Message-ID: <20120929134957.GA30257@somewhere>
+References: <50659D37.2020206@gmail.com>
+ <20120928133633.GC12843@somewhere.redhat.com>
+ <20120928173133.GB2498@linux.vnet.ibm.com>
+ <50669952.1000805@gmail.com>
+ <CAFTL4hzuh+iXPpKpyHWvpx3-Dwy9aq+poJLF_u=xcVfJPiaQVw@mail.gmail.com>
+ <20120929133737.GB2551@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1348875441-19561-1-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20120929133737.GB2551@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 29, 2012 at 02:37:18AM +0300, Kirill A. Shutemov wrote:
-> Cons:
->  - increases TLB pressure;
+On Sat, Sep 29, 2012 at 06:37:37AM -0700, Paul E. McKenney wrote:
+> On Sat, Sep 29, 2012 at 02:25:04PM +0200, Frederic Weisbecker wrote:
+> > 2012/9/29 Sasha Levin <levinsasha928@gmail.com>:
+> > > Maybe I could help here a bit.
+> > >
+> > > lappy linux # addr2line -i -e vmlinux ffffffff8111d45f
+> > > /usr/src/linux/kernel/timer.c:549
+> > > /usr/src/linux/include/linux/jump_label.h:101
+> > > /usr/src/linux/include/trace/events/timer.h:44
+> > > /usr/src/linux/kernel/timer.c:601
+> > > /usr/src/linux/kernel/timer.c:734
+> > > /usr/src/linux/kernel/timer.c:886
+> > >
+> > > Which means that it was about to:
+> > >
+> > >         debug_object_activate(timer, &timer_debug_descr);
+> 
+> Understood and agreed, hence my severe diagnostic patch.
+> 
+> > I can't find anything in the debug object code that might fault.
+> > I was suspecting some per cpu allocated memory: per cpu allocation
+> > sometimes use vmalloc
+> > which uses lazy paging using faults. But I can't find such thing there.
+> > 
+> > May be there is some faulting specific to KVM...
+> 
+> Sasha, is the easily reproducible?  If so, could you please try the
+> previous patch?  It will likely give us more information on where
+> this bug really lives.  (Yes, it might totally obscure the bug, but
+> in that case we will just need to try some other perturbation.)
 
-I generally don't like using 4k tlb entries ever. This only has the
-advantage of saving 2MB-4KB RAM (globally), and a chpxchg at the first
-system-wide zero page fault. I like apps to only use 2M TLB entries
-whenever possible (that is going to payoff big as the number of 2M TLB
-entries is going to increase over time).
+Isn't your patch actually removing the timer? But if so, we won't fault
+anymore, or may be you want to check if we fault also outside the timer?
 
-I did some research with tricks using 4k ptes up to half the pmd was
-filled before converting it to a THP (to save some memory and cache),
-and it didn't look good, so my rule of thumb was "THP sometime costs,
-even the switch from half pte filled to transhuge pmd still costs, so
-to diminish the risk of slowdowns we should use 2M TLB entries
-immediately, whenever possible".
+Just in case, I'm posting a second patch that dumps the regs when we
+fault in the middle of an RCU user mode API. This way we can find
+the precise rip where we fault:
 
-Now the rule of thumb doesn't fully apply here, 1) there's no
-compaction costs to offset, 2) chances are the zero page isn't very
-performance critical anyway... only some weird apps uses it (but
-sometime they have a legitimate reason for using it, this is why we
-support it).
+---
+>From db4ef9708e606754ac8a3f83b9f293383d263108 Mon Sep 17 00:00:00 2001
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Date: Sat, 29 Sep 2012 14:16:09 +0200
+Subject: [PATCH] rcu: Debug nasty rcu user mode API recursion
 
-There would be a small cache benefit here... but even then some first
-level caches are virtually indexed IIRC (always physically tagged to
-avoid the software to notice) and virtually indexed ones won't get any
-benefit.
+Add some debug code to chase down the origin of the fault.
 
-It wouldn't provide even the memory saving tradeoff by dropping the
-zero pmd at the first fault (not at the last). And it's better to
-replace it at the first fault then the last (that matches the current
-design).
+Not-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/mm/fault.c      |    1 +
+ include/linux/rcupdate.h |    1 +
+ kernel/rcutree.c         |   32 ++++++++++++++++++++++++++++++++
+ kernel/rcutree.h         |    1 +
+ 4 files changed, 35 insertions(+)
 
-Another point is that the previous patch is easier to port to other
-archs by not requiring arch features to track the zero pmd.
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index a530b23..a5f0eb5 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -1232,6 +1232,7 @@ good_area:
+ dotraplinkage void __kprobes
+ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ {
++	rcu_check_user_recursion(regs);
+ 	exception_enter(regs);
+ 	__do_page_fault(regs, error_code);
+ 	exception_exit(regs);
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 7c968e4..14ba908 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -199,6 +199,7 @@ extern void rcu_user_enter_after_irq(void);
+ extern void rcu_user_exit_after_irq(void);
+ extern void rcu_user_hooks_switch(struct task_struct *prev,
+ 				  struct task_struct *next);
++extern void rcu_check_user_recursion(struct pt_regs *regs);
+ #else
+ static inline void rcu_user_enter(void) { }
+ static inline void rcu_user_exit(void) { }
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 4fb2376..63b84f5 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -405,6 +405,20 @@ void rcu_idle_enter(void)
+ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+ 
+ #ifdef CONFIG_RCU_USER_QS
++void rcu_check_user_recursion(struct pt_regs *regs)
++{
++	unsigned long flags;
++	static int printed;
++
++	local_irq_save(flags);
++	if (__this_cpu_read(rcu_dynticks.recursion) && !printed) {
++		printed = 1;
++		printk("Found recursion\n");
++		show_regs(regs);
++	}
++	local_irq_restore(flags);
++}
++
+ /**
+  * rcu_user_enter - inform RCU that we are resuming userspace.
+  *
+@@ -433,10 +447,20 @@ void rcu_user_enter(void)
+ 
+ 	local_irq_save(flags);
+ 	rdtp = &__get_cpu_var(rcu_dynticks);
++	if (WARN_ON_ONCE(rdtp->recursion)) {
++		local_irq_restore(flags);
++		return;
++	}
++
++	rdtp->recursion = true;
++	barrier();
++
+ 	if (!rdtp->ignore_user_qs && !rdtp->in_user) {
+ 		rdtp->in_user = true;
+ 		rcu_eqs_enter(true);
+ 	}
++	rdtp->recursion = false;
++
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -590,10 +614,18 @@ void rcu_user_exit(void)
+ 
+ 	local_irq_save(flags);
+ 	rdtp = &__get_cpu_var(rcu_dynticks);
++	if (WARN_ON_ONCE(rdtp->recursion)) {
++		local_irq_restore(flags);
++		return;
++	}
++
++	rdtp->recursion = true;
++	barrier();
+ 	if (rdtp->in_user) {
+ 		rdtp->in_user = false;
+ 		rcu_eqs_exit(true);
+ 	}
++	rdtp->recursion = false;
+ 	local_irq_restore(flags);
+ }
+ 
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 5faf05d..1bde9d5 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -103,6 +103,7 @@ struct rcu_dynticks {
+ 	int tick_nohz_enabled_snap; /* Previously seen value from sysfs. */
+ #endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+ #ifdef CONFIG_RCU_USER_QS
++	bool recursion;
+ 	bool ignore_user_qs;	    /* Treat userspace as extended QS or not */
+ 	bool in_user;		    /* Is the CPU in userland from RCU POV? */
+ #endif
+-- 
+1.7.9.5
 
-I guess it won't make a whole lot of difference but my preference is
-for the previous implementation that always guaranteed huge TLB
-entries whenever possible. Said that I'm fine either ways so if
-somebody has strong reasons for wanting this one, I'd like to hear
-about it.
-
-Thanks!
-Andrea
