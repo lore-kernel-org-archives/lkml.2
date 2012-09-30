@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab2I3VVs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 17:21:48 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:41635 "EHLO mail.sf-mail.de"
+	id S1751692Ab2I3VbW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 17:31:22 -0400
+Received: from smtp209.alice.it ([82.57.200.105]:52995 "EHLO smtp209.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572Ab2I3VVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 17:21:47 -0400
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: Paul Bolle <pebolle@tiscali.nl>, linux-scsi@vger.kernel.org
-Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] qla2xxx: silence two GCC warnings
-Date: Sun, 30 Sep 2012 23:21:30 +0200
-Message-ID: <3591681.K68OpP9yPi@eto>
-User-Agent: KMail/4.8.5 (Linux/3.4.3-30-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1349003274.15306.6.camel@x61.thuisdomein>
-References: <1349003274.15306.6.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1619425.UVYHHceP1Z"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: quoted-printable
+	id S1751487Ab2I3VbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 17:31:21 -0400
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Sep 2012 17:31:20 EDT
+Date: Sun, 30 Sep 2012 23:25:59 +0200
+From: Giuliano Pochini <pochini@shiny.it>
+To: Alexey Vlasov <renton@renton.name>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Instead of IP addresses the kernel started to show zero's
+Message-ID: <20120930232559.03a0ce4c@wc1>
+In-Reply-To: <20120925102607.GC23296@beaver>
+References: <20120925102607.GC23296@beaver>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 25 Sep 2012 14:26:07 +0400
+Alexey Vlasov <renton@renton.name> wrote:
 
---nextPart1619425.UVYHHceP1Z
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="utf-8"
+> Hi.
+> 
+> Here it writes LOG target from syslog:
+> 
+> Sep 25 03:23:49 l24 kernel: ip:SYN-OUTPUT-HTTP IN= OUT=eth0
+> SRC=0000000000000000 DST=0000000000000000 LEN=60 TOS=0x00 PREC=0x00
+> TTL=64 ID=22467 DF PROTO=TCP SPT=52829 DPT=80 WINDOW=14600 RES=0x00 SYN
+> URGP=0 UID=564373 GID=155
+> 
+> This is recent, here go zero's again:
+> # cat /proc/net/xt_recent/ssh-brute
+> ...
+> src=0000000000000000 ttl: 122 last_seen: 4371027622 oldest_pkt: 1
+> 4371027622
+>
+> Can it be fixed without restarting the box?
+> Thanks!
+>
+> Kernel 3.4.6.
 
-Am Sonntag 30 September 2012, 13:07:54 schrieb Paul Bolle:
-> Compiling qla_gs.o (part of the qla2xxx module) triggers two GCC
-> warnings:
->     drivers/scsi/qla2xxx/qla_gs.c: In function =E2=80=98qla2x00_fdmi_=
-rhba=E2=80=99:
->     drivers/scsi/qla2xxx/qla_gs.c:1339:7: warning: array subscript is=
- above
-> array bounds [-Warray-bounds] drivers/scsi/qla2xxx/qla_gs.c: In funct=
-ion
-> =E2=80=98qla2x00_fdmi_register=E2=80=99: drivers/scsi/qla2xxx/qla_gs.=
-c:1663:15: warning:
-> array subscript is above array bounds [-Warray-bounds]
->=20
-> It seems that the sequence of a strcpy followed by a strlen confuses =
-GCC
-> when it is keeping track of array bounds here. (It is not clear to me=
+It look similar to a problem that occurred on some 3.x heavy loaded
+machines. After a while they begin to send packets with dst=0.0.0.0. We had
+to revert to 2.6 on our production machines.
 
-> which array triggers this warning and by how much GCC thinks the
-> subscript is above its bounds. Neither is it clear to me why comparab=
-le
-> code in these two functions doesn't trigger this warning.)
->=20
-> The easiest way to silence these warnings is to hardcode the length o=
-f
-> these two strings in the code here. The length used here is the lengt=
-h
-> of the string, including its NUL terminator, rounded up to the next
-> multiple of four.
+tcpdump output looks like this:
 
-This adds some magic values, which is asking for trouble once someone c=
-hanges=20
-the manufacturer string or something. What about something like this:
+17:06:29.272225 IP 0.0.0.0.http > 0.0.0.0.1687: . ack 232 win 15400
+17:06:29.272671 IP 0.0.0.0.http > 0.0.0.0.1687: P 0:511(511) ack 232 win 15400
+17:06:29.272689 IP 0.0.0.0.http > 0.0.0.0.1687: F 511:511(0) ack 232 win 15400
+17:06:29.273249 IP 0.0.0.0.http > 0.0.0.0.65307: . ack 62552748 win 1006 <nop,nop,timestamp 1760963 478909562>
+17:06:29.273662 IP 0.0.0.0.http > 0.0.0.0.65307: P 0:511(511) ack 1 win 1006 <nop,nop,timestamp 1760963 478909562>
+17:06:29.273678 IP 0.0.0.0.http > 0.0.0.0.65307: F 511:511(0) ack 1 win 1006 <nop,nop,timestamp 1760963 478909562>
+17:06:29.278683 IP 0.0.0.0.http > 0.0.0.0.12021: . ack 1 win 12240
+17:06:29.288707 IP 0.0.0.0.http > 0.0.0.0.28308: . ack 1049058319 win 12420
+17:06:29.289406 IP 0.0.0.0.http > 0.0.0.0.28308: . ack 57 win 12420
+17:06:29.289834 IP 0.0.0.0.http > 0.0.0.0.28308: P 0:487(487) ack 57 win 12420
+17:06:29.289851 IP 0.0.0.0.http > 0.0.0.0.28308: F 487:487(0) ack 57 win 12420
+17:06:29.291767 IP 0.0.0.0.http > 0.0.0.0.11407: P 0:472(472) ack 171 win 1275 <nop,nop,timestamp 1760982 2400635630>
+17:06:29.292657 IP 0.0.0.0.http > 0.0.0.0.50511: . ack 1 win 14400
+17:06:29.293502 IP 0.0.0.0.http > 0.0.0.0.12381: . ack 558 win 14960
+17:06:29.295080 IP 0.0.0.0.http > 0.0.0.0.10980: . ack 2 win 16692
 
-const char *qlogic =3D "QLogic Corporation";
-strcpy(eiter->a.manufacturer, qlogic);
-alen +=3D round_up(strlen(qlogic), 4);
-...
+When the network traffic slows down the machine recovers to normal operation.
 
-Eike
---nextPart1619425.UVYHHceP1Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+I found another report about this issue:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+https://bbs.archlinux.org/viewtopic.php?id=129304
 
-iEYEABECAAYFAlBot+AACgkQXKSJPmm5/E5WcQCfWjNqE5yJHPEMHHBRFq++DQ4B
-+CsAoKThjAOhtJoAYJ4M0QeMTS+kHiM7
-=z0Rh
------END PGP SIGNATURE-----
 
---nextPart1619425.UVYHHceP1Z--
-
+-- 
+Giuliano.
