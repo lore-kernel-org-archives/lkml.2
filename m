@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361Ab2I3Lc5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 07:32:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18847 "EHLO mx1.redhat.com"
+	id S1751276Ab2I3LoS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 07:44:18 -0400
+Received: from smtp.getmail.no ([84.208.15.66]:44322 "EHLO smtp.getmail.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785Ab2I3Lc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 07:32:56 -0400
-Message-ID: <50682DDE.7010002@redhat.com>
-Date: Sun, 30 Sep 2012 13:32:46 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: paulmck@linux.vnet.ibm.com, Josh Boyer <jwboyer@redhat.com>,
-        Christian Hoffmann <email@christianhoffmann.info>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, johnstul@us.ibm.com,
-        tglx@linutronix.de
-Subject: Re: INFO: rcu_preempt detected stalls on CPUs/tasks: { 1} (detected
- by 0, t=10002 jiffies)
-References: <20120925150701.GA2502@linux.vnet.ibm.com> <20120926042237.GA18287@localhost> <20120926043445.GB2524@linux.vnet.ibm.com> <20120926081501.GA28485@localhost> <20120926164543.GD2467@linux.vnet.ibm.com> <20120927025400.GA11434@localhost> <20120927042849.GA6556@linux.vnet.ibm.com> <20120927044044.GA22753@localhost> <20120928033511.GB2480@linux.vnet.ibm.com> <506828BF.9050409@redhat.com> <20120930112308.GA18839@localhost>
-In-Reply-To: <20120930112308.GA18839@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1750786Ab2I3LoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 07:44:17 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+To: linux-kernel@vger.kernel.org
+Subject: The 10ms averager in fair.c
+Date: Sun, 30 Sep 2012 13:44:14 +0200
+From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Message-id: <op.wlf5j0i76426ze@localhost.localdomain>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2012 01:23 PM, Fengguang Wu wrote:
-> On Sun, Sep 30, 2012 at 01:10:55PM +0200, Avi Kivity wrote:
->> On 09/28/2012 05:35 AM, Paul E. McKenney wrote:
->> > On Thu, Sep 27, 2012 at 12:40:44PM +0800, Fengguang Wu wrote:
->> >> On Wed, Sep 26, 2012 at 09:28:50PM -0700, Paul E. McKenney wrote:
->> >> > On Thu, Sep 27, 2012 at 10:54:00AM +0800, Fengguang Wu wrote:
->> >> > > On Wed, Sep 26, 2012 at 09:45:43AM -0700, Paul E. McKenney wrote:
->> >> > > > On Wed, Sep 26, 2012 at 04:15:01PM +0800, Fengguang Wu wrote:
->> > 
->> > [ . . . ]
->> > 
->> >> > > > But could you also please send your .config file and a description of
->> >> > > 
->> >> > > .config attached.
->> >> > > 
->> >> > > > the workload you are running?
->> >> > > 
->> >> > > It's basically the below commands. The exact initrd is not relevant in
->> >> > > this case because it's a boot time warning before user space is
->> >> > > started. The stalls roughly happen 1 time on every 10 boots.
->> >> > 
->> >> > Yow!!!
->> >> > 
->> >> > You have severe cross-CPU time-synchronization problems.  See for
->> >> > example the first dmesg, with the relevant part extracted right here.
->> >> > One CPU believes that it is about 37 seconds past boot, and the other
->> >> > CPU beleives that it is about 137 seconds past boot.  Given that large
->> >> > of a time difference, an RCU CPU stall warning is expected behavior.
->> >> 
->> >> Good spot! Yeah I noticed that huge timestamp gap, however didn't take
->> >> it seriously enough..
->> >> 
->> >> > Get your two CPUs in agreement about what time it is, and I bet that
->> >> > the CPU stall warnings will go away.
->> >> 
->> >> Possibly KVM related? Because the warnings show up in many test boxes
->> >> running KVM and so is not likely some hardware specific issue.
->> > 
->> > I vaguely recall seeing something recently.  But let's ask the KVM and
->> > timekeeping guys.
->> 
->> >From the logs it looks like hpet (why not kvmclock?) is used for the
->> clock, it should not generate such drifts since it is a global clock.
->> Can you verify current_clocksource on a boot that actually failed (in
->> case the clocksource is switched during runtime)?
-> 
-> I've checked out the dmesg that's cited by Paul, attached. Yes it
-> contains lines
-> 
-> [    4.970051] Switching to clocksource hpet
-> 
-> and then
-> 
-> [    7.250353] Switching to clocksource tsc
-> 
-> And there is no kvm-clock lines. Oh well for this particular kernel:
-> 
+Hiya. I just had an initial look at fair.c
 
-Ah, tsc will certainly break on kvm if the hardware doesn't provide a
-constant tsc source.  I'm surprised the guest kernel didn't detect it
-and switch back to hpet though.
+There seems to be a 10ms averager in there?
 
+You are aware that that means you work on delayed values?
 
--- 
-error compiling committee.c: too many arguments to function
+Isn`t that counterintuitive to the principle of sharing?
+
+That means short bursts of cpu-use will be filtered out, and given less  
+cpu time.
+Starting applications won`t have their cpu-usage before 5ms, which is  
+quite a bit on modern machines. Well if you use a linearphase filter, I  
+don`t know what kind of averager you use. The best would ofcourse be to  
+use a minimalphase gaussian averager. Which might be overkill. Atleast a  
+one-pole iir, buf = buf + (-buf + in) * cut)); One pole IIRs also have a  
+better frequency response.
+
+When you are working with low-latencies, wouldn`t it be better if such  
+things are tuned for target latency. I think few care about latency after  
+0.2ms. So say the filter should be set to 0.4ms max.
+
+Why would you want to filter cpu-usage also really?
+
+Peace Be With You.
+
+(please CC me.)
