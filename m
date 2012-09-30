@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888Ab2I3XDu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 19:03:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52550 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab2I3XDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 19:03:49 -0400
-Date: Mon, 1 Oct 2012 01:03:45 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Giuliano Pochini <pochini@shiny.it>
-Cc: Alexey Vlasov <renton@renton.name>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Instead of IP addresses the kernel started to show zero's
-Message-ID: <20120930230345.GA9142@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Giuliano Pochini <pochini@shiny.it>,
-	Alexey Vlasov <renton@renton.name>, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org
-References: <20120925102607.GC23296@beaver>
- <20120930232559.03a0ce4c@wc1>
+	id S1751413Ab2I3XLD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 19:11:03 -0400
+Received: from nm6-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.206]:44593 "HELO
+	nm6-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751132Ab2I3XLA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 19:11:00 -0400
+X-Yahoo-Newman-Id: 523818.81801.bm@omp1024.access.mail.sp2.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: GH.Q5z4VM1ngTiM1gui6LWatKMZlfCRdVsHScCzAkK.tu0V
+ sIRhLBrPVm2.AuvvYzilJr3XVhzaKIM.Z_BXvA.mHjMwgqtrz.rFy9WihiZ0
+ prLDiIEdtl0ewUXSEqLm2f1NVnr8mu8IsTj3OQcCltNONicFnBNWfHxOaFNc
+ 7l3RIViphTgzDCO_MubU_Ii5v5J6XdO4KPvF_MIHHaNIXHx.f2UxUhK41Cyp
+ XiQC3RAqV5L61dsHkgOURHPyq2Rmsq3JRZi6bHZGP4GL2sE3RL7LNd4if4wU
+ YtNZ92n8RmZD.zaHWi1NiwnPKW7C.fzn9Py.nqajQJ.S0fxa_KpTWKOfsebS
+ 6gbJHUMVXBldeP2xy4k7y61itJDPRM9LCMO0npuub1EM3jErYZBYagkh7Cbs
+ ThY09r4T.bWNnb2w80c64U9irs3PbUGi_MDdx3wq4z2mGSnfhGw--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <5068D185.9000802@att.net>
+Date: Sun, 30 Sep 2012 18:11:01 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120930232559.03a0ce4c@wc1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Andi Kleen <ak@linux.intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH 3/10] compiler-gcc.h: Add gcc-recommended GCC_VERSION
+ macro
+References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com> <1348874411-28288-4-git-send-email-daniel.santos@pobox.com>
+In-Reply-To: <1348874411-28288-4-git-send-email-daniel.santos@pobox.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ netdev
+So in light of feedback I've been getting on this patch set, it leaves
+me with
+this question.
+> +#define GCC_VERSION (__GNUC__ * 10000 \
+> +		   + __GNUC_MINOR__ * 100 \
+> +		   + __GNUC_PATCHLEVEL__)
+This macro presumes you are using gcc 3.0 or later, which introduced the
+__GNUC_PATCHLEVEL__ predefined macro.  Should you be using a version of gcc
+prior to 3.0 (where the macro is undefined), you would get an error that
+__GNUC_PATCHLEVEL__ is undefined prior to getting the error trying to
+include
+"linux/compiler-gcc2.h".  So it presumes the compiler is 3.0+, when another
+part of the code may allow it from a future change.  Should it be
+modified to
+do account for this or would that be overkill?
 
-On Sun, Sep 30, 2012 at 11:25:59PM +0200, Giuliano Pochini wrote:
-> On Tue, 25 Sep 2012 14:26:07 +0400
-> Alexey Vlasov <renton@renton.name> wrote:
-> 
-> > Hi.
-> > 
-> > Here it writes LOG target from syslog:
-> > 
-> > Sep 25 03:23:49 l24 kernel: ip:SYN-OUTPUT-HTTP IN= OUT=eth0
-> > SRC=0000000000000000 DST=0000000000000000 LEN=60 TOS=0x00 PREC=0x00
-> > TTL=64 ID=22467 DF PROTO=TCP SPT=52829 DPT=80 WINDOW=14600 RES=0x00 SYN
-> > URGP=0 UID=564373 GID=155
-> > 
-> > This is recent, here go zero's again:
-> > # cat /proc/net/xt_recent/ssh-brute
-> > ...
-> > src=0000000000000000 ttl: 122 last_seen: 4371027622 oldest_pkt: 1
-> > 4371027622
-> >
-> > Can it be fixed without restarting the box?
-> > Thanks!
-> >
-> > Kernel 3.4.6.
-> 
-> It look similar to a problem that occurred on some 3.x heavy loaded
-> machines. After a while they begin to send packets with dst=0.0.0.0. We had
-> to revert to 2.6 on our production machines.
-> 
-> tcpdump output looks like this:
-> 
-> 17:06:29.272225 IP 0.0.0.0.http > 0.0.0.0.1687: . ack 232 win 15400
-> 17:06:29.272671 IP 0.0.0.0.http > 0.0.0.0.1687: P 0:511(511) ack 232 win 15400
-> 17:06:29.272689 IP 0.0.0.0.http > 0.0.0.0.1687: F 511:511(0) ack 232 win 15400
-> 17:06:29.273249 IP 0.0.0.0.http > 0.0.0.0.65307: . ack 62552748 win 1006 <nop,nop,timestamp 1760963 478909562>
-> 17:06:29.273662 IP 0.0.0.0.http > 0.0.0.0.65307: P 0:511(511) ack 1 win 1006 <nop,nop,timestamp 1760963 478909562>
-> 17:06:29.273678 IP 0.0.0.0.http > 0.0.0.0.65307: F 511:511(0) ack 1 win 1006 <nop,nop,timestamp 1760963 478909562>
-> 17:06:29.278683 IP 0.0.0.0.http > 0.0.0.0.12021: . ack 1 win 12240
-> 17:06:29.288707 IP 0.0.0.0.http > 0.0.0.0.28308: . ack 1049058319 win 12420
-> 17:06:29.289406 IP 0.0.0.0.http > 0.0.0.0.28308: . ack 57 win 12420
-> 17:06:29.289834 IP 0.0.0.0.http > 0.0.0.0.28308: P 0:487(487) ack 57 win 12420
-> 17:06:29.289851 IP 0.0.0.0.http > 0.0.0.0.28308: F 487:487(0) ack 57 win 12420
-> 17:06:29.291767 IP 0.0.0.0.http > 0.0.0.0.11407: P 0:472(472) ack 171 win 1275 <nop,nop,timestamp 1760982 2400635630>
-> 17:06:29.292657 IP 0.0.0.0.http > 0.0.0.0.50511: . ack 1 win 14400
-> 17:06:29.293502 IP 0.0.0.0.http > 0.0.0.0.12381: . ack 558 win 14960
-> 17:06:29.295080 IP 0.0.0.0.http > 0.0.0.0.10980: . ack 2 win 16692
-> 
-> When the network traffic slows down the machine recovers to normal operation.
-> 
-> I found another report about this issue:
-> 
-> https://bbs.archlinux.org/viewtopic.php?id=129304
 
-Any chance you guys can try the latest Linus kernel - it is 3.6-rc7 +
-100ish patches and it should be close to final release, so pretty stable
-already - to check whether the issue still persists?
+#ifdef __GNUC_PATCHLEVEL__
+# define GCC_VERSION (__GNUC__ * 10000 \
+                    + __GNUC_MINOR__ * 100 \
+                    + __GNUC_PATCHLEVEL__)
+#else
+# define GCC_VERSION (__GNUC__ * 10000 \
+                    + __GNUC_MINOR__ * 100)
+#endif
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+Daniel
