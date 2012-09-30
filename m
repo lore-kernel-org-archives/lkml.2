@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751177Ab2I3K2m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 06:28:42 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:33089 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab2I3K2l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 06:28:41 -0400
-Message-ID: <1349000906.28456.1.camel@phoenix>
-Subject: [PATCH] backlight: tps65217_bl: Add missing platform_set_drvdata in
- tps65217_bl_probe
-From: Axel Lin <axel.lin@ingics.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Matthias Kaehlcke <matthias@kaehlcke.net>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 30 Sep 2012 18:28:26 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1751168Ab2I3KfG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 06:35:06 -0400
+Received: from antcom.de ([188.40.178.216]:41975 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785Ab2I3KfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 06:35:05 -0400
+Message-ID: <5068204F.6090606@antcom.de>
+Date: Sun, 30 Sep 2012 12:34:55 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
+MIME-Version: 1.0
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
+References: <1348780923-27428-1-git-send-email-stigge@antcom.de> <20120928024744.GV17667@game.jcrosoft.org> <50654E57.3080201@antcom.de> <20120928075145.GW17667@game.jcrosoft.org> <50656522.1050900@antcom.de> <20120928090848.GX17667@game.jcrosoft.org> <20120928102822.GY17667@game.jcrosoft.org> <50658AD0.1050501@antcom.de> <20120928160105.GA17667@game.jcrosoft.org> <5065ED4F.5070700@antcom.de> <20120929195754.GC17667@game.jcrosoft.org>
+In-Reply-To: <20120929195754.GC17667@game.jcrosoft.org>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise, we got NULL derefernce while calling backlight_device_unregister()
-in tps65217_bl_remove().
+On 29/09/12 21:57, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> Problem here is that it's only an intermediate format since hardware
+>> often needs special preparation of the data.
+>>
+>> But will evaluate what makes most sense.
+> the key point here is to avoid to manipualte data each time we call
+> gpio_block_set
+> 
+> hardware specific will have to be handle at driver level
 
-Also convert to use module_platform_driver.
+Understand, thanks! I'm just trying to prevent overly complex API because:
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/video/backlight/tps65217_bl.c |   14 ++------------
- 1 file changed, 2 insertions(+), 12 deletions(-)
+* In our discussed scheme, the driver still needs to convert the data bits
+* In practice, the block gpio API is especially useful for use on single
+gpio_chips (only there, a real simultaneous i/o is possible anyway)
+* Wouldn't introduce this kind of optimization in lack of measurable
+improvement
+* The actual i/o data bits still need handling, generating a bit CPU
+load anyway.
 
-diff --git a/drivers/video/backlight/tps65217_bl.c b/drivers/video/backlight/tps65217_bl.c
-index 6ac2ef5..7088163 100644
---- a/drivers/video/backlight/tps65217_bl.c
-+++ b/drivers/video/backlight/tps65217_bl.c
-@@ -312,6 +312,7 @@ static int tps65217_bl_probe(struct platform_device *pdev)
- 	}
- 
- 	tps65217_bl->bl->props.brightness = 0;
-+	platform_set_drvdata(pdev, tps65217_bl);
- 
- 	return 0;
- }
-@@ -334,18 +335,7 @@ static struct platform_driver tps65217_bl_driver = {
- 	},
- };
- 
--static int __init tps65217_bl_init(void)
--{
--	return platform_driver_register(&tps65217_bl_driver);
--}
--
--static void __exit tps65217_bl_exit(void)
--{
--	platform_driver_unregister(&tps65217_bl_driver);
--}
--
--module_init(tps65217_bl_init);
--module_exit(tps65217_bl_exit);
-+module_platform_driver(tps65217_bl_driver);
- 
- MODULE_DESCRIPTION("TPS65217 Backlight driver");
- MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+Trying to provide as simple API as possible.
 
-
-
+Roland
