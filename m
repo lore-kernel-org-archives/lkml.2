@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751160Ab2I3Kuv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 06:50:51 -0400
-Received: from antcom.de ([188.40.178.216]:48661 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab2I3Kuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 06:50:50 -0400
-Message-ID: <50682402.8020402@antcom.de>
-Date: Sun, 30 Sep 2012 12:50:42 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
-MIME-Version: 1.0
-To: Stijn Devriendt <highguy@gmail.com>
-CC: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        bgat@billgatliff.com
-Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
-References: <1348780923-27428-1-git-send-email-stigge@antcom.de> <CAOY=C6GG6jqqEAAGJjmDG-BFT2eq=9+ck+F_EOcthRgDCDv8=Q@mail.gmail.com>
-In-Reply-To: <CAOY=C6GG6jqqEAAGJjmDG-BFT2eq=9+ck+F_EOcthRgDCDv8=Q@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751205Ab2I3LID (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 07:08:03 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:4525 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750786Ab2I3LIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 07:08:00 -0400
+Message-ID: <1349003274.15306.6.camel@x61.thuisdomein>
+Subject: [PATCH] qla2xxx: silence two GCC warnings
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 30 Sep 2012 13:07:54 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 30 Sep 2012 11:07:54.0661 (UTC) FILETIME=[D71D3D50:01CD9EFB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/09/12 11:35, Stijn Devriendt wrote:
-> In our kernel tree we have similar code. If you like I can request
-> permission
-> to share. I can, however, already give you an update on the basic
-> structure, perhaps
-> it's useful now.
-> 
-> For the first part, the drivers need to implement a the gpio interface
-> for groups.
-> gpio_set_multi, gpio_get_multi, gpio_direction_input_multi,
-> gpio_direction_output_multi. Each of them gets a 'u32 mask'.
-> 
-> Secondly, gpiolib gets some new code to handle groups:
-> groups are requested via a list of gpio ids. Mind that order is respected:
-> request( [1, 5, 2, 4] ) followed by a set(0x5) will translate to
-> gpio_set_multi( 0x18 ). An opaque gpio_group struct is used to keep track.
-> This means the gpiolib interface also has a u32 mask, but translation is
-> done for the gpio-drivers.
-> 
-> There is some code to request groups via device-tree (again respecting
-> order)
-> and there are also platform driver structures.
-> 
-> gpiolib was also extended to export groups into sysfs, respecting policy
-> (input, output, user-selectable) and to make softlinks to groups in other
-> driver's subdir. (One driver we use this in is a power-sequencer with 2
-> gpios selecting a margining profile, this driver then has the gpio_group
-> exported in it's sysfs dir as .../profile, allowing H/W engineers to select
-> the profile without voltage glitches)
-> 
-> There's also a separate driver, that does nothing more than exporting
-> both individual pins and groups to userspace based on platform description
-> or devicetree. This is probably less interesting for mainline, since we're
-> abusing device-tree to do away with some init script that can do the same.
-> 
-> The rationale behind a 32bit mask is that typical processors can at most
-> set one processor-word worth of GPIOs at once and there are probably
-> few chips with over 32GPIOs on a single gpio_chip anyway.
-> Nevertheless, in the era of 64bit, it's definitely possible to go for
-> u64 instead.
+Compiling qla_gs.o (part of the qla2xxx module) triggers two GCC
+warnings:
+    drivers/scsi/qla2xxx/qla_gs.c: In function ‘qla2x00_fdmi_rhba’:
+    drivers/scsi/qla2xxx/qla_gs.c:1339:7: warning: array subscript is above array bounds [-Warray-bounds]
+    drivers/scsi/qla2xxx/qla_gs.c: In function ‘qla2x00_fdmi_register’:
+    drivers/scsi/qla2xxx/qla_gs.c:1663:15: warning: array subscript is above array bounds [-Warray-bounds]
 
-Hi Stijn,
+It seems that the sequence of a strcpy followed by a strlen confuses GCC
+when it is keeping track of array bounds here. (It is not clear to me
+which array triggers this warning and by how much GCC thinks the
+subscript is above its bounds. Neither is it clear to me why comparable
+code in these two functions doesn't trigger this warning.)
 
-thank you for your notes!
+The easiest way to silence these warnings is to hardcode the length of
+these two strings in the code here. The length used here is the length
+of the string, including its NUL terminator, rounded up to the next
+multiple of four.
 
-Besides what I discussed with JC and Linus, I find the unsigned int
-(i.e. u32 or u64, depending on the arch) quite appealing. It is a nice
-compromise between my general bit mapped data model (variable size *u8
-array) and the bool *values list. Even maps easily onto a single sysfs
-entry for values, by abstracting a gpio list to an actual data word.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) I noticed this warning while building v3.6-rc7 on current Fedora
+17, using Fedora's default config.
 
-What do others think? JC? Linus? I'm considering this (unsigned int
-data) a valid option.
+1) Compile tested only. 
 
-One question: How did you solve the one-value-per-file in the sysfs
-interface?
+ drivers/scsi/qla2xxx/qla_gs.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-Thanks in advance!
+diff --git a/drivers/scsi/qla2xxx/qla_gs.c b/drivers/scsi/qla2xxx/qla_gs.c
+index 05260d2..a3ef5d0 100644
+--- a/drivers/scsi/qla2xxx/qla_gs.c
++++ b/drivers/scsi/qla2xxx/qla_gs.c
+@@ -1326,10 +1326,8 @@ qla2x00_fdmi_rhba(scsi_qla_host_t *vha)
+ 	eiter = (struct ct_fdmi_hba_attr *) (entries + size);
+ 	eiter->type = __constant_cpu_to_be16(FDMI_HBA_MANUFACTURER);
+ 	strcpy(eiter->a.manufacturer, "QLogic Corporation");
+-	alen = strlen(eiter->a.manufacturer);
+-	alen += (alen & 3) ? (4 - (alen & 3)) : 4;
+-	eiter->len = cpu_to_be16(4 + alen);
+-	size += 4 + alen;
++	eiter->len = cpu_to_be16(4 + 20);
++	size += 4 + 20;
+ 
+ 	ql_dbg(ql_dbg_disc, vha, 0x2026,
+ 	    "Manufacturer = %s.\n", eiter->a.manufacturer);
+@@ -1647,10 +1645,8 @@ qla2x00_fdmi_rpa(scsi_qla_host_t *vha)
+ 	eiter = (struct ct_fdmi_port_attr *) (entries + size);
+ 	eiter->type = __constant_cpu_to_be16(FDMI_PORT_OS_DEVICE_NAME);
+ 	strcpy(eiter->a.os_dev_name, QLA2XXX_DRIVER_NAME);
+-	alen = strlen(eiter->a.os_dev_name);
+-	alen += (alen & 3) ? (4 - (alen & 3)) : 4;
+-	eiter->len = cpu_to_be16(4 + alen);
+-	size += 4 + alen;
++	eiter->len = cpu_to_be16(4 + 8);
++	size += 4 + 8;
+ 
+ 	ql_dbg(ql_dbg_disc, vha, 0x204b,
+ 	    "OS_Device_Name=%s.\n", eiter->a.os_dev_name);
+-- 
+1.7.11.4
 
-Roland
