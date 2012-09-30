@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411Ab2I3SUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 14:20:16 -0400
-Received: from mga14.intel.com ([143.182.124.37]:7047 "EHLO mga14.intel.com"
+	id S1751450Ab2I3SwT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 14:52:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60645 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790Ab2I3SUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 14:20:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,514,1344236400"; 
-   d="scan'208";a="150865140"
-Date: Sun, 30 Sep 2012 20:20:07 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Feng Tang <feng.tang@intel.com>,
-        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Daniel Mack <zonque@gmail.com>
-Subject: Re: hot CPU with 3.6.0-rc7+ and intel graphic
-Message-ID: <20120930182007.GA12231@sortiz-mobl>
-References: <5066AD45.70107@gmx.de>
- <5066AE4B.9090000@gmx.de>
- <20120930213743.69e13db1@feng-i7>
- <CAJL_dMuizMcDNZCR0Paj2JKt2h05qWA3qDrDKbio7UmCke+wxw@mail.gmail.com>
+	id S1750790Ab2I3SwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 14:52:18 -0400
+Message-ID: <506894D5.5060101@zytor.com>
+Date: Sun, 30 Sep 2012 11:52:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJL_dMuizMcDNZCR0Paj2JKt2h05qWA3qDrDKbio7UmCke+wxw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pierre Beck <mail@pierre-beck.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: 3.6-rc7 32-bit PAE miscalculates dirty page limits
+References: <5068130A.4050602@pierre-beck.de>
+In-Reply-To: <5068130A.4050602@pierre-beck.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/30/2012 02:38 AM, Pierre Beck wrote:
+> Hi,
+>
+> there seems to be a bug in either ext4 or VM code triggered with 16 GB
+> memory when compiled with 32-bit and PAE. dirty_background_ratio
+> defaults to 10, dirty_ratio to 20. But in effect, dirty pages are
+> strongly limited (zero or negative?). I observed extreme I/O wait states
+> and slow disk access. A quick cure was to set dirty_bytes and
+> dirty_background_bytes to sane values, overriding the ratios. An
+> educated guess: the result of dirty_ratio calculation is stored as an
+> unsigned 32-bit integer and overflows?
+>
 
-On Sun, Sep 30, 2012 at 05:06:43PM +0300, Anca Emanuel wrote:
-> On Sun, Sep 30, 2012 at 4:37 PM, Feng Tang <feng.tang@intel.com> wrote:
-> > Where can we get a powertop-2.1? I searched google and found
-> > git clone git://git.kernel.org/pub/scm/status/powertop/powertop.git
-> > is null now.
-> 
-> https://01.org/powertop/
-> https://01.org/powertop/sites/default/files/downloads/powertop-2.1.tar.gz
-> 
-> I'm not sure about this source.
-> Samuel, can you confirm this is an official Intel site ?
-Yes, 01.org is an official Intel website.
+Seriously, why are you running a 32-bit kernel on memory sizes this 
+large?  Yes, in theory it should work up to 64 GB but claims are that 
+the kernel doesn't even boot if you try...
 
-Cheers,
-Samuel.
-
+	-hpa
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
