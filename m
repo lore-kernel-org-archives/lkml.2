@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab2I3SwT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 14:52:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60645 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790Ab2I3SwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 14:52:18 -0400
-Message-ID: <506894D5.5060101@zytor.com>
-Date: Sun, 30 Sep 2012 11:52:05 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1751411Ab2I3S7J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 14:59:09 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50572 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab2I3S7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 14:59:07 -0400
 MIME-Version: 1.0
-To: Pierre Beck <mail@pierre-beck.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 3.6-rc7 32-bit PAE miscalculates dirty page limits
-References: <5068130A.4050602@pierre-beck.de>
-In-Reply-To: <5068130A.4050602@pierre-beck.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120930144930.GA27329@kroah.com>
+References: <1348950199-30460-1-git-send-email-geert@linux-m68k.org>
+	<20120930144930.GA27329@kroah.com>
+Date: Sun, 30 Sep 2012 20:59:05 +0200
+X-Google-Sender-Auth: Xj9S5MjD0TeAPMLo95n37IGYbZ0
+Message-ID: <CAMuHMdW19BQti_EWdgynWwOZCuhTQO-tJbN9Q8gBnUcA=auEKg@mail.gmail.com>
+Subject: Re: [PATCH] sysfs: sysfs_pathname/sysfs_add_one: Use strlcat()
+ instead of strcat()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alex Williamson <alex.williamson@hp.com>, Alex Chiang <achiang@hp.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2012 02:38 AM, Pierre Beck wrote:
-> Hi,
+Hi Greg,
+
+On Sun, Sep 30, 2012 at 4:49 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Sat, Sep 29, 2012 at 10:23:19PM +0200, Geert Uytterhoeven wrote:
+>> The warning check for duplicate sysfs entries can cause a buffer overflow
+>> when printing the warning, as strcat() doesn't check buffer sizes.
+>> Use strlcat() instead.
 >
-> there seems to be a bug in either ext4 or VM code triggered with 16 GB
-> memory when compiled with 32-bit and PAE. dirty_background_ratio
-> defaults to 10, dirty_ratio to 20. But in effect, dirty pages are
-> strongly limited (zero or negative?). I observed extreme I/O wait states
-> and slow disk access. A quick cure was to set dirty_bytes and
-> dirty_background_bytes to sane values, overriding the ratios. An
-> educated guess: the result of dirty_ratio calculation is stored as an
-> unsigned 32-bit integer and overflows?
+> As the comment said, we knew about this, but I have never seen it, do
+> you know of a way to trigger it?
+
+I expected there would be a check somewhere else in the code, so we can
+never overflow here. But I did manage to overflow the buffer by having a real
+long name (4060 characters) in a conflicting mfd_cell.
+There may be other ways.
+
+I don't know how likely it is to trigger in a real world scenario. Is
+there a limit
+on the depth of sysfs? Or can it go unbounded, e.g. by cascading USB hubs?
+
+>> Cc: stable@vger.kernel.org
 >
+> Given that I don't know of any way to actually hit this problem, is it
+> really needed for older kernel releases?
 
-Seriously, why are you running a 32-bit kernel on memory sizes this 
-large?  Yes, in theory it should work up to 64 GB but claims are that 
-the kernel doesn't even boot if you try...
+That's up to you to decide...
 
-	-hpa
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
