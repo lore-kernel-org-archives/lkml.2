@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab2I3IYN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 04:24:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56715 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab2I3IYI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 04:24:08 -0400
-Date: Sun, 30 Sep 2012 17:23:58 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120930082358.GG10383@mtj.dyndns.org>
-References: <50635B9D.8020205@parallels.com>
- <20120926195648.GA20342@google.com>
- <50635F46.7000700@parallels.com>
- <20120926201629.GB20342@google.com>
- <50637298.2090904@parallels.com>
- <20120927120806.GA29104@dhcp22.suse.cz>
- <20120927143300.GA4251@mtj.dyndns.org>
- <20120927144307.GH3429@suse.de>
- <20120927145802.GC4251@mtj.dyndns.org>
- <50649B4C.8000208@parallels.com>
+	id S1752947Ab2I3IZM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 04:25:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57988 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752703Ab2I3IZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 04:25:05 -0400
+Message-ID: <506801D3.6040305@redhat.com>
+Date: Sun, 30 Sep 2012 10:24:51 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50649B4C.8000208@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: habanero@linux.vnet.ibm.com
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue>  <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com>  <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com>  <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com>  <5061B437.8070300@linux.vnet.ibm.com> <5064101A.5070902@redhat.com>  <50643745.6010202@linux.vnet.ibm.com> <506440AF.9080202@redhat.com>  <506537C7.9070909@linux.vnet.ibm.com> <1348832438.5551.5.camel@oc6622382223.ibm.com>
+In-Reply-To: <1348832438.5551.5.camel@oc6622382223.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Glauber.
-
-On Thu, Sep 27, 2012 at 10:30:36PM +0400, Glauber Costa wrote:
-> > But that happens only when pages enter and leave slab and if it still
-> > is significant, we can try to further optimize charging.  Given that
-> > this is only for cases where memcg is already in use and we provide a
-> > switch to disable it globally, I really don't think this warrants
-> > implementing fully hierarchy configuration.
+On 09/28/2012 01:40 PM, Andrew Theurer wrote:
+>> 
+>> >>
+>> >> IIRC, with defer preemption :
+>> >> we will have hook in spinlock/unlock path to measure depth of lock held,
+>> >> and shared with host scheduler (may be via MSRs now).
+>> >> Host scheduler 'prefers' not to preempt lock holding vcpu. (or rather
+>> >> give say one chance.
+>> >
+>> > A downside is that we have to do that even when undercommitted.
 > 
-> Not totally true. We still have to match every allocation to the right
-> cache, and that is actually our heaviest hit, responsible for the 2, 3 %
-> we're seeing when this is enabled. It is the kind of path so hot that
-> people frown upon branches being added, so I don't think we'll ever get
-> this close to being free.
+> Hopefully vcpu preemption is very rare when undercommitted, so it should
+> not happen much at all.
 
-Sure, depening on workload, any addition to alloc/free could be
-noticeable.  I don't know.  I'll write more about it when replying to
-Michal's message.  BTW, __memcg_kmem_get_cache() does seem a bit
-heavy.  I wonder whether indexing from cache side would make it
-cheaper?  e.g. something like the following.
+As soon as you're preempted, you're effectively overcommitted (even if
+the system as a whole is undercommitted).  What I meant was that you
+need to communicate your lock state to the host, and with fine-grained
+locking this can happen a lot.  It may be as simple as an
+increment/decrement instruction though.
 
-	kmem_cache *__memcg_kmem_get_cache(cachep, gfp)
-	{
-		struct kmem_cache *c;
 
-		c = cachep->memcg_params->caches[percpu_read(kmemcg_slab_idx)];
-		if (likely(c))
-			return c;
-		/* try to create and then fall back to cachep */
-	}
-
-where kmemcg_slab_idx is updated from sched notifier (or maybe add and
-use current->kmemcg_slab_idx?).  You would still need __GFP_* and
-in_interrupt() tests but current->mm and PF_KTHREAD tests can be
-rolled into index selection.
-
-Thanks.
 
 -- 
-tejun
+error compiling committee.c: too many arguments to function
