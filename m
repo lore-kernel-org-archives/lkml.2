@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367Ab2I3OGp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 10:06:45 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:40188 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab2I3OGo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 10:06:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120930213743.69e13db1@feng-i7>
-References: <5066AD45.70107@gmx.de>
-	<5066AE4B.9090000@gmx.de>
-	<20120930213743.69e13db1@feng-i7>
-Date: Sun, 30 Sep 2012 17:06:43 +0300
-Message-ID: <CAJL_dMuizMcDNZCR0Paj2JKt2h05qWA3qDrDKbio7UmCke+wxw@mail.gmail.com>
-Subject: Re: hot CPU with 3.6.0-rc7+ and intel graphic
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Daniel Mack <zonque@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751298Ab2I3OYM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 10:24:12 -0400
+Received: from smtp.getmail.no ([84.208.15.66]:59443 "EHLO smtp.getmail.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750792Ab2I3OYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 10:24:10 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+Subject: re: Linux 3.6-rc7
+To: linux-kernel@vger.kernel.org
+Date: Sun, 30 Sep 2012 16:24:08 +0200
+From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Message-id: <op.wlgcyich6426ze@localhost.localdomain>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 30, 2012 at 4:37 PM, Feng Tang <feng.tang@intel.com> wrote:
-> Where can we get a powertop-2.1? I searched google and found
-> git clone git://git.kernel.org/pub/scm/status/powertop/powertop.git
-> is null now.
+Compiled 3.6-rc7, with a hz timer of 3956 for a "natural" psychovisual
+profile jitter level in OpenGL, and a shaved config for minimal jitter.
 
-https://01.org/powertop/
-https://01.org/powertop/sites/default/files/downloads/powertop-2.1.tar.gz
+Also changed the 10ms filter in fair.c to 1. And I suggest the whole
+filter to be removed. https://lkml.org/lkml/2012/9/30/78
 
-I'm not sure about this source.
-Samuel, can you confirm this is an official Intel site ?
+There is very few clicks with ALSA + onboard soundcard at 0.3ms lantecy
+now, without RT-threads.
+
+Meaning os-jitter is near optimal for audio/video. I think few care once
+it is below 0.2ms.
+
+Ofcourse one always wants lower, but at that point, things feel like
+hardware, and becomes unnoticable to the user.
+
+Peace Be With You.
