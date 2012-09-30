@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751235Ab2I3KgO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 06:36:14 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:37856 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab2I3Kfa (ORCPT
+	id S1751197Ab2I3Khn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 06:37:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54267 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab2I3Khl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 06:35:30 -0400
-Date: Sun, 30 Sep 2012 12:35:19 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: mvebu: Add missing breaks in
- mvebu_gpio_irq_set_type
-Message-ID: <20120930123519.5bddb2cd@skate>
-In-Reply-To: <1348993407.20815.1.camel@phoenix>
-References: <1348993407.20815.1.camel@phoenix>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 30 Sep 2012 06:37:41 -0400
+Date: Sun, 30 Sep 2012 19:37:32 +0900
+From: Tejun Heo <tj@kernel.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Glauber Costa <glommer@parallels.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+Message-ID: <20120930103732.GK10383@mtj.dyndns.org>
+References: <50638793.7060806@parallels.com>
+ <20120926230807.GC10453@mtj.dyndns.org>
+ <20120927142822.GG3429@suse.de>
+ <20120927144942.GB4251@mtj.dyndns.org>
+ <50646977.40300@parallels.com>
+ <20120927174605.GA2713@localhost>
+ <50649EAD.2050306@parallels.com>
+ <20120930075700.GE10383@mtj.dyndns.org>
+ <20120930080249.GF10383@mtj.dyndns.org>
+ <1348995388.2458.8.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348995388.2458.8.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Axel Lin,
+Hello, James.
 
-On Sun, 30 Sep 2012 16:23:27 +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/gpio/gpio-mvebu.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
-> index 902af43..7a874129 100644
-> --- a/drivers/gpio/gpio-mvebu.c
-> +++ b/drivers/gpio/gpio-mvebu.c
-> @@ -381,11 +381,13 @@ static int mvebu_gpio_irq_set_type(struct irq_data *d, unsigned int type)
->  		u = readl_relaxed(mvebu_gpioreg_in_pol(mvchip));
->  		u &= ~(1 << pin);
->  		writel_relaxed(u, mvebu_gpioreg_in_pol(mvchip));
-> +		break;
->  	case IRQ_TYPE_EDGE_FALLING:
->  	case IRQ_TYPE_LEVEL_LOW:
->  		u = readl_relaxed(mvebu_gpioreg_in_pol(mvchip));
->  		u |= 1 << pin;
->  		writel_relaxed(u, mvebu_gpioreg_in_pol(mvchip));
-> +		break;
->  	case IRQ_TYPE_EDGE_BOTH: {
->  		u32 v;
->  
-> @@ -401,6 +403,7 @@ static int mvebu_gpio_irq_set_type(struct irq_data *d, unsigned int type)
->  		else
->  			u &= ~(1 << pin);	/* rising */
->  		writel_relaxed(u, mvebu_gpioreg_in_pol(mvchip));
-> +		break;
->  	}
->  	}
->  	return 0;
+On Sun, Sep 30, 2012 at 09:56:28AM +0100, James Bottomley wrote:
+> The beancounter approach originally used by OpenVZ does exactly this.
+> There are two specific problems, though, firstly you can't count
+> references in generic code, so now you have to extend the cgroup
+> tentacles into every object, an invasiveness which people didn't really
+> like.
 
-Doh, I missed this when converting the if() series to a switch()
-construct. It was just pure luck that it worked. Good catch indeed.
+Yeah, it will need some hooks.  For dentry and inode, I think it would
+be pretty well isolated tho.  Wasn't it?
 
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Secondly split accounting causes oddities too, like your total
+> kernel memory usage can appear to go down even though you do nothing
+> just because someone else added a share.  Worse, if someone drops the
+> reference, your usage can go up, even though you did nothing, and push
+> you over your limit, at which point action gets taken against the
+> container.  This leads to nasty system unpredictability (The whole point
+> of cgroup isolation is supposed to be preventing resource usage in one
+> cgroup from affecting that in another).
+
+In a sense, the fluctuating amount is the actual resource burden the
+cgroup is putting on the system, so maybe it just needs to be handled
+better or maybe we should charge fixed amount per refcnt?  I don't
+know.
+
+> We discussed this pretty heavily at the Containers Mini Summit in Santa
+> Rosa.  The emergent consensus was that no-one really likes first use
+> accounting, but it does solve all the problems and it has the fewest
+> unexpected side effects.
+
+But that's like fitting the problem to the mechanism.  Maybe that is
+the best which can be done, but the side effect there is way-off
+accounting under pretty common workload, which sounds pretty nasty to
+me.
+
+Thanks.
 
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+tejun
