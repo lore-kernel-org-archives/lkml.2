@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550Ab2I3UFX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 16:05:23 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:48783 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab2I3UFV convert rfc822-to-8bit (ORCPT
+	id S1751572Ab2I3U4x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 16:56:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51884 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab2I3U4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 16:05:21 -0400
-Date: Sun, 30 Sep 2012 22:04:19 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: HID: picoLCD: optimize for inactive debugfs
-Message-ID: <20120930220419.01408e0e@neptune.home>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 30 Sep 2012 16:56:51 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: mcgrof@qca.qualcomm.com
+Cc: jouni@qca.qualcomm.com, vthiagar@qca.qualcomm.com,
+        senthilb@qca.qualcomm.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH V2] ath/ath9k/ar9003_eeprom.c: Remove semicolon after if
+Date: Sun, 30 Sep 2012 22:56:39 +0200
+Message-Id: <1349038599-22026-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1349032870-4780-1-git-send-email-peter.senna@gmail.com>
+References: <1349032870-4780-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthieu CASTET adjusted picolcd_debug_out_report() to only operate when
-there is an active listener on debugfs for events.
+The semantic patch that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-His change got lost while splitting hid_picolcd.c, restore it.
+// <smpl>
+@r1@
+position p;
+@@
+if (...);@p
 
-Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+@script:python@
+p0 << r1.p;
+@@
+// Emacs org-mode output
+cocci.print_main("", p0)
+cocci.print_secs("", p0)
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
+NOTE: This patch changes the semantics.
 
+Changes from V1:
+Commit message
+Added a note about semantics change
 
-diff --git a/drivers/hid/hid-picolcd_debugfs.c b/drivers/hid/hid-picolcd_debugfs.c
-index 6ef03be..4809aa1 100644
---- a/drivers/hid/hid-picolcd_debugfs.c
-+++ b/drivers/hid/hid-picolcd_debugfs.c
-@@ -402,7 +402,7 @@ void picolcd_debug_out_report(struct picolcd_data *data,
- #define BUFF_SZ 256
- 
- 	/* Avoid unnecessary overhead if debugfs is disabled */
--	if (!hdev->debug_events)
-+	if (list_empty(&hdev->debug_list))
- 		return;
- 
- 	buff = kmalloc(BUFF_SZ, GFP_ATOMIC);
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+index 5bbe505..189aeb2 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -2989,7 +2989,7 @@ static u32 ath9k_hw_ar9300_get_eeprom(struct ath_hw *ah,
+ 	case EEP_PAPRD:
+ 		if (AR_SREV_9462(ah))
+ 			return false;
+-		if (!ah->config.enable_paprd);
++		if (!ah->config.enable_paprd)
+ 			return false;
+ 		return !!(pBase->featureEnable & BIT(5));
+ 	case EEP_CHAIN_MASK_REDUCE:
+-- 
+1.7.11.4
+
