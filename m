@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811Ab2I3TlZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 15:41:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50467 "EHLO mx1.redhat.com"
+	id S1751767Ab2I3TlX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 15:41:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18541 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544Ab2I3Tkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 15:40:53 -0400
-Date: Sun, 30 Sep 2012 21:42:24 +0200
+	id S1751540Ab2I3Tkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 15:40:52 -0400
+Date: Sun, 30 Sep 2012 21:42:27 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,8 +14,8 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] uprobes: Fix uprobe_copy_insn() race with itself
-Message-ID: <20120930194224.GA11347@redhat.com>
+Subject: [PATCH 7/7] uprobes: Fix the racy uprobe->flags manipulation
+Message-ID: <20120930194227.GA11350@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,66 +25,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-install_breakpoint() is called under mm->mmap_sem, this protects
-set_swbp() but not uprobe_copy_insn(). Two or more different tasks
-can call install_breakpoint()->uprobe_copy_insn() at the same time,
-this leads to numerous problems if UPROBE_COPY_INSN is not set.
+Multiple threads can manipulate uprobe->flags, this is obviously
+unsafe. For example mmap can set UPROBE_COPY_INSN while register
+tries to set UPROBE_RUN_HANDLER, the latter can also race with
+can_skip_sstep() which clears UPROBE_SKIP_SSTEP.
 
-Just for example, the second copy_insn() can corrupt the already
-analyzed/fixuped uprobe->arch.insn and race with handle_swbp().
-
-This patch simply adds uprobe->copy_mutex to serialize this code.
-We could probably reuse ->consumer_rwsem, but this would mean that
-consumer->handler() can not use mm->mmap_sem, not good.
-
-Note: this is another temporary ugly hack until we move this logic
-into uprobe_register().
+Change this code to use bitops.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ kernel/events/uprobes.c |   28 ++++++++++++++--------------
+ 1 files changed, 14 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 5c0c1b0..8410388 100644
+index 8410388..3d8c815 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -89,6 +89,7 @@ struct uprobe {
+@@ -79,11 +79,11 @@ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
+ static atomic_t uprobe_events = ATOMIC_INIT(0);
+ 
+ /* Have a copy of original instruction */
+-#define UPROBE_COPY_INSN	0x1
++#define UPROBE_COPY_INSN	0
+ /* Dont run handlers when first register/ last unregister in progress*/
+-#define UPROBE_RUN_HANDLER	0x2
++#define UPROBE_RUN_HANDLER	1
+ /* Can skip singlestep */
+-#define UPROBE_SKIP_SSTEP	0x4
++#define UPROBE_SKIP_SSTEP	2
+ 
+ struct uprobe {
  	struct rb_node		rb_node;	/* node in the rb tree */
- 	atomic_t		ref;
- 	struct rw_semaphore	consumer_rwsem;
-+	struct mutex		copy_mutex;	/* TODO: kill me and UPROBE_COPY_INSN */
- 	struct list_head	pending_list;
+@@ -94,7 +94,7 @@ struct uprobe {
  	struct uprobe_consumer	*consumers;
  	struct inode		*inode;		/* Also hold a ref to inode */
-@@ -444,6 +445,7 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
- 	uprobe->inode = igrab(inode);
- 	uprobe->offset = offset;
- 	init_rwsem(&uprobe->consumer_rwsem);
-+	mutex_init(&uprobe->copy_mutex);
+ 	loff_t			offset;
+-	int			flags;
++	unsigned long		flags;
+ 	struct arch_uprobe	arch;
+ };
  
- 	/* add to uprobes_tree, sorted on inode:offset */
- 	cur_uprobe = insert_uprobe(uprobe);
-@@ -578,6 +580,10 @@ static int uprobe_copy_insn(struct uprobe *uprobe, struct file *file,
- 	if (uprobe->flags & UPROBE_COPY_INSN)
+@@ -423,7 +423,7 @@ static struct uprobe *insert_uprobe(struct uprobe *uprobe)
+ 	spin_unlock(&uprobes_treelock);
+ 
+ 	/* For now assume that the instruction need not be single-stepped */
+-	uprobe->flags |= UPROBE_SKIP_SSTEP;
++	__set_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
+ 
+ 	return u;
+ }
+@@ -466,7 +466,7 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+ {
+ 	struct uprobe_consumer *uc;
+ 
+-	if (!(uprobe->flags & UPROBE_RUN_HANDLER))
++	if (!test_bit(UPROBE_RUN_HANDLER, &uprobe->flags))
+ 		return;
+ 
+ 	down_read(&uprobe->consumer_rwsem);
+@@ -577,11 +577,11 @@ static int uprobe_copy_insn(struct uprobe *uprobe, struct file *file,
+ {
+ 	int ret = 0;
+ 
+-	if (uprobe->flags & UPROBE_COPY_INSN)
++	if (test_bit(UPROBE_COPY_INSN, &uprobe->flags))
  		return ret;
  
-+	mutex_lock(&uprobe->copy_mutex);
-+	if (uprobe->flags & UPROBE_COPY_INSN)
-+		goto out;
-+
- 	ret = copy_insn(uprobe, file);
- 	if (ret)
+ 	mutex_lock(&uprobe->copy_mutex);
+-	if (uprobe->flags & UPROBE_COPY_INSN)
++	if (test_bit(UPROBE_COPY_INSN, &uprobe->flags))
  		goto out;
-@@ -598,6 +604,8 @@ static int uprobe_copy_insn(struct uprobe *uprobe, struct file *file,
- 	uprobe->flags |= UPROBE_COPY_INSN;
+ 
+ 	ret = copy_insn(uprobe, file);
+@@ -601,7 +601,7 @@ static int uprobe_copy_insn(struct uprobe *uprobe, struct file *file,
+ 			UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
+ 
+ 	smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
+-	uprobe->flags |= UPROBE_COPY_INSN;
++	set_bit(UPROBE_COPY_INSN, &uprobe->flags);
  	ret = 0;
   out:
-+	mutex_unlock(&uprobe->copy_mutex);
-+
- 	return ret;
- }
+ 	mutex_unlock(&uprobe->copy_mutex);
+@@ -852,7 +852,7 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+ 			uprobe->consumers = NULL;
+ 			__uprobe_unregister(uprobe);
+ 		} else {
+-			uprobe->flags |= UPROBE_RUN_HANDLER;
++			set_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
+ 		}
+ 	}
  
+@@ -885,7 +885,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+ 	if (consumer_del(uprobe, uc)) {
+ 		if (!uprobe->consumers) {
+ 			__uprobe_unregister(uprobe);
+-			uprobe->flags &= ~UPROBE_RUN_HANDLER;
++			clear_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
+ 		}
+ 	}
+ 
+@@ -1346,10 +1346,10 @@ bool uprobe_deny_signal(void)
+  */
+ static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
+ {
+-	if (uprobe->flags & UPROBE_SKIP_SSTEP) {
++	if (test_bit(UPROBE_SKIP_SSTEP, &uprobe->flags)) {
+ 		if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
+ 			return true;
+-		uprobe->flags &= ~UPROBE_SKIP_SSTEP;
++		clear_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
+ 	}
+ 	return false;
+ }
+@@ -1428,7 +1428,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+ 	 * new and not-yet-analyzed uprobe at the same address, restart.
+ 	 */
+ 	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
+-	if (uprobe && unlikely(!(uprobe->flags & UPROBE_COPY_INSN))) {
++	if (uprobe && unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags))) {
+ 		uprobe = NULL;
+ 		*is_swbp = 0;
+ 	}
 -- 
 1.5.5.1
 
