@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572Ab2I3TlN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 15:41:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21492 "EHLO mx1.redhat.com"
+	id S1751628Ab2I3TnH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 15:43:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54855 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790Ab2I3Tkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 15:40:31 -0400
-Date: Sun, 30 Sep 2012 21:42:01 +0200
+	id S1751526Ab2I3TnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 15:43:04 -0400
+Date: Sun, 30 Sep 2012 21:44:38 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,8 +14,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] uprobes: Don't return success if alloc_uprobe() fails
-Message-ID: <20120930194201.GA11319@redhat.com>
+Subject: Re: [PATCH 0/7] uprobes: register/unregister bugfixes
+Message-ID: <20120930194438.GA11222@redhat.com>
+References: <20120930194119.GA11278@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,28 +26,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If alloc_uprobe() fails uprobe_register() should return ENOMEM, not 0.
+Forgot to mention,
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+This is on top of "[PATCH 0/3] uprobes: mprotect fixes" series,
+which is still waiting for review...
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index a741ba7..3ec114c 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -813,7 +813,9 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
- 	mutex_lock(uprobes_hash(inode));
- 	uprobe = alloc_uprobe(inode, offset);
- 
--	if (uprobe && !consumer_add(uprobe, uc)) {
-+	if (!uprobe) {
-+		ret = -ENOMEM;
-+	} else if (!consumer_add(uprobe, uc)) {
- 		ret = __uprobe_register(uprobe);
- 		if (ret) {
- 			uprobe->consumers = NULL;
--- 
-1.5.5.1
+On 09/30, Oleg Nesterov wrote:
+>
+> Hello.
+>
+> Misc bugfixes, mostly register/unregister related.
+>
+> Note: 4/7 and especially 6/7 are the really ugly (but hopefully
+> temporary) hacks. We already discussed this, we should inspect
+> the original insn in uprobe_register(). But this is not easy, and
+> we need something simple to fix (some of) the bugs right now.
+>
+> Even 7/7 is ugly. Imho UPROBE_SKIP_SSTEP should die as well but
+> this is another story.
+>
+> Oleg.
+>
+>  arch/x86/kernel/uprobes.c |   16 +------
+>  include/linux/uprobes.h   |   10 ----
+>  kernel/events/uprobes.c   |  107 +++++++++++++++++++++++++++++++-------------
+>  3 files changed, 77 insertions(+), 56 deletions(-)
 
