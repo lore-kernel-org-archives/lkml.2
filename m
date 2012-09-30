@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab2I3NWi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 09:22:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56905 "EHLO mail.skyhub.de"
+	id S1751400Ab2I3NoL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 09:44:11 -0400
+Received: from mga14.intel.com ([143.182.124.37]:37729 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751148Ab2I3NWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 09:22:35 -0400
-Date: Sun, 30 Sep 2012 15:22:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 6/10] bug.h: Replace __linktime_error with
- __compiletime_error
-Message-ID: <20120930132233.GB15400@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Josh Triplett <josh@joshtriplett.org>,
-	Daniel Santos <daniel.santos@pobox.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Andi Kleen <ak@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Christopher Li <sparse@chrisli.org>,
-	David Daney <david.daney@cavium.com>,
-	David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-	Paul Gortmaker <paul.gortmaker@windriver.com>,
-	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
- <1348874411-28288-7-git-send-email-daniel.santos@pobox.com>
- <20120929002353.GC13907@jtriplet-mobl1>
- <1348880675.22822.102.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1348880675.22822.102.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751052Ab2I3NoJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 09:44:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,513,1344236400"; 
+   d="scan'208";a="198922710"
+Date: Sun, 30 Sep 2012 21:37:43 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Toralf =?UTF-8?B?RsO2cnN0ZXI=?= <toralf.foerster@gmx.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Daniel Mack <zonque@gmail.com>
+Subject: Re: hot CPU with 3.6.0-rc7+ and intel graphic
+Message-ID: <20120930213743.69e13db1@feng-i7>
+In-Reply-To: <5066AE4B.9090000@gmx.de>
+References: <5066AD45.70107@gmx.de>
+	<5066AE4B.9090000@gmx.de>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 09:04:35PM -0400, Steven Rostedt wrote:
-> On Fri, 2012-09-28 at 17:23 -0700, Josh Triplett wrote:
-> > On Fri, Sep 28, 2012 at 06:20:07PM -0500, Daniel Santos wrote:
-> > > Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-> > > ---
-> > >  include/linux/bug.h |    2 +-
-> > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/include/linux/bug.h b/include/linux/bug.h
-> > > index aaac4bb..298a916 100644
-> > > --- a/include/linux/bug.h
-> > > +++ b/include/linux/bug.h
-> > > @@ -73,7 +73,7 @@ extern int __build_bug_on_failed;
-> > >  #define BUILD_BUG()						\
-> > >  	do {							\
-> > >  		extern void __build_bug_failed(void)		\
-> > > -			__linktime_error("BUILD_BUG failed");	\
-> > > +			__compiletime_error("BUILD_BUG failed");\
-> > >  		__build_bug_failed();				\
-> > >  	} while (0)
-> > 
-> > This change should either occur as part of patch 5 or before patch 5,
-> > not after.
+Hi Toralf,
+
+On Sat, 29 Sep 2012 10:16:11 +0200
+Toralf Förster <toralf.foerster@gmx.de> wrote:
+
 > 
-> I noticed the same thing and was about to comment on it.
+> Hello,
 > 
-> Please do not break bisectablity. All your patches should compile and
-> run at every step.
+> I'm observed hot CPUs at my ThinkPad T420 (i5-2540M CPU) w/ integrated
+> intel graphic with current git
+> Powertop-2.1 shows that the GPU is always at 100%.
 
-And while we're at it, every patch upstream should have a commit message
-explaining why this is done. No matter how trivial it is, because after
-a sufficient amount of time passes, everyone tends to forget why this
-has been done.
+Where can we get a powertop-2.1? I searched google and found 
+git clone git://git.kernel.org/pub/scm/status/powertop/powertop.git
+is null now.
 
-Thanks.
+> 
+> .config is attached
 
--- 
-Regards/Gruss,
-    Boris.
+Really weird, my commit only change the lpc_ich.c which affects the TCO_WDT
+driver. but from your .config file, neither CONFIG_LPC_ICH nor the
+ CONFIG_ITCO_WDT is enabled, which means the commit should not affect
+your kernel, could you double check the .config file?
+
+Thanks,
+Feng
+> 
+> 
+> I bisected this to
+> 
+> 
+> commit a0e35322910555e20e9eced3f050a76c7b3a1f92
+> Author: Feng Tang <feng.tang@intel.com>
+> Date:   Thu Aug 16 15:50:10 2012 +0800
+> 
+>     mfd: lpc_ich: Fix a 3.5 kernel regression for iTCO_wdt driver
+> 
+> 
+> 
+> 
+> 
