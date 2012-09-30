@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298Ab2I3OYM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 10:24:12 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:59443 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750792Ab2I3OYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 10:24:10 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-Subject: re: Linux 3.6-rc7
-To: linux-kernel@vger.kernel.org
-Date: Sun, 30 Sep 2012 16:24:08 +0200
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wlgcyich6426ze@localhost.localdomain>
-User-Agent: Opera Mail/11.10 (Linux)
+	id S1751281Ab2I3OcT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 10:32:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42556 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab2I3OcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 10:32:07 -0400
+Date: Sun, 30 Sep 2012 07:32:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Re: 3.4.10 i915 [GM45] regression
+Message-ID: <20120930143201.GA22107@kroah.com>
+References: <2372445.fuIXicT4H0@tux200s>
+ <CAKMK7uFm7YVMeUKUj4wmCeV4myYYODrp2XFDn5O8PHmjg3_U4g@mail.gmail.com>
+ <20120928160656.GE2625@kroah.com>
+ <12610424.iJ3m5UY2ZS@tux200s>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <12610424.iJ3m5UY2ZS@tux200s>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compiled 3.6-rc7, with a hz timer of 3956 for a "natural" psychovisual
-profile jitter level in OpenGL, and a shaved config for minimal jitter.
+On Sun, Sep 30, 2012 at 01:15:38PM +0200, Andreas Sturmlechner wrote:
+> > Ok, now reverted, thanks.
+> > 
+> > greg k-h
+> 
+> The same patch also breaks 3.0 for me. A 3.0.42 image with the patch
+> reverted was fine, I checked with several restarts.
+> 
+> Sort of confirms there is something in >=3.5 that makes this thing work.
 
-Also changed the 10ms filter in fair.c to 1. And I suggest the whole
-filter to be removed. https://lkml.org/lkml/2012/9/30/78
+Ok, Daniel, should I also revert this on 3.0.y?
 
-There is very few clicks with ALSA + onboard soundcard at 0.3ms lantecy
-now, without RT-threads.
+thanks,
 
-Meaning os-jitter is near optimal for audio/video. I think few care once
-it is below 0.2ms.
-
-Ofcourse one always wants lower, but at that point, things feel like
-hardware, and becomes unnoticable to the user.
-
-Peace Be With You.
+greg k-h
