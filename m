@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334Ab2I3Pqj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 11:46:39 -0400
-Received: from antcom.de ([188.40.178.216]:60375 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab2I3Pqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 11:46:38 -0400
-Message-ID: <50686955.8040503@antcom.de>
-Date: Sun, 30 Sep 2012 17:46:29 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
+	id S1751290Ab2I3QQF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 12:16:05 -0400
+Received: from fed1rmfepo201.cox.net ([68.230.241.146]:42573 "EHLO
+	fed1rmfepo201.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab2I3QQD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 12:16:03 -0400
+X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Sep 2012 12:16:03 EDT
+X-CT-Class: Bulk
+X-CT-Score: 5.00
+X-CT-RefID: str=0001.0A020208.50686122.0024,ss=3,sh,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=2.0 cv=d8F3OGfE c=1 sm=1
+ a=Xnmg95nyKyqIyU2aQl/OOQ==:17 a=G8Uczd0VNMoA:10 a=rXZKsSmlCtAA:10
+ a=puFshcl44ZMA:10 a=IkcTkHD0fZMA:10 a=kviXuzpPAAAA:8 a=Zo5euW2OAAAA:8
+ a=o4PhpUUTiEnO83psTogA:9 a=QEXdDO2ut3YA:10 a=CzrMnq8LMnkOYsON:21
+ a=82OG3SWfQrJ44mmZ:21 a=Xnmg95nyKyqIyU2aQl/OOQ==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20120930120812.PHBS6.1191185.imail@fed1rmwml302>
+Date: Sun, 30 Sep 2012 9:08:12 -0700
+From: BBC <r55grt4rffg@cox.net>
+Reply-To: bbc778@hotmail.co.uk
+Subject: BBC WINNER
 MIME-Version: 1.0
-To: Stijn Devriendt <highguy@gmail.com>
-CC: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        bgat@billgatliff.com
-Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
-References: <1348780923-27428-1-git-send-email-stigge@antcom.de> <CAOY=C6GG6jqqEAAGJjmDG-BFT2eq=9+ck+F_EOcthRgDCDv8=Q@mail.gmail.com> <50682402.8020402@antcom.de> <CAOY=C6FaLckRHSfAHvw2=J9xZEVFDZPL+1oKnKeGnpOGPFVB1w@mail.gmail.com> <506860C6.5020408@antcom.de> <CAOY=C6F1rHoGM0T9FqLYuVwzaidDZBzEf_uWn9mP8fmT1oURTQ@mail.gmail.com>
-In-Reply-To: <CAOY=C6F1rHoGM0T9FqLYuVwzaidDZBzEf_uWn9mP8fmT1oURTQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/09/12 17:19, Stijn Devriendt wrote:
->> If I understand correctly, it's a violation (single-value should hold
->> for read and write).
->>
->> To solve it, I have the following in mind: /sys/.../gpiogroupXXX/
->> contains files "bit0" ... "bit31" which contain a gpio number each,
->> empty if "unconnected".
-> 
-> Unfortunately that means you can't atomically create a group.
+Your email was Selected to ticket number 661768432463,
 
-I don't see a big advantage of having atomic create/request. Most
-important is set/get, isn't it? I assume the following usage pattern:
+serial numbers FTS/8070337201/06, lucky numbers 15-72-24-48-50-37 (40)
 
-* Create(request) - non atomic (maybe atomic but why not add GPIOs later?)
-* Set - atomic
-* Get - atomic
-* ...
+One Million Gbp is being awarded to you from our promotions board BBC AWARD
 
-> It also creates a mess to keep ordering intact and to either
-> keep the current pin state or override it at allocation-time.
+send below the requested info
 
-Ordering should stay intact, and later add/delete operations could be
-possible. I meant bit0 ... bit31 in the gpio block as such:
+1) Full Names, (2) Full Address, (3) Gender, 4) Occupation,
 
-bit0  - "80"
-bit1  - ""  (i.e. unconnected)
-bit2  - "85"
-bit3  - "2"
-...
-bit31 - ""
-
-This scheme can support multiple gpio_chips, as discussed with Linus and
-JC, which of course can't always guarantee real simultaneous I/O but
-provide virtual I/O word access (32bit/64bit).
-
-> Rules are rules, but why make the interface overly complex when
-> the multi-value file is saner, cleaner and simpler?
-
-Simply because they won't (and probably shouldn't) accept it mainline.
-
-Roland
+(5) Country, (6) telephone (7) Age, (8) Marital Status
