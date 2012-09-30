@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751254Ab2I3LLi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 07:11:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26137 "EHLO mx1.redhat.com"
+	id S1751267Ab2I3LNY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 07:13:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9516 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab2I3LLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 07:11:37 -0400
-Message-ID: <506828BF.9050409@redhat.com>
-Date: Sun, 30 Sep 2012 13:10:55 +0200
+	id S1750786Ab2I3LNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 07:13:22 -0400
+Message-ID: <50682945.3060309@redhat.com>
+Date: Sun, 30 Sep 2012 13:13:09 +0200
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Fengguang Wu <fengguang.wu@intel.com>, Josh Boyer <jwboyer@redhat.com>,
-        Christian Hoffmann <email@christianhoffmann.info>,
+To: Gleb Natapov <gleb@redhat.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, johnstul@us.ibm.com,
-        tglx@linutronix.de
-Subject: Re: INFO: rcu_preempt detected stalls on CPUs/tasks: { 1} (detected
- by 0, t=10002 jiffies)
-References: <20120925111938.GA4545@localhost> <20120925150701.GA2502@linux.vnet.ibm.com> <20120926042237.GA18287@localhost> <20120926043445.GB2524@linux.vnet.ibm.com> <20120926081501.GA28485@localhost> <20120926164543.GD2467@linux.vnet.ibm.com> <20120927025400.GA11434@localhost> <20120927042849.GA6556@linux.vnet.ibm.com> <20120927044044.GA22753@localhost> <20120928033511.GB2480@linux.vnet.ibm.com>
-In-Reply-To: <20120928033511.GB2480@linux.vnet.ibm.com>
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <5060851E.1030404@redhat.com> <506166B4.4010207@linux.vnet.ibm.com> <5061713D.5060406@redhat.com> <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com> <50641356.5070008@redhat.com> <CAJocwcc19F+PtsQ5okGMvYeVnkEigpZRpwWY9JgeRPFqfcVoXA@mail.gmail.com> <506540C7.9070105@linux.vnet.ibm.com> <50680049.5020206@redhat.com> <20120930110755.GB1009@redhat.com>
+In-Reply-To: <20120930110755.GB1009@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 05:35 AM, Paul E. McKenney wrote:
-> On Thu, Sep 27, 2012 at 12:40:44PM +0800, Fengguang Wu wrote:
->> On Wed, Sep 26, 2012 at 09:28:50PM -0700, Paul E. McKenney wrote:
->> > On Thu, Sep 27, 2012 at 10:54:00AM +0800, Fengguang Wu wrote:
->> > > On Wed, Sep 26, 2012 at 09:45:43AM -0700, Paul E. McKenney wrote:
->> > > > On Wed, Sep 26, 2012 at 04:15:01PM +0800, Fengguang Wu wrote:
-> 
-> [ . . . ]
-> 
->> > > > But could you also please send your .config file and a description of
->> > > 
->> > > .config attached.
->> > > 
->> > > > the workload you are running?
->> > > 
->> > > It's basically the below commands. The exact initrd is not relevant in
->> > > this case because it's a boot time warning before user space is
->> > > started. The stalls roughly happen 1 time on every 10 boots.
+On 09/30/2012 01:07 PM, Gleb Natapov wrote:
+> On Sun, Sep 30, 2012 at 10:18:17AM +0200, Avi Kivity wrote:
+>> On 09/28/2012 08:16 AM, Raghavendra K T wrote:
 >> > 
->> > Yow!!!
+>> >>
+>> >>     +struct pv_sched_info {
+>> >>     +       unsigned long   sched_bitmap;
 >> > 
->> > You have severe cross-CPU time-synchronization problems.  See for
->> > example the first dmesg, with the relevant part extracted right here.
->> > One CPU believes that it is about 37 seconds past boot, and the other
->> > CPU beleives that it is about 137 seconds past boot.  Given that large
->> > of a time difference, an RCU CPU stall warning is expected behavior.
+>> > Thinking, whether we need something similar to cpumask here?
+>> > Only thing is we are representing guest (v)cpumask.
+>> > 
 >> 
->> Good spot! Yeah I noticed that huge timestamp gap, however didn't take
->> it seriously enough..
+>> DECLARE_BITMAP(sched_bitmap, KVM_MAX_VCPUS)
 >> 
->> > Get your two CPUs in agreement about what time it is, and I bet that
->> > the CPU stall warnings will go away.
->> 
->> Possibly KVM related? Because the warnings show up in many test boxes
->> running KVM and so is not likely some hardware specific issue.
-> 
-> I vaguely recall seeing something recently.  But let's ask the KVM and
-> timekeeping guys.
+> vcpu_id can be greater than KVM_MAX_VCPUS.
 
->From the logs it looks like hpet (why not kvmclock?) is used for the
-clock, it should not generate such drifts since it is a global clock.
-Can you verify current_clocksource on a boot that actually failed (in
-case the clocksource is switched during runtime)?
+Use the index into the vcpu table as the bitmap index then.  In fact
+it's better because then the lookup to get the vcpu pointer is trivial.
 
 
 -- 
