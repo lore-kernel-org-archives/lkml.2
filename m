@@ -1,130 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab2I3H5s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 03:57:48 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20385 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab2I3H5o (ORCPT
+	id S1752740Ab2I3H5v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 03:57:51 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33016 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab2I3H5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 03:57:44 -0400
+	Sun, 30 Sep 2012 03:57:48 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 03/13] x86, mm: Move init_memory_mapping calling out of setup.c
-Date: Sun, 30 Sep 2012 00:57:14 -0700
-Message-Id: <1348991844-12285-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 12/13] x86/mm: calculate_table_space_size based on memory ranges that are being mapped
+Date: Sun, 30 Sep 2012 00:57:23 -0700
+Message-Id: <1348991844-12285-13-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
 References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now init_memory_mapping is called two times, later will call more time for
-more ram ranges.
+From: Jacob Shin <jacob.shin@amd.com>
 
-Could put all related init_mem calling together.
+Current logic finds enough space for direct mapping page tables from 0
+to end. Instead, we only need to find enough space to cover mr[0].start
+to mr[nr_range].end -- the range that is actually being mapped by
+init_memory_mapping()
 
+This patch also reportedly fixes suspend/resume issue reported in:
+
+https://lkml.org/lkml/2012/8/11/83
+
+-v2: update with calculate_table_space_size()
+     clear max_pfn_mapped before init_all_memory_mapping to get right value
+					  -Yinghai Lu
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/include/asm/init.h    |    1 -
- arch/x86/include/asm/pgtable.h |    2 +-
- arch/x86/kernel/setup.c        |   13 +------------
- arch/x86/mm/init.c             |   19 ++++++++++++++++++-
- 4 files changed, 20 insertions(+), 15 deletions(-)
+ arch/x86/mm/init.c |   51 ++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 30 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
-index adcc0ae..4f13998 100644
---- a/arch/x86/include/asm/init.h
-+++ b/arch/x86/include/asm/init.h
-@@ -12,7 +12,6 @@ kernel_physical_mapping_init(unsigned long start,
- 			     unsigned long end,
- 			     unsigned long page_size_mask);
- 
--
- extern unsigned long __initdata pgt_buf_start;
- extern unsigned long __meminitdata pgt_buf_end;
- extern unsigned long __meminitdata pgt_buf_top;
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index c6f5779..52d40a1 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -598,7 +598,7 @@ static inline int pgd_none(pgd_t pgd)
- #ifndef __ASSEMBLY__
- 
- extern int direct_gbpages;
--void probe_page_size_mask(void);
-+void init_mem_mapping(void);
- 
- /* local pte updates need not use xchg for locking */
- static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 20581d7..249384a 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -912,20 +912,9 @@ void __init setup_arch(char **cmdline_p)
- 	setup_real_mode();
- 
- 	init_gbpages();
--	probe_page_size_mask();
- 
--	/* max_pfn_mapped is updated here */
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
-+	init_mem_mapping();
- 
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
- 	memblock.current_limit = get_max_mapped();
- 	dma_contiguous_reserve(0);
- 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 818b881..9f69180 100644
+index 3237c9b..c12dfd5 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -92,7 +92,7 @@ static void __init find_early_table_space(struct map_range *mr,
- 		(pgt_buf_top << PAGE_SHIFT) - 1);
+@@ -191,39 +191,48 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	return nr_range;
  }
  
--void probe_page_size_mask(void)
-+static void __init probe_page_size_mask(void)
+-static unsigned long __init calculate_table_space_size(unsigned long begin,
++static unsigned long __init calculate_table_space_size(unsigned long start,
+ 					  unsigned long end)
  {
- #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
- 	/*
-@@ -312,6 +312,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	return ret >> PAGE_SHIFT;
- }
+-	unsigned long puds, pmds, ptes, tables;
++	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
++	struct map_range mr[NR_RANGE_MR];
++	int nr_range, i;
  
-+void __init init_mem_mapping(void)
-+{
-+	probe_page_size_mask();
-+
-+	/* max_pfn_mapped is updated here */
-+	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-+	max_pfn_mapped = max_low_pfn_mapped;
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		max_pfn_mapped = init_memory_mapping(1UL<<32,
-+						     max_pfn<<PAGE_SHIFT);
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
+-	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
+-	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	pr_info("calculate_table_space_size: [mem %#010lx-%#010lx]\n",
++	       start, end - 1);
+ 
+-	if (page_size_mask & (1 << PG_LEVEL_1G)) {
+-		unsigned long extra;
++	memset(mr, 0, sizeof(mr));
++	nr_range = 0;
++	nr_range = split_mem_range(mr, nr_range, start, end);
+ 
+-		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
+-		pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
+-	} else
+-		pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
++	for (i = 0; i < nr_range; i++) {
++		unsigned long range, extra;
+ 
+-	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
++		range = mr[i].end - mr[i].start;
++		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+ 
+-	if (page_size_mask & (1 << PG_LEVEL_2M)) {
+-		unsigned long extra;
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
++			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
++			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
++		} else
++			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
+ 
+-		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
++			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
+ #ifdef CONFIG_X86_32
+-		extra += PMD_SIZE;
++			extra += PMD_SIZE;
+ #endif
+-		/* The first 2/4M doesn't use large pages. */
+-		if (begin < PMD_SIZE)
+-			extra += (PMD_SIZE - begin) >> PAGE_SHIFT;
++			/* The first 2/4M doesn't use large pages. */
++			if (mr[i].start < PMD_SIZE)
++				extra += PMD_SIZE - mr[i].start;
+ 
+-		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	} else
+-		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
++			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		} else
++			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
 +	}
-+#endif
-+}
  
- /*
-  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
++	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+ 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_32
 -- 
 1.7.7
 
