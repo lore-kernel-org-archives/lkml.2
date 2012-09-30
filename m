@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2I3ID1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 04:03:27 -0400
-Received: from cust-218-222.on4.ontelecoms.gr ([92.118.218.222]:57789 "EHLO
-	vergina.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab2I3IDV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 04:03:21 -0400
-Message-ID: <5067FCC5.5090206@asyr.hopto.org>
-Date: Sun, 30 Sep 2012 11:03:17 +0300
-From: Thanasis <thanasis@asyr.hopto.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
+	id S1752716Ab2I3IRB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 04:17:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54403 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752565Ab2I3IQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 04:16:57 -0400
+Message-ID: <5067FFDF.2050501@redhat.com>
+Date: Sun, 30 Sep 2012 10:16:31 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-References: <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com> <20120920232030.GA9224@electric-eye.fr.zoreil.com> <505BF437.4090506@asyr.hopto.org> <20120921152828.GA24364@electric-eye.fr.zoreil.com> <505C98C7.20302@asyr.hopto.org> <20120921175455.GA28255@electric-eye.fr.zoreil.com> <505CC65D.9010605@asyr.hopto.org> <20120924231216.GA20015@electric-eye.fr.zoreil.com> <20120925095403.GA29497@electric-eye.fr.zoreil.com> <5061AC2D.6030407@asyr.hopto.org> <20120925205342.GA11361@electric-eye.fr.zoreil.com> <5062957C.7080508@asyr.hopto.org>
-In-Reply-To: <5062957C.7080508@asyr.hopto.org>
-Content-Type: text/plain; charset=UTF-8
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <5060851E.1030404@redhat.com> <506166B4.4010207@linux.vnet.ibm.com> <5061713D.5060406@redhat.com> <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com> <50641356.5070008@redhat.com> <50643802.5050200@linux.vnet.ibm.com> <50644148.5090201@redhat.com> <20120928181801.GB17449@localhost.localdomain>
+In-Reply-To: <20120928181801.GB17449@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on 09/26/2012 08:41 AM Thanasis wrote the following:
-> on 09/25/2012 11:53 PM Francois Romieu wrote the following:
->> Thanasis <thanasis@asyr.hopto.org> :
->> [...]
->>> Ping failed in the following step:
->>>
->>> HEAD is now at 3c6ad46 r8169: move rtl_set_rx_mode before its
->>> rtl_hw_start callers.
->>
->> *spleen*
->>
->> It's a genuine code move without any real change. Imho it's more a
->> matter of sleeping a few seconds for the link to settle after the
->> device is brought up.
->>
->> The differences between the top-most r8169 driver you tried and the
->> real v3.5.4 r8169 driver are minor : mostly Ben Grear's corrupted
->> frames rx work (default: disabled) and a skb_timestamp which comes
->> too late in your setup.
->>
->> So, either your problem lacks of reproducibility with 3.5.4 - cold reboot,
->> driver which does not fail the first time - or it needs something else
->> in the kernel to happen.
->>
->> The "PME# disabled" messages have disappeared between 2.6 and 3.5.4 in your
->> dmesg. It's probably due to a dev_dbg/dev_printk + CONFIG_DYNAMIC_DEBUG
->> change. It's still worth checking runtime pm settings though
->>
+On 09/28/2012 08:18 PM, Konrad Rzeszutek Wilk wrote:
+>> >> PLE:
+>> >> - works for unmodified / non-Linux guests
+>> >> - works for all types of spins (e.g. smp_call_function*())
+>> >> - utilizes an existing hardware interface (PAUSE instruction) so likely
+>> >> more robust compared to a software interface
+>> >>
+>> >> PV:
+>> >> - has more information, so it can perform better
+>> > 
+>> > Should we also consider that we always have an edge here for non-PLE
+>> > machine?
+>> 
+>> True.  The deployment share for these is decreasing rapidly though.  I
+>> hate optimizing for obsolete hardware.
 > 
-> Sorry but I don't understand much of what you said above...
-> 
->> Can you check the content of /sys/class/pci_bus/0000:02/power, set it
->> to "on" if it contains "auto" and plug the cable again (with 3.5.4) ?
->>
-> 
-> I changed /sys/class/pci_bus/0000\:02/power/control from auto to on,
-> did unplug and plug the cable again, also I manually assigned thte IP
-> address to the NIC, but it did not make it work.
-> 
-> Here is the situation in /sys/class/pci_bus/0000\:02/power:
-> 
-> atom ~ # ls /sys/class/pci_bus/0000\:02/power
-> autosuspend_delay_ms  control  runtime_active_time  runtime_status
-> runtime_suspended_time
-> atom ~ # cat /sys/class/pci_bus/0000\:02/power/*
-> cat: /sys/class/pci_bus/0000:02/power/autosuspend_delay_ms: Input/output
-> error
-> on
-> 0
-> unsupported
-> 0
-> atom ~ # cat /sys/class/pci_bus/0000\:02/power/runtime_status
-> unsupported
-> atom ~ # cat /sys/class/pci_bus/0000\:02/power/control
-> on
-> atom ~ # cat /sys/class/pci_bus/0000\:02/power/runtime_active_time
-> 0
-> atom ~ # cat /sys/class/pci_bus/0000\:02/power/runtime_suspended_time
-> 0
-> atom ~ #
-> 
-> I attach the dmesg where it can be seen that the card every few seconds
-> reports:
-> r8169 0000:02:00.0: eth0: link up
-> r8169 0000:02:00.0: eth0: link up
-> r8169 0000:02:00.0: eth0: link up
-> r8169 0000:02:00.0: eth0: link up
-> ...
-> 
+> Keep in mind that the patchset that Jeremy provided also cleans (remove)
+> parts of the pv spinlock code. It removes the various spin_lock,
+> spin_unlock, etc that touch paravirt code. Instead the pv code is only
+> in the slowpath. And if you don't compile with CONFIG_PARAVIRT_SPINLOCK
+> the end code is the same as it is now.
 
-Any news about the issue?
-Should we file a bug?
+We still need to maintain information about the lock holder if pv is
+enabled at all, even if it is never used.
 
+> On a different subject-  I am curious whether the Haswell new locking
+> instructions (the transactional ones?) can be put in usage for the slow
+> case?
 
+Transactions are blown on any context switch, so no.
+
+-- 
+error compiling committee.c: too many arguments to function
