@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab2I3H6I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 03:58:08 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20404 "EHLO
+	id S1752893Ab2I3H6c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 03:58:32 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20399 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab2I3H5s (ORCPT
+	with ESMTP id S1752635Ab2I3H5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 03:57:48 -0400
+	Sun, 30 Sep 2012 03:57:46 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 13/13] x86, mm: Use func pointer to table size calculation and mapping
-Date: Sun, 30 Sep 2012 00:57:24 -0700
-Message-Id: <1348991844-12285-14-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 10/13] x86: Fixup code testing if a pfn is direct mapped
+Date: Sun, 30 Sep 2012 00:57:21 -0700
+Message-Id: <1348991844-12285-11-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
 References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
@@ -23,132 +23,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They all need to go over ram range in same sequence. So add shared function
-to reduce duplicated code.
+From: Jacob Shin <jacob.shin@amd.com>
 
--v2: Change to walk_ram_ranges() according to Pekka Enberg.
+Update code that previously assumed pfns [ 0 - max_low_pfn_mapped ) and
+[ 4GB - max_pfn_mapped ) were always direct mapped, to now look up
+pfn_mapped ranges instead.
 
+
+-v2: change applying sequence to keep git bisecting working.
+     so add dummy pfn_range_is_mapped(). - Yinghai Lu
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/mm/init.c |   64 ++++++++++++++++++---------------------------------
- 1 files changed, 23 insertions(+), 41 deletions(-)
+ arch/x86/include/asm/page_types.h |    8 ++++++++
+ arch/x86/kernel/cpu/amd.c         |    8 +++-----
+ arch/x86/platform/efi/efi.c       |    8 ++++----
+ 3 files changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index c12dfd5..cf662ba 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -243,14 +243,15 @@ static unsigned long __init calculate_table_space_size(unsigned long start,
- 	return tables;
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index e21fdd1..45aae6e 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -51,6 +51,14 @@ static inline phys_addr_t get_max_mapped(void)
+ 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
  }
  
--static unsigned long __init calculate_all_table_space_size(void)
-+static void __init walk_ram_ranges(
-+			void (*work_fn)(unsigned long, unsigned long, void *),
-+			void *data)
- {
- 	unsigned long start_pfn, end_pfn;
--	unsigned long tables;
- 	int i;
- 
- 	/* the ISA range is always mapped regardless of memory holes */
--	tables = calculate_table_space_size(0, ISA_END_ADDRESS);
-+	work_fn(0, ISA_END_ADDRESS, data);
- 
- 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
- 		u64 start = start_pfn << PAGE_SHIFT;
-@@ -269,10 +270,15 @@ static unsigned long __init calculate_all_table_space_size(void)
- 		if ((end >> PAGE_SHIFT) > max_low_pfn)
- 			end = max_low_pfn << PAGE_SHIFT;
- #endif
--		tables += calculate_table_space_size(start, end);
-+		work_fn(start, end, data);
- 	}
-+}
- 
--	return tables;
-+static void __init size_work_fn(unsigned long start, unsigned long end, void *data)
++static inline bool pfn_range_is_mapped(unsigned long start_pfn,
++					unsigned long end_pfn)
 +{
-+	unsigned long *size = data;
++	return end_pfn <= max_low_pfn_mapped ||
++	       (end_pfn > (1UL << (32 - PAGE_SHIFT)) &&
++		end_pfn <= max_pfn_mapped);
++}
 +
-+	*size += calculate_table_space_size(start, end);
- }
+ extern unsigned long init_memory_mapping(unsigned long start,
+ 					 unsigned long end);
  
- static void __init find_early_table_space(unsigned long start,
-@@ -361,45 +367,15 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
-  * Depending on the alignment of E820 ranges, this may possibly result in using
-  * smaller size (i.e. 4K instead of 2M or 1G) page tables.
-  */
--static void __init init_all_memory_mapping(void)
-+static void __init mapping_work_fn(unsigned long start, unsigned long end,
-+					 void *data)
- {
--	unsigned long start_pfn, end_pfn;
--	int i;
--
--	/* the ISA range is always mapped regardless of memory holes */
--	init_memory_mapping(0, ISA_END_ADDRESS);
--
--	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
--		u64 start = start_pfn << PAGE_SHIFT;
--		u64 end = end_pfn << PAGE_SHIFT;
--
--		if (end <= ISA_END_ADDRESS)
--			continue;
--
--		if (start < ISA_END_ADDRESS)
--			start = ISA_END_ADDRESS;
--#ifdef CONFIG_X86_32
--		/* on 32 bit, we only map up to max_low_pfn */
--		if ((start >> PAGE_SHIFT) >= max_low_pfn)
--			continue;
--
--		if ((end >> PAGE_SHIFT) > max_low_pfn)
--			end = max_low_pfn << PAGE_SHIFT;
--#endif
--		init_memory_mapping(start, end);
--	}
--
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
-+	init_memory_mapping(start, end);
- }
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index f7e98a2..9619ba6 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -676,12 +676,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		 * benefit in doing so.
+ 		 */
+ 		if (!rdmsrl_safe(MSR_K8_TSEG_ADDR, &tseg)) {
++			unsigned long pfn = tseg >> PAGE_SHIFT;
++
+ 			printk(KERN_DEBUG "tseg: %010llx\n", tseg);
+-			if ((tseg>>PMD_SHIFT) <
+-				(max_low_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) ||
+-				((tseg>>PMD_SHIFT) <
+-				(max_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) &&
+-				(tseg>>PMD_SHIFT) >= (1ULL<<(32 - PMD_SHIFT))))
++			if (pfn_range_is_mapped(pfn, pfn + 1))
+ 				set_memory_4k((unsigned long)__va(tseg), 1);
+ 		}
+ 	}
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index f8a30da..4e5320c 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -823,7 +823,7 @@ void __init efi_enter_virtual_mode(void)
+ 	efi_memory_desc_t *md, *prev_md = NULL;
+ 	efi_status_t status;
+ 	unsigned long size;
+-	u64 end, systab, addr, npages, end_pfn;
++	u64 end, systab, addr, npages, start_pfn, end_pfn;
+ 	void *p, *va, *new_memmap = NULL;
+ 	int count = 0;
  
- void __init init_mem_mapping(void)
- {
--	unsigned long tables, good_end, end;
-+	unsigned long tables = 0, good_end, end;
+@@ -876,10 +876,10 @@ void __init efi_enter_virtual_mode(void)
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+ 		end = md->phys_addr + size;
  
- 	probe_page_size_mask();
- 
-@@ -417,15 +393,21 @@ void __init init_mem_mapping(void)
- 	end = max_low_pfn << PAGE_SHIFT;
- 	good_end = max_pfn_mapped << PAGE_SHIFT;
- #endif
--	tables = calculate_all_table_space_size();
-+	walk_ram_ranges(size_work_fn, &tables);
- 	find_early_table_space(0, good_end, tables);
- 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx] prealloc\n",
- 		end - 1, pgt_buf_start << PAGE_SHIFT,
- 		(pgt_buf_top << PAGE_SHIFT) - 1);
- 
- 	max_pfn_mapped = 0; /* will get exact value next */
--	init_all_memory_mapping();
-+	walk_ram_ranges(mapping_work_fn, NULL);
- 
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
- 	/*
- 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
- 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
++		start_pfn = PFN_DOWN(md->phys_addr);
+ 		end_pfn = PFN_UP(end);
+-		if (end_pfn <= max_low_pfn_mapped
+-		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
+-			&& end_pfn <= max_pfn_mapped))
++
++		if (pfn_range_is_mapped(start_pfn, end_pfn))
+ 			va = __va(md->phys_addr);
+ 		else
+ 			va = efi_ioremap(md->phys_addr, size, md->type);
 -- 
 1.7.7
 
