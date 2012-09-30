@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388Ab2I3MbC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 08:31:02 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:47105 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751127Ab2I3MbA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 08:31:00 -0400
-Date: Sun, 30 Sep 2012 14:30:54 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [ 080/262] usb: gadget: dummy_hcd: fixup error probe path
-Message-ID: <20120930123054.GA4121@breakpoint.cc>
-References: <20120928182957.993484211@linuxfoundation.org>
- <20120928183007.576522849@linuxfoundation.org>
- <1348945275.18878.32.camel@deadeye.wl.decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348945275.18878.32.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751411Ab2I3MyL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 08:54:11 -0400
+Received: from smtp.getmail.no ([84.208.15.66]:52580 "EHLO smtp.getmail.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751148Ab2I3MyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 08:54:09 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+Date: Sun, 30 Sep 2012 14:54:07 +0200
+Subject: re: Linux 3.5-rc7
+To: linux-kernel@vger.kernel.org
+From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Message-id: <op.wlf8shgd6426ze@localhost.localdomain>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 29, 2012 at 09:01:15PM +0200, Ben Hutchings wrote:
-> > This is a problem since 448b6eb1 ("USB: Make sure to fetch the BOS desc
-> > for roothubs.) if used in USB3 mode because dummy does not provide this
-> > descriptor and explodes later.
-> [...]
-> 
-> i.e. for 3.5 (as noted in the cc: stable line).  But I don't see why
-> this isn't needed for earlier kernel versions.  The same broken error
-> handling is present.
+Compiled 3.6-rc7, with a hz timer of 3956 for a "natural" psychovisual  
+profile jitter level in OpenGL, and a shaved config for minimal jitter.
 
-Hmmm. The error handling is broken since day 1 that is cdfcbd2c4a ("usb:
-gadget: dummy_hcd: use the shared_hcd infrastructure") / v3.1-rc1.
-Prior v3.5 it is unlikely that something fails here, I never noticed it.
-However you are right: wrong is wrong and thefore it should be picked up to
-v3.1.
+Also changed the 10ms filter in fair.c to 1. And I suggest the whole  
+filter to be removed. https://lkml.org/lkml/2012/9/30/78
 
-> Ben.
+There is very few clicks with ALSA + onboard soundcard at 0.3ms lantecy  
+now, without RT-threads.
 
-Sebastian
+Meaning os-jitter is near optimal for audio/video. I think few care once  
+it is below 0.2ms.
+
+Ofcourse one always wants lower, but at that point, things feel like  
+hardware, and becomes unnoticable to the user.
+
+Peace Be With You.
