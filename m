@@ -1,94 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab2I3X3D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 19:29:03 -0400
-Received: from nm23-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.224]:29747 "HELO
-	nm23-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751388Ab2I3X3A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 19:29:00 -0400
-X-Yahoo-Newman-Id: 368090.8418.bm@omp1006.access.mail.sp2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: hGmrFgMVM1m4YfePhlMRTUD1ZRyobgQ366l88Bp9rgPqueD
- T.O_hlNamWzGrBVB.L7nbtXhhZEX5iZOGu.KgO7AB_NYZUamq4v1ryZol4yl
- IlrWgzaCDLF6pWYuOUPFIi8bh6Rnhfrc0CFV4E4fHkaa4suhG7TxLdMd5od8
- Cwjwp_O6BxKlY7Nux9N7IclVYEWj0pac36x_nm8krt_kmHyYhYp6hPd1ZBxo
- q7lm0e4sHXRJFrQgbnlXFNjkVTaz4489ZeVcikCpAGchQ7sefVu3sHnrepeV
- o98En0qNzPZ1QR1kb1uogxJMvUAc6ezy2IWTzAc7WEoNLtahQqF9yM7LhQOU
- Mqtefb7WSugJGu6jJdatPnl1Ob6hrRfp2IEI1BGcC03A8gHKRU7hbNPk6eTh
- y4h2U4QdyGTyN7qBPJ3HAEndf6mXxRLTgF2.08Vd4WNoULXYZxg--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <5068D5BD.1000802@att.net>
-Date: Sun, 30 Sep 2012 18:29:01 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+	id S1751585Ab2I3XaP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 19:30:15 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:42198 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab2I3XaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 19:30:13 -0400
+Date: Sun, 30 Sep 2012 17:30:12 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
+Subject: [PATCH] TPM: Issue TPM_STARTUP at driver load if the TPM has not
+ been started
+Message-ID: <20120930233012.GH30637@obsidianresearch.com>
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Daniel Santos <daniel.santos@pobox.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 8/10] bug.h: Make BUILD_BUG_ON generate compile-time error
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com> <1348874411-28288-9-git-send-email-daniel.santos@pobox.com> <20120929003239.GA14293@jtriplet-mobl1> <50664E30.7050809@att.net> <20120929025506.GA3183@leaf>
-In-Reply-To: <20120929025506.GA3183@leaf>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 09:55 PM, Josh Triplett wrote:
-> Assuming you don't call BUILD_BUG_ON_MSG more than once per line:
->
-> /tmp$ cat test.c
-> #define BUILD_BUG_ON_MSG_INTERNAL2(cond, msg, line) \
->     do { \
->         extern void __build_bug_on_failed_ ## line (void) __attribute__((error(msg))); \
->         if (cond) \
->             __build_bug_on_failed_ ## line(); \
->     } while (0)
->
-> #define BUILD_BUG_ON_MSG_INTERNAL(cond, msg, line) BUILD_BUG_ON_MSG_INTERNAL2(cond, msg, line)
-> #define BUILD_BUG_ON_MSG(cond, msg) BUILD_BUG_ON_MSG_INTERNAL(cond, msg, __LINE__)
->
-> void f(void)
-> {
->     BUILD_BUG_ON_MSG(0, "test 1");
->     BUILD_BUG_ON_MSG(1, "test 2");
->     BUILD_BUG_ON_MSG(0, "test 3");
->     BUILD_BUG_ON_MSG(1, "test 4");
-> }
-> /tmp$ gcc -c test.c
-> test.c: In function ‘f’:
-> test.c:14:119: error: call to ‘__build_bug_on_failed_14’ declared with attribute error: test 2
-> test.c:16:119: error: call to ‘__build_bug_on_failed_16’ declared with attribute error: test 4
-Thanks! This is very nice!  I've done a little more research and
-discovered that there's also a __COUNTER__ macro that is available
-in gcc 4.3+.  Before I realized that it was only available in gcc
-4.3, I wrote this little macro:
+The TPM will respond to TPM_GET_CAP with TPM_ERR_INVALID_POSTINIT if
+TPM_STARTUP has not been issued. This will result in the TPM driver
+failing to load and no way to recover. Detect this and automatically
+issue TPM_STARTUP.
 
-#define _CONCAT1(a, b) a##b
-#define CONCAT(a, b) _CONCAT1(a, b)
+This is for embedded applications where the kernel is the first thing
+to touch the TPM.
 
-#ifdef __COUNTER__
-# define UNIQUIFY(prefix) CONCAT(prefix, __COUNTER__)
-#else
-# define UNIQUIFY(prefix) CONCAT(prefix, __LINE__)
-#endif
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/char/tpm/tpm.c |   41 ++++++++++++++++++++++++++++++++++++-----
+ drivers/char/tpm/tpm.h |    6 ++++++
+ 2 files changed, 42 insertions(+), 5 deletions(-)
 
-However, this could lead to code might compile on gcc 4.3+, but
-not compile prior, so this is bad, right?
-
-Daniel
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 817f0ee..60e8442 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -473,7 +473,7 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
+ 		return -EFAULT;
+ 
+ 	err = be32_to_cpu(cmd->header.out.return_code);
+-	if (err != 0)
++	if (err != 0 && desc)
+ 		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
+ 
+ 	return err;
+@@ -489,6 +489,15 @@ static const struct tpm_input_header tpm_getcap_header = {
+ 	.ordinal = TPM_ORD_GET_CAP
+ };
+ 
++
++#define TPM_ORD_STARTUP cpu_to_be32(153)
++#define TPM_ST_CLEAR cpu_to_be32(1)
++static const struct tpm_input_header tpm_startup_header = {
++	.tag = TPM_TAG_RQU_COMMAND,
++	.length = cpu_to_be32(12),
++	.ordinal = TPM_ORD_STARTUP
++};
++
+ ssize_t tpm_getcap(struct device *dev, __be32 subcap_id, cap_t *cap,
+ 		   const char *desc)
+ {
+@@ -545,11 +554,33 @@ int tpm_get_timeouts(struct tpm_chip *chip)
+ 	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
+ 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
+ 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
++	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, 0);
++
++	if (rc == TPM_ERR_INVALID_POSTINIT) {
++		struct tpm_cmd_t start_cmd;
++		/* The TPM is not started, we are the first to talk to it.
++		   Execute a startup command. */
++		start_cmd.header.in = tpm_startup_header;
++		start_cmd.params.startup_in.startup_type = TPM_ST_CLEAR;
++
++		dev_info(chip->dev, "Issuing TPM_STARTUP");
++		rc = transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
++			"attempting to start the TPM");
++		if (rc)
++			return -EINVAL;
+ 
+-	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+-			"attempting to determine the timeouts");
+-	if (rc)
++		tpm_cmd.header.in = tpm_getcap_header;
++		tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
++		tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
++		tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
++		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, 0);
++	}
++	if (rc) {
++		dev_err(chip->dev,
++			"A TPM error (%d) occurred attempting to determine the timeouts\n",
++			rc);
+ 		goto duration;
++	}
+ 
+ 	if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
+ 	    be32_to_cpu(tpm_cmd.header.out.length)
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 917f727..2d583ef 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -41,6 +41,7 @@ enum tpm_addr {
+ #define TPM_WARN_DOING_SELFTEST 0x802
+ #define TPM_ERR_DEACTIVATED     0x6
+ #define TPM_ERR_DISABLED        0x7
++#define TPM_ERR_INVALID_POSTINIT 38
+ 
+ #define TPM_HEADER_SIZE		10
+ extern ssize_t tpm_show_pubek(struct device *, struct device_attribute *attr,
+@@ -269,6 +270,10 @@ struct tpm_pcrextend_in {
+ 	u8	hash[TPM_DIGEST_SIZE];
+ }__attribute__((packed));
+ 
++struct tpm_startup_in {
++	__be16	startup_type;
++} __packed;
++
+ typedef union {
+ 	struct	tpm_getcap_params_out getcap_out;
+ 	struct	tpm_readpubek_params_out readpubek_out;
+@@ -277,6 +282,7 @@ typedef union {
+ 	struct	tpm_pcrread_in	pcrread_in;
+ 	struct	tpm_pcrread_out	pcrread_out;
+ 	struct	tpm_pcrextend_in pcrextend_in;
++	struct tpm_startup_in startup_in;
+ } tpm_cmd_params;
+ 
+ struct tpm_cmd_t {
+-- 
+1.7.4.1
 
