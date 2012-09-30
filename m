@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751197Ab2I3Khn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 06:37:43 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54267 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab2I3Khl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 06:37:41 -0400
-Date: Sun, 30 Sep 2012 19:37:32 +0900
-From: Tejun Heo <tj@kernel.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Glauber Costa <glommer@parallels.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20120930103732.GK10383@mtj.dyndns.org>
-References: <50638793.7060806@parallels.com>
- <20120926230807.GC10453@mtj.dyndns.org>
- <20120927142822.GG3429@suse.de>
- <20120927144942.GB4251@mtj.dyndns.org>
- <50646977.40300@parallels.com>
- <20120927174605.GA2713@localhost>
- <50649EAD.2050306@parallels.com>
- <20120930075700.GE10383@mtj.dyndns.org>
- <20120930080249.GF10383@mtj.dyndns.org>
- <1348995388.2458.8.camel@dabdike.int.hansenpartnership.com>
+	id S1751160Ab2I3Kuv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 06:50:51 -0400
+Received: from antcom.de ([188.40.178.216]:48661 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716Ab2I3Kuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 06:50:50 -0400
+Message-ID: <50682402.8020402@antcom.de>
+Date: Sun, 30 Sep 2012 12:50:42 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348995388.2458.8.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stijn Devriendt <highguy@gmail.com>
+CC: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        bgat@billgatliff.com
+Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
+References: <1348780923-27428-1-git-send-email-stigge@antcom.de> <CAOY=C6GG6jqqEAAGJjmDG-BFT2eq=9+ck+F_EOcthRgDCDv8=Q@mail.gmail.com>
+In-Reply-To: <CAOY=C6GG6jqqEAAGJjmDG-BFT2eq=9+ck+F_EOcthRgDCDv8=Q@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, James.
+On 30/09/12 11:35, Stijn Devriendt wrote:
+> In our kernel tree we have similar code. If you like I can request
+> permission
+> to share. I can, however, already give you an update on the basic
+> structure, perhaps
+> it's useful now.
+> 
+> For the first part, the drivers need to implement a the gpio interface
+> for groups.
+> gpio_set_multi, gpio_get_multi, gpio_direction_input_multi,
+> gpio_direction_output_multi. Each of them gets a 'u32 mask'.
+> 
+> Secondly, gpiolib gets some new code to handle groups:
+> groups are requested via a list of gpio ids. Mind that order is respected:
+> request( [1, 5, 2, 4] ) followed by a set(0x5) will translate to
+> gpio_set_multi( 0x18 ). An opaque gpio_group struct is used to keep track.
+> This means the gpiolib interface also has a u32 mask, but translation is
+> done for the gpio-drivers.
+> 
+> There is some code to request groups via device-tree (again respecting
+> order)
+> and there are also platform driver structures.
+> 
+> gpiolib was also extended to export groups into sysfs, respecting policy
+> (input, output, user-selectable) and to make softlinks to groups in other
+> driver's subdir. (One driver we use this in is a power-sequencer with 2
+> gpios selecting a margining profile, this driver then has the gpio_group
+> exported in it's sysfs dir as .../profile, allowing H/W engineers to select
+> the profile without voltage glitches)
+> 
+> There's also a separate driver, that does nothing more than exporting
+> both individual pins and groups to userspace based on platform description
+> or devicetree. This is probably less interesting for mainline, since we're
+> abusing device-tree to do away with some init script that can do the same.
+> 
+> The rationale behind a 32bit mask is that typical processors can at most
+> set one processor-word worth of GPIOs at once and there are probably
+> few chips with over 32GPIOs on a single gpio_chip anyway.
+> Nevertheless, in the era of 64bit, it's definitely possible to go for
+> u64 instead.
 
-On Sun, Sep 30, 2012 at 09:56:28AM +0100, James Bottomley wrote:
-> The beancounter approach originally used by OpenVZ does exactly this.
-> There are two specific problems, though, firstly you can't count
-> references in generic code, so now you have to extend the cgroup
-> tentacles into every object, an invasiveness which people didn't really
-> like.
+Hi Stijn,
 
-Yeah, it will need some hooks.  For dentry and inode, I think it would
-be pretty well isolated tho.  Wasn't it?
+thank you for your notes!
 
-> Secondly split accounting causes oddities too, like your total
-> kernel memory usage can appear to go down even though you do nothing
-> just because someone else added a share.  Worse, if someone drops the
-> reference, your usage can go up, even though you did nothing, and push
-> you over your limit, at which point action gets taken against the
-> container.  This leads to nasty system unpredictability (The whole point
-> of cgroup isolation is supposed to be preventing resource usage in one
-> cgroup from affecting that in another).
+Besides what I discussed with JC and Linus, I find the unsigned int
+(i.e. u32 or u64, depending on the arch) quite appealing. It is a nice
+compromise between my general bit mapped data model (variable size *u8
+array) and the bool *values list. Even maps easily onto a single sysfs
+entry for values, by abstracting a gpio list to an actual data word.
 
-In a sense, the fluctuating amount is the actual resource burden the
-cgroup is putting on the system, so maybe it just needs to be handled
-better or maybe we should charge fixed amount per refcnt?  I don't
-know.
+What do others think? JC? Linus? I'm considering this (unsigned int
+data) a valid option.
 
-> We discussed this pretty heavily at the Containers Mini Summit in Santa
-> Rosa.  The emergent consensus was that no-one really likes first use
-> accounting, but it does solve all the problems and it has the fewest
-> unexpected side effects.
+One question: How did you solve the one-value-per-file in the sysfs
+interface?
 
-But that's like fitting the problem to the mechanism.  Maybe that is
-the best which can be done, but the side effect there is way-off
-accounting under pretty common workload, which sounds pretty nasty to
-me.
+Thanks in advance!
 
-Thanks.
-
--- 
-tejun
+Roland
