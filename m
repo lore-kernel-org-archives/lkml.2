@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751290Ab2I3QQF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 12:16:05 -0400
-Received: from fed1rmfepo201.cox.net ([68.230.241.146]:42573 "EHLO
-	fed1rmfepo201.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab2I3QQD (ORCPT
+	id S1751400Ab2I3Qre (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 12:47:34 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:58158 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab2I3Qrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 12:16:03 -0400
-X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Sep 2012 12:16:03 EDT
-X-CT-Class: Bulk
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A020208.50686122.0024,ss=3,sh,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=2.0 cv=d8F3OGfE c=1 sm=1
- a=Xnmg95nyKyqIyU2aQl/OOQ==:17 a=G8Uczd0VNMoA:10 a=rXZKsSmlCtAA:10
- a=puFshcl44ZMA:10 a=IkcTkHD0fZMA:10 a=kviXuzpPAAAA:8 a=Zo5euW2OAAAA:8
- a=o4PhpUUTiEnO83psTogA:9 a=QEXdDO2ut3YA:10 a=CzrMnq8LMnkOYsON:21
- a=82OG3SWfQrJ44mmZ:21 a=Xnmg95nyKyqIyU2aQl/OOQ==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20120930120812.PHBS6.1191185.imail@fed1rmwml302>
-Date: Sun, 30 Sep 2012 9:08:12 -0700
-From: BBC <r55grt4rffg@cox.net>
-Reply-To: bbc778@hotmail.co.uk
-Subject: BBC WINNER
+	Sun, 30 Sep 2012 12:47:31 -0400
+Message-ID: <5068779A.20402@mvista.com>
+Date: Sun, 30 Sep 2012 18:47:22 +0200
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregkh@linuxfoundation.org, balbi@ti.com
+Subject: Re: [PATCH 6/6] usb: dwc3: core: add dt support for dwc3 core
+References: <1348836795-4783-1-git-send-email-kishon@ti.com> <1348836795-4783-7-git-send-email-kishon@ti.com>
+In-Reply-To: <1348836795-4783-7-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your email was Selected to ticket number 661768432463,
+Hello.
 
-serial numbers FTS/8070337201/06, lucky numbers 15-72-24-48-50-37 (40)
+On 28-09-2012 14:53, Kishon Vijay Abraham I wrote:
 
-One Million Gbp is being awarded to you from our promotions board BBC AWARD
+> Added dwc3 support for dwc3 core and update the documentation with
+> device tree binding information.
+>
+> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
+[...]
 
-send below the requested info
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index 08a5738..0c17a7a 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+[...]
+> @@ -602,11 +601,22 @@ static int __devexit dwc3_remove(struct platform_device *pdev)
+>   	return 0;
+>   }
+>
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id of_dwc3_matach[] = {
 
-1) Full Names, (2) Full Address, (3) Gender, 4) Occupation,
+     I guess you meant 'of_dwc3_match' here and below?
 
-(5) Country, (6) telephone (7) Age, (8) Marital Status
+
+> +	{
+> +		.compatible = "synopsis,dwc3"
+> +	},
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, of_dwc3_matach);
+> +#endif
+> +
+>   static struct platform_driver dwc3_driver = {
+>   	.probe		= dwc3_probe,
+>   	.remove		= __devexit_p(dwc3_remove),
+>   	.driver		= {
+>   		.name	= "dwc3",
+> +		.of_match_table	= of_match_ptr(of_dwc3_matach),
+>   	},
+>   };
+>   
+
+WBR, Sergei
+
