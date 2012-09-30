@@ -1,77 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab2I3XLD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 19:11:03 -0400
-Received: from nm6-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.206]:44593 "HELO
-	nm6-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751132Ab2I3XLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 19:11:00 -0400
-X-Yahoo-Newman-Id: 523818.81801.bm@omp1024.access.mail.sp2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: GH.Q5z4VM1ngTiM1gui6LWatKMZlfCRdVsHScCzAkK.tu0V
- sIRhLBrPVm2.AuvvYzilJr3XVhzaKIM.Z_BXvA.mHjMwgqtrz.rFy9WihiZ0
- prLDiIEdtl0ewUXSEqLm2f1NVnr8mu8IsTj3OQcCltNONicFnBNWfHxOaFNc
- 7l3RIViphTgzDCO_MubU_Ii5v5J6XdO4KPvF_MIHHaNIXHx.f2UxUhK41Cyp
- XiQC3RAqV5L61dsHkgOURHPyq2Rmsq3JRZi6bHZGP4GL2sE3RL7LNd4if4wU
- YtNZ92n8RmZD.zaHWi1NiwnPKW7C.fzn9Py.nqajQJ.S0fxa_KpTWKOfsebS
- 6gbJHUMVXBldeP2xy4k7y61itJDPRM9LCMO0npuub1EM3jErYZBYagkh7Cbs
- ThY09r4T.bWNnb2w80c64U9irs3PbUGi_MDdx3wq4z2mGSnfhGw--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <5068D185.9000802@att.net>
-Date: Sun, 30 Sep 2012 18:11:01 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+	id S1751462Ab2I3XPm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 19:15:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7745 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab2I3XPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 19:15:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,514,1344236400"; 
+   d="scan'208";a="228380619"
+Date: Mon, 1 Oct 2012 01:15:36 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Patil, Rachna" <rachna@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-iio@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH v4 2/5] MFD: ti_tscadc: Add support for TI's TSC/ADC
+ MFDevice
+Message-ID: <20120930231536.GE12231@sortiz-mobl>
+References: <1348636814-14129-1-git-send-email-rachna@ti.com>
+ <1348636814-14129-3-git-send-email-rachna@ti.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Andi Kleen <ak@linux.intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH 3/10] compiler-gcc.h: Add gcc-recommended GCC_VERSION
- macro
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com> <1348874411-28288-4-git-send-email-daniel.santos@pobox.com>
-In-Reply-To: <1348874411-28288-4-git-send-email-daniel.santos@pobox.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348636814-14129-3-git-send-email-rachna@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So in light of feedback I've been getting on this patch set, it leaves
-me with
-this question.
-> +#define GCC_VERSION (__GNUC__ * 10000 \
-> +		   + __GNUC_MINOR__ * 100 \
-> +		   + __GNUC_PATCHLEVEL__)
-This macro presumes you are using gcc 3.0 or later, which introduced the
-__GNUC_PATCHLEVEL__ predefined macro.  Should you be using a version of gcc
-prior to 3.0 (where the macro is undefined), you would get an error that
-__GNUC_PATCHLEVEL__ is undefined prior to getting the error trying to
-include
-"linux/compiler-gcc2.h".  So it presumes the compiler is 3.0+, when another
-part of the code may allow it from a future change.  Should it be
-modified to
-do account for this or would that be overkill?
+Hi Rachna,
+
+On Wed, Sep 26, 2012 at 10:50:11AM +0530, Patil, Rachna wrote:
+> Add the mfd core driver which supports touchscreen
+> and ADC.
+> With this patch we are only adding infrastructure to
+> support the MFD clients.
+> 
+> Signed-off-by: Patil, Rachna <rachna@ti.com>
+> ---
+> Changes in v2:
+> 	Merged "[PATCH 5/5] MFD: ti_tscadc: Add check on number of i/p channels",
+> 	patch submitted in previous version into this file.
+> 
+> Changes in v3:
+> 	No changes
+> 
+> Changes in v4:
+> 	No changes
+> 
+>  drivers/mfd/Kconfig                  |    9 ++
+>  drivers/mfd/Makefile                 |    1 +
+>  drivers/mfd/ti_am335x_tscadc.c       |  193 ++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/ti_am335x_tscadc.h |  133 +++++++++++++++++++++++
+>  4 files changed, 336 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/mfd/ti_am335x_tscadc.c
+>  create mode 100644 include/linux/mfd/ti_am335x_tscadc.h
+Looks good to me, I only have a few comments:
+
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index b1a1462..e472184 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -94,6 +94,15 @@ config MFD_TI_SSP
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called ti-ssp.
+>  
+> +config MFD_TI_AM335X_TSCADC
+> +	tristate "TI ADC / Touch Screen chip support"
+> +	depends on ARCH_OMAP2PLUS
+- Why do you need to depend on that architecture ?
+- You must select MFD_CORE.
+
+> +static unsigned int tscadc_readl(struct ti_tscadc_dev *tsadc, unsigned int reg)
+> +{
+> +	return readl(tsadc->tscadc_base + reg);
+> +}
+> +
+> +static void tscadc_writel(struct ti_tscadc_dev *tsadc, unsigned int reg,
+> +					unsigned int val)
+> +{
+> +	writel(val, tsadc->tscadc_base + reg);
+> +}
+> +
+Have you considered using the regmap MMIO API ? The benefits are not very
+obvious in that case, but it's always better to use a common framework.
 
 
-#ifdef __GNUC_PATCHLEVEL__
-# define GCC_VERSION (__GNUC__ * 10000 \
-                    + __GNUC_MINOR__ * 100 \
-                    + __GNUC_PATCHLEVEL__)
-#else
-# define GCC_VERSION (__GNUC__ * 10000 \
-                    + __GNUC_MINOR__ * 100)
-#endif
+> +static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
+> +{
+> +	struct ti_tscadc_dev	*tscadc;
+> +	struct resource		*res;
+> +	struct clk		*clk;
+> +	struct mfd_tscadc_board	*pdata = pdev->dev.platform_data;
+> +	int			irq;
+> +	int			err, ctrl;
+> +	int			clk_value, clock_rate;
+> +
+> +	if (!pdata) {
+> +		dev_err(&pdev->dev, "Could not find platform data\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		dev_err(&pdev->dev, "no memory resource defined.\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (irq < 0) {
+> +		dev_err(&pdev->dev, "no irq ID is specified.\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* Allocate memory for device */
+> +	tscadc = kzalloc(sizeof(struct ti_tscadc_dev), GFP_KERNEL);
+devm_kzalloc ?
 
-Daniel
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
