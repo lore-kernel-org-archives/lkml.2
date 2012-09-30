@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750856Ab2I3KFa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 06:05:30 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:19899 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab2I3KF3 (ORCPT
+	id S1750878Ab2I3KP6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 06:15:58 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:3902 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750716Ab2I3KP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 06:05:29 -0400
-Date: Sun, 30 Sep 2012 12:05:16 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Huewe <peterhuewe@gmx.de>, linux-s390@vger.kernel.org,
-        Linux-Next <linux-next@vger.kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [-next]: s390 *_irq() link errors
-Message-ID: <20120930120516.29be3022@endymion.delvare>
-In-Reply-To: <CAMuHMdVV5F148RrqyGgD7q9y_C5tTnGi8S9hC4tus6wu-mLPxw@mail.gmail.com>
-References: <CAMuHMdXqsPgfToNyjbxJ-WM=-kEEvAweE03wb3vtkwVO+-RR3A@mail.gmail.com>
-	<20120927115134.GA5654@osiris.de.ibm.com>
-	<CAMuHMdUqXnY5ZNgjYN0YMpLkPw0j41MXM18H9qiLoEk-BzKYMg@mail.gmail.com>
-	<20120930105350.16e54037@endymion.delvare>
-	<CAMuHMdV=mcVuVuJaWrVjwxLz0+gkBoC=NUq6=C176B3W7j8Yag@mail.gmail.com>
-	<20120930112052.733ce361@endymion.delvare>
-	<CAMuHMdVV5F148RrqyGgD7q9y_C5tTnGi8S9hC4tus6wu-mLPxw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	Sun, 30 Sep 2012 06:15:57 -0400
+Message-ID: <1349000155.1553.27.camel@x61.thuisdomein>
+Subject: [PATCH] regmap: silence GCC warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Sun, 30 Sep 2012 12:15:55 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 30 Sep 2012 10:15:56.0044 (UTC) FILETIME=[94460CC0:01CD9EF4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Sep 2012 11:35:41 +0200, Geert Uytterhoeven wrote:
-> On Sun, Sep 30, 2012 at 11:20 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> > On Sun, 30 Sep 2012 11:08:41 +0200, Geert Uytterhoeven wrote:
-> >> On Sun, Sep 30, 2012 at 10:53 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> >> > I thought we were trying to move away from explicit arch exclusions,
-> >> > but if S390 is special then fine with me. I've folded Heiko's fix into
-> >>
-> >> "depends on GENERIC_HARDIRQS" is the alternative...
-> >
-> > That would make even less sense to me, I2C can work just fine without
-> > IRQs.
-> 
-> For the individual drivers that need it...
+Building regmap.o triggers this GCC warning:
+    drivers/base/regmap/regmap.c: In function ‘regmap_raw_read’:
+    drivers/base/regmap/regmap.c:1172:6: warning: ‘ret’ may be used uninitialized in this function [-Wmaybe-uninitialized]
 
-Oh, of course. Sorry I was probably not completely awaken ;)
+It seems 'ret' should always be set when this function returns. See, the
+else-branch can leave 'ret' uninitialized only if 'val_count' is zero.
+But if 'val_count' is zero regmap_volatile_range() will return true.
+That implies that 'ret' will be set in the if-branch. ('val_count' could
+be zero if 'val_len' is, for example, zero. That would be useless input,
+however.)
 
-Either way is fine with me if it makes developers and users happy.
+Anyhow, initializing 'ret' to -EINVAL silences GCC and is harmless.
 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+I noticed this warning while building v3.6-rc7 on current Fedora 17,
+using Fedora's default config.
+
+ drivers/base/regmap/regmap.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index c241ae2..025f41c 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1169,12 +1169,12 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	size_t val_bytes = map->format.val_bytes;
+ 	size_t val_count = val_len / val_bytes;
+ 	unsigned int v;
+-	int ret, i;
++	int i, ret = -EINVAL;
+ 
+ 	if (val_len % map->format.val_bytes)
+-		return -EINVAL;
++		return ret;
+ 	if (reg % map->reg_stride)
+-		return -EINVAL;
++		return ret;
+ 
+ 	map->lock(map);
+ 
 -- 
-Jean Delvare
+1.7.11.4
+
