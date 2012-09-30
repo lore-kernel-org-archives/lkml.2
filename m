@@ -1,104 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349Ab2I3LYa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 07:24:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35671 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785Ab2I3LYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 07:24:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,513,1344236400"; 
-   d="scan'208";a="228265686"
-Date: Sun, 30 Sep 2012 19:18:12 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: paulmck@linux.vnet.ibm.com, Josh Boyer <jwboyer@redhat.com>,
-        Christian Hoffmann <email@christianhoffmann.info>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, johnstul@us.ibm.com,
-        tglx@linutronix.de
-Subject: Re: INFO: rcu_preempt detected stalls on CPUs/tasks: { 1} (detected
- by 0, t=10002 jiffies)
-Message-ID: <20120930111812.GA18764@localhost>
-References: <20120925150701.GA2502@linux.vnet.ibm.com>
- <20120926042237.GA18287@localhost>
- <20120926043445.GB2524@linux.vnet.ibm.com>
- <20120926081501.GA28485@localhost>
- <20120926164543.GD2467@linux.vnet.ibm.com>
- <20120927025400.GA11434@localhost>
- <20120927042849.GA6556@linux.vnet.ibm.com>
- <20120927044044.GA22753@localhost>
- <20120928033511.GB2480@linux.vnet.ibm.com>
- <506828BF.9050409@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506828BF.9050409@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751334Ab2I3LZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 07:25:59 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38634 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750785Ab2I3LZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 07:25:57 -0400
+Message-ID: <1349004352.2458.34.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Date: Sun, 30 Sep 2012 12:25:52 +0100
+In-Reply-To: <20120930103732.GK10383@mtj.dyndns.org>
+References: <50638793.7060806@parallels.com>
+	 <20120926230807.GC10453@mtj.dyndns.org> <20120927142822.GG3429@suse.de>
+	 <20120927144942.GB4251@mtj.dyndns.org> <50646977.40300@parallels.com>
+	 <20120927174605.GA2713@localhost> <50649EAD.2050306@parallels.com>
+	 <20120930075700.GE10383@mtj.dyndns.org>
+	 <20120930080249.GF10383@mtj.dyndns.org>
+	 <1348995388.2458.8.camel@dabdike.int.hansenpartnership.com>
+	 <20120930103732.GK10383@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 30, 2012 at 01:10:55PM +0200, Avi Kivity wrote:
-> On 09/28/2012 05:35 AM, Paul E. McKenney wrote:
-> > On Thu, Sep 27, 2012 at 12:40:44PM +0800, Fengguang Wu wrote:
-> >> On Wed, Sep 26, 2012 at 09:28:50PM -0700, Paul E. McKenney wrote:
-> >> > On Thu, Sep 27, 2012 at 10:54:00AM +0800, Fengguang Wu wrote:
-> >> > > On Wed, Sep 26, 2012 at 09:45:43AM -0700, Paul E. McKenney wrote:
-> >> > > > On Wed, Sep 26, 2012 at 04:15:01PM +0800, Fengguang Wu wrote:
-> > 
-> > [ . . . ]
-> > 
-> >> > > > But could you also please send your .config file and a description of
-> >> > > 
-> >> > > .config attached.
-> >> > > 
-> >> > > > the workload you are running?
-> >> > > 
-> >> > > It's basically the below commands. The exact initrd is not relevant in
-> >> > > this case because it's a boot time warning before user space is
-> >> > > started. The stalls roughly happen 1 time on every 10 boots.
-> >> > 
-> >> > Yow!!!
-> >> > 
-> >> > You have severe cross-CPU time-synchronization problems.  See for
-> >> > example the first dmesg, with the relevant part extracted right here.
-> >> > One CPU believes that it is about 37 seconds past boot, and the other
-> >> > CPU beleives that it is about 137 seconds past boot.  Given that large
-> >> > of a time difference, an RCU CPU stall warning is expected behavior.
-> >> 
-> >> Good spot! Yeah I noticed that huge timestamp gap, however didn't take
-> >> it seriously enough..
-> >> 
-> >> > Get your two CPUs in agreement about what time it is, and I bet that
-> >> > the CPU stall warnings will go away.
-> >> 
-> >> Possibly KVM related? Because the warnings show up in many test boxes
-> >> running KVM and so is not likely some hardware specific issue.
-> > 
-> > I vaguely recall seeing something recently.  But let's ask the KVM and
-> > timekeeping guys.
+On Sun, 2012-09-30 at 19:37 +0900, Tejun Heo wrote:
+> Hello, James.
 > 
-> >From the logs it looks like hpet (why not kvmclock?) is used for the
+> On Sun, Sep 30, 2012 at 09:56:28AM +0100, James Bottomley wrote:
+> > The beancounter approach originally used by OpenVZ does exactly this.
+> > There are two specific problems, though, firstly you can't count
+> > references in generic code, so now you have to extend the cgroup
+> > tentacles into every object, an invasiveness which people didn't really
+> > like.
+> 
+> Yeah, it will need some hooks.  For dentry and inode, I think it would
+> be pretty well isolated tho.  Wasn't it?
 
-Hi Avi! Thanks for looking into this. It seems you have the full logs
-attached in my previous email?
+But you've got to ask yourself who cares about accurate accounting per
+container of dentry and inode objects? They're not objects that any
+administrator is used to limiting.  What we at parallels care about
+isn't accurately accounting them, it's that one container can't DoS
+another by exhausting system resources.  That's achieved equally well by
+first charge slab accounting, so we don't really have an interest in
+pushing object accounting code for which there's no use case.
 
-FYI, I've enabled CONFIG_KVM_CLOCK/CONFIG_KVM_GUEST for all bootable
-kernels and here is the related boot message:
+> > Secondly split accounting causes oddities too, like your total
+> > kernel memory usage can appear to go down even though you do nothing
+> > just because someone else added a share.  Worse, if someone drops the
+> > reference, your usage can go up, even though you did nothing, and push
+> > you over your limit, at which point action gets taken against the
+> > container.  This leads to nasty system unpredictability (The whole point
+> > of cgroup isolation is supposed to be preventing resource usage in one
+> > cgroup from affecting that in another).
+> 
+> In a sense, the fluctuating amount is the actual resource burden the
+> cgroup is putting on the system, so maybe it just needs to be handled
+> better or maybe we should charge fixed amount per refcnt?  I don't
+> know.
 
-[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
-[    0.000000] kvm-clock: cpu 0, msr 0:1b7ec81, boot clock
+Yes, we considered single charge per reference accounting as well
+(although I don't believe anyone went as far as producing an
+implementation).  The problem here is now that the sum of the container
+resources no-longer bears any relation to the host consumption.  This
+makes it very difficult for virtualisation orchestration systems to make
+accurate decisions when doing dynamic resource scheduling (DRS).
 
-> clock, it should not generate such drifts since it is a global clock.
-> Can you verify current_clocksource on a boot that actually failed (in
-> case the clocksource is switched during runtime)?
+Conversely, as ugly as you think it, first use accounting is actually
+pretty good at identifying problem containers (at least with regard to
+memory usage) for DRS because containers which are stretching the memory
+tend to accumulate the greatest number of first charges over the system
+lifetime.
 
-I see a line
+> > We discussed this pretty heavily at the Containers Mini Summit in Santa
+> > Rosa.  The emergent consensus was that no-one really likes first use
+> > accounting, but it does solve all the problems and it has the fewest
+> > unexpected side effects.
+> 
+> But that's like fitting the problem to the mechanism.  Maybe that is
+> the best which can be done, but the side effect there is way-off
+> accounting under pretty common workload, which sounds pretty nasty to
+> me.
 
-[    2.011710] Switching to clocksource kvm-clock
+All we need kernel memory accounting and limiting for is DoS prevention.
+There aren't really any system administrators who care about Kernel
+Memory accounting (at least until the system goes oom) because there are
+no absolute knobs for it (all there is are a set of weird and wonderful
+heuristics, like dirty limit ratio and drop caches).  Kernel memory
+usage has a whole set of regulatory infrastructure for trying to make it
+transparent to the user.
 
-w/o any indication of errors.
+Don't get me wrong: if there were some easy way to get proper memory
+accounting for free, we'd be happy but, because it has no practical
+application for any of our customers, there's a limited price we're
+willing to pay to get it.
 
-Thanks,
-Fengguang
+James
+
+
