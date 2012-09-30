@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751032Ab2I3J2u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 05:28:50 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:36796 "EHLO
+	id S1751150Ab2I3Jfo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 05:35:44 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54169 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab2I3J2s (ORCPT
+	with ESMTP id S1750790Ab2I3Jfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 05:28:48 -0400
+	Sun, 30 Sep 2012 05:35:42 -0400
 MIME-Version: 1.0
-X-Originating-IP: [46.116.106.0]
-In-Reply-To: <20120925070156.GB23009@elgon.mountain>
-References: <20120925070156.GB23009@elgon.mountain>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 30 Sep 2012 11:28:27 +0200
-Message-ID: <CAK=Wgbbk1MvH_ct8RLz+6bkG7fauBtUZeCVvB+yj68V0Kr9TNw@mail.gmail.com>
-Subject: Re: [patch 1/3] remoteproc: memory leak in rproc_handle_carveout()
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120930112052.733ce361@endymion.delvare>
+References: <CAMuHMdXqsPgfToNyjbxJ-WM=-kEEvAweE03wb3vtkwVO+-RR3A@mail.gmail.com>
+	<20120927115134.GA5654@osiris.de.ibm.com>
+	<CAMuHMdUqXnY5ZNgjYN0YMpLkPw0j41MXM18H9qiLoEk-BzKYMg@mail.gmail.com>
+	<20120930105350.16e54037@endymion.delvare>
+	<CAMuHMdV=mcVuVuJaWrVjwxLz0+gkBoC=NUq6=C176B3W7j8Yag@mail.gmail.com>
+	<20120930112052.733ce361@endymion.delvare>
+Date: Sun, 30 Sep 2012 11:35:41 +0200
+X-Google-Sender-Auth: vC8yLlrmzcVm-787rbazG7hMgd8
+Message-ID: <CAMuHMdVV5F148RrqyGgD7q9y_C5tTnGi8S9hC4tus6wu-mLPxw@mail.gmail.com>
+Subject: Re: [-next]: s390 *_irq() link errors
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Huewe <peterhuewe@gmx.de>, linux-s390@vger.kernel.org,
+        Linux-Next <linux-next@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 9:01 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> We only need to allocate mapping if there is an rproc domain.
+On Sun, Sep 30, 2012 at 11:20 AM, Jean Delvare <khali@linux-fr.org> wrote:
+> On Sun, 30 Sep 2012 11:08:41 +0200, Geert Uytterhoeven wrote:
+>> On Sun, Sep 30, 2012 at 10:53 AM, Jean Delvare <khali@linux-fr.org> wrote:
+>> > I thought we were trying to move away from explicit arch exclusions,
+>> > but if S390 is special then fine with me. I've folded Heiko's fix into
+>>
+>> "depends on GENERIC_HARDIRQS" is the alternative...
 >
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> Static checker stuff.  Handle with appropriate caution.
+> That would make even less sense to me, I2C can work just fine without
+> IRQs.
 
-Applied, thanks.
+For the individual drivers that need it...
 
-I'm just changing the subject, because this actually fixes a sneaky
-NULL-dereference and not a memory leak.
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
