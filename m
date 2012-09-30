@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400Ab2I3Qre (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 12:47:34 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58158 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab2I3Qrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 12:47:31 -0400
-Message-ID: <5068779A.20402@mvista.com>
-Date: Sun, 30 Sep 2012 18:47:22 +0200
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1751374Ab2I3RCH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 13:02:07 -0400
+Received: from inx.pm.waw.pl ([195.116.170.130]:34633 "EHLO inx.pm.waw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042Ab2I3RCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 13:02:06 -0400
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: ARM SoC tree, Was: Re: [PATCH 05/12] ARM: ixp4xx: use __iomem for MMIO
+References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
+	<1348868177-21205-6-git-send-email-arnd@arndb.de>
+	<m3lift6rru.fsf_-_@intrepid.localdomain>
+	<201209291458.16112.arnd@arndb.de>
+	<m3y5jskbir.fsf@intrepid.localdomain>
+	<20120929174400.GA6933@n2100.arm.linux.org.uk>
+	<m3pq54jyqw.fsf@intrepid.localdomain>
+	<20120929215355.GD6933@n2100.arm.linux.org.uk>
+Date: Sun, 30 Sep 2012 19:01:59 +0200
+In-Reply-To: <20120929215355.GD6933@n2100.arm.linux.org.uk> (Russell King's
+	message of "Sat, 29 Sep 2012 22:53:55 +0100")
+Message-ID: <m3vcevtpfc.fsf@intrepid.localdomain>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, balbi@ti.com
-Subject: Re: [PATCH 6/6] usb: dwc3: core: add dt support for dwc3 core
-References: <1348836795-4783-1-git-send-email-kishon@ti.com> <1348836795-4783-7-git-send-email-kishon@ti.com>
-In-Reply-To: <1348836795-4783-7-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
 
-On 28-09-2012 14:53, Kishon Vijay Abraham I wrote:
-
-> Added dwc3 support for dwc3 core and update the documentation with
-> device tree binding information.
+>> Note I'm not only doing ARM, but also X86 and MIPS, with additional code
+>> shared between them, and the "stable" part of it is what I'm paid for.
+>> I can't simply work with arm-soc, none of my platforms will even boot
+>> with pure arm-soc.
 >
-> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
-[...]
+> I'm assuming that Linus' -rc kernels work for you, yes?
 
-> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> index 08a5738..0c17a7a 100644
-> --- a/drivers/usb/dwc3/core.c
-> +++ b/drivers/usb/dwc3/core.c
-[...]
-> @@ -602,11 +601,22 @@ static int __devexit dwc3_remove(struct platform_device *pdev)
->   	return 0;
->   }
->
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id of_dwc3_matach[] = {
+No, but it's OK :-)
 
-     I guess you meant 'of_dwc3_match' here and below?
+I meant I need additional code for a) ARM and MIPS-based boards (off the
+shelf by Ubiquity, Gateworks etc., support ported mostly from OpenWRT),
+b) custom hardware used only by us.
 
+I hope to eventually submit a) upstream, then arm-soc and Linus' trees
+would work for me. I know it's a mess, but for now I have no options.
 
-> +	{
-> +		.compatible = "synopsis,dwc3"
-> +	},
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(of, of_dwc3_matach);
-> +#endif
-> +
->   static struct platform_driver dwc3_driver = {
->   	.probe		= dwc3_probe,
->   	.remove		= __devexit_p(dwc3_remove),
->   	.driver		= {
->   		.name	= "dwc3",
-> +		.of_match_table	= of_match_ptr(of_dwc3_matach),
->   	},
->   };
->   
-
-WBR, Sergei
-
+BTW the situation with hardware supported only by OpenWRT is a part of
+the equation.
+-- 
+Krzysztof Halasa
