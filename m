@@ -1,185 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab2I3GEh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 02:04:37 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:38367 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab2I3GDd (ORCPT
+	id S1751794Ab2I3Gan (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 02:30:43 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44459 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab2I3Gam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 02:03:33 -0400
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        Roland Dreier <roland@purestorage.com>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3/6] iscsi-target: Enable MaxXmitDataSegmentLength operation in login path
-Date: Sun, 30 Sep 2012 05:58:13 +0000
-Message-Id: <1348984696-30992-4-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1348984696-30992-1-git-send-email-nab@linux-iscsi.org>
-References: <1348984696-30992-1-git-send-email-nab@linux-iscsi.org>
+	Sun, 30 Sep 2012 02:30:42 -0400
+MIME-Version: 1.0
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Sun, 30 Sep 2012 08:30:20 +0200
+X-Google-Sender-Auth: pF9PCaI021iULLuUrW3sS3qzVkk
+Message-ID: <CAHO5Pa2dnFH+SVkrJngR8Vn4VomsfJ00nOCzRB3+Ns4zs_pxnQ@mail.gmail.com>
+Subject: ABI change for setitimer(2) [in feature-removal-schedule.txt]
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Sasikantha Babu <sasikanth.v19@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Trevor Woerner <twoerner@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+[Was: Re: [GIT pull] timer fixes for 3.4]
 
-This patch activates MaxXmitDataSegmentLength usage that performs the
-following sequence of events:
+[CC+=Trevor Woerner, after an independent mail led me to find this thread.]
+[CC+=linux-api@, which really should have been CCed on the original patch]
 
-- Once the incoming initiator's MAXRECVDATASEGMENTLENGTH key is detected
-  within iscsi_check_acceptor_state(), save the requested MRDSL into
-  conn->conn_ops->MaxRecvDataSegmentLength
+Linus,
 
-- Next change the outgoing target's MaxRecvDataSegmenthLength key=value
-  based upon the local TPG's MaxXmitDataSegmentLength attribute value.
+On Fri, Apr 13, 2012 at 12:19 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Apr 12, 2012 at 3:06 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>>
+>> The itimer removal one is not strictly a fix, but I really wanted to
+>> avoid a rebase of the urgent ones.
+>
+> Btw, I think that setitimer NULL pointer removal commit is crap.
+>
+> If people actually do rely on the NULL pointer thing, we're not
+> "scheduling it for removal". And we most *definitely* aren't
+> scheduling it for removal for some short timeframe like 3.6.
+>
+> That's not how ABI's work. If it has become something people rely on,
+> it now *is* part of the ABI, and no amount of "violates the spec"
+> matters what-so-ever.
+>
+> "The spec" is paper - and worthless. What people actually *do* is all
+> that matters.
 
-- Change iscsi_set_connection_parameters() to skip the assignment of
-  conn->conn_ops->MaxRecvDataSegmentLength, now setup within
-  iscsi_check_acceptor_state()
+So, to restore some context some months after the last mail in this
+thread, commit aa2bf9bc6414b6972b9e51903c1ce7b1f057aee2 added this to
+Documentation/feature-removal-schedule.txt:
 
-Also update iscsi_decode_text_input() -> iscsi_check_acceptor_state()
-code-path to accept struct iscsi_conn *.
+[[
+What:   setitimer accepts user NULL pointer (value)
+When:   3.6
+Why:    setitimer is not returning -EFAULT if user pointer is NULL. This
+        violates the spec.
+]]
 
-Cc: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/target/iscsi/iscsi_target_nego.c       |    4 +-
- drivers/target/iscsi/iscsi_target_parameters.c |   50 +++++++++++++++++++----
- drivers/target/iscsi/iscsi_target_parameters.h |    2 +-
- 3 files changed, 44 insertions(+), 12 deletions(-)
+And the commit message said:
 
-diff --git a/drivers/target/iscsi/iscsi_target_nego.c b/drivers/target/iscsi/iscsi_target_nego.c
-index a9a73ac..d08373f 100644
---- a/drivers/target/iscsi/iscsi_target_nego.c
-+++ b/drivers/target/iscsi/iscsi_target_nego.c
-@@ -550,7 +550,7 @@ static int iscsi_target_handle_csg_zero(
- 			SENDER_INITIATOR|SENDER_RECEIVER,
- 			login->req_buf,
- 			payload_length,
--			conn->param_list);
-+			conn);
- 	if (ret < 0)
- 		return -1;
- 
-@@ -627,7 +627,7 @@ static int iscsi_target_handle_csg_one(struct iscsi_conn *conn, struct iscsi_log
- 			SENDER_INITIATOR|SENDER_RECEIVER,
- 			login->req_buf,
- 			payload_length,
--			conn->param_list);
-+			conn);
- 	if (ret < 0)
- 		return -1;
- 
-diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
-index 40864ee..3678ff2 100644
---- a/drivers/target/iscsi/iscsi_target_parameters.c
-+++ b/drivers/target/iscsi/iscsi_target_parameters.c
-@@ -1065,7 +1065,8 @@ out:
- 	return proposer_values;
- }
- 
--static int iscsi_check_acceptor_state(struct iscsi_param *param, char *value)
-+static int iscsi_check_acceptor_state(struct iscsi_param *param, char *value,
-+				struct iscsi_conn *conn)
- {
- 	u8 acceptor_boolean_value = 0, proposer_boolean_value = 0;
- 	char *negoitated_value = NULL;
-@@ -1140,8 +1141,35 @@ static int iscsi_check_acceptor_state(struct iscsi_param *param, char *value)
- 				return -1;
- 		}
- 
--		if (!strcmp(param->name, MAXRECVDATASEGMENTLENGTH))
--			SET_PSTATE_REPLY_OPTIONAL(param);
-+		if (!strcmp(param->name, MAXRECVDATASEGMENTLENGTH)) {
-+			struct iscsi_param *param_mxdsl;
-+			unsigned long long tmp;
-+			int rc;
-+
-+			rc = strict_strtoull(param->value, 0, &tmp);
-+			if (rc < 0)
-+				return -1;
-+
-+			conn->conn_ops->MaxRecvDataSegmentLength = tmp;
-+			pr_debug("Saving op->MaxRecvDataSegmentLength from"
-+				" original initiator received value: %u\n",
-+				conn->conn_ops->MaxRecvDataSegmentLength);
-+
-+			param_mxdsl = iscsi_find_param_from_key(
-+						MAXXMITDATASEGMENTLENGTH,
-+						conn->param_list);
-+			if (!param_mxdsl)
-+				return -1;
-+
-+			rc = iscsi_update_param_value(param,
-+						param_mxdsl->value);
-+			if (rc < 0)
-+				return -1;
-+
-+			pr_debug("Updated %s to target MXDSL value: %s\n",
-+					param->name, param->value);
-+		}
-+
- 	} else if (IS_TYPE_NUMBER_RANGE(param)) {
- 		negoitated_value = iscsi_get_value_from_number_range(
- 					param, value);
-@@ -1535,8 +1563,9 @@ int iscsi_decode_text_input(
- 	u8 sender,
- 	char *textbuf,
- 	u32 length,
--	struct iscsi_param_list *param_list)
-+	struct iscsi_conn *conn)
- {
-+	struct iscsi_param_list *param_list = conn->param_list;
- 	char *tmpbuf, *start = NULL, *end = NULL;
- 
- 	tmpbuf = kzalloc(length + 1, GFP_KERNEL);
-@@ -1594,7 +1623,7 @@ int iscsi_decode_text_input(
- 			}
- 			SET_PSTATE_RESPONSE_GOT(param);
- 		} else {
--			if (iscsi_check_acceptor_state(param, value) < 0) {
-+			if (iscsi_check_acceptor_state(param, value, conn) < 0) {
- 				kfree(tmpbuf);
- 				return -1;
- 			}
-@@ -1755,10 +1784,13 @@ void iscsi_set_connection_parameters(
- 			pr_debug("DataDigest:                   %s\n",
- 				param->value);
- 		} else if (!strcmp(param->name, MAXRECVDATASEGMENTLENGTH)) {
--			ops->MaxRecvDataSegmentLength =
--				simple_strtoul(param->value, &tmpptr, 0);
--			pr_debug("MaxRecvDataSegmentLength:     %s\n",
--				param->value);
-+			/*
-+			 * At this point iscsi_check_acceptor_state() will have
-+			 * set ops->MaxRecvDataSegmentLength from the original
-+			 * initiator provided value.
-+			 */
-+			pr_debug("MaxRecvDataSegmentLength:     %u\n",
-+				ops->MaxRecvDataSegmentLength);
- 		} else if (!strcmp(param->name, OFMARKER)) {
- 			ops->OFMarker = !strcmp(param->value, YES);
- 			pr_debug("OFMarker:                     %s\n",
-diff --git a/drivers/target/iscsi/iscsi_target_parameters.h b/drivers/target/iscsi/iscsi_target_parameters.h
-index 77a28b5..1e1b750 100644
---- a/drivers/target/iscsi/iscsi_target_parameters.h
-+++ b/drivers/target/iscsi/iscsi_target_parameters.h
-@@ -36,7 +36,7 @@ extern void iscsi_release_param_list(struct iscsi_param_list *);
- extern struct iscsi_param *iscsi_find_param_from_key(char *, struct iscsi_param_list *);
- extern int iscsi_extract_key_value(char *, char **, char **);
- extern int iscsi_update_param_value(struct iscsi_param *, char *);
--extern int iscsi_decode_text_input(u8, u8, char *, u32, struct iscsi_param_list *);
-+extern int iscsi_decode_text_input(u8, u8, char *, u32, struct iscsi_conn *);
- extern int iscsi_encode_text_output(u8, u8, char *, u32 *,
- 			struct iscsi_param_list *);
- extern int iscsi_check_negotiated_keys(struct iscsi_param_list *);
+    setitimer() should return -EFAULT if called with an invalid pointer
+    for value. The current code excludes a NULL pointer from this rule and
+    silently uses it to stop the timer. This violates the spec.
+
+The last sentence is rather questionable. POSIX is actually rather
+silent on this point, since it doesn't say anything explicit about the
+new_value==NULL case. The Linux man page is also rather silent about
+it. (By the way, the current behavior seems to have been present on
+Linux since 1.0.) So, I'm not sure what spec is being referred to (and
+thus, what the rationale is for the change).
+
+In any case, if the behavior here should change, the proposed change
+is the wrong change. The right thing to do would be to make Linux
+consistent with other systems. At least Solaris, FreeBSD, and NetBSD
+(which are all the systems that I have for testing) all do the
+following (though none of them seem to document it):
+
+    If the 'new_value' of setitimer() is NULL, then (assuming
+    that 'old_value' is not NULL) the call is equivalent to
+    getitimer(), simply return the current value of the timer
+    in 'old_value'
+
+If Linux is to change, then it should at least be made consistent with
+those other systems. There is one question if that path is taken: what
+to do in the case where both 'old_value" and 'new_value' are NULL?
+Solaris treats that case as a no-op; FreeBSD gives EFAULT. The FreeBSD
+behavior seems a little more sensible, IMO.
+
+Would you entertain a patch to implement FreeBSD semantics for
+setitimer() where 'new_value' is NULL?
+
+Later in this thread you said:
+
+> I think the whole "let's deprecate this six months into the future" is
+> unnecessary. Yes, it may well be worth doing for something with bigger
+> consequences, but I think that for something like this, it's just
+> overthinking the issue.
+
+When it comes to ABIs, I think there *is* value in a lead time on the
+change. This particular example is a good example of why. Making ABI
+changes like this should be done with a bit or research and review,
+rather than bluntly making the change and seeing if anybody squawks
+because something breaks. If this change _had_ been instantly executed
+in 3.4, then we'd have missed a chance to bring greater consistency
+across systems (here, I assume that having added the EFAULT behavior,
+there'd probably be resistance to changing the ABI a *second* time in
+order to achieve consistency).
+
+Thanks,
+
+Michael
+
+
 -- 
-1.7.2.5
-
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
