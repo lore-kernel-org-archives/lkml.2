@@ -1,34 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab2I3I11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 04:27:27 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51338 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab2I3I1W (ORCPT
+	id S1753025Ab2I3I3A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 04:29:00 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55988 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab2I3I25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 04:27:22 -0400
+	Sun, 30 Sep 2012 04:28:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <1348559774-15484-2-git-send-email-stigge@antcom.de>
-References: <1348559774-15484-1-git-send-email-stigge@antcom.de>
-	<1348559774-15484-2-git-send-email-stigge@antcom.de>
-Date: Sun, 30 Sep 2012 10:27:21 +0200
-Message-ID: <CACRpkdYbRu5=9vDPQWOfOeO_o4gu+KyH5GNU-naDU2P0dzK5sg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio: Document device_node's det_debounce
+In-Reply-To: <1348574622-11632-1-git-send-email-zhangwm@marvell.com>
+References: <1348574622-11632-1-git-send-email-zhangwm@marvell.com>
+Date: Sun, 30 Sep 2012 10:28:55 +0200
+Message-ID: <CACRpkdaL_EbGxBknoQMnnHCND=AKyY+qBZ5pTBC+-dVC2Ab4ZQ@mail.gmail.com>
+Subject: Re: [PATCH] GPIO: gpio-pxa: fix bug when get gpio value
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, aletes.xgr@gmail.com,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com
+To: Neil Zhang <zhangwm@marvell.com>
+Cc: grant.likely@secretlab.ca, haojian.zhuang@gmail.com,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 9:56 AM, Roland Stigge <stigge@antcom.de> wrote:
+On Tue, Sep 25, 2012 at 2:03 PM, Neil Zhang <zhangwm@marvell.com> wrote:
 
-> This patch adds documentation for set_debounce in struct device_node.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> We need to return 0 or 1 when get gpio value.
 
-Applied, thanks!
+OK...
+
+>  static int pxa_gpio_get(struct gpio_chip *chip, unsigned offset)
+>  {
+> -       return readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET) & (1 << offset);
+> +       u32 gplr = __raw_readl(gpio_chip_base(chip) + GPLR_OFFSET);
+> +       u32 mask = 1 << offset;
+> +
+> +       return (gplr & mask) != 0;
+
+So why are you switching the perfectly working readl_relaxed() call to
+a __raw_readl()?
+
+Please don't do this, and respin the patch.
+
+Yours,
 Linus Walleij
