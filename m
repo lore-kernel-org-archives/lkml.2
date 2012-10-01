@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965245Ab2JAXf7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:35:59 -0400
-Received: from 1wt.eu ([62.212.114.60]:35085 "EHLO 1wt.eu"
+	id S932610Ab2JAXAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:00:05 -0400
+Received: from 1wt.eu ([62.212.114.60]:35063 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932575Ab2JAXAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:07 -0400
-Message-Id: <20121001225159.437069092@1wt.eu>
+	id S932575Ab2JAW77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 18:59:59 -0400
+Message-Id: <20121001225159.734955658@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:40 +0200
+Date: Tue, 02 Oct 2012 00:52:47 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Louis Rilling <louis.rilling@kerlabs.com>,
-        Jens Axboe <jens.axboe@oracle.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 043/180] block: Fix io_context leak after failure of clone with CLONE_IO
+Cc: Jason Wang <jasowang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 050/180] net: sock: validate data_len before allocating skb in sock_alloc_send_pskb()
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,100 +23,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Louis Rilling <louis.rilling@kerlabs.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit b69f2292063d2caf37ca9aec7d63ded203701bf3 upstream
+commit cc9b17ad29ecaa20bfe426a8d4dbfb94b13ff1cc upstream
 
-With CLONE_IO, parent's io_context->nr_tasks is incremented, but never
-decremented whenever copy_process() fails afterwards, which prevents
-exit_io_context() from calling IO schedulers exit functions.
+We need to validate the number of pages consumed by data_len, otherwise frags
+array could be overflowed by userspace. So this patch validate data_len and
+return -EMSGSIZE when data_len may occupies more frags than MAX_SKB_FRAGS.
 
-Give a task_struct to exit_io_context(), and call exit_io_context() instead of
-put_io_context() in copy_process() cleanup path.
-
-Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
-Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- block/blk-ioc.c           |   10 +++++-----
- include/linux/iocontext.h |    5 +++--
- kernel/exit.c             |    2 +-
- kernel/fork.c             |    3 ++-
- 4 files changed, 11 insertions(+), 9 deletions(-)
+ net/core/sock.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-index dcd0412..cbdabb0 100644
---- a/block/blk-ioc.c
-+++ b/block/blk-ioc.c
-@@ -66,14 +66,14 @@ static void cfq_exit(struct io_context *ioc)
- }
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 6605e75..4538a34 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1391,6 +1391,11 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+ 	gfp_t gfp_mask;
+ 	long timeo;
+ 	int err;
++	int npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
++
++	err = -EMSGSIZE;
++	if (npages > MAX_SKB_FRAGS)
++		goto failure;
  
- /* Called by the exitting task */
--void exit_io_context(void)
-+void exit_io_context(struct task_struct *task)
- {
- 	struct io_context *ioc;
+ 	gfp_mask = sk->sk_allocation;
+ 	if (gfp_mask & __GFP_WAIT)
+@@ -1409,14 +1414,12 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+ 		if (atomic_read(&sk->sk_wmem_alloc) < sk->sk_sndbuf) {
+ 			skb = alloc_skb(header_len, gfp_mask);
+ 			if (skb) {
+-				int npages;
+ 				int i;
  
--	task_lock(current);
--	ioc = current->io_context;
--	current->io_context = NULL;
--	task_unlock(current);
-+	task_lock(task);
-+	ioc = task->io_context;
-+	task->io_context = NULL;
-+	task_unlock(task);
+ 				/* No pages, we're done... */
+ 				if (!data_len)
+ 					break;
  
- 	if (atomic_dec_and_test(&ioc->nr_tasks)) {
- 		if (ioc->aic && ioc->aic->exit)
-diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
-index eb73632..19abfc1 100644
---- a/include/linux/iocontext.h
-+++ b/include/linux/iocontext.h
-@@ -94,14 +94,15 @@ static inline struct io_context *ioc_task_link(struct io_context *ioc)
- 	return NULL;
- }
- 
-+struct task_struct;
- #ifdef CONFIG_BLOCK
- int put_io_context(struct io_context *ioc);
--void exit_io_context(void);
-+void exit_io_context(struct task_struct *task);
- struct io_context *get_io_context(gfp_t gfp_flags, int node);
- struct io_context *alloc_io_context(gfp_t gfp_flags, int node);
- void copy_io_context(struct io_context **pdst, struct io_context **psrc);
- #else
--static inline void exit_io_context(void)
-+static inline void exit_io_context(struct task_struct *task)
- {
- }
- 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 0f8fae3..a2a1659 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1020,7 +1020,7 @@ NORET_TYPE void do_exit(long code)
- 	tsk->flags |= PF_EXITPIDONE;
- 
- 	if (tsk->io_context)
--		exit_io_context();
-+		exit_io_context(tsk);
- 
- 	if (tsk->splice_pipe)
- 		__free_pipe_info(tsk->splice_pipe);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 4bde56f..cd075bc 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1299,7 +1299,8 @@ bad_fork_free_pid:
- 	if (pid != &init_struct_pid)
- 		free_pid(pid);
- bad_fork_cleanup_io:
--	put_io_context(p->io_context);
-+	if (p->io_context)
-+		exit_io_context(p);
- bad_fork_cleanup_namespaces:
- 	exit_task_namespaces(p);
- bad_fork_cleanup_mm:
+-				npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
+ 				skb->truesize += data_len;
+ 				skb_shinfo(skb)->nr_frags = npages;
+ 				for (i = 0; i < npages; i++) {
 -- 
 1.7.2.1.45.g54fbc
 
