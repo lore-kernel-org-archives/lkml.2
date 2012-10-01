@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab2JAX2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:28:42 -0400
-Received: from 1wt.eu ([62.212.114.60]:35236 "EHLO 1wt.eu"
+	id S933225Ab2JAX25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:28:57 -0400
+Received: from 1wt.eu ([62.212.114.60]:35231 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757575Ab2JAXAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:48 -0400
-Message-Id: <20121001225203.121723717@1wt.eu>
+	id S932736Ab2JAXAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:47 -0400
+Message-Id: <20121001225159.478878308@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:07 +0200
+Date: Tue, 02 Oct 2012 00:52:41 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 130/180] NFS: Alias the nfs module to nfs4
+Subject: [ 044/180] KVM: x86: disallow multiple KVM_CREATE_IRQCHIP
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +23,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: bjschuma@gmail.com <bjschuma@gmail.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 425e776d93a7a5070b77d4f458a5bab0f924652c upstream.
+commit 3ddea128ad75bd33e88780fe44f44c3717369b98 upstream
 
-This allows distros to remove the line from their modprobe
-configuration.
+Otherwise kvm will leak memory on multiple KVM_CREATE_IRQCHIP.
+Also serialize multiple accesses with kvm->lock.
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/nfs/super.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/x86/kvm/irq.h |    6 +++++-
+ arch/x86/kvm/x86.c |   30 ++++++++++++++++++++++--------
+ 2 files changed, 27 insertions(+), 9 deletions(-)
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index c346808..9a3f15b 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2934,4 +2934,6 @@ out:
- 	return error;
+diff --git a/arch/x86/kvm/irq.h b/arch/x86/kvm/irq.h
+index 7d6058a..85a8721 100644
+--- a/arch/x86/kvm/irq.h
++++ b/arch/x86/kvm/irq.h
+@@ -85,7 +85,11 @@ static inline struct kvm_pic *pic_irqchip(struct kvm *kvm)
+ 
+ static inline int irqchip_in_kernel(struct kvm *kvm)
+ {
+-	return pic_irqchip(kvm) != NULL;
++	int ret;
++
++	ret = (pic_irqchip(kvm) != NULL);
++	smp_rmb();
++	return ret;
  }
  
-+MODULE_ALIAS("nfs4");
+ void kvm_pic_reset(struct kvm_kpic_state *s);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 23b5a71..5908461 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2273,25 +2273,39 @@ long kvm_arch_vm_ioctl(struct file *filp,
+ 		if (r)
+ 			goto out;
+ 		break;
+-	case KVM_CREATE_IRQCHIP:
++	case KVM_CREATE_IRQCHIP: {
++		struct kvm_pic *vpic;
 +
- #endif /* CONFIG_NFS_V4 */
++		mutex_lock(&kvm->lock);
++		r = -EEXIST;
++		if (kvm->arch.vpic)
++			goto create_irqchip_unlock;
+ 		r = -ENOMEM;
+-		kvm->arch.vpic = kvm_create_pic(kvm);
+-		if (kvm->arch.vpic) {
++		vpic = kvm_create_pic(kvm);
++		if (vpic) {
+ 			r = kvm_ioapic_init(kvm);
+ 			if (r) {
+-				kfree(kvm->arch.vpic);
+-				kvm->arch.vpic = NULL;
+-				goto out;
++				kfree(vpic);
++				goto create_irqchip_unlock;
+ 			}
+ 		} else
+-			goto out;
++			goto create_irqchip_unlock;
++		smp_wmb();
++		kvm->arch.vpic = vpic;
++		smp_wmb();
+ 		r = kvm_setup_default_irq_routing(kvm);
+ 		if (r) {
++			mutex_lock(&kvm->irq_lock);
+ 			kfree(kvm->arch.vpic);
+ 			kfree(kvm->arch.vioapic);
+-			goto out;
++			kvm->arch.vpic = NULL;
++			kvm->arch.vioapic = NULL;
++			mutex_unlock(&kvm->irq_lock);
+ 		}
++	create_irqchip_unlock:
++		mutex_unlock(&kvm->lock);
+ 		break;
++	}
+ 	case KVM_CREATE_PIT:
+ 		u.pit_config.flags = KVM_PIT_SPEAKER_DUMMY;
+ 		goto create_pit;
 -- 
 1.7.2.1.45.g54fbc
 
