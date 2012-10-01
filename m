@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab2JAKHM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 06:07:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35823 "EHLO mga11.intel.com"
+	id S1753174Ab2JAKHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 06:07:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24890 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753077Ab2JAKHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 06:07:07 -0400
+	id S1753044Ab2JAKHk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 06:07:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,515,1344236400"; 
-   d="scan'208";a="228988470"
+   d="scan'208";a="228988691"
+Message-ID: <1349086054.13371.165.camel@smile>
+Subject: Re: [PATCHv3] dw_dmac: autoconfigure data_width or get it via
+ platform data
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: viresh.kumar@linaro.org, Vinod Koul <vinod.koul@intel.com>,
-        spear-devel@list.st.com, linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] dw_dmac: fix a regression in dwc_prep_dma_memcpy
-Date: Mon,  1 Oct 2012 13:06:25 +0300
-Message-Id: <1349085985-1128-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: viresh.kumar@linaro.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
+Date: Mon, 01 Oct 2012 13:07:34 +0300
+In-Reply-To: <1349084751.1648.39.camel@vkoul-udesk3>
+References: <CAOh2x=n4ZCsQ1ccqobZF6fz-Kuj_VE-ua5PftAHQkTobA=p+pw@mail.gmail.com>
+	 <1348573156-5032-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1348740388.1648.27.camel@vkoul-udesk3>
+	 <1348742028.1648.29.camel@vkoul-udesk3>  <1349082272.13371.163.camel@smile>
+	 <1349084751.1648.39.camel@vkoul-udesk3>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes memory-to-memory test is failed, that's why we need to choose minimum
-data portion between source and destination limits together.
+On Mon, 2012-10-01 at 15:15 +0530, Vinod Koul wrote: 
+> On Mon, 2012-10-01 at 12:04 +0300, Andy Shevchenko wrote:
+> > On Thu, 2012-09-27 at 16:03 +0530, Vinod Koul wrote: 
+> > > On Thu, 2012-09-27 at 15:36 +0530, Vinod Koul wrote:
+> > > > On Tue, 2012-09-25 at 14:39 +0300, Andy Shevchenko wrote:
+> > > > > Not all of the controllers support the 64 bit data width. Make it configurable
+> > > > > via platform data. The driver will try to get a value from the component
+> > > > > parameters, otherwise it will use the platform data.
+> > > > > 
+> > > > What was this gen against, I can apply this.
+> > > %s/can/can't
+> > Today I got what was happened. I sent an update to one patch of the
+> > series, but you tried to apply it on top of previous version. It seems I
+> > was not clear. So, now we have a regression, and I will send a fix soon
+> > today.
+> I received a series, and a patch on top and that what I tried to
+> apply :(
+> I am okay to revert the whole series now.
+> 
+> Please send me fix by today, merge window has started, I hate to change
+> stuff now.
+I've sent a patch. You could apply on top of the series, or squash it
+with the one called "dw_dmac: autoconfigure data_width or get it via
+platform data"
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 9ca9ca4..c4b0eb3 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -716,6 +716,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 	size_t			offset;
- 	unsigned int		src_width;
- 	unsigned int		dst_width;
-+	unsigned int		data_width;
- 	u32			ctllo;
- 
- 	dev_vdbg(chan2dev(chan),
-@@ -728,11 +729,11 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		return NULL;
- 	}
- 
--	src_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
--			  dwc_fast_fls(src | len));
-+	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
-+					 dwc->dw->data_width[dwc_get_dms(dws)]);
- 
--	dst_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_dms(dws)],
--			  dwc_fast_fls(dest | len));
-+	src_width = dst_width = min_t(unsigned int, data_width,
-+				      dwc_fast_fls(src | dest | len));
- 
- 	ctllo = DWC_DEFAULT_CTLLO(chan)
- 			| DWC_CTLL_DST_WIDTH(dst_width)
 -- 
-1.7.10.4
-
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
