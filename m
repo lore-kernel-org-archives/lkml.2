@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab2JAXAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:00:08 -0400
-Received: from 1wt.eu ([62.212.114.60]:35060 "EHLO 1wt.eu"
+	id S932977Ab2JAXBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:01:37 -0400
+Received: from 1wt.eu ([62.212.114.60]:35383 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932569Ab2JAW76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 18:59:58 -0400
-Message-Id: <20121001225157.951753597@1wt.eu>
+	id S932935Ab2JAXBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:01:33 -0400
+Message-Id: <20121001225202.097323172@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:05 +0200
+Date: Tue, 02 Oct 2012 00:53:43 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Willy Tarreau <w@1wt.eu>
-Subject: [ 008/180] 2.6.32.x: ntp: Fix leap-second hrtimer livelock
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 106/180] locks: fix checking of fcntl_setlease argument
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,334 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: J. Bruce Fields <bfields@fieldses.org>
 
-This is a backport of 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d
+commit 0ec4f431eb56d633da3a55da67d5c4b88886ccc7 upstream.
 
-This should have been backported when it was commited, but I
-mistook the problem as requiring the ntp_lock changes
-that landed in 3.4 in order for it to occur.
+The only checks of the long argument passed to fcntl(fd,F_SETLEASE,.)
+are done after converting the long to an int.  Thus some illegal values
+may be let through and cause problems in later code.
 
-Unfortunately the same issue can happen (with only one cpu)
-as follows:
-do_adjtimex()
- write_seqlock_irq(&xtime_lock);
-  process_adjtimex_modes()
-   process_adj_status()
-    ntp_start_leap_timer()
-     hrtimer_start()
-      hrtimer_reprogram()
-       tick_program_event()
-        clockevents_program_event()
-         ktime_get()
-          seq = req_seqbegin(xtime_lock); [DEADLOCK]
+[ They actually *don't* cause problems in mainline, as of Dave Jones's
+  commit 8d657eb3b438 "Remove easily user-triggerable BUG from
+  generic_setlease", but we should fix this anyway.  And this patch will
+  be necessary to fix real bugs on earlier kernels. ]
 
-This deadlock will no always occur, as it requires the
-leap_timer to force a hrtimer_reprogram which only happens
-if its set and there's no sooner timer to expire.
-
-NOTE: This patch, being faithful to the original commit,
-introduces a bug (we don't update wall_to_monotonic),
-which will be resovled by backporting a following fix.
-
-Original commit message below:
-
-Since commit 7dffa3c673fbcf835cd7be80bb4aec8ad3f51168 the ntp
-subsystem has used an hrtimer for triggering the leapsecond
-adjustment. However, this can cause a potential livelock.
-
-Thomas diagnosed this as the following pattern:
-CPU 0                                                    CPU 1
-do_adjtimex()
-  spin_lock_irq(&ntp_lock);
-    process_adjtimex_modes();				 timer_interrupt()
-      process_adj_status();                                do_timer()
-        ntp_start_leap_timer();                             write_lock(&xtime_lock);
-          hrtimer_start();                                  update_wall_time();
-             hrtimer_reprogram();                            ntp_tick_length()
-               tick_program_event()                            spin_lock(&ntp_lock);
-                 clockevents_program_event()
-		   ktime_get()
-                     seq = req_seqbegin(xtime_lock);
-
-This patch tries to avoid the problem by reverting back to not using
-an hrtimer to inject leapseconds, and instead we handle the leapsecond
-processing in the second_overflow() function.
-
-The downside to this change is that on systems that support highres
-timers, the leap second processing will occur on a HZ tick boundary,
-(ie: ~1-10ms, depending on HZ)  after the leap second instead of
-possibly sooner (~34us in my tests w/ x86_64 lapic).
-
-This patch applies on top of tip/timers/core.
-
-CC: Sasha Levin <levinsasha928@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Diagnoised-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- include/linux/timex.h     |    2 +-
- kernel/time/ntp.c         |  122 +++++++++++++++------------------------------
- kernel/time/timekeeping.c |   12 +---
- 3 files changed, 44 insertions(+), 92 deletions(-)
+ fs/locks.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/timex.h b/include/linux/timex.h
-index e6967d1..3b587b4 100644
---- a/include/linux/timex.h
-+++ b/include/linux/timex.h
-@@ -271,7 +271,7 @@ static inline int ntp_synced(void)
- /* Returns how long ticks are at present, in ns / 2^NTP_SCALE_SHIFT. */
- extern u64 tick_length;
- 
--extern void second_overflow(void);
-+extern int second_overflow(unsigned long secs);
- extern void update_ntp_one_tick(void);
- extern int do_adjtimex(struct timex *);
- 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 4800f93..dc76c9a 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -28,8 +28,6 @@ unsigned long			tick_nsec;
- u64				tick_length;
- static u64			tick_length_base;
- 
--static struct hrtimer		leap_timer;
--
- #define MAX_TICKADJ		500LL		/* usecs */
- #define MAX_TICKADJ_SCALED \
- 	(((MAX_TICKADJ * NSEC_PER_USEC) << NTP_SCALE_SHIFT) / NTP_INTERVAL_FREQ)
-@@ -180,60 +178,60 @@ void ntp_clear(void)
+diff --git a/fs/locks.c b/fs/locks.c
+index a8794f2..fde92d1 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -291,7 +291,7 @@ static int flock_make_lock(struct file *filp, struct file_lock **lock,
+ 	return 0;
  }
  
+-static int assign_type(struct file_lock *fl, int type)
++static int assign_type(struct file_lock *fl, long type)
+ {
+ 	switch (type) {
+ 	case F_RDLCK:
+@@ -444,7 +444,7 @@ static const struct lock_manager_operations lease_manager_ops = {
  /*
-- * Leap second processing. If in leap-insert state at the end of the
-- * day, the system clock is set back one second; if in leap-delete
-- * state, the system clock is set ahead one second.
-+ * this routine handles the overflow of the microsecond field
-+ *
-+ * The tricky bits of code to handle the accurate clock support
-+ * were provided by Dave Mills (Mills@UDEL.EDU) of NTP fame.
-+ * They were originally developed for SUN and DEC kernels.
-+ * All the kudos should go to Dave for this stuff.
-+ *
-+ * Also handles leap second processing, and returns leap offset
+  * Initialize a lease, use the default lock manager operations
   */
--static enum hrtimer_restart ntp_leap_second(struct hrtimer *timer)
-+int second_overflow(unsigned long secs)
+-static int lease_init(struct file *filp, int type, struct file_lock *fl)
++static int lease_init(struct file *filp, long type, struct file_lock *fl)
+  {
+ 	if (assign_type(fl, type) != 0)
+ 		return -EINVAL;
+@@ -462,7 +462,7 @@ static int lease_init(struct file *filp, int type, struct file_lock *fl)
+ }
+ 
+ /* Allocate a file_lock initialised to this type of lease */
+-static struct file_lock *lease_alloc(struct file *filp, int type)
++static struct file_lock *lease_alloc(struct file *filp, long type)
  {
--	enum hrtimer_restart res = HRTIMER_NORESTART;
--
--	write_seqlock(&xtime_lock);
-+	int leap = 0;
-+	s64 delta;
- 
-+	/*
-+	 * Leap second processing. If in leap-insert state at the end of the
-+	 * day, the system clock is set back one second; if in leap-delete
-+	 * state, the system clock is set ahead one second.
-+	 */
- 	switch (time_state) {
- 	case TIME_OK:
-+		if (time_status & STA_INS)
-+			time_state = TIME_INS;
-+		else if (time_status & STA_DEL)
-+			time_state = TIME_DEL;
- 		break;
- 	case TIME_INS:
--		timekeeping_leap_insert(-1);
--		time_state = TIME_OOP;
--		printk(KERN_NOTICE
--			"Clock: inserting leap second 23:59:60 UTC\n");
--		hrtimer_add_expires_ns(&leap_timer, NSEC_PER_SEC);
--		res = HRTIMER_RESTART;
-+		if (secs % 86400 == 0) {
-+			leap = -1;
-+			time_state = TIME_OOP;
-+			printk(KERN_NOTICE
-+				"Clock: inserting leap second 23:59:60 UTC\n");
-+		}
- 		break;
- 	case TIME_DEL:
--		timekeeping_leap_insert(1);
--		time_tai--;
--		time_state = TIME_WAIT;
--		printk(KERN_NOTICE
--			"Clock: deleting leap second 23:59:59 UTC\n");
-+		if ((secs + 1) % 86400 == 0) {
-+			leap = 1;
-+			time_tai--;
-+			time_state = TIME_WAIT;
-+			printk(KERN_NOTICE
-+				"Clock: deleting leap second 23:59:59 UTC\n");
-+		}
- 		break;
- 	case TIME_OOP:
- 		time_tai++;
- 		time_state = TIME_WAIT;
--		/* fall through */
-+		break;
-+
- 	case TIME_WAIT:
- 		if (!(time_status & (STA_INS | STA_DEL)))
- 			time_state = TIME_OK;
- 		break;
- 	}
- 
--	write_sequnlock(&xtime_lock);
--
--	return res;
--}
--
--/*
-- * this routine handles the overflow of the microsecond field
-- *
-- * The tricky bits of code to handle the accurate clock support
-- * were provided by Dave Mills (Mills@UDEL.EDU) of NTP fame.
-- * They were originally developed for SUN and DEC kernels.
-- * All the kudos should go to Dave for this stuff.
-- */
--void second_overflow(void)
--{
--	s64 delta;
- 
- 	/* Bump the maxerror field */
- 	time_maxerror += MAXFREQ / NSEC_PER_USEC;
-@@ -253,23 +251,25 @@ void second_overflow(void)
- 	tick_length	+= delta;
- 
- 	if (!time_adjust)
--		return;
-+		goto out;
- 
- 	if (time_adjust > MAX_TICKADJ) {
- 		time_adjust -= MAX_TICKADJ;
- 		tick_length += MAX_TICKADJ_SCALED;
--		return;
-+		goto out;
- 	}
- 
- 	if (time_adjust < -MAX_TICKADJ) {
- 		time_adjust += MAX_TICKADJ;
- 		tick_length -= MAX_TICKADJ_SCALED;
--		return;
-+		goto out;
- 	}
- 
- 	tick_length += (s64)(time_adjust * NSEC_PER_USEC / NTP_INTERVAL_FREQ)
- 							 << NTP_SCALE_SHIFT;
- 	time_adjust = 0;
-+out:
-+	return leap;
- }
- 
- #ifdef CONFIG_GENERIC_CMOS_UPDATE
-@@ -331,27 +331,6 @@ static void notify_cmos_timer(void)
- static inline void notify_cmos_timer(void) { }
- #endif
- 
--/*
-- * Start the leap seconds timer:
-- */
--static inline void ntp_start_leap_timer(struct timespec *ts)
--{
--	long now = ts->tv_sec;
--
--	if (time_status & STA_INS) {
--		time_state = TIME_INS;
--		now += 86400 - now % 86400;
--		hrtimer_start(&leap_timer, ktime_set(now, 0), HRTIMER_MODE_ABS);
--
--		return;
--	}
--
--	if (time_status & STA_DEL) {
--		time_state = TIME_DEL;
--		now += 86400 - (now + 1) % 86400;
--		hrtimer_start(&leap_timer, ktime_set(now, 0), HRTIMER_MODE_ABS);
--	}
--}
- 
- /*
-  * Propagate a new txc->status value into the NTP state:
-@@ -374,22 +353,6 @@ static inline void process_adj_status(struct timex *txc, struct timespec *ts)
- 	time_status &= STA_RONLY;
- 	time_status |= txc->status & ~STA_RONLY;
- 
--	switch (time_state) {
--	case TIME_OK:
--		ntp_start_leap_timer(ts);
--		break;
--	case TIME_INS:
--	case TIME_DEL:
--		time_state = TIME_OK;
--		ntp_start_leap_timer(ts);
--	case TIME_WAIT:
--		if (!(time_status & (STA_INS | STA_DEL)))
--			time_state = TIME_OK;
--		break;
--	case TIME_OOP:
--		hrtimer_restart(&leap_timer);
--		break;
--	}
- }
- /*
-  * Called with the xtime lock held, so we can access and modify
-@@ -469,9 +432,6 @@ int do_adjtimex(struct timex *txc)
- 		    (txc->tick <  900000/USER_HZ ||
- 		     txc->tick > 1100000/USER_HZ))
- 			return -EINVAL;
--
--		if (txc->modes & ADJ_STATUS && time_state != TIME_OK)
--			hrtimer_cancel(&leap_timer);
- 	}
- 
- 	getnstimeofday(&ts);
-@@ -549,6 +509,4 @@ __setup("ntp_tick_adj=", ntp_tick_adj_setup);
- void __init ntp_init(void)
- {
- 	ntp_clear();
--	hrtimer_init(&leap_timer, CLOCK_REALTIME, HRTIMER_MODE_ABS);
--	leap_timer.function = ntp_leap_second;
- }
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 4a71cff..00e2fae 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -183,14 +183,6 @@ void update_xtime_cache(u64 nsec)
- 	ACCESS_ONCE(xtime_cache) = ts;
- }
- 
--/* must hold xtime_lock */
--void timekeeping_leap_insert(int leapsecond)
--{
--	xtime.tv_sec += leapsecond;
--	wall_to_monotonic.tv_sec -= leapsecond;
--	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
--}
--
- #ifdef CONFIG_GENERIC_TIME
- 
- /**
-@@ -783,9 +775,11 @@ void update_wall_time(void)
- 
- 		timekeeper.xtime_nsec += timekeeper.xtime_interval;
- 		if (timekeeper.xtime_nsec >= nsecps) {
-+			int leap;
- 			timekeeper.xtime_nsec -= nsecps;
- 			xtime.tv_sec++;
--			second_overflow();
-+			leap = second_overflow(xtime.tv_sec);
-+			xtime.tv_sec += leap;
- 		}
- 
- 		raw_time.tv_nsec += timekeeper.raw_interval;
+ 	struct file_lock *fl = locks_alloc_lock();
+ 	int error = -ENOMEM;
 -- 
 1.7.2.1.45.g54fbc
 
