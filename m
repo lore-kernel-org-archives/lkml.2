@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab2JAXBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:01:05 -0400
-Received: from 1wt.eu ([62.212.114.60]:35281 "EHLO 1wt.eu"
+	id S965104Ab2JAX0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:26:34 -0400
+Received: from 1wt.eu ([62.212.114.60]:35290 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932800Ab2JAXBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:01:00 -0400
-Message-Id: <20121001225202.869841003@1wt.eu>
+	id S932803Ab2JAXBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:01:04 -0400
+Message-Id: <20121001225205.159751569@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:01 +0200
+Date: Tue, 02 Oct 2012 00:54:55 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Zach Brown <zab@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Theodore Tso <tytso@mit.edu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 124/180] fuse: verify all ioctl retry iov elements
+Subject: [ 178/180] rtc: wm831x: Feed the write counter into device_add_randomness()
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,45 +25,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zach Brown <zab@redhat.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit fb6ccff667712c46b4501b920ea73a326e49626a upstream.
+commit 9dccf55f4cb011a7552a8a2749a580662f5ed8ed upstream.
 
-Commit 7572777eef78ebdee1ecb7c258c0ef94d35bad16 attempted to verify that
-the total iovec from the client doesn't overflow iov_length() but it
-only checked the first element.  The iovec could still overflow by
-starting with a small element.  The obvious fix is to check all the
-elements.
+The tamper evident features of the RTC include the "write counter" which
+is a pseudo-random number regenerated whenever we set the RTC. Since this
+value is unpredictable it should provide some useful seeding to the random
+number generator.
 
-The overflow case doesn't look dangerous to the kernel as the copy is
-limited by the length after the overflow.  This fix restores the
-intention of returning an error instead of successfully copying less
-than the iovec represented.
+Only do this on boot since the goal is to seed the pool rather than add
+useful entropy.
 
-I found this by code inspection.  I built it but don't have a test case.
-I'm cc:ing stable because the initial commit did as well.
-
-Signed-off-by: Zach Brown <zab@redhat.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/fuse/file.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/rtc/rtc-wm831x.c |   24 +++++++++++++++++++++++-
+ 1 files changed, 23 insertions(+), 1 deletions(-)
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index f6104a95..102d582 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1664,7 +1664,7 @@ static int fuse_verify_ioctl_iov(struct iovec *iov, size_t count)
- 	size_t n;
- 	u32 max = FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT;
+diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
+index 79795cd..daefe66 100644
+--- a/drivers/rtc/rtc-wm831x.c
++++ b/drivers/rtc/rtc-wm831x.c
+@@ -23,7 +23,7 @@
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
+-
++#include <linux/random.h>
  
--	for (n = 0; n < count; n++) {
-+	for (n = 0; n < count; n++, iov++) {
- 		if (iov->iov_len > (size_t) max)
- 			return -ENOMEM;
- 		max -= iov->iov_len;
+ /*
+  * R16416 (0x4020) - RTC Write Counter
+@@ -95,6 +95,26 @@ struct wm831x_rtc {
+ 	unsigned int alarm_enabled:1;
+ };
+ 
++static void wm831x_rtc_add_randomness(struct wm831x *wm831x)
++{
++	int ret;
++	u16 reg;
++
++	/*
++	 * The write counter contains a pseudo-random number which is
++	 * regenerated every time we set the RTC so it should be a
++	 * useful per-system source of entropy.
++	 */
++	ret = wm831x_reg_read(wm831x, WM831X_RTC_WRITE_COUNTER);
++	if (ret >= 0) {
++		reg = ret;
++		add_device_randomness(&reg, sizeof(reg));
++	} else {
++		dev_warn(wm831x->dev, "Failed to read RTC write counter: %d\n",
++			 ret);
++	}
++}
++
+ /*
+  * Read current time and date in RTC
+  */
+@@ -464,6 +484,8 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
+ 			alm_irq, ret);
+ 	}
+ 
++	wm831x_rtc_add_randomness(wm831x);
++
+ 	return 0;
+ 
+ err:
 -- 
 1.7.2.1.45.g54fbc
 
