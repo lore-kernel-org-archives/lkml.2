@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758699Ab2JAXer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:34:47 -0400
-Received: from 1wt.eu ([62.212.114.60]:35128 "EHLO 1wt.eu"
+	id S1758721Ab2JAXfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:35:18 -0400
+Received: from 1wt.eu ([62.212.114.60]:35119 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932634Ab2JAXAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:19 -0400
-Message-Id: <20121001225201.586140633@1wt.eu>
+	id S1757544Ab2JAXAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:17 -0400
+Message-Id: <20121001225159.817081664@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:31 +0200
+Date: Tue, 02 Oct 2012 00:52:49 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Tyler Hicks <tyhicks@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jeff Mahoney <jeffm@suse.com>, "David S. Miller" <davem@davemloft.net>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 094/180] eCryptfs: Properly check for O_RDONLY flag before doing privileged open
+Subject: [ 052/180] dl2k: Clean up rio_ioctl
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +23,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 9fe79d7600497ed8a95c3981cbe5b73ab98222f0 upstream.
+commit 1bb57e940e1958e40d51f2078f50c3a96a9b2d75 upstream
 
-If the first attempt at opening the lower file read/write fails,
-eCryptfs will retry using a privileged kthread. However, the privileged
-retry should not happen if the lower file's inode is read-only because a
-read/write open will still be unsuccessful.
+The dl2k driver's rio_ioctl call has a few issues:
+- No permissions checking
+- Implements SIOCGMIIREG and SIOCGMIIREG using the SIOCDEVPRIVATE numbers
+- Has a few ioctls that may have been used for debugging at one point
+  but have no place in the kernel proper.
 
-The check for determining if the open should be retried was intended to
-be based on the access mode of the lower file's open flags being
-O_RDONLY, but the check was incorrectly performed. This would cause the
-open to be retried by the privileged kthread, resulting in a second
-failed open of the lower file. This patch corrects the check to
-determine if the open request should be handled by the privileged
-kthread.
+This patch removes all but the MII ioctls, renumbers them to use the
+standard ones, and adds the proper permission check for SIOCSMIIREG.
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+We can also get rid of the dl2k-specific struct mii_data in favor of
+the generic struct mii_ioctl_data.
+
+Since we have the phyid on hand, we can add the SIOCGMIIPHY ioctl too.
+
+Most of the MII code for the driver could probably be converted to use
+the generic MII library but I don't have a device to test the results.
+
+Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/ecryptfs/kthread.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/dl2k.c |   52 +++++++++-------------------------------------------
+ drivers/net/dl2k.h |    7 -------
+ 2 files changed, 9 insertions(+), 50 deletions(-)
 
-diff --git a/fs/ecryptfs/kthread.c b/fs/ecryptfs/kthread.c
-index e14cf7e..5ffc900 100644
---- a/fs/ecryptfs/kthread.c
-+++ b/fs/ecryptfs/kthread.c
-@@ -148,7 +148,7 @@ int ecryptfs_privileged_open(struct file **lower_file,
- 	(*lower_file) = dentry_open(lower_dentry, lower_mnt, flags, cred);
- 	if (!IS_ERR(*lower_file))
- 		goto out;
--	if (flags & O_RDONLY) {
-+	if ((flags & O_ACCMODE) == O_RDONLY) {
- 		rc = PTR_ERR((*lower_file));
- 		goto out;
+diff --git a/drivers/net/dl2k.c b/drivers/net/dl2k.c
+index 731ee85..c2f9313 100644
+--- a/drivers/net/dl2k.c
++++ b/drivers/net/dl2k.c
+@@ -1279,55 +1279,21 @@ rio_ioctl (struct net_device *dev, struct ifreq *rq, int cmd)
+ {
+ 	int phy_addr;
+ 	struct netdev_private *np = netdev_priv(dev);
+-	struct mii_data *miidata = (struct mii_data *) &rq->ifr_ifru;
+-
+-	struct netdev_desc *desc;
+-	int i;
++	struct mii_ioctl_data *miidata = if_mii(rq);
+ 
+ 	phy_addr = np->phy_addr;
+ 	switch (cmd) {
+-	case SIOCDEVPRIVATE:
+-		break;
+-
+-	case SIOCDEVPRIVATE + 1:
+-		miidata->out_value = mii_read (dev, phy_addr, miidata->reg_num);
++	case SIOCGMIIPHY:
++		miidata->phy_id = phy_addr;
+ 		break;
+-	case SIOCDEVPRIVATE + 2:
+-		mii_write (dev, phy_addr, miidata->reg_num, miidata->in_value);
++	case SIOCGMIIREG:
++		miidata->val_out = mii_read (dev, phy_addr, miidata->reg_num);
+ 		break;
+-	case SIOCDEVPRIVATE + 3:
+-		break;
+-	case SIOCDEVPRIVATE + 4:
+-		break;
+-	case SIOCDEVPRIVATE + 5:
+-		netif_stop_queue (dev);
++	case SIOCSMIIREG:
++		if (!capable(CAP_NET_ADMIN))
++			return -EPERM;
++		mii_write (dev, phy_addr, miidata->reg_num, miidata->val_in);
+ 		break;
+-	case SIOCDEVPRIVATE + 6:
+-		netif_wake_queue (dev);
+-		break;
+-	case SIOCDEVPRIVATE + 7:
+-		printk
+-		    ("tx_full=%x cur_tx=%lx old_tx=%lx cur_rx=%lx old_rx=%lx\n",
+-		     netif_queue_stopped(dev), np->cur_tx, np->old_tx, np->cur_rx,
+-		     np->old_rx);
+-		break;
+-	case SIOCDEVPRIVATE + 8:
+-		printk("TX ring:\n");
+-		for (i = 0; i < TX_RING_SIZE; i++) {
+-			desc = &np->tx_ring[i];
+-			printk
+-			    ("%02x:cur:%08x next:%08x status:%08x frag1:%08x frag0:%08x",
+-			     i,
+-			     (u32) (np->tx_ring_dma + i * sizeof (*desc)),
+-			     (u32)le64_to_cpu(desc->next_desc),
+-			     (u32)le64_to_cpu(desc->status),
+-			     (u32)(le64_to_cpu(desc->fraginfo) >> 32),
+-			     (u32)le64_to_cpu(desc->fraginfo));
+-			printk ("\n");
+-		}
+-		printk ("\n");
+-		break;
+-
+ 	default:
+ 		return -EOPNOTSUPP;
  	}
+diff --git a/drivers/net/dl2k.h b/drivers/net/dl2k.h
+index 73e1457..cde8ecd 100644
+--- a/drivers/net/dl2k.h
++++ b/drivers/net/dl2k.h
+@@ -365,13 +365,6 @@ struct ioctl_data {
+ 	char *data;
+ };
+ 
+-struct mii_data {
+-	__u16 reserved;
+-	__u16 reg_num;
+-	__u16 in_value;
+-	__u16 out_value;
+-};
+-
+ /* The Rx and Tx buffer descriptors. */
+ struct netdev_desc {
+ 	__le64 next_desc;
 -- 
 1.7.2.1.45.g54fbc
 
