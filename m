@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273Ab2JAXDW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:03:22 -0400
-Received: from 1wt.eu ([62.212.114.60]:35652 "EHLO 1wt.eu"
+	id S964788Ab2JAXIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:08:00 -0400
+Received: from 1wt.eu ([62.212.114.60]:35786 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757726Ab2JAXDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:03:17 -0400
-Message-Id: <20121001225204.349611017@1wt.eu>
+	id S1753232Ab2JAXH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:07:57 -0400
+Message-Id: <20121001225159.055640879@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:36 +0200
+Date: Tue, 02 Oct 2012 00:52:31 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Theodore Tso" <tytso@mit.edu>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Borislav Petkov <borislav.petkov@amd.com>, Yinghai Lu <yinghai@kernel.org>,
+        stable@kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Jiri Slaby <jslaby@suse.cz>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 159/180] random: Add support for architectural random hooks
+Subject: [ 034/180] x86/PCI: amd: factor out MMCONFIG discovery
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,102 +25,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H. Peter Anvin <hpa@zytor.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 63d77173266c1791f1553e9e8ccea65dc87c4485 upstream.
+commit 24d25dbfa63c376323096660bfa9ad45a08870ce upstream.
 
-Add support for architecture-specific hooks into the kernel-directed
-random number generator interfaces.  This patchset does not use the
-architecture random number generator interfaces for the
-userspace-directed interfaces (/dev/random and /dev/urandom), thus
-eliminating the need to distinguish between them based on a pool
-pointer.
+This factors out the AMD native MMCONFIG discovery so we can use it
+outside amd_bus.c.
 
-Changes in version 3:
-- Moved the hooks from extract_entropy() to get_random_bytes().
-- Changes the hooks to inlines.
+amd_bus.c reads AMD MSRs so it can remove the MMCONFIG area from the
+PCI resources.  We may also need the MMCONFIG information to work
+around BIOS defects in the ACPI MCFG table.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-[PG: .34 already had "unsigned int ret" in get_random_int, so the
- diffstat here is slightly smaller than that of 63d7717. ]
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+[WT: this patch was initially not planned for 2.6.32 but is required by commit
+ 2215d910 merged into 2.6.32.55 and which relies on amd_get_mmconfig_range() ]
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/char/random.c  |   23 +++++++++++++++++++++--
- include/linux/random.h |   13 +++++++++++++
- 2 files changed, 34 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/k8.h |    2 ++
+ arch/x86/kernel/k8.c      |   31 +++++++++++++++++++++++++++++++
+ arch/x86/pci/amd_bus.c    |   42 +++++++++++-------------------------------
+ 3 files changed, 44 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 0adb8c8..93b3c29 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -932,7 +932,21 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
-  */
- void get_random_bytes(void *buf, int nbytes)
- {
--	extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
-+	char *p = buf;
-+
-+	while (nbytes) {
-+		unsigned long v;
-+		int chunk = min(nbytes, (int)sizeof(unsigned long));
-+
-+		if (!arch_get_random_long(&v))
-+			break;
-+
-+		memcpy(buf, &v, chunk);
-+		p += chunk;
-+		nbytes -= chunk;
-+	}
-+
-+	extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
+diff --git a/arch/x86/include/asm/k8.h b/arch/x86/include/asm/k8.h
+index f0746f4..41845d2 100644
+--- a/arch/x86/include/asm/k8.h
++++ b/arch/x86/include/asm/k8.h
+@@ -1,11 +1,13 @@
+ #ifndef _ASM_X86_K8_H
+ #define _ASM_X86_K8_H
+ 
++#include <linux/ioport.h>
+ #include <linux/pci.h>
+ 
+ extern struct pci_device_id k8_nb_ids[];
+ 
+ extern int early_is_k8_nb(u32 value);
++extern struct resource *amd_get_mmconfig_range(struct resource *res);
+ extern struct pci_dev **k8_northbridges;
+ extern int num_k8_northbridges;
+ extern int cache_k8_northbridges(void);
+diff --git a/arch/x86/kernel/k8.c b/arch/x86/kernel/k8.c
+index 9b89546..2831a32 100644
+--- a/arch/x86/kernel/k8.c
++++ b/arch/x86/kernel/k8.c
+@@ -87,6 +87,37 @@ int __init early_is_k8_nb(u32 device)
+ 	return 0;
  }
- EXPORT_SYMBOL(get_random_bytes);
  
-@@ -1360,9 +1374,14 @@ late_initcall(random_int_secret_init);
- DEFINE_PER_CPU(__u32 [MD5_DIGEST_WORDS], get_random_int_hash);
- unsigned int get_random_int(void)
++struct resource *amd_get_mmconfig_range(struct resource *res)
++{
++	u32 address;
++	u64 base, msr;
++	unsigned segn_busn_bits;
++
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
++		return NULL;
++
++	/* assume all cpus from fam10h have mmconfig */
++	if (boot_cpu_data.x86 < 0x10)
++		return NULL;
++
++	address = MSR_FAM10H_MMIO_CONF_BASE;
++	rdmsrl(address, msr);
++
++	/* mmconfig is not enabled */
++	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
++		return NULL;
++
++	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
++
++	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
++                         FAM10H_MMIO_CONF_BUSRANGE_MASK;
++
++	res->flags = IORESOURCE_MEM;
++	res->start = base;
++	res->end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
++	return res;
++}
++
+ void k8_flush_garts(void)
  {
--	__u32 *hash = get_cpu_var(get_random_int_hash);
-+	__u32 *hash;
- 	unsigned int ret;
+ 	int flushed, i;
+diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+index 572ee97..cb34763 100644
+--- a/arch/x86/pci/amd_bus.c
++++ b/arch/x86/pci/amd_bus.c
+@@ -190,34 +190,6 @@ static struct pci_hostbridge_probe pci_probes[] __initdata = {
+ 	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1300 },
+ };
  
-+	if (arch_get_random_int(&ret))
-+		return ret;
-+
-+	hash = get_cpu_var(get_random_int_hash);
-+
- 	hash[0] += current->pid + jiffies + get_cycles();
- 	md5_transform(hash, random_int_secret);
- 	ret = hash[0];
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 2948046..0bf2936 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -63,6 +63,19 @@ unsigned long randomize_range(unsigned long start, unsigned long end, unsigned l
- u32 random32(void);
- void srandom32(u32 seed);
+-static u64 __initdata fam10h_mmconf_start;
+-static u64 __initdata fam10h_mmconf_end;
+-static void __init get_pci_mmcfg_amd_fam10h_range(void)
+-{
+-	u32 address;
+-	u64 base, msr;
+-	unsigned segn_busn_bits;
+-
+-	/* assume all cpus from fam10h have mmconf */
+-        if (boot_cpu_data.x86 < 0x10)
+-		return;
+-
+-	address = MSR_FAM10H_MMIO_CONF_BASE;
+-	rdmsrl(address, msr);
+-
+-	/* mmconfig is not enable */
+-	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
+-		return;
+-
+-	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
+-
+-	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
+-			 FAM10H_MMIO_CONF_BUSRANGE_MASK;
+-
+-	fam10h_mmconf_start = base;
+-	fam10h_mmconf_end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
+-}
+-
+ /**
+  * early_fill_mp_bus_to_node()
+  * called before pcibios_scan_root and pci_scan_bus
+@@ -243,6 +215,9 @@ static int __init early_fill_mp_bus_info(void)
+ 	struct res_range range[RANGE_NUM];
+ 	u64 val;
+ 	u32 address;
++	struct resource fam10h_mmconf_res, *fam10h_mmconf;
++	u64 fam10h_mmconf_start;
++	u64 fam10h_mmconf_end;
  
-+#ifdef CONFIG_ARCH_RANDOM
-+# include <asm/archrandom.h>
-+#else
-+static inline int arch_get_random_long(unsigned long *v)
-+{
-+	return 0;
-+}
-+static inline int arch_get_random_int(unsigned int *v)
-+{
-+	return 0;
-+}
-+#endif
-+
- #endif /* __KERNEL___ */
+ 	if (!early_pci_allowed())
+ 		return -1;
+@@ -367,11 +342,16 @@ static int __init early_fill_mp_bus_info(void)
+ 		update_range(range, 0, end - 1);
  
- #endif /* _LINUX_RANDOM_H */
+ 	/* get mmconfig */
+-	get_pci_mmcfg_amd_fam10h_range();
++	fam10h_mmconf = amd_get_mmconfig_range(&fam10h_mmconf_res);
+ 	/* need to take out mmconf range */
+-	if (fam10h_mmconf_end) {
+-		printk(KERN_DEBUG "Fam 10h mmconf [%llx, %llx]\n", fam10h_mmconf_start, fam10h_mmconf_end);
++	if (fam10h_mmconf) {
++		printk(KERN_DEBUG "Fam 10h mmconf %pR\n", fam10h_mmconf);
++		fam10h_mmconf_start = fam10h_mmconf->start;
++		fam10h_mmconf_end = fam10h_mmconf->end;
+ 		update_range(range, fam10h_mmconf_start, fam10h_mmconf_end);
++	} else {
++		fam10h_mmconf_start = 0;
++		fam10h_mmconf_end = 0;
+ 	}
+ 
+ 	/* mmio resource */
 -- 
 1.7.2.1.45.g54fbc
 
