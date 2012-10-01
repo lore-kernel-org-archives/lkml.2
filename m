@@ -1,42 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab2JAJWB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 05:22:01 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:33573 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab2JAJWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 05:22:00 -0400
-Message-ID: <506960AE.2000402@ahsoftware.de>
-Date: Mon, 01 Oct 2012 11:21:50 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752651Ab2JAJ2D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 05:28:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51893 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751536Ab2JAJ2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 05:28:00 -0400
+Date: Mon, 1 Oct 2012 11:27:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+Message-ID: <20121001092756.GA8622@dhcp22.suse.cz>
+References: <20120926193417.GJ12544@google.com>
+ <50635B9D.8020205@parallels.com>
+ <20120926195648.GA20342@google.com>
+ <50635F46.7000700@parallels.com>
+ <20120926201629.GB20342@google.com>
+ <50637298.2090904@parallels.com>
+ <20120927120806.GA29104@dhcp22.suse.cz>
+ <20120927143300.GA4251@mtj.dyndns.org>
+ <20120927150950.GG29104@dhcp22.suse.cz>
+ <20120930084750.GI10383@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: kernel BUG at fs/buffer.c:3205 (stable 3.5.3)
-References: <50531629.9020107@ahsoftware.de> <20120925110206.GD28937@mwanda> <50643C4A.9010202@ahsoftware.de> <20120927151232.GA12210@quack.suse.cz> <506474E8.3030300@ahsoftware.de> <20120927200342.GB12553@quack.suse.cz> <506746EF.5070000@ahsoftware.de> <20121001091001.GA22800@quack.suse.cz>
-In-Reply-To: <20121001091001.GA22800@quack.suse.cz>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120930084750.GI10383@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-Am 01.10.2012 11:10, schrieb Jan Kara:
+On Sun 30-09-12 17:47:50, Tejun Heo wrote:
+[...]
+> > > The hot path overhead is quite minimal - it doesn't do much more than
+> > > indirecting one more time.  In terms of memory usage, it sure could
+> > > lead to a bit more fragmentation but even if it gets to several megs
+> > > per cgroup, I don't think that's something excessive.  So, there is
+> > > overhead but I don't believe it to be prohibitive.
+> > 
+> > Remember that users do not want to pay even "something minimal" when the
+> > feature is not needed.
+> 
+> Yeah but, if we can get it down to, say, around 1% under most
+> workloads for memcg users, it is quite questionable to introduce full
+> hierarchical configuration to allow avoiding that, isn't it?
 
->> sha1sum Tainted: P           O 3.5.4-00009-gfa43f23-dirty #228
->    BTW, fglrx moodule taints the kernel because it is a proprietary driver.
+Remember that the kmem memory is still accounted to u+k if it is enabled
+which could be a no-go because some workloads (I have provided an
+example that those which are trusted are generally safe to ignore kernel
+memory overhead) simply don't want to consider additional memory which
+is mostly invisible for them.
 
-I know.
+> > > The distinction between "trusted" and "untrusted" is something
+> > > artificially created due to the assumed deficiency of kmemcg
+> > > implementation.  
+> > 
+> > Not really. It doesn't have to do anything with the overhead (be it
+> > memory or runtime). It really boils down to "do I need/want it at all".
+> > Why would I want to think about how much kernel memory is in use in the
+> > first place? Or do you think that user memory accounting should be
+> > deprecated?
+> 
+> But you can apply the same "do I need/want it at all" question to the
+> configuration parameter too.  
 
-> Can you reproduce the issue without this module loaded?
+Yes but, as I've said, the global configuration parameter is too
+coarse. You can have a mix of trusted and untrusted workloads at the
+same machine (e.g. web server which is inherently untrusted) and trusted
+(local batch jobs which just needs a special LRU aging).
 
-I will try it with a clean 3.6. Most of the 9 additional patches here 
-are for ARM boxes, but anyway. I will need a few days.
+> I can see your point but the decision seems muddy to me, and if muddy,
+> I prefer to err on the side of being too conservative.
+> 
+> > > This is userland visible API.  
+> > 
+> > I am not sure which API visible part you have in mind but
+> > kmem.limit_in_bytes will be there whether we go with global knob or "no
+> > limit no accounting" approach. 
+> 
+> I mean full hierarchical configuration of it.  It becomes something
+> which each memcg user cares about instead of something which the base
+> system / admin flips on system boot.
+> 
+> > > We can always expand the flexibility.  Let's do the simple thing
+> > > first.  As an added bonus, it would enable using static_keys for
+> > > accounting branches too.
+> > 
+> > While I do agree with you in general and being careful is at place in
+> > this area as time shown several times, this seems to be too restrictive
+> > in this particular case.
+> > We won't save almost no code with the global knob so I am not sure
+> > what we are actually saving here. Global knob will just give us all or
+> > nothing semantic without making the whole thing simpler. You will stick
+> > with static branches and checkes whether the group accountable anyway,
+> > right?
+> 
+> The thing is about the same argument can be made about .use_hierarchy
+> too.  It doesn't necessarily make the code much harier.  Especially
+> because the code is structured with that feature on mind, removing
+> .use_hierarchy might not remove whole lot of code; however, the wider
+> range of behavior which got exposed through that poses a much larger
+> problem when we try to make modifications on related behaviors.  We
+> get a lot more locked down by seemingly not too much code and our long
+> term maintainability / sustainability suffers as a result.
 
-Regards,
+I think that comparing kmem accounting with use_hierarchy is not fair.
+Glauber tried to explain why already so I will not repeat it here.
+I will just mention one thing. use_hierarchy has been introduces becuase
+hierarchies were expensive at the time. kmem accounting is about should
+we do u or u+k accounting. So there is a crucial difference.
+ 
+> I'm not trying to say this is as bad as .use_hierarchy but want to
+> point out that memcg and cgroup in general have had pretty strong
+> tendency to choose overly flexible and complex designs and interfaces
+> and it's probably about time we become more careful especially about
+> stuff which is visible to userland.
 
-Alexander
+That is right but I think that the current discussion shows that a mixed
+(kmem disabled and kmem enabled hierarchies) workloads are far from
+being theoretical and a global knob is just too coarse. I am afraid we
+will see "we want that per hierarchy" requests shortly and that would
+just add a new confusion where global knob would complicate it
+considerably (do we really want on/off/per_hierarchy global knob?).
+-- 
+Michal Hocko
+SUSE Labs
