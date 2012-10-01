@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab2JAO0B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 10:26:01 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47667 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab2JAOZ7 (ORCPT
+	id S1752524Ab2JAO1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 10:27:44 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:33549 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab2JAO1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 10:25:59 -0400
-From: Yuta Ando <yuta.and@gmail.com>
-To: linux-kbuild@vger.kernel.org
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Yuta Ando <yuta.and@gmail.com>
-Subject: [PATCH] kconfig: Fix localyesconfig don't sets to 'yes'
-Date: Mon,  1 Oct 2012 23:24:30 +0900
-Message-Id: <1349101470-12243-1-git-send-email-yuta.and@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+	Mon, 1 Oct 2012 10:27:42 -0400
+Date: Mon, 1 Oct 2012 07:27:37 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Irina Tirdea <irina.tirdea@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Irina Tirdea <irina.tirdea@intel.com>
+Subject: Re: [PATCH v2 3/4] perf annotate: configure objdump path at compile
+ time
+Message-ID: <20121001142737.GC9829@ghostprotocols.net>
+References: <1348428446-28245-1-git-send-email-irina.tirdea@gmail.com>
+ <1348428446-28245-4-git-send-email-irina.tirdea@gmail.com>
+ <1348578539.1877.40.camel@leonhard>
+ <CANg8OW+u=dsi=5Y04ka0D=VLKEUELAo1L3mkWhs5mOqTS4c1jA@mail.gmail.com>
+ <87d318w7u9.fsf@sejong.aot.lge.com>
+ <CANg8OWLR64RQYMwi=vx78tWBfcML4CPrerXV3nE+ngYkJ3Ru=A@mail.gmail.com>
+ <87haqjvc6f.fsf@sejong.aot.lge.com>
+ <20121001072154.GA17143@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121001072154.GA17143@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kbuild target 'localyesconfig' has been same as 'localmodconfig'
-since the commit 50bce3e "kconfig/streamline_config.pl: merge
-local{mod,yes}config". The commit expects this script generates
-different configure depending on target, but it was not yet implemented.
+Em Mon, Oct 01, 2012 at 09:21:54AM +0200, Ingo Molnar escreveu:
+> * Namhyung Kim <namhyung@kernel.org> wrote:
+> > What I'm thinking is that perf can try to find cross-built binutils
+> > when it detects perf.data file is came from other
+> > machine/architecture. Fortunately perf_session_env was added
+> > recently and it has the arch information from the file so we can use
+> > it to find the path.
 
-So I added code sets to 'yes' when target is 'localyesconfig'.
+> > Following patch is a proof-of-concept patch and only build tested.
+> > What do you think?  Could you play with it for some time? :)
 
-Signed-off-by: Yuta Ando <yuta.and@gmail.com>
----
- scripts/kconfig/streamline_config.pl |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> This is a pretty clever idea - much better than hard-coding 
+> architecture details at build time.
 
-diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
-index 2fbbbc1..5eb3777 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -605,6 +605,8 @@ foreach my $line (@config_file) {
- 	if (defined($configs{$1})) {
- 	    if ($localyesconfig) {
- 	        $setconfigs{$1} = 'y';
-+		print "$1=y\n";
-+		next;
- 	    } else {
- 	        $setconfigs{$1} = $2;
- 	    }
--- 
-1.7.3.4
+Indeed, great idea!
 
+- Arnaldo
