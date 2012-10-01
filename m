@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab2JAWSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 18:18:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55622 "EHLO mx2.suse.de"
+	id S1757464Ab2JAWUD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 18:20:03 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:48190
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751439Ab2JAWSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 18:18:09 -0400
-Date: Tue, 2 Oct 2012 00:18:00 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Emil Goode <emilgoode@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] HID: picoLCD: Remove use of deprecated function
-In-Reply-To: <20120906201538.GK29092@google.com>
-Message-ID: <alpine.LNX.2.00.1210020017200.23544@pobox.suse.cz>
-References: <1346942780-8091-1-git-send-email-emilgoode@gmail.com> <20120906221252.1402ba50@neptune.home> <20120906201538.GK29092@google.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1751260Ab2JAWUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 18:20:01 -0400
+X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Oct 2012 18:20:01 EDT
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: [PATCH net,1/3] hyperv: Fix the max_xfer_size in RNDIS initialization
+Date: Mon,  1 Oct 2012 15:30:55 -0700
+Message-Id: <1349130657-7987-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Sep 2012, Tejun Heo wrote:
+According to RNDIS specs, Windows sets this size to
+0x4000. I use the same value here.
 
-> > > Sparse is giving a warning:
-> > > drivers/hid/hid-picolcd_fb.c:611:2: warning:
-> > > 	‘flush_delayed_work_sync’ is deprecated
-> > > 	(declared at include/linux/workqueue.h:454)
-> > > 	[-Wdeprecated-declarations]
-> > > 
-> > > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > 
-> > Acked-by: Bruno Prémont <bonbons@linux-vserver.org>
-> > 
-> > This matches a patch by Tejun a few weeks ago which was partially
-> > skipped in -next due to merge conflict with code split in picoLCD.
-> > 
-> > See http://comments.gmane.org/gmane.linux.kernel.next/23740
-> > 
-> > For the sake of proper bisectability, this should go in after
-> > Tejun's workqueue changes (if needed at all depending on how merge
-> > happens during pull by Linus).
-> 
-> Yeah, we either can ask Linus to fix it up during merge or send a
-> separate patch afterwards.  In this case, I don't think it matters too
-> much either way.  I tend to send out pull request fairly early in the
-> merge window, I'll try to remember to poke Linus about the merge
-> conflict.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-Linus has just pulled from me, so if you could take care of this merge 
-conflict, that'd be awesome.
+---
+ drivers/net/hyperv/rndis_filter.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Thanks,
-
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index 1e88a10..3cb7486 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -678,8 +678,7 @@ static int rndis_filter_init_device(struct rndis_device *dev)
+ 	init = &request->request_msg.msg.init_req;
+ 	init->major_ver = RNDIS_MAJOR_VERSION;
+ 	init->minor_ver = RNDIS_MINOR_VERSION;
+-	/* FIXME: Use 1536 - rounded ethernet frame size */
+-	init->max_xfer_size = 2048;
++	init->max_xfer_size = 0x4000;
+ 
+ 	dev->state = RNDIS_DEV_INITIALIZING;
+ 
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.4.1
+
