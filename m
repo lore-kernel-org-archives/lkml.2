@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab2JAOCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 10:02:36 -0400
-Received: from shutemov.name ([176.9.204.213]:59613 "EHLO shutemov.name"
+	id S1752703Ab2JAOCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 10:02:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20666 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab2JAOCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 10:02:34 -0400
-Date: Mon, 1 Oct 2012 17:03:05 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, akpm@linux-foundation.org, mhocko@suse.cz,
-        Steve Capper <steve.capper@arm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] mm: thp: Set the accessed flag for old pages on access
- fault.
-Message-ID: <20121001140305.GA20173@shutemov.name>
-References: <1349099505-5581-1-git-send-email-will.deacon@arm.com>
+	id S1751989Ab2JAOCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 10:02:35 -0400
+Date: Mon, 1 Oct 2012 16:03:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] uprobes: register/unregister bugfixes
+Message-ID: <20121001140327.GA2389@redhat.com>
+References: <20120930194119.GA11278@redhat.com> <20120930194438.GA11222@redhat.com> <20121001125552.GA27781@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349099505-5581-1-git-send-email-will.deacon@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121001125552.GA27781@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 02:51:45PM +0100, Will Deacon wrote:
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 5736170..d5c007d 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3537,7 +3537,11 @@ retry:
->  				if (unlikely(ret & VM_FAULT_OOM))
->  					goto retry;
->  				return ret;
-> +			} else {
-> +				huge_pmd_set_accessed(mm, vma, address, pmd,
-> +						      orig_pmd);
+On 10/01, Srikar Dronamraju wrote:
+>
+> > This is on top of "[PATCH 0/3] uprobes: mprotect fixes" series,
+> > which is still waiting for review...
+> >
+>
+> Did you mean [PATCH 0/4] uprobes: remove is_swbp_at_addr() from
+> register/unregister?
 
-I think putting it to 'else' is wrong. You should not touch pmd, if it's
-under splitting.
+Yes, sorry for confusion,
 
->  			}
-> +
->  			return 0;
->  		}
->  	}
+> I have already reviewed and acked "[PATCH 0/3] uprobes: mprotect fixes"
+> series".
 
--- 
- Kirill A. Shutemov
+Yes, and I already added your acks, thanks.
+
+> Got distracted by the register/unregister bug that we were discussing
+> offline.
+
+Yes. 2-6 try to fix the bugs I found by the code inspection, but
+I do not think they can fix that bug, I guess there is yet another
+problem we need to fix.
+
+Oleg.
+
