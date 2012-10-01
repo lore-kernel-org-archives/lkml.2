@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab2JAQdM (ORCPT <rfc822;w@1wt.eu>);
+	id S1753436Ab2JAQdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 12:33:18 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38417 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753373Ab2JAQdM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Oct 2012 12:33:12 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:39932 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753098Ab2JAQdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 12:33:08 -0400
-Message-ID: <5069C5AF.3030607@iki.fi>
-Date: Mon, 01 Oct 2012 19:32:47 +0300
-From: Antti Palosaari <crope@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+Date: Mon, 1 Oct 2012 17:32:50 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mhocko@suse.cz" <mhocko@suse.cz>, Steve Capper <Steve.Capper@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] mm: thp: Set the accessed flag for old pages on access
+ fault.
+Message-ID: <20121001163250.GO20812@mudshark.cambridge.arm.com>
+References: <1349099505-5581-1-git-send-email-will.deacon@arm.com>
+ <20121001145944.GA18051@redhat.com>
 MIME-Version: 1.0
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Add stk1160 driver
-References: <1349101213-21723-1-git-send-email-elezegarcia@gmail.com>
-In-Reply-To: <1349101213-21723-1-git-send-email-elezegarcia@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 82.128.186.237
-X-SA-Exim-Mail-From: crope@iki.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121001145944.GA18051@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2012 05:20 PM, Ezequiel Garcia wrote:
-> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
-> ---
->   MAINTAINERS |    7 +++++++
->   1 files changed, 7 insertions(+), 0 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 0750c24..17f6fb0 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3168,6 +3168,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->   S:	Maintained
->   F:	drivers/media/usb/gspca/
->
-> +STK1160 USB VIDEO CAPTURE DRIVER
-> +M:	Ezequiel Garcia <elezegarcia@redhat.com>
+On Mon, Oct 01, 2012 at 03:59:44PM +0100, Andrea Arcangeli wrote:
+> Hi Will,
 
-Copy paste mistake?
+Hi Andrea, Kirill,
 
-> +L:	linux-media@vger.kernel.org
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-> +S:	Maintained
-> +F:	drivers/media/usb/stk1160/
-> +
->   HARD DRIVE ACTIVE PROTECTION SYSTEM (HDAPS) DRIVER
->   M:	Frank Seidel <frank@f-seidel.de>
->   L:	platform-driver-x86@vger.kernel.org
->
+Thanks for the comments.
 
-regards
-Antti
+> On Mon, Oct 01, 2012 at 02:51:45PM +0100, Will Deacon wrote:
+> > +void huge_pmd_set_accessed(struct mm_struct *mm, struct vm_area_struct *vma,
+> > +			   unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
+> > +{
+> > +	pmd_t entry;
+> > +
+> > +	spin_lock(&mm->page_table_lock);
+> > +	entry = pmd_mkyoung(orig_pmd);
+> > +	if (pmdp_set_access_flags(vma, address & HPAGE_PMD_MASK, pmd, entry, 0))
+> > +		update_mmu_cache(vma, address, pmd);
+> 
+> If the pmd is being splitted, this may not be a trasnhuge pmd anymore
+> by the time you obtained the lock. (orig_pmd could be stale, and it
+> wasn't verified with pmd_same either)
+> 
+> The lock should be obtained through pmd_trans_huge_lock.
+> 
+>   if (pmd_trans_huge_lock(orig_pmd, vma) == 1)
+>   {
+> 	set young bit
+> 	spin_unlock(&mm->page_table_lock);
+>   }
 
--- 
-http://palosaari.fi/
+I didn't notice that -- thanks. I'll move the locking outside of the
+_set_accessed function and direct it via that function instead.
+
+> On x86:
+> 
+> int pmdp_set_access_flags(struct vm_area_struct *vma,
+> 			  unsigned long address, pmd_t *pmdp,
+> 			  pmd_t entry, int dirty)
+> {
+> 	int changed = !pmd_same(*pmdp, entry);
+> 
+> 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
+> 
+> 	if (changed && dirty) {
+> 		*pmdp = entry;
+> 
+> with dirty == 0 it looks like it won't make any difference, but I
+> guess your arm pmdp_set_access_flag is different.
+
+We use the generic code, which ignores the dirty argument. Still, we should
+pass the correct value through anyway, so I'll fix that too.
+
+> However it seems "dirty" means write access and so the invocation
+> would better match the pte case:
+> 
+> 	if (pmdp_set_access_flags(vma, address & HPAGE_PMD_MASK, pmd, entry,
+> 	    flags & FAULT_FLAG_WRITE))
+> 
+> 
+> But note, you still have to update it even when "dirty" == 0, or it'll
+> still infinite loop for read accesses.
+
+Yup. v2 to follow once we've re-run our testing.
+
+Cheers,
+
+Will
