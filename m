@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab2JAV5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 17:57:18 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34017 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757515Ab2JAV5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 17:57:16 -0400
-From: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Re: 3.4.10 i915 [GM45] regression
-Date: Mon, 01 Oct 2012 23:56:28 +0200
-Message-ID: <6616255.1baV4zcIkN@tux200s>
-Organization: Andreas Sturmlechner
-User-Agent: KMail/4.9.1 (Linux/3.6.0-ownage; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <CAKMK7uE-L-+bFxJad3-pa-8i2MwvYw4_vYoWM8S-bxRmKruzoQ@mail.gmail.com>
-References: <2372445.fuIXicT4H0@tux200s> <20120930143201.GA22107@kroah.com> <CAKMK7uE-L-+bFxJad3-pa-8i2MwvYw4_vYoWM8S-bxRmKruzoQ@mail.gmail.com>
+	id S1752782Ab2JAV7k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 17:59:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58369 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751439Ab2JAV7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 17:59:39 -0400
+Date: Mon, 1 Oct 2012 23:59:36 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Pierre Beck <mail@pierre-beck.de>, linux-kernel@vger.kernel.org
+Subject: Re: 3.6-rc7 32-bit PAE miscalculates dirty page limits
+Message-ID: <20121001215936.GC19126@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Pierre Beck <mail@pierre-beck.de>,
+	linux-kernel@vger.kernel.org
+References: <5068130A.4050602@pierre-beck.de>
+ <506894D5.5060101@zytor.com>
+ <506A06B6.50800@pierre-beck.de>
+ <20121001215202.GB19126@liondog.tnic>
+ <506A10E4.80905@zytor.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <506A10E4.80905@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Andreas, can you please check whether 3.5.x works for you, just to
-> make sure that this particular elephant is only wreaking havoc in 3.4
-> and earlier?
+On Mon, Oct 01, 2012 at 02:53:40PM -0700, H. Peter Anvin wrote:
+> It is very sad, though, that there are still drivers which don't work
+> correctly in compat mode. Please report bugs on those -- that is just
+> not acceptable.
+>
+> Unfortunately few distros provide 64-bit kernels for their 32-bit
+> distros, which acerbates the problem.
 
-I've been using 3.5 all the time since .0, I never had any trouble there - a few reboots just now with a vanilla 3.5.4 image were 
-successful as expected. Meanwhile I have upgraded to 3.6, zero issues as well.
+Yes, the other way 'round, 32-bit userspace on 64-bit kernels should
+work. And fixed if not.
 
-Regards
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
