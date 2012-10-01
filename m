@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab2JAJow (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 05:44:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52672 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab2JAJov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 05:44:51 -0400
-Date: Mon, 1 Oct 2012 11:44:47 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
-Message-ID: <20121001094447.GB8622@dhcp22.suse.cz>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
- <1347977050-29476-7-git-send-email-glommer@parallels.com>
- <20120926155108.GE15801@dhcp22.suse.cz>
- <5064392D.5040707@parallels.com>
- <20120927134432.GE29104@dhcp22.suse.cz>
- <50658B3B.9020303@parallels.com>
- <20120930082542.GH10383@mtj.dyndns.org>
+	id S1753037Ab2JAJqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 05:46:01 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57469 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab2JAJqA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 05:46:00 -0400
+Date: Mon, 1 Oct 2012 11:45:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, riel@redhat.com, oleg@redhat.com,
+        pjt@google.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        Lee.Schermerhorn@hp.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/19] mm/mpol: Add MPOL_MF_NOOP
+Message-ID: <20121001094554.GA19112@gmail.com>
+References: <20120731191204.540691987@chello.nl>
+ <20120731192808.769449391@chello.nl>
+ <CAHO5Pa2Ai6BzXFtTDBzuw4y=tzk9G4DA=9cRBojVjjMB9mtT0w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120930082542.GH10383@mtj.dyndns.org>
+In-Reply-To: <CAHO5Pa2Ai6BzXFtTDBzuw4y=tzk9G4DA=9cRBojVjjMB9mtT0w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 30-09-12 17:25:42, Tejun Heo wrote:
-> On Fri, Sep 28, 2012 at 03:34:19PM +0400, Glauber Costa wrote:
-> > On 09/27/2012 05:44 PM, Michal Hocko wrote:
-> > > Anyway, I have just noticed that __mem_cgroup_try_charge does
-> > > VM_BUG_ON(css_is_removed(&memcg->css)) on a given memcg so you should
-> > > keep css ref count up as well.
-> > 
-> > IIRC, css_get will prevent the cgroup directory from being removed.
-> > Because some allocations are expected to outlive the cgroup, we
-> > specifically don't want that.
-> 
-> That synchronous ref draining is going away.  Maybe we can do that
-> before kmemcg?  Michal, do you have some timeframe on mind?
 
-It is on my todo list but I didn't get to it yet. I am not sure we can
-get rid of css_get though - will have to think about that.
+* Michael Kerrisk <mtk.manpages@gmail.com> wrote:
 
+> On Tue, Jul 31, 2012 at 9:12 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> >
+> > This patch augments the MPOL_MF_LAZY feature by adding a 
+> > "NOOP" policy to mbind().  When the NOOP policy is used with 
+> > the 'MOVE and 'LAZY flags, mbind() [check_range()] will walk 
+> > the specified range and unmap eligible pages so that they 
+> > will be migrated on next touch.
 > 
-> Thanks.
-> 
-> -- 
-> tejun
+> This patch is mistitled. The new flag is MPOL_NOOP. That made 
+> it difficult to find the commit in linux-next. Does it make 
+> sense to fix the patch title before this hits mainline?
 
--- 
-Michal Hocko
-SUSE Labs
+In isolation such a minor title problem alone does not justify 
+rebasing.
+
+Thanks,
+
+	Ingo
