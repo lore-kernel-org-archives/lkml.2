@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab2JAPqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 11:46:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48543 "EHLO
+	id S1752829Ab2JAPqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 11:46:31 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60933 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab2JAPqE (ORCPT
+	with ESMTP id S1752469Ab2JAPqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 11:46:04 -0400
+	Mon, 1 Oct 2012 11:46:02 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Michal Marek <mmarek@suse.cz>
 Cc: linux-kbuild@vger.kernel.org, David Gibson <david@gibson.dropbear.id.au>,
@@ -17,9 +17,9 @@ Cc: linux-kbuild@vger.kernel.org, David Gibson <david@gibson.dropbear.id.au>,
         Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V3 2/2] kbuild: introduce cmd_dtc_cpp
-Date: Mon,  1 Oct 2012 09:45:51 -0600
-Message-Id: <1349106351-17714-3-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH V3 1/2] kbuild: centralize .dts->.dtb rule
+Date: Mon,  1 Oct 2012 09:45:50 -0600
+Message-Id: <1349106351-17714-2-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1349106351-17714-1-git-send-email-swarren@wwwdotorg.org>
 References: <1349106351-17714-1-git-send-email-swarren@wwwdotorg.org>
@@ -30,59 +30,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-cmd_dtc_cpp runs the C pre-processor on the input .dts file before
-passing it to dtc for final compilation. This allows used of #define
-within the .dts file.
-
-Introduce a new rule for %.dtsp -> %.dtb, which uses cmd_dtc_cpp. A new
-file extension is introduced for this purpose, since use of the pre-
-processor must be optional; any property or node name that starts with
-"#" must be escaped to prevent the pre-processor attempting to interpret
-it as a directive. For this reason, skeleton.dtsi-cpp is introduced for
-*.dts-cpp to include.
+All architectures that use cmd_dtc do so in the same way. Move the build
+rule to a central location to avoid duplication.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-v3: Pass "-x c" not "-xc" to cpp.
-v2: Place make %.dtb: %.dtsp rule into Makefile.lib.
+v3: No change.
+v2: New patch.
 ---
- arch/arm/boot/dts/skeleton.dtsip |   13 +++++++++++++
- scripts/Makefile.lib             |    6 ++++++
- 2 files changed, 19 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/skeleton.dtsip
+ arch/arm/boot/Makefile      |    4 ----
+ arch/c6x/boot/Makefile      |    3 ---
+ arch/openrisc/boot/Makefile |    3 ---
+ arch/powerpc/boot/Makefile  |    4 ----
+ scripts/Makefile.lib        |    3 +++
+ 5 files changed, 3 insertions(+), 14 deletions(-)
 
-diff --git a/arch/arm/boot/dts/skeleton.dtsip b/arch/arm/boot/dts/skeleton.dtsip
-new file mode 100644
-index 0000000..8bf6729
---- /dev/null
-+++ b/arch/arm/boot/dts/skeleton.dtsip
-@@ -0,0 +1,13 @@
-+/*
-+ * Skeleton device tree; the bare minimum needed to boot; just include and
-+ * add a compatible value.  The bootloader will typically populate the memory
-+ * node.
-+ */
-+
-+/ {
-+	\#address-cells = <1>;
-+	\#size-cells = <1>;
-+	chosen { };
-+	aliases { };
-+	memory { device_type = "memory"; reg = <0 0>; };
-+};
+diff --git a/arch/arm/boot/Makefile b/arch/arm/boot/Makefile
+index 3fdab01..da33331 100644
+--- a/arch/arm/boot/Makefile
++++ b/arch/arm/boot/Makefile
+@@ -61,10 +61,6 @@ endif
+ 
+ targets += $(dtb-y)
+ 
+-# Rule to build device tree blobs
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+-
+ $(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
+ 
+ clean-files := *.dtb
+diff --git a/arch/c6x/boot/Makefile b/arch/c6x/boot/Makefile
+index 6891257..ad605fb 100644
+--- a/arch/c6x/boot/Makefile
++++ b/arch/c6x/boot/Makefile
+@@ -12,9 +12,6 @@ ifneq ($(DTB),)
+ obj-y += linked_dtb.o
+ endif
+ 
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+-
+ quiet_cmd_cp = CP      $< $@$2
+ 	cmd_cp = cat $< >$@$2 || (rm -f $@ && echo false)
+ 
+diff --git a/arch/openrisc/boot/Makefile b/arch/openrisc/boot/Makefile
+index 0995835..fd329bd 100644
+--- a/arch/openrisc/boot/Makefile
++++ b/arch/openrisc/boot/Makefile
+@@ -10,6 +10,3 @@ obj-y += $(BUILTIN_DTB)
+ clean-files := *.dtb.S
+ 
+ #DTC_FLAGS ?= -p 1024
+-
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+diff --git a/arch/powerpc/boot/Makefile b/arch/powerpc/boot/Makefile
+index 6a15c96..90206f2 100644
+--- a/arch/powerpc/boot/Makefile
++++ b/arch/powerpc/boot/Makefile
+@@ -356,10 +356,6 @@ $(obj)/treeImage.initrd.%: vmlinux $(obj)/%.dtb $(wrapperbits)
+ $(obj)/treeImage.%: vmlinux $(obj)/%.dtb $(wrapperbits)
+ 	$(call if_changed,wrap,treeboot-$*,,$(obj)/$*.dtb)
+ 
+-# Rule to build device tree blobs
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+-
+ # If there isn't a platform selected then just strip the vmlinux.
+ ifeq (,$(image-y))
+ image-y := vmlinux.strip
 diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 425578e..1980078 100644
+index 0be6f11..425578e 100644
 --- a/scripts/Makefile.lib
 +++ b/scripts/Makefile.lib
-@@ -269,6 +269,12 @@ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile
- $(obj)/%.dtb: $(src)/dts/%.dts FORCE
- 	$(call if_changed_dep,dtc)
+@@ -266,6 +266,9 @@ $(obj)/%.dtb.S: $(obj)/%.dtb
+ quiet_cmd_dtc = DTC     $@
+ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile) $<
  
-+quiet_cmd_dtc_cpp = DTC+CPP $@
-+cmd_dtc_cpp = $(CC) -E -Wp,-MD,$(depfile) -x c $< | $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -
-+
-+$(obj)/%.dtb: $(src)/dts/%.dtsp FORCE
-+	$(call if_changed_dep,dtc_cpp)
++$(obj)/%.dtb: $(src)/dts/%.dts FORCE
++	$(call if_changed_dep,dtc)
 +
  # Bzip2
  # ---------------------------------------------------------------------------
