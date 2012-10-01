@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab2JAVpk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 17:45:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41468 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab2JAVpi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 17:45:38 -0400
-Date: Mon, 01 Oct 2012 17:45:35 -0400 (EDT)
-Message-Id: <20121001.174535.32880983714519058.davem@davemloft.net>
-To: paul.gortmaker@windriver.com
-Cc: anisse@astier.eu, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        mmarek@suse.cz, torvalds@linux-foundation.org, mchan@broadcom.com,
-        mcarlson@broadcom.com
-Subject: Re: [PATCH 2/2] tg3: fix build-time dependency with
- IS_DEPENDENCY_SATISFIED()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121001161059.GA27396@windriver.com>
-References: <1349094080-769-1-git-send-email-anisse@astier.eu>
-	<1349094080-769-2-git-send-email-anisse@astier.eu>
-	<20121001161059.GA27396@windriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932234Ab2JAVqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 17:46:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44472 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752273Ab2JAVqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 17:46:01 -0400
+Date: Mon, 1 Oct 2012 23:45:57 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Shantanu Gupta <shans95g@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: xchg in fastpath for mutex unlock [mutex-xchg.h]
+Message-ID: <20121001214557.GA19126@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Shantanu Gupta <shans95g@gmail.com>, linux-kernel@vger.kernel.org
+References: <CAPDArR+9Kd+Rzgxj9FgQR0NCayZskXkq4bg3U-GRpCKFP5uC+Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAPDArR+9Kd+Rzgxj9FgQR0NCayZskXkq4bg3U-GRpCKFP5uC+Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Mon, 1 Oct 2012 12:10:59 -0400
+On Fri, Sep 28, 2012 at 04:18:41PM +0530, Shantanu Gupta wrote:
+> Hello,
+> 
+> I am currently studying mutex(es) and was referring to linux sources
+> for it's implementation. However I noticed one shortcoming, in
+> "/include/asm-generic/mutex-xchg.h" of the master branch inside
+> __mutex_fastpath_trylock, Why doesn't the kernel use a cmpxchg instead
+> of dirtying the value with xchg ?
+> 
+> (The only thing that came to my mind was that x86_x64 implementation
+> mentioned that all x86_x64 cpu(s) have cmpxchg leading me to
+> assumption that certain archs can have xchg but not cmpxchg, so is it
+> this way just to work with architectures without a cmpxchg but with
+> xchg ?)
 
-> From e7c432cf5eb44b188c1aa2b188877c42300de8b9 Mon Sep 17 00:00:00 2001
-> From: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Date: Mon, 1 Oct 2012 11:43:49 -0400
-> Subject: [PATCH] tg3: unconditionally select HWMON support when tg3 is
->  enabled.
-> 
-> There is the seldom used corner case where HWMON=m at the same
-> time as TIGON3=y (typically randconfigs) which will cause a link
-> fail like:
-> 
-> drivers/built-in.o: In function `tg3_close':
-> tg3.c:(.text+0x16bd86): undefined reference to `hwmon_device_unregister'
-> drivers/built-in.o: In function `tg3_hwmon_open':
-> tg3.c:(.text+0x16fc4b): undefined reference to `hwmon_device_register'
-> make[1]: *** [vmlinux] Error 1
-> 
-> Fix it as suggested by DaveM[1] by having the Kconfig logic simply
-> select HWMON when TIGON3 is selected.  This gets rid of all the
-> extra IS_ENABLED ifdeffery in tg3.c as a side benefit.
-> 
-> [1] http://marc.info/?l=linux-netdev&m=134250573718151&w=2
-> 
-> Cc: Michael Chan <mchan@broadcom.com>
-> Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Reported-by: Anisse Astier <anisse@astier.eu>
-> Suggested-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Yes.
 
-Applied, thanks.
+Btw, 'git annotate' helps with such questions-to-self sometimes. Because
+if you do
+
+$ git annotate include/asm-generic/mutex-xchg.h
+
+you can find the following patch adding __mutex_fastpath_trylock:
+
+commit 620a6fd185c084aa617c411f711533f01ea673c9
+Author: Ingo Molnar <mingo@elte.hu>
+Date:   Mon Jan 9 15:59:17 2006 -0800
+
+    [PATCH] mutex subsystem, add asm-generic/mutex-[dec|xchg|null].h implementations
+
+    Add three (generic) mutex fastpath implementations.
+
+    The mutex-xchg.h implementation is atomic_xchg() based, and should
+    work fine on every architecture.
+
+    The mutex-dec.h implementation is atomic_dec_return() based - this
+    one too should work on every architecture, but might not perform the
+    most optimally on architectures that have no atomic-dec/inc instructions.
+
+    The mutex-null.h implementation forces all calls into the slowpath. This
+    is used for mutex debugging, but it can also be used on platforms that do
+    not want (or need) a fastpath at all.
+
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Arjan van de Ven <arjan@infradead.org>
+
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
