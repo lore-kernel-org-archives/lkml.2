@@ -1,128 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758281Ab2JAXQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:16:28 -0400
-Received: from 1wt.eu ([62.212.114.60]:35480 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933057Ab2JAXCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:02:00 -0400
-Message-Id: <20121001225200.404694594@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:03 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Salman Qazi <sqazi@google.com>, John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        john stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 066/180] sched/x86: Fix overflow in cyc2ns_offset
-In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
+	id S1758304Ab2JAXQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:16:33 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:47021 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757643Ab2JAXQ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:16:29 -0400
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: lm-sensors@lm-sensors.org
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org, Steve Hardy <shardy@redhat.com>
+Subject: [PATCH v2 1/2] hwmon: (ads7828) driver cleanup
+Date: Mon,  1 Oct 2012 19:16:23 -0400
+Message-Id: <1349133384-5181-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+* Remove unused macros;
+* Point to the documentation;
+* Coding Style fixes (Kernel Doc, spacing);
+* Move driver declaration to avoid adding function prototypes.
 
-------------------
-
-From: Salman Qazi <sqazi@google.com>
-
-commit 9993bc635d01a6ee7f6b833b4ee65ce7c06350b1 upstream.
-
-When a machine boots up, the TSC generally gets reset.  However,
-when kexec is used to boot into a kernel, the TSC value would be
-carried over from the previous kernel.  The computation of
-cycns_offset in set_cyc2ns_scale is prone to an overflow, if the
-machine has been up more than 208 days prior to the kexec.  The
-overflow happens when we multiply *scale, even though there is
-enough room to store the final answer.
-
-We fix this issue by decomposing tsc_now into the quotient and
-remainder of division by CYC2NS_SCALE_FACTOR and then performing
-the multiplication separately on the two components.
-
-Refactor code to share the calculation with the previous
-fix in __cycles_2_ns().
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Acked-by: John Stultz <john.stultz@linaro.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: john stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/20120310004027.19291.88460.stgit@dungbeetle.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 ---
- arch/x86/include/asm/timer.h |    8 ++------
- arch/x86/kernel/tsc.c        |    3 ++-
- include/linux/kernel.h       |   13 +++++++++++++
- 3 files changed, 17 insertions(+), 7 deletions(-)
+ drivers/hwmon/ads7828.c | 91 +++++++++++++++++++++++--------------------------
+ 1 file changed, 43 insertions(+), 48 deletions(-)
 
-diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
-index b93a9aa..18e1ca7 100644
---- a/arch/x86/include/asm/timer.h
-+++ b/arch/x86/include/asm/timer.h
-@@ -63,14 +63,10 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
+diff --git a/drivers/hwmon/ads7828.c b/drivers/hwmon/ads7828.c
+index bf3fdf4..fb3010d 100644
+--- a/drivers/hwmon/ads7828.c
++++ b/drivers/hwmon/ads7828.c
+@@ -6,7 +6,7 @@
+  *
+  * Written by Steve Hardy <shardy@redhat.com>
+  *
+- * Datasheet available at: http://focus.ti.com/lit/ds/symlink/ads7828.pdf
++ * For further information, see the Documentation/hwmon/ads7828 file.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -34,14 +34,12 @@
+ #include <linux/mutex.h>
  
- static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ /* The ADS7828 registers */
+-#define ADS7828_NCH 8 /* 8 channels of 12-bit A-D supported */
+-#define ADS7828_CMD_SD_SE 0x80 /* Single ended inputs */
+-#define ADS7828_CMD_SD_DIFF 0x00 /* Differential inputs */
+-#define ADS7828_CMD_PD0 0x0 /* Power Down between A-D conversions */
+-#define ADS7828_CMD_PD1 0x04 /* Internal ref OFF && A-D ON */
+-#define ADS7828_CMD_PD2 0x08 /* Internal ref ON && A-D OFF */
+-#define ADS7828_CMD_PD3 0x0C /* Internal ref ON && A-D ON */
+-#define ADS7828_INT_VREF_MV 2500 /* Internal vref is 2.5V, 2500mV */
++#define ADS7828_NCH		8	/* 8 channels supported */
++#define ADS7828_CMD_SD_SE	0x80	/* Single ended inputs */
++#define ADS7828_CMD_SD_DIFF	0x00	/* Differential inputs */
++#define ADS7828_CMD_PD1		0x04	/* Internal ref OFF && A/D ON */
++#define ADS7828_CMD_PD3		0x0C	/* Internal ref ON && A/D ON */
++#define ADS7828_INT_VREF_MV	2500	/* Internal vref is 2.5V, 2500mV */
+ 
+ /* Addresses to scan */
+ static const unsigned short normal_i2c[] = { 0x48, 0x49, 0x4a, 0x4b,
+@@ -59,25 +57,26 @@ module_param(vref_mv, int, S_IRUGO);
+ static u8 ads7828_cmd_byte; /* cmd byte without channel bits */
+ static unsigned int ads7828_lsb_resol; /* resolution of the ADC sample lsb */
+ 
+-/* Each client has this additional data */
++/**
++ * struct ads7828_data - client specific data
++ * @hwmon_dev:		The hwmon device.
++ * @update_lock:	Mutex protecting updates.
++ * @valid:		Validity flag.
++ * @last_updated:	Last updated time (in jiffies).
++ * @adc_input:		ADS7828_NCH samples.
++ */
+ struct ads7828_data {
+ 	struct device *hwmon_dev;
+-	struct mutex update_lock; /* mutex protect updates */
+-	char valid; /* !=0 if following fields are valid */
+-	unsigned long last_updated; /* In jiffies */
+-	u16 adc_input[ADS7828_NCH]; /* ADS7828_NCH 12-bit samples */
++	struct mutex update_lock;
++	char valid;
++	unsigned long last_updated;
++	u16 adc_input[ADS7828_NCH];
+ };
+ 
+-/* Function declaration - necessary due to function dependencies */
+-static int ads7828_detect(struct i2c_client *client,
+-			  struct i2c_board_info *info);
+-static int ads7828_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-
+ static inline u8 channel_cmd_byte(int ch)
  {
--	unsigned long long quot;
--	unsigned long long rem;
- 	int cpu = smp_processor_id();
- 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
--	quot = (cyc >> CYC2NS_SCALE_FACTOR);
--	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
--	ns += quot * per_cpu(cyc2ns, cpu) +
--		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
-+	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
-+			(1UL << CYC2NS_SCALE_FACTOR));
- 	return ns;
+ 	/* cmd byte C2,C1,C0 - see datasheet */
+-	u8 cmd = (((ch>>1) | (ch&0x01)<<2)<<4);
++	u8 cmd = (((ch >> 1) | (ch & 0x01) << 2) << 4);
+ 	cmd |= ads7828_cmd_byte;
+ 	return cmd;
+ }
+@@ -120,9 +119,8 @@ static ssize_t show_in(struct device *dev, struct device_attribute *da,
+ 		ads7828_lsb_resol)/1000);
  }
  
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index bc07543..9972276 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -623,7 +623,8 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+-#define in_reg(offset)\
+-static SENSOR_DEVICE_ATTR(in##offset##_input, S_IRUGO, show_in,\
+-	NULL, offset)
++#define in_reg(offset) \
++static SENSOR_DEVICE_ATTR(in##offset##_input, S_IRUGO, show_in, NULL, offset)
  
- 	if (cpu_khz) {
- 		*scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
--		*offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
-+		*offset = ns_now - mult_frac(tsc_now, *scale,
-+					     (1UL << CYC2NS_SCALE_FACTOR));
- 	}
+ in_reg(0);
+ in_reg(1);
+@@ -158,25 +156,6 @@ static int ads7828_remove(struct i2c_client *client)
+ 	return 0;
+ }
  
- 	sched_clock_idle_wakeup_event(0);
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 9acb92d..3526cd4 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -55,6 +55,19 @@ extern const char linux_proc_banner[];
- }							\
- )
+-static const struct i2c_device_id ads7828_id[] = {
+-	{ "ads7828", 0 },
+-	{ }
+-};
+-MODULE_DEVICE_TABLE(i2c, ads7828_id);
+-
+-/* This is the driver that will be inserted */
+-static struct i2c_driver ads7828_driver = {
+-	.class = I2C_CLASS_HWMON,
+-	.driver = {
+-		.name = "ads7828",
+-	},
+-	.probe = ads7828_probe,
+-	.remove = ads7828_remove,
+-	.id_table = ads7828_id,
+-	.detect = ads7828_detect,
+-	.address_list = normal_i2c,
+-};
+-
+ /* Return 0 if detection is successful, -ENODEV otherwise */
+ static int ads7828_detect(struct i2c_client *client,
+ 			  struct i2c_board_info *info)
+@@ -247,13 +226,29 @@ exit:
+ 	return err;
+ }
  
-+/*
-+ * Multiplies an integer by a fraction, while avoiding unnecessary
-+ * overflow or loss of precision.
-+ */
-+#define mult_frac(x, numer, denom)(			\
-+{							\
-+	typeof(x) quot = (x) / (denom);			\
-+	typeof(x) rem  = (x) % (denom);			\
-+	(quot * (numer)) + ((rem * (numer)) / (denom));	\
-+}							\
-+)
++static const struct i2c_device_id ads7828_ids[] = {
++	{ "ads7828", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, ads7828_ids);
 +
++static struct i2c_driver ads7828_driver = {
++	.class = I2C_CLASS_HWMON,
++	.driver = {
++		.name = "ads7828",
++	},
++	.address_list = normal_i2c,
++	.detect = ads7828_detect,
++	.probe = ads7828_probe,
++	.remove = ads7828_remove,
++	.id_table = ads7828_ids,
++};
 +
- #define _RET_IP_		(unsigned long)__builtin_return_address(0)
- #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
+ static int __init sensors_ads7828_init(void)
+ {
+ 	/* Initialize the command byte according to module parameters */
+-	ads7828_cmd_byte = se_input ?
+-		ADS7828_CMD_SD_SE : ADS7828_CMD_SD_DIFF;
+-	ads7828_cmd_byte |= int_vref ?
+-		ADS7828_CMD_PD3 : ADS7828_CMD_PD1;
++	ads7828_cmd_byte = se_input ? ADS7828_CMD_SD_SE : ADS7828_CMD_SD_DIFF;
++	ads7828_cmd_byte |= int_vref ? ADS7828_CMD_PD3 : ADS7828_CMD_PD1;
  
+ 	/* Calculate the LSB resolution */
+ 	ads7828_lsb_resol = (vref_mv*1000)/4096;
+@@ -267,7 +262,7 @@ static void __exit sensors_ads7828_exit(void)
+ }
+ 
+ MODULE_AUTHOR("Steve Hardy <shardy@redhat.com>");
+-MODULE_DESCRIPTION("ADS7828 driver");
++MODULE_DESCRIPTION("Driver for TI ADS7828 A/D converter");
+ MODULE_LICENSE("GPL");
+ 
+ module_init(sensors_ads7828_init);
 -- 
-1.7.2.1.45.g54fbc
-
-
+1.7.11.4
 
