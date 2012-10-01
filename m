@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab2JAHlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 03:41:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53758 "EHLO
+	id S1751996Ab2JAHnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 03:43:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60745 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab2JAHli (ORCPT
+	with ESMTP id S1750822Ab2JAHnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 03:41:38 -0400
-From: Daniel J Blueman <daniel@quora.org>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Daniel J Blueman <daniel@quora.org>
-Subject: [PATCH] Correct AMD IOMMU printing
-Date: Mon,  1 Oct 2012 15:41:13 +0800
-Message-Id: <1349077273-17297-1-git-send-email-daniel@quora.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 1 Oct 2012 03:43:31 -0400
+Message-ID: <5069499E.6000006@gmail.com>
+Date: Mon, 01 Oct 2012 13:13:26 +0530
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Jeff Garzik <jgarzik@pobox.com>, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [SCSI PATCH] sd: max-retries becomes configurable
+References: <20120924210049.GA18527@havoc.gtf.org>  <1348546019.2457.3.camel@dabdike> <50613F72.4000302@pobox.com> <1348569508.2457.28.camel@dabdike>
+In-Reply-To: <1348569508.2457.28.camel@dabdike>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an AMD IOMMU is detected, prevent printing unintended blank line.
+On 09/25/2012 04:08 PM, James Bottomley wrote:
+> On Tue, 2012-09-25 at 01:21 -0400, Jeff Garzik wrote:
+>> On 09/25/2012 12:06 AM, James Bottomley wrote:
+>>> On Mon, 2012-09-24 at 17:00 -0400, Jeff Garzik wrote:
+>>>>    drivers/scsi/sd.c |    4 ++++
+>>>>    drivers/scsi/sd.h |    2 +-
+>>>>    2 files changed, 5 insertions(+), 1 deletion(-)
+>>> I'm not opposed in principle to doing this (except that it should be a
+>>> sysfs parameter like all our other controls), but what's the reasoning
+>>> behind needing it changed?
+>> <vendor hat on>
+>>
+>> Periodically turns up as a useful field sledgehammer for solving
+>> problems, until the real problem is found and fixed.  Got tired of a
+>> very similar patch manually bouncing around the "hey, pssst, this worked
+>> for me" backchannel IT network.
+>>
+>> </red hat>
+> I'm asking because the general consensus from the device guys is that we
+> should never retry unless the device or the transport tells us to (and
+> then we shouldn't count the retries).  A long time ago we used to get
+> spurious command failures from retry exhaustion on QUEUE_FULL or BUSY,
+> but since we switched those to being purely timeout based, I thought the
+> problem had gone away and I'm curious to know what guise it resurfaced
+> in.
 
-Signed-off-by: Daniel J Blueman <daniel@quora.org>
----
- drivers/iommu/amd_iommu_init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I think that is still very much a true statement. By the time normal disks 
+return an error, they have retried *many* times in firmware. There are some 
+exceptions of course - vibrations and so on might make this useful.
 
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index 18a89b7..49d9d32 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1115,8 +1115,8 @@ static void print_iommu_info(void)
- 				if (iommu_feature(iommu, (1ULL << i)))
- 					pr_cont(" %s", feat_str[i]);
- 			}
-+			pr_cont("\n");
- 		}
--		pr_cont("\n");
- 	}
- }
- 
--- 
-1.7.9.5
+Back when my day job often involved recovering data from dead drives, we 
+actually normally wanted to cut retries down to zero since various part of the 
+stack retried for us so much that each bad sector had to be timed out multiple 
+times!
+
+I don't object to making this a tunable, but we should default to not retrying.
+
+Also would be very interesting to seeing if this actually is useful in the real 
+world, not just "word on the street" world :)
+
+Ric
+
+>
+>> Can you be more specific about sysfs location?  A runtime-writable (via
+>> sysfs!) module parameter for a module-wide default seemed appropriate.
+> Well, if it's really important, the same thing should happen with
+> retries as happened with timeout (it became a request_queue property),
+> but it could be hacked as a struct scsi_disk one with a corresponding
+> entry in sd_dis_attrs.
+>
+> James
+>
+>
 
