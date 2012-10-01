@@ -1,129 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab2JAJMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 05:12:45 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:58727 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752445Ab2JAJMn (ORCPT
+	id S1752816Ab2JAJQT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 05:16:19 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:49530 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752429Ab2JAJQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 05:12:43 -0400
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Date: Mon, 1 Oct 2012 11:12:24 +0200
-Subject: RE: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Topic: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Index: Ac2fstEtG3Kt79i8QvSJDePhgDdBpQAAaVow
-Message-ID: <F45880696056844FA6A73F415B568C695B6962C347@EXDCVYMBSTM006.EQ1STM.local>
-References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
-	<1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
-	<20120928160045.GD2625@kroah.com>
-	<F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
-	<CAK7N6vpXfhb0KhMfqxbcSQqT=qPcMS06OdaG9kNsWMqiiepLTQ@mail.gmail.com>
-	<F45880696056844FA6A73F415B568C695B6962C1CD@EXDCVYMBSTM006.EQ1STM.local>
- <CAK7N6vqpokVk19-KPPggZRynKJVjoa04n_0g4nnb1CN836s5pA@mail.gmail.com>
-In-Reply-To: <CAK7N6vqpokVk19-KPPggZRynKJVjoa04n_0g4nnb1CN836s5pA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 1 Oct 2012 05:16:16 -0400
+Date: Mon, 1 Oct 2012 12:16:10 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Prabhakar <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LDOC <linux-doc@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        VGER <linux-kernel@vger.kernel.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v4] media: v4l2-ctrls: add control for test pattern
+Message-ID: <20121001091548.GB14107@valkosipuli.retiisi.org.uk>
+References: <1348553345-14296-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1348553345-14296-1-git-send-email-prabhakar.lad@ti.com>
+X-Identity-Key: id13
+X-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120909
+ Firefox/15.0.1 SeaMonkey/2.12.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q919CqYC023465
 
-> >> >> > +int modem_release(struct modem_desc *mdesc) {
-> >> >> > +   if (!mdesc->release)
-> >> >> > +           return -EFAULT;
-> >> >> > +
-> >> >> > +   if (modem_is_requested(mdesc)) {
-> >> >> > +           atomic_dec(&mdesc->mclients->cnt);
-> >> >> > +           if (atomic_read(&mdesc->use_cnt) == 1) {
-> >> >> > +                   mdesc->release(mdesc);
-> >> >> > +                   atomic_dec(&mdesc->use_cnt);
-> >> >> > +           }
-> >> >>
-> >> >> Eeek, why aren't you using the built-in reference counting that
-> >> >> the struct device provided to you, and instead are rolling your own?
-> >> >> This happens in many places, why?
-> >> >
-> >> > My usage of counters over here is for each modem there are many
-> clients.
-> >> > Each of the clients will have a ref to modem_desc. Each of them use
-> >> > this for requesting and releasing the modem. One counter for
-> >> > tracking the request and release for each client which is done by
-> >> > variable 'cnt' in
-> >> struct clients.
-> >> > The counter use_cnt is used for tracking the modem request/release
-> >> > irrespective of the clients and counter cli_cnt is used for
-> >> > restricting the modem_get to the no of clients defined in no_clients.
-> >> >
-> >> > So totally 3 counter one for restricting the usage of modem_get by
-> >> > clients, second for restricting modem request/release at top level,
-> >> > and 3rd for restricting modem release/request for per client per
-> >> > modem
-> >> basis.
-> >> >
-> >> > Can you let me know if the same can be achieved by using built-in
-> >> > ref counting?
-> >> Is this your model:
-> >> You have a modem device which can be requested by many clients.This
-> >> clients can register for a particular service which this modem
-> >> provides and then after that if it client doesn't need this service then it will
-> call un-register.
-> >
-> > Let me correct a bit over here:
-> > There are many clients, yes correct but the operations performed are
-> > only two, i.e modem request and modem release. This is something like
-> > waking up the modem and let modem to sleep.
-> > The traffic of this request and release is too high.
-> >
-> > So irrespective of the requests/releases made to the MAF framework,
-> > the MAF should perform the operation request/release only once.
-> >
-> > So each and every time handling list consumes time.
-> > Let me brief the context, this is a single chip modem and ape,
-> > basically used in mobile, tablets etc. So the traffic in ape-modem
-> > communication is too high and also time critical. If it bound to
-> > exceed the time, or delay might end up in buffer full. Thatâ€™s the reason I
-> have made it as simple as possible.
-> 
-> So let me put it this way:
->            Modem                 Client1     Client2    Client3    Client4
-> State  turn-on                   request
-> State  no-state-change                     request
-> State  no-state-change                                   request
-> State  no-state-change
-> request
-> State  no-state-change      release
-> State  no-state-change                     release
-> State  no-state-change                                   release
-> State   turn-off
->       release
-> 
-> So eventhough all the clients have requested the modem it is being turned
-> on only once and when all of them have released then it will be turned-off.
-> 
-> In this case it makes sense to use the atomic variables to track the requests
-> and release but what will happen to sysfs incase the device is released when
-> the last call to release has come from client4?Won't it lead to kernel panic or
-> some unwanted behaviour?
+Hi Prabhakar,
+
+Prabhakar wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>
+> add V4L2_CID_TEST_PATTERN of type menu, which determines
+> the internal test pattern selected by the device.
+>
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Hans de Goede <hdegoede@redhat.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Rob Landley <rob@landley.net>
+> ---
+>   This patches has one checkpatch warning for line over
+>   80 characters altough it can be avoided I have kept it
+>   for consistency.
+>
+>   Changes for v4:
+>   1: Fixed some grammar/style issues, pointed by Hans.
+>
+>   Changes for v3:
+>   1: Removed the menu for test pattern, pointed by Sakari.
+>
+>   Changes for v2:
+>   1: Included display devices in the description for test pattern
+>     as pointed by Hans.
+>   2: In the menu replaced 'Test Pattern Disabled' by 'Disabled' as
+>     pointed by Sylwester.
+>   3: Removed the test patterns from menu as the are hardware specific
+>     as pointed by Sakari.
+>
+>   Documentation/DocBook/media/v4l/controls.xml |   10 ++++++++++
+>   drivers/media/v4l2-core/v4l2-ctrls.c         |    2 ++
+>   include/linux/videodev2.h                    |    1 +
+>   3 files changed, 13 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> index f0fb08d..5450d31 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -4313,6 +4313,16 @@ interface and may change in the future.</para>
+>   	      </tbody>
+>   	    </entrytbl>
+>   	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
+> +	    <entry>menu</entry>
+> +	  </row>
+> +	  <row id="v4l2-test-pattern">
+> +	    <entry spanname="descr"> Some capture/display/sensor devices have
+> +	    the capability to generate test pattern images. These hardware
+> +	    specific test patterns can be used to test if a device is working
+> +	    properly.</entry>
+> +	  </row>
+>   	<row><entry></entry></row>
+>   	</tbody>
+>         </tgroup>
+> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+> index 8f2f40b..41b7732 100644
+> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> @@ -740,6 +740,7 @@ const char *v4l2_ctrl_get_name(u32 id)
+>   	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
+>   	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
+>   	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
+> +	case V4L2_CID_TEST_PATTERN:		return "Test Pattern";
+>
+>   	default:
+>   		return NULL;
+> @@ -841,6 +842,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+>   	case V4L2_CID_EXPOSURE_METERING:
+>   	case V4L2_CID_SCENE_MODE:
+>   	case V4L2_CID_DPCM_PREDICTOR:
+> +	case V4L2_CID_TEST_PATTERN:
+>   		*type = V4L2_CTRL_TYPE_MENU;
+>   		break;
+>   	case V4L2_CID_LINK_FREQ:
+> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+> index ca9fb78..7014c0b 100644
+> --- a/include/linux/videodev2.h
+> +++ b/include/linux/videodev2.h
+> @@ -2005,6 +2005,7 @@ enum v4l2_dpcm_predictor {
+>   	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
+>   	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
+>   };
+> +#define V4L2_CID_TEST_PATTERN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
+>
+>   /*
+>    *	T U N I N G
 >
 
-Yes, you are right, so will add a check in modem_put and modem_unregister
-to check if modem is requested and if so will release first and then go ahead.
-But actually clients are not suppose to call modem_put/modem_unregister
-unless modem is released but yes, in MAF we can take this precaution.
+Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
 
-Thanks and Regards,
-Arun R Murthy
------------------
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I'd suggest to rebase this under the DPCM predictor patch. As the choice of
+the predictor affects the resulting format, it has to be the same on the
+transmitter and the receiver, and also affects the in-memory pixel format.
+
+I'll prepare an RFC on the topic shortly.
+
+Kind regards,
+
+-- 
+Sakari Ailus
+sakari.ailus@iki.fi
