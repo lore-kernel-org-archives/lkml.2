@@ -1,259 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab2JAAjH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 20:39:07 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34846 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab2JAAjF convert rfc822-to-8bit (ORCPT
+	id S1751906Ab2JAAmU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 20:42:20 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33258 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab2JAAmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 20:39:05 -0400
-MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 30 Sep 2012 17:38:42 -0700
-X-Google-Sender-Auth: RKYxYZrgDfHzbf7sDVcsSDya4N8
-Message-ID: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
-Subject: Linux 3.6
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 30 Sep 2012 20:42:18 -0400
+From: Irina Tirdea <irina.tirdea@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: [RFC v3] perf tools: Try to find cross-built objdump path
+Date: Mon,  1 Oct 2012 03:41:26 +0300
+Message-Id: <1349052086-4389-1-git-send-email-irina.tirdea@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <87d317vbjn.fsf_-_@sejong.aot.lge.com>
+References: <87d317vbjn.fsf_-_@sejong.aot.lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I did the -rc7 announcement a week ago, I said I might have to do
-an -rc8, but a week passed, and things have been calm, and I honestly
-cannot see a major reason to do another rc.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-So here it is, 3.6 final. Sure, I'd have been happier with even fewer
-changes, but that just never happens. And holding off the release
-until people get too bored to send me the small stuff just makes the
-next merge window more painful.
+As we have architecture information of saved perf.data file, we can
+try to find cross-built objdump path.
 
-The changes that got merged this week were generally pretty tiny, but
-more importantly, they tend to be small or very unlikely/special
-things. Famous last words.
+The triplets include support for Android (arm, x86 and mips architectures).
 
-The shortlog below is obviously just the log since -rc7, the changes
-in 3.6 since 3.5 are too many to list. There haven't been any huge new
-architectures or filesystems, it's all "solid progress". That may not
-sound all that exciting, but the devil is in the details, and there's
-a lot of small fixes all over.
-
-Anyway, this obviously means that the merge window for 3.7 is open,
-and on that subject I do want to note that I'm going to travel much of
-this merge window. Let's see how much that impacts my merging, but I
-hope that it won't be *that* noticeable. But in case it results in any
-problems, I'll just give a heads-up, and if worst comes to worst I'll
-just extend the merge window to give myself more time for merging. I
-aim to avoid it, but I'll note it here just in case it happens.
-
-Steven Rothwell already noted during the -rc7 release that people
-should have the stuff for 3.7 in linux-next, and I hope that is true.
-Guys and gals, please behave, ok?
-
-                 Linus
-
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
-Al Viro (6):
-      do_add_mount()/umount -l races
-      close the race in nlmsvc_free_block()
-      um: take cleaning singlestep to start_thread()
-      um: don't leak floating point state and segment registers on execve()
-      um: let signal_delivered() do SIGTRAP on singlestepping into handler
-      um: kill thread->forking
 
-Alan Stern (1):
-      USB: Fix race condition when removing host controllers
+v3:
+ () update triplets to include Android toolchains for arm, x86 and mips
+ () fixed a few small bugs
+ () tested on Android
+ 
+v2: don't modify env string
 
-Alex Elder (2):
-      rbd: drop dev reference on error in rbd_open()
-      libceph: only kunmap kmapped pages
+ tools/perf/Makefile           |    2 +
+ tools/perf/arch/common.c      |   51 ++++++++++++++++++++
+ tools/perf/builtin-annotate.c |    3 ++
+ tools/perf/util/annotate.c    |  107 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/annotate.h    |   11 +++++
+ 5 files changed, 174 insertions(+)
+ create mode 100644 tools/perf/arch/common.c
 
-Alex Williamson (3):
-      vfio: Trivial Documentation correction
-      vfio: Fix virqfd release race
-      iommu: static inline iommu group stub functions
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index e5e71e7..816fc04 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -412,6 +412,8 @@ LIB_OBJS += $(OUTPUT)ui/helpline.o
+ LIB_OBJS += $(OUTPUT)ui/hist.o
+ LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
+ 
++LIB_OBJS += $(OUTPUT)arch/common.o
++
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+ # Benchmark modules
+diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
+new file mode 100644
+index 0000000..6904777
+--- /dev/null
++++ b/tools/perf/arch/common.c
+@@ -0,0 +1,51 @@
++#include <stdio.h>
++
++const char *const arm_triplets[] = {
++	"arm-eabi-",
++	"arm-linux-androideabi-",
++	"arm-unknown-linux-",
++	"arm-unknown-linux-gnu-",
++	"arm-unknown-linux-gnueabi-",
++	NULL
++};
++
++const char *const powerpc_triplets[] = {
++	"powerpc-unknown-linux-gnu-",
++	"powerpc64-unknown-linux-gnu-",
++	NULL
++};
++
++const char *const s390_triplets[] = {
++	"s390-ibm-linux-",
++	NULL
++};
++
++const char *const sh_triplets[] = {
++	"sh-unknown-linux-gnu-",
++	"sh64-unknown-linux-gnu-",
++	NULL
++};
++
++const char *const sparc_triplets[] = {
++	"sparc-unknown-linux-gnu-",
++	"sparc64-unknown-linux-gnu-",
++	NULL
++};
++
++const char *const x86_triplets[] = {
++	"x86_64-pc-linux-gnu-",
++	"x86_64-unknown-linux-gnu-",
++	"i686-pc-linux-gnu-",
++	"i586-pc-linux-gnu-",
++	"i486-pc-linux-gnu-",
++	"i386-pc-linux-gnu-",
++	"i686-linux-android-",
++	"i686-android-linux-",
++	NULL
++};
++
++const char *const mips_triplets[] = {
++	"mips-unknown-linux-gnu-",
++	"mipsel-linux-android-",
++	NULL
++};
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 9ea3854..20fe9bb 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -186,6 +186,9 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 			goto out_delete;
+ 	}
+ 
++	if (!objdump_path)
++		try_objdump_path(session);
++
+ 	ret = perf_session__process_events(session, &ann->tool);
+ 	if (ret)
+ 		goto out_delete;
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index f0a9103..36f3af0 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -15,6 +15,7 @@
+ #include "debug.h"
+ #include "annotate.h"
+ #include <pthread.h>
++#include <sys/utsname.h>
+ 
+ const char 	*disassembler_style;
+ const char	*objdump_path;
+@@ -1140,3 +1141,109 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
+ 
+ 	return 0;
+ }
++
++static bool lookup_path(char *name)
++{
++	bool found = false;
++	char *path, *tmp;
++	char buf[PATH_MAX];
++	char *env = getenv("PATH");
++
++	if (!env)
++		return false;
++
++	env = strdup(env);
++	if (!env)
++		return false;
++
++	path = strtok_r(env, ":", &tmp);
++	while (path) {
++		scnprintf(buf, sizeof(buf), "%s/%s", path, name);
++		if (access(buf, F_OK) == 0) {
++			found = true;
++			break;
++		}
++		path = strtok_r(NULL, ":", &tmp);
++	}
++	free(env);
++	return found;
++}
++
++static int lookup_triplets(const char **triplets, const char *name)
++{
++	int i;
++	char buf[PATH_MAX];
++
++	for (i = 0; triplets[i] != NULL; i++) {
++		scnprintf(buf, sizeof(buf), "%s%s", triplets[i], name);
++		if (lookup_path(buf))
++			return i;
++	}
++	return -1;
++}
++
++static char *try_binutils_path(struct perf_session *session, const char *name)
++{
++	int idx;
++	char *arch, *env;
++	struct utsname uts;
++	const char **path_list;
++	char buf[PATH_MAX];
++
++	if (uname(&uts) < 0)
++		return NULL;
++
++	/*
++	 * We don't need to try to find objdump path for native system.
++	 * Just use default "objdump".
++	 */
++	if (!strcmp(uts.machine, session->header.env.arch))
++		return NULL;
++
++	env = getenv("CROSS_COMPILE");
++	if (env) {
++		scnprintf(buf, sizeof(buf), "%s%s", env, name);
++		if (buf[0] == '/') {
++			if (access(buf, F_OK) == 0)
++				return strdup(buf);
++
++			return NULL;
++		}
++
++		if (lookup_path(buf))
++			return strdup(buf);
++	}
++
++	arch = session->header.env.arch;
++
++	if (!strcmp(arch, "arm"))
++		path_list = arm_triplets;
++	else if (!strcmp(arch, "powerpc"))
++		path_list = powerpc_triplets;
++	else if (!strcmp(arch, "sh"))
++		path_list = sh_triplets;
++	else if (!strcmp(arch, "s390"))
++		path_list = s390_triplets;
++	else if (!strcmp(arch, "sparc"))
++		path_list = sparc_triplets;
++	else if (!strcmp(arch, "x86") || !strcmp(arch, "i386") ||
++		 !strcmp(arch, "i486") || !strcmp(arch, "i586") ||
++		 !strcmp(arch, "i686"))
++		path_list = x86_triplets;
++	else if (!strcmp(arch, "mips"))
++		path_list = mips_triplets;
++	else
++		BUG_ON(1);
++
++	idx = lookup_triplets(path_list, name);
++	if (idx < 0)
++		return NULL;
++
++	scnprintf(buf, sizeof(buf), "%s%s", path_list[idx], name);
++	return strdup(buf);
++}
++
++void try_objdump_path(struct perf_session *session)
++{
++	objdump_path = try_binutils_path(session, "objdump");
++}
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index 9b5b21e..4918d1f 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -5,6 +5,7 @@
+ #include <stdint.h>
+ #include "types.h"
+ #include "symbol.h"
++#include "session.h"
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <pthread.h>
+@@ -156,4 +157,14 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ extern const char	*disassembler_style;
+ extern const char	*objdump_path;
+ 
++extern const char *arm_triplets[];
++extern const char *powerpc_triplets[];
++extern const char *sh_triplets[];
++extern const char *s390_triplets[];
++extern const char *sparc_triplets[];
++extern const char *x86_triplets[];
++extern const char *mips_triplets[];
++
++void try_objdump_path(struct perf_session *session);
++
+ #endif	/* __PERF_ANNOTATE_H */
+-- 
+1.7.9.5
 
-Andrea Arcangeli (1):
-      thp: avoid VM_BUG_ON page_count(page) false positives in
-__collapse_huge_page_copy
-
-Andrei Emeltchenko (1):
-      Bluetooth: Fix freeing uninitialized delayed works
-
-Andrew Lunn (1):
-      ARM: Orion5x: Fix too small coherent pool.
-
-Andrzej Kaczmarek (2):
-      Bluetooth: mgmt: Fix enabling SSP while powered off
-      Bluetooth: mgmt: Fix enabling LE while powered off
-
-Ben Skeggs (3):
-      drm/nouveau: silence a debug message triggered by newer userspace
-      drm/nvc0/ltcg: mask off intr 0x10
-      drm/nvc0/fifo: ignore bits in PFIFO_INTR that aren't set in PFIFO_INTR_EN
-
-Chris Metcalf (1):
-      tile: gxio iorpc numbering change for TRIO interface
-
-Dan Carpenter (2):
-      NVMe: handle allocation failure in nvme_map_user_pages()
-      vmwgfx: corruption in vmw_event_fence_action_create()
-
-Daniel Mack (1):
-      ALSA: snd-usb: fix next_packet_size calls for pause case
-
-Dave Airlie (1):
-      drm/udl: limit modes to the sku pixel limits.
-
-Dave Jiang (1):
-      MAINTAINERS: update Intel C600 SAS driver maintainers
-
-Def (1):
-      batman-adv: Fix change mac address of soft iface.
-
-Emmanuel Grumbach (1):
-      iwlwifi: don't double free the interrupt in failure path
-
-Eric Dumazet (4):
-      ipv4: raw: fix icmp_filter()
-      net: guard tcp_set_keepalive() to tcp sockets
-      ipv6: raw: fix icmpv6_filter()
-      ipv6: mip6: fix mip6_mh_filter()
-
-Geert Uytterhoeven (1):
-      um: Preinclude include/linux/kern_levels.h
-
-Heiko Carstens (1):
-      checksyscalls: fix "here document" handling
-
-J. Bruce Fields (1):
-      trivial select_parent documentation fix
-
-Jan Engelhardt (1):
-      netfilter: xt_limit: have r->cost != 0 case work
-
-Jan Kara (1):
-      lib/flex_proportions.c: fix corruption of denominator in
-flexible proportions
-
-Jiri Pirko (1):
-      team: send port changed when added
-
-Joachim Eastwood (1):
-      USB: ohci-at91: fix null pointer in ohci_hcd_at91_overcurrent_irq
-
-Joerg Roedel (1):
-      iommu/amd: Fix wrong assumption in iommu-group specific code
-
-Keith Busch (7):
-      NVMe: Set request queue logical block size
-      NVMe: Fix nvme module init when nvme_major is set
-      NVMe: replace nvme_ns with nvme_dev for user admin
-      NVMe: use namespace id for nvme_get_features
-      NVMe: Set block queue max sectors
-      NVMe: Do not set IO queue depth beyond device max
-      NVMe: Fix uninitialized iod compiler warning
-
-Konrad Rzeszutek Wilk (1):
-      xen/boot: Disable NUMA for PV guests.
-
-Linus Lüssing (1):
-      batman-adv: Fix symmetry check / route flapping in multi interface setups
-
-Linus Torvalds (2):
-      mtdchar: fix offset overflow detection
-      Linux 3.6
-
-Luis R. Rodriguez (1):
-      cfg80211: fix possible circular lock on reg_regdb_search()
-
-Marek Vasut (4):
-      phy/micrel: Implement support for KSZ8021
-      phy/micrel: Rename KS80xx to KSZ80xx
-      phy/micrel: Add missing header to micrel_phy.h
-      net: phy: smsc: Implement PHY config_init for LAN87xx
-
-Mark Brown (1):
-      ASoC: wm2000: Correct register size
-
-Mark Salter (3):
-      c6x: use asm-generic/barrier.h
-      c/r: prctl: fix build error for no-MMU case
-      syscalls: add __NR_kcmp syscall to generic unistd.h
-
-Matthew Wilcox (3):
-      NVMe: Fix whitespace damage in nvme_init
-      NVMe: Free admin queue memory on initialisation failure
-      NVMe: Cancel outstanding IOs on queue deletion
-
-Mauro Carvalho Chehab (3):
-      i3200_edac: Fix memory rank size
-      i5000: Fix the memory size calculation with 2R memories
-      sb_edac: Avoid overflow errors at memory size calculation
-
-Mike Snitzer (6):
-      dm thin: do not set discard_zeroes_data
-      dm mpath: only retry ioctl when no paths if queue_if_no_path set
-      dm: handle requests beyond end of device instead of using BUG_ON
-      dm: retain table limits when swapping to new table with no devices
-      dm thin: tidy discard support
-      dm thin: fix discard support for data devices
-
-Miklos Szeredi (1):
-      vfs: dcache: fix deadlock in tree traversal
-
-Mikulas Patocka (1):
-      dm verity: fix overflow check
-
-Milan Broz (1):
-      dm table: clear add_random unless all devices have it set
-
-Narendra K (1):
-      qlcnic: Fix scheduling while atomic bug
-
-Neil Horman (1):
-      bnx2: Clean up remaining iounmap
-
-NeilBrown (2):
-      md/raid5: add missing spin_lock_init.
-      md/raid10: fix "enough" function for detecting if array is failed.
-
-Nicolas Dichtel (1):
-      inetpeer: fix token initialization
-
-Paul Mundt (1):
-      sh: pfc: Fix up GPIO mux type reconfig case.
-
-Peter Hüwe (1):
-      net/phy/bcm87xx: Add MODULE_LICENSE("GPL") to GPL driver
-
-Quoc-Son Anh (1):
-      NVMe: Use ida for nvme device instance
-
-Richard Weinberger (1):
-      um: Fix IPC on um
-
-Roland Stigge (1):
-      gpio-lpc32xx: Fix value handling of gpio_direction_output()
-
-Sachin Kamat (1):
-      ARM: dma-mapping: Fix potential memory leak in atomic_pool_init()
-
-Steve Glendinning (1):
-      smsc75xx: fix resume after device reset
-
-Thierry Reding (1):
-      pwm-backlight: take over maintenance
-
-Vinicius Costa Gomes (1):
-      Bluetooth: Fix not removing power_off delayed work
-
-Wei Yongjun (4):
-      l2tp: fix return value check
-      team: fix return value check
-      netdev: pasemi: fix return value check in pasemi_mac_phy_init()
-      netdev: octeon: fix return value check in octeon_mgmt_init_phy()
-
-Xiaodong Xu (1):
-      pppoe: drop PPPOX_ZOMBIEs in pppoe_release
