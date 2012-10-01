@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab2JAQdG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 12:33:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51580 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab2JAQdD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 12:33:03 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Irina Tirdea <irina.tirdea@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v2 11/12] perf tools: Convert to BACKTRACE_SUPPORT
-Date: Tue,  2 Oct 2012 01:32:51 +0900
-Message-Id: <1349109171-1942-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <20121001142443.GA9829@ghostprotocols.net>
-References: <20121001142443.GA9829@ghostprotocols.net>
+	id S1753372Ab2JAQdM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 12:33:12 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:39932 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753098Ab2JAQdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 12:33:08 -0400
+Message-ID: <5069C5AF.3030607@iki.fi>
+Date: Mon, 01 Oct 2012 19:32:47 +0300
+From: Antti Palosaari <crope@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: Add stk1160 driver
+References: <1349101213-21723-1-git-send-email-elezegarcia@gmail.com>
+In-Reply-To: <1349101213-21723-1-git-send-email-elezegarcia@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 82.128.186.237
+X-SA-Exim-Mail-From: crope@iki.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 10/01/2012 05:20 PM, Ezequiel Garcia wrote:
+> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+> ---
+>   MAINTAINERS |    7 +++++++
+>   1 files changed, 7 insertions(+), 0 deletions(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 0750c24..17f6fb0 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -3168,6 +3168,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
+>   S:	Maintained
+>   F:	drivers/media/usb/gspca/
+>
+> +STK1160 USB VIDEO CAPTURE DRIVER
+> +M:	Ezequiel Garcia <elezegarcia@redhat.com>
 
-For building perf without stack backtrace debug, we can set
-NO_BACKTRACE=1 as a argument of make.  It then defines NO_BACKTRACE
-macro for C code to do the proper handling.  However it usually used
-in a negative semantics - e.g. #ifndef - so we saw double negations
-which can be misleading.  Convert it to a positive form to make it
-more readable and add _SUPPORT suffix for consistency.
+Copy paste mistake?
 
-Cc: Irina Tirdea <irina.tirdea@intel.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Makefile    |   10 +++++-----
- tools/perf/util/util.c |    4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
+> +L:	linux-media@vger.kernel.org
+> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
+> +S:	Maintained
+> +F:	drivers/media/usb/stk1160/
+> +
+>   HARD DRIVE ACTIVE PROTECTION SYSTEM (HDAPS) DRIVER
+>   M:	Frank Seidel <frank@f-seidel.de>
+>   L:	platform-driver-x86@vger.kernel.org
+>
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index dd5b9a0507c7..6b3ed863023b 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -45,6 +45,8 @@ include config/utilities.mak
- #
- # Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
- # backtrace post unwind.
-+#
-+# Define NO_BACKTRACE if you do not want stack backtrace debug feature
- 
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-@@ -750,11 +752,9 @@ else
- 	endif
- endif
- 
--ifdef NO_BACKTRACE
--       BASIC_CFLAGS += -DNO_BACKTRACE
--else
--       ifneq ($(call try-cc,$(SOURCE_BACKTRACE),),y)
--               BASIC_CFLAGS += -DNO_BACKTRACE
-+ifndef NO_BACKTRACE
-+       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),),y)
-+               BASIC_CFLAGS += -DBACKTRACE_SUPPORT
-        endif
- endif
- 
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 2055cf38041c..99664598bc1a 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -1,7 +1,7 @@
- #include "../perf.h"
- #include "util.h"
- #include <sys/mman.h>
--#ifndef NO_BACKTRACE
-+#ifdef BACKTRACE_SUPPORT
- #include <execinfo.h>
- #endif
- #include <stdio.h>
-@@ -165,7 +165,7 @@ size_t hex_width(u64 v)
- }
- 
- /* Obtain a backtrace and print it to stdout. */
--#ifndef NO_BACKTRACE
-+#ifdef BACKTRACE_SUPPORT
- void dump_stack(void)
- {
- 	void *array[16];
+regards
+Antti
+
 -- 
-1.7.9.2
-
+http://palosaari.fi/
