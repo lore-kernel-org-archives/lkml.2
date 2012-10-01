@@ -1,164 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab2JATOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 15:14:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20829 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104Ab2JATOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 15:14:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,517,1344236400"; 
-   d="scan'208";a="217723782"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH v2] usb hub: send clear_tt_buffer_complete events when canceling TT clear work
-Date: Mon,  1 Oct 2012 22:21:12 +0300
-Message-Id: <1349119272-21682-1-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <CAE1zotL=WggH2OFoxF7KZX+Ciu71LLZwiaOeVBZfPVM_jC1PDw@mail.gmail.com>
-References: <CAE1zotL=WggH2OFoxF7KZX+Ciu71LLZwiaOeVBZfPVM_jC1PDw@mail.gmail.com>
+	id S1751691Ab2JATS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 15:18:29 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:61958 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab2JATS2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 15:18:28 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGiy0IFwQ=
+X-RZG-CLASS-ID: mo00
+From: Olaf Hering <olaf@aepfle.de>
+To: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Olaf Hering <olaf@aepfle.de>
+Subject: [PATCH] xen pv-on-hvm: add pfn_is_ram helper for kdump
+Date: Mon,  1 Oct 2012 21:18:01 +0200
+Message-Id: <1349119081-9081-1-git-send-email-olaf@aepfle.de>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race condition in the USB hub code with regard to handling
-TT clear requests that can get the HCD driver in a deadlock. Usually
-when an TT clear request is scheduled it will be executed immediately:
+Register pfn_is_ram helper speed up reading /proc/vmcore in the kdump
+kernel. See commit message of 997c136f518c ("fs/proc/vmcore.c: add hook
+to read_from_oldmem() to check for non-ram pages") for details.
 
-<7>[    6.077583] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
-<3>[    6.078041] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
-<7>[    6.078299] hub_tt_work:731
-<7>[    9.309089] usb 2-1.5: link qh1-0e01/f4d506c0 start 0 [1/2 us]
-<7>[    9.324526] ehci_hcd 0000:00:1d.0: reused qh f4d4db00 schedule
-<7>[    9.324539] usb 2-1.3: link qh1-0e01/f4d4db00 start 0 [1/2 us]
-<7>[    9.341530] usb 1-1.1: link qh4-0e01/f397aec0 start 2 [1/2 us]
-<7>[   10.116159] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
-<3>[   10.116459] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
-<7>[   10.116537] hub_tt_work:731
+It makes use of a new hvmop HVMOP_get_mem_type which was introduced in
+xen 4.2 (23298:26413986e6e0) and backported to 4.1.1.
 
-However, if a suspend operation is triggered before hub_tt_work is
-scheduled, hub_quiesce will cancel the work without notifying the HCD
-driver:
+The new function is currently only enabled for reading /proc/vmcore.
+Later it will be used also for the kexec kernel. Since that requires
+more changes in the generic kernel make it static for the time being.
 
-<3>[   35.033941] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d80
-<5>[   35.034022] sd 0:0:0:0: [sda] Stopping disk
-<7>[   35.034039] hub 2-1:1.0: hub_suspend
-<7>[   35.034067] usb 2-1: unlink qh256-0001/f3b1ab00 start 1 [1/0 us]
-<7>[   35.035085] hub 1-0:1.0: hub_suspend
-<7>[   35.035102] usb usb1: bus suspend, wakeup 0
-<7>[   35.035106] ehci_hcd 0000:00:1a.0: suspend root hub
-<7>[   35.035298] hub 2-0:1.0: hub_suspend
-<7>[   35.035313] usb usb2: bus suspend, wakeup 0
-<7>[   35.035315] ehci_hcd 0000:00:1d.0: suspend root hub
-<6>[   35.250017] PM: suspend of devices complete after 216.979 msecs
-<6>[   35.250822] PM: late suspend of devices complete after 0.799 msecs
-<7>[   35.252343] ehci_hcd 0000:00:1d.0: wakeup: 1
-<7>[   35.262923] ehci_hcd 0000:00:1d.0: --> PCI D3hot
-<7>[   35.263302] ehci_hcd 0000:00:1a.0: wakeup: 1
-<7>[   35.273912] ehci_hcd 0000:00:1a.0: --> PCI D3hot
-<6>[   35.274254] PM: noirq suspend of devices complete after 23.442 msecs
-<6>[   35.274975] ACPI: Preparing to enter system sleep state S3
-<6>[   35.292666] PM: Saving platform NVS memory
-<7>[   35.295030] Disabling non-boot CPUs ...
-<6>[   35.297351] CPU 1 is now offline
-<6>[   35.300345] CPU 2 is now offline
-<6>[   35.303929] CPU 3 is now offline
-<7>[   35.303931] lockdep: fixing up alternatives.
-<6>[   35.304825] Extended CMOS year: 2000
-
-When the device will resume the EHCI driver will get stuck in
-ehci_endpoint_disable waiting for the tt_clearing flag to reset:
-
-<0>[   47.610967] usb 2-1.3: **** DPM device timeout ****
-<7>[   47.610972]  f2f11c60 00000092 f2f11c0c c10624a5 00000003 f4c6e880 c1c8a4c0 c1c8a4c0
-<7>[   47.610983]  15c55698 0000000b f56b34c0 f2a45b70 f4c6e880 00000082 f2a4602c f2f11c30
-<7>[   47.610993]  c10787f8 f4cac000 f2a45b70 00000000 f4cac010 f2f11c58 00000046 00000001
-<7>[   47.611004] Call Trace:
-<7>[   47.611006]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
-<7>[   47.611019]  [<c10787f8>] ? lock_release_holdtime.part.22+0x88/0xf0
-<7>[   47.611026]  [<c103ed46>] ? lock_timer_base.isra.35+0x26/0x50
-<7>[   47.611034]  [<c17592d3>] ? schedule_timeout+0x133/0x290
-<7>[   47.611044]  [<c175b43e>] schedule+0x1e/0x50
-<7>[   47.611051]  [<c17592d8>] schedule_timeout+0x138/0x290
-<7>[   47.611057]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
-<7>[   47.611063]  [<c103e560>] ? usleep_range+0x40/0x40
-<7>[   47.611070]  [<c1759445>] schedule_timeout_uninterruptible+0x15/0x20
-<7>[   47.611077]  [<c14935f4>] ehci_endpoint_disable+0x64/0x160
-<7>[   47.611084]  [<c147d1ee>] ? usb_hcd_flush_endpoint+0x10e/0x1d0
-<7>[   47.611092]  [<c1165663>] ? sysfs_add_file+0x13/0x20
-<7>[   47.611100]  [<c147d5a9>] usb_hcd_disable_endpoint+0x29/0x40
-<7>[   47.611107]  [<c147fafc>] usb_disable_endpoint+0x5c/0x80
-<7>[   47.611111]  [<c147fb57>] usb_disable_interface+0x37/0x50
-<7>[   47.611116]  [<c1477650>] usb_reset_and_verify_device+0x4b0/0x640
-<7>[   47.611122]  [<c1474665>] ? hub_port_status+0xb5/0x100
-<7>[   47.611129]  [<c147a975>] usb_port_resume+0xd5/0x220
-<7>[   47.611136]  [<c148877f>] generic_resume+0xf/0x30
-<7>[   47.611142]  [<c14821a3>] usb_resume+0x133/0x180
-<7>[   47.611147]  [<c1473b10>] ? usb_dev_thaw+0x10/0x10
-<7>[   47.611152]  [<c1473b1d>] usb_dev_resume+0xd/0x10
-<7>[   47.611157]  [<c13baa60>] dpm_run_callback+0x40/0xb0
-<7>[   47.611164]  [<c13bdb03>] ? pm_runtime_enable+0x43/0x70
-<7>[   47.611171]  [<c13bafc6>] device_resume+0x1a6/0x2c0
-<7>[   47.611177]  [<c13ba940>] ? dpm_show_time+0xe0/0xe0
-<7>[   47.611183]  [<c13bb0f9>] async_resume+0x19/0x40
-<7>[   47.611189]  [<c10580c4>] async_run_entry_fn+0x64/0x160
-<7>[   47.611196]  [<c104a244>] ? process_one_work+0x104/0x480
-<7>[   47.611203]  [<c104a24c>] ? process_one_work+0x10c/0x480
-<7>[   47.611209]  [<c104a2c0>] process_one_work+0x180/0x480
-<7>[   47.611215]  [<c104a244>] ? process_one_work+0x104/0x480
-<7>[   47.611220]  [<c1058060>] ? async_schedule+0x10/0x10
-<7>[   47.611226]  [<c104c15c>] worker_thread+0x11c/0x2f0
-<7>[   47.611233]  [<c104c040>] ? manage_workers.isra.27+0x1f0/0x1f0
-<7>[   47.611239]  [<c10507f8>] kthread+0x78/0x80
-<7>[   47.611244]  [<c1750000>] ? timer_cpu_notify+0xd6/0x20d
-<7>[   47.611253]  [<c1050780>] ? __init_kthread_worker+0x60/0x60
-<7>[   47.611258]  [<c176357e>] kernel_thread_helper+0x6/0xd
-<7>[   47.611283] ------------[ cut here ]------------
-
-This patch changes hub_quiesce behavior to flush the TT clear work
-instead of canceling it, to make sure that no TT clear request remains
-uncompleted before suspend.
-
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
 ---
- drivers/usb/core/hub.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+v2:
+ - remove typedefs
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 128a804..e27a28e 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -730,13 +730,16 @@ static void hub_tt_work(struct work_struct *work)
- 	int			limit = 100;
+ arch/x86/xen/mmu.c                 | 41 ++++++++++++++++++++++++++++++++++++++
+ include/xen/interface/hvm/hvm_op.h | 19 ++++++++++++++++++
+ 2 files changed, 60 insertions(+)
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 5141d80..973962a 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -47,6 +47,7 @@
+ #include <linux/gfp.h>
+ #include <linux/memblock.h>
+ #include <linux/seq_file.h>
++#include <linux/crash_dump.h>
  
- 	spin_lock_irqsave (&hub->tt.lock, flags);
--	while (--limit && !list_empty (&hub->tt.clear_list)) {
-+	while (!list_empty(&hub->tt.clear_list)) {
- 		struct list_head	*next;
- 		struct usb_tt_clear	*clear;
- 		struct usb_device	*hdev = hub->hdev;
- 		const struct hc_driver	*drv;
- 		int			status;
+ #include <trace/events/xen.h>
  
-+		if (!hub->quiescing && --limit < 0)
-+			break;
+@@ -2272,6 +2273,43 @@ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order)
+ EXPORT_SYMBOL_GPL(xen_destroy_contiguous_region);
+ 
+ #ifdef CONFIG_XEN_PVHVM
++#ifdef CONFIG_PROC_VMCORE
++/*
++ * This function is used in two contexts:
++ * - the kdump kernel has to check whether a pfn of the crashed kernel
++ *   was a ballooned page. vmcore is using this function to decide
++ *   whether to access a pfn of the crashed kernel.
++ * - the kexec kernel has to check whether a pfn was ballooned by the
++ *   previous kernel. If the pfn is ballooned, handle it properly.
++ * Returns 0 if the pfn is not backed by a RAM page, the caller may
++ * handle the pfn special in this case.
++ */
++static int xen_oldmem_pfn_is_ram(unsigned long pfn)
++{
++	struct xen_hvm_get_mem_type a = {
++		.domid = DOMID_SELF,
++		.pfn = pfn,
++	};
++	int ram;
 +
- 		next = hub->tt.clear_list.next;
- 		clear = list_entry (next, struct usb_tt_clear, clear_list);
- 		list_del (&clear->clear_list);
-@@ -1201,7 +1204,7 @@ static void hub_quiesce(struct usb_hub *hub, enum hub_quiescing_type type)
- 	if (hub->has_indicators)
- 		cancel_delayed_work_sync(&hub->leds);
- 	if (hub->tt.hub)
--		cancel_work_sync(&hub->tt.clear_work);
-+		flush_work_sync(&hub->tt.clear_work);
++	if (HYPERVISOR_hvm_op(HVMOP_get_mem_type, &a))
++		return -ENXIO;
++
++	switch (a.mem_type) {
++		case HVMMEM_mmio_dm:
++			ram = 0;
++			break;
++		case HVMMEM_ram_rw:
++		case HVMMEM_ram_ro:
++		default:
++			ram = 1;
++			break;
++	}
++
++	return ram;
++}
++#endif
++
+ static void xen_hvm_exit_mmap(struct mm_struct *mm)
+ {
+ 	struct xen_hvm_pagetable_dying a;
+@@ -2302,6 +2340,9 @@ void __init xen_hvm_init_mmu_ops(void)
+ {
+ 	if (is_pagetable_dying_supported())
+ 		pv_mmu_ops.exit_mmap = xen_hvm_exit_mmap;
++#ifdef CONFIG_PROC_VMCORE
++	register_oldmem_pfn_is_ram(&xen_oldmem_pfn_is_ram);
++#endif
  }
+ #endif
  
- /* caller has locked the hub device */
+diff --git a/include/xen/interface/hvm/hvm_op.h b/include/xen/interface/hvm/hvm_op.h
+index a4827f4..956a046 100644
+--- a/include/xen/interface/hvm/hvm_op.h
++++ b/include/xen/interface/hvm/hvm_op.h
+@@ -43,4 +43,23 @@ struct xen_hvm_pagetable_dying {
+ typedef struct xen_hvm_pagetable_dying xen_hvm_pagetable_dying_t;
+ DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_pagetable_dying_t);
+  
++enum hvmmem_type_t {
++    HVMMEM_ram_rw,             /* Normal read/write guest RAM */
++    HVMMEM_ram_ro,             /* Read-only; writes are discarded */
++    HVMMEM_mmio_dm,            /* Reads and write go to the device model */
++};
++
++#define HVMOP_get_mem_type    15
++/* Return hvmmem_type_t for the specified pfn. */
++struct xen_hvm_get_mem_type {
++    /* Domain to be queried. */
++    domid_t domid;
++    /* OUT variable. */
++    uint16_t mem_type;
++    uint16_t pad[2]; /* align next field on 8-byte boundary */
++    /* IN variable. */
++    uint64_t pfn;
++};
++DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_get_mem_type);
++
+ #endif /* __XEN_PUBLIC_HVM_HVM_OP_H__ */
 -- 
-1.7.5.4
+1.7.12
 
