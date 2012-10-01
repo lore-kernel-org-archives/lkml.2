@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745Ab2JAXAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:00:49 -0400
-Received: from 1wt.eu ([62.212.114.60]:35215 "EHLO 1wt.eu"
+	id S932920Ab2JAXBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:01:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:35314 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932707Ab2JAXAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:42 -0400
-Message-Id: <20121001225200.194544970@1wt.eu>
+	id S932856Ab2JAXBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:01:12 -0400
+Message-Id: <20121001225201.969551571@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:58 +0200
+Date: Tue, 02 Oct 2012 00:53:40 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Sasha Levin <levinsasha928@gmail.com>, johnstul@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 061/180] ntp: Fix integer overflow when setting time
+Subject: [ 103/180] SCSI: fix eh wakeup (scsi_schedule_eh vs scsi_restart_operations)
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33 upstream.
+commit 57fc2e335fd3c2f898ee73570dc81426c28dc7b4 upstream.
 
-'long secs' is passed as divisor to div_s64, which accepts a 32bit
-divisor. On 64bit machines that value is trimmed back from 8 bytes
-back to 4, causing a divide by zero when the number is bigger than
-(1 << 32) - 1 and all 32 lower bits are 0.
+Rapid ata hotplug on a libsas controller results in cases where libsas
+is waiting indefinitely on eh to perform an ata probe.
 
-Use div64_long() instead.
+A race exists between scsi_schedule_eh() and scsi_restart_operations()
+in the case when scsi_restart_operations() issues i/o to other devices
+in the sas domain.  When this happens the host state transitions from
+SHOST_RECOVERY (set by scsi_schedule_eh) back to SHOST_RUNNING and
+->host_busy is non-zero so we put the eh thread to sleep even though
+->host_eh_scheduled is active.
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Cc: johnstul@us.ibm.com
-Link: http://lkml.kernel.org/r/1331829374-31543-2-git-send-email-levinsasha928@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Before putting the error handler to sleep we need to check if the
+host_state needs to return to SHOST_RECOVERY for another trip through
+eh.  Since i/o that is released by scsi_restart_operations has been
+blocked for at least one eh cycle, this implementation allows those
+i/o's to run before another eh cycle starts to discourage hung task
+timeouts.
+
+Reported-by: Tom Jackson <thomas.p.jackson@intel.com>
+Tested-by: Tom Jackson <thomas.p.jackson@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[WT: div64_long() does not exist on 2.6.32 and needs a deeper backport than
- desired. Instead, address the issue by controlling that the divisor is
- correct for use as an s32 divisor]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/time/ntp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/scsi/scsi_error.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index c1c36a2..26472a7 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -106,7 +106,7 @@ static inline s64 ntp_update_offset_fll(s64 offset64, long secs)
- {
- 	time_status &= ~STA_MODE;
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index 573921d..3890793 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -1550,6 +1550,20 @@ static void scsi_restart_operations(struct Scsi_Host *shost)
+ 	 * requests are started.
+ 	 */
+ 	scsi_run_host_queues(shost);
++
++	/*
++	 * if eh is active and host_eh_scheduled is pending we need to re-run
++	 * recovery.  we do this check after scsi_run_host_queues() to allow
++	 * everything pent up since the last eh run a chance to make forward
++	 * progress before we sync again.  Either we'll immediately re-run
++	 * recovery or scsi_device_unbusy() will wake us again when these
++	 * pending commands complete.
++	 */
++	spin_lock_irqsave(shost->host_lock, flags);
++	if (shost->host_eh_scheduled)
++		if (scsi_host_set_state(shost, SHOST_RECOVERY))
++			WARN_ON(scsi_host_set_state(shost, SHOST_CANCEL_RECOVERY));
++	spin_unlock_irqrestore(shost->host_lock, flags);
+ }
  
--	if (secs < MINSEC)
-+	if ((s32)secs < MINSEC)
- 		return 0;
- 
- 	if (!(time_status & STA_FLL) && (secs <= MAXSEC))
+ /**
 -- 
 1.7.2.1.45.g54fbc
 
