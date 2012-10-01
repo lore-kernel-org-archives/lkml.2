@@ -1,95 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab2JAGrm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 02:47:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55096 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab2JAGrl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 02:47:41 -0400
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: linux-kernel@vger.kernel.org
-Cc: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
-	<benoit.thebaudeau@advansee.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH] pwm: dt: Fix description of second PWM cell
-Date: Mon,  1 Oct 2012 08:47:33 +0200
-Message-Id: <1349074053-18385-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.7.12.2
+	id S1752041Ab2JAGxH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 02:53:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7344 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751416Ab2JAGxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 02:53:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,514,1344236400"; 
+   d="scan'208";a="228943812"
+Date: Mon, 1 Oct 2012 09:55:26 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@lists.linux-foundation.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Len, Brown" <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [RFC PATCH 5/6] ACPI: Introduce ACPI I2C controller enumeration
+ driver
+Message-ID: <20121001065526.GH15548@intel.com>
+References: <1348818032.10877.325.camel@rui.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:KCB34ybI7k4ISN6uiIP/b0qJxDQIIAKTkVrimGtBtFF
- SBp0zQU5sinrDl2e9Mq4pdymQ5Dkk/o2tKuullm63Kl9Ky2+ic
- 1tly6wbHz8xRa+Rxvd1pB0HZmj65K1YWWtqzRQihsEuigFM8Qd
- 7QpVlsH/z4Pdcv1bdTs85G9acsFqB3nqjNGSL3Vmpo7RebrNzE
- h5UYacEfsPyYBOU7Aow7595MAyNGqcw5h32wOTnY+ZJwDo5nhR
- LYGvBhVdJ3hokH8eWgDbEj0tsVGFBqDgrudv/mE3LzLAy5vUVo
- mt+CwDdpublTTmphudiw+yCUZXvUJ0o0iM8iePdKvgHbgzTOkY
- HpYH95n2dYJSzOnp61kGYW00Rs79PZ7zcNf2GrCTbLVmHPgW+t
- kgtewBvApL+zFX+ghmVF3V7yDWSxNuvrVGWYRtcTzqY96XicZB
- rdeWf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348818032.10877.325.camel@rui.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The second cell in the PWM specifier denotes the period in nanoseconds,
-not the duty cycle. The latter can be freely configured at runtime and
-a PWM with a fixed duty cycle would be rather pointless.
+On Fri, Sep 28, 2012 at 03:40:32PM +0800, Zhang Rui wrote:
+> +acpi_status __init i2c_enumerate_slave(acpi_handle handle, u32 level,
+> +				       void *data, void **return_value)
+> +{
+> +	int result;
+> +	acpi_status status;
+> +	struct acpi_buffer buffer;
+> +	struct acpi_resource *resource;
+> +	struct acpi_resource_gpio *gpio;
+> +	struct acpi_resource_i2c_serialbus *i2c;
+> +	int i;
+> +	struct acpi_i2c_root *root = data;
+> +	struct i2c_board_info info;
+> +	struct acpi_device *device;
+> +
+> +	if (acpi_bus_get_device(handle, &device))
+> +		return AE_OK;
+> +
+> +	status = acpi_get_current_resources(handle, &buffer);
+> +	if (ACPI_FAILURE(status)) {
+> +		dev_err(&device->dev, "Failed to get ACPI resources\n");
+> +		return AE_OK;
+> +	}
+> +
+> +	for (i = 0; i < buffer.length; i += sizeof(struct acpi_resource)) {
+> +		resource = (struct acpi_resource *)(buffer.pointer + i);
+> +
+> +		switch (resource->type) {
+> +		case ACPI_RESOURCE_TYPE_GPIO:
+> +			gpio = &resource->data.gpio;
+> +
+> +			if (gpio->connection_type == ACPI_RESOURCE_GPIO_TYPE_INT) {
+> +				result =
+> +				    acpi_device_get_gpio_irq
+> +				    (gpio->resource_source.string_ptr,
+> +				     gpio->pin_table[0], &info.irq);
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: "Benoît Thébaudeau" <benoit.thebaudeau@advansee.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
----
- Documentation/devicetree/bindings/pwm/imx-pwm.txt            | 2 +-
- Documentation/devicetree/bindings/pwm/mxs-pwm.txt            | 2 +-
- Documentation/devicetree/bindings/pwm/nvidia,tegra20-pwm.txt | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+acpi_device_get_gpio_irq() is not defined in this patch series?
 
-diff --git a/Documentation/devicetree/bindings/pwm/imx-pwm.txt b/Documentation/devicetree/bindings/pwm/imx-pwm.txt
-index 9b9b185..8522bfb 100644
---- a/Documentation/devicetree/bindings/pwm/imx-pwm.txt
-+++ b/Documentation/devicetree/bindings/pwm/imx-pwm.txt
-@@ -4,7 +4,7 @@ Required properties:
- - compatible: should be "fsl,<soc>-pwm"
- - reg: physical base address and length of the controller's registers
- - #pwm-cells: should be 2.  The first cell specifies the per-chip index
--  of the PWM to use and the second cell is the duty cycle in nanoseconds.
-+  of the PWM to use and the second cell is the period in nanoseconds.
- - interrupts: The interrupt for the pwm controller
- 
- Example:
-diff --git a/Documentation/devicetree/bindings/pwm/mxs-pwm.txt b/Documentation/devicetree/bindings/pwm/mxs-pwm.txt
-index b16f4a5..d7946be6 100644
---- a/Documentation/devicetree/bindings/pwm/mxs-pwm.txt
-+++ b/Documentation/devicetree/bindings/pwm/mxs-pwm.txt
-@@ -4,7 +4,7 @@ Required properties:
- - compatible: should be "fsl,imx23-pwm"
- - reg: physical base address and length of the controller's registers
- - #pwm-cells: should be 2.  The first cell specifies the per-chip index
--  of the PWM to use and the second cell is the duty cycle in nanoseconds.
-+  of the PWM to use and the second cell is the period in nanoseconds.
- - fsl,pwm-number: the number of PWM devices
- 
- Example:
-diff --git a/Documentation/devicetree/bindings/pwm/nvidia,tegra20-pwm.txt b/Documentation/devicetree/bindings/pwm/nvidia,tegra20-pwm.txt
-index bbbeedb..01438ec 100644
---- a/Documentation/devicetree/bindings/pwm/nvidia,tegra20-pwm.txt
-+++ b/Documentation/devicetree/bindings/pwm/nvidia,tegra20-pwm.txt
-@@ -7,7 +7,7 @@ Required properties:
- - reg: physical base address and length of the controller's registers
- - #pwm-cells: On Tegra the number of cells used to specify a PWM is 2. The
-   first cell specifies the per-chip index of the PWM to use and the second
--  cell is the duty cycle in nanoseconds.
-+  cell is the period in nanoseconds.
- 
- Example:
- 
--- 
-1.7.12.2
+Also you need to do the gpio_request()/gpio_to_irq() things somewhere. Are
+they handled in acpi_device_get_gpio_irq()?
 
+How about GpioIo resources?
+
+> +				if (result)
+> +					dev_err(&device->dev,
+> +						"Failed to get IRQ\n");
+> +			}
+> +			break;
+> +		case ACPI_RESOURCE_TYPE_SERIAL_BUS:
+> +			i2c = &resource->data.i2c_serial_bus;
+> +
+> +			info.addr = i2c->slave_address;
+> +			break;
+> +		default:
+> +			break;
+> +		}
+> +	}
+> +
+> +	add_slave(root, &info);
+> +
+> +	kfree(buffer.pointer);
+> +	return AE_OK;
+> +}
+> +
+> +static int __devinit acpi_i2c_root_add(struct acpi_device *device)
+> +{
+> +	acpi_status status;
+> +	struct acpi_i2c_root *root;
+> +	struct resource *resources;
+> +	int result;
+> +
+> +	if (!device->pnp.unique_id) {
+> +		dev_err(&device->dev,
+> +			"Unsupported ACPI I2C controller. No UID\n");
+
+Where does this restriction come from? As far as I understand UID is
+optional.
+
+> +		return -ENODEV;
+> +	}
+> +
+> +	root = kzalloc(sizeof(struct acpi_i2c_root), GFP_KERNEL);
+> +	if (!root)
+> +		return -ENOMEM;
+> +
+> +	root->device = device;
+> +
+> +	kstrtoint(device->pnp.unique_id, 10, &root->busnum);
+> +
+> +	/* enumerate I2C controller */
+> +	root->pdev =
+> +	    platform_device_alloc(acpi_device_hid(device), root->busnum);
+> +	if (!root->pdev) {
+> +		dev_err(&device->dev, "Failed to alloc platform device\n");
+> +		goto err;
+> +	}
+> +
+> +	result = acpi_get_generic_resources(device, &resources);
+> +	if (result < 0) {
+> +		dev_err(&device->dev, "Failed to get resources\n");
+> +		goto err;
+> +	}
+> +
+> +	platform_device_add_resources(root->pdev, resources, result);
+> +	platform_device_add(root->pdev);
+> +
+> +	/* enumerate I2C slave devices */
+> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, root->device->handle, 1,
+> +				     i2c_enumerate_slave, NULL, root, NULL);
+> +
+> +	if (ACPI_FAILURE(status)) {
+> +		dev_err(&root->device->dev, "i2c ACPI namespace walk error!\n");
+> +		kfree(root);
+> +		return -ENODEV;
+> +	}
+> +
+> +	register_slaves(root);
+> +
+> +	return 0;
+> +err:
+> +	kfree(root);
+> +	return -ENODEV;
+> +}
