@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483Ab2JAL6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 07:58:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59429 "EHLO mx2.suse.de"
+	id S1752509Ab2JAL7o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 07:59:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18070 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab2JAL6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 07:58:48 -0400
-Date: Mon, 1 Oct 2012 13:58:47 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
-Message-ID: <20121001115847.GF8622@dhcp22.suse.cz>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
- <1347977050-29476-7-git-send-email-glommer@parallels.com>
- <20120926155108.GE15801@dhcp22.suse.cz>
- <5064392D.5040707@parallels.com>
- <20120927134432.GE29104@dhcp22.suse.cz>
- <50658B3B.9020303@parallels.com>
- <20121001094846.GC8622@dhcp22.suse.cz>
- <50696BC5.8040808@parallels.com>
- <20121001115157.GE8622@dhcp22.suse.cz>
- <506983B8.8010805@parallels.com>
+	id S1750991Ab2JAL7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 07:59:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,515,1344236400"; 
+   d="scan'208";a="228537244"
+Date: Mon, 1 Oct 2012 19:59:36 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, mingo@kernel.org
+Subject: Re: task_work_add/scheduler_tick: possible circular locking
+ dependency detected
+Message-ID: <20121001115936.GA17830@localhost>
+References: <20120928113402.GA577@localhost>
+ <1349088639.7780.4.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <506983B8.8010805@parallels.com>
+In-Reply-To: <1349088639.7780.4.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 01-10-12 15:51:20, Glauber Costa wrote:
-> On 10/01/2012 03:51 PM, Michal Hocko wrote:
-> > On Mon 01-10-12 14:09:09, Glauber Costa wrote:
-> >> On 10/01/2012 01:48 PM, Michal Hocko wrote:
-> >>> On Fri 28-09-12 15:34:19, Glauber Costa wrote:
-> >>>> On 09/27/2012 05:44 PM, Michal Hocko wrote:
-> >>>>>>> the reference count aquired by mem_cgroup_get will still prevent the
-> >>>>>>> memcg from going away, no?
-> >>>>> Yes but you are outside of the rcu now and we usually do css_get before
-> >>>>> we rcu_unlock. mem_cgroup_get just makes sure the group doesn't get
-> >>>>> deallocated but it could be gone before you call it. Or I am just
-> >>>>> confused - these 2 levels of ref counting is really not nice.
-> >>>>>
-> >>>>> Anyway, I have just noticed that __mem_cgroup_try_charge does
-> >>>>> VM_BUG_ON(css_is_removed(&memcg->css)) on a given memcg so you should
-> >>>>> keep css ref count up as well.
-> >>>>>
-> >>>>
-> >>>> IIRC, css_get will prevent the cgroup directory from being removed.
-> >>>> Because some allocations are expected to outlive the cgroup, we
-> >>>> specifically don't want that.
-> >>>
-> >>> Yes, but how do you guarantee that the above VM_BUG_ON doesn't trigger?
-> >>> Task could have been moved to another group between mem_cgroup_from_task
-> >>> and mem_cgroup_get, no?
-> >>>
-> >>
-> >> Ok, after reading this again (and again), you seem to be right. It
-> >> concerns me, however, that simply getting the css would lead us to a
-> >> double get/put pair, since try_charge will have to do it anyway.
+On Mon, Oct 01, 2012 at 12:50:39PM +0200, Peter Zijlstra wrote:
+> On Fri, 2012-09-28 at 19:34 +0800, Fengguang Wu wrote:
+> > Peter,
 > > 
-> > That happens only for !*ptr case and you provide a memcg here, don't
-> > you.
+> > I got the warning
+> > 
+> > [   10.412023] 
+> > [   10.412611] ======================================================
+> > [   10.413014] [ INFO: possible circular locking dependency detected ]
+> > [   10.413014] 3.6.0-rc4-00098-g7eaffe9 #402 Not tainted
+> > [   10.413014] -------------------------------------------------------
+> > [   10.413014] init/1 is trying to acquire lock:
+> > [   10.413014]  (&p->pi_lock){-.-.-.}, at: [<ffffffff81088214>] task_work_add+0x28/0x82
+> > [   10.413014] 
+> > [   10.413014] but task is already holding lock:
+> > [   10.413014]  (&rq->lock){-.-.-.}, at: [<ffffffff8109c6ea>] scheduler_tick+0x3f/0xec
+> > [   10.413014] 
+> > [   10.413014] which lock already depends on the new lock.
+> > [   10.413014] 
+> > [   10.413014] 
 > > 
 > 
->         if (*ptr) { /* css should be a valid one */
->                 memcg = *ptr;
->                 VM_BUG_ON(css_is_removed(&memcg->css));
->                 if (mem_cgroup_is_root(memcg))
->                         goto done;
->                 if (consume_stock(memcg, nr_pages))
->                         goto done;
->                 css_get(&memcg->css);
-> 
-> 
-> The way I read this, this will still issue a css_get here, unless
-> consume_stock suceeds (assuming non-root)
-> 
-> So we'd still have to have a wrapping get/put pair outside the charge.
+> The commit ac3d0da8f3290b3d394cdb7f50604424a7cd6092 should avoid this
+> from happening, not sure what branch its on, but it was in tip before
+> all this landed, so I guess its due to you testing sched/numa branch and
+> not a merged branch like master or auto-next.
 
-That is correct but it assumes that the css is valid so somebody upwards
-made sure css will not go away. This would suggest css_get is not
-necessary here but I guess the primary intention here is to make the
-code easier so that we do not have to check whether we took css
-reference on the return path.
--- 
-Michal Hocko
-SUSE Labs
+Peter, you are right, it's tested in tip:sched/numa. linux-next is
+fine. Hmm, I should automatically test linux-next before raising the
+problem, hehe.
+
+Thanks,
+Fengguang
