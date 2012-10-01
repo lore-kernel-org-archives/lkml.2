@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751121Ab2JATAP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 15:00:15 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:46014 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab2JATAN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 15:00:13 -0400
+	id S1751375Ab2JATBA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 15:01:00 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58589 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927Ab2JATA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 15:00:58 -0400
+Date: Mon, 1 Oct 2012 15:00:48 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 02/13] memcg: Reclaim when more than one page needed.
+Message-ID: <20121001190048.GC23734@cmpxchg.org>
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
+ <1347977050-29476-3-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <20121001160043.GF12460@arm.com>
-References: <20121001160043.GF12460@arm.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 1 Oct 2012 11:59:52 -0700
-X-Google-Sender-Auth: 2q9ry3iOWG0reA7OCYkXjrj2Hac
-Message-ID: <CA+55aFxefxzYB1iLFfWJeen6XK+5MZEMDjMLJQPS9Satr_5CxA@mail.gmail.com>
-Subject: Re: [GIT PULL] arm64: Linux kernel port
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347977050-29476-3-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 1, 2012 at 9:00 AM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+On Tue, Sep 18, 2012 at 06:03:59PM +0400, Glauber Costa wrote:
+> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
+> 
+> mem_cgroup_do_charge() was written before kmem accounting, and expects
+> three cases: being called for 1 page, being called for a stock of 32
+> pages, or being called for a hugepage.  If we call for 2 or 3 pages (and
+> both the stack and several slabs used in process creation are such, at
+> least with the debug options I had), it assumed it's being called for
+> stock and just retried without reclaiming.
+> 
+> Fix that by passing down a minsize argument in addition to the csize.
+> 
+> And what to do about that (csize == PAGE_SIZE && ret) retry?  If it's
+
+Wow, that patch set has been around for a while.  It's been nr_pages
+== 1 for a while now :-)
+
+> needed at all (and presumably is since it's there, perhaps to handle
+> races), then it should be extended to more than PAGE_SIZE, yet how far?
+> And should there be a retry count limit, of what?  For now retry up to
+> COSTLY_ORDER (as page_alloc.c does) and make sure not to do it if
+> __GFP_NORETRY.
 >
-> Please pull the tag below containing the arm64 Linux port. The code
-> lives primarily under arch/arm64/ with a few bits of generic code
-> outside this. Thanks.
+> [v4: fixed nr pages calculation pointed out by Christoph Lameter ]
+> 
+> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/memcontrol.c | 16 +++++++++-------
+>  1 file changed, 9 insertions(+), 7 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9d3bc72..b12121b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2232,7 +2232,8 @@ enum {
+>  };
+>  
+>  static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+> -				unsigned int nr_pages, bool oom_check)
+> +				unsigned int nr_pages, unsigned int min_pages,
+> +				bool oom_check)
 
-Ok, pulled.
+I'm not a big fan of the parameter names.  Can we make this function
+officially aware of batching and name the parameters like the
+arguments that are passed in?  I.e. @batch and @nr_pages?
 
-However, looking at the non-arm64 changes, I note:
+>  {
+>  	unsigned long csize = nr_pages * PAGE_SIZE;
+>  	struct mem_cgroup *mem_over_limit;
+> @@ -2255,18 +2256,18 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  	} else
+>  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+>  	/*
+> -	 * nr_pages can be either a huge page (HPAGE_PMD_NR), a batch
+> -	 * of regular pages (CHARGE_BATCH), or a single regular page (1).
+> -	 *
+>  	 * Never reclaim on behalf of optional batching, retry with a
+>  	 * single page instead.
 
- - the UID16 config option *has* to be fixed.
+"[...] with the amount of actually required pages instead."
 
-   This is not really about arm64, the ugliness comes from every crazy
-architecture. But we really need to fix this to have something like a
-"HAVE_UID16" config option, and have the architectures that support
-this select that option, so that the UID16 config option can just have
-a "depends on HAVE_UID16".
+>  	 */
+> -	if (nr_pages == CHARGE_BATCH)
+> +	if (nr_pages > min_pages)
+>  		return CHARGE_RETRY;
 
-   Please? Anybody?
+	if (batch > nr_pages)
+		return CHARGE_RETRY;
 
- - same goes for DEBUG_KMEMLEAK and DEBUG_BUGVERBOSE.
+But that is all just nitpicking.  Functionally, it looks sane, so:
 
- - very similar issues for the crazy mess of "#if defined()" in
-kernel/sysctl.c. Can we please just add a SYSCTL_EXCEPTION_TRACE
-config option, and have the architectures that want this just select
-it?
-
-Hmm? Having new architecture have to mess with these kinds of things,
-and making the thing continually uglier is just nasty.
-
-I'm sure there are other cases like this elsewhere, but these were the
-ones that the arm64 pull showed.
-
-               Linus
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
