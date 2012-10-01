@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758894Ab2JAX6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:58:30 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57381 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758841Ab2JAX5t (ORCPT
+	id S1758906Ab2JAX6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:58:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53219 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830Ab2JAX5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:57:49 -0400
+	Mon, 1 Oct 2012 19:57:47 -0400
 From: Olof Johansson <olof@lixom.net>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
-Subject: [GIT PULL 10/12] ARM: soc: device tree updates, take 2
-Date: Mon,  1 Oct 2012 16:57:05 -0700
-Message-Id: <1349135827-24790-11-git-send-email-olof@lixom.net>
+Subject: [GIT PULL 9/12] ARM: soc: board specific updates
+Date: Mon,  1 Oct 2012 16:57:04 -0700
+Message-Id: <1349135827-24790-10-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
 In-Reply-To: <1349135827-24790-1-git-send-email-olof@lixom.net>
 References: <1349135827-24790-1-git-send-email-olof@lixom.net>
@@ -21,70 +21,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This branch contains mostly a set of changes for device tree bindings
-on Samsung Exynos. It was staged behind the other branches due to
-dependencies on pincontrol and board changes.
+Misc board updates:
+- Greg added a handful of boards to KS8695 (since he has stepped up to
+maintain it).
+- Qualcomm has added DT-only board support for a couple of their newer SoCs.
+- misc other updates for Samsung and Freescale boards.
 
 Conflicts:
-* remove/remove conflict in arch/arm/mach-exynos/clock-exynos5.c. Remove
-  both sides, i.e. the whole first entry.
+* add/add conflict in arch/arm/mach-shmobile/board-armadillo800eva.c. Keep both.
 
 ----------------------------------------------------------------
 
-The following changes since commit a8e1ceb728d249fbe0bc5e30b9b8ceb0f33b54f5:
+The following changes since commit 8b1a13b02812b60b88920801363920956691feb3:
 
-  Merge branch 'next/boards' into HEAD
+  Merge branch 'next/drivers' into HEAD
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/dt2
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/boards
 
-for you to fetch changes up to 7b27fa258c8f2670a8c09bbc6c4b2c874d155da2:
+for you to fetch changes up to e6ca4ae895e9fbf8b96d3ee1dd44ea96e95babad:
 
-  Merge branch 'next/dt2' into HEAD
+  Merge branch 'next/board-samsung' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into next/boards
 
 ----------------------------------------------------------------
 
-Kukjin Kim (3):
-      ARM: dts: use uart2 for console on smdkv310 and smdk5250
-      Merge branches 'next/pinctrl-samsung' and 'next/board-samsung' into next/dt-samsung-new
-      Merge branch 'next/dt-samsung' into next/dt-samsung-new
+Arnd Bergmann (1):
+      Merge branch 'board' of git://github.com/hzhuang1/linux into next/boards
 
-Olof Johansson (4):
-      Merge branch 'samsung/boards' into next/dt2
-      Merge branch 'samsung/pinctrl' into next/dt2
-      Merge branch 'next/dt-samsung-new' of git://git.kernel.org/.../kgene/linux-samsung into next/dt2
-      Merge branch 'next/dt2' into HEAD
+Fabio Estevam (1):
+      ARM: mx27pdk: Add audio support
 
-Thomas Abraham (3):
-      ARM: EXYNOS: Add support for MSHC controller clocks
-      ARM: EXYNOS: Add AUXDATA support for MSHC controllers
-      ARM: dts: Add nodes for dw_mmc controllers for Samsung EXYNOS5250 platforms
+Greg Ungerer (2):
+      ARM: ks8695: add board support for the SnapGear boards based on the KS8695
+      ARM: ks8695: add board support for the OpenGear boards based on the KS8695
 
-Tomasz Figa (6):
-      ARM: dts: Move parts common to EXYNOS4 from exynos4210.dtsi to exynos4.dtsi
-      ARM: EXYNOS: Use exynos4 prefix instead of exynos4210 on exynos4-dt
-      ARM: dts: Assume status of all optional nodes as disabled for exynos4
-      ARM: dts: Specify address and size cells for i2c controllers for EXYNOS4
-      ARM: EXYNOS: Add OF compatibility lookups for EXYNOS4 i2c adapters
-      ARM: dts: Add basic dts file for Samsung Trats board
+Haojian Zhuang (2):
+      ARM: mmp: implement DEBUG_LL port choice
+      ARM: mmp: enable debug uart port in defconfig
+
+Kuninori Morimoto (2):
+      ARM: shmobile: marzen: fixup regulator id for smsc911x
+      ARM: shmobile: marzen: enable thermal sensor
+
+Lei Wen (1):
+      ARM: ttc_dkb: add nand support
+
+Mark Brown (2):
+      ARM: S3C64XX: Update configuration for WM5102 module on Cragganmore
+      ARM: S3C64XX: Register audio platform devices for Bells on Cragganmore
+
+Nobuhiro Iwamatsu (1):
+      ARM: shmobile: armadillo800eva: Add support RTC
+
+Olof Johansson (7):
+      Merge branch 'ks8695/boards' into next/boards
+      Merge branch 'boards' of git://git.kernel.org/.../horms/renesas into next/boards
+      Merge branch 'board' of git://github.com/hzhuang1/linux into next/boards
+      Merge branch 'boards' of git://git.kernel.org/.../horms/renesas into next/boards
+      Merge tag 'imx-boards' of git://git.pengutronix.de/git/imx/linux-2.6 into next/boards
+      Merge tag 'msm-board-for-3.7' of git://git.kernel.org/.../davidb/linux-msm into next/boards
+      Merge branch 'next/board-samsung' of git://git.kernel.org/.../kgene/linux-samsung into next/boards
+
+Phil Edworthy (1):
+      ARM: shmobile: marzen: add SDHI0 support
+
+Sachin Kamat (4):
+      ARM: dts: Use active low flag for gpio-keys on Origen
+      ARM: dts: Add heartbeat gpio-leds support to Origen
+      ARM: EXYNOS: Add generic PWM lookup support for SMDK4X12
+      ARM: EXYNOS: Add generic PWM lookup support for SMDKV310
+
+Stephen Boyd (2):
+      ARM: msm: Allow msm_iomap-8x60 and msm_iomap-8960 to coexist
+      ARM: msm: Allow 8960 and 8660 to compile together
 
 Tushar Behera (1):
-      ARM: dts: Enable on-board keys as wakeup source for exynos4210-origen
+      ARM: EXYNOS: Use generic pwm driver in Origen board
 
 
- arch/arm/boot/dts/exynos4.dtsi            | 248 +++++++++++++++++++++++++
- arch/arm/boot/dts/exynos4210-origen.dts   |  63 +------
- arch/arm/boot/dts/exynos4210-smdkv310.dts |  54 +-----
- arch/arm/boot/dts/exynos4210-trats.dts    | 237 +++++++++++++++++++++++
- arch/arm/boot/dts/exynos4210.dtsi         | 186 +------------------
- arch/arm/boot/dts/exynos5250-smdk5250.dts |  59 +++++-
- arch/arm/boot/dts/exynos5250.dtsi         |  32 ++++
- arch/arm/mach-exynos/Makefile.boot        |   2 +-
- arch/arm/mach-exynos/clock-exynos5.c      |  45 ++---
- arch/arm/mach-exynos/include/mach/map.h   |   4 +
- arch/arm/mach-exynos/mach-exynos4-dt.c    |  32 +++-
- arch/arm/mach-exynos/mach-exynos5-dt.c    |   8 +
- 12 files changed, 644 insertions(+), 326 deletions(-)
- create mode 100644 arch/arm/boot/dts/exynos4.dtsi
- create mode 100644 arch/arm/boot/dts/exynos4210-trats.dts
+ arch/arm/Kconfig.debug                          |  14 ++
+ arch/arm/boot/dts/exynos4210-origen.dts         |  18 +-
+ arch/arm/configs/armadillo800eva_defconfig      |   3 +
+ arch/arm/configs/marzen_defconfig               |   2 +
+ arch/arm/configs/mmp2_defconfig                 |   5 +-
+ arch/arm/configs/pxa910_defconfig               |   4 +-
+ arch/arm/mach-exynos/Kconfig                    |   3 +
+ arch/arm/mach-exynos/mach-origen.c              |   6 +
+ arch/arm/mach-exynos/mach-smdk4x12.c            |   6 +
+ arch/arm/mach-exynos/mach-smdkv310.c            |   7 +
+ arch/arm/mach-imx/Kconfig                       |   1 +
+ arch/arm/mach-imx/mach-mx27_3ds.c               |  21 +-
+ arch/arm/mach-ks8695/Kconfig                    |  61 ++++++
+ arch/arm/mach-ks8695/Makefile                   |   8 +
+ arch/arm/mach-ks8695/board-og.c                 | 199 +++++++++++++++++++
+ arch/arm/mach-ks8695/board-sg.c                 | 121 +++++++++++
+ arch/arm/mach-mmp/include/mach/debug-macro.S    |  12 +-
+ arch/arm/mach-mmp/ttc_dkb.c                     |  10 +
+ arch/arm/mach-msm/Kconfig                       |   8 +-
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |  11 -
+ arch/arm/mach-msm/include/mach/msm_iomap.h      |   3 +-
+ arch/arm/mach-msm/io.c                          |   2 -
+ arch/arm/mach-s3c64xx/mach-crag6410-module.c    |  36 +++-
+ arch/arm/mach-s3c64xx/mach-crag6410.c           |  12 ++
+ arch/arm/mach-shmobile/board-armadillo800eva.c  |  25 +++
+ arch/arm/mach-shmobile/board-marzen.c           |  68 ++++++-
+ 26 files changed, 633 insertions(+), 33 deletions(-)
+ create mode 100644 arch/arm/mach-ks8695/board-og.c
+ create mode 100644 arch/arm/mach-ks8695/board-sg.c
