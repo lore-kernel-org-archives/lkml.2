@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab2JAOyd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 10:54:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56043 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab2JAOyc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 10:54:32 -0400
-Date: Tue, 2 Oct 2012 00:54:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: linux-next: build warning after merge of the tip tree
-Message-Id: <20121002005423.7530890bfcfaca06666dfc72@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Oct_2012_00_54_23_+1000_zwowgVAWCZlC=_Mt"
+	id S1752159Ab2JAOzn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 10:55:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40031 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085Ab2JAOzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 10:55:42 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] loop: Make explicit loop device destruction lazy
+References: <1348812593-21344-1-git-send-email-david@fromorbit.com>
+	<506562CE.2070500@kernel.dk>
+	<x49mx0ambqa.fsf@segfault.boston.devel.redhat.com>
+	<50668C22.8010406@kernel.dk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 01 Oct 2012 10:00:00 -0400
+In-Reply-To: <50668C22.8010406@kernel.dk> (Jens Axboe's message of "Sat, 29
+	Sep 2012 07:50:26 +0200")
+Message-ID: <x49a9w6mgwv.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Oct_2012_00_54_23_+1000_zwowgVAWCZlC=_Mt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Jens Axboe <axboe@kernel.dk> writes:
 
-Hi all,
+> On 2012-09-28 17:02, Jeff Moyer wrote:
+>> Jens Axboe <axboe@kernel.dk> writes:
+>> 
+>>> On 2012-09-28 08:09, Dave Chinner wrote:
+>>>> From: Dave Chinner <dchinner@redhat.com>
+>>>>
+>>>> xfstests has always had random failures of tests due to loop devices
+>>>> failing to be torn down and hence leaving filesytems that cannot be
+>>>> unmounted. This causes test runs to immediately stop.
+>>>>
+>>>> Over the past 6 or 7 years we've added hacks like explicit unmount
+>>>> -d commands for loop mounts, losetup -d after unmount -d fails, etc,
+>>>> but still the problems persist.  Recently, the frequency of loop
+>>>> related failures increased again to the point that xfstests 259 will
+>>>> reliably fail with a stray loop device that was not torn down.
+>>>>
+>>>> That is despite the fact the test is above as simple as it gets -
+>>>> loop 5 or 6 times running mkfs.xfs with different paramters:
+>>>>
+>>>>         lofile=$(losetup -f)
+>>>>         losetup $lofile "$testfile"
+>>>>         "$MKFS_XFS_PROG" -b size=512 $lofile >/dev/null || echo "mkfs failed!"
+>>>>         sync
+>>>>         losetup -d $lofile
+>>>>
+>>>> And losteup -d $lofile is failing with EBUSY on 1-3 of these loops
+>>>> every time the test is run.
+>>>>
+>>>> Turns out that blkid is running simultaneously with losetup -d, and
+>>>> so it sees an elevated reference count and returns EBUSY.  But why
+>>>> is blkid running? It's obvious, isn't it? udev has decided to try
+>>>> and find out what is on the block device as a result of a creation
+>>>> notification. And it is racing with mkfs, so might still be scanning
+>>>> the device when mkfs finishes and we try to tear it down.
+>>>>
+>>>> So, make losetup -d force autoremove behaviour. That is, when the
+>>>> last reference goes away, tear down the device. xfstests wants it
+>>>> *gone*, not causing random teardown failures when we know that all
+>>>> the operations the tests have specifically run on the device have
+>>>> completed and are no longer referencing the loop device.
+>>>
+>>> I hear that %^#@#! blkid behavior, it is such a pain in the neck. I
+>>> don't know how many times I've had to explain that behaviour to people
+>>> who run write testing with tracing, wonder wtf there are reads in the
+>>> trace.
+>>>
+>>> Patch looks fine, seems like the sane thing to do (lazy-remove on last
+>>> drop) for this case.
+>> 
+>> Do we also want to prevent further opens?
+>
+> That's not a bad idea, at least it would be the logical thing to do. But
+> it does get into the realm of potentially breaking existing behaviour.
 
-After merging the tip tree, today's linux-next build (sparc64 defconfig)
-produced this warning:
+What do you think could rely on the existing behaviour (that isn't
+broken by design)?
 
-include/linux/efi.h:503:13: warning: 'efi_enter_virtual_mode' defined but n=
-ot used [-Wunused-function]
-include/linux/efi.h:504:13: warning: 'efi_late_init' defined but not used [=
--Wunused-function]
-include/linux/efi.h:505:13: warning: 'efi_free_boot_services' defined but n=
-ot used [-Wunused-function]
-
-Introduced by commit f383a1e37bc3 ("efi: Add a stub for
-efi_enter_virtual_mode on non-x86") and following patches.  These
-function definitions should be "static inline".
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__2_Oct_2012_00_54_23_+1000_zwowgVAWCZlC=_Mt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQaa6fAAoJEECxmPOUX5FE2AQQAIbCDSl2we04JkCwgZS4p8bg
-FvGiGghuk7J/ApxBWUgknkESKRDezJfcyo/hk2bQpm76AN4LMaZYQWi3rTEefr7D
-UJX32wKoL5x0/wScWMji1OX6Gg2FjWjN8sL/PE2IPxT0IRg/kPeF38kj/oEBb3uP
-6oI8MxzGzvyShpqpI59cjhqBnJVDE6ARfUPvpRsvYbICI02OuU8WQaQKCOZfmqZW
-1WZVfnB4LkD8oxa1sI9aAw6ZsyVXi7eBKOHK1Ds9t6EyK/GbP10uT40UlD0n8K6n
-fI0Z5L+FfmMVEtUcEt6d/hTA9OSPTY3VG5scJ76SXiwynoNgoChHeuvatiC6UJJv
-q8YquFO/8JfD9XR1I4Z3rIbrCez0u5PYUm4y9ktV3HAqC1LCuTWS3ExopiPtJRaV
-eZs5tACImLYXmcQuMYd3ZuASKl8/jUH6aA7RPhrinifC2yyxZpY1Dov5xmDuIWX6
-h/WIm6u7JXWIijEgDsGcwxMfNF+fZ7e2m4abTWL7YBdLoSA+qUbzoihx9hwFekS/
-DtEf2U0blC+xfu3dXt4V13Yck3imRT1r/x8xq8WH3E1eggzPm8lkmhb1LmuYXCiN
-KXmtoUV3TyWl5IgiBw+VzNnKIctEVTNzBbD/IE+NzWRKEx9MAF6rwILcBtwmAU3a
-v4VBiT6Hy6zEBR3eQfIY
-=rAKK
------END PGP SIGNATURE-----
-
---Signature=_Tue__2_Oct_2012_00_54_23_+1000_zwowgVAWCZlC=_Mt--
+-Jeff
