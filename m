@@ -1,53 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab2JAICV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 04:02:21 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:39104 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090Ab2JAICR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752160Ab2JAICX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 04:02:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64913 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab2JAICR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Oct 2012 04:02:17 -0400
-Message-ID: <50694D3C.8000603@parallels.com>
-Date: Mon, 1 Oct 2012 11:58:52 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
-References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com> <5062C029.308@parallels.com> <alpine.DEB.2.00.1209261813300.7072@chino.kir.corp.google.com> <5063F94C.4090600@parallels.com> <alpine.DEB.2.00.1209271552350.13360@chino.kir.corp.google.com> <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com> <alpine.DEB.2.00.1209281336380.21335@chino.kir.corp.google.com> <CAOJsxLFYSKqq-JexK1Q7NEtQmxtJnWB-WwbNyp9tk9mpAh6vGg@mail.gmail.com>
-In-Reply-To: <CAOJsxLFYSKqq-JexK1Q7NEtQmxtJnWB-WwbNyp9tk9mpAh6vGg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+From: Prabhakar <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        VGER <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [PATCH v3] media: mt9p031/mt9t001/mt9v032: use V4L2_CID_TEST_PATTERN for test pattern control
+Date: Mon,  1 Oct 2012 13:31:59 +0530
+Message-Id: <1349078519-22828-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2012 11:28 AM, Pekka Enberg wrote:
-> Hello,
-> 
-> [ Found this in my @cs.helsinki.fi inbox, grmbl. ]
-> 
-> On Fri, Sep 28, 2012 at 11:39 PM, David Rientjes <rientjes@google.com> wrote:
->> The first prototype, SLAM XP1, will be posted in October.  I'd simply like
->> to avoid reverting this patch down the road and having all of us
->> reconsider the topic again when clear alternatives exist that, in my
->> opinion, make the code cleaner.
-> 
-> David, I'm sure you know we don't work speculatively against
-> out-of-tree code that may or may not be include in the future...
-> 
-> That said, I don't like Glauber's patch because it leaves CREATE_MASK
-> in mm/slab.c. And I'm not totally convinced a generic SLAB_INTERNAL is
-> going to cut it either. Hmm.
-> 
->                         Pekka
-> 
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-How about we require allocators to define their own CREATE_MASK, and
-then in slab_common.c we mask out any flags outside that mask?
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jean Delvare <khali@linux-fr.org>
+---
+ Changes for v3:
+ 1: Used cluster in mt9v032 for test pattern,
+ pointed by Laurent.
 
-This way we can achieve masking in common code while still leaving the
-decision to the allocators.
+ Changes for v2:
+ 1: Fixed review comments pointed by Laurent.
+
+ drivers/media/i2c/mt9p031.c |   19 +++----------
+ drivers/media/i2c/mt9t001.c |   22 ++++++++++-----
+ drivers/media/i2c/mt9v032.c |   60 +++++++++++++++++++++++++++---------------
+ 3 files changed, 58 insertions(+), 43 deletions(-)
+
+diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
+index 2c0f407..e328332 100644
+--- a/drivers/media/i2c/mt9p031.c
++++ b/drivers/media/i2c/mt9p031.c
+@@ -574,7 +574,6 @@ static int mt9p031_set_crop(struct v4l2_subdev *subdev,
+  * V4L2 subdev control operations
+  */
+ 
+-#define V4L2_CID_TEST_PATTERN		(V4L2_CID_USER_BASE | 0x1001)
+ #define V4L2_CID_BLC_AUTO		(V4L2_CID_USER_BASE | 0x1002)
+ #define V4L2_CID_BLC_TARGET_LEVEL	(V4L2_CID_USER_BASE | 0x1003)
+ #define V4L2_CID_BLC_ANALOG_OFFSET	(V4L2_CID_USER_BASE | 0x1004)
+@@ -740,18 +739,6 @@ static const char * const mt9p031_test_pattern_menu[] = {
+ static const struct v4l2_ctrl_config mt9p031_ctrls[] = {
+ 	{
+ 		.ops		= &mt9p031_ctrl_ops,
+-		.id		= V4L2_CID_TEST_PATTERN,
+-		.type		= V4L2_CTRL_TYPE_MENU,
+-		.name		= "Test Pattern",
+-		.min		= 0,
+-		.max		= ARRAY_SIZE(mt9p031_test_pattern_menu) - 1,
+-		.step		= 0,
+-		.def		= 0,
+-		.flags		= 0,
+-		.menu_skip_mask	= 0,
+-		.qmenu		= mt9p031_test_pattern_menu,
+-	}, {
+-		.ops		= &mt9p031_ctrl_ops,
+ 		.id		= V4L2_CID_BLC_AUTO,
+ 		.type		= V4L2_CTRL_TYPE_BOOLEAN,
+ 		.name		= "BLC, Auto",
+@@ -950,7 +937,7 @@ static int mt9p031_probe(struct i2c_client *client,
+ 	mt9p031->model = did->driver_data;
+ 	mt9p031->reset = -1;
+ 
+-	v4l2_ctrl_handler_init(&mt9p031->ctrls, ARRAY_SIZE(mt9p031_ctrls) + 5);
++	v4l2_ctrl_handler_init(&mt9p031->ctrls, ARRAY_SIZE(mt9p031_ctrls) + 6);
+ 
+ 	v4l2_ctrl_new_std(&mt9p031->ctrls, &mt9p031_ctrl_ops,
+ 			  V4L2_CID_EXPOSURE, MT9P031_SHUTTER_WIDTH_MIN,
+@@ -966,6 +953,10 @@ static int mt9p031_probe(struct i2c_client *client,
+ 	v4l2_ctrl_new_std(&mt9p031->ctrls, &mt9p031_ctrl_ops,
+ 			  V4L2_CID_PIXEL_RATE, pdata->target_freq,
+ 			  pdata->target_freq, 1, pdata->target_freq);
++	v4l2_ctrl_new_std_menu_items(&mt9p031->ctrls, &mt9p031_ctrl_ops,
++			  V4L2_CID_TEST_PATTERN,
++			  ARRAY_SIZE(mt9p031_test_pattern_menu) - 1, 0,
++			  0, mt9p031_test_pattern_menu);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(mt9p031_ctrls); ++i)
+ 		v4l2_ctrl_new_custom(&mt9p031->ctrls, &mt9p031_ctrls[i], NULL);
+diff --git a/drivers/media/i2c/mt9t001.c b/drivers/media/i2c/mt9t001.c
+index 6d343ad..2e189d8 100644
+--- a/drivers/media/i2c/mt9t001.c
++++ b/drivers/media/i2c/mt9t001.c
+@@ -371,7 +371,7 @@ static int mt9t001_set_crop(struct v4l2_subdev *subdev,
+  * V4L2 subdev control operations
+  */
+ 
+-#define V4L2_CID_TEST_PATTERN		(V4L2_CID_USER_BASE | 0x1001)
++#define V4L2_CID_TEST_PATTERN_COLOR	(V4L2_CID_USER_BASE | 0x1001)
+ #define V4L2_CID_BLACK_LEVEL_AUTO	(V4L2_CID_USER_BASE | 0x1002)
+ #define V4L2_CID_BLACK_LEVEL_OFFSET	(V4L2_CID_USER_BASE | 0x1003)
+ #define V4L2_CID_BLACK_LEVEL_CALIBRATE	(V4L2_CID_USER_BASE | 0x1004)
+@@ -487,12 +487,11 @@ static int mt9t001_s_ctrl(struct v4l2_ctrl *ctrl)
+ 				     ctrl->val >> 16);
+ 
+ 	case V4L2_CID_TEST_PATTERN:
+-		ret = mt9t001_set_output_control(mt9t001,
++		return mt9t001_set_output_control(mt9t001,
+ 			ctrl->val ? 0 : MT9T001_OUTPUT_CONTROL_TEST_DATA,
+ 			ctrl->val ? MT9T001_OUTPUT_CONTROL_TEST_DATA : 0);
+-		if (ret < 0)
+-			return ret;
+ 
++	case V4L2_CID_TEST_PATTERN_COLOR:
+ 		return mt9t001_write(client, MT9T001_TEST_DATA, ctrl->val << 2);
+ 
+ 	case V4L2_CID_BLACK_LEVEL_AUTO:
+@@ -533,12 +532,17 @@ static struct v4l2_ctrl_ops mt9t001_ctrl_ops = {
+ 	.s_ctrl = mt9t001_s_ctrl,
+ };
+ 
++static const char * const mt9t001_test_pattern_menu[] = {
++	"Disabled",
++	"Enabled",
++};
++
+ static const struct v4l2_ctrl_config mt9t001_ctrls[] = {
+ 	{
+ 		.ops		= &mt9t001_ctrl_ops,
+-		.id		= V4L2_CID_TEST_PATTERN,
++		.id		= V4L2_CID_TEST_PATTERN_COLOR,
+ 		.type		= V4L2_CTRL_TYPE_INTEGER,
+-		.name		= "Test pattern",
++		.name		= "Test Pattern Color",
+ 		.min		= 0,
+ 		.max		= 1023,
+ 		.step		= 1,
+@@ -741,7 +745,7 @@ static int mt9t001_probe(struct i2c_client *client,
+ 		return -ENOMEM;
+ 
+ 	v4l2_ctrl_handler_init(&mt9t001->ctrls, ARRAY_SIZE(mt9t001_ctrls) +
+-						ARRAY_SIZE(mt9t001_gains) + 3);
++						ARRAY_SIZE(mt9t001_gains) + 4);
+ 
+ 	v4l2_ctrl_new_std(&mt9t001->ctrls, &mt9t001_ctrl_ops,
+ 			  V4L2_CID_EXPOSURE, MT9T001_SHUTTER_WIDTH_MIN,
+@@ -752,6 +756,10 @@ static int mt9t001_probe(struct i2c_client *client,
+ 	v4l2_ctrl_new_std(&mt9t001->ctrls, &mt9t001_ctrl_ops,
+ 			  V4L2_CID_PIXEL_RATE, pdata->ext_clk, pdata->ext_clk,
+ 			  1, pdata->ext_clk);
++	v4l2_ctrl_new_std_menu_items(&mt9t001->ctrls, &mt9t001_ctrl_ops,
++			V4L2_CID_TEST_PATTERN,
++			ARRAY_SIZE(mt9t001_test_pattern_menu) - 1, 0,
++			0, mt9t001_test_pattern_menu);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(mt9t001_ctrls); ++i)
+ 		v4l2_ctrl_new_custom(&mt9t001->ctrls, &mt9t001_ctrls[i], NULL);
+diff --git a/drivers/media/i2c/mt9v032.c b/drivers/media/i2c/mt9v032.c
+index e217740..a0a37ba 100644
+--- a/drivers/media/i2c/mt9v032.c
++++ b/drivers/media/i2c/mt9v032.c
+@@ -141,6 +141,10 @@ struct mt9v032 {
+ 	u16 chip_control;
+ 	u16 aec_agc;
+ 	u16 hblank;
++	struct {
++		struct v4l2_ctrl *test_pattern;
++		struct v4l2_ctrl *test_pattern_color;
++	};
+ };
+ 
+ static struct mt9v032 *to_mt9v032(struct v4l2_subdev *sd)
+@@ -500,7 +504,7 @@ static int mt9v032_set_crop(struct v4l2_subdev *subdev,
+  * V4L2 subdev control operations
+  */
+ 
+-#define V4L2_CID_TEST_PATTERN		(V4L2_CID_USER_BASE | 0x1001)
++#define V4L2_CID_TEST_PATTERN_COLOR	(V4L2_CID_USER_BASE | 0x1001)
+ 
+ static int mt9v032_s_ctrl(struct v4l2_ctrl *ctrl)
+ {
+@@ -545,7 +549,7 @@ static int mt9v032_s_ctrl(struct v4l2_ctrl *ctrl)
+ 		break;
+ 
+ 	case V4L2_CID_TEST_PATTERN:
+-		switch (ctrl->val) {
++		switch (mt9v032->test_pattern->val) {
+ 		case 0:
+ 			data = 0;
+ 			break;
+@@ -562,13 +566,13 @@ static int mt9v032_s_ctrl(struct v4l2_ctrl *ctrl)
+ 			     | MT9V032_TEST_PATTERN_ENABLE;
+ 			break;
+ 		default:
+-			data = (ctrl->val << MT9V032_TEST_PATTERN_DATA_SHIFT)
+-			     | MT9V032_TEST_PATTERN_USE_DATA
+-			     | MT9V032_TEST_PATTERN_ENABLE
+-			     | MT9V032_TEST_PATTERN_FLIP;
++			data = (mt9v032->test_pattern_color->val <<
++				MT9V032_TEST_PATTERN_DATA_SHIFT) |
++				MT9V032_TEST_PATTERN_USE_DATA |
++				MT9V032_TEST_PATTERN_ENABLE |
++				MT9V032_TEST_PATTERN_FLIP;
+ 			break;
+ 		}
+-
+ 		return mt9v032_write(client, MT9V032_TEST_PATTERN, data);
+ 	}
+ 
+@@ -579,18 +583,24 @@ static struct v4l2_ctrl_ops mt9v032_ctrl_ops = {
+ 	.s_ctrl = mt9v032_s_ctrl,
+ };
+ 
+-static const struct v4l2_ctrl_config mt9v032_ctrls[] = {
+-	{
+-		.ops		= &mt9v032_ctrl_ops,
+-		.id		= V4L2_CID_TEST_PATTERN,
+-		.type		= V4L2_CTRL_TYPE_INTEGER,
+-		.name		= "Test pattern",
+-		.min		= 0,
+-		.max		= 1023,
+-		.step		= 1,
+-		.def		= 0,
+-		.flags		= 0,
+-	}
++static const char * const mt9v032_test_pattern_menu[] = {
++	"Disabled",
++	"Gray Vertical Shade",
++	"Gray Horizontal Shade",
++	"Gray Diagonal Shade",
++	"Plain",
++};
++
++static const struct v4l2_ctrl_config mt9v032_test_patter_color = {
++	.ops		= &mt9v032_ctrl_ops,
++	.id		= V4L2_CID_TEST_PATTERN_COLOR,
++	.type		= V4L2_CTRL_TYPE_INTEGER,
++	.name		= "Test Pattern Color",
++	.min		= 4,
++	.max		= 1023,
++	.step		= 1,
++	.def		= 4,
++	.flags		= 0,
+ };
+ 
+ /* -----------------------------------------------------------------------------
+@@ -741,7 +751,7 @@ static int mt9v032_probe(struct i2c_client *client,
+ 	mutex_init(&mt9v032->power_lock);
+ 	mt9v032->pdata = pdata;
+ 
+-	v4l2_ctrl_handler_init(&mt9v032->ctrls, ARRAY_SIZE(mt9v032_ctrls) + 8);
++	v4l2_ctrl_handler_init(&mt9v032->ctrls, 10);
+ 
+ 	v4l2_ctrl_new_std(&mt9v032->ctrls, &mt9v032_ctrl_ops,
+ 			  V4L2_CID_AUTOGAIN, 0, 1, 1, 1);
+@@ -763,6 +773,14 @@ static int mt9v032_probe(struct i2c_client *client,
+ 			  V4L2_CID_VBLANK, MT9V032_VERTICAL_BLANKING_MIN,
+ 			  MT9V032_VERTICAL_BLANKING_MAX, 1,
+ 			  MT9V032_VERTICAL_BLANKING_DEF);
++	mt9v032->test_pattern = v4l2_ctrl_new_std_menu_items(&mt9v032->ctrls,
++				&mt9v032_ctrl_ops, V4L2_CID_TEST_PATTERN,
++				ARRAY_SIZE(mt9v032_test_pattern_menu) - 1, 0, 0,
++				mt9v032_test_pattern_menu);
++	mt9v032->test_pattern_color = v4l2_ctrl_new_custom(&mt9v032->ctrls,
++				      &mt9v032_test_patter_color, NULL);
++
++	v4l2_ctrl_cluster(2, &mt9v032->test_pattern);
+ 
+ 	mt9v032->pixel_rate =
+ 		v4l2_ctrl_new_std(&mt9v032->ctrls, &mt9v032_ctrl_ops,
+@@ -784,8 +802,6 @@ static int mt9v032_probe(struct i2c_client *client,
+ 		v4l2_ctrl_cluster(2, &mt9v032->link_freq);
+ 	}
+ 
+-	for (i = 0; i < ARRAY_SIZE(mt9v032_ctrls); ++i)
+-		v4l2_ctrl_new_custom(&mt9v032->ctrls, &mt9v032_ctrls[i], NULL);
+ 
+ 	mt9v032->subdev.ctrl_handler = &mt9v032->ctrls;
+ 
+-- 
+1.7.4.1
 
