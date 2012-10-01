@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965188Ab2JAXd6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:33:58 -0400
-Received: from 1wt.eu ([62.212.114.60]:35139 "EHLO 1wt.eu"
+	id S1757576Ab2JAXAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:00:20 -0400
+Received: from 1wt.eu ([62.212.114.60]:35114 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757526Ab2JAXAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:22 -0400
-Message-Id: <20121001225202.952908501@1wt.eu>
+	id S1757526Ab2JAXAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:15 -0400
+Message-Id: <20121001225200.700029255@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:03 +0200
+Date: Tue, 02 Oct 2012 00:53:10 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mark Ferrell <mferrell@uplogix.com>,
+Cc: Alex He <alex.he@amd.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 126/180] usb: serial: mos7840: Fixup mos7840_chars_in_buffer()
+Subject: [ 073/180] xHCI: Correct the #define XHCI_LEGACY_DISABLE_SMI
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,41 +24,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Ferrell <mferrell@uplogix.com>
+From: Alex He <alex.he@amd.com>
 
-commit 5c263b92f828af6a8cf54041db45ceae5af8f2ab upstream.
+commit 95018a53f7653e791bba1f54c8d75d9cb700d1bd upstream.
 
- * Use the buffer content length as opposed to the total buffer size.  This can
-   be a real problem when using the mos7840 as a usb serial-console as all
-   kernel output is truncated during boot.
+Re-define XHCI_LEGACY_DISABLE_SMI and used it in right way. All SMI enable
+bits will be cleared to zero and flag bits 29:31 are also cleared to zero.
+Other bits should be presvered as Table 146.
 
-Signed-off-by: Mark Ferrell <mferrell@uplogix.com>
+This patch should be backported to kernels as old as 2.6.31.
+
+Signed-off-by: Alex He <alex.he@amd.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/usb/serial/mos7840.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/usb/host/pci-quirks.c    |   10 +++++++---
+ drivers/usb/host/xhci-ext-caps.h |    5 +++--
+ 2 files changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index 9fdcee2..61829b8 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -1181,9 +1181,12 @@ static int mos7840_chars_in_buffer(struct tty_struct *tty)
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 0ff157a..981b604 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -458,9 +458,13 @@ static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
+ 		}
  	}
  
- 	spin_lock_irqsave(&mos7840_port->pool_lock, flags);
--	for (i = 0; i < NUM_URBS; ++i)
--		if (mos7840_port->busy[i])
--			chars += URB_TRANSFER_BUFFER_SIZE;
-+	for (i = 0; i < NUM_URBS; ++i) {
-+		if (mos7840_port->busy[i]) {
-+			struct urb *urb = mos7840_port->write_urb_pool[i];
-+			chars += urb->transfer_buffer_length;
-+		}
-+	}
- 	spin_unlock_irqrestore(&mos7840_port->pool_lock, flags);
- 	dbg("%s - returns %d", __func__, chars);
- 	return chars;
+-	/* Disable any BIOS SMIs */
+-	writel(XHCI_LEGACY_DISABLE_SMI,
+-			base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
++	val = readl(base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
++	/* Mask off (turn off) any enabled SMIs */
++	val &= XHCI_LEGACY_DISABLE_SMI;
++	/* Mask all SMI events bits, RW1C */
++	val |= XHCI_LEGACY_SMI_EVENTS;
++	/* Disable any BIOS SMIs and clear all SMI events*/
++	writel(val, base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
+ 
+ hc_init:
+ 	op_reg_base = base + XHCI_HC_LENGTH(readl(base));
+diff --git a/drivers/usb/host/xhci-ext-caps.h b/drivers/usb/host/xhci-ext-caps.h
+index 78c4eda..e2acc97 100644
+--- a/drivers/usb/host/xhci-ext-caps.h
++++ b/drivers/usb/host/xhci-ext-caps.h
+@@ -62,8 +62,9 @@
+ /* USB Legacy Support Control and Status Register  - section 7.1.2 */
+ /* Add this offset, plus the value of xECP in HCCPARAMS to the base address */
+ #define XHCI_LEGACY_CONTROL_OFFSET	(0x04)
+-/* bits 1:2, 5:12, and 17:19 need to be preserved; bits 21:28 should be zero */
+-#define	XHCI_LEGACY_DISABLE_SMI		((0x3 << 1) + (0xff << 5) + (0x7 << 17))
++/* bits 1:3, 5:12, and 17:19 need to be preserved; bits 21:28 should be zero */
++#define	XHCI_LEGACY_DISABLE_SMI		((0x7 << 1) + (0xff << 5) + (0x7 << 17))
++#define XHCI_LEGACY_SMI_EVENTS		(0x7 << 29)
+ 
+ /* command register values to disable interrupts and halt the HC */
+ /* start/stop HC execution - do not write unless HC is halted*/
 -- 
 1.7.2.1.45.g54fbc
 
