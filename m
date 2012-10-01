@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932869Ab2JAXBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:01:13 -0400
-Received: from 1wt.eu ([62.212.114.60]:35276 "EHLO 1wt.eu"
+	id S933037Ab2JAXBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:01:52 -0400
+Received: from 1wt.eu ([62.212.114.60]:35429 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932798Ab2JAXA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:59 -0400
-Message-Id: <20121001225200.321008899@1wt.eu>
+	id S933013Ab2JAXBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:01:47 -0400
+Message-Id: <20121001225202.658882219@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:01 +0200
+Date: Tue, 02 Oct 2012 00:53:56 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Ben Myers <bpm@sgi.com>,
+Cc: Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 064/180] xfs: Fix oops on IO error during xlog_recover_process_iunlinks()
+Subject: [ 119/180] futex: Test for pi_mutex on fault in futex_wait_requeue_pi()
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,84 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit d97d32edcd732110758799ae60af725e5110b3dc upstream.
+commit b6070a8d9853eda010a549fa9a09eb8d7269b929 upstream.
 
-When an IO error happens during inode deletion run from
-xlog_recover_process_iunlinks() filesystem gets shutdown. Thus any subsequent
-attempt to read buffers fails. Code in xlog_recover_process_iunlinks() does not
-count with the fact that read of a buffer which was read a while ago can
-really fail which results in the oops on
-  agi = XFS_BUF_TO_AGI(agibp);
+If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
+for pi_mutex != NULL before testing the owner against current
+and possibly unlocking it.
 
-Fix the problem by cleaning up the buffer handling in
-xlog_recover_process_iunlinks() as suggested by Dave Chinner. We release buffer
-lock but keep buffer reference to AG buffer. That is enough for buffer to stay
-pinned in memory and we don't have to call xfs_read_agi() all the time.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Link: http://lkml.kernel.org/r/dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/xfs/xfs_log_recover.c |   33 +++++++++++----------------------
- 1 files changed, 11 insertions(+), 22 deletions(-)
+ kernel/futex.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
-index 844a99b..bae2c99 100644
---- a/fs/xfs/xfs_log_recover.c
-+++ b/fs/xfs/xfs_log_recover.c
-@@ -3298,37 +3298,26 @@ xlog_recover_process_iunlinks(
- 			 */
- 			continue;
- 		}
-+		/*
-+		 * Unlock the buffer so that it can be acquired in the normal
-+		 * course of the transaction to truncate and free each inode.
-+		 * Because we are not racing with anyone else here for the AGI
-+		 * buffer, we don't even need to hold it locked to read the
-+		 * initial unlinked bucket entries out of the buffer. We keep
-+		 * buffer reference though, so that it stays pinned in memory
-+		 * while we need the buffer.
-+		 */
- 		agi = XFS_BUF_TO_AGI(agibp);
-+		xfs_buf_unlock(agibp);
- 
- 		for (bucket = 0; bucket < XFS_AGI_UNLINKED_BUCKETS; bucket++) {
- 			agino = be32_to_cpu(agi->agi_unlinked[bucket]);
- 			while (agino != NULLAGINO) {
--				/*
--				 * Release the agi buffer so that it can
--				 * be acquired in the normal course of the
--				 * transaction to truncate and free the inode.
--				 */
--				xfs_buf_relse(agibp);
--
- 				agino = xlog_recover_process_one_iunlink(mp,
- 							agno, agino, bucket);
--
--				/*
--				 * Reacquire the agibuffer and continue around
--				 * the loop. This should never fail as we know
--				 * the buffer was good earlier on.
--				 */
--				error = xfs_read_agi(mp, NULL, agno, &agibp);
--				ASSERT(error == 0);
--				agi = XFS_BUF_TO_AGI(agibp);
- 			}
- 		}
--
--		/*
--		 * Release the buffer for the current agi so we can
--		 * go on to the next one.
--		 */
--		xfs_buf_relse(agibp);
-+		xfs_buf_rele(agibp);
- 	}
- 
- 	mp->m_dmevmask = mp_dmevmask;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 0b06da1..6f745b6 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2345,7 +2345,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
+ 	 * fault, unlock the rt_mutex and return the fault to userspace.
+ 	 */
+ 	if (ret == -EFAULT) {
+-		if (rt_mutex_owner(pi_mutex) == current)
++		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
+ 			rt_mutex_unlock(pi_mutex);
+ 	} else if (ret == -EINTR) {
+ 		/*
 -- 
 1.7.2.1.45.g54fbc
 
