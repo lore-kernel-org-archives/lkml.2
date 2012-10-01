@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267Ab2JASsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 14:48:24 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58578 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708Ab2JASsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 14:48:22 -0400
-Date: Mon, 1 Oct 2012 14:48:12 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 01/13] memcg: Make it possible to use the stock for
- more than one page.
-Message-ID: <20121001184812.GB23734@cmpxchg.org>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
- <1347977050-29476-2-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347977050-29476-2-git-send-email-glommer@parallels.com>
+	id S1751510Ab2JASsf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 14:48:35 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:21985 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab2JASsd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 14:48:33 -0400
+Message-ID: <1349117311.2688.9.camel@lorien2>
+Subject: [PATCH] dma-debug: Remove local BUS_NOTIFY_UNBOUND_DRIVER define
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: joerg.roedel@amd.com, paul.gortmaker@windriver.com, kubakici@wp.pl,
+        stern@rowland.harvard.edu, dan.carpenter@oracle.com
+Cc: LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Date: Mon, 01 Oct 2012 12:48:31 -0600
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 06:03:58PM +0400, Glauber Costa wrote:
-> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
-> 
-> We currently have a percpu stock cache scheme that charges one page at a
-> time from memcg->res, the user counter. When the kernel memory
-> controller comes into play, we'll need to charge more than that.
-> 
-> This is because kernel memory allocations will also draw from the user
-> counter, and can be bigger than a single page, as it is the case with
-> the stack (usually 2 pages) or some higher order slabs.
-> 
-> [ glommer@parallels.com: added a changelog ]
-> 
-> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Michal Hocko <mhocko@suse.cz>
+Remove local BUS_NOTIFY_UNBOUND_DRIVER define. This is not used since
+BUS_NOTIFY_UNBOUND_DRIVER is defined in include/linux/device.h
 
-Independent of how the per-subtree enable-through-setting-limit
-discussion pans out, we're going to need the charge cache, so:
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ lib/dma-debug.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+index 66ce414..b9087bf 100644
+--- a/lib/dma-debug.c
++++ b/lib/dma-debug.c
+@@ -120,11 +120,6 @@ static const char *type2name[4] = { "single", "page",
+ static const char *dir2name[4] = { "DMA_BIDIRECTIONAL", "DMA_TO_DEVICE",
+ 				   "DMA_FROM_DEVICE", "DMA_NONE" };
+ 
+-/* little merge helper - remove it after the merge window */
+-#ifndef BUS_NOTIFY_UNBOUND_DRIVER
+-#define BUS_NOTIFY_UNBOUND_DRIVER 0x0005
+-#endif
+-
+ /*
+  * The access to some variables in this macro is racy. We can't use atomic_t
+  * here because all these variables are exported to debugfs. Some of them even
+-- 
+1.7.9.5
+
+
+
+
