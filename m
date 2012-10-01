@@ -1,94 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab2JADY5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 23:24:57 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:46313 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751564Ab2JADY4 (ORCPT
+	id S1751968Ab2JADhB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 23:37:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35119 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab2JADg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 23:24:56 -0400
-Message-ID: <50690CFE.6010600@xenotime.net>
-Date: Sun, 30 Sep 2012 20:24:46 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sun, 30 Sep 2012 23:36:29 -0400
+Date: Sun, 30 Sep 2012 20:36:10 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-e6459606b04e6385ccd3c2060fc10f78a92c7700@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        lenb@kernel.org, fenghua.yu@intel.com, tglx@linutronix.de,
+        trenn@suse.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, fenghua.yu@intel.com, trenn@suse.de,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1349043837-22659-2-git-send-email-trenn@suse.de>
+References: <1349043837-22659-2-git-send-email-trenn@suse.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/acpi] lib: Add early cpio decoder
+Git-Commit-ID: e6459606b04e6385ccd3c2060fc10f78a92c7700
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Tim Shepard <shep@alum.mit.edu>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: CONFIG_EXPERT is a booby trap
-References: <E1TIVdh-0007iT-00@www.xplot.org>
-In-Reply-To: <E1TIVdh-0007iT-00@www.xplot.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 30 Sep 2012 20:36:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2012 07:21 PM, Tim Shepard wrote:
+Commit-ID:  e6459606b04e6385ccd3c2060fc10f78a92c7700
+Gitweb:     http://git.kernel.org/tip/e6459606b04e6385ccd3c2060fc10f78a92c7700
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Mon, 1 Oct 2012 00:23:52 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sun, 30 Sep 2012 18:02:20 -0700
 
-> A month or two ago when I attempted to upgrade from 3.4 to 3.5 on my
-> MacBook Pro laptop, in preparation to try an interesting patch to TCP
-> developed against 3.5 by a colleague, my keyboard stopped working.  I
-> tried bisecting, but that lead to nowhere useful and much confusion.
-> 
-> 
-> It turns out that while I was looking for some debug options under
-> "General setup" and "Kernel hacking", I turned on "Configure standard
-> kernel features (expert users)" which is also known as CONFIG_EXPERT.
-> I read the documentation for that option, and I perused the options
-> which appeared underneath when it was turned on, thought to myself "oh,
-> hmm, I don't want to change any of these" and wandered off and
-> eventually found what I was actually looking for elsewhere in the
-> kernel configuration tree.
-> 
-> This weekend I finally figured out why the keyboard in my MacBook Pro
-> stopped working between 3.4 and 3.5.
-> 
-> When I turned on CONFIG_EXPERT it turned off CONFIG_HID_APPLE.  There
-> was no warning that selecting "Configure standard kernel features" will
-> invisibly turn off needed things elsewhere in the configuration tree.
-> 
-> Something needs to be fixed, but it's not obvious that any simple change
-> will work without causing other troubles.
-> 
-> I've read some of the lkml history history and learned that references
-> to CONFIG_EXPERT (like the one on CONFIG_HID_APPLE) used to be
-> references to CONFIG_EMBEDDED, so CONFIG_EXPERT used to mean something
-> else.
-> 
-> Maybe "make menuconfig" should show you all the things that you've just
-> changed and ask for confirmation when changing one configuration option
-> causes actual configuration changes elsewhere in the tree.
-> 
-> And may I suggest that CONFIG_EXPERT should be factored into two
-> CONFIGs, one of which makes configuration things visible, and another
-> which changes the default values to something more appropriate for
-> embedded systems (perhaps call it CONFIG_EMBEDDED_DEFAULTS).  That way
-> you'd have to select CONFIG_EXPERT, and then select the
-> CONFIG_EMBEDDED_DEFAULTS option that CONFIG_EXPERT made visible to
-> actually change any configuration, and the documentation for
-> CONFIG_EMBEDDED_DEFAULTS could explain that it changes defaults
-> throughout the tree (and selecting CONFIG_EXPERT alone would not go off
-> and muck things up with no warning).
-> 
-> The transition plan such a factoring needs some further thought to avoid
-> breaking anyone's current configuration when they "make oldconfig".
+lib: Add early cpio decoder
 
+Add a simple cpio decoder without library dependencies for the purpose
+of extracting components from the initramfs blob for early kernel
+uses.  Intended consumers so far are microcode and ACPI override.
 
-I don't disagree with you that it can be a problem, but
-the help text for CONFIG_EXPERT does say:
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1349043837-22659-2-git-send-email-trenn@suse.de
+Cc: Len Brown <lenb@kernel.org>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ include/linux/earlycpio.h |   17 +++++
+ lib/Makefile              |    2 +-
+ lib/earlycpio.c           |  145 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 163 insertions(+), 1 deletions(-)
 
-	Only use this if you really know what you are doing.
-
-
-Anyway, the hid drivers are certainly a big user of this mechanism.
-Many of them are like HID_APPLE:
-
-config HID_APPLE
-	tristate "Apple {i,Power,Mac}Books" if EXPERT
-	depends on (USB_HID || BT_HIDP)
-	default !EXPERT
-
-
--- 
-~Randy
+diff --git a/include/linux/earlycpio.h b/include/linux/earlycpio.h
+new file mode 100644
+index 0000000..111f46d
+--- /dev/null
++++ b/include/linux/earlycpio.h
+@@ -0,0 +1,17 @@
++#ifndef _LINUX_EARLYCPIO_H
++#define _LINUX_EARLYCPIO_H
++
++#include <linux/types.h>
++
++#define MAX_CPIO_FILE_NAME 18
++
++struct cpio_data {
++	void *data;
++	size_t size;
++	char name[MAX_CPIO_FILE_NAME];
++};
++
++struct cpio_data find_cpio_data(const char *path, void *data, size_t len,
++				long *offset);
++
++#endif /* _LINUX_EARLYCPIO_H */
+diff --git a/lib/Makefile b/lib/Makefile
+index 42d283e..0924041 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o
++	 is_single_threaded.o plist.o decompress.o earlycpio.o
+ 
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/earlycpio.c b/lib/earlycpio.c
+new file mode 100644
+index 0000000..8078ef4
+--- /dev/null
++++ b/lib/earlycpio.c
+@@ -0,0 +1,145 @@
++/* ----------------------------------------------------------------------- *
++ *
++ *   Copyright 2012 Intel Corporation; author H. Peter Anvin
++ *
++ *   This file is part of the Linux kernel, and is made available
++ *   under the terms of the GNU General Public License version 2, as
++ *   published by the Free Software Foundation.
++ *
++ *   This program is distributed in the hope it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *   General Public License for more details.
++ *
++ * ----------------------------------------------------------------------- */
++
++/*
++ * earlycpio.c
++ *
++ * Find a specific cpio member; must precede any compressed content.
++ * This is used to locate data items in the initramfs used by the
++ * kernel itself during early boot (before the main initramfs is
++ * decompressed.)  It is the responsibility of the initramfs creator
++ * to ensure that these items are uncompressed at the head of the
++ * blob.  Depending on the boot loader or package tool that may be a
++ * separate file or part of the same file.
++ */
++
++#include <linux/earlycpio.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++
++enum cpio_fields {
++	C_MAGIC,
++	C_INO,
++	C_MODE,
++	C_UID,
++	C_GID,
++	C_NLINK,
++	C_MTIME,
++	C_FILESIZE,
++	C_MAJ,
++	C_MIN,
++	C_RMAJ,
++	C_RMIN,
++	C_NAMESIZE,
++	C_CHKSUM,
++	C_NFIELDS
++};
++
++/**
++ * cpio_data find_cpio_data - Search for files in an uncompressed cpio
++ * @path:   The directory to search for, including a slash at the end
++ * @data:   Pointer to the the cpio archive or a header inside
++ * @len:    Remaining length of the cpio based on data pointer
++ * @offset: When a matching file is found, this is the offset to the
++ *          beginning of the cpio. It can be used to iterate through
++ *          the cpio to find all files inside of a directory path
++ *
++ * @return: struct cpio_data containing the address, length and
++ *          filename (with the directory path cut off) of the found file.
++ *          If you search for a filename and not for files in a directory,
++ *          pass the absolute path of the filename in the cpio and make sure
++ *          the match returned an empty filename string.
++ */
++
++struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
++					  size_t len,  long *offset)
++{
++	const size_t cpio_header_len = 8*C_NFIELDS - 2;
++	struct cpio_data cd = { NULL, 0, "" };
++	const char *p, *dptr, *nptr;
++	unsigned int ch[C_NFIELDS], *chp, v;
++	unsigned char c, x;
++	size_t mypathsize = strlen(path);
++	int i, j;
++
++	p = data;
++
++	while (len > cpio_header_len) {
++		if (!*p) {
++			/* All cpio headers need to be 4-byte aligned */
++			p += 4;
++			len -= 4;
++			continue;
++		}
++
++		j = 6;		/* The magic field is only 6 characters */
++		chp = ch;
++		for (i = C_NFIELDS; i; i--) {
++			v = 0;
++			while (j--) {
++				v <<= 4;
++				c = *p++;
++
++				x = c - '0';
++				if (x < 10) {
++					v += x;
++					continue;
++				}
++
++				x = (c | 0x20) - 'a';
++				if (x < 6) {
++					v += x + 10;
++					continue;
++				}
++
++				goto quit; /* Invalid hexadecimal */
++			}
++			*chp++ = v;
++			j = 8;	/* All other fields are 8 characters */
++		}
++
++		if ((ch[C_MAGIC] - 0x070701) > 1)
++			goto quit; /* Invalid magic */
++
++		len -= cpio_header_len;
++
++		dptr = PTR_ALIGN(p + ch[C_NAMESIZE], 4);
++		nptr = PTR_ALIGN(dptr + ch[C_FILESIZE], 4);
++
++		if (nptr > p + len || dptr < p || nptr < dptr)
++			goto quit; /* Buffer overrun */
++
++		if ((ch[C_MODE] & 0170000) == 0100000 &&
++		    ch[C_NAMESIZE] >= mypathsize &&
++		    !memcmp(p, path, mypathsize)) {
++			*offset = (long)nptr - (long)data;
++			if (ch[C_NAMESIZE] - mypathsize >= MAX_CPIO_FILE_NAME) {
++				pr_warn(
++				"File %s exceeding MAX_CPIO_FILE_NAME [%d]\n",
++				p, MAX_CPIO_FILE_NAME);
++			}
++			strlcpy(cd.name, p + mypathsize, MAX_CPIO_FILE_NAME);
++
++			cd.data = (void *)dptr;
++			cd.size = ch[C_FILESIZE];
++			return cd; /* Found it! */
++		}
++		len -= (nptr - p);
++		p = nptr;
++	}
++
++quit:
++	return cd;
++}
