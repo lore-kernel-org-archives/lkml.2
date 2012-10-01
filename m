@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab2JAX2M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:28:12 -0400
-Received: from 1wt.eu ([62.212.114.60]:35250 "EHLO 1wt.eu"
+	id S933016Ab2JAX2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:28:30 -0400
+Received: from 1wt.eu ([62.212.114.60]:35235 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932707Ab2JAXAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:52 -0400
-Message-Id: <20121001225200.867252575@1wt.eu>
+	id S1752574Ab2JAXAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:48 -0400
+Message-Id: <20121001225202.827137062@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:14 +0200
+Date: Tue, 02 Oct 2012 00:54:00 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 077/180] netlink: fix races after skb queueing
+Subject: [ 123/180] mm: mmu_notifier: fix freed page still mapped in secondary MMU
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,83 +29,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
-[ Upstream commit 4a7e7c2ad540e54c75489a70137bf0ec15d3a127 ]
+commit 3ad3d901bbcfb15a5e4690e55350db0899095a68 upstream.
 
-As soon as an skb is queued into socket receive_queue, another thread
-can consume it, so we are not allowed to reference skb anymore, or risk
-use after free.
+mmu_notifier_release() is called when the process is exiting.  It will
+delete all the mmu notifiers.  But at this time the page belonging to the
+process is still present in page tables and is present on the LRU list, so
+this race will happen:
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+      CPU 0                 CPU 1
+mmu_notifier_release:    try_to_unmap:
+   hlist_del_init_rcu(&mn->hlist);
+                            ptep_clear_flush_notify:
+                                  mmu nofifler not found
+                            free page  !!!!!!
+                            /*
+                             * At the point, the page has been
+                             * freed, but it is still mapped in
+                             * the secondary MMU.
+                             */
+
+  mn->ops->release(mn, mm);
+
+Then the box is not stable and sometimes we can get this bug:
+
+[  738.075923] BUG: Bad page state in process migrate-perf  pfn:03bec
+[  738.075931] page:ffffea00000efb00 count:0 mapcount:0 mapping:          (null) index:0x8076
+[  738.075936] page flags: 0x20000000000014(referenced|dirty)
+
+The same issue is present in mmu_notifier_unregister().
+
+We can call ->release before deleting the notifier to ensure the page has
+been unmapped from the secondary MMU before it is freed.
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/netlink/af_netlink.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
+ mm/mmu_notifier.c |   45 +++++++++++++++++++++++----------------------
+ 1 files changed, 23 insertions(+), 22 deletions(-)
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 5a7dcdf..fc91ff6 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -821,12 +821,19 @@ int netlink_attachskb(struct sock *sk, struct sk_buff *skb,
- 	return 0;
- }
- 
--int netlink_sendskb(struct sock *sk, struct sk_buff *skb)
-+static int __netlink_sendskb(struct sock *sk, struct sk_buff *skb)
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+index 7e33f2c..8aa875c 100644
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -32,6 +32,24 @@
+ void __mmu_notifier_release(struct mm_struct *mm)
  {
- 	int len = skb->len;
- 
- 	skb_queue_tail(&sk->sk_receive_queue, skb);
- 	sk->sk_data_ready(sk, len);
-+	return len;
-+}
+ 	struct mmu_notifier *mn;
++	struct hlist_node *n;
 +
-+int netlink_sendskb(struct sock *sk, struct sk_buff *skb)
-+{
-+	int len = __netlink_sendskb(sk, skb);
++	/*
++	 * RCU here will block mmu_notifier_unregister until
++	 * ->release returns.
++	 */
++	rcu_read_lock();
++	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist)
++		/*
++		 * if ->release runs before mmu_notifier_unregister it
++		 * must be handled as it's the only way for the driver
++		 * to flush all existing sptes and stop the driver
++		 * from establishing any more sptes before all the
++		 * pages in the mm are freed.
++		 */
++		if (mn->ops->release)
++			mn->ops->release(mn, mm);
++	rcu_read_unlock();
+ 
+ 	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
+@@ -45,23 +63,6 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 		 * mmu_notifier_unregister to return.
+ 		 */
+ 		hlist_del_init_rcu(&mn->hlist);
+-		/*
+-		 * RCU here will block mmu_notifier_unregister until
+-		 * ->release returns.
+-		 */
+-		rcu_read_lock();
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
+-		/*
+-		 * if ->release runs before mmu_notifier_unregister it
+-		 * must be handled as it's the only way for the driver
+-		 * to flush all existing sptes and stop the driver
+-		 * from establishing any more sptes before all the
+-		 * pages in the mm are freed.
+-		 */
+-		if (mn->ops->release)
+-			mn->ops->release(mn, mm);
+-		rcu_read_unlock();
+-		spin_lock(&mm->mmu_notifier_mm->lock);
+ 	}
+ 	spin_unlock(&mm->mmu_notifier_mm->lock);
+ 
+@@ -263,16 +264,13 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ {
+ 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
+ 
+-	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	if (!hlist_unhashed(&mn->hlist)) {
+-		hlist_del_rcu(&mn->hlist);
+-
+ 		/*
+ 		 * RCU here will force exit_mmap to wait ->release to finish
+ 		 * before freeing the pages.
+ 		 */
+ 		rcu_read_lock();
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
 +
- 	sock_put(sk);
- 	return len;
- }
-@@ -951,8 +958,7 @@ static inline int netlink_broadcast_deliver(struct sock *sk,
- 	if (atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf &&
- 	    !test_bit(0, &nlk->state)) {
- 		skb_set_owner_r(skb, sk);
--		skb_queue_tail(&sk->sk_receive_queue, skb);
--		sk->sk_data_ready(sk, skb->len);
-+		__netlink_sendskb(sk, skb);
- 		return atomic_read(&sk->sk_rmem_alloc) > sk->sk_rcvbuf;
- 	}
- 	return -1;
-@@ -1665,10 +1671,8 @@ static int netlink_dump(struct sock *sk)
+ 		/*
+ 		 * exit_mmap will block in mmu_notifier_release to
+ 		 * guarantee ->release is called before freeing the
+@@ -281,8 +279,11 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ 		if (mn->ops->release)
+ 			mn->ops->release(mn, mm);
+ 		rcu_read_unlock();
+-	} else
++
++		spin_lock(&mm->mmu_notifier_mm->lock);
++		hlist_del_rcu(&mn->hlist);
+ 		spin_unlock(&mm->mmu_notifier_mm->lock);
++	}
  
- 		if (sk_filter(sk, skb))
- 			kfree_skb(skb);
--		else {
--			skb_queue_tail(&sk->sk_receive_queue, skb);
--			sk->sk_data_ready(sk, skb->len);
--		}
-+		else
-+			__netlink_sendskb(sk, skb);
- 		return 0;
- 	}
- 
-@@ -1680,10 +1684,8 @@ static int netlink_dump(struct sock *sk)
- 
- 	if (sk_filter(sk, skb))
- 		kfree_skb(skb);
--	else {
--		skb_queue_tail(&sk->sk_receive_queue, skb);
--		sk->sk_data_ready(sk, skb->len);
--	}
-+	else
-+		__netlink_sendskb(sk, skb);
- 
- 	if (cb->done)
- 		cb->done(cb);
+ 	/*
+ 	 * Wait any running method to finish, of course including
 -- 
 1.7.2.1.45.g54fbc
 
