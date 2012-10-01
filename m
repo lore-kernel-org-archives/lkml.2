@@ -1,91 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab2JAGzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 02:55:10 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49275 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab2JAGzI (ORCPT
+	id S1752145Ab2JAG5X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 02:57:23 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:53329 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751932Ab2JAG5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 02:55:08 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50693E30.3010006@jp.fujitsu.com>
-Date: Mon, 1 Oct 2012 15:54:40 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Mon, 1 Oct 2012 02:57:22 -0400
+From: Arun MURTHY <arun.murthy@stericsson.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Date: Mon, 1 Oct 2012 08:57:04 +0200
+Subject: RE: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
+Thread-Topic: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
+Thread-Index: Ac2fnrMKICLwI5B4RbygjzGXgN0EtwAATvmw
+Message-ID: <F45880696056844FA6A73F415B568C695B6962C1CD@EXDCVYMBSTM006.EQ1STM.local>
+References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
+	<1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
+	<20120928160045.GD2625@kroah.com>
+	<F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
+ <CAK7N6vpXfhb0KhMfqxbcSQqT=qPcMS06OdaG9kNsWMqiiepLTQ@mail.gmail.com>
+In-Reply-To: <CAK7N6vpXfhb0KhMfqxbcSQqT=qPcMS06OdaG9kNsWMqiiepLTQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: <wency@cn.fujitsu.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <rientjes@google.com>,
-        <liuj97@gmail.com>, <len.brown@intel.com>, <benh@kernel.crashing.org>,
-        <paulus@samba.org>, <minchan.kim@gmail.com>,
-        <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] memory-hotplug: add node_device_release
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-3-git-send-email-wency@cn.fujitsu.com> <CAHGf_=rLMsmAxR5hrDVXjkHAxmupVrmtqE3iq2qu=O9Prp4nSg@mail.gmail.com> <5064EA5A.3080905@jp.fujitsu.com> <CAHGf_=qbBGjTL9oBHz7AM8BAosbzvn_WAGdAzJ8np-nDPN_KFQ@mail.gmail.com> <5064FDCA.1020504@jp.fujitsu.com> <CAHGf_=r+oz0GS137e81EySbN-3KVmQisF8sySiCUYUas1RZLtQ@mail.gmail.com> <5065740A.2000502@jp.fujitsu.com> <CAHGf_=o_FLsEULK3s1+zD-A0FL5QvKnX542Lz4vCwVVV2fYNRw@mail.gmail.com>
-In-Reply-To: <CAHGf_=o_FLsEULK3s1+zD-A0FL5QvKnX542Lz4vCwVVV2fYNRw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q916vSma023109
 
-Hi Kosaki-san,
+> On Mon, Oct 1, 2012 at 11:00 AM, Arun MURTHY
+> <arun.murthy@stericsson.com> wrote:
+> >> On Fri, Sep 28, 2012 at 01:35:01PM +0530, Arun Murthy wrote:
+> >> > +#include <linux/module.h>
+> >> > +#include <linux/slab.h>
+> >> > +#include <linux/err.h>
+> >> > +#include <linux/printk.h>
+> >> > +#include <linux/modem_shm/modem.h>
+> >> > +
+> >> > +static struct class *modem_class;
+> >>
+> >> What's wrong with a bus_type instead?
+> >
+> > Can I know the advantage of using bus_type over class?
+> >
+> >>
+> >> > +static int __modem_is_requested(struct device *dev, void *data) {
+> >> > +   struct modem_desc *mdesc = (struct modem_desc *)data;
+> >> > +
+> >> > +   if (!mdesc->mclients) {
+> >> > +           printk(KERN_ERR "modem_access: modem description is
+> >> NULL\n");
+> >> > +           return 0;
+> >> > +   }
+> >> > +   return atomic_read(&mdesc->mclients->cnt);
+> >> > +}
+> >> > +
+> >> > +int modem_is_requested(struct modem_desc *mdesc) {
+> >> > +   return class_for_each_device(modem_class, NULL, (void *)mdesc,
+> >> > +__modem_is_requested); }
+> >>
+> >> Where is the documentation for your public api functions like this?
+> >
+> > Sure will include this in the next patchset.
+> >
+> >>
+> >> > +
+> >> > +int modem_release(struct modem_desc *mdesc) {
+> >> > +   if (!mdesc->release)
+> >> > +           return -EFAULT;
+> >> > +
+> >> > +   if (modem_is_requested(mdesc)) {
+> >> > +           atomic_dec(&mdesc->mclients->cnt);
+> >> > +           if (atomic_read(&mdesc->use_cnt) == 1) {
+> >> > +                   mdesc->release(mdesc);
+> >> > +                   atomic_dec(&mdesc->use_cnt);
+> >> > +           }
+> >>
+> >> Eeek, why aren't you using the built-in reference counting that the
+> >> struct device provided to you, and instead are rolling your own?
+> >> This happens in many places, why?
+> >
+> > My usage of counters over here is for each modem there are many clients.
+> > Each of the clients will have a ref to modem_desc. Each of them use
+> > this for requesting and releasing the modem. One counter for tracking
+> > the request and release for each client which is done by variable 'cnt' in
+> struct clients.
+> > The counter use_cnt is used for tracking the modem request/release
+> > irrespective of the clients and counter cli_cnt is used for
+> > restricting the modem_get to the no of clients defined in no_clients.
+> >
+> > So totally 3 counter one for restricting the usage of modem_get by
+> > clients, second for restricting modem request/release at top level,
+> > and 3rd for restricting modem release/request for per client per modem
+> basis.
+> >
+> > Can you let me know if the same can be achieved by using built-in ref
+> > counting?
+> Is this your model:
+> You have a modem device which can be requested by many clients.This
+> clients can register for a particular service which this modem provides and
+> then after that if it client doesn't need this service then it will call un-register.
 
-2012/09/29 7:19, KOSAKI Motohiro wrote:
->>>> I don't understand it. How can we get rid of the warning?
->>>
->>> See cpu_device_release() for example.
->>
->> If we implement a function like cpu_device_release(), the warning
->> disappears. But the comment says in the function "Never copy this way...".
->> So I think it is illegal way.
->
-> What does "illegal" mean?
+Let me correct a bit over here:
+There are many clients, yes correct but the operations performed are only two,
+i.e modem request and modem release. This is something like waking up the
+modem and let modem to sleep.
+The traffic of this request and release is too high.
 
-The "illegal" means the code should not be mimicked.
+So irrespective of the requests/releases made to the MAF framework, the MAF
+should perform the operation request/release only once.
 
-> You still haven't explain any benefit of your code. If there is zero
-> benefit, just kill it.
-> I believe everybody think so.
->
-> Again, Which benefit do you have?
+So each and every time handling list consumes time. 
+Let me brief the context, this is a single chip modem and ape, basically used in
+mobile, tablets etc. So the traffic in ape-modem communication is too high and
+also time critical. If it bound to exceed the time, or delay might end up in buffer
+full. Thatâ€™s the reason I have made it as simple as possible.
 
-The patch has a benefit to delets a warning message.
-
->
->>>>> Why do we need this node_device_release() implementation?
->>>>
->>>> I think that this is a manner of releasing object related kobject.
->>>
->>> No.  Usually we never call memset() from release callback.
->>
->> What we want to release is a part of array, not a pointer.
->> Therefore, there is only this way instead of kfree().
->
-> Why? Before your patch, we don't have memset() and did work it.
-
-If we does not apply the patch, a warning message is shown.
-So I think it did not work well.
-
-> I can't understand what mean "only way".
-
-For deleting a warning message, I created a node_device_release().
-In the manner of releasing kobject, the function frees a object related
-to the kobject. So most functions calls kfree() for releasing it.
-In node_device_release(), we need to free a node struct. If the node
-struct is pointer, I can free it by kfree. But the node struct is a part
-of node_devices[] array. I cannot free it. So I filled the node struct
-with 0.
-
-But you think it is not good. Do you have a good solution?
-
-Thanks,
-Yasuaki Ishimatsu
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-
+Thanks and Regards,
+Arun R Murthy
+------------------
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
