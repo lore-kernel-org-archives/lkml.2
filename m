@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab2JASAp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 14:00:45 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:37276 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750927Ab2JASAo (ORCPT
+	id S1752107Ab2JASAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 14:00:52 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53446 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050Ab2JASAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 14:00:44 -0400
-Message-ID: <1349114440.2577.26.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH] net: fix neigh_resolve_output can cause skb_under_panic
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: Ramesh Nagappa <ramesh.nagappa@ericsson.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "michel@digirati.com.br" <michel@digirati.com.br>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-Date: Mon, 1 Oct 2012 19:00:40 +0100
-In-Reply-To: <20120929005721.GA13335@kroah.com>
-References: <CA3E5132752D1F49871ED0FC40D56BBA43ECE2E72D@EUSAACMS0701.eamcs.ericsson.se>
-	 <20120928235209.GA11474@kroah.com>
-	 <CA3E5132752D1F49871ED0FC40D56BBA43ECE2E743@EUSAACMS0701.eamcs.ericsson.se>
-	 <20120929005721.GA13335@kroah.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Oct 2012 14:00:46 -0400
+Message-ID: <5069DA49.7030901@mvista.com>
+Date: Mon, 01 Oct 2012 20:00:41 +0200
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        balbi@ti.com, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v2 6/7] usb: dwc3-omap: Minor fixes to get dt working
+References: <1349087107-18229-1-git-send-email-kishon@ti.com> <1349087107-18229-7-git-send-email-kishon@ti.com>
+In-Reply-To: <1349087107-18229-7-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-28 at 17:57 -0700, gregkh@linuxfoundation.org wrote:
-[...]
-> > > You need a blank line before the first Signed-off-by: line.  
-> > > Surely one of the reviewers should have caught this basic thing?
-> > 
-> > Outlook mangled the patch. I am unable to use git send-email because of
-> > a corporate firewall on the build machine.
-> 
-> Then your patch would also be corrupted, Outlook, and Exchange, can not
-> handle patches at all.  Please read Documentation/email_clients.txt for
-> more details.
-> 
-> Also, ask your coworkers who properly submit patches what they do to
-> work around your broken email infrastructure.
+Hello.
 
-I successfully send patches using git-imap-send and Evolution talking to
-Exchange 2010 through its IMAP and SMTP submission interfaces.  (I think
-the previous version worked as well.)  But I would agree that Outlook is
-probably hopeless.
+On 01-10-2012 12:25, Kishon Vijay Abraham I wrote:
 
-Ben.
+> Includes few minor fixes in dwc3-omap like populating the compatible
+> string in a correct way, extracting the utmi-mode property properly and
+> changing the index of get_irq since irq of core is removed from hwmod
+> entry.
+> Also updated the documentation with dwc3-omap device tree binding
+> information.
+>
+> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
+> ---
+>   drivers/usb/dwc3/dwc3-omap.c |    8 ++++----
+>   1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+> index c19affa..25bd847 100644
+> --- a/drivers/usb/dwc3/dwc3-omap.c
+> +++ b/drivers/usb/dwc3/dwc3-omap.c
+> @@ -277,13 +277,13 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+>
+>   	platform_set_drvdata(pdev, omap);
+>
+> -	irq = platform_get_irq(pdev, 1);
+> +	irq = platform_get_irq(pdev, 0);
+>   	if (irq<  0) {
+>   		dev_err(dev, "missing IRQ resource\n");
+>   		return -EINVAL;
+>   	}
+>
+> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>   	if (!res) {
+>   		dev_err(dev, "missing memory base resource\n");
+>   		return -EINVAL;
+> @@ -326,7 +326,7 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+>
+>   	utmi_mode = of_get_property(node, "utmi-mode",&size);
+>   	if (utmi_mode&&  size == sizeof(*utmi_mode)) {
+> -		reg |= *utmi_mode;
+> +		reg |= be32_to_cpup(utmi_mode);
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+    Why not just use of_property_read_u32() instead of all this?
+
+WBR, Sergei
 
