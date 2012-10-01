@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab2JAPYZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 11:24:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34239 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab2JAPYY (ORCPT
+	id S1752628Ab2JAPY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 11:24:27 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:52666 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752497Ab2JAPYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 11:24:24 -0400
-Date: Mon, 1 Oct 2012 08:23:38 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jamie Gloudon <jamie.gloudon@gmail.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: x86_64: wrong DirectMap kB
-In-Reply-To: <20121001104652.GA1390@darkstar>
-Message-ID: <alpine.LSU.2.00.1210010812530.1914@eggly.anvils>
-References: <20121001104652.GA1390@darkstar>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 1 Oct 2012 11:24:25 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20121001120907.GK4360@opensource.wolfsonmicro.com>
+References: <1349089282-22105-1-git-send-email-sourav.poddar@ti.com>
+	<CAAe_U6+zEGuwMC1yn7O=LXE6PhPvPc2i7DCF0EAprkE8s+-iEw@mail.gmail.com>
+	<20121001114454.GA9170@sirena.org.uk>
+	<CAAe_U6JX9QDWvWA3KH7E9sOv0EHGkozVONuXDgn+a2MZ4GTE7Q@mail.gmail.com>
+	<20121001120907.GK4360@opensource.wolfsonmicro.com>
+Date: Mon, 1 Oct 2012 20:54:23 +0530
+Message-ID: <CAAe_U6K6nAjsZUOk2rBFweWHtJmcLF7EJDpu9O6FXrq3tzv3yg@mail.gmail.com>
+Subject: Re: [PATCHv3 1/4] mfd: smsc: Add support for smsc gpio io/keypad driver
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        b-cousson@ti.com, balbi@ti.com, santosh.shilimkar@ti.com,
+        sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Oct 2012, Jamie Gloudon wrote:
-> 
->  Interesting. I am able to reproduce the same problem as you using mem=700M, which shows: 
-> 
-> DirectMap4k:        4096 kB
-> DirectMap2M:    18446744073709547520 kB
-> 
-> However, it appears to be normal without the boot parameter:
-> 
-> DirectMap4k:        4096 kB
-> DirectMap2M:    15708160 kB
+Hi,
 
-It appears to be normal because the calculations haven't wrapped around,
-but if you compare with 3.4 or before, I think you'll find that it
-still adds up to too little.
+On Mon, Oct 1, 2012 at 5:39 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Oct 01, 2012 at 05:23:15PM +0530, ABRAHAM, KISHON VIJAY wrote:
+>> On Mon, Oct 1, 2012 at 5:14 PM, Mark Brown
+>
+>> > No, this is not at all sensible - if there's an mfd_remove_devices()
+>> > function we really ought to be able to use it to remove the children.
+>> > If we can't do that we should fix the API usability, not open code the
+>> > same stuff in every user.
+>
+>> What makes more sense to me is extend mfd_add_devices to create child
+>> devices from dt data. Then for removing devices, one can use
+>> mfd_remove_devices().
+>
+> Why would that be helpful?  Most platforms don't support DT at all, and
+I'm not sure how to put it correctly. All I'm trying to tell is mfd is
+a framework that exposes a set of API's to create and remove a device
+among others. If a mfd child device is not created using mfd API,
+it'll be unfair to expect that child be removed properly using mfd
+API. Like in this patch, the device is created using
+of_platform_populate (not a mfd API) but is removed using
+mfd_remove_devices (mfd API) [which should result in an abort].
+This means mfd framework does not have an API to create a device from
+dt data or so do I think since of_platform_populate() is used. Thats
+why I suggested the idea of extending mfd_add_devices() (or adding a
+new API in mfd framework) to create child devices from dt data so that
+we'll have API's in mfd framework to both create and delete a device.
 
-> 
-> What does your output looks like with the full amount on 3.6?
-
-On 3.6:
-
-MemTotal:        8060528 kB
-...
-DirectMap4k:        2048 kB
-DirectMap2M:     7229440 kB
-
-So it's showing significantly less direct mapped than is included
-in MemTotal (which itself omits some areas of reserved memory).
-
-Whereas on 3.4:
-
-MemTotal:        8060760 kB
-...
-DirectMap4k:        4096 kB
-DirectMap2M:     8275968 kB
-
-Hugh
+Thanks
+Kishon
