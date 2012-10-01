@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268Ab2JAIPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 04:15:09 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:33719 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab2JAIPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 04:15:07 -0400
-Date: Mon, 1 Oct 2012 01:14:25 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Petr Holasek <pholasek@redhat.com>
-cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v4] KSM: numa awareness sysfs knob
-In-Reply-To: <alpine.LSU.2.00.1209301736560.6304@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1210010053380.6539@eggly.anvils>
-References: <1348448166-1995-1-git-send-email-pholasek@redhat.com> <alpine.LSU.2.00.1209301736560.6304@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1752176Ab2JAIRE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 04:17:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11490 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751217Ab2JAIRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 04:17:02 -0400
+Date: Mon, 1 Oct 2012 10:16:31 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCHv2 00/14] perf diff: Factor diff command
+Message-ID: <20121001081631.GB991@krava.brq.redhat.com>
+References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+ <20120927213102.GO16230@one.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120927213102.GO16230@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Sep 2012, Hugh Dickins wrote:
-> Andrea's point about ksm_migrate_page() is an important one, and I've
-> answered that against his mail, but here's some other easier points.
+On Thu, Sep 27, 2012 at 11:31:02PM +0200, Andi Kleen wrote:
+> On Thu, Sep 27, 2012 at 01:09:21PM +0200, Jiri Olsa wrote:
+> > hi,
+> > this is v2 of diff command changes proposed in here:
+> > https://lkml.org/lkml/2012/9/6/344
+> > 
+> > It's now rebased on new hists hpp* interface plus few
+> > more additional changes.
+> 
+> FWIW I've been playing around with it a bit. It seems useful
+> both for scaling problems and likely for performance regression tracking too.
 
-There's another point that I completely forgot to make once I got down
-to the details of your patch.
+cool ;)
 
-Somewhere, I didn't decide exactly where, perhaps near the memcmp_pages()
-call in unstable_tree_search_insert(), you do need to check that the page
-"in" the unstable tree still belongs to the NUMAnode of the page we're
-comparing with.
+> 
+> Some minor issues I ran into (but no show stoppers):
+> - The error messages for bad -c expressions could be better
+> - I found the requirement for no space after -c unintuitive.
 
-While that is, of course, the NUMAnode of the unstable tree we're
-searching, the unstable tree places no hold on the pages "in" it (it's
-actually a tree of rmap_items, not of pages), so they could get migrated
-to a different NUMAnode (or faulted out and then faulted back in on a
-different NUMAnode) since the rmap_item was placed in that tree.
+I'll see to that
 
-This is little different from the other instabilities of the unstable
-tree, it's not a big deal, and gets corrected (usually) next time around;
-but you do want to check, to avoid promoting such a mismatch into the
-stable tree.
+> - It would be nice to have support for doing the bucketizing per line
+> instead of per function. With a large function and/or inlining 
+> it's sometimes hard to identify the actual problem
+> Acme recently added this for perf report.
 
-Hugh
+hm, I missed this one.. hopefully it should be no problem to add it
+
+thanks for testing this!
+jirka
