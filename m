@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab2JAXAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:00:14 -0400
-Received: from 1wt.eu ([62.212.114.60]:35093 "EHLO 1wt.eu"
+	id S932648Ab2JAXA2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:00:28 -0400
+Received: from 1wt.eu ([62.212.114.60]:35137 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932624Ab2JAXAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:11 -0400
-Message-Id: <20121001225201.545241358@1wt.eu>
+	id S1757575Ab2JAXAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:21 -0400
+Message-Id: <20121001225204.819240105@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:30 +0200
+Date: Tue, 02 Oct 2012 00:54:47 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mel Gorman <mgorman@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: "Theodore Tso" <tytso@mit.edu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 093/180] stable: Allow merging of backports for serious user-visible performance issues
+Subject: [ 170/180] random: use the arch-specific rng in xfer_secondary_pool
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,50 +24,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit eb3979f64d25120d60b9e761a4c58f70b1a02f86 upstream.
+commit e6d4947b12e8ad947add1032dd754803c6004824 upstream.
 
-Distribution kernel maintainers routinely backport fixes for users that
-were deemed important but not "something critical" as defined by the
-rules. To users of these kernels they are very serious and failing to fix
-them reduces the value of -stable.
+If the CPU supports a hardware random number generator, use it in
+xfer_secondary_pool(), where it will significantly improve things and
+where we can afford it.
 
-The problem is that the patches fixing these issues are often subtle and
-prone to regressions in other ways and need greater care and attention.
-To combat this, these "serious" backports should have a higher barrier
-to entry.
+Also, remove the use of the arch-specific rng in
+add_timer_randomness(), since the call is significantly slower than
+get_cycles(), and we're much better off using it in
+xfer_secondary_pool() anyway.
 
-This patch relaxes the rules to allow a distribution maintainer to merge
-to -stable a backported patch or small series that fixes a "serious"
-user-visible performance issue. They should include additional information on
-the user-visible bug affected and a link to the bugzilla entry if available.
-The same rules about the patch being already in mainline still apply.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- Documentation/stable_kernel_rules.txt |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/char/random.c |   25 ++++++++++++++++---------
+ 1 files changed, 16 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
-index e6e482f..3c9d7ac 100644
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -12,6 +12,12 @@ Rules on what kind of patches are accepted, and which ones are not, into the
-    marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
-    security issue, or some "oh, that's not good" issue.  In short, something
-    critical.
-+ - Serious issues as reported by a user of a distribution kernel may also
-+   be considered if they fix a notable performance or interactivity issue.
-+   As these fixes are not as obvious and have a higher risk of a subtle
-+   regression they should only be submitted by a distribution kernel
-+   maintainer and include an addendum linking to a bugzilla entry if it
-+   exists and additional information on the user-visible impact.
-  - New device IDs and quirks are also accepted.
-  - No "theoretical race condition" issues, unless an explanation of how the
-    race can be exploited is also provided.
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index cfcb31d..b5b16f1 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -254,6 +254,7 @@
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
+ #include <linux/ptrace.h>
++#include <linux/kmemcheck.h>
+ 
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ # include <linux/irq.h>
+@@ -702,11 +703,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
+ 		goto out;
+ 
+ 	sample.jiffies = jiffies;
+-
+-	/* Use arch random value, fall back to cycles */
+-	if (!arch_get_random_int(&sample.cycles))
+-		sample.cycles = get_cycles();
+-
++	sample.cycles = get_cycles();
+ 	sample.num = num;
+ 	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
+ 
+@@ -838,7 +835,11 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+  */
+ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ {
+-	__u32 tmp[OUTPUT_POOL_WORDS];
++	union {
++		__u32	tmp[OUTPUT_POOL_WORDS];
++		long	hwrand[4];
++	} u;
++	int	i;
+ 
+ 	if (r->pull && r->entropy_count < nbytes * 8 &&
+ 	    r->entropy_count < r->poolinfo->POOLBITS) {
+@@ -849,17 +850,23 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ 		/* pull at least as many as BYTES as wakeup BITS */
+ 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
+ 		/* but never more than the buffer size */
+-		bytes = min_t(int, bytes, sizeof(tmp));
++		bytes = min_t(int, bytes, sizeof(u.tmp));
+ 
+ 		DEBUG_ENT("going to reseed %s with %d bits "
+ 			  "(%d of %d requested)\n",
+ 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
+ 
+-		bytes = extract_entropy(r->pull, tmp, bytes,
++		bytes = extract_entropy(r->pull, u.tmp, bytes,
+ 					random_read_wakeup_thresh / 8, rsvd);
+-		mix_pool_bytes(r, tmp, bytes, NULL);
++		mix_pool_bytes(r, u.tmp, bytes, NULL);
+ 		credit_entropy_bits(r, bytes*8);
+ 	}
++	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
++	for (i = 0; i < 4; i++)
++		if (arch_get_random_long(&u.hwrand[i]))
++			break;
++	if (i)
++		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
+ }
+ 
+ /*
 -- 
 1.7.2.1.45.g54fbc
 
