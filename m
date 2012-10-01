@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900Ab2JAXEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:04:39 -0400
-Received: from 1wt.eu ([62.212.114.60]:35684 "EHLO 1wt.eu"
+	id S1757929Ab2JAXE7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:04:59 -0400
+Received: from 1wt.eu ([62.212.114.60]:35671 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757766Ab2JAXDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:03:45 -0400
-Message-Id: <20121001225200.112687471@1wt.eu>
+	id S933320Ab2JAXDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:03:35 -0400
+Message-Id: <20121001225159.562823590@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:56 +0200
+Date: Tue, 02 Oct 2012 00:52:43 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alex Elder <aelder@sgi.com>, Carlos Maiolino <cmaiolino@redhat.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 059/180] nilfs2: fix NULL pointer dereference in nilfs_load_super_block()
+Subject: [ 046/180] xfs: Fix possible memory corruption in xfs_readlink
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,62 +23,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Carlos Maiolino <cmaiolino@redhat.com>
 
-commit d7178c79d9b7c5518f9943188091a75fc6ce0675 upstream.
+commit b52a360b2aa1c59ba9970fb0f52bbb093fcc7a24 upstream
 
-According to the report from Slicky Devil, nilfs caused kernel oops at
-nilfs_load_super_block function during mount after he shrank the
-partition without resizing the filesystem:
+Fixes a possible memory corruption when the link is larger than
+MAXPATHLEN and XFS_DEBUG is not enabled. This also remove the
+S_ISLNK assert, since the inode mode is checked previously in
+xfs_readlink_by_handle() and via VFS.
 
- BUG: unable to handle kernel NULL pointer dereference at 00000048
- IP: [<d0d7a08e>] nilfs_load_super_block+0x17e/0x280 [nilfs2]
- *pde = 00000000
- Oops: 0000 [#1] PREEMPT SMP
- ...
- Call Trace:
-  [<d0d7a87b>] init_nilfs+0x4b/0x2e0 [nilfs2]
-  [<d0d6f707>] nilfs_mount+0x447/0x5b0 [nilfs2]
-  [<c0226636>] mount_fs+0x36/0x180
-  [<c023d961>] vfs_kern_mount+0x51/0xa0
-  [<c023ddae>] do_kern_mount+0x3e/0xe0
-  [<c023f189>] do_mount+0x169/0x700
-  [<c023fa9b>] sys_mount+0x6b/0xa0
-  [<c04abd1f>] sysenter_do_call+0x12/0x28
- Code: 53 18 8b 43 20 89 4b 18 8b 4b 24 89 53 1c 89 43 24 89 4b 20 8b 43
- 20 c7 43 2c 00 00 00 00 23 75 e8 8b 50 68 89 53 28 8b 54 b3 20 <8b> 72
- 48 8b 7a 4c 8b 55 08 89 b3 84 00 00 00 89 bb 88 00 00 00
- EIP: [<d0d7a08e>] nilfs_load_super_block+0x17e/0x280 [nilfs2] SS:ESP 0068:ca9bbdcc
- CR2: 0000000000000048
+Updated to address concerns raised by Ben Hutchings about the loose
+attention paid to 32- vs 64-bit values, and the lack of handling a
+potentially negative pathlen value:
+ - Changed type of "pathlen" to be xfs_fsize_t, to match that of
+   ip->i_d.di_size
+ - Added checking for a negative pathlen to the too-long pathlen
+   test, and generalized the message that gets reported in that case
+   to reflect the change
+As a result, if a negative pathlen were encountered, this function
+would return EFSCORRUPTED (and would fail an assertion for a debug
+build)--just as would a too-long pathlen.
 
-This turned out due to a defect in an error path which runs if the
-calculated location of the secondary super block was invalid.
-
-This patch fixes it and eliminates the reported oops.
-
-Reported-by: Slicky Devil <slicky.dvl@gmail.com>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Slicky Devil <slicky.dvl@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Alex Elder <aelder@sgi.com>
+Signed-off-by: Carlos Maiolino <cmaiolino@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/nilfs2/the_nilfs.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/xfs/xfs_vnodeops.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nilfs2/the_nilfs.c b/fs/nilfs2/the_nilfs.c
-index ad391a8..149a8a1 100644
---- a/fs/nilfs2/the_nilfs.c
-+++ b/fs/nilfs2/the_nilfs.c
-@@ -478,6 +478,7 @@ static int nilfs_load_super_block(struct the_nilfs *nilfs,
- 		brelse(sbh[1]);
- 		sbh[1] = NULL;
- 		sbp[1] = NULL;
-+		valid[1] = 0;
- 		swp = 0;
- 	}
- 	if (!valid[swp]) {
+diff --git a/fs/xfs/xfs_vnodeops.c b/fs/xfs/xfs_vnodeops.c
+index 8f32f50..1638884 100644
+--- a/fs/xfs/xfs_vnodeops.c
++++ b/fs/xfs/xfs_vnodeops.c
+@@ -554,7 +554,7 @@ xfs_readlink(
+ 	char		*link)
+ {
+ 	xfs_mount_t	*mp = ip->i_mount;
+-	int		pathlen;
++	xfs_fsize_t	pathlen;
+ 	int		error = 0;
+ 
+ 	xfs_itrace_entry(ip);
+@@ -564,13 +564,20 @@ xfs_readlink(
+ 
+ 	xfs_ilock(ip, XFS_ILOCK_SHARED);
+ 
+-	ASSERT((ip->i_d.di_mode & S_IFMT) == S_IFLNK);
+-	ASSERT(ip->i_d.di_size <= MAXPATHLEN);
+-
+ 	pathlen = ip->i_d.di_size;
+ 	if (!pathlen)
+ 		goto out;
+ 
++	if (pathlen < 0 || pathlen > MAXPATHLEN) {
++		xfs_fs_cmn_err(CE_ALERT, mp,
++			 "%s: inode (%llu) bad symlink length (%lld)",
++			 __func__, (unsigned long long) ip->i_ino,
++			 (long long) pathlen);
++		ASSERT(0);
++		return XFS_ERROR(EFSCORRUPTED);
++	}
++
++
+ 	if (ip->i_df.if_flags & XFS_IFINLINE) {
+ 		memcpy(link, ip->i_df.if_u1.if_data, pathlen);
+ 		link[pathlen] = '\0';
 -- 
 1.7.2.1.45.g54fbc
 
