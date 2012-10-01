@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758444Ab2JAXR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:17:59 -0400
-Received: from 1wt.eu ([62.212.114.60]:35442 "EHLO 1wt.eu"
+	id S964826Ab2JAXSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:18:39 -0400
+Received: from 1wt.eu ([62.212.114.60]:35434 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933020Ab2JAXBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:01:51 -0400
-Message-Id: <20121001225201.807308843@1wt.eu>
+	id S1757642Ab2JAXBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:01:50 -0400
+Message-Id: <20121001225203.841869825@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:36 +0200
+Date: Tue, 02 Oct 2012 00:54:24 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Roger Blofeld <blofeldus@yahoo.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 099/180] powerpc/ftrace: Fix assembly trampoline register usage
+Subject: [ 147/180] udf: Fortify loading of sparing table
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +23,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: roger blofeld <blofeldus@yahoo.com>
+From: Jan Kara <jack@suse.cz>
 
-commit fd5a42980e1cf327b7240adf5e7b51ea41c23437 upstream.
+commit 1df2ae31c724e57be9d7ac00d78db8a5dabdd050 upstream.
 
-Just like the module loader, ftrace needs to be updated to use r12
-instead of r11 with newer gcc's.
+Add sanity checks when loading sparing table from disk to avoid accessing
+unallocated memory or writing to it.
 
-Signed-off-by: Roger Blofeld <blofeldus@yahoo.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-commit a8ed5765b5a8bf44a86284d80afd24f37a23e369 upstream.
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/powerpc/kernel/ftrace.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ fs/udf/super.c |   86 ++++++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 53 insertions(+), 33 deletions(-)
 
-diff --git a/arch/powerpc/kernel/ftrace.c b/arch/powerpc/kernel/ftrace.c
-index ce1f3e4..eda40d2 100644
---- a/arch/powerpc/kernel/ftrace.c
-+++ b/arch/powerpc/kernel/ftrace.c
-@@ -244,9 +244,9 @@ __ftrace_make_nop(struct module *mod,
+diff --git a/fs/udf/super.c b/fs/udf/super.c
+index 0388d43..f0314da 100644
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -57,6 +57,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/bitmap.h>
+ #include <linux/crc-itu-t.h>
++#include <linux/log2.h>
+ #include <asm/byteorder.h>
  
- 	/*
- 	 * On PPC32 the trampoline looks like:
--	 *  0x3d, 0x60, 0x00, 0x00  lis r11,sym@ha
--	 *  0x39, 0x6b, 0x00, 0x00  addi r11,r11,sym@l
--	 *  0x7d, 0x69, 0x03, 0xa6  mtctr r11
-+	 *  0x3d, 0x80, 0x00, 0x00  lis r12,sym@ha
-+	 *  0x39, 0x8c, 0x00, 0x00  addi r12,r12,sym@l
-+	 *  0x7d, 0x89, 0x03, 0xa6  mtctr r12
- 	 *  0x4e, 0x80, 0x04, 0x20  bctr
- 	 */
+ #include "udf_sb.h"
+@@ -1239,11 +1240,59 @@ out_bh:
+ 	return ret;
+ }
  
-@@ -261,9 +261,9 @@ __ftrace_make_nop(struct module *mod,
- 	pr_devel(" %08x %08x ", jmp[0], jmp[1]);
- 
- 	/* verify that this is what we expect it to be */
--	if (((jmp[0] & 0xffff0000) != 0x3d600000) ||
--	    ((jmp[1] & 0xffff0000) != 0x396b0000) ||
--	    (jmp[2] != 0x7d6903a6) ||
-+	if (((jmp[0] & 0xffff0000) != 0x3d800000) ||
-+	    ((jmp[1] & 0xffff0000) != 0x398c0000) ||
-+	    (jmp[2] != 0x7d8903a6) ||
- 	    (jmp[3] != 0x4e800420)) {
- 		printk(KERN_ERR "Not a trampoline\n");
- 		return -EINVAL;
++static int udf_load_sparable_map(struct super_block *sb,
++				 struct udf_part_map *map,
++				 struct sparablePartitionMap *spm)
++{
++	uint32_t loc;
++	uint16_t ident;
++	struct sparingTable *st;
++	struct udf_sparing_data *sdata = &map->s_type_specific.s_sparing;
++	int i;
++	struct buffer_head *bh;
++
++	map->s_partition_type = UDF_SPARABLE_MAP15;
++	sdata->s_packet_len = le16_to_cpu(spm->packetLength);
++	if (!is_power_of_2(sdata->s_packet_len)) {
++		udf_error(sb, __func__, "error loading logical volume descriptor: "
++			"Invalid packet length %u\n",
++			(unsigned)sdata->s_packet_len);
++		return -EIO;
++	}
++	if (spm->numSparingTables > 4) {
++		udf_error(sb, __func__, "error loading logical volume descriptor: "
++			"Too many sparing tables (%d)\n",
++			(int)spm->numSparingTables);
++		return -EIO;
++	}
++
++	for (i = 0; i < spm->numSparingTables; i++) {
++		loc = le32_to_cpu(spm->locSparingTable[i]);
++		bh = udf_read_tagged(sb, loc, loc, &ident);
++		if (!bh)
++			continue;
++
++		st = (struct sparingTable *)bh->b_data;
++		if (ident != 0 ||
++		    strncmp(st->sparingIdent.ident, UDF_ID_SPARING,
++			    strlen(UDF_ID_SPARING)) ||
++		    sizeof(*st) + le16_to_cpu(st->reallocationTableLen) >
++							sb->s_blocksize) {
++			brelse(bh);
++			continue;
++		}
++
++		sdata->s_spar_map[i] = bh;
++	}
++	map->s_partition_func = udf_get_pblock_spar15;
++	return 0;
++}
++
+ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
+ 			       struct kernel_lb_addr *fileset)
+ {
+ 	struct logicalVolDesc *lvd;
+-	int i, j, offset;
++	int i, offset;
+ 	uint8_t type;
+ 	struct udf_sb_info *sbi = UDF_SB(sb);
+ 	struct genericPartitionMap *gpm;
+@@ -1308,38 +1357,9 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
+ 			} else if (!strncmp(upm2->partIdent.ident,
+ 						UDF_ID_SPARABLE,
+ 						strlen(UDF_ID_SPARABLE))) {
+-				uint32_t loc;
+-				struct sparingTable *st;
+-				struct sparablePartitionMap *spm =
+-					(struct sparablePartitionMap *)gpm;
+-
+-				map->s_partition_type = UDF_SPARABLE_MAP15;
+-				map->s_type_specific.s_sparing.s_packet_len =
+-						le16_to_cpu(spm->packetLength);
+-				for (j = 0; j < spm->numSparingTables; j++) {
+-					struct buffer_head *bh2;
+-
+-					loc = le32_to_cpu(
+-						spm->locSparingTable[j]);
+-					bh2 = udf_read_tagged(sb, loc, loc,
+-							     &ident);
+-					map->s_type_specific.s_sparing.
+-							s_spar_map[j] = bh2;
+-
+-					if (bh2 == NULL)
+-						continue;
+-
+-					st = (struct sparingTable *)bh2->b_data;
+-					if (ident != 0 || strncmp(
+-						st->sparingIdent.ident,
+-						UDF_ID_SPARING,
+-						strlen(UDF_ID_SPARING))) {
+-						brelse(bh2);
+-						map->s_type_specific.s_sparing.
+-							s_spar_map[j] = NULL;
+-					}
+-				}
+-				map->s_partition_func = udf_get_pblock_spar15;
++				if (udf_load_sparable_map(sb, map,
++				    (struct sparablePartitionMap *)gpm) < 0)
++					goto out_bh;
+ 			} else if (!strncmp(upm2->partIdent.ident,
+ 						UDF_ID_METADATA,
+ 						strlen(UDF_ID_METADATA))) {
 -- 
 1.7.2.1.45.g54fbc
 
