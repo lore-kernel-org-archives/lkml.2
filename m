@@ -1,303 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab2JAMP6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 08:15:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60351 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751677Ab2JAMP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 08:15:56 -0400
-Date: Mon, 1 Oct 2012 14:15:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 09/13] memcg: kmem accounting lifecycle management
-Message-ID: <20121001121553.GG8622@dhcp22.suse.cz>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
- <1347977050-29476-10-git-send-email-glommer@parallels.com>
+	id S1752548Ab2JAMVY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 08:21:24 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:20235
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751145Ab2JAMVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 08:21:22 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dId6eah1432I4015Id6f1izz1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839h944hd25hf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MB7RND-02-421-02
+X-M-MSG: 
+Date: Mon, 1 Oct 2012 14:21:11 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
+CC: wyang1 <Wei.Yang@windriver.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>,
+        <oprofile-list@lists.sourceforge.net>
+Subject: Re: [PATCH -v2] x86, 32-bit: Fix invalid stack address while in
+ softirq
+Message-ID: <20121001122111.GN8285@erda.amd.com>
+References: <1346031133-12756-1-git-send-email-Wei.Yang@windriver.com>
+ <20120904102439.GS8285@erda.amd.com>
+ <5047FCBD.9000205@windriver.com>
+ <20120906100434.GX8285@erda.amd.com>
+ <20120912135059.GZ8285@erda.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1347977050-29476-10-git-send-email-glommer@parallels.com>
+In-Reply-To: <20120912135059.GZ8285@erda.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on the previous discussions I guess this one will get reworked,
-right?
+Ingo, Peter,
 
-On Tue 18-09-12 18:04:06, Glauber Costa wrote:
-> Because the assignment: memcg->kmem_accounted = true is done after the
-> jump labels increment, we guarantee that the root memcg will always be
-> selected until all call sites are patched (see memcg_kmem_enabled).
-> This guarantees that no mischarges are applied.
+any opinions on this patch?
+
+Thanks,
+
+-Robert
+
+On 12.09.12 15:50:59, Robert Richter wrote:
+> Updated version below. Changes are:
 > 
-> Jump label decrement happens when the last reference count from the
-> memcg dies. This will only happen when the caches are all dead.
+>     * add comments to kernel_stack_pointer()
+>     * always return a valid stack address by falling back to the address
+>       of regs
 > 
-> -> /cgroups/memory/A/B/C
+> -Robert
 > 
-> * kmem limit set at A,
-> * A and B have no tasks,
-> * span a new task in in C.
 > 
-> Because kmem_accounted is a boolean that was not set for C, no
-> accounting would be done. This is, however, not what we expect.
+> From 0114d0e2ff6ce3f6015fd991541a45261f14eab1 Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Mon, 3 Sep 2012 20:54:48 +0200
+> Subject: [PATCH] x86, 32-bit: Fix invalid stack address while in softirq
 > 
-> The basic idea, is that when a cgroup is limited, we walk the tree
-> downwards and make sure that we store the information about the parent
-> being limited in kmem_accounted.
+> In 32 bit the stack address provided by kernel_stack_pointer() may
+> point to an invalid range causing NULL pointer access or page faults
+> while in NMI (see trace below). This happens if called in softirq
+> context and if the stack is empty. The address at &regs->sp is then
+> out of range.
 > 
-> We do the reverse operation when a formerly limited cgroup becomes
-> unlimited.
+> Fixing this by checking if regs and &regs->sp are in the same stack
+> context. Otherwise return the previous stack pointer stored in struct
+> thread_info. If that address is invalid too, return address of regs.
 > 
-> Since kmem charges may outlive the cgroup existance, we need to be extra
-> careful to guarantee the memcg object will stay around for as long as
-> needed. Up to now, we were using a mem_cgroup_get()/put() pair in charge
-> and uncharge operations.
+>  BUG: unable to handle kernel NULL pointer dereference at 0000000a
+>  IP: [<c1004237>] print_context_stack+0x6e/0x8d
+>  *pde = 00000000
+>  Oops: 0000 [#1] SMP
+>  Modules linked in:
+>  Pid: 4434, comm: perl Not tainted 3.6.0-rc3-oprofile-i386-standard-g4411a05 #4 Hewlett-Packard HP xw9400 Workstation/0A1Ch
+>  EIP: 0060:[<c1004237>] EFLAGS: 00010093 CPU: 0
+>  EIP is at print_context_stack+0x6e/0x8d
+>  EAX: ffffe000 EBX: 0000000a ECX: f4435f94 EDX: 0000000a
+>  ESI: f4435f94 EDI: f4435f94 EBP: f5409ec0 ESP: f5409ea0
+>   DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+>  CR0: 8005003b CR2: 0000000a CR3: 34ac9000 CR4: 000007d0
+>  DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+>  DR6: ffff0ff0 DR7: 00000400
+>  Process perl (pid: 4434, ti=f5408000 task=f5637850 task.ti=f4434000)
+>  Stack:
+>   000003e8 ffffe000 00001ffc f4e39b00 00000000 0000000a f4435f94 c155198c
+>   f5409ef0 c1003723 c155198c f5409f04 00000000 f5409edc 00000000 00000000
+>   f5409ee8 f4435f94 f5409fc4 00000001 f5409f1c c12dce1c 00000000 c155198c
+>  Call Trace:
+>   [<c1003723>] dump_trace+0x7b/0xa1
+>   [<c12dce1c>] x86_backtrace+0x40/0x88
+>   [<c12db712>] ? oprofile_add_sample+0x56/0x84
+>   [<c12db731>] oprofile_add_sample+0x75/0x84
+>   [<c12ddb5b>] op_amd_check_ctrs+0x46/0x260
+>   [<c12dd40d>] profile_exceptions_notify+0x23/0x4c
+>   [<c1395034>] nmi_handle+0x31/0x4a
+>   [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+>   [<c13950ed>] do_nmi+0xa0/0x2ff
+>   [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+>   [<c13949e5>] nmi_stack_correct+0x28/0x2d
+>   [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+>   [<c1003603>] ? do_softirq+0x4b/0x7f
+>   <IRQ>
+>   [<c102a06f>] irq_exit+0x35/0x5b
+>   [<c1018f56>] smp_apic_timer_interrupt+0x6c/0x7a
+>   [<c1394746>] apic_timer_interrupt+0x2a/0x30
+>  Code: 89 fe eb 08 31 c9 8b 45 0c ff 55 ec 83 c3 04 83 7d 10 00 74 0c 3b 5d 10 73 26 3b 5d e4 73 0c eb 1f 3b 5d f0 76 1a 3b 5d e8 73 15 <8b> 13 89 d0 89 55 e0 e8 ad 42 03 00 85 c0 8b 55 e0 75 a6 eb cc
+>  EIP: [<c1004237>] print_context_stack+0x6e/0x8d SS:ESP 0068:f5409ea0
+>  CR2: 000000000000000a
+>  ---[ end trace 62afee3481b00012 ]---
+>  Kernel panic - not syncing: Fatal exception in interrupt
 > 
-> Although this guarantees that the object will be around until the last
-> call to unchage, this means an atomic update in every charge. We can do
-> better than that if we only issue get() in the first charge, and then
-> put() when the last charge finally goes away.
+> V2:
+> * add comments to kernel_stack_pointer()
+> * always return a valid stack address by falling back to the address
+>   of regs
 > 
-> [ v3: merged all lifecycle related patches in one ]
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
+> Reported-by: Yang Wei <wei.yang@windriver.com>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
 > ---
->  mm/memcontrol.c | 123 +++++++++++++++++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 112 insertions(+), 11 deletions(-)
+>  arch/x86/include/asm/ptrace.h |   15 ++++-----------
+>  arch/x86/kernel/ptrace.c      |   28 ++++++++++++++++++++++++++++
+>  2 files changed, 32 insertions(+), 11 deletions(-)
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 0f36a01..720e4bb 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -287,7 +287,8 @@ struct mem_cgroup {
->  	 * Should the accounting and control be hierarchical, per subtree?
->  	 */
->  	bool use_hierarchy;
-> -	bool kmem_accounted;
-> +
-> +	unsigned long kmem_accounted; /* See KMEM_ACCOUNTED_*, below */
->  
->  	bool		oom_lock;
->  	atomic_t	under_oom;
-> @@ -340,6 +341,43 @@ struct mem_cgroup {
+> diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+> index dcfde52..19f16eb 100644
+> --- a/arch/x86/include/asm/ptrace.h
+> +++ b/arch/x86/include/asm/ptrace.h
+> @@ -205,21 +205,14 @@ static inline bool user_64bit_mode(struct pt_regs *regs)
+>  }
 >  #endif
->  };
 >  
-> +enum {
-> +	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
-> +	KMEM_ACCOUNTED_PARENT, /* one of its parents is active */
-> +	KMEM_ACCOUNTED_DEAD, /* dead memcg, pending kmem charges */
-> +};
-> +
-> +/* bits 0 and 1 */
-> +#define KMEM_ACCOUNTED_MASK 0x3
-> +
-> +#ifdef CONFIG_MEMCG_KMEM
-> +static bool memcg_kmem_set_active(struct mem_cgroup *memcg)
-> +{
-> +	return !test_and_set_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted);
-> +}
-> +
-> +static bool memcg_kmem_is_accounted(struct mem_cgroup *memcg)
-> +{
-> +	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted);
-> +}
-> +
-> +static void memcg_kmem_set_active_parent(struct mem_cgroup *memcg)
-> +{
-> +	set_bit(KMEM_ACCOUNTED_PARENT, &memcg->kmem_accounted);
-> +}
-> +
-> +static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
-> +{
-> +	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted))
-> +		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_accounted);
-> +}
-> +
-> +static bool memcg_kmem_dead(struct mem_cgroup *memcg)
-> +{
-> +	return test_and_clear_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_accounted);
-> +}
-> +#endif /* CONFIG_MEMCG_KMEM */
-> +
->  /* Stuffs for move charges at task migration. */
->  /*
->   * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
-> @@ -491,7 +529,7 @@ EXPORT_SYMBOL(tcp_proto_cgroup);
->  static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
->  {
->  	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
-> -		memcg->kmem_accounted;
-> +		 (memcg->kmem_accounted & (KMEM_ACCOUNTED_MASK));
->  }
->  
->  /*
-> @@ -524,13 +562,9 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
->  	if (!memcg_can_account_kmem(memcg))
->  		return true;
->  
-> -	mem_cgroup_get(memcg);
-> -
->  	ret = memcg_charge_kmem(memcg, gfp, PAGE_SIZE << order) == 0;
->  	if (ret)
->  		*_memcg = memcg;
-> -	else
-> -		mem_cgroup_put(memcg);
->  
->  	return ret;
->  }
-> @@ -589,7 +623,6 @@ void __memcg_kmem_uncharge_page(struct page *page, int order)
->  
->  	WARN_ON(mem_cgroup_is_root(memcg));
->  	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
-> -	mem_cgroup_put(memcg);
->  }
->  #endif /* CONFIG_MEMCG_KMEM */
->  
-> @@ -4077,6 +4110,40 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
->  	len = scnprintf(str, sizeof(str), "%llu\n", (unsigned long long)val);
->  	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
->  }
-> +
-> +static void memcg_update_kmem_limit(struct mem_cgroup *memcg, u64 val)
-> +{
-> +#ifdef CONFIG_MEMCG_KMEM
-> +	struct mem_cgroup *iter;
-> +
-> +	/*
-> +	 * When we are doing hierarchical accounting, with an hierarchy like
-> +	 * A/B/C, we need to start accounting kernel memory all the way up to C
-> +	 * in case A start being accounted.
-> +	 *
-> +	 * So when we the cgroup first gets to be unlimited, we walk all the
-> +	 * children of the current memcg and enable kmem accounting for them.
-> +	 * Note that a separate bit is used there to indicate that the
-> +	 * accounting happens due to the parent being accounted.
-> +	 *
-> +	 * note that memcg_kmem_set_active is a test-and-set routine, so we only
-> +	 * arrive here once (since we never disable it)
-> +	 */
-> +	mutex_lock(&set_limit_mutex);
-> +	if ((val != RESOURCE_MAX) && memcg_kmem_set_active(memcg)) {
-> +
-> +		mem_cgroup_get(memcg);
-> +
-> +		for_each_mem_cgroup_tree(iter, memcg) {
-> +			if (iter == memcg)
-> +				continue;
-> +			memcg_kmem_set_active_parent(iter);
-> +		}
-> +	}
-> +	mutex_unlock(&set_limit_mutex);
-> +#endif
-> +}
-> +
->  /*
->   * The user of this function is...
->   * RES_LIMIT.
-> @@ -4115,9 +4182,7 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
->  			if (ret)
->  				break;
->  
-> -			/* For simplicity, we won't allow this to be disabled */
-> -			if (!memcg->kmem_accounted && val != RESOURCE_MAX)
-> -				memcg->kmem_accounted = true;
-> +			memcg_update_kmem_limit(memcg, val);
->  		} else
->  			return -EINVAL;
->  		break;
-> @@ -4791,6 +4856,20 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->  static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
->  {
->  	mem_cgroup_sockets_destroy(memcg);
-> +
-> +	memcg_kmem_mark_dead(memcg);
-> +
-> +	if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
-> +		return;
-> +
-> +	/*
-> +	 * Charges already down to 0, undo mem_cgroup_get() done in the charge
-> +	 * path here, being careful not to race with memcg_uncharge_kmem: it is
-> +	 * possible that the charges went down to 0 between mark_dead and the
-> +	 * res_counter read, so in that case, we don't need the put
-> +	 */
-> +	if (memcg_kmem_dead(memcg))
-> +		mem_cgroup_put(memcg);
->  }
+> -/*
+> - * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
+> - * when it traps.  The previous stack will be directly underneath the saved
+> - * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
+> - *
+> - * This is valid only for kernel mode traps.
+> - */
+> -static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
+> -{
+>  #ifdef CONFIG_X86_32
+> -	return (unsigned long)(&regs->sp);
+> +extern unsigned long kernel_stack_pointer(struct pt_regs *regs);
 >  #else
->  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
-> @@ -5148,6 +5227,8 @@ mem_cgroup_create(struct cgroup *cont)
->  	}
->  
->  	if (parent && parent->use_hierarchy) {
-> +		struct mem_cgroup __maybe_unused *p;
-> +
->  		res_counter_init(&memcg->res, &parent->res);
->  		res_counter_init(&memcg->memsw, &parent->memsw);
->  		res_counter_init(&memcg->kmem, &parent->kmem);
-> @@ -5158,6 +5239,20 @@ mem_cgroup_create(struct cgroup *cont)
->  		 * mem_cgroup(see mem_cgroup_put).
->  		 */
->  		mem_cgroup_get(parent);
-> +#ifdef CONFIG_MEMCG_KMEM
-> +		/*
-> +		 * In case a parent is already limited when we create this, we
-> +		 * need him to propagate it now so we become limited as well.
-> +		 */
-> +		mutex_lock(&set_limit_mutex);
-> +		for (p = parent; p != NULL; p = parent_mem_cgroup(p)) {
-> +			if (memcg_kmem_is_accounted(p)) {
-> +				memcg_kmem_set_active_parent(memcg);
-> +				break;
-> +			}
-> +		}
-> +		mutex_unlock(&set_limit_mutex);
-> +#endif
->  	} else {
->  		res_counter_init(&memcg->res, NULL);
->  		res_counter_init(&memcg->memsw, NULL);
-> @@ -5871,9 +5966,15 @@ void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
->  	if (!memcg)
->  		return;
->  
-> -	res_counter_uncharge(&memcg->kmem, size);
->  	res_counter_uncharge(&memcg->res, size);
->  	if (do_swap_account)
->  		res_counter_uncharge(&memcg->memsw, size);
-> +
-> +	/* Not down to 0 */
-> +	if (res_counter_uncharge(&memcg->kmem, size))
-> +		return;
-> +
-> +	if (memcg_kmem_dead(memcg))
-> +		mem_cgroup_put(memcg);
+> +static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
+> +{
+>  	return regs->sp;
+> -#endif
 >  }
->  #endif /* CONFIG_MEMCG_KMEM */
+> +#endif
+>  
+>  #define GET_IP(regs) ((regs)->ip)
+>  #define GET_FP(regs) ((regs)->bp)
+> diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+> index c4c6a5c..947cf90 100644
+> --- a/arch/x86/kernel/ptrace.c
+> +++ b/arch/x86/kernel/ptrace.c
+> @@ -165,6 +165,34 @@ static inline bool invalid_selector(u16 value)
+>  
+>  #define FLAG_MASK		FLAG_MASK_32
+>  
+> +/*
+> + * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
+> + * when it traps.  The previous stack will be directly underneath the saved
+> + * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
+> + *
+> + * Now, if the stack is empty, '&regs->sp' is out of range. In this
+> + * case we try to take the previous stack. To always return a non-null
+> + * stack pointer we fall back to regs as stack if no previous stack
+> + * exists.
+> + *
+> + * This is valid only for kernel mode traps.
+> + */
+> +unsigned long kernel_stack_pointer(struct pt_regs *regs)
+> +{
+> +	unsigned long context = (unsigned long)regs & ~(THREAD_SIZE - 1);
+> +	unsigned long sp = (unsigned long)&regs->sp;
+> +	struct thread_info *tinfo;
+> +
+> +	if (context == (sp & ~(THREAD_SIZE - 1)))
+> +		return sp;
+> +
+> +	tinfo = (struct thread_info *)context;
+> +	if (tinfo->previous_esp)
+> +		return tinfo->previous_esp;
+> +
+> +	return (unsigned long)regs;
+> +}
+> +
+>  static unsigned long *pt_regs_access(struct pt_regs *regs, unsigned long regno)
+>  {
+>  	BUILD_BUG_ON(offsetof(struct pt_regs, bx) != 0);
 > -- 
-> 1.7.11.4
+> 1.7.8.6
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+> -- 
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
 
 -- 
-Michal Hocko
-SUSE Labs
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
