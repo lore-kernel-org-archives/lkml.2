@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab2JAKZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 06:25:34 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35800 "EHLO arroyo.ext.ti.com"
+	id S1753239Ab2JAKZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 06:25:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35801 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753163Ab2JAKZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753164Ab2JAKZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Oct 2012 06:25:31 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
@@ -12,9 +12,9 @@ To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH v2 2/7] usb: dwc3-omap: use of_platform API to create dwc3 core pdev
-Date: Mon, 1 Oct 2012 15:55:02 +0530
-Message-ID: <1349087107-18229-3-git-send-email-kishon@ti.com>
+Subject: [PATCH v2 5/7] usb: dwc3-omap: Add an API to write to dwc mailbox
+Date: Mon, 1 Oct 2012 15:55:05 +0530
+Message-ID: <1349087107-18229-6-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349087107-18229-1-git-send-email-kishon@ti.com>
 References: <1349087107-18229-1-git-send-email-kishon@ti.com>
@@ -24,136 +24,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used of_platform_populate() to populate dwc3 core platform_device
-from device tree data. Since now the allocation of unique device id is
-handled be of_*, removed the call to dwc3_get_device_id.
+Add an API in the omap glue layer to write to the mailbox register which
+can be used by comparator driver(twl). To pass the detection of the attached
+device (signified by VBUS, ID) to the dwc3 core, dwc3 core has to write
+to the mailbox regiter.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/usb/dwc3/dwc3-omap.c |   52 ++++++++----------------------------------
- 1 file changed, 10 insertions(+), 42 deletions(-)
+ drivers/usb/dwc3/dwc3-omap.c  |   59 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/usb/dwc3-omap.h |   30 +++++++++++++++++++++
+ 2 files changed, 89 insertions(+)
+ create mode 100644 include/linux/usb/dwc3-omap.h
 
 diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index e335da3..cb4037a 100644
+index d417bec..c19affa 100644
 --- a/drivers/usb/dwc3/dwc3-omap.c
 +++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -47,6 +47,7 @@
+@@ -43,6 +43,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/platform_device.h>
+ #include <linux/platform_data/dwc3-omap.h>
++#include <linux/usb/dwc3-omap.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/dma-mapping.h>
  #include <linux/ioport.h>
- #include <linux/io.h>
- #include <linux/of.h>
-+#include <linux/of_platform.h>
+@@ -126,6 +127,8 @@ struct dwc3_omap {
+ 	u32			dma_status:1;
+ };
  
- #include "core.h"
- 
-@@ -130,7 +131,6 @@ struct dwc3_omap {
- 	/* device lock */
- 	spinlock_t		lock;
- 
--	struct platform_device	*dwc3;
- 	struct device		*dev;
- 
- 	int			irq;
-@@ -218,12 +218,10 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
- 	struct dwc3_omap_data	*pdata = pdev->dev.platform_data;
- 	struct device_node	*node = pdev->dev.of_node;
- 
--	struct platform_device	*dwc3;
- 	struct dwc3_omap	*omap;
- 	struct resource		*res;
- 	struct device		*dev = &pdev->dev;
- 
--	int			devid;
- 	int			size;
- 	int			ret = -ENOMEM;
- 	int			irq;
-@@ -260,34 +258,19 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	devid = dwc3_get_device_id();
--	if (devid < 0)
--		return -ENODEV;
--
--	dwc3 = platform_device_alloc("dwc3", devid);
--	if (!dwc3) {
--		dev_err(dev, "couldn't allocate dwc3 device\n");
--		goto err1;
--	}
--
- 	context = devm_kzalloc(dev, resource_size(res), GFP_KERNEL);
- 	if (!context) {
- 		dev_err(dev, "couldn't allocate dwc3 context memory\n");
--		goto err2;
-+		return -ENOMEM;
- 	}
- 
- 	spin_lock_init(&omap->lock);
--	dma_set_coherent_mask(&dwc3->dev, dev->coherent_dma_mask);
- 
--	dwc3->dev.parent = dev;
--	dwc3->dev.dma_mask = dev->dma_mask;
--	dwc3->dev.dma_parms = dev->dma_parms;
- 	omap->resource_size = resource_size(res);
- 	omap->context	= context;
- 	omap->dev	= dev;
- 	omap->irq	= irq;
- 	omap->base	= base;
--	omap->dwc3	= dwc3;
- 
- 	reg = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
- 
-@@ -332,7 +315,7 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
- 	if (ret) {
- 		dev_err(dev, "failed to request IRQ #%d --> %d\n",
- 				omap->irq, ret);
--		goto err2;
-+		return ret;
- 	}
- 
- 	/* enable all IRQs */
-@@ -351,35 +334,20 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
- 
- 	dwc3_omap_writel(omap->base, USBOTGSS_IRQENABLE_SET_1, reg);
- 
--	ret = platform_device_add_resources(dwc3, pdev->resource,
--			pdev->num_resources);
--	if (ret) {
--		dev_err(dev, "couldn't add resources to dwc3 device\n");
--		goto err2;
--	}
--
--	ret = platform_device_add(dwc3);
--	if (ret) {
--		dev_err(dev, "failed to register dwc3 device\n");
--		goto err2;
-+	if (node) {
-+		ret = of_platform_populate(node, NULL, NULL, dev);
-+		if (ret) {
-+			dev_err(&pdev->dev,
-+				"failed to add create dwc3 core\n");
-+			return ret;
-+		}
- 	}
- 
- 	return 0;
--
--err2:
--	platform_device_put(dwc3);
--
--err1:
--	dwc3_put_device_id(devid);
--
--	return ret;
++struct dwc3_omap		*_omap;
++
+ static inline u32 dwc3_omap_readl(void __iomem *base, u32 offset)
+ {
+ 	return readl(base + offset);
+@@ -136,6 +139,56 @@ static inline void dwc3_omap_writel(void __iomem *base, u32 offset, u32 value)
+ 	writel(value, base + offset);
  }
  
- static int __devexit dwc3_omap_remove(struct platform_device *pdev)
- {
--	struct dwc3_omap	*omap = platform_get_drvdata(pdev);
--
--	dwc3_put_device_id(omap->dwc3->id);
- 	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
++void dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
++{
++	u32			val;
++	struct dwc3_omap	*omap = _omap;
++
++	switch (status) {
++	case OMAP_DWC3_ID_GROUND:
++		dev_dbg(omap->dev, "ID GND\n");
++
++		val = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
++		val &= ~(USBOTGSS_UTMI_OTG_STATUS_IDDIG
++				| USBOTGSS_UTMI_OTG_STATUS_VBUSVALID
++				| USBOTGSS_UTMI_OTG_STATUS_SESSEND);
++		val |= USBOTGSS_UTMI_OTG_STATUS_SESSVALID
++				| USBOTGSS_UTMI_OTG_STATUS_POWERPRESENT;
++		dwc3_omap_writel(omap->base, USBOTGSS_UTMI_OTG_STATUS, val);
++		break;
++
++	case OMAP_DWC3_VBUS_VALID:
++		dev_dbg(omap->dev, "VBUS Connect\n");
++
++		val = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
++		val &= ~USBOTGSS_UTMI_OTG_STATUS_SESSEND;
++		val |= USBOTGSS_UTMI_OTG_STATUS_IDDIG
++				| USBOTGSS_UTMI_OTG_STATUS_VBUSVALID
++				| USBOTGSS_UTMI_OTG_STATUS_SESSVALID
++				| USBOTGSS_UTMI_OTG_STATUS_POWERPRESENT;
++		dwc3_omap_writel(omap->base, USBOTGSS_UTMI_OTG_STATUS, val);
++		break;
++
++	case OMAP_DWC3_ID_FLOAT:
++	case OMAP_DWC3_VBUS_OFF:
++		dev_dbg(omap->dev, "VBUS Disconnect\n");
++
++		val = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
++		val &= ~(USBOTGSS_UTMI_OTG_STATUS_SESSVALID
++				| USBOTGSS_UTMI_OTG_STATUS_VBUSVALID
++				| USBOTGSS_UTMI_OTG_STATUS_POWERPRESENT);
++		val |= USBOTGSS_UTMI_OTG_STATUS_SESSEND
++				| USBOTGSS_UTMI_OTG_STATUS_IDDIG;
++		dwc3_omap_writel(omap->base, USBOTGSS_UTMI_OTG_STATUS, val);
++		break;
++
++	default:
++		dev_dbg(omap->dev, "ID float\n");
++	}
++
++	return;
++}
++EXPORT_SYMBOL_GPL(dwc3_omap_mailbox);
  
- 	return 0;
+ static irqreturn_t dwc3_omap_interrupt(int irq, void *_omap)
+ {
+@@ -256,6 +309,12 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+ 	omap->irq	= irq;
+ 	omap->base	= base;
+ 
++	/*
++	 * REVISIT if we ever have two instances of the wrapper, we will be
++	 * in big trouble
++	 */
++	_omap	= omap;
++
+ 	pm_runtime_enable(dev);
+ 	ret = pm_runtime_get_sync(dev);
+ 	if (ret < 0) {
+diff --git a/include/linux/usb/dwc3-omap.h b/include/linux/usb/dwc3-omap.h
+new file mode 100644
+index 0000000..6ebcf73
+--- /dev/null
++++ b/include/linux/usb/dwc3-omap.h
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (C) 2011-2012 by Texas Instruments
++ *
++ * The Inventra Controller Driver for Linux is free software; you
++ * can redistribute it and/or modify it under the terms of the GNU
++ * General Public License version 2 as published by the Free Software
++ * Foundation.
++ */
++
++#ifndef __DWC3_OMAP_H__
++#define __DWC3_OMAP_H__
++
++enum omap_dwc3_vbus_id_status {
++	OMAP_DWC3_UNKNOWN = 0,
++	OMAP_DWC3_ID_GROUND,
++	OMAP_DWC3_ID_FLOAT,
++	OMAP_DWC3_VBUS_VALID,
++	OMAP_DWC3_VBUS_OFF,
++};
++
++#if (defined(CONFIG_USB_DWC3) || defined(CONFIG_USB_DWC3_MODULE))
++void dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status);
++#else
++static inline void dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
++{
++	return;
++}
++#endif
++
++#endif	/* __DWC3_OMAP_H__ */
 -- 
 1.7.9.5
 
