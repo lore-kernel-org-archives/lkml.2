@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab2JAQdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 12:33:18 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38417 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753373Ab2JAQdM (ORCPT
+	id S1753461Ab2JAQdl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 12:33:41 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:47553
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753071Ab2JAQdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 12:33:12 -0400
-Date: Mon, 1 Oct 2012 17:32:50 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>, Steve Capper <Steve.Capper@arm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] mm: thp: Set the accessed flag for old pages on access
- fault.
-Message-ID: <20121001163250.GO20812@mudshark.cambridge.arm.com>
-References: <1349099505-5581-1-git-send-email-will.deacon@arm.com>
- <20121001145944.GA18051@redhat.com>
+	Mon, 1 Oct 2012 12:33:39 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MB83BX-01-2W5-02
+X-M-MSG: 
+Date: Mon, 1 Oct 2012 18:33:38 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/16] iommu/amd: Add IOAPIC remapping routines
+Message-ID: <20121001163338.GP4009@amd.com>
+References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+ <1348835046-3262-10-git-send-email-joerg.roedel@amd.com>
+ <6d716497-bcf6-4d71-88a3-6ec772a4d396@sausexedgep01.amd.com>
+ <20121001084051.GO4009@amd.com>
+ <20121001134753.GF4099@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20121001145944.GA18051@redhat.com>
+In-Reply-To: <20121001134753.GF4099@phenom.dumpdata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 03:59:44PM +0100, Andrea Arcangeli wrote:
-> Hi Will,
+On Mon, Oct 01, 2012 at 09:47:53AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Mon, Oct 01, 2012 at 10:40:51AM +0200, Joerg Roedel wrote:
 
-Hi Andrea, Kirill,
+> > Don't understand this. What is not set?
+> 
+> the IRQ_DELAYED_DISABLE. But I could not even find that enum anymore?
+> Has that been obsoleted?
 
-Thanks for the comments.
+You are right, its was removed. Ok, I will remove that line of the
+comment too.
 
-> On Mon, Oct 01, 2012 at 02:51:45PM +0100, Will Deacon wrote:
-> > +void huge_pmd_set_accessed(struct mm_struct *mm, struct vm_area_struct *vma,
-> > +			   unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
-> > +{
-> > +	pmd_t entry;
-> > +
-> > +	spin_lock(&mm->page_table_lock);
-> > +	entry = pmd_mkyoung(orig_pmd);
-> > +	if (pmdp_set_access_flags(vma, address & HPAGE_PMD_MASK, pmd, entry, 0))
-> > +		update_mmu_cache(vma, address, pmd);
-> 
-> If the pmd is being splitted, this may not be a trasnhuge pmd anymore
-> by the time you obtained the lock. (orig_pmd could be stale, and it
-> wasn't verified with pmd_same either)
-> 
-> The lock should be obtained through pmd_trans_huge_lock.
-> 
->   if (pmd_trans_huge_lock(orig_pmd, vma) == 1)
->   {
-> 	set young bit
-> 	spin_unlock(&mm->page_table_lock);
->   }
+> I was thinking the other way around. You recover the old affinity. Should
+> you print out a warning mentioning to the system admin that you could not
+> set the new affinity but reverted to the old one? Or will that not serve
+> anything except spam the kernel logs?
 
-I didn't notice that -- thanks. I'll move the locking outside of the
-_set_accessed function and direct it via that function instead.
+Well, I don't think it makes sense to print an additional error at this
+point. The error will be propagated upwards in the call-chain and in the
+end it is up to the initiator how to handle this situation (for example
+just return a failure to user-space).
 
-> On x86:
-> 
-> int pmdp_set_access_flags(struct vm_area_struct *vma,
-> 			  unsigned long address, pmd_t *pmdp,
-> 			  pmd_t entry, int dirty)
-> {
-> 	int changed = !pmd_same(*pmdp, entry);
-> 
-> 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
-> 
-> 	if (changed && dirty) {
-> 		*pmdp = entry;
-> 
-> with dirty == 0 it looks like it won't make any difference, but I
-> guess your arm pmdp_set_access_flag is different.
 
-We use the generic code, which ignores the dirty argument. Still, we should
-pass the correct value through anyway, so I'll fix that too.
+	Joerg
 
-> However it seems "dirty" means write access and so the invocation
-> would better match the pte case:
-> 
-> 	if (pmdp_set_access_flags(vma, address & HPAGE_PMD_MASK, pmd, entry,
-> 	    flags & FAULT_FLAG_WRITE))
-> 
-> 
-> But note, you still have to update it even when "dirty" == 0, or it'll
-> still infinite loop for read accesses.
+-- 
+AMD Operating System Research Center
 
-Yup. v2 to follow once we've re-run our testing.
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-Cheers,
-
-Will
