@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab2JASAZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 14:00:25 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:7976 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750927Ab2JASAY (ORCPT
+	id S1752098Ab2JASAp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 14:00:45 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:37276 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750927Ab2JASAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 14:00:24 -0400
-Date: Mon, 1 Oct 2012 18:00:22 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v2] slab: Ignore internal flags in cache creation
-In-Reply-To: <1349088458-3940-1-git-send-email-glommer@parallels.com>
-Message-ID: <0000013a1d7c65d7-e63e5171-d5ea-4464-a5ea-c345d6804c07-000000@email.amazonses.com>
-References: <1349088458-3940-1-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 1 Oct 2012 14:00:44 -0400
+Message-ID: <1349114440.2577.26.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] net: fix neigh_resolve_output can cause skb_under_panic
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Ramesh Nagappa <ramesh.nagappa@ericsson.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "michel@digirati.com.br" <michel@digirati.com.br>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+Date: Mon, 1 Oct 2012 19:00:40 +0100
+In-Reply-To: <20120929005721.GA13335@kroah.com>
+References: <CA3E5132752D1F49871ED0FC40D56BBA43ECE2E72D@EUSAACMS0701.eamcs.ericsson.se>
+	 <20120928235209.GA11474@kroah.com>
+	 <CA3E5132752D1F49871ED0FC40D56BBA43ECE2E743@EUSAACMS0701.eamcs.ericsson.se>
+	 <20120929005721.GA13335@kroah.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Oct 2012, Glauber Costa wrote:
+On Fri, 2012-09-28 at 17:57 -0700, gregkh@linuxfoundation.org wrote:
+[...]
+> > > You need a blank line before the first Signed-off-by: line.  
+> > > Surely one of the reviewers should have caught this basic thing?
+> > 
+> > Outlook mangled the patch. I am unable to use git send-email because of
+> > a corporate firewall on the build machine.
+> 
+> Then your patch would also be corrupted, Outlook, and Exchange, can not
+> handle patches at all.  Please read Documentation/email_clients.txt for
+> more details.
+> 
+> Also, ask your coworkers who properly submit patches what they do to
+> work around your broken email infrastructure.
 
-> [ v2: leave the mask out decision up to the allocators ]
+I successfully send patches using git-imap-send and Evolution talking to
+Exchange 2010 through its IMAP and SMTP submission interfaces.  (I think
+the previous version worked as well.)  But I would agree that Outlook is
+probably hopeless.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+Ben.
 
-I would prefer that this mask be named appropriately and be defined in all
-sl*_def.h files for all allocators.
-
-Name could be SLAB_AVAILABLE_FLAGS or some name that makes more
-sense than CACHE_CREATE_MASK.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
