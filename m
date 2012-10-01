@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab2JAIY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 04:24:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21921 "EHLO mx1.redhat.com"
+	id S1752162Ab2JAI0D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 04:26:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49193 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492Ab2JAIY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 04:24:27 -0400
-Date: Mon, 1 Oct 2012 13:54:17 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: sjur.brandeland@stericsson.com
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        sjurbren@stericsson.com
-Subject: Re: [PATCH 3/3] virtio_console: Don't initialize buffers to zero
-Message-ID: <20121001082417.GC9810@amit.redhat.com>
-References: <1348580837-10919-1-git-send-email-sjur.brandeland@stericsson.com>
- <1348580837-10919-4-git-send-email-sjur.brandeland@stericsson.com>
+	id S1751217Ab2JAI0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 04:26:01 -0400
+Date: Mon, 1 Oct 2012 10:25:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: HID: picoLCD: optimize for inactive debugfs
+In-Reply-To: <20120930220419.01408e0e@neptune.home>
+Message-ID: <alpine.LNX.2.00.1210011025490.27440@pobox.suse.cz>
+References: <20120930220419.01408e0e@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1348580837-10919-4-git-send-email-sjur.brandeland@stericsson.com>
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 25 Sep 2012 [15:47:17], sjur.brandeland@stericsson.com wrote:
-> From: Sjur Br�ndeland <sjur.brandeland@stericsson.com>
+On Sun, 30 Sep 2012, Bruno Prémont wrote:
+
+> Matthieu CASTET adjusted picolcd_debug_out_report() to only operate when
+> there is an active listener on debugfs for events.
 > 
-> Skip initializing the receive buffers.
+> His change got lost while splitting hid_picolcd.c, restore it.
+> 
+> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> ---
+> 
+> 
+> diff --git a/drivers/hid/hid-picolcd_debugfs.c b/drivers/hid/hid-picolcd_debugfs.c
+> index 6ef03be..4809aa1 100644
+> --- a/drivers/hid/hid-picolcd_debugfs.c
+> +++ b/drivers/hid/hid-picolcd_debugfs.c
+> @@ -402,7 +402,7 @@ void picolcd_debug_out_report(struct picolcd_data *data,
+>  #define BUFF_SZ 256
+>  
+>  	/* Avoid unnecessary overhead if debugfs is disabled */
+> -	if (!hdev->debug_events)
+> +	if (list_empty(&hdev->debug_list))
+>  		return;
+>  
+>  	buff = kmalloc(BUFF_SZ, GFP_ATOMIC);
 
-This tells 'what', but not 'why'.  Please add some more description.
-For the generic virtio ports case, at least, my original thinking was
-to not send random guest data to the host device.  However, we don't
-have any device isolation in the host yet, and doing that will be
-expensive, so it's not going to be done in the near future.. this can
-be safely skipped.
+Applied, thanks.
 
-Also, please make this patch 1/3, so we don't end up doing
-
- kzalloc->kmalloc+memset->kmalloc
-
-Thanks,
-		Amit
+-- 
+Jiri Kosina
+SUSE Labs
