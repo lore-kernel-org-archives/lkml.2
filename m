@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab2JAXPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:15:47 -0400
-Received: from nm21-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.220]:28673 "HELO
-	nm21-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758199Ab2JAXPo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:15:44 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 539793.23818.bm@omp1056.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=fv4X21hAkRlXhpJRTnRPAoi3M81un/ea+voQLjdf/WPq7KLv2BiFvXsXl53YcvvwBQV9mCj6bw1b+ikAohhMjF2m3tuRRzTbbzVi7rBxcrXFXdhWy3GF4LOffAGMoit1hJzACxWEto8iazAxstrbxWsTRnzMCqwIPe2EYgNQ/Es=;
-X-YMail-OSG: 8L1A7wUVM1nMGzDSOVlAIIDbn9D4qjrttWGppuXeyyKv0_N
- Ihyf_QlvPl1Nboc7E.GvT1dqaSj_7X7qe0VkKYI3ojt5IZL.aa7Nl9DGnM5y
- PAcnCEuePAGlmR970eMtgubU7Jnt7eis.JEQY46ZJAfbDDoiHBmx4DzS4coK
- yfVKQof7noPhz8jgRTRyD7svxcDF.YJNcvXIvn8N4TBfVFskkzojNNreg2ML
- jEUxCkVfncuheDK.r9fd8yoUC9VdGWkScbeu4b1MPjSvuiJ4iLNBlliWneJR
- wYonPdEa0Gwf8qGOFnm.yOn3O5TAnPMwwE29VuPTp68y.heDN_EygFrnrcea
- Mz2mRGvEW8L1hLAnufFhyW8e093mJv47HMzAuWGUXCcS3LVuxZuUeQyUwLZx
- eCZ9nLXGsx4IDsDXgSMIWrQkqrrzfUBiMuA4atn4WO.a8wmLiZlIBq0uOLAt
- 5QIY6tDCWDsR_49G0qPz4RkXR
-X-Mailer: YahooMailWebService/0.8.122.442
-References: <1348086305.81224.YahooMailNeo@web164004.mail.gq1.yahoo.com>  <20120928121917.GF5368@mwanda>  <1348870515.1973.YahooMailNeo@web164005.mail.gq1.yahoo.com>  <20120929072527.GA13767@mwanda>  <1349102641.41622.YahooMailNeo@web164005.mail.gq1.yahoo.com>  <20121001150913.GC13767@mwanda>  <1349109750.55372.YahooMailNeo@web164005.mail.gq1.yahoo.com>  (sfid-20121001_184314_573998_F50474BE) <1349119899.10330.53.camel@jlt4.sipsolutions.net> <1349132818.58475.YahooMailNeo@web164006.mail.gq1.yahoo.com>
-Message-ID: <1349133342.57103.YahooMailNeo@web164001.mail.gq1.yahoo.com>
-Date: Mon, 1 Oct 2012 16:15:42 -0700 (PDT)
-From: Kevin Cruz <skate_ops@yahoo.com>
-Reply-To: Kevin Cruz <skate_ops@yahoo.com>
-Subject: Re: How do I get mac80211 debugfs?
-To: Intel Wireless <ilw@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-In-Reply-To: <1349132818.58475.YahooMailNeo@web164006.mail.gq1.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933074Ab2JAXCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:02:03 -0400
+Received: from 1wt.eu ([62.212.114.60]:35470 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933054Ab2JAXB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:01:58 -0400
+Message-Id: <20121001225205.201628712@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Tue, 02 Oct 2012 00:54:56 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Theodore Tso <tytso@mit.edu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 179/180] mfd: wm831x: Feed the device UUID into device_add_randomness()
+In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I accidentally changed the subject name. This should be part of
-"iwlwifi can't connect to router after suspend resuming from suspend."
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+commit 27130f0cc3ab97560384da437e4621fc4e94f21c upstream.
+
+wm831x devices contain a unique ID value. Feed this into the newly added
+device_add_randomness() to add some per device seed data to the pool.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ drivers/mfd/wm831x-otp.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mfd/wm831x-otp.c b/drivers/mfd/wm831x-otp.c
+index f742745..b90f3e0 100644
+--- a/drivers/mfd/wm831x-otp.c
++++ b/drivers/mfd/wm831x-otp.c
+@@ -18,6 +18,7 @@
+ #include <linux/bcd.h>
+ #include <linux/delay.h>
+ #include <linux/mfd/core.h>
++#include <linux/random.h>
+ 
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/mfd/wm831x/otp.h>
+@@ -66,6 +67,7 @@ static DEVICE_ATTR(unique_id, 0444, wm831x_unique_id_show, NULL);
+ 
+ int wm831x_otp_init(struct wm831x *wm831x)
+ {
++	char uuid[WM831X_UNIQUE_ID_LEN];
+ 	int ret;
+ 
+ 	ret = device_create_file(wm831x->dev, &dev_attr_unique_id);
+@@ -73,6 +75,12 @@ int wm831x_otp_init(struct wm831x *wm831x)
+ 		dev_err(wm831x->dev, "Unique ID attribute not created: %d\n",
+ 			ret);
+ 
++	ret = wm831x_unique_id_read(wm831x, uuid);
++	if (ret == 0)
++		add_device_randomness(uuid, sizeof(uuid));
++	else
++		dev_err(wm831x->dev, "Failed to read UUID: %d\n", ret);
++
+ 	return ret;
+ }
+ 
+-- 
+1.7.2.1.45.g54fbc
+
+
 
