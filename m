@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab2JAXA2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:00:28 -0400
-Received: from 1wt.eu ([62.212.114.60]:35137 "EHLO 1wt.eu"
+	id S932689Ab2JAXAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:00:37 -0400
+Received: from 1wt.eu ([62.212.114.60]:35165 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757575Ab2JAXAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:21 -0400
-Message-Id: <20121001225204.819240105@1wt.eu>
+	id S932643Ab2JAXA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:29 -0400
+Message-Id: <20121001225158.251922085@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:47 +0200
+Date: Tue, 02 Oct 2012 00:52:12 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "Theodore Tso" <tytso@mit.edu>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 170/180] random: use the arch-specific rng in xfer_secondary_pool
+Subject: [ 015/180] 2.6.32.x: hrtimers: Move lock held region in hrtimer_interrupt()
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,91 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit e6d4947b12e8ad947add1032dd754803c6004824 upstream.
+This is a backport of 196951e91262fccda81147d2bcf7fdab08668b40
 
-If the CPU supports a hardware random number generator, use it in
-xfer_secondary_pool(), where it will significantly improve things and
-where we can afford it.
+We need to update the base offsets from this code and we need to do
+that under base->lock. Move the lock held region around the
+ktime_get() calls. The ktime_get() calls are going to be replaced with
+a function which gets the time and the offsets atomically.
 
-Also, remove the use of the arch-specific rng in
-add_timer_randomness(), since the call is significantly slower than
-get_cycles(), and we're much better off using it in
-xfer_secondary_pool() anyway.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-6-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/char/random.c |   25 ++++++++++++++++---------
- 1 files changed, 16 insertions(+), 9 deletions(-)
+ kernel/hrtimer.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index cfcb31d..b5b16f1 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -254,6 +254,7 @@
- #include <linux/cryptohash.h>
- #include <linux/fips.h>
- #include <linux/ptrace.h>
-+#include <linux/kmemcheck.h>
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index c4acec7..8ba6d31 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1263,11 +1263,10 @@ void hrtimer_interrupt(struct clock_event_device *dev)
+ 	cpu_base->nr_events++;
+ 	dev->next_event.tv64 = KTIME_MAX;
  
- #ifdef CONFIG_GENERIC_HARDIRQS
- # include <linux/irq.h>
-@@ -702,11 +703,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 		goto out;
- 
- 	sample.jiffies = jiffies;
++	spin_lock(&cpu_base->lock);
+ 	entry_time = now = ktime_get();
+ retry:
+ 	expires_next.tv64 = KTIME_MAX;
 -
--	/* Use arch random value, fall back to cycles */
--	if (!arch_get_random_int(&sample.cycles))
--		sample.cycles = get_cycles();
--
-+	sample.cycles = get_cycles();
- 	sample.num = num;
- 	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
- 
-@@ -838,7 +835,11 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
-  */
- static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- {
--	__u32 tmp[OUTPUT_POOL_WORDS];
-+	union {
-+		__u32	tmp[OUTPUT_POOL_WORDS];
-+		long	hwrand[4];
-+	} u;
-+	int	i;
- 
- 	if (r->pull && r->entropy_count < nbytes * 8 &&
- 	    r->entropy_count < r->poolinfo->POOLBITS) {
-@@ -849,17 +850,23 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 		/* pull at least as many as BYTES as wakeup BITS */
- 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
- 		/* but never more than the buffer size */
--		bytes = min_t(int, bytes, sizeof(tmp));
-+		bytes = min_t(int, bytes, sizeof(u.tmp));
- 
- 		DEBUG_ENT("going to reseed %s with %d bits "
- 			  "(%d of %d requested)\n",
- 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
- 
--		bytes = extract_entropy(r->pull, tmp, bytes,
-+		bytes = extract_entropy(r->pull, u.tmp, bytes,
- 					random_read_wakeup_thresh / 8, rsvd);
--		mix_pool_bytes(r, tmp, bytes, NULL);
-+		mix_pool_bytes(r, u.tmp, bytes, NULL);
- 		credit_entropy_bits(r, bytes*8);
- 	}
-+	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
-+	for (i = 0; i < 4; i++)
-+		if (arch_get_random_long(&u.hwrand[i]))
-+			break;
-+	if (i)
-+		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
- }
- 
- /*
+-	spin_lock(&cpu_base->lock);
+ 	/*
+ 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
+ 	 * held to prevent that a timer is enqueued in our queue via
+@@ -1342,6 +1341,7 @@ retry:
+ 	 * interrupt routine. We give it 3 attempts to avoid
+ 	 * overreacting on some spurious event.
+ 	 */
++	spin_lock(&cpu_base->lock);
+ 	now = ktime_get();
+ 	cpu_base->nr_retries++;
+ 	if (++retries < 3)
+@@ -1354,6 +1354,7 @@ retry:
+ 	 */
+ 	cpu_base->nr_hangs++;
+ 	cpu_base->hang_detected = 1;
++	spin_unlock(&cpu_base->lock);
+ 	delta = ktime_sub(now, entry_time);
+ 	if (delta.tv64 > cpu_base->max_hang_time.tv64)
+ 		cpu_base->max_hang_time = delta;
 -- 
 1.7.2.1.45.g54fbc
 
