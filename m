@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab2JAVtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 17:49:04 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59454 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab2JAVtC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 17:49:02 -0400
-Message-ID: <506A0FCA.2020908@suse.cz>
-Date: Mon, 01 Oct 2012 23:48:58 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0a2
+	id S1756721Ab2JAVwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 17:52:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49047 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466Ab2JAVwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 17:52:04 -0400
+Date: Mon, 1 Oct 2012 23:52:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Pierre Beck <mail@pierre-beck.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: 3.6-rc7 32-bit PAE miscalculates dirty page limits
+Message-ID: <20121001215202.GB19126@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Pierre Beck <mail@pierre-beck.de>, "H. Peter Anvin" <hpa@zytor.com>,
+	linux-kernel@vger.kernel.org
+References: <5068130A.4050602@pierre-beck.de>
+ <506894D5.5060101@zytor.com>
+ <506A06B6.50800@pierre-beck.de>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Stanislav Kozina <skozina@redhat.com>
-Subject: Re: [GIT PATCH] TTY patches for 3.7-rc1
-References: <20121001183046.GA13042@kroah.com>
-In-Reply-To: <20121001183046.GA13042@kroah.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <506A06B6.50800@pierre-beck.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2012 08:30 PM, Greg KH wrote:
-> Stanislav Kozina (2):
->       tty: Fix possible race in n_tty_read()
+On Mon, Oct 01, 2012 at 11:10:47PM +0200, Pierre Beck wrote:
+> But what about other folks who upgrade their PC? They won't know what
+> hit them when their new PC crawls because disk is trashed.
 
-The (pretty hopeless) commit log says:
-    Fix possible panic caused by unlocked access to tty->read_cnt in
-    while-loop condition in n_tty_read().
+I don't know, maybe backup their data, install a nice 64-bit Linux
+distro of their liking along with a 64-bit kernel which is several
+magnitudes more tested than its 32-bit counterpart, copy their data back
+and forget 32-bit ever existed...
 
-Just curious, what kind of panic that can cause, can you be more
-concrete on that? I suppose two readers, one eats everything, the other
-is a killer? And should we backport to -stable?
+:-)
 
-thanks,
 -- 
-js
-suse labs
+Regards/Gruss,
+    Boris.
