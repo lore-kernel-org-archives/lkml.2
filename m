@@ -1,150 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab2JAR4y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 13:56:54 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43836 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab2JAR4v (ORCPT
+	id S1752122Ab2JAR5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 13:57:15 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53639 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751828Ab2JAR5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 13:56:51 -0400
-Date: Mon, 1 Oct 2012 18:56:47 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [ARM] Use AT() in the linker script to create correct
- program headers
-Message-ID: <20121001175647.GD2100@linaro.org>
-References: <20120930232116.GC30637@obsidianresearch.com>
- <20121001153952.GB2100@linaro.org>
- <20121001160639.GA31620@obsidianresearch.com>
+	Mon, 1 Oct 2012 13:57:13 -0400
+X-Sasl-enc: f1vUuFI/7n918QWaVziCLhuUNKTKSPqncEPz+VRtfCxV 1349114232
+Date: Mon, 1 Oct 2012 10:57:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, git@vger.kernel.org
+Subject: no diffstat for 'git request-pull' (was Re: [GIT PATCH] char/misc
+ changes for 3.7-rc1)
+Message-ID: <20121001175711.GB10092@kroah.com>
+References: <20121001175433.GA10092@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121001160639.GA31620@obsidianresearch.com>
+In-Reply-To: <20121001175433.GA10092@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 10:06:39AM -0600, Jason Gunthorpe wrote:
-> On Mon, Oct 01, 2012 at 04:39:53PM +0100, Dave Martin wrote:
+On Mon, Oct 01, 2012 at 10:54:33AM -0700, Greg KH wrote:
+> The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
 > 
-> > >   Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
-> > >   LOAD           0x008000 0xc0008000 0x00008000 0x372244 0x3a4310 RWE 0x8000
-> > 
-> > Not related directly to your patch, but I wonder why we don't we see
-> > separate r-x and rw- segments?
+>   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
 > 
-> I think this is because the sections are not aligned when the
-> protections change, and the sections are not sorted by protection
-> type.
+> are available in the git repository at:
 > 
->   [ 1] .head.text        PROGBITS        c0008000 008000 0001c0 00  AX  0   0 32
->   [ 2] .text             PROGBITS        c00081c0 0081c0 1dc880 00  AX  0   0 32
->   [ 3] .rodata           PROGBITS        c01e5000 1e5000 060a80 00   A  0   0 32
->   [ 4] __bug_table       PROGBITS        c0245a80 245a80 002a78 00   A  0   0  1
->   [ 5] .pci_fixup        PROGBITS        c02484f8 2484f8 000090 00   A  0   0  4
->   [ 6] __param           PROGBITS        c0248588 248588 000280 00   A  0   0  4
->   [ 7] __modver          PROGBITS        c0248808 248808 0007f8 00   A  0   0  4
->   [ 8] .init.text        PROGBITS        c0249000 249000 01af20 00  AX  0   0 32
->   [ 9] .exit.text        PROGBITS        c0263f20 263f20 000c0c 00  AX  0   0  4
->   [10] .init.proc.info   PROGBITS        c0264b2c 264b2c 00009c 00  AX  0   0  1
->   [11] .init.arch.info   PROGBITS        c0264bc8 264bc8 000044 00   A  0   0  4
->   [12] .init.tagtable    PROGBITS        c0264c0c 264c0c 000040 00   A  0   0  4
->   [13] .init.data        PROGBITS        c0264c60 264c60 0f481c 00  WA  0   0 32
->   [14] .data             PROGBITS        c035a000 35a000 020220 00  WA  0   0 32
->   [15] .notes            NOTE            c037a220 37a220 000024 00  AX  0   0  4
->   [16] .bss              NOBITS          c037a260 37a244 0320b0 00  WA  0   0 32
->   [17] .comment          PROGBITS        00000000 37a244 000021 01  MS  0   0  1
+>   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.6
 > 
->  
-> > > +/* If we have a known, fixed physical load address then set LOAD_OFFSET
-> > > +   and generate an ELF that has the physical load address in the program
-> > > +   headers. */
-> > > +#ifndef CONFIG_ARM_PATCH_PHYS_VIRT
-> > > +#define LOAD_OFFSET (PAGE_OFFSET - PHYS_OFFSET)
-> > > +#endif
-> > > +
-> > 
-> > What happens if CONFIG_ARM_PATCH_PHYS_VIRT=y?  This will be used
-> > increasingly, especially for multiplatform kernels.
+> for you to fetch changes up to fea7a08acb13524b47711625eebea40a0ede69a0:
 > 
-> Then LOAD_OFFSET is unset and include/asm-generic/vmlinux.lds.h does:
+>   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
 > 
-> #ifndef LOAD_OFFSET
-> #define LOAD_OFFSET 0
-> #endif
-
-OK, good.
- 
-> Which is exactly the same case we have today. LOAD_OFFSET is not a
-> name I invented, it is the standard kernel name for the functionality.
->  
-> > If the kernel is intended to be loadable at a physical address which is
-> > not statically known, no ELF loader that does not ignore the ELF
-> > phdr
+> ----------------------------------------------------------------
+> char/misc driver merge for 3.7-rc1
 > 
-> In this case you can't really use a standard ELF loader to load the
-> kernel so, LOAD_OFFSET = 0 is fine. My case is using an ELF loader,
-> and I have set options for a static physical load address.
-
-Generally, people should try to be compatible with the single kernel
-image effort unless there's a really compelling reason not to.
-
-Wouldn't your firmware be incapable of loading a multiplatform kernel?
-
-> > >  OUTPUT_ARCH(arm)
-> > > -ENTRY(stext)
-> > > +ENTRY(phys_start)
-> > 
-> > This is debatable.  In fact, stext has the property that its virtual
-> > (runtime) and load addresses are the same.
+> Here is the "big" char/misc driver tree update for the 3.7-rc1 merge
+> window.
 > 
-> This is what other arches using LOAD_OFFSET do (eg see ia64), and is
-> sensible. ENTRY is *only* used by the ELF loader and specifies where
-> the loader should jump. It must be a physical address since the loader
-> only works with physical addresse. I don't understand your comment
-> that .stext has the same load and virtual address, that is clearly not
-> true for the ELF images my build is producing:
+> Nothing major, just a number of driver updates and fixes, all of which
+> have been in the linux-next releases for a while now either in my tree,
+> or in Andrew's (the lis3l driver changes came from his tree last week).
 > 
-> c0008000 T _text
-> c0008000 T stext
-> 
-> The physical address of that symbol is 0x8000.
-
-Well, that was a bit of a pedantic point I admit, but there are
-conflicting definitions of what "virtual address" really means in these
-situations.  The original SYSV ABI spec explicitly specifies that
-e_entry is a virtual address, but is also rather vague about how the
-paddr fields should be interpreted.
+> ----------------------------------------------------------------
 
 
-All that AT(ADDR(blah) - LOAD_OFFSET) stuff is cumbersome, but if it's
-at least consistent with other architectures then it may not such a
-disaster.  It's not universal though: less than 50% of the arches in
-the kernel currently seem to use this.
+Wait, what happened to the diffstat?  Does the latest version of git not
+send out the diffstat for 'git request-pull'?  It used to on older
+versions, I just updated the version on my machine that generated this
+to
+	git version 1.7.12.2.421.g261b511
 
-An alternative, cleaner approach might be to specify segment load
-addresses directly using PHDRS { }.  This should at leat allow the
-load address to be specified once per phdr, rather than once per section.
+Do I have to give a new option to request-pull to have the diffstat show
+up?  I'm using
+	git request-pull master git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ char-misc-3.6
 
-> > To represent this correctly in the linker scripts, the
-> > position-independent head.S code should be split out into a separate
-> > section to which LOAD_OFFSET is not applied.
-> 
-> I'm not sure, the linker script should use addresses that are correct
-> during runtime, and if the PIC code does not care about its PC then it
-> is fine to keep it at the virtual address to minimize confusion once
-> the MMU is on.
-> > Setting vaddr and paddr to PAGE_OFFSET (as we do now) and having the
-> > loader choose the appropriate board-specific place to load the kernel
-> > image makes this irrelevant, if I've understood the situation correctly.
-> 
-> Yes, if you use more loader stages then the load headers are ignored.
-> Our boot loaders on our boards boot straight ELF vmlinux.gz so they
-> need correct load headers.
+For this specific request pull.
 
-If your image is compressed anyway though, why are you not using zImage?
-
-Cheers
----Dave
+greg k-h
