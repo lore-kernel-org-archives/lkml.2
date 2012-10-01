@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab2JAGjF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 02:39:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49779 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab2JAGjE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 02:39:04 -0400
-Message-ID: <50693A84.8010102@gmail.com>
-Date: Sun, 30 Sep 2012 23:39:00 -0700
-From: Stephen Boyd <bebarino@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110911 Thunderbird/6.0
+	id S1751960Ab2JAGmS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 02:42:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32096 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751217Ab2JAGmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 02:42:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,514,1344236400"; 
+   d="scan'208";a="228941533"
+Date: Mon, 1 Oct 2012 09:44:33 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@lists.linux-foundation.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Len, Brown" <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [RFC PATCH 0/6] ACPI: ACPI 5.0 device enumeration proposal
+Message-ID: <20121001064433.GF15548@intel.com>
+References: <1348817863.10877.320.camel@rui.sh.intel.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Ivo van Doorn <IvDoorn@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: rt73usb WARNING: at net/mac80211/driver-ops.h:12 check_sdata_in_driver
-References: <505AD51F.7050709@gmail.com> <20120928124632.GG5368@mwanda>
-In-Reply-To: <20120928124632.GG5368@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348817863.10877.320.camel@rui.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 05:46 AM, Dan Carpenter wrote:
-> Hi Stephen,
+On Fri, Sep 28, 2012 at 03:37:43PM +0800, Zhang Rui wrote:
 > 
-> I have created a bug for this:
-> https://bugzilla.kernel.org/show_bug.cgi?id=48041
-> 
-> We only recently added the warning on that path.
-> 
-> Please add the following information.
-> *) Complete dmesg
-> 
+> the main idea is that, for Serial Buses like I2C and SPI, we enumerate
+> the controller as a platform device, and then enumerate the slaves via
+> i2c/spi_register_board_info. And then, when the controller is really
+> probed and enabled in the platform driver, the SPI/I2C bus code will
+> enumerate I2C/SPI slaves automatically.
+> And for the other devices, we will enumerate all of them as platform
+> devices, which is not covered in this patch set yet.
 
-Ok I've added the information to the bug. I'm still seeing it on 3.6.
+Can you show some example how we could use this new code for example with
+an existing I2C/SPI slave driver? Let's say the device uses few GPIOs, one
+for interrupt and other for triggering firmware download. In addition to
+that it needs a special parameters that can be extracted running the "_DSM"
+method of the device.
 
+Normally the driver would get this stuff from the platform data or from
+Device Tree but how it is done with these patches?
