@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab2JAXE7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:04:59 -0400
-Received: from 1wt.eu ([62.212.114.60]:35671 "EHLO 1wt.eu"
+	id S1757946Ab2JAXFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:05:09 -0400
+Received: from 1wt.eu ([62.212.114.60]:35710 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933320Ab2JAXDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:03:35 -0400
-Message-Id: <20121001225159.562823590@1wt.eu>
+	id S1757931Ab2JAXFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:05:04 -0400
+Message-Id: <20121001225158.422711000@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:43 +0200
+Date: Tue, 02 Oct 2012 00:52:16 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alex Elder <aelder@sgi.com>, Carlos Maiolino <cmaiolino@redhat.com>,
+Cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 046/180] xfs: Fix possible memory corruption in xfs_readlink
+Subject: [ 019/180] 2.6.32.y: time: Improve sanity checking of timekeeping inputs
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,73 +26,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Carlos Maiolino <cmaiolino@redhat.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit b52a360b2aa1c59ba9970fb0f52bbb093fcc7a24 upstream
+This is a -stable backport of 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b
 
-Fixes a possible memory corruption when the link is larger than
-MAXPATHLEN and XFS_DEBUG is not enabled. This also remove the
-S_ISLNK assert, since the inode mode is checked previously in
-xfs_readlink_by_handle() and via VFS.
+Unexpected behavior could occur if the time is set to a value large
+enough to overflow a 64bit ktime_t (which is something larger then the
+year 2262).
 
-Updated to address concerns raised by Ben Hutchings about the loose
-attention paid to 32- vs 64-bit values, and the lack of handling a
-potentially negative pathlen value:
- - Changed type of "pathlen" to be xfs_fsize_t, to match that of
-   ip->i_d.di_size
- - Added checking for a negative pathlen to the too-long pathlen
-   test, and generalized the message that gets reported in that case
-   to reflect the change
-As a result, if a negative pathlen were encountered, this function
-would return EFSCORRUPTED (and would fail an assertion for a debug
-build)--just as would a too-long pathlen.
+Also unexpected behavior could occur if large negative offsets are
+injected via adjtimex.
 
-Signed-off-by: Alex Elder <aelder@sgi.com>
-Signed-off-by: Carlos Maiolino <cmaiolino@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-[dannf: backported to Debian's 2.6.32]
+So this patch improves the sanity check timekeeping inputs by
+improving the timespec_valid() check, and then makes better use of
+timespec_valid() to make sure we don't set the time to an invalid
+negative value or one that overflows ktime_t.
+
+Note: This does not protect from setting the time close to overflowing
+ktime_t and then letting natural accumulation cause the overflow.
+
+Reported-by: CAI Qian <caiqian@redhat.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Zhouping Liu <zliu@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1344454580-17031-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/xfs/xfs_vnodeops.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+ include/linux/ktime.h     |    7 -------
+ include/linux/time.h      |   22 ++++++++++++++++++++--
+ kernel/time/timekeeping.c |   15 ++++++++++++++-
+ 3 files changed, 34 insertions(+), 10 deletions(-)
 
-diff --git a/fs/xfs/xfs_vnodeops.c b/fs/xfs/xfs_vnodeops.c
-index 8f32f50..1638884 100644
---- a/fs/xfs/xfs_vnodeops.c
-+++ b/fs/xfs/xfs_vnodeops.c
-@@ -554,7 +554,7 @@ xfs_readlink(
- 	char		*link)
- {
- 	xfs_mount_t	*mp = ip->i_mount;
--	int		pathlen;
-+	xfs_fsize_t	pathlen;
- 	int		error = 0;
+diff --git a/include/linux/ktime.h b/include/linux/ktime.h
+index ce59832..ecdf64e 100644
+--- a/include/linux/ktime.h
++++ b/include/linux/ktime.h
+@@ -58,13 +58,6 @@ union ktime {
  
- 	xfs_itrace_entry(ip);
-@@ -564,13 +564,20 @@ xfs_readlink(
+ typedef union ktime ktime_t;		/* Kill this */
  
- 	xfs_ilock(ip, XFS_ILOCK_SHARED);
- 
--	ASSERT((ip->i_d.di_mode & S_IFMT) == S_IFLNK);
--	ASSERT(ip->i_d.di_size <= MAXPATHLEN);
+-#define KTIME_MAX			((s64)~((u64)1 << 63))
+-#if (BITS_PER_LONG == 64)
+-# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
+-#else
+-# define KTIME_SEC_MAX			LONG_MAX
+-#endif
 -
- 	pathlen = ip->i_d.di_size;
- 	if (!pathlen)
- 		goto out;
+ /*
+  * ktime_t definitions when using the 64-bit scalar representation:
+  */
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 6e026e4..146b6f3 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -91,11 +91,29 @@ static inline struct timespec timespec_sub(struct timespec lhs,
+ 	return ts_delta;
+ }
  
-+	if (pathlen < 0 || pathlen > MAXPATHLEN) {
-+		xfs_fs_cmn_err(CE_ALERT, mp,
-+			 "%s: inode (%llu) bad symlink length (%lld)",
-+			 __func__, (unsigned long long) ip->i_ino,
-+			 (long long) pathlen);
-+		ASSERT(0);
-+		return XFS_ERROR(EFSCORRUPTED);
++#define KTIME_MAX			((s64)~((u64)1 << 63))
++#if (BITS_PER_LONG == 64)
++# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
++#else
++# define KTIME_SEC_MAX			LONG_MAX
++#endif
++
+ /*
+  * Returns true if the timespec is norm, false if denorm:
+  */
+-#define timespec_valid(ts) \
+-	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
++static inline bool timespec_valid(const struct timespec *ts)
++{
++	/* Dates before 1970 are bogus */
++	if (ts->tv_sec < 0)
++		return false;
++	/* Can't have more nanoseconds then a second */
++	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
++		return false;
++	/* Disallow values that could overflow ktime_t */
++	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
++		return false;
++	return true;
++}
+ 
+ extern struct timespec xtime;
+ extern struct timespec wall_to_monotonic;
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 3f7e53f..85d51c4 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -354,7 +354,7 @@ int do_settimeofday(struct timespec *tv)
+ 	struct timespec ts_delta;
+ 	unsigned long flags;
+ 
+-	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
++	if (!timespec_valid(tv))
+ 		return -EINVAL;
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+@@ -570,7 +570,20 @@ void __init timekeeping_init(void)
+ 	struct timespec now, boot;
+ 
+ 	read_persistent_clock(&now);
++	if (!timespec_valid(&now)) {
++		printk("WARNING: Persistent clock returned invalid value!\n"
++			"         Check your CMOS/BIOS settings.\n");
++		now.tv_sec = 0;
++		now.tv_nsec = 0;
 +	}
 +
-+
- 	if (ip->i_df.if_flags & XFS_IFINLINE) {
- 		memcpy(link, ip->i_df.if_u1.if_data, pathlen);
- 		link[pathlen] = '\0';
+ 	read_boot_clock(&boot);
++	if (!timespec_valid(&boot)) {
++		printk("WARNING: Boot clock returned invalid value!\n"
++			"         Check your CMOS/BIOS settings.\n");
++		boot.tv_sec = 0;
++		boot.tv_nsec = 0;
++	}
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+ 
 -- 
 1.7.2.1.45.g54fbc
 
