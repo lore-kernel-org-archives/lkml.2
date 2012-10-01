@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933091Ab2JAXCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:02:05 -0400
-Received: from 1wt.eu ([62.212.114.60]:35472 "EHLO 1wt.eu"
+	id S933542Ab2JAXOt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:14:49 -0400
+Received: from 1wt.eu ([62.212.114.60]:35494 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932976Ab2JAXB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:01:59 -0400
-Message-Id: <20121001225158.036926739@1wt.eu>
+	id S933084Ab2JAXCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:02:06 -0400
+Message-Id: <20121001225204.223255292@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:07 +0200
+Date: Tue, 02 Oct 2012 00:54:33 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>,
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 010/180] 2.6.32.x: timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
+Subject: [ 156/180] random: simplify fips mode
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,43 +24,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Matt Mackall <mpm@selenic.com>
 
-This is a backport of fad0c66c4bb836d57a5f125ecd38bed653ca863a
-which resolves a bug the previous commit.
+commit e954bc91bdd4bb08b8325478c5004b24a23a3522 upstream.
 
-Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
-leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
-wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
+Rather than dynamically allocate 10 bytes, move it to static allocation.
+This saves space and avoids the need for error checking.
 
-Adjust wall_to_monotonic when NTP inserted a leapsecond.
-
-Reported-by: Richard Cochran <richardcochran@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Tested-by: Richard Cochran <richardcochran@gmail.com>
-Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Matt Mackall <mpm@selenic.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+[PG: adding this simplifies required updates to random for .34 stable]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/time/timekeeping.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/char/random.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 00e2fae..6d19a00 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -780,6 +780,7 @@ void update_wall_time(void)
- 			xtime.tv_sec++;
- 			leap = second_overflow(xtime.tv_sec);
- 			xtime.tv_sec += leap;
-+			wall_to_monotonic.tv_sec -= leap;
- 		}
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index de325792..0adb8c8 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -264,6 +264,7 @@
+ #define INPUT_POOL_WORDS 128
+ #define OUTPUT_POOL_WORDS 32
+ #define SEC_XFER_SIZE 512
++#define EXTRACT_SIZE 10
  
- 		raw_time.tv_nsec += timekeeper.raw_interval;
+ /*
+  * The minimum number of bits of entropy before we wake up a read on
+@@ -421,7 +422,7 @@ struct entropy_store {
+ 	unsigned add_ptr;
+ 	int entropy_count;
+ 	int input_rotate;
+-	__u8 *last_data;
++	__u8 last_data[EXTRACT_SIZE];
+ };
+ 
+ static __u32 input_pool_data[INPUT_POOL_WORDS];
+@@ -721,8 +722,6 @@ void add_disk_randomness(struct gendisk *disk)
+ }
+ #endif
+ 
+-#define EXTRACT_SIZE 10
+-
+ /*********************************************************************
+  *
+  * Entropy extraction routines
+@@ -869,7 +868,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 	while (nbytes) {
+ 		extract_buf(r, tmp);
+ 
+-		if (r->last_data) {
++		if (fips_enabled) {
+ 			spin_lock_irqsave(&r->lock, flags);
+ 			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
+ 				panic("Hardware RNG duplicated output!\n");
+@@ -958,9 +957,6 @@ static void init_std_data(struct entropy_store *r)
+ 	now = ktime_get_real();
+ 	mix_pool_bytes(r, &now, sizeof(now));
+ 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
+-	/* Enable continuous test in fips mode */
+-	if (fips_enabled)
+-		r->last_data = kmalloc(EXTRACT_SIZE, GFP_KERNEL);
+ }
+ 
+ static int rand_initialize(void)
 -- 
 1.7.2.1.45.g54fbc
 
