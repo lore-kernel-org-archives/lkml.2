@@ -1,129 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965033Ab2JAXW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:22:28 -0400
-Received: from 1wt.eu ([62.212.114.60]:35354 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932913Ab2JAXBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:01:24 -0400
-Message-Id: <20121001225201.459511496@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:28 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Pavel Shilovsky <piastry@etersoft.ru>, Miklos Szeredi <mszeredi@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 091/180] fuse: fix stat call on 32 bit platforms
-In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
+	id S965048Ab2JAXWq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:22:46 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47853 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965036Ab2JAXWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:22:40 -0400
+Date: Mon, 1 Oct 2012 16:22:35 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Zach Brown <zab@zabbo.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@google.com, tj@kernel.org,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        michael.mesnier@intel.com, jeffrey.d.skirvin@intel.com,
+        Martin Petersen <martin.petersen@oracle.com>
+Subject: Re: [RFC, PATCH] Extensible AIO interface
+Message-ID: <20121001232235.GH26488@google.com>
+References: <20121001222341.GF26488@google.com>
+ <20121001231222.GB14533@lenny.home.zabbo.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121001231222.GB14533@lenny.home.zabbo.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On Mon, Oct 01, 2012 at 04:12:22PM -0700, Zach Brown wrote:
+> On Mon, Oct 01, 2012 at 03:23:41PM -0700, Kent Overstreet wrote:
+> > So, I and other people keep running into things where we really need to
+> > add an interface to pass some auxiliary... stuff along with a pread() or
+> > pwrite().
+> 
+> Sure.  Martin (cc:ed) will sympathize.
+> 
+> > A few examples:
+> > 
+> > * IO scheduler hints...
+> > * Cache hints...
+> > 
+> > * Passing checksums out to userspace. We've got bio integrity, which is
+> > a (somewhat) generic interface for passing data checksums between the
+> > filesystem and the hardware.
+> 
+> Hmm, careful here.  I think that in DIF/DIX the checksums are
+> per-sector, not per IO, right?  That'd mean that the PAGE_SIZE attr
+> limit in this patch would be magically creating different max IO size
+> limits on different architectures.  That doesn't seem great.
 
-------------------
+Not just per sector, Per hardware sector. For passing around checksums
+userspace would have to find out the hardware sector size and checksum
+type/size via a different interface, and then the attribute would
+contain a pointer to a buffer that can hold the appropriate number of
+checksums.
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+> 
+> > Hence, AIO attributes.
+> 
+> I have to be honest: I really don't like tying the interface to AIO, but
+> I guess it's the only per-io facility we have today.  It'd be nice to
+> include sync O_DIRECT when designing the interface to make sure that it
+> is possible to use generic syscalls in the future without running up
+> against unexpected problems. 
 
-commit 45c72cd73c788dd18c8113d4a404d6b4a01decf1 upstream.
+It'd certainly useful with regular sync IO, I just want to take it
+one step at a time particularly since for sync IO we'll probably need
+new syscalls.
 
-Now we store attr->ino at inode->i_ino, return attr->ino at the
-first time and then return inode->i_ino if the attribute timeout
-isn't expired. That's wrong on 32 bit platforms because attr->ino
-is 64 bit and inode->i_ino is 32 bit in this case.
+But yes you're right, it would be good to keep in mind.
 
-Fix this by saving 64 bit ino in fuse_inode structure and returning
-it every time we call getattr. Also squash attr->ino into inode->i_ino
-explicitly.
+> > An iocb_attr has an id field, and a size field - and some amount of data
+> > specific to that attribute.
+> 
+> I'd hope that we can come up with a less fragile interface.  The kernel
+> would have to scan the attributes to make sure that there aren't
+> malicious sizes.  I only quickly glanced at the loops, but it seemed
+> like you could have a 0 size attribute in there and _next() would spin
+> forever.
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- fs/fuse/dir.c    |    1 +
- fs/fuse/fuse_i.h |    3 +++
- fs/fuse/inode.c  |   17 ++++++++++++++++-
- 3 files changed, 20 insertions(+), 1 deletions(-)
+Ouch, yeah that's wrong :/
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 4787ae6..b359543 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -855,6 +855,7 @@ int fuse_update_attributes(struct inode *inode, struct kstat *stat,
- 		if (stat) {
- 			generic_fillattr(inode, stat);
- 			stat->mode = fi->orig_i_mode;
-+			stat->ino = fi->orig_ino;
- 		}
- 	}
- 
-diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-index e6d614d..829acee 100644
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -76,6 +76,9 @@ struct fuse_inode {
- 	    preserve the original mode */
- 	mode_t orig_i_mode;
- 
-+	/** 64 bit inode number */
-+	u64 orig_ino;
-+
- 	/** Version of last attribute change */
- 	u64 attr_version;
- 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 1a822ce..c95186c 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -86,6 +86,7 @@ static struct inode *fuse_alloc_inode(struct super_block *sb)
- 	fi->nlookup = 0;
- 	fi->attr_version = 0;
- 	fi->writectr = 0;
-+	fi->orig_ino = 0;
- 	INIT_LIST_HEAD(&fi->write_files);
- 	INIT_LIST_HEAD(&fi->queued_writes);
- 	INIT_LIST_HEAD(&fi->writepages);
-@@ -140,6 +141,18 @@ static int fuse_remount_fs(struct super_block *sb, int *flags, char *data)
- 	return 0;
- }
- 
-+/*
-+ * ino_t is 32-bits on 32-bit arch. We have to squash the 64-bit value down
-+ * so that it will fit.
-+ */
-+static ino_t fuse_squash_ino(u64 ino64)
-+{
-+	ino_t ino = (ino_t) ino64;
-+	if (sizeof(ino_t) < sizeof(u64))
-+		ino ^= ino64 >> (sizeof(u64) - sizeof(ino_t)) * 8;
-+	return ino;
-+}
-+
- void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
- 				   u64 attr_valid)
- {
-@@ -149,7 +162,7 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
- 	fi->attr_version = ++fc->attr_version;
- 	fi->i_time = attr_valid;
- 
--	inode->i_ino     = attr->ino;
-+	inode->i_ino     = fuse_squash_ino(attr->ino);
- 	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
- 	inode->i_nlink   = attr->nlink;
- 	inode->i_uid     = attr->uid;
-@@ -175,6 +188,8 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
- 	fi->orig_i_mode = inode->i_mode;
- 	if (!(fc->flags & FUSE_DEFAULT_PERMISSIONS))
- 		inode->i_mode &= ~S_ISVTX;
-+
-+	fi->orig_ino = attr->ino;
- }
- 
- void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
--- 
-1.7.2.1.45.g54fbc
+I don't think there's anything fragile about the basic idea though. Or
+do you have some way of improving upon it in mind?
 
+The idea with the size field is that it's just sizeof(the particular
+attribute struct), so when userspace is appending attributes it just
+sets size = sizeof() and attr_list->size += attr->size.
 
-
+The kernel is going to have to sanity check the size fields of the
+individual attributes anyways to verify the size of the last attr
+doesn't extend off the end of the attr list, so I think it makes sense
+to keep the current semantics of the size fields and just also check
+that the size field is nonzero (actually >= sizeof(struct iocb_attr)).
