@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2JASMg (ORCPT <rfc822;w@1wt.eu>);
+	id S1754141Ab2JASMj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 14:12:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44152 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab2JASMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Oct 2012 14:12:36 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52611 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab2JASMe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 14:12:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <50693E30.3010006@jp.fujitsu.com>
-References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com>
- <1348724705-23779-3-git-send-email-wency@cn.fujitsu.com> <CAHGf_=rLMsmAxR5hrDVXjkHAxmupVrmtqE3iq2qu=O9Prp4nSg@mail.gmail.com>
- <5064EA5A.3080905@jp.fujitsu.com> <CAHGf_=qbBGjTL9oBHz7AM8BAosbzvn_WAGdAzJ8np-nDPN_KFQ@mail.gmail.com>
- <5064FDCA.1020504@jp.fujitsu.com> <CAHGf_=r+oz0GS137e81EySbN-3KVmQisF8sySiCUYUas1RZLtQ@mail.gmail.com>
- <5065740A.2000502@jp.fujitsu.com> <CAHGf_=o_FLsEULK3s1+zD-A0FL5QvKnX542Lz4vCwVVV2fYNRw@mail.gmail.com>
- <50693E30.3010006@jp.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Mon, 1 Oct 2012 14:12:13 -0400
-X-Google-Sender-Auth: WxxZeCR2TokBCY2MedPzTJ9AIo4
-Message-ID: <CAHGf_=qZVe_KfThZa5yEm+4w3MMREs1xqya5HmKWsWjyTcjkzA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] memory-hotplug: add node_device_release
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: wency@cn.fujitsu.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
+In-Reply-To: <Pine.LNX.4.44L0.1210011343170.1386-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1210011332150.1386-100000@iolanthe.rowland.org>
+	<Pine.LNX.4.44L0.1210011343170.1386-100000@iolanthe.rowland.org>
+Date: Mon, 1 Oct 2012 21:12:34 +0300
+Message-ID: <CAE1zotL=WggH2OFoxF7KZX+Ciu71LLZwiaOeVBZfPVM_jC1PDw@mail.gmail.com>
+Subject: Re: [PATCH] usb hub: send clear_tt_buffer_complete events when
+ canceling TT clear work
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 1, 2012 at 2:54 AM, Yasuaki Ishimatsu
-<isimatu.yasuaki@jp.fujitsu.com> wrote:
-> Hi Kosaki-san,
->
->
-> 2012/09/29 7:19, KOSAKI Motohiro wrote:
->>>>>
->>>>> I don't understand it. How can we get rid of the warning?
->>>>
->>>>
->>>> See cpu_device_release() for example.
->>>
->>>
->>> If we implement a function like cpu_device_release(), the warning
->>> disappears. But the comment says in the function "Never copy this
->>> way...".
->>> So I think it is illegal way.
->>
->>
->> What does "illegal" mean?
->
->
-> The "illegal" means the code should not be mimicked.
->
->
->> You still haven't explain any benefit of your code. If there is zero
->> benefit, just kill it.
->> I believe everybody think so.
->>
->> Again, Which benefit do you have?
->
->
-> The patch has a benefit to delets a warning message.
->
->
->>
->>>>>> Why do we need this node_device_release() implementation?
->>>>>
->>>>>
->>>>> I think that this is a manner of releasing object related kobject.
->>>>
->>>>
->>>> No.  Usually we never call memset() from release callback.
->>>
->>>
->>> What we want to release is a part of array, not a pointer.
->>> Therefore, there is only this way instead of kfree().
->>
->>
->> Why? Before your patch, we don't have memset() and did work it.
->
->
-> If we does not apply the patch, a warning message is shown.
-> So I think it did not work well.
->
->
->> I can't understand what mean "only way".
->
->
-> For deleting a warning message, I created a node_device_release().
-> In the manner of releasing kobject, the function frees a object related
-> to the kobject. So most functions calls kfree() for releasing it.
-> In node_device_release(), we need to free a node struct. If the node
-> struct is pointer, I can free it by kfree. But the node struct is a part
-> of node_devices[] array. I cannot free it. So I filled the node struct
-> with 0.
->
-> But you think it is not good. Do you have a good solution?
+Hi Alan,
 
-Do nothing. just add empty release function and kill a warning.
-Obviously do nothing can't make any performance drop nor any
-side effect.
+On Mon, Oct 1, 2012 at 8:48 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>
+> On Mon, 1 Oct 2012, Alan Stern wrote:
+>
+> > On Mon, 1 Oct 2012, Octavian Purdila wrote:
+> >
+> > > There is a race condition in the USB hub code with regard to handling
+> > > TT clear requests that can get the HCD driver in a deadlock. Usually
+> > > when an TT clear request is scheduled it will be executed immediately:
+> >
+> > > However, if a suspend operation is triggered before hub_tt_work is
+> > > scheduled, hub_quiesce will cancel the work without notifying the HCD
+> > > driver:
+> >
+> > Ah, this is a very good point.
+> >
+> > > When the device will resume the EHCI driver will get stuck in
+> > > ehci_endpoint_disable waiting for the tt_clearing flag to reset:
+> >
+> > > This patch notifies the HCD driver via clear_tt_buffer_complete
+> > > when canceling TT clear work so that the EHCI driver has a chance to
+> > > clear its tt_clearing flag.
+> >
+> > But I don't like the proposed fix.  What we really need to do is avoid
+> > suspending the device until the clear-tt-buffer operation is complete.
+> > Can you write a patch to do that instead?
+>
+> Actually, it would be sufficient to avoid suspending the _hub_ until
+> the clear-tt-buffer operation is complete.  In short, hub_quiesce()
+> should wait until all pending TT operations have finished.  The
+> cancel_work_sync() call should be replaced with flush_work_sync().
+>
 
-meaningless memset() is just silly from point of cache pollution view.
+Good point, i will resend the patch. I will only be able to test the
+fix tomorrow though, I don't have access to the setup that reproduces
+the issue.
+
+Thanks!
+Tavi
