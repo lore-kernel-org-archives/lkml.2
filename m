@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab2JAXNN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:13:13 -0400
-Received: from 1wt.eu ([62.212.114.60]:35535 "EHLO 1wt.eu"
+	id S1758083Ab2JAXNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:13:33 -0400
+Received: from 1wt.eu ([62.212.114.60]:35531 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757646Ab2JAXCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:02:19 -0400
-Message-Id: <20121001225203.883987112@1wt.eu>
+	id S1753475Ab2JAXCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:02:18 -0400
+Message-Id: <20121001225202.479114542@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:25 +0200
+Date: Tue, 02 Oct 2012 00:53:52 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
+Cc: Jiri Kosina <jkosina@suse.cz>, "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 148/180] mtd: cafe_nand: fix an & vs | mistake
+Subject: [ 115/180] tcp: perform DMA to userspace only if there is a task waiting for it
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +24,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 48f8b641297df49021093763a3271119a84990a2 upstream.
+[ Upstream commit 59ea33a68a9083ac98515e4861c00e71efdc49a1 ]
 
-The intent here was clearly to set result to true if the 0x40000000 flag
-was set.  But instead there was a | vs & typo and we always set result
-to true.
+Back in 2006, commit 1a2449a87b ("[I/OAT]: TCP recv offload to I/OAT")
+added support for receive offloading to IOAT dma engine if available.
 
-Artem: check the spec at
-wiki.laptop.org/images/5/5c/88ALP01_Datasheet_July_2007.pdf
-and this fix looks correct.
+The code in tcp_rcv_established() tries to perform early DMA copy if
+applicable. It however does so without checking whether the userspace
+task is actually expecting the data in the buffer.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+This is not a problem under normal circumstances, but there is a corner
+case where this doesn't work -- and that's when MSG_TRUNC flag to
+recvmsg() is used.
+
+If the IOAT dma engine is not used, the code properly checks whether
+there is a valid ucopy.task and the socket is owned by userspace, but
+misses the check in the dmaengine case.
+
+This problem can be observed in real trivially -- for example 'tbench' is a
+good reproducer, as it makes a heavy use of MSG_TRUNC. On systems utilizing
+IOAT, you will soon find tbench waiting indefinitely in sk_wait_data(), as they
+have been already early-copied in tcp_rcv_established() using dma engine.
+
+This patch introduces the same check we are performing in the simple
+iovec copy case to the IOAT case as well. It fixes the indefinite
+recvmsg(MSG_TRUNC) hangs.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/mtd/nand/cafe_nand.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ net/ipv4/tcp_input.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mtd/nand/cafe_nand.c b/drivers/mtd/nand/cafe_nand.c
-index c828d9a..97b9c7b 100644
---- a/drivers/mtd/nand/cafe_nand.c
-+++ b/drivers/mtd/nand/cafe_nand.c
-@@ -103,7 +103,7 @@ static const char *part_probes[] = { "cmdlinepart", "RedBoot", NULL };
- static int cafe_device_ready(struct mtd_info *mtd)
- {
- 	struct cafe_priv *cafe = mtd->priv;
--	int result = !!(cafe_readl(cafe, NAND_STATUS) | 0x40000000);
-+	int result = !!(cafe_readl(cafe, NAND_STATUS) & 0x40000000);
- 	uint32_t irqs = cafe_readl(cafe, NAND_IRQ);
- 
- 	cafe_writel(cafe, irqs, NAND_IRQ);
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index ce1ce82..4b148e5 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -5239,7 +5239,9 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
+ 			if (tp->copied_seq == tp->rcv_nxt &&
+ 			    len - tcp_header_len <= tp->ucopy.len) {
+ #ifdef CONFIG_NET_DMA
+-				if (tcp_dma_try_early_copy(sk, skb, tcp_header_len)) {
++				if (tp->ucopy.task == current &&
++				    sock_owned_by_user(sk) &&
++				    tcp_dma_try_early_copy(sk, skb, tcp_header_len)) {
+ 					copied_early = 1;
+ 					eaten = 1;
+ 				}
 -- 
 1.7.2.1.45.g54fbc
 
