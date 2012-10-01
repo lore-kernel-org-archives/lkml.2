@@ -1,151 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab2JAXsF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:48:05 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:33292 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab2JAXsD (ORCPT
+	id S965371Ab2JAXvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:51:55 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48710 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752407Ab2JAXvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:48:03 -0400
-Date: Mon, 1 Oct 2012 16:47:21 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Petr Holasek <pholasek@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v4] KSM: numa awareness sysfs knob
-In-Reply-To: <20121001115309.GE20924@redhat.com>
-Message-ID: <alpine.LSU.2.00.1210011629180.3075@eggly.anvils>
-References: <1348448166-1995-1-git-send-email-pholasek@redhat.com> <20120928112645.GX19474@redhat.com> <alpine.LSU.2.00.1209301639240.6304@eggly.anvils> <20121001115309.GE20924@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 1 Oct 2012 19:51:54 -0400
+X-Sasl-enc: 4PGysRBk8zAtysqvW8jnDyqcRTgBBLbs/LtNBAPimu7g 1349135513
+Date: Mon, 1 Oct 2012 16:51:52 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Alex Williamson <alex.williamson@hp.com>, Alex Chiang <achiang@hp.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] sysfs: sysfs_pathname/sysfs_add_one: Use strlcat()
+ instead of strcat()
+Message-ID: <20121001235152.GC15924@kroah.com>
+References: <1348950199-30460-1-git-send-email-geert@linux-m68k.org>
+ <20120930144930.GA27329@kroah.com>
+ <CAMuHMdW19BQti_EWdgynWwOZCuhTQO-tJbN9Q8gBnUcA=auEKg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdW19BQti_EWdgynWwOZCuhTQO-tJbN9Q8gBnUcA=auEKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Oct 2012, Andrea Arcangeli wrote:
-> On Sun, Sep 30, 2012 at 05:36:33PM -0700, Hugh Dickins wrote:
-> > I'm all for the simplest solution, but here in ksm_migrate_page()
-> > is not a good place for COW breaking - we don't want to get into
-> > an indefinite number of page allocations, and the risk of failure.
+On Sun, Sep 30, 2012 at 08:59:05PM +0200, Geert Uytterhoeven wrote:
+> Hi Greg,
 > 
-> Agreed, not a good place to break_cow.
+> On Sun, Sep 30, 2012 at 4:49 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Sat, Sep 29, 2012 at 10:23:19PM +0200, Geert Uytterhoeven wrote:
+> >> The warning check for duplicate sysfs entries can cause a buffer overflow
+> >> when printing the warning, as strcat() doesn't check buffer sizes.
+> >> Use strlcat() instead.
+> >
+> > As the comment said, we knew about this, but I have never seen it, do
+> > you know of a way to trigger it?
 > 
-> > I was toying with the idea of leaving the new page in the old NUMAnode's
-> > stable tree temporarily, until ksmd comes around again, and let that
-> > clean it up.  Which would imply less reliance on get_kpfn_nid(),
-> > and not skipping PageKsm in ksm_do_scan(), and...
+> I expected there would be a check somewhere else in the code, so we can
+> never overflow here. But I did manage to overflow the buffer by having a real
+> long name (4060 characters) in a conflicting mfd_cell.
+> There may be other ways.
 > 
-> There a break_cow could more easily run to cleanup the errors in the
-> stable tree. It'd be one way to avoid altering migrate.
+> I don't know how likely it is to trigger in a real world scenario. Is
+> there a limit
+> on the depth of sysfs? Or can it go unbounded, e.g. by cascading USB hubs?
 
-I get the feeling that you've thought this path through further
-than I have, and are pretty sure that it will stay simple.
+You can only go so deep with USB hubs (5 I think.)
 
-Whereas I was a little anxious about leaving a KSMnode behind in a
-tree which ostensibly belongs to an already-offlined NUMAnode.
+> >> Cc: stable@vger.kernel.org
+> >
+> > Given that I don't know of any way to actually hit this problem, is it
+> > really needed for older kernel releases?
+> 
+> That's up to you to decide...
 
-Don't let me push you into more far-reaching changes than are
-necessary.  I didn't think we needed to change ->migrate, just
-migrate_page_copy() in the anonymous case (the only one KSM affects).
+Ok, I'll queue this up after 3.7-rc1 is out, thanks.
 
-Maybe that's bad practice, and maybe I'm wrong, that it would have to
-percolate up a few levels of callers.  And I wouldn't want to think
-through the memcg page charging in a hurry.
-
-If you can see that another ksm_do_scan() break_cow() will sort it
-all out simply and safely (together with extending the node pointer
-or nid usage from unstable to stable tree, instead of get_kpfn_nid()),
-please just go for that.
-
-We can always be cleverer later - but I doubt it'll be a priority.
-
-H(always good for saying the opposite in alternate mails)ugh
-
-> 
-> > But it's not all that simple, and I think we can do better.
-> 
-> Agreed.
-> 
-> > It's only just fully dawned on me that ksm_migrate_page() is actually
-> > a very convenient place: no pagetable mangling required, because we
-> > know that neither old nor new page is at this instant mapped into
-> > userspace at all - don't we?  Instead there are swap-like migration
-> > entries plugging all ptes until we're ready to put in the new page.
-> 
-> Yes.
-> 
-> > So I think what we really want to do is change the ksm_migrate_page()
-> > interface a little, and probably the precise position it's called from,
-> > to allow it to update mm/migrate.c's newpage - in the collision case
-> 
-> I agree your proposed modification to the ->migratepage protocol
-> should be able to deal with that. We should notify the caller the
-> "newpage" has been freed and we transferred all ownership to an
-> "alternate_newpage". So then migrate will restore the ptes pointing to
-> the alternate_newpage (not the allocated newpage). It should be also
-> possible to get an hold on the alternate_newpage, before having to
-> allocate newpage.
-> 
-> > when the new NUMAnode already has a stable copy of this page.  But when
-> > it doesn't, just move KSMnode from old NUMAnode's stable tree to new.
-> 
-> Agreed, that is the easy case and doesn't require interface changes.
-> 
-> > How well the existing ksm.c primitives are suited to this, I've not
-> > checked.  Probably not too well, but shouldn't be hard to add what's
-> > needed.
-> > 
-> > What do you think?  Does that sound reasonable, Petr?
-> 
-> Sounds like a plan, I agree the modification to migrate is the best
-> way to go here. Only cons: it's not the simplest solution.
-> 
-> > By the way, this is probably a good occasion to remind ourselves,
-> > that page migration is still usually disabled on PageKsm pages:
-> > ksm_migrate_page() is only being called for memory hotremove.  I had
-> > been about to complain that calling remove_node_from_stable_tree()
-> > from ksm_migrate_page() is also unsafe from a locking point of view;
-> > until I remembered that MEM_GOING_OFFLINE has previously acquired
-> > ksm_thread_mutex.
-> > 
-> > But page migration is much more important now than three years ago,
-> > with compaction relying upon it, CMA and THP relying upon compaction,
-> > and lumpy reclaim gone.
-> 
-> Agreed. AutoNUMA needs it too: AutoNUMA migrates all types of memory,
-> not just anonymous memory, as long as the mapcount == 1.
-> 
-> If all users break_cow except one, then the KSM page can move around
-> if it has left just one user, we don't need to wait this last user to
-> break_cow (which may never happen) before can move it.
-> 
-> > Whilst it should not be mixed up in the NUMA patch itself, I think we
-> > need now to relax that restriction.  I found re-reading my 62b61f611e
-> > "ksm: memory hotremove migration only" was helpful.  Petr, is that
-> > something you could take on also?  I _think_ it's just a matter of
-> > protecting the stable tree(s) with an additional mutex (which ought
-> > not to be contended, since ksm_thread_mutex is normally held above
-> > it, except in migration); then removing a number of PageKsm refusals
-> > (and the offlining arg to unmap_and_move() etc).  But perhaps there's
-> > more to it, I haven't gone over it properly.
-> 
-> Removing the restriction sounds good. In addition to
-> compaction/AutoNUMA etc.. KSM pages are marked MOVABLE so it's likely
-> not good for the anti frag pageblock types.
-> 
-> So if I understand this correctly, there would be no way to trigger
-> the stable tree corruption in current v4, without memory hotremove.
-> 
-> > Yes, I agree; but a few more comments I'll make against the v4 post.
-> 
-> Cool.
-> 
-> Thanks for the help!
-> Andrea
+greg k-h
