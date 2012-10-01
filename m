@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab2JAOzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 10:55:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40031 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab2JAOzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 10:55:42 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] loop: Make explicit loop device destruction lazy
-References: <1348812593-21344-1-git-send-email-david@fromorbit.com>
-	<506562CE.2070500@kernel.dk>
-	<x49mx0ambqa.fsf@segfault.boston.devel.redhat.com>
-	<50668C22.8010406@kernel.dk>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 01 Oct 2012 10:00:00 -0400
-In-Reply-To: <50668C22.8010406@kernel.dk> (Jens Axboe's message of "Sat, 29
-	Sep 2012 07:50:26 +0200")
-Message-ID: <x49a9w6mgwv.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752020Ab2JAO6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 10:58:42 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:39665 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751193Ab2JAO6i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 10:58:38 -0400
+Message-ID: <5069AF8C.2070807@ti.com>
+Date: Mon, 01 Oct 2012 20:28:20 +0530
+From: Shubhrajyoti <shubhrajyoti@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, b-cousson@ti.com, balbi@ti.com,
+        santosh.shilimkar@ti.com, dmitry.torokhov@gmail.com
+Subject: Re: [PATCHv3 2/4] Input: keypad: Add smsc ece1099 keypad driver
+References: <1349089310-22134-1-git-send-email-sourav.poddar@ti.com>
+In-Reply-To: <1349089310-22134-1-git-send-email-sourav.poddar@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <axboe@kernel.dk> writes:
-
-> On 2012-09-28 17:02, Jeff Moyer wrote:
->> Jens Axboe <axboe@kernel.dk> writes:
->> 
->>> On 2012-09-28 08:09, Dave Chinner wrote:
->>>> From: Dave Chinner <dchinner@redhat.com>
->>>>
->>>> xfstests has always had random failures of tests due to loop devices
->>>> failing to be torn down and hence leaving filesytems that cannot be
->>>> unmounted. This causes test runs to immediately stop.
->>>>
->>>> Over the past 6 or 7 years we've added hacks like explicit unmount
->>>> -d commands for loop mounts, losetup -d after unmount -d fails, etc,
->>>> but still the problems persist.  Recently, the frequency of loop
->>>> related failures increased again to the point that xfstests 259 will
->>>> reliably fail with a stray loop device that was not torn down.
->>>>
->>>> That is despite the fact the test is above as simple as it gets -
->>>> loop 5 or 6 times running mkfs.xfs with different paramters:
->>>>
->>>>         lofile=$(losetup -f)
->>>>         losetup $lofile "$testfile"
->>>>         "$MKFS_XFS_PROG" -b size=512 $lofile >/dev/null || echo "mkfs failed!"
->>>>         sync
->>>>         losetup -d $lofile
->>>>
->>>> And losteup -d $lofile is failing with EBUSY on 1-3 of these loops
->>>> every time the test is run.
->>>>
->>>> Turns out that blkid is running simultaneously with losetup -d, and
->>>> so it sees an elevated reference count and returns EBUSY.  But why
->>>> is blkid running? It's obvious, isn't it? udev has decided to try
->>>> and find out what is on the block device as a result of a creation
->>>> notification. And it is racing with mkfs, so might still be scanning
->>>> the device when mkfs finishes and we try to tear it down.
->>>>
->>>> So, make losetup -d force autoremove behaviour. That is, when the
->>>> last reference goes away, tear down the device. xfstests wants it
->>>> *gone*, not causing random teardown failures when we know that all
->>>> the operations the tests have specifically run on the device have
->>>> completed and are no longer referencing the loop device.
->>>
->>> I hear that %^#@#! blkid behavior, it is such a pain in the neck. I
->>> don't know how many times I've had to explain that behaviour to people
->>> who run write testing with tracing, wonder wtf there are reads in the
->>> trace.
->>>
->>> Patch looks fine, seems like the sane thing to do (lazy-remove on last
->>> drop) for this case.
->> 
->> Do we also want to prevent further opens?
+On Monday 01 October 2012 04:31 PM, Sourav Poddar wrote:
+> +smsc_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct smsc *smsc = dev_get_drvdata(pdev->dev.parent);
+> +	struct input_dev *input;
+> +	struct smsc_keypad *kp;
+> +	int ret = 0, error;
+> +	int col, i, max_keys, row_shift;
+> +	int irq;
+> +	int addr;
+> +
+> +	kp = devm_kzalloc(dev, sizeof(*kp), GFP_KERNEL);
+> +
+> +	input = input_allocate_device();
+> +	if (!kp || !input) {
+> +		error = -ENOMEM;
+> +		goto err1;
+> +	}
+> +
+> +	error = smsc_keypad_parse_dt(&pdev->dev, kp);
+> +	if (error)
+> +		return error;
 >
-> That's not a bad idea, at least it would be the logical thing to do. But
-> it does get into the realm of potentially breaking existing behaviour.
-
-What do you think could rely on the existing behaviour (that isn't
-broken by design)?
-
--Jeff
+Are we leaking input here?
