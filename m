@@ -1,158 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab2JAGxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 02:53:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:7344 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab2JAGxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 02:53:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,514,1344236400"; 
-   d="scan'208";a="228943812"
-Date: Mon, 1 Oct 2012 09:55:26 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@lists.linux-foundation.org>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Len, Brown" <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: Re: [RFC PATCH 5/6] ACPI: Introduce ACPI I2C controller enumeration
- driver
-Message-ID: <20121001065526.GH15548@intel.com>
-References: <1348818032.10877.325.camel@rui.sh.intel.com>
+	id S1752125Ab2JAGzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 02:55:10 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49275 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab2JAGzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 02:55:08 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50693E30.3010006@jp.fujitsu.com>
+Date: Mon, 1 Oct 2012 15:54:40 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348818032.10877.325.camel@rui.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: <wency@cn.fujitsu.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <rientjes@google.com>,
+        <liuj97@gmail.com>, <len.brown@intel.com>, <benh@kernel.crashing.org>,
+        <paulus@samba.org>, <minchan.kim@gmail.com>,
+        <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] memory-hotplug: add node_device_release
+References: <1348724705-23779-1-git-send-email-wency@cn.fujitsu.com> <1348724705-23779-3-git-send-email-wency@cn.fujitsu.com> <CAHGf_=rLMsmAxR5hrDVXjkHAxmupVrmtqE3iq2qu=O9Prp4nSg@mail.gmail.com> <5064EA5A.3080905@jp.fujitsu.com> <CAHGf_=qbBGjTL9oBHz7AM8BAosbzvn_WAGdAzJ8np-nDPN_KFQ@mail.gmail.com> <5064FDCA.1020504@jp.fujitsu.com> <CAHGf_=r+oz0GS137e81EySbN-3KVmQisF8sySiCUYUas1RZLtQ@mail.gmail.com> <5065740A.2000502@jp.fujitsu.com> <CAHGf_=o_FLsEULK3s1+zD-A0FL5QvKnX542Lz4vCwVVV2fYNRw@mail.gmail.com>
+In-Reply-To: <CAHGf_=o_FLsEULK3s1+zD-A0FL5QvKnX542Lz4vCwVVV2fYNRw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 03:40:32PM +0800, Zhang Rui wrote:
-> +acpi_status __init i2c_enumerate_slave(acpi_handle handle, u32 level,
-> +				       void *data, void **return_value)
-> +{
-> +	int result;
-> +	acpi_status status;
-> +	struct acpi_buffer buffer;
-> +	struct acpi_resource *resource;
-> +	struct acpi_resource_gpio *gpio;
-> +	struct acpi_resource_i2c_serialbus *i2c;
-> +	int i;
-> +	struct acpi_i2c_root *root = data;
-> +	struct i2c_board_info info;
-> +	struct acpi_device *device;
-> +
-> +	if (acpi_bus_get_device(handle, &device))
-> +		return AE_OK;
-> +
-> +	status = acpi_get_current_resources(handle, &buffer);
-> +	if (ACPI_FAILURE(status)) {
-> +		dev_err(&device->dev, "Failed to get ACPI resources\n");
-> +		return AE_OK;
-> +	}
-> +
-> +	for (i = 0; i < buffer.length; i += sizeof(struct acpi_resource)) {
-> +		resource = (struct acpi_resource *)(buffer.pointer + i);
-> +
-> +		switch (resource->type) {
-> +		case ACPI_RESOURCE_TYPE_GPIO:
-> +			gpio = &resource->data.gpio;
-> +
-> +			if (gpio->connection_type == ACPI_RESOURCE_GPIO_TYPE_INT) {
-> +				result =
-> +				    acpi_device_get_gpio_irq
-> +				    (gpio->resource_source.string_ptr,
-> +				     gpio->pin_table[0], &info.irq);
+Hi Kosaki-san,
 
-acpi_device_get_gpio_irq() is not defined in this patch series?
+2012/09/29 7:19, KOSAKI Motohiro wrote:
+>>>> I don't understand it. How can we get rid of the warning?
+>>>
+>>> See cpu_device_release() for example.
+>>
+>> If we implement a function like cpu_device_release(), the warning
+>> disappears. But the comment says in the function "Never copy this way...".
+>> So I think it is illegal way.
+>
+> What does "illegal" mean?
 
-Also you need to do the gpio_request()/gpio_to_irq() things somewhere. Are
-they handled in acpi_device_get_gpio_irq()?
+The "illegal" means the code should not be mimicked.
 
-How about GpioIo resources?
+> You still haven't explain any benefit of your code. If there is zero
+> benefit, just kill it.
+> I believe everybody think so.
+>
+> Again, Which benefit do you have?
 
-> +				if (result)
-> +					dev_err(&device->dev,
-> +						"Failed to get IRQ\n");
-> +			}
-> +			break;
-> +		case ACPI_RESOURCE_TYPE_SERIAL_BUS:
-> +			i2c = &resource->data.i2c_serial_bus;
-> +
-> +			info.addr = i2c->slave_address;
-> +			break;
-> +		default:
-> +			break;
-> +		}
-> +	}
-> +
-> +	add_slave(root, &info);
-> +
-> +	kfree(buffer.pointer);
-> +	return AE_OK;
-> +}
-> +
-> +static int __devinit acpi_i2c_root_add(struct acpi_device *device)
-> +{
-> +	acpi_status status;
-> +	struct acpi_i2c_root *root;
-> +	struct resource *resources;
-> +	int result;
-> +
-> +	if (!device->pnp.unique_id) {
-> +		dev_err(&device->dev,
-> +			"Unsupported ACPI I2C controller. No UID\n");
+The patch has a benefit to delets a warning message.
 
-Where does this restriction come from? As far as I understand UID is
-optional.
+>
+>>>>> Why do we need this node_device_release() implementation?
+>>>>
+>>>> I think that this is a manner of releasing object related kobject.
+>>>
+>>> No.  Usually we never call memset() from release callback.
+>>
+>> What we want to release is a part of array, not a pointer.
+>> Therefore, there is only this way instead of kfree().
+>
+> Why? Before your patch, we don't have memset() and did work it.
 
-> +		return -ENODEV;
-> +	}
-> +
-> +	root = kzalloc(sizeof(struct acpi_i2c_root), GFP_KERNEL);
-> +	if (!root)
-> +		return -ENOMEM;
-> +
-> +	root->device = device;
-> +
-> +	kstrtoint(device->pnp.unique_id, 10, &root->busnum);
-> +
-> +	/* enumerate I2C controller */
-> +	root->pdev =
-> +	    platform_device_alloc(acpi_device_hid(device), root->busnum);
-> +	if (!root->pdev) {
-> +		dev_err(&device->dev, "Failed to alloc platform device\n");
-> +		goto err;
-> +	}
-> +
-> +	result = acpi_get_generic_resources(device, &resources);
-> +	if (result < 0) {
-> +		dev_err(&device->dev, "Failed to get resources\n");
-> +		goto err;
-> +	}
-> +
-> +	platform_device_add_resources(root->pdev, resources, result);
-> +	platform_device_add(root->pdev);
-> +
-> +	/* enumerate I2C slave devices */
-> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, root->device->handle, 1,
-> +				     i2c_enumerate_slave, NULL, root, NULL);
-> +
-> +	if (ACPI_FAILURE(status)) {
-> +		dev_err(&root->device->dev, "i2c ACPI namespace walk error!\n");
-> +		kfree(root);
-> +		return -ENODEV;
-> +	}
-> +
-> +	register_slaves(root);
-> +
-> +	return 0;
-> +err:
-> +	kfree(root);
-> +	return -ENODEV;
-> +}
+If we does not apply the patch, a warning message is shown.
+So I think it did not work well.
+
+> I can't understand what mean "only way".
+
+For deleting a warning message, I created a node_device_release().
+In the manner of releasing kobject, the function frees a object related
+to the kobject. So most functions calls kfree() for releasing it.
+In node_device_release(), we need to free a node struct. If the node
+struct is pointer, I can free it by kfree. But the node struct is a part
+of node_devices[] array. I cannot free it. So I filled the node struct
+with 0.
+
+But you think it is not good. Do you have a good solution?
+
+Thanks,
+Yasuaki Ishimatsu
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
