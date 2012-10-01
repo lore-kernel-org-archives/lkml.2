@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab2JAKM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 06:12:57 -0400
-Received: from caiajhbdcbbj.dreamhost.com ([208.97.132.119]:42470 "EHLO
-	homiemail-a37.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753153Ab2JAKM4 (ORCPT
+	id S1753118Ab2JAKQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 06:16:49 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:3873 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752798Ab2JAKQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 06:12:56 -0400
-Message-ID: <1349086372.2721.1.camel@offbook>
-Subject: [PATCH RESEND] PM/Hibernate: use rb_entry
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>
-Cc: linux-pm@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Date: Mon, 01 Oct 2012 12:12:52 +0200
-Organization: GNU
+	Mon, 1 Oct 2012 06:16:48 -0400
+Message-ID: <1349086606.24442.13.camel@x61.thuisdomein>
+Subject: Re: [PATCH] regmap: silence GCC warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 01 Oct 2012 12:16:46 +0200
+In-Reply-To: <20121001100321.GB4360@opensource.wolfsonmicro.com>
+References: <1349000155.1553.27.camel@x61.thuisdomein>
+	 <20121001100321.GB4360@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 01 Oct 2012 10:16:47.0757 (UTC) FILETIME=[DD8293D0:01CD9FBD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the software suspend extents are organized in an rbtree, use rb_entry
-instead of container_of, as it is semantically more appropriate in order to
-get a node as it is iterated.
+On Mon, 2012-10-01 at 11:03 +0100, Mark Brown wrote:
+> On Sun, Sep 30, 2012 at 12:15:55PM +0200, Paul Bolle wrote:
+> > Building regmap.o triggers this GCC warning:
+> >     drivers/base/regmap/regmap.c: In function ‘regmap_raw_read’:
+> >     drivers/base/regmap/regmap.c:1172:6: warning: ‘ret’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+> > 
+> > It seems 'ret' should always be set when this function returns. See, the
+> > else-branch can leave 'ret' uninitialized only if 'val_count' is zero.
+> > But if 'val_count' is zero regmap_volatile_range() will return true.
+> > That implies that 'ret' will be set in the if-branch. ('val_count' could
+> > be zero if 'val_len' is, for example, zero. That would be useless input,
+> > however.)
+> > 
+> > Anyhow, initializing 'ret' to -EINVAL silences GCC and is harmless.
+> 
+> Have you reported this bug in GCC?
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- kernel/power/swap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+No I haven't. Since you ask, I guess you too think 'ret' is always set
+when this function returns, don't you? Ie, my analysis isn't obviously
+wrong.
 
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 3c9d764..7c33ed2 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -126,7 +126,7 @@ static int swsusp_extents_insert(unsigned long swap_offset)
- 
- 	/* Figure out where to put the new node */
- 	while (*new) {
--		ext = container_of(*new, struct swsusp_extent, node);
-+		ext = rb_entry(*new, struct swsusp_extent, node);
- 		parent = *new;
- 		if (swap_offset < ext->start) {
- 			/* Try to merge */
--- 
-1.7.9.5
+> Their flow analyis just seems to keep on getting worse and worse.
 
 
+Paul Bolle
 
