@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab2JAXAU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:00:20 -0400
-Received: from 1wt.eu ([62.212.114.60]:35114 "EHLO 1wt.eu"
+	id S965206Ab2JAXeQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:34:16 -0400
+Received: from 1wt.eu ([62.212.114.60]:35134 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757526Ab2JAXAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:15 -0400
-Message-Id: <20121001225200.700029255@1wt.eu>
+	id S1757567Ab2JAXAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:20 -0400
+Message-Id: <20121001225204.647398665@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:10 +0200
+Date: Tue, 02 Oct 2012 00:54:43 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alex He <alex.he@amd.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Theodore Tso" <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 073/180] xHCI: Correct the #define XHCI_LEGACY_DISABLE_SMI
+Subject: [ 166/180] drivers/char/random.c: fix boot id uniqueness race
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,62 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex He <alex.he@amd.com>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit 95018a53f7653e791bba1f54c8d75d9cb700d1bd upstream.
+commit 44e4360fa3384850d65dd36fb4e6e5f2f112709b upstream.
 
-Re-define XHCI_LEGACY_DISABLE_SMI and used it in right way. All SMI enable
-bits will be cleared to zero and flag bits 29:31 are also cleared to zero.
-Other bits should be presvered as Table 146.
+/proc/sys/kernel/random/boot_id can be read concurrently by userspace
+processes.  If two (or more) user-space processes concurrently read
+boot_id when sysctl_bootid is not yet assigned, a race can occur making
+boot_id differ between the reads.  Because the whole point of the boot id
+is to be unique across a kernel execution, fix this by protecting this
+operation with a spinlock.
 
-This patch should be backported to kernels as old as 2.6.31.
+Given that this operation is not frequently used, hitting the spinlock
+on each call should not be an issue.
 
-Signed-off-by: Alex He <alex.he@amd.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Matt Mackall <mpm@selenic.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/usb/host/pci-quirks.c    |   10 +++++++---
- drivers/usb/host/xhci-ext-caps.h |    5 +++--
- 2 files changed, 10 insertions(+), 5 deletions(-)
+ drivers/char/random.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 0ff157a..981b604 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -458,9 +458,13 @@ static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
- 		}
- 	}
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 5e106b1..0c38849 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1258,10 +1258,15 @@ static int proc_do_uuid(ctl_table *table, int write,
+ 	uuid = table->data;
+ 	if (!uuid) {
+ 		uuid = tmp_uuid;
+-		uuid[8] = 0;
+-	}
+-	if (uuid[8] == 0)
+ 		generate_random_uuid(uuid);
++	} else {
++		static DEFINE_SPINLOCK(bootid_spinlock);
++
++		spin_lock(&bootid_spinlock);
++		if (!uuid[8])
++			generate_random_uuid(uuid);
++		spin_unlock(&bootid_spinlock);
++	}
  
--	/* Disable any BIOS SMIs */
--	writel(XHCI_LEGACY_DISABLE_SMI,
--			base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
-+	val = readl(base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
-+	/* Mask off (turn off) any enabled SMIs */
-+	val &= XHCI_LEGACY_DISABLE_SMI;
-+	/* Mask all SMI events bits, RW1C */
-+	val |= XHCI_LEGACY_SMI_EVENTS;
-+	/* Disable any BIOS SMIs and clear all SMI events*/
-+	writel(val, base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
- 
- hc_init:
- 	op_reg_base = base + XHCI_HC_LENGTH(readl(base));
-diff --git a/drivers/usb/host/xhci-ext-caps.h b/drivers/usb/host/xhci-ext-caps.h
-index 78c4eda..e2acc97 100644
---- a/drivers/usb/host/xhci-ext-caps.h
-+++ b/drivers/usb/host/xhci-ext-caps.h
-@@ -62,8 +62,9 @@
- /* USB Legacy Support Control and Status Register  - section 7.1.2 */
- /* Add this offset, plus the value of xECP in HCCPARAMS to the base address */
- #define XHCI_LEGACY_CONTROL_OFFSET	(0x04)
--/* bits 1:2, 5:12, and 17:19 need to be preserved; bits 21:28 should be zero */
--#define	XHCI_LEGACY_DISABLE_SMI		((0x3 << 1) + (0xff << 5) + (0x7 << 17))
-+/* bits 1:3, 5:12, and 17:19 need to be preserved; bits 21:28 should be zero */
-+#define	XHCI_LEGACY_DISABLE_SMI		((0x7 << 1) + (0xff << 5) + (0x7 << 17))
-+#define XHCI_LEGACY_SMI_EVENTS		(0x7 << 29)
- 
- /* command register values to disable interrupts and halt the HC */
- /* start/stop HC execution - do not write unless HC is halted*/
+ 	sprintf(buf, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-"
+ 		"%02x%02x%02x%02x%02x%02x",
 -- 
 1.7.2.1.45.g54fbc
 
