@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2JAOcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 10:32:43 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64462 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab2JAOcl (ORCPT
+	id S1751647Ab2JAOhw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 10:37:52 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48782 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab2JAOhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 10:32:41 -0400
-Date: Mon, 1 Oct 2012 16:32:35 +0200
+	Mon, 1 Oct 2012 10:37:51 -0400
+Date: Mon, 1 Oct 2012 16:37:45 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/mm changes for v3.7
-Message-ID: <20121001143235.GA25070@gmail.com>
+Subject: [GIT PULL] x86/platform changes for v3.7
+Message-ID: <20121001143745.GA25356@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,224 +25,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-mm-for-linus git tree from:
+Please pull the latest x86-platform-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-mm-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-platform-for-linus
 
-   HEAD: fd0f5869724ff6195c6e7f12f8287c66a132e0ba x86: Distinguish TLB shootdown interrupts from other functions call interrupts
+   HEAD: 64282278989d5b0398dcb3ba7904cb00c621dc35 x86: Document x86_init.paging.pagetable_init()
 
-The biggest change is new TLB partial flushing code for AMD 
-CPUs. (The v3.6 kernel had the Intel CPU side code, see commits 
-e0ba94f14f74..effee4b9b3b.)
-
-There's also various other refinements around the TLB flush 
-code.
+This cleans up some Xen-induced pagetable init code uglies,
+by generalizing new platform callbacks and state: 
+x86_init.paging.*.
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Borislav Petkov (4):
-      x86, cpu: Fixup tlb_flushall_shift formatting
-      x86, cpu: Push TLB detection CPUID check down
-      x86, cpu: Add AMD TLB size detection
-      x86, cpu: Preset default tlb_flushall_shift on AMD
-
-Jan Beulich (1):
-      x86/mm: Fix range check in tlbflush debugfs interface
-
-Tomoki Sekiyama (1):
-      x86: Distinguish TLB shootdown interrupts from other functions call interrupts
+Attilio Rao (5):
+      x86: Remove base argument from x86_init.paging.pagetable_setup_start
+      x86: Rename pagetable_setup_start() to pagetable_init()
+      x86: Move paging_init() call to x86_init.paging.pagetable_init()
+      x86: xen: Cleanup and remove x86_init.paging.pagetable_setup_done()
+      x86: Document x86_init.paging.pagetable_init()
 
 
- arch/x86/include/asm/hardirq.h |  4 +++
- arch/x86/kernel/cpu/amd.c      | 67 ++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/common.c   |  5 ++--
- arch/x86/kernel/cpu/intel.c    |  4 +++
- arch/x86/kernel/irq.c          |  4 +--
- arch/x86/mm/tlb.c              |  4 ++-
- 6 files changed, 82 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/pgtable_types.h |  6 ++----
+ arch/x86/include/asm/x86_init.h      |  9 +++++----
+ arch/x86/kernel/setup.c              |  4 +---
+ arch/x86/kernel/x86_init.c           |  4 +---
+ arch/x86/mm/init_32.c                | 11 ++++-------
+ arch/x86/xen/mmu.c                   | 18 +++++++-----------
+ 6 files changed, 20 insertions(+), 32 deletions(-)
 
-diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
-index d3895db..81f04ce 100644
---- a/arch/x86/include/asm/hardirq.h
-+++ b/arch/x86/include/asm/hardirq.h
-@@ -18,6 +18,10 @@ typedef struct {
- #ifdef CONFIG_SMP
- 	unsigned int irq_resched_count;
- 	unsigned int irq_call_count;
-+	/*
-+	 * irq_tlb_count is double-counted in irq_call_count, so it must be
-+	 * subtracted from irq_call_count when displaying irq_call_count
-+	 */
- 	unsigned int irq_tlb_count;
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 9d92e19..f7e98a2 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -737,6 +737,72 @@ static unsigned int __cpuinit amd_size_cache(struct cpuinfo_x86 *c,
- }
- #endif
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 013286a..db8fec6 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -303,11 +303,9 @@ void set_pte_vaddr(unsigned long vaddr, pte_t pte);
  
-+static void __cpuinit cpu_set_tlb_flushall_shift(struct cpuinfo_x86 *c)
-+{
-+	if (!cpu_has_invlpg)
-+		return;
-+
-+	tlb_flushall_shift = 5;
-+
-+	if (c->x86 <= 0x11)
-+		tlb_flushall_shift = 4;
-+}
-+
-+static void __cpuinit cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
-+{
-+	u32 ebx, eax, ecx, edx;
-+	u16 mask = 0xfff;
-+
-+	if (c->x86 < 0xf)
-+		return;
-+
-+	if (c->extended_cpuid_level < 0x80000006)
-+		return;
-+
-+	cpuid(0x80000006, &eax, &ebx, &ecx, &edx);
-+
-+	tlb_lld_4k[ENTRIES] = (ebx >> 16) & mask;
-+	tlb_lli_4k[ENTRIES] = ebx & mask;
-+
-+	/*
-+	 * K8 doesn't have 2M/4M entries in the L2 TLB so read out the L1 TLB
-+	 * characteristics from the CPUID function 0x80000005 instead.
-+	 */
-+	if (c->x86 == 0xf) {
-+		cpuid(0x80000005, &eax, &ebx, &ecx, &edx);
-+		mask = 0xff;
-+	}
-+
-+	/* Handle DTLB 2M and 4M sizes, fall back to L1 if L2 is disabled */
-+	if (!((eax >> 16) & mask)) {
-+		u32 a, b, c, d;
-+
-+		cpuid(0x80000005, &a, &b, &c, &d);
-+		tlb_lld_2m[ENTRIES] = (a >> 16) & 0xff;
-+	} else {
-+		tlb_lld_2m[ENTRIES] = (eax >> 16) & mask;
-+	}
-+
-+	/* a 4M entry uses two 2M entries */
-+	tlb_lld_4m[ENTRIES] = tlb_lld_2m[ENTRIES] >> 1;
-+
-+	/* Handle ITLB 2M and 4M sizes, fall back to L1 if L2 is disabled */
-+	if (!(eax & mask)) {
-+		/* Erratum 658 */
-+		if (c->x86 == 0x15 && c->x86_model <= 0x1f) {
-+			tlb_lli_2m[ENTRIES] = 1024;
-+		} else {
-+			cpuid(0x80000005, &eax, &ebx, &ecx, &edx);
-+			tlb_lli_2m[ENTRIES] = eax & 0xff;
-+		}
-+	} else
-+		tlb_lli_2m[ENTRIES] = eax & mask;
-+
-+	tlb_lli_4m[ENTRIES] = tlb_lli_2m[ENTRIES] >> 1;
-+
-+	cpu_set_tlb_flushall_shift(c);
-+}
-+
- static const struct cpu_dev __cpuinitconst amd_cpu_dev = {
- 	.c_vendor	= "AMD",
- 	.c_ident	= { "AuthenticAMD" },
-@@ -756,6 +822,7 @@ static const struct cpu_dev __cpuinitconst amd_cpu_dev = {
- 	.c_size_cache	= amd_size_cache,
- #endif
- 	.c_early_init   = early_init_amd,
-+	.c_detect_tlb	= cpu_detect_tlb_amd,
- 	.c_bsp_init	= bsp_init_amd,
- 	.c_init		= init_amd,
- 	.c_x86_vendor	= X86_VENDOR_AMD,
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 46d8786..080f4a7 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -474,7 +474,7 @@ void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
- 
- 	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
- 		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n"	     \
--		"tlb_flushall_shift is 0x%x\n",
-+		"tlb_flushall_shift: %d\n",
- 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
- 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
- 		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
-@@ -940,8 +940,7 @@ void __init identify_boot_cpu(void)
+ extern void native_pagetable_reserve(u64 start, u64 end);
+ #ifdef CONFIG_X86_32
+-extern void native_pagetable_setup_start(pgd_t *base);
+-extern void native_pagetable_setup_done(pgd_t *base);
++extern void native_pagetable_init(void);
  #else
- 	vgetcpu_set_mode();
+-#define native_pagetable_setup_start x86_init_pgd_noop
+-#define native_pagetable_setup_done  x86_init_pgd_noop
++#define native_pagetable_init        paging_init
  #endif
--	if (boot_cpu_data.cpuid_level >= 2)
--		cpu_detect_tlb(&boot_cpu_data);
-+	cpu_detect_tlb(&boot_cpu_data);
+ 
+ struct seq_file;
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 38155f6..5769349 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -81,12 +81,13 @@ struct x86_init_mapping {
+ 
+ /**
+  * struct x86_init_paging - platform specific paging functions
+- * @pagetable_setup_start:	platform specific pre paging_init() call
+- * @pagetable_setup_done:	platform specific post paging_init() call
++ * @pagetable_init:	platform specific paging initialization call to setup
++ *			the kernel pagetables and prepare accessors functions.
++ *			Callback must call paging_init(). Called once after the
++ *			direct mapping for phys memory is available.
+  */
+ struct x86_init_paging {
+-	void (*pagetable_setup_start)(pgd_t *base);
+-	void (*pagetable_setup_done)(pgd_t *base);
++	void (*pagetable_init)(void);
+ };
+ 
+ /**
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f4b9b80..4f16547 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -961,9 +961,7 @@ void __init setup_arch(char **cmdline_p)
+ 	kvmclock_init();
+ #endif
+ 
+-	x86_init.paging.pagetable_setup_start(swapper_pg_dir);
+-	paging_init();
+-	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
++	x86_init.paging.pagetable_init();
+ 
+ 	if (boot_cpu_data.cpuid_level >= 0) {
+ 		/* A CPU has %cr4 if and only if it has CPUID */
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 9f3167e..7a3d075 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -26,7 +26,6 @@
+ 
+ void __cpuinit x86_init_noop(void) { }
+ void __init x86_init_uint_noop(unsigned int unused) { }
+-void __init x86_init_pgd_noop(pgd_t *unused) { }
+ int __init iommu_init_noop(void) { return 0; }
+ void iommu_shutdown_noop(void) { }
+ 
+@@ -68,8 +67,7 @@ struct x86_init_ops x86_init __initdata = {
+ 	},
+ 
+ 	.paging = {
+-		.pagetable_setup_start	= native_pagetable_setup_start,
+-		.pagetable_setup_done	= native_pagetable_setup_done,
++		.pagetable_init		= native_pagetable_init,
+ 	},
+ 
+ 	.timers = {
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 575d86f..4f04db1 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -445,10 +445,10 @@ static inline void permanent_kmaps_init(pgd_t *pgd_base)
+ }
+ #endif /* CONFIG_HIGHMEM */
+ 
+-void __init native_pagetable_setup_start(pgd_t *base)
++void __init native_pagetable_init(void)
+ {
+ 	unsigned long pfn, va;
+-	pgd_t *pgd;
++	pgd_t *pgd, *base = swapper_pg_dir;
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 	pte_t *pte;
+@@ -475,10 +475,7 @@ void __init native_pagetable_setup_start(pgd_t *base)
+ 		pte_clear(NULL, va, pte);
+ 	}
+ 	paravirt_alloc_pmd(&init_mm, __pa(base) >> PAGE_SHIFT);
+-}
+-
+-void __init native_pagetable_setup_done(pgd_t *base)
+-{
++	paging_init();
  }
  
- void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 0a4ce29..198e019 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -648,6 +648,10 @@ static void __cpuinit intel_detect_tlb(struct cpuinfo_x86 *c)
- 	int i, j, n;
- 	unsigned int regs[4];
- 	unsigned char *desc = (unsigned char *)regs;
-+
-+	if (c->cpuid_level < 2)
-+		return;
-+
- 	/* Number of times to iterate */
- 	n = cpuid_eax(2) & 0xFF;
+ /*
+@@ -493,7 +490,7 @@ void __init native_pagetable_setup_done(pgd_t *base)
+  * If we're booting paravirtualized under a hypervisor, then there are
+  * more options: we may already be running PAE, and the pagetable may
+  * or may not be based in swapper_pg_dir.  In any case,
+- * paravirt_pagetable_setup_start() will set up swapper_pg_dir
++ * paravirt_pagetable_init() will set up swapper_pg_dir
+  * appropriately for the rest of the initialization to work.
+  *
+  * In general, pagetable_init() assumes that the pagetable may already
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 5141d80..7a769b7 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1174,8 +1174,13 @@ static void xen_exit_mmap(struct mm_struct *mm)
+ 	spin_unlock(&mm->page_table_lock);
+ }
  
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 1f5f1d5..355b13f 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -92,7 +92,8 @@ int arch_show_interrupts(struct seq_file *p, int prec)
- 	seq_printf(p, "  Rescheduling interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "CAL");
- 	for_each_online_cpu(j)
--		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count);
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count -
-+					irq_stats(j)->irq_tlb_count);
- 	seq_printf(p, "  Function call interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "TLB");
- 	for_each_online_cpu(j)
-@@ -147,7 +148,6 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
- #ifdef CONFIG_SMP
- 	sum += irq_stats(cpu)->irq_resched_count;
- 	sum += irq_stats(cpu)->irq_call_count;
--	sum += irq_stats(cpu)->irq_tlb_count;
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
- 	sum += irq_stats(cpu)->irq_thermal_count;
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 613cd83..0777f04 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -98,6 +98,8 @@ static void flush_tlb_func(void *info)
+-static void __init xen_pagetable_setup_start(pgd_t *base)
++static void xen_post_allocator_init(void);
++
++static void __init xen_pagetable_init(void)
  {
- 	struct flush_tlb_info *f = info;
++	paging_init();
++	xen_setup_shared_info();
++	xen_post_allocator_init();
+ }
  
-+	inc_irq_stat(irq_tlb_count);
-+
- 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
- 		return;
+ static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
+@@ -1192,14 +1197,6 @@ static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
+ 	}
+ }
  
-@@ -320,7 +322,7 @@ static ssize_t tlbflush_write_file(struct file *file,
- 	if (kstrtos8(buf, 0, &shift))
- 		return -EINVAL;
+-static void xen_post_allocator_init(void);
+-
+-static void __init xen_pagetable_setup_done(pgd_t *base)
+-{
+-	xen_setup_shared_info();
+-	xen_post_allocator_init();
+-}
+-
+ static void xen_write_cr2(unsigned long cr2)
+ {
+ 	this_cpu_read(xen_vcpu)->arch.cr2 = cr2;
+@@ -2068,8 +2065,7 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+ void __init xen_init_mmu_ops(void)
+ {
+ 	x86_init.mapping.pagetable_reserve = xen_mapping_pagetable_reserve;
+-	x86_init.paging.pagetable_setup_start = xen_pagetable_setup_start;
+-	x86_init.paging.pagetable_setup_done = xen_pagetable_setup_done;
++	x86_init.paging.pagetable_init = xen_pagetable_init;
+ 	pv_mmu_ops = xen_mmu_ops;
  
--	if (shift > 64)
-+	if (shift < -1 || shift >= BITS_PER_LONG)
- 		return -EINVAL;
- 
- 	tlb_flushall_shift = shift;
+ 	memset(dummy_mapping, 0xff, PAGE_SIZE);
