@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757717Ab2JAXDN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:03:13 -0400
-Received: from 1wt.eu ([62.212.114.60]:35628 "EHLO 1wt.eu"
+	id S933309Ab2JAXD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:03:28 -0400
+Received: from 1wt.eu ([62.212.114.60]:35655 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933252Ab2JAXDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:03:04 -0400
-Message-Id: <20121001225158.761761711@1wt.eu>
+	id S933266Ab2JAXDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:03:22 -0400
+Message-Id: <20121001225201.421810660@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:24 +0200
+Date: Tue, 02 Oct 2012 00:53:27 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Tyler Hicks <tyhicks@canonical.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Andy Whitcroft <apw@canonical.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 027/180] eCryptfs: Clear ECRYPTFS_NEW_FILE flag during truncate
+Cc: Steffen Rumler <steffen.rumler.ext@nsn.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 090/180] powerpc: Fix kernel panic during kernel module load
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Ian King <colin.king@canonical.com>
+From: Steffen Rumler <steffen.rumler.ext@nsn.com>
 
-BugLink: http://bugs.launchpad.net/bugs/745836
+commit 3c75296562f43e6fbc6cddd3de948a7b3e4e9bcf upstream.
 
-The ECRYPTFS_NEW_FILE crypt_stat flag is set upon creation of a new
-eCryptfs file. When the flag is set, eCryptfs reads directly from the
-lower filesystem when bringing a page up to date. This means that no
-offset translation (for the eCryptfs file metadata in the lower file)
-and no decryption is performed. The flag is cleared just before the
-first write is completed (at the beginning of ecryptfs_write_begin()).
+This fixes a problem which can causes kernel oopses while loading
+a kernel module.
 
-It was discovered that if a new file was created and then extended with
-truncate, the ECRYPTFS_NEW_FILE flag was not cleared. If pages
-corresponding to this file are ever reclaimed, any subsequent reads
-would result in userspace seeing eCryptfs file metadata and encrypted
-file contents instead of the expected decrypted file contents.
+According to the PowerPC EABI specification, GPR r11 is assigned
+the dedicated function to point to the previous stack frame.
+In the powerpc-specific kernel module loader, do_plt_call()
+(in arch/powerpc/kernel/module_32.c), GPR r11 is also used
+to generate trampoline code.
 
-Data corruption is possible if the file is written to before the
-eCryptfs directory is unmounted. The data written will be copied into
-pages which have been read directly from the lower file rather than
-zeroed pages, as would be expected after extending the file with
-truncate.
+This combination crashes the kernel, in the case where the compiler
+chooses to use a helper function for saving GPRs on entry, and the
+module loader has placed the .init.text section far away from the
+.text section, meaning that it has to generate a trampoline for
+functions in the .init.text section to call the GPR save helper.
+Because the trampoline trashes r11, references to the stack frame
+using r11 can cause an oops.
 
-This flag, and the functionality that used it, was removed in upstream
-kernels in 2.6.39 with the following commits:
+The fix just uses GPR r12 instead of GPR r11 for generating the
+trampoline code.  According to the statements from Freescale, this is
+safe from an EABI perspective.
 
-bd4f0fe8bb7c73c738e1e11bc90d6e2cf9c6e20e
-fed8859b3ab94274c986cbdf7d27130e0545f02c
+I've tested the fix for kernel 2.6.33 on MPC8541.
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
-Acked-by: Stefan Bader <stefan.bader@canonical.com>
-Acked-by: Andy Whitcroft <apw@canonical.com>
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: Steffen Rumler <steffen.rumler.ext@nsn.com>
+[paulus@samba.org: reworded the description]
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/ecryptfs/inode.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/powerpc/kernel/module_32.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index 645da17..3c1dbc0 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -777,6 +777,9 @@ static int truncate_upper(struct dentry *dentry, struct iattr *ia,
- 		goto out;
+diff --git a/arch/powerpc/kernel/module_32.c b/arch/powerpc/kernel/module_32.c
+index f832773..449a7e0 100644
+--- a/arch/powerpc/kernel/module_32.c
++++ b/arch/powerpc/kernel/module_32.c
+@@ -187,8 +187,8 @@ int apply_relocate(Elf32_Shdr *sechdrs,
+ 
+ static inline int entry_matches(struct ppc_plt_entry *entry, Elf32_Addr val)
+ {
+-	if (entry->jump[0] == 0x3d600000 + ((val + 0x8000) >> 16)
+-	    && entry->jump[1] == 0x396b0000 + (val & 0xffff))
++	if (entry->jump[0] == 0x3d800000 + ((val + 0x8000) >> 16)
++	    && entry->jump[1] == 0x398c0000 + (val & 0xffff))
+ 		return 1;
+ 	return 0;
+ }
+@@ -215,10 +215,9 @@ static uint32_t do_plt_call(void *location,
+ 		entry++;
  	}
- 	crypt_stat = &ecryptfs_inode_to_private(dentry->d_inode)->crypt_stat;
-+	if (crypt_stat->flags & ECRYPTFS_NEW_FILE)
-+		crypt_stat->flags &= ~(ECRYPTFS_NEW_FILE);
-+
- 	/* Set up a fake ecryptfs file, this is used to interface with
- 	 * the file in the underlying filesystem so that the
- 	 * truncation has an effect there as well. */
+ 
+-	/* Stolen from Paul Mackerras as well... */
+-	entry->jump[0] = 0x3d600000+((val+0x8000)>>16);	/* lis r11,sym@ha */
+-	entry->jump[1] = 0x396b0000 + (val&0xffff);	/* addi r11,r11,sym@l*/
+-	entry->jump[2] = 0x7d6903a6;			/* mtctr r11 */
++	entry->jump[0] = 0x3d800000+((val+0x8000)>>16); /* lis r12,sym@ha */
++	entry->jump[1] = 0x398c0000 + (val&0xffff);     /* addi r12,r12,sym@l*/
++	entry->jump[2] = 0x7d8903a6;                    /* mtctr r12 */
+ 	entry->jump[3] = 0x4e800420;			/* bctr */
+ 
+ 	DEBUGP("Initialized plt for 0x%x at %p\n", val, entry);
 -- 
 1.7.2.1.45.g54fbc
 
