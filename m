@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab2JAPYe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 11:24:34 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:39880 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497Ab2JAPYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 11:24:31 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: Mike Galbraith <efault@gmx.de>
-Subject: Re: The 10ms averager in fair.c
-References: <op.wlf5j0i76426ze@localhost.localdomain>
- <1349064397.6957.26.camel@marge.simpson.net>
-Date: Mon, 01 Oct 2012 15:24:28 +0200
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wlh4u2xj6426ze@millennium.getinternet.no>
-In-reply-to: <1349064397.6957.26.camel@marge.simpson.net>
-User-Agent: Opera Mail/12.02 (Win32)
+	id S1752760Ab2JAPZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 11:25:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:32980 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751955Ab2JAPZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 11:25:04 -0400
+X-Sasl-enc: KuVAolQDHG3iVS7FOGZv6tA+c6E/5Eh8JkZZuLfcEdhc 1349105102
+Date: Mon, 1 Oct 2012 08:25:01 -0700
+From: Greg KH <greg@kroah.com>
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: akpm@linux-foundation.org, stable@vger.kernel.org, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] leds-ot200: Fix error caused by shifted mask
+Message-ID: <20121001152501.GA7978@kroah.com>
+References: <1349095840-26450-1-git-send-email-christian.gmeiner@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349095840-26450-1-git-send-email-christian.gmeiner@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Oct 2012 06:06:37 +0200, Mike Galbraith <efault@gmx.de> wrote:
+On Mon, Oct 01, 2012 at 02:50:40PM +0200, Christian Gmeiner wrote:
+> During the development of this driver an in-house register
+> documentation was used. The last weeks some integration tests
+> were done and this problem was found. It turned out that
+> the released register documentation is wrong.
+> 
+> The fix is very simple: shift all mask by one.
+> 
+> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+> ---
+>  drivers/leds/leds-ot200.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
 
-> On Sun, 2012-09-30 at 13:44 +0200, Uwaysi Bin Kareem wrote:
->> Hiya. I just had an initial look at fair.c
->>
->> There seems to be a 10ms averager in there?
->>
->> You are aware that that means you work on delayed values?
->>
->> Isn`t that counterintuitive to the principle of sharing?
->
-> Not if you want to be able to use lots of groups, and still do something
-> other than in-kernel arithmetic.
->
-> -Mike
->
+<formletter>
 
-"Use lots of groups"? I don`t even see the point with that. Currently  
-doesn`t cfs manipulate nice levels? If you set constant nice levels, and  
-remove the filter, things will work more as expected. High nice value,  
-should be short slice. That is your "group", for instance "low priority  
-stuff".
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
-That a filter filters out the initial cpu spike, only to starve it and  
-elevate the priority later, is silly. That is delayed execution.
-
-Now I haven`t looked that close at the whole scheduler yet, but no.. I  
-can`t possibly think what a filter does in there, that smears at 100uS  
-spike, over 10ms.
-
-Btw, I did set it to 1ns, and it only improved things. So that it should  
-have some function seems odd to me.
-
-Are you sure this isn`t just a design-philosophy that was done, without  
-much knowledge of filters?
-
-Peace Be With You.
+</formletter>
