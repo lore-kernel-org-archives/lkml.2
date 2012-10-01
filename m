@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab2JATvL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 15:51:11 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39154 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751493Ab2JATvJ (ORCPT
+	id S1754240Ab2JAT4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 15:56:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42662 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab2JAT4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 15:51:09 -0400
-X-Sasl-enc: qxCtDNzCY8QZEur1BA/jVnEhIyyomsXjIoyuCatqB0dm 1349121068
-Date: Mon, 1 Oct 2012 12:51:07 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Igor Grinberg <grinberg@compulab.co.il>,
-        Paul Walmsley <paul@pwsan.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [ 045/218] ARM: OMAP: timer: obey the !CONFIG_OMAP_32K_TIMER
-Message-ID: <20121001195107.GA14278@kroah.com>
-References: <20120928201501.208384923@linuxfoundation.org>
- <20120928201506.626237283@linuxfoundation.org>
- <20121001182046.GB3198@herton-Z68MA-D2H-B3>
- <20121001183343.GA13126@kroah.com>
- <20121001185303.GC3198@herton-Z68MA-D2H-B3>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121001185303.GC3198@herton-Z68MA-D2H-B3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 1 Oct 2012 15:56:20 -0400
+Date: Mon, 1 Oct 2012 12:56:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-Id: <20121001125619.97649131.akpm@linux-foundation.org>
+In-Reply-To: <Pine.LNX.4.64.1209281117580.21946@file.rdu.redhat.com>
+References: <20120928163029.19d304240b796e2c7a7d633b@canb.auug.org.au>
+	<Pine.LNX.4.64.1209281117580.21946@file.rdu.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 03:53:04PM -0300, Herton Ronaldo Krzesinski wrote:
-> On Mon, Oct 01, 2012 at 11:33:43AM -0700, Greg Kroah-Hartman wrote:
-> > On Mon, Oct 01, 2012 at 03:20:46PM -0300, Herton Ronaldo Krzesinski wrote:
-> > > On Fri, Sep 28, 2012 at 01:14:22PM -0700, Greg Kroah-Hartman wrote:
-> > > > 3.4-stable review patch.  If anyone has any objections, please let me know.
-> > > > 
-> > > > ------------------
-> > > > 
-> > > > From: Igor Grinberg <grinberg@compulab.co.il>
-> > > > 
-> > > > commit 45caae74d238ef6583e9402cb8c550cc0b0f7dbd upstream.
-> > > > 
-> > > > Currently, omap2_sync32k_clocksource_init() function initializes the 32K
-> > > > timer as the system clock source regardless of the CONFIG_OMAP_32K_TIMER
-> > > > setting.
-> > > > Fix this by providing a default implementation for
-> > > > !CONFIG_OMAP_32K_TIMER case.
-> > > > 
-> > > > Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
-> > > > Reviewed-by: Paul Walmsley <paul@pwsan.com>
-> > > > Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> > > > Signed-off-by: Tony Lindgren <tony@atomide.com>
-> > > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > > 
-> > > > ---
-> > > >  arch/arm/mach-omap2/timer.c |    7 +++++++
-> > > >  1 file changed, 7 insertions(+)
-> > > 
-> > > Build failure with this patch:
-> > > 
-> > > linux/arch/arm/mach-omap2/timer.c:308:2: error: #else after #else
-> > > linux/arch/arm/mach-omap2/timer.c:238:0: error: the conditional began here
-> > > linux/arch/arm/mach-omap2/timer.c:326:21: error: expected declaration specifiers or '...' before numeric constant
-> > > linux/arch/arm/mach-omap2/timer.c:326:24: error: expected declaration specifiers or '...' before numeric constant
-> > > linux/arch/arm/mach-omap2/timer.c:326:27: error: expected declaration specifiers or '...' before string constant
-> > > linux/arch/arm/mach-omap2/timer.c:326:47: error: expected declaration specifiers or '...' before numeric constant
-> > > linux/arch/arm/mach-omap2/timer.c:326:50: error: expected declaration specifiers or '...' before string constant
-> > > linux/arch/arm/mach-omap2/timer.c:328:21: error: invalid suffix "_secure" on integer constant
-> > > linux/arch/arm/mach-omap2/timer.c:328:21: error: expected declaration specifiers or '...' before numeric constant
-> > > linux/arch/arm/mach-omap2/timer.c:328:31: error: expected declaration specifiers or '...' before numeric constant
-> > > linux/arch/arm/mach-omap2/timer.c:328:51: error: expected declaration specifiers or '...' before string constant
-> > > linux/arch/arm/mach-omap2/timer.c:329:4: error: expected declaration specifiers or '...' before numeric constant
-> > > linux/arch/arm/mach-omap2/timer.c:329:7: error: expected declaration specifiers or '...' before string constant
+On Fri, 28 Sep 2012 11:19:29 -0400 (EDT)
+Mikulas Patocka <mpatocka@redhat.com> wrote:
+
+> > -	if (!prio_tree_empty(&mapping->i_mmap) ||
+> > +	if (!RB_EMPTY_ROOT(&mapping->i_mmap) ||
+> >  	    !list_empty(&mapping->i_mmap_nonlinear)) {
+> >  		mutex_unlock(&mapping->i_mmap_mutex);
+> >  		percpu_up_write(&bdev->bd_block_size_semaphore);
+> > -- 
+> > 1.7.10.280.gaa39
 > > 
-> > Does it also fail in Linus's tree?  Was there a follow-on patch that
-> > fixed the build issues?
+> > -- 
+> > Cheers,
+> > Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> I only saw the build failure, and proposed 3.5.5 which have the same patch
-> builds fine. It looks like this patch isn't applicable to 3.4 (that seems to be
-> fixing a problem in commit 1fe97c8f).
+> ... or replace it with
+> 
+> if (mapping_mapped(&mapping)) { ...
 
-Ah, nice catch, I'll go drop this patch from the 3.4-stable queue,
-thanks for letting me know.
+yup..
 
-greg k-h
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: fs/block_dev.c:set_blocksize(): use mapping_mapped()
+
+... instead of open-coding it.
+
+Suggested-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/block_dev.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff -puN fs/block_dev.c~fs-block_devc-set_blocksize-use-mapping_mapped fs/block_dev.c
+--- a/fs/block_dev.c~fs-block_devc-set_blocksize-use-mapping_mapped
++++ a/fs/block_dev.c
+@@ -27,7 +27,6 @@
+ #include <linux/namei.h>
+ #include <linux/log2.h>
+ #include <linux/cleancache.h>
+-#include <linux/rbtree.h>
+ #include <asm/uaccess.h>
+ #include "internal.h"
+ 
+@@ -133,8 +132,7 @@ int set_blocksize(struct block_device *b
+ 	/* Check that the block device is not memory mapped */
+ 	mapping = bdev->bd_inode->i_mapping;
+ 	mutex_lock(&mapping->i_mmap_mutex);
+-	if (!RB_EMPTY_ROOT(&mapping->i_mmap) ||
+-	    !list_empty(&mapping->i_mmap_nonlinear)) {
++	if (mapping_mapped(mapping)) {
+ 		mutex_unlock(&mapping->i_mmap_mutex);
+ 		percpu_up_write(&bdev->bd_block_size_semaphore);
+ 		return -EBUSY;
+_
+
