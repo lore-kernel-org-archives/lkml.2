@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab2JAXio (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:38:44 -0400
-Received: from 1wt.eu ([62.212.114.60]:35047 "EHLO 1wt.eu"
+	id S965300Ab2JAXi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:38:59 -0400
+Received: from 1wt.eu ([62.212.114.60]:35042 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932545Ab2JAW7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 18:59:54 -0400
-Message-Id: <20121001225200.615577056@1wt.eu>
+	id S1753370Ab2JAW7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 18:59:53 -0400
+Message-Id: <20121001225159.182781980@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:08 +0200
+Date: Tue, 02 Oct 2012 00:52:34 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 071/180] USB: serial: fix race between probe and open
+Cc: Alex Williamson <alex.williamson@redhat.com>, Yang Bai <hamo.by@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 037/180] KVM: Device assignment permission checks
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,98 +23,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit a65a6f14dc24a90bde3f5d0073ba2364476200bf upstream.
+commit 3d27e23b17010c668db311140b17bbbb70c78fb9 upstream
 
-Fix race between probe and open by making sure that the disconnected
-flag is not cleared until all ports have been registered.
+Only allow KVM device assignment to attach to devices which:
 
-A call to tty_open while probe is running may get a reference to the
-serial structure in serial_install before its ports have been
-registered. This may lead to usb_serial_core calling driver open before
-port is fully initialised.
+ - Are not bridges
+ - Have BAR resources (assume others are special devices)
+ - The user has permissions to use
 
-With ftdi_sio this result in the following NULL-pointer dereference as
-the private data has not been initialised at open:
+Assigning a bridge is a configuration error, it's not supported, and
+typically doesn't result in the behavior the user is expecting anyway.
+Devices without BAR resources are typically chipset components that
+also don't have host drivers.  We don't want users to hold such devices
+captive or cause system problems by fencing them off into an iommu
+domain.  We determine "permission to use" by testing whether the user
+has access to the PCI sysfs resource files.  By default a normal user
+will not have access to these files, so it provides a good indication
+that an administration agent has granted the user access to the device.
 
-[  199.698286] IP: [<f811a089>] ftdi_open+0x59/0xe0 [ftdi_sio]
-[  199.698297] *pde = 00000000
-[  199.698303] Oops: 0000 [#1] PREEMPT SMP
-[  199.698313] Modules linked in: ftdi_sio usbserial
-[  199.698323]
-[  199.698327] Pid: 1146, comm: ftdi_open Not tainted 3.2.11 #70 Dell Inc. Vostro 1520/0T816J
-[  199.698339] EIP: 0060:[<f811a089>] EFLAGS: 00010286 CPU: 0
-[  199.698344] EIP is at ftdi_open+0x59/0xe0 [ftdi_sio]
-[  199.698348] EAX: 0000003e EBX: f5067000 ECX: 00000000 EDX: 80000600
-[  199.698352] ESI: f48d8800 EDI: 00000001 EBP: f515dd54 ESP: f515dcfc
-[  199.698356]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  199.698361] Process ftdi_open (pid: 1146, ti=f515c000 task=f481e040 task.ti=f515c000)
-[  199.698364] Stack:
-[  199.698368]  f811a9fe f811a9e0 f811b3ef 00000000 00000000 00001388 00000000 f4a86800
-[  199.698387]  00000002 00000000 f806e68e 00000000 f532765c f481e040 00000246 22222222
-[  199.698479]  22222222 22222222 22222222 f5067004 f5327600 f5327638 f515dd74 f806e6ab
-[  199.698496] Call Trace:
-[  199.698504]  [<f806e68e>] ? serial_activate+0x2e/0x70 [usbserial]
-[  199.698511]  [<f806e6ab>] serial_activate+0x4b/0x70 [usbserial]
-[  199.698521]  [<c126380c>] tty_port_open+0x7c/0xd0
-[  199.698527]  [<f806e660>] ? serial_set_termios+0xa0/0xa0 [usbserial]
-[  199.698534]  [<f806e76f>] serial_open+0x2f/0x70 [usbserial]
-[  199.698540]  [<c125d07c>] tty_open+0x20c/0x510
-[  199.698546]  [<c10e9eb7>] chrdev_open+0xe7/0x230
-[  199.698553]  [<c10e48f2>] __dentry_open+0x1f2/0x390
-[  199.698559]  [<c144bfec>] ? _raw_spin_unlock+0x2c/0x50
-[  199.698565]  [<c10e4b76>] nameidata_to_filp+0x66/0x80
-[  199.698570]  [<c10e9dd0>] ? cdev_put+0x20/0x20
-[  199.698576]  [<c10f3e08>] do_last+0x198/0x730
-[  199.698581]  [<c10f4440>] path_openat+0xa0/0x350
-[  199.698587]  [<c10f47d5>] do_filp_open+0x35/0x80
-[  199.698593]  [<c144bfec>] ? _raw_spin_unlock+0x2c/0x50
-[  199.698599]  [<c10ff110>] ? alloc_fd+0xc0/0x100
-[  199.698605]  [<c10f0b72>] ? getname_flags+0x72/0x120
-[  199.698611]  [<c10e4450>] do_sys_open+0xf0/0x1c0
-[  199.698617]  [<c11fcc08>] ? trace_hardirqs_on_thunk+0xc/0x10
-[  199.698623]  [<c10e458e>] sys_open+0x2e/0x40
-[  199.698628]  [<c144c990>] sysenter_do_call+0x12/0x36
-[  199.698632] Code: 85 89 00 00 00 8b 16 8b 4d c0 c1 e2 08 c7 44 24 14 88 13 00 00 81 ca 00 00 00 80 c7 44 24 10 00 00 00 00 c7 44 24 0c 00 00 00 00 <0f> b7 41 78 31 c9 89 44 24 08 c7 44 24 04 00 00 00 00 c7 04 24
-[  199.698884] EIP: [<f811a089>] ftdi_open+0x59/0xe0 [ftdi_sio] SS:ESP 0068:f515dcfc
-[  199.698893] CR2: 0000000000000078
-[  199.698925] ---[ end trace 77c43ec023940cff ]---
+[Yang Bai: add missing #include]
+[avi: fix comment style]
 
-Reported-and-tested-by: Ken Huang <csuhgw@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Yang Bai <hamo.by@gmail.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/usb/serial/usb-serial.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ virt/kvm/kvm_main.c |   75 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 75 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
-index f23f3b4..5429bc5 100644
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -1083,6 +1083,12 @@ int usb_serial_probe(struct usb_interface *interface,
- 		serial->attached = 1;
- 	}
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 77288e2..311ec18 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -43,6 +43,8 @@
+ #include <linux/swap.h>
+ #include <linux/bitops.h>
+ #include <linux/spinlock.h>
++#include <linux/namei.h>
++#include <linux/fs.h>
  
-+	/* Avoid race with tty_open and serial_install by setting the
-+	 * disconnected flag and not clearing it until all ports have been
-+	 * registered.
-+	 */
-+	serial->disconnected = 1;
+ #include <asm/processor.h>
+ #include <asm/io.h>
+@@ -575,12 +577,73 @@ out:
+ 	return r;
+ }
+ 
++/*
++ * We want to test whether the caller has been granted permissions to
++ * use this device.  To be able to configure and control the device,
++ * the user needs access to PCI configuration space and BAR resources.
++ * These are accessed through PCI sysfs.  PCI config space is often
++ * passed to the process calling this ioctl via file descriptor, so we
++ * can't rely on access to that file.  We can check for permissions
++ * on each of the BAR resource files, which is a pretty clear
++ * indicator that the user has been granted access to the device.
++ */
++static int probe_sysfs_permissions(struct pci_dev *dev)
++{
++#ifdef CONFIG_SYSFS
++	int i;
++	bool bar_found = false;
 +
- 	if (get_free_serial(serial, num_ports, &minor) == NULL) {
- 		dev_err(&interface->dev, "No more free serial devices\n");
- 		goto probe_error;
-@@ -1105,6 +1111,8 @@ int usb_serial_probe(struct usb_interface *interface,
- 		}
- 	}
- 
-+	serial->disconnected = 0;
++	for (i = PCI_STD_RESOURCES; i <= PCI_STD_RESOURCE_END; i++) {
++		char *kpath, *syspath;
++		struct path path;
++		struct inode *inode;
++		int r;
 +
- 	usb_serial_console_init(debug, minor);
++		if (!pci_resource_len(dev, i))
++			continue;
++
++		kpath = kobject_get_path(&dev->dev.kobj, GFP_KERNEL);
++		if (!kpath)
++			return -ENOMEM;
++
++		/* Per sysfs-rules, sysfs is always at /sys */
++		syspath = kasprintf(GFP_KERNEL, "/sys%s/resource%d", kpath, i);
++		kfree(kpath);
++		if (!syspath)
++			return -ENOMEM;
++
++		r = kern_path(syspath, LOOKUP_FOLLOW, &path);
++		kfree(syspath);
++		if (r)
++			return r;
++
++		inode = path.dentry->d_inode;
++
++		r = inode_permission(inode, MAY_READ | MAY_WRITE | MAY_ACCESS);
++		path_put(&path);
++		if (r)
++			return r;
++
++		bar_found = true;
++	}
++
++	/* If no resources, probably something special */
++	if (!bar_found)
++		return -EPERM;
++
++	return 0;
++#else
++	return -EINVAL; /* No way to control the device without sysfs */
++#endif
++}
++
+ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
+ 				      struct kvm_assigned_pci_dev *assigned_dev)
+ {
+ 	int r = 0;
+ 	struct kvm_assigned_dev_kernel *match;
+ 	struct pci_dev *dev;
++	u8 header_type;
  
- exit:
+ 	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
+ 		return -EINVAL;
+@@ -610,6 +673,18 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
+ 		r = -EINVAL;
+ 		goto out_free;
+ 	}
++
++	/* Don't allow bridges to be assigned */
++	pci_read_config_byte(dev, PCI_HEADER_TYPE, &header_type);
++	if ((header_type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL) {
++		r = -EPERM;
++		goto out_put;
++	}
++
++	r = probe_sysfs_permissions(dev);
++	if (r)
++		goto out_put;
++
+ 	if (pci_enable_device(dev)) {
+ 		printk(KERN_INFO "%s: Could not enable PCI device\n", __func__);
+ 		r = -EBUSY;
 -- 
 1.7.2.1.45.g54fbc
 
