@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab2JAMHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 08:07:55 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:47619 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981Ab2JAMHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 08:07:53 -0400
-Message-ID: <506986C6.3050908@parallels.com>
-Date: Mon, 1 Oct 2012 16:04:22 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752433Ab2JAMJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 08:09:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41519 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750929Ab2JAMJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 08:09:09 -0400
+Date: Mon, 1 Oct 2012 13:09:07 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        b-cousson@ti.com, balbi@ti.com, santosh.shilimkar@ti.com,
+        sameo@linux.intel.com
+Subject: Re: [PATCHv3 1/4] mfd: smsc: Add support for smsc gpio io/keypad
+ driver
+Message-ID: <20121001120907.GK4360@opensource.wolfsonmicro.com>
+References: <1349089282-22105-1-git-send-email-sourav.poddar@ti.com>
+ <CAAe_U6+zEGuwMC1yn7O=LXE6PhPvPc2i7DCF0EAprkE8s+-iEw@mail.gmail.com>
+ <20121001114454.GA9170@sirena.org.uk>
+ <CAAe_U6JX9QDWvWA3KH7E9sOv0EHGkozVONuXDgn+a2MZ4GTE7Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-7-git-send-email-glommer@parallels.com> <20120926155108.GE15801@dhcp22.suse.cz> <5064392D.5040707@parallels.com> <20120927134432.GE29104@dhcp22.suse.cz> <50658B3B.9020303@parallels.com> <20121001094846.GC8622@dhcp22.suse.cz> <50696BC5.8040808@parallels.com> <20121001115157.GE8622@dhcp22.suse.cz> <506983B8.8010805@parallels.com> <20121001115847.GF8622@dhcp22.suse.cz>
-In-Reply-To: <20121001115847.GF8622@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAe_U6JX9QDWvWA3KH7E9sOv0EHGkozVONuXDgn+a2MZ4GTE7Q@mail.gmail.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2012 03:58 PM, Michal Hocko wrote:
-> On Mon 01-10-12 15:51:20, Glauber Costa wrote:
->> On 10/01/2012 03:51 PM, Michal Hocko wrote:
->>> On Mon 01-10-12 14:09:09, Glauber Costa wrote:
->>>> On 10/01/2012 01:48 PM, Michal Hocko wrote:
->>>>> On Fri 28-09-12 15:34:19, Glauber Costa wrote:
->>>>>> On 09/27/2012 05:44 PM, Michal Hocko wrote:
->>>>>>>>> the reference count aquired by mem_cgroup_get will still prevent the
->>>>>>>>> memcg from going away, no?
->>>>>>> Yes but you are outside of the rcu now and we usually do css_get before
->>>>>>> we rcu_unlock. mem_cgroup_get just makes sure the group doesn't get
->>>>>>> deallocated but it could be gone before you call it. Or I am just
->>>>>>> confused - these 2 levels of ref counting is really not nice.
->>>>>>>
->>>>>>> Anyway, I have just noticed that __mem_cgroup_try_charge does
->>>>>>> VM_BUG_ON(css_is_removed(&memcg->css)) on a given memcg so you should
->>>>>>> keep css ref count up as well.
->>>>>>>
->>>>>>
->>>>>> IIRC, css_get will prevent the cgroup directory from being removed.
->>>>>> Because some allocations are expected to outlive the cgroup, we
->>>>>> specifically don't want that.
->>>>>
->>>>> Yes, but how do you guarantee that the above VM_BUG_ON doesn't trigger?
->>>>> Task could have been moved to another group between mem_cgroup_from_task
->>>>> and mem_cgroup_get, no?
->>>>>
->>>>
->>>> Ok, after reading this again (and again), you seem to be right. It
->>>> concerns me, however, that simply getting the css would lead us to a
->>>> double get/put pair, since try_charge will have to do it anyway.
->>>
->>> That happens only for !*ptr case and you provide a memcg here, don't
->>> you.
->>>
->>
->>         if (*ptr) { /* css should be a valid one */
->>                 memcg = *ptr;
->>                 VM_BUG_ON(css_is_removed(&memcg->css));
->>                 if (mem_cgroup_is_root(memcg))
->>                         goto done;
->>                 if (consume_stock(memcg, nr_pages))
->>                         goto done;
->>                 css_get(&memcg->css);
->>
->>
->> The way I read this, this will still issue a css_get here, unless
->> consume_stock suceeds (assuming non-root)
->>
->> So we'd still have to have a wrapping get/put pair outside the charge.
-> 
-> That is correct but it assumes that the css is valid so somebody upwards
-> made sure css will not go away. This would suggest css_get is not
-> necessary here but I guess the primary intention here is to make the
-> code easier so that we do not have to check whether we took css
-> reference on the return path.
-> 
-In any case, umem would also suffer from double reference, so I'm fine
-taking it here as well, since a solution for that is orthogonal.
+On Mon, Oct 01, 2012 at 05:23:15PM +0530, ABRAHAM, KISHON VIJAY wrote:
+> On Mon, Oct 1, 2012 at 5:14 PM, Mark Brown
 
-I still need mem_cgroup_get() to make sure the data structure stays
-around, but we only need to do it once at first charge.
+> > No, this is not at all sensible - if there's an mfd_remove_devices()
+> > function we really ought to be able to use it to remove the children.
+> > If we can't do that we should fix the API usability, not open code the
+> > same stuff in every user.
 
+> What makes more sense to me is extend mfd_add_devices to create child
+> devices from dt data. Then for removing devices, one can use
+> mfd_remove_devices().
 
-
+Why would that be helpful?  Most platforms don't support DT at all, and
+having the API behave differently depending on the platform doesn't seem
+like a step forwards.  I would really expect any usage of DT to be
+totally orthogonal here.
