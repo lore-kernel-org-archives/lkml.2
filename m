@@ -1,117 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2JAQCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 12:02:06 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:38349 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752233Ab2JAQCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 12:02:03 -0400
-Date: Mon, 1 Oct 2012 09:01:24 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute2 v3.6.0
-Message-ID: <20121001090124.2f8ce0f7@nehalam.linuxnetplumber.net>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753000Ab2JAQCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 12:02:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63874 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab2JAQCT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 12:02:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121001080541.GM4009@amd.com>
+References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+	<1348835046-3262-13-git-send-email-joerg.roedel@amd.com>
+	<CAKocOONojx7tvu6x+HV97Rae-KXA3hW65Ujmt2t7LCVs9oRpyw@mail.gmail.com>
+	<20121001080541.GM4009@amd.com>
+Date: Mon, 1 Oct 2012 10:02:18 -0600
+Message-ID: <CAKocOOOpN413i+yET-7-TSR6dHnkp5+EzDkaO7DmoCRnc-iMGQ@mail.gmail.com>
+Subject: Re: [PATCH 12/16] iommu/amd: Add initialization routines for AMD
+ interrupt remapping
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am happy to announce the update to iproute2 for v3.6 kernel.
-In addition to lots of documentation and minor bugfixes,
-this version contains support for controlling the forwarding
-tables of software and external device bridges.
+On Mon, Oct 1, 2012 at 2:05 AM, Joerg Roedel <joerg.roedel@amd.com> wrote:
+> On Fri, Sep 28, 2012 at 05:18:18PM -0600, Shuah Khan wrote:
+>> > +void amd_iommu_disable(void)
+>> > +{
+>> > +       amd_iommu_suspend();
+>>
+>> Is it safe to attempt to suspend when iommu is in suspend state? In
+>> other words what happens if amd_iommu_disable() gets called when iommu
+>> is already in suspend state?
+>
+> Yes, this is safe. It just trns a bit to 0 which is already 0.
+>
+Good.
+>>> > +int amd_iommu_reenable(int mode)
+>> > +{
+>> > +       amd_iommu_resume();
+>>
+>> Same question as above. Safe to do a resume, when in resumed state?
+>
+> Safe too, it just writes values to the hardware which are already there.
+> This was also proven by testing.
+>
 
-This also means that if there are changes to iproute2 to support
-features added to 3.7 merge window, please submit them now.
+Thanks. Sounds good.
 
-
-Iproute2 package is available at:
-  http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.6.0.tar.gz
-
-You can download the source from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
-
----
-
-Andreas Schwab (1):
-      iproute2: Fix various manpage formatting nits
-
-Chris Webb (1):
-      Correct the bridge command name in help messages
-
-Dan Kenigsberg (1):
-      utils: invarg: msg precedes the faulty arg
-
-Eric Dumazet (1):
-      ss: report SK_MEMINFO_BACKLOG
-
-Florian Westphal (2):
-      tc: add ipset ematch
-      add ematch man page
-
-Jiri Pirko (1):
-      iplink: add support for num[tr]xqueues
-
-John Fastabend (4):
-      iproute2: Add FDB print and update cmds for self and master
-      iproute2: build failure due to missing '\' in Makefile
-      iproute2: bridge: remove replace and change options
-      iproute2: bridge: finish removing replace option in man pages
-
-Julian Anastasov (3):
-      iproute2: add libgenl files
-      iproute2: use libgenl in ipl2tp
-      iproute2: GENL: merge GENL_REQUEST and GENL_INITIALIZER
-
-Li Wei (3):
-      iproute2: fix typo in help message.
-      iproute2: configure: Add search path for 64bit library.
-      iproute2: tc.8: update UNITS section.
-
-Mathias Krause (1):
-      configure: remove TMPDIR on exit
-
-Mike Frysinger (1):
-      Fix regression with 'ip address show'
-
-Oliver Hartkopp (1):
-      iproute2: Add missing tc-ematch.8 for man page installation
-
-Pavel Emelyanov (4):
-      iproute: Fix errno propagation from rtnl_talk
-      iproute: Add magic cookie to route dump file
-      iproute: Add route showdump command (v2)
-      iproute: Add ability to save, restore and show the interfaces' addresses (resend)
-
-Rostislav Lisovy (2):
-      add can.h
-      Ematch used to classify CAN frames according to their identifiers
-
-Saurabh (1):
-      iproute2: VTI support for ip link command.
-
-Saurabh Mohan (1):
-      VTI support for ip tunnel
-
-Stephen Hemminger (9):
-      Update to 3.6.0-pre headers
-      Fix formatting of ip.8 family man page
-      Explain TC class id limits
-      Update can.h to 3.6-rc2
-      Install all tc and ip sub pages
-      man: make sure tc man page gets installed
-      Add support for AF_BRIDGE
-      update header files to 3.6
-      v3.6.0
-
-Werner Fink (1):
-      Change how pdf doc's are created
-
-Xose Vazquez Perez (1):
-      Fix Makefile's
-
+-- Shuah
