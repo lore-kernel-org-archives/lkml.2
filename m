@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758630Ab2JAX1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:27:47 -0400
-Received: from 1wt.eu ([62.212.114.60]:35259 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932756Ab2JAXAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932763Ab2JAXAy (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 1 Oct 2012 19:00:54 -0400
-Message-Id: <20121001225201.043384456@1wt.eu>
+Received: from 1wt.eu ([62.212.114.60]:35241 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757624Ab2JAXAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:50 -0400
+Message-Id: <20121001225204.690403037@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:18 +0200
+Date: Tue, 02 Oct 2012 00:54:44 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: David Ward <david.ward@ll.mit.edu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Theodore Tso" <tytso@mit.edu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 081/180] net_sched: gred: Fix oops in gred_dump() in WRED mode
+Subject: [ 167/180] random: make add_interrupt_randomness() do something sane
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +25,276 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Ward <david.ward@ll.mit.edu>
+From: Theodore Ts'o <tytso@mit.edu>
 
-[ Upstream commit 244b65dbfede788f2fa3fe2463c44d0809e97c6b ]
+commit 775f4b297b780601e61787b766f306ed3e1d23eb upstream.
 
-A parameter set exists for WRED mode, called wred_set, to hold the same
-values for qavg and qidlestart across all VQs. The WRED mode values had
-been previously held in the VQ for the default DP. After these values
-were moved to wred_set, the VQ for the default DP was no longer created
-automatically (so that it could be omitted on purpose, to have packets
-in the default DP enqueued directly to the device without using RED).
+We've been moving away from add_interrupt_randomness() for various
+reasons: it's too expensive to do on every interrupt, and flooding the
+CPU with interrupts could theoretically cause bogus floods of entropy
+from a somewhat externally controllable source.
 
-However, gred_dump() was overlooked during that change; in WRED mode it
-still reads qavg/qidlestart from the VQ for the default DP, which might
-not even exist. As a result, this command sequence will cause an oops:
+This solves both problems by limiting the actual randomness addition
+to just once a second or after 64 interrupts, whicever comes first.
+During that time, the interrupt cycle data is buffered up in a per-cpu
+pool.  Also, we make sure the the nonblocking pool used by urandom is
+initialized before we start feeding the normal input pool.  This
+assures that /dev/urandom is returning unpredictable data as soon as
+possible.
 
-tc qdisc add dev $DEV handle $HANDLE parent $PARENT gred setup \
-    DPs 3 default 2 grio
-tc qdisc change dev $DEV handle $HANDLE gred DP 0 prio 8 $RED_OPTIONS
-tc qdisc change dev $DEV handle $HANDLE gred DP 1 prio 8 $RED_OPTIONS
+(Based on an original patch by Linus, but significantly modified by
+tytso.)
 
-This fixes gred_dump() in WRED mode to use the values held in wred_set.
-
-Signed-off-by: David Ward <david.ward@ll.mit.edu>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Tested-by: Eric Wustrow <ewust@umich.edu>
+Reported-by: Eric Wustrow <ewust@umich.edu>
+Reported-by: Nadia Heninger <nadiah@cs.ucsd.edu>
+Reported-by: Zakir Durumeric <zakir@umich.edu>
+Reported-by: J. Alex Halderman <jhalderm@umich.edu>.
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[PG: minor adjustment required since .34 doesn't have f9e4989eb8
+ which renames "status" to "random" in kernel/irq/handle.c ]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/sched/sch_gred.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/char/random.c  |  103 ++++++++++++++++++++++++++++++++++++++++--------
+ include/linux/random.h |    2 +-
+ kernel/irq/handle.c    |    7 +--
+ 3 files changed, 90 insertions(+), 22 deletions(-)
 
-diff --git a/net/sched/sch_gred.c b/net/sched/sch_gred.c
-index 40408d5..bf98414 100644
---- a/net/sched/sch_gred.c
-+++ b/net/sched/sch_gred.c
-@@ -544,11 +544,8 @@ static int gred_dump(struct Qdisc *sch, struct sk_buff *skb)
- 		opt.packets	= q->packetsin;
- 		opt.bytesin	= q->bytesin;
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 0c38849..30eae12 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -127,19 +127,15 @@
+  *
+  * 	void add_input_randomness(unsigned int type, unsigned int code,
+  *                                unsigned int value);
+- * 	void add_interrupt_randomness(int irq);
++ *	void add_interrupt_randomness(int irq, int irq_flags);
+  * 	void add_disk_randomness(struct gendisk *disk);
+  *
+  * add_input_randomness() uses the input layer interrupt timing, as well as
+  * the event type information from the hardware.
+  *
+- * add_interrupt_randomness() uses the inter-interrupt timing as random
+- * inputs to the entropy pool.  Note that not all interrupts are good
+- * sources of randomness!  For example, the timer interrupts is not a
+- * good choice, because the periodicity of the interrupts is too
+- * regular, and hence predictable to an attacker.  Network Interface
+- * Controller interrupts are a better measure, since the timing of the
+- * NIC interrupts are more unpredictable.
++ * add_interrupt_randomness() uses the interrupt timing as random
++ * inputs to the entropy pool. Using the cycle counters and the irq source
++ * as inputs, it feeds the randomness roughly once a second.
+  *
+  * add_disk_randomness() uses what amounts to the seek time of block
+  * layer request events, on a per-disk_devt basis, as input to the
+@@ -248,6 +244,7 @@
+ #include <linux/percpu.h>
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
++#include <linux/ptrace.h>
  
--		if (gred_wred_mode(table)) {
--			q->parms.qidlestart =
--				table->tab[table->def]->parms.qidlestart;
--			q->parms.qavg = table->tab[table->def]->parms.qavg;
--		}
-+		if (gred_wred_mode(table))
-+			gred_load_wred_set(table, q);
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ # include <linux/irq.h>
+@@ -256,6 +253,7 @@
+ #include <asm/processor.h>
+ #include <asm/uaccess.h>
+ #include <asm/irq.h>
++#include <asm/irq_regs.h>
+ #include <asm/io.h>
  
- 		opt.qave = red_calc_qavg(&q->parms, q->parms.qavg);
+ /*
+@@ -421,7 +419,9 @@ struct entropy_store {
+ 	spinlock_t lock;
+ 	unsigned add_ptr;
+ 	int entropy_count;
++	int entropy_total;
+ 	int input_rotate;
++	unsigned int initialized:1;
+ 	__u8 last_data[EXTRACT_SIZE];
+ };
  
+@@ -454,6 +454,10 @@ static struct entropy_store nonblocking_pool = {
+ 	.pool = nonblocking_pool_data
+ };
+ 
++static __u32 const twist_table[8] = {
++	0x00000000, 0x3b6e20c8, 0x76dc4190, 0x4db26158,
++	0xedb88320, 0xd6d6a3e8, 0x9b64c2b0, 0xa00ae278 };
++
+ /*
+  * This function adds bytes into the entropy "pool".  It does not
+  * update the entropy estimate.  The caller should call
+@@ -467,9 +471,6 @@ static struct entropy_store nonblocking_pool = {
+ static void mix_pool_bytes_extract(struct entropy_store *r, const void *in,
+ 				   int nbytes, __u8 out[64])
+ {
+-	static __u32 const twist_table[8] = {
+-		0x00000000, 0x3b6e20c8, 0x76dc4190, 0x4db26158,
+-		0xedb88320, 0xd6d6a3e8, 0x9b64c2b0, 0xa00ae278 };
+ 	unsigned long i, j, tap1, tap2, tap3, tap4, tap5;
+ 	int input_rotate;
+ 	int wordmask = r->poolinfo->poolwords - 1;
+@@ -528,6 +529,36 @@ static void mix_pool_bytes(struct entropy_store *r, const void *in, int bytes)
+        mix_pool_bytes_extract(r, in, bytes, NULL);
+ }
+ 
++struct fast_pool {
++	__u32		pool[4];
++	unsigned long	last;
++	unsigned short	count;
++	unsigned char	rotate;
++	unsigned char	last_timer_intr;
++};
++
++/*
++ * This is a fast mixing routine used by the interrupt randomness
++ * collector.  It's hardcoded for an 128 bit pool and assumes that any
++ * locks that might be needed are taken by the caller.
++ */
++static void fast_mix(struct fast_pool *f, const void *in, int nbytes)
++{
++	const char	*bytes = in;
++	__u32		w;
++	unsigned	i = f->count;
++	unsigned	input_rotate = f->rotate;
++
++	while (nbytes--) {
++		w = rol32(*bytes++, input_rotate & 31) ^ f->pool[i & 3] ^
++			f->pool[(i + 1) & 3];
++		f->pool[i & 3] = (w >> 3) ^ twist_table[w & 7];
++		input_rotate += (i++ & 3) ? 7 : 14;
++	}
++	f->count = i;
++	f->rotate = input_rotate;
++}
++
+ /*
+  * Credit (or debit) the entropy store with n bits of entropy
+  */
+@@ -551,6 +582,12 @@ static void credit_entropy_bits(struct entropy_store *r, int nbits)
+ 		entropy_count = r->poolinfo->POOLBITS;
+ 	r->entropy_count = entropy_count;
+ 
++	if (!r->initialized && nbits > 0) {
++		r->entropy_total += nbits;
++		if (r->entropy_total > 128)
++			r->initialized = 1;
++	}
++
+ 	/* should we wake readers? */
+ 	if (r == &input_pool && entropy_count >= random_read_wakeup_thresh) {
+ 		wake_up_interruptible(&random_read_wait);
+@@ -700,17 +737,48 @@ void add_input_randomness(unsigned int type, unsigned int code,
+ }
+ EXPORT_SYMBOL_GPL(add_input_randomness);
+ 
+-void add_interrupt_randomness(int irq)
++static DEFINE_PER_CPU(struct fast_pool, irq_randomness);
++
++void add_interrupt_randomness(int irq, int irq_flags)
+ {
+-	struct timer_rand_state *state;
++	struct entropy_store	*r;
++	struct fast_pool	*fast_pool = &__get_cpu_var(irq_randomness);
++	struct pt_regs		*regs = get_irq_regs();
++	unsigned long		now = jiffies;
++	__u32			input[4], cycles = get_cycles();
++
++	input[0] = cycles ^ jiffies;
++	input[1] = irq;
++	if (regs) {
++		__u64 ip = instruction_pointer(regs);
++		input[2] = ip;
++		input[3] = ip >> 32;
++	}
+ 
+-	state = get_timer_rand_state(irq);
++	fast_mix(fast_pool, input, sizeof(input));
+ 
+-	if (state == NULL)
++	if ((fast_pool->count & 1023) &&
++	    !time_after(now, fast_pool->last + HZ))
+ 		return;
+ 
+-	DEBUG_ENT("irq event %d\n", irq);
+-	add_timer_randomness(state, 0x100 + irq);
++	fast_pool->last = now;
++
++	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
++	mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool));
++	/*
++	 * If we don't have a valid cycle counter, and we see
++	 * back-to-back timer interrupts, then skip giving credit for
++	 * any entropy.
++	 */
++	if (cycles == 0) {
++		if (irq_flags & __IRQF_TIMER) {
++			if (fast_pool->last_timer_intr)
++				return;
++			fast_pool->last_timer_intr = 1;
++		} else
++			fast_pool->last_timer_intr = 0;
++	}
++	credit_entropy_bits(r, 1);
+ }
+ 
+ #ifdef CONFIG_BLOCK
+@@ -971,6 +1039,7 @@ static void init_std_data(struct entropy_store *r)
+ 
+ 	spin_lock_irqsave(&r->lock, flags);
+ 	r->entropy_count = 0;
++	r->entropy_total = 0;
+ 	spin_unlock_irqrestore(&r->lock, flags);
+ 
+ 	now = ktime_get_real();
+diff --git a/include/linux/random.h b/include/linux/random.h
+index 0bf2936..8a85602 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -48,7 +48,7 @@ extern void rand_initialize_irq(int irq);
+ 
+ extern void add_input_randomness(unsigned int type, unsigned int code,
+ 				 unsigned int value);
+-extern void add_interrupt_randomness(int irq);
++extern void add_interrupt_randomness(int irq, int irq_flags);
+ 
+ extern void get_random_bytes(void *buf, int nbytes);
+ void generate_random_uuid(unsigned char uuid_out[16]);
+diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+index 17c71bb..27fd0a6 100644
+--- a/kernel/irq/handle.c
++++ b/kernel/irq/handle.c
+@@ -370,7 +370,7 @@ static void warn_no_thread(unsigned int irq, struct irqaction *action)
+ irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action)
+ {
+ 	irqreturn_t ret, retval = IRQ_NONE;
+-	unsigned int status = 0;
++	unsigned int flags = 0;
+ 
+ 	if (!(action->flags & IRQF_DISABLED))
+ 		local_irq_enable_in_hardirq();
+@@ -413,7 +413,7 @@ irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action)
+ 
+ 			/* Fall through to add to randomness */
+ 		case IRQ_HANDLED:
+-			status |= action->flags;
++			flags |= action->flags;
+ 			break;
+ 
+ 		default:
+@@ -424,8 +424,7 @@ irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action)
+ 		action = action->next;
+ 	} while (action);
+ 
+-	if (status & IRQF_SAMPLE_RANDOM)
+-		add_interrupt_randomness(irq);
++	add_interrupt_randomness(irq, flags);
+ 	local_irq_disable();
+ 
+ 	return retval;
 -- 
 1.7.2.1.45.g54fbc
 
