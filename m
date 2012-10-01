@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2JAUzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 16:55:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756524Ab2JAUzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 16:55:47 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, tj@kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH 04/15] cfq-iosched: Rename few functions related to selecting workload
-References: <1349119976-26837-1-git-send-email-vgoyal@redhat.com>
-	<1349119976-26837-5-git-send-email-vgoyal@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 01 Oct 2012 16:55:43 -0400
-In-Reply-To: <1349119976-26837-5-git-send-email-vgoyal@redhat.com> (Vivek
-	Goyal's message of "Mon, 1 Oct 2012 15:32:45 -0400")
-Message-ID: <x49ehlhj4j4.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755975Ab2JAUqf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 16:46:35 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49208 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756634Ab2JAUq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 16:46:29 -0400
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH] arm/dts: at91sam9g20ek_common: Fix typos in buttons labels.
+Date: Mon,  1 Oct 2012 22:46:09 +0200
+Message-Id: <1349124369-28742-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+---
+ arch/arm/boot/dts/at91sam9g20ek_common.dtsi |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> choose_st() selects/sets both wl_class and wl_type.  Rename it to
-> choose_wl_class_and_type() to make it very clear.
->
-> cfq_choose_wl() only selects and sets wl_type. It is easy to confuse
-> it with choose_st(). So rename it to cfq_choose_wl_type() to make
-> it clear what does it do.
->
-> Just renaming. No functionality change.
->
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+diff --git a/arch/arm/boot/dts/at91sam9g20ek_common.dtsi b/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
+index b06c0db..e6391a4 100644
+--- a/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
++++ b/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
+@@ -126,14 +126,14 @@
+ 		#size-cells = <0>;
+ 
+ 		btn3 {
+-			label = "Buttin 3";
++			label = "Button 3";
+ 			gpios = <&pioA 30 1>;
+ 			linux,code = <0x103>;
+ 			gpio-key,wakeup;
+ 		};
+ 
+ 		btn4 {
+-			label = "Buttin 4";
++			label = "Button 4";
+ 			gpios = <&pioA 31 1>;
+ 			linux,code = <0x104>;
+ 			gpio-key,wakeup;
+-- 
+1.7.9.5
 
-No objections.
-
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
