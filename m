@@ -1,70 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab2JAMFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 08:05:22 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56981 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab2JAMFU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 08:05:20 -0400
-Date: Mon, 1 Oct 2012 14:05:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: task_work_add/scheduler_tick: possible circular locking
- dependency detected
-Message-ID: <20121001120515.GA21354@gmail.com>
-References: <20120928113402.GA577@localhost>
- <1349088639.7780.4.camel@twins>
- <20121001115936.GA17830@localhost>
+	id S1752451Ab2JAMHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 08:07:55 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:47619 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750981Ab2JAMHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 08:07:53 -0400
+Message-ID: <506986C6.3050908@parallels.com>
+Date: Mon, 1 Oct 2012 16:04:22 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121001115936.GA17830@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-7-git-send-email-glommer@parallels.com> <20120926155108.GE15801@dhcp22.suse.cz> <5064392D.5040707@parallels.com> <20120927134432.GE29104@dhcp22.suse.cz> <50658B3B.9020303@parallels.com> <20121001094846.GC8622@dhcp22.suse.cz> <50696BC5.8040808@parallels.com> <20121001115157.GE8622@dhcp22.suse.cz> <506983B8.8010805@parallels.com> <20121001115847.GF8622@dhcp22.suse.cz>
+In-Reply-To: <20121001115847.GF8622@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Fengguang Wu <fengguang.wu@intel.com> wrote:
-
-> On Mon, Oct 01, 2012 at 12:50:39PM +0200, Peter Zijlstra wrote:
-> > On Fri, 2012-09-28 at 19:34 +0800, Fengguang Wu wrote:
-> > > Peter,
-> > > 
-> > > I got the warning
-> > > 
-> > > [   10.412023] 
-> > > [   10.412611] ======================================================
-> > > [   10.413014] [ INFO: possible circular locking dependency detected ]
-> > > [   10.413014] 3.6.0-rc4-00098-g7eaffe9 #402 Not tainted
-> > > [   10.413014] -------------------------------------------------------
-> > > [   10.413014] init/1 is trying to acquire lock:
-> > > [   10.413014]  (&p->pi_lock){-.-.-.}, at: [<ffffffff81088214>] task_work_add+0x28/0x82
-> > > [   10.413014] 
-> > > [   10.413014] but task is already holding lock:
-> > > [   10.413014]  (&rq->lock){-.-.-.}, at: [<ffffffff8109c6ea>] scheduler_tick+0x3f/0xec
-> > > [   10.413014] 
-> > > [   10.413014] which lock already depends on the new lock.
-> > > [   10.413014] 
-> > > [   10.413014] 
-> > > 
-> > 
-> > The commit ac3d0da8f3290b3d394cdb7f50604424a7cd6092 should avoid this
-> > from happening, not sure what branch its on, but it was in tip before
-> > all this landed, so I guess its due to you testing sched/numa branch and
-> > not a merged branch like master or auto-next.
+On 10/01/2012 03:58 PM, Michal Hocko wrote:
+> On Mon 01-10-12 15:51:20, Glauber Costa wrote:
+>> On 10/01/2012 03:51 PM, Michal Hocko wrote:
+>>> On Mon 01-10-12 14:09:09, Glauber Costa wrote:
+>>>> On 10/01/2012 01:48 PM, Michal Hocko wrote:
+>>>>> On Fri 28-09-12 15:34:19, Glauber Costa wrote:
+>>>>>> On 09/27/2012 05:44 PM, Michal Hocko wrote:
+>>>>>>>>> the reference count aquired by mem_cgroup_get will still prevent the
+>>>>>>>>> memcg from going away, no?
+>>>>>>> Yes but you are outside of the rcu now and we usually do css_get before
+>>>>>>> we rcu_unlock. mem_cgroup_get just makes sure the group doesn't get
+>>>>>>> deallocated but it could be gone before you call it. Or I am just
+>>>>>>> confused - these 2 levels of ref counting is really not nice.
+>>>>>>>
+>>>>>>> Anyway, I have just noticed that __mem_cgroup_try_charge does
+>>>>>>> VM_BUG_ON(css_is_removed(&memcg->css)) on a given memcg so you should
+>>>>>>> keep css ref count up as well.
+>>>>>>>
+>>>>>>
+>>>>>> IIRC, css_get will prevent the cgroup directory from being removed.
+>>>>>> Because some allocations are expected to outlive the cgroup, we
+>>>>>> specifically don't want that.
+>>>>>
+>>>>> Yes, but how do you guarantee that the above VM_BUG_ON doesn't trigger?
+>>>>> Task could have been moved to another group between mem_cgroup_from_task
+>>>>> and mem_cgroup_get, no?
+>>>>>
+>>>>
+>>>> Ok, after reading this again (and again), you seem to be right. It
+>>>> concerns me, however, that simply getting the css would lead us to a
+>>>> double get/put pair, since try_charge will have to do it anyway.
+>>>
+>>> That happens only for !*ptr case and you provide a memcg here, don't
+>>> you.
+>>>
+>>
+>>         if (*ptr) { /* css should be a valid one */
+>>                 memcg = *ptr;
+>>                 VM_BUG_ON(css_is_removed(&memcg->css));
+>>                 if (mem_cgroup_is_root(memcg))
+>>                         goto done;
+>>                 if (consume_stock(memcg, nr_pages))
+>>                         goto done;
+>>                 css_get(&memcg->css);
+>>
+>>
+>> The way I read this, this will still issue a css_get here, unless
+>> consume_stock suceeds (assuming non-root)
+>>
+>> So we'd still have to have a wrapping get/put pair outside the charge.
 > 
-> Peter, you are right, it's tested in tip:sched/numa. linux-next is
-> fine. Hmm, I should automatically test linux-next before raising the
-> problem, hehe.
+> That is correct but it assumes that the css is valid so somebody upwards
+> made sure css will not go away. This would suggest css_get is not
+> necessary here but I guess the primary intention here is to make the
+> code easier so that we do not have to check whether we took css
+> reference on the return path.
+> 
+In any case, umem would also suffer from double reference, so I'm fine
+taking it here as well, since a solution for that is orthogonal.
 
-tip:master is well-tested and generally a couple of days fresher 
-than linux-next, so in such a case where you are interested in 
-tip:sched/numa you should probably test tip:master.
+I still need mem_cgroup_get() to make sure the data structure stays
+around, but we only need to do it once at first charge.
 
-Thanks,
 
-	Ingo
+
