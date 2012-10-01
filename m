@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933627Ab2JAXcz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:32:55 -0400
-Received: from 1wt.eu ([62.212.114.60]:35155 "EHLO 1wt.eu"
+	id S965161Ab2JAXdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:33:18 -0400
+Received: from 1wt.eu ([62.212.114.60]:35150 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757610Ab2JAXA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:27 -0400
-Message-Id: <20121001225203.502626725@1wt.eu>
+	id S1757596Ab2JAXAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:25 -0400
+Message-Id: <20121001225202.564535859@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:16 +0200
+Date: Tue, 02 Oct 2012 00:53:54 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mathias Krause <minipli@googlemail.com>,
-        Gerrit Renker <gerrit@erg.abdn.ac.uk>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Colin Ian King <colin.king@canonical.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 139/180] dccp: check ccid before dereferencing
+Subject: [ 117/180] USB: echi-dbgp: increase the controller wait time to come out of halt.
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Colin Ian King <colin.king@canonical.com>
 
-commit 276bdb82dedb290511467a5a4fdbe9f0b52dce6f upstream.
+commit f96a4216e85050c0a9d41a41ecb0ae9d8e39b509 upstream.
 
-ccid_hc_rx_getsockopt() and ccid_hc_tx_getsockopt() might be called with
-a NULL ccid pointer leading to a NULL pointer dereference. This could
-lead to a privilege escalation if the attacker is able to map page 0 and
-prepare it with a fake ccid_ops pointer.
+The default 10 microsecond delay for the controller to come out of
+halt in dbgp_ehci_startup is too short, so increase it to 1 millisecond.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Gerrit Renker <gerrit@erg.abdn.ac.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This is based on emperical testing on various USB debug ports on
+modern machines such as a Lenovo X220i and an Ivybridge development
+platform that needed to wait ~450-950 microseconds.
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/dccp/ccid.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/early/ehci-dbgp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/dccp/ccid.h b/net/dccp/ccid.h
-index facedd2..ab260b0 100644
---- a/net/dccp/ccid.h
-+++ b/net/dccp/ccid.h
-@@ -214,7 +214,7 @@ static inline int ccid_hc_rx_getsockopt(struct ccid *ccid, struct sock *sk,
- 					u32 __user *optval, int __user *optlen)
- {
- 	int rc = -ENOPROTOOPT;
--	if (ccid->ccid_ops->ccid_hc_rx_getsockopt != NULL)
-+	if (ccid != NULL && ccid->ccid_ops->ccid_hc_rx_getsockopt != NULL)
- 		rc = ccid->ccid_ops->ccid_hc_rx_getsockopt(sk, optname, len,
- 						 optval, optlen);
- 	return rc;
-@@ -225,7 +225,7 @@ static inline int ccid_hc_tx_getsockopt(struct ccid *ccid, struct sock *sk,
- 					u32 __user *optval, int __user *optlen)
- {
- 	int rc = -ENOPROTOOPT;
--	if (ccid->ccid_ops->ccid_hc_tx_getsockopt != NULL)
-+	if (ccid != NULL && ccid->ccid_ops->ccid_hc_tx_getsockopt != NULL)
- 		rc = ccid->ccid_ops->ccid_hc_tx_getsockopt(sk, optname, len,
- 						 optval, optlen);
- 	return rc;
+diff --git a/drivers/usb/early/ehci-dbgp.c b/drivers/usb/early/ehci-dbgp.c
+index 1206a26..7565f55 100644
+--- a/drivers/usb/early/ehci-dbgp.c
++++ b/drivers/usb/early/ehci-dbgp.c
+@@ -449,7 +449,7 @@ static int dbgp_ehci_startup(void)
+ 	writel(FLAG_CF, &ehci_regs->configured_flag);
+ 
+ 	/* Wait until the controller is no longer halted */
+-	loop = 10;
++	loop = 1000;
+ 	do {
+ 		status = readl(&ehci_regs->status);
+ 		if (!(status & STS_HALT))
 -- 
 1.7.2.1.45.g54fbc
 
