@@ -1,194 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab2JANQT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 09:16:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34901 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753058Ab2JANQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 09:16:17 -0400
-Date: Mon, 1 Oct 2012 15:16:09 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] trivial
-Message-ID: <alpine.LNX.2.00.1210011514450.27440@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753283Ab2JANQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 09:16:33 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:33837 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084Ab2JANQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 09:16:31 -0400
+Date: Mon, 1 Oct 2012 15:16:11 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: andrew.cooper3@citrix.com, jbeulich@suse.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH 06/11] x86/xen: Add i386 kexec/kdump implementation
+Message-ID: <20121001131611.GD2942@host-192-168-1-59.local.net-space.pl>
+References: <1348769198-29580-1-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-2-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-3-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-4-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-5-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-6-git-send-email-daniel.kiper@oracle.com>
+ <1348769198-29580-7-git-send-email-daniel.kiper@oracle.com>
+ <20120928163941.GD16262@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120928163941.GD16262@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, Sep 28, 2012 at 12:39:44PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Thu, Sep 27, 2012 at 08:06:33PM +0200, Daniel Kiper wrote:
+> > Add i386 kexec/kdump implementation.
+> >
+> > Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> > ---
+> >  arch/x86/xen/machine_kexec_32.c   |  245 ++++++++++++++++++++++++++++
+> >  arch/x86/xen/relocate_kernel_32.S |  323 +++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 568 insertions(+), 0 deletions(-)
+> >  create mode 100644 arch/x86/xen/machine_kexec_32.c
+> >  create mode 100644 arch/x86/xen/relocate_kernel_32.S
+> >
+> > diff --git a/arch/x86/xen/machine_kexec_32.c b/arch/x86/xen/machine_kexec_32.c
+> > new file mode 100644
+> > index 0000000..6b5141e
+> > --- /dev/null
+> > +++ b/arch/x86/xen/machine_kexec_32.c
+> > @@ -0,0 +1,245 @@
+> > +/*
+> > + * Copyright (c) 2011 Daniel Kiper
+> > + * Copyright (c) 2012 Daniel Kiper, Oracle Corporation
+> > + *
+> > + * kexec/kdump implementation for Xen was written by Daniel Kiper.
+> > + * Initial work on it was sponsored by Google under Google Summer
+> > + * of Code 2011 program and Citrix. Konrad Rzeszutek Wilk from Oracle
+> > + * was the mentor for this project.
+> > + *
+> > + * Some ideas are taken from:
+> > + *   - native kexec/kdump implementation,
+> > + *   - kexec/kdump implementation for Xen Linux Kernel Ver. 2.6.18,
+> > + *   - PV-GRUB.
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License along
+> > + * with this program.  If not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +
+> > +#include <linux/errno.h>
+> > +#include <linux/init.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/kexec.h>
+> > +#include <linux/mm.h>
+> > +#include <linux/string.h>
+> > +
+> > +#include <xen/xen.h>
+> > +#include <xen/xen-ops.h>
+> > +
+> > +#include <asm/xen/hypercall.h>
+> > +#include <asm/xen/kexec.h>
+> > +#include <asm/xen/page.h>
+> > +
+> > +#define __ma(vaddr)	(virt_to_machine(vaddr).maddr)
+> > +
+> > +static struct page *kimage_alloc_pages(gfp_t gfp_mask,
+> > +					unsigned int order,
+> > +					unsigned long limit)
+> > +{
+> > +	struct page *pages;
+> > +	unsigned int address_bits, i;
+> > +
+> > +	pages = alloc_pages(gfp_mask, order);
+> > +
+> > +	if (!pages)
+> > +		return NULL;
+> > +
+> > +	address_bits = (limit == ULONG_MAX) ? BITS_PER_LONG : ilog2(limit);
+> > +
+> > +	/* Relocate set of pages below given limit. */
+> > +	if (xen_create_contiguous_region((unsigned long)page_address(pages),
+> > +							order, address_bits)) {
+> > +		__free_pages(pages, order);
+> > +		return NULL;
+> > +	}
+> > +
+> > +	pages->mapping = NULL;
+>
+> It shouldn't matter (as you did the alloc_page) but could you
+> add:
+> 	BUG_ON(PagePrivate(pages))
+> in case somebody did do something weird beforehand.
 
-please pull from
+OK.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
+> > +	set_page_private(pages, order);
+> > +
+> > +	for (i = 0; i < (1 << order); ++i)
+> > +		SetPageReserved(pages + i);
+> > +
+> > +	return pages;
+> > +}
+> > +
+> > +static void kimage_free_pages(struct page *page)
+> > +{
+> > +	unsigned int i, order;
+> > +
+> > +	order = page_private(page);
+> > +
+> > +	for (i = 0; i < (1 << order); ++i)
+> > +		ClearPageReserved(page + i);
+> > +
+> > +	xen_destroy_contiguous_region((unsigned long)page_address(page), order);
+> > +	__free_pages(page, order);
+> > +}
+> > +
+> > +static unsigned long xen_page_to_mfn(struct page *page)
+> > +{
+> > +	return pfn_to_mfn(page_to_pfn(page));
+> > +}
+> > +
+> > +static struct page *xen_mfn_to_page(unsigned long mfn)
+> > +{
+> > +	return pfn_to_page(mfn_to_pfn(mfn));
+> > +}
+> > +
+> > +static unsigned long xen_virt_to_machine(volatile void *address)
+> > +{
+> > +	return virt_to_machine(address).maddr;
+> > +}
+> > +
+> > +static void *xen_machine_to_virt(unsigned long address)
+> > +{
+> > +	return phys_to_virt(machine_to_phys(XMADDR(address)).paddr);
+> > +}
+> > +
+> > +static void free_transition_pgtable(struct kimage *image)
+> > +{
+> > +	free_page((unsigned long)image->arch.pgd);
+> > +	free_page((unsigned long)image->arch.pmd0);
+> > +	free_page((unsigned long)image->arch.pmd1);
+> > +	free_page((unsigned long)image->arch.pte0);
+> > +	free_page((unsigned long)image->arch.pte1);
+> > +}
+> > +
+> > +static int alloc_transition_pgtable(struct kimage *image)
+> > +{
+> > +	image->arch.pgd = (pgd_t *)get_zeroed_page(GFP_KERNEL);
+> > +
+> > +	if (!image->arch.pgd)
+> > +		goto err;
+> > +
+> > +	image->arch.pmd0 = (pmd_t *)get_zeroed_page(GFP_KERNEL);
+> > +
+> > +	if (!image->arch.pmd0)
+> > +		goto err;
+> > +
+> > +	image->arch.pmd1 = (pmd_t *)get_zeroed_page(GFP_KERNEL);
+> > +
+> > +	if (!image->arch.pmd1)
+> > +		goto err;
+> > +
+> > +	image->arch.pte0 = (pte_t *)get_zeroed_page(GFP_KERNEL);
+> > +
+> > +	if (!image->arch.pte0)
+> > +		goto err;
+> > +
+> > +	image->arch.pte1 = (pte_t *)get_zeroed_page(GFP_KERNEL);
+> > +
+> > +	if (!image->arch.pte1)
+> > +		goto err;
+> > +
+> > +	return 0;
+> > +
+> > +err:
+> > +	free_transition_pgtable(image);
+> > +
+> > +	return -ENOMEM;
+> > +}
+> > +
+> > +static int machine_xen_kexec_prepare(struct kimage *image)
+> > +{
+> > +#ifdef CONFIG_KEXEC_JUMP
+> > +	if (image->preserve_context) {
+> > +		pr_info_once("kexec: Context preservation is not "
+> > +				"supported in Xen domains.\n");
+> > +		return -ENOSYS;
+> > +	}
+> > +#endif
+> > +
+> > +	return alloc_transition_pgtable(image);
+> > +}
+> > +
+> > +static int machine_xen_kexec_load(struct kimage *image)
+> > +{
+> > +	void *control_page;
+> > +	struct xen_kexec_load xkl = {};
+> > +
+> > +	if (!image)
+> > +		return 0;
+>
+> Not -EINVAL?
 
-to receive updates queued in trivial tree.
+No, if image == NULL then it means that image is unloaded from memory
+and there is nothing to do by machine_xen_kexec_load().
 
-
-Tiny usual fixes all over the place.
-
-
-Alan Cox (1):
-      tmiofb: missing NULL pointer checks
-
-Anatol Pomozov (1):
-      treewide: fix comment/printk/variable typos
-
-Fengguang Wu (1):
-      Coccinelle: fix typo in memdup_user.cocci
-
-Javi Merino (1):
-      bootmem: Fix the short description of reserve_bootmem()
-
-Jesper Juhl (2):
-      doc: aliasing-test: close fd on write error
-      doc: getdelays.c: remember to close() socket on error in create_nl_socket()
-
-Jiri Kosina (1):
-      Revert "backlight: fix memory leak on obscure error path"
-
-Jon Mason (4):
-      megaraid: remove unnecessary #defines
-      gdt: remove unnecessary #defines
-      hpet: Remove unused PCI Vendor ID #define
-      ioat: remove unused #defines
-
-Kleber Sacilotto de Souza (1):
-      ipr: fix small coding style issues
-
-Liu Bo (3):
-      btrfs: fix comment typo in btrfs_finish_ordered_io
-      fs/fs-writeback.c: cleanup riteback_sb_inodes kerneldoc
-      doc: fix old config name of kprobetrace
-
-Masanari Iida (7):
-      scsi: fix various printk and comment typos
-      tools/testing: fix comment / output typos
-      tools: perf: Fix typo in tools/perf
-      spi: fix comment/printk typos in spi
-      dma: fix comments
-      mmc: fix comment typos
-      mfd: printk/comment fixes
-
-Maxim Nikulin (1):
-      platform/x86: fix asus_laptop.wled_type module parameter
-
-Oskar Schirmer (1):
-      doc: fix broken utf8 encoding
-
-Paul Bolle (5):
-      powerpc: remove four unused files from .gitignore
-      pci: remove unused .gitignore file
-      AppArmor: remove af_names.h from .gitignore
-      oss: remove maui_boot.h from .gitignore and dontdiff
-      b43: Kconfig: drop unknown symbol 'BRCMSMAC_MODULE'
-
-Paul Gortmaker (1):
-      irqdesc: delete now orphaned references to timer_rand_state
-
-Peter Meerwald (1):
-      nfs: comment fix
-
-Wang Sheng-Hui (2):
-      btrfs: fix trivial typo for the comment of BTRFS_FREE_INO_OBJECTID
-      btrfs: fix the commment for the action flags in delayed-ref.h
-
-Yanchuan Nian (1):
-      vfs: fix kerneldoc for generic_fh_to_parent()
-
-
- Documentation/accounting/getdelays.c               |    5 +-
- Documentation/dontdiff                             |    1 -
- Documentation/ia64/aliasing-test.c                 |    1 +
- Documentation/power/swsusp.txt                     |    2 +-
- Documentation/trace/kprobetrace.txt                |    2 +-
- arch/powerpc/boot/.gitignore                       |    4 -
- arch/x86/include/asm/hpet.h                        |    2 -
- drivers/dma/at_hdmac.c                             |    8 +-
- drivers/dma/ep93xx_dma.c                           |    2 +-
- drivers/dma/fsldma.c                               |    2 +-
- drivers/dma/imx-dma.c                              |    4 +-
- drivers/dma/intel_mid_dma.c                        |    2 +-
- drivers/dma/intel_mid_dma_regs.h                   |    6 +-
- drivers/dma/ioat/hw.h                              |    4 -
- drivers/dma/pl330.c                                |    2 +-
- drivers/dma/ppc4xx/adma.c                          |    2 +-
- drivers/dma/ste_dma40_ll.h                         |    2 +-
- drivers/mfd/ab8500-gpadc.c                         |    2 +-
- drivers/mfd/rc5t583.c                              |    2 +-
- drivers/mfd/rdc321x-southbridge.c                  |    2 +-
- drivers/mfd/tps65911-comparator.c                  |    2 +-
- drivers/mmc/core/sdio.c                            |    2 +-
- drivers/mmc/host/at91_mci.c                        |    2 +-
- drivers/mmc/host/atmel-mci.c                       |    2 +-
- drivers/mmc/host/omap_hsmmc.c                      |    2 +-
- drivers/mmc/host/sdhci-esdhc-imx.c                 |    2 +-
- drivers/mmc/host/vub300.c                          |    2 +-
- drivers/net/ethernet/3com/typhoon.c                |    2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h        |    2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.h     |    2 +-
- drivers/net/wireless/b43/Kconfig                   |    4 +-
- drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c  |    6 +-
- drivers/net/wireless/rtlwifi/rtl8192de/fw.c        |    6 +-
- drivers/pci/.gitignore                             |    4 -
- drivers/scsi/aic7xxx/aic79xx_core.c                |    2 +-
- drivers/scsi/bfa/bfa_ioc.c                         |    2 +-
- drivers/scsi/bfa/bfa_ioc.h                         |    2 +-
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c                  |    4 +-
- drivers/scsi/gdth.h                                |    9 ---
- drivers/scsi/ipr.c                                 |   66 ++++++++++----------
- drivers/scsi/isci/host.c                           |    2 +-
- drivers/scsi/isci/init.c                           |    2 +-
- drivers/scsi/isci/port.c                           |    2 +-
- drivers/scsi/isci/request.c                        |    2 +-
- drivers/scsi/isci/task.c                           |    2 +-
- drivers/scsi/lpfc/lpfc_init.c                      |    2 +-
- drivers/scsi/lpfc/lpfc_sli.c                       |    4 +-
- drivers/scsi/megaraid.c                            |    5 +-
- drivers/scsi/megaraid.h                            |   35 ----------
- drivers/scsi/mvumi.c                               |    6 +-
- drivers/scsi/qla4xxx/ql4_os.c                      |    6 +-
- drivers/scsi/vmw_pvscsi.c                          |    4 +-
- drivers/spi/spi-au1550.c                           |    2 +-
- drivers/spi/spi-bfin-sport.c                       |    2 +-
- drivers/spi/spi-oc-tiny.c                          |    2 +-
- drivers/spi/spi-ppc4xx.c                           |    4 +-
- drivers/spi/spi-topcliff-pch.c                     |    2 +-
- drivers/target/iscsi/iscsi_target_parameters.c     |    4 +-
- drivers/video/backlight/88pm860x_bl.c              |    1 -
- drivers/video/exynos/exynos_mipi_dsi.c             |    2 +-
- drivers/video/tmiofb.c                             |    4 +
- drivers/w1/masters/ds1wm.c                         |    2 +-
- fs/btrfs/ctree.h                                   |    2 +-
- fs/btrfs/delayed-ref.h                             |    2 +-
- fs/btrfs/inode.c                                   |    4 +-
- fs/ext2/balloc.c                                   |    2 +-
- fs/ext3/balloc.c                                   |    2 +-
- fs/ext3/inode.c                                    |    2 +-
- fs/ext4/inode.c                                    |   14 ++--
- fs/ext4/mballoc.c                                  |    2 +-
- fs/fs-writeback.c                                  |    4 -
- fs/libfs.c                                         |    2 +-
- fs/nfs/super.c                                     |    2 +-
- include/linux/irqdesc.h                            |    2 -
- include/linux/mfd/max8998.h                        |    2 +-
- include/trace/define_trace.h                       |    2 +-
- mm/bootmem.c                                       |    2 +-
- net/8021q/vlanproc.c                               |    2 +-
- scripts/coccinelle/api/memdup_user.cocci           |    4 +-
- security/apparmor/.gitignore                       |    1 -
- sound/oss/.gitignore                               |    1 -
- tools/perf/util/callchain.h                        |    2 +-
- tools/perf/util/parse-events-test.c                |    2 +-
- tools/perf/util/python-ext-sources                 |    2 +-
- tools/testing/ktest/examples/include/defaults.conf |    2 +-
- tools/testing/ktest/examples/include/tests.conf    |    2 +-
- tools/testing/selftests/vm/run_vmtests             |    6 +-
- 87 files changed, 142 insertions(+), 207 deletions(-)
-
--- 
-Jiri Kosina
-SUSE Labs
+Daniel
