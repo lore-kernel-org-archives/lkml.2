@@ -1,128 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab2JALxX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 07:53:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38806 "EHLO mx1.redhat.com"
+	id S1752641Ab2JALyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 07:54:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54784 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450Ab2JALxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 07:53:21 -0400
-Date: Mon, 1 Oct 2012 13:53:09 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Petr Holasek <pholasek@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v4] KSM: numa awareness sysfs knob
-Message-ID: <20121001115309.GE20924@redhat.com>
-References: <1348448166-1995-1-git-send-email-pholasek@redhat.com>
- <20120928112645.GX19474@redhat.com>
- <alpine.LSU.2.00.1209301639240.6304@eggly.anvils>
+	id S1752483Ab2JALyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 07:54:07 -0400
+Message-ID: <50698454.6000601@redhat.com>
+Date: Mon, 01 Oct 2012 13:53:56 +0200
+From: Ivan Vecera <ivecera@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1209301639240.6304@eggly.anvils>
+To: David Miller <davem@davemloft.net>
+CC: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the net-next tree
+References: <20120928114335.e05b34a5cfe716df86364ccf@canb.auug.org.au> <20120927.221943.19056434713380159.davem@davemloft.net>
+In-Reply-To: <20120927.221943.19056434713380159.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-
-On Sun, Sep 30, 2012 at 05:36:33PM -0700, Hugh Dickins wrote:
-> I'm all for the simplest solution, but here in ksm_migrate_page()
-> is not a good place for COW breaking - we don't want to get into
-> an indefinite number of page allocations, and the risk of failure.
-
-Agreed, not a good place to break_cow.
-
-> I was toying with the idea of leaving the new page in the old NUMAnode's
-> stable tree temporarily, until ksmd comes around again, and let that
-> clean it up.  Which would imply less reliance on get_kpfn_nid(),
-> and not skipping PageKsm in ksm_do_scan(), and...
-
-There a break_cow could more easily run to cleanup the errors in the
-stable tree. It'd be one way to avoid altering migrate.
-
-> But it's not all that simple, and I think we can do better.
-
-Agreed.
-
-> It's only just fully dawned on me that ksm_migrate_page() is actually
-> a very convenient place: no pagetable mangling required, because we
-> know that neither old nor new page is at this instant mapped into
-> userspace at all - don't we?  Instead there are swap-like migration
-> entries plugging all ptes until we're ready to put in the new page.
-
-Yes.
-
-> So I think what we really want to do is change the ksm_migrate_page()
-> interface a little, and probably the precise position it's called from,
-> to allow it to update mm/migrate.c's newpage - in the collision case
-
-I agree your proposed modification to the ->migratepage protocol
-should be able to deal with that. We should notify the caller the
-"newpage" has been freed and we transferred all ownership to an
-"alternate_newpage". So then migrate will restore the ptes pointing to
-the alternate_newpage (not the allocated newpage). It should be also
-possible to get an hold on the alternate_newpage, before having to
-allocate newpage.
-
-> when the new NUMAnode already has a stable copy of this page.  But when
-> it doesn't, just move KSMnode from old NUMAnode's stable tree to new.
-
-Agreed, that is the easy case and doesn't require interface changes.
-
-> How well the existing ksm.c primitives are suited to this, I've not
-> checked.  Probably not too well, but shouldn't be hard to add what's
-> needed.
+On 09/28/2012 04:19 AM, David Miller wrote:
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 28 Sep 2012 11:43:35 +1000
 > 
-> What do you think?  Does that sound reasonable, Petr?
-
-Sounds like a plan, I agree the modification to migrate is the best
-way to go here. Only cons: it's not the simplest solution.
-
-> By the way, this is probably a good occasion to remind ourselves,
-> that page migration is still usually disabled on PageKsm pages:
-> ksm_migrate_page() is only being called for memory hotremove.  I had
-> been about to complain that calling remove_node_from_stable_tree()
-> from ksm_migrate_page() is also unsafe from a locking point of view;
-> until I remembered that MEM_GOING_OFFLINE has previously acquired
-> ksm_thread_mutex.
+>> Hi all,
+>>
+>> After merging the net-next tree, today's linux-next build (powerpc
+>> ppc64_defconfig) failed like this:
+>>
+>> drivers/net/ethernet/emulex/benet/be_main.c: In function 'be_find_vfs':
+>> drivers/net/ethernet/emulex/benet/be_main.c:1090:28: error: 'struct pci_dev' has no member named 'physfn'
+>>
+>> Caused by commit 51af6d7c1f31 ("be2net: fix vfs enumeration").  physfn is
+>> only defined if CONFIG_PCI_ATS is set.
+>>
+>> I have reverted that commit for today.
 > 
-> But page migration is much more important now than three years ago,
-> with compaction relying upon it, CMA and THP relying upon compaction,
-> and lumpy reclaim gone.
+> I'm reverting it too, thanks for reporting Stephen.
+> 
+Sorry for that, it will be better to use pci_physfn to access this
+member. I'll repost the patch.
 
-Agreed. AutoNUMA needs it too: AutoNUMA migrates all types of memory,
-not just anonymous memory, as long as the mapcount == 1.
-
-If all users break_cow except one, then the KSM page can move around
-if it has left just one user, we don't need to wait this last user to
-break_cow (which may never happen) before can move it.
-
-> Whilst it should not be mixed up in the NUMA patch itself, I think we
-> need now to relax that restriction.  I found re-reading my 62b61f611e
-> "ksm: memory hotremove migration only" was helpful.  Petr, is that
-> something you could take on also?  I _think_ it's just a matter of
-> protecting the stable tree(s) with an additional mutex (which ought
-> not to be contended, since ksm_thread_mutex is normally held above
-> it, except in migration); then removing a number of PageKsm refusals
-> (and the offlining arg to unmap_and_move() etc).  But perhaps there's
-> more to it, I haven't gone over it properly.
-
-Removing the restriction sounds good. In addition to
-compaction/AutoNUMA etc.. KSM pages are marked MOVABLE so it's likely
-not good for the anti frag pageblock types.
-
-So if I understand this correctly, there would be no way to trigger
-the stable tree corruption in current v4, without memory hotremove.
-
-> Yes, I agree; but a few more comments I'll make against the v4 post.
-
-Cool.
-
-Thanks for the help!
-Andrea
+Ivan
