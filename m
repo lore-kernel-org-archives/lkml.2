@@ -1,98 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab2JAI4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 04:56:01 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:38864 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751945Ab2JAIz6 (ORCPT
+	id S1752336Ab2JAI5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 04:57:24 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:38797 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab2JAI5W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 04:55:58 -0400
-Date: Mon, 1 Oct 2012 11:50:52 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-Cc: balbi@ti.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rob@landley.net, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH 1/6] usb: dwc3-omap: use of_platform API to create dwc3
- core pdev
-Message-ID: <20121001085051.GA19346@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1348836795-4783-1-git-send-email-kishon@ti.com>
- <1348836795-4783-2-git-send-email-kishon@ti.com>
- <20120928125758.GK31006@arwen.pp.htv.fi>
- <CAAe_U6JX8nqhZU-m+0Cfh1-xEkZhXNf2ecYcg_JX9mx5fv1b3A@mail.gmail.com>
+	Mon, 1 Oct 2012 04:57:22 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
-Content-Disposition: inline
-In-Reply-To: <CAAe_U6JX8nqhZU-m+0Cfh1-xEkZhXNf2ecYcg_JX9mx5fv1b3A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <F45880696056844FA6A73F415B568C695B6962C1CD@EXDCVYMBSTM006.EQ1STM.local>
+References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
+	<1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
+	<20120928160045.GD2625@kroah.com>
+	<F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
+	<CAK7N6vpXfhb0KhMfqxbcSQqT=qPcMS06OdaG9kNsWMqiiepLTQ@mail.gmail.com>
+	<F45880696056844FA6A73F415B568C695B6962C1CD@EXDCVYMBSTM006.EQ1STM.local>
+Date: Mon, 1 Oct 2012 14:27:21 +0530
+Message-ID: <CAK7N6vqpokVk19-KPPggZRynKJVjoa04n_0g4nnb1CN836s5pA@mail.gmail.com>
+Subject: Re: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
+From: anish singh <anish198519851985@gmail.com>
+To: Arun MURTHY <arun.murthy@stericsson.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 1, 2012 at 12:27 PM, Arun MURTHY <arun.murthy@stericsson.com> wrote:
+>> On Mon, Oct 1, 2012 at 11:00 AM, Arun MURTHY
+>> <arun.murthy@stericsson.com> wrote:
+>> >> On Fri, Sep 28, 2012 at 01:35:01PM +0530, Arun Murthy wrote:
+>> >> > +#include <linux/module.h>
+>> >> > +#include <linux/slab.h>
+>> >> > +#include <linux/err.h>
+>> >> > +#include <linux/printk.h>
+>> >> > +#include <linux/modem_shm/modem.h>
+>> >> > +
+>> >> > +static struct class *modem_class;
+>> >>
+>> >> What's wrong with a bus_type instead?
+>> >
+>> > Can I know the advantage of using bus_type over class?
+>> >
+>> >>
+>> >> > +static int __modem_is_requested(struct device *dev, void *data) {
+>> >> > +   struct modem_desc *mdesc = (struct modem_desc *)data;
+>> >> > +
+>> >> > +   if (!mdesc->mclients) {
+>> >> > +           printk(KERN_ERR "modem_access: modem description is
+>> >> NULL\n");
+>> >> > +           return 0;
+>> >> > +   }
+>> >> > +   return atomic_read(&mdesc->mclients->cnt);
+>> >> > +}
+>> >> > +
+>> >> > +int modem_is_requested(struct modem_desc *mdesc) {
+>> >> > +   return class_for_each_device(modem_class, NULL, (void *)mdesc,
+>> >> > +__modem_is_requested); }
+>> >>
+>> >> Where is the documentation for your public api functions like this?
+>> >
+>> > Sure will include this in the next patchset.
+>> >
+>> >>
+>> >> > +
+>> >> > +int modem_release(struct modem_desc *mdesc) {
+>> >> > +   if (!mdesc->release)
+>> >> > +           return -EFAULT;
+>> >> > +
+>> >> > +   if (modem_is_requested(mdesc)) {
+>> >> > +           atomic_dec(&mdesc->mclients->cnt);
+>> >> > +           if (atomic_read(&mdesc->use_cnt) == 1) {
+>> >> > +                   mdesc->release(mdesc);
+>> >> > +                   atomic_dec(&mdesc->use_cnt);
+>> >> > +           }
+>> >>
+>> >> Eeek, why aren't you using the built-in reference counting that the
+>> >> struct device provided to you, and instead are rolling your own?
+>> >> This happens in many places, why?
+>> >
+>> > My usage of counters over here is for each modem there are many clients.
+>> > Each of the clients will have a ref to modem_desc. Each of them use
+>> > this for requesting and releasing the modem. One counter for tracking
+>> > the request and release for each client which is done by variable 'cnt' in
+>> struct clients.
+>> > The counter use_cnt is used for tracking the modem request/release
+>> > irrespective of the clients and counter cli_cnt is used for
+>> > restricting the modem_get to the no of clients defined in no_clients.
+>> >
+>> > So totally 3 counter one for restricting the usage of modem_get by
+>> > clients, second for restricting modem request/release at top level,
+>> > and 3rd for restricting modem release/request for per client per modem
+>> basis.
+>> >
+>> > Can you let me know if the same can be achieved by using built-in ref
+>> > counting?
+>> Is this your model:
+>> You have a modem device which can be requested by many clients.This
+>> clients can register for a particular service which this modem provides and
+>> then after that if it client doesn't need this service then it will call un-register.
+>
+> Let me correct a bit over here:
+> There are many clients, yes correct but the operations performed are only two,
+> i.e modem request and modem release. This is something like waking up the
+> modem and let modem to sleep.
+> The traffic of this request and release is too high.
+>
+> So irrespective of the requests/releases made to the MAF framework, the MAF
+> should perform the operation request/release only once.
+>
+> So each and every time handling list consumes time.
+> Let me brief the context, this is a single chip modem and ape, basically used in
+> mobile, tablets etc. So the traffic in ape-modem communication is too high and
+> also time critical. If it bound to exceed the time, or delay might end up in buffer
+> full. That’s the reason I have made it as simple as possible.
 
---mP3DRpeJDSE+ciuQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+So let me put it this way:
+           Modem                 Client1     Client2    Client3    Client4
+State  turn-on                   request
+State  no-state-change                     request
+State  no-state-change                                   request
+State  no-state-change
+request
+State  no-state-change      release
+State  no-state-change                     release
+State  no-state-change                                   release
+State   turn-off
+      release
 
-Hi,
+So eventhough all the clients have requested the modem it is being
+turned on only once and when all of them have released then it will be
+turned-off.
 
-On Fri, Sep 28, 2012 at 07:01:04PM +0530, ABRAHAM, KISHON VIJAY wrote:
-> Hi,
->=20
-> On Fri, Sep 28, 2012 at 6:27 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi,
-> >
-> > On Fri, Sep 28, 2012 at 06:23:10PM +0530, Kishon Vijay Abraham I wrote:
-> >> Used of_platform_populate() to populate dwc3 core platform_device
-> >> from device tree data. Since now the allocation of unique device id is
-> >> handled be of_*, removed the call to dwc3_get_device_id.
-> >>
-> >> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> >
-> > I think it's best if you split the use of device_for_each_child() from
-> > this patch. So first do the device_for_each_child() part, then later use
-> > of_platform_populate().
->=20
-> I think it's better to have it both together as of_platform_populate
-> will create the device and the device_for_each_child() part will
-> delete it on error conditions and during driver removal.
-> In this patch the first device_for_each_child() comes in error
-> condition and it is not needed if we have not created the device using
-> of_platform_populate.
+In this case it makes sense to use the atomic variables to track the requests
+and release but what will happen to sysfs incase the device is released when the
+last call to release has come from client4?Won't it lead to kernel panic or some
+unwanted behaviour?
 
-We are already parent of a device and we already handle child removal
-manually. You can change the current implementation to use
-device_for_each_child() and on a later patch introduce
-of_platform_populate().
-
---=20
-balbi
-
---mP3DRpeJDSE+ciuQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQaVlrAAoJEIaOsuA1yqREnPcP/3Sr7v7PldUaazkom6xUwMsq
-lUYN4YzeYJbtS8wqdyf+AMU1bbAeBdKv8cirLgh8AxGE4ILJiGmiXYsjg3KbUgma
-fi8aMBgwhovDYAiJU/VS029qLIJyGHlFA4thbdoHymSOYoTX7RMEi9V2hLlTqmBQ
-M2UKmB2ep8HBUwhLgnGMJty6qGOhz8KXXxG7oO6lunwzHeqzlEresP/b1Gd3YpVm
-vkvdgXoqErh8aMgL9S5AaV178eFEIoLsvR6iaPO8JeWaNGI2vhrR9ZMmwkXrd9vZ
-soZnuk35VrNJH3eyFeDkIloTAGWjT0uB+96WdVOhjF4i3WV70Bji9z0Q9i5HLZDT
-cymfjpDwwMryhqhAdqV8Rbz6zYHlb9xWkhUncOHuS7ladY06DPwUVdk6So9GUyCn
-0SJz553i3H/JQv8458NdOek19c8W2H5wBAZ2VygFyVsTRqkwDndh2HRVme/WtMC9
-VRc1pTc+3LRCX+40CeDXGjOru8ymukRChzRcFiXKrDpbrkOUe6DTbYGj9dSxt/R/
-TItEoOwULYaAIGYMQLw9OAguxvvLVg+FAfFHdeU8FOExPo5I9FlrBQNSSEvUh1NS
-se+Iqs+XC8S2yOQyREKFkSasBOduIWFhLUoTCNbkm979p9CFbpmtrcrxFlTAYzA7
-PZYml2WxpR2/bslLgNKt
-=JM55
------END PGP SIGNATURE-----
-
---mP3DRpeJDSE+ciuQ--
+>
+> Thanks and Regards,
+> Arun R Murthy
+> ------------------
