@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743Ab2JAXAr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:00:47 -0400
-Received: from 1wt.eu ([62.212.114.60]:35203 "EHLO 1wt.eu"
+	id S933567Ab2JAX3b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:29:31 -0400
+Received: from 1wt.eu ([62.212.114.60]:35228 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932643Ab2JAXAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:40 -0400
-Message-Id: <20121001225201.077130761@1wt.eu>
+	id S932729Ab2JAXAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:46 -0400
+Message-Id: <20121001225204.476606409@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:19 +0200
+Date: Tue, 02 Oct 2012 00:54:39 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Tim Bird <tim.bird@am.sony.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 082/180] ARM: 7410/1: Add extra clobber registers for assembly in kernel_execve
+Subject: [ 162/180] fix typo/thinko in get_random_bytes()
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Bird <tim.bird@am.sony.com>
+From: Luck, Tony <tony.luck@intel.com>
 
-commit e787ec1376e862fcea1bfd523feb7c5fb43ecdb9 upstream.
+commit bd29e568a4cb6465f6e5ec7c1c1f3ae7d99cbec1 upstream.
 
-The inline assembly in kernel_execve() uses r8 and r9.  Since this
-code sequence does not return, it usually doesn't matter if the
-register clobber list is accurate.  However, I saw a case where a
-particular version of gcc used r8 as an intermediate for the value
-eventually passed to r9.  Because r8 is used in the inline
-assembly, and not mentioned in the clobber list, r9 was set
-to an incorrect value.
+If there is an architecture-specific random number generator we use it
+to acquire randomness one "long" at a time.  We should put these random
+words into consecutive words in the result buffer - not just overwrite
+the first word again and again.
 
-This resulted in a kernel panic on execution of the first user-space
-program in the system.  r9 is used in ret_to_user as the thread_info
-pointer, and if it's wrong, bad things happen.
-
-Signed-off-by: Tim Bird <tim.bird@am.sony.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/arm/kernel/sys_arm.c |    2 +-
+ drivers/char/random.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/kernel/sys_arm.c b/arch/arm/kernel/sys_arm.c
-index ae4027b..2dd070f 100644
---- a/arch/arm/kernel/sys_arm.c
-+++ b/arch/arm/kernel/sys_arm.c
-@@ -240,7 +240,7 @@ int kernel_execve(const char *filename, char *const argv[], char *const envp[])
- 		  "Ir" (THREAD_START_SP - sizeof(regs)),
- 		  "r" (&regs),
- 		  "Ir" (sizeof(regs))
--		: "r0", "r1", "r2", "r3", "ip", "lr", "memory");
-+		: "r0", "r1", "r2", "r3", "r8", "r9", "ip", "lr", "memory");
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 93b3c29..f2a1651 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -941,7 +941,7 @@ void get_random_bytes(void *buf, int nbytes)
+ 		if (!arch_get_random_long(&v))
+ 			break;
  
-  out:
- 	return ret;
+-		memcpy(buf, &v, chunk);
++		memcpy(p, &v, chunk);
+ 		p += chunk;
+ 		nbytes -= chunk;
+ 	}
 -- 
 1.7.2.1.45.g54fbc
 
