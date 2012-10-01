@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062Ab2JAHz4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 03:55:56 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:26288
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751217Ab2JAHzz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 03:55:55 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(z551biz98dI1432Izz1202h1d1ah1d2ahzz8275dh15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
-X-WSS-ID: 0MB7FCZ-02-03R-02
-X-M-MSG: 
-Date: Mon, 1 Oct 2012 09:55:53 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Daniel J Blueman <daniel@quora.org>
-CC: Ingo Molnar <mingo@redhat.com>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Correct AMD IOMMU printing
-Message-ID: <20121001075553.GL4009@amd.com>
-References: <1349077273-17297-1-git-send-email-daniel@quora.org>
+	id S1752007Ab2JAICV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 04:02:21 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:39104 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab2JAICR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 04:02:17 -0400
+Message-ID: <50694D3C.8000603@parallels.com>
+Date: Mon, 1 Oct 2012 11:58:52 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1349077273-17297-1-git-send-email-daniel@quora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Pekka Enberg <penberg@kernel.org>
+CC: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
+References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com> <5062C029.308@parallels.com> <alpine.DEB.2.00.1209261813300.7072@chino.kir.corp.google.com> <5063F94C.4090600@parallels.com> <alpine.DEB.2.00.1209271552350.13360@chino.kir.corp.google.com> <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com> <alpine.DEB.2.00.1209281336380.21335@chino.kir.corp.google.com> <CAOJsxLFYSKqq-JexK1Q7NEtQmxtJnWB-WwbNyp9tk9mpAh6vGg@mail.gmail.com>
+In-Reply-To: <CAOJsxLFYSKqq-JexK1Q7NEtQmxtJnWB-WwbNyp9tk9mpAh6vGg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 03:41:13PM +0800, Daniel J Blueman wrote:
-> When an AMD IOMMU is detected, prevent printing unintended blank line.
+On 10/01/2012 11:28 AM, Pekka Enberg wrote:
+> Hello,
 > 
-> Signed-off-by: Daniel J Blueman <daniel@quora.org>
-> ---
->  drivers/iommu/amd_iommu_init.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> [ Found this in my @cs.helsinki.fi inbox, grmbl. ]
 > 
-> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-> index 18a89b7..49d9d32 100644
-> --- a/drivers/iommu/amd_iommu_init.c
-> +++ b/drivers/iommu/amd_iommu_init.c
-> @@ -1115,8 +1115,8 @@ static void print_iommu_info(void)
->  				if (iommu_feature(iommu, (1ULL << i)))
->  					pr_cont(" %s", feat_str[i]);
->  			}
-> +			pr_cont("\n");
->  		}
-> -		pr_cont("\n");
+> On Fri, Sep 28, 2012 at 11:39 PM, David Rientjes <rientjes@google.com> wrote:
+>> The first prototype, SLAM XP1, will be posted in October.  I'd simply like
+>> to avoid reverting this patch down the road and having all of us
+>> reconsider the topic again when clear alternatives exist that, in my
+>> opinion, make the code cleaner.
+> 
+> David, I'm sure you know we don't work speculatively against
+> out-of-tree code that may or may not be include in the future...
+> 
+> That said, I don't like Glauber's patch because it leaves CREATE_MASK
+> in mm/slab.c. And I'm not totally convinced a generic SLAB_INTERNAL is
+> going to cut it either. Hmm.
+> 
+>                         Pekka
+> 
 
-Sorry, you are 3 days too late with this, Borislav Petkov already
-submitted a similar patch on friday.
+How about we require allocators to define their own CREATE_MASK, and
+then in slab_common.c we mask out any flags outside that mask?
 
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+This way we can achieve masking in common code while still leaving the
+decision to the allocators.
 
