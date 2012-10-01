@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965104Ab2JAX0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:26:34 -0400
-Received: from 1wt.eu ([62.212.114.60]:35290 "EHLO 1wt.eu"
+	id S965119Ab2JAX0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:26:48 -0400
+Received: from 1wt.eu ([62.212.114.60]:35288 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932803Ab2JAXBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932801Ab2JAXBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Oct 2012 19:01:04 -0400
-Message-Id: <20121001225205.159751569@1wt.eu>
+Message-Id: <20121001225201.884628603@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:55 +0200
+Date: Tue, 02 Oct 2012 00:53:38 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Theodore Tso <tytso@mit.edu>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 178/180] rtc: wm831x: Feed the write counter into device_add_randomness()
+Subject: [ 101/180] SCSI: libsas: continue revalidation
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,75 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 9dccf55f4cb011a7552a8a2749a580662f5ed8ed upstream.
+commit 26f2f199ff150d8876b2641c41e60d1c92d2fb81 upstream.
 
-The tamper evident features of the RTC include the "write counter" which
-is a pseudo-random number regenerated whenever we set the RTC. Since this
-value is unpredictable it should provide some useful seeding to the random
-number generator.
+Continue running revalidation until no more broadcast devices are
+discovered.  Fixes cases where re-discovery completes too early in a
+domain with multiple expanders with pending re-discovery events.
+Servicing BCNs can get backed up behind error recovery.
 
-Only do this on boot since the goal is to seed the pool rather than add
-useful entropy.
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+commit 2da74cd8a6bad64d02207396c76d0939f3c57aaa upstream.
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/rtc/rtc-wm831x.c |   24 +++++++++++++++++++++++-
- 1 files changed, 23 insertions(+), 1 deletions(-)
+ drivers/scsi/libsas/sas_expander.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
-index 79795cd..daefe66 100644
---- a/drivers/rtc/rtc-wm831x.c
-+++ b/drivers/rtc/rtc-wm831x.c
-@@ -23,7 +23,7 @@
- #include <linux/mfd/wm831x/core.h>
- #include <linux/delay.h>
- #include <linux/platform_device.h>
--
-+#include <linux/random.h>
+diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
+index b10ee2a..bac091d 100644
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -1946,9 +1946,7 @@ int sas_ex_revalidate_domain(struct domain_device *port_dev)
+ 	struct domain_device *dev = NULL;
  
- /*
-  * R16416 (0x4020) - RTC Write Counter
-@@ -95,6 +95,26 @@ struct wm831x_rtc {
- 	unsigned int alarm_enabled:1;
- };
+ 	res = sas_find_bcast_dev(port_dev, &dev);
+-	if (res)
+-		goto out;
+-	if (dev) {
++	while (res == 0 && dev) {
+ 		struct expander_device *ex = &dev->ex_dev;
+ 		int i = 0, phy_id;
  
-+static void wm831x_rtc_add_randomness(struct wm831x *wm831x)
-+{
-+	int ret;
-+	u16 reg;
+@@ -1960,8 +1958,10 @@ int sas_ex_revalidate_domain(struct domain_device *port_dev)
+ 			res = sas_rediscover(dev, phy_id);
+ 			i = phy_id + 1;
+ 		} while (i < ex->num_phys);
 +
-+	/*
-+	 * The write counter contains a pseudo-random number which is
-+	 * regenerated every time we set the RTC so it should be a
-+	 * useful per-system source of entropy.
-+	 */
-+	ret = wm831x_reg_read(wm831x, WM831X_RTC_WRITE_COUNTER);
-+	if (ret >= 0) {
-+		reg = ret;
-+		add_device_randomness(&reg, sizeof(reg));
-+	} else {
-+		dev_warn(wm831x->dev, "Failed to read RTC write counter: %d\n",
-+			 ret);
-+	}
-+}
-+
- /*
-  * Read current time and date in RTC
-  */
-@@ -464,6 +484,8 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
- 			alm_irq, ret);
++		dev = NULL;
++		res = sas_find_bcast_dev(port_dev, &dev);
  	}
+-out:
+ 	return res;
+ }
  
-+	wm831x_rtc_add_randomness(wm831x);
-+
- 	return 0;
- 
- err:
 -- 
 1.7.2.1.45.g54fbc
 
