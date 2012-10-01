@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab2JAIkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 04:40:15 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:34135 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab2JAIkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 04:40:11 -0400
-Message-ID: <50695615.9050004@parallels.com>
-Date: Mon, 1 Oct 2012 12:36:37 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752240Ab2JAIlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 04:41:18 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:52119
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751981Ab2JAIlQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 04:41:16 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
+X-WSS-ID: 0MB7HG4-01-1F0-02
+X-M-MSG: 
+Date: Mon, 1 Oct 2012 10:40:51 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/16] iommu/amd: Add IOAPIC remapping routines
+Message-ID: <20121001084051.GO4009@amd.com>
+References: <1348835046-3262-1-git-send-email-joerg.roedel@amd.com>
+ <1348835046-3262-10-git-send-email-joerg.roedel@amd.com>
+ <6d716497-bcf6-4d71-88a3-6ec772a4d396@sausexedgep01.amd.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-References: <20120926221046.GA10453@mtj.dyndns.org> <506381B2.2060806@parallels.com> <20120926224235.GB10453@mtj.dyndns.org> <50638793.7060806@parallels.com> <20120926230807.GC10453@mtj.dyndns.org> <20120927142822.GG3429@suse.de> <20120927144942.GB4251@mtj.dyndns.org> <50646977.40300@parallels.com> <20120927174605.GA2713@localhost> <50649EAD.2050306@parallels.com> <20120930075700.GE10383@mtj.dyndns.org>
-In-Reply-To: <20120930075700.GE10383@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <6d716497-bcf6-4d71-88a3-6ec772a4d396@sausexedgep01.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2012 11:57 AM, Tejun Heo wrote:
-> Hello, Glauber.
+On Fri, Sep 28, 2012 at 10:45:15AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Sep 28, 2012 at 02:23:59PM +0200, Joerg Roedel wrote:
+> > +	/*
+> > +	 * Mask level triggered irqs.
+> > +	 * Use IRQ_DELAYED_DISABLE for edge triggered irqs.
 > 
-> On Thu, Sep 27, 2012 at 10:45:01PM +0400, Glauber Costa wrote:
->>> Can you please give other examples of cases where this type of issue
->>> exists (plenty of shared kernel data structure which is inherent to
->>> the workload at hand)?  Until now, this has been the only example for
->>> this type of issues.
->>
->> Yes. the namespace related caches (*), all kinds of sockets and network
->> structures, other file system structures like file struct, vm areas, and
->> pretty much everything a full container does.
->>
->> (*) we run full userspace, so we have namespaces + cgroups combination.
+> so how come it is not set?
+
+Don't understand this. What is not set?
+
+> > +	if (!config_enabled(CONFIG_SMP))
+> > +		return -1;
 > 
-> This is probably me being dumb but wouldn't resources used by full
-> namespaces be mostly independent?  Which parts get shared?  Also, if
-> you do full namespace, isn't it more likely that you would want fuller
-> resource isolation too?
+> -1? -ENOx something?
+
+No, -1 for compatibiblity with the other implementation of this.
+
+> > +	err = apic->cpu_mask_to_apicid_and(cfg->domain, mask, &dest);
+> > +	if (err) {
+> > +		if (assign_irq_vector(irq, cfg, data->affinity))
+> > +			pr_err("AMD-Vi: Failed to recover vector for irq %d\n", irq);
 > 
+> If we do OK with the assignment of the vector, should we just continue
+> on instead of returning error?
 
-Not necessarily. Namespaces are pretty flexible. If you are using the
-network namespace, for instance, you can create interfaces, routes,
-addresses, etc. But because this deals with the network only, there is
-nothing unreasonable in saying that your webserver and database lives in
-the same network (which is a different network namespace), but are
-entitled to different memory limits - which is cgroups realm. With
-application-only containers being championed these days by multiple
-users, I would expect this situation to become non-negligible.
+The purpose of this is to recover to the old affinity if we failed at
+this point. Even in this case, setting the new affinity still failed and
+we need to inform the caller about this. Thus returning the error.
+Also note the pr_err message which also tells you about the
+recovery-case :)
 
-The full container scenario, of course, is very different. Most of the
-accesses tends to be local.
 
-I will second what Michal said, since I believe this is also very
-important: User memory is completely at the control of the application,
-while kernel memory is not, and never will. It is perfectly fine to
-imagine applications that want its memory to be limited by a very
-predictable amount, and there are no reasons to believe that those
-cannot live in the same box as full containers - the biggest example of
-kmem interested folks. It could be, for instance, that a management tool
-for containers lives in there, and that application wants to be umem
-limited but not kmem limited. (If it goes touching files and data inside
-each container, for instance, it is obviously not local)
+	Joerg
 
->>>> Mel suggestion of not allowing this to happen once the cgroup has tasks
->>>> takes care of this, and is something I thought of myself.
->>>
->>> You mean Michal's?  It should also disallow switching if there are
->>> children cgroups, right?
->>
->> No, I meant Mel, quoting this:
->>
->> "Further I would expect that an administrator would be aware of these
->> limitations and set kmem_accounting at cgroup creation time before any
->> processes start. Maybe that should be enforced but it's not a
->> fundamental problem."
->>
->> But I guess it is pretty much the same thing Michal proposes, in essence.
->>
->> Or IOW, if your concern is with the fact that charges may have happened
->> in the past before this is enabled, we can make sure this cannot happen
->> by disallowing the limit to be set if currently unset (value changes are
->> obviously fine) if you have children or any tasks already in the group.
-> 
-> Yeah, please do that.
-> 
 
-I did already, patches soon! =)
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
