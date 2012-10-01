@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965356Ab2JAXkv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:40:51 -0400
-Received: from 1wt.eu ([62.212.114.60]:34975 "EHLO 1wt.eu"
+	id S932457Ab2JAW7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 18:59:31 -0400
+Received: from 1wt.eu ([62.212.114.60]:34958 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932458Ab2JAW7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 18:59:32 -0400
-Message-Id: <20121001225159.521191640@1wt.eu>
+	id S1753222Ab2JAW71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 18:59:27 -0400
+Message-Id: <20121001225159.098617063@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:42 +0200
+Date: Tue, 02 Oct 2012 00:52:32 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Michael Ellerman <michael@ellerman.id.au>, Avi Kivity <avi@redhat.com>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 045/180] KVM: Ensure all vcpus are consistent with in-kernel irqchip settings
+Cc: Willy Tarreau <w@1wt.eu>, Jiri Slaby <jslaby@suse.cz>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [ 035/180] PNP: fix "work around Dell 1536/1546 BIOS MMCONFIG bug that breaks USB"
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,108 +24,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Willy Tarreau <w@1wt.eu>
 
-commit 3e515705a1f46beb1c942bb8043c16f8ac7b1e9e upstream
+Initial stable commit : 2215d91091c465fd58da7814d1c10e09ac2d8307
 
-If some vcpus are created before KVM_CREATE_IRQCHIP, then
-irqchip_in_kernel() and vcpu->arch.apic will be inconsistent, leading
-to potential NULL pointer dereferences.
+This patch backported into 2.6.32.55 is enabled when CONFIG_AMD_NB is set,
+but this config option does not exist in 2.6.32, it was called CONFIG_K8_NB,
+so the fix was never applied. Some other changes were needed to make it work.
+first, the correct include file name was asm/k8.h and not asm/amd_nb.h, and
+second, amd_get_mmconfig_range() is needed and was merged by previous patch.
 
-Fix by:
-- ensuring that no vcpus are installed when KVM_CREATE_IRQCHIP is called
-- ensuring that a vcpu has an apic if it is installed after KVM_CREATE_IRQCHIP
+Thanks to Jiri Slabi who reported the issue and diagnosed all the dependencies.
 
-This is somewhat long winded because vcpu->arch.apic is created without
-kvm->lock held.
-
-Based on earlier patch by Michael Ellerman.
-
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
 ---
- arch/ia64/kvm/kvm-ia64.c |    5 +++++
- arch/x86/kvm/x86.c       |    8 ++++++++
- include/linux/kvm_host.h |    7 +++++++
- virt/kvm/kvm_main.c      |    4 ++++
- 4 files changed, 24 insertions(+), 0 deletions(-)
+ arch/x86/pci/amd_bus.c |    1 +
+ drivers/pnp/quirks.c   |    6 +++---
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
-index 2eb6365..416122b 100644
---- a/arch/ia64/kvm/kvm-ia64.c
-+++ b/arch/ia64/kvm/kvm-ia64.c
-@@ -1185,6 +1185,11 @@ out:
+diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+index cb34763..aae9931 100644
+--- a/arch/x86/pci/amd_bus.c
++++ b/arch/x86/pci/amd_bus.c
+@@ -3,6 +3,7 @@
+ #include <linux/topology.h>
+ #include <linux/cpu.h>
+ #include <asm/pci_x86.h>
++#include <asm/k8.h>
  
- #define PALE_RESET_ENTRY    0x80000000ffffffb0UL
- 
-+bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu)
-+{
-+	return irqchip_in_kernel(vcpu->kcm) == (vcpu->arch.apic != NULL);
-+}
-+
- int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
- {
- 	struct kvm_vcpu *v;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 5908461..271fddf 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2280,6 +2280,9 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 		r = -EEXIST;
- 		if (kvm->arch.vpic)
- 			goto create_irqchip_unlock;
-+		r = -EINVAL;
-+		if (atomic_read(&kvm->online_vcpus))
-+			goto create_irqchip_unlock;
- 		r = -ENOMEM;
- 		vpic = kvm_create_pic(kvm);
- 		if (vpic) {
-@@ -5027,6 +5030,11 @@ void kvm_arch_check_processor_compat(void *rtn)
- 	kvm_x86_ops->check_processor_compatibility(rtn);
+ #ifdef CONFIG_X86_64
+ #include <asm/pci-direct.h>
+diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
+index eb39d26..253996c 100644
+--- a/drivers/pnp/quirks.c
++++ b/drivers/pnp/quirks.c
+@@ -300,9 +300,9 @@ static void quirk_system_pci_resources(struct pnp_dev *dev)
+ 	}
  }
  
-+bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu)
-+{
-+	return irqchip_in_kernel(vcpu->kvm) == (vcpu->arch.apic != NULL);
-+}
-+
- int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
- {
- 	struct page *page;
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index c728a50..8bfed57 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -556,5 +556,12 @@ static inline bool kvm_vcpu_is_bsp(struct kvm_vcpu *vcpu)
- {
- 	return vcpu->kvm->bsp_vcpu_id == vcpu->vcpu_id;
- }
-+
-+bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu);
-+
-+#else
-+
-+static inline bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu) { return true; }
-+
- #endif
- #endif
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 311ec18..82b6fdc 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1857,6 +1857,10 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
- 		return r;
+-#ifdef CONFIG_AMD_NB
++#ifdef CONFIG_K8_NB
  
- 	mutex_lock(&kvm->lock);
-+	if (!kvm_vcpu_compatible(vcpu)) {
-+		r = -EINVAL;
-+		goto vcpu_destroy;
-+	}
- 	if (atomic_read(&kvm->online_vcpus) == KVM_MAX_VCPUS) {
- 		r = -EINVAL;
- 		goto vcpu_destroy;
+-#include <asm/amd_nb.h>
++#include <asm/k8.h>
+ 
+ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
+ {
+@@ -366,7 +366,7 @@ static struct pnp_fixup pnp_fixups[] = {
+ 	/* PnP resources that might overlap PCI BARs */
+ 	{"PNP0c01", quirk_system_pci_resources},
+ 	{"PNP0c02", quirk_system_pci_resources},
+-#ifdef CONFIG_AMD_NB
++#ifdef CONFIG_K8_NB
+ 	{"PNP0c01", quirk_amd_mmconfig_area},
+ #endif
+ 	{""}
 -- 
 1.7.2.1.45.g54fbc
 
