@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab2JALjb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 07:39:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55411 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751821Ab2JALj3 (ORCPT
+	id S1752369Ab2JALpD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 07:45:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35952 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab2JALpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 07:39:29 -0400
-Date: Mon, 1 Oct 2012 12:39:27 +0100
+	Mon, 1 Oct 2012 07:45:00 -0400
+Date: Mon, 1 Oct 2012 12:44:54 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regmap: silence GCC warning
-Message-ID: <20121001113927.GJ4360@opensource.wolfsonmicro.com>
-References: <1349000155.1553.27.camel@x61.thuisdomein>
- <20121001100321.GB4360@opensource.wolfsonmicro.com>
- <1349086606.24442.13.camel@x61.thuisdomein>
- <20121001101859.GC4360@opensource.wolfsonmicro.com>
- <1349087577.24442.21.camel@x61.thuisdomein>
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        b-cousson@ti.com, balbi@ti.com, santosh.shilimkar@ti.com,
+        sameo@linux.intel.com
+Subject: Re: [PATCHv3 1/4] mfd: smsc: Add support for smsc gpio io/keypad
+ driver
+Message-ID: <20121001114454.GA9170@sirena.org.uk>
+References: <1349089282-22105-1-git-send-email-sourav.poddar@ti.com>
+ <CAAe_U6+zEGuwMC1yn7O=LXE6PhPvPc2i7DCF0EAprkE8s+-iEw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349087577.24442.21.camel@x61.thuisdomein>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAe_U6+zEGuwMC1yn7O=LXE6PhPvPc2i7DCF0EAprkE8s+-iEw@mail.gmail.com>
+X-Cookie: The people rule.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 12:32:57PM +0200, Paul Bolle wrote:
-> On Mon, 2012-10-01 at 11:19 +0100, Mark Brown wrote:
+On Mon, Oct 01, 2012 at 05:00:06PM +0530, ABRAHAM, KISHON VIJAY wrote:
+> On Mon, Oct 1, 2012 at 4:31 PM, Sourav Poddar <sourav.poddar@ti.com> wrote:
 
-> > I haven't actually stared hard enough at the code to figure this out
-> > yet but given what you're changing I'd hope it's a flow analysis bug.
-> > I'm certainly not seeing a warning here.
+Delete irrelevant context from your replies, it makes it much easier to
+find new text.
 
-> Well, you may be using another version of gcc, or using different
-> defaults. I'm using gcc-4.7.2-2.fc17.x86_64 (ie, the gcc currently
-> shipped in Fedora 17 for x86_64), in what I think to be default
-> settings.
+> > +static int smsc_i2c_remove(struct i2c_client *i2c)
+> > +{
+> > +       struct smsc *smsc = i2c_get_clientdata(i2c);
+> > +
+> > +       mfd_remove_devices(smsc->dev);
 
-Yes, of course.  Hence my comment about their flow analysis getting
-worse and worse.
+> IMO, this should have resulted in an abort (hint: see
+> mfd_remove_devices_fn()). Trying to do mfd_remove_devices without
+> mfd_add_devices(). Use device_for_each_child here to remove the
+> device.
 
-> Note that it's not some local oddity. Looking at the (currently) latest
-> log for a Fedora build of v3.6-rc7 you'll find an identical warning [0].
-> Apparently that build was done with gcc-4.7.1-5.fc18.x86_64 [1].
-
-I assume this is a regression they've introduced in 4.7.
+No, this is not at all sensible - if there's an mfd_remove_devices()
+function we really ought to be able to use it to remove the children.
+If we can't do that we should fix the API usability, not open code the
+same stuff in every user.
