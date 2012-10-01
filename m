@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965147Ab2JAX1a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:27:30 -0400
-Received: from 1wt.eu ([62.212.114.60]:35262 "EHLO 1wt.eu"
+	id S1758630Ab2JAX1r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:27:47 -0400
+Received: from 1wt.eu ([62.212.114.60]:35259 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932765Ab2JAXAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:55 -0400
-Message-Id: <20121001225203.545037669@1wt.eu>
+	id S932756Ab2JAXAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:54 -0400
+Message-Id: <20121001225201.043384456@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:17 +0200
+Date: Tue, 02 Oct 2012 00:53:18 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: =?ISO-8859-15?q?=C3=89meric=20Maschino?= 
-	<emeric.maschino@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 140/180] ia64: Add accept4() syscall
+Cc: David Ward <david.ward@ll.mit.edu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 081/180] net_sched: gred: Fix oops in gred_dump() in WRED mode
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,67 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?latin1?q?=C3=89meric=20Maschino?= <emeric.maschino@gmail.com>
+From: David Ward <david.ward@ll.mit.edu>
 
-commit 65cc21b4523e94d5640542a818748cd3be8cd6b4 upstream.
+[ Upstream commit 244b65dbfede788f2fa3fe2463c44d0809e97c6b ]
 
-While debugging udev > 170 failure on Debian Wheezy
-(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=648325), it appears
-that the issue was in fact due to missing accept4() in ia64.
+A parameter set exists for WRED mode, called wred_set, to hold the same
+values for qavg and qidlestart across all VQs. The WRED mode values had
+been previously held in the VQ for the default DP. After these values
+were moved to wred_set, the VQ for the default DP was no longer created
+automatically (so that it could be omitted on purpose, to have packets
+in the default DP enqueued directly to the device without using RED).
 
-This patch simply adds accept4() to ia64.
+However, gred_dump() was overlooked during that change; in WRED mode it
+still reads qavg/qidlestart from the VQ for the default DP, which might
+not even exist. As a result, this command sequence will cause an oops:
 
-Signed-off-by: Émeric Maschino <emeric.maschino@gmail.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Backported-by: Dennis Schridde <devurandom@gmx.net>
+tc qdisc add dev $DEV handle $HANDLE parent $PARENT gred setup \
+    DPs 3 default 2 grio
+tc qdisc change dev $DEV handle $HANDLE gred DP 0 prio 8 $RED_OPTIONS
+tc qdisc change dev $DEV handle $HANDLE gred DP 1 prio 8 $RED_OPTIONS
+
+This fixes gred_dump() in WRED mode to use the values held in wred_set.
+
+Signed-off-by: David Ward <david.ward@ll.mit.edu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/ia64/include/asm/unistd.h |    3 ++-
- arch/ia64/kernel/entry.S       |   13 +++++++++++++
- 2 files changed, 15 insertions(+), 1 deletions(-)
+ net/sched/sch_gred.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/arch/ia64/include/asm/unistd.h b/arch/ia64/include/asm/unistd.h
-index 5a5347f..08a0e5c 100644
---- a/arch/ia64/include/asm/unistd.h
-+++ b/arch/ia64/include/asm/unistd.h
-@@ -311,11 +311,12 @@
- #define __NR_preadv			1319
- #define __NR_pwritev			1320
- #define __NR_rt_tgsigqueueinfo		1321
-+#define __NR_accept4			1334
+diff --git a/net/sched/sch_gred.c b/net/sched/sch_gred.c
+index 40408d5..bf98414 100644
+--- a/net/sched/sch_gred.c
++++ b/net/sched/sch_gred.c
+@@ -544,11 +544,8 @@ static int gred_dump(struct Qdisc *sch, struct sk_buff *skb)
+ 		opt.packets	= q->packetsin;
+ 		opt.bytesin	= q->bytesin;
  
- #ifdef __KERNEL__
+-		if (gred_wred_mode(table)) {
+-			q->parms.qidlestart =
+-				table->tab[table->def]->parms.qidlestart;
+-			q->parms.qavg = table->tab[table->def]->parms.qavg;
+-		}
++		if (gred_wred_mode(table))
++			gred_load_wred_set(table, q);
  
+ 		opt.qave = red_calc_qavg(&q->parms, q->parms.qavg);
  
--#define NR_syscalls			298 /* length of syscall table */
-+#define NR_syscalls			311 /* length of syscall table */
- 
- /*
-  * The following defines stop scripts/checksyscalls.sh from complaining about
-diff --git a/arch/ia64/kernel/entry.S b/arch/ia64/kernel/entry.S
-index d0e7d37..e3be543 100644
---- a/arch/ia64/kernel/entry.S
-+++ b/arch/ia64/kernel/entry.S
-@@ -1806,6 +1806,19 @@ sys_call_table:
- 	data8 sys_preadv
- 	data8 sys_pwritev			// 1320
- 	data8 sys_rt_tgsigqueueinfo
-+	data8 sys_ni_syscall
-+	data8 sys_ni_syscall
-+	data8 sys_ni_syscall
-+	data8 sys_ni_syscall			// 1325
-+	data8 sys_ni_syscall
-+	data8 sys_ni_syscall
-+	data8 sys_ni_syscall
-+	data8 sys_ni_syscall
-+	data8 sys_ni_syscall			// 1330
-+	data8 sys_ni_syscall
-+	data8 sys_ni_syscall
-+	data8 sys_ni_syscall
-+	data8 sys_accept4
- 
- 	.org sys_call_table + 8*NR_syscalls	// guard against failures to increase NR_syscalls
- #endif /* __IA64_ASM_PARAVIRTUALIZED_NATIVE */
 -- 
 1.7.2.1.45.g54fbc
 
