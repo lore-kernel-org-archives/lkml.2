@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab2JAMg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 08:36:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33213 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab2JAMgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 08:36:55 -0400
-Date: Mon, 1 Oct 2012 14:36:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 09/13] memcg: kmem accounting lifecycle management
-Message-ID: <20121001123654.GJ8622@dhcp22.suse.cz>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
- <1347977050-29476-10-git-send-email-glommer@parallels.com>
- <20121001121553.GG8622@dhcp22.suse.cz>
- <50698C97.70703@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50698C97.70703@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752866Ab2JAMku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 08:40:50 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35244 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab2JAMks (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 08:40:48 -0400
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+To: akpm@linux-foundation.org, stable@vger.kernel.org, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
+Subject: [PATCH] leds-ot200: Fix error caused by shifted mask
+Date: Mon,  1 Oct 2012 14:50:40 +0200
+Message-Id: <1349095840-26450-1-git-send-email-christian.gmeiner@gmail.com>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 01-10-12 16:29:11, Glauber Costa wrote:
-> On 10/01/2012 04:15 PM, Michal Hocko wrote:
-> > Based on the previous discussions I guess this one will get reworked,
-> > right?
-> > 
-> 
-> Yes, but most of it stayed. The hierarchy part is gone, but because we
-> will still have kmem pages floating around (potentially), I am still
-> using the mark_dead() trick with the corresponding get when kmem_accounted.
+During the development of this driver an in-house register
+documentation was used. The last weeks some integration tests
+were done and this problem was found. It turned out that
+the released register documentation is wrong.
 
-Is it OK if I hold on with the review of this one until the next
-version?
+The fix is very simple: shift all mask by one.
+
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ drivers/leds/leds-ot200.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+index c464682..676e729 100644
+--- a/drivers/leds/leds-ot200.c
++++ b/drivers/leds/leds-ot200.c
+@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
+ 	{
+ 		.name = "led_1",
+ 		.port = 0x49,
+-		.mask = BIT(7),
++		.mask = BIT(6),
+ 	},
+ 	{
+ 		.name = "led_2",
+ 		.port = 0x49,
+-		.mask = BIT(6),
++		.mask = BIT(5),
+ 	},
+ 	{
+ 		.name = "led_3",
+ 		.port = 0x49,
+-		.mask = BIT(5),
++		.mask = BIT(4),
+ 	},
+ 	{
+ 		.name = "led_4",
+ 		.port = 0x49,
+-		.mask = BIT(4),
++		.mask = BIT(3),
+ 	},
+ 	{
+ 		.name = "led_5",
+ 		.port = 0x49,
+-		.mask = BIT(3),
++		.mask = BIT(2),
+ 	},
+ 	{
+ 		.name = "led_6",
+ 		.port = 0x49,
+-		.mask = BIT(2),
++		.mask = BIT(1),
+ 	},
+ 	{
+ 		.name = "led_7",
+ 		.port = 0x49,
+-		.mask = BIT(1),
++		.mask = BIT(0),
+ 	}
+ };
+ 
 -- 
-Michal Hocko
-SUSE Labs
+1.7.12.2.421.g261b511
+
