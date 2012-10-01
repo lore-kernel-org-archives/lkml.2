@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab2JAIqM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 04:46:12 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53757
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752089Ab2JAIqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 04:46:10 -0400
-Date: Mon, 1 Oct 2012 04:46:05 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        Roland Dreier <roland@purestorage.com>,
-        Andy Grover <agrover@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/6] target/file: Re-enable optional fd_buffered_io=1
- operation
-Message-ID: <20121001084605.GA23497@infradead.org>
-References: <1348984696-30992-1-git-send-email-nab@linux-iscsi.org>
- <1348984696-30992-2-git-send-email-nab@linux-iscsi.org>
+	id S1752275Ab2JAIq7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 04:46:59 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:50806 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751968Ab2JAIq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 04:46:57 -0400
+Message-ID: <506957AC.5070206@parallels.com>
+Date: Mon, 1 Oct 2012 12:43:24 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348984696-30992-2-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Tejun Heo <tj@kernel.org>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+References: <20120927142822.GG3429@suse.de> <20120927144942.GB4251@mtj.dyndns.org> <50646977.40300@parallels.com> <20120927174605.GA2713@localhost> <50649EAD.2050306@parallels.com> <20120930075700.GE10383@mtj.dyndns.org> <20120930080249.GF10383@mtj.dyndns.org> <1348995388.2458.8.camel@dabdike.int.hansenpartnership.com> <20120930103732.GK10383@mtj.dyndns.org> <1349004352.2458.34.camel@dabdike.int.hansenpartnership.com> <20121001005717.GM10383@mtj.dyndns.org>
+In-Reply-To: <20121001005717.GM10383@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 30, 2012 at 05:58:11AM +0000, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On 10/01/2012 04:57 AM, Tejun Heo wrote:
+> Hello, James.
 > 
-> This patch re-adds the ability to optionally run in buffered FILEIO mode
-> (eg: w/o O_DSYNC) for device backends in order to once again use the
-> Linux buffered cache as a write-back storage mechanism.
+> On Sun, Sep 30, 2012 at 12:25:52PM +0100, James Bottomley wrote:
+>> But you've got to ask yourself who cares about accurate accounting per
+>> container of dentry and inode objects? They're not objects that any
+>> administrator is used to limiting.  What we at parallels care about
+>> isn't accurately accounting them, it's that one container can't DoS
+>> another by exhausting system resources.  That's achieved equally well by
+>> first charge slab accounting, so we don't really have an interest in
+>> pushing object accounting code for which there's no use case.
 > 
-> This difference with this patch is that fd_create_virtdevice() now
-> forces the explicit setting of emulate_write_cache=1 when buffered FILEIO
-> operation has been enabled.
+> Isn't it more because the use cases you have on mind don't share
+> dentries/inodes too much?  Wildly incorrect accounting definitely
+> degrades container isolation and can lead to unexpected behaviors.
+> 
+>> All we need kernel memory accounting and limiting for is DoS prevention.
+>> There aren't really any system administrators who care about Kernel
+>> Memory accounting (at least until the system goes oom) because there are
+>> no absolute knobs for it (all there is are a set of weird and wonderful
+>> heuristics, like dirty limit ratio and drop caches).  Kernel memory
+> 
+> I think that's because the mechanism currently doesn't exist.  If one
+> wants to control how memory is distributed across different cgroups,
+> it's logical to control kernel memory too.  The resource in question
+> is the actual memory after all.  I think at least google would be
+> interested in it, so, no, I don't agree that nobody wants it.  If that
+> is the case, we're working towards the wrong direction.
+> 
+>> usage has a whole set of regulatory infrastructure for trying to make it
+>> transparent to the user.
+>>
+>> Don't get me wrong: if there were some easy way to get proper memory
+>> accounting for free, we'd be happy but, because it has no practical
+>> application for any of our customers, there's a limited price we're
+>> willing to pay to get it.
+> 
+> Even on purely technical ground, it could be that first-use is the
+> right trade off if other more accurate approaches are too difficult
+> and most workloads are happy with such approach.  I'm still a bit
+> weary to base userland interface decisions on that tho.
+> 
 
-What this lacks is a clear reason why you would enable this inherently
-unsafe mode.  While there is some clear precedence to allow people doing
-stupid thing I'd least like a rationale for it, and it being documented
-as unsafe.
+For the record, user memory also suffers a bit from being always
+constrained to first-touch accounting. Greg Thelen is working on
+alternative solutions to make first-accounting the default in a
+configurable environment, as he explained in the kernel summit.
 
-> +	 /*
-
-Indention error.
-
-> +	 * Optionally allow fd_buffered_io=1 to be enabled for people
-> +	 * who know what they are doing w/o O_DSYNC.
-> +	 */
-
-This comment doesn't explain at all what's going on here.  It should be
-something like
-
-	/*
-	 * Unsafe mode allows disabling data integrity by not forcing
-	 * data out to disk in writethrough cache mode.  Only to be used
-	 * for benchmark cheating or similar purposes.
-	 */
-
->  #define FBDF_HAS_PATH		0x01
->  #define FBDF_HAS_SIZE		0x02
-> +#define FDBD_USE_BUFFERED_IO	0x04
-
-This should be named BDBD_UNSAFE
+When that happens, kernel memory can take advantage of it for free.
 
