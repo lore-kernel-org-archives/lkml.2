@@ -1,44 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab2JAL3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 07:29:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34139 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536Ab2JAL3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 07:29:38 -0400
-Message-ID: <50697E8D.3060901@ti.com>
-Date: Mon, 1 Oct 2012 16:59:17 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1752446Ab2JALay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 07:30:54 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:44792 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752399Ab2JALaT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 07:30:19 -0400
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.lad@ti.com>
-CC: LMML <linux-media@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hansverk@cisco.com>, <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>
-Subject: Re: [PATCH 1/2] dm644x: replace the obsolete preset API by the timings
- API.
-References: <1344429020-27616-1-git-send-email-prabhakar.lad@ti.com> <1344429020-27616-2-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1344429020-27616-2-git-send-email-prabhakar.lad@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1349089282-22105-1-git-send-email-sourav.poddar@ti.com>
+References: <1349089282-22105-1-git-send-email-sourav.poddar@ti.com>
+Date: Mon, 1 Oct 2012 17:00:06 +0530
+Message-ID: <CAAe_U6+zEGuwMC1yn7O=LXE6PhPvPc2i7DCF0EAprkE8s+-iEw@mail.gmail.com>
+Subject: Re: [PATCHv3 1/4] mfd: smsc: Add support for smsc gpio io/keypad driver
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, b-cousson@ti.com, balbi@ti.com,
+        santosh.shilimkar@ti.com, sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/8/2012 6:00 PM, Prabhakar Lad wrote:
-> From: Hans Verkuil <hans.verkuil@cisco.com>
-> 
-> Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Hi,
 
-Please have a patch description. For the DaVinci platform portion:
+On Mon, Oct 1, 2012 at 4:31 PM, Sourav Poddar <sourav.poddar@ti.com> wrote:
+> smsc ece1099 is a keyboard scan or gpio expansion device.
+> The patch create keypad and gpio expander child for this
+> multi function smsc driver.
+>
+> Tested on omap5430 evm with 3.6-rc6 custom kernel.
+Can we have this line in comment section and not in commit log?
 
-Acked-by: Sekhar Nori <nsekhar@ti.com>
+>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Benoit Cousson <b-cousson@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> ---
+> Changes since v2:
+>  - Change the cache type, max register assignment
+>  - remove of_device_table, since i2c based device gets
+> probed according to i2c_device_id through dt.
+>  - Modify the remove function
+>  - Minor return patch cleanups.
+>  Documentation/smsc_ece1099.txt |   56 ++++++++++++++++++++
+>  drivers/mfd/Kconfig            |   12 ++++
+>  drivers/mfd/Makefile           |    1 +
+>  drivers/mfd/smsc-ece1099.c     |  113 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/smsc.h       |  109 ++++++++++++++++++++++++++++++++++++++
+>  5 files changed, 291 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/smsc_ece1099.txt
+>  create mode 100644 drivers/mfd/smsc-ece1099.c
+>  create mode 100644 include/linux/mfd/smsc.h
+>
+> diff --git a/Documentation/smsc_ece1099.txt b/Documentation/smsc_ece1099.txt
+> new file mode 100644
+> index 0000000..6b492e8
+> --- /dev/null
+> +++ b/Documentation/smsc_ece1099.txt
+> @@ -0,0 +1,56 @@
+> +What is smsc-ece1099?
+> +----------------------
+> +
+> +The ECE1099 is a 40-Pin 3.3V Keyboard Scan Expansion
+> +or GPIO Expansion device. The device supports a keyboard
+> +scan matrix of 23x8. The device is connected to a Master
+> +via the SMSC BC-Link interface or via the SMBus.
+> +Keypad scan Input(KSI) and Keypad Scan Output(KSO) signals
+> +are multiplexed with GPIOs.
+> +
+> +Interrupt generation
+> +--------------------
+> +
+> +Interrupts can be generated by an edge detection on a GPIO
+> +pin or an edge detection on one of the bus interface pins.
+> +Interrupts can also be detected on the keyboard scan interface.
+> +The bus interrupt pin (BC_INT# or SMBUS_INT#) is asserted if
+> +any bit in one of the Interrupt Status registers is 1 and
+> +the corresponding Interrupt Mask bit is also 1.
+> +
+> +In order for software to determine which device is the source
+> +of an interrupt, it should first read the Group Interrupt Status Register
+> +to determine which Status register group is a source for the interrupt.
+> +Software should read both the Status register and the associated Mask register,
+> +then AND the two values together. Bits that are 1 in the result of the AND
+> +are active interrupts. Software clears an interrupt by writing a 1 to the
+> +corresponding bit in the Status register.
+> +
+> +Communication Protocol
+> +----------------------
+> +
+> +- SMbus slave Interface
+> +       The host processor communicates with the ECE1099 device
+> +       through a series of read/write registers via the SMBus
+> +       interface. SMBus is a serial communication protocol between
+> +       a computer host and its peripheral devices. The SMBus data
+> +       rate is 10KHz minimum to 400 KHz maximum
+> +
+> +- Slave Bus Interface
+> +       The ECE1099 device SMBus implementation is a subset of the
+> +       SMBus interface to the host. The device is a slave-only SMBus device.
+> +       The implementation in the device is a subset of SMBus since it
+> +       only supports four protocols.
+> +
+> +       The Write Byte, Read Byte, Send Byte, and Receive Byte protocols are the
+> +       only valid SMBus protocols for the device.
+> +
+> +- BC-LinkTM Interface
+> +       The BC-Link is a proprietary bus that allows communication
+> +       between a Master device and a Companion device. The Master
+> +       device uses this serial bus to read and write registers
+> +       located on the Companion device. The bus comprises three signals,
+> +       BC_CLK, BC_DAT and BC_INT#. The Master device always provides the
+> +       clock, BC_CLK, and the Companion device is the source for an
+> +       independent asynchronous interrupt signal, BC_INT#. The ECE1099
+> +       supports BC-Link speeds up to 24MHz.
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index b1a1462..dedc874 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -385,6 +385,18 @@ config MFD_T7L66XB
+>         help
+>           Support for Toshiba Mobile IO Controller T7L66XB
+>
+> +config MFD_SMSC
+> +       bool "Support for the SMSC ECE1099 series chips"
+> +       depends on I2C=y
+> +       select MFD_CORE
+> +       select REGMAP_I2C
+> +       help
+> +        If you say yes here you get support for the
+> +        ece1099 chips from SMSC.
+> +
+> +        To compile this driver as a module, choose M here: the
+> +        module will be called smsc.
+*bool* attribute for MFD_SMSC, does not allow to select the driver as
+module. use *trisate* instead.
+> +
+>  config MFD_TC6387XB
+>         bool "Support Toshiba TC6387XB"
+>         depends on ARM && HAVE_CLK
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 79dd22d..3323345 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -77,6 +77,7 @@ obj-$(CONFIG_EZX_PCAP)                += ezx-pcap.o
+>  obj-$(CONFIG_MCP)              += mcp-core.o
+>  obj-$(CONFIG_MCP_SA11X0)       += mcp-sa11x0.o
+>  obj-$(CONFIG_MCP_UCB1200)      += ucb1x00-core.o
+> +obj-$(CONFIG_MFD_SMSC)        += smsc-ece1099.o
+>  obj-$(CONFIG_MCP_UCB1200_TS)   += ucb1x00-ts.o
+>
+>  ifeq ($(CONFIG_SA1100_ASSABET),y)
+> diff --git a/drivers/mfd/smsc-ece1099.c b/drivers/mfd/smsc-ece1099.c
+> new file mode 100644
+> index 0000000..220aec2
+> --- /dev/null
+> +++ b/drivers/mfd/smsc-ece1099.c
+> @@ -0,0 +1,113 @@
+> +/*
+> + * TI SMSC MFD Driver
+> + *
+> + * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com
+> + *
+> + * Author: Sourav Poddar <sourav.poddar@ti.com>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify it
+> + *  under  the terms of the GNU General  Public License as published by the
+> + *  Free Software Foundation;  GPL v2.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/moduleparam.h>
+> +#include <linux/init.h>
+> +#include <linux/slab.h>
+> +#include <linux/i2c.h>
+> +#include <linux/gpio.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/irq.h>
+> +#include <linux/regmap.h>
+> +#include <linux/err.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/mfd/smsc.h>
+> +#include <linux/of_platform.h>
+> +
+> +static struct regmap_config smsc_regmap_config = {
+> +               .reg_bits = 8,
+> +               .val_bits = 8,
+> +               .max_register = SMSC_VEN_ID_H,
+> +               .cache_type = REGCACHE_RBTREE,
+> +};
+> +
+> +static int smsc_i2c_probe(struct i2c_client *i2c,
+> +                       const struct i2c_device_id *id)
+> +{
+> +       struct device_node              *node = i2c->dev.of_node;
+> +       struct smsc *smsc;
+> +       int devid, rev, venid_l, venid_h;
+> +       int ret = 0;
+> +
+> +       smsc = devm_kzalloc(&i2c->dev, sizeof(struct smsc),
+> +                               GFP_KERNEL);
+> +       if (!smsc) {
+> +               dev_err(&i2c->dev, "smsc mfd driver memory allocation failed\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       smsc->regmap = devm_regmap_init_i2c(i2c, &smsc_regmap_config);
+> +       if (IS_ERR(smsc->regmap)) {
+> +               ret = PTR_ERR(smsc->regmap);
+> +               goto err;
+> +       }
+> +
+> +       i2c_set_clientdata(i2c, smsc);
+> +       smsc->dev = &i2c->dev;
+> +
+> +#ifdef CONFIG_OF
+> +       of_property_read_u32(node, "clock", &smsc->clk);
+This functions need not come under macro.
+> +#endif
+> +
+> +       regmap_read(smsc->regmap, SMSC_DEV_ID, &devid);
+> +       regmap_read(smsc->regmap, SMSC_DEV_REV, &rev);
+> +       regmap_read(smsc->regmap, SMSC_VEN_ID_L, &venid_l);
+> +       regmap_read(smsc->regmap, SMSC_VEN_ID_H, &venid_h);
+> +
+> +       dev_info(&i2c->dev, "SMSCxxx devid: %02x rev: %02x venid: %02x\n",
+> +               devid, rev, (venid_h << 8) | venid_l);
+dev_info makes the boot noisy.
+> +
+> +       ret = regmap_write(smsc->regmap, SMSC_CLK_CTRL, smsc->clk);
+> +       if (ret)
+> +               goto err;
+> +
+> +#ifdef CONFIG_OF
+> +       if (node)
+> +               ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+of_platform_populate() need not come under macro.
+> +#endif
+> +
+> +err:
+> +       return ret;
+> +}
+> +
+> +static int smsc_i2c_remove(struct i2c_client *i2c)
+> +{
+> +       struct smsc *smsc = i2c_get_clientdata(i2c);
+> +
+> +       mfd_remove_devices(smsc->dev);
+IMO, this should have resulted in an abort (hint: see
+mfd_remove_devices_fn()). Trying to do mfd_remove_devices without
+mfd_add_devices(). Use device_for_each_child here to remove the
+device.
 
-Thanks,
-Sekhar
+Thanks
+Kishon
