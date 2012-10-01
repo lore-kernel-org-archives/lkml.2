@@ -1,102 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab2JANiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 09:38:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19826 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab2JANiE (ORCPT
+	id S1752770Ab2JANiZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 09:38:25 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43257 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab2JANiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 09:38:04 -0400
-X-Authority-Analysis: v=2.0 cv=WKj9rwQR c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=LOY5so0FgDIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=qVE7D8RSIxcA:10 a=d02Qd9UPtPDmJoHnSaEA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=r0gCxOt0-Oj3OErTTwMA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121001133801.534934513@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 01 Oct 2012 09:30:57 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: [PATCH 2/4] localmodconfig: Rework find_config in streamline_config.pl
-References: <20121001133055.594443758@goodmis.org>
-Content-Disposition: inline; filename=0002-localmodconfig-Rework-find_config-in-streamline_conf.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 1 Oct 2012 09:38:23 -0400
+Date: Mon, 1 Oct 2012 15:38:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/cleanups changes for v3.7
+Message-ID: <20121001133818.GA23567@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Linus,
 
-From: Bill Pemberton <wfp5p@virginia.edu>
+Please pull the latest x86-cleanups-for-linus git tree from:
 
-Change find_config function to read_config.  It now finds the config,
-reads the config into an array, and returns the array.  This makes it
-a little cleaner and changes the open to use perl's 3 option open.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cleanups-for-linus
 
-Signed-off-by: Bill Pemberton <wfp5p@virginia.edu>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- scripts/kconfig/streamline_config.pl |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+   HEAD: 4b8073e467e6a66b6a5a8e799d28bc3b243c0d78 arch/x86: Remove unecessary semicolons
 
-diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streaml=
-ine_config.pl
-index e3687f9..62d64ce 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -100,7 +100,7 @@ my @searchconfigs =3D (
- 	},
- );
-=20
--sub find_config {
-+sub read_config {
-     foreach my $conf (@searchconfigs) {
- 	my $file =3D $conf->{"file"};
-=20
-@@ -115,17 +115,15 @@ sub find_config {
-=20
- 	print STDERR "using config: '$file'\n";
-=20
--	open(CIN, "$exec $file |") || die "Failed to run $exec $file";
--	return;
-+	open(my $infile, '-|', "$exec $file") || die "Failed to run $exec $file";
-+	my @x =3D <$infile>;
-+	close $infile;
-+	return @x;
-     }
-     die "No config file found";
- }
-=20
--find_config;
+Smaller cleanups.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Paul Bolle (1):
+      x86, boot: Remove obsolete and unused constant RAMDISK
+
+Peter Senna Tschudin (1):
+      arch/x86: Remove unecessary semicolons
+
+
+ arch/x86/boot/header.S         | 4 ----
+ arch/x86/kernel/alternative.c  | 4 ++--
+ arch/x86/kernel/apic/apic.c    | 2 +-
+ arch/x86/kvm/vmx.c             | 2 +-
+ arch/x86/pci/mmconfig-shared.c | 2 +-
+ 5 files changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index b4e15dd..2a01744 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -32,10 +32,6 @@ SYSSEG		= 0x1000		/* historical load address >> 4 */
+ #define SVGA_MODE ASK_VGA
+ #endif
+ 
+-#ifndef RAMDISK
+-#define RAMDISK 0
+-#endif
 -
--# Read in the entire config file into config_file
--my @config_file =3D <CIN>;
--close CIN;
-+my @config_file =3D read_config;
-=20
- # Parse options
- my $localmodconfig =3D 0;
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJQaZy5AAoJEOdOSU1xswtMqHoH+gJaEYdK/8/jBjFPnyFEPCjO
-c6vfUiXtDPwFYweIYtgZIAuDA/uKauO0n4iohzqCLDTOKbf4i/eaCe1TfDw2Lp+u
-5u039wv/S/DijWgX2szzREwoYLoNecdTTW07Bzy5GrYgWVxKCac4Y4qFmYXGw6YS
-MML0+3Jbtyz3liQ2s206oRJKS5G6I/u22aohaecrCVUnXGApo2IT4ik1qUGn76Qx
-7IKvTzMMkWm70OMStGDRMdyIaTMQgy1t++8K9dlzUu+SEDAhnt45uQGboZKhXhAa
-md4HlurL6rvFarROivlRmMTkgAy3n/zO6R9OzUxdz/kug9rmZw2Rw2weAtqQdJY=
-=IyDR
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+ #ifndef ROOT_RDONLY
+ #define ROOT_RDONLY 1
+ #endif
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index ced4534..3318b1e 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -317,7 +317,7 @@ static void alternatives_smp_lock(const s32 *start, const s32 *end,
+ 		/* turn DS segment override prefix into lock prefix */
+ 		if (*ptr == 0x3e)
+ 			text_poke(ptr, ((unsigned char []){0xf0}), 1);
+-	};
++	}
+ 	mutex_unlock(&text_mutex);
+ }
+ 
+@@ -338,7 +338,7 @@ static void alternatives_smp_unlock(const s32 *start, const s32 *end,
+ 		/* turn lock prefix into DS segment override prefix */
+ 		if (*ptr == 0xf0)
+ 			text_poke(ptr, ((unsigned char []){0x3E}), 1);
+-	};
++	}
+ 	mutex_unlock(&text_mutex);
+ }
+ 
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 24deb30..b17416e 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1934,7 +1934,7 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
+ 		i++;
+ 		v1 >>= 1;
+-	};
++	}
+ 
+ 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
+ 
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index b1eb202..b06737d 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4543,7 +4543,7 @@ static int handle_cr(struct kvm_vcpu *vcpu)
+ 				vcpu->run->exit_reason = KVM_EXIT_SET_TPR;
+ 				return 0;
+ 			}
+-		};
++		}
+ 		break;
+ 	case 2: /* clts */
+ 		handle_clts(vcpu);
+diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
+index 937bcec..704b9ec 100644
+--- a/arch/x86/pci/mmconfig-shared.c
++++ b/arch/x86/pci/mmconfig-shared.c
+@@ -585,7 +585,7 @@ static int __init pci_parse_mcfg(struct acpi_table_header *header)
+ 	while (i >= sizeof(struct acpi_mcfg_allocation)) {
+ 		entries++;
+ 		i -= sizeof(struct acpi_mcfg_allocation);
+-	};
++	}
+ 	if (entries == 0) {
+ 		pr_err(PREFIX "MMCONFIG has no entries\n");
+ 		return -ENODEV;
