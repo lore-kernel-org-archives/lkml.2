@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965206Ab2JAXeQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:34:16 -0400
-Received: from 1wt.eu ([62.212.114.60]:35134 "EHLO 1wt.eu"
+	id S1757567Ab2JAXeT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:34:19 -0400
+Received: from 1wt.eu ([62.212.114.60]:35132 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757567Ab2JAXAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757551Ab2JAXAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Oct 2012 19:00:20 -0400
-Message-Id: <20121001225204.647398665@1wt.eu>
+Message-Id: <20121001225202.182593652@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:43 +0200
+Date: Tue, 02 Oct 2012 00:53:45 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "Theodore Tso" <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 166/180] drivers/char/random.c: fix boot id uniqueness race
+Subject: [ 108/180] Btrfs: call the ordered free operation without any locks held
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,56 +24,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+From: Chris Mason <chris.mason@fusionio.com>
 
-commit 44e4360fa3384850d65dd36fb4e6e5f2f112709b upstream.
+commit e9fbcb42201c862fd6ab45c48ead4f47bb2dea9d upstream.
 
-/proc/sys/kernel/random/boot_id can be read concurrently by userspace
-processes.  If two (or more) user-space processes concurrently read
-boot_id when sysctl_bootid is not yet assigned, a race can occur making
-boot_id differ between the reads.  Because the whole point of the boot id
-is to be unique across a kernel execution, fix this by protecting this
-operation with a spinlock.
+Each ordered operation has a free callback, and this was called with the
+worker spinlock held.  Josef made the free callback also call iput,
+which we can't do with the spinlock.
 
-Given that this operation is not frequently used, hitting the spinlock
-on each call should not be an issue.
+This drops the spinlock for the free operation and grabs it again before
+moving through the rest of the list.  We'll circle back around to this
+and find a cleaner way that doesn't bounce the lock around so much.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Matt Mackall <mpm@selenic.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/char/random.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ fs/btrfs/async-thread.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 5e106b1..0c38849 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1258,10 +1258,15 @@ static int proc_do_uuid(ctl_table *table, int write,
- 	uuid = table->data;
- 	if (!uuid) {
- 		uuid = tmp_uuid;
--		uuid[8] = 0;
--	}
--	if (uuid[8] == 0)
- 		generate_random_uuid(uuid);
-+	} else {
-+		static DEFINE_SPINLOCK(bootid_spinlock);
-+
-+		spin_lock(&bootid_spinlock);
-+		if (!uuid[8])
-+			generate_random_uuid(uuid);
-+		spin_unlock(&bootid_spinlock);
-+	}
+diff --git a/fs/btrfs/async-thread.c b/fs/btrfs/async-thread.c
+index c0861e7..8aac2d6 100644
+--- a/fs/btrfs/async-thread.c
++++ b/fs/btrfs/async-thread.c
+@@ -211,10 +211,17 @@ static noinline int run_ordered_completions(struct btrfs_workers *workers,
  
- 	sprintf(buf, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-"
- 		"%02x%02x%02x%02x%02x%02x",
+ 		work->ordered_func(work);
+ 
+-		/* now take the lock again and call the freeing code */
++		/* now take the lock again and drop our item from the list */
+ 		spin_lock(&workers->order_lock);
+ 		list_del(&work->order_list);
++		spin_unlock(&workers->order_lock);
++
++		/*
++		 * we don't want to call the ordered free functions
++		 * with the lock held though
++		 */
+ 		work->ordered_free(work);
++		spin_lock(&workers->order_lock);
+ 	}
+ 
+ 	spin_unlock(&workers->order_lock);
 -- 
 1.7.2.1.45.g54fbc
 
