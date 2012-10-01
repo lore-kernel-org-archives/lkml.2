@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652Ab2JAEY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 00:24:26 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55495 "EHLO
+	id S1751194Ab2JAEY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 00:24:28 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58332 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab2JAEX1 (ORCPT
+	with ESMTP id S1750953Ab2JAEX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 00:23:27 -0400
-Date: Mon, 1 Oct 2012 14:22:37 +1000
+	Mon, 1 Oct 2012 00:23:26 -0400
+Date: Mon, 1 Oct 2012 13:58:29 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Mason <chris.mason@fusionio.com>
+To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: linux-next: build failure after merge of the btrfs tree
-Message-Id: <20121001142237.e1fdc75e6d338f517d5c35d9@canb.auug.org.au>
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>
+Subject: linux-next: manual merge of the mips tree with Linus' tree
+Message-Id: <20121001135829.7da3ee1b81d2dae0c8c393e7@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__1_Oct_2012_14_22_37_+1000_xCec8MyIMJzRxw6v"
+ boundary="Signature=_Mon__1_Oct_2012_13_58_29_+1000_OoDkj51X.eALb33x"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__1_Oct_2012_14_22_37_+1000_xCec8MyIMJzRxw6v
+--Signature=_Mon__1_Oct_2012_13_58_29_+1000_OoDkj51X.eALb33x
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Chris,
+Hi Ralf,
 
-After merging the btrfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Today's linux-next merge of the mips tree got a conflict in
+drivers/net/ethernet/octeon/octeon_mgmt.c between commit df555b665367
+("netdev: octeon: fix return value check in octeon_mgmt_init_phy()") from
+Linus' tree and commit eeae05aa2169 ("netdev: octeon_mgmt: Add support
+for 1Gig ports") from the mips tree.
 
-fs/btrfs/disk-io.c:34:28: fatal error: asm/cpufeature.h: No such file or di=
-rectory
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Caused by commit 2fcfff234500 ("Btrfs: do not async metadata csumming in
-certain situations").  Only x86 has asm/cupfeature.h
-
-I have dropped the btrfs tree for today.  This is exactly why your tree
-should have been in linux-next some time ago ... :-(
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__1_Oct_2012_14_22_37_+1000_xCec8MyIMJzRxw6v
+diff --cc drivers/net/ethernet/octeon/octeon_mgmt.c
+index a688a2d,5be431c..0000000
+--- a/drivers/net/ethernet/octeon/octeon_mgmt.c
++++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
+@@@ -722,10 -973,8 +973,8 @@@ static int octeon_mgmt_init_phy(struct=20
+  				   octeon_mgmt_adjust_link, 0,
+  				   PHY_INTERFACE_MODE_MII);
+ =20
+ -	if (p->phydev =3D=3D NULL)
+ +	if (!p->phydev)
+- 		return -1;
+-=20
+- 	phy_start_aneg(p->phydev);
++ 		return -ENODEV;
+ =20
+  	return 0;
+  }
+
+--Signature=_Mon__1_Oct_2012_13_58_29_+1000_OoDkj51X.eALb33x
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQaRqNAAoJEECxmPOUX5FEJ1oQAJkpukoQju6GAsIsYI40R2Dy
-ur1aNFTyHv15YqxsJXFRH4kRDWLR5vF1Ym14Xe68mTs+Yp8fsbffGiUwbkkyzZNi
-wNAPmBBOqakpIzB3nG9sJ4ExKlQ6I1oF06wFubBWih72gNXX0DU1ieMevFM6f+wB
-fwWgCWSrGTB5rG16p2t8O7F8XrE+Jv4drtLnriPMHyOG6Yj3fFoJq+hYpw7uMFAa
-UOoGZHdxBQ6JxywkOwFVKX2A55mRige+ixgIpilhJxbbyGingJrsgkB1BPvcHwM0
-BhkjHdrTs6RThiiVY8f45CVDUkoDWLCtGGCCy64NVQhrAmIFmuLyxa/cPn4N1VlG
-qb3cPcpvfxwzMUU2sV+Ftpopj6wLdq3EG5YmCSnrb1TqrIc5PlD0q7RL7EXWHNLt
-xmqepA8A512E4zwltPHiDozeMBxYF37aZh/nEmot2gEATA4ORgDoyETL5CHox9Ex
-xGhWTBKDA38WuYqZS6P4udNyKP6vgvuM+qz+RxO7ZLhckllzG1X6XnSKpa8W2pp1
-2T1K9m4ENvQ0xUIcxz1vleToVtnplRDbcM25ls9KWnjHvy+0JhMBDI+bY5Ekq4BR
-Bsl5KjKhLRp8P+Lthe7Auq7HvsUFJ8zZnox0XNQO6Iyy2ovb2aw0X1FO/gYN4c9w
-w9ZVVM3VZLz8gIaTmEF2
-=kMk0
+iQIcBAEBCAAGBQJQaRTlAAoJEECxmPOUX5FEbfEQAJVNrDtZ5be7nMP4s/13AYWl
+3q+CW6OC4d5+M0okcnzXugG4RiHmiUxX/OscUHcsvlQ6+X1U3sewRt2gNqv7Xx3P
+SLfKkfXRYLSZEuPb7xqfcGNFaJPdOUC2A7MFwLWW3ST4yRvnPyCqFcZvlGHf/k6J
+2QpKEEE6mUmyUKuigl9/nTuvdWfXE9vZrOqq8tFLkPrzAQTmBj4AY3fFNaq5iDmn
+nQ6h9QlJciBJA0Zums49UTjEswiN6sfTg64KsmAGvapVsIVWLTiAc8wJghRNhEyK
+QEC+PHzzdrbrACTiDK7hXxgPVazxFDiouv+45MrxGbqV414gdGV3KpwRn6/ivQST
+W8yANTipJdUPtCsvcAd5Ia9z38zX0UfRfOchpahIEhy0kBsrHpPalyUZV45Opw0I
+54fzhRhQQPtmsMd7zzfCTN3VYrk6KWAhUm/iFZEajdqgxzjwmloxER43lFs/oDvk
+Vw+YixOPNfEciB85XHII/MLTHpYkj/u45vfzi+5oeGFeqxIiXj+lCw2uGX1px0gv
+PqMcVno46SFFuQkzyjrmx3XqhJGX75AfdrtHnDa7qLcZJQK/Zi8NGA+Zy+q8cavi
+9hQE1Sq8QzGvkIDDD/7SSlluV1Tk8JgjN2ZobsT1Z3uXCWs04FaBqKeHgDtd/rIR
+5sGTnMVyfMTsyckqOueL
+=teAp
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__1_Oct_2012_14_22_37_+1000_xCec8MyIMJzRxw6v--
+--Signature=_Mon__1_Oct_2012_13_58_29_+1000_OoDkj51X.eALb33x--
