@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab2JACxL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 22:53:11 -0400
-Received: from www.xplot.org ([66.92.66.146]:53837 "EHLO www.xplot.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476Ab2JACxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 22:53:09 -0400
-X-Greylist: delayed 1880 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Sep 2012 22:53:09 EDT
-From: Tim Shepard <shep@alum.mit.edu>
-To: linux-kernel@vger.kernel.org
-Subject: CONFIG_EXPERT is a booby trap
-Date: Sun, 30 Sep 2012 22:21:45 -0400
-Message-Id: <E1TIVdh-0007iT-00@www.xplot.org>
+	id S1751981Ab2JADD4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 23:03:56 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58561 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab2JADDw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Sep 2012 23:03:52 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <506907E5.2080609@jp.fujitsu.com>
+Date: Mon, 1 Oct 2012 12:03:01 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Ni zhan Chen <nizhan.chen@gmail.com>
+CC: <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
+        <sparclinux@vger.kernel.org>, <rientjes@google.com>,
+        <liuj97@gmail.com>, <len.brown@intel.com>, <benh@kernel.crashing.org>,
+        <paulus@samba.org>, <cl@linux.com>, <minchan.kim@gmail.com>,
+        <akpm@linux-foundation.org>, <kosaki.motohiro@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [RFC v9 PATCH 13/21] memory-hotplug: check page type in get_page_bootmem
+References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <1346837155-534-14-git-send-email-wency@cn.fujitsu.com> <506659D7.9080904@gmail.com>
+In-Reply-To: <506659D7.9080904@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Chen,
+
+2012/09/29 11:15, Ni zhan Chen wrote:
+> On 09/05/2012 05:25 PM, wency@cn.fujitsu.com wrote:
+>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> The function get_page_bootmem() may be called more than one time to the same
+>> page. There is no need to set page's type, private if the function is not
+>> the first time called to the page.
+>>
+>> Note: the patch is just optimization and does not fix any problem.
+>
+> Hi Yasuaki,
+>
+> this patch is reasonable to me. I have another question associated to get_page_bootmem(), the question is from another fujitsu guy's patch changelog [commit : 04753278769f3], the changelog said  that:
+>
+>   1) When the memmap of removing section is allocated on other
+>       section by bootmem, it should/can be free.
+>   2) When the memmap of removing section is allocated on the
+>       same section, it shouldn't be freed. Because the section has to be
+>       logical memory offlined already and all pages must be isolated against
+>       page allocater. If it is freed, page allocator may use it which will
+>       be removed physically soon.
+>
+> but I don't see his patch guarantee 2), it means that his patch doesn't guarantee the memmap of removing section which is allocated on other section by bootmem doesn't be freed. Hopefully get your explaination in details, thanks in advance. :-)
+
+In my understanding, the patch does not guarantee it.
+Please see [commit : 0c0a4a517a31e]. free_map_bootmem() in the commit
+guarantees it.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+>>
+>> CC: David Rientjes <rientjes@google.com>
+>> CC: Jiang Liu <liuj97@gmail.com>
+>> CC: Len Brown <len.brown@intel.com>
+>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> CC: Paul Mackerras <paulus@samba.org>
+>> CC: Christoph Lameter <cl@linux.com>
+>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> ---
+>>   mm/memory_hotplug.c |   15 +++++++++++----
+>>   1 files changed, 11 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>> index d736df3..26a5012 100644
+>> --- a/mm/memory_hotplug.c
+>> +++ b/mm/memory_hotplug.c
+>> @@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
+>>   static void get_page_bootmem(unsigned long info,  struct page *page,
+>>                    unsigned long type)
+>>   {
+>> -    page->lru.next = (struct list_head *) type;
+>> -    SetPagePrivate(page);
+>> -    set_page_private(page, info);
+>> -    atomic_inc(&page->_count);
+>> +    unsigned long page_type;
+>> +
+>> +    page_type = (unsigned long)page->lru.next;
+>> +    if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
+>> +        page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
+>> +        page->lru.next = (struct list_head *)type;
+>> +        SetPagePrivate(page);
+>> +        set_page_private(page, info);
+>> +        atomic_inc(&page->_count);
+>> +    } else
+>> +        atomic_inc(&page->_count);
+>>   }
+>>   /* reference to __meminit __free_pages_bootmem is valid
+>
 
 
-A month or two ago when I attempted to upgrade from 3.4 to 3.5 on my
-MacBook Pro laptop, in preparation to try an interesting patch to TCP
-developed against 3.5 by a colleague, my keyboard stopped working.  I
-tried bisecting, but that lead to nowhere useful and much confusion.
-
-
-It turns out that while I was looking for some debug options under
-"General setup" and "Kernel hacking", I turned on "Configure standard
-kernel features (expert users)" which is also known as CONFIG_EXPERT.
-I read the documentation for that option, and I perused the options
-which appeared underneath when it was turned on, thought to myself "oh,
-hmm, I don't want to change any of these" and wandered off and
-eventually found what I was actually looking for elsewhere in the
-kernel configuration tree.
-
-This weekend I finally figured out why the keyboard in my MacBook Pro
-stopped working between 3.4 and 3.5.
-
-When I turned on CONFIG_EXPERT it turned off CONFIG_HID_APPLE.  There
-was no warning that selecting "Configure standard kernel features" will
-invisibly turn off needed things elsewhere in the configuration tree.
-
-Something needs to be fixed, but it's not obvious that any simple change
-will work without causing other troubles.
-
-I've read some of the lkml history history and learned that references
-to CONFIG_EXPERT (like the one on CONFIG_HID_APPLE) used to be
-references to CONFIG_EMBEDDED, so CONFIG_EXPERT used to mean something
-else.
-
-Maybe "make menuconfig" should show you all the things that you've just
-changed and ask for confirmation when changing one configuration option
-causes actual configuration changes elsewhere in the tree.
-
-And may I suggest that CONFIG_EXPERT should be factored into two
-CONFIGs, one of which makes configuration things visible, and another
-which changes the default values to something more appropriate for
-embedded systems (perhaps call it CONFIG_EMBEDDED_DEFAULTS).  That way
-you'd have to select CONFIG_EXPERT, and then select the
-CONFIG_EMBEDDED_DEFAULTS option that CONFIG_EXPERT made visible to
-actually change any configuration, and the documentation for
-CONFIG_EMBEDDED_DEFAULTS could explain that it changes defaults
-throughout the tree (and selecting CONFIG_EXPERT alone would not go off
-and muck things up with no warning).
-
-The transition plan such a factoring needs some further thought to avoid
-breaking anyone's current configuration when they "make oldconfig".
-
-
-			-Tim Shepard
-			 shep@alum.mit.edu
