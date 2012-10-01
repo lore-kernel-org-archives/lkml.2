@@ -1,135 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439Ab2JAR3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 13:29:09 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45553 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab2JAR3H (ORCPT
+	id S1751401Ab2JARcO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 13:32:14 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57810 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab2JARcN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 13:29:07 -0400
-Date: Mon, 1 Oct 2012 18:29:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Add a codec driver for SI476X MFD
-Message-ID: <20121001172906.GB25335@sirena.org.uk>
-References: <1347576013-28832-1-git-send-email-andrey.smirnov@convergeddevices.net>
- <1347576013-28832-4-git-send-email-andrey.smirnov@convergeddevices.net>
+	Mon, 1 Oct 2012 13:32:13 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347576013-28832-4-git-send-email-andrey.smirnov@convergeddevices.net>
-X-Cookie: Androphobia:
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8BIT
+From: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+User-Agent: alot/0.3.2+
+To: torvalds@linux-foundation.org
+Message-ID: <20121001173158.12878.37886@nucleus>
+Subject: [GIT PULL] clk: changes for 3.7
+Date: Mon, 01 Oct 2012 10:31:58 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 03:40:13PM -0700, Andrey Smirnov wrote:
-> This commit add a sound codec driver for Silicon Laboratories 476x
-> series of AM/FM radio chips.
+Hi Linus,
 
-*Always* CC both maintainers and lists on patches.  There's a few
-problems here, though none of them terribly substantial.
+The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
 
->  	select SND_SOC_UDA1380 if I2C
->  	select SND_SOC_WL1273 if MFD_WL1273_CORE
-> +	select SND_SOC_SI476X if MFD_SI476X_CORE
->  	select SND_SOC_WM1250_EV1 if I2C
+  Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
 
+are available in the git repository at:
 
-Keep the Makefile and Kconfig sorted.
+  git://git.linaro.org/people/mturquette/linux.git tags/clk-for-linus
 
-> +struct si476x_codec {
-> +	struct si476x_core *core;
-> +};
+for you to fetch changes up to 494bfec99922d54054d2d0873f1017680cfc3f13:
 
-control_data.
+  clk: add of_clk_src_onecell_get() support (2012-09-07 18:30:19 -0700)
 
-> +static int si476x_codec_set_daudio_params(struct snd_soc_codec *codec,
-> +					  int width, int rate)
-> +{
+----------------------------------------------------------------
+The common clk framework changes for 3.7 are dominated by ARM platform
+ports to the framework along with one MIPS port, one MFD port, one minor
+framework enhancement and one helper function for platforms expressing
+their clock data through device tree.
 
-Just inline this into the one user.
+----------------------------------------------------------------
+Barry Song (1):
+      clk: prima2: move from arch/arm/mach to drivers/clk
 
-> +	int err;
-> +	u16 digital_io_output_format = \
-> +		snd_soc_read(codec,
-> +			     SI476X_DIGITAL_IO_OUTPUT_FORMAT);
+Binghua Duan (1):
+      ARM: PRIMA2: convert to common clk and finish full clk tree
 
-Throughout the driver you're randomly using \ for no visible reason -
-don't do that.
+Chao Xie (5):
+      clk: mmp: add mmp specific clocks
+      clk: mmp: add clock definition for pxa168
+      clk: mmp: add clock definition for pxa910
+      clk: mmp: add clock definition for mmp2
+      arm: mmp: make all SOCs use common clock by default
 
-> +	if ((rate < 32000) || (rate > 48000)) {
-> +		dev_dbg(codec->dev, "Rate: %d is not supported\n", rate);
+Jonghwa Lee (1):
+      clock: max77686: Add driver for Maxim 77686 32Khz crystal oscillator.
 
-dev_err.
+Kelvin Cheung (1):
+      clk: add Loongson1B clock support
 
-> +	digital_io_output_format &= SI476X_DIGITAL_IO_OUTPUT_WIDTH_MASK;
-> +	digital_io_output_format |= (width << 11) | (width << 8);
-> +
-> +	return snd_soc_write(codec, SI476X_DIGITAL_IO_OUTPUT_FORMAT,
-> +			     digital_io_output_format);
+Linus Walleij (2):
+      clk: convert ARM RealView to common clk
+      clk: versatile: make config option boolean
 
-snd_soc_update_bits().
+Michel Jaouen (1):
+      mfd: dbx500: Provide a more accurate smp_twd clock
 
-> +static int si476x_codec_volume_get(struct snd_kcontrol *kcontrol,
-> +				   struct snd_ctl_elem_value *ucontrol)
-> +{
-> +	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-> +
-> +	ucontrol->value.integer.value[0] =
-> +		snd_soc_read(codec, SI476X_AUDIO_VOLUME);
-> +	return 0;
-> +}
+Shawn Guo (1):
+      clk: add of_clk_src_onecell_get() support
 
-Why are you open coding this?  Looks like a standard register...
+Ulf Hansson (7):
+      clk: ux500: Adapt PRCMU and PRCC clocks for common clk
+      clk: ux500: First version of clock definitions for ux500
+      clk: ux500: Clock definitions for u8500
+      ARM: ux500: Switch to use common clock framework
+      clk: Provide option for clk_get_rate to issue hw for new rate
+      clk: ux500: Support for prmcu_rate clock
+      clk: ux500: Define smp_twd clock for u8500
 
-> +static int si476x_codec_digital_mute(struct snd_soc_dai *codec_dai, int mute)
-> +{
-> +	if (mute)
-> +		snd_soc_write(codec_dai->codec, SI476X_AUDIO_MUTE, 0x3);
-> +
-> +	return 0;
-> +}
-
-This will never disable the mute once it's been activated; are you sure
-this code has been tested?
-
-> +	switch (params_format(params)) {
-> +	case SNDRV_PCM_FORMAT_S8:
-> +		width = SI476X_PCM_FORMAT_S8;
-> +	case SNDRV_PCM_FORMAT_S16_LE:
-
-Missing break;
-
-> +static int si476x_codec_probe(struct snd_soc_codec *codec)
-> +{
-> +	struct si476x_core **core = codec->dev->platform_data;
-> +	struct si476x_codec *si476x;
-> +
-> +	if (!core) {
-> +		dev_err(codec->dev, "Platform data is missing.\n");
-> +		return -EINVAL;
-> +	}
-
-You should use dev->parent to find the parent rather than use platform
-data like this.
-
-> +	si476x = kzalloc(sizeof(*si476x), GFP_KERNEL);
-> +	if (si476x == NULL) {
-
-devm_kzalloc(), and this should be in the device level probe (as should
-the previous check for the core).  Though as the struct ought to be
-empty now this'll presumably go away.
-
-> +static int __init si476x_init(void)
-> +{
-> +	return platform_driver_register(&si476x_platform_driver);
-> +}
-> +module_init(si476x_init);
-
-module_platform_driver()
+ arch/arm/Kconfig                             |    9 +-
+ arch/arm/mach-mmp/Kconfig                    |    3 +
+ arch/arm/mach-prima2/Makefile                |    1 -
+ arch/arm/mach-prima2/clock.c                 |  510 -----------
+ arch/arm/mach-prima2/prima2.c                |    1 -
+ arch/arm/mach-prima2/timer.c                 |    8 +-
+ arch/arm/mach-realview/core.c                |  106 ---
+ arch/arm/mach-realview/include/mach/clkdev.h |   16 -
+ arch/arm/mach-realview/realview_eb.c         |    2 +
+ arch/arm/mach-realview/realview_pb1176.c     |    2 +
+ arch/arm/mach-realview/realview_pb11mp.c     |    2 +
+ arch/arm/mach-realview/realview_pba8.c       |    2 +
+ arch/arm/mach-realview/realview_pbx.c        |    2 +
+ arch/arm/mach-ux500/Kconfig                  |    1 +
+ arch/arm/mach-ux500/Makefile                 |    2 +-
+ arch/arm/mach-ux500/clock.c                  |  715 ----------------
+ arch/arm/mach-ux500/clock.h                  |  164 ----
+ arch/arm/mach-ux500/cpu.c                    |   14 +-
+ drivers/clk/Kconfig                          |   13 +
+ drivers/clk/Makefile                         |    9 +-
+ drivers/clk/clk-ls1x.c                       |  111 +++
+ drivers/clk/clk-max77686.c                   |  244 ++++++
+ drivers/clk/clk-prima2.c                     | 1171 ++++++++++++++++++++++++++
+ drivers/clk/clk.c                            |   57 +-
+ drivers/clk/mmp/Makefile                     |    9 +
+ drivers/clk/mmp/clk-apbc.c                   |  152 ++++
+ drivers/clk/mmp/clk-apmu.c                   |   97 +++
+ drivers/clk/mmp/clk-frac.c                   |  153 ++++
+ drivers/clk/mmp/clk-mmp2.c                   |  449 ++++++++++
+ drivers/clk/mmp/clk-pxa168.c                 |  346 ++++++++
+ drivers/clk/mmp/clk-pxa910.c                 |  320 +++++++
+ drivers/clk/mmp/clk.h                        |   35 +
+ drivers/clk/ux500/Makefile                   |   12 +
+ drivers/clk/ux500/clk-prcc.c                 |  164 ++++
+ drivers/clk/ux500/clk-prcmu.c                |  252 ++++++
+ drivers/clk/ux500/clk.h                      |   48 ++
+ drivers/clk/ux500/u8500_clk.c                |  477 +++++++++++
+ drivers/clk/ux500/u8540_clk.c                |   21 +
+ drivers/clk/ux500/u9540_clk.c                |   21 +
+ drivers/clk/versatile/Makefile               |    1 +
+ drivers/clk/versatile/clk-realview.c         |  114 +++
+ drivers/mfd/db8500-prcmu.c                   |   42 +
+ drivers/mfd/dbx500-prcmu-regs.h              |    4 +-
+ include/linux/clk-provider.h                 |    6 +
+ include/linux/mfd/dbx500-prcmu.h             |    1 +
+ include/linux/platform_data/clk-realview.h   |    1 +
+ include/linux/platform_data/clk-ux500.h      |   17 +
+ 47 files changed, 4360 insertions(+), 1547 deletions(-)
+ delete mode 100644 arch/arm/mach-prima2/clock.c
+ delete mode 100644 arch/arm/mach-realview/include/mach/clkdev.h
+ delete mode 100644 arch/arm/mach-ux500/clock.c
+ delete mode 100644 arch/arm/mach-ux500/clock.h
+ create mode 100644 drivers/clk/clk-ls1x.c
+ create mode 100644 drivers/clk/clk-max77686.c
+ create mode 100644 drivers/clk/clk-prima2.c
+ create mode 100644 drivers/clk/mmp/Makefile
+ create mode 100644 drivers/clk/mmp/clk-apbc.c
+ create mode 100644 drivers/clk/mmp/clk-apmu.c
+ create mode 100644 drivers/clk/mmp/clk-frac.c
+ create mode 100644 drivers/clk/mmp/clk-mmp2.c
+ create mode 100644 drivers/clk/mmp/clk-pxa168.c
+ create mode 100644 drivers/clk/mmp/clk-pxa910.c
+ create mode 100644 drivers/clk/mmp/clk.h
+ create mode 100644 drivers/clk/ux500/Makefile
+ create mode 100644 drivers/clk/ux500/clk-prcc.c
+ create mode 100644 drivers/clk/ux500/clk-prcmu.c
+ create mode 100644 drivers/clk/ux500/clk.h
+ create mode 100644 drivers/clk/ux500/u8500_clk.c
+ create mode 100644 drivers/clk/ux500/u8540_clk.c
+ create mode 100644 drivers/clk/ux500/u9540_clk.c
+ create mode 100644 drivers/clk/versatile/clk-realview.c
+ create mode 100644 include/linux/platform_data/clk-realview.h
+ create mode 100644 include/linux/platform_data/clk-ux500.h
