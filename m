@@ -1,113 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab2JAJzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 05:55:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15140 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752458Ab2JAJzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 05:55:21 -0400
-Date: Mon, 1 Oct 2012 15:09:49 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "sjurbren@gmail.com" <sjurbren@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 1/3] virtio_console:Merge struct buffer_token into struct
- port_buffer
-Message-ID: <20121001093949.GE9810@amit.redhat.com>
-References: <1348580837-10919-1-git-send-email-sjur.brandeland@stericsson.com>
- <1348580837-10919-2-git-send-email-sjur.brandeland@stericsson.com>
- <50626C11.9040708@hitachi.com>
- <81C3A93C17462B4BBD7E272753C1057923BD8365F7@EXDCVYMBSTM005.EQ1STM.local>
+	id S1753055Ab2JAJ7k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 05:59:40 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54395 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab2JAJ7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 05:59:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <81C3A93C17462B4BBD7E272753C1057923BD8365F7@EXDCVYMBSTM005.EQ1STM.local>
+In-Reply-To: <CABb+yY3QfZEyvn4jvwdbgf6OBy++XMNZoeN0zrzHrCy=f4iwzw@mail.gmail.com>
+References: <1348563456-30569-1-git-send-email-inderpal.singh@linaro.org>
+	<1348563456-30569-4-git-send-email-inderpal.singh@linaro.org>
+	<CABb+yY3TcVr=0Po0N7TLCkQ9TmMJuvQhKJj3aQ1bP9+68T+Ogw@mail.gmail.com>
+	<CAG17yqSOWhg_4KrQNojdYcpygkznvrzO74qnh8yasK=UH1f05Q@mail.gmail.com>
+	<1348739292.1648.15.camel@vkoul-udesk3>
+	<CAG17yqRxZFsKpx+gpEGoZTbs4x7ijmqywX39=ezq2+RZkvk=TA@mail.gmail.com>
+	<CABb+yY1qbs_s7a-rb91wehEUbO1Azax+-PCaH2QQ=gr+Mc5ioA@mail.gmail.com>
+	<CAG17yqTSj4wg0f-9kuzqYDicpD50mjZ2vuWCm+s4vfCTcQs_1g@mail.gmail.com>
+	<CABb+yY3QfZEyvn4jvwdbgf6OBy++XMNZoeN0zrzHrCy=f4iwzw@mail.gmail.com>
+Date: Mon, 1 Oct 2012 15:29:37 +0530
+Message-ID: <CAG17yqTDzkD6_FSn0eVBbeUn=XinJ+OyPpKZQ4+nbwdpQ4OrcQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] DMA: PL330: Balance module remove function with probe
+From: Inderpal Singh <inderpal.singh@linaro.org>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, boojin.kim@samsung.com,
+        patches@linaro.org, kgene.kim@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 26 Sep 2012 [09:48:12], Sjur BRENDELAND wrote:
-> > > This merge reduces code size by unifying the approach for
-> > > sending scatter-lists and regular buffers. Any type of
-> > > write operation (splice, write, put_chars) will now allocate
-> > > a port_buffer and send_buf() and free_buf() can always be used.
-> > 
-> > Thanks!
-> > This looks much nicer and simpler. I just have some comments below.
-> 
-> OK, good to hear that you agree to this kind of change. I'll do a respin
-> of this patch fixing the issues you have pointed out.
-> 
-> > >  static void free_buf(struct port_buffer *buf)
-> > >  {
-> > > +	int i;
-> > > +
-> > >  	kfree(buf->buf);
-> > 
-> > this should be done only when !buf->sgpages, or (see below)
-> 
-> Agree, I'll put this statement in an else branch to the if-statement below.
+On 28 September 2012 16:28, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+> On Fri, Sep 28, 2012 at 10:03 AM, Inderpal Singh
+> <inderpal.singh@linaro.org> wrote:
+>>
+>> Now, if we have to check if any client is using the channel and then
+>> decide. We will have to traverse the channel list twice once to check
+>> the usage and second time to delete the nodes from the list if we go
+>> ahead with remove.
+>> The remove will look like below:
+>>
+>> @@ -3008,18 +3008,19 @@ static int __devexit pl330_remove(struct
+>> amba_device *adev)
+>>         if (!pdmac)
+>>                 return 0;
+>>
+>> +       /* check if any client is using any channel */
+>> +       list_for_each_entry_safe(pch, _p, &pdmac->ddma.channels,
+>> +                       chan.device_node) {
+>> +
+>> +               if (pch->chan.client_count)
+>> +                       return -EBUSY;
+>> +       }
+>> +
+> The iteration doesn't have to be the 'safe' version here. Other than
+> that it seems OK.
 
-Not necessary; see my comments in another mail.
+Ok. I will update the patch and send again.
 
-> > > -static struct port_buffer *alloc_buf(size_t buf_size)
-> > > +static struct port_buffer *alloc_buf(struct virtqueue *vq, size_t buf_size,
-> > > +				     int nrbufs)
-> > >  {
-> > >  	struct port_buffer *buf;
-> > > +	size_t alloc_size;
-> > >
-> > > -	buf = kmalloc(sizeof(*buf), GFP_KERNEL);
-> > > +	/* Allocate buffer and the scatter list */
-> > > +	alloc_size = sizeof(*buf) + sizeof(struct scatterlist) * nrbufs;
-> > 
-> > This allocates one redundant sg entry when nrbuf > 0,
-> > but I think it is OK. (just a comment)
-> 
-> I did this on purpose for the sake of simplicity, but I can
-> change this to something like:
-> 	 alloc_size = sizeof(*buf) + sizeof(buf->sg) * max(nrbufs - 1, 1);
-> 
-> 
-> > > +	buf = kmalloc(alloc_size, GFP_ATOMIC);
-> > 
-> > This should be kzalloc(), or buf->buf and others are not initialized,
-> > which will cause unexpected kfree bug at kfree(buf->buf) in free_buf.
-> 
-> Agree, kzalloc() is better in this case. 
-
-Not really -- one thing I've picked up from Rusty is to use kmallocs
-and explicitly initialise values.  Then, missing such initialisations
-(like in this case) will cause tools like valgrind to show the error
-pretty quickly.
-
-> > >  	if (!buf)
-> > >  		goto fail;
-> > > -	buf->buf = kzalloc(buf_size, GFP_KERNEL);
-> > > +
-> > > +	buf->sgpages = nrbufs;
-> > > +	if (nrbufs > 0)
-> > > +		return buf;
-> > > +
-> > > +	buf->buf = kmalloc(buf_size, GFP_ATOMIC);
-> > 
-> > You can also use kzalloc here as previous code does.
-> > But if the reason why using kzalloc comes from the security,
-> > I think kmalloc is enough here, since the host can access
-> > all the guest pages anyway.
-> 
-> With this new patch alloc_buf() is used both for both RX and TX.
-> The out_vq did previously use malloc(). But I have preserved
-> the legacy behavior for the in_vq by calling memset() in function
-> fill_queue().
-
-But we're dropping the memset/kzalloc anyway.
-
-		Amit
+Thanks,
+Inder
