@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557Ab2JAWVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 18:21:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55693 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752875Ab2JAWVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 18:21:24 -0400
-Date: Tue, 2 Oct 2012 00:21:16 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: linux-next: manual merge of the trivial tree with the mfd tree
-In-Reply-To: <20120912134349.f1dd0f4d050dd4834623e57b@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1210020018340.23544@pobox.suse.cz>
-References: <20120912134349.f1dd0f4d050dd4834623e57b@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757564Ab2JAWWc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 18:22:32 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39601 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625Ab2JAWWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 18:22:31 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120929223136.GA10419@liondog.tnic>
+References: <CAEMuUzi2SHp8Z44R4=B8EhutBuODRfoK5uWVaGfTU=Mf-XeqAQ@mail.gmail.com>
+	<20120929223136.GA10419@liondog.tnic>
+Date: Mon, 1 Oct 2012 18:22:29 -0400
+Message-ID: <CAEMuUzhiqorMnVj9q+Gt2GgOKH39vQU5_SqYZM8ciUSGBzkFRg@mail.gmail.com>
+Subject: Re: arch/x86/lib/inat.c Error and Kernel Panic
+From: Franklin Wei <frankhwei536@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Franklin Wei <frankhwei536@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <mhiramat@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Sep 2012, Stephen Rothwell wrote:
+I'll take your advice. However, this is a MacBook so...
+Thanks anyways!
 
-> Hi Jiri,
-> 
-> Today's linux-next merge of the trivial tree got a conflict in
-> drivers/video/backlight/88pm860x_bl.c between commit a6ccdcd98c39 ("mfd:
-> 88pm860x: Use REG resource for backlight") from the mfd tree and commit
-> e1c9ac420ef1 ("Revert "backlight: fix memory leak on obscure error
-> path"") from the trivial tree.
-> 
-> I just used the version from the mfd tree and can carry the fix as
-> necessary (no action is required).
-
-Samuel,
-
-Linus has just pulled from trivial.git, so could you please make sure this 
-is taken care of (*) in your next pull request? Thanks a lot!
-
-(*) either by resolving the conflict in your tree first, or mentioning it 
-explicitly in your pull request to Linus.
-
--- 
-Jiri Kosina
-SUSE Labs
+On 9/29/12, Borislav Petkov <bp@alien8.de> wrote:
+> On Sat, Sep 29, 2012 at 09:36:36AM -0400, Franklin Wei wrote:
+>> Well, I managed to compile the kernel (3.6rc7) using the code in the
+>> tar.gz. However, when I try to boot it, it gives a kernel panic. I
+>> suspect that it has to do with the initrd I created, judging from the
+>> messages on the screen. Attached are pictures of the error. Sorry fot
+>> the bad quality.
+>> You guys are awesome!
+>
+> Not yet, we haven't fixed your issue yet :)
+>
+> But judging from the screenshots, you don't have the required drivers
+> for the kernel to find your root partition.
+>
+> Make sure you've compiled in the SATA/IDE driver for your motherboard
+> and the driver for your root filesystem (ext2,3,4). When you have all
+> those compiled into the kernel you don't need an initrd AFAICT.
+>
+> Simply try booting a live cd, see what SATA/IDE driver gets detected,
+> enable it in your kernel and then try again.
+>
+> Or take the .config from an older kernel which boots on your box.
+>
+> HTH.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
