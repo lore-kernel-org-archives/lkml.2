@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab2JATcc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 15:32:32 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:54046 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab2JATca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 15:32:30 -0400
-Date: Mon, 1 Oct 2012 21:32:25 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k updates for 3.7
-Message-ID: <alpine.DEB.2.00.1210012130130.30878@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754226Ab2JATdD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 15:33:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9703 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753104Ab2JATdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 15:33:00 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: tj@kernel.org, cgroups@vger.kernel.org, vgoyal@redhat.com
+Subject: [PATCH 09/15] cfq-iosched: make new_cfqq variable bool
+Date: Mon,  1 Oct 2012 15:32:50 -0400
+Message-Id: <1349119976-26837-10-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1349119976-26837-1-git-send-email-vgoyal@redhat.com>
+References: <1349119976-26837-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+Make new_cfqq bool. Also set the variable in the beginning of function.
 
-The following changes since commit a0d271cbfed1dd50278c6b06bead3d00ba0a88f9:
-  Linus Torvalds (1):
-        Linux 3.6
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/cfq-iosched.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-are available in the git repository at:
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index a929e2d..76f020f 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1622,7 +1622,7 @@ static void cfq_st_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	unsigned long rb_key;
+ 	struct cfq_rb_root *st;
+ 	int left;
+-	int new_cfqq = 1;
++	bool new_cfqq = RB_EMPTY_NODE(&cfqq->rb_node);
+ 
+ 	st = st_for(cfqq->cfqg, cfqq_class(cfqq), cfqq_type(cfqq));
+ 	if (cfq_class_idle(cfqq)) {
+@@ -1649,8 +1649,7 @@ static void cfq_st_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		rb_key += __cfqq ? __cfqq->rb_key : jiffies;
+ 	}
+ 
+-	if (!RB_EMPTY_NODE(&cfqq->rb_node)) {
+-		new_cfqq = 0;
++	if (!new_cfqq) {
+ 		/*
+ 		 * same position, nothing more to do
+ 		 */
+-- 
+1.7.7.6
 
-  ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-
-Geert Uytterhoeven (1):
-      m68k/apollo: Remove disabled definitions in apollohw.h
-
-Thomas Meyer (3):
-      m68k/amiga: Use PTR_RET rather than if(IS_ERR(...)) + PTR_ERR
-      m68k/q40: Use PTR_RET rather than if(IS_ERR(...)) + PTR_ERR
-      m68k: Use PTR_RET rather than if(IS_ERR(...)) + PTR_ERR
-
-All pretty boring, seems like all of us had better things to do last summer...
-
-Thanks for pulling!
-
- arch/m68k/amiga/platform.c       |    5 +----
- arch/m68k/include/asm/apollohw.h |   12 ------------
- arch/m68k/kernel/time.c          |    5 +----
- arch/m68k/q40/config.c           |    5 +----
- 4 files changed, 3 insertions(+), 24 deletions(-)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
