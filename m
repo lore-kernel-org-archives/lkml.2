@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933213Ab2JAXCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:02:52 -0400
-Received: from 1wt.eu ([62.212.114.60]:35585 "EHLO 1wt.eu"
+	id S932403Ab2JAW7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 18:59:24 -0400
+Received: from 1wt.eu ([62.212.114.60]:34940 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933151Ab2JAXCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:02:48 -0400
-Message-Id: <20121001225200.489197874@1wt.eu>
+	id S932326Ab2JAW7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 18:59:22 -0400
+Message-Id: <20121001225157.908958808@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:05 +0200
+Date: Tue, 02 Oct 2012 00:52:04 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Johan Hovold <jhovold@gmail.com>, Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 068/180] Bluetooth: hci_ldisc: fix NULL-pointer dereference on tty_close
+Subject: [ 007/180] futex: Fix uninterruptible loop due to gate_area
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,107 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit 33b69bf80a3704d45341928e4ff68b6ebd470686 upstream.
+commit e6780f7243eddb133cc20ec37fa69317c218b709 upstream.
 
-Do not close protocol driver until device has been unregistered.
+It was found (by Sasha) that if you use a futex located in the gate
+area we get stuck in an uninterruptible infinite loop, much like the
+ZERO_PAGE issue.
 
-This fixes a race between tty_close and hci_dev_open which can result in
-a NULL-pointer dereference.
+While looking at this problem, PeterZ realized you'll get into similar
+trouble when hitting any install_special_pages() mapping.  And are there
+still drivers setting up their own special mmaps without page->mapping,
+and without special VM or pte flags to make get_user_pages fail?
 
-The line discipline closes the protocol driver while we may still have
-hci_dev_open sleeping on the req_lock mutex resulting in a NULL-pointer
-dereference when lock is acquired and hci_init_req called.
+In most cases, if page->mapping is NULL, we do not need to retry at all:
+Linus points out that even /proc/sys/vm/drop_caches poses no problem,
+because it ends up using remove_mapping(), which takes care not to
+interfere when the page reference count is raised.
 
-Bug is 100% reproducible using hciattach and a disconnected serial port:
+But there is still one case which does need a retry: if memory pressure
+called shmem_writepage in between get_user_pages_fast dropping page
+table lock and our acquiring page lock, then the page gets switched from
+filecache to swapcache (and ->mapping set to NULL) whatever the refcount.
+Fault it back in to get the page->mapping needed for key->shared.inode.
 
-0. # hciattach -n ttyO1 any noflow
-
-1. hci_dev_open called from hci_power_on grabs req lock
-2. hci_init_req executes but device fails to initialise (times out
-   eventually)
-3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
-4. hci_uart_tty_close detaches protocol driver and cancels init req
-5. hci_dev_open (1) releases req lock
-6. hci_dev_open (3) grabs req lock, calls hci_init_req, which triggers oops
-   when request is prepared in hci_uart_send_frame
-
-[  137.201263] Unable to handle kernel NULL pointer dereference at virtual address 00000028
-[  137.209838] pgd = c0004000
-[  137.212677] [00000028] *pgd=00000000
-[  137.216430] Internal error: Oops: 17 [#1]
-[  137.220642] Modules linked in:
-[  137.223846] CPU: 0    Tainted: G        W     (3.3.0-rc6-dirty #406)
-[  137.230529] PC is at __lock_acquire+0x5c/0x1ab0
-[  137.235290] LR is at lock_acquire+0x9c/0x128
-[  137.239776] pc : [<c0071490>]    lr : [<c00733f8>]    psr: 20000093
-[  137.239776] sp : cf869dd8  ip : c0529554  fp : c051c730
-[  137.251800] r10: 00000000  r9 : cf8673c0  r8 : 00000080
-[  137.257293] r7 : 00000028  r6 : 00000002  r5 : 00000000  r4 : c053fd70
-[  137.264129] r3 : 00000000  r2 : 00000000  r1 : 00000000  r0 : 00000001
-[  137.270965] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[  137.278717] Control: 10c5387d  Table: 8f0f4019  DAC: 00000015
-[  137.284729] Process kworker/u:1 (pid: 7, stack limit = 0xcf8682e8)
-[  137.291229] Stack: (0xcf869dd8 to 0xcf86a000)
-[  137.295776] 9dc0:                                                       c0529554 00000000
-[  137.304351] 9de0: cf8673c0 cf868000 d03ea1ef cf868000 000001ef 00000470 00000000 00000002
-[  137.312927] 9e00: cf8673c0 00000001 c051c730 c00716ec 0000000c 00000440 c0529554 00000001
-[  137.321533] 9e20: c051c730 cf868000 d03ea1f3 00000000 c053b978 00000000 00000028 cf868000
-[  137.330078] 9e40: 00000000 00000000 00000002 00000000 00000000 c00733f8 00000002 00000080
-[  137.338684] 9e60: 00000000 c02a1d50 00000000 00000001 60000013 c0969a1c 60000093 c053b96c
-[  137.347259] 9e80: 00000002 00000018 20000013 c02a1d50 cf0ac000 00000000 00000002 cf868000
-[  137.355834] 9ea0: 00000089 c0374130 00000002 00000000 c02a1d50 cf0ac000 0000000c cf0fc540
-[  137.364410] 9ec0: 00000018 c02a1d50 cf0fc540 00000000 cf0fc540 c0282238 c028220c cf178d80
-[  137.372985] 9ee0: 127525d8 c02821cc 9a1fa451 c032727c 9a1fa451 127525d8 cf0fc540 cf0ac4ec
-[  137.381561] 9f00: cf0ac000 cf0fc540 cf0ac584 c03285f4 c0328580 cf0ac4ec cf85c740 c05510cc
-[  137.390136] 9f20: ce825400 c004c914 00000002 00000000 c004c884 ce8254f5 cf869f48 00000000
-[  137.398712] 9f40: c0328580 ce825415 c0a7f914 c061af64 00000000 c048cf3c cf8673c0 cf85c740
-[  137.407287] 9f60: c05510cc c051a66c c05510ec c05510c4 cf85c750 cf868000 00000089 c004d6ac
-[  137.415863] 9f80: 00000000 c0073d14 00000001 cf853ed8 cf85c740 c004d558 00000013 00000000
-[  137.424438] 9fa0: 00000000 00000000 00000000 c00516b0 00000000 00000000 cf85c740 00000000
-[  137.433013] 9fc0: 00000001 dead4ead ffffffff ffffffff c0551674 00000000 00000000 c0450aa4
-[  137.441589] 9fe0: cf869fe0 cf869fe0 cf853ed8 c005162c c0013b30 c0013b30 00ffff00 00ffff00
-[  137.450164] [<c0071490>] (__lock_acquire+0x5c/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
-[  137.459503] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58)
-[  137.469360] [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c02a1d50>] (skb_queue_tail+0x18/0x48)
-[  137.479339] [<c02a1d50>] (skb_queue_tail+0x18/0x48) from [<c0282238>] (h4_enqueue+0x2c/0x34)
-[  137.488189] [<c0282238>] (h4_enqueue+0x2c/0x34) from [<c02821cc>] (hci_uart_send_frame+0x34/0x68)
-[  137.497497] [<c02821cc>] (hci_uart_send_frame+0x34/0x68) from [<c032727c>] (hci_send_frame+0x50/0x88)
-[  137.507171] [<c032727c>] (hci_send_frame+0x50/0x88) from [<c03285f4>] (hci_cmd_work+0x74/0xd4)
-[  137.516204] [<c03285f4>] (hci_cmd_work+0x74/0xd4) from [<c004c914>] (process_one_work+0x1a0/0x4ec)
-[  137.525604] [<c004c914>] (process_one_work+0x1a0/0x4ec) from [<c004d6ac>] (worker_thread+0x154/0x344)
-[  137.535278] [<c004d6ac>] (worker_thread+0x154/0x344) from [<c00516b0>] (kthread+0x84/0x90)
-[  137.543975] [<c00516b0>] (kthread+0x84/0x90) from [<c0013b30>] (kernel_thread_exit+0x0/0x8)
-[  137.552734] Code: e59f4e5c e5941000 e3510000 0a000031 (e5971000)
-[  137.559234] ---[ end trace 1b75b31a2719ed1e ]---
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[PG: 2.6.34 variable is page, not page_head, since it doesn't have a5b338f2]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/bluetooth/hci_ldisc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/futex.c |   28 ++++++++++++++++++++--------
+ 1 files changed, 20 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
-index e6f67b6..d68e2f5 100644
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -312,11 +312,11 @@ static void hci_uart_tty_close(struct tty_struct *tty)
- 			hci_uart_close(hdev);
+diff --git a/kernel/futex.c b/kernel/futex.c
+index fb98c9f..0b06da1 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -264,17 +264,29 @@ again:
  
- 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
--			hu->proto->close(hu);
- 			if (hdev) {
- 				hci_unregister_dev(hdev);
- 				hci_free_dev(hdev);
- 			}
-+			hu->proto->close(hu);
- 		}
+ 	page = compound_head(page);
+ 	lock_page(page);
++
++	/*
++	 * If page->mapping is NULL, then it cannot be a PageAnon
++	 * page; but it might be the ZERO_PAGE or in the gate area or
++	 * in a special mapping (all cases which we are happy to fail);
++	 * or it may have been a good file page when get_user_pages_fast
++	 * found it, but truncated or holepunched or subjected to
++	 * invalidate_complete_page2 before we got the page lock (also
++	 * cases which we are happy to fail).  And we hold a reference,
++	 * so refcount care in invalidate_complete_page's remove_mapping
++	 * prevents drop_caches from setting mapping to NULL beneath us.
++	 *
++	 * The case we do have to guard against is when memory pressure made
++	 * shmem_writepage move it from filecache to swapcache beneath us:
++	 * an unlikely race, but we do need to retry for page->mapping.
++	 */
+ 	if (!page->mapping) {
++		int shmem_swizzled = PageSwapCache(page);
+ 		unlock_page(page);
+ 		put_page(page);
+-		/*
+-		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
+-		* trying to find one. RW mapping would have COW'd (and thus
+-		* have a mapping) so this page is RO and won't ever change.
+-		*/
+-		if ((page == ZERO_PAGE(address)))
+-			return -EFAULT;
+-		goto again;
++		if (shmem_swizzled)
++			goto again;
++		return -EFAULT;
  	}
- }
+ 
+ 	/*
 -- 
 1.7.2.1.45.g54fbc
 
