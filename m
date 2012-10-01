@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab2JAXAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:00:23 -0400
-Received: from 1wt.eu ([62.212.114.60]:35109 "EHLO 1wt.eu"
+	id S965188Ab2JAXd6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:33:58 -0400
+Received: from 1wt.eu ([62.212.114.60]:35139 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757494Ab2JAXAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:14 -0400
-Message-Id: <20121001225159.944146084@1wt.eu>
+	id S1757526Ab2JAXAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:22 -0400
+Message-Id: <20121001225202.952908501@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:52 +0200
+Date: Tue, 02 Oct 2012 00:54:03 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Damian Lukowski <damian@tvk.rwth-aachen.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 055/180] tcp: Dont change unlocked socket state in tcp_v4_err().
+Cc: Mark Ferrell <mferrell@uplogix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 126/180] usb: serial: mos7840: Fixup mos7840_chars_in_buffer()
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +24,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Mark Ferrell <mferrell@uplogix.com>
 
-commit 8f49c2703b33519aaaccc63f571b465b9d2b3a2d upstream.
+commit 5c263b92f828af6a8cf54041db45ceae5af8f2ab upstream.
 
-Alexey Kuznetsov noticed a regression introduced by
-commit f1ecd5d9e7366609d640ff4040304ea197fbc618
-("Revert Backoff [v3]: Revert RTO on ICMP destination unreachable")
+ * Use the buffer content length as opposed to the total buffer size.  This can
+   be a real problem when using the mos7840 as a usb serial-console as all
+   kernel output is truncated during boot.
 
-The RTO and timer modification code added to tcp_v4_err()
-doesn't check sock_owned_by_user(), which if true means we
-don't have exclusive access to the socket and therefore cannot
-modify it's critical state.
-
-Just skip this new code block if sock_owned_by_user() is true
-and eliminate the now superfluous sock_owned_by_user() code
-block contained within.
-
-Reported-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-CC: Damian Lukowski <damian@tvk.rwth-aachen.de>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mark Ferrell <mferrell@uplogix.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/ipv4/tcp_ipv4.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+ drivers/usb/serial/mos7840.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 6fc7961..6a4e832 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -406,6 +406,9 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
- 		    !icsk->icsk_backoff)
- 			break;
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 9fdcee2..61829b8 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -1181,9 +1181,12 @@ static int mos7840_chars_in_buffer(struct tty_struct *tty)
+ 	}
  
-+		if (sock_owned_by_user(sk))
-+			break;
-+
- 		icsk->icsk_backoff--;
- 		inet_csk(sk)->icsk_rto = __tcp_set_rto(tp) <<
- 					 icsk->icsk_backoff;
-@@ -420,11 +423,6 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
- 		if (remaining) {
- 			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
- 						  remaining, TCP_RTO_MAX);
--		} else if (sock_owned_by_user(sk)) {
--			/* RTO revert clocked out retransmission,
--			 * but socket is locked. Will defer. */
--			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
--						  HZ/20, TCP_RTO_MAX);
- 		} else {
- 			/* RTO revert clocked out retransmission.
- 			 * Will retransmit now */
+ 	spin_lock_irqsave(&mos7840_port->pool_lock, flags);
+-	for (i = 0; i < NUM_URBS; ++i)
+-		if (mos7840_port->busy[i])
+-			chars += URB_TRANSFER_BUFFER_SIZE;
++	for (i = 0; i < NUM_URBS; ++i) {
++		if (mos7840_port->busy[i]) {
++			struct urb *urb = mos7840_port->write_urb_pool[i];
++			chars += urb->transfer_buffer_length;
++		}
++	}
+ 	spin_unlock_irqrestore(&mos7840_port->pool_lock, flags);
+ 	dbg("%s - returns %d", __func__, chars);
+ 	return chars;
 -- 
 1.7.2.1.45.g54fbc
 
