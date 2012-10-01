@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab2JATHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 15:07:05 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58597 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751463Ab2JATHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 15:07:02 -0400
-Date: Mon, 1 Oct 2012 15:06:52 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 03/13] memcg: change defines to an enum
-Message-ID: <20121001190652.GD23734@cmpxchg.org>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
- <1347977050-29476-4-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347977050-29476-4-git-send-email-glommer@parallels.com>
+	id S1753617Ab2JATJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 15:09:00 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:1943 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751204Ab2JATI7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 15:08:59 -0400
+Message-ID: <1349118537.1414.22.camel@x61.thuisdomein>
+Subject: Re: [PATCH] regmap: silence GCC warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 01 Oct 2012 21:08:57 +0200
+In-Reply-To: <20121001113927.GJ4360@opensource.wolfsonmicro.com>
+References: <1349000155.1553.27.camel@x61.thuisdomein>
+	 <20121001100321.GB4360@opensource.wolfsonmicro.com>
+	 <1349086606.24442.13.camel@x61.thuisdomein>
+	 <20121001101859.GC4360@opensource.wolfsonmicro.com>
+	 <1349087577.24442.21.camel@x61.thuisdomein>
+	 <20121001113927.GJ4360@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Oct 2012 19:08:57.0325 (UTC) FILETIME=[350401D0:01CDA008]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 06:04:00PM +0400, Glauber Costa wrote:
-> This is just a cleanup patch for clarity of expression.  In earlier
-> submissions, people asked it to be in a separate patch, so here it is.
-> 
-> [ v2: use named enum as type throughout the file as well ]
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Michal Hocko <mhocko@suse.cz>
+On Mon, 2012-10-01 at 12:39 +0100, Mark Brown wrote:
+> I assume this is a regression they've introduced in 4.7.
 
-Should probably be the first in the series to get the cleanups out of
-the way :-)
+For what it's worth, GCC 4.6 apparently shows identical behavior.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+The code that triggers this warning was (basically) introduced in commit
+b8fb5ab156055b745254609f4635fcfd6b7dabc8 ("regmap: Support raw reads
+from cached registers"). The first release shipping that commit was
+v3.4. The log of a build of v3.4 using the oldest version of GCC (that
+Fedora used to build v3.4) I could find also contains this warning [0].
+They used gcc-4.6.3-2.fc16.x86_64 in that build [1].
+
+Perhaps I'll stumble on some build logs of v3.4 for which earlier
+versions of GCC were used. That might show whether or not earlier
+releases of GCC also print a warning for this code.
+
+
+Paul Bolle
+
+[0] http://kojipkgs.fedoraproject.org/packages/kernel/3.4.2/1.fc16/data/logs/x86_64/build.log
+[1] http://kojipkgs.fedoraproject.org/packages/kernel/3.4.2/1.fc16/data/logs/x86_64/root.log
+
