@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab2JAXOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:14:34 -0400
-Received: from 1wt.eu ([62.212.114.60]:35496 "EHLO 1wt.eu"
+	id S933091Ab2JAXCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:02:05 -0400
+Received: from 1wt.eu ([62.212.114.60]:35472 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086Ab2JAXCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:02:07 -0400
-Message-Id: <20121001225204.863747458@1wt.eu>
+	id S932976Ab2JAXB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:01:59 -0400
+Message-Id: <20121001225158.036926739@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:48 +0200
+Date: Tue, 02 Oct 2012 00:52:07 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "Theodore Tso" <tytso@mit.edu>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 171/180] random: add new get_random_bytes_arch() function
+Subject: [ 010/180] 2.6.32.x: timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,117 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: John Stultz <john.stultz@linaro.org>
 
-commit c2557a303ab6712bb6e09447df828c557c710ac9 upstream.
+This is a backport of fad0c66c4bb836d57a5f125ecd38bed653ca863a
+which resolves a bug the previous commit.
 
-Create a new function, get_random_bytes_arch() which will use the
-architecture-specific hardware random number generator if it is
-present.  Change get_random_bytes() to not use the HW RNG, even if it
-is avaiable.
+Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
+leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
+wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
 
-The reason for this is that the hw random number generator is fast (if
-it is present), but it requires that we trust the hardware
-manufacturer to have not put in a back door.  (For example, an
-increasing counter encrypted by an AES key known to the NSA.)
+Adjust wall_to_monotonic when NTP inserted a leapsecond.
 
-It's unlikely that Intel (for example) was paid off by the US
-Government to do this, but it's impossible for them to prove otherwise
- --- especially since Bull Mountain is documented to use AES as a
-whitener.  Hence, the output of an evil, trojan-horse version of
-RDRAND is statistically indistinguishable from an RDRAND implemented
-to the specifications claimed by Intel.  Short of using a tunnelling
-electronic microscope to reverse engineer an Ivy Bridge chip and
-disassembling and analyzing the CPU microcode, there's no way for us
-to tell for sure.
-
-Since users of get_random_bytes() in the Linux kernel need to be able
-to support hardware systems where the HW RNG is not present, most
-time-sensitive users of this interface have already created their own
-cryptographic RNG interface which uses get_random_bytes() as a seed.
-So it's much better to use the HW RNG to improve the existing random
-number generator, by mixing in any entropy returned by the HW RNG into
-/dev/random's entropy pool, but to always _use_ /dev/random's entropy
-pool.
-
-This way we get almost of the benefits of the HW RNG without any
-potential liabilities.  The only benefits we forgo is the
-speed/performance enhancements --- and generic kernel code can't
-depend on depend on get_random_bytes() having the speed of a HW RNG
-anyway.
-
-For those places that really want access to the arch-specific HW RNG,
-if it is available, we provide get_random_bytes_arch().
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Tested-by: Richard Cochran <richardcochran@gmail.com>
+Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/char/random.c  |   27 +++++++++++++++++++++++----
- include/linux/random.h |    1 +
- 2 files changed, 24 insertions(+), 4 deletions(-)
+ kernel/time/timekeeping.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index b5b16f1..b038751 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1038,11 +1038,28 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 00e2fae..6d19a00 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -780,6 +780,7 @@ void update_wall_time(void)
+ 			xtime.tv_sec++;
+ 			leap = second_overflow(xtime.tv_sec);
+ 			xtime.tv_sec += leap;
++			wall_to_monotonic.tv_sec -= leap;
+ 		}
  
- /*
-  * This function is the exported kernel interface.  It returns some
-- * number of good random numbers, suitable for seeding TCP sequence
-- * numbers, etc.
-+ * number of good random numbers, suitable for key generation, seeding
-+ * TCP sequence numbers, etc.  It does not use the hw random number
-+ * generator, if available; use get_random_bytes_arch() for that.
-  */
- void get_random_bytes(void *buf, int nbytes)
- {
-+	extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
-+}
-+EXPORT_SYMBOL(get_random_bytes);
-+
-+/*
-+ * This function will use the architecture-specific hardware random
-+ * number generator if it is available.  The arch-specific hw RNG will
-+ * almost certainly be faster than what we can do in software, but it
-+ * is impossible to verify that it is implemented securely (as
-+ * opposed, to, say, the AES encryption of a sequence number using a
-+ * key known by the NSA).  So it's useful if we need the speed, but
-+ * only if we're willing to trust the hardware manufacturer not to
-+ * have put in a back door.
-+ */
-+void get_random_bytes_arch(void *buf, int nbytes)
-+{
- 	char *p = buf;
- 
- 	while (nbytes) {
-@@ -1057,9 +1074,11 @@ void get_random_bytes(void *buf, int nbytes)
- 		nbytes -= chunk;
- 	}
- 
--	extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
-+	if (nbytes)
-+		extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
- }
--EXPORT_SYMBOL(get_random_bytes);
-+EXPORT_SYMBOL(get_random_bytes_arch);
-+
- 
- /*
-  * init_std_data - initialize pool with system data
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 7451093..5a376bc 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -52,6 +52,7 @@ extern void add_input_randomness(unsigned int type, unsigned int code,
- extern void add_interrupt_randomness(int irq, int irq_flags);
- 
- extern void get_random_bytes(void *buf, int nbytes);
-+extern void get_random_bytes_arch(void *buf, int nbytes);
- void generate_random_uuid(unsigned char uuid_out[16]);
- 
- #ifndef MODULE
+ 		raw_time.tv_nsec += timekeeper.raw_interval;
 -- 
 1.7.2.1.45.g54fbc
 
