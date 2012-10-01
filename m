@@ -1,157 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab2JARwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 13:52:44 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:41841 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab2JARwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 13:52:42 -0400
-Date: Mon, 1 Oct 2012 10:52:06 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Paolo Valente <paolo.valente@unimore.it>
-Cc: jhs@mojatatu.com, davem@davemloft.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rizzo@iet.unipi.it, fchecconi@gmail.com
-Subject: Re: [PATCH RFC] pkt_sched: QFQ Plus: fair-queueing service at DRR
- cost
-Message-ID: <20121001105206.71d16488@nehalam.linuxnetplumber.net>
-In-Reply-To: <5069D701.9090403@unimore.it>
-References: <20120930174049.GA13793@paolo-ThinkPad-W520>
-	<20121001083100.13fc231c@nehalam.linuxnetplumber.net>
-	<5069D701.9090403@unimore.it>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751990Ab2JARyP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 13:54:15 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:4210 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751887Ab2JARyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 13:54:14 -0400
+Date: Mon, 1 Oct 2012 17:54:12 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: David Rientjes <rientjes@google.com>
+cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] slab: Ignore internal flags in cache creation
+In-Reply-To: <alpine.DEB.2.00.1209281606230.26759@chino.kir.corp.google.com>
+Message-ID: <0000013a1d76c065-7134a937-7892-40df-80bd-e7189eff7e4c-000000@email.amazonses.com>
+References: <1348571866-31738-1-git-send-email-glommer@parallels.com> <00000139fe408877-40bc98e3-322c-4ba2-be72-e298ff28e694-000000@email.amazonses.com> <alpine.DEB.2.00.1209251744580.22521@chino.kir.corp.google.com> <5062C029.308@parallels.com>
+ <alpine.DEB.2.00.1209261813300.7072@chino.kir.corp.google.com> <5063F94C.4090600@parallels.com> <alpine.DEB.2.00.1209271552350.13360@chino.kir.corp.google.com> <0000013a0d390e11-03bf6f97-a8b7-4229-9f69-84aa85795b7e-000000@email.amazonses.com>
+ <alpine.DEB.2.00.1209281336380.21335@chino.kir.corp.google.com> <0000013a0ec088ee-69089a7c-125f-4e80-9881-e66ab96ab59d-000000@email.amazonses.com> <alpine.DEB.2.00.1209281606230.26759@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Oct 2012 19:46:41 +0200
-Paolo Valente <paolo.valente@unimore.it> wrote:
+On Fri, 28 Sep 2012, David Rientjes wrote:
 
-> Il 01/10/2012 17:31, Stephen Hemminger ha scritto:
-> > On Sun, 30 Sep 2012 19:40:49 +0200
-> > Paolo Valente <paolo.valente@unimore.it> wrote:
-> >
-> >> Hi,
-> >> this patch turns QFQ into QFQ+, a faster variant of QFQ that groups
-> >> classes into aggregates, and uses the original QFQ scheduling
-> >> algorithm to schedule aggregates instead of single classes. An
-> >> aggregate is made of at most M classes, all with the same weight and
-> >> maximum packet size.  M is equal to the minimum between tx_queue_len+1
-> >> and 8 (value chosen to get a good trade-off between execution time and
-> >> service guarantees). QFQ+ associates each aggregate with a budget
-> >> equal to the maximum packet size for the classes in the aggregate,
-> >> multiplied by the number of classes of the aggregate. Once selected an
-> >> aggregate for service, QFQ+ dequeues only the packets of its classes,
-> >> until the aggregate finishes its budget. Finally, within an aggregate,
-> >> classes are scheduled with DRR. In my tests, described below, the
-> >> execution time of QFQ+ with M=8 was from 16% to 31% lower than that of
-> >> QFQ, and close to that of DRR.
-> >>
-> >> QFQ+ does not use packet lengths for computing aggregate timestamps,
-> >> but budgets. Hence it does not need to modify any timestamp if the
-> >> head packet of a class changes. As a consequence, differently from
-> >> QFQ, which uses head-packet lengths to compute class timestamps, QFQ+
-> >> does not need further modifications to correctly schedule also
-> >> non-leaf classes and classes with non-FIFO qdiscs. Finally, QFQ+ is
-> >> more robust than QFQ against corruption of the data structures
-> >> implementing the bucket lists. A detailed description of QFQ+ can be
-> >> found in [1].
-> >>
-> >> As for service guarantees, thanks to the way how M is computed, the
-> >> service of QFQ+ is close to the one of QFQ. For example, as proved in
-> >> [1], under QFQ+ every packet of a given class is guaranteed the same
-> >> worst-case completion time as under QFQ, plus an additional delay
-> >> equal to the transmission time, at the rate reserved to the class, of
-> >> three maximum-size packet. See [1, Section 7.1] for a numerical
-> >> comparison among the packet delays guaranteed by QFQ+, QFQ and DRR.
-> >>
-> >> I measured the execution time of QFQ+, DRR and QFQ using the testing
-> >> environment [2]. In particular, for each scheduler I measured the
-> >> average total execution time of a packet enqueue plus a packet
-> >> dequeue.  For practical reasons, in this testing environment each
-> >> enqueue&dequeue is also charged for the cost of generating and
-> >> discarding an empty, fixed-size packet (using a free list). The
-> >> following table reports the results with an i7-2760QM, against four
-> >> different class sets. Time is measured in nanoseconds, while each set
-> >> or subset of classes is denoted as <num_classes>-w<weight>, where
-> >> <num_classes> and <weight> are, respectively, the number of classes
-> >> and the weight of every class in the set/subset (for example, 250-w1
-> >> stands for 250 classes with weight 1). For QFQ+, the table shows the
-> >> results for the two extremes for M: 1 and 8 (see [1, Section 7.2] for
-> >> results with other values of M and for more information).
-> >>
-> >>   -----------------------------------------------
-> >> | Set of  |      QFQ+ (M)     |   DRR      QFQ  |
-> >> | classes |    1          8   |                 |
-> >> |-----------------------------------------------|
-> >> | 1k-w1   |   89         63   |    56       81  |
-> >> |-----------------------------------------------|
-> >> | 500-w1, |                   |                 |
-> >> | 250-w2, |  102         71   |    87      103  |
-> >> | 250-w4  |                   |                 |
-> >> |-----------------------------------------------|
-> >> | 32k-w1  |  267        225   |   173      257  |
-> >> |-----------------------------------------------|
-> >> | 16k-w1, |                   |                 |
-> >> | 8k-w2,  |  253        187   |   252      257  |
-> >> | 8k-w4   |                   |                 |
-> >>   -----------------------------------------------
-> >>
-> >> About DRR, it achieves its best performance when all the classes have
-> >> the same weight. This is fortunate, because in such scenarios it is
-> >> actually pointless to use a fair-queueing scheduler, as the latter
-> >> would provide the same quality of service as DRR. In contrast, when
-> >> classes have differentiated weights and the better service properties
-> >> of QFQ+ make a difference, QFQ+ has better performance than DRR. It
-> >> happens mainly because QFQ+ dequeues packets in an order that causes
-> >> about 8% less cache misses than DRR. As for the number of
-> >> instructions, QFQ+ executes instead about 7% more instructions than
-> >> DRR, whereas QFQ executes from 25% to 34% more instructions than DRR.
-> >>
-> >> Paolo
-> >>
-> >> [1] P. Valente, "Reducing the Execution Time of Fair-Queueing Schedulers"
-> >> http://algo.ing.unimo.it/people/paolo/agg-sched/agg-sched.pdf
-> >>
-> >> [2] http://algo.ing.unimo.it/people/paolo/agg-sched/test-env.tgz
-> >>
-> >> Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-> > I like the improvement and the performance improvement.
-> > Is there some concern that changing the implementation this much might
-> > upset some people already using QFQ?
-> If you mean people upset for the degradation of the service quality 
-> (which should however be hard to perceive in most practical 
-> applications), then the following solution could address this issue. It 
-> was the my first idea, before I decided not to change the interface at all.
-> 
-> 1. Add an additional parameter M to the tc interface, with two types of 
-> values:
-> 0        -> automatically compute the max number of classes in an 
-> aggregate using the current formula
->  >0     -> use the value provided by the user as max number of classes
-> 
-> 2. Set M to 1 as default value, which would let QFQ+ behave as QFQ by 
-> default.
-> 
-> tc should however be modified, and people using QFQ should probably move 
-> to the new version (which is the main reason why I opted for the other 
-> solution).
-> 
-> Paolo
-> > What happens if an existing working QFQ config is used in QFQ+?
-> >
-> >
-> >
-> 
-> 
+> All of the move to mm/slab_common.c has obviously slowed down posting of
+> SLAM and I haven't complained about that once or asked that it not be
+> done, I'm simply pointing out an instance here that will conflict later on
+> if we go with this patch.  That, to me, is respectful of other people's
+> time.  That said, I'll leave it to Glauber to decide how he'd like to
+> handle this issue given the knowledge of what is to come.
 
-In order for the transistion to be seamless all possible upgrades
-have to work. As in:
-  * old iproute2 utilities with new kernel with QFQ+
-  * new iproute2 utilities with old kernel with QFQ
+I do not mind if you post a version against some older kernel. We can
+then see what is going on and come to an agreement on how to move forward.
+I just want to finally *see* the patches instead of just hot talk.
 
-It is okay to force users to give new parameters to get full performance,
-but just don't want to break existing users.
