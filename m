@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933037Ab2JAXBw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:01:52 -0400
-Received: from 1wt.eu ([62.212.114.60]:35429 "EHLO 1wt.eu"
+	id S932953Ab2JAXBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:01:31 -0400
+Received: from 1wt.eu ([62.212.114.60]:35366 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933013Ab2JAXBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:01:47 -0400
-Message-Id: <20121001225202.658882219@1wt.eu>
+	id S932935Ab2JAXB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:01:27 -0400
+Message-Id: <20121001225157.994641504@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:56 +0200
+Date: Tue, 02 Oct 2012 00:52:06 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 119/180] futex: Test for pi_mutex on fault in futex_wait_requeue_pi()
+        John Stultz <john.stultz@linaro.org>, Willy Tarreau <w@1wt.eu>
+Subject: [ 009/180] 2.6.32.x: ntp: Correct TAI offset during leap second
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit b6070a8d9853eda010a549fa9a09eb8d7269b929 upstream.
+This is a backport of dd48d708ff3e917f6d6b6c2b696c3f18c019feed
 
-If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
-for pi_mutex != NULL before testing the owner against current
-and possibly unlocking it.
+When repeating a UTC time value during a leap second (when the UTC
+time should be 23:59:60), the TAI timescale should not stop. The kernel
+NTP code increments the TAI offset one second too late. This patch fixes
+the issue by incrementing the offset during the leap second itself.
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Link: http://lkml.kernel.org/r/dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/futex.c |    2 +-
+ kernel/time/ntp.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 0b06da1..6f745b6 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2345,7 +2345,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
- 	 * fault, unlock the rt_mutex and return the fault to userspace.
- 	 */
- 	if (ret == -EFAULT) {
--		if (rt_mutex_owner(pi_mutex) == current)
-+		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
- 			rt_mutex_unlock(pi_mutex);
- 	} else if (ret == -EINTR) {
- 		/*
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index dc76c9a..c1c36a2 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -208,6 +208,7 @@ int second_overflow(unsigned long secs)
+ 		if (secs % 86400 == 0) {
+ 			leap = -1;
+ 			time_state = TIME_OOP;
++			time_tai++;
+ 			printk(KERN_NOTICE
+ 				"Clock: inserting leap second 23:59:60 UTC\n");
+ 		}
+@@ -222,7 +223,6 @@ int second_overflow(unsigned long secs)
+ 		}
+ 		break;
+ 	case TIME_OOP:
+-		time_tai++;
+ 		time_state = TIME_WAIT;
+ 		break;
+ 
 -- 
 1.7.2.1.45.g54fbc
 
