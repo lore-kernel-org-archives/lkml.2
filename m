@@ -1,139 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab2JATdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 15:33:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43149 "EHLO mx1.redhat.com"
+	id S1754465Ab2JATeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 15:34:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54282 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab2JATdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 15:33:03 -0400
+	id S1754027Ab2JATdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 15:33:02 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, axboe@kernel.dk
 Cc: tj@kernel.org, cgroups@vger.kernel.org, vgoyal@redhat.com
-Subject: [PATCH 10/15] cfq-get-rid-of-slice-offset-and-always-put-new-queue-at-the-end-2
-Date: Mon,  1 Oct 2012 15:32:51 -0400
-Message-Id: <1349119976-26837-11-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 14/15] cfq-iosched: Wait for queue to get busy even if this is not last queue in group
+Date: Mon,  1 Oct 2012 15:32:55 -0400
+Message-Id: <1349119976-26837-15-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1349119976-26837-1-git-send-email-vgoyal@redhat.com>
 References: <1349119976-26837-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently cfq does round robin among cfqq and allocates bigger slices
-to higher prio queue. But it also does additional logic of putting
-higher priority queues ahead of lower priority queues in the service
-tree. cfq_slice_offset() determines the postion of a queue in the
-service tree.
+With new algorithm, to maintain fairness we need to make sure that queue
+does not get deleted from tree at slice expiry. Otherwise when new
+request comes in very shortly after deletion, queue gets queued at
+the end of service tree.
 
-I think it was done so that higher prio queues can get even higher
-share of disk. As I am planning to move to vdisktime logic, this
-does not fit anymore in to scheme of things. In the end of patch
-series, I will introduce another approximation which provides vdisktime
-boost based on weight. So that will kind of emulate this logic to
-provide higher prio queues more than fair share of disk.
+In general it is not too much of a problem as we had scaled slice
+length based on prio/weight scaling to begin with. But low_latency
+logic might introduce some imperfections.
 
-So this patch puts every new queue at the end of service tree by
-default. Existing queues get their position in the tree depending
-on how much slice did they use recently and what's their prio/weight.
+We intoroduced wait for queue to get backlogged logic already. Just
+that we trigger it only when queue is last queue in the group (In
+an attempt to provide group its fair share). Just extend same wait
+busy logic to queue too.
 
-This patch only introduces the functionality of adding queues at
-the end of service tree. Later patches will introduce the functionality
-of determining vdisktime (hence position in service tree) based on
-slice used and weight.
-
-If a queue is being requeued, then it will already be on service tree
-and we can't determine the rb_key of last element using cfq_rb_last().
-So we always remove the queue from service tree first.
-
-This is just an intermediate patch to show clearly how I am chaning
-existing functionality. Did not want to lump it together with bigger
-patches.
+Because this little extra wait happens only if we have been idling
+all along on the queue, I am not expecting any serious impact of this
+little extra idling.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/cfq-iosched.c |   51 ++++++++++++++++++---------------------------------
- 1 files changed, 18 insertions(+), 33 deletions(-)
+ block/cfq-iosched.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 76f020f..bf2bc32 100644
+index 732e465..7d1fa41 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -1139,16 +1139,6 @@ cfq_find_next_rq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	return cfq_choose_req(cfqd, next, prev, blk_rq_pos(last));
- }
+@@ -2685,7 +2685,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+ 		return NULL;
  
--static unsigned long cfq_slice_offset(struct cfq_data *cfqd,
--				      struct cfq_queue *cfqq)
--{
--	/*
--	 * just an approximation, should be ok.
--	 */
--	return (cfqq->cfqg->nr_cfqq - 1) * (cfq_prio_slice(cfqd, 1, 0) -
--		       cfq_prio_slice(cfqd, cfq_cfqq_sync(cfqq), cfqq->ioprio));
--}
--
- static inline s64
- cfqg_key(struct cfq_rb_root *st, struct cfq_group *cfqg)
- {
-@@ -1625,41 +1615,36 @@ static void cfq_st_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	bool new_cfqq = RB_EMPTY_NODE(&cfqq->rb_node);
+ 	/*
+-	 * We were waiting for group to get backlogged. Expire the queue
++	 * We were waiting for queue to get backlogged. Expire the queue
+ 	 */
+ 	if (cfq_cfqq_wait_busy(cfqq) && !RB_EMPTY_ROOT(&cfqq->sort_list))
+ 		goto expire;
+@@ -2703,7 +2703,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+ 		 * have been idling all along on this queue and it should be
+ 		 * ok to wait for this request to complete.
+ 		 */
+-		if (cfqq->cfqg->nr_cfqq == 1 && RB_EMPTY_ROOT(&cfqq->sort_list)
++		if (RB_EMPTY_ROOT(&cfqq->sort_list)
+ 		    && cfqq->dispatched && cfq_should_idle(cfqd, cfqq)) {
+ 			cfqq = NULL;
+ 			goto keep_queue;
+@@ -3631,10 +3631,6 @@ static bool cfq_should_wait_busy(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 	if (!RB_EMPTY_ROOT(&cfqq->sort_list))
+ 		return false;
  
- 	st = st_for(cfqq->cfqg, cfqq_class(cfqq), cfqq_type(cfqq));
--	if (cfq_class_idle(cfqq)) {
-+
-+	if (!new_cfqq) {
-+		cfq_rb_erase(&cfqq->rb_node, cfqq->st);
-+		cfqq->st = NULL;
-+	}
-+
-+	if (!add_front) {
- 		rb_key = CFQ_IDLE_DELAY;
- 		parent = rb_last(&st->rb);
--		if (parent && parent != &cfqq->rb_node) {
-+		if (parent) {
- 			__cfqq = rb_entry(parent, struct cfq_queue, rb_node);
- 			rb_key += __cfqq->rb_key;
- 		} else
- 			rb_key += jiffies;
--	} else if (!add_front) {
--		/*
--		 * Get our rb key offset. Subtract any residual slice
--		 * value carried from last service. A negative resid
--		 * count indicates slice overrun, and this should position
--		 * the next service time further away in the tree.
--		 */
--		rb_key = cfq_slice_offset(cfqd, cfqq) + jiffies;
--		rb_key -= cfqq->slice_resid;
--		cfqq->slice_resid = 0;
-+		if (!cfq_class_idle(cfqq)) {
-+			/*
-+			 * Subtract any residual slice * value carried from
-+			 * last service. A negative resid count indicates
-+			 * slice overrun, and this should position
-+			 * the next service time further away in the tree.
-+			 */
-+			rb_key -= cfqq->slice_resid;
-+			cfqq->slice_resid = 0;
-+		}
- 	} else {
- 		rb_key = -HZ;
- 		__cfqq = cfq_rb_first(st);
- 		rb_key += __cfqq ? __cfqq->rb_key : jiffies;
- 	}
- 
--	if (!new_cfqq) {
--		/*
--		 * same position, nothing more to do
--		 */
--		if (rb_key == cfqq->rb_key && cfqq->st == st)
--			return;
+-	/* If there are other queues in the group, don't wait */
+-	if (cfqq->cfqg->nr_cfqq > 1)
+-		return false;
 -
--		cfq_rb_erase(&cfqq->rb_node, cfqq->st);
--		cfqq->st = NULL;
--	}
--
- 	left = 1;
- 	parent = NULL;
- 	cfqq->st = st;
+ 	/* the only queue in the group, but think time is big */
+ 	if (cfq_io_thinktime_big(cfqd, &cfqq->cfqg->ttime, true))
+ 		return false;
 -- 
 1.7.7.6
 
