@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab2JAUBg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 16:01:36 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40537 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab2JAUBf (ORCPT
+	id S1752482Ab2JAUIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 16:08:06 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:35841 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab2JAUIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 16:01:35 -0400
-Date: Mon, 01 Oct 2012 16:00:42 -0400 (EDT)
-Message-Id: <20121001.160042.2132360219816463227.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-next 2012-10-01
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121001192448.GA1944@tuxdriver.com>
-References: <20121001192448.GA1944@tuxdriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Oct 2012 16:08:04 -0400
+Date: Mon, 1 Oct 2012 14:08:03 -0600
+From: Khalid Aziz <khalid.aziz@hp.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, khalid@gonehiking.org
+Subject: [PATCH] MAINTAINERS: Update email address for Khalid Aziz
+Message-ID: <20121001200803.GA13096@ldl.usa.hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Mon, 1 Oct 2012 15:24:49 -0400
+Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+Cc: Khalid Aziz <khalid@gonehiking.org>
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> commit e4d680c706284ca0413a84bd2a28fda76b360904
-> 
-> In my previous pull request, I mentioned that I had a few stragglers.
-> They are all driver updates: ti, brcmfmac, ath9k, one for bcma and
-> one for b43legacy.  I merged them late last week and was letting them
-> soak in linux-next.  I hope they can still make 3.7.
-> 
-> Please let me know if there are problems!
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 9a6c4da..c29a73d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5226,7 +5226,7 @@ F:	include/linux/i2c-algo-pca.h
+ F:	include/linux/i2c-pca-platform.h
+ 
+ PCDP - PRIMARY CONSOLE AND DEBUG PORT
+-M:	Khalid Aziz <khalid.aziz@hp.com>
++M:	Khalid Aziz <khalid@gonehiking.org>
+ S:	Maintained
+ F:	drivers/firmware/pcdp.*
+ 
+-- 
+1.7.8.3
 
-Pulled, thanks John.
