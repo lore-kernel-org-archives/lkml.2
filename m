@@ -1,150 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab2JANY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 09:24:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45112 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166Ab2JANY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 09:24:57 -0400
-Date: Mon, 1 Oct 2012 15:24:52 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/apic changes for v3.7
-Message-ID: <20121001132452.GA22739@gmail.com>
+	id S1753369Ab2JAN1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 09:27:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35318 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581Ab2JAN1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 09:27:14 -0400
+Date: Mon, 1 Oct 2012 15:27:11 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 12/13] execute the whole memcg freeing in rcu callback
+Message-ID: <20121001132711.GL8622@dhcp22.suse.cz>
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
+ <1347977050-29476-13-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1347977050-29476-13-git-send-email-glommer@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue 18-09-12 18:04:09, Glauber Costa wrote:
+> A lot of the initialization we do in mem_cgroup_create() is done with softirqs
+> enabled. This include grabbing a css id, which holds &ss->id_lock->rlock, and
+> the per-zone trees, which holds rtpz->lock->rlock. All of those signal to the
+> lockdep mechanism that those locks can be used in SOFTIRQ-ON-W context. This
+> means that the freeing of memcg structure must happen in a compatible context,
+> otherwise we'll get a deadlock.
 
-Please pull the latest x86-apic-for-linus git tree from:
+Maybe I am missing something obvious but why cannot we simply disble
+(soft)irqs in mem_cgroup_create rather than make the free path much more
+complicated. It really feels strange to defer everything (e.g. soft
+reclaim tree cleanup which should be a no-op at the time because there
+shouldn't be any user pages in the group).
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-apic-for-linus
-
-   HEAD: 57c078ce13983d27c83f962b3e9722887209005c x86/api: Rename mp_register_lapic in a comment
-
-Smaller fixes and cleanups.
-
- Thanks,
-
-	Ingo
-
------------------->
-Sebastian Andrzej Siewior (1):
-      x86: dt: Use linear irq domain for ioapic(s)
-
-Yasuaki Ishimatsu (1):
-      x86/api: Rename mp_register_lapic in a comment
-
-Yuanhan Liu (1):
-      x86/irq/i8259: Fix incorrect comment
+> The reference counting mechanism we use allows the memcg structure to be freed
+> later and outlive the actual memcg destruction from the filesystem. However, we
+> have little, if any, means to guarantee in which context the last memcg_put
+> will happen. The best we can do is test it and try to make sure no invalid
+> context releases are happening. But as we add more code to memcg, the possible
+> interactions grow in number and expose more ways to get context conflicts.
+> 
+> We already moved a part of the freeing to a worker thread to be context-safe
+> for the static branches disabling. I see no reason not to do it for the whole
+> freeing action. I consider this to be the safe choice.
 
 
- arch/x86/kernel/acpi/boot.c  |  2 +-
- arch/x86/kernel/devicetree.c | 51 ++++++++++++++++++++++++++++++++++++--------
- arch/x86/kernel/i8259.c      |  2 +-
- 3 files changed, 44 insertions(+), 11 deletions(-)
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Tested-by: Greg Thelen <gthelen@google.com>
+> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memcontrol.c | 66 +++++++++++++++++++++++++++++----------------------------
+>  1 file changed, 34 insertions(+), 32 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index b05ecac..74654f0 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -5082,16 +5082,29 @@ out_free:
+>  }
+>  
+>  /*
+> - * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
+> - * but in process context.  The work_freeing structure is overlaid
+> - * on the rcu_freeing structure, which itself is overlaid on memsw.
+> + * At destroying mem_cgroup, references from swap_cgroup can remain.
+> + * (scanning all at force_empty is too costly...)
+> + *
+> + * Instead of clearing all references at force_empty, we remember
+> + * the number of reference from swap_cgroup and free mem_cgroup when
+> + * it goes down to 0.
+> + *
+> + * Removal of cgroup itself succeeds regardless of refs from swap.
+>   */
+> -static void free_work(struct work_struct *work)
+> +
+> +static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>  {
+> -	struct mem_cgroup *memcg;
+> +	int node;
+>  	int size = sizeof(struct mem_cgroup);
+>  
+> -	memcg = container_of(work, struct mem_cgroup, work_freeing);
+> +	mem_cgroup_remove_from_trees(memcg);
+> +	free_css_id(&mem_cgroup_subsys, &memcg->css);
+> +
+> +	for_each_node(node)
+> +		free_mem_cgroup_per_zone_info(memcg, node);
+> +
+> +	free_percpu(memcg->stat);
+> +
+>  	/*
+>  	 * We need to make sure that (at least for now), the jump label
+>  	 * destruction code runs outside of the cgroup lock. This is because
+> @@ -5110,38 +5123,27 @@ static void free_work(struct work_struct *work)
+>  		vfree(memcg);
+>  }
+>  
+> -static void free_rcu(struct rcu_head *rcu_head)
+> -{
+> -	struct mem_cgroup *memcg;
+> -
+> -	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
+> -	INIT_WORK(&memcg->work_freeing, free_work);
+> -	schedule_work(&memcg->work_freeing);
+> -}
+>  
+>  /*
+> - * At destroying mem_cgroup, references from swap_cgroup can remain.
+> - * (scanning all at force_empty is too costly...)
+> - *
+> - * Instead of clearing all references at force_empty, we remember
+> - * the number of reference from swap_cgroup and free mem_cgroup when
+> - * it goes down to 0.
+> - *
+> - * Removal of cgroup itself succeeds regardless of refs from swap.
+> + * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
+> + * but in process context.  The work_freeing structure is overlaid
+> + * on the rcu_freeing structure, which itself is overlaid on memsw.
+>   */
+> -
+> -static void __mem_cgroup_free(struct mem_cgroup *memcg)
+> +static void free_work(struct work_struct *work)
+>  {
+> -	int node;
+> +	struct mem_cgroup *memcg;
+>  
+> -	mem_cgroup_remove_from_trees(memcg);
+> -	free_css_id(&mem_cgroup_subsys, &memcg->css);
+> +	memcg = container_of(work, struct mem_cgroup, work_freeing);
+> +	__mem_cgroup_free(memcg);
+> +}
+>  
+> -	for_each_node(node)
+> -		free_mem_cgroup_per_zone_info(memcg, node);
+> +static void free_rcu(struct rcu_head *rcu_head)
+> +{
+> +	struct mem_cgroup *memcg;
+>  
+> -	free_percpu(memcg->stat);
+> -	call_rcu(&memcg->rcu_freeing, free_rcu);
+> +	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
+> +	INIT_WORK(&memcg->work_freeing, free_work);
+> +	schedule_work(&memcg->work_freeing);
+>  }
+>  
+>  static void mem_cgroup_get(struct mem_cgroup *memcg)
+> @@ -5153,7 +5155,7 @@ static void __mem_cgroup_put(struct mem_cgroup *memcg, int count)
+>  {
+>  	if (atomic_sub_and_test(count, &memcg->refcnt)) {
+>  		struct mem_cgroup *parent = parent_mem_cgroup(memcg);
+> -		__mem_cgroup_free(memcg);
+> +		call_rcu(&memcg->rcu_freeing, free_rcu);
+>  		if (parent)
+>  			mem_cgroup_put(parent);
+>  	}
+> -- 
+> 1.7.11.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index b2297e5..e651f7a 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -656,7 +656,7 @@ static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int *pcpu)
- 	acpi_register_lapic(physid, ACPI_MADT_ENABLED);
- 
- 	/*
--	 * If mp_register_lapic successfully generates a new logical cpu
-+	 * If acpi_register_lapic successfully generates a new logical cpu
- 	 * number, then the following will get us exactly what was mapped
- 	 */
- 	cpumask_andnot(new_map, cpu_present_mask, tmp_map);
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index 3ae2ced..b158152 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -342,6 +342,47 @@ const struct irq_domain_ops ioapic_irq_domain_ops = {
- 	.xlate = ioapic_xlate,
- };
- 
-+static void dt_add_ioapic_domain(unsigned int ioapic_num,
-+		struct device_node *np)
-+{
-+	struct irq_domain *id;
-+	struct mp_ioapic_gsi *gsi_cfg;
-+	int ret;
-+	int num;
-+
-+	gsi_cfg = mp_ioapic_gsi_routing(ioapic_num);
-+	num = gsi_cfg->gsi_end - gsi_cfg->gsi_base + 1;
-+
-+	id = irq_domain_add_linear(np, num, &ioapic_irq_domain_ops,
-+			(void *)ioapic_num);
-+	BUG_ON(!id);
-+	if (gsi_cfg->gsi_base == 0) {
-+		/*
-+		 * The first NR_IRQS_LEGACY irq descs are allocated in
-+		 * early_irq_init() and need just a mapping. The
-+		 * remaining irqs need both. All of them are preallocated
-+		 * and assigned so we can keep the 1:1 mapping which the ioapic
-+		 * is having.
-+		 */
-+		ret = irq_domain_associate_many(id, 0, 0, NR_IRQS_LEGACY);
-+		if (ret)
-+			pr_err("Error mapping legacy IRQs: %d\n", ret);
-+
-+		if (num > NR_IRQS_LEGACY) {
-+			ret = irq_create_strict_mappings(id, NR_IRQS_LEGACY,
-+					NR_IRQS_LEGACY, num - NR_IRQS_LEGACY);
-+			if (ret)
-+				pr_err("Error creating mapping for the "
-+						"remaining IRQs: %d\n", ret);
-+		}
-+		irq_set_default_host(id);
-+	} else {
-+		ret = irq_create_strict_mappings(id, gsi_cfg->gsi_base, 0, num);
-+		if (ret)
-+			pr_err("Error creating IRQ mapping: %d\n", ret);
-+	}
-+}
-+
- static void __init ioapic_add_ofnode(struct device_node *np)
- {
- 	struct resource r;
-@@ -356,15 +397,7 @@ static void __init ioapic_add_ofnode(struct device_node *np)
- 
- 	for (i = 0; i < nr_ioapics; i++) {
- 		if (r.start == mpc_ioapic_addr(i)) {
--			struct irq_domain *id;
--			struct mp_ioapic_gsi *gsi_cfg;
--
--			gsi_cfg = mp_ioapic_gsi_routing(i);
--
--			id = irq_domain_add_legacy(np, 32, gsi_cfg->gsi_base, 0,
--						   &ioapic_irq_domain_ops,
--						   (void*)i);
--			BUG_ON(!id);
-+			dt_add_ioapic_domain(i, np);
- 			return;
- 		}
- 	}
-diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
-index 36d1853..9a5c460 100644
---- a/arch/x86/kernel/i8259.c
-+++ b/arch/x86/kernel/i8259.c
-@@ -263,7 +263,7 @@ static void i8259A_shutdown(void)
- 	 * out of.
- 	 */
- 	outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
--	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-1 */
-+	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
- }
- 
- static struct syscore_ops i8259_syscore_ops = {
+-- 
+Michal Hocko
+SUSE Labs
