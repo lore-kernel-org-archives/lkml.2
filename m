@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab2JADh3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 23:37:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35132 "EHLO
+	id S1751999Ab2JADiV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 23:38:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35146 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab2JADh1 (ORCPT
+	with ESMTP id S1751476Ab2JADiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 23:37:27 -0400
-Date: Sun, 30 Sep 2012 20:37:06 -0700
+	Sun, 30 Sep 2012 23:38:19 -0400
+Date: Sun, 30 Sep 2012 20:38:03 -0700
 From: tip-bot for Thomas Renninger <trenn@suse.de>
-Message-ID: <tip-8e30524dcc0d0ac1a18a5cee482b9d9cde3cb332@git.kernel.org>
+Message-ID: <tip-53aac44c904abbad9f474f652f099de13b5c3563@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         yinghai@kernel.org, lenb@kernel.org, eric.piel@tremplin-utc.net,
         tglx@linutronix.de, trenn@suse.de, hpa@linux.intel.com,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         yinghai@kernel.org, lenb@kernel.org, eric.piel@tremplin-utc.net,
         tglx@linutronix.de, trenn@suse.de, hpa@linux.intel.com,
         robert.moore@intel.com
-In-Reply-To: <1349043837-22659-3-git-send-email-trenn@suse.de>
-References: <1349043837-22659-3-git-send-email-trenn@suse.de>
+In-Reply-To: <1349043837-22659-4-git-send-email-trenn@suse.de>
+References: <1349043837-22659-4-git-send-email-trenn@suse.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/acpi] x86, acpi:
-  Introduce x86 arch specific arch_reserve_mem_area() for e820 handling
-Git-Commit-ID: 8e30524dcc0d0ac1a18a5cee482b9d9cde3cb332
+Subject: [tip:x86/acpi] ACPI:
+  Store valid ACPI tables passed via early initrd in reserved memblock areas
+Git-Commit-ID: 53aac44c904abbad9f474f652f099de13b5c3563
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,66 +32,219 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 30 Sep 2012 20:37:13 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 30 Sep 2012 20:38:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8e30524dcc0d0ac1a18a5cee482b9d9cde3cb332
-Gitweb:     http://git.kernel.org/tip/8e30524dcc0d0ac1a18a5cee482b9d9cde3cb332
+Commit-ID:  53aac44c904abbad9f474f652f099de13b5c3563
+Gitweb:     http://git.kernel.org/tip/53aac44c904abbad9f474f652f099de13b5c3563
 Author:     Thomas Renninger <trenn@suse.de>
-AuthorDate: Mon, 1 Oct 2012 00:23:53 +0200
+AuthorDate: Mon, 1 Oct 2012 00:23:54 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sun, 30 Sep 2012 18:03:13 -0700
+CommitDate: Sun, 30 Sep 2012 18:03:23 -0700
 
-x86, acpi: Introduce x86 arch specific arch_reserve_mem_area() for e820 handling
+ACPI: Store valid ACPI tables passed via early initrd in reserved memblock areas
 
-This is needed for ACPI table overriding via initrd. Beside reserving
-memblocks, X86 also requires to flag the memory area to E820_RESERVED or
-E820_ACPI in the e820 mappings to be able to io(re)map it later.
+A later patch will compare them with ACPI tables that get loaded at boot or
+runtime and if criteria match, a stored one is loaded.
 
 Signed-off-by: Thomas Renninger <trenn@suse.de>
-Link: http://lkml.kernel.org/r/1349043837-22659-3-git-send-email-trenn@suse.de
+Link: http://lkml.kernel.org/r/1349043837-22659-4-git-send-email-trenn@suse.de
 Cc: Len Brown <lenb@kernel.org>
 Cc: Robert Moore <robert.moore@intel.com>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Eric Piel <eric.piel@tremplin-utc.net>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/acpi/boot.c |    6 ++++++
- include/linux/acpi.h        |    8 ++++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+ arch/x86/kernel/setup.c |    2 +
+ drivers/acpi/Kconfig    |    9 ++++
+ drivers/acpi/osl.c      |  122 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h    |    8 +++
+ 4 files changed, 141 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index b2297e5..6b75777 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1700,3 +1700,9 @@ int __acpi_release_global_lock(unsigned int *lock)
- 	} while (unlikely (val != old));
- 	return old & 0x1;
- }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f4b9b80..764e543 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -941,6 +941,8 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	reserve_initrd();
+ 
++	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
 +
-+void __init arch_reserve_mem_area(acpi_physical_address addr, size_t size)
+ 	reserve_crashkernel();
+ 
+ 	vsmp_init();
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 8099895..8cf7195 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -261,6 +261,15 @@ config ACPI_CUSTOM_DSDT
+ 	bool
+ 	default ACPI_CUSTOM_DSDT_FILE != ""
+ 
++config ACPI_INITRD_TABLE_OVERRIDE
++	bool "ACPI tables can be passed via uncompressed cpio in initrd"
++	default n
++	help
++	  This option provides functionality to override arbitrary ACPI tables
++	  via initrd. No functional change if no ACPI tables are passed via
++	  initrd, therefore it's safe to say Y.
++	  See Documentation/acpi/initrd_table_override.txt for details
++
+ config ACPI_BLACKLIST_YEAR
+ 	int "Disable ACPI for systems before Jan 1st this year" if X86_32
+ 	default 0
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 9eaf708..b20b079 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -534,6 +534,128 @@ acpi_os_predefined_override(const struct acpi_predefined_names *init_val,
+ 	return AE_OK;
+ }
+ 
++#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
++#include <linux/earlycpio.h>
++#include <linux/memblock.h>
++
++static u64 acpi_tables_addr;
++static int all_tables_size;
++
++/* Copied from acpica/tbutils.c:acpi_tb_checksum() */
++u8 __init acpi_table_checksum(u8 *buffer, u32 length)
 +{
-+	e820_add_region(addr, size, E820_ACPI);
-+	update_e820();
++	u8 sum = 0;
++	u8 *end = buffer + length;
++
++	while (buffer < end)
++		sum = (u8) (sum + *(buffer++));
++	return sum;
 +}
++
++/* All but ACPI_SIG_RSDP and ACPI_SIG_FACS: */
++static const char * const table_sigs[] = {
++	ACPI_SIG_BERT, ACPI_SIG_CPEP, ACPI_SIG_ECDT, ACPI_SIG_EINJ,
++	ACPI_SIG_ERST, ACPI_SIG_HEST, ACPI_SIG_MADT, ACPI_SIG_MSCT,
++	ACPI_SIG_SBST, ACPI_SIG_SLIT, ACPI_SIG_SRAT, ACPI_SIG_ASF,
++	ACPI_SIG_BOOT, ACPI_SIG_DBGP, ACPI_SIG_DMAR, ACPI_SIG_HPET,
++	ACPI_SIG_IBFT, ACPI_SIG_IVRS, ACPI_SIG_MCFG, ACPI_SIG_MCHI,
++	ACPI_SIG_SLIC, ACPI_SIG_SPCR, ACPI_SIG_SPMI, ACPI_SIG_TCPA,
++	ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
++	ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
++	ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT, NULL };
++
++/* Non-fatal errors: Affected tables/files are ignored */
++#define INVALID_TABLE(x, path, name)					\
++	{ pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
++
++#define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
++
++/* Must not increase 10 or needs code modification below */
++#define ACPI_OVERRIDE_TABLES 10
++
++void __init acpi_initrd_override(void *data, size_t size)
++{
++	int sig, no, table_nr = 0, total_offset = 0;
++	long offset = 0;
++	struct acpi_table_header *table;
++	char cpio_path[32] = "kernel/firmware/acpi/";
++	struct cpio_data file;
++	struct cpio_data early_initrd_files[ACPI_OVERRIDE_TABLES];
++	char *p;
++
++	if (data == NULL || size == 0)
++		return;
++
++	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
++		file = find_cpio_data(cpio_path, data, size, &offset);
++		if (!file.data)
++			break;
++
++		data += offset;
++		size -= offset;
++
++		if (file.size < sizeof(struct acpi_table_header))
++			INVALID_TABLE("Table smaller than ACPI header",
++				      cpio_path, file.name);
++
++		table = file.data;
++
++		for (sig = 0; table_sigs[sig]; sig++)
++			if (!memcmp(table->signature, table_sigs[sig], 4))
++				break;
++
++		if (!table_sigs[sig])
++			INVALID_TABLE("Unknown signature",
++				      cpio_path, file.name);
++		if (file.size != table->length)
++			INVALID_TABLE("File length does not match table length",
++				      cpio_path, file.name);
++		if (acpi_table_checksum(file.data, table->length))
++			INVALID_TABLE("Bad table checksum",
++				      cpio_path, file.name);
++
++		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
++			table->signature, cpio_path, file.name, table->length);
++
++		all_tables_size += table->length;
++		early_initrd_files[table_nr].data = file.data;
++		early_initrd_files[table_nr].size = file.size;
++		table_nr++;
++	}
++	if (table_nr == 0)
++		return;
++
++	acpi_tables_addr =
++		memblock_find_in_range(0, max_low_pfn_mapped << PAGE_SHIFT,
++				       all_tables_size, PAGE_SIZE);
++	if (!acpi_tables_addr) {
++		WARN_ON(1);
++		return;
++	}
++	/*
++	 * Only calling e820_add_reserve does not work and the
++	 * tables are invalid (memory got used) later.
++	 * memblock_reserve works as expected and the tables won't get modified.
++	 * But it's not enough on X86 because ioremap will
++	 * complain later (used by acpi_os_map_memory) that the pages
++	 * that should get mapped are not marked "reserved".
++	 * Both memblock_reserve and e820_add_region (via arch_reserve_mem_area)
++	 * works fine.
++	 */
++	memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
++	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
++
++	p = early_ioremap(acpi_tables_addr, all_tables_size);
++
++	for (no = 0; no < table_nr; no++) {
++		memcpy(p + total_offset, early_initrd_files[no].data,
++		       early_initrd_files[no].size);
++		total_offset += early_initrd_files[no].size;
++	}
++	early_iounmap(p, all_tables_size);
++}
++#endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
++
+ acpi_status
+ acpi_os_table_override(struct acpi_table_header * existing_table,
+ 		       struct acpi_table_header ** new_table)
 diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 4f2a762..946fd1e 100644
+index 946fd1e..d14081c 100644
 --- a/include/linux/acpi.h
 +++ b/include/linux/acpi.h
-@@ -426,6 +426,14 @@ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+@@ -76,6 +76,14 @@ typedef int (*acpi_table_handler) (struct acpi_table_header *table);
  
- acpi_status acpi_os_prepare_sleep(u8 sleep_state,
- 				  u32 pm1a_control, u32 pm1b_control);
-+#if CONFIG_X86
-+void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
+ typedef int (*acpi_table_entry_handler) (struct acpi_subtable_header *header, const unsigned long end);
+ 
++#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
++void acpi_initrd_override(void *data, size_t size);
 +#else
-+static inline void arch_reserve_mem_area(acpi_physical_address addr,
-+					  size_t size)
++static inline void acpi_initrd_override(void *data, size_t size)
 +{
 +}
-+#endif /* CONFIG_X86 */
- #else
- #define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
- #endif
++#endif
++
+ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
+ void __acpi_unmap_table(char *map, unsigned long size);
+ int early_acpi_boot_init(void);
