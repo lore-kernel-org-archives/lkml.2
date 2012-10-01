@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab2JAO6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 10:58:42 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:39665 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751193Ab2JAO6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 10:58:38 -0400
-Message-ID: <5069AF8C.2070807@ti.com>
-Date: Mon, 01 Oct 2012 20:28:20 +0530
-From: Shubhrajyoti <shubhrajyoti@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1751819Ab2JAPAD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 11:00:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27232 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751193Ab2JAO77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 10:59:59 -0400
+Date: Mon, 1 Oct 2012 16:59:44 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, akpm@linux-foundation.org, mhocko@suse.cz,
+        Steve Capper <steve.capper@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] mm: thp: Set the accessed flag for old pages on access
+ fault.
+Message-ID: <20121001145944.GA18051@redhat.com>
+References: <1349099505-5581-1-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-To: Sourav Poddar <sourav.poddar@ti.com>
-CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, b-cousson@ti.com, balbi@ti.com,
-        santosh.shilimkar@ti.com, dmitry.torokhov@gmail.com
-Subject: Re: [PATCHv3 2/4] Input: keypad: Add smsc ece1099 keypad driver
-References: <1349089310-22134-1-git-send-email-sourav.poddar@ti.com>
-In-Reply-To: <1349089310-22134-1-git-send-email-sourav.poddar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349099505-5581-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 October 2012 04:31 PM, Sourav Poddar wrote:
-> +smsc_probe(struct platform_device *pdev)
+Hi Will,
+
+On Mon, Oct 01, 2012 at 02:51:45PM +0100, Will Deacon wrote:
+> +void huge_pmd_set_accessed(struct mm_struct *mm, struct vm_area_struct *vma,
+> +			   unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
 > +{
-> +	struct device *dev = &pdev->dev;
-> +	struct smsc *smsc = dev_get_drvdata(pdev->dev.parent);
-> +	struct input_dev *input;
-> +	struct smsc_keypad *kp;
-> +	int ret = 0, error;
-> +	int col, i, max_keys, row_shift;
-> +	int irq;
-> +	int addr;
+> +	pmd_t entry;
 > +
-> +	kp = devm_kzalloc(dev, sizeof(*kp), GFP_KERNEL);
+> +	spin_lock(&mm->page_table_lock);
+> +	entry = pmd_mkyoung(orig_pmd);
+> +	if (pmdp_set_access_flags(vma, address & HPAGE_PMD_MASK, pmd, entry, 0))
+> +		update_mmu_cache(vma, address, pmd);
+
+If the pmd is being splitted, this may not be a trasnhuge pmd anymore
+by the time you obtained the lock. (orig_pmd could be stale, and it
+wasn't verified with pmd_same either)
+
+The lock should be obtained through pmd_trans_huge_lock.
+
+  if (pmd_trans_huge_lock(orig_pmd, vma) == 1)
+  {
+	set young bit
+	spin_unlock(&mm->page_table_lock);
+  }
+
+
+On x86:
+
+int pmdp_set_access_flags(struct vm_area_struct *vma,
+			  unsigned long address, pmd_t *pmdp,
+			  pmd_t entry, int dirty)
+{
+	int changed = !pmd_same(*pmdp, entry);
+
+	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
+
+	if (changed && dirty) {
+		*pmdp = entry;
+
+with dirty == 0 it looks like it won't make any difference, but I
+guess your arm pmdp_set_access_flag is different.
+
+However it seems "dirty" means write access and so the invocation
+would better match the pte case:
+
+	if (pmdp_set_access_flags(vma, address & HPAGE_PMD_MASK, pmd, entry,
+	    flags & FAULT_FLAG_WRITE))
+
+
+But note, you still have to update it even when "dirty" == 0, or it'll
+still infinite loop for read accesses.
+
+> +	spin_unlock(&mm->page_table_lock);
+> +}
 > +
-> +	input = input_allocate_device();
-> +	if (!kp || !input) {
-> +		error = -ENOMEM;
-> +		goto err1;
-> +	}
+>  int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
+>  {
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 5736170..d5c007d 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3537,7 +3537,11 @@ retry:
+>  				if (unlikely(ret & VM_FAULT_OOM))
+>  					goto retry;
+>  				return ret;
+> +			} else {
+> +				huge_pmd_set_accessed(mm, vma, address, pmd,
+> +						      orig_pmd);
+>  			}
 > +
-> +	error = smsc_keypad_parse_dt(&pdev->dev, kp);
-> +	if (error)
-> +		return error;
->
-Are we leaking input here?
+>  			return 0;
+
+Thanks,
+Andrea
