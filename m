@@ -1,148 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab2JAI5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 04:57:24 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:38797 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab2JAI5W convert rfc822-to-8bit (ORCPT
+	id S1752332Ab2JAJEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 05:04:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52097 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752089Ab2JAJEi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 04:57:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <F45880696056844FA6A73F415B568C695B6962C1CD@EXDCVYMBSTM006.EQ1STM.local>
-References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
-	<1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
-	<20120928160045.GD2625@kroah.com>
-	<F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
-	<CAK7N6vpXfhb0KhMfqxbcSQqT=qPcMS06OdaG9kNsWMqiiepLTQ@mail.gmail.com>
-	<F45880696056844FA6A73F415B568C695B6962C1CD@EXDCVYMBSTM006.EQ1STM.local>
-Date: Mon, 1 Oct 2012 14:27:21 +0530
-Message-ID: <CAK7N6vqpokVk19-KPPggZRynKJVjoa04n_0g4nnb1CN836s5pA@mail.gmail.com>
-Subject: Re: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-From: anish singh <anish198519851985@gmail.com>
-To: Arun MURTHY <arun.murthy@stericsson.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 1 Oct 2012 05:04:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,514,1344236400"; 
+   d="scan'208";a="199121360"
+Message-ID: <1349082272.13371.163.camel@smile>
+Subject: Re: [PATCHv3] dw_dmac: autoconfigure data_width or get it via
+ platform data
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: viresh.kumar@linaro.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
+Date: Mon, 01 Oct 2012 12:04:32 +0300
+In-Reply-To: <1348742028.1648.29.camel@vkoul-udesk3>
+References: <CAOh2x=n4ZCsQ1ccqobZF6fz-Kuj_VE-ua5PftAHQkTobA=p+pw@mail.gmail.com>
+	 <1348573156-5032-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1348740388.1648.27.camel@vkoul-udesk3>
+	 <1348742028.1648.29.camel@vkoul-udesk3>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 1, 2012 at 12:27 PM, Arun MURTHY <arun.murthy@stericsson.com> wrote:
->> On Mon, Oct 1, 2012 at 11:00 AM, Arun MURTHY
->> <arun.murthy@stericsson.com> wrote:
->> >> On Fri, Sep 28, 2012 at 01:35:01PM +0530, Arun Murthy wrote:
->> >> > +#include <linux/module.h>
->> >> > +#include <linux/slab.h>
->> >> > +#include <linux/err.h>
->> >> > +#include <linux/printk.h>
->> >> > +#include <linux/modem_shm/modem.h>
->> >> > +
->> >> > +static struct class *modem_class;
->> >>
->> >> What's wrong with a bus_type instead?
->> >
->> > Can I know the advantage of using bus_type over class?
->> >
->> >>
->> >> > +static int __modem_is_requested(struct device *dev, void *data) {
->> >> > +   struct modem_desc *mdesc = (struct modem_desc *)data;
->> >> > +
->> >> > +   if (!mdesc->mclients) {
->> >> > +           printk(KERN_ERR "modem_access: modem description is
->> >> NULL\n");
->> >> > +           return 0;
->> >> > +   }
->> >> > +   return atomic_read(&mdesc->mclients->cnt);
->> >> > +}
->> >> > +
->> >> > +int modem_is_requested(struct modem_desc *mdesc) {
->> >> > +   return class_for_each_device(modem_class, NULL, (void *)mdesc,
->> >> > +__modem_is_requested); }
->> >>
->> >> Where is the documentation for your public api functions like this?
->> >
->> > Sure will include this in the next patchset.
->> >
->> >>
->> >> > +
->> >> > +int modem_release(struct modem_desc *mdesc) {
->> >> > +   if (!mdesc->release)
->> >> > +           return -EFAULT;
->> >> > +
->> >> > +   if (modem_is_requested(mdesc)) {
->> >> > +           atomic_dec(&mdesc->mclients->cnt);
->> >> > +           if (atomic_read(&mdesc->use_cnt) == 1) {
->> >> > +                   mdesc->release(mdesc);
->> >> > +                   atomic_dec(&mdesc->use_cnt);
->> >> > +           }
->> >>
->> >> Eeek, why aren't you using the built-in reference counting that the
->> >> struct device provided to you, and instead are rolling your own?
->> >> This happens in many places, why?
->> >
->> > My usage of counters over here is for each modem there are many clients.
->> > Each of the clients will have a ref to modem_desc. Each of them use
->> > this for requesting and releasing the modem. One counter for tracking
->> > the request and release for each client which is done by variable 'cnt' in
->> struct clients.
->> > The counter use_cnt is used for tracking the modem request/release
->> > irrespective of the clients and counter cli_cnt is used for
->> > restricting the modem_get to the no of clients defined in no_clients.
->> >
->> > So totally 3 counter one for restricting the usage of modem_get by
->> > clients, second for restricting modem request/release at top level,
->> > and 3rd for restricting modem release/request for per client per modem
->> basis.
->> >
->> > Can you let me know if the same can be achieved by using built-in ref
->> > counting?
->> Is this your model:
->> You have a modem device which can be requested by many clients.This
->> clients can register for a particular service which this modem provides and
->> then after that if it client doesn't need this service then it will call un-register.
->
-> Let me correct a bit over here:
-> There are many clients, yes correct but the operations performed are only two,
-> i.e modem request and modem release. This is something like waking up the
-> modem and let modem to sleep.
-> The traffic of this request and release is too high.
->
-> So irrespective of the requests/releases made to the MAF framework, the MAF
-> should perform the operation request/release only once.
->
-> So each and every time handling list consumes time.
-> Let me brief the context, this is a single chip modem and ape, basically used in
-> mobile, tablets etc. So the traffic in ape-modem communication is too high and
-> also time critical. If it bound to exceed the time, or delay might end up in buffer
-> full. That’s the reason I have made it as simple as possible.
+On Thu, 2012-09-27 at 16:03 +0530, Vinod Koul wrote: 
+> On Thu, 2012-09-27 at 15:36 +0530, Vinod Koul wrote:
+> > On Tue, 2012-09-25 at 14:39 +0300, Andy Shevchenko wrote:
+> > > Not all of the controllers support the 64 bit data width. Make it configurable
+> > > via platform data. The driver will try to get a value from the component
+> > > parameters, otherwise it will use the platform data.
+> > > 
+> > What was this gen against, I can apply this.
+> %s/can/can't
+Today I got what was happened. I sent an update to one patch of the
+series, but you tried to apply it on top of previous version. It seems I
+was not clear. So, now we have a regression, and I will send a fix soon
+today.
 
-So let me put it this way:
-           Modem                 Client1     Client2    Client3    Client4
-State  turn-on                   request
-State  no-state-change                     request
-State  no-state-change                                   request
-State  no-state-change
-request
-State  no-state-change      release
-State  no-state-change                     release
-State  no-state-change                                   release
-State   turn-off
-      release
 
-So eventhough all the clients have requested the modem it is being
-turned on only once and when all of them have released then it will be
-turned-off.
-
-In this case it makes sense to use the atomic variables to track the requests
-and release but what will happen to sysfs incase the device is released when the
-last call to release has come from client4?Won't it lead to kernel panic or some
-unwanted behaviour?
-
->
-> Thanks and Regards,
-> Arun R Murthy
-> ------------------
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
