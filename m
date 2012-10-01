@@ -1,132 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab2JAG5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 02:57:23 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:53329 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751932Ab2JAG5W (ORCPT
+	id S1752067Ab2JAHWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 03:22:00 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:37180 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab2JAHV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 02:57:22 -0400
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Date: Mon, 1 Oct 2012 08:57:04 +0200
-Subject: RE: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Topic: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Index: Ac2fnrMKICLwI5B4RbygjzGXgN0EtwAATvmw
-Message-ID: <F45880696056844FA6A73F415B568C695B6962C1CD@EXDCVYMBSTM006.EQ1STM.local>
-References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
-	<1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
-	<20120928160045.GD2625@kroah.com>
-	<F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
- <CAK7N6vpXfhb0KhMfqxbcSQqT=qPcMS06OdaG9kNsWMqiiepLTQ@mail.gmail.com>
-In-Reply-To: <CAK7N6vpXfhb0KhMfqxbcSQqT=qPcMS06OdaG9kNsWMqiiepLTQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 1 Oct 2012 03:21:59 -0400
+Date: Mon, 1 Oct 2012 09:21:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Irina Tirdea <irina.tirdea@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Irina Tirdea <irina.tirdea@intel.com>
+Subject: Re: [PATCH v2 3/4] perf annotate: configure objdump path at compile
+ time
+Message-ID: <20121001072154.GA17143@gmail.com>
+References: <1348428446-28245-1-git-send-email-irina.tirdea@gmail.com>
+ <1348428446-28245-4-git-send-email-irina.tirdea@gmail.com>
+ <1348578539.1877.40.camel@leonhard>
+ <CANg8OW+u=dsi=5Y04ka0D=VLKEUELAo1L3mkWhs5mOqTS4c1jA@mail.gmail.com>
+ <87d318w7u9.fsf@sejong.aot.lge.com>
+ <CANg8OWLR64RQYMwi=vx78tWBfcML4CPrerXV3nE+ngYkJ3Ru=A@mail.gmail.com>
+ <87haqjvc6f.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87haqjvc6f.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q916vSma023109
 
-> On Mon, Oct 1, 2012 at 11:00 AM, Arun MURTHY
-> <arun.murthy@stericsson.com> wrote:
-> >> On Fri, Sep 28, 2012 at 01:35:01PM +0530, Arun Murthy wrote:
-> >> > +#include <linux/module.h>
-> >> > +#include <linux/slab.h>
-> >> > +#include <linux/err.h>
-> >> > +#include <linux/printk.h>
-> >> > +#include <linux/modem_shm/modem.h>
-> >> > +
-> >> > +static struct class *modem_class;
-> >>
-> >> What's wrong with a bus_type instead?
-> >
-> > Can I know the advantage of using bus_type over class?
-> >
-> >>
-> >> > +static int __modem_is_requested(struct device *dev, void *data) {
-> >> > +   struct modem_desc *mdesc = (struct modem_desc *)data;
-> >> > +
-> >> > +   if (!mdesc->mclients) {
-> >> > +           printk(KERN_ERR "modem_access: modem description is
-> >> NULL\n");
-> >> > +           return 0;
-> >> > +   }
-> >> > +   return atomic_read(&mdesc->mclients->cnt);
-> >> > +}
-> >> > +
-> >> > +int modem_is_requested(struct modem_desc *mdesc) {
-> >> > +   return class_for_each_device(modem_class, NULL, (void *)mdesc,
-> >> > +__modem_is_requested); }
-> >>
-> >> Where is the documentation for your public api functions like this?
-> >
-> > Sure will include this in the next patchset.
-> >
-> >>
-> >> > +
-> >> > +int modem_release(struct modem_desc *mdesc) {
-> >> > +   if (!mdesc->release)
-> >> > +           return -EFAULT;
-> >> > +
-> >> > +   if (modem_is_requested(mdesc)) {
-> >> > +           atomic_dec(&mdesc->mclients->cnt);
-> >> > +           if (atomic_read(&mdesc->use_cnt) == 1) {
-> >> > +                   mdesc->release(mdesc);
-> >> > +                   atomic_dec(&mdesc->use_cnt);
-> >> > +           }
-> >>
-> >> Eeek, why aren't you using the built-in reference counting that the
-> >> struct device provided to you, and instead are rolling your own?
-> >> This happens in many places, why?
-> >
-> > My usage of counters over here is for each modem there are many clients.
-> > Each of the clients will have a ref to modem_desc. Each of them use
-> > this for requesting and releasing the modem. One counter for tracking
-> > the request and release for each client which is done by variable 'cnt' in
-> struct clients.
-> > The counter use_cnt is used for tracking the modem request/release
-> > irrespective of the clients and counter cli_cnt is used for
-> > restricting the modem_get to the no of clients defined in no_clients.
-> >
-> > So totally 3 counter one for restricting the usage of modem_get by
-> > clients, second for restricting modem request/release at top level,
-> > and 3rd for restricting modem release/request for per client per modem
-> basis.
-> >
-> > Can you let me know if the same can be achieved by using built-in ref
-> > counting?
-> Is this your model:
-> You have a modem device which can be requested by many clients.This
-> clients can register for a particular service which this modem provides and
-> then after that if it client doesn't need this service then it will call un-register.
 
-Let me correct a bit over here:
-There are many clients, yes correct but the operations performed are only two,
-i.e modem request and modem release. This is something like waking up the
-modem and let modem to sleep.
-The traffic of this request and release is too high.
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-So irrespective of the requests/releases made to the MAF framework, the MAF
-should perform the operation request/release only once.
+> On Thu, 27 Sep 2012 14:25:10 +0300, Irina Tirdea wrote:
+> >>> The perf built to run on the host needs to use arm-eabi-objdump from
+> >>> the toolchain so that it can analyse data recorded on Android. This
+> >>> patch is targeting this scenario, not the previous one. In this case,
+> >>> the CROSS_COMPILE option would be different than arm-eabi- so using
+> >>> $(CROSS_COMPILE)objdump would be wrong. objdump should be overridden
+> >>> when running make since there is no connection between the toolchain
+> >>> used here and the path for objdump. I am always overriding objdump
+> >>> when calling make, so I did not catch this.
+> >>>
+> >>> I think that I should change DEFAULT_OBJDUMP_PATH=objdump in the
+> >>> Makefile to handle the first scenario. I'll also explain this in the
+> >>> commit message so that it is more clear and make the same change for
+> >>> the addr2line patch.
+> >>>
+> >>> What do you think?
+> >>
+> >> I think the right thing to do is finding a correct objdump at runtime in
+> >> some way.  Why do you want to make it compile-time configurable?
+> >>
+> >
+> > The correct objdump path can be detected at runtime by setting the
+> > toolchain path. But since the name is arm-eabi-objdump and not
+> > objdump, it does not know to use it instead.
+> >
+> > The only way (I can think of) to change objdump at runtime would be to
+> > use the --objdump option for perf annotate (and provide a similar
+> > option for addr2line). The problem with this approach is that the user
+> > has to be aware that perf annotate uses the objdump tool and that he
+> > has to use the cross-compiler version instead. Since the user will
+> > have perf compiled for host as part of his Android tree, he will
+> > expect it to work without these further changes from his part. The
+> > path for objdump can be set in the Android Makefile at compile time so
+> > that the user doesn't need to be aware of it.
+> 
+> What I'm thinking is that perf can try to find cross-built 
+> binutils when it detects perf.data file is came from other 
+> machine/architecture. Fortunately perf_session_env was added 
+> recently and it has the arch information from the file so we 
+> can use it to find the path.
+> 
+> Following patch is a proof-of-concept patch and only build 
+> tested. What do you think?  Could you play with it for some 
+> time? :)
 
-So each and every time handling list consumes time. 
-Let me brief the context, this is a single chip modem and ape, basically used in
-mobile, tablets etc. So the traffic in ape-modem communication is too high and
-also time critical. If it bound to exceed the time, or delay might end up in buffer
-full. Thatâ€™s the reason I have made it as simple as possible.
+This is a pretty clever idea - much better than hard-coding 
+architecture details at build time.
 
-Thanks and Regards,
-Arun R Murthy
-------------------
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+
+	Ingo
