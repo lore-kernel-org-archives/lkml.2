@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab2JAR5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 13:57:15 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53639 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751828Ab2JAR5N (ORCPT
+	id S1751944Ab2JASAZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 14:00:25 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:7976 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750927Ab2JASAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 13:57:13 -0400
-X-Sasl-enc: f1vUuFI/7n918QWaVziCLhuUNKTKSPqncEPz+VRtfCxV 1349114232
-Date: Mon, 1 Oct 2012 10:57:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, git@vger.kernel.org
-Subject: no diffstat for 'git request-pull' (was Re: [GIT PATCH] char/misc
- changes for 3.7-rc1)
-Message-ID: <20121001175711.GB10092@kroah.com>
-References: <20121001175433.GA10092@kroah.com>
+	Mon, 1 Oct 2012 14:00:24 -0400
+Date: Mon, 1 Oct 2012 18:00:22 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v2] slab: Ignore internal flags in cache creation
+In-Reply-To: <1349088458-3940-1-git-send-email-glommer@parallels.com>
+Message-ID: <0000013a1d7c65d7-e63e5171-d5ea-4464-a5ea-c345d6804c07-000000@email.amazonses.com>
+References: <1349088458-3940-1-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121001175433.GA10092@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 10:54:33AM -0700, Greg KH wrote:
-> The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
-> 
->   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.6
-> 
-> for you to fetch changes up to fea7a08acb13524b47711625eebea40a0ede69a0:
-> 
->   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
-> 
-> ----------------------------------------------------------------
-> char/misc driver merge for 3.7-rc1
-> 
-> Here is the "big" char/misc driver tree update for the 3.7-rc1 merge
-> window.
-> 
-> Nothing major, just a number of driver updates and fixes, all of which
-> have been in the linux-next releases for a while now either in my tree,
-> or in Andrew's (the lis3l driver changes came from his tree last week).
-> 
-> ----------------------------------------------------------------
+On Mon, 1 Oct 2012, Glauber Costa wrote:
 
+> [ v2: leave the mask out decision up to the allocators ]
 
-Wait, what happened to the diffstat?  Does the latest version of git not
-send out the diffstat for 'git request-pull'?  It used to on older
-versions, I just updated the version on my machine that generated this
-to
-	git version 1.7.12.2.421.g261b511
+Acked-by: Christoph Lameter <cl@linux.com>
 
-Do I have to give a new option to request-pull to have the diffstat show
-up?  I'm using
-	git request-pull master git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ char-misc-3.6
+I would prefer that this mask be named appropriately and be defined in all
+sl*_def.h files for all allocators.
 
-For this specific request pull.
+Name could be SLAB_AVAILABLE_FLAGS or some name that makes more
+sense than CACHE_CREATE_MASK.
 
-greg k-h
