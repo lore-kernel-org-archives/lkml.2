@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab2JAIRV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 04:17:21 -0400
-Received: from fep27.mx.upcmail.net ([62.179.121.47]:48928 "EHLO
-	fep27.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab2JAIRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 04:17:19 -0400
-X-Greylist: delayed 974 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Oct 2012 04:17:18 EDT
-X-SourceIP: 178.83.228.246
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <50694DBA.6050702@odi.ch>
-Date: Mon, 01 Oct 2012 10:00:58 +0200
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120824 Thunderbird/10.0.7
+	id S1752327Ab2JAIRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 04:17:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48480 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752288Ab2JAIR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 04:17:28 -0400
+Date: Mon, 1 Oct 2012 10:17:18 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: GeneralTouch <aroundight77@gmail.com>
+Cc: yxhma <yxhma@163.com>, Henrik Rydberg <rydberg@euromail.se>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] hid:Fix problem on GeneralTouch multi-touchscreen
+In-Reply-To: <1348798739-2950-1-git-send-email-aroundight77@gmail.com>
+Message-ID: <alpine.LNX.2.00.1210011017110.27440@pobox.suse.cz>
+References: <1348798739-2950-1-git-send-email-aroundight77@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: [PATCH] drm/nouveau: fix crash regression
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Work around a crash during boot if noaccel is set.
+On Fri, 28 Sep 2012, GeneralTouch wrote:
 
-NB: still broken in 3.5 as well, used to work in 3.4. Why are people 
-ignoring this? It's a regression!
+> From: Xianhan Yu <aroundight77@gmail.com>
+> 
+> Fix the touch-up no response problem on GeneralTouch twofingers 
+> touchscreen and modify the driver for new GeneralTouch PWT touchscreen.
+> 
+> Signed-off-by: Xianhan Yu <aroundight77@gmail.com>
 
-Signed-off-by: Ortwin Glück <odi@odi.ch>
----
-diff --git a/drivers/gpu/drm/nouveau/nv50_display.c 
-b/drivers/gpu/drm/nouveau/nv50_display.c
-index b244d99..c7ffa63 100644
---- a/drivers/gpu/drm/nouveau/nv50_display.c
-+++ b/drivers/gpu/drm/nouveau/nv50_display.c
-@@ -650,6 +650,12 @@ nv50_display_vblank_crtc_handler(struct drm_device 
-*dev, int crtc)
-  	struct nouveau_software_priv *psw = nv_engine(dev, NVOBJ_ENGINE_SW);
-  	struct nouveau_software_chan *pch, *tmp;
+Applied, thanks.
 
-+        if (!psw) {
-+                WARN_ON_ONCE(1);
-+                printk(KERN_ERR "NULL software engine\n");
-+                return;
-+        }
-+
-  	list_for_each_entry_safe(pch, tmp, &psw->vblank, vblank.list) {
-  		if (pch->vblank.head != crtc)
-  			continue;
+-- 
+Jiri Kosina
+SUSE Labs
