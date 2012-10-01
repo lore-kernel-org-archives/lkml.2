@@ -1,194 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802Ab2JAX5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:57:36 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57381 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab2JAX5b (ORCPT
+	id S1758819Ab2JAX5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:57:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45774 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab2JAX5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:57:31 -0400
+	Mon, 1 Oct 2012 19:57:37 -0400
 From: Olof Johansson <olof@lixom.net>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
-Subject: =?UTF-8?q?=5BGIT=20PULL=201/12=5D=20ARM=3A=20soc=3A=20non-critical=20bug=20fixes?=
-Date: Mon,  1 Oct 2012 16:56:56 -0700
-Message-Id: <1349135827-24790-2-git-send-email-olof@lixom.net>
+Subject: [GIT PULL 4/12] ARM: soc: soc-specific updates
+Date: Mon,  1 Oct 2012 16:56:59 -0700
+Message-Id: <1349135827-24790-5-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
 In-Reply-To: <1349135827-24790-1-git-send-email-olof@lixom.net>
 References: <1349135827-24790-1-git-send-email-olof@lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These were submitted as bug fixes before v3.6 but not considered important
-enough to be included in it. Some of them cross over to cleanup territory
-as well, and aren't strictly bugfixes.
+Most notable here is probably the addition of basic support for the
+BCM2835, an SoC used in some of the Roku 2 players as well as the
+much-hyped Raspberry Pi, cleaned up and contributed by Stephen
+Warren. It's still early days on mainline support, with just the
+basics working. But it has to start somewhere!
 
+Beyond that there's some conversions of clock infrastructure on tegra
+to common clock, misc updates for several other platforms, and OMAP
+now has its own bus (under drivers/bus) to manage its devices through.
 
-Conflicts: none
+This branch adds two new directories outside of arch/arm:
+drivers/irqchip for new irq controllers, and drivers/bus for the above
+OMAP bus. It's expected that some of the other platforms will migrate
+parts of their platforms to those directories over time as well.
+
+Conflicts:
+* Trivial add/add conflict in arch/arm/mach-ux500/cpu.c
+* Trivial add/add conflict in drivers/clocksource/Makefile
+* Change/delete conflict in arch/arm/mach-ux500/clock.c. Remove the file.
+
 
 ----------------------------------------------------------------
 
-The following changes since commit d9a807461fc8cc0d6ba589ea0730d139122af012:
+The following changes since commit f7b967bffefe69f1ad8b79e263237ec1feba7b9b:
 
-  Merge tag 'usb-3.6' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb
+  Merge branch 'next/maintainers' into HEAD
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-non-critical
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/soc
 
-for you to fetch changes up to b10dcdcac43b2b5adf800a19f782fef38ada75a1:
+for you to fetch changes up to b6e3b5c2fea9c76617e101cbbc54ed14961f9dee:
 
-  Merge tag 'ep93xx-fixes-for-3.7' of git://github.com/RyanMallon/linux-ep93xx into next/fixes-non-critical
+  Merge branch 'lpc32xx/core' of git://git.antcom.de/linux-2.6 into next/soc
 
 ----------------------------------------------------------------
 
-Arnd Bergmann (8):
-      watchdog/mpc8xxx: add a const qualifier
-      powerpc/fsl_msi: drop unneeded cast to non-const pointer
-      mfd/da9052: make i2c_device_id array const
-      i2c/mpc: make data used as *of_device_id.data const
-      macintosh/mediabay: make data used as *of_device_id.data const
-      can: mpc5xxx_can: make data used as *of_device_id.data const
-      ARM: ep93xx: use __iomem pointers for MMIO
-      ARM: nomadik: remove NAND_NO_READRDY use
+Alex Gershgorin (1):
+      ARM: i.MX35: Implement camera and keypad clocks
 
-Axel Lin (2):
-      ARM: ux500: Fix build error due to missing include of asm/pmu.h in cpu-db8500.c
-      ARM: ep93xx: Fix build error due to 'SZ_32M' undeclared
+Arnd Bergmann (2):
+      Merge branch 'ux500-core' of git://git.kernel.org/.../linusw/linux-stericsson into next/soc
+      ARM: shmobile: add new __iomem annotation for new code
 
-David Brown (1):
-      ARM: msm: Remove call to missing FPGA init on 8660
+Chander Kashyap (3):
+      ARM: EXYNOS: Turn off clocks for NAND, OneNAND and TSI controllers
+      ARM: EXYNOS: Put PCM, Slimbus, Spdif clocks to off state
+      ARM: SAMSUNG: Add check for NULL in clock interface
 
-Julia Lawall (1):
-      ARM: S3C24xx: delete double assignment
+Dave Martin (1):
+      ARM: mxc: ssi-fiq: Make ssi-fiq.S Thumb-2 compatible
 
-Kukjin Kim (1):
-      ARM: EXYNOS: fix address for EXYNOS4 MDMA1
+Joseph Lo (7):
+      ARM: tegra: clocks: separate tegra_clk_32k_ops from Tegra20 and Tegra30
+      ARM: tegra30: clocks: fix the wrong tegra_audio_sync_clk_ops name
+      ARM: tegra: introduce tegra_cpu_car_ops structures
+      ARM: tegra: replace the CPU CAR access code by tegra_cpu_car_ops
+      ARM: tegra: clean up the common assembly macros into sleep.h
+      ARM: tegra30: add CPU hotplug support
+      ARM: tegra20: add CPU hotplug support
 
-Laxman Dewangan (2):
-      dma: tegra: make tegra_dma.chip_data a pointer to const data
-      dma: tegra: make data used as *of_device_id.data const
+Kevin Hilman (4):
+      ARM: OMAP: omap_device: keep track of driver bound status
+      ARM: OMAP: omap_device: don't attempt late suspend if no driver bound
+      ARM: OMAP: omap_device: idle devices with no driver bound
+      ARM: OMAP: AM33xx hwmod: fixup SPI after platform_data move
 
-Lee Jones (1):
-      ARM: ux500: Provide SMSC911x fixed-regulator when not booting DT
+Leela Krishna Amudala (1):
+      ARM: EXYNOS: Add bus clock for FIMD
 
-Linus Walleij (1):
-      ARM: ux500: set proper GIC flags
+Linus Walleij (4):
+      ARM: ux500: delete remnant U5500 macros
+      ARM: ux500: add a U8520 detection macro
+      ARM: ux500: reform Ux500 family names
+      ARM: ux500: add detection for DB8500 ASIC v2.2
 
-Olof Johansson (9):
-      Merge branch 'ofdeviceiddata' of git://git.pengutronix.de/git/ukl/linux into next/fixes-non-critical
-      Merge tag 'ux500-core-updates' of http://git.kernel.org/.../linusw/linux-stericsson into next/fixes-non-critical
-      Merge tag 'imx-fixes' of git://git.pengutronix.de/git/imx/linux-2.6 into next/fixes-non-critical
-      Merge tag 'msm-fix-noncrit-for-3.7' of git://git.kernel.org/.../davidb/linux-msm into next/fixes-non-critical
-      Merge tag 'tegra-for-3.7-fixes' of git://git.kernel.org/.../swarren/linux-tegra into next/fixes-non-critical
-      Merge tag 'omap-fixes-noncritical-for-v3.7' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
-      Merge branch 'v3.7-samsung-fixes-1' of git://git.kernel.org/.../kgene/linux-samsung into next/fixes-non-critical
-      Merge branch 'pxa/fixes' into next/fixes-non-critical
-      Merge tag 'ep93xx-fixes-for-3.7' of git://github.com/RyanMallon/linux-ep93xx into next/fixes-non-critical
+Loic PALLARDY (1):
+      ARM: ux500: Correct Ux500 family names usage
 
-Paul Walmsley (1):
-      ARM: OMAP4: wakeupgen: remove duplicate AUXCOREBOOT* read/write
+Olof Johansson (14):
+      Merge branch 'ux500/asic-id' into next/soc
+      Merge branch 'kzm9g' of git://git.kernel.org/.../horms/renesas into next/soc
+      Merge branch 'lpc32xx/core' of git://git.antcom.de/linux-2.6 into next/soc
+      Merge branch 'soc' of git://git.kernel.org/.../horms/renesas into next/soc
+      Merge branch 'renesas/pmu' into next/soc
+      Merge tag 'imx-soc' of git://git.pengutronix.de/git/imx/linux-2.6 into next/soc
+      Merge tag 'tegra-for-3.7-common-clk' of git://git.kernel.org/.../swarren/linux-tegra into next/soc
+      Merge tag 'tegra-for-3.7-cpu-hotplug' of git://git.kernel.org/.../swarren/linux-tegra into next/soc
+      Merge tag 'devel-omap-device-for-v3.7' of git://git.kernel.org/.../tmlind/linux-omap into next/soc
+      Merge tag 'omap-devel-am33xx-for-v3.7' of git://git.kernel.org/.../tmlind/linux-omap into next/soc
+      Merge tag 'rpi-for-3.7' of git://git.kernel.org/.../swarren/linux-rpi into next/soc
+      Merge branch 'next/devel-samsung' of git://git.kernel.org/.../kgene/linux-samsung into next/soc
+      Merge branch 'bcm2835/soc' into next/soc
+      Merge branch 'lpc32xx/core' of git://git.antcom.de/linux-2.6 into next/soc
 
-Peter De Schrijver (2):
-      ARM: tegra: fix return value for debugfs init
-      ARM: tegra: fix debugfs entry for Tegra30
+Phil Edworthy (1):
+      r8a7779: add SDHI clock support
 
-Peter Senna Tschudin (1):
-      ARM: S3C24XX: removes unnecessary semicolon
+Prashant Gaikwad (8):
+      ARM: tegra30: Separate out clk ops and clk data
+      ARM: tegra20: Separate out clk ops and clk data
+      ARM: tegra: Rename tegra20 clock file
+      ARM: tegra: Add clk_tegra structure and helper functions
+      ARM: tegra: Port tegra to generic clock framework
+      ARM: tegra: Remove duplicate code
+      ARM: tegra: Fix data type for io address
+      ARM: Tegra: Add smp_twd clock for Tegra20
 
-Rohit Vaswani (2):
-      ARM: msm: io: Remove 7x30 iomap region from 7x00
-      ARM: msm: io: Change the default static iomappings to be shared
+Roland Stigge (6):
+      ARM: LPC32xx: Use handle_edge_irq() callback on edge type irqs
+      ARM: LPC32xx: Provide DMA filter callbacks via platform data
+      ARM: LPC32xx: Remove board specific GPIO init
+      ARM: LPC32xx: Board cleanup
+      ARM: LPC32xx: Platform update for devicetree completion of spi-pl022
+      ARM: LPC32xx: Support GPI 28
 
-Ryan Mallon (1):
-      ARM: ep93xx: Move ts72xx.h out of include/mach
+Sachin Kamat (2):
+      ARM: EXYNOS: Fix incorrect help text
+      ARM: SAMSUNG: Fix HDMI related warnings
 
-Santosh Shilimkar (1):
-      ARM: OMAP4: wakeupgen: Fix the typo in AUXCOREBOOT register save
+Sascha Hauer (1):
+      ARM i.MX53: register CAN clocks
 
-Seung-Woo Kim (1):
-      ARM: EXYNOS: fixed SYSMMU setup definition to mate parameter name
+Simon Arlott (5):
+      ARM: add infra-structure for BCM2835 and Raspberry Pi
+      ARM: bcm2835: add interrupt controller driver
+      ARM: bcm2835: add system timer
+      ARM: bcm2835: add stub clock driver
+      ARM: bcm2835: instantiate console UART
 
-Stephen Boyd (1):
-      ARM: msm: Fix early debug uart mapping on some memory configs
-
-Stephen Warren (1):
-      ARM: enable SUSPEND/ARCH_SUSPEND_POSSIBLE for ARCH_TEGRA
+Stephen Warren (7):
+      ARM: tegra: turn on UART A clock at boot
+      ARM: tegra: fix U16 divider range check
+      ARM: tegra: remove tegra_timer from tegra_list_clks
+      ARM: tegra: fix overflow in tegra20_pll_clk_round_rate()
+      ARM: tegra: cpu-tegra: explicitly manage re-parenting
+      MAINTAINERS: add an entry for the BCM2835 ARM sub-architecture
+      irqchip: fill in empty Kconfig
 
 Sylwester Nawrocki (1):
-      ARM: SAMSUNG: Add missing variable declaration in s3c64xx_spi1_set_platdata()
+      ARM: S3C24XX: Add .get_rate callback for "camif-upll" clock
 
-Uwe Kleine-König (17):
-      spi/imx: make spi_imx_data.devtype_data member point to const data
-      spi/spi-omap2-mcspi: add a const qualifier
-      serial/imx: make imx_port.devdata member point to const data
-      serial/mpc52xx_uart: add a const qualifier
-      ARM: cache-l2x0: add a const qualifier
-      misc/atmel_tc: make atmel_tc.tcb_config member point to const data
-      gpio/gpio-omap.c: add a const qualifier
-      gpio/mpc8xxx: add a const qualifier
-      i2c/i2c-omap: add a const qualifier
-      i2c/mpc: add a const qualifier
-      mmc/omap_hsmmc: add a const qualifier
-      macintosh/mediabay: add a const qualifier
-      powerpc/83xx: add a const qualifier
-      powerpc/fsl_msi: add a const qualifier
-      powerpc/celleb_pci: add a const qualifier
-      of: add const to struct *of_device_id.data
-      gpio/gpio-omap: make platformdata used as *of_device_id.data const
+Tetsuyuki Kobayashi (3):
+      ARM: shmobile: kzm9g: enable restarting
+      ARM: shmobile: sh73a0: enable PMU(Performance Monitoring Unit)
+      ARM: shmobile: emev2: enable PMU(Performance Monitoring Unit)
 
-Wei Yongjun (2):
-      gpio/omap: fix possible memory leak in omap2_gpio_dev_init()
-      ARM: pxa: fix return value check in pxa2xx_drv_pcmcia_probe()
+Tony Lindgren (2):
+      Merge tag 'for_3.7-omap_device' of git://git.kernel.org/.../khilman/linux-omap-pm into devel-omap-device
+      Merge tag 'omap-devel-a2-for-3.7' of git://git.kernel.org/.../pjw/omap-pending into devel-am33xx
+
+Torben Hohn (1):
+      arm imx31: add a few pinmux settings the tt01 needs
+
+Vaibhav Hiremath (4):
+      ARM: OMAP2+: hwmod: Hook-up am33xx support in omap_hwmod framework
+      ARM: OMAP3+: hwmod: Add AM33XX HWMOD data
+      ARM: OMAP2+: dpll: Add missing soc_is_am33xx() check for common functions
+      ARM: AM33XX: clock: Add dcan clock aliases for device-tree
 
 
- arch/arm/Kconfig                                |  2 +-
- arch/arm/mach-ep93xx/adssphere.c                |  1 +
- arch/arm/mach-ep93xx/gesbc9312.c                |  1 +
- arch/arm/mach-ep93xx/ts72xx.c                   | 12 +++---
- .../arm/mach-ep93xx/{include/mach => }/ts72xx.h | 10 ++---
- arch/arm/mach-exynos/include/mach/map.h         |  2 +-
- arch/arm/mach-exynos/include/mach/sysmmu.h      |  2 +-
- arch/arm/mach-msm/board-msm8x60.c               |  5 ---
- arch/arm/mach-msm/include/mach/msm_iomap-8960.h |  2 +-
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |  2 +-
- arch/arm/mach-msm/io.c                          | 25 ++++++------
- arch/arm/mach-nomadik/board-nhk8815.c           |  3 +-
- arch/arm/mach-omap2/gpio.c                      |  2 +
- arch/arm/mach-omap2/omap-wakeupgen.c            |  8 +---
- arch/arm/mach-s3c24xx/mach-h1940.c              |  4 +-
- arch/arm/mach-tegra/powergate.c                 | 43 ++++++++++++++++----
- arch/arm/mach-ux500/Kconfig                     |  1 +
- arch/arm/mach-ux500/board-mop500-regulators.c   | 15 +++++++
- arch/arm/mach-ux500/board-mop500-regulators.h   |  1 +
- arch/arm/mach-ux500/board-mop500.c              | 19 +++++++++
- arch/arm/mach-ux500/cpu-db8500.c                |  1 +
- arch/arm/mach-ux500/cpu.c                       |  2 +
- arch/arm/mm/cache-l2x0.c                        |  2 +-
- arch/arm/plat-samsung/devs.c                    |  2 +
- arch/powerpc/platforms/83xx/suspend.c           |  2 +-
- arch/powerpc/platforms/cell/celleb_pci.c        |  2 +-
- arch/powerpc/sysdev/fsl_msi.c                   |  8 ++--
- drivers/dma/tegra20-apb-dma.c                   |  8 ++--
- drivers/gpio/gpio-mpc8xxx.c                     |  2 +-
- drivers/gpio/gpio-omap.c                        |  8 ++--
- drivers/i2c/busses/i2c-mpc.c                    | 12 +++---
- drivers/i2c/busses/i2c-omap.c                   |  3 +-
- drivers/macintosh/mediabay.c                    |  8 ++--
- drivers/mfd/da9052-i2c.c                        |  4 +-
- drivers/mmc/host/omap_hsmmc.c                   |  2 +-
- drivers/net/can/mscan/mpc5xxx_can.c             |  4 +-
- drivers/pcmcia/pxa2xx_base.c                    |  2 +-
- drivers/spi/spi-imx.c                           |  2 +-
- drivers/spi/spi-omap2-mcspi.c                   |  2 +-
- drivers/tty/serial/mpc52xx_uart.c               |  2 +-
- drivers/watchdog/mpc8xxx_wdt.c                  |  2 +-
- include/linux/atmel_tc.h                        |  2 +-
- include/linux/mod_devicetable.h                 |  2 +-
- 43 files changed, 154 insertions(+), 90 deletions(-)
- rename arch/arm/mach-ep93xx/{include/mach => }/ts72xx.h (89%)
+ .../devicetree/bindings/arm/bcm2835.txt         |    8 +
+ .../brcm,bcm2835-armctrl-ic.txt                 |  110 +
+ .../timer/brcm,bcm2835-system-timer.txt         |   22 +
+ .../devicetree/bindings/vendor-prefixes.txt     |    1 +
+ MAINTAINERS                                     |   10 +
+ arch/arm/Kconfig                                |   18 +
+ arch/arm/Makefile                               |    1 +
+ arch/arm/boot/dts/bcm2835-rpi-b.dts             |   12 +
+ arch/arm/boot/dts/bcm2835.dtsi                  |   39 +
+ arch/arm/configs/bcm2835_defconfig              |   95 +
+ arch/arm/configs/kzm9d_defconfig                |    1 +
+ arch/arm/configs/kzm9g_defconfig                |    1 +
+ arch/arm/mach-bcm2835/Makefile                  |    1 +
+ arch/arm/mach-bcm2835/Makefile.boot             |    5 +
+ arch/arm/mach-bcm2835/bcm2835.c                 |   64 +
+ .../arm/mach-bcm2835/include/mach/bcm2835_soc.h |   29 +
+ .../arm/mach-bcm2835/include/mach/debug-macro.S |   21 +
+ arch/arm/mach-bcm2835/include/mach/timex.h      |   26 +
+ arch/arm/mach-bcm2835/include/mach/uncompress.h |   45 +
+ arch/arm/mach-exynos/Kconfig                    |    4 +-
+ arch/arm/mach-exynos/clock-exynos4.c            |   31 +
+ arch/arm/mach-exynos/clock-exynos5.c            |   32 +-
+ arch/arm/mach-imx/clk-imx35.c                   |   11 +-
+ arch/arm/mach-imx/clk-imx51-imx53.c             |   14 +-
+ .../mach-lpc32xx/include/mach/gpio-lpc32xx.h    |    2 +-
+ arch/arm/mach-lpc32xx/irq.c                     |    7 +-
+ arch/arm/mach-lpc32xx/phy3250.c                 |   42 +-
+ arch/arm/mach-omap2/Makefile                    |    1 +
+ arch/arm/mach-omap2/clkt_dpll.c                 |    4 +-
+ arch/arm/mach-omap2/clock33xx_data.c            |    2 +
+ arch/arm/mach-omap2/dpll3xxx.c                  |    4 +-
+ arch/arm/mach-omap2/io.c                        |    2 +
+ arch/arm/mach-omap2/omap_hwmod.c                |  178 +
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c      | 3381 ++++++++++++++++++
+ arch/arm/mach-s3c24xx/clock-s3c2440.c           |   14 +
+ arch/arm/mach-shmobile/board-kzm9g.c            |    8 +
+ arch/arm/mach-shmobile/clock-r8a7779.c          |   11 +-
+ arch/arm/mach-shmobile/setup-emev2.c            |   21 +
+ arch/arm/mach-shmobile/setup-sh73a0.c           |   21 +
+ arch/arm/mach-tegra/Makefile                    |    6 +-
+ arch/arm/mach-tegra/board-dt-tegra20.c          |    1 +
+ arch/arm/mach-tegra/clock.c                     |  574 +--
+ arch/arm/mach-tegra/clock.h                     |   40 +-
+ arch/arm/mach-tegra/common.c                    |    4 +-
+ arch/arm/mach-tegra/cpu-tegra.c                 |   48 +-
+ arch/arm/mach-tegra/headsmp.S                   |    6 +-
+ arch/arm/mach-tegra/hotplug.c                   |  118 +-
+ arch/arm/mach-tegra/include/mach/clk.h          |    3 +
+ arch/arm/mach-tegra/platsmp.c                   |   29 +-
+ arch/arm/mach-tegra/sleep-t20.S                 |   82 +
+ arch/arm/mach-tegra/sleep-t30.S                 |  107 +
+ arch/arm/mach-tegra/sleep.S                     |   33 +-
+ arch/arm/mach-tegra/sleep.h                     |   85 +
+ arch/arm/mach-tegra/tegra20_clocks.c            | 1625 +++++++++
+ arch/arm/mach-tegra/tegra20_clocks.h            |   42 +
+ arch/arm/mach-tegra/tegra20_clocks_data.c       | 1144 ++++++
+ arch/arm/mach-tegra/tegra2_clocks.c             | 2484 -------------
+ arch/arm/mach-tegra/tegra30_clocks.c            | 2593 +++++---------
+ arch/arm/mach-tegra/tegra30_clocks.h            |   53 +
+ arch/arm/mach-tegra/tegra30_clocks_data.c       | 1372 +++++++
+ arch/arm/mach-tegra/tegra_cpu_car.h             |   87 +
+ arch/arm/mach-ux500/cache-l2x0.c                |    2 +-
+ arch/arm/mach-ux500/cpu-db8500.c                |    2 +-
+ arch/arm/mach-ux500/cpu.c                       |    2 +-
+ arch/arm/mach-ux500/include/mach/id.h           |   44 +-
+ arch/arm/mach-ux500/platsmp.c                   |    4 +-
+ arch/arm/mach-ux500/timer.c                     |    2 +-
+ arch/arm/plat-mxc/include/mach/iomux-mx3.h      |    5 +
+ arch/arm/plat-mxc/ssi-fiq.S                     |   89 +-
+ arch/arm/plat-omap/include/plat/omap_device.h   |    2 +
+ arch/arm/plat-omap/include/plat/omap_hwmod.h    |    1 +
+ arch/arm/plat-omap/omap_device.c                |   56 +-
+ arch/arm/plat-samsung/clock.c                   |    8 +-
+ arch/arm/plat-samsung/devs.c                    |    3 +-
+ drivers/Kconfig                                 |    2 +
+ drivers/Makefile                                |    2 +
+ drivers/clk/Makefile                            |    1 +
+ drivers/clk/clk-bcm2835.c                       |   59 +
+ drivers/clocksource/Makefile                    |    1 +
+ drivers/clocksource/bcm2835_timer.c             |  161 +
+ drivers/irqchip/Kconfig                         |    1 +
+ drivers/irqchip/Makefile                        |    1 +
+ drivers/irqchip/irq-bcm2835.c                   |  223 ++
+ include/linux/bcm2835_timer.h                   |   22 +
+ include/linux/clk/bcm2835.h                     |   24 +
+ include/linux/irqchip/bcm2835.h                 |   29 +
+ 86 files changed, 10542 insertions(+), 5039 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/bcm2835.txt
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,bcm2835-armctrl-ic.txt
+ create mode 100644 Documentation/devicetree/bindings/timer/brcm,bcm2835-system-timer.txt
+ create mode 100644 arch/arm/boot/dts/bcm2835-rpi-b.dts
+ create mode 100644 arch/arm/boot/dts/bcm2835.dtsi
+ create mode 100644 arch/arm/configs/bcm2835_defconfig
+ create mode 100644 arch/arm/mach-bcm2835/Makefile
+ create mode 100644 arch/arm/mach-bcm2835/Makefile.boot
+ create mode 100644 arch/arm/mach-bcm2835/bcm2835.c
+ create mode 100644 arch/arm/mach-bcm2835/include/mach/bcm2835_soc.h
+ create mode 100644 arch/arm/mach-bcm2835/include/mach/debug-macro.S
+ create mode 100644 arch/arm/mach-bcm2835/include/mach/timex.h
+ create mode 100644 arch/arm/mach-bcm2835/include/mach/uncompress.h
+ create mode 100644 arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+ create mode 100644 arch/arm/mach-tegra/sleep-t20.S
+ create mode 100644 arch/arm/mach-tegra/sleep-t30.S
+ create mode 100644 arch/arm/mach-tegra/sleep.h
+ create mode 100644 arch/arm/mach-tegra/tegra20_clocks.c
+ create mode 100644 arch/arm/mach-tegra/tegra20_clocks.h
+ create mode 100644 arch/arm/mach-tegra/tegra20_clocks_data.c
+ delete mode 100644 arch/arm/mach-tegra/tegra2_clocks.c
+ create mode 100644 arch/arm/mach-tegra/tegra30_clocks.h
+ create mode 100644 arch/arm/mach-tegra/tegra30_clocks_data.c
+ create mode 100644 arch/arm/mach-tegra/tegra_cpu_car.h
+ create mode 100644 drivers/clk/clk-bcm2835.c
+ create mode 100644 drivers/clocksource/bcm2835_timer.c
+ create mode 100644 drivers/irqchip/Kconfig
+ create mode 100644 drivers/irqchip/Makefile
+ create mode 100644 drivers/irqchip/irq-bcm2835.c
+ create mode 100644 include/linux/bcm2835_timer.h
+ create mode 100644 include/linux/clk/bcm2835.h
+ create mode 100644 include/linux/irqchip/bcm2835.h
