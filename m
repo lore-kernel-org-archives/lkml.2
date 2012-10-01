@@ -1,142 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab2JAAhQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Sep 2012 20:37:16 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:38442 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab2JAAhN (ORCPT
+	id S1751900Ab2JAAjH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Sep 2012 20:39:07 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:34846 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2JAAjF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Sep 2012 20:37:13 -0400
-Date: Sun, 30 Sep 2012 17:36:33 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Petr Holasek <pholasek@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v4] KSM: numa awareness sysfs knob
-In-Reply-To: <20120928112645.GX19474@redhat.com>
-Message-ID: <alpine.LSU.2.00.1209301639240.6304@eggly.anvils>
-References: <1348448166-1995-1-git-send-email-pholasek@redhat.com> <20120928112645.GX19474@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sun, 30 Sep 2012 20:39:05 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 30 Sep 2012 17:38:42 -0700
+X-Google-Sender-Auth: RKYxYZrgDfHzbf7sDVcsSDya4N8
+Message-ID: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
+Subject: Linux 3.6
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for taking so long to look at Petr's nice work: it's more than
-what I can think through in odd stolen moments; but yesterday at last
-I managed to get down to remembering KSM and giving this some time.
+When I did the -rc7 announcement a week ago, I said I might have to do
+an -rc8, but a week passed, and things have been calm, and I honestly
+cannot see a major reason to do another rc.
 
-On Fri, 28 Sep 2012, Andrea Arcangeli wrote:
-> On Mon, Sep 24, 2012 at 02:56:06AM +0200, Petr Holasek wrote:
-> > @@ -1758,7 +1800,12 @@ void ksm_migrate_page(struct page *newpage, struct page *oldpage)
-> >  	stable_node = page_stable_node(newpage);
-> >  	if (stable_node) {
-> >  		VM_BUG_ON(stable_node->kpfn != page_to_pfn(oldpage));
-> > -		stable_node->kpfn = page_to_pfn(newpage);
-> > +
-> > +		if (ksm_merge_across_nodes ||
-> > +				page_to_nid(oldpage) == page_to_nid(newpage))
-> > +			stable_node->kpfn = page_to_pfn(newpage);
-> > +		else
-> > +			remove_node_from_stable_tree(stable_node);
-> >  	}
-> >  }
-> 
-> This will result in memory corruption because the ksm page still
-> points to the stable_node that has been freed (that is copied by the
-> migrate code when the newpage->mapping = oldpage->mapping).
+So here it is, 3.6 final. Sure, I'd have been happier with even fewer
+changes, but that just never happens. And holding off the release
+until people get too bored to send me the small stuff just makes the
+next merge window more painful.
 
-That is a very acute observation!  (And there was I searching for
-where we copy over the PageKsm ;) which of course is in ->mapping.)
+The changes that got merged this week were generally pretty tiny, but
+more importantly, they tend to be small or very unlikely/special
+things. Famous last words.
 
-> 
-> What should happen is that the ksm page of src_node is merged with
-> the pre-existing ksm page in the dst_node of the migration. That's the
-> complex case, the easy case is if there's no pre-existing page and
-> that just requires an insert of the stable node in a different rbtree
-> I think (without actual pagetable mangling).
+The shortlog below is obviously just the log since -rc7, the changes
+in 3.6 since 3.5 are too many to list. There haven't been any huge new
+architectures or filesystems, it's all "solid progress". That may not
+sound all that exciting, but the devil is in the details, and there's
+a lot of small fixes all over.
 
-I believe it's not as bad as "pagetable mangling" suggests.
+Anyway, this obviously means that the merge window for 3.7 is open,
+and on that subject I do want to note that I'm going to travel much of
+this merge window. Let's see how much that impacts my merging, but I
+hope that it won't be *that* noticeable. But in case it results in any
+problems, I'll just give a heads-up, and if worst comes to worst I'll
+just extend the merge window to give myself more time for merging. I
+aim to avoid it, but I'll note it here just in case it happens.
 
-> 
-> It may be simpler to break cow across migrate and require the ksm
-> scanner to re-merge it however.
+Steven Rothwell already noted during the -rc7 release that people
+should have the stuff for 3.7 in linux-next, and I hope that is true.
+Guys and gals, please behave, ok?
 
-I'm all for the simplest solution, but here in ksm_migrate_page()
-is not a good place for COW breaking - we don't want to get into
-an indefinite number of page allocations, and the risk of failure.
+                 Linus
 
-I was toying with the idea of leaving the new page in the old NUMAnode's
-stable tree temporarily, until ksmd comes around again, and let that
-clean it up.  Which would imply less reliance on get_kpfn_nid(),
-and not skipping PageKsm in ksm_do_scan(), and...
+---
+Al Viro (6):
+      do_add_mount()/umount -l races
+      close the race in nlmsvc_free_block()
+      um: take cleaning singlestep to start_thread()
+      um: don't leak floating point state and segment registers on execve()
+      um: let signal_delivered() do SIGTRAP on singlestepping into handler
+      um: kill thread->forking
 
-But it's not all that simple, and I think we can do better.
+Alan Stern (1):
+      USB: Fix race condition when removing host controllers
 
-> 
-> Basically the above would remove the ability to rmap the ksm page
-> (i.e. rmap crashes on a dangling pointer), but we need rmap to be
-> functional at all times on all ksm pages.
+Alex Elder (2):
+      rbd: drop dev reference on error in rbd_open()
+      libceph: only kunmap kmapped pages
 
-Yes.
+Alex Williamson (3):
+      vfio: Trivial Documentation correction
+      vfio: Fix virqfd release race
+      iommu: static inline iommu group stub functions
 
-> 
-> Hugh what's your views on this ksm_migrate_page NUMA aware that is
-> giving trouble? What would you prefer? Merge two ksm pages together
-> (something that has never happened before), break_cow (so we don't
-> have to merge two ksm pages together in the first place and we
-> fallback in the regular paths) etc...
+Andrea Arcangeli (1):
+      thp: avoid VM_BUG_ON page_count(page) false positives in
+__collapse_huge_page_copy
 
-It's only just fully dawned on me that ksm_migrate_page() is actually
-a very convenient place: no pagetable mangling required, because we
-know that neither old nor new page is at this instant mapped into
-userspace at all - don't we?  Instead there are swap-like migration
-entries plugging all ptes until we're ready to put in the new page.
+Andrei Emeltchenko (1):
+      Bluetooth: Fix freeing uninitialized delayed works
 
-So I think what we really want to do is change the ksm_migrate_page()
-interface a little, and probably the precise position it's called from,
-to allow it to update mm/migrate.c's newpage - in the collision case
-when the new NUMAnode already has a stable copy of this page.  But when
-it doesn't, just move KSMnode from old NUMAnode's stable tree to new.
+Andrew Lunn (1):
+      ARM: Orion5x: Fix too small coherent pool.
 
-How well the existing ksm.c primitives are suited to this, I've not
-checked.  Probably not too well, but shouldn't be hard to add what's
-needed.
+Andrzej Kaczmarek (2):
+      Bluetooth: mgmt: Fix enabling SSP while powered off
+      Bluetooth: mgmt: Fix enabling LE while powered off
 
-What do you think?  Does that sound reasonable, Petr?
+Ben Skeggs (3):
+      drm/nouveau: silence a debug message triggered by newer userspace
+      drm/nvc0/ltcg: mask off intr 0x10
+      drm/nvc0/fifo: ignore bits in PFIFO_INTR that aren't set in PFIFO_INTR_EN
 
-By the way, this is probably a good occasion to remind ourselves,
-that page migration is still usually disabled on PageKsm pages:
-ksm_migrate_page() is only being called for memory hotremove.  I had
-been about to complain that calling remove_node_from_stable_tree()
-from ksm_migrate_page() is also unsafe from a locking point of view;
-until I remembered that MEM_GOING_OFFLINE has previously acquired
-ksm_thread_mutex.
+Chris Metcalf (1):
+      tile: gxio iorpc numbering change for TRIO interface
 
-But page migration is much more important now than three years ago,
-with compaction relying upon it, CMA and THP relying upon compaction,
-and lumpy reclaim gone.
+Dan Carpenter (2):
+      NVMe: handle allocation failure in nvme_map_user_pages()
+      vmwgfx: corruption in vmw_event_fence_action_create()
 
-Whilst it should not be mixed up in the NUMA patch itself, I think we
-need now to relax that restriction.  I found re-reading my 62b61f611e
-"ksm: memory hotremove migration only" was helpful.  Petr, is that
-something you could take on also?  I _think_ it's just a matter of
-protecting the stable tree(s) with an additional mutex (which ought
-not to be contended, since ksm_thread_mutex is normally held above
-it, except in migration); then removing a number of PageKsm refusals
-(and the offlining arg to unmap_and_move() etc).  But perhaps there's
-more to it, I haven't gone over it properly.
+Daniel Mack (1):
+      ALSA: snd-usb: fix next_packet_size calls for pause case
 
-> 
-> All the rest looks very good, great work Petr!
+Dave Airlie (1):
+      drm/udl: limit modes to the sku pixel limits.
 
-Yes, I agree; but a few more comments I'll make against the v4 post.
+Dave Jiang (1):
+      MAINTAINERS: update Intel C600 SAS driver maintainers
 
-Hugh
+Def (1):
+      batman-adv: Fix change mac address of soft iface.
+
+Emmanuel Grumbach (1):
+      iwlwifi: don't double free the interrupt in failure path
+
+Eric Dumazet (4):
+      ipv4: raw: fix icmp_filter()
+      net: guard tcp_set_keepalive() to tcp sockets
+      ipv6: raw: fix icmpv6_filter()
+      ipv6: mip6: fix mip6_mh_filter()
+
+Geert Uytterhoeven (1):
+      um: Preinclude include/linux/kern_levels.h
+
+Heiko Carstens (1):
+      checksyscalls: fix "here document" handling
+
+J. Bruce Fields (1):
+      trivial select_parent documentation fix
+
+Jan Engelhardt (1):
+      netfilter: xt_limit: have r->cost != 0 case work
+
+Jan Kara (1):
+      lib/flex_proportions.c: fix corruption of denominator in
+flexible proportions
+
+Jiri Pirko (1):
+      team: send port changed when added
+
+Joachim Eastwood (1):
+      USB: ohci-at91: fix null pointer in ohci_hcd_at91_overcurrent_irq
+
+Joerg Roedel (1):
+      iommu/amd: Fix wrong assumption in iommu-group specific code
+
+Keith Busch (7):
+      NVMe: Set request queue logical block size
+      NVMe: Fix nvme module init when nvme_major is set
+      NVMe: replace nvme_ns with nvme_dev for user admin
+      NVMe: use namespace id for nvme_get_features
+      NVMe: Set block queue max sectors
+      NVMe: Do not set IO queue depth beyond device max
+      NVMe: Fix uninitialized iod compiler warning
+
+Konrad Rzeszutek Wilk (1):
+      xen/boot: Disable NUMA for PV guests.
+
+Linus Lüssing (1):
+      batman-adv: Fix symmetry check / route flapping in multi interface setups
+
+Linus Torvalds (2):
+      mtdchar: fix offset overflow detection
+      Linux 3.6
+
+Luis R. Rodriguez (1):
+      cfg80211: fix possible circular lock on reg_regdb_search()
+
+Marek Vasut (4):
+      phy/micrel: Implement support for KSZ8021
+      phy/micrel: Rename KS80xx to KSZ80xx
+      phy/micrel: Add missing header to micrel_phy.h
+      net: phy: smsc: Implement PHY config_init for LAN87xx
+
+Mark Brown (1):
+      ASoC: wm2000: Correct register size
+
+Mark Salter (3):
+      c6x: use asm-generic/barrier.h
+      c/r: prctl: fix build error for no-MMU case
+      syscalls: add __NR_kcmp syscall to generic unistd.h
+
+Matthew Wilcox (3):
+      NVMe: Fix whitespace damage in nvme_init
+      NVMe: Free admin queue memory on initialisation failure
+      NVMe: Cancel outstanding IOs on queue deletion
+
+Mauro Carvalho Chehab (3):
+      i3200_edac: Fix memory rank size
+      i5000: Fix the memory size calculation with 2R memories
+      sb_edac: Avoid overflow errors at memory size calculation
+
+Mike Snitzer (6):
+      dm thin: do not set discard_zeroes_data
+      dm mpath: only retry ioctl when no paths if queue_if_no_path set
+      dm: handle requests beyond end of device instead of using BUG_ON
+      dm: retain table limits when swapping to new table with no devices
+      dm thin: tidy discard support
+      dm thin: fix discard support for data devices
+
+Miklos Szeredi (1):
+      vfs: dcache: fix deadlock in tree traversal
+
+Mikulas Patocka (1):
+      dm verity: fix overflow check
+
+Milan Broz (1):
+      dm table: clear add_random unless all devices have it set
+
+Narendra K (1):
+      qlcnic: Fix scheduling while atomic bug
+
+Neil Horman (1):
+      bnx2: Clean up remaining iounmap
+
+NeilBrown (2):
+      md/raid5: add missing spin_lock_init.
+      md/raid10: fix "enough" function for detecting if array is failed.
+
+Nicolas Dichtel (1):
+      inetpeer: fix token initialization
+
+Paul Mundt (1):
+      sh: pfc: Fix up GPIO mux type reconfig case.
+
+Peter Hüwe (1):
+      net/phy/bcm87xx: Add MODULE_LICENSE("GPL") to GPL driver
+
+Quoc-Son Anh (1):
+      NVMe: Use ida for nvme device instance
+
+Richard Weinberger (1):
+      um: Fix IPC on um
+
+Roland Stigge (1):
+      gpio-lpc32xx: Fix value handling of gpio_direction_output()
+
+Sachin Kamat (1):
+      ARM: dma-mapping: Fix potential memory leak in atomic_pool_init()
+
+Steve Glendinning (1):
+      smsc75xx: fix resume after device reset
+
+Thierry Reding (1):
+      pwm-backlight: take over maintenance
+
+Vinicius Costa Gomes (1):
+      Bluetooth: Fix not removing power_off delayed work
+
+Wei Yongjun (4):
+      l2tp: fix return value check
+      team: fix return value check
+      netdev: pasemi: fix return value check in pasemi_mac_phy_init()
+      netdev: octeon: fix return value check in octeon_mgmt_init_phy()
+
+Xiaodong Xu (1):
+      pppoe: drop PPPOX_ZOMBIEs in pppoe_release
