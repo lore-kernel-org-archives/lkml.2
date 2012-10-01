@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290Ab2JAXDY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:03:24 -0400
-Received: from 1wt.eu ([62.212.114.60]:35651 "EHLO 1wt.eu"
+	id S933273Ab2JAXDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:03:22 -0400
+Received: from 1wt.eu ([62.212.114.60]:35652 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757723Ab2JAXDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757726Ab2JAXDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Oct 2012 19:03:17 -0400
-Message-Id: <20121001225203.419132056@1wt.eu>
+Message-Id: <20121001225204.349611017@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:14 +0200
+Date: Tue, 02 Oct 2012 00:54:36 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Tso" <tytso@mit.edu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 137/180] ext3: Fix fdatasync() for files with only i_size changes
+Subject: [ 159/180] random: Add support for architectural random hooks
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,75 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: H. Peter Anvin <hpa@zytor.com>
 
-commit 156bddd8e505b295540f3ca0e27dda68cb0d49aa upstream.
+commit 63d77173266c1791f1553e9e8ccea65dc87c4485 upstream.
 
-Code tracking when transaction needs to be committed on fdatasync(2) forgets
-to handle a situation when only inode's i_size is changed. Thus in such
-situations fdatasync(2) doesn't force transaction with new i_size to disk
-and that can result in wrong i_size after a crash.
+Add support for architecture-specific hooks into the kernel-directed
+random number generator interfaces.  This patchset does not use the
+architecture random number generator interfaces for the
+userspace-directed interfaces (/dev/random and /dev/urandom), thus
+eliminating the need to distinguish between them based on a pool
+pointer.
 
-Fix the issue by updating inode's i_datasync_tid whenever its size is
-updated.
+Changes in version 3:
+- Moved the hooks from extract_entropy() to get_random_bytes().
+- Changes the hooks to inlines.
 
-Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+[PG: .34 already had "unsigned int ret" in get_random_int, so the
+ diffstat here is slightly smaller than that of 63d7717. ]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/ext3/inode.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+ drivers/char/random.c  |   23 +++++++++++++++++++++--
+ include/linux/random.h |   13 +++++++++++++
+ 2 files changed, 34 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-index f9d6937..3191a30 100644
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -2948,6 +2948,8 @@ static int ext3_do_update_inode(handle_t *handle,
- 	struct ext3_inode_info *ei = EXT3_I(inode);
- 	struct buffer_head *bh = iloc->bh;
- 	int err = 0, rc, block;
-+	int need_datasync = 0;
-+	__le32 disksize;
- 
- again:
- 	/* we can't allow multiple procs in here at once, its a bit racey */
-@@ -2985,7 +2987,11 @@ again:
- 		raw_inode->i_gid_high = 0;
- 	}
- 	raw_inode->i_links_count = cpu_to_le16(inode->i_nlink);
--	raw_inode->i_size = cpu_to_le32(ei->i_disksize);
-+	disksize = cpu_to_le32(ei->i_disksize);
-+	if (disksize != raw_inode->i_size) {
-+		need_datasync = 1;
-+		raw_inode->i_size = disksize;
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 0adb8c8..93b3c29 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -932,7 +932,21 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+  */
+ void get_random_bytes(void *buf, int nbytes)
+ {
+-	extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
++	char *p = buf;
++
++	while (nbytes) {
++		unsigned long v;
++		int chunk = min(nbytes, (int)sizeof(unsigned long));
++
++		if (!arch_get_random_long(&v))
++			break;
++
++		memcpy(buf, &v, chunk);
++		p += chunk;
++		nbytes -= chunk;
 +	}
- 	raw_inode->i_atime = cpu_to_le32(inode->i_atime.tv_sec);
- 	raw_inode->i_ctime = cpu_to_le32(inode->i_ctime.tv_sec);
- 	raw_inode->i_mtime = cpu_to_le32(inode->i_mtime.tv_sec);
-@@ -3001,8 +3007,11 @@ again:
- 	if (!S_ISREG(inode->i_mode)) {
- 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
- 	} else {
--		raw_inode->i_size_high =
--			cpu_to_le32(ei->i_disksize >> 32);
-+		disksize = cpu_to_le32(ei->i_disksize >> 32);
-+		if (disksize != raw_inode->i_size_high) {
-+			raw_inode->i_size_high = disksize;
-+			need_datasync = 1;
-+		}
- 		if (ei->i_disksize > 0x7fffffffULL) {
- 			struct super_block *sb = inode->i_sb;
- 			if (!EXT3_HAS_RO_COMPAT_FEATURE(sb,
-@@ -3055,6 +3064,8 @@ again:
- 	ei->i_state &= ~EXT3_STATE_NEW;
++
++	extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
+ }
+ EXPORT_SYMBOL(get_random_bytes);
  
- 	atomic_set(&ei->i_sync_tid, handle->h_transaction->t_tid);
-+	if (need_datasync)
-+		atomic_set(&ei->i_datasync_tid, handle->h_transaction->t_tid);
- out_brelse:
- 	brelse (bh);
- 	ext3_std_error(inode->i_sb, err);
+@@ -1360,9 +1374,14 @@ late_initcall(random_int_secret_init);
+ DEFINE_PER_CPU(__u32 [MD5_DIGEST_WORDS], get_random_int_hash);
+ unsigned int get_random_int(void)
+ {
+-	__u32 *hash = get_cpu_var(get_random_int_hash);
++	__u32 *hash;
+ 	unsigned int ret;
+ 
++	if (arch_get_random_int(&ret))
++		return ret;
++
++	hash = get_cpu_var(get_random_int_hash);
++
+ 	hash[0] += current->pid + jiffies + get_cycles();
+ 	md5_transform(hash, random_int_secret);
+ 	ret = hash[0];
+diff --git a/include/linux/random.h b/include/linux/random.h
+index 2948046..0bf2936 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -63,6 +63,19 @@ unsigned long randomize_range(unsigned long start, unsigned long end, unsigned l
+ u32 random32(void);
+ void srandom32(u32 seed);
+ 
++#ifdef CONFIG_ARCH_RANDOM
++# include <asm/archrandom.h>
++#else
++static inline int arch_get_random_long(unsigned long *v)
++{
++	return 0;
++}
++static inline int arch_get_random_int(unsigned int *v)
++{
++	return 0;
++}
++#endif
++
+ #endif /* __KERNEL___ */
+ 
+ #endif /* _LINUX_RANDOM_H */
 -- 
 1.7.2.1.45.g54fbc
 
