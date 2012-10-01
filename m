@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758653Ab2JAXau (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:30:50 -0400
-Received: from 1wt.eu ([62.212.114.60]:35190 "EHLO 1wt.eu"
+	id S1758687Ab2JAXbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:31:06 -0400
+Received: from 1wt.eu ([62.212.114.60]:35186 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932671Ab2JAXAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:36 -0400
-Message-Id: <20121001225202.784206264@1wt.eu>
+	id S932664Ab2JAXAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:35 -0400
+Message-Id: <20121001225159.604631641@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:59 +0200
+Date: Tue, 02 Oct 2012 00:52:44 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Pearson <greg.pearson@hp.com>, Khalid Aziz <khalid.aziz@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Eric Paris <eparis@redhat.com>, James Morris <james.l.morris@oracle.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 122/180] pcdp: use early_ioremap/early_iounmap to access pcdp table
+Subject: [ 047/180] fcaps: clear the same personality flags as suid when fcaps are used
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +23,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Pearson <greg.pearson@hp.com>
+From: Eric Paris <eparis@redhat.com>
 
-commit 6c4088ac3a4d82779903433bcd5f048c58fb1aca upstream.
+commit d52fc5dde171f030170a6cb78034d166b13c9445 upstream
 
-efi_setup_pcdp_console() is called during boot to parse the HCDP/PCDP
-EFI system table and setup an early console for printk output.  The
-routine uses ioremap/iounmap to setup access to the HCDP/PCDP table
-information.
+If a process increases permissions using fcaps all of the dangerous
+personality flags which are cleared for suid apps should also be cleared.
+Thus programs given priviledge with fcaps will continue to have address space
+randomization enabled even if the parent tried to disable it to make it
+easier to attack.
 
-The call to ioremap is happening early in the boot process which leads
-to a panic on x86_64 systems:
-
-    panic+0x01ca
-    do_exit+0x043c
-    oops_end+0x00a7
-    no_context+0x0119
-    __bad_area_nosemaphore+0x0138
-    bad_area_nosemaphore+0x000e
-    do_page_fault+0x0321
-    page_fault+0x0020
-    reserve_memtype+0x02a1
-    __ioremap_caller+0x0123
-    ioremap_nocache+0x0012
-    efi_setup_pcdp_console+0x002b
-    setup_arch+0x03a9
-    start_kernel+0x00d4
-    x86_64_start_reservations+0x012c
-    x86_64_start_kernel+0x00fe
-
-This replaces the calls to ioremap/iounmap in efi_setup_pcdp_console()
-with calls to early_ioremap/early_iounmap which can be called during
-early boot.
-
-This patch was tested on an x86_64 prototype system which uses the
-HCDP/PCDP table for early console setup.
-
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
-Acked-by: Khalid Aziz <khalid.aziz@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Reviewed-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/firmware/pcdp.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ security/commoncap.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/firmware/pcdp.c b/drivers/firmware/pcdp.c
-index 51e0e2d..a330492 100644
---- a/drivers/firmware/pcdp.c
-+++ b/drivers/firmware/pcdp.c
-@@ -95,7 +95,7 @@ efi_setup_pcdp_console(char *cmdline)
- 	if (efi.hcdp == EFI_INVALID_TABLE_ADDR)
- 		return -ENODEV;
- 
--	pcdp = ioremap(efi.hcdp, 4096);
-+	pcdp = early_ioremap(efi.hcdp, 4096);
- 	printk(KERN_INFO "PCDP: v%d at 0x%lx\n", pcdp->rev, efi.hcdp);
- 
- 	if (strstr(cmdline, "console=hcdp")) {
-@@ -131,6 +131,6 @@ efi_setup_pcdp_console(char *cmdline)
+diff --git a/security/commoncap.c b/security/commoncap.c
+index fe30751..30972d6 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -511,6 +511,11 @@ int cap_bprm_set_creds(struct linux_binprm *bprm)
  	}
+ skip:
  
- out:
--	iounmap(pcdp);
-+	early_iounmap(pcdp, 4096);
- 	return rc;
- }
++	/* if we have fs caps, clear dangerous personality flags */
++	if (!cap_issubset(new->cap_permitted, old->cap_permitted))
++		bprm->per_clear |= PER_CLEAR_ON_SETID;
++
++
+ 	/* Don't let someone trace a set[ug]id/setpcap binary with the revised
+ 	 * credentials unless they have the appropriate permit
+ 	 */
 -- 
 1.7.2.1.45.g54fbc
 
