@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab2JAPn2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 11:43:28 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:37107 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab2JAPn1 (ORCPT
+	id S1752594Ab2JAPqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 11:46:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36518 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab2JAPp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 11:43:27 -0400
-Date: Mon, 1 Oct 2012 11:43:11 -0400
-From: Jamie Gloudon <jamie.gloudon@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: x86_64: wrong DirectMap kB
-Message-ID: <20121001154311.GA2605@darkstar>
-References: <20121001104652.GA1390@darkstar>
- <alpine.LSU.2.00.1210010812530.1914@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1210010812530.1914@eggly.anvils>
-User-Agent: Mutt/ (2011-07-01)
+	Mon, 1 Oct 2012 11:45:59 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, David Gibson <david@gibson.dropbear.id.au>,
+        Jon Loeliger <jdl@jdl.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V3 0/2] dtc: enable use of pre-processor
+Date: Mon,  1 Oct 2012 09:45:49 -0600
+Message-Id: <1349106351-17714-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was also skeptical about DirectMap results added up being less than
-MemTotal. I see now, Thanks for the explanation.
+From: Stephen Warren <swarren@nvidia.com>
 
-Jamie Gloudon
+This series adds a build rule to run cpp on *.dtsp prior to invoking dtc.
 
-On Mon, Oct 01, 2012 at 08:23:38AM -0700, Hugh Dickins wrote:
-> On Mon, 1 Oct 2012, Jamie Gloudon wrote:
-> > 
-> >  Interesting. I am able to reproduce the same problem as you using mem=700M, which shows: 
-> > 
-> > DirectMap4k:        4096 kB
-> > DirectMap2M:    18446744073709547520 kB
-> > 
-> > However, it appears to be normal without the boot parameter:
-> > 
-> > DirectMap4k:        4096 kB
-> > DirectMap2M:    15708160 kB
-> 
-> It appears to be normal because the calculations haven't wrapped around,
-> but if you compare with 3.4 or before, I think you'll find that it
-> still adds up to too little.
-> 
-> > 
-> > What does your output looks like with the full amount on 3.6?
-> 
-> On 3.6:
-> 
-> MemTotal:        8060528 kB
-> ...
-> DirectMap4k:        2048 kB
-> DirectMap2M:     7229440 kB
-> 
-> So it's showing significantly less direct mapped than is included
-> in MemTotal (which itself omits some areas of reserved memory).
-> 
-> Whereas on 3.4:
-> 
-> MemTotal:        8060760 kB
-> ...
-> DirectMap4k:        4096 kB
-> DirectMap2M:     8275968 kB
-> 
-> Hugh
+This patch relies on the patch I recently posted to update the in-kernel
+copy of dtc to match the latest upstream version ("[PATCH] dtc: import
+latest upstream dtc"; http://www.spinics.net/lists/kernel/msg1410063.html.
+
+Stephen Warren (2):
+  kbuild: centralize .dts->.dtb rule
+  kbuild: introduce cmd_dtc_cpp
+
+ arch/arm/boot/Makefile           |    4 ----
+ arch/arm/boot/dts/skeleton.dtsip |   13 +++++++++++++
+ arch/c6x/boot/Makefile           |    3 ---
+ arch/openrisc/boot/Makefile      |    3 ---
+ arch/powerpc/boot/Makefile       |    4 ----
+ scripts/Makefile.lib             |    9 +++++++++
+ 6 files changed, 22 insertions(+), 14 deletions(-)
+ create mode 100644 arch/arm/boot/dts/skeleton.dtsip
+
