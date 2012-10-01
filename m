@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab2JANuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 09:50:14 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:34017 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab2JANuM (ORCPT
+	id S1751711Ab2JANw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 09:52:26 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35542 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750863Ab2JANwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 09:50:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121001123242.GJ5641@beef>
-References: <1348861072-14507-1-git-send-email-mporter@ti.com>
-	<1348861072-14507-5-git-send-email-mporter@ti.com>
-	<506986B2.1030000@ti.com>
-	<20121001123242.GJ5641@beef>
-Date: Mon, 1 Oct 2012 09:50:11 -0400
-Message-ID: <CAPcSpELdAK6=O8HG9FJXG_t88eymZO1f3wxzFqmR-faUn4jx4g@mail.gmail.com>
-Subject: Re: [PATCH v2 4/7] ARM: davinci: Add support for an L3RAM gen_pool
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: "Nori, Sekhar" <nsekhar@ti.com>, Matt Porter <mporter@ti.com>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 1 Oct 2012 09:52:24 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        akpm@linux-foundation.org, mhocko@suse.cz,
+        Steve Capper <steve.capper@arm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Will Deacon <will.deacon@arm.com>
+Subject: [PATCH] mm: thp: Set the accessed flag for old pages on access fault.
+Date: Mon,  1 Oct 2012 14:51:45 +0100
+Message-Id: <1349099505-5581-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 1, 2012 at 8:32 AM, Matt Porter <mporter@ti.com> wrote:
-> On Mon, Oct 01, 2012 at 05:34:02PM +0530, Sekhar Nori wrote:
->> Hi Matt,
->>
->> On 9/29/2012 1:07 AM, Matt Porter wrote:
->> > L3RAM (shared SRAM) is needed for use by several drivers.
->> > This creates a genalloc pool and a hook for the platform code
->> > to provide the struct gen_pool * in platform data.
->> >
->> > Signed-off-by: Matt Porter <mporter@ti.com>
->>
->> I am not sure if any of the DaVinci devices have a need to allocate from
->> *both* ARM RAM and shared RAM. Shared RAM is not present on all DaVinci
->> devices AFAIR, and on DA850, there is just 8KB ARM RAM so I am not sure
->> if there is much point in trying to allocate from there.
->>
->> Can you instead see if Ben's earlier patch[1] to use shared RAM for SRAM
->> allocation on DA850 makes sense for your case? If yes, can you repost
->> with Ben's patch included in your series instead of this patch? I would
->> prefer that over creating a new pool for shared RAM.
->
-> Hrm, I did look at Ben's earlier patch. The reason I added a separate
-> pool mostly was so I didn't have to touch the PM code at all. That can
-> continue using the private SRAM API with the ARM RAM as it is now. The
-> idea here was to allow that to be separate since no other bus masters
-> can access the ARM RAM anyway and do something that didn't require
-> regression testing PM. Also, I figured there's really no reason to use
-> even a tiny bit of the shared SRAM on PM if we have that ARM RAM there
-> and working fine for that use case.
-> [...]
+From: Steve Capper <steve.capper@arm.com>
 
-I agree with Matt. Preserving the use of the ARM RAM (8K on L138 -- as
-you said, Sekhar) in any fashion is preferable to moving suspend
-support into shared RAM. There is more of it (128K on L138) but also
-more pressure on allocations there since there are more clients.
+On x86 memory accesses to pages without the ACCESSED flag set result in the
+ACCESSED flag being set automatically. With the ARM architecture a page access
+fault is raised instead (and it will continue to be raised until the ACCESSED
+flag is set for the appropriate PTE/PMD).
 
-I appreciate that you are trying to preserve prior efforts in
-attempted merging of SRAM support -- thank you for that; however, that
-patch [1] was just an import of Subashish Ghosh's patch [2]  -- I
-chose _that_ implementation option then mainly because I imagined it
-would be the least risky to get accepted upstream and not because of
-any particular technical merits.
+For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+be called for a write fault.
 
-Best Regards,
-Ben Gardiner
+This patch ensures that faults on transparent hugepages which do not result
+in a CoW update the access flags for the faulting pmd.
 
-[1] https://patchwork.kernel.org/patch/840552/
-[2] https://patchwork.kernel.org/patch/549351/
-
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Steve Capper <steve.capper@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 ---
-Nanometrics Inc.
-http://www.nanometrics.ca
+
+Hello again,
+
+This is another fix for an issue that we discovered when porting THP to
+ARM but it somehow managed to slip through the cracks.
+
+Will
+
+ include/linux/huge_mm.h |    3 +++
+ mm/huge_memory.c        |   12 ++++++++++++
+ mm/memory.c             |    4 ++++
+ 3 files changed, 19 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 4c59b11..bbc62ad 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -8,6 +8,9 @@ extern int do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ extern int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 			 pmd_t *dst_pmd, pmd_t *src_pmd, unsigned long addr,
+ 			 struct vm_area_struct *vma);
++extern void huge_pmd_set_accessed(struct mm_struct *mm, struct vm_area_struct *vma,
++				  unsigned long address, pmd_t *pmd,
++				  pmd_t orig_pmd);
+ extern int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			       unsigned long address, pmd_t *pmd,
+ 			       pmd_t orig_pmd);
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index d684934..ee9cc3b 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -914,6 +914,18 @@ out_free_pages:
+ 	goto out;
+ }
+ 
++void huge_pmd_set_accessed(struct mm_struct *mm, struct vm_area_struct *vma,
++			   unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
++{
++	pmd_t entry;
++
++	spin_lock(&mm->page_table_lock);
++	entry = pmd_mkyoung(orig_pmd);
++	if (pmdp_set_access_flags(vma, address & HPAGE_PMD_MASK, pmd, entry, 0))
++		update_mmu_cache(vma, address, pmd);
++	spin_unlock(&mm->page_table_lock);
++}
++
+ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
+ {
+diff --git a/mm/memory.c b/mm/memory.c
+index 5736170..d5c007d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3537,7 +3537,11 @@ retry:
+ 				if (unlikely(ret & VM_FAULT_OOM))
+ 					goto retry;
+ 				return ret;
++			} else {
++				huge_pmd_set_accessed(mm, vma, address, pmd,
++						      orig_pmd);
+ 			}
++
+ 			return 0;
+ 		}
+ 	}
+-- 
+1.7.4.1
+
