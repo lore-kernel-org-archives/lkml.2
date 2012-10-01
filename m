@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757835Ab2JAXa0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:30:26 -0400
-Received: from 1wt.eu ([62.212.114.60]:35209 "EHLO 1wt.eu"
+	id S1758653Ab2JAXau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:30:50 -0400
+Received: from 1wt.eu ([62.212.114.60]:35190 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932694Ab2JAXAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:41 -0400
-Message-Id: <20121001225158.165039916@1wt.eu>
+	id S932671Ab2JAXAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:36 -0400
+Message-Id: <20121001225202.784206264@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:10 +0200
+Date: Tue, 02 Oct 2012 00:53:59 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Willy Tarreau <w@1wt.eu>
-Subject: [ 013/180] 2.6.32.x: timekeeping: Fix leapsecond triggered load spike issue
+Cc: Greg Pearson <greg.pearson@hp.com>, Khalid Aziz <khalid.aziz@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 122/180] pcdp: use early_ioremap/early_iounmap to access pcdp table
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,57 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <johnstul@us.ibm.com>
+From: Greg Pearson <greg.pearson@hp.com>
 
-This is a backport of 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51
+commit 6c4088ac3a4d82779903433bcd5f048c58fb1aca upstream.
 
-The timekeeping code misses an update of the hrtimer subsystem after a
-leap second happened. Due to that timers based on CLOCK_REALTIME are
-either expiring a second early or late depending on whether a leap
-second has been inserted or deleted until an operation is initiated
-which causes that update. Unless the update happens by some other
-means this discrepancy between the timekeeping and the hrtimer data
-stays forever and timers are expired either early or late.
+efi_setup_pcdp_console() is called during boot to parse the HCDP/PCDP
+EFI system table and setup an early console for printk output.  The
+routine uses ioremap/iounmap to setup access to the HCDP/PCDP table
+information.
 
-The reported immediate workaround - $ data -s "`date`" - is causing a
-call to clock_was_set() which updates the hrtimer data structures.
-See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
+The call to ioremap is happening early in the boot process which leads
+to a panic on x86_64 systems:
 
-Add the missing clock_was_set() call to update_wall_time() in case of
-a leap second event. The actual update is deferred to softirq context
-as the necessary smp function call cannot be invoked from hard
-interrupt context.
+    panic+0x01ca
+    do_exit+0x043c
+    oops_end+0x00a7
+    no_context+0x0119
+    __bad_area_nosemaphore+0x0138
+    bad_area_nosemaphore+0x000e
+    do_page_fault+0x0321
+    page_fault+0x0020
+    reserve_memtype+0x02a1
+    __ioremap_caller+0x0123
+    ioremap_nocache+0x0012
+    efi_setup_pcdp_console+0x002b
+    setup_arch+0x03a9
+    start_kernel+0x00d4
+    x86_64_start_reservations+0x012c
+    x86_64_start_kernel+0x00fe
 
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+This replaces the calls to ioremap/iounmap in efi_setup_pcdp_console()
+with calls to early_ioremap/early_iounmap which can be called during
+early boot.
+
+This patch was tested on an x86_64 prototype system which uses the
+HCDP/PCDP table for early console setup.
+
+Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+Acked-by: Khalid Aziz <khalid.aziz@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/time/timekeeping.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/firmware/pcdp.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index a969adf..1e9808d 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -790,6 +790,8 @@ void update_wall_time(void)
- 			leap = second_overflow(xtime.tv_sec);
- 			xtime.tv_sec += leap;
- 			wall_to_monotonic.tv_sec -= leap;
-+			if (leap)
-+				clock_was_set_delayed();
- 		}
+diff --git a/drivers/firmware/pcdp.c b/drivers/firmware/pcdp.c
+index 51e0e2d..a330492 100644
+--- a/drivers/firmware/pcdp.c
++++ b/drivers/firmware/pcdp.c
+@@ -95,7 +95,7 @@ efi_setup_pcdp_console(char *cmdline)
+ 	if (efi.hcdp == EFI_INVALID_TABLE_ADDR)
+ 		return -ENODEV;
  
- 		raw_time.tv_nsec += timekeeper.raw_interval;
+-	pcdp = ioremap(efi.hcdp, 4096);
++	pcdp = early_ioremap(efi.hcdp, 4096);
+ 	printk(KERN_INFO "PCDP: v%d at 0x%lx\n", pcdp->rev, efi.hcdp);
+ 
+ 	if (strstr(cmdline, "console=hcdp")) {
+@@ -131,6 +131,6 @@ efi_setup_pcdp_console(char *cmdline)
+ 	}
+ 
+ out:
+-	iounmap(pcdp);
++	early_iounmap(pcdp, 4096);
+ 	return rc;
+ }
 -- 
 1.7.2.1.45.g54fbc
 
