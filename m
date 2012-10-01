@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab2JANe2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 09:34:28 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46899 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab2JANe0 (ORCPT
+	id S1751239Ab2JANiG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 09:38:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19826 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab2JANiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 09:34:26 -0400
-Date: Mon, 1 Oct 2012 15:34:09 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: andrew.cooper3@citrix.com, jbeulich@suse.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH 03/11] xen: Introduce architecture independent data for
- kexec/kdump
-Message-ID: <20121001133409.GG2942@host-192-168-1-59.local.net-space.pl>
-References: <1348769198-29580-1-git-send-email-daniel.kiper@oracle.com>
- <1348769198-29580-2-git-send-email-daniel.kiper@oracle.com>
- <1348769198-29580-3-git-send-email-daniel.kiper@oracle.com>
- <1348769198-29580-4-git-send-email-daniel.kiper@oracle.com>
- <20120928161016.GB16262@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120928161016.GB16262@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 1 Oct 2012 09:38:03 -0400
+X-Authority-Analysis: v=2.0 cv=WKj9rwQR c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ryrs6W6k5W4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=kO2SeoYvgLQA:10 a=VwQbUJbxAAAA:8 a=LgbLIiRoEce-g8Y5PDEA:9 a=QEXdDO2ut3YA:10 a=y3OXxtZUb9NDqmw4rPkA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121001133055.594443758@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 01 Oct 2012 09:30:55 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: [PATCH 0/4] [GIT PULL] localmodconfig: clean ups and fixes
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 12:10:17PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Thu, Sep 27, 2012 at 08:06:30PM +0200, Daniel Kiper wrote:
-> > Introduce architecture independent constants and structures
->
-> Don't you mean 'dependent constants'?
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Right.
 
-> > required by Xen kexec/kdump implementation.
-> >
-> > Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> > ---
-> >  include/xen/interface/xen.h |   33 +++++++++++++++++++++++++++++++++
-> >  1 files changed, 33 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
-> > index 0801468..ac19f9e 100644
-> > --- a/include/xen/interface/xen.h
-> > +++ b/include/xen/interface/xen.h
-> > @@ -58,6 +58,7 @@
-> >  #define __HYPERVISOR_event_channel_op     32
-> >  #define __HYPERVISOR_physdev_op           33
-> >  #define __HYPERVISOR_hvm_op               34
-> > +#define __HYPERVISOR_kexec_op             37
-> >  #define __HYPERVISOR_tmem_op              38
-> >
-> >  /* Architecture-specific hypercall definitions. */
-> > @@ -232,7 +233,39 @@ DEFINE_GUEST_HANDLE_STRUCT(mmuext_op);
-> >  #define VMASST_TYPE_pae_extended_cr3     3
-> >  #define MAX_VMASST_TYPE 3
-> >
-> > +/*
-> > + * Commands to HYPERVISOR_kexec_op().
-> > + */
-> > +#define KEXEC_CMD_kexec			0
-> > +#define KEXEC_CMD_kexec_load		1
-> > +#define KEXEC_CMD_kexec_unload		2
-> > +#define KEXEC_CMD_kexec_get_range	3
-> > +
-> > +/*
-> > + * Memory ranges for kdump (utilized by HYPERVISOR_kexec_op()).
-> > + */
-> > +#define KEXEC_RANGE_MA_CRASH		0
-> > +#define KEXEC_RANGE_MA_XEN		1
-> > +#define KEXEC_RANGE_MA_CPU		2
-> > +#define KEXEC_RANGE_MA_XENHEAP		3
-> > +#define KEXEC_RANGE_MA_BOOT_PARAM	4
-> > +#define KEXEC_RANGE_MA_EFI_MEMMAP	5
-> > +#define KEXEC_RANGE_MA_VMCOREINFO	6
-> > +
-> >  #ifndef __ASSEMBLY__
-> > +struct xen_kexec_exec {
-> > +	int type;
-> > +};
-> > +
-> > +struct xen_kexec_range {
-> > +	int range;
-> > +	int nr;
-> > +	unsigned long size;
-> > +	unsigned long start;
-> > +};
->
-> Might want to include an little blurb saying what we expect
-> in case of running a 32-bit domain on a 64-bit hypervisor
-> where the start might be past 4GB?
+Linus,
 
-This is not true. All needed pages used by i386 relocate kernel
-code are always below 4 GiB.
+Bill Pemberton added some changes to make streamline-config.pl
+work again as a stand-alone tool (outside of make localmodconfig).
 
-Daniel
+Also, he added a couple of updates to make the code be more
+"Perl proper".
+
+*Note* I changed the gpg subkey that I use to sign with because the
+old one is about to expire. You may need to refresh my key to
+get the new subkeys.
+
+Main key which you should have:
+  5ED9 A48F C54C 0A22 D1D0  804C EBC2 6CDB 5A56 DE73
+
+Old subkey (expires tomorrow):
+  C66DAA00
+
+New subkey:
+  71B30B4C
+
+Please pull the latest localmodconfig-v3.7 tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-kconfig.git
+localmodconfig-v3.7
+
+Head SHA1: 88050b21c2ca96aff36dc2cb1f29ee72d0a70fe6
+
+
+Bill Pemberton (4):
+      localmodconfig: Set default value for ksource in streamline_config.pl
+      localmodconfig: Rework find_config in streamline_config.pl
+      localmodconfig: Use 3 parameter open in streamline_config.pl
+      localmodconfig: Use my variable for loop in streamline_config.pl
+
+----
+ scripts/kconfig/streamline_config.pl |   48 ++++++++++++++++--------------=
+----
+ 1 file changed, 22 insertions(+), 26 deletions(-)
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJQaZy2AAoJEOdOSU1xswtM7m4H/3LJHpoly1uetgV9NpbpNuTG
+4ZpIRMDAkcPhlNkqQCvftO00dLoEqXWHqAN3d4cY8qyDa+DPXEH/VZGlZS6LWCjT
+DY8257wpFN7sVGNgoOJuaLVKX8CdTtGR0StzTtxLypNqBi4l5VIxKU0cXK9wk4nL
+eCGU4ZWXHsGaw0GeRWs7LHdKhqBjRr7OAM1a2tTvJl37EaqhKHRRZm7o3pSq18+O
+BNNAbJcUj9jodpD2YRRjdDkjf56MZUOl3g2qIk4INWMsK3KDVOBXHqNWTvf67HBT
+fvXJJPMaRdEVRXLoG/OksrNoCURHiOX8CTQgdGqMYeBwRJsVQqkke5wAV3uxt34=
+=fvme
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
