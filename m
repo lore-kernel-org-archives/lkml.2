@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965176Ab2JAXdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:33:38 -0400
-Received: from 1wt.eu ([62.212.114.60]:35148 "EHLO 1wt.eu"
+	id S1757594Ab2JAXAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:00:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:35109 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab2JAXAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:24 -0400
-Message-Id: <20121001225200.236039321@1wt.eu>
+	id S1757494Ab2JAXAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:14 -0400
+Message-Id: <20121001225159.944146084@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:59 +0200
+Date: Tue, 02 Oct 2012 00:52:52 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 062/180] SUNRPC: We must not use list_for_each_entry_safe() in rpc_wake_up()
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Damian Lukowski <damian@tvk.rwth-aachen.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
+Subject: [ 055/180] tcp: Dont change unlocked socket state in tcp_v4_err().
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,73 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David S. Miller <davem@davemloft.net>
 
-commit 540a0f7584169651f485e8ab67461fcb06934e38 upstream.
+commit 8f49c2703b33519aaaccc63f571b465b9d2b3a2d upstream.
 
-The problem is that for the case of priority queues, we
-have to assume that __rpc_remove_wait_queue_priority will move new
-elements from the tk_wait.links lists into the queue->tasks[] list.
-We therefore cannot use list_for_each_entry_safe() on queue->tasks[],
-since that will skip these new tasks that __rpc_remove_wait_queue_priority
-is adding.
+Alexey Kuznetsov noticed a regression introduced by
+commit f1ecd5d9e7366609d640ff4040304ea197fbc618
+("Revert Backoff [v3]: Revert RTO on ICMP destination unreachable")
 
-Without this fix, rpc_wake_up and rpc_wake_up_status will both fail
-to wake up all functions on priority wait queues, which can result
-in some nasty hangs.
+The RTO and timer modification code added to tcp_v4_err()
+doesn't check sock_owned_by_user(), which if true means we
+don't have exclusive access to the socket and therefore cannot
+modify it's critical state.
 
-Reported-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Just skip this new code block if sock_owned_by_user() is true
+and eliminate the now superfluous sock_owned_by_user() code
+block contained within.
+
+Reported-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+CC: Damian Lukowski <damian@tvk.rwth-aachen.de>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/sunrpc/sched.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+ net/ipv4/tcp_ipv4.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index ac94477..9b3941d 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -485,14 +485,18 @@ EXPORT_SYMBOL_GPL(rpc_wake_up_next);
-  */
- void rpc_wake_up(struct rpc_wait_queue *queue)
- {
--	struct rpc_task *task, *next;
- 	struct list_head *head;
- 
- 	spin_lock_bh(&queue->lock);
- 	head = &queue->tasks[queue->maxpriority];
- 	for (;;) {
--		list_for_each_entry_safe(task, next, head, u.tk_wait.list)
-+		while (!list_empty(head)) {
-+			struct rpc_task *task;
-+			task = list_first_entry(head,
-+					struct rpc_task,
-+					u.tk_wait.list);
- 			rpc_wake_up_task_queue_locked(queue, task);
-+		}
- 		if (head == &queue->tasks[0])
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 6fc7961..6a4e832 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -406,6 +406,9 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
+ 		    !icsk->icsk_backoff)
  			break;
- 		head--;
-@@ -510,13 +514,16 @@ EXPORT_SYMBOL_GPL(rpc_wake_up);
-  */
- void rpc_wake_up_status(struct rpc_wait_queue *queue, int status)
- {
--	struct rpc_task *task, *next;
- 	struct list_head *head;
  
- 	spin_lock_bh(&queue->lock);
- 	head = &queue->tasks[queue->maxpriority];
- 	for (;;) {
--		list_for_each_entry_safe(task, next, head, u.tk_wait.list) {
-+		while (!list_empty(head)) {
-+			struct rpc_task *task;
-+			task = list_first_entry(head,
-+					struct rpc_task,
-+					u.tk_wait.list);
- 			task->tk_status = status;
- 			rpc_wake_up_task_queue_locked(queue, task);
- 		}
++		if (sock_owned_by_user(sk))
++			break;
++
+ 		icsk->icsk_backoff--;
+ 		inet_csk(sk)->icsk_rto = __tcp_set_rto(tp) <<
+ 					 icsk->icsk_backoff;
+@@ -420,11 +423,6 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
+ 		if (remaining) {
+ 			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
+ 						  remaining, TCP_RTO_MAX);
+-		} else if (sock_owned_by_user(sk)) {
+-			/* RTO revert clocked out retransmission,
+-			 * but socket is locked. Will defer. */
+-			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
+-						  HZ/20, TCP_RTO_MAX);
+ 		} else {
+ 			/* RTO revert clocked out retransmission.
+ 			 * Will retransmit now */
 -- 
 1.7.2.1.45.g54fbc
 
