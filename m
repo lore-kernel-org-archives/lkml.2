@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796Ab2JAXA5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:00:57 -0400
-Received: from 1wt.eu ([62.212.114.60]:35244 "EHLO 1wt.eu"
+	id S933159Ab2JAXCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:02:36 -0400
+Received: from 1wt.eu ([62.212.114.60]:35549 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757631Ab2JAXAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:50 -0400
-Message-Id: <20121001225202.605833644@1wt.eu>
+	id S933151Ab2JAXCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:02:31 -0400
+Message-Id: <20121001225200.951589835@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:55 +0200
+Date: Tue, 02 Oct 2012 00:53:16 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Tony Zelenoff <antonz@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 118/180] ALSA: mpu401: Fix missing initialization of irq field
+Subject: [ 079/180] atl1: fix kernel panic in case of DMA errors
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,35 +25,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Tony Zelenoff <antonz@parallels.com>
 
-commit bc733d495267a23ef8660220d696c6e549ce30b3 upstream.
+[ Upstream commit 03662e41c7cff64a776bfb1b3816de4be43de881 ]
 
-The irq field of struct snd_mpu401 is supposed to be initialized to -1.
-Since it's set to zero as of now, a probing error before the irq
-installation results in a kernel warning "Trying to free already-free
-IRQ 0".
+Problem:
+There was two separate work_struct structures which share one
+handler. Unfortunately getting atl1_adapter structure from
+work_struct in case of DMA error was done from incorrect
+offset which cause kernel panics.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=44821
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Solution:
+The useless work_struct for DMA error removed and
+handler name changed to more generic one.
+
+Signed-off-by: Tony Zelenoff <antonz@parallels.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- sound/drivers/mpu401/mpu401_uart.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/net/atlx/atl1.c |   12 +++++-------
+ drivers/net/atlx/atl1.h |    3 +--
+ drivers/net/atlx/atlx.c |    2 +-
+ 3 files changed, 7 insertions(+), 10 deletions(-)
 
-diff --git a/sound/drivers/mpu401/mpu401_uart.c b/sound/drivers/mpu401/mpu401_uart.c
-index 2af0999..74f5a3d 100644
---- a/sound/drivers/mpu401/mpu401_uart.c
-+++ b/sound/drivers/mpu401/mpu401_uart.c
-@@ -554,6 +554,7 @@ int snd_mpu401_uart_new(struct snd_card *card, int device,
- 	spin_lock_init(&mpu->output_lock);
- 	spin_lock_init(&mpu->timer_lock);
- 	mpu->hardware = hardware;
-+	mpu->irq = -1;
- 	if (! (info_flags & MPU401_INFO_INTEGRATED)) {
- 		int res_size = hardware == MPU401_HW_PC98II ? 4 : 2;
- 		mpu->res = request_region(port, res_size, "MPU401 UART");
+diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
+index 403bfb6..adc862f 100644
+--- a/drivers/net/atlx/atl1.c
++++ b/drivers/net/atlx/atl1.c
+@@ -2478,7 +2478,7 @@ static irqreturn_t atl1_intr(int irq, void *data)
+ 					"pcie phy link down %x\n", status);
+ 			if (netif_running(adapter->netdev)) {	/* reset MAC */
+ 				iowrite32(0, adapter->hw.hw_addr + REG_IMR);
+-				schedule_work(&adapter->pcie_dma_to_rst_task);
++				schedule_work(&adapter->reset_dev_task);
+ 				return IRQ_HANDLED;
+ 			}
+ 		}
+@@ -2490,7 +2490,7 @@ static irqreturn_t atl1_intr(int irq, void *data)
+ 					"pcie DMA r/w error (status = 0x%x)\n",
+ 					status);
+ 			iowrite32(0, adapter->hw.hw_addr + REG_IMR);
+-			schedule_work(&adapter->pcie_dma_to_rst_task);
++			schedule_work(&adapter->reset_dev_task);
+ 			return IRQ_HANDLED;
+ 		}
+ 
+@@ -2635,10 +2635,10 @@ static void atl1_down(struct atl1_adapter *adapter)
+ 	atl1_clean_rx_ring(adapter);
+ }
+ 
+-static void atl1_tx_timeout_task(struct work_struct *work)
++static void atl1_reset_dev_task(struct work_struct *work)
+ {
+ 	struct atl1_adapter *adapter =
+-		container_of(work, struct atl1_adapter, tx_timeout_task);
++		container_of(work, struct atl1_adapter, reset_dev_task);
+ 	struct net_device *netdev = adapter->netdev;
+ 
+ 	netif_device_detach(netdev);
+@@ -3050,12 +3050,10 @@ static int __devinit atl1_probe(struct pci_dev *pdev,
+ 		    (unsigned long)adapter);
+ 	adapter->phy_timer_pending = false;
+ 
+-	INIT_WORK(&adapter->tx_timeout_task, atl1_tx_timeout_task);
++	INIT_WORK(&adapter->reset_dev_task, atl1_reset_dev_task);
+ 
+ 	INIT_WORK(&adapter->link_chg_task, atlx_link_chg_task);
+ 
+-	INIT_WORK(&adapter->pcie_dma_to_rst_task, atl1_tx_timeout_task);
+-
+ 	err = register_netdev(netdev);
+ 	if (err)
+ 		goto err_common;
+diff --git a/drivers/net/atlx/atl1.h b/drivers/net/atlx/atl1.h
+index 146372f..0494e514 100644
+--- a/drivers/net/atlx/atl1.h
++++ b/drivers/net/atlx/atl1.h
+@@ -762,9 +762,8 @@ struct atl1_adapter {
+ 	u16 link_speed;
+ 	u16 link_duplex;
+ 	spinlock_t lock;
+-	struct work_struct tx_timeout_task;
++	struct work_struct reset_dev_task;
+ 	struct work_struct link_chg_task;
+-	struct work_struct pcie_dma_to_rst_task;
+ 
+ 	struct timer_list phy_config_timer;
+ 	bool phy_timer_pending;
+diff --git a/drivers/net/atlx/atlx.c b/drivers/net/atlx/atlx.c
+index 3dc0142..ce09b95 100644
+--- a/drivers/net/atlx/atlx.c
++++ b/drivers/net/atlx/atlx.c
+@@ -189,7 +189,7 @@ static void atlx_tx_timeout(struct net_device *netdev)
+ {
+ 	struct atlx_adapter *adapter = netdev_priv(netdev);
+ 	/* Do the reset outside of interrupt context */
+-	schedule_work(&adapter->tx_timeout_task);
++	schedule_work(&adapter->reset_dev_task);
+ }
+ 
+ /*
 -- 
 1.7.2.1.45.g54fbc
 
