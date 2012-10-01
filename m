@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933542Ab2JAXOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:14:49 -0400
-Received: from 1wt.eu ([62.212.114.60]:35494 "EHLO 1wt.eu"
+	id S1758165Ab2JAXPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:15:08 -0400
+Received: from 1wt.eu ([62.212.114.60]:35493 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933084Ab2JAXCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:02:06 -0400
-Message-Id: <20121001225204.223255292@1wt.eu>
+	id S933077Ab2JAXCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:02:05 -0400
+Message-Id: <20121001225202.394490409@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:33 +0200
+Date: Tue, 02 Oct 2012 00:53:50 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Alan Cox <alan@linux.intel.com>, "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 156/180] random: simplify fips mode
+Subject: [ 113/180] wanmain: comparing array with NULL
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,71 +24,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Mackall <mpm@selenic.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit e954bc91bdd4bb08b8325478c5004b24a23a3522 upstream.
+[ Upstream commit 8b72ff6484fe303e01498b58621810a114f3cf09 ]
 
-Rather than dynamically allocate 10 bytes, move it to static allocation.
-This saves space and avoids the need for error checking.
+gcc really should warn about these !
 
-Signed-off-by: Matt Mackall <mpm@selenic.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-[PG: adding this simplifies required updates to random for .34 stable]
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/char/random.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+ net/wanrouter/wanmain.c |   51 +++++++++++++++++++++-------------------------
+ 1 files changed, 23 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index de325792..0adb8c8 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -264,6 +264,7 @@
- #define INPUT_POOL_WORDS 128
- #define OUTPUT_POOL_WORDS 32
- #define SEC_XFER_SIZE 512
-+#define EXTRACT_SIZE 10
+diff --git a/net/wanrouter/wanmain.c b/net/wanrouter/wanmain.c
+index 258daa8..0d8380a 100644
+--- a/net/wanrouter/wanmain.c
++++ b/net/wanrouter/wanmain.c
+@@ -603,36 +603,31 @@ static int wanrouter_device_new_if(struct wan_device *wandev,
+ 		 * successfully, add it to the interface list.
+ 		 */
  
- /*
-  * The minimum number of bits of entropy before we wake up a read on
-@@ -421,7 +422,7 @@ struct entropy_store {
- 	unsigned add_ptr;
- 	int entropy_count;
- 	int input_rotate;
--	__u8 *last_data;
-+	__u8 last_data[EXTRACT_SIZE];
- };
+-		if (dev->name == NULL) {
+-			err = -EINVAL;
+-		} else {
++#ifdef WANDEBUG
++		printk(KERN_INFO "%s: registering interface %s...\n",
++		       wanrouter_modname, dev->name);
++#endif
  
- static __u32 input_pool_data[INPUT_POOL_WORDS];
-@@ -721,8 +722,6 @@ void add_disk_randomness(struct gendisk *disk)
- }
- #endif
- 
--#define EXTRACT_SIZE 10
+-			#ifdef WANDEBUG
+-			printk(KERN_INFO "%s: registering interface %s...\n",
+-				wanrouter_modname, dev->name);
+-			#endif
 -
- /*********************************************************************
-  *
-  * Entropy extraction routines
-@@ -869,7 +868,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- 	while (nbytes) {
- 		extract_buf(r, tmp);
- 
--		if (r->last_data) {
-+		if (fips_enabled) {
- 			spin_lock_irqsave(&r->lock, flags);
- 			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
- 				panic("Hardware RNG duplicated output!\n");
-@@ -958,9 +957,6 @@ static void init_std_data(struct entropy_store *r)
- 	now = ktime_get_real();
- 	mix_pool_bytes(r, &now, sizeof(now));
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
--	/* Enable continuous test in fips mode */
--	if (fips_enabled)
--		r->last_data = kmalloc(EXTRACT_SIZE, GFP_KERNEL);
- }
- 
- static int rand_initialize(void)
+-			err = register_netdev(dev);
+-			if (!err) {
+-				struct net_device *slave = NULL;
+-				unsigned long smp_flags=0;
+-
+-				lock_adapter_irq(&wandev->lock, &smp_flags);
+-
+-				if (wandev->dev == NULL) {
+-					wandev->dev = dev;
+-				} else {
+-					for (slave=wandev->dev;
+-					     DEV_TO_SLAVE(slave);
+-					     slave = DEV_TO_SLAVE(slave))
+-						DEV_TO_SLAVE(slave) = dev;
+-				}
+-				++wandev->ndev;
+-
+-				unlock_adapter_irq(&wandev->lock, &smp_flags);
+-				err = 0;	/* done !!! */
+-				goto out;
++		err = register_netdev(dev);
++		if (!err) {
++			struct net_device *slave = NULL;
++			unsigned long smp_flags=0;
++
++			lock_adapter_irq(&wandev->lock, &smp_flags);
++
++			if (wandev->dev == NULL) {
++				wandev->dev = dev;
++			} else {
++				for (slave=wandev->dev;
++				     DEV_TO_SLAVE(slave);
++				     slave = DEV_TO_SLAVE(slave))
++					DEV_TO_SLAVE(slave) = dev;
+ 			}
++			++wandev->ndev;
++
++			unlock_adapter_irq(&wandev->lock, &smp_flags);
++			err = 0;	/* done !!! */
++			goto out;
+ 		}
+ 		if (wandev->del_if)
+ 			wandev->del_if(wandev, dev);
 -- 
 1.7.2.1.45.g54fbc
 
