@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab2JAJRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 05:17:32 -0400
-Received: from smtp2.infineon.com ([217.10.60.23]:18066 "EHLO
-	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab2JAJRb convert rfc822-to-8bit (ORCPT
+	id S1752468Ab2JAJWB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 05:22:01 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:33573 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab2JAJWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 05:17:31 -0400
-X-SBRS: None
-From: <Peter.Huewe@infineon.com>
-To: <jgunthorpe@obsidianresearch.com>, <linux-kernel@vger.kernel.org>,
-        <tpmdd-devel@lists.sourceforge.net>
-Subject: RE: [tpmdd-devel] [PATCH] TPM: Issue TPM_STARTUP at driver load if
- the TPM has not been started
-Thread-Topic: [tpmdd-devel] [PATCH] TPM: Issue TPM_STARTUP at driver load if
- the TPM has not been started
-Thread-Index: AQHNn2pdOsnXAeayo0enYmQRsgYYcpekKczg
-Date: Mon, 1 Oct 2012 09:17:28 +0000
-Message-ID: <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
-References: <20120930233012.GH30637@obsidianresearch.com>
-In-Reply-To: <20120930233012.GH30637@obsidianresearch.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.8.248]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 1 Oct 2012 05:22:00 -0400
+Message-ID: <506960AE.2000402@ahsoftware.de>
+Date: Mon, 01 Oct 2012 11:21:50 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG at fs/buffer.c:3205 (stable 3.5.3)
+References: <50531629.9020107@ahsoftware.de> <20120925110206.GD28937@mwanda> <50643C4A.9010202@ahsoftware.de> <20120927151232.GA12210@quack.suse.cz> <506474E8.3030300@ahsoftware.de> <20120927200342.GB12553@quack.suse.cz> <506746EF.5070000@ahsoftware.de> <20121001091001.GA22800@quack.suse.cz>
+In-Reply-To: <20121001091001.GA22800@quack.suse.cz>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+Hello,
 
-> The TPM will respond to TPM_GET_CAP with TPM_ERR_INVALID_POSTINIT if
-> TPM_STARTUP has not been issued. This will result in the TPM driver
-> failing to load and no way to recover. Detect this and automatically
-> issue TPM_STARTUP.
+Am 01.10.2012 11:10, schrieb Jan Kara:
 
-> This is for embedded applications where the kernel is the first thing
-> to touch the TPM.
+>> sha1sum Tainted: P           O 3.5.4-00009-gfa43f23-dirty #228
+>    BTW, fglrx moodule taints the kernel because it is a proprietary driver.
 
-Thanks for working on this.
-I also thought about this scenario quite often.
+I know.
 
-Shouldn't we then also add a TpmStartup(ST_STATE) in case of a resume?
- rc=GetCapability()
- if(rc==INVALID_POSTINIT)
- 	tpm_transmit ("TPM_STARTUP(ST_STATE)")...
+> Can you reproduce the issue without this module loaded?
 
-Thanks,
-Peter
+I will try it with a clean 3.6. Most of the 9 additional patches here 
+are for ARM boxes, but anyway. I will need a few days.
+
+Regards,
+
+Alexander
