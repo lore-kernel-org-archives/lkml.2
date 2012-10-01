@@ -1,125 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab2JATeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 15:34:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6357 "EHLO mx1.redhat.com"
+	id S1754595Ab2JATeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 15:34:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23043 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab2JATdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753512Ab2JATdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Oct 2012 15:33:02 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, axboe@kernel.dk
 Cc: tj@kernel.org, cgroups@vger.kernel.org, vgoyal@redhat.com
-Subject: [PATCH 15/15] cfq-ioschd: Give boost to higher prio/weight queues
-Date: Mon,  1 Oct 2012 15:32:56 -0400
-Message-Id: <1349119976-26837-16-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 02/15] cfq-iosched: More renaming to better represent wl_class and wl_type
+Date: Mon,  1 Oct 2012 15:32:43 -0400
+Message-Id: <1349119976-26837-3-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1349119976-26837-1-git-send-email-vgoyal@redhat.com>
 References: <1349119976-26837-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Though vdisktime based scheduling will take care of providng a queue
-its fair share time of disk, the service differentiation between prio
-levels is not as pronounced as with unpatched kernel. One of the reason
-is that I got rid of cfq_slice_offset() logic which will do some
-approximations to allow more than fair share of disk time to higher
-prio queues.
+Some more renaming. Again making the code uniform w.r.t use of
+wl_class/class to represent IO class (RT, BE, IDLE) and using
+wl_type/type to represent subclass (SYNC, SYNC-IDLE, ASYNC).
 
-This patch does intorduce a boost logic which provides vdisktime boost
-to queues based on their weights. Higher the prio/weight, higher the
-boost. So higher priority queues end up getting more than their fair
-disk share.
+At places this patch shortens the string "workload" to "wl". Also at
+places I have got rid of keyword "serving" as it is obivious.
 
-I noticed another oddity during testing and that is that even I
-provide higher disk slice to a queue, it does not seem to be doing
-higher amount of IO. Somehow disk seems to slow down and delays the
-completions of IO. Not sure how that can happen and how to tackle
-that.
-
-This arbitrary approximation is primarily there to provide bigger
-service differentiation between various prio levels. I think we
-should get rid of it when we merge queue and group scheduling logic.
+Again, just trying to increase uniformity and improve readability. No
+functional change.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/cfq-iosched.c |   44 +++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 41 insertions(+), 3 deletions(-)
+ block/cfq-iosched.c |   61 +++++++++++++++++++++++++--------------------------
+ 1 files changed, 30 insertions(+), 31 deletions(-)
 
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 7d1fa41..a2f7e8d 100644
+index 9d44394..44ac479 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -1641,12 +1641,45 @@ static u64 calc_st_last_entry_vdisktime(struct cfq_rb_root *st)
- 		return st->min_vdisktime;
+@@ -248,9 +248,9 @@ struct cfq_group {
+ 	struct cfq_rb_root service_trees[2][3];
+ 	struct cfq_rb_root service_tree_idle;
+ 
+-	unsigned long saved_workload_slice;
+-	enum wl_type_t saved_workload;
+-	enum wl_class_t saved_serving_class;
++	unsigned long saved_wl_slice;
++	enum wl_type_t saved_wl_type;
++	enum wl_class_t saved_wl_class;
+ 
+ 	/* number of requests that are on the dispatch list or inside driver */
+ 	int dispatched;
+@@ -280,8 +280,8 @@ struct cfq_data {
+ 	/*
+ 	 * The priority currently being served
+ 	 */
+-	enum wl_class_t serving_class;
+-	enum wl_type_t serving_type;
++	enum wl_class_t wl_class;
++	enum wl_type_t wl_type;
+ 	unsigned long workload_expires;
+ 	struct cfq_group *serving_group;
+ 
+@@ -1241,7 +1241,7 @@ cfq_group_notify_queue_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 
+ 	cfq_log_cfqg(cfqd, cfqg, "del_from_rr group");
+ 	cfq_group_service_tree_del(st, cfqg);
+-	cfqg->saved_workload_slice = 0;
++	cfqg->saved_wl_slice = 0;
+ 	cfqg_stats_update_dequeue(cfqg);
  }
  
-+/*
-+ * Give boost to a queue based on its ioprio. This is very approximate
-+ * and arbitrary boost to give higher prio queues even greater share of
-+ * disk than what they are entitled to based on their weight. So why
-+ * to do this. Two reasons.
-+ *
-+ * - Provide more service differentation between queues and keep it inline
-+ *   with exisitng logic.
-+ *
-+ * - vdisktime logic works only if we are idling on the queue. For SSD
-+ *   we might skip idling and this logic will help to provide some kind
-+ *   of service differentiation. Most of the time this will not help as
-+ *   there are not enough processes doing IO. If SSD has deep queue depth,
-+ *   readers will be blocked as their request is with driver/device and
-+ *   there are not enough readers on service tree to create service
-+ *   differentiation. So this might kick in only you have 32/64 or
-+ *   greater processes doing IO.
-+ *
-+ * I think we should do away with this boost logic some day.
-+ */
-+static u64 calc_cfqq_vdisktime_boost(struct cfq_rb_root *st,
-+			struct cfq_queue *cfqq)
-+{
-+	u64 spread;
-+	unsigned int weight = cfq_prio_to_weight(cfqq->ioprio);
-+
-+	spread = calc_st_last_entry_vdisktime(st) - st->min_vdisktime;
-+
-+	/* divide 50% of spread in proportion to weight as boost */
-+	return (spread * weight)/(2*CFQ_WEIGHT_MAX);
-+}
-+
- static u64 calc_cfqq_vdisktime(struct cfq_queue *cfqq, bool add_front,
- 			bool new_cfqq, struct cfq_rb_root *old_st)
+@@ -1301,12 +1301,12 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+ 
+ 	/* This group is being expired. Save the context */
+ 	if (time_after(cfqd->workload_expires, jiffies)) {
+-		cfqg->saved_workload_slice = cfqd->workload_expires
++		cfqg->saved_wl_slice = cfqd->workload_expires
+ 						- jiffies;
+-		cfqg->saved_workload = cfqd->serving_type;
+-		cfqg->saved_serving_class = cfqd->serving_class;
++		cfqg->saved_wl_type = cfqd->wl_type;
++		cfqg->saved_wl_class = cfqd->wl_class;
+ 	} else
+-		cfqg->saved_workload_slice = 0;
++		cfqg->saved_wl_slice = 0;
+ 
+ 	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+ 					st->min_vdisktime);
+@@ -2030,7 +2030,7 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
  {
+ 	if (cfqq) {
+ 		cfq_log_cfqq(cfqd, cfqq, "set_active wl_class:%d wl_type:%d",
+-				cfqd->serving_class, cfqd->serving_type);
++				cfqd->wl_class, cfqd->wl_type);
+ 		cfqg_stats_update_avg_queue_size(cfqq->cfqg);
+ 		cfqq->slice_start = 0;
+ 		cfqq->dispatch_start = jiffies;
+@@ -2117,8 +2117,8 @@ static inline void cfq_slice_expired(struct cfq_data *cfqd, bool timed_out)
+ static struct cfq_queue *cfq_get_next_queue(struct cfq_data *cfqd)
+ {
+ 	struct cfq_rb_root *service_tree =
+-		service_tree_for(cfqd->serving_group, cfqd->serving_class,
+-					cfqd->serving_type);
++		service_tree_for(cfqd->serving_group, cfqd->wl_class,
++						cfqd->wl_type);
  
- 	unsigned int charge, unaccounted_sl = 0, weight;
+ 	if (!cfqd->rq_queued)
+ 		return NULL;
+@@ -2522,20 +2522,20 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 	unsigned count;
  	struct cfq_rb_root *st;
-+	u64 vdisktime, boost;
+ 	unsigned group_slice;
+-	enum wl_class_t original_class = cfqd->serving_class;
++	enum wl_class_t original_class = cfqd->wl_class;
  
- 	st = st_for(cfqq->cfqg, cfqq_class(cfqq), cfqq_type(cfqq));
+ 	/* Choose next priority. RT > BE > IDLE */
+ 	if (cfq_group_busy_queues_wl(RT_WORKLOAD, cfqd, cfqg))
+-		cfqd->serving_class = RT_WORKLOAD;
++		cfqd->wl_class = RT_WORKLOAD;
+ 	else if (cfq_group_busy_queues_wl(BE_WORKLOAD, cfqd, cfqg))
+-		cfqd->serving_class = BE_WORKLOAD;
++		cfqd->wl_class = BE_WORKLOAD;
+ 	else {
+-		cfqd->serving_class = IDLE_WORKLOAD;
++		cfqd->wl_class = IDLE_WORKLOAD;
+ 		cfqd->workload_expires = jiffies + 1;
+ 		return;
+ 	}
  
-@@ -1659,8 +1692,11 @@ static u64 calc_cfqq_vdisktime(struct cfq_queue *cfqq, bool add_front,
- 		return st->min_vdisktime;
- 
- 	/* A new queue is being added. Just add it to end of service tree */
--	if (new_cfqq)
--		return calc_st_last_entry_vdisktime(st);
-+	if (new_cfqq) {
-+		vdisktime = calc_st_last_entry_vdisktime(st);
-+		boost = calc_cfqq_vdisktime_boost(st, cfqq);
-+		return max_t(u64, st->min_vdisktime, (vdisktime - boost));
-+	}
+-	if (original_class != cfqd->serving_class)
++	if (original_class != cfqd->wl_class)
+ 		goto new_workload;
  
  	/*
- 	 * A queue is being requeued. If service tree has changed, then
-@@ -1675,7 +1711,9 @@ static u64 calc_cfqq_vdisktime(struct cfq_queue *cfqq, bool add_front,
+@@ -2543,7 +2543,7 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 	 * (SYNC, SYNC_NOIDLE, ASYNC), and to compute a workload
+ 	 * expiration time
  	 */
- 	weight = cfq_prio_to_weight(cfqq->ioprio);
- 	charge = cfq_cfqq_slice_usage(cfqq, &unaccounted_sl);
--	return cfqq->vdisktime + cfq_scale_slice(charge, weight);
-+	vdisktime = cfqq->vdisktime + cfq_scale_slice(charge, weight);
-+	boost = calc_cfqq_vdisktime_boost(st, cfqq);
-+	return max_t(u64, st->min_vdisktime, (vdisktime - boost));
- }
+-	st = service_tree_for(cfqg, cfqd->serving_class, cfqd->serving_type);
++	st = service_tree_for(cfqg, cfqd->wl_class, cfqd->wl_type);
+ 	count = st->count;
  
- static void __cfq_st_add(struct cfq_queue *cfqq, bool add_front)
+ 	/*
+@@ -2554,9 +2554,8 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 
+ new_workload:
+ 	/* otherwise select new workload type */
+-	cfqd->serving_type =
+-		cfq_choose_wl(cfqd, cfqg, cfqd->serving_class);
+-	st = service_tree_for(cfqg, cfqd->serving_class, cfqd->serving_type);
++	cfqd->wl_type = cfq_choose_wl(cfqd, cfqg, cfqd->wl_class);
++	st = service_tree_for(cfqg, cfqd->wl_class, cfqd->wl_type);
+ 	count = st->count;
+ 
+ 	/*
+@@ -2567,11 +2566,11 @@ new_workload:
+ 	group_slice = cfq_group_slice(cfqd, cfqg);
+ 
+ 	slice = group_slice * count /
+-		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_class],
+-		      cfq_group_busy_queues_wl(cfqd->serving_class, cfqd,
++		max_t(unsigned, cfqg->busy_queues_avg[cfqd->wl_class],
++		      cfq_group_busy_queues_wl(cfqd->wl_class, cfqd,
+ 					cfqg));
+ 
+-	if (cfqd->serving_type == ASYNC_WORKLOAD) {
++	if (cfqd->wl_type == ASYNC_WORKLOAD) {
+ 		unsigned int tmp;
+ 
+ 		/*
+@@ -2617,10 +2616,10 @@ static void cfq_choose_cfqg(struct cfq_data *cfqd)
+ 	cfqd->serving_group = cfqg;
+ 
+ 	/* Restore the workload type data */
+-	if (cfqg->saved_workload_slice) {
+-		cfqd->workload_expires = jiffies + cfqg->saved_workload_slice;
+-		cfqd->serving_type = cfqg->saved_workload;
+-		cfqd->serving_class = cfqg->saved_serving_class;
++	if (cfqg->saved_wl_slice) {
++		cfqd->workload_expires = jiffies + cfqg->saved_wl_slice;
++		cfqd->wl_type = cfqg->saved_wl_type;
++		cfqd->wl_class = cfqg->saved_wl_class;
+ 	} else
+ 		cfqd->workload_expires = jiffies - 1;
+ 
+@@ -3403,7 +3402,7 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
+ 		return true;
+ 
+ 	/* Allow preemption only if we are idling on sync-noidle tree */
+-	if (cfqd->serving_type == SYNC_NOIDLE_WORKLOAD &&
++	if (cfqd->wl_type == SYNC_NOIDLE_WORKLOAD &&
+ 	    cfqq_type(new_cfqq) == SYNC_NOIDLE_WORKLOAD &&
+ 	    new_cfqq->service_tree->count == 2 &&
+ 	    RB_EMPTY_ROOT(&cfqq->sort_list))
+@@ -3455,7 +3454,7 @@ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 	 * doesn't happen
+ 	 */
+ 	if (old_type != cfqq_type(cfqq))
+-		cfqq->cfqg->saved_workload_slice = 0;
++		cfqq->cfqg->saved_wl_slice = 0;
+ 
+ 	/*
+ 	 * Put the new queue at the front of the of the current list,
 -- 
 1.7.7.6
 
