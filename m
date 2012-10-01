@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab2JAXCm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:02:42 -0400
-Received: from 1wt.eu ([62.212.114.60]:35561 "EHLO 1wt.eu"
+	id S1757786Ab2JAXDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:03:46 -0400
+Received: from 1wt.eu ([62.212.114.60]:35683 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933151Ab2JAXCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:02:39 -0400
-Message-Id: <20121001225200.993302108@1wt.eu>
+	id S1752597Ab2JAXDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:03:44 -0400
+Message-Id: <20121001225158.929563132@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:17 +0200
+Date: Tue, 02 Oct 2012 00:52:28 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Davide Ciminaghi <ciminaghi@gnudd.com>,
-        Raffaele Recalcati <raffaele.recalcati@bticino.it>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable@kernel.org, Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Ming Lei <tom.leiming@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 080/180] net/ethernet: ks8851_mll fix rx frame buffer overflow
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 031/180] usbnet: increase URB reference count before usb_unlink_urb
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
+From: tom.leiming@gmail.com <tom.leiming@gmail.com>
 
-[ Upstream commit 8a9a0ea6032186e3030419262678d652b88bf6a8 ]
+commit 0956a8c20b23d429e79ff86d4325583fc06f9eb4 upstream.
 
-At the beginning of ks_rcv(), a for loop retrieves the
-header information relevant to all the frames stored
-in the mac's internal buffers. The number of pending
-frames is stored as an 8 bits field in KS_RXFCTR.
-If interrupts are disabled long enough to allow for more than
-32 frames to accumulate in the MAC's internal buffers, a buffer
-overflow occurs.
-This patch fixes the problem by making the
-driver's frame_head_info buffer big enough.
-Well actually, since the chip appears to have 12K of
-internal rx buffers and the shortest ethernet frame should
-be 64 bytes long, maybe the limit could be set to
-12*1024/64 = 192 frames, but 255 should be safer.
+Commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d(net/usbnet: avoid
+recursive locking in usbnet_stop()) fixes the recursive locking
+problem by releasing the skb queue lock, but it makes usb_unlink_urb
+racing with defer_bh, and the URB to being unlinked may be freed before
+or during calling usb_unlink_urb, so use-after-free problem may be
+triggerd inside usb_unlink_urb.
 
-Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
-Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
+The patch fixes the use-after-free problem by increasing URB
+reference count with skb queue lock held before calling
+usb_unlink_urb, so the URB won't be freed until return from
+usb_unlink_urb.
+
+Cc: stable@kernel.org
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Oliver Neukum <oliver@neukum.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/net/ks8851_mll.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/usb/usbnet.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ks8851_mll.c b/drivers/net/ks8851_mll.c
-index c0ceebc..4e3a69c 100644
---- a/drivers/net/ks8851_mll.c
-+++ b/drivers/net/ks8851_mll.c
-@@ -35,7 +35,7 @@
- #define	DRV_NAME	"ks8851_mll"
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index da33dce..a92a415 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -584,6 +584,14 @@ static int unlink_urbs (struct usbnet *dev, struct sk_buff_head *q)
+ 		entry = (struct skb_data *) skb->cb;
+ 		urb = entry->urb;
  
- static u8 KS_DEFAULT_MAC_ADDRESS[] = { 0x00, 0x10, 0xA1, 0x86, 0x95, 0x11 };
--#define MAX_RECV_FRAMES			32
-+#define MAX_RECV_FRAMES			255
- #define MAX_BUF_SIZE			2048
- #define TX_BUF_SIZE			2000
- #define RX_BUF_SIZE			2000
++		/*
++		 * Get reference count of the URB to avoid it to be
++		 * freed during usb_unlink_urb, which may trigger
++		 * use-after-free problem inside usb_unlink_urb since
++		 * usb_unlink_urb is always racing with .complete
++		 * handler(include defer_bh).
++		 */
++		usb_get_urb(urb);
+ 		spin_unlock_irqrestore(&q->lock, flags);
+ 		// during some PM-driven resume scenarios,
+ 		// these (async) unlinks complete immediately
+@@ -592,6 +600,7 @@ static int unlink_urbs (struct usbnet *dev, struct sk_buff_head *q)
+ 			devdbg (dev, "unlink urb err, %d", retval);
+ 		else
+ 			count++;
++		usb_put_urb(urb);
+ 		spin_lock_irqsave(&q->lock, flags);
+ 	}
+ 	spin_unlock_irqrestore (&q->lock, flags);
 -- 
 1.7.2.1.45.g54fbc
 
