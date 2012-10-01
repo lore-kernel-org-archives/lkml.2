@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab2JAWUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 18:20:31 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:48190
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	id S1757557Ab2JAWVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 18:21:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55693 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757467Ab2JAWUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 18:20:06 -0400
-X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Oct 2012 18:20:01 EDT
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: [PATCH net,3/3] hyperv: Fix page buffer handling in rndis_filter_send_request()
-Date: Mon,  1 Oct 2012 15:30:57 -0700
-Message-Id: <1349130657-7987-3-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1349130657-7987-1-git-send-email-haiyangz@microsoft.com>
-References: <1349130657-7987-1-git-send-email-haiyangz@microsoft.com>
+	id S1752875Ab2JAWVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 18:21:24 -0400
+Date: Tue, 2 Oct 2012 00:21:16 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: linux-next: manual merge of the trivial tree with the mfd tree
+In-Reply-To: <20120912134349.f1dd0f4d050dd4834623e57b@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1210020018340.23544@pobox.suse.cz>
+References: <20120912134349.f1dd0f4d050dd4834623e57b@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add another page buffer if the request message crossed page boundary.
+On Wed, 12 Sep 2012, Stephen Rothwell wrote:
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> Hi Jiri,
+> 
+> Today's linux-next merge of the trivial tree got a conflict in
+> drivers/video/backlight/88pm860x_bl.c between commit a6ccdcd98c39 ("mfd:
+> 88pm860x: Use REG resource for backlight") from the mfd tree and commit
+> e1c9ac420ef1 ("Revert "backlight: fix memory leak on obscure error
+> path"") from the trivial tree.
+> 
+> I just used the version from the mfd tree and can carry the fix as
+> necessary (no action is required).
 
----
- drivers/net/hyperv/rndis_filter.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
+Samuel,
 
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 2909dd8..1cd8d45 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -45,7 +45,9 @@ struct rndis_request {
- 
- 	/* Simplify allocation by having a netvsc packet inline */
- 	struct hv_netvsc_packet	pkt;
--	struct hv_page_buffer buf;
-+	/* Set 2 pages for rndis requests crossing page boundary */
-+	struct hv_page_buffer buf[2];
-+
- 	/* FIXME: We assumed a fixed size request here. */
- 	struct rndis_message request_msg;
- 	u8 ext[100];
-@@ -221,6 +223,18 @@ static int rndis_filter_send_request(struct rndis_device *dev,
- 	packet->page_buf[0].offset =
- 		(unsigned long)&req->request_msg & (PAGE_SIZE - 1);
- 
-+	/* Add one page_buf when request_msg crossing page boundary */
-+	if (packet->page_buf[0].offset + packet->page_buf[0].len > PAGE_SIZE) {
-+		packet->page_buf_cnt++;
-+		packet->page_buf[0].len = PAGE_SIZE -
-+			packet->page_buf[0].offset;
-+		packet->page_buf[1].pfn = virt_to_phys((void *)&req->request_msg
-+			+ packet->page_buf[0].len) >> PAGE_SHIFT;
-+		packet->page_buf[1].offset = 0;
-+		packet->page_buf[1].len = req->request_msg.msg_len -
-+			packet->page_buf[0].len;
-+	}
-+
- 	packet->completion.send.send_completion_ctx = req;/* packet; */
- 	packet->completion.send.send_completion =
- 		rndis_filter_send_request_completion;
+Linus has just pulled from trivial.git, so could you please make sure this 
+is taken care of (*) in your next pull request? Thanks a lot!
+
+(*) either by resolving the conflict in your tree first, or mentioning it 
+explicitly in your pull request to Linus.
+
 -- 
-1.7.4.1
-
+Jiri Kosina
+SUSE Labs
