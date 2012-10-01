@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203Ab2JAROs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 13:14:48 -0400
-Received: from shutemov.name ([176.9.204.213]:59630 "EHLO shutemov.name"
+	id S1751285Ab2JAROx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 13:14:53 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:47042 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068Ab2JAROq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 13:14:46 -0400
-Date: Mon, 1 Oct 2012 20:15:19 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 0/3] Virtual huge zero page
-Message-ID: <20121001171519.GA20915@shutemov.name>
-References: <1348875441-19561-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120929134811.GC26989@redhat.com>
- <5069B804.6040902@linux.intel.com>
- <20121001163118.GC18051@redhat.com>
- <5069CCF9.7040309@linux.intel.com>
+	id S1751068Ab2JAROu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 13:14:50 -0400
+Date: Mon, 1 Oct 2012 12:10:03 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Peter.Huewe@infineon.com, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH] TPM: Issue TPM_STARTUP at driver load if
+ the TPM has not been started
+Message-ID: <20121001171003.GA1117@ennui.austin.ibm.com>
+References: <20120930233012.GH30637@obsidianresearch.com>
+ <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
+ <20121001161536.GC31620@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5069CCF9.7040309@linux.intel.com>
+In-Reply-To: <20121001161536.GC31620@obsidianresearch.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12100117-1976-0000-0000-000011E6546D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 10:03:53AM -0700, H. Peter Anvin wrote:
-> On 10/01/2012 09:31 AM, Andrea Arcangeli wrote:
-> > On Mon, Oct 01, 2012 at 08:34:28AM -0700, H. Peter Anvin wrote:
-> >> On 09/29/2012 06:48 AM, Andrea Arcangeli wrote:
-> >>>
-> >>> There would be a small cache benefit here... but even then some first
-> >>> level caches are virtually indexed IIRC (always physically tagged to
-> >>> avoid the software to notice) and virtually indexed ones won't get any
-> >>> benefit.
-> >>>
-> >>
-> >> Not quite.  The virtual indexing is limited to a few bits (e.g. three
-> >> bits on K8); the right way to deal with that is to color the zeropage,
-> >> both the regular one and the virtual one (the virtual one would circle
-> >> through all the colors repeatedly.)
-> >>
-> >> The cache difference, therefore, is *huge*.
+On Mon, Oct 01, 2012 at 10:15:36AM -0600, Jason Gunthorpe wrote:
+> On Mon, Oct 01, 2012 at 09:17:28AM +0000, Peter.Huewe@infineon.com wrote:
+> > Hi Jason,
 > > 
-> > Kirill measured the cache benefit and it provided a 6% gain, not very
-> > huge but certainly significant.
+> > > The TPM will respond to TPM_GET_CAP with TPM_ERR_INVALID_POSTINIT if
+> > > TPM_STARTUP has not been issued. This will result in the TPM driver
+> > > failing to load and no way to recover. Detect this and automatically
+> > > issue TPM_STARTUP.
 > > 
-> >> It's a performance tradeoff, and it can, and should, be measured.
+> > > This is for embedded applications where the kernel is the first thing
+> > > to touch the TPM.
 > > 
-> > I now measured the other side of the trade, by touching only one
-> > character every 4k page in the range to simulate a very seeking load,
-> > and doing so the physical huge zero page wins with a 600% margin, so
-> > if the cache benefit is huge for the virtual zero page, the TLB
-> > benefit is massive for the physical zero page.
+> > Thanks for working on this.
+> > I also thought about this scenario quite often.
 > > 
-> > Overall I think picking the solution that risks to regress the least
-> > (also compared to current status of no zero page) is the safest.
-> > 
+> > Shouldn't we then also add a TpmStartup(ST_STATE) in case of a resume?
+> >  rc=GetCapability()
+> >  if(rc==INVALID_POSTINIT)
+> >  	tpm_transmit ("TPM_STARTUP(ST_STATE)")...
 > 
-> Something isn't quite right about that.  If you look at your numbers:
+> I'm not familiar enough with how the power management flow works with
+> the TPM to do this. I don't think that can be the general case
+> because:
 > 
-> 1,049,134,961 LLC-loads
->         6,222 LLC-load-misses
+> 3. If stType = TPM_ST_STATE
+>   a. If the TPM has no state to restore, the TPM MUST set the internal
+>      state such that it returns TPM_FAILEDSELFTEST to all subsequent
+>      commands.
 > 
-> This is another way of saying in your benchmark the huge zero page is
-> parked in your LLC - using up 2 MB of your LLC, typically a significant
-> portion of said cache.  In a real-life application that will squeeze out
-> real data, but in your benchmark the system is artificially quiescent.
-> 
-> It is well known that microbenchmarks can be horribly misleading.  What
-> led to Kirill investigating huge zero page in the first place was the
-> fact that some applications/macrobenchmarks benefit, and I think those
-> are the right thing to look at.
+> So you need to know a save state exists in the TPM before attempting
+> the command?
 
-I think performance is not the first thing we should look at. We need to
-choose which implementation is easier to support.
+ Presumably we'd have called TPM_SaveState on suspend. It might be
+possible to set a flag based on whether we needed to call startup at
+init time that tells the driver to call save/restore state during
+suspend/resume.
 
-Applications which benefit from zero page are quite rare. We need to
-provide a huge zero page to avoid huge memory consumption with THP.
-That's it. Performance optimization for that rare case is overkill.
+Kent
 
--- 
- Kirill A. Shutemov
+> Would you agree that CLEAR is appropriate for an initial driver
+> attach on probe?
+> 
+> Jason
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
