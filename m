@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758379Ab2JAXRh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:17:37 -0400
-Received: from 1wt.eu ([62.212.114.60]:35450 "EHLO 1wt.eu"
+	id S1758458Ab2JAXSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:18:01 -0400
+Received: from 1wt.eu ([62.212.114.60]:35439 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933036Ab2JAXBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:01:53 -0400
-Message-Id: <20121001225205.117322009@1wt.eu>
+	id S932924Ab2JAXBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:01:51 -0400
+Message-Id: <20121001225201.671529475@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:54 +0200
+Date: Tue, 02 Oct 2012 00:53:33 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Tony Luck <tony.luck@intel.com>, Theodore Tso <tytso@mit.edu>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Hugh Dickins <hugh@veritas.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Badari Pulavarty <pbadari@us.ibm.com>, Nick Piggin <npiggin@suse.de>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 177/180] random: Add comment to random_initialize()
+Subject: [ 096/180] mm: Hold a file reference in madvise_remove
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,54 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit cbc96b7594b5691d61eba2db8b2ea723645be9ca upstream.
+commit 9ab4233dd08036fe34a89c7dc6f47a8bf2eb29eb upstream.
 
-Many platforms have per-machine instance data (serial numbers,
-asset tags, etc.) squirreled away in areas that are accessed
-during early system bringup. Mixing this data into the random
-pools has a very high value in providing better random data,
-so we should allow (and even encourage) architecture code to
-call add_device_randomness() from the setup_arch() paths.
+Otherwise the code races with munmap (causing a use-after-free
+of the vma) or with close (causing a use-after-free of the struct
+file).
 
-However, this limits our options for internal structure of
-the random driver since random_initialize() is not called
-until long after setup_arch().
+The bug was introduced by commit 90ed52ebe481 ("[PATCH] holepunch: fix
+mmap_sem i_mutex deadlock")
 
-Add a big fat comment to rand_initialize() spelling out
-this requirement.
+[bwh: Backported to 3.2:
+ - Adjust context
+ - madvise_remove() calls vmtruncate_range(), not do_fallocate()]
+[luto: Backported to 3.0: Adjust context]
 
-Suggested-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Hugh Dickins <hugh@veritas.com>
+Cc: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Badari Pulavarty <pbadari@us.ibm.com>
+Cc: Nick Piggin <npiggin@suse.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/char/random.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ mm/madvise.c |   16 +++++++++++++---
+ 1 files changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index cbb63b0..446b20a 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1077,6 +1077,16 @@ static void init_std_data(struct entropy_store *r)
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
- }
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 35b1479..e405c5f 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -12,6 +12,7 @@
+ #include <linux/hugetlb.h>
+ #include <linux/sched.h>
+ #include <linux/ksm.h>
++#include <linux/file.h>
  
-+/*
-+ * Note that setup_arch() may call add_device_randomness()
-+ * long before we get here. This allows seeding of the pools
-+ * with some platform dependent data very early in the boot
-+ * process. But it limits our options here. We must use
-+ * statically allocated structures that already have all
-+ * initializations complete at compile time. We should also
-+ * take care not to overwrite the precious per platform data
-+ * we were given.
-+ */
- static int rand_initialize(void)
- {
- 	init_std_data(&input_pool);
+ /*
+  * Any behaviour which results in changes to the vma->vm_flags needs to
+@@ -190,14 +191,16 @@ static long madvise_remove(struct vm_area_struct *vma,
+ 	struct address_space *mapping;
+ 	loff_t offset, endoff;
+ 	int error;
++	struct file *f;
+ 
+ 	*prev = NULL;	/* tell sys_madvise we drop mmap_sem */
+ 
+ 	if (vma->vm_flags & (VM_LOCKED|VM_NONLINEAR|VM_HUGETLB))
+ 		return -EINVAL;
+ 
+-	if (!vma->vm_file || !vma->vm_file->f_mapping
+-		|| !vma->vm_file->f_mapping->host) {
++	f = vma->vm_file;
++
++	if (!f || !f->f_mapping || !f->f_mapping->host) {
+ 			return -EINVAL;
+ 	}
+ 
+@@ -211,9 +214,16 @@ static long madvise_remove(struct vm_area_struct *vma,
+ 	endoff = (loff_t)(end - vma->vm_start - 1)
+ 			+ ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+ 
+-	/* vmtruncate_range needs to take i_mutex and i_alloc_sem */
++	/*
++	 * vmtruncate_range may need to take i_mutex and i_alloc_sem.
++	 * We need to explicitly grab a reference because the vma (and
++	 * hence the vma's reference to the file) can go away as soon as
++	 * we drop mmap_sem.
++	 */
++	get_file(f);
+ 	up_read(&current->mm->mmap_sem);
+ 	error = vmtruncate_range(mapping->host, offset, endoff);
++	fput(f);
+ 	down_read(&current->mm->mmap_sem);
+ 	return error;
+ }
 -- 
 1.7.2.1.45.g54fbc
 
