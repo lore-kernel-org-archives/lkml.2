@@ -1,236 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab2JAQzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 12:55:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58656 "EHLO mga09.intel.com"
+	id S1753590Ab2JARAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 13:00:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44504 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753091Ab2JAQzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 12:55:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,517,1344236400"; 
-   d="scan'208";a="200272955"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH] usb hub: send clear_tt_buffer_complete events when canceling TT clear work
-Date: Mon,  1 Oct 2012 20:01:53 +0300
-Message-Id: <1349110913-22931-1-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1753509Ab2JARAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 13:00:49 -0400
+Date: Mon, 1 Oct 2012 19:00:46 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        devel@openvz.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC 1/4] memcg: provide root figures from system totals
+Message-ID: <20121001170046.GC24860@dhcp22.suse.cz>
+References: <1348563173-8952-1-git-send-email-glommer@parallels.com>
+ <1348563173-8952-2-git-send-email-glommer@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348563173-8952-2-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race condition in the USB hub code with regard to handling
-TT clear requests that can get the HCD driver in a deadlock. Usually
-when an TT clear request is scheduled it will be executed immediately:
+On Tue 25-09-12 12:52:50, Glauber Costa wrote:
+> For the root memcg, there is no need to rely on the res_counters.
 
-<7>[    6.077583] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
-<3>[    6.078041] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
-<7>[    6.078299] hub_tt_work:731
-<7>[    9.309089] usb 2-1.5: link qh1-0e01/f4d506c0 start 0 [1/2 us]
-<7>[    9.324526] ehci_hcd 0000:00:1d.0: reused qh f4d4db00 schedule
-<7>[    9.324539] usb 2-1.3: link qh1-0e01/f4d4db00 start 0 [1/2 us]
-<7>[    9.341530] usb 1-1.1: link qh4-0e01/f397aec0 start 2 [1/2 us]
-<7>[   10.116159] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
-<3>[   10.116459] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
-<7>[   10.116537] hub_tt_work:731
+This is true only if there are no children groups but once there is at
+least one we have to move global statistics into root res_counter and
+start using it since then. This is a tricky part because it has to be
+done atomically so that we do not miss anything.
 
-However, if a suspend operation is triggered before hub_tt_work is
-scheduled, hub_quiesce will cancel the work without notifying the HCD
-driver:
+> The sum of all mem cgroups plus the tasks in root itself, is necessarily
+> the amount of memory used for the whole system. Since those figures are
+> already kept somewhere anyway, we can just return them here, without too
+> much hassle.
+> 
+> The limit can't be set for the root cgroup, so it is left at 0. 
 
-<3>[   35.033941] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d80
-<5>[   35.034022] sd 0:0:0:0: [sda] Stopping disk
-<7>[   35.034039] hub 2-1:1.0: hub_suspend
-<7>[   35.034067] usb 2-1: unlink qh256-0001/f3b1ab00 start 1 [1/0 us]
-<7>[   35.035085] hub 1-0:1.0: hub_suspend
-<7>[   35.035102] usb usb1: bus suspend, wakeup 0
-<7>[   35.035106] ehci_hcd 0000:00:1a.0: suspend root hub
-<7>[   35.035298] hub 2-0:1.0: hub_suspend
-<7>[   35.035313] usb usb2: bus suspend, wakeup 0
-<7>[   35.035315] ehci_hcd 0000:00:1d.0: suspend root hub
-<6>[   35.250017] PM: suspend of devices complete after 216.979 msecs
-<6>[   35.250822] PM: late suspend of devices complete after 0.799 msecs
-<7>[   35.252343] ehci_hcd 0000:00:1d.0: wakeup: 1
-<7>[   35.262923] ehci_hcd 0000:00:1d.0: --> PCI D3hot
-<7>[   35.263302] ehci_hcd 0000:00:1a.0: wakeup: 1
-<7>[   35.273912] ehci_hcd 0000:00:1a.0: --> PCI D3hot
-<6>[   35.274254] PM: noirq suspend of devices complete after 23.442 msecs
-<6>[   35.274975] ACPI: Preparing to enter system sleep state S3
-<6>[   35.292666] PM: Saving platform NVS memory
-<7>[   35.295030] Disabling non-boot CPUs ...
-<6>[   35.297351] CPU 1 is now offline
-<6>[   35.300345] CPU 2 is now offline
-<6>[   35.303929] CPU 3 is now offline
-<7>[   35.303931] lockdep: fixing up alternatives.
-<6>[   35.304825] Extended CMOS year: 2000
+You meant RESOURCE_MAX, didn't you?
 
-When the device will resume the EHCI driver will get stuck in
-ehci_endpoint_disable waiting for the tt_clearing flag to reset:
+> Same is
+> true for failcnt, because its actual meaning is how many times we failed
+> allocations due to the limit being hit. We will fail allocations in the
+> root cgroup, but the limit will never the reason.
+> 
+> TODO includes figuring out what to do with the soft limit and max_usage.
+> Comments and suggestions appreciated.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Mel Gorman <mgorman@suse.de>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  mm/memcontrol.c | 45 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 45 insertions(+)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 82c5b8f..bac398b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4506,6 +4506,45 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
+>  	return val << PAGE_SHIFT;
+>  }
+>  
+> +static u64 mem_cgroup_read_root(struct mem_cgroup *memcg, enum res_type type, int name)
+> +{
+> +	struct sysinfo i;
+> +        unsigned long pages[NR_LRU_LISTS];
+> +        int lru;
+> +
+> +	si_meminfo(&i);
+> +	si_swapinfo(&i);
+> +
+> +	if (name == RES_LIMIT)
+> +		return RESOURCE_MAX;
+> +	if (name == RES_SOFT_LIMIT)
+> +		return 0;
+> +	if (name == RES_FAILCNT)
+> +		return 0;
+> +	if (name == RES_MAX_USAGE)
+> +		return 0;
+> +
+> +	if (WARN_ON_ONCE(name != RES_USAGE))
+> +		return 0;
+> +
+> +	for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
+> +		pages[lru] = global_page_state(NR_LRU_BASE + lru);
+> +
+> +	switch (type) {
+> +	case _MEM:
+> +                return pages[LRU_ACTIVE_ANON]   + pages[LRU_ACTIVE_FILE] +
+> +			pages[LRU_INACTIVE_ANON] + pages[LRU_INACTIVE_FILE];
+> +	case _MEMSWAP:
+> +                return pages[LRU_ACTIVE_ANON]   + pages[LRU_ACTIVE_FILE] +
+> +			pages[LRU_INACTIVE_ANON] + pages[LRU_INACTIVE_FILE] +
+> +			i.totalswap - i.freeswap;
+> +	case _KMEM:
+> +		return 0;
+> +	default:
+> +		BUG();
+> +	};
+> +}
+> +
+>  static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+>  			       struct file *file, char __user *buf,
+>  			       size_t nbytes, loff_t *ppos)
+> @@ -4522,6 +4561,11 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+>  	if (!do_swap_account && type == _MEMSWAP)
+>  		return -EOPNOTSUPP;
+>  
+> +	if (mem_cgroup_is_root(memcg)) {
+> +		val = mem_cgroup_read_root(memcg, type, name);
+> +		goto root_bypass;
+> +	}
+> +
+>  	switch (type) {
+>  	case _MEM:
+>  		if (name == RES_USAGE)
+> @@ -4542,6 +4586,7 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+>  		BUG();
+>  	}
+>  
+> +root_bypass:
+>  	len = scnprintf(str, sizeof(str), "%llu\n", (unsigned long long)val);
+>  	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
+>  }
+> -- 
+> 1.7.11.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-<0>[   47.610967] usb 2-1.3: **** DPM device timeout ****
-<7>[   47.610972]  f2f11c60 00000092 f2f11c0c c10624a5 00000003 f4c6e880 c1c8a4c0 c1c8a4c0
-<7>[   47.610983]  15c55698 0000000b f56b34c0 f2a45b70 f4c6e880 00000082 f2a4602c f2f11c30
-<7>[   47.610993]  c10787f8 f4cac000 f2a45b70 00000000 f4cac010 f2f11c58 00000046 00000001
-<7>[   47.611004] Call Trace:
-<7>[   47.611006]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
-<7>[   47.611019]  [<c10787f8>] ? lock_release_holdtime.part.22+0x88/0xf0
-<7>[   47.611026]  [<c103ed46>] ? lock_timer_base.isra.35+0x26/0x50
-<7>[   47.611034]  [<c17592d3>] ? schedule_timeout+0x133/0x290
-<7>[   47.611044]  [<c175b43e>] schedule+0x1e/0x50
-<7>[   47.611051]  [<c17592d8>] schedule_timeout+0x138/0x290
-<7>[   47.611057]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
-<7>[   47.611063]  [<c103e560>] ? usleep_range+0x40/0x40
-<7>[   47.611070]  [<c1759445>] schedule_timeout_uninterruptible+0x15/0x20
-<7>[   47.611077]  [<c14935f4>] ehci_endpoint_disable+0x64/0x160
-<7>[   47.611084]  [<c147d1ee>] ? usb_hcd_flush_endpoint+0x10e/0x1d0
-<7>[   47.611092]  [<c1165663>] ? sysfs_add_file+0x13/0x20
-<7>[   47.611100]  [<c147d5a9>] usb_hcd_disable_endpoint+0x29/0x40
-<7>[   47.611107]  [<c147fafc>] usb_disable_endpoint+0x5c/0x80
-<7>[   47.611111]  [<c147fb57>] usb_disable_interface+0x37/0x50
-<7>[   47.611116]  [<c1477650>] usb_reset_and_verify_device+0x4b0/0x640
-<7>[   47.611122]  [<c1474665>] ? hub_port_status+0xb5/0x100
-<7>[   47.611129]  [<c147a975>] usb_port_resume+0xd5/0x220
-<7>[   47.611136]  [<c148877f>] generic_resume+0xf/0x30
-<7>[   47.611142]  [<c14821a3>] usb_resume+0x133/0x180
-<7>[   47.611147]  [<c1473b10>] ? usb_dev_thaw+0x10/0x10
-<7>[   47.611152]  [<c1473b1d>] usb_dev_resume+0xd/0x10
-<7>[   47.611157]  [<c13baa60>] dpm_run_callback+0x40/0xb0
-<7>[   47.611164]  [<c13bdb03>] ? pm_runtime_enable+0x43/0x70
-<7>[   47.611171]  [<c13bafc6>] device_resume+0x1a6/0x2c0
-<7>[   47.611177]  [<c13ba940>] ? dpm_show_time+0xe0/0xe0
-<7>[   47.611183]  [<c13bb0f9>] async_resume+0x19/0x40
-<7>[   47.611189]  [<c10580c4>] async_run_entry_fn+0x64/0x160
-<7>[   47.611196]  [<c104a244>] ? process_one_work+0x104/0x480
-<7>[   47.611203]  [<c104a24c>] ? process_one_work+0x10c/0x480
-<7>[   47.611209]  [<c104a2c0>] process_one_work+0x180/0x480
-<7>[   47.611215]  [<c104a244>] ? process_one_work+0x104/0x480
-<7>[   47.611220]  [<c1058060>] ? async_schedule+0x10/0x10
-<7>[   47.611226]  [<c104c15c>] worker_thread+0x11c/0x2f0
-<7>[   47.611233]  [<c104c040>] ? manage_workers.isra.27+0x1f0/0x1f0
-<7>[   47.611239]  [<c10507f8>] kthread+0x78/0x80
-<7>[   47.611244]  [<c1750000>] ? timer_cpu_notify+0xd6/0x20d
-<7>[   47.611253]  [<c1050780>] ? __init_kthread_worker+0x60/0x60
-<7>[   47.611258]  [<c176357e>] kernel_thread_helper+0x6/0xd
-<7>[   47.611283] ------------[ cut here ]------------
-
-This patch notifies the HCD driver via clear_tt_buffer_complete
-when canceling TT clear work so that the EHCI driver has a chance to
-clear its tt_clearing flag.
-
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
----
- drivers/usb/core/hub.c |   64 ++++++++++++++++++++++++++++++-----------------
- 1 files changed, 41 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 128a804..83b07c2 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -711,43 +711,38 @@ resubmit:
- static inline int
- hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
- {
--	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
-+	int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
- 			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
- 			       tt, NULL, 0, 1000);
-+	if (status)
-+		dev_err(&hdev->dev, "clear tt %d (%04x) error %d\n",
-+			tt, devinfo, status);
-+
-+	return status;
- }
- 
--/*
-- * enumeration blocks khubd for a long time. we use keventd instead, since
-- * long blocking there is the exception, not the rule.  accordingly, HCDs
-- * talking to TTs must queue control transfers (not just bulk and iso), so
-- * both can talk to the same hub concurrently.
-- */
--static void hub_tt_work(struct work_struct *work)
-+static void hub_tt_run_list(struct usb_hub *hub, int limit, bool do_clear)
- {
--	struct usb_hub		*hub =
--		container_of(work, struct usb_hub, tt.clear_work);
--	unsigned long		flags;
--	int			limit = 100;
-+	unsigned long flags, work = 0;
- 
--	spin_lock_irqsave (&hub->tt.lock, flags);
--	while (--limit && !list_empty (&hub->tt.clear_list)) {
-+	spin_lock_irqsave(&hub->tt.lock, flags);
-+	while (!list_empty(&hub->tt.clear_list)) {
- 		struct list_head	*next;
- 		struct usb_tt_clear	*clear;
- 		struct usb_device	*hdev = hub->hdev;
- 		const struct hc_driver	*drv;
--		int			status;
-+
-+		if (limit && ++work > limit)
-+			break;
- 
- 		next = hub->tt.clear_list.next;
- 		clear = list_entry (next, struct usb_tt_clear, clear_list);
--		list_del (&clear->clear_list);
-+		list_del(&clear->clear_list);
- 
- 		/* drop lock so HCD can concurrently report other TT errors */
- 		spin_unlock_irqrestore (&hub->tt.lock, flags);
--		status = hub_clear_tt_buffer (hdev, clear->devinfo, clear->tt);
--		if (status)
--			dev_err (&hdev->dev,
--				"clear tt %d (%04x) error %d\n",
--				clear->tt, clear->devinfo, status);
-+		if (do_clear)
-+			hub_clear_tt_buffer(hdev, clear->devinfo, clear->tt);
- 
- 		/* Tell the HCD, even if the operation failed */
- 		drv = clear->hcd->driver;
-@@ -757,7 +752,30 @@ static void hub_tt_work(struct work_struct *work)
- 		kfree(clear);
- 		spin_lock_irqsave(&hub->tt.lock, flags);
- 	}
--	spin_unlock_irqrestore (&hub->tt.lock, flags);
-+	spin_unlock_irqrestore(&hub->tt.lock, flags);
-+}
-+
-+/*
-+ * enumeration blocks khubd for a long time. we use keventd instead, since
-+ * long blocking there is the exception, not the rule.  accordingly, HCDs
-+ * talking to TTs must queue control transfers (not just bulk and iso), so
-+ * both can talk to the same hub concurrently.
-+ */
-+static void hub_tt_work(struct work_struct *work)
-+{
-+	struct usb_hub		*hub =
-+		container_of(work, struct usb_hub, tt.clear_work);
-+
-+	hub_tt_run_list(hub, 100, 1);
-+}
-+
-+static void hub_cancel_tt_work(struct usb_hub *hub)
-+{
-+	cancel_work_sync(&hub->tt.clear_work);
-+	/* Tell HCD drivers that TT work is complete even when
-+	 * canceling work otherwise they will wait forever for a
-+	 * clear_tt_buffer_complete event. */
-+	hub_tt_run_list(hub, 0, 0);
- }
- 
- /**
-@@ -1201,7 +1219,7 @@ static void hub_quiesce(struct usb_hub *hub, enum hub_quiescing_type type)
- 	if (hub->has_indicators)
- 		cancel_delayed_work_sync(&hub->leds);
- 	if (hub->tt.hub)
--		cancel_work_sync(&hub->tt.clear_work);
-+		hub_cancel_tt_work(hub);
- }
- 
- /* caller has locked the hub device */
 -- 
-1.7.5.4
-
+Michal Hocko
+SUSE Labs
