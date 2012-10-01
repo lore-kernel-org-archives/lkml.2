@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab2JANCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 09:02:09 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:35684 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab2JANCH (ORCPT
+	id S1753119Ab2JANEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 09:04:33 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58736 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab2JANEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 09:02:07 -0400
-Date: Mon, 1 Oct 2012 15:01:51 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: andrew.cooper3@citrix.com, xen-devel <xen-devel@lists.xen.org>,
-        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] x86/kexec: Add extra pointers to transition page
- table PGD, PUD, PMD and PTE
-Message-ID: <20121001130151.GC2942@host-192-168-1-59.local.net-space.pl>
-References: <1348769198-29580-1-git-send-email-daniel.kiper@oracle.com>
- <1348769198-29580-2-git-send-email-daniel.kiper@oracle.com>
- <1348769198-29580-3-git-send-email-daniel.kiper@oracle.com>
- <50657462020000780009E64A@nat28.tlf.novell.com>
+	Mon, 1 Oct 2012 09:04:32 -0400
+Date: Mon, 1 Oct 2012 15:04:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fix for v3.7
+Message-ID: <20121001130426.GA22347@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50657462020000780009E64A@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 08:56:50AM +0100, Jan Beulich wrote:
-> >>> On 27.09.12 at 20:06, Daniel Kiper <daniel.kiper@oracle.com> wrote:
-> > Some implementations (e.g. Xen PVOPS) could not use part of identity page
-> > table to construct transition page table. It means that they require separate
-> > PUDs, PMDs and PTEs for virtual and physical (identity) mapping. To satisfy that
-> > requirement add extra pointer to PGD, PUD, PMD and PTE and align existing
-> > code.
->
-> I'm puzzled by this - why would you need to reintroduce what had
-> been dropped a long time ago, when the forward ported kernels
-> don't need it? Xen itself doesn't need the extra entries, their
-> presence is purely a requirement of the specific kernel
-> implementation afaict.
+Linus,
 
-Hmmm... I will try to optimize that a bit.
+Please pull the latest perf-urgent-for-linus git tree from:
 
-Daniel
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+
+   HEAD: 402537fd9f5499d1a50a6f20cdd9031d24ee2e47 perf/x86: Fix typo in uncore_pmu_to_box
+
+Leftover perf/urgent fix from the v3.6 cycle.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Yan, Zheng (1):
+      perf/x86: Fix typo in uncore_pmu_to_box
+
+
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 38e4894..c7c55e7 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1950,7 +1950,7 @@ struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type, int cp
+ static struct intel_uncore_box *
+ uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+ {
+-	static struct intel_uncore_box *box;
++	struct intel_uncore_box *box;
+ 
+ 	box = *per_cpu_ptr(pmu->box, cpu);
+ 	if (box)
