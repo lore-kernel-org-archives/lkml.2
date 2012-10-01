@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab2JAXCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:02:36 -0400
-Received: from 1wt.eu ([62.212.114.60]:35549 "EHLO 1wt.eu"
+	id S932539Ab2JAW7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 18:59:49 -0400
+Received: from 1wt.eu ([62.212.114.60]:35017 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933151Ab2JAXCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:02:31 -0400
-Message-Id: <20121001225200.951589835@1wt.eu>
+	id S1752479Ab2JAW7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 18:59:47 -0400
+Message-Id: <20121001225157.738708230@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:53:16 +0200
+Date: Tue, 02 Oct 2012 00:52:00 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Tony Zelenoff <antonz@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 079/180] atl1: fix kernel panic in case of DMA errors
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 003/180] powerpc/pmac: Fix SMP kernels on pre-core99 UP machines
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,107 +23,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Zelenoff <antonz@parallels.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-[ Upstream commit 03662e41c7cff64a776bfb1b3816de4be43de881 ]
+commit 78c5c68a4cf4329d17abfa469345ddf323d4fd62 upstream.
 
-Problem:
-There was two separate work_struct structures which share one
-handler. Unfortunately getting atl1_adapter structure from
-work_struct in case of DMA error was done from incorrect
-offset which cause kernel panics.
+The code for "powersurge" SMP would kick in and cause a crash
+at boot due to the lack of a NULL test.
 
-Solution:
-The useless work_struct for DMA error removed and
-handler name changed to more generic one.
+Adam Conrad reports that the 3.2 kernel, with CONFIG_SMP=y, will not
+boot on an OldWorld G3; we're unconditionally writing to psurge_start,
+but this is only set on powersurge machines.
 
-Signed-off-by: Tony Zelenoff <antonz@parallels.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+Reported-by: Adam Conrad <adconrad@ubuntu.com>
+Tested-by: Adam Conrad <adconrad@ubuntu.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/net/atlx/atl1.c |   12 +++++-------
- drivers/net/atlx/atl1.h |    3 +--
- drivers/net/atlx/atlx.c |    2 +-
- 3 files changed, 7 insertions(+), 10 deletions(-)
+ arch/powerpc/platforms/powermac/smp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
-index 403bfb6..adc862f 100644
---- a/drivers/net/atlx/atl1.c
-+++ b/drivers/net/atlx/atl1.c
-@@ -2478,7 +2478,7 @@ static irqreturn_t atl1_intr(int irq, void *data)
- 					"pcie phy link down %x\n", status);
- 			if (netif_running(adapter->netdev)) {	/* reset MAC */
- 				iowrite32(0, adapter->hw.hw_addr + REG_IMR);
--				schedule_work(&adapter->pcie_dma_to_rst_task);
-+				schedule_work(&adapter->reset_dev_task);
- 				return IRQ_HANDLED;
- 			}
- 		}
-@@ -2490,7 +2490,7 @@ static irqreturn_t atl1_intr(int irq, void *data)
- 					"pcie DMA r/w error (status = 0x%x)\n",
- 					status);
- 			iowrite32(0, adapter->hw.hw_addr + REG_IMR);
--			schedule_work(&adapter->pcie_dma_to_rst_task);
-+			schedule_work(&adapter->reset_dev_task);
- 			return IRQ_HANDLED;
- 		}
+diff --git a/arch/powerpc/platforms/powermac/smp.c b/arch/powerpc/platforms/powermac/smp.c
+index b40c22d..7f66d0c 100644
+--- a/arch/powerpc/platforms/powermac/smp.c
++++ b/arch/powerpc/platforms/powermac/smp.c
+@@ -402,7 +402,7 @@ static struct irqaction psurge_irqaction = {
  
-@@ -2635,10 +2635,10 @@ static void atl1_down(struct atl1_adapter *adapter)
- 	atl1_clean_rx_ring(adapter);
- }
- 
--static void atl1_tx_timeout_task(struct work_struct *work)
-+static void atl1_reset_dev_task(struct work_struct *work)
+ static void __init smp_psurge_setup_cpu(int cpu_nr)
  {
- 	struct atl1_adapter *adapter =
--		container_of(work, struct atl1_adapter, tx_timeout_task);
-+		container_of(work, struct atl1_adapter, reset_dev_task);
- 	struct net_device *netdev = adapter->netdev;
+-	if (cpu_nr != 0)
++	if (cpu_nr != 0 || !psurge_start)
+ 		return;
  
- 	netif_device_detach(netdev);
-@@ -3050,12 +3050,10 @@ static int __devinit atl1_probe(struct pci_dev *pdev,
- 		    (unsigned long)adapter);
- 	adapter->phy_timer_pending = false;
- 
--	INIT_WORK(&adapter->tx_timeout_task, atl1_tx_timeout_task);
-+	INIT_WORK(&adapter->reset_dev_task, atl1_reset_dev_task);
- 
- 	INIT_WORK(&adapter->link_chg_task, atlx_link_chg_task);
- 
--	INIT_WORK(&adapter->pcie_dma_to_rst_task, atl1_tx_timeout_task);
--
- 	err = register_netdev(netdev);
- 	if (err)
- 		goto err_common;
-diff --git a/drivers/net/atlx/atl1.h b/drivers/net/atlx/atl1.h
-index 146372f..0494e514 100644
---- a/drivers/net/atlx/atl1.h
-+++ b/drivers/net/atlx/atl1.h
-@@ -762,9 +762,8 @@ struct atl1_adapter {
- 	u16 link_speed;
- 	u16 link_duplex;
- 	spinlock_t lock;
--	struct work_struct tx_timeout_task;
-+	struct work_struct reset_dev_task;
- 	struct work_struct link_chg_task;
--	struct work_struct pcie_dma_to_rst_task;
- 
- 	struct timer_list phy_config_timer;
- 	bool phy_timer_pending;
-diff --git a/drivers/net/atlx/atlx.c b/drivers/net/atlx/atlx.c
-index 3dc0142..ce09b95 100644
---- a/drivers/net/atlx/atlx.c
-+++ b/drivers/net/atlx/atlx.c
-@@ -189,7 +189,7 @@ static void atlx_tx_timeout(struct net_device *netdev)
- {
- 	struct atlx_adapter *adapter = netdev_priv(netdev);
- 	/* Do the reset outside of interrupt context */
--	schedule_work(&adapter->tx_timeout_task);
-+	schedule_work(&adapter->reset_dev_task);
- }
- 
- /*
+ 	/* reset the entry point so if we get another intr we won't
 -- 
 1.7.2.1.45.g54fbc
 
