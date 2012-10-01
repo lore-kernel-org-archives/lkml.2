@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472Ab2JAW7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 18:59:33 -0400
-Received: from 1wt.eu ([62.212.114.60]:34959 "EHLO 1wt.eu"
+	id S932745Ab2JAXAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:00:49 -0400
+Received: from 1wt.eu ([62.212.114.60]:35215 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753239Ab2JAW71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 18:59:27 -0400
-Message-Id: <20121001225158.802435384@1wt.eu>
+	id S932707Ab2JAXAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:42 -0400
+Message-Id: <20121001225200.194544970@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:25 +0200
+Date: Tue, 02 Oct 2012 00:52:58 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Robert Richter <robert.richter@amd.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Junxiao Bi <junxiao.bi@oracle.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 028/180] oprofile: use KM_NMI slot for kmap_atomic
+Cc: Sasha Levin <levinsasha928@gmail.com>, johnstul@us.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 061/180] ntp: Fix integer overflow when setting time
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,44 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Sasha Levin <levinsasha928@gmail.com>
 
-If one kernel path is using KM_USER0 slot and is interrupted by
-the oprofile nmi, then in copy_from_user_nmi(), the KM_USER0 slot
-will be overwrite and cleared to zero at last, when the control
-return to the original kernel path, it will access an invalid
-virtual address and trigger a crash.
+commit a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33 upstream.
 
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: stable@vger.kernel.org
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+'long secs' is passed as divisor to div_s64, which accepts a 32bit
+divisor. On 64bit machines that value is trimmed back from 8 bytes
+back to 4, causing a divide by zero when the number is bigger than
+(1 << 32) - 1 and all 32 lower bits are 0.
 
-[WT: According to Junxiao and Robert, this patch is needed for stable kernels
- which include a backport of a0e3e70243f5b270bc3eca718f0a9fa5e6b8262e without
- 3e4d3af501cccdc8a8cca41bdbe57d54ad7e7e73, but there is no exact equivalent in
- mainline]
+Use div64_long() instead.
+
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Cc: johnstul@us.ibm.com
+Link: http://lkml.kernel.org/r/1331829374-31543-2-git-send-email-levinsasha928@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[WT: div64_long() does not exist on 2.6.32 and needs a deeper backport than
+ desired. Instead, address the issue by controlling that the divisor is
+ correct for use as an s32 divisor]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/oprofile/backtrace.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/time/ntp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-index 829edf0..b50a280 100644
---- a/arch/x86/oprofile/backtrace.c
-+++ b/arch/x86/oprofile/backtrace.c
-@@ -71,9 +71,9 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
- 		offset = addr & (PAGE_SIZE - 1);
- 		size = min(PAGE_SIZE - offset, n - len);
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index c1c36a2..26472a7 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -106,7 +106,7 @@ static inline s64 ntp_update_offset_fll(s64 offset64, long secs)
+ {
+ 	time_status &= ~STA_MODE;
  
--		map = kmap_atomic(page, KM_USER0);
-+		map = kmap_atomic(page, KM_NMI);
- 		memcpy(to, map+offset, size);
--		kunmap_atomic(map, KM_USER0);
-+		kunmap_atomic(map, KM_NMI);
- 		put_page(page);
+-	if (secs < MINSEC)
++	if ((s32)secs < MINSEC)
+ 		return 0;
  
- 		len  += size;
+ 	if (!(time_status & STA_FLL) && (secs <= MAXSEC))
 -- 
 1.7.2.1.45.g54fbc
 
