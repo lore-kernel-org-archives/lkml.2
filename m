@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab2JAMbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 08:31:00 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:54515 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab2JAMa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 08:30:59 -0400
-Message-ID: <50698C2F.5090208@parallels.com>
-Date: Mon, 1 Oct 2012 16:27:27 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752772Ab2JAMcZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 08:32:25 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54638 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab2JAMcY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 08:32:24 -0400
+Date: Mon, 1 Oct 2012 08:32:42 -0400
+From: Matt Porter <mporter@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 4/7] ARM: davinci: Add support for an L3RAM gen_pool
+Message-ID: <20121001123242.GJ5641@beef>
+References: <1348861072-14507-1-git-send-email-mporter@ti.com>
+ <1348861072-14507-5-git-send-email-mporter@ti.com>
+ <506986B2.1030000@ti.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 10/13] memcg: use static branches when code not in
- use
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-11-git-send-email-glommer@parallels.com> <20121001122516.GH8622@dhcp22.suse.cz>
-In-Reply-To: <20121001122516.GH8622@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <506986B2.1030000@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2012 04:25 PM, Michal Hocko wrote:
-> On Tue 18-09-12 18:04:07, Glauber Costa wrote:
-> [...]
->>  include/linux/memcontrol.h |  4 +++-
->>  mm/memcontrol.c            | 26 ++++++++++++++++++++++++--
->>  2 files changed, 27 insertions(+), 3 deletions(-)
->>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 82ede9a..4ec9fd5 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -22,6 +22,7 @@
->>  #include <linux/cgroup.h>
->>  #include <linux/vm_event_item.h>
->>  #include <linux/hardirq.h>
->> +#include <linux/jump_label.h>
->>  
->>  struct mem_cgroup;
->>  struct page_cgroup;
->> @@ -401,9 +402,10 @@ struct sock;
->>  void sock_update_memcg(struct sock *sk);
->>  void sock_release_memcg(struct sock *sk);
->>  
->> +extern struct static_key memcg_kmem_enabled_key;
->>  static inline bool memcg_kmem_enabled(void)
->>  {
->> -	return true;
->> +	return static_key_false(&memcg_kmem_enabled_key);
->>  }
->>  
->>  extern bool __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg,
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 720e4bb..aada601 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -467,6 +467,8 @@ struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
->>  #include <net/sock.h>
->>  #include <net/ip.h>
->>  
->> +struct static_key memcg_kmem_enabled_key;
->> +
->>  static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
->>  static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size);
->>  static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size);
->> @@ -624,6 +626,16 @@ void __memcg_kmem_uncharge_page(struct page *page, int order)
->>  	WARN_ON(mem_cgroup_is_root(memcg));
->>  	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
->>  }
->> +
->> +static void disarm_kmem_keys(struct mem_cgroup *memcg)
->> +{
->> +	if (memcg_kmem_is_accounted(memcg))
->> +		static_key_slow_dec(&memcg_kmem_enabled_key);
->> +}
->> +#else
->> +static void disarm_kmem_keys(struct mem_cgroup *memcg)
->> +{
->> +}
->>  #endif /* CONFIG_MEMCG_KMEM */
->>  
->>  #if defined(CONFIG_INET) && defined(CONFIG_MEMCG_KMEM)
->> @@ -639,6 +651,12 @@ static void disarm_sock_keys(struct mem_cgroup *memcg)
->>  }
->>  #endif
->>  
->> +static void disarm_static_keys(struct mem_cgroup *memcg)
->> +{
->> +	disarm_sock_keys(memcg);
->> +	disarm_kmem_keys(memcg);
->> +}
->> +
->>  static void drain_all_stock_async(struct mem_cgroup *memcg);
->>  
->>  static struct mem_cgroup_per_zone *
->> @@ -4131,7 +4149,11 @@ static void memcg_update_kmem_limit(struct mem_cgroup *memcg, u64 val)
->>  	 */
->>  	mutex_lock(&set_limit_mutex);
->>  	if ((val != RESOURCE_MAX) && memcg_kmem_set_active(memcg)) {
->> -
->> +		/*
->> +		 * Once the static branch is enabled it will only be
->> +		 * disabled when the last reference to memcg is gone.
->> +		 */
->> +		static_key_slow_inc(&memcg_kmem_enabled_key);
+On Mon, Oct 01, 2012 at 05:34:02PM +0530, Sekhar Nori wrote:
+> Hi Matt,
 > 
-> I guess the reason why we do not need to inc also for children is that
-> we do not inherit kmem_accounted, right?
+> On 9/29/2012 1:07 AM, Matt Porter wrote:
+> > L3RAM (shared SRAM) is needed for use by several drivers.
+> > This creates a genalloc pool and a hook for the platform code
+> > to provide the struct gen_pool * in platform data.
+> > 
+> > Signed-off-by: Matt Porter <mporter@ti.com>
 > 
+> I am not sure if any of the DaVinci devices have a need to allocate from
+> *both* ARM RAM and shared RAM. Shared RAM is not present on all DaVinci
+> devices AFAIR, and on DA850, there is just 8KB ARM RAM so I am not sure
+> if there is much point in trying to allocate from there.
+> 
+> Can you instead see if Ben's earlier patch[1] to use shared RAM for SRAM
+> allocation on DA850 makes sense for your case? If yes, can you repost
+> with Ben's patch included in your series instead of this patch? I would
+> prefer that over creating a new pool for shared RAM.
 
-Yes, but I of course changed that in the upcoming version of the patch.
-We now inherit the value everytime, and the static branches are updated
-accordingly.
+Hrm, I did look at Ben's earlier patch. The reason I added a separate
+pool mostly was so I didn't have to touch the PM code at all. That can
+continue using the private SRAM API with the ARM RAM as it is now. The
+idea here was to allow that to be separate since no other bus masters
+can access the ARM RAM anyway and do something that didn't require
+regression testing PM. Also, I figured there's really no reason to use
+even a tiny bit of the shared SRAM on PM if we have that ARM RAM there
+and working fine for that use case.
 
+The other thing is that Ben's patch needs to be rewritten to at least
+have the hook I added so we can provide the gen_pool in platform data.
+If you prefer this path still, I can add the needed hook on top of his
+original patch. Ultimately, I only *need* genalloc support for the
+shared sram so I can remove the private SRAM API from uio_pruss...so I'm
+happy with any way to get at it.
+
+Oh, and to be honest...it's not just for uio_pruss, but also to cleanly
+remove the private SRAM API usage from the davinci ASoC driver too.
+
+Thanks,
+Matt
