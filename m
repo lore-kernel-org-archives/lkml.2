@@ -1,39 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab2JAV4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 17:56:46 -0400
-Received: from caesar.teilar.gr ([195.251.124.81]:41331 "HELO caesar.teilar.gr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752273Ab2JAV4p convert rfc822-to-8bit (ORCPT
+	id S1757542Ab2JAV5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 17:57:18 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34017 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757515Ab2JAV5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 17:56:45 -0400
-X-Greylist: delayed 2025 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Oct 2012 17:56:34 EDT
-Message-ID: <5ed12753e5210d70ced30879e3f79a62.webmail.m5712@myweb.teilar.gr>
-Date: Tue, 2 Oct 2012 00:09:49 +0300 (EEST)
-Subject: 
-From: "Donna Frey" <officialclaims@w.cn>
-Reply-To: wumt-dept@live.co.uk
-User-Agent: SquirrelMail/1.4.15
+	Mon, 1 Oct 2012 17:57:16 -0400
+From: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Re: 3.4.10 i915 [GM45] regression
+Date: Mon, 01 Oct 2012 23:56:28 +0200
+Message-ID: <6616255.1baV4zcIkN@tux200s>
+Organization: Andreas Sturmlechner
+User-Agent: KMail/4.9.1 (Linux/3.6.0-ownage; KDE/4.9.1; x86_64; ; )
+In-Reply-To: <CAKMK7uE-L-+bFxJad3-pa-8i2MwvYw4_vYoWM8S-bxRmKruzoQ@mail.gmail.com>
+References: <2372445.fuIXicT4H0@tux200s> <20120930143201.GA22107@kroah.com> <CAKMK7uE-L-+bFxJad3-pa-8i2MwvYw4_vYoWM8S-bxRmKruzoQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-Content-Transfer-Encoding: 7BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Andreas, can you please check whether 3.5.x works for you, just to
+> make sure that this particular elephant is only wreaking havoc in 3.4
+> and earlier?
 
+I've been using 3.5 all the time since .0, I never had any trouble there - a few reboots just now with a vanilla 3.5.4 image were 
+successful as expected. Meanwhile I have upgraded to 3.6, zero issues as well.
 
-
-You have been selected as the sole beneficiary of the lump sum of Three
-Hundred Thousand Dollars ($300,000.00 USD).
-
-Kindly contact Donna Frey (wu-payout@outlook.com) for claims.
-
-
------------------------------------------
-This email was sent using WEB Mail service.
-   "TEI of Larissa"
-http://myweb.teilar.gr/
+Regards
