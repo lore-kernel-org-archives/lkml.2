@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab2JAMxo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 08:53:44 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53072 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab2JAMxm (ORCPT
+	id S1753185Ab2JAMyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 08:54:01 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:58945 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab2JAMx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 08:53:42 -0400
-From: Prabhakar <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        VGER <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH] media: davinci: vpfe: fix build error
-Date: Mon,  1 Oct 2012 18:22:48 +0530
-Message-Id: <1349095968-14257-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Mon, 1 Oct 2012 08:53:59 -0400
+Date: Mon, 1 Oct 2012 08:54:18 -0400
+From: Matt Porter <mporter@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Benoit Cousson <b-cousson@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        omar.luna@linaro.org
+Subject: Re: [PATCH v2 0/7] uio_pruss cleanup and platform support
+Message-ID: <20121001125418.GK5641@beef>
+References: <1348861072-14507-1-git-send-email-mporter@ti.com>
+ <alpine.DEB.2.00.1209291830270.20956@utopia.booyaka.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1209291830270.20956@utopia.booyaka.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On Sat, Sep 29, 2012 at 06:34:54PM +0000, Paul Walmsley wrote:
+> 
+> cc Omar
+> 
+> Hi Matt
+> 
+> On Fri, 28 Sep 2012, Matt Porter wrote:
+> 
+> > The AM33xx support requires some help in hwmod due to the following
+> > comment in arch/arm/mach-omap2/omap_hwmod.c:
+> > 	/*
+> > 	 * If an IP block contains HW reset lines and any of them are
+> > 	 * asserted, we let integration code associated with that
+> > 	 * block handle the enable.  We've received very little
+> > 	 * information on what those driver authors need, and until
+> > 	 * detailed information is provided and the driver code is
+> > 	 * posted to the public lists, this is probably the best we
+> > 	 * can do.
+> > 	 */
+> > 
+> > The approach to deal with the hardware reset (for at least the pruss
+> > hwmod) was to add a generic omap property to properly define this
+> > hardware. The implementation simply deasserts any rst lines that
+> > are called out in the property when the omap_device is
+> > instantiated. This is not the ideal implementation as the sequence is
+> > a bit wrong for pruss since the busy check during the hard reset
+> > will fail, even though it fails in a benign manner. Ideally, we would
+> > want the implementation to observe the ti,deassert-hard-reset property
+> > and use that in omap_hwmod.c:_enable() *after* the module is unidled
+> > and the clocks active. However, this is actually functional for purposes
+> > of getting the uio_pruss driver up and running.
+> 
+> Could you please sync with Omar on the hard reset handling?  He posted 
+> some patches that change the hard reset code.  Perhaps you can align on an 
+> approach with him?
 
-recent patch with commit id 4f996594ceaf6c3f9bc42b40c40b0f7f87b79c86
-which makes vidioc_s_crop const, was causing a following build error.
-
-vpfe_capture.c: In function 'vpfe_s_crop':
-vpfe_capture.c:1695: error: assignment of read-only location '*crop'
-vpfe_capture.c:1706: warning: passing argument 1 of
-'ccdc_dev->hw_ops.set_image_window' discards qualifiers from pointer target type
-vpfe_capture.c:1706: note: expected 'struct v4l2_rect *' but argument is of
-type 'const struct v4l2_rect *'
-make[4]: *** [drivers/media/platform/davinci/vpfe_capture.o] Error 1
-
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
----
- drivers/media/platform/davinci/vpfe_capture.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/media/platform/davinci/vpfe_capture.c b/drivers/media/platform/davinci/vpfe_capture.c
-index 48052cb..8be492c 100644
---- a/drivers/media/platform/davinci/vpfe_capture.c
-+++ b/drivers/media/platform/davinci/vpfe_capture.c
-@@ -1669,6 +1669,7 @@ static int vpfe_s_crop(struct file *file, void *priv,
- 			     const struct v4l2_crop *crop)
- {
- 	struct vpfe_device *vpfe_dev = video_drvdata(file);
-+	struct v4l2_rect rect = crop->c;
- 	int ret = 0;
+Ok, yes, I looked over his series now and it goes some way to solving
+the problem on PRUSS. My only concern is that the approach of loading up
+function pointers in pdata for the assert/deassert calls gets a bit ugly on a
+DT-only platform like AM33xx. I'll work with Omar on that.
  
- 	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_s_crop\n");
-@@ -1684,7 +1685,7 @@ static int vpfe_s_crop(struct file *file, void *priv,
- 	if (ret)
- 		return ret;
- 
--	if (crop->c.top < 0 || crop->c.left < 0) {
-+	if (rect.top < 0 || rect.left < 0) {
- 		v4l2_err(&vpfe_dev->v4l2_dev,
- 			"doesn't support negative values for top & left\n");
- 		ret = -EINVAL;
-@@ -1692,26 +1693,26 @@ static int vpfe_s_crop(struct file *file, void *priv,
- 	}
- 
- 	/* adjust the width to 16 pixel boundary */
--	crop->c.width = ((crop->c.width + 15) & ~0xf);
-+	rect.width = ((rect.width + 15) & ~0xf);
- 
- 	/* make sure parameters are valid */
--	if ((crop->c.left + crop->c.width >
-+	if ((rect.left + rect.width >
- 		vpfe_dev->std_info.active_pixels) ||
--	    (crop->c.top + crop->c.height >
-+	    (rect.top + rect.height >
- 		vpfe_dev->std_info.active_lines)) {
- 		v4l2_err(&vpfe_dev->v4l2_dev, "Error in S_CROP params\n");
- 		ret = -EINVAL;
- 		goto unlock_out;
- 	}
--	ccdc_dev->hw_ops.set_image_window(&crop->c);
--	vpfe_dev->fmt.fmt.pix.width = crop->c.width;
--	vpfe_dev->fmt.fmt.pix.height = crop->c.height;
-+	ccdc_dev->hw_ops.set_image_window(&rect);
-+	vpfe_dev->fmt.fmt.pix.width = rect.width;
-+	vpfe_dev->fmt.fmt.pix.height = rect.height;
- 	vpfe_dev->fmt.fmt.pix.bytesperline =
- 		ccdc_dev->hw_ops.get_line_length();
- 	vpfe_dev->fmt.fmt.pix.sizeimage =
- 		vpfe_dev->fmt.fmt.pix.bytesperline *
- 		vpfe_dev->fmt.fmt.pix.height;
--	vpfe_dev->crop = crop->c;
-+	vpfe_dev->crop = rect;
- unlock_out:
- 	mutex_unlock(&vpfe_dev->lock);
- 	return ret;
--- 
-1.7.4.1
+> A few general comments: if some new per-IP block flag is needed to control 
+> this, the best place for it right now would be the hwmod data in 
+> arch/arm/mach-omap2/omap_hwmod_*_data.c, rather than DT.  At some point 
+> soon, the hard reset handling will be split between a PRM driver and some 
+> hwmod bus driver, and it seems best to deal with the DT binding question 
+> at that time.  That way we don't wind up with a legacy binding that has to 
+> be supported over the long term.
 
+Ok, make sense.
+
+Thanks,
+Matt
